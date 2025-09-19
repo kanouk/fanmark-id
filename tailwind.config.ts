@@ -4,6 +4,12 @@ export default {
   darkMode: ["class"],
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   prefix: "",
+  plugins: [require("tailwindcss-animate"), require("daisyui")],
+  daisyui: {
+    themes: ["cupcake", "pastel"],
+    base: true,
+    styled: true,
+  },
   theme: {
     container: {
       center: true,
@@ -80,12 +86,22 @@ export default {
             height: "0",
           },
         },
+        "float": {
+          "0%, 100%": {
+            transform: "translateY(0px)",
+          },
+          "50%": {
+            transform: "translateY(-10px)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "bounce-soft": "bounce 1s ease-in-out infinite",
+        "pulse-slow": "pulse 3s ease-in-out infinite",
+        "float": "float 3s ease-in-out infinite",
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
 } satisfies Config;
