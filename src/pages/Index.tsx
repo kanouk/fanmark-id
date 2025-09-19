@@ -1,4 +1,19 @@
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+
 const Index = () => {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleAuthAction = () => {
+    if (user) {
+      signOut();
+    } else {
+      navigate("/auth");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50" data-theme="cupcake">
       {/* Navigation */}
@@ -9,8 +24,20 @@ const Index = () => {
           </div>
         </div>
         <div className="navbar-end">
-          <button className="btn btn-primary btn-sm mr-2">ログイン</button>
-          <button className="btn btn-outline btn-primary btn-sm">新規登録</button>
+          {user ? (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                {user.email}
+              </span>
+              <Button variant="outline" size="sm" onClick={handleAuthAction}>
+                ログアウト
+              </Button>
+            </div>
+          ) : (
+            <Button variant="default" size="sm" onClick={handleAuthAction}>
+              ログイン・新規登録
+            </Button>
+          )}
         </div>
       </div>
 
@@ -28,12 +55,20 @@ const Index = () => {
               長くて覚えにくいリンクはもうおしまい。🎵🎤🎸みたいに、一目で「あなた」ってわかるアドレスを作ろう
             </p>
             <div className="flex flex-wrap gap-4 justify-center mb-8">
-              <button className="btn btn-primary btn-lg hover:scale-105 transition-transform">
+              <Button 
+                size="lg" 
+                className="hover:scale-105 transition-transform"
+                onClick={() => user ? console.log("Create fanmark") : navigate("/auth")}
+              >
                 さっそく作ってみる ✨
-              </button>
-              <button className="btn btn-outline btn-lg hover:scale-105 transition-transform">
+              </Button>
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="hover:scale-105 transition-transform"
+              >
                 みんなの使い方を見る 👀
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -181,9 +216,14 @@ const Index = () => {
           <p className="text-xl mb-8 opacity-90">
             もう何千人ものクリエイターが、自分だけの絵文字アドレスを持ってる
           </p>
-          <button className="btn btn-secondary btn-lg hover:scale-105 transition-transform">
+          <Button 
+            variant="secondary" 
+            size="lg" 
+            className="hover:scale-105 transition-transform"
+            onClick={() => user ? console.log("Create fanmark") : navigate("/auth")}
+          >
             無料で作ってみる 🚀
-          </button>
+          </Button>
         </div>
       </div>
 
