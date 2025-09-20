@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AuthLayout } from '@/components/AuthLayout';
 import { PasswordRequirement } from '@/components/PasswordRequirement';
 import { InvitationSystem } from '@/components/InvitationSystem';
-import { Heart, Sparkles, Users, Mail } from 'lucide-react';
+import { Heart, Sparkles, Users, Mail, Info } from 'lucide-react';
 
 const Auth = () => {
   const { user, session } = useAuth();
@@ -106,13 +106,6 @@ const Auth = () => {
     >
       <div className="space-y-6">
         
-        {/* Show invitation success banner if user came from invitation flow */}
-        {invitationFlow.validCode && (
-          <div className="alert alert-success">
-            <Heart className="w-5 h-5" />
-            <span>{t('invitation.validCodeWelcome')}</span>
-          </div>
-        )}
         
         <Tabs defaultValue="signin" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
@@ -261,11 +254,11 @@ const SignUpForm = ({
       <label className="label">
         <span className="label-text">{t('auth.username')}</span>
       </label>
-      <div className="input-group">
-        <span>@</span>
+      <div className="join w-full">
+        <span className="btn btn-disabled join-item">@</span>
         <input
           type="text"
-          className="input input-bordered w-full"
+          className="input input-bordered join-item flex-1"
           value={username}
           onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
           placeholder="yourname"
@@ -291,6 +284,23 @@ const SignUpForm = ({
     <div className="form-control">
       <label className="label">
         <span className="label-text">{t('auth.password')}</span>
+        {formData.password && (
+          <div className="dropdown dropdown-end">
+            <div tabIndex={0} role="button" className="btn btn-circle btn-ghost btn-xs">
+              <Info className="w-4 h-4 text-info" />
+            </div>
+            <div tabIndex={0} className="dropdown-content z-50 card card-compact w-72 p-4 shadow-lg bg-base-100 border">
+              <div className="card-body">
+                <h3 className="card-title text-sm">{t('password.requirements.title')}</h3>
+                <div className="space-y-1">
+                  {requirements.map((req: any, index: number) => (
+                    <PasswordRequirement key={index} met={req.met} text={req.text} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </label>
       <input
         type="password"
@@ -314,16 +324,6 @@ const SignUpForm = ({
       />
     </div>
     
-    {formData.password && (
-      <div className="space-y-2">
-        <p className="text-sm text-base-content/70">{t('password.requirements.title')}:</p>
-        <div className="space-y-1">
-          {requirements.map((req: any, index: number) => (
-            <PasswordRequirement key={index} met={req.met} text={req.text} />
-          ))}
-        </div>
-      </div>
-    )}
     
     {invitationCode && (
       <div className="alert alert-success">
