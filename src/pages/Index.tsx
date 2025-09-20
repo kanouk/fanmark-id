@@ -127,36 +127,36 @@ const Index = () => {
             <div className="card bg-gradient-to-br from-pink-100 to-purple-100 shadow-xl hover:scale-105 transition-transform">
               <div className="card-body text-center">
                 <div className="text-4xl mb-4">🎵🎤🎸</div>
-                <h3 className="card-title justify-center text-lg">ミュージシャン</h3>
-                <p className="text-sm text-base-content/70">楽曲・ライブ情報・グッズがまとめて見れるページ</p>
-                <div className="badge badge-secondary px-[10px]">プロフィール</div>
+                <h3 className="card-title justify-center text-lg">{t('sections.examples.musician.title')}</h3>
+                <p className="text-sm text-base-content/70">{t('sections.examples.musician.description')}</p>
+                <div className="badge badge-secondary px-[10px]">{t('sections.examples.musician.badge')}</div>
               </div>
             </div>
 
             <div className="card bg-gradient-to-br from-orange-100 to-red-100 shadow-xl hover:scale-105 transition-transform">
               <div className="card-body text-center">
                 <div className="text-4xl mb-4">🍔🍟</div>
-                <h3 className="card-title justify-center text-lg">お店</h3>
-                <p className="text-sm text-base-content/70">メニュー・出前・予約のリンクをひとまとめ</p>
-                <div className="badge badge-accent px-[10px]">リンク集</div>
+                <h3 className="card-title justify-center text-lg">{t('sections.examples.shop.title')}</h3>
+                <p className="text-sm text-base-content/70">{t('sections.examples.shop.description')}</p>
+                <div className="badge badge-accent px-[10px]">{t('sections.examples.shop.badge')}</div>
               </div>
             </div>
 
             <div className="card bg-gradient-to-br from-blue-100 to-cyan-100 shadow-xl hover:scale-105 transition-transform">
               <div className="card-body text-center">
                 <div className="text-4xl mb-4">💼📊⚡</div>
-                <h3 className="card-title justify-center text-lg">ビジネス</h3>
-                <p className="text-sm text-base-content/70">実績・経歴・連絡先がわかりやすい名刺代わり</p>
-                <div className="badge badge-info px-[10px]">名刺</div>
+                <h3 className="card-title justify-center text-lg">{t('sections.examples.business.title')}</h3>
+                <p className="text-sm text-base-content/70">{t('sections.examples.business.description')}</p>
+                <div className="badge badge-info px-[10px]">{t('sections.examples.business.badge')}</div>
               </div>
             </div>
 
             <div className="card bg-gradient-to-br from-purple-100 to-pink-100 shadow-xl hover:scale-105 transition-transform">
               <div className="card-body text-center">
                 <div className="text-4xl mb-4">🔥🔥🔥</div>
-                <h3 className="card-title justify-center text-lg">ストリーマー</h3>
-                <p className="text-sm text-base-content/70">Twitchチャンネルに直接ジャンプ</p>
-                <div className="badge badge-error px-[10px]">ワンクリック</div>
+                <h3 className="card-title justify-center text-lg">{t('sections.examples.streamer.title')}</h3>
+                <p className="text-sm text-base-content/70">{t('sections.examples.streamer.description')}</p>
+                <div className="badge badge-error px-[10px]">{t('sections.examples.streamer.badge')}</div>
               </div>
             </div>
           </div>
@@ -210,14 +210,13 @@ const Index = () => {
             <div className="card bg-gradient-to-r from-pink-100 to-purple-100 shadow-xl">
               <div className="card-body">
                 <p className="text-lg mb-4">
-                  <span className="badge badge-primary badge-lg px-[10px]">短いファンマ（1〜2個）は有料 ✨</span>
+                  <span className="badge badge-primary badge-lg px-[10px]">{t('sections.pricingDetails.shortPremium')}</span>
                 </p>
                 <p className="text-lg mb-4">
-                  <span className="badge badge-secondary badge-lg px-[10px]">長いファンマ（3個以上）は無料！ 🎉</span>
+                  <span className="badge badge-secondary badge-lg px-[10px]">{t('sections.pricingDetails.longFree')}</span>
                 </p>
-                <p className="text-base-content/70">
-                  まずは無料で試してみて<br />
-                  気に入ったら短いアドレスにグレードアップ
+                <p className="text-base-content/70 whitespace-pre-line">
+                  {t('sections.pricingDetails.description')}
                 </p>
               </div>
             </div>
@@ -232,26 +231,22 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             <div className="card bg-base-100 shadow-lg">
               <div className="card-body">
-                <h3 className="card-title text-error justify-center">😵 今までのやり方</h3>
+                <h3 className="card-title text-error justify-center">{t('sections.comparisonDetails.oldWay.title')}</h3>
                 <p className="text-sm font-mono bg-base-200 p-3 rounded">
                   linktr.ee/my_awesome_musician_profile_2024
                 </p>
-                <p className="text-base-content/70">
-                  長すぎて覚えられない<br />
-                  打ち間違える<br />
-                  伝えにくい...
+                <p className="text-base-content/70 whitespace-pre-line">
+                  {t('sections.comparisonDetails.oldWay.problems')}
                 </p>
               </div>
             </div>
             
             <div className="card bg-gradient-to-br from-green-100 to-blue-100 shadow-lg">
               <div className="card-body">
-                <h3 className="card-title text-success justify-center">✨ fanmarkなら</h3>
+                <h3 className="card-title text-success justify-center">{t('sections.comparisonDetails.fanmarkWay.title')}</h3>
                 <p className="text-2xl p-3">🎵🎤🎸</p>
-                <p className="text-base-content/70">
-                  一度見たら忘れない<br />
-                  口で言える<br />
-                  シェアしたくなる！
+                <p className="text-base-content/70 whitespace-pre-line">
+                  {t('sections.comparisonDetails.fanmarkWay.benefits')}
                 </p>
               </div>
             </div>

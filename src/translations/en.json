@@ -85,7 +85,44 @@
     "comparison": "Service Comparison",
     "cta": "Get Started Now",
     "ctaDescription": "Find your perfect fanmark and start your new address experience",
-    "footer": "© 2024 fanmark.id All rights reserved."
+    "footer": "© 2024 fanmark.id All rights reserved.",
+    "examples": {
+      "musician": {
+        "title": "Musician",
+        "description": "Music, live events & merchandise all in one page",
+        "badge": "Profile"
+      },
+      "shop": {
+        "title": "Shop",
+        "description": "Menu, delivery & reservation links in one place",
+        "badge": "Link Hub"
+      },
+      "business": {
+        "title": "Business",
+        "description": "Portfolio, experience & contact info as a business card",
+        "badge": "Business Card"
+      },
+      "streamer": {
+        "title": "Streamer",
+        "description": "Direct jump to Twitch channel",
+        "badge": "One Click"
+      }
+    },
+    "pricingDetails": {
+      "shortPremium": "Short fanmarks (1-2 emojis) are premium ✨",
+      "longFree": "Long fanmarks (3+ emojis) are free! 🎉",
+      "description": "Try it free first\nThen upgrade to shorter address if you like it"
+    },
+    "comparisonDetails": {
+      "oldWay": {
+        "title": "😵 The Old Way",
+        "problems": "Too long to remember\nEasy to mistype\nHard to share..."
+      },
+      "fanmarkWay": {
+        "title": "✨ With fanmark",
+        "benefits": "Unforgettable\nEasy to say\nShareable!"
+      }
+    }
   },
   "common": {
     "loading": "Loading...",

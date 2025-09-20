@@ -85,7 +85,44 @@
     "comparison": "他サービスとの比較",
     "cta": "今すぐ始めよう",
     "ctaDescription": "あなただけのファンマを見つけて、新しいアドレス体験を始めましょう",
-    "footer": "© 2024 fanmark.id All rights reserved."
+    "footer": "© 2024 fanmark.id All rights reserved.",
+    "examples": {
+      "musician": {
+        "title": "ミュージシャン",
+        "description": "楽曲・ライブ情報・グッズがまとめて見れるページ",
+        "badge": "プロフィール"
+      },
+      "shop": {
+        "title": "お店",
+        "description": "メニュー・出前・予約のリンクをひとまとめ",
+        "badge": "リンク集"
+      },
+      "business": {
+        "title": "ビジネス",
+        "description": "実績・経歴・連絡先がわかりやすい名刺代わり",
+        "badge": "名刺"
+      },
+      "streamer": {
+        "title": "ストリーマー",
+        "description": "Twitchチャンネルに直接ジャンプ",
+        "badge": "ワンクリック"
+      }
+    },
+    "pricingDetails": {
+      "shortPremium": "短いファンマ（1〜2個）は有料 ✨",
+      "longFree": "長いファンマ（3個以上）は無料！ 🎉",
+      "description": "まずは無料で試してみて\n気に入ったら短いアドレスにグレードアップ"
+    },
+    "comparisonDetails": {
+      "oldWay": {
+        "title": "😵 今までのやり方",
+        "problems": "長すぎて覚えられない\n打ち間違える\n伝えにくい..."
+      },
+      "fanmarkWay": {
+        "title": "✨ fanmarkなら",
+        "benefits": "一度見たら忘れない\n口で言える\nシェアしたくなる！"
+      }
+    }
   },
   "common": {
     "loading": "読み込み中...",
