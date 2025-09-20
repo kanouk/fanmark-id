@@ -7,7 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useAvatarUpload } from '@/hooks/useAvatarUpload';
-import { Save, User, Link as LinkIcon, Globe, Instagram, Github, X, Video, Play, MessageCircle, Upload, Camera } from 'lucide-react';
+import { Save, User, Link as LinkIcon, Globe, Upload, Camera } from 'lucide-react';
+import { SiInstagram, SiX, SiTiktok, SiYoutube, SiLine, SiGithub } from 'react-icons/si';
 
 interface UserProfileFormProps {
   profile: any;
@@ -171,7 +172,7 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
           <div className="form-control">
             <Label className="label">
               <span className="label-text flex items-center space-x-2">
-                <Instagram className="w-4 h-4" />
+                <SiInstagram className="w-4 h-4" />
                 <span>Instagram</span>
               </span>
             </Label>
@@ -186,7 +187,7 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
           <div className="form-control">
             <Label className="label">
               <span className="label-text flex items-center space-x-2">
-                <X className="w-4 h-4" />
+                <SiX className="w-4 h-4" />
                 <span>X</span>
               </span>
             </Label>
@@ -201,7 +202,7 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
           <div className="form-control">
             <Label className="label">
               <span className="label-text flex items-center space-x-2">
-                <Video className="w-4 h-4" />
+                <SiTiktok className="w-4 h-4" />
                 <span>TikTok</span>
               </span>
             </Label>
@@ -216,7 +217,7 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
           <div className="form-control">
             <Label className="label">
               <span className="label-text flex items-center space-x-2">
-                <Play className="w-4 h-4" />
+                <SiYoutube className="w-4 h-4" />
                 <span>YouTube</span>
               </span>
             </Label>
@@ -231,7 +232,7 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
           <div className="form-control">
             <Label className="label">
               <span className="label-text flex items-center space-x-2">
-                <MessageCircle className="w-4 h-4" />
+                <SiLine className="w-4 h-4" />
                 <span>LINE</span>
               </span>
             </Label>
@@ -246,7 +247,7 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
           <div className="form-control">
             <Label className="label">
               <span className="label-text flex items-center space-x-2">
-                <Github className="w-4 h-4" />
+                <SiGithub className="w-4 h-4" />
                 <span>GitHub</span>
               </span>
             </Label>
