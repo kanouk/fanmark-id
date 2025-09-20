@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from './useTranslation';
 
 export const useAvatarUpload = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [uploading, setUploading] = useState(false);
 
   const uploadAvatar = async (file: File): Promise<string> => {
-    if (!user) throw new Error('User not authenticated');
+    if (!user) throw new Error(t('common.userNotAuthenticated'));
     
     setUploading(true);
     try {
@@ -82,7 +84,7 @@ export const useAvatarUpload = () => {
   };
 
   const deleteAvatar = async (avatarUrl: string): Promise<void> => {
-    if (!user) throw new Error('User not authenticated');
+    if (!user) throw new Error(t('common.userNotAuthenticated'));
     
     try {
       // Extract file path from URL

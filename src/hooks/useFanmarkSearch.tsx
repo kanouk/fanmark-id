@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useTranslation } from './useTranslation';
 
 export interface FanmarkSearchResult {
   id: string;
@@ -19,6 +20,7 @@ export interface FanmarkSearchResult {
 }
 
 export function useFanmarkSearch() {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [result, setResult] = useState<FanmarkSearchResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -107,7 +109,7 @@ export function useFanmarkSearch() {
   // Validate emoji input - strict emoji-only validation
   const validateEmojiInput = (input: string): { valid: boolean; error?: string; emojiCount: number } => {
     if (!input || input.trim().length === 0) {
-      return { valid: false, error: 'Emoji combination is required', emojiCount: 0 };
+      return { valid: false, error: t('search.emojiRequired'), emojiCount: 0 };
     }
 
     const cleanInput = input.replace(/\s/g, '');
@@ -115,7 +117,7 @@ export function useFanmarkSearch() {
     // Check if string contains only emojis
     const emojiRegex = /^[\p{Emoji}\p{Emoji_Modifier}\p{Emoji_Component}\p{Emoji_Modifier_Base}\p{Emoji_Presentation}]+$/u;
     if (!emojiRegex.test(cleanInput)) {
-      return { valid: false, error: 'Input must contain only emojis (no text, numbers, or symbols)', emojiCount: 0 };
+      return { valid: false, error: t('search.validationError'), emojiCount: 0 };
     }
 
     // Count emoji characters - use simple array spread for better compatibility
@@ -127,7 +129,7 @@ export function useFanmarkSearch() {
     }).length;
     
     if (emojiCount < 1 || emojiCount > 5) {
-      return { valid: false, error: 'Emoji combination must contain 1-5 emojis', emojiCount };
+      return { valid: false, error: t('search.emojiCountError'), emojiCount };
     }
 
     return { valid: true, emojiCount };

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useTranslation } from './useTranslation';
 
 interface InvitationCodeResult {
   isValid: boolean;
@@ -8,11 +9,12 @@ interface InvitationCodeResult {
 }
 
 export function useInvitationCode() {
+  const { t } = useTranslation();
   const [validationLoading, setValidationLoading] = useState(false);
 
   const validateCode = async (code: string): Promise<InvitationCodeResult> => {
     if (!code.trim()) {
-      return { isValid: false, message: 'Invitation code is required' };
+      return { isValid: false, message: t('invitation.codeRequired') };
     }
 
     setValidationLoading(true);
@@ -27,27 +29,27 @@ export function useInvitationCode() {
       if (error) throw error;
 
       if (!data) {
-        return { isValid: false, message: 'Invalid invitation code' };
+        return { isValid: false, message: t('invitation.invalidCode') };
       }
 
       // Check if code is expired
       if (data.expires_at && new Date(data.expires_at) < new Date()) {
-        return { isValid: false, message: 'Code has expired' };
+        return { isValid: false, message: t('invitation.expiredCode') };
       }
 
       // Check if code has reached max uses
       if (data.used_count >= data.max_uses) {
-        return { isValid: false, message: 'Code has been fully used' };
+        return { isValid: false, message: t('invitation.codeFullyUsed') };
       }
 
       return {
         isValid: true,
-        message: 'Valid invitation code',
+        message: t('invitation.validCode'),
         perks: data.special_perks,
       };
     } catch (error) {
       console.error('Error validating invitation code:', error);
-      return { isValid: false, message: 'Error validating code' };
+      return { isValid: false, message: t('invitation.errorValidating') };
     } finally {
       setValidationLoading(false);
     }

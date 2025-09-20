@@ -22,6 +22,7 @@
     "validationError": "絵文字のみ入力してください（文字、数字、記号は使用できません）",
     "emojiCountError": "絵文字は1〜5個で入力してください",
     "emojiCountLabel": "個の絵文字",
+    "emojiRequired": "絵文字の組み合わせが必要です",
     "pricingGuide": {
       "singleEmoji": "💎 1個の絵文字: $99.9",
       "doubleEmoji": "💳 2個の絵文字: $9.99",
@@ -56,7 +57,11 @@
     "validate": "確認",
     "join": "参加する",
     "validCodeWelcome": "ようこそ！招待コードが有効です ✨",
-    "codeApplied": "招待コードが適用されました"
+    "codeApplied": "招待コードが適用されました",
+    "codeRequired": "招待コードが必要です",
+    "codeFullyUsed": "コードは使用済みです",
+    "validCode": "有効な招待コード",
+    "errorValidating": "コード検証エラー"
   },
   "navigation": {
     "profile": "プロフィール",
@@ -174,7 +179,8 @@
     "back": "戻る",
     "saving": "保存中...",
     "enabled": "有効",
-    "disabled": "無効"
+    "disabled": "無効",
+    "userNotAuthenticated": "ユーザーが認証されていません"
   },
   "profile": {
     "welcome": "プロフィールへようこそ！",

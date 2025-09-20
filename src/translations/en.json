@@ -22,6 +22,7 @@
     "validationError": "Input must contain only emojis (no text, numbers, or symbols)",
     "emojiCountError": "Emoji combination must contain 1-5 emojis",
     "emojiCountLabel": "emojis",
+    "emojiRequired": "Emoji combination is required",
     "pricingGuide": {
       "singleEmoji": "💎 1 emoji: $99.9",
       "doubleEmoji": "💳 2 emojis: $9.99", 
@@ -56,7 +57,11 @@
     "validate": "Validate",
     "join": "Join",
     "validCodeWelcome": "Welcome! Your invitation code is valid ✨",
-    "codeApplied": "Invitation code applied"
+    "codeApplied": "Invitation code applied",
+    "codeRequired": "Invitation code is required",
+    "codeFullyUsed": "Code has been fully used",
+    "validCode": "Valid invitation code",
+    "errorValidating": "Error validating code"
   },
   "navigation": {
     "profile": "Profile",
@@ -169,7 +174,8 @@
     "back": "Back",
     "saving": "Saving...",
     "enabled": "Enabled",
-    "disabled": "Disabled"
+    "disabled": "Disabled",
+    "userNotAuthenticated": "User not authenticated"
   },
   "profile": {
     "welcome": "Welcome to your profile!",
