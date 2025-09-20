@@ -195,7 +195,7 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, t }: LoginForm
     
     <button 
       type="submit" 
-      className="btn btn-primary w-full" 
+      className="btn btn-outline btn-primary w-full" 
       disabled={authState.loading}
     >
       {authState.loading ? (
@@ -339,7 +339,7 @@ const SignUpForm = ({
     
     <button 
       type="submit" 
-      className="btn btn-primary w-full" 
+      className="btn btn-outline btn-primary w-full" 
       disabled={authState.loading || !isValid || !username.trim()}
     >
       {authState.loading ? (

@@ -12,6 +12,7 @@ const buttonVariants = cva(
         default: "btn-primary",
         destructive: "btn-error",
         outline: "btn-outline",
+        primaryOutline: "btn-outline btn-primary",
         secondary: "btn-secondary",
         ghost: "btn-ghost",
         link: "btn-link",
