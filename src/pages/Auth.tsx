@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { User, Session } from '@supabase/supabase-js';
+import { CheckCircle, XCircle } from 'lucide-react';
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -18,6 +19,7 @@ const Auth = () => {
   const [activeTab, setActiveTab] = useState("signin");
   const [emailError, setEmailError] = useState("");
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+  const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -101,9 +103,15 @@ const Auth = () => {
       });
 
       if (error) {
+        let errorMessage = error.message;
+        if (error.message.includes("Password should be at least 8 characters")) {
+          errorMessage = "パスワードは8文字以上で入力してください";
+        } else if (error.message.includes("Password should contain")) {
+          errorMessage = "パスワードは大文字、小文字、数字、記号を含む必要があります";
+        }
         toast({
           title: "登録エラー",
-          description: error.message,
+          description: errorMessage,
           variant: "destructive",
         });
       } else {
@@ -250,6 +258,29 @@ const Auth = () => {
     }
   };
 
+  // Password validation helpers
+  const checkPasswordRequirements = (password: string) => {
+    return {
+      length: password.length >= 8,
+      lowercase: /[a-z]/.test(password),
+      uppercase: /[A-Z]/.test(password),
+      number: /[0-9]/.test(password),
+      symbol: /[^A-Za-z0-9]/.test(password)
+    };
+  };
+
+  const isPasswordValid = (password: string) => {
+    const requirements = checkPasswordRequirements(password);
+    return Object.values(requirements).every(Boolean);
+  };
+
+  const PasswordRequirement = ({ met, text }: { met: boolean; text: string }) => (
+    <div className={`flex items-center gap-2 text-sm ${met ? 'text-green-600' : 'text-red-500'}`}>
+      {met ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+      <span>{text}</span>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/10 to-primary/10 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -363,25 +394,53 @@ const Auth = () => {
                       <p className="text-sm text-destructive mt-1">{emailError}</p>
                     )}
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">パスワード</Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      placeholder="6文字以上のパスワード"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      minLength={6}
-                    />
-                  </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "登録中..." : "新規登録"}
-                  </Button>
+                   <div className="space-y-2">
+                     <Label htmlFor="signup-password">パスワード</Label>
+                     <Input
+                       id="signup-password"
+                       type="password"
+                       placeholder="8文字以上のパスワード"
+                       value={password}
+                       onChange={(e) => {
+                         setPassword(e.target.value);
+                         setShowPasswordRequirements(e.target.value.length > 0);
+                       }}
+                       required
+                       minLength={8}
+                     />
+                     {showPasswordRequirements && (
+                       <div className="space-y-1 p-3 bg-muted/50 rounded-md">
+                         <p className="text-sm font-medium text-muted-foreground mb-2">パスワード要件:</p>
+                         <PasswordRequirement 
+                           met={checkPasswordRequirements(password).length} 
+                           text="8文字以上" 
+                         />
+                         <PasswordRequirement 
+                           met={checkPasswordRequirements(password).lowercase} 
+                           text="小文字を含む" 
+                         />
+                         <PasswordRequirement 
+                           met={checkPasswordRequirements(password).uppercase} 
+                           text="大文字を含む" 
+                         />
+                         <PasswordRequirement 
+                           met={checkPasswordRequirements(password).number} 
+                           text="数字を含む" 
+                         />
+                         <PasswordRequirement 
+                           met={checkPasswordRequirements(password).symbol} 
+                           text="記号を含む" 
+                         />
+                       </div>
+                     )}
+                   </div>
+                   <Button 
+                     type="submit" 
+                     className="w-full" 
+                     disabled={isLoading || (password.length > 0 && !isPasswordValid(password))}
+                   >
+                     {isLoading ? "登録中..." : "新規登録"}
+                   </Button>
                 </form>
               </TabsContent>
             </Tabs>
