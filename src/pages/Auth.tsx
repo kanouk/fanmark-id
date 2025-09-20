@@ -105,13 +105,6 @@ const Auth = () => {
       backLabel={t('auth.homeButton')}
     >
       <div className="space-y-6">
-        {/* Show invitation info if in invitation mode */}
-        {!settingsLoading && settings.invitation_mode && invitationFlow.showInvitation && (
-          <div className="alert alert-info">
-            <Sparkles className="w-5 h-5" />
-            <span>{t('invitation.currentlyInviteOnly')}</span>
-          </div>
-        )}
         
         {/* Show invitation success banner if user came from invitation flow */}
         {invitationFlow.validCode && (
