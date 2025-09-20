@@ -31,21 +31,45 @@ function generateShortId(): string {
   return result;
 }
 
-// Validate emoji combination
-function validateEmojiCombination(emoji: string): { valid: boolean; error?: string } {
+// Validate emoji combination - strict emoji-only validation
+function validateEmojiCombination(emoji: string): { valid: boolean; error?: string; emojiCount: number } {
   if (!emoji || emoji.trim().length === 0) {
-    return { valid: false, error: 'Emoji combination is required' };
+    return { valid: false, error: 'Emoji combination is required', emojiCount: 0 };
   }
 
-  // Count graphemes (visual characters)
-  const segments = [...new Intl.Segmenter().segment(emoji)];
-  const emojiCount = segments.filter(s => s.segment.match(/\p{Emoji}/u)).length;
+  // Remove all whitespace for validation
+  const cleanEmoji = emoji.replace(/\s/g, '');
+  
+  // Check if string contains only emojis
+  const emojiRegex = /^[\p{Emoji}\p{Emoji_Modifier}\p{Emoji_Component}\p{Emoji_Modifier_Base}\p{Emoji_Presentation}]+$/u;
+  if (!emojiRegex.test(cleanEmoji)) {
+    return { valid: false, error: 'Input must contain only emojis (no text, numbers, or symbols)', emojiCount: 0 };
+  }
+
+  // Count actual emoji characters (excluding modifiers)
+  const segments = [...new Intl.Segmenter().segment(cleanEmoji)];
+  const emojiCount = segments.filter(s => {
+    // Count base emojis, excluding modifiers and variation selectors
+    return s.segment.match(/\p{Emoji}/u) && 
+           !s.segment.match(/[\u{1F3FB}-\u{1F3FF}\u{FE0F}\u{200D}]/u);
+  }).length;
   
   if (emojiCount < 1 || emojiCount > 5) {
-    return { valid: false, error: 'Emoji combination must contain 1-5 emojis' };
+    return { valid: false, error: 'Emoji combination must contain 1-5 emojis', emojiCount };
   }
 
-  return { valid: true };
+  return { valid: true, emojiCount };
+}
+
+// Determine pricing based on emoji count
+function getPricingInfo(emojiCount: number): { requiresPayment: boolean; priceYen?: number } {
+  if (emojiCount === 1) {
+    return { requiresPayment: true, priceYen: 500 }; // Premium price for single emoji
+  } else if (emojiCount === 2) {
+    return { requiresPayment: true, priceYen: 300 }; // Standard price for double emoji
+  } else {
+    return { requiresPayment: false }; // Free for 3+ emojis
+  }
 }
 
 serve(async (req) => {
@@ -95,7 +119,10 @@ serve(async (req) => {
     // Normalize emoji for database storage
     const normalizedEmoji = normalizeEmoji(emoji_combination);
     
-    // Check if emoji is reserved
+    // Get pricing info based on emoji count
+    const pricingInfo = getPricingInfo(validation.emojiCount);
+    
+    // Check if emoji is reserved (admin-defined patterns)
     const { data: reservedEmoji } = await supabase
       .from('reserved_emoji_patterns')
       .select('pattern, price_yen')
@@ -103,12 +130,15 @@ serve(async (req) => {
       .eq('is_active', true)
       .single();
 
-    if (reservedEmoji) {
+    // If requires payment (by count-based pricing or reserved pattern)
+    if (pricingInfo.requiresPayment || reservedEmoji) {
+      const priceYen = reservedEmoji?.price_yen || pricingInfo.priceYen;
       return new Response(
         JSON.stringify({ 
-          error: 'This emoji requires payment',
+          error: `This emoji requires payment (${validation.emojiCount} emoji${validation.emojiCount !== 1 ? 's' : ''})`,
           type: 'payment_required',
-          price_yen: reservedEmoji.price_yen 
+          price_yen: priceYen,
+          emoji_count: validation.emojiCount
         }),
         { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );

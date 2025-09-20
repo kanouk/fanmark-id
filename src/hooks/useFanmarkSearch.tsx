@@ -9,6 +9,8 @@ export interface FanmarkSearchResult {
   is_premium: boolean;
   status: 'available' | 'taken' | 'premium' | 'payment_required';
   price_yen?: number;
+  emoji_count?: number;
+  error?: string;
   owner?: {
     username: string;
     display_name: string;
@@ -85,10 +87,67 @@ export function useFanmarkSearch() {
     return emoji.replace(/[\u{1F3FB}-\u{1F3FF}]/gu, '');
   };
 
+  // Validate emoji input - strict emoji-only validation
+  const validateEmojiInput = (input: string): { valid: boolean; error?: string; emojiCount: number } => {
+    if (!input || input.trim().length === 0) {
+      return { valid: false, error: 'Emoji combination is required', emojiCount: 0 };
+    }
+
+    const cleanInput = input.replace(/\s/g, '');
+    
+    // Check if string contains only emojis
+    const emojiRegex = /^[\p{Emoji}\p{Emoji_Modifier}\p{Emoji_Component}\p{Emoji_Modifier_Base}\p{Emoji_Presentation}]+$/u;
+    if (!emojiRegex.test(cleanInput)) {
+      return { valid: false, error: 'Input must contain only emojis (no text, numbers, or symbols)', emojiCount: 0 };
+    }
+
+    // Count emoji characters - use simple array spread for better compatibility
+    const emojiArray = [...cleanInput];
+    const emojiCount = emojiArray.filter(char => {
+      // Count characters that match emoji pattern but exclude modifiers
+      return char.match(/\p{Emoji}/u) && 
+             !char.match(/[\u{1F3FB}-\u{1F3FF}\u{FE0F}\u{200D}]/u);
+    }).length;
+    
+    if (emojiCount < 1 || emojiCount > 5) {
+      return { valid: false, error: 'Emoji combination must contain 1-5 emojis', emojiCount };
+    }
+
+    return { valid: true, emojiCount };
+  };
+
+  // Get pricing info based on emoji count
+  const getPricingInfo = (emojiCount: number): { requiresPayment: boolean; priceYen?: number } => {
+    if (emojiCount === 1) {
+      return { requiresPayment: true, priceYen: 500 }; // Premium price for single emoji
+    } else if (emojiCount === 2) {
+      return { requiresPayment: true, priceYen: 300 }; // Standard price for double emoji
+    } else {
+      return { requiresPayment: false }; // Free for 3+ emojis
+    }
+  };
+
   const searchFanmarks = async (query: string) => {
     setLoading(true);
     try {
+      // Validate input first
+      const validation = validateEmojiInput(query);
+      if (!validation.valid) {
+        setResult({
+          id: 'invalid',
+          emoji_combination: query,
+          normalized_emoji: '',
+          short_id: '',
+          is_premium: false,
+          status: 'available', // Show as available but will show error
+          error: validation.error
+        } as any);
+        setLoading(false);
+        return;
+      }
+
       const normalizedQuery = normalizeEmoji(query);
+      const pricingInfo = getPricingInfo(validation.emojiCount);
 
       // Check if emoji is reserved first
       const { data: reservedEmoji } = await supabase
@@ -129,13 +188,13 @@ export function useFanmarkSearch() {
         setResult({
           ...existingFanmark,
           status,
-          price_yen: reservedEmoji?.price_yen,
+          price_yen: reservedEmoji?.price_yen || pricingInfo.priceYen,
           owner: ownerProfile ? {
             username: ownerProfile.username,
             display_name: ownerProfile.display_name
           } : undefined
         });
-      } else if (reservedEmoji) {
+      } else if (pricingInfo.requiresPayment || reservedEmoji) {
         // Fanmark requires payment
         setResult({
           id: 'payment_required',
@@ -144,10 +203,11 @@ export function useFanmarkSearch() {
           short_id: '',
           is_premium: true,
           status: 'payment_required',
-          price_yen: reservedEmoji.price_yen,
-        });
+          price_yen: reservedEmoji?.price_yen || pricingInfo.priceYen,
+          emoji_count: validation.emojiCount
+        } as any);
       } else {
-        // Fanmark is available
+        // Fanmark is available and free
         setResult({
           id: 'available',
           emoji_combination: query,
@@ -155,7 +215,8 @@ export function useFanmarkSearch() {
           short_id: '',
           is_premium: false,
           status: 'available',
-        });
+          emoji_count: validation.emojiCount
+        } as any);
       }
     } catch (error) {
       console.error('Error searching fanmarks:', error);
