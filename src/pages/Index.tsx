@@ -74,7 +74,7 @@ const Index = () => {
       </div>
 
       {/* Hero Section */}
-      <div className="hero min-h-[80vh] bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100">
+      <div className="hero min-h-[60vh] bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100">
         <div className="hero-content text-center">
           <div className="max-w-4xl">
             <div className="animate-float mb-8">
@@ -93,7 +93,7 @@ const Index = () => {
                 <InvitationSystem onValidCode={handleValidInvitationCode} />
               </div>
             ) : (
-              <div className="flex flex-wrap gap-4 justify-center mb-8">
+              <div className="flex flex-wrap gap-4 justify-center">
                 <Button size="lg" className="hover:scale-105 transition-transform" onClick={handleSignupPrompt}>
                   {t('hero.tryButton')} ✨
                 </Button>
@@ -104,14 +104,16 @@ const Index = () => {
             )}
           </div>
         </div>
+      </div>
 
-        {/* Public Search Section */}
-        {!showInvitationMode && (
-          <div className="mb-16 container mx-auto px-4">
+      {/* Fanmark Search Section */}
+      {!showInvitationMode && (
+        <div className="py-16 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+          <div className="container mx-auto px-4">
             <FanmarkSearch onSignupPrompt={handleSignupPrompt} />
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Examples Section */}
       <div className="py-20 bg-base-100">
