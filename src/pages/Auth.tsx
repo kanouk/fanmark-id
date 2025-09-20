@@ -17,6 +17,7 @@ const Auth = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [activeTab, setActiveTab] = useState("signin");
   const [emailError, setEmailError] = useState("");
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -27,8 +28,8 @@ const Auth = () => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Redirect authenticated users to home page
-        if (session?.user) {
+        // Redirect authenticated and confirmed users to home page
+        if (session?.user?.email_confirmed_at) {
           navigate("/");
         }
       }
@@ -39,8 +40,8 @@ const Auth = () => {
       setSession(session);
       setUser(session?.user ?? null);
       
-      // Redirect if already authenticated
-      if (session?.user) {
+      // Redirect if already authenticated and confirmed
+      if (session?.user?.email_confirmed_at) {
         navigate("/");
       }
     });
@@ -106,6 +107,7 @@ const Auth = () => {
           variant: "destructive",
         });
       } else {
+        setAwaitingConfirmation(true);
         toast({
           title: "確認メールを送信しました",
           description: "メールアドレスに送られた確認リンクをクリックしてください。",
@@ -141,6 +143,13 @@ const Auth = () => {
             description: "メールアドレスまたはパスワードが正しくありません。",
             variant: "destructive",
           });
+        } else if (error.message.includes("Email not confirmed")) {
+          toast({
+            title: "メール認証が必要です",
+            description: "アカウントを使用する前にメールアドレスの確認をしてください。",
+            variant: "destructive",
+          });
+          setAwaitingConfirmation(true);
         } else {
           toast({
             title: "ログインエラー",
@@ -201,6 +210,46 @@ const Auth = () => {
     }
   };
 
+  const handleResendConfirmation = async () => {
+    if (!email) {
+      toast({
+        title: "メールアドレスを入力してください",
+        description: "確認メールの再送信にはメールアドレスが必要です。",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`
+        }
+      });
+
+      if (error) {
+        toast({
+          title: "エラーが発生しました",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "確認メールを再送信しました",
+          description: "メールアドレスに送られた確認リンクをクリックしてください。",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "エラーが発生しました",
+        description: "もう一度お試しください。",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/10 to-primary/10 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -219,11 +268,37 @@ const Auth = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">ログイン</TabsTrigger>
-                <TabsTrigger value="signup">新規登録</TabsTrigger>
-              </TabsList>
+            {awaitingConfirmation ? (
+              <div className="text-center space-y-4">
+                <div className="text-6xl">📧</div>
+                <h3 className="text-lg font-semibold">メール認証待ち</h3>
+                <p className="text-sm text-muted-foreground">
+                  {email} に確認メールを送信しました。<br />
+                  メール内のリンクをクリックしてアカウントを有効化してください。
+                </p>
+                <div className="space-y-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleResendConfirmation}
+                    className="w-full"
+                  >
+                    確認メールを再送信
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => setAwaitingConfirmation(false)}
+                    className="w-full text-sm"
+                  >
+                    ← 認証画面に戻る
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="signin">ログイン</TabsTrigger>
+                  <TabsTrigger value="signup">新規登録</TabsTrigger>
+                </TabsList>
               
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
@@ -310,6 +385,7 @@ const Auth = () => {
                 </form>
               </TabsContent>
             </Tabs>
+            )}
           </CardContent>
         </Card>
 

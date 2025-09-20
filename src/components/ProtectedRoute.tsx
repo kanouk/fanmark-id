@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { user, loading } = useAuth();
+  const { user, loading, emailConfirmed } = useAuth();
 
   if (loading) {
     return (
@@ -24,6 +24,21 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  if (!emailConfirmed) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="text-center space-y-4 max-w-md">
+          <div className="text-6xl">📧</div>
+          <h1 className="text-2xl font-bold">メール認証が必要です</h1>
+          <p className="text-muted-foreground">
+            登録時に送信されたメールの確認リンクをクリックしてアカウントを有効化してください。
+          </p>
+          <Navigate to="/auth" replace />
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;
