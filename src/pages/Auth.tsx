@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -366,10 +366,9 @@ const Auth = () => {
                     type="button" 
                     variant="link" 
                     className="w-full text-sm"
-                    onClick={handleForgotPassword}
-                    disabled={isLoading}
+                    asChild
                   >
-                    パスワードをお忘れですか？
+                    <Link to="/forgot-password">パスワードをお忘れですか？</Link>
                   </Button>
                 </form>
               </TabsContent>
