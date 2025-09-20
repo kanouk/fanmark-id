@@ -3,14 +3,16 @@ export interface PasswordRequirement {
   text: string;
 }
 
-export const checkPasswordRequirements = (password: string): PasswordRequirement[] => [
-  { met: password.length >= 8, text: "8文字以上" },
-  { met: /[a-z]/.test(password), text: "小文字を含む" },
-  { met: /[A-Z]/.test(password), text: "大文字を含む" },
-  { met: /\d/.test(password), text: "数字を含む" },
-  { met: /[!@#$%^&*(),.?":{}|<>]/.test(password), text: "記号を含む" }
+export const checkPasswordRequirements = (password: string, t: (key: string) => string): PasswordRequirement[] => [
+  { met: password.length >= 8, text: t('password.requirements.length') },
+  { met: /[a-z]/.test(password), text: t('password.requirements.lowercase') },
+  { met: /[A-Z]/.test(password), text: t('password.requirements.uppercase') },
+  { met: /\d/.test(password), text: t('password.requirements.number') },
+  { met: /[!@#$%^&*(),.?":{}|<>]/.test(password), text: t('password.requirements.special') }
 ];
 
 export const isPasswordValid = (password: string): boolean => {
-  return checkPasswordRequirements(password).every(req => req.met);
+  // We need a dummy translation function for validation
+  const dummyT = (key: string) => key;
+  return checkPasswordRequirements(password, dummyT).every(req => req.met);
 };

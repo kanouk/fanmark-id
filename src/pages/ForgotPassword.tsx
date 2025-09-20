@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/useTranslation";
 import { AuthLayout } from "@/components/AuthLayout";
 
 const ForgotPassword = () => {
@@ -12,6 +13,7 @@ const ForgotPassword = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,21 +26,21 @@ const ForgotPassword = () => {
 
       if (error) {
         toast({
-          title: "エラーが発生しました",
+          title: t('common.error'),
           description: error.message,
           variant: "destructive",
         });
       } else {
         setIsSubmitted(true);
         toast({
-          title: "パスワードリセットメールを送信しました",
-          description: "メールに記載されたリンクからパスワードを再設定してください。",
+          title: t('auth.resetEmailSent'),
+          description: t('auth.resetEmailDescription'),
         });
       }
     } catch (error) {
       toast({
-        title: "エラーが発生しました",
-        description: "もう一度お試しください。",
+        title: t('common.error'),
+        description: t('common.tryAgain'),
         variant: "destructive",
       });
     } finally {
@@ -48,19 +50,18 @@ const ForgotPassword = () => {
 
   return (
     <AuthLayout 
-      title="パスワードを忘れた場合" 
-      description={isSubmitted ? "リセットメールを送信しました" : "メールアドレスを入力してください"}
+      title={t('auth.forgotPasswordTitle')} 
+      description={isSubmitted ? t('auth.resetEmailSent') : t('auth.forgotPasswordDescription')}
       showBackButton
       backTo="/auth"
-      backLabel="ログイン画面に戻る"
+      backLabel={t('auth.backToLogin')}
     >
       {isSubmitted ? (
         <div className="text-center space-y-4">
           <div className="text-6xl">📧</div>
-          <h3 className="text-lg font-semibold">メール送信完了</h3>
+          <h3 className="text-lg font-semibold">{t('auth.resetEmailSent')}</h3>
           <p className="text-sm text-muted-foreground">
-            {email} にパスワードリセット用のメールを送信しました。<br />
-            メール内のリンクをクリックして新しいパスワードを設定してください。
+            {t('auth.resetEmailDescription')}
           </p>
           <div className="space-y-2">
             <Button 
@@ -68,25 +69,25 @@ const ForgotPassword = () => {
               onClick={() => setIsSubmitted(false)}
               className="w-full"
             >
-              別のメールアドレスを試す
+              {t('auth.tryAnotherEmail')}
             </Button>
             <Button 
               variant="ghost" 
               asChild
               className="w-full text-sm"
             >
-              <Link to="/auth">← ログイン画面に戻る</Link>
+              <Link to="/auth">← {t('auth.backToLogin')}</Link>
             </Button>
           </div>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">メールアドレス</Label>
+            <Label htmlFor="email">{t('auth.email')}</Label>
             <Input
               id="email"
               type="email"
-              placeholder="your@email.com"
+              placeholder={t('invitation.emailPlaceholder')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -97,7 +98,7 @@ const ForgotPassword = () => {
             className="w-full" 
             disabled={isLoading}
           >
-            {isLoading ? "送信中..." : "リセットメールを送信"}
+            {isLoading ? t('common.loading') : t('auth.sendResetEmail')}
           </Button>
         </form>
       )}

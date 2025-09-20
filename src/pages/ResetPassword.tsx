@@ -1,5 +1,6 @@
 import { usePasswordReset } from "@/hooks/usePasswordReset";
 import { usePasswordValidation } from "@/hooks/usePasswordValidation";
+import { useTranslation } from "@/hooks/useTranslation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,12 +19,13 @@ const ResetPassword = () => {
   } = usePasswordReset();
   
   const { requirements, isValid } = usePasswordValidation(password);
+  const { t } = useTranslation();
 
   if (!isValidSession) {
     return (
       <AuthLayout 
-        title="セッション確認中..." 
-        description="パスワードリセット権限を確認しています。"
+        title={t('common.loading')} 
+        description={t('auth.passwordResetDescription')}
       >
         <div className="text-center space-y-4">
           <div className="text-6xl">🔒</div>
@@ -34,19 +36,19 @@ const ResetPassword = () => {
 
   return (
     <AuthLayout 
-      title="パスワード再設定" 
-      description="新しいパスワードを入力してください"
+      title={t('auth.passwordResetTitle')} 
+      description={t('auth.passwordResetDescription')}
       showBackButton
       backTo="/auth"
-      backLabel="ログイン画面に戻る"
+      backLabel={t('auth.backToLogin')}
     >
       <form onSubmit={(e) => { e.preventDefault(); resetPassword(); }} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="password">新しいパスワード</Label>
+          <Label htmlFor="password">{t('auth.newPassword')}</Label>
           <Input
             id="password"
             type="password"
-            placeholder="8文字以上のパスワード"
+            placeholder={t('password.requirements.length')}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -54,7 +56,7 @@ const ResetPassword = () => {
           />
           {password && (
             <div className="space-y-1 p-3 bg-muted/50 rounded-md">
-              <p className="text-sm font-medium text-muted-foreground mb-2">パスワード要件:</p>
+              <p className="text-sm font-medium text-muted-foreground mb-2">{t('password.requirements.length')}:</p>
               {requirements.map((req, index) => (
                 <PasswordRequirement key={index} met={req.met} text={req.text} />
               ))}
@@ -63,17 +65,17 @@ const ResetPassword = () => {
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="confirmPassword">パスワード確認</Label>
+          <Label htmlFor="confirmPassword">{t('auth.confirmNewPassword')}</Label>
           <Input
             id="confirmPassword"
             type="password"
-            placeholder="パスワードを再入力"
+            placeholder={t('auth.confirmNewPassword')}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
           />
           {confirmPassword && password !== confirmPassword && (
-            <p className="text-sm text-destructive">パスワードが一致しません</p>
+            <p className="text-sm text-destructive">{t('auth.passwordMismatch')}</p>
           )}
         </div>
         
@@ -82,7 +84,7 @@ const ResetPassword = () => {
           className="w-full" 
           disabled={isLoading || !isValid || password !== confirmPassword}
         >
-          {isLoading ? "更新中..." : "パスワードを更新"}
+          {isLoading ? t('common.loading') : t('auth.resetPassword')}
         </Button>
       </form>
     </AuthLayout>

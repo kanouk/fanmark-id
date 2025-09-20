@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthForm } from '@/hooks/useAuthForm';
 import { usePasswordValidation } from '@/hooks/usePasswordValidation';
+import { useTranslation } from '@/hooks/useTranslation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +14,7 @@ import { PasswordRequirement } from '@/components/PasswordRequirement';
 const Auth = () => {
   const { user, session } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { formData, authState, updateFormData, signUp, signIn, resendConfirmation } = useAuthForm();
   const { requirements, isValid } = usePasswordValidation(formData.password);
 
@@ -25,14 +27,15 @@ const Auth = () => {
   if (authState.awaitingConfirmation) {
     return (
       <AuthLayout 
-        title="メール確認待ち" 
-        description="確認メールを送信しました"
+        title={t('auth.awaitingConfirmation')} 
+        description={t('auth.checkEmail')}
         showBackButton
+        backLabel={t('auth.homeButton')}
       >
         <div className="text-center space-y-4">
           <div className="text-6xl">📧</div>
           <p className="text-muted-foreground">
-            {formData.email} に確認メールを送信しました。メール内のリンクをクリックしてアカウントを有効化してください。
+            {t('auth.confirmationSent')}
           </p>
           <div className="space-y-2">
             <Button 
@@ -41,14 +44,14 @@ const Auth = () => {
               className="w-full"
               disabled={authState.loading}
             >
-              {authState.loading ? '送信中...' : '確認メールを再送信'}
+              {authState.loading ? t('common.loading') : t('auth.resendConfirmation')}
             </Button>
             <Button 
               onClick={() => updateFormData('email', '')} 
               variant="ghost" 
               className="w-full"
             >
-              戻る
+              {t('invitation.back')}
             </Button>
           </div>
         </div>
@@ -58,20 +61,21 @@ const Auth = () => {
 
   return (
     <AuthLayout 
-      title="アカウント" 
-      description="ログインまたは新規登録"
+      title={t('auth.login')} 
+      description={t('auth.loginDescription')}
       showBackButton
+      backLabel={t('auth.homeButton')}
     >
       <Tabs defaultValue="signin" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="signin">ログイン</TabsTrigger>
-          <TabsTrigger value="signup">新規登録</TabsTrigger>
+          <TabsTrigger value="signin">{t('auth.login')}</TabsTrigger>
+          <TabsTrigger value="signup">{t('auth.signUp')}</TabsTrigger>
         </TabsList>
         
         <TabsContent value="signin" className="space-y-4">
           <form onSubmit={(e) => { e.preventDefault(); signIn(); }} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">メールアドレス</Label>
+              <Label htmlFor="email">{t('auth.email')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -81,7 +85,7 @@ const Auth = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">パスワード</Label>
+              <Label htmlFor="password">{t('auth.password')}</Label>
               <Input
                 id="password"
                 type="password"
@@ -96,7 +100,7 @@ const Auth = () => {
             )}
             
             <Button type="submit" className="w-full" disabled={authState.loading}>
-              {authState.loading ? 'ログイン中...' : 'ログイン'}
+              {authState.loading ? t('common.loading') : t('auth.login')}
             </Button>
             
             <div className="text-center">
@@ -104,7 +108,7 @@ const Auth = () => {
                 to="/forgot-password" 
                 className="text-sm text-muted-foreground hover:text-primary"
               >
-                パスワードを忘れた場合
+                {t('auth.forgotPassword')}
               </Link>
             </div>
           </form>
@@ -113,7 +117,7 @@ const Auth = () => {
         <TabsContent value="signup" className="space-y-4">
           <form onSubmit={(e) => { e.preventDefault(); signUp(); }} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email-register">メールアドレス</Label>
+              <Label htmlFor="email-register">{t('auth.email')}</Label>
               <Input
                 id="email-register"
                 type="email"
@@ -123,7 +127,7 @@ const Auth = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password-register">パスワード</Label>
+              <Label htmlFor="password-register">{t('auth.password')}</Label>
               <Input
                 id="password-register"
                 type="password"
@@ -135,7 +139,7 @@ const Auth = () => {
             
             {formData.password && (
               <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">パスワード要件:</p>
+                <p className="text-sm text-muted-foreground">{t('password.requirements.length')}:</p>
                 <div className="space-y-1">
                   {requirements.map((req, index) => (
                     <PasswordRequirement key={index} met={req.met} text={req.text} />
@@ -153,7 +157,7 @@ const Auth = () => {
               className="w-full" 
               disabled={authState.loading || !isValid}
             >
-              {authState.loading ? '登録中...' : '新規登録'}
+              {authState.loading ? t('common.loading') : t('auth.signUp')}
             </Button>
           </form>
         </TabsContent>

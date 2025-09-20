@@ -27,12 +27,75 @@
     "expiredCode": "Code has expired",
     "joinWaitlist": "Join Waitlist",
     "waitlistSuccess": "Added to waitlist!",
-    "emailPlaceholder": "Enter your email address"
+    "emailPlaceholder": "Enter your email address",
+    "back": "Back",
+    "validate": "Validate",
+    "join": "Join"
+  },
+  "auth": {
+    "login": "Login",
+    "signUp": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "forgotPassword": "Forgot Password?",
+    "resetPassword": "Reset Password",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "sendResetEmail": "Send Reset Email",
+    "backToLogin": "Back to Login",
+    "resendConfirmation": "Resend Confirmation",
+    "awaitingConfirmation": "Awaiting Confirmation",
+    "checkEmail": "Check Your Email",
+    "confirmationSent": "We've sent you a confirmation email. Please check your inbox and click the link to verify your account.",
+    "resetEmailSent": "Password reset email sent",
+    "resetEmailDescription": "We've sent you a password reset link. Please check your email and click the link to reset your password.",
+    "tryAnotherEmail": "Try Another Email",
+    "passwordResetTitle": "Reset Your Password",
+    "passwordResetDescription": "Enter your new password below",
+    "forgotPasswordTitle": "Forgot Password",
+    "forgotPasswordDescription": "Enter your email address and we'll send you a link to reset your password.",
+    "loginDescription": "Sign in to your account",
+    "signUpDescription": "Create a new account",
+    "passwordMismatch": "Passwords do not match",
+    "homeButton": "Back to Home"
+  },
+  "password": {
+    "requirements": {
+      "length": "At least 8 characters",
+      "uppercase": "Contains uppercase letter",
+      "lowercase": "Contains lowercase letter",
+      "number": "Contains number",
+      "special": "Contains special character"
+    }
+  },
+  "navigation": {
+    "logout": "Logout",
+    "seeHowUsed": "See How It's Used"
+  },
+  "sections": {
+    "howUsed": "How It's Being Used",
+    "howItWorks": "3 Simple Steps",
+    "step1": "Search Fanmarks",
+    "step1Description": "Find your favorite emoji combination",
+    "step2": "Create Account",
+    "step2Description": "Quick registration to get started",
+    "step3": "Create URL",
+    "step3Description": "Your unique short URL is ready!",
+    "pricing": "Pricing Plans",
+    "comparison": "Service Comparison",
+    "cta": "Get Started Now",
+    "ctaDescription": "Find your perfect fanmark and start your new address experience",
+    "footer": "© 2024 fanmark.id All rights reserved."
   },
   "common": {
     "loading": "Loading...",
     "error": "An error occurred",
     "tryAgain": "Try Again",
-    "close": "Close"
+    "close": "Close",
+    "save": "Save",
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "submit": "Submit"
   }
 }

@@ -61,7 +61,7 @@ const Index = () => {
                   {user.email}
                 </span>
                 <Button variant="outline" size="sm" onClick={handleAuthAction}>
-                  ログアウト
+                  {t('navigation.logout')}
                 </Button>
               </div>
             ) : !showInvitationMode ? (
@@ -98,7 +98,7 @@ const Index = () => {
                   {t('hero.tryButton')} ✨
                 </Button>
                 <Button variant="outline" size="lg" className="hover:scale-105 transition-transform">
-                  みんなの使い方を見る 👀
+                  {t('navigation.seeHowUsed')} 👀
                 </Button>
               </div>
             )}
@@ -118,9 +118,9 @@ const Index = () => {
       {/* Examples Section */}
       <div className="py-20 bg-base-100">
         <div className="container mx-auto px-4">
-          <h2 className="text-4xl font-bold text-center mb-4">こんな風に使われてます 🚀</h2>
+          <h2 className="text-4xl font-bold text-center mb-4">{t('sections.howUsed')} 🚀</h2>
           <p className="text-center text-base-content/70 mb-12 text-lg">
-            みんなそれぞれ、自分らしいファンマアドレスを作ってる
+            {t('search.joinThousands')}
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -166,17 +166,15 @@ const Index = () => {
       {/* How It Works */}
       <div className="py-20 bg-gradient-to-br from-purple-50 to-pink-50">
         <div className="container mx-auto px-4">
-          <h2 className="text-4xl font-bold text-center mb-12">3ステップで完成 🛠️</h2>
+          <h2 className="text-4xl font-bold text-center mb-12">{t('sections.howItWorks')} 🛠️</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="card bg-base-100 shadow-xl">
               <div className="card-body text-center">
                 <div className="text-5xl mb-4 animate-bounce-soft">🎯</div>
-                <h3 className="card-title justify-center text-xl mb-4">1. ファンマを選ぶ</h3>
+                <h3 className="card-title justify-center text-xl mb-4">1. {t('sections.step1')}</h3>
                 <p className="text-base-content/70">
-                  あなたらしいファンマを1〜3個選んで<br />
-                  💕💕💕で気持ちを込めても<br />
-                  🌸でシンプルでもOK
+                  {t('sections.step1Description')}
                 </p>
               </div>
             </div>
@@ -184,11 +182,9 @@ const Index = () => {
             <div className="card bg-base-100 shadow-xl">
               <div className="card-body text-center">
                 <div className="text-5xl mb-4 animate-pulse-slow">📝</div>
-                <h3 className="card-title justify-center text-xl mb-4">2. ページを作る</h3>
+                <h3 className="card-title justify-center text-xl mb-4">2. {t('sections.step2')}</h3>
                 <p className="text-base-content/70">
-                  プロフィールページにするか<br />
-                  リンク集にするか<br />
-                  どこかに飛ばすか、お好みで
+                  {t('sections.step2Description')}
                 </p>
               </div>
             </div>
@@ -196,11 +192,9 @@ const Index = () => {
             <div className="card bg-base-100 shadow-xl">
               <div className="card-body text-center">
                 <div className="text-5xl mb-4 animate-float">🚀</div>
-                <h3 className="card-title justify-center text-xl mb-4">3. みんなにシェア</h3>
+                <h3 className="card-title justify-center text-xl mb-4">3. {t('sections.step3')}</h3>
                 <p className="text-base-content/70">
-                  ファンマアドレスをSNSでも名刺でも<br />
-                  どこでもシェア<br />
-                  覚えてもらいやすくて便利！
+                  {t('sections.step3Description')}
                 </p>
               </div>
             </div>
@@ -212,7 +206,7 @@ const Index = () => {
       <div className="py-16 bg-base-100">
         <div className="container mx-auto px-4 text-center">
           <div className="max-w-2xl mx-auto">
-            <h2 className="text-3xl font-bold mb-6">料金はとってもシンプル 💖</h2>
+            <h2 className="text-3xl font-bold mb-6">{t('sections.pricing')} 💖</h2>
             <div className="card bg-gradient-to-r from-pink-100 to-purple-100 shadow-xl">
               <div className="card-body">
                 <p className="text-lg mb-4">
@@ -234,7 +228,7 @@ const Index = () => {
       {/* Comparison */}
       <div className="py-16 bg-gradient-to-br from-blue-50 to-purple-50">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-8">LinkTreeより断然覚えやすい！ 💝</h2>
+          <h2 className="text-3xl font-bold mb-8">{t('sections.comparison')} 💝</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             <div className="card bg-base-100 shadow-lg">
               <div className="card-body">
@@ -268,13 +262,12 @@ const Index = () => {
       {/* CTA */}
       <div className="py-20 bg-primary text-primary-content">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-4xl font-bold mb-6">あなただけのファンマ、作ってみよう ✨</h2>
+          <h2 className="text-4xl font-bold mb-6">{t('sections.cta')} ✨</h2>
           <p className="text-xl mb-8 opacity-90">
-            もう何千人ものクリエイターが<br />
-            自分だけのファンマアドレスを持ってる
+            {t('sections.ctaDescription')}
           </p>
           <Button variant="secondary" size="lg" className="hover:scale-105 transition-transform" onClick={handleSignupPrompt}>
-            無料で作ってみる 🚀
+            {t('hero.tryButton')} 🚀
           </Button>
         </div>
       </div>
@@ -285,7 +278,7 @@ const Index = () => {
           <div className="text-2xl font-bold text-primary mb-4">
             <span className="text-3xl">✨</span> fanmark.id
           </div>
-          <p className="text-base-content/70">ファンマひとつひとつで、ネットをもっと楽しく</p>
+          <p className="text-base-content/70">{t('sections.footer')}</p>
         </div>
       </footer>
     </div>;

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface AuthLayoutProps {
   title: string;
@@ -19,14 +20,16 @@ export const AuthLayout = ({
   children, 
   showBackButton = false,
   backTo = "/",
-  backLabel = "ホームに戻る"
+  backLabel
 }: AuthLayoutProps) => {
+  const { t } = useTranslation();
+  
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold">fanmark.id</h1>
-          <p className="text-muted-foreground">ファンマでつくるあなただけのアドレス</p>
+          <h1 className="text-3xl font-bold">{t('hero.title')}</h1>
+          <p className="text-muted-foreground">{t('hero.subtitle')}</p>
         </div>
         
         <Card>
@@ -46,7 +49,7 @@ export const AuthLayout = ({
             <Button variant="ghost" asChild>
               <Link to={backTo} className="flex items-center space-x-2">
                 <ArrowLeft className="h-4 w-4" />
-                <span>{backLabel}</span>
+                <span>{backLabel || t('auth.homeButton')}</span>
               </Link>
             </Button>
           </div>

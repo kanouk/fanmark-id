@@ -45,14 +45,14 @@ export function InvitationSystem({ onValidCode }: InvitationSystemProps) {
     if (success) {
       toast({
         title: "✨ " + t('invitation.waitlistSuccess'),
-        description: "招待コードが利用可能になりましたらご連絡いたします。",
+        description: t('invitation.waitlistSuccess'),
       });
       setWaitlistEmail('');
       setShowWaitlist(false);
     } else {
       toast({
         title: t('common.error'),
-        description: "待機リストへの追加に失敗しました。もう一度お試しください。",
+        description: t('common.tryAgain'),
         variant: "destructive",
       });
     }
@@ -110,8 +110,8 @@ export function InvitationSystem({ onValidCode }: InvitationSystemProps) {
               </>
             ) : (
               <>
-                <Check className="w-4 h-4 mr-2" />
-                コードを確認
+              <Check className="w-4 h-4 mr-2" />
+              {t('invitation.validate')}
               </>
             )}
           </Button>
@@ -123,7 +123,7 @@ export function InvitationSystem({ onValidCode }: InvitationSystemProps) {
         <Card className="border-dashed">
           <CardContent className="p-4 text-center">
             <p className="text-muted-foreground mb-3">
-              招待コードをお持ちではありませんか？
+              {t('invitation.enterCode')}?
             </p>
             <Button 
               variant="outline" 
@@ -157,7 +157,7 @@ export function InvitationSystem({ onValidCode }: InvitationSystemProps) {
                 onClick={() => setShowWaitlist(false)}
                 className="flex-1"
               >
-                戻る
+                {t('invitation.back')}
               </Button>
               <Button
                 onClick={handleWaitlistJoin}
@@ -167,12 +167,12 @@ export function InvitationSystem({ onValidCode }: InvitationSystemProps) {
                 {waitlistLoading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    追加中...
+                    {t('common.loading')}
                   </>
                 ) : (
                   <>
                     <Mail className="w-4 h-4 mr-2" />
-                    参加する
+                    {t('invitation.join')}
                   </>
                 )}
               </Button>

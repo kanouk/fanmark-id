@@ -27,12 +27,75 @@
     "expiredCode": "有効期限が切れています", 
     "joinWaitlist": "待機リストに参加",
     "waitlistSuccess": "待機リストに追加されました！",
-    "emailPlaceholder": "メールアドレスを入力"
+    "emailPlaceholder": "メールアドレスを入力",
+    "back": "戻る",
+    "validate": "確認",
+    "join": "参加する"
+  },
+  "auth": {
+    "login": "ログイン",
+    "signUp": "新規登録",
+    "email": "メールアドレス",
+    "password": "パスワード",
+    "confirmPassword": "パスワード確認",
+    "forgotPassword": "パスワードを忘れた場合",
+    "resetPassword": "パスワードリセット",
+    "newPassword": "新しいパスワード",
+    "confirmNewPassword": "新しいパスワード確認",
+    "sendResetEmail": "リセットメールを送信",
+    "backToLogin": "ログインに戻る",
+    "resendConfirmation": "確認メールを再送信",
+    "awaitingConfirmation": "確認待ち",
+    "checkEmail": "メールを確認してください",
+    "confirmationSent": "確認メールをお送りしました。メールボックスをご確認ください。",
+    "resetEmailSent": "パスワードリセットメールを送信しました",
+    "resetEmailDescription": "パスワードリセットのリンクをメールでお送りしました。メールをご確認の上、リンクをクリックしてパスワードをリセットしてください。",
+    "tryAnotherEmail": "別のメールアドレスで試す",
+    "passwordResetTitle": "パスワードをリセット",
+    "passwordResetDescription": "新しいパスワードを入力してください",
+    "forgotPasswordTitle": "パスワードリセット",
+    "forgotPasswordDescription": "メールアドレスを入力してください。パスワードリセットのリンクをお送りします。",
+    "loginDescription": "アカウントにログインしてください",
+    "signUpDescription": "新しいアカウントを作成してください",
+    "passwordMismatch": "パスワードが一致しません",
+    "homeButton": "ホームに戻る"
+  },
+  "password": {
+    "requirements": {
+      "length": "8文字以上",
+      "uppercase": "大文字を含む",
+      "lowercase": "小文字を含む",
+      "number": "数字を含む",
+      "special": "特殊文字を含む"
+    }
+  },
+  "navigation": {
+    "logout": "ログアウト",
+    "seeHowUsed": "みんなの使い方を見る"
+  },
+  "sections": {
+    "howUsed": "こんな風に使われてます",
+    "howItWorks": "3ステップで完成",
+    "step1": "ファンマを検索",
+    "step1Description": "お気に入りの絵文字の組み合わせを見つけよう",
+    "step2": "アカウント作成",
+    "step2Description": "簡単登録で、すぐに始められます",
+    "step3": "URLを作成",
+    "step3Description": "あなただけの短縮URLが完成！",
+    "pricing": "料金プラン",
+    "comparison": "他サービスとの比較",
+    "cta": "今すぐ始めよう",
+    "ctaDescription": "あなただけのファンマを見つけて、新しいアドレス体験を始めましょう",
+    "footer": "© 2024 fanmark.id All rights reserved."
   },
   "common": {
     "loading": "読み込み中...",
     "error": "エラーが発生しました",
     "tryAgain": "再試行",
-    "close": "閉じる"
+    "close": "閉じる",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "continue": "続ける",
+    "submit": "送信"
   }
 }
