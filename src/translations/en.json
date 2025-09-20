@@ -31,6 +31,14 @@
       "premiumEmoji": "Premium emoji",
       "paidEmoji": "Paid emoji",
       "reservedEmoji": "Reserved emoji"
+    },
+    "skinTone": {
+      "normalizationInfo": "🌈 All skin tone variations included!",
+      "tooltip": "We group skin tones together! 💕",
+      "example": "Example: 👋🏻👋🏽👋🏿 → 👋👋👋",
+      "allVariationsIncluded": "(includes all skin tone variations)",
+      "normalizedDisplay": "Normalized:",
+      "beforeAfter": "Input: {original} → Search: {normalized}"
     }
   },
   "invitation": {

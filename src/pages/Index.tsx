@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { LanguageToggle } from "@/components/LanguageToggle";
-import { FanmarkSearch } from "@/components/FanmarkSearch";
+import FanmarkSearch from "@/components/FanmarkSearch";
 import { InvitationSystem } from "@/components/InvitationSystem";
 import { Button } from "@/components/ui/button";
 const Index = () => {

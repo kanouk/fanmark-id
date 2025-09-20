@@ -31,6 +31,14 @@
       "premiumEmoji": "プレミアム絵文字",
       "paidEmoji": "有料絵文字",
       "reservedEmoji": "特別絵文字"
+    },
+    "skinTone": {
+      "normalizationInfo": "🌈 肌色のバリエーションもまとめて検索！",
+      "tooltip": "肌色違いの絵文字もひとつにまとめます 💕",
+      "example": "例: 👋🏻👋🏽👋🏿 → 👋👋👋",
+      "allVariationsIncluded": "(全ての肌色バリエーションを含む)",
+      "normalizedDisplay": "正規化済み:",
+      "beforeAfter": "入力: {original} → 検索: {normalized}"
     }
   },
   "invitation": {

@@ -88,6 +88,22 @@ export function useFanmarkSearch() {
     return emoji.replace(/[\u{1F3FB}-\u{1F3FF}]/gu, '');
   };
 
+  // Check if emoji has skin tone modifiers
+  const hasSkinToneModifiers = (emoji: string): boolean => {
+    return /[\u{1F3FB}-\u{1F3FF}]/gu.test(emoji);
+  };
+
+  // Get normalization info for display
+  const getNormalizationInfo = (original: string) => {
+    const normalized = normalizeEmoji(original);
+    return {
+      original,
+      normalized,
+      hasSkinTones: hasSkinToneModifiers(original),
+      isNormalized: original !== normalized
+    };
+  };
+
   // Validate emoji input - strict emoji-only validation
   const validateEmojiInput = (input: string): { valid: boolean; error?: string; emojiCount: number } => {
     if (!input || input.trim().length === 0) {
@@ -366,5 +382,6 @@ export function useFanmarkSearch() {
     checkAvailability,
     registerFanmark,
     refetchRecent: fetchRecentFanmarks,
+    getNormalizationInfo,
   };
 }

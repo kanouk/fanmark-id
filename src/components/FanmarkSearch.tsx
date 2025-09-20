@@ -1,19 +1,33 @@
-import { useState } from 'react';
-import { Search, Sparkles, Eye, Crown } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { useTranslation } from '@/hooks/useTranslation';
-import { useFanmarkSearch, FanmarkSearchResult } from '@/hooks/useFanmarkSearch';
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Search, Sparkles, Eye, Crown } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
+import { useFanmarkSearch, FanmarkSearchResult } from "@/hooks/useFanmarkSearch";
 
 interface FanmarkSearchProps {
   onSignupPrompt?: () => void;
 }
 
-export function FanmarkSearch({ onSignupPrompt }: FanmarkSearchProps) {
+const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt }) => {
   const { t } = useTranslation();
-  const { searchQuery, setSearchQuery, result, loading, recentFanmarks, registerFanmark } = useFanmarkSearch();
+  const { 
+    searchQuery, 
+    setSearchQuery, 
+    result, 
+    loading, 
+    recentFanmarks, 
+    checkAvailability, 
+    registerFanmark, 
+    refetchRecent,
+    getNormalizationInfo
+  } = useFanmarkSearch();
+
+  // Get normalization info for current search query
+  const normalizationInfo = searchQuery.trim() ? getNormalizationInfo(searchQuery.trim()) : null;
 
   const getStatusBadge = (result: FanmarkSearchResult) => {
     switch (result.status) {
@@ -21,27 +35,27 @@ export function FanmarkSearch({ onSignupPrompt }: FanmarkSearchProps) {
         return (
           <Badge className="bg-success text-success-content border-success/20">
             <Sparkles className="w-3 h-3 mr-1" />
-            ✅ Available
+            ✅ {t('search.available')}
           </Badge>
         );
       case 'taken':
         return (
           <Badge variant="destructive">
             <Eye className="w-3 h-3 mr-1" />
-            ❌ Taken
+            ❌ {t('search.taken')}
           </Badge>
         );
       case 'premium':
         return (
           <Badge className="bg-warning text-warning-content border-warning/20">
             <Crown className="w-3 h-3 mr-1" />
-            💎 Premium
+            💎 {t('search.premium')}
           </Badge>
         );
       case 'payment_required':
         return (
           <Badge className="bg-info text-info-content border-info/20">
-            💳 Payment Required
+            💳 {t('search.paymentRequired')}
           </Badge>
         );
       default:
@@ -61,7 +75,6 @@ export function FanmarkSearch({ onSignupPrompt }: FanmarkSearchProps) {
     }
   };
 
-
   const handleSignupPrompt = () => {
     onSignupPrompt?.();
   };
@@ -78,8 +91,35 @@ export function FanmarkSearch({ onSignupPrompt }: FanmarkSearchProps) {
           className="pl-10 pr-4 py-3 text-lg rounded-full border-2 border-primary/20 focus:border-primary focus:ring-primary"
         />
       </div>
-      
 
+      {/* Skin Tone Normalization Info */}
+      {normalizationInfo?.isNormalized && (
+        <TooltipProvider>
+          <Alert className="border-primary/20 bg-gradient-to-r from-primary/5 to-secondary/5">
+            <AlertDescription className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium text-primary">
+                  {t('search.skinTone.normalizationInfo')}
+                </span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge 
+                      variant="outline" 
+                      className="bg-gradient-to-r from-violet-100 to-pink-100 border-primary/30 text-primary cursor-help"
+                    >
+                      {normalizationInfo.normalized} {t('search.skinTone.allVariationsIncluded')}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-sm">{t('search.skinTone.tooltip')}</p>
+                    <p className="text-xs mt-1 opacity-75">{t('search.skinTone.example')}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            </AlertDescription>
+          </Alert>
+        </TooltipProvider>
+      )}
 
       {/* Status Display */}
       {loading && searchQuery.trim() && (
@@ -145,7 +185,7 @@ export function FanmarkSearch({ onSignupPrompt }: FanmarkSearchProps) {
                 )}
                 {(result.status === 'taken' || result.status === 'premium') && (
                   <Button variant="ghost" size="sm">
-                    View Profile
+                    {t('search.viewProfile')}
                   </Button>
                 )}
               </div>
@@ -193,4 +233,6 @@ export function FanmarkSearch({ onSignupPrompt }: FanmarkSearchProps) {
       </div>
     </div>
   );
-}
+};
+
+export default FanmarkSearch;
