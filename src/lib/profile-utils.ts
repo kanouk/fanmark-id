@@ -23,58 +23,47 @@ export interface FullProfile extends PublicProfile {
 }
 
 /**
- * Safely fetch public profile data without exposing sensitive subscription information
- * This function filters out sensitive fields at the application level to prevent
- * accidental exposure of business-critical data to unauthorized users.
+ * Safely fetch public profile data from the secure public view
+ * This function uses the public_profiles view which only exposes safe fields
  */
 export async function getPublicProfile(username: string): Promise<PublicProfile | null> {
   const { data, error } = await supabase
-    .from('profiles')
-    .select(`
-      id,
-      user_id,
-      username,
-      display_name,
-      bio,
-      avatar_url,
-      social_links,
-      created_at
-    `)
+    .from('public_profiles')
+    .select('*')
     .eq('username', username)
-    .eq('is_public_profile', true)
-    .single();
+    .maybeSingle();
 
   if (error || !data) {
     return null;
   }
 
-  return data;
+  // Transform to match PublicProfile interface (add missing fields with null values)
+  return {
+    ...data,
+    user_id: '', // Not exposed in public view for security
+    social_links: null // Not exposed in public view for security
+  };
 }
 
 /**
- * Fetch multiple public profiles without sensitive data
+ * Fetch multiple public profiles from the secure public view
  */
 export async function getPublicProfiles(limit = 10): Promise<PublicProfile[]> {
   const { data, error } = await supabase
-    .from('profiles')
-    .select(`
-      id,
-      user_id,
-      username,
-      display_name,
-      bio,
-      avatar_url,
-      social_links,
-      created_at
-    `)
-    .eq('is_public_profile', true)
+    .from('public_profiles')
+    .select('*')
     .limit(limit);
 
   if (error || !data) {
     return [];
   }
 
-  return data;
+  // Transform to match PublicProfile interface (add missing fields)
+  return data.map(profile => ({
+    ...profile,
+    user_id: '', // Not exposed in public view for security
+    social_links: null // Not exposed in public view for security
+  }));
 }
 
 /**
