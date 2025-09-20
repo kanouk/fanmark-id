@@ -18,10 +18,6 @@ export function useFanmarkSearch() {
   const [searchQuery, setSearchQuery] = useState('');
   const [result, setResult] = useState<FanmarkSearchResult | null>(null);
   const [loading, setLoading] = useState(false);
-  const [suggestions] = useState([
-    '🔥🔥🔥', '💕💕💕', '⭐⭐⭐', '💎💎', '🚀🚀🚀',
-    '🌟🌟', '💪💪💪', '🎉🎉', '🌸🌸🌸', '🍀🍀'
-  ]);
   const [recentFanmarks, setRecentFanmarks] = useState<FanmarkSearchResult[]>([]);
 
   // Fetch recent fanmarks on mount
@@ -49,7 +45,8 @@ export function useFanmarkSearch() {
           short_id,
           is_premium,
           status,
-          user_id
+          user_id,
+          profiles!fanmarks_user_id_fkey(username, display_name)
         `)
         .eq('status', 'active')
         .order('created_at', { ascending: false })
@@ -58,9 +55,16 @@ export function useFanmarkSearch() {
       if (error) throw error;
 
       if (data) {
-        const fanmarksWithStatus: FanmarkSearchResult[] = data.map(fanmark => {
+        const fanmarksWithStatus: FanmarkSearchResult[] = data.map((fanmark: any) => {
           const status: 'premium' | 'taken' = fanmark.is_premium ? 'premium' : 'taken';
-          return { ...fanmark, status };
+          return { 
+            ...fanmark, 
+            status,
+            owner: fanmark.profiles ? {
+              username: fanmark.profiles.username,
+              display_name: fanmark.profiles.display_name
+            } : undefined
+          };
         });
         setRecentFanmarks(fanmarksWithStatus);
       }
@@ -138,7 +142,6 @@ export function useFanmarkSearch() {
     setSearchQuery,
     result,
     loading,
-    suggestions,
     recentFanmarks,
     checkAvailability,
     refetchRecent: fetchRecentFanmarks,

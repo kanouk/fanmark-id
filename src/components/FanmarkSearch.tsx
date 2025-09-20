@@ -13,7 +13,7 @@ interface FanmarkSearchProps {
 
 export function FanmarkSearch({ onSignupPrompt }: FanmarkSearchProps) {
   const { t } = useTranslation();
-  const { searchQuery, setSearchQuery, result, loading, suggestions, recentFanmarks } = useFanmarkSearch();
+  const { searchQuery, setSearchQuery, result, loading, recentFanmarks } = useFanmarkSearch();
 
   const getStatusBadge = (result: FanmarkSearchResult) => {
     switch (result.status) {
@@ -43,9 +43,6 @@ export function FanmarkSearch({ onSignupPrompt }: FanmarkSearchProps) {
     }
   };
 
-  const handleSuggestionClick = (suggestion: string) => {
-    setSearchQuery(suggestion);
-  };
 
   const handleSignupPrompt = () => {
     onSignupPrompt?.();
@@ -64,27 +61,6 @@ export function FanmarkSearch({ onSignupPrompt }: FanmarkSearchProps) {
         />
       </div>
 
-      {/* Popular Suggestions */}
-      {!searchQuery && (
-        <div className="space-y-3">
-          <h3 className="text-sm font-medium text-muted-foreground">
-            {t('search.suggestions')}
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {suggestions.map((suggestion, index) => (
-              <Button
-                key={index}
-                variant="outline"
-                size="sm"
-                onClick={() => handleSuggestionClick(suggestion)}
-                className="rounded-full hover:scale-105 transition-transform"
-              >
-                {suggestion}
-              </Button>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Status Display */}
       {loading && searchQuery.trim() && (
@@ -123,21 +99,28 @@ export function FanmarkSearch({ onSignupPrompt }: FanmarkSearchProps) {
         </div>
       )}
 
-      {/* Recent Fanmarks */}
+      {/* Recently Acquired Fanmarks */}
       {!searchQuery && recentFanmarks.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-muted-foreground">
-            {t('search.recentlyRegistered')}
+            {t('search.recentlyAcquired')}
           </h3>
           <div className="grid gap-2">
             {recentFanmarks.map((fanmark, index) => (
-              <Card key={`recent-${fanmark.id}-${index}`} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSearchQuery(fanmark.emoji_combination)}>
+              <Card key={`recent-${fanmark.id}-${index}`} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <span className="text-xl">{fanmark.emoji_combination}</span>
-                      <div className="text-sm text-muted-foreground">
-                        fanmark.id/e/{fanmark.short_id}
+                      <div className="flex flex-col">
+                        <div className="text-sm text-muted-foreground">
+                          fanmark.id/e/{fanmark.short_id}
+                        </div>
+                        {fanmark.owner && (
+                          <div className="text-xs text-muted-foreground">
+                            by @{fanmark.owner.username}
+                          </div>
+                        )}
                       </div>
                     </div>
                     {getStatusBadge(fanmark)}
