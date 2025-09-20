@@ -47,15 +47,19 @@ export function useFanmarkSearch() {
           is_premium,
           status,
           user_id,
-          profiles!fanmarks_user_id_fkey(username, display_name)
+          profiles(username, display_name)
         `)
         .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(6);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error fetching recent fanmarks:', error);
+        throw error;
+      }
 
       if (data) {
+        console.log('Fetched recent fanmarks data:', data);
         const fanmarksWithStatus: FanmarkSearchResult[] = data.map((fanmark: any) => {
           const status: 'premium' | 'taken' = fanmark.is_premium ? 'premium' : 'taken';
           return { 
@@ -68,9 +72,11 @@ export function useFanmarkSearch() {
           };
         });
         setRecentFanmarks(fanmarksWithStatus);
+        console.log('Recent fanmarks updated:', fanmarksWithStatus);
       }
     } catch (error) {
       console.error('Error fetching recent fanmarks:', error);
+      setRecentFanmarks([]);
     }
   };
 
