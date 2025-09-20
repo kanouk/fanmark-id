@@ -40,11 +40,11 @@ const Profile = () => {
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <Button variant="ghost" onClick={() => navigate('/')} className="flex items-center space-x-2">
+          <Button variant="ghost" onClick={() => navigate('/')} className="btn btn-ghost flex items-center space-x-2">
             <ArrowLeft className="w-4 h-4" />
             <span>{t('common.back')}</span>
           </Button>
-          <Button variant="outline" onClick={handleSignOut} className="flex items-center space-x-2">
+          <Button variant="outline" onClick={handleSignOut} className="btn btn-outline flex items-center space-x-2">
             <LogOut className="w-4 h-4" />
             <span>{t('auth.logout')}</span>
           </Button>
@@ -73,9 +73,9 @@ const Profile = () => {
                     <span>{profile?.subscription_status === 'premium' ? 'プラス' : 'フリー'}</span>
                   </Badge>
                 </div>
-                <p className="text-muted-foreground">@{profile?.username}</p>
+                <p className="text-base-content/70">@{profile?.username}</p>
                 {profile?.bio && (
-                  <p className="text-sm text-muted-foreground mt-1">{profile.bio}</p>
+                  <p className="text-sm text-base-content/70 mt-1">{profile.bio}</p>
                 )}
               </div>
             </div>
@@ -144,16 +144,16 @@ const Profile = () => {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">{t('profile.email')}</label>
-                    <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
-                      <p className="text-sm text-foreground">{user?.email}</p>
+                    <label className="text-sm font-medium text-base-content/70">{t('profile.email')}</label>
+                    <div className="p-3 bg-base-200 rounded-lg border border-base-300">
+                      <p className="text-sm text-base-content">{user?.email}</p>
                     </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">{t('profile.memberSince')}</label>
-                    <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
-                      <p className="text-sm text-foreground">
+                    <label className="text-sm font-medium text-base-content/70">{t('profile.memberSince')}</label>
+                    <div className="p-3 bg-base-200 rounded-lg border border-base-300">
+                      <p className="text-sm text-base-content">
                         {profile?.created_at 
                           ? new Date(profile.created_at).toLocaleDateString()
                           : 'N/A'
@@ -163,8 +163,8 @@ const Profile = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">プラン</label>
-                    <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
+                    <label className="text-sm font-medium text-base-content/70">プラン</label>
+                    <div className="p-3 bg-base-200 rounded-lg border border-base-300">
                       <Badge variant="secondary">
                         {profile?.subscription_status === 'premium' ? 'プラス' : 'フリー'}
                       </Badge>
@@ -172,8 +172,8 @@ const Profile = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">{t('profile.publicProfile')}</label>
-                    <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
+                    <label className="text-sm font-medium text-base-content/70">{t('profile.publicProfile')}</label>
+                    <div className="p-3 bg-base-200 rounded-lg border border-base-300">
                       <Badge variant={profile?.is_public_profile ? "default" : "secondary"}>
                         {profile?.is_public_profile ? t('common.enabled') : t('common.disabled')}
                       </Badge>

@@ -138,7 +138,7 @@ export function AdminPatternRules() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">{rule.description}</p>
+            <p className="text-sm text-base-content/70">{rule.description}</p>
             
             {rule.rule_type === 'prefix_pattern' && (
               <div className="space-y-3">
@@ -190,7 +190,7 @@ export function AdminPatternRules() {
                   {Object.entries(rule.rule_config?.pricing || {}).map(([count, price]) => (
                     <div key={count} className="text-center">
                       <div className="font-medium">{count}文字</div>
-                      <div className="text-muted-foreground">${String(price)}</div>
+                      <div className="text-base-content/70">${String(price)}</div>
                     </div>
                   ))}
                 </div>

@@ -55,8 +55,8 @@ const ResetPassword = () => {
             minLength={8}
           />
           {password && (
-            <div className="space-y-1 p-3 bg-muted/50 rounded-md">
-              <p className="text-sm font-medium text-muted-foreground mb-2">{t('password.requirements.length')}:</p>
+            <div className="space-y-1 p-3 bg-base-200 rounded-md">
+              <p className="text-sm font-medium text-base-content/70 mb-2">{t('password.requirements.length')}:</p>
               {requirements.map((req, index) => (
                 <PasswordRequirement key={index} met={req.met} text={req.text} />
               ))}

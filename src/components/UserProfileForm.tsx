@@ -312,7 +312,7 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
           <div className="flex items-center justify-between p-4 bg-base-200 rounded-lg">
             <div className="space-y-1">
               <Label className="text-sm font-medium">{t('profile.publicProfile')}</Label>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-base-content/70">
                 {t('profile.publicProfileDescription')}
               </p>
             </div>

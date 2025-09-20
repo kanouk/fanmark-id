@@ -122,7 +122,7 @@ export function InvitationSystem({ onValidCode }: InvitationSystemProps) {
       {!showWaitlist ? (
         <Card className="border-dashed">
           <CardContent className="p-4 text-center">
-            <p className="text-muted-foreground mb-3">
+            <p className="text-base-content/70 mb-3">
               {t('invitation.enterCode')}?
             </p>
             <Button 

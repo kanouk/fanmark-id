@@ -60,7 +60,7 @@ const ForgotPassword = () => {
         <div className="text-center space-y-4">
           <div className="text-6xl">📧</div>
           <h3 className="text-lg font-semibold">{t('auth.resetEmailSent')}</h3>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-base-content/70">
             {t('auth.resetEmailDescription')}
           </p>
           <div className="space-y-2">

@@ -63,7 +63,7 @@ const Auth = () => {
             <h3 className="text-lg font-semibold text-primary">
               {t('auth.confirmationSent')}
             </h3>
-            <p className="text-muted-foreground">
+            <p className="text-base-content/70">
               {t('auth.checkEmail')}
             </p>
           </div>
