@@ -2,39 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* DaisyUI-first design system with custom gradients for special effects only */
 
 @layer base {
   :root {
-    /* Keep only essential custom variables, let DaisyUI handle colors */
+    /* Essential layout variables */
     --radius: 1rem;
 
-    /* Custom gradients for special effects */
-    --gradient-primary: linear-gradient(135deg, oklch(var(--p)), oklch(var(--s)));
-    --gradient-secondary: linear-gradient(135deg, oklch(var(--b2)), oklch(var(--b1)));
+    /* Custom gradients using DaisyUI color variables for special effects */
+    --gradient-text: linear-gradient(135deg, oklch(var(--p)), oklch(var(--s)));
     --gradient-hero: linear-gradient(135deg, oklch(var(--b1)), oklch(var(--b2)));
-    
-    /* Animation variables */
-    --bounce-duration: 0.6s;
-    --sparkle-duration: 2s;
   }
-
-  /* DaisyUI handles dark mode automatically */
 }
 
 @layer base {
-  html {
-    @apply bg-base-100;
-  }
-  
   body {
     @apply bg-base-100 text-base-content;
   }
+}
+
+@layer utilities {
+  /* Custom gradient utilities for special effects */
+  .text-gradient {
+    background: var(--gradient-text);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
   
-  /* Force DaisyUI theme */
-  html[data-theme="pastel"] {
-    color-scheme: light;
+  .bg-gradient-hero {
+    background: var(--gradient-hero);
   }
 }

@@ -108,8 +108,8 @@ const Auth = () => {
         
         
         <div className="w-full">
-          <div role="tablist" className="tabs tabs-bordered bg-base-200/30 p-1 rounded-box mb-6">
-            <input type="radio" name="auth_tabs" role="tab" className="tab text-base-content" aria-label={t('auth.login')} defaultChecked />
+          <div role="tablist" className="tabs tabs-bordered bg-base-200/50 p-1 rounded-box mb-6">
+            <input type="radio" name="auth_tabs" role="tab" className="tab" aria-label={t('auth.login')} defaultChecked />
             <div role="tabpanel" className="tab-content bg-base-100 border-base-300 rounded-box p-6">
               <LoginForm 
                 formData={formData}
@@ -120,7 +120,7 @@ const Auth = () => {
               />
             </div>
 
-            <input type="radio" name="auth_tabs" role="tab" className="tab text-base-content" aria-label={t('auth.signUp')} />
+            <input type="radio" name="auth_tabs" role="tab" className="tab" aria-label={t('auth.signUp')} />
             <div role="tabpanel" className="tab-content bg-base-100 border-base-300 rounded-box p-6">
               {/* Show invitation system if in invitation mode and no valid code */}
               {!settingsLoading && settings.invitation_mode && invitationFlow.showInvitation ? (
