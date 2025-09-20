@@ -16,7 +16,7 @@ export interface FanmarkSearchResult {
 
 export function useFanmarkSearch() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [results, setResults] = useState<FanmarkSearchResult[]>([]);
+  const [result, setResult] = useState<FanmarkSearchResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [suggestions] = useState([
     '🔥🔥🔥', '💕💕💕', '⭐⭐⭐', '💎💎', '🚀🚀🚀',
@@ -34,7 +34,7 @@ export function useFanmarkSearch() {
     if (searchQuery.trim()) {
       searchFanmarks(searchQuery);
     } else {
-      setResults([]);
+      setResult(null);
     }
   }, [searchQuery]);
 
@@ -90,18 +90,16 @@ export function useFanmarkSearch() {
 
       if (searchError) throw searchError;
 
-      const searchResults: FanmarkSearchResult[] = [];
-
       if (existingFanmark) {
         // Fanmark is taken
         const status: 'premium' | 'taken' = existingFanmark.is_premium ? 'premium' : 'taken';
-        searchResults.push({
+        setResult({
           ...existingFanmark,
           status,
         });
       } else {
         // Fanmark is available
-        searchResults.push({
+        setResult({
           id: 'available',
           emoji_combination: query,
           normalized_emoji: query,
@@ -110,40 +108,9 @@ export function useFanmarkSearch() {
           status: 'available',
         });
       }
-
-      // Only add similar patterns if the exact query is taken/premium
-      if (existingFanmark) {
-        const { data: similarFanmarks, error: similarError } = await supabase
-          .from('fanmarks')
-          .select(`
-            id,
-            emoji_combination,
-            normalized_emoji,
-            short_id,
-            is_premium,
-            status,
-            user_id
-          `)
-          .eq('status', 'active')
-          .ilike('normalized_emoji', `%${query.slice(0, 1)}%`)
-          .neq('normalized_emoji', query)
-          .limit(3);
-
-        if (similarError) throw similarError;
-
-        if (similarFanmarks) {
-          const similarWithStatus: FanmarkSearchResult[] = similarFanmarks.map(fanmark => {
-            const status: 'premium' | 'taken' = fanmark.is_premium ? 'premium' : 'taken';
-            return { ...fanmark, status };
-          });
-          searchResults.push(...similarWithStatus);
-        }
-      }
-
-      setResults(searchResults);
     } catch (error) {
       console.error('Error searching fanmarks:', error);
-      setResults([]);
+      setResult(null);
     } finally {
       setLoading(false);
     }
@@ -169,7 +136,7 @@ export function useFanmarkSearch() {
   return {
     searchQuery,
     setSearchQuery,
-    results,
+    result,
     loading,
     suggestions,
     recentFanmarks,

@@ -13,7 +13,7 @@ interface FanmarkSearchProps {
 
 export function FanmarkSearch({ onSignupPrompt }: FanmarkSearchProps) {
   const { t } = useTranslation();
-  const { searchQuery, setSearchQuery, results, loading, suggestions, recentFanmarks } = useFanmarkSearch();
+  const { searchQuery, setSearchQuery, result, loading, suggestions, recentFanmarks } = useFanmarkSearch();
 
   const getStatusBadge = (result: FanmarkSearchResult) => {
     switch (result.status) {
@@ -86,9 +86,9 @@ export function FanmarkSearch({ onSignupPrompt }: FanmarkSearchProps) {
         </div>
       )}
 
-      {/* Search Results */}
-      {loading && (
-        <div className="text-center py-8">
+      {/* Status Display */}
+      {loading && searchQuery.trim() && (
+        <div className="flex items-center justify-center py-4">
           <div className="inline-flex items-center space-x-2">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
             <span className="text-muted-foreground">{t('common.loading')}</span>
@@ -96,53 +96,30 @@ export function FanmarkSearch({ onSignupPrompt }: FanmarkSearchProps) {
         </div>
       )}
 
-      {results.length > 0 && searchQuery.trim() && (
-        <div className="space-y-3">
-          <h3 className="text-sm font-medium text-muted-foreground">
-            {t('hero.searchButton')} "{searchQuery}"
-          </h3>
-          <div className="grid gap-3">
-            {results.map((result, index) => (
-              <Card key={`${result.id}-${index}`} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <span className="text-2xl">{result.emoji_combination}</span>
-                      <div>
-                        <div className="font-medium">{result.emoji_combination}</div>
-                        {result.short_id && (
-                          <div className="text-sm text-muted-foreground">
-                            fanmark.id/e/{result.short_id}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      {getStatusBadge(result)}
-                      {result.status === 'taken' && (
-                        <Button variant="ghost" size="sm">
-                          {t('search.viewProfile')}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+      {result && searchQuery.trim() && !loading && (
+        <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
+          <div className="flex items-center space-x-3">
+            <span className="text-2xl">{result.emoji_combination}</span>
+            {result.short_id && (
+              <div className="text-sm text-muted-foreground">
+                fanmark.id/e/{result.short_id}
+              </div>
+            )}
           </div>
-          
-          {/* Call to Action */}
-          {results.some(r => r.status === 'available') && (
-            <Card className="bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20">
-              <CardContent className="p-4 text-center">
-                <p className="text-lg font-medium mb-3">{t('search.foundPerfect')}</p>
-                <Button onClick={handleSignupPrompt} className="rounded-full px-6">
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  {t('hero.tryButton')}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+          <div className="flex items-center space-x-3">
+            {getStatusBadge(result)}
+            {result.status === 'available' && (
+              <Button onClick={handleSignupPrompt} size="sm" className="rounded-full">
+                <Sparkles className="w-3 h-3 mr-1" />
+                {t('hero.tryButton')}
+              </Button>
+            )}
+            {result.status === 'taken' && (
+              <Button variant="ghost" size="sm">
+                {t('search.viewProfile')}
+              </Button>
+            )}
+          </div>
         </div>
       )}
 
