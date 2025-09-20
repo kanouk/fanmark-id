@@ -53,7 +53,7 @@ const Auth = () => {
     try {
       const redirectUrl = `${window.location.origin}/`;
       
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -61,8 +61,13 @@ const Auth = () => {
         }
       });
 
+      console.log('Signup result:', { data, error }); // Debug logging
+
       if (error) {
-        if (error.message.includes("User already registered")) {
+        // Handle various Supabase error messages for existing users
+        if (error.message.includes("User already registered") || 
+            error.message.includes("already been registered") ||
+            error.message.includes("already exists")) {
           toast({
             title: "アカウントが既に存在します",
             description: "このメールアドレスは既に登録されています。ログインタブをお試しください。",
@@ -76,12 +81,29 @@ const Auth = () => {
           });
         }
       } else {
-        toast({
-          title: "確認メールを送信しました",
-          description: "メールアドレスに送られた確認リンクをクリックしてください。",
-        });
+        // Check if user was created or already exists
+        if (data.user && !data.user.email_confirmed_at) {
+          toast({
+            title: "確認メールを送信しました",
+            description: "メールアドレスに送られた確認リンクをクリックしてください。",
+          });
+        } else if (data.user && data.user.email_confirmed_at) {
+          // User already exists and is confirmed
+          toast({
+            title: "アカウントが既に存在します",
+            description: "このメールアドレスは既に登録済みです。ログインタブをお試しください。",
+            variant: "destructive",
+          });
+        } else {
+          // Fallback message
+          toast({
+            title: "登録を処理しています",
+            description: "アカウントの状態を確認してください。既に登録済みの場合はログインをお試しください。",
+          });
+        }
       }
     } catch (error) {
+      console.error('Signup error:', error); // Debug logging
       toast({
         title: "エラーが発生しました",
         description: "もう一度お試しください。",
