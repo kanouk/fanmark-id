@@ -71,11 +71,11 @@ const Index = () => {
                   aria-haspopup="true"
                   aria-expanded={userMenuOpen}
                 >
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center leading-none overflow-hidden">
+                  <div className="relative w-8 h-8 rounded-full bg-primary/10 overflow-hidden">
                     {profile?.avatar_url ? (
-                      <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                      <img src={profile.avatar_url} alt="Avatar" className="absolute inset-0 w-full h-full object-cover" />
                     ) : (
-                      <User className="text-primary w-4 h-4" />
+                      <User className="text-primary w-4 h-4 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
                     )}
                   </div>
                 </button>

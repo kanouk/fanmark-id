@@ -33,6 +33,26 @@ export const useProfile = () => {
     }
   }, [user]);
 
+  // Realtime subscription to keep profile in sync across the app
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('profile-updates')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          setProfile(payload.new as Profile);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   const fetchProfile = async () => {
     try {
       setLoading(true);

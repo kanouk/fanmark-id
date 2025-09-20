@@ -67,6 +67,7 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
     try {
       const avatarUrl = await uploadAvatar(file);
       setFormData(prev => ({ ...prev, avatar_url: avatarUrl }));
+      await onUpdate({ avatar_url: avatarUrl });
       toast({
         title: "✨ アバター画像をアップロードしました",
         description: "プロフィール画像が更新されました。",
@@ -86,6 +87,7 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
         await deleteAvatar(formData.avatar_url);
       }
       setFormData(prev => ({ ...prev, avatar_url: '' }));
+      await onUpdate({ avatar_url: null });
       toast({
         title: "✨ アバター画像を削除しました",
         description: "プロフィール画像が削除されました。",

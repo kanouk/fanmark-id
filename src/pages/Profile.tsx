@@ -55,11 +55,11 @@ const Profile = () => {
           <CardContent className="p-6">
             <div className="flex items-center space-x-4">
               <div className="avatar">
-                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
+                <div className="relative w-16 h-16 rounded-full bg-primary/20 overflow-hidden">
                   {profile?.avatar_url ? (
-                    <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                    <img src={profile.avatar_url} alt="Avatar" className="absolute inset-0 w-full h-full object-cover" />
                   ) : (
-                    <User className="w-8 h-8 text-primary" />
+                    <User className="w-8 h-8 text-primary absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
                   )}
                 </div>
               </div>
