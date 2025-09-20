@@ -15,6 +15,8 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [activeTab, setActiveTab] = useState("signin");
+  const [emailError, setEmailError] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -46,14 +48,50 @@ const Auth = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  const checkEmailExists = async (email: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('check-email-exists', {
+        body: { email }
+      });
+
+      if (error) {
+        console.error('Error checking email:', error);
+        return false; // Fallback to allow signup if check fails
+      }
+
+      return data?.exists || false;
+    } catch (error) {
+      console.error('Error calling check-email-exists:', error);
+      return false; // Fallback to allow signup if check fails
+    }
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setEmailError("");
     setIsLoading(true);
 
     try {
+      // First check if email already exists
+      const emailExists = await checkEmailExists(email);
+      
+      if (emailExists) {
+        setEmailError("このメールアドレスは既に登録されています");
+        toast({
+          title: "アカウントが既に存在します",
+          description: "このメールアドレスは既に登録されています。ログインしますか？",
+          variant: "destructive",
+        });
+        // Switch to login tab
+        setActiveTab("signin");
+        setIsLoading(false);
+        return;
+      }
+
+      // Proceed with signup if email doesn't exist
       const redirectUrl = `${window.location.origin}/`;
       
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -61,49 +99,20 @@ const Auth = () => {
         }
       });
 
-      console.log('Signup result:', { data, error }); // Debug logging
-
       if (error) {
-        // Handle various Supabase error messages for existing users
-        if (error.message.includes("User already registered") || 
-            error.message.includes("already been registered") ||
-            error.message.includes("already exists")) {
-          toast({
-            title: "アカウントが既に存在します",
-            description: "このメールアドレスは既に登録されています。ログインタブをお試しください。",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "登録エラー",
-            description: error.message,
-            variant: "destructive",
-          });
-        }
+        toast({
+          title: "登録エラー",
+          description: error.message,
+          variant: "destructive",
+        });
       } else {
-        // Check if user was created or already exists
-        if (data.user && !data.user.email_confirmed_at) {
-          toast({
-            title: "確認メールを送信しました",
-            description: "メールアドレスに送られた確認リンクをクリックしてください。",
-          });
-        } else if (data.user && data.user.email_confirmed_at) {
-          // User already exists and is confirmed
-          toast({
-            title: "アカウントが既に存在します",
-            description: "このメールアドレスは既に登録済みです。ログインタブをお試しください。",
-            variant: "destructive",
-          });
-        } else {
-          // Fallback message
-          toast({
-            title: "登録を処理しています",
-            description: "アカウントの状態を確認してください。既に登録済みの場合はログインをお試しください。",
-          });
-        }
+        toast({
+          title: "確認メールを送信しました",
+          description: "メールアドレスに送られた確認リンクをクリックしてください。",
+        });
       }
     } catch (error) {
-      console.error('Signup error:', error); // Debug logging
+      console.error('Signup error:', error);
       toast({
         title: "エラーが発生しました",
         description: "もう一度お試しください。",
@@ -116,6 +125,7 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    setEmailError("");
     setIsLoading(true);
 
     try {
@@ -155,6 +165,42 @@ const Auth = () => {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast({
+        title: "メールアドレスを入力してください",
+        description: "パスワードリセット用のメールアドレスを入力してください。",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth`
+      });
+
+      if (error) {
+        toast({
+          title: "エラーが発生しました",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "パスワードリセットメールを送信しました",
+          description: "メールに記載されたリンクからパスワードを再設定してください。",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "エラーが発生しました",
+        description: "もう一度お試しください。",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/10 to-primary/10 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -173,7 +219,7 @@ const Auth = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="signin" className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">ログイン</TabsTrigger>
                 <TabsTrigger value="signup">新規登録</TabsTrigger>
@@ -203,12 +249,21 @@ const Auth = () => {
                       required
                     />
                   </div>
-                  <Button 
+                   <Button 
                     type="submit" 
                     className="w-full" 
                     disabled={isLoading}
                   >
                     {isLoading ? "ログイン中..." : "ログイン"}
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="link" 
+                    className="w-full text-sm"
+                    onClick={handleForgotPassword}
+                    disabled={isLoading}
+                  >
+                    パスワードをお忘れですか？
                   </Button>
                 </form>
               </TabsContent>
@@ -222,9 +277,16 @@ const Auth = () => {
                       type="email"
                       placeholder="your@email.com"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setEmailError("");
+                      }}
                       required
+                      className={emailError ? "border-destructive" : ""}
                     />
+                    {emailError && (
+                      <p className="text-sm text-destructive mt-1">{emailError}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-password">パスワード</Label>
