@@ -1,1 +1,4 @@
 project_id = "ppqgtbjykitqtiaisyji"
+
+[functions.register-fanmark]
+verify_jwt = true

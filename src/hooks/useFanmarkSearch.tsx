@@ -7,7 +7,8 @@ export interface FanmarkSearchResult {
   normalized_emoji: string;
   short_id: string;
   is_premium: boolean;
-  status: 'available' | 'taken' | 'premium';
+  status: 'available' | 'taken' | 'premium' | 'payment_required';
+  price_yen?: number;
   owner?: {
     username: string;
     display_name: string;
@@ -73,10 +74,25 @@ export function useFanmarkSearch() {
     }
   };
 
+  // Normalize emoji by removing skin tone modifiers
+  const normalizeEmoji = (emoji: string): string => {
+    return emoji.replace(/[\u{1F3FB}-\u{1F3FF}]/gu, '');
+  };
+
   const searchFanmarks = async (query: string) => {
     setLoading(true);
     try {
-      // Check if the exact query exists
+      const normalizedQuery = normalizeEmoji(query);
+
+      // Check if emoji is reserved first
+      const { data: reservedEmoji } = await supabase
+        .from('reserved_emoji_patterns')
+        .select('pattern, price_yen')
+        .eq('pattern', normalizedQuery)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      // Check if fanmark already exists
       const { data: existingFanmark, error: searchError } = await supabase
         .from('fanmarks')
         .select(`
@@ -88,25 +104,48 @@ export function useFanmarkSearch() {
           status,
           user_id
         `)
-        .eq('normalized_emoji', query)
+        .eq('normalized_emoji', normalizedQuery)
         .eq('status', 'active')
         .maybeSingle();
 
       if (searchError) throw searchError;
 
       if (existingFanmark) {
+        // Get owner profile separately
+        const { data: ownerProfile } = await supabase
+          .from('profiles')
+          .select('username, display_name')
+          .eq('user_id', existingFanmark.user_id)
+          .single();
+
         // Fanmark is taken
         const status: 'premium' | 'taken' = existingFanmark.is_premium ? 'premium' : 'taken';
         setResult({
           ...existingFanmark,
           status,
+          price_yen: reservedEmoji?.price_yen,
+          owner: ownerProfile ? {
+            username: ownerProfile.username,
+            display_name: ownerProfile.display_name
+          } : undefined
+        });
+      } else if (reservedEmoji) {
+        // Fanmark requires payment
+        setResult({
+          id: 'payment_required',
+          emoji_combination: query,
+          normalized_emoji: normalizedQuery,
+          short_id: '',
+          is_premium: true,
+          status: 'payment_required',
+          price_yen: reservedEmoji.price_yen,
         });
       } else {
         // Fanmark is available
         setResult({
           id: 'available',
           emoji_combination: query,
-          normalized_emoji: query,
+          normalized_emoji: normalizedQuery,
           short_id: '',
           is_premium: false,
           status: 'available',
@@ -117,6 +156,22 @@ export function useFanmarkSearch() {
       setResult(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const registerFanmark = async (emoji: string): Promise<{ success: boolean; error?: string; fanmark?: any }> => {
+    try {
+      const response = await supabase.functions.invoke('register-fanmark', {
+        body: { emoji_combination: emoji }
+      });
+
+      if (response.error) {
+        return { success: false, error: response.error.message };
+      }
+
+      return { success: true, fanmark: response.data.fanmark };
+    } catch (error) {
+      return { success: false, error: 'Registration failed' };
     }
   };
 
@@ -144,6 +199,7 @@ export function useFanmarkSearch() {
     loading,
     recentFanmarks,
     checkAvailability,
+    registerFanmark,
     refetchRecent: fetchRecentFanmarks,
   };
 }

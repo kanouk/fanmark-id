@@ -13,33 +13,51 @@ interface FanmarkSearchProps {
 
 export function FanmarkSearch({ onSignupPrompt }: FanmarkSearchProps) {
   const { t } = useTranslation();
-  const { searchQuery, setSearchQuery, result, loading, recentFanmarks } = useFanmarkSearch();
+  const { searchQuery, setSearchQuery, result, loading, recentFanmarks, registerFanmark } = useFanmarkSearch();
 
   const getStatusBadge = (result: FanmarkSearchResult) => {
     switch (result.status) {
       case 'available':
         return (
-          <Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-200">
+          <Badge className="bg-success text-success-content border-success/20">
             <Sparkles className="w-3 h-3 mr-1" />
-            {t('search.available')}
+            ✅ Available
           </Badge>
         );
       case 'taken':
         return (
           <Badge variant="destructive">
             <Eye className="w-3 h-3 mr-1" />
-            {t('search.taken')}
+            ❌ Taken
           </Badge>
         );
       case 'premium':
         return (
-          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200">
+          <Badge className="bg-warning text-warning-content border-warning/20">
             <Crown className="w-3 h-3 mr-1" />
-            {t('search.premium')}
+            💎 Premium
+          </Badge>
+        );
+      case 'payment_required':
+        return (
+          <Badge className="bg-info text-info-content border-info/20">
+            💳 Payment Required
           </Badge>
         );
       default:
         return null;
+    }
+  };
+
+  const handleRegister = async (emoji: string) => {
+    const response = await registerFanmark(emoji);
+    if (response.success) {
+      // Refresh search to show updated status
+      setSearchQuery(searchQuery);
+    } else {
+      console.error('Registration failed:', response.error);
+      // For now, prompt signup - later we'll handle authentication
+      onSignupPrompt?.();
     }
   };
 
@@ -85,14 +103,30 @@ export function FanmarkSearch({ onSignupPrompt }: FanmarkSearchProps) {
           <div className="flex items-center space-x-3">
             {getStatusBadge(result)}
             {result.status === 'available' && (
-              <Button onClick={handleSignupPrompt} size="sm" className="rounded-full">
+              <Button 
+                onClick={() => handleRegister(result.emoji_combination)} 
+                size="sm" 
+                className="bg-success text-success-content hover:bg-success/80 rounded-full"
+              >
                 <Sparkles className="w-3 h-3 mr-1" />
-                {t('hero.tryButton')}
+                Register ✨
               </Button>
             )}
-            {result.status === 'taken' && (
+            {result.status === 'payment_required' && (
+              <div className="flex flex-col items-end gap-1">
+                <Button 
+                  onClick={handleSignupPrompt}
+                  size="sm" 
+                  className="bg-info text-info-content hover:bg-info/80 rounded-full"
+                >
+                  Pay ¥{result.price_yen?.toLocaleString()} 💳
+                </Button>
+                <span className="text-xs text-muted-foreground">Premium emoji</span>
+              </div>
+            )}
+            {(result.status === 'taken' || result.status === 'premium') && (
               <Button variant="ghost" size="sm">
-                {t('search.viewProfile')}
+                View Profile
               </Button>
             )}
           </div>
