@@ -25,7 +25,16 @@ All colors MUST be HSL.
 }
 
 @layer base {
+  html {
+    @apply bg-base-100;
+  }
+  
   body {
     @apply bg-base-100 text-base-content;
+  }
+  
+  /* Force DaisyUI theme */
+  html[data-theme="pastel"] {
+    color-scheme: light;
   }
 }

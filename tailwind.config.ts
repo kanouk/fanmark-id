@@ -9,6 +9,7 @@ export default {
     themes: ["pastel"],
     base: true,
     styled: true,
+    utils: true,
   },
   theme: {
     container: {

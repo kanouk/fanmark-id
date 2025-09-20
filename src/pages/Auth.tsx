@@ -107,44 +107,43 @@ const Auth = () => {
       <div className="space-y-6">
         
         
-        <Tabs defaultValue="signin" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="signin">{t('auth.login')}</TabsTrigger>
-            <TabsTrigger value="signup">{t('auth.signUp')}</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="signin" className="space-y-4">
-            <LoginForm 
-              formData={formData}
-              authState={authState}
-              updateFormData={updateFormData}
-              signIn={signIn}
-              t={t}
-            />
-          </TabsContent>
-
-          <TabsContent value="signup" className="space-y-4">
-            {/* Show invitation system if in invitation mode and no valid code */}
-            {!settingsLoading && settings.invitation_mode && invitationFlow.showInvitation ? (
-              <div className="space-y-4">
-                <InvitationSystem onValidCode={handleValidInvitation} />
-              </div>
-            ) : (
-              <SignUpForm 
+        <div className="w-full">
+          <div role="tablist" className="tabs tabs-bordered bg-base-200/30 p-1 rounded-box mb-6">
+            <input type="radio" name="auth_tabs" role="tab" className="tab text-base-content" aria-label={t('auth.login')} defaultChecked />
+            <div role="tabpanel" className="tab-content bg-base-100 border-base-300 rounded-box p-6">
+              <LoginForm 
                 formData={formData}
                 authState={authState}
                 updateFormData={updateFormData}
-                signUp={signUp}
-                requirements={requirements}
-                isValid={isValid}
-                username={username}
-                setUsername={setUsername}
-                invitationCode={invitationFlow.validCode}
+                signIn={signIn}
                 t={t}
               />
-            )}
-          </TabsContent>
-        </Tabs>
+            </div>
+
+            <input type="radio" name="auth_tabs" role="tab" className="tab text-base-content" aria-label={t('auth.signUp')} />
+            <div role="tabpanel" className="tab-content bg-base-100 border-base-300 rounded-box p-6">
+              {/* Show invitation system if in invitation mode and no valid code */}
+              {!settingsLoading && settings.invitation_mode && invitationFlow.showInvitation ? (
+                <div className="space-y-4">
+                  <InvitationSystem onValidCode={handleValidInvitation} />
+                </div>
+              ) : (
+                <SignUpForm 
+                  formData={formData}
+                  authState={authState}
+                  updateFormData={updateFormData}
+                  signUp={signUp}
+                  requirements={requirements}
+                  isValid={isValid}
+                  username={username}
+                  setUsername={setUsername}
+                  invitationCode={invitationFlow.validCode}
+                  t={t}
+                />
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </AuthLayout>
   );
