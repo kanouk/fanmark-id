@@ -301,6 +301,19 @@ const SignUpForm = ({
       />
     </div>
     
+    <div className="form-control">
+      <label className="label">
+        <span className="label-text">{t('auth.confirmPassword')}</span>
+      </label>
+      <input
+        type="password"
+        className="input input-bordered w-full"
+        value={formData.confirmPassword || ''}
+        onChange={(e) => updateFormData('confirmPassword', e.target.value)}
+        required
+      />
+    </div>
+    
     {formData.password && (
       <div className="space-y-2">
         <p className="text-sm text-base-content/70">{t('password.requirements.title')}:</p>

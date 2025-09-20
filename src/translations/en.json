@@ -74,6 +74,7 @@
     "logout": "Logout",
     "email": "Email",
     "password": "Password",
+    "confirmPassword": "Confirm Password",
     "username": "Username",
     "confirmPassword": "Confirm Password",
     "forgotPassword": "Forgot Password?",
