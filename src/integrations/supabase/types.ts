@@ -47,6 +47,45 @@ export type Database = {
         }
         Relationships: []
       }
+      fanmark_availability_rules: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_available: boolean
+          price_usd: number | null
+          priority: number
+          rule_config: Json
+          rule_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_available?: boolean
+          price_usd?: number | null
+          priority: number
+          rule_config?: Json
+          rule_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_available?: boolean
+          price_usd?: number | null
+          priority?: number
+          rule_config?: Json
+          rule_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fanmarks: {
         Row: {
           created_at: string

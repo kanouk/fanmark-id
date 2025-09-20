@@ -117,15 +117,108 @@ export function useFanmarkSearch() {
     return { valid: true, emojiCount };
   };
 
-  // Get pricing info based on emoji count
-  const getPricingInfo = (emojiCount: number): { requiresPayment: boolean; priceUsd?: number } => {
-    if (emojiCount === 1) {
-      return { requiresPayment: true, priceUsd: 99.9 }; // Premium price for single emoji
-    } else if (emojiCount === 2) {
-      return { requiresPayment: true, priceUsd: 9.99 }; // Standard price for double emoji
-    } else {
-      return { requiresPayment: false }; // Free for 3+ emojis
+  // Check pattern-based pricing using availability rules
+  const checkPatternBasedPricing = async (normalizedEmoji: string, emojiCount: number): Promise<{ requiresPayment: boolean; priceUsd?: number; reason?: string; isAvailable: boolean }> => {
+    try {
+      // Get all active availability rules ordered by priority
+      const { data: rules } = await supabase
+        .from('fanmark_availability_rules')
+        .select('rule_type, priority, rule_config, is_available, price_usd')
+        .eq('is_available', true)
+        .order('priority', { ascending: true });
+
+      if (!rules) {
+        return { requiresPayment: false, isAvailable: true };
+      }
+
+      // Check patterns in priority order (1=highest, 4=lowest)
+      for (const rule of rules) {
+        const config = rule.rule_config as any || {};
+        
+        switch (rule.rule_type) {
+          case 'specific_pattern':
+            if (config.patterns && Array.isArray(config.patterns) && config.patterns.includes(normalizedEmoji)) {
+              return {
+                requiresPayment: true,
+                priceUsd: rule.price_usd,
+                reason: 'specific_pattern',
+                isAvailable: rule.is_available
+              };
+            }
+            break;
+
+          case 'duplicate_pattern':
+            if (config.enabled && hasDuplicateEmojis(normalizedEmoji)) {
+              return {
+                requiresPayment: true,
+                priceUsd: rule.price_usd,
+                reason: 'duplicate_pattern',
+                isAvailable: rule.is_available
+              };
+            }
+            break;
+
+          case 'prefix_pattern':
+            if (config.prefixes && typeof config.prefixes === 'object') {
+              const firstEmoji = getFirstEmoji(normalizedEmoji);
+              if (firstEmoji && config.prefixes[firstEmoji]) {
+                return {
+                  requiresPayment: true,
+                  priceUsd: config.prefixes[firstEmoji],
+                  reason: 'prefix_pattern',
+                  isAvailable: rule.is_available
+                };
+              }
+            }
+            break;
+
+          case 'count_based':
+            if (config.pricing && typeof config.pricing === 'object' && config.pricing[emojiCount.toString()]) {
+              const price = parseFloat(config.pricing[emojiCount.toString()]);
+              return {
+                requiresPayment: price > 0,
+                priceUsd: price,
+                reason: 'count_based',
+                isAvailable: rule.is_available
+              };
+            }
+            break;
+        }
+      }
+
+      return { requiresPayment: false, isAvailable: true };
+    } catch (error) {
+      console.error('Error checking pattern-based pricing:', error);
+      return { requiresPayment: false, isAvailable: true };
     }
+  };
+
+  // Helper function to check for duplicate emojis
+  const hasDuplicateEmojis = (emoji: string): boolean => {
+    const emojiArray = [...emoji];
+    let previousEmoji = '';
+    
+    for (const char of emojiArray) {
+      if (char.match(/\p{Emoji}/u) && !char.match(/[\u{1F3FB}-\u{1F3FF}\u{FE0F}\u{200D}]/u)) {
+        if (char === previousEmoji) {
+          return true; // Found consecutive duplicate
+        }
+        previousEmoji = char;
+      }
+    }
+    
+    return false;
+  };
+
+  // Helper function to get first emoji
+  const getFirstEmoji = (emoji: string): string | null => {
+    const emojiArray = [...emoji];
+    for (const char of emojiArray) {
+      if (char.match(/\p{Emoji}/u) && !char.match(/[\u{1F3FB}-\u{1F3FF}\u{FE0F}\u{200D}]/u)) {
+        return char;
+      }
+    }
+    return null;
   };
 
   const searchFanmarks = async (query: string) => {
@@ -148,15 +241,7 @@ export function useFanmarkSearch() {
       }
 
       const normalizedQuery = normalizeEmoji(query);
-      const pricingInfo = getPricingInfo(validation.emojiCount);
-
-      // Check if emoji is reserved first
-      const { data: reservedEmoji } = await supabase
-        .from('reserved_emoji_patterns')
-        .select('pattern, price_yen')
-        .eq('pattern', normalizedQuery)
-        .eq('is_active', true)
-        .maybeSingle();
+      const pricingInfo = await checkPatternBasedPricing(normalizedQuery, validation.emojiCount);
 
       // Check if fanmark already exists
       const { data: existingFanmark, error: searchError } = await supabase
@@ -189,14 +274,25 @@ export function useFanmarkSearch() {
         setResult({
           ...existingFanmark,
           status,
-          price_yen: reservedEmoji?.price_yen,
-          price_usd: reservedEmoji?.price_yen ? (reservedEmoji.price_yen / 150) : pricingInfo.priceUsd,
+          price_usd: pricingInfo.priceUsd,
           owner: ownerProfile ? {
             username: ownerProfile.username,
             display_name: ownerProfile.display_name
           } : undefined
         });
-      } else if (pricingInfo.requiresPayment || reservedEmoji) {
+      } else if (!pricingInfo.isAvailable) {
+        // Fanmark pattern is not available
+        setResult({
+          id: 'not_available',
+          emoji_combination: query,
+          normalized_emoji: normalizedQuery,
+          short_id: '',
+          is_premium: false,
+          status: 'available', // Will show error message
+          error: 'This emoji pattern is currently not available for registration',
+          emoji_count: validation.emojiCount
+        } as any);
+      } else if (pricingInfo.requiresPayment) {
         // Fanmark requires payment
         setResult({
           id: 'payment_required',
@@ -205,8 +301,7 @@ export function useFanmarkSearch() {
           short_id: '',
           is_premium: true,
           status: 'payment_required',
-          price_yen: reservedEmoji?.price_yen,
-          price_usd: reservedEmoji?.price_yen ? (reservedEmoji.price_yen / 150) : pricingInfo.priceUsd,
+          price_usd: pricingInfo.priceUsd,
           emoji_count: validation.emojiCount
         } as any);
       } else {

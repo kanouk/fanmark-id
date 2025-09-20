@@ -61,15 +61,104 @@ function validateEmojiCombination(emoji: string): { valid: boolean; error?: stri
   return { valid: true, emojiCount };
 }
 
-// Determine pricing based on emoji count
-function getPricingInfo(emojiCount: number): { requiresPayment: boolean; priceUsd?: number } {
-  if (emojiCount === 1) {
-    return { requiresPayment: true, priceUsd: 99.9 }; // Premium price for single emoji
-  } else if (emojiCount === 2) {
-    return { requiresPayment: true, priceUsd: 9.99 }; // Standard price for double emoji
-  } else {
-    return { requiresPayment: false }; // Free for 3+ emojis
+// Check for pattern-based pricing using availability rules
+async function checkPatternBasedPricing(supabase: any, normalizedEmoji: string, emojiCount: number): Promise<{ requiresPayment: boolean; priceUsd?: number; reason?: string; isAvailable: boolean }> {
+  // Get all active availability rules ordered by priority
+  const { data: rules } = await supabase
+    .from('fanmark_availability_rules')
+    .select('rule_type, priority, rule_config, is_available, price_usd')
+    .eq('is_available', true)
+    .order('priority', { ascending: true });
+
+  if (!rules) {
+    return { requiresPayment: false, isAvailable: true };
   }
+
+  // Check patterns in priority order (1=highest, 4=lowest)
+  for (const rule of rules) {
+    const config = rule.rule_config || {};
+    
+    switch (rule.rule_type) {
+      case 'specific_pattern':
+        if (config.patterns && config.patterns.includes(normalizedEmoji)) {
+          return {
+            requiresPayment: true,
+            priceUsd: rule.price_usd,
+            reason: 'specific_pattern',
+            isAvailable: rule.is_available
+          };
+        }
+        break;
+
+      case 'duplicate_pattern':
+        if (config.enabled && hasDuplicateEmojis(normalizedEmoji)) {
+          return {
+            requiresPayment: true,
+            priceUsd: rule.price_usd,
+            reason: 'duplicate_pattern',
+            isAvailable: rule.is_available
+          };
+        }
+        break;
+
+      case 'prefix_pattern':
+        if (config.prefixes) {
+          const firstEmoji = getFirstEmoji(normalizedEmoji);
+          if (firstEmoji && config.prefixes[firstEmoji]) {
+            return {
+              requiresPayment: true,
+              priceUsd: config.prefixes[firstEmoji],
+              reason: 'prefix_pattern',
+              isAvailable: rule.is_available
+            };
+          }
+        }
+        break;
+
+      case 'count_based':
+        if (config.pricing && config.pricing[emojiCount.toString()]) {
+          return {
+            requiresPayment: parseFloat(config.pricing[emojiCount.toString()]) > 0,
+            priceUsd: parseFloat(config.pricing[emojiCount.toString()]),
+            reason: 'count_based',
+            isAvailable: rule.is_available
+          };
+        }
+        break;
+    }
+  }
+
+  return { requiresPayment: false, isAvailable: true };
+}
+
+// Helper function to check for duplicate emojis
+function hasDuplicateEmojis(emoji: string): boolean {
+  const segments = [...new Intl.Segmenter().segment(emoji)];
+  const uniqueEmojis = new Set();
+  let previousEmoji = '';
+  
+  for (const segment of segments) {
+    if (segment.segment.match(/\p{Emoji}/u) && !segment.segment.match(/[\u{1F3FB}-\u{1F3FF}\u{FE0F}\u{200D}]/u)) {
+      if (segment.segment === previousEmoji) {
+        return true; // Found consecutive duplicate
+      }
+      uniqueEmojis.add(segment.segment);
+      previousEmoji = segment.segment;
+    }
+  }
+  
+  return false;
+}
+
+// Helper function to get first emoji
+function getFirstEmoji(emoji: string): string | null {
+  const segments = [...new Intl.Segmenter().segment(emoji)];
+  for (const segment of segments) {
+    if (segment.segment.match(/\p{Emoji}/u) && !segment.segment.match(/[\u{1F3FB}-\u{1F3FF}\u{FE0F}\u{200D}]/u)) {
+      return segment.segment;
+    }
+  }
+  return null;
 }
 
 serve(async (req) => {
@@ -119,26 +208,29 @@ serve(async (req) => {
     // Normalize emoji for database storage
     const normalizedEmoji = normalizeEmoji(emoji_combination);
     
-    // Get pricing info based on emoji count
-    const pricingInfo = getPricingInfo(validation.emojiCount);
+    // Check pattern-based pricing using new availability rules system
+    const pricingInfo = await checkPatternBasedPricing(supabase, normalizedEmoji, validation.emojiCount);
     
-    // Check if emoji is reserved (admin-defined patterns)
-    const { data: reservedEmoji } = await supabase
-      .from('reserved_emoji_patterns')
-      .select('pattern, price_yen')
-      .eq('pattern', normalizedEmoji)
-      .eq('is_active', true)
-      .single();
-
-    // If requires payment (by count-based pricing or reserved pattern)
-    if (pricingInfo.requiresPayment || reservedEmoji) {
-      const priceUsd = reservedEmoji?.price_yen ? (reservedEmoji.price_yen / 150) : pricingInfo.priceUsd; // Convert yen to USD roughly
+    // If not available or requires payment
+    if (!pricingInfo.isAvailable) {
       return new Response(
         JSON.stringify({ 
-          error: `This emoji requires payment (${validation.emojiCount} emoji${validation.emojiCount !== 1 ? 's' : ''})`,
+          error: 'This emoji pattern is currently not available for registration',
+          type: 'not_available',
+          reason: pricingInfo.reason
+        }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (pricingInfo.requiresPayment) {
+      return new Response(
+        JSON.stringify({ 
+          error: `This emoji requires payment (${pricingInfo.reason || 'pricing rule'})`,
           type: 'payment_required',
-          price_usd: priceUsd,
-          emoji_count: validation.emojiCount
+          price_usd: pricingInfo.priceUsd,
+          emoji_count: validation.emojiCount,
+          reason: pricingInfo.reason
         }),
         { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -214,7 +306,7 @@ serve(async (req) => {
         short_id: shortId,
         user_id: user.id,
         status: 'active',
-        is_premium: !!reservedEmoji
+        is_premium: pricingInfo.requiresPayment
       })
       .select()
       .single();
