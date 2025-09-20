@@ -73,7 +73,7 @@ const Index = () => {
                 <div className="text-4xl mb-4">🎵🎤🎸</div>
                 <h3 className="card-title justify-center text-lg">ミュージシャン</h3>
                 <p className="text-sm text-base-content/70">楽曲・ライブ情報・グッズがまとめて見れるページ</p>
-                <div className="badge badge-secondary">プロフィール</div>
+                <div className="badge badge-secondary px-[10px]">プロフィール</div>
               </div>
             </div>
 
@@ -82,7 +82,7 @@ const Index = () => {
                 <div className="text-4xl mb-4">🍔🍟</div>
                 <h3 className="card-title justify-center text-lg">お店</h3>
                 <p className="text-sm text-base-content/70">メニュー・出前・予約のリンクをひとまとめ</p>
-                <div className="badge badge-accent">リンク集</div>
+                <div className="badge badge-accent px-[10px]">リンク集</div>
               </div>
             </div>
 
@@ -91,7 +91,7 @@ const Index = () => {
                 <div className="text-4xl mb-4">💼📊⚡</div>
                 <h3 className="card-title justify-center text-lg">ビジネス</h3>
                 <p className="text-sm text-base-content/70">実績・経歴・連絡先がわかりやすい名刺代わり</p>
-                <div className="badge badge-info">名刺</div>
+                <div className="badge badge-info px-[10px]">名刺</div>
               </div>
             </div>
 
@@ -100,7 +100,7 @@ const Index = () => {
                 <div className="text-4xl mb-4">🔥🔥🔥</div>
                 <h3 className="card-title justify-center text-lg">ストリーマー</h3>
                 <p className="text-sm text-base-content/70">Twitchチャンネルに直接ジャンプ</p>
-                <div className="badge badge-error">ワンクリック</div>
+                <div className="badge badge-error px-[10px]">ワンクリック</div>
               </div>
             </div>
           </div>
@@ -154,10 +154,10 @@ const Index = () => {
             <div className="card bg-gradient-to-r from-pink-100 to-purple-100 shadow-xl">
               <div className="card-body">
                 <p className="text-lg mb-4">
-                  <span className="badge badge-primary badge-lg">短い絵文字（1〜2個）は有料 ✨</span>
+                  <span className="badge badge-primary badge-lg px-[10px]">短い絵文字（1〜2個）は有料 ✨</span>
                 </p>
                 <p className="text-lg mb-4">
-                  <span className="badge badge-secondary badge-lg">長い絵文字（3個以上）は無料！ 🎉</span>
+                  <span className="badge badge-secondary badge-lg px-[10px]">長い絵文字（3個以上）は無料！ 🎉</span>
                 </p>
                 <p className="text-base-content/70">
                   まずは無料で試してみて、気に入ったら短いアドレスにグレードアップ
@@ -197,7 +197,7 @@ const Index = () => {
       {/* CTA */}
       <div className="py-20 bg-primary text-primary-content">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-4xl font-bold mb-6">あなたらしい絵文字アドレス、作ってみない？ ✨</h2>
+          <h2 className="text-4xl font-bold mb-6">あなただけのファンマ、作ってみよう ✨</h2>
           <p className="text-xl mb-8 opacity-90">
             もう何千人ものクリエイターが、自分だけの絵文字アドレスを持ってる
           </p>
