@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Save, User, Link as LinkIcon, Globe, Instagram, Github, Twitter } from 'lucide-react';
+import { Save, User, Link as LinkIcon, Globe, Instagram, Github, Twitter, Video, Play, MessageCircle } from 'lucide-react';
 
 interface UserProfileFormProps {
   profile: any;
@@ -120,37 +120,6 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
           <div className="form-control">
             <Label className="label">
               <span className="label-text flex items-center space-x-2">
-                <Globe className="w-4 h-4" />
-                <span>{t('profile.website')}</span>
-              </span>
-            </Label>
-            <Input
-              type="url"
-              value={formData.social_links.website || ''}
-              onChange={(e) => updateSocialLink('website', e.target.value)}
-              placeholder="https://yoursite.com"
-              className="input input-bordered w-full"
-            />
-          </div>
-
-          <div className="form-control">
-            <Label className="label">
-              <span className="label-text flex items-center space-x-2">
-                <Twitter className="w-4 h-4" />
-                <span>Twitter/X</span>
-              </span>
-            </Label>
-            <Input
-              value={formData.social_links.twitter || ''}
-              onChange={(e) => updateSocialLink('twitter', e.target.value)}
-              placeholder="@username"
-              className="input input-bordered w-full"
-            />
-          </div>
-
-          <div className="form-control">
-            <Label className="label">
-              <span className="label-text flex items-center space-x-2">
                 <Instagram className="w-4 h-4" />
                 <span>Instagram</span>
               </span>
@@ -166,6 +135,66 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
           <div className="form-control">
             <Label className="label">
               <span className="label-text flex items-center space-x-2">
+                <Twitter className="w-4 h-4" />
+                <span>X</span>
+              </span>
+            </Label>
+            <Input
+              value={formData.social_links.twitter || ''}
+              onChange={(e) => updateSocialLink('twitter', e.target.value)}
+              placeholder="@username"
+              className="input input-bordered w-full"
+            />
+          </div>
+
+          <div className="form-control">
+            <Label className="label">
+              <span className="label-text flex items-center space-x-2">
+                <Video className="w-4 h-4" />
+                <span>TikTok</span>
+              </span>
+            </Label>
+            <Input
+              value={formData.social_links.tiktok || ''}
+              onChange={(e) => updateSocialLink('tiktok', e.target.value)}
+              placeholder="@username"
+              className="input input-bordered w-full"
+            />
+          </div>
+
+          <div className="form-control">
+            <Label className="label">
+              <span className="label-text flex items-center space-x-2">
+                <Play className="w-4 h-4" />
+                <span>YouTube</span>
+              </span>
+            </Label>
+            <Input
+              value={formData.social_links.youtube || ''}
+              onChange={(e) => updateSocialLink('youtube', e.target.value)}
+              placeholder="@channel"
+              className="input input-bordered w-full"
+            />
+          </div>
+
+          <div className="form-control">
+            <Label className="label">
+              <span className="label-text flex items-center space-x-2">
+                <MessageCircle className="w-4 h-4" />
+                <span>LINE</span>
+              </span>
+            </Label>
+            <Input
+              value={formData.social_links.line || ''}
+              onChange={(e) => updateSocialLink('line', e.target.value)}
+              placeholder="LINE ID"
+              className="input input-bordered w-full"
+            />
+          </div>
+
+          <div className="form-control">
+            <Label className="label">
+              <span className="label-text flex items-center space-x-2">
                 <Github className="w-4 h-4" />
                 <span>GitHub</span>
               </span>
@@ -174,6 +203,22 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
               value={formData.social_links.github || ''}
               onChange={(e) => updateSocialLink('github', e.target.value)}
               placeholder="username"
+              className="input input-bordered w-full"
+            />
+          </div>
+
+          <div className="form-control">
+            <Label className="label">
+              <span className="label-text flex items-center space-x-2">
+                <Globe className="w-4 h-4" />
+                <span>ウェブサイト</span>
+              </span>
+            </Label>
+            <Input
+              type="url"
+              value={formData.social_links.website || ''}
+              onChange={(e) => updateSocialLink('website', e.target.value)}
+              placeholder="https://yoursite.com"
               className="input input-bordered w-full"
             />
           </div>
