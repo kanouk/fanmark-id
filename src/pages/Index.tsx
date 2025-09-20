@@ -44,7 +44,7 @@ const Index = () => {
               <span className="text-8xl">✨</span>
             </div>
             <h1 className="text-6xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent mb-6">
-              ファンマだけでつくる<br />
+              ファンマでつくる<br />
               あなただけのアドレス
             </h1>
             <p className="text-xl mb-8 text-base-content/80">
@@ -68,7 +68,7 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <h2 className="text-4xl font-bold text-center mb-4">こんな風に使われてます 🚀</h2>
           <p className="text-center text-base-content/70 mb-12 text-lg">
-            みんなそれぞれ、自分らしい絵文字アドレスを作ってる
+            みんなそれぞれ、自分らしいファンマアドレスを作ってる
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -120,9 +120,9 @@ const Index = () => {
             <div className="card bg-base-100 shadow-xl">
               <div className="card-body text-center">
                 <div className="text-5xl mb-4 animate-bounce-soft">🎯</div>
-                <h3 className="card-title justify-center text-xl mb-4">1. 絵文字を選ぶ</h3>
+                <h3 className="card-title justify-center text-xl mb-4">1. ファンマを選ぶ</h3>
                 <p className="text-base-content/70">
-                  あなたらしい絵文字を1〜3個選んで<br />
+                  あなたらしいファンマを1〜3個選んで<br />
                   💕💕💕で気持ちを込めても<br />
                   🌸でシンプルでもOK
                 </p>
@@ -146,7 +146,7 @@ const Index = () => {
                 <div className="text-5xl mb-4 animate-float">🚀</div>
                 <h3 className="card-title justify-center text-xl mb-4">3. みんなにシェア</h3>
                 <p className="text-base-content/70">
-                  絵文字アドレスをSNSでも名刺でも<br />
+                  ファンマアドレスをSNSでも名刺でも<br />
                   どこでもシェア<br />
                   覚えてもらいやすくて便利！
                 </p>
@@ -164,10 +164,10 @@ const Index = () => {
             <div className="card bg-gradient-to-r from-pink-100 to-purple-100 shadow-xl">
               <div className="card-body">
                 <p className="text-lg mb-4">
-                  <span className="badge badge-primary badge-lg px-[10px]">短い絵文字（1〜2個）は有料 ✨</span>
+                  <span className="badge badge-primary badge-lg px-[10px]">短いファンマ（1〜2個）は有料 ✨</span>
                 </p>
                 <p className="text-lg mb-4">
-                  <span className="badge badge-secondary badge-lg px-[10px]">長い絵文字（3個以上）は無料！ 🎉</span>
+                  <span className="badge badge-secondary badge-lg px-[10px]">長いファンマ（3個以上）は無料！ 🎉</span>
                 </p>
                 <p className="text-base-content/70">
                   まずは無料で試してみて<br />
@@ -219,7 +219,7 @@ const Index = () => {
           <h2 className="text-4xl font-bold mb-6">あなただけのファンマ、作ってみよう ✨</h2>
           <p className="text-xl mb-8 opacity-90">
             もう何千人ものクリエイターが<br />
-            自分だけの絵文字アドレスを持ってる
+            自分だけのファンマアドレスを持ってる
           </p>
           <Button variant="secondary" size="lg" className="hover:scale-105 transition-transform" onClick={() => user ? console.log("Create fanmark") : navigate("/auth")}>
             無料で作ってみる 🚀
@@ -233,7 +233,7 @@ const Index = () => {
           <div className="text-2xl font-bold text-primary mb-4">
             <span className="text-3xl">✨</span> fanmark.id
           </div>
-          <p className="text-base-content/70">絵文字ひとつひとつで、ネットをもっと楽しく</p>
+          <p className="text-base-content/70">ファンマひとつひとつで、ネットをもっと楽しく</p>
         </div>
       </footer>
     </div>;
