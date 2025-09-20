@@ -42,6 +42,8 @@
     }
   },
   "invitation": {
+    "title": "Invitation Required",
+    "description": "Enter your special invitation code to join our community",
     "currentlyInviteOnly": "Currently invite-only ✨",
     "enterCode": "Enter your invitation code",
     "codeValidation": "Validating code...",
@@ -52,13 +54,17 @@
     "emailPlaceholder": "Enter your email address",
     "back": "Back",
     "validate": "Validate",
-    "join": "Join"
+    "join": "Join",
+    "validCodeWelcome": "Welcome! Your invitation code is valid ✨",
+    "codeApplied": "Invitation code applied"
   },
   "auth": {
     "login": "Login",
     "signUp": "Sign Up",
+    "logout": "Logout",
     "email": "Email",
     "password": "Password",
+    "username": "Username",
     "confirmPassword": "Confirm Password",
     "forgotPassword": "Forgot Password?",
     "resetPassword": "Reset Password",
@@ -69,7 +75,7 @@
     "resendConfirmation": "Resend Confirmation",
     "awaitingConfirmation": "Awaiting Confirmation",
     "checkEmail": "Check Your Email",
-    "confirmationSent": "We've sent you a confirmation email. Please check your inbox and click the link to verify your account.",
+    "confirmationSent": "We've sent you a confirmation email! 📧✨",
     "resetEmailSent": "Password reset email sent",
     "resetEmailDescription": "We've sent you a password reset link. Please check your email and click the link to reset your password.",
     "tryAnotherEmail": "Try Another Email",
@@ -80,10 +86,13 @@
     "loginDescription": "Sign in to your account",
     "signUpDescription": "Create a new account",
     "passwordMismatch": "Passwords do not match",
-    "homeButton": "Back to Home"
+    "homeButton": "Back to Home",
+    "welcome": "Welcome to Fanmark",
+    "description": "Join our community and claim your unique emoji combinations!"
   },
   "password": {
     "requirements": {
+      "title": "Password Requirements",
       "length": "At least 8 characters",
       "uppercase": "Contains uppercase letter",
       "lowercase": "Contains lowercase letter",
@@ -155,6 +164,33 @@
     "save": "Save",
     "cancel": "Cancel",
     "continue": "Continue",
-    "submit": "Submit"
+    "submit": "Submit",
+    "back": "Back",
+    "saving": "Saving...",
+    "enabled": "Enabled",
+    "disabled": "Disabled"
+  },
+  "profile": {
+    "welcome": "Welcome to your profile!",
+    "editProfile": "Edit Profile",
+    "accountSettings": "Account Settings",
+    "displayName": "Display Name",
+    "displayNamePlaceholder": "Your display name",
+    "bio": "Bio",
+    "bioPlaceholder": "Tell us about yourself...",
+    "avatarUrl": "Avatar URL",
+    "socialLinks": "Social Links",
+    "website": "Website",
+    "privacySettings": "Privacy Settings",
+    "publicProfile": "Public Profile",
+    "publicProfileDescription": "Allow others to see your profile",
+    "saveChanges": "Save Changes",
+    "updateSuccess": "Profile updated successfully",
+    "updateSuccessDescription": "Your changes have been saved!",
+    "updateError": "Failed to update profile",
+    "invitedBy": "Invited by",
+    "email": "Email Address",
+    "memberSince": "Member Since",
+    "role": "Role"
   }
 }

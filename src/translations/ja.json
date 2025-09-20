@@ -42,6 +42,8 @@
     }
   },
   "invitation": {
+    "title": "招待が必要です",
+    "description": "特別な招待コードを入力してコミュニティに参加してください",
     "currentlyInviteOnly": "現在招待制です✨",
     "enterCode": "招待コードを入力してください",
     "codeValidation": "コードを確認中...",
@@ -52,13 +54,17 @@
     "emailPlaceholder": "メールアドレスを入力",
     "back": "戻る",
     "validate": "確認",
-    "join": "参加する"
+    "join": "参加する",
+    "validCodeWelcome": "ようこそ！招待コードが有効です ✨",
+    "codeApplied": "招待コードが適用されました"
   },
   "auth": {
     "login": "ログイン",
     "signUp": "新規登録",
+    "logout": "ログアウト",
     "email": "メールアドレス",
     "password": "パスワード",
+    "username": "ユーザー名",
     "confirmPassword": "パスワード確認",
     "forgotPassword": "パスワードを忘れた場合",
     "resetPassword": "パスワードリセット",
@@ -69,7 +75,7 @@
     "resendConfirmation": "確認メールを再送信",
     "awaitingConfirmation": "確認待ち",
     "checkEmail": "メールを確認してください",
-    "confirmationSent": "確認メールをお送りしました。メールボックスをご確認ください。",
+    "confirmationSent": "確認メールをお送りしました！ 📧✨",
     "resetEmailSent": "パスワードリセットメールを送信しました",
     "resetEmailDescription": "パスワードリセットのリンクをメールでお送りしました。メールをご確認の上、リンクをクリックしてパスワードをリセットしてください。",
     "tryAnotherEmail": "別のメールアドレスで試す",
@@ -80,10 +86,13 @@
     "loginDescription": "アカウントにログインしてください",
     "signUpDescription": "新しいアカウントを作成してください",
     "passwordMismatch": "パスワードが一致しません",
-    "homeButton": "ホームに戻る"
+    "homeButton": "ホームに戻る",
+    "welcome": "ファンマークへようこそ",
+    "description": "コミュニティに参加して、あなただけの絵文字組み合わせを手に入れよう！"
   },
   "password": {
     "requirements": {
+      "title": "パスワード要件",
       "length": "8文字以上",
       "uppercase": "大文字を含む",
       "lowercase": "小文字を含む",
@@ -155,6 +164,33 @@
     "save": "保存",
     "cancel": "キャンセル",
     "continue": "続ける",
-    "submit": "送信"
+    "submit": "送信",
+    "back": "戻る",
+    "saving": "保存中...",
+    "enabled": "有効",
+    "disabled": "無効"
+  },
+  "profile": {
+    "welcome": "プロフィールへようこそ！",
+    "editProfile": "プロフィール編集",
+    "accountSettings": "アカウント設定",
+    "displayName": "表示名",
+    "displayNamePlaceholder": "あなたの表示名",
+    "bio": "自己紹介",
+    "bioPlaceholder": "自己紹介を書いてください...",
+    "avatarUrl": "アバター画像URL",
+    "socialLinks": "ソーシャルリンク",
+    "website": "ウェブサイト",
+    "privacySettings": "プライバシー設定",
+    "publicProfile": "公開プロフィール",
+    "publicProfileDescription": "他のユーザーがあなたのプロフィールを見ることを許可",
+    "saveChanges": "変更を保存",
+    "updateSuccess": "プロフィールを更新しました",
+    "updateSuccessDescription": "変更が保存されました！",
+    "updateError": "プロフィールの更新に失敗しました",
+    "invitedBy": "招待者",
+    "email": "メールアドレス",
+    "memberSince": "登録日",
+    "role": "役割"
   }
 }

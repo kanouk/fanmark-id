@@ -1,28 +1,53 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthForm } from '@/hooks/useAuthForm';
 import { usePasswordValidation } from '@/hooks/usePasswordValidation';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AuthLayout } from '@/components/AuthLayout';
 import { PasswordRequirement } from '@/components/PasswordRequirement';
+import { InvitationSystem } from '@/components/InvitationSystem';
+import { Heart, Sparkles, Users, Mail } from 'lucide-react';
 
 const Auth = () => {
   const { user, session } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { settings, loading: settingsLoading } = useSystemSettings();
   const { formData, authState, updateFormData, signUp, signIn, resendConfirmation } = useAuthForm();
   const { requirements, isValid } = usePasswordValidation(formData.password);
+  
+  const [invitationFlow, setInvitationFlow] = useState({
+    showInvitation: false,
+    validCode: '',
+    invitationPerks: null as any
+  });
+  const [username, setUsername] = useState('');
 
   useEffect(() => {
     if (user && session) {
       navigate('/');
     }
   }, [user, session, navigate]);
+
+  useEffect(() => {
+    if (!settingsLoading && settings.invitation_mode) {
+      setInvitationFlow(prev => ({ ...prev, showInvitation: true }));
+    }
+  }, [settings.invitation_mode, settingsLoading]);
+
+  const handleValidInvitation = (code: string, perks?: any) => {
+    setInvitationFlow({
+      showInvitation: false,
+      validCode: code,
+      invitationPerks: perks
+    });
+  };
 
   if (authState.awaitingConfirmation) {
     return (
@@ -32,28 +57,61 @@ const Auth = () => {
         showBackButton
         backLabel={t('auth.homeButton')}
       >
-        <div className="text-center space-y-4">
-          <div className="text-6xl">📧</div>
-          <p className="text-muted-foreground">
-            {t('auth.confirmationSent')}
-          </p>
+        <div className="text-center space-y-6">
+          <div className="text-7xl animate-bounce-soft">📧✨</div>
           <div className="space-y-2">
-            <Button 
+            <h3 className="text-lg font-semibold text-primary">
+              {t('auth.confirmationSent')}
+            </h3>
+            <p className="text-muted-foreground">
+              {t('auth.checkEmail')}
+            </p>
+          </div>
+          <div className="space-y-3">
+            <button 
               onClick={resendConfirmation} 
-              variant="outline" 
-              className="w-full"
+              className="btn btn-outline btn-primary w-full"
               disabled={authState.loading}
             >
-              {authState.loading ? t('common.loading') : t('auth.resendConfirmation')}
-            </Button>
-            <Button 
+              {authState.loading ? (
+                <>
+                  <span className="loading loading-spinner loading-sm"></span> 
+                  {t('common.loading')}
+                </>
+              ) : (
+                <>
+                  <Mail className="w-4 h-4" /> 
+                  {t('auth.resendConfirmation')}
+                </>
+              )}
+            </button>
+            <button 
               onClick={() => updateFormData('email', '')} 
-              variant="ghost" 
-              className="w-full"
+              className="btn btn-ghost w-full"
             >
               {t('invitation.back')}
-            </Button>
+            </button>
           </div>
+        </div>
+      </AuthLayout>
+    );
+  }
+
+  // Show invitation system if invitation mode is enabled and no valid code
+  if (!settingsLoading && settings.invitation_mode && invitationFlow.showInvitation) {
+    return (
+      <AuthLayout 
+        title={"🌸 " + t('invitation.title')} 
+        description={t('invitation.description')}
+        showBackButton
+        backLabel={t('auth.homeButton')}
+      >
+        <div className="space-y-6">
+          <div className="alert alert-info">
+            <Sparkles className="w-5 h-5" />
+            <span>{t('invitation.currentlyInviteOnly')}</span>
+          </div>
+          <InvitationSystem onValidCode={handleValidInvitation} />
         </div>
       </AuthLayout>
     );
@@ -61,109 +119,242 @@ const Auth = () => {
 
   return (
     <AuthLayout 
-      title={t('auth.login')} 
-      description={t('auth.loginDescription')}
+      title={"🌟 " + t('auth.welcome')} 
+      description={t('auth.description')}
       showBackButton
       backLabel={t('auth.homeButton')}
     >
-      <Tabs defaultValue="signin" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="signin">{t('auth.login')}</TabsTrigger>
-          <TabsTrigger value="signup">{t('auth.signUp')}</TabsTrigger>
-        </TabsList>
+      <div className="space-y-6">
+        {/* Show invitation success banner if user came from invitation flow */}
+        {invitationFlow.validCode && (
+          <div className="alert alert-success">
+            <Heart className="w-5 h-5" />
+            <span>{t('invitation.validCodeWelcome')}</span>
+          </div>
+        )}
         
-        <TabsContent value="signin" className="space-y-4">
-          <form onSubmit={(e) => { e.preventDefault(); signIn(); }} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">{t('auth.email')}</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => updateFormData('email', e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">{t('auth.password')}</Label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => updateFormData('password', e.target.value)}
-                required
-              />
-            </div>
-            
-            {authState.error && (
-              <div className="text-red-500 text-sm">{authState.error}</div>
-            )}
-            
-            <Button type="submit" className="w-full" disabled={authState.loading}>
-              {authState.loading ? t('common.loading') : t('auth.login')}
-            </Button>
-            
-            <div className="text-center">
-              <Link 
-                to="/forgot-password" 
-                className="text-sm text-muted-foreground hover:text-primary"
-              >
-                {t('auth.forgotPassword')}
-              </Link>
-            </div>
-          </form>
-        </TabsContent>
-        
-        <TabsContent value="signup" className="space-y-4">
-          <form onSubmit={(e) => { e.preventDefault(); signUp(); }} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email-register">{t('auth.email')}</Label>
-              <Input
-                id="email-register"
-                type="email"
-                value={formData.email}
-                onChange={(e) => updateFormData('email', e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password-register">{t('auth.password')}</Label>
-              <Input
-                id="password-register"
-                type="password"
-                value={formData.password}
-                onChange={(e) => updateFormData('password', e.target.value)}
-                required
-              />
-            </div>
-            
-            {formData.password && (
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">{t('password.requirements.length')}:</p>
-                <div className="space-y-1">
-                  {requirements.map((req, index) => (
-                    <PasswordRequirement key={index} met={req.met} text={req.text} />
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {authState.error && (
-              <div className="text-red-500 text-sm">{authState.error}</div>
-            )}
-            
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={authState.loading || !isValid}
-            >
-              {authState.loading ? t('common.loading') : t('auth.signUp')}
-            </Button>
-          </form>
-        </TabsContent>
-      </Tabs>
+        <Tabs defaultValue="signin" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="signin">{t('auth.login')}</TabsTrigger>
+            <TabsTrigger value="signup">{t('auth.signUp')}</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="signin" className="space-y-4">
+            <LoginForm 
+              formData={formData}
+              authState={authState}
+              updateFormData={updateFormData}
+              signIn={signIn}
+              t={t}
+            />
+          </TabsContent>
+
+          <TabsContent value="signup" className="space-y-4">
+            <SignUpForm 
+              formData={formData}
+              authState={authState}
+              updateFormData={updateFormData}
+              signUp={signUp}
+              requirements={requirements}
+              isValid={isValid}
+              username={username}
+              setUsername={setUsername}
+              invitationCode={invitationFlow.validCode}
+              t={t}
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
     </AuthLayout>
   );
 };
+
+// Login Form Component
+interface LoginFormProps {
+  formData: any;
+  authState: any;
+  updateFormData: (field: string, value: string) => void;
+  signIn: () => void;
+  t: (key: string) => string;
+}
+
+const LoginForm = ({ formData, authState, updateFormData, signIn, t }: LoginFormProps) => (
+  <form onSubmit={(e) => { e.preventDefault(); signIn(); }} className="space-y-4">
+    <div className="form-control">
+      <label className="label">
+        <span className="label-text">{t('auth.email')}</span>
+      </label>
+      <input
+        type="email"
+        className="input input-bordered w-full"
+        value={formData.email}
+        onChange={(e) => updateFormData('email', e.target.value)}
+        placeholder="your@email.com"
+        required
+      />
+    </div>
+    
+    <div className="form-control">
+      <label className="label">
+        <span className="label-text">{t('auth.password')}</span>
+      </label>
+      <input
+        type="password"
+        className="input input-bordered w-full"
+        value={formData.password}
+        onChange={(e) => updateFormData('password', e.target.value)}
+        required
+      />
+    </div>
+    
+    {authState.error && (
+      <div className="alert alert-error">
+        <span>{authState.error}</span>
+      </div>
+    )}
+    
+    <button 
+      type="submit" 
+      className="btn btn-primary w-full" 
+      disabled={authState.loading}
+    >
+      {authState.loading ? (
+        <>
+          <span className="loading loading-spinner loading-sm"></span> 
+          {t('common.loading')}
+        </>
+      ) : (
+        <>
+          <Users className="w-4 h-4" /> 
+          {t('auth.login')}
+        </>
+      )}
+    </button>
+    
+    <div className="text-center">
+      <Link 
+        to="/forgot-password" 
+        className="link link-primary text-sm"
+      >
+        {t('auth.forgotPassword')}
+      </Link>
+    </div>
+  </form>
+);
+
+// Sign Up Form Component  
+interface SignUpFormProps {
+  formData: any;
+  authState: any;
+  updateFormData: (field: string, value: string) => void;
+  signUp: () => void;
+  requirements: any[];
+  isValid: boolean;
+  username: string;
+  setUsername: (value: string) => void;
+  invitationCode: string;
+  t: (key: string) => string;
+}
+
+const SignUpForm = ({ 
+  formData, 
+  authState, 
+  updateFormData, 
+  signUp, 
+  requirements, 
+  isValid, 
+  username, 
+  setUsername, 
+  invitationCode, 
+  t 
+}: SignUpFormProps) => (
+  <form onSubmit={(e) => { e.preventDefault(); signUp(); }} className="space-y-4">
+    <div className="form-control">
+      <label className="label">
+        <span className="label-text">{t('auth.username')}</span>
+      </label>
+      <div className="input-group">
+        <span>@</span>
+        <input
+          type="text"
+          className="input input-bordered w-full"
+          value={username}
+          onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+          placeholder="yourname"
+          maxLength={20}
+        />
+      </div>
+    </div>
+    
+    <div className="form-control">
+      <label className="label">
+        <span className="label-text">{t('auth.email')}</span>
+      </label>
+      <input
+        type="email"
+        className="input input-bordered w-full"
+        value={formData.email}
+        onChange={(e) => updateFormData('email', e.target.value)}
+        placeholder="your@email.com"
+        required
+      />
+    </div>
+    
+    <div className="form-control">
+      <label className="label">
+        <span className="label-text">{t('auth.password')}</span>
+      </label>
+      <input
+        type="password"
+        className="input input-bordered w-full"
+        value={formData.password}
+        onChange={(e) => updateFormData('password', e.target.value)}
+        required
+      />
+    </div>
+    
+    {formData.password && (
+      <div className="space-y-2">
+        <p className="text-sm text-base-content/70">{t('password.requirements.title')}:</p>
+        <div className="space-y-1">
+          {requirements.map((req: any, index: number) => (
+            <PasswordRequirement key={index} met={req.met} text={req.text} />
+          ))}
+        </div>
+      </div>
+    )}
+    
+    {invitationCode && (
+      <div className="alert alert-success">
+        <Sparkles className="w-4 h-4" />
+        <span>{t('invitation.codeApplied')}: {invitationCode}</span>
+      </div>
+    )}
+    
+    {authState.error && (
+      <div className="alert alert-error">
+        <span>{authState.error}</span>
+      </div>
+    )}
+    
+    <button 
+      type="submit" 
+      className="btn btn-primary w-full" 
+      disabled={authState.loading || !isValid || !username.trim()}
+    >
+      {authState.loading ? (
+        <>
+          <span className="loading loading-spinner loading-sm"></span> 
+          {t('common.loading')}
+        </>
+      ) : (
+        <>
+          <Heart className="w-4 h-4" /> 
+          {t('auth.signUp')}
+        </>
+      )}
+    </button>
+  </form>
+);
 
 export default Auth;
