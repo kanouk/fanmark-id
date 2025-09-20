@@ -74,11 +74,11 @@ const Index = () => {
                   </a></li>
                 </ul>
               </div>
-            ) : !showInvitationMode ? (
+            ) : (
               <Button variant="default" size="sm" onClick={handleAuthAction}>
                 {t('hero.signInButton')}
               </Button>
-            ) : null}
+            )}
           </div>
         </div>
       </div>
