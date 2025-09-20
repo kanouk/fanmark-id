@@ -27,7 +27,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt }) => {
   } = useFanmarkSearch();
 
   // Get normalization info for current search query
-  const normalizationInfo = searchQuery.trim() ? getNormalizationInfo(searchQuery.trim()) : null;
+  const normalizationInfo = searchQuery.trim() && getNormalizationInfo ? getNormalizationInfo(searchQuery.trim()) : null;
 
   const getStatusBadge = (result: FanmarkSearchResult) => {
     switch (result.status) {
