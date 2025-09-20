@@ -1,11 +1,12 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-
 const Index = () => {
-  const { user, signOut } = useAuth();
+  const {
+    user,
+    signOut
+  } = useAuth();
   const navigate = useNavigate();
-
   const handleAuthAction = () => {
     if (user) {
       signOut();
@@ -13,9 +14,7 @@ const Index = () => {
       navigate("/auth");
     }
   };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50" data-theme="cupcake">
+  return <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50" data-theme="cupcake">
       {/* Navigation */}
       <div className="navbar bg-base-100/80 backdrop-blur-sm shadow-lg">
         <div className="navbar-start">
@@ -24,20 +23,16 @@ const Index = () => {
           </div>
         </div>
         <div className="navbar-end">
-          {user ? (
-            <div className="flex items-center gap-2">
+          {user ? <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">
                 {user.email}
               </span>
               <Button variant="outline" size="sm" onClick={handleAuthAction}>
                 ログアウト
               </Button>
-            </div>
-          ) : (
-            <Button variant="default" size="sm" onClick={handleAuthAction}>
+            </div> : <Button variant="default" size="sm" onClick={handleAuthAction}>
               ログイン・新規登録
-            </Button>
-          )}
+            </Button>}
         </div>
       </div>
 
@@ -48,25 +43,15 @@ const Index = () => {
             <div className="animate-float mb-8">
               <span className="text-8xl">✨</span>
             </div>
-            <h1 className="text-6xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent mb-6">
-              絵文字だけで作る、あなただけのアドレス
-            </h1>
+            <h1 className="text-6xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent mb-6">ファンマだけでつくる、あなただけのアドレス</h1>
             <p className="text-xl mb-8 text-base-content/80">
               長くて覚えにくいリンクはもうおしまい。🎵🎤🎸みたいに、一目で「あなた」ってわかるアドレスを作ろう
             </p>
             <div className="flex flex-wrap gap-4 justify-center mb-8">
-              <Button 
-                size="lg" 
-                className="hover:scale-105 transition-transform"
-                onClick={() => user ? console.log("Create fanmark") : navigate("/auth")}
-              >
+              <Button size="lg" className="hover:scale-105 transition-transform" onClick={() => user ? console.log("Create fanmark") : navigate("/auth")}>
                 さっそく作ってみる ✨
               </Button>
-              <Button 
-                variant="outline" 
-                size="lg" 
-                className="hover:scale-105 transition-transform"
-              >
+              <Button variant="outline" size="lg" className="hover:scale-105 transition-transform">
                 みんなの使い方を見る 👀
               </Button>
             </div>
@@ -216,12 +201,7 @@ const Index = () => {
           <p className="text-xl mb-8 opacity-90">
             もう何千人ものクリエイターが、自分だけの絵文字アドレスを持ってる
           </p>
-          <Button 
-            variant="secondary" 
-            size="lg" 
-            className="hover:scale-105 transition-transform"
-            onClick={() => user ? console.log("Create fanmark") : navigate("/auth")}
-          >
+          <Button variant="secondary" size="lg" className="hover:scale-105 transition-transform" onClick={() => user ? console.log("Create fanmark") : navigate("/auth")}>
             無料で作ってみる 🚀
           </Button>
         </div>
@@ -236,8 +216,6 @@ const Index = () => {
           <p className="text-base-content/70">絵文字ひとつひとつで、ネットをもっと楽しく</p>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
