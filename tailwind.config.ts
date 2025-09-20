@@ -6,7 +6,7 @@ export default {
   prefix: "",
   plugins: [require("tailwindcss-animate"), require("daisyui")],
   daisyui: {
-    themes: ["cupcake", "pastel"],
+    themes: ["pastel"],
     base: true,
     styled: true,
   },
