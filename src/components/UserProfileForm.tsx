@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useAvatarUpload } from '@/hooks/useAvatarUpload';
-import { Save, User, Link as LinkIcon, Globe, Upload, Camera } from 'lucide-react';
+import { Save, User, Link as LinkIcon, Globe, Upload, Camera, Trash2 } from 'lucide-react';
 import { SiInstagram, SiX, SiTiktok, SiYoutube, SiLine, SiGithub } from 'react-icons/si';
 
 interface UserProfileFormProps {
@@ -18,7 +18,7 @@ interface UserProfileFormProps {
 export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => {
   const { t } = useTranslation();
   const { toast } = useToast();
-  const { uploadAvatar, uploading } = useAvatarUpload();
+  const { uploadAvatar, deleteAvatar, uploading } = useAvatarUpload();
   const [loading, setLoading] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -80,6 +80,25 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
     }
   };
 
+  const handleAvatarDelete = async () => {
+    try {
+      if (formData.avatar_url) {
+        await deleteAvatar(formData.avatar_url);
+      }
+      setFormData(prev => ({ ...prev, avatar_url: '' }));
+      toast({
+        title: "✨ アバター画像を削除しました",
+        description: "プロフィール画像が削除されました。",
+      });
+    } catch (error) {
+      toast({
+        title: "エラー",
+        description: "画像の削除に失敗しました。",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Basic Info */}
@@ -135,26 +154,32 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
                 )}
               </div>
               <div className="flex-1 space-y-2">
-                {/* File Upload */}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
-                  className="hidden"
-                  id="avatar-upload"
-                />
-                <Label htmlFor="avatar-upload" className="btn btn-outline btn-sm cursor-pointer">
-                  <Upload className="w-4 h-4" />
-                  {uploading ? '画像をアップロード中...' : '画像をアップロード'}
-                </Label>
-                {/* URL Input */}
-                <Input
-                  type="url"
-                  value={formData.avatar_url}
-                  onChange={(e) => setFormData(prev => ({ ...prev, avatar_url: e.target.value }))}
-                  placeholder="または画像URLを入力"
-                  className="input input-bordered w-full"
-                />
+                <div className="flex space-x-2">
+                  {/* File Upload */}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                    id="avatar-upload"
+                  />
+                  <Label htmlFor="avatar-upload" className="btn btn-outline btn-sm cursor-pointer flex-1">
+                    <Upload className="w-4 h-4" />
+                    {uploading ? '画像をアップロード中...' : '画像をアップロード'}
+                  </Label>
+                  {/* Delete Button */}
+                  {formData.avatar_url && (
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleAvatarDelete}
+                      className="btn btn-outline btn-error btn-sm"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </div>

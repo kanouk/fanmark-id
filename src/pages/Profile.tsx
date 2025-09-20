@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { User, Settings, Gift, LogOut, ArrowLeft } from 'lucide-react';
+import { User, Settings, Gift, LogOut, ArrowLeft, Info } from 'lucide-react';
 
 const Profile = () => {
   const { user, signOut } = useAuth();
@@ -44,17 +44,10 @@ const Profile = () => {
             <ArrowLeft className="w-4 h-4" />
             <span>{t('common.back')}</span>
           </Button>
-          
-            <div className="flex items-center space-x-2">
-              <Badge variant="secondary" className="flex items-center space-x-1">
-                <User className="w-3 h-3" />
-                <span>{profile?.subscription_status === 'premium' ? 'プラス' : 'フリー'}</span>
-              </Badge>
-            <Button variant="outline" onClick={handleSignOut} className="flex items-center space-x-2">
-              <LogOut className="w-4 h-4" />
-              <span>{t('auth.logout')}</span>
-            </Button>
-          </div>
+          <Button variant="outline" onClick={handleSignOut} className="flex items-center space-x-2">
+            <LogOut className="w-4 h-4" />
+            <span>{t('auth.logout')}</span>
+          </Button>
         </div>
 
         {/* Profile Header Card */}
@@ -62,18 +55,24 @@ const Profile = () => {
           <CardContent className="p-6">
             <div className="flex items-center space-x-4">
               <div className="avatar">
-                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
+                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
                   {profile?.avatar_url ? (
-                    <img src={profile.avatar_url} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+                    <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
                     <User className="w-8 h-8 text-primary" />
                   )}
                 </div>
               </div>
               <div className="flex-1">
-                <h1 className="text-2xl font-bold text-primary">
-                  {profile?.display_name || t('profile.welcome')}
-                </h1>
+                <div className="flex items-center space-x-2">
+                  <h1 className="text-2xl font-bold text-primary">
+                    {profile?.display_name || t('profile.welcome')}
+                  </h1>
+                  <Badge variant="secondary" className="flex items-center space-x-1">
+                    <User className="w-3 h-3" />
+                    <span>{profile?.subscription_status === 'premium' ? 'プラス' : 'フリー'}</span>
+                  </Badge>
+                </div>
                 <p className="text-muted-foreground">@{profile?.username}</p>
                 {profile?.bio && (
                   <p className="text-sm text-muted-foreground mt-1">{profile.bio}</p>
@@ -112,8 +111,8 @@ const Profile = () => {
               <span>{t('profile.editProfile')}</span>
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center space-x-2">
-              <User className="w-4 h-4" />
-              <span>{t('profile.accountSettings')}</span>
+              <Info className="w-4 h-4" />
+              <span>アカウント情報</span>
             </TabsTrigger>
           </TabsList>
           
@@ -137,21 +136,24 @@ const Profile = () => {
           <TabsContent value="settings" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>{t('profile.accountSettings')}</CardTitle>
+                <CardTitle className="flex items-center space-x-2">
+                  <Info className="w-5 h-5" />
+                  <span>アカウント情報</span>
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">{t('profile.email')}</label>
-                    <div className="p-3 bg-muted rounded-lg">
-                      <p className="text-sm">{user?.email}</p>
+                    <label className="text-sm font-medium text-muted-foreground">{t('profile.email')}</label>
+                    <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
+                      <p className="text-sm text-foreground">{user?.email}</p>
                     </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">{t('profile.memberSince')}</label>
-                    <div className="p-3 bg-muted rounded-lg">
-                      <p className="text-sm">
+                    <label className="text-sm font-medium text-muted-foreground">{t('profile.memberSince')}</label>
+                    <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
+                      <p className="text-sm text-foreground">
                         {profile?.created_at 
                           ? new Date(profile.created_at).toLocaleDateString()
                           : 'N/A'
@@ -161,8 +163,8 @@ const Profile = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">プラン</label>
-                    <div className="p-3 bg-muted rounded-lg">
+                    <label className="text-sm font-medium text-muted-foreground">プラン</label>
+                    <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
                       <Badge variant="secondary">
                         {profile?.subscription_status === 'premium' ? 'プラス' : 'フリー'}
                       </Badge>
@@ -170,8 +172,8 @@ const Profile = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">{t('profile.publicProfile')}</label>
-                    <div className="p-3 bg-muted rounded-lg">
+                    <label className="text-sm font-medium text-muted-foreground">{t('profile.publicProfile')}</label>
+                    <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
                       <Badge variant={profile?.is_public_profile ? "default" : "secondary"}>
                         {profile?.is_public_profile ? t('common.enabled') : t('common.disabled')}
                       </Badge>

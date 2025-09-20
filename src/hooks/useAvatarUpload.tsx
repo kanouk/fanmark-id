@@ -81,5 +81,27 @@ export const useAvatarUpload = () => {
     });
   };
 
-  return { uploadAvatar, uploading };
+  const deleteAvatar = async (avatarUrl: string): Promise<void> => {
+    if (!user) throw new Error('User not authenticated');
+    
+    try {
+      // Extract file path from URL
+      const url = new URL(avatarUrl);
+      const pathSegments = url.pathname.split('/');
+      const fileName = pathSegments[pathSegments.length - 1];
+      const filePath = `${user.id}/${fileName}`;
+
+      // Delete from Supabase Storage
+      const { error } = await supabase.storage
+        .from('avatars')
+        .remove([filePath]);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting avatar:', error);
+      throw error;
+    }
+  };
+
+  return { uploadAvatar, deleteAvatar, uploading };
 };

@@ -7,9 +7,11 @@ import { LanguageToggle } from "@/components/LanguageToggle";
 import FanmarkSearch from "@/components/FanmarkSearch";
 import { InvitationSystem } from "@/components/InvitationSystem";
 import { Button } from "@/components/ui/button";
-import { FiUser, FiLogOut } from 'react-icons/fi';
+import { User, LogOut } from 'lucide-react';
+import { useProfile } from '@/hooks/useProfile';
 const Index = () => {
   const { user, signOut } = useAuth();
+  const { profile } = useProfile();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { settings, loading: settingsLoading } = useSystemSettings();
@@ -69,8 +71,12 @@ const Index = () => {
                   aria-haspopup="true"
                   aria-expanded={userMenuOpen}
                 >
-                  <div className="w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <FiUser className="text-primary w-4 h-4" />
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center leading-none overflow-hidden">
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="text-primary w-4 h-4" />
+                    )}
                   </div>
                 </button>
                 <ul className="menu menu-sm dropdown-content mt-3 z-50 p-2 shadow bg-base-100 rounded-box w-52">
@@ -78,10 +84,10 @@ const Index = () => {
                     <span className="text-xs text-base-content/60 px-3 py-1 pointer-events-none">{user.email}</span>
                   </li>
                   <li><a onClick={() => { navigate('/profile'); setUserMenuOpen(false); }} className="gap-2 active:bg-primary/20">
-                    <FiUser className="w-4 h-4" /> {t('navigation.profile')}
+                    <User className="w-4 h-4" /> {t('navigation.profile')}
                   </a></li>
                   <li><a onClick={() => { handleAuthAction(); setUserMenuOpen(false); }} className="gap-2 active:bg-primary/20">
-                    <FiLogOut className="w-4 h-4" /> {t('navigation.logout')}
+                    <LogOut className="w-4 h-4" /> {t('navigation.logout')}
                   </a></li>
                 </ul>
               </div>
