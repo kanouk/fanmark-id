@@ -25,8 +25,8 @@ export const AuthLayout = ({
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold">My App</h1>
-          <p className="text-muted-foreground">安全で使いやすいアプリケーション</p>
+          <h1 className="text-3xl font-bold">fanmark.id</h1>
+          <p className="text-muted-foreground">ファンマでつくるあなただけのアドレス</p>
         </div>
         
         <Card>
