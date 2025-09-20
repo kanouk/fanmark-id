@@ -58,6 +58,11 @@
     "validCodeWelcome": "ようこそ！招待コードが有効です ✨",
     "codeApplied": "招待コードが適用されました"
   },
+  "navigation": {
+    "profile": "プロフィール",
+    "logout": "ログアウト",
+    "seeHowUsed": "使い方を見る"
+  },
   "auth": {
     "login": "ログイン",
     "signUp": "新規登録",
@@ -101,6 +106,7 @@
     }
   },
   "navigation": {
+    "profile": "プロフィール",
     "logout": "ログアウト",
     "seeHowUsed": "みんなの使い方を見る"
   },

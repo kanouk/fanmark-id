@@ -58,6 +58,11 @@
     "validCodeWelcome": "Welcome! Your invitation code is valid ✨",
     "codeApplied": "Invitation code applied"
   },
+  "navigation": {
+    "profile": "Profile",
+    "logout": "Logout",
+    "seeHowUsed": "See How It's Used"
+  },
   "auth": {
     "login": "Login",
     "signUp": "Sign Up",
@@ -99,10 +104,6 @@
       "number": "Contains number",
       "special": "Contains special character"
     }
-  },
-  "navigation": {
-    "logout": "Logout",
-    "seeHowUsed": "See How It's Used"
   },
   "sections": {
     "howUsed": "How It's Being Used",
