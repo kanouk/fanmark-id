@@ -20,23 +20,37 @@ const translations: Record<Language, Translations> = {
 
 export function TranslationProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<Language>(() => {
-    const saved = localStorage.getItem('fanmark-language');
-    return (saved as Language) || 'ja';
+    try {
+      const saved = localStorage.getItem('fanmark-language');
+      return (saved as Language) || 'ja';
+    } catch (error) {
+      console.warn('Failed to load language from localStorage:', error);
+      return 'ja';
+    }
   });
 
   useEffect(() => {
-    localStorage.setItem('fanmark-language', language);
+    try {
+      localStorage.setItem('fanmark-language', language);
+    } catch (error) {
+      console.warn('Failed to save language to localStorage:', error);
+    }
   }, [language]);
 
   const t = (key: string): string => {
-    const keys = key.split('.');
-    let value: any = translations[language];
-    
-    for (const k of keys) {
-      value = value?.[k];
+    try {
+      const keys = key.split('.');
+      let value: any = translations[language];
+      
+      for (const k of keys) {
+        value = value?.[k];
+      }
+      
+      return value || key;
+    } catch (error) {
+      console.warn(`Translation error for key "${key}":`, error);
+      return key;
     }
-    
-    return value || key;
   };
 
   return (
@@ -49,7 +63,13 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
 export function useTranslation() {
   const context = useContext(TranslationContext);
   if (!context) {
-    throw new Error('useTranslation must be used within a TranslationProvider');
+    console.error('useTranslation hook called outside of TranslationProvider. Make sure component is wrapped with TranslationProvider.');
+    // Provide a fallback instead of throwing to prevent app crash
+    return {
+      language: 'ja' as Language,
+      setLanguage: () => {},
+      t: (key: string) => key // Return the key as fallback
+    };
   }
   return context;
 }
