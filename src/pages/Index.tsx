@@ -12,13 +12,6 @@ const Index = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { settings, loading: settingsLoading } = useSystemSettings();
-  const [showInvitationMode, setShowInvitationMode] = useState(false);
-
-  useEffect(() => {
-    if (!settingsLoading) {
-      setShowInvitationMode(settings.invitation_mode);
-    }
-  }, [settings.invitation_mode, settingsLoading]);
 
   const handleAuthAction = () => {
     if (user) {
@@ -29,11 +22,7 @@ const Index = () => {
   };
 
   const handleSignupPrompt = () => {
-    if (settings.invitation_mode) {
-      setShowInvitationMode(true);
-    } else {
-      navigate("/auth");
-    }
+    navigate("/auth");
   };
 
   const handleValidInvitationCode = (code: string, perks?: any) => {
@@ -97,21 +86,14 @@ const Index = () => {
               {t('hero.description')}
             </p>
 
-            {/* Show invitation system or regular buttons based on mode */}
-            {showInvitationMode ? (
-              <div className="max-w-md mx-auto">
-                <InvitationSystem onValidCode={handleValidInvitationCode} />
-              </div>
-            ) : (
-              <div className="flex flex-wrap gap-4 justify-center">
-                <Button size="lg" className="hover:scale-105 transition-transform" onClick={handleSignupPrompt}>
-                  {t('hero.tryButton')} ✨
-                </Button>
-                <Button variant="outline" size="lg" className="hover:scale-105 transition-transform">
-                  {t('navigation.seeHowUsed')} 👀
-                </Button>
-              </div>
-            )}
+            <div className="flex flex-wrap gap-4 justify-center">
+              <Button size="lg" className="hover:scale-105 transition-transform" onClick={handleSignupPrompt}>
+                {t('hero.tryButton')} ✨
+              </Button>
+              <Button variant="outline" size="lg" className="hover:scale-105 transition-transform">
+                {t('navigation.seeHowUsed')} 👀
+              </Button>
+            </div>
           </div>
         </div>
       </div>
