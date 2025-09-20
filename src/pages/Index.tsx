@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -12,6 +12,21 @@ const Index = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { settings, loading: settingsLoading } = useSystemSettings();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleAuthAction = () => {
     if (user) {
@@ -35,7 +50,7 @@ const Index = () => {
   };
   return <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50" data-theme="cupcake">
       {/* Navigation */}
-      <div className="navbar bg-base-100/80 backdrop-blur-sm shadow-lg">
+      <div className="navbar bg-base-100/80 backdrop-blur-sm shadow-lg sticky top-0 z-50">
         <div className="navbar-start">
           <div className="text-xl font-bold text-primary">
             <span className="text-2xl">✨</span> fanmark.id
@@ -45,26 +60,26 @@ const Index = () => {
           <div className="flex items-center gap-2">
             <LanguageToggle />
             {user ? (
-              <div className="dropdown dropdown-end">
-                <div 
-                  tabIndex={0} 
-                  role="button" 
+              <div ref={menuRef} className={`dropdown dropdown-end ${userMenuOpen ? 'dropdown-open' : ''}`}>
+                <button 
                   className="btn btn-ghost btn-circle avatar"
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
                   aria-label="User menu"
                   aria-haspopup="true"
+                  aria-expanded={userMenuOpen}
                 >
                   <div className="w-8 rounded-full bg-primary/10 flex items-center justify-center">
                     <span className="text-primary text-lg">👤</span>
                   </div>
-                </div>
-                <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-50 p-2 shadow bg-base-100 rounded-box w-52">
+                </button>
+                <ul className="menu menu-sm dropdown-content mt-3 z-50 p-2 shadow bg-base-100 rounded-box w-52">
                   <li>
                     <span className="text-xs text-base-content/60 px-3 py-1 pointer-events-none">{user.email}</span>
                   </li>
-                  <li><a onClick={() => navigate('/profile')} className="gap-2 active:bg-primary/20">
+                  <li><a onClick={() => { navigate('/profile'); setUserMenuOpen(false); }} className="gap-2 active:bg-primary/20">
                     <span>👤</span> {t('navigation.profile')}
                   </a></li>
-                  <li><a onClick={handleAuthAction} className="gap-2 active:bg-primary/20">
+                  <li><a onClick={() => { handleAuthAction(); setUserMenuOpen(false); }} className="gap-2 active:bg-primary/20">
                     <span>🚪</span> {t('navigation.logout')}
                   </a></li>
                 </ul>
