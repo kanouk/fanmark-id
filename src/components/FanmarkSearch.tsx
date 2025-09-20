@@ -107,7 +107,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt }) => {
                       variant="outline" 
                       className="bg-gradient-to-r from-violet-100 to-pink-100 border-primary/30 text-primary cursor-help"
                     >
-                      {normalizationInfo.normalized} {t('search.skinTone.allVariationsIncluded')}
+                      {normalizationInfo?.normalized} {t('search.skinTone.allVariationsIncluded')}
                     </Badge>
                   </TooltipTrigger>
                   <TooltipContent>
