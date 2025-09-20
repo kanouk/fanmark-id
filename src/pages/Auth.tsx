@@ -97,26 +97,6 @@ const Auth = () => {
     );
   }
 
-  // Show invitation system if invitation mode is enabled and no valid code
-  if (!settingsLoading && settings.invitation_mode && invitationFlow.showInvitation) {
-    return (
-      <AuthLayout 
-        title={"🌸 " + t('invitation.title')} 
-        description={t('invitation.description')}
-        showBackButton
-        backLabel={t('auth.homeButton')}
-      >
-        <div className="space-y-6">
-          <div className="alert alert-info">
-            <Sparkles className="w-5 h-5" />
-            <span>{t('invitation.currentlyInviteOnly')}</span>
-          </div>
-          <InvitationSystem onValidCode={handleValidInvitation} />
-        </div>
-      </AuthLayout>
-    );
-  }
-
   return (
     <AuthLayout 
       title={"🌟 " + t('auth.welcome')} 
@@ -125,6 +105,14 @@ const Auth = () => {
       backLabel={t('auth.homeButton')}
     >
       <div className="space-y-6">
+        {/* Show invitation info if in invitation mode */}
+        {!settingsLoading && settings.invitation_mode && invitationFlow.showInvitation && (
+          <div className="alert alert-info">
+            <Sparkles className="w-5 h-5" />
+            <span>{t('invitation.currentlyInviteOnly')}</span>
+          </div>
+        )}
+        
         {/* Show invitation success banner if user came from invitation flow */}
         {invitationFlow.validCode && (
           <div className="alert alert-success">
@@ -150,18 +138,25 @@ const Auth = () => {
           </TabsContent>
 
           <TabsContent value="signup" className="space-y-4">
-            <SignUpForm 
-              formData={formData}
-              authState={authState}
-              updateFormData={updateFormData}
-              signUp={signUp}
-              requirements={requirements}
-              isValid={isValid}
-              username={username}
-              setUsername={setUsername}
-              invitationCode={invitationFlow.validCode}
-              t={t}
-            />
+            {/* Show invitation system if in invitation mode and no valid code */}
+            {!settingsLoading && settings.invitation_mode && invitationFlow.showInvitation ? (
+              <div className="space-y-4">
+                <InvitationSystem onValidCode={handleValidInvitation} />
+              </div>
+            ) : (
+              <SignUpForm 
+                formData={formData}
+                authState={authState}
+                updateFormData={updateFormData}
+                signUp={signUp}
+                requirements={requirements}
+                isValid={isValid}
+                username={username}
+                setUsername={setUsername}
+                invitationCode={invitationFlow.validCode}
+                t={t}
+              />
+            )}
           </TabsContent>
         </Tabs>
       </div>

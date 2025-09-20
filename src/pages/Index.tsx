@@ -116,14 +116,12 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Fanmark Search Section */}
-      {!showInvitationMode && (
-        <div className="py-16 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
-          <div className="container mx-auto px-4">
-            <FanmarkSearch onSignupPrompt={handleSignupPrompt} />
-          </div>
+      {/* Fanmark Search Section - Always show for search functionality */}
+      <div className="py-16 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+        <div className="container mx-auto px-4">
+          <FanmarkSearch onSignupPrompt={handleSignupPrompt} />
         </div>
-      )}
+      </div>
 
       {/* Examples Section */}
       <div className="py-20 bg-base-100">
