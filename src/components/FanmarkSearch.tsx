@@ -74,7 +74,7 @@ export function FanmarkSearch({ onSignupPrompt }: FanmarkSearchProps) {
         <Input
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="🔍 絵文字のみ入力してください... (1-2個:有料, 3個以上:無料)"
+          placeholder={t('search.searchPlaceholder')}
           className="pl-10 pr-4 py-3 text-lg rounded-full border-2 border-primary/20 focus:border-primary focus:ring-primary"
         />
       </div>
@@ -82,9 +82,9 @@ export function FanmarkSearch({ onSignupPrompt }: FanmarkSearchProps) {
       {/* Pricing Guide */}
       <div className="text-center text-sm text-muted-foreground space-y-1">
         <div className="flex justify-center gap-4 flex-wrap">
-          <span className="bg-warning/10 text-warning px-2 py-1 rounded">💎 1個の絵文字: ¥500</span>
-          <span className="bg-info/10 text-info px-2 py-1 rounded">💳 2個の絵文字: ¥300</span>
-          <span className="bg-success/10 text-success px-2 py-1 rounded">✨ 3個以上: 無料</span>
+          <span className="bg-warning/10 text-warning px-2 py-1 rounded">{t('search.pricingGuide.singleEmoji')}</span>
+          <span className="bg-info/10 text-info px-2 py-1 rounded">{t('search.pricingGuide.doubleEmoji')}</span>
+          <span className="bg-success/10 text-success px-2 py-1 rounded">{t('search.pricingGuide.multipleEmoji')}</span>
         </div>
       </div>
 
@@ -120,7 +120,7 @@ export function FanmarkSearch({ onSignupPrompt }: FanmarkSearchProps) {
                 )}
                 {result.emoji_count && (
                   <div className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                    {result.emoji_count}個の絵文字
+                    {result.emoji_count}{t('search.emojiCountLabel')}
                   </div>
                 )}
               </div>
@@ -143,11 +143,11 @@ export function FanmarkSearch({ onSignupPrompt }: FanmarkSearchProps) {
                       size="sm" 
                       className="bg-info text-info-content hover:bg-info/80 rounded-full"
                     >
-                      Pay ¥{result.price_yen?.toLocaleString()} 💳
+                      Pay ${result.price_usd?.toLocaleString()} 💳
                     </Button>
                     <span className="text-xs text-muted-foreground">
-                      {result.emoji_count === 1 ? 'プレミアム絵文字' : 
-                       result.emoji_count === 2 ? '有料絵文字' : 'Reserved emoji'}
+                      {result.emoji_count === 1 ? t('search.pricingLabels.premiumEmoji') : 
+                       result.emoji_count === 2 ? t('search.pricingLabels.paidEmoji') : t('search.pricingLabels.reservedEmoji')}
                     </span>
                   </div>
                 )}

@@ -9,6 +9,7 @@ export interface FanmarkSearchResult {
   is_premium: boolean;
   status: 'available' | 'taken' | 'premium' | 'payment_required';
   price_yen?: number;
+  price_usd?: number;
   emoji_count?: number;
   error?: string;
   owner?: {
@@ -117,11 +118,11 @@ export function useFanmarkSearch() {
   };
 
   // Get pricing info based on emoji count
-  const getPricingInfo = (emojiCount: number): { requiresPayment: boolean; priceYen?: number } => {
+  const getPricingInfo = (emojiCount: number): { requiresPayment: boolean; priceUsd?: number } => {
     if (emojiCount === 1) {
-      return { requiresPayment: true, priceYen: 500 }; // Premium price for single emoji
+      return { requiresPayment: true, priceUsd: 99.9 }; // Premium price for single emoji
     } else if (emojiCount === 2) {
-      return { requiresPayment: true, priceYen: 300 }; // Standard price for double emoji
+      return { requiresPayment: true, priceUsd: 9.99 }; // Standard price for double emoji
     } else {
       return { requiresPayment: false }; // Free for 3+ emojis
     }
@@ -188,7 +189,8 @@ export function useFanmarkSearch() {
         setResult({
           ...existingFanmark,
           status,
-          price_yen: reservedEmoji?.price_yen || pricingInfo.priceYen,
+          price_yen: reservedEmoji?.price_yen,
+          price_usd: reservedEmoji?.price_yen ? (reservedEmoji.price_yen / 150) : pricingInfo.priceUsd,
           owner: ownerProfile ? {
             username: ownerProfile.username,
             display_name: ownerProfile.display_name
@@ -203,7 +205,8 @@ export function useFanmarkSearch() {
           short_id: '',
           is_premium: true,
           status: 'payment_required',
-          price_yen: reservedEmoji?.price_yen || pricingInfo.priceYen,
+          price_yen: reservedEmoji?.price_yen,
+          price_usd: reservedEmoji?.price_yen ? (reservedEmoji.price_yen / 150) : pricingInfo.priceUsd,
           emoji_count: validation.emojiCount
         } as any);
       } else {

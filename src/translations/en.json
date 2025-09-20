@@ -12,11 +12,26 @@
     "available": "Available",
     "taken": "Taken",
     "premium": "Premium",
+    "paymentRequired": "Payment Required",
     "viewProfile": "View Profile",
     "recentlyAcquired": "Recently Acquired Fanmarks",
     "noResults": "No results found",
     "foundPerfect": "Found the perfect one? Sign up to claim it!",
-    "joinThousands": "Join thousands of creators!"
+    "joinThousands": "Join thousands of creators!",
+    "searchPlaceholder": "🔍 Emojis only... (1-2 emojis: paid, 3+ emojis: free)",
+    "validationError": "Input must contain only emojis (no text, numbers, or symbols)",
+    "emojiCountError": "Emoji combination must contain 1-5 emojis",
+    "emojiCountLabel": "emojis",
+    "pricingGuide": {
+      "singleEmoji": "💎 1 emoji: $99.9",
+      "doubleEmoji": "💳 2 emojis: $9.99", 
+      "multipleEmoji": "✨ 3+ emojis: Free"
+    },
+    "pricingLabels": {
+      "premiumEmoji": "Premium emoji",
+      "paidEmoji": "Paid emoji",
+      "reservedEmoji": "Reserved emoji"
+    }
   },
   "invitation": {
     "currentlyInviteOnly": "Currently invite-only ✨",

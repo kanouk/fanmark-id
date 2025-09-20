@@ -62,11 +62,11 @@ function validateEmojiCombination(emoji: string): { valid: boolean; error?: stri
 }
 
 // Determine pricing based on emoji count
-function getPricingInfo(emojiCount: number): { requiresPayment: boolean; priceYen?: number } {
+function getPricingInfo(emojiCount: number): { requiresPayment: boolean; priceUsd?: number } {
   if (emojiCount === 1) {
-    return { requiresPayment: true, priceYen: 500 }; // Premium price for single emoji
+    return { requiresPayment: true, priceUsd: 99.9 }; // Premium price for single emoji
   } else if (emojiCount === 2) {
-    return { requiresPayment: true, priceYen: 300 }; // Standard price for double emoji
+    return { requiresPayment: true, priceUsd: 9.99 }; // Standard price for double emoji
   } else {
     return { requiresPayment: false }; // Free for 3+ emojis
   }
@@ -132,12 +132,12 @@ serve(async (req) => {
 
     // If requires payment (by count-based pricing or reserved pattern)
     if (pricingInfo.requiresPayment || reservedEmoji) {
-      const priceYen = reservedEmoji?.price_yen || pricingInfo.priceYen;
+      const priceUsd = reservedEmoji?.price_yen ? (reservedEmoji.price_yen / 150) : pricingInfo.priceUsd; // Convert yen to USD roughly
       return new Response(
         JSON.stringify({ 
           error: `This emoji requires payment (${validation.emojiCount} emoji${validation.emojiCount !== 1 ? 's' : ''})`,
           type: 'payment_required',
-          price_yen: priceYen,
+          price_usd: priceUsd,
           emoji_count: validation.emojiCount
         }),
         { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

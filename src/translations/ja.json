@@ -12,11 +12,26 @@
     "available": "利用可能",
     "taken": "取得済み",
     "premium": "プレミアム",
+    "paymentRequired": "支払い必要",
     "viewProfile": "プロフィールを見る",
     "recentlyAcquired": "最近取得されたファンマ",
     "noResults": "検索結果が見つかりません",
     "foundPerfect": "完璧なファンマを見つけた？サインアップして取得しよう！",
-    "joinThousands": "何千人ものクリエイターが使用中！"
+    "joinThousands": "何千人ものクリエイターが使用中！",
+    "searchPlaceholder": "🔍 絵文字のみ入力してください... (1-2個:有料, 3個以上:無料)",
+    "validationError": "絵文字のみ入力してください（文字、数字、記号は使用できません）",
+    "emojiCountError": "絵文字は1〜5個で入力してください",
+    "emojiCountLabel": "個の絵文字",
+    "pricingGuide": {
+      "singleEmoji": "💎 1個の絵文字: $99.9",
+      "doubleEmoji": "💳 2個の絵文字: $9.99",
+      "multipleEmoji": "✨ 3個以上: 無料"
+    },
+    "pricingLabels": {
+      "premiumEmoji": "プレミアム絵文字",
+      "paidEmoji": "有料絵文字",
+      "reservedEmoji": "特別絵文字"
+    }
   },
   "invitation": {
     "currentlyInviteOnly": "現在招待制です✨",
