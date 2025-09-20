@@ -56,13 +56,23 @@ const Index = () => {
           <div className="flex items-center gap-2">
             <LanguageToggle />
             {user ? (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">
-                  {user.email}
-                </span>
-                <Button variant="outline" size="sm" onClick={handleAuthAction}>
-                  {t('navigation.logout')}
-                </Button>
+              <div className="dropdown dropdown-end">
+                <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar">
+                  <div className="w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="text-primary text-lg">👤</span>
+                  </div>
+                </div>
+                <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+                  <li>
+                    <span className="text-xs text-base-content/60 px-3 py-1">{user.email}</span>
+                  </li>
+                  <li><a onClick={() => navigate('/profile')} className="gap-2">
+                    <span>👤</span> {t('navigation.profile')}
+                  </a></li>
+                  <li><a onClick={handleAuthAction} className="gap-2">
+                    <span>🚪</span> {t('navigation.logout')}
+                  </a></li>
+                </ul>
               </div>
             ) : !showInvitationMode ? (
               <Button variant="default" size="sm" onClick={handleAuthAction}>
