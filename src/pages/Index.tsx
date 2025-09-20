@@ -1,18 +1,48 @@
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "@/hooks/useTranslation";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { FanmarkSearch } from "@/components/FanmarkSearch";
+import { InvitationSystem } from "@/components/InvitationSystem";
 import { Button } from "@/components/ui/button";
 const Index = () => {
-  const {
-    user,
-    signOut
-  } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { settings, loading: settingsLoading } = useSystemSettings();
+  const [showInvitationMode, setShowInvitationMode] = useState(false);
+
+  useEffect(() => {
+    if (!settingsLoading) {
+      setShowInvitationMode(settings.invitation_mode);
+    }
+  }, [settings.invitation_mode, settingsLoading]);
+
   const handleAuthAction = () => {
     if (user) {
       signOut();
     } else {
       navigate("/auth");
     }
+  };
+
+  const handleSignupPrompt = () => {
+    if (settings.invitation_mode) {
+      setShowInvitationMode(true);
+    } else {
+      navigate("/auth");
+    }
+  };
+
+  const handleValidInvitationCode = (code: string, perks?: any) => {
+    // Store invitation code for signup process
+    localStorage.setItem('invitation_code', code);
+    if (perks) {
+      localStorage.setItem('invitation_perks', JSON.stringify(perks));
+    }
+    navigate("/auth");
   };
   return <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50" data-theme="cupcake">
       {/* Navigation */}
@@ -23,16 +53,23 @@ const Index = () => {
           </div>
         </div>
         <div className="navbar-end">
-          {user ? <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                {user.email}
-              </span>
-              <Button variant="outline" size="sm" onClick={handleAuthAction}>
-                ログアウト
+          <div className="flex items-center gap-2">
+            <LanguageToggle />
+            {user ? (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {user.email}
+                </span>
+                <Button variant="outline" size="sm" onClick={handleAuthAction}>
+                  ログアウト
+                </Button>
+              </div>
+            ) : !showInvitationMode ? (
+              <Button variant="default" size="sm" onClick={handleAuthAction}>
+                {t('hero.signInButton')}
               </Button>
-            </div> : <Button variant="default" size="sm" onClick={handleAuthAction}>
-              ログイン・新規登録
-            </Button>}
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -44,23 +81,36 @@ const Index = () => {
               <span className="text-8xl">✨</span>
             </div>
             <h1 className="text-6xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent mb-6">
-              ファンマでつくる<br />
-              あなただけのアドレス
+              {t('hero.subtitle')}
             </h1>
             <p className="text-xl mb-8 text-base-content/80">
-              長くて覚えにくいリンクはもうおしまい<br />
-              🎵🎤🎸みたいに、一目で「あなた」ってわかるアドレスを作ろう
+              {t('hero.description')}
             </p>
-            <div className="flex flex-wrap gap-4 justify-center mb-8">
-              <Button size="lg" className="hover:scale-105 transition-transform" onClick={() => user ? console.log("Create fanmark") : navigate("/auth")}>
-                さっそく作ってみる ✨
-              </Button>
-              <Button variant="outline" size="lg" className="hover:scale-105 transition-transform">
-                みんなの使い方を見る 👀
-              </Button>
-            </div>
+
+            {/* Show invitation system or regular buttons based on mode */}
+            {showInvitationMode ? (
+              <div className="max-w-md mx-auto">
+                <InvitationSystem onValidCode={handleValidInvitationCode} />
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-4 justify-center mb-8">
+                <Button size="lg" className="hover:scale-105 transition-transform" onClick={handleSignupPrompt}>
+                  {t('hero.tryButton')} ✨
+                </Button>
+                <Button variant="outline" size="lg" className="hover:scale-105 transition-transform">
+                  みんなの使い方を見る 👀
+                </Button>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Public Search Section */}
+        {!showInvitationMode && (
+          <div className="mb-16 container mx-auto px-4">
+            <FanmarkSearch onSignupPrompt={handleSignupPrompt} />
+          </div>
+        )}
       </div>
 
       {/* Examples Section */}
@@ -221,7 +271,7 @@ const Index = () => {
             もう何千人ものクリエイターが<br />
             自分だけのファンマアドレスを持ってる
           </p>
-          <Button variant="secondary" size="lg" className="hover:scale-105 transition-transform" onClick={() => user ? console.log("Create fanmark") : navigate("/auth")}>
+          <Button variant="secondary" size="lg" className="hover:scale-105 transition-transform" onClick={handleSignupPrompt}>
             無料で作ってみる 🚀
           </Button>
         </div>

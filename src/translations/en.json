@@ -1,0 +1,38 @@
+{
+  "hero": {
+    "title": "fanmark.id",
+    "subtitle": "Create your unique address with emoji marks",
+    "description": "Create your own unique short URL with emojis. Simple, memorable, and perfect for social media - a new kind of address service.",
+    "searchPlaceholder": "Search for your perfect emoji combination! 🔍",
+    "searchButton": "Search",
+    "tryButton": "Try for Free",
+    "signInButton": "Sign In"
+  },
+  "search": {
+    "available": "Available",
+    "taken": "Taken",
+    "premium": "Premium",
+    "viewProfile": "View Profile",
+    "suggestions": "Popular Patterns",
+    "recentlyRegistered": "Recently Registered",
+    "noResults": "No results found",
+    "foundPerfect": "Found the perfect one? Sign up to claim it!",
+    "joinThousands": "Join thousands of creators!"
+  },
+  "invitation": {
+    "currentlyInviteOnly": "Currently invite-only ✨",
+    "enterCode": "Enter your invitation code",
+    "codeValidation": "Validating code...",
+    "invalidCode": "Invalid invitation code",
+    "expiredCode": "Code has expired",
+    "joinWaitlist": "Join Waitlist",
+    "waitlistSuccess": "Added to waitlist!",
+    "emailPlaceholder": "Enter your email address"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "tryAgain": "Try Again",
+    "close": "Close"
+  }
+}

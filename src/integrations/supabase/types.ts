@@ -14,6 +14,81 @@ export type Database = {
   }
   public: {
     Tables: {
+      fanmarks: {
+        Row: {
+          created_at: string
+          emoji_combination: string
+          id: string
+          is_premium: boolean
+          normalized_emoji: string
+          short_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji_combination: string
+          id?: string
+          is_premium?: boolean
+          normalized_emoji: string
+          short_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji_combination?: string
+          id?: string
+          is_premium?: boolean
+          normalized_emoji?: string
+          short_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      invitation_codes: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number
+          special_perks: Json | null
+          updated_at: string
+          used_count: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number
+          special_perks?: Json | null
+          updated_at?: string
+          used_count?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number
+          special_perks?: Json | null
+          updated_at?: string
+          used_count?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -22,6 +97,8 @@ export type Database = {
           display_name: string | null
           emoji_limit: number | null
           id: string
+          invitation_perks: Json | null
+          invited_by_code: string | null
           is_public_profile: boolean | null
           role: Database["public"]["Enums"]["user_role"] | null
           social_links: Json | null
@@ -38,6 +115,8 @@ export type Database = {
           display_name?: string | null
           emoji_limit?: number | null
           id?: string
+          invitation_perks?: Json | null
+          invited_by_code?: string | null
           is_public_profile?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
           social_links?: Json | null
@@ -54,6 +133,8 @@ export type Database = {
           display_name?: string | null
           emoji_limit?: number | null
           id?: string
+          invitation_perks?: Json | null
+          invited_by_code?: string | null
           is_public_profile?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
           social_links?: Json | null
@@ -89,6 +170,60 @@ export type Database = {
           display_name?: string | null
           id?: string
           username?: string | null
+        }
+        Relationships: []
+      }
+      system_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean
+          setting_key: string
+          setting_value: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          setting_key: string
+          setting_value: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          setting_key?: string
+          setting_value?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      waitlist: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          referral_source: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          referral_source?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          referral_source?: string | null
+          status?: string
         }
         Relationships: []
       }
