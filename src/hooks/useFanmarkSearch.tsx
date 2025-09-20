@@ -111,31 +111,33 @@ export function useFanmarkSearch() {
         });
       }
 
-      // Add similar patterns
-      const { data: similarFanmarks, error: similarError } = await supabase
-        .from('fanmarks')
-        .select(`
-          id,
-          emoji_combination,
-          normalized_emoji,
-          short_id,
-          is_premium,
-          status,
-          user_id
-        `)
-        .eq('status', 'active')
-        .ilike('normalized_emoji', `%${query.slice(0, 1)}%`)
-        .neq('normalized_emoji', query)
-        .limit(5);
+      // Only add similar patterns if the exact query is taken/premium
+      if (existingFanmark) {
+        const { data: similarFanmarks, error: similarError } = await supabase
+          .from('fanmarks')
+          .select(`
+            id,
+            emoji_combination,
+            normalized_emoji,
+            short_id,
+            is_premium,
+            status,
+            user_id
+          `)
+          .eq('status', 'active')
+          .ilike('normalized_emoji', `%${query.slice(0, 1)}%`)
+          .neq('normalized_emoji', query)
+          .limit(3);
 
-      if (similarError) throw similarError;
+        if (similarError) throw similarError;
 
-      if (similarFanmarks) {
-        const similarWithStatus: FanmarkSearchResult[] = similarFanmarks.map(fanmark => {
-          const status: 'premium' | 'taken' = fanmark.is_premium ? 'premium' : 'taken';
-          return { ...fanmark, status };
-        });
-        searchResults.push(...similarWithStatus);
+        if (similarFanmarks) {
+          const similarWithStatus: FanmarkSearchResult[] = similarFanmarks.map(fanmark => {
+            const status: 'premium' | 'taken' = fanmark.is_premium ? 'premium' : 'taken';
+            return { ...fanmark, status };
+          });
+          searchResults.push(...similarWithStatus);
+        }
       }
 
       setResults(searchResults);

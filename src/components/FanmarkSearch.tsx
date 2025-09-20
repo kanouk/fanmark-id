@@ -96,7 +96,7 @@ export function FanmarkSearch({ onSignupPrompt }: FanmarkSearchProps) {
         </div>
       )}
 
-      {results.length > 0 && (
+      {results.length > 0 && searchQuery.trim() && (
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-muted-foreground">
             {t('hero.searchButton')} "{searchQuery}"
