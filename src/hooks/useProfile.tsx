@@ -12,6 +12,7 @@ interface Profile {
   social_links: any;
   is_public_profile: boolean;
   role: string;
+  subscription_status: string | null;
   invited_by_code: string | null;
   invitation_perks: any;
   created_at: string;

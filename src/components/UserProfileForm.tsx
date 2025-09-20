@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Save, User, Link as LinkIcon, Globe, Instagram, Github, Twitter, Video, Play, MessageCircle } from 'lucide-react';
+import { useAvatarUpload } from '@/hooks/useAvatarUpload';
+import { Save, User, Link as LinkIcon, Globe, Instagram, Github, X, Video, Play, MessageCircle, Upload, Camera } from 'lucide-react';
 
 interface UserProfileFormProps {
   profile: any;
@@ -16,6 +17,7 @@ interface UserProfileFormProps {
 export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => {
   const { t } = useTranslation();
   const { toast } = useToast();
+  const { uploadAvatar, uploading } = useAvatarUpload();
   const [loading, setLoading] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -57,6 +59,26 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
     }));
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const avatarUrl = await uploadAvatar(file);
+      setFormData(prev => ({ ...prev, avatar_url: avatarUrl }));
+      toast({
+        title: "✨ アバター画像をアップロードしました",
+        description: "プロフィール画像が更新されました。",
+      });
+    } catch (error) {
+      toast({
+        title: "エラー",
+        description: "画像のアップロードに失敗しました。",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Basic Info */}
@@ -87,25 +109,54 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
             onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
             placeholder={t('profile.bioPlaceholder')}
             className="textarea textarea-bordered w-full h-24"
-            maxLength={160}
+            maxLength={140}
           />
           <div className="label">
-            <span className="label-text-alt">{formData.bio.length}/160</span>
+            <span className="label-text-alt">{formData.bio.length}/140</span>
           </div>
         </div>
 
         <div className="form-control">
-          <Label htmlFor="avatar_url" className="label">
-            <span className="label-text">{t('profile.avatarUrl')}</span>
+          <Label className="label">
+            <span className="label-text flex items-center space-x-2">
+              <Camera className="w-4 h-4" />
+              <span>アバター画像</span>
+            </span>
           </Label>
-          <Input
-            id="avatar_url"
-            type="url"
-            value={formData.avatar_url}
-            onChange={(e) => setFormData(prev => ({ ...prev, avatar_url: e.target.value }))}
-            placeholder="https://example.com/avatar.jpg"
-            className="input input-bordered w-full"
-          />
+          <div className="space-y-3">
+            {/* Avatar Preview */}
+            <div className="flex items-center space-x-4">
+              <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
+                {formData.avatar_url ? (
+                  <img src={formData.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-8 h-8 text-primary" />
+                )}
+              </div>
+              <div className="flex-1 space-y-2">
+                {/* File Upload */}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                  id="avatar-upload"
+                />
+                <Label htmlFor="avatar-upload" className="btn btn-outline btn-sm cursor-pointer">
+                  <Upload className="w-4 h-4" />
+                  {uploading ? '画像をアップロード中...' : '画像をアップロード'}
+                </Label>
+                {/* URL Input */}
+                <Input
+                  type="url"
+                  value={formData.avatar_url}
+                  onChange={(e) => setFormData(prev => ({ ...prev, avatar_url: e.target.value }))}
+                  placeholder="または画像URLを入力"
+                  className="input input-bordered w-full"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -135,7 +186,7 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
           <div className="form-control">
             <Label className="label">
               <span className="label-text flex items-center space-x-2">
-                <Twitter className="w-4 h-4" />
+                <X className="w-4 h-4" />
                 <span>X</span>
               </span>
             </Label>

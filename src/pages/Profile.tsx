@@ -45,11 +45,11 @@ const Profile = () => {
             <span>{t('common.back')}</span>
           </Button>
           
-          <div className="flex items-center space-x-2">
-            <Badge variant="secondary" className="flex items-center space-x-1">
-              <User className="w-3 h-3" />
-              <span>{profile?.role || 'user'}</span>
-            </Badge>
+            <div className="flex items-center space-x-2">
+              <Badge variant="secondary" className="flex items-center space-x-1">
+                <User className="w-3 h-3" />
+                <span>{profile?.subscription_status === 'premium' ? 'プラス' : 'フリー'}</span>
+              </Badge>
             <Button variant="outline" onClick={handleSignOut} className="flex items-center space-x-2">
               <LogOut className="w-4 h-4" />
               <span>{t('auth.logout')}</span>
@@ -161,9 +161,11 @@ const Profile = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">{t('profile.role')}</label>
+                    <label className="text-sm font-medium">プラン</label>
                     <div className="p-3 bg-muted rounded-lg">
-                      <Badge variant="secondary">{profile?.role || 'user'}</Badge>
+                      <Badge variant="secondary">
+                        {profile?.subscription_status === 'premium' ? 'プラス' : 'フリー'}
+                      </Badge>
                     </div>
                   </div>
                   
