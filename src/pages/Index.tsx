@@ -43,9 +43,13 @@ const Index = () => {
             <div className="animate-float mb-8">
               <span className="text-8xl">✨</span>
             </div>
-            <h1 className="text-6xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent mb-6">ファンマだけでつくる、あなただけのアドレス</h1>
+            <h1 className="text-6xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent mb-6">
+              ファンマだけでつくる<br />
+              あなただけのアドレス
+            </h1>
             <p className="text-xl mb-8 text-base-content/80">
-              長くて覚えにくいリンクはもうおしまい。🎵🎤🎸みたいに、一目で「あなた」ってわかるアドレスを作ろう
+              長くて覚えにくいリンクはもうおしまい<br />
+              🎵🎤🎸みたいに、一目で「あなた」ってわかるアドレスを作ろう
             </p>
             <div className="flex flex-wrap gap-4 justify-center mb-8">
               <Button size="lg" className="hover:scale-105 transition-transform" onClick={() => user ? console.log("Create fanmark") : navigate("/auth")}>
@@ -118,7 +122,9 @@ const Index = () => {
                 <div className="text-5xl mb-4 animate-bounce-soft">🎯</div>
                 <h3 className="card-title justify-center text-xl mb-4">1. 絵文字を選ぶ</h3>
                 <p className="text-base-content/70">
-                  あなたらしい絵文字を1〜3個選んで。💕💕💕で気持ちを込めても、🌸でシンプルでもOK
+                  あなたらしい絵文字を1〜3個選んで<br />
+                  💕💕💕で気持ちを込めても<br />
+                  🌸でシンプルでもOK
                 </p>
               </div>
             </div>
@@ -128,7 +134,9 @@ const Index = () => {
                 <div className="text-5xl mb-4 animate-pulse-slow">📝</div>
                 <h3 className="card-title justify-center text-xl mb-4">2. ページを作る</h3>
                 <p className="text-base-content/70">
-                  プロフィールページにするか、リンク集にするか、どこかに飛ばすか、お好みで
+                  プロフィールページにするか<br />
+                  リンク集にするか<br />
+                  どこかに飛ばすか、お好みで
                 </p>
               </div>
             </div>
@@ -138,7 +146,9 @@ const Index = () => {
                 <div className="text-5xl mb-4 animate-float">🚀</div>
                 <h3 className="card-title justify-center text-xl mb-4">3. みんなにシェア</h3>
                 <p className="text-base-content/70">
-                  絵文字アドレスをSNSでも名刺でも、どこでもシェア。覚えてもらいやすくて便利！
+                  絵文字アドレスをSNSでも名刺でも<br />
+                  どこでもシェア<br />
+                  覚えてもらいやすくて便利！
                 </p>
               </div>
             </div>
@@ -160,7 +170,8 @@ const Index = () => {
                   <span className="badge badge-secondary badge-lg px-[10px]">長い絵文字（3個以上）は無料！ 🎉</span>
                 </p>
                 <p className="text-base-content/70">
-                  まずは無料で試してみて、気に入ったら短いアドレスにグレードアップ
+                  まずは無料で試してみて<br />
+                  気に入ったら短いアドレスにグレードアップ
                 </p>
               </div>
             </div>
@@ -179,7 +190,11 @@ const Index = () => {
                 <p className="text-sm font-mono bg-base-200 p-3 rounded">
                   linktr.ee/my_awesome_musician_profile_2024
                 </p>
-                <p className="text-base-content/70">長すぎて覚えられない、打ち間違える、伝えにくい...</p>
+                <p className="text-base-content/70">
+                  長すぎて覚えられない<br />
+                  打ち間違える<br />
+                  伝えにくい...
+                </p>
               </div>
             </div>
             
@@ -187,7 +202,11 @@ const Index = () => {
               <div className="card-body">
                 <h3 className="card-title text-success justify-center">✨ fanmarkなら</h3>
                 <p className="text-2xl p-3">🎵🎤🎸</p>
-                <p className="text-base-content/70">一度見たら忘れない、口で言える、シェアしたくなる！</p>
+                <p className="text-base-content/70">
+                  一度見たら忘れない<br />
+                  口で言える<br />
+                  シェアしたくなる！
+                </p>
               </div>
             </div>
           </div>
@@ -199,7 +218,8 @@ const Index = () => {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold mb-6">あなただけのファンマ、作ってみよう ✨</h2>
           <p className="text-xl mb-8 opacity-90">
-            もう何千人ものクリエイターが、自分だけの絵文字アドレスを持ってる
+            もう何千人ものクリエイターが<br />
+            自分だけの絵文字アドレスを持ってる
           </p>
           <Button variant="secondary" size="lg" className="hover:scale-105 transition-transform" onClick={() => user ? console.log("Create fanmark") : navigate("/auth")}>
             無料で作ってみる 🚀
