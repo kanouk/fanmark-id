@@ -79,26 +79,6 @@ export function FanmarkSearch({ onSignupPrompt }: FanmarkSearchProps) {
         />
       </div>
       
-      {/* Pricing Guide */}
-      <div className="text-center text-sm text-muted-foreground space-y-2">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
-          <div className="bg-destructive/10 text-destructive px-2 py-1 rounded">
-            <span className="font-medium">特定パターン:</span> $99.99
-          </div>
-          <div className="bg-warning/10 text-warning px-2 py-1 rounded">
-            <span className="font-medium">重複絵文字:</span> $19.99
-          </div>
-          <div className="bg-info/10 text-info px-2 py-1 rounded">
-            <span className="font-medium">🎄プレフィックス:</span> $5.99
-          </div>
-          <div className="bg-secondary/10 text-secondary-foreground px-2 py-1 rounded">
-            <span className="font-medium">🏢プレフィックス:</span> $29.99
-          </div>
-        </div>
-        <div className="text-xs opacity-75">
-          {t('search.pricingGuide.multipleEmoji')} • 優先順位: 特定 {'>'} 重複 {'>'} プレフィックス {'>'} 文字数
-        </div>
-      </div>
 
 
       {/* Status Display */}
