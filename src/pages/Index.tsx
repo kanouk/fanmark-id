@@ -76,7 +76,7 @@ const Index = () => {
       <div className="hero min-h-[60vh] bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100">
         <div className="hero-content text-center">
           <div className="max-w-4xl">
-            <div className="animate-float mb-8">
+            <div className="animate-float mb-8 pointer-events-none">
               <span className="text-8xl">✨</span>
             </div>
             <h1 className="text-6xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent mb-6">
