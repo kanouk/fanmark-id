@@ -12,28 +12,15 @@ interface FanmarkSearchWithRegistrationProps {
 
 export const FanmarkSearchWithRegistration = ({ onSignupPrompt }: FanmarkSearchWithRegistrationProps) => {
   const { user } = useAuth();
-  const [selectedEmoji, setSelectedEmoji] = useState<string>('');
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
-
-  const handleEmojiAvailable = (emoji: string) => {
-    if (!user) {
-      onSignupPrompt?.();
-      return;
-    }
-    
-    setSelectedEmoji(emoji);
-    setShowRegistrationForm(true);
-  };
 
   const handleRegistrationSuccess = () => {
     setShowRegistrationForm(false);
-    setSelectedEmoji('');
     // Optionally navigate to dashboard or show success message
   };
 
   const handleRegistrationCancel = () => {
     setShowRegistrationForm(false);
-    setSelectedEmoji('');
   };
 
   return (
@@ -69,7 +56,6 @@ export const FanmarkSearchWithRegistration = ({ onSignupPrompt }: FanmarkSearchW
             <DialogTitle>Register Your Fanmark</DialogTitle>
           </DialogHeader>
           <FanmarkRegistrationForm
-            prefilledEmoji={selectedEmoji}
             onSuccess={handleRegistrationSuccess}
             onCancel={handleRegistrationCancel}
           />
