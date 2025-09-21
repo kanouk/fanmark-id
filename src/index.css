@@ -4,48 +4,50 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 262.1 83.3% 57.8%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 262.1 83.3% 57.8%;
-    --radius: 0.5rem;
+    /* Z世代向けポップ&スタイリッシュテーマ - ライトモード */
+    --background: 28 33% 97%; /* 暖かみのあるオフホワイト #FAF7F5 */
+    --foreground: 20 14% 25%; /* 柔らかいダークブラウン */
+    --card: 28 25% 95%; /* わずかにクリーム色 */
+    --card-foreground: 20 14% 25%;
+    --popover: 28 25% 95%;
+    --popover-foreground: 20 14% 25%;
+    --primary: 180 55% 62%; /* 鮮やかなミントグリーン #65C3C8 */
+    --primary-foreground: 0 0% 100%; /* 明るい白 */
+    --secondary: 30 20% 88%; /* 落ち着いたベージュ */
+    --secondary-foreground: 20 14% 25%;
+    --muted: 30 15% 90%; /* 上品なライトグレー */
+    --muted-foreground: 20 10% 45%;
+    --accent: 340 50% 75%; /* 遊び心のあるコーラルピンク #EF9FBC */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 65% 65%; /* 彩度を落とした赤 */
+    --destructive-foreground: 0 0% 100%;
+    --border: 30 25% 85%; /* 柔らかいボーダー */
+    --input: 30 20% 88%;
+    --ring: 340 50% 75%; /* アクセントカラーのリング */
+    --radius: 0.75rem; /* より大きく柔らかい角丸 */
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 262.1 83.3% 57.8%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 262.1 83.3% 57.8%;
+    /* Z世代向けポップ&スタイリッシュテーマ - ダークモード */
+    --background: 240 15% 8%; /* 暖色系ダークブルー */
+    --foreground: 35 15% 85%; /* 明るいベージュ */
+    --card: 240 12% 12%;
+    --card-foreground: 35 15% 85%;
+    --popover: 240 12% 12%;
+    --popover-foreground: 35 15% 85%;
+    --primary: 180 45% 55%; /* ダークモード用ミントグリーン */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 8% 18%;
+    --secondary-foreground: 35 15% 85%;
+    --muted: 240 8% 15%;
+    --muted-foreground: 35 8% 65%;
+    --accent: 340 40% 65%; /* ダークモード用コーラルピンク */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 55% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 8% 20%;
+    --input: 240 8% 18%;
+    --ring: 340 40% 65%;
   }
 }
 
@@ -54,11 +56,33 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-figtree;
+  }
+  
+  /* タイポグラフィ設定 */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+  
+  h1 {
+    @apply text-3xl md:text-4xl font-bold;
+  }
+  
+  h2 {
+    @apply text-2xl md:text-3xl font-semibold;
+  }
+  
+  h3 {
+    @apply text-xl md:text-2xl font-semibold;
+  }
+  
+  p, span {
+    @apply font-normal leading-relaxed;
   }
 }
 
 @layer utilities {
+  /* ポップなグラデーション */
   .text-gradient {
     background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
     -webkit-background-clip: text;
@@ -68,5 +92,52 @@
   
   .bg-gradient-hero {
     background: linear-gradient(135deg, hsl(var(--background)), hsl(var(--muted)));
+  }
+  
+  .bg-gradient-pop {
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--accent) / 0.1));
+  }
+  
+  /* ポップなボタンエフェクト */
+  .btn-pop {
+    @apply transition-all duration-200 ease-in-out;
+    box-shadow: 0 4px 12px hsl(var(--primary) / 0.2);
+  }
+  
+  .btn-pop:hover {
+    @apply transform -translate-y-1;
+    box-shadow: 0 8px 20px hsl(var(--primary) / 0.3);
+  }
+  
+  .btn-pop:active {
+    @apply transform translate-y-0;
+    box-shadow: 0 2px 8px hsl(var(--primary) / 0.2);
+  }
+  
+  /* アクセントボタン */
+  .btn-accent-pop {
+    @apply transition-all duration-200 ease-in-out;
+    box-shadow: 0 4px 12px hsl(var(--accent) / 0.2);
+  }
+  
+  .btn-accent-pop:hover {
+    @apply transform -translate-y-1;
+    box-shadow: 0 8px 20px hsl(var(--accent) / 0.3);
+  }
+  
+  .btn-accent-pop:active {
+    @apply transform translate-y-0;
+    box-shadow: 0 2px 8px hsl(var(--accent) / 0.2);
+  }
+  
+  /* カードエフェクト */
+  .card-pop {
+    @apply transition-all duration-300 ease-in-out;
+    box-shadow: 0 2px 12px hsl(var(--primary) / 0.08);
+  }
+  
+  .card-pop:hover {
+    @apply transform -translate-y-1;
+    box-shadow: 0 8px 24px hsl(var(--primary) / 0.12);
   }
 }
