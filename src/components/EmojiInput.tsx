@@ -23,6 +23,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
   onSearchPerformed
 }) => {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   const handleEmojiSelect = (emoji: string) => {
     const newValue = value + emoji;
@@ -32,7 +33,6 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
         onSearchPerformed(newValue);
       }
     }
-    setIsPickerOpen(false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,32 +44,40 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
   };
 
   const handleInputFocus = () => {
+    setIsFocused(true);
     setIsPickerOpen(true);
   };
 
-  const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    // Don't close if clicking inside the popover
-    if (!e.relatedTarget || !e.currentTarget.parentElement?.contains(e.relatedTarget as Node)) {
-      // Delay closing to allow emoji selection
-      setTimeout(() => setIsPickerOpen(false), 150);
+  const handleInputBlur = () => {
+    setIsFocused(false);
+    // Don't close immediately to allow clicking on emoji picker
+    setTimeout(() => {
+      if (!isFocused) {
+        setIsPickerOpen(false);
+      }
+    }, 200);
+  };
+
+  const handlePickerOpenChange = (open: boolean) => {
+    setIsPickerOpen(open);
+    if (!open) {
+      setIsFocused(false);
     }
   };
 
   return (
     <div className="relative w-full">
-      <Popover open={isPickerOpen} onOpenChange={setIsPickerOpen}>
-        <PopoverTrigger asChild>
-          <Input
-            value={value}
-            onChange={handleInputChange}
-            onFocus={handleInputFocus}
-            onBlur={handleInputBlur}
-            placeholder={placeholder}
-            disabled={disabled}
-            maxLength={maxLength}
-            className={className}
-          />
-        </PopoverTrigger>
+      <Popover open={isPickerOpen} onOpenChange={handlePickerOpenChange}>
+        <Input
+          value={value}
+          onChange={handleInputChange}
+          onFocus={handleInputFocus}
+          onBlur={handleInputBlur}
+          placeholder={placeholder}
+          disabled={disabled}
+          maxLength={maxLength}
+          className={className}
+        />
         <PopoverContent 
           className="p-0 border-base-300 bg-base-100" 
           align="start" 
