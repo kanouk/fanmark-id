@@ -183,8 +183,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
               )}
             </div>
           );
-          })}
-        </div>
+        })}
       </div>
       <div className="flex flex-1 justify-end gap-2">
         <Button

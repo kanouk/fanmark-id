@@ -137,7 +137,7 @@ const Auth = () => {
               </div>
             </div>
           </div>
-          <AuthLayout>
+          <AuthLayout title={t('auth.title')} description={t('auth.description')}>
             <div className="space-y-6">
               <Tabs defaultValue="login" className="space-y-6">
                 <TabsList className="grid w-full grid-cols-2 gap-3 rounded-full border border-primary/20 bg-background/80 p-3 backdrop-blur">
