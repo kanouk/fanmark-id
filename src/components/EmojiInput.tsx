@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -29,12 +29,47 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const { t, language } = useTranslation();
 
+  const segmenter = useMemo(() => {
+    if (typeof Intl === 'undefined' || !(Intl as any).Segmenter) {
+      return null;
+    }
+    try {
+      return new (Intl as any).Segmenter(language, { granularity: 'grapheme' });
+    } catch (error) {
+      console.warn('Failed to create Intl.Segmenter:', error);
+      return null;
+    }
+  }, [language]);
+
+  const splitGraphemes = useCallback(
+    (text: string) => {
+      if (!text) return [] as string[];
+      if (segmenter) {
+        return Array.from(segmenter.segment(text), (segment: any) => segment.segment as string);
+      }
+      return Array.from(text);
+    },
+    [segmenter]
+  );
+
+  const clampToMaxLength = useCallback(
+    (text: string) => {
+      if (!maxLength || maxLength <= 0) return text;
+      const graphemes = splitGraphemes(text);
+      if (graphemes.length <= maxLength) {
+        return text;
+      }
+      return graphemes.slice(0, maxLength).join('');
+    },
+    [splitGraphemes, maxLength]
+  );
+
   const handleEmojiSelect = (emoji: string) => {
-    const newValue = value + emoji;
-    if (newValue.length <= maxLength) {
-      onChange(newValue);
+    const nextValue = clampToMaxLength(value + emoji);
+    if (nextValue !== value) {
+      onChange(nextValue);
       if (onSearchPerformed) {
-        onSearchPerformed(newValue);
+        onSearchPerformed(nextValue);
       }
     }
     // keep picker open and refocus input for continuous entry
@@ -42,7 +77,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
+    const newValue = clampToMaxLength(e.target.value);
     onChange(newValue);
     if (onSearchPerformed && newValue.trim()) {
       onSearchPerformed(newValue);
@@ -61,7 +96,6 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
         onChange={handleInputChange}
         placeholder={placeholder}
         disabled={disabled}
-        maxLength={maxLength}
         className={`${className} flex-1`}
       />
       <Popover open={isPickerOpen} onOpenChange={handlePickerOpenChange}>

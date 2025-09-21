@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { User, LogOut } from 'lucide-react';
+import { MdSpaceDashboard } from 'react-icons/md';
 import { useProfile } from '@/hooks/useProfile';
 import {
   DropdownMenu,
@@ -105,8 +106,8 @@ const Index = () => {
                     }}
                     className="cursor-pointer"
                   >
-                    <span className="mr-2 text-lg">🎯</span>
-                    Dashboard
+                    <MdSpaceDashboard className="mr-2 h-4 w-4" />
+                    {t('navigation.dashboard')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onSelect={(event) => {
@@ -181,7 +182,7 @@ const Index = () => {
       {/* Fanmark Search Section - Always show for search functionality */}
       <div id="search" className="py-16 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
         <div className="container mx-auto px-4">
-          <FanmarkSearchWithRegistration onSignupPrompt={handleSignupPrompt} />
+          <FanmarkSearchWithRegistration onSignupPrompt={handleSignupPrompt} showRecent={false} />
         </div>
       </div>
 

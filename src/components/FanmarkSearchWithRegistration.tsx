@@ -1,13 +1,17 @@
 import FanmarkSearch from '@/components/FanmarkSearch';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 interface FanmarkSearchWithRegistrationProps {
   onSignupPrompt?: () => void;
+  showRecent?: boolean;
 }
 
-export const FanmarkSearchWithRegistration = ({ onSignupPrompt }: FanmarkSearchWithRegistrationProps) => {
+export const FanmarkSearchWithRegistration = ({ onSignupPrompt, showRecent = true }: FanmarkSearchWithRegistrationProps) => {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const statusVariant = user ? 'authenticated' : 'public';
 
   return (
     <div className="relative mx-auto max-w-5xl">
@@ -18,14 +22,14 @@ export const FanmarkSearchWithRegistration = ({ onSignupPrompt }: FanmarkSearchW
             🔍
           </div>
           <CardTitle className="text-3xl sm:text-4xl font-bold tracking-tight">
-            {t('search.searchFanmarks')}
+            {t('search.searchFanmas')}
           </CardTitle>
           <CardDescription className="text-base text-muted-foreground">
             {t('search.foundPerfect')}
           </CardDescription>
         </CardHeader>
         <CardContent className="px-4 pb-8 pt-4 sm:px-8">
-          <FanmarkSearch onSignupPrompt={onSignupPrompt} />
+          <FanmarkSearch onSignupPrompt={onSignupPrompt} statusVariant={statusVariant} showRecent={showRecent} />
         </CardContent>
       </Card>
     </div>

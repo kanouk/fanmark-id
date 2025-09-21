@@ -4,16 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { EmojiInput } from "@/components/EmojiInput";
-import { Sparkles, Eye, Crown } from "lucide-react";
+import { Sparkles, Eye, Lock } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useFanmarkSearch, FanmarkSearchResult } from "@/hooks/useFanmarkSearch";
 
 interface FanmarkSearchProps {
   onSignupPrompt?: () => void;
   onSearchPerformed?: (searchQuery: string) => void;
+  statusVariant?: 'authenticated' | 'public';
+  showRecent?: boolean;
 }
 
-const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchPerformed }) => {
+const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchPerformed, statusVariant = 'authenticated', showRecent = true }) => {
   const { t } = useTranslation();
   const { 
     searchQuery, 
@@ -30,38 +32,44 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchP
   // Get normalization info for current search query
   const normalizationInfo = searchQuery.trim() && getNormalizationInfo ? getNormalizationInfo(searchQuery.trim()) : null;
 
-  const getStatusBadge = (result: FanmarkSearchResult) => {
-    switch (result.status) {
-      case 'available':
-        return (
-          <Badge className="bg-success text-success-content border-success/20">
-            <Sparkles className="w-3 h-3 mr-1" />
-            ✅ {t('search.available')}
-          </Badge>
-        );
-      case 'taken':
-        return (
-          <Badge variant="destructive">
-            <Eye className="w-3 h-3 mr-1" />
-            ❌ {t('search.taken')}
-          </Badge>
-        );
-      case 'premium':
-        return (
-          <Badge className="bg-warning text-warning-content border-warning/20">
-            <Crown className="w-3 h-3 mr-1" />
-            💎 {t('search.premium')}
-          </Badge>
-        );
-      case 'payment_required':
-        return (
-          <Badge className="bg-info text-info-content border-info/20">
-            💳 {t('search.paymentRequired')}
-          </Badge>
-        );
-      default:
-        return null;
+  const normalizeStatus = (status: FanmarkSearchResult['status']): 'available' | 'taken' | 'unavailable' => {
+    if (status === 'available' || status === 'payment_required') {
+      return 'available';
     }
+    if (status === 'taken' || status === 'premium') {
+      return statusVariant === 'public' ? 'unavailable' : 'taken';
+    }
+    return 'unavailable';
+  };
+
+  const getStatusBadge = (result: FanmarkSearchResult) => {
+    const status = normalizeStatus(result.status);
+
+    const badgeStyles = {
+      available: {
+        className: 'bg-green-100 text-green-800 border-green-200',
+        icon: <Sparkles className="h-3 w-3" />,
+        label: t('search.available'),
+      },
+      taken: {
+        className: 'bg-blue-100 text-blue-800 border-blue-200',
+        icon: <Eye className="h-3 w-3" />,
+        label: t('search.taken'),
+      },
+      unavailable: {
+        className: 'bg-rose-100 text-rose-800 border-rose-200',
+        icon: <Lock className="h-3 w-3" />,
+        label: t('search.unavailable'),
+      },
+    } as const;
+
+    const config = badgeStyles[status];
+    return (
+      <Badge className={`${config.className} inline-flex items-center gap-1 border`}>
+        {config.icon}
+        {config.label}
+      </Badge>
+    );
   };
 
   const handleRegister = async (emoji: string) => {
@@ -197,7 +205,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchP
       )}
 
       {/* Recently Acquired Fanmarks */}
-      {!searchQuery && recentFanmarks.length > 0 && (
+      {showRecent && !searchQuery && recentFanmarks.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-base-content/70">
             {t('search.recentlyAcquired')}

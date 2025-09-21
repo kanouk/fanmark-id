@@ -3,14 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useTranslation } from '@/hooks/useTranslation';
-import { Plus, Search, Eye, Edit, Settings, Trash2, ExternalLink, Sparkles } from 'lucide-react';
+import { Search, Eye, Edit, Settings, Trash2, ExternalLink } from 'lucide-react';
+import { FiTarget, FiLayers, FiCompass, FiStar, FiCheckCircle, FiMoon, FiFileText, FiUser, FiLink } from 'react-icons/fi';
 import { FanmarkAcquisition } from './FanmarkAcquisition';
 import { FanmarkSettings } from './FanmarkSettings';
 import { FanmarkSearchWithRegistration } from './FanmarkSearchWithRegistration';
@@ -46,10 +46,10 @@ export const FanmarkDashboard = () => {
   const { toast } = useToast();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  
+  const fanmarkLimit = Math.max(profile?.emoji_limit || 10, 1);
+
   const [fanmarks, setFanmarks] = useState<Fanmark[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('my-fanmarks');
   const [settingsFanmark, setSettingsFanmark] = useState<Fanmark | null>(null);
 
@@ -82,27 +82,33 @@ export const FanmarkDashboard = () => {
   };
 
   const getAccessTypeBadge = (accessType: string) => {
-    const badges = {
-      profile: { emoji: '📄', label: t('dashboard.accessTypes.profile'), className: 'bg-blue-100 text-blue-800' },
-      redirect: { emoji: '🔗', label: t('dashboard.accessTypes.redirect'), className: 'bg-green-100 text-green-800' },
-      text: { emoji: '📝', label: t('dashboard.accessTypes.text'), className: 'bg-yellow-100 text-yellow-800' },
-      inactive: { emoji: '😴', label: t('dashboard.accessTypes.inactive'), className: 'bg-gray-100 text-gray-800' },
-    };
+    let icon = <FiLayers className="h-3.5 w-3.5" />;
+    let className = 'border-gray-200 bg-gray-100 text-gray-700';
+    let label = t('dashboard.accessTypes.inactive');
 
-    const config = badges[accessType as keyof typeof badges] || badges.inactive;
+    if (accessType === 'profile') {
+      icon = <FiUser className="h-3.5 w-3.5" />;
+      className = 'border-blue-200 bg-blue-100/80 text-blue-800';
+      label = t('dashboard.accessTypes.profile');
+    } else if (accessType === 'redirect') {
+      icon = <FiLink className="h-3.5 w-3.5" />;
+      className = 'border-green-200 bg-green-100/80 text-green-800';
+      label = t('dashboard.accessTypes.redirect');
+    } else if (accessType === 'text') {
+      icon = <FiFileText className="h-3.5 w-3.5" />;
+      className = 'border-yellow-200 bg-yellow-100/80 text-yellow-800';
+      label = t('dashboard.accessTypes.text');
+    }
+
     return (
-      <Badge variant="outline" className={config.className}>
-        <span className="mr-1">{config.emoji}</span>
-        {config.label}
+      <Badge variant="outline" className={`${className} flex items-center gap-2`}>
+        {icon}
+        {label}
       </Badge>
     );
   };
 
-  const filteredFanmarks = fanmarks.filter(fanmark =>
-    fanmark.emoji_combination.includes(searchQuery) ||
-    fanmark.display_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    fanmark.short_id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredFanmarks = fanmarks;
 
   const handleSignupPrompt = () => {
     navigate('/auth');
@@ -117,45 +123,41 @@ export const FanmarkDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/50">
-      <div className="container mx-auto px-4 py-8 space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-4">
-          <div className="flex items-center justify-center gap-3">
-            <span className="text-4xl">🎨</span>
-          <h1 className="text-3xl sm:text-4xl font-bold text-foreground">
-            {profile?.display_name || profile?.username || 'User'}
+    <section className="w-full bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
+      <div className="container mx-auto px-4 py-12 space-y-10">
+        <div className="space-y-3 text-center">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+            {t('dashboard.title')}
           </h1>
-          </div>
-          <p className="text-muted-foreground text-sm sm:text-base max-w-lg mx-auto">
+          <p className="mx-auto max-w-2xl text-sm sm:text-base text-muted-foreground">
             {t('dashboard.subtitle')}
           </p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="relative overflow-hidden">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <Card className="relative overflow-hidden rounded-3xl border border-primary/25 bg-background/85 shadow-[0_15px_40px_rgba(101,195,200,0.16)] backdrop-blur">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground">
                     {t('dashboard.stats.totalFanmarks')}
                   </p>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold text-primary">{fanmarks.length}</span>
-                    <span className="text-lg text-muted-foreground/80">
-                      / ∞
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-3xl font-bold text-primary">{fanmarks.length}</span>
+                    <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      {t('dashboard.stats.limitLabel')}: {fanmarkLimit}
                     </span>
                   </div>
                 </div>
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-2xl">🎯</span>
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <FiTarget className="h-6 w-6" />
                 </div>
               </div>
               <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden mt-4">
                 <div 
                   className="bg-primary h-2.5 rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min((fanmarks.length / 10) * 100, 100)}%` }}
+                  style={{ width: `${Math.min((fanmarks.length / fanmarkLimit) * 100, 100)}%` }}
                 />
               </div>
             </CardContent>
@@ -165,46 +167,33 @@ export const FanmarkDashboard = () => {
         </div>
 
         {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 h-auto p-1 bg-muted/20 backdrop-blur-sm">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+          <TabsList className="grid w-full grid-cols-2 gap-2 rounded-full border border-primary/20 bg-background/70 p-2 backdrop-blur">
             <TabsTrigger 
               value="my-fanmarks"
-              className="gap-2 py-3 px-4 text-base font-medium data-[state=active]:bg-background data-[state=active]:shadow-lg transition-all duration-200"
+              className="gap-2 rounded-full py-3 px-4 text-base font-medium transition-all duration-200 data-[state=active]:bg-primary/15 data-[state=active]:text-foreground data-[state=active]:shadow-lg"
             >
-              <span className="text-xl">🎨</span>
+              <FiLayers className="h-5 w-5" />
               {t('dashboard.tabs.myFanmarks')}
             </TabsTrigger>
             <TabsTrigger 
               value="acquisition"
-              className="gap-2 py-3 px-4 text-base font-medium data-[state=active]:bg-background data-[state=active]:shadow-lg transition-all duration-200"
+              className="gap-2 rounded-full py-3 px-4 text-base font-medium transition-all duration-200 data-[state=active]:bg-primary/15 data-[state=active]:text-foreground data-[state=active]:shadow-lg"
             >
-              <Plus className="h-5 w-5" />
-              {t('dashboard.tabs.getFanmarks')}
+              <FiCompass className="h-5 w-5" />
+              {t('dashboard.tabs.getFanma')}
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="my-fanmarks" className="space-y-6">
-            {/* Search */}
-            <Card className="bg-card/80 backdrop-blur-sm border">
-              <CardContent className="p-4 sm:p-6">
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
-                  <Input
-                    placeholder={t('dashboard.searchPlaceholder')}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-12 h-12 text-base"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Fanmarks List */}
-            <Card className="bg-card/80 backdrop-blur-sm border">
-              <CardHeader className="pb-4">
+            <Card className="rounded-3xl border border-primary/15 bg-background/90 shadow-[0_20px_45px_rgba(101,195,200,0.14)] backdrop-blur">
+              <CardHeader className="px-6 pt-6 pb-2">
                 <CardTitle className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">🎨</span>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <FiLayers className="h-5 w-5" />
+                    </div>
                     <div>
                       <h2 className="text-xl font-bold text-foreground">
                         {t('dashboard.yourFanmarks')}
@@ -214,57 +203,40 @@ export const FanmarkDashboard = () => {
                       </p>
                     </div>
                   </div>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button
-                        size="lg"
-                        className="gap-2 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                      >
-                        <Plus className="h-5 w-5" />
-                        {t('dashboard.addFanmark')}
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                      <FanmarkSearchWithRegistration onSignupPrompt={handleSignupPrompt} />
-                    </DialogContent>
-                  </Dialog>
                 </CardTitle>
               </CardHeader>
 
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 px-6 pb-6">
                 {filteredFanmarks.length === 0 ? (
-                  <div className="text-center py-12">
+                  <div className="py-14 text-center">
                     <div className="space-y-4">
-                      <span className="text-6xl">🎨</span>
+                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <FiLayers className="h-8 w-8" />
+                      </div>
                       <h3 className="text-xl font-semibold text-foreground">
-                        {searchQuery ? t('dashboard.noSearchResults') : t('dashboard.noFanmarksYet')}
+                        {t('dashboard.noFanmarksYet')}
                       </h3>
-                      <p className="text-muted-foreground max-w-md mx-auto">
-                        {searchQuery ? t('dashboard.tryDifferentSearch') : t('dashboard.getStarted')}
+                      <p className="mx-auto max-w-md text-muted-foreground">
+                        {t('dashboard.getStarted')}
                       </p>
-                      {!searchQuery && (
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              size="lg"
-                              className="gap-2 mt-6 shadow-lg hover:shadow-xl transition-all duration-300"
-                            >
-                              <Sparkles className="h-5 w-5" />
-                              {t('dashboard.createFirstFanmark')}
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                            <FanmarkSearchWithRegistration onSignupPrompt={handleSignupPrompt} />
-                          </DialogContent>
-                        </Dialog>
-                      )}
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            size="lg"
+                            className="mt-6 gap-2 rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105"
+                          >
+                            <FiStar className="h-5 w-5" />
+                            {t('dashboard.createFirstFanma')}
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                          <FanmarkSearchWithRegistration onSignupPrompt={handleSignupPrompt} />
+                        </DialogContent>
+                      </Dialog>
                     </div>
-                    <Badge variant="outline" className="bg-muted text-muted-foreground mt-8">
-                      {t('dashboard.noFanmarks')}
-                    </Badge>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                    <div className="space-y-4">
                     {/* Desktop Table View */}
                     <div className="hidden lg:block">
                       <div className="overflow-x-auto">
@@ -281,18 +253,18 @@ export const FanmarkDashboard = () => {
                           </thead>
                           <tbody>
                             {filteredFanmarks.map((fanmark) => (
-                              <tr key={fanmark.id} className="hover:bg-muted/30 transition-colors border-b">
-                                <td className="p-3">
+                              <tr key={fanmark.id} className="border-b transition-colors hover:bg-muted/30">
+                                <td className="px-4 py-4">
                                   <div className="flex items-center gap-2">
                                     <span className="text-2xl">{fanmark.emoji_combination}</span>
                                     {fanmark.is_premium && (
-                                      <Badge variant="secondary" className="bg-accent text-accent-foreground gap-1">
-                                        💎 <span className="hidden xl:inline">Premium</span>
+                                      <Badge variant="secondary" className="gap-1 border border-primary/30 bg-primary/10 text-primary">
+                                        <FiStar className="h-3 w-3" /> <span className="hidden xl:inline">{t('dashboard.premiumLabel')}</span>
                                       </Badge>
                                     )}
                                   </div>
                                 </td>
-                                <td className="p-3">
+                                <td className="px-4 py-4">
                                   <div>
                                     <div className="font-semibold text-foreground">{fanmark.display_name}</div>
                                     {fanmark.access_type === 'redirect' && fanmark.redirect_url && (
@@ -302,29 +274,39 @@ export const FanmarkDashboard = () => {
                                       </div>
                                     )}
                                     {fanmark.access_type === 'text' && fanmark.profile_text && (
-                                      <div className="text-sm text-muted-foreground truncate max-w-xs flex items-center gap-1">
-                                        📝 {fanmark.profile_text}
+                                      <div className="flex max-w-xs items-center gap-1 truncate text-sm text-muted-foreground">
+                                        <FiFileText className="h-3 w-3" /> {fanmark.profile_text}
                                       </div>
                                     )}
                                   </div>
                                 </td>
-                                <td className="p-3">
+                                <td className="px-4 py-4">
                                   {getAccessTypeBadge(fanmark.access_type)}
                                 </td>
-                                <td className="p-3">
+                                <td className="px-4 py-4">
                                   <code className="bg-muted text-muted-foreground font-mono text-sm px-2 py-1 rounded">
                                     {fanmark.short_id}
                                   </code>
                                 </td>
-                                <td className="p-3">
+                                <td className="px-4 py-4">
                                   <Badge 
-                                    variant={fanmark.status === 'active' ? 'default' : 'destructive'}
-                                    className={fanmark.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
+                                    variant="outline"
+                                    className={`${fanmark.status === 'active' ? 'border-green-200 bg-green-100/70 text-green-800' : 'border-red-200 bg-red-100/70 text-red-800'} flex items-center gap-2`}
                                   >
-                                    {fanmark.status === 'active' ? '✅ Active' : '💤 Inactive'}
+                                    {fanmark.status === 'active' ? (
+                                      <>
+                                        <FiCheckCircle className="h-4 w-4" />
+                                        {t('dashboard.statusActive')}
+                                      </>
+                                    ) : (
+                                      <>
+                                        <FiMoon className="h-4 w-4" />
+                                        {t('dashboard.statusInactive')}
+                                      </>
+                                    )}
                                   </Badge>
                                 </td>
-                                <td className="p-3">
+                                <td className="px-4 py-4">
                                   <div className="flex gap-1">
                                     <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-blue-100">
                                       <Eye className="h-4 w-4" />
@@ -359,8 +341,8 @@ export const FanmarkDashboard = () => {
                     {/* Mobile Card View */}
                     <div className="lg:hidden space-y-4">
                       {filteredFanmarks.map((fanmark) => (
-                        <Card key={fanmark.id} className="bg-card/30 hover:bg-card/50 transition-colors">
-                          <CardContent className="p-4">
+                        <Card key={fanmark.id} className="rounded-3xl border border-primary/10 bg-background/80 transition-colors hover:border-primary/20">
+                          <CardContent className="p-5">
                             <div className="space-y-3">
                               <div className="flex items-start justify-between">
                                 <div className="flex items-center gap-3">
@@ -371,17 +353,29 @@ export const FanmarkDashboard = () => {
                                   </div>
                                 </div>
                                 {fanmark.is_premium && (
-                                  <Badge variant="secondary" className="bg-accent text-accent-foreground">💎</Badge>
+                                  <Badge variant="secondary" className="border border-primary/30 bg-primary/10 text-primary">
+                                    <FiStar className="h-3 w-3" />
+                                  </Badge>
                                 )}
                               </div>
                               
                               <div className="flex items-center justify-between">
                                 {getAccessTypeBadge(fanmark.access_type)}
                                 <Badge 
-                                  variant={fanmark.status === 'active' ? 'default' : 'destructive'}
-                                  className={fanmark.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
+                                  variant="outline"
+                                  className={`${fanmark.status === 'active' ? 'border-green-200 bg-green-100/70 text-green-800' : 'border-red-200 bg-red-100/70 text-red-800'} flex items-center gap-2`}
                                 >
-                                  {fanmark.status === 'active' ? '✅ Active' : '💤 Inactive'}
+                                  {fanmark.status === 'active' ? (
+                                    <>
+                                      <FiCheckCircle className="h-4 w-4" />
+                                      {t('dashboard.statusActive')}
+                                    </>
+                                  ) : (
+                                    <>
+                                      <FiMoon className="h-4 w-4" />
+                                      {t('dashboard.statusInactive')}
+                                    </>
+                                  )}
                                 </Badge>
                               </div>
 
@@ -395,7 +389,7 @@ export const FanmarkDashboard = () => {
                                   )}
                                   {fanmark.access_type === 'text' && fanmark.profile_text && (
                                     <div className="flex items-start gap-1">
-                                      <span>📝</span>
+                                      <FiFileText className="mt-0.5 h-3 w-3" />
                                       <span className="line-clamp-2">{fanmark.profile_text}</span>
                                     </div>
                                   )}
@@ -403,21 +397,21 @@ export const FanmarkDashboard = () => {
                               )}
 
                               <div className="flex gap-2">
-                                <Button size="sm" variant="outline" className="border-blue-200 text-blue-600 hover:bg-blue-50 flex-1">
-                                  <Eye className="h-4 w-4 mr-1" />
+                                <Button size="sm" variant="outline" className="flex-1 border-blue-200 text-blue-600 hover:bg-blue-50">
+                                  <Eye className="mr-1 h-4 w-4" />
                                   {t('dashboard.view')}
                                 </Button>
-                                <Button size="sm" variant="outline" className="border-yellow-200 text-yellow-600 hover:bg-yellow-50 flex-1">
-                                  <Edit className="h-4 w-4 mr-1" />
+                                <Button size="sm" variant="outline" className="flex-1 border-yellow-200 text-yellow-600 hover:bg-yellow-50">
+                                  <Edit className="mr-1 h-4 w-4" />
                                   {t('dashboard.edit')}
                                 </Button>
                                 <Button 
                                   size="sm" 
                                   variant="outline" 
-                                  className="border-gray-200 text-gray-600 hover:bg-gray-50 flex-1"
+                                  className="flex-1 border-gray-200 text-gray-600 hover:bg-gray-50"
                                   onClick={() => setSettingsFanmark(fanmark)}
                                 >
-                                  <Settings className="h-4 w-4 mr-1" />
+                                  <Settings className="mr-1 h-4 w-4" />
                                   {t('dashboard.settings')}
                                 </Button>
                               </div>
@@ -433,23 +427,20 @@ export const FanmarkDashboard = () => {
           </TabsContent>
 
           <TabsContent value="acquisition" className="space-y-6">
-            <Card className="overflow-hidden">
-              <CardContent className="p-0">
-                <div className="bg-gradient-to-r from-primary/10 to-secondary/10 p-6 sm:p-8">
-                  <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
-                    <Sparkles className="h-6 w-6" />
-                    {t('dashboard.getFanmarksTitle')}
+            <Card className="overflow-hidden rounded-3xl border border-primary/20 bg-background/90 shadow-[0_20px_45px_rgba(101,195,200,0.14)] backdrop-blur">
+              <CardContent className="space-y-6 p-6 sm:p-8">
+                <div className="space-y-3 text-center">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <FiCompass className="h-6 w-6" />
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground">
+                    {t('dashboard.getFanmaTitle')}
                   </h3>
-                  <p className="text-muted-foreground text-sm sm:text-base max-w-lg mt-2">
-                    {t('dashboard.getFanmarksDescription')}
+                  <p className="mx-auto max-w-xl text-sm text-muted-foreground">
+                    {t('dashboard.getFanmaDescription')}
                   </p>
                 </div>
-                <div className="p-6 sm:p-8">
-                  <FanmarkAcquisition />
-                </div>
-                <Badge variant="outline" className="bg-yellow-100 text-yellow-800 self-start sm:self-center m-6">
-                  ✨ {t('dashboard.comingSoon')}
-                </Badge>
+                <FanmarkAcquisition />
               </CardContent>
             </Card>
           </TabsContent>
@@ -457,12 +448,12 @@ export const FanmarkDashboard = () => {
 
         {/* Settings Dialog */}
         <FanmarkSettings 
-          fanmark={settingsFanmark!} 
+          fanmark={settingsFanmark} 
           open={!!settingsFanmark}
           onOpenChange={(open) => !open && setSettingsFanmark(null)}
           onSuccess={fetchFanmarks}
         />
       </div>
-    </div>
+    </section>
   );
 };

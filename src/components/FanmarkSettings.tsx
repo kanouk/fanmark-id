@@ -124,7 +124,7 @@ export const FanmarkSettings = ({
 
       toast({
         title: '設定を更新しました ✨',
-        description: 'ファンマークの設定が正常に保存されました',
+        description: 'ファンマの設定が正常に保存されました',
       });
 
       onSuccess?.();
@@ -185,10 +185,10 @@ export const FanmarkSettings = ({
             <span className="text-5xl animate-bounce">{fanmark.emoji_combination}</span>
             <div>
               <div className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                ファンマーク設定
+                ファンマ設定
               </div>
               <div className="text-sm font-normal text-base-content/70">
-                あなたのファンマークをカスタマイズ
+                あなたのファンマをカスタマイズ
               </div>
             </div>
           </DialogTitle>
@@ -371,7 +371,7 @@ export const FanmarkSettings = ({
                     <span className="font-semibold">譲渡を許可する</span>
                   </div>
                   <div className="text-sm text-base-content/70">
-                    他のユーザーにファンマークを譲渡できます
+                    他のユーザーにファンマを譲渡できます
                   </div>
                 </Label>
               </div>
