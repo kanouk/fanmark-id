@@ -1,70 +1,33 @@
-import { useState } from 'react';
 import FanmarkSearch from '@/components/FanmarkSearch';
-import { FanmarkRegistrationForm } from '@/components/FanmarkRegistrationForm';
-import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 interface FanmarkSearchWithRegistrationProps {
   onSignupPrompt?: () => void;
 }
 
 export const FanmarkSearchWithRegistration = ({ onSignupPrompt }: FanmarkSearchWithRegistrationProps) => {
-  const { user } = useAuth();
   const { t } = useTranslation();
-  const [showRegistrationForm, setShowRegistrationForm] = useState(false);
-
-  const handleRegistrationSuccess = () => {
-    setShowRegistrationForm(false);
-    // Optionally navigate to dashboard or show success message
-  };
-
-  const handleRegistrationCancel = () => {
-    setShowRegistrationForm(false);
-  };
 
   return (
-    <div className="space-y-8">
-      <Card className="w-full max-w-4xl mx-auto">
-        <CardHeader>
-          <CardTitle className="text-3xl text-center">
-            🔍 {t('search.searchFanmarks')}
+    <div className="relative mx-auto max-w-5xl">
+      <div className="absolute inset-x-10 -top-10 -z-10 h-32 rounded-full bg-primary/20 blur-3xl" aria-hidden />
+      <Card className="overflow-hidden border border-primary/20 bg-card/95 shadow-[0_20px_60px_rgba(101,195,200,0.15)]">
+        <CardHeader className="space-y-3 text-center px-3 py-3 sm:px-5 sm:py-4">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/15 text-2xl">
+            🔍
+          </div>
+          <CardTitle className="text-3xl sm:text-4xl font-bold tracking-tight">
+            {t('search.searchFanmarks')}
           </CardTitle>
+          <CardDescription className="text-base text-muted-foreground">
+            {t('search.foundPerfect')}
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <FanmarkSearch 
-            onSignupPrompt={onSignupPrompt}
-          />
-          
-          {user && (
-            <div className="mt-6 text-center border-t pt-6">
-              <p className="text-gray-600 mb-4">{t('registration.customFanmark')}?</p>
-              <Button 
-                onClick={() => setShowRegistrationForm(true)}
-                className="gap-2 bg-gradient-to-r from-pink-400 to-purple-400 hover:from-pink-500 hover:to-purple-500"
-              >
-                <span>✨</span>
-                {t('registration.registerCustom')}
-              </Button>
-            </div>
-          )}
+        <CardContent className="px-4 pb-8 pt-4 sm:px-8">
+          <FanmarkSearch onSignupPrompt={onSignupPrompt} />
         </CardContent>
       </Card>
-
-      {/* Registration Form Dialog */}
-      <Dialog open={showRegistrationForm} onOpenChange={setShowRegistrationForm}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{t('registration.title')}</DialogTitle>
-          </DialogHeader>
-          <FanmarkRegistrationForm
-            onSuccess={handleRegistrationSuccess}
-            onCancel={handleRegistrationCancel}
-          />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

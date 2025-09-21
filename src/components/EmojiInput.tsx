@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CustomEmojiPicker } from '@/components/ui/emoji-picker';
+import { EmojiPicker } from 'frimousse';
 import { Smile, Sparkles } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -27,7 +27,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
 }) => {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   const handleEmojiSelect = (emoji: string) => {
     const newValue = value + emoji;
@@ -43,12 +43,6 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    console.log('EmojiInput: Input change detected', { 
-      newValue, 
-      length: newValue.length, 
-      maxLength, 
-      userAgent: navigator.userAgent.includes('Mobile') ? 'Mobile' : 'Desktop' 
-    });
     onChange(newValue);
     if (onSearchPerformed && newValue.trim()) {
       onSearchPerformed(newValue);
@@ -84,7 +78,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
           </Button>
         </PopoverTrigger>
         <PopoverContent
-          className="p-0 border bg-popover w-auto"
+          className="w-[360px] max-w-[90vw] rounded-2xl border border-border bg-card p-0 shadow-[0_20px_45px_rgba(101,195,200,0.18)]"
           align="end"
           side="bottom"
           sideOffset={8}
@@ -92,7 +86,33 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
         >
-          <CustomEmojiPicker onEmojiSelect={handleEmojiSelect} disabled={disabled} />
+          <EmojiPicker.Root
+            onEmojiSelect={(emoji: { emoji: string } | string) => {
+              const selected = typeof emoji === 'string'
+                ? emoji
+                : emoji?.emoji;
+              if (selected) {
+                handleEmojiSelect(selected);
+              }
+            }}
+            className="flex h-[360px] flex-col"
+          >
+            <div className="px-4 pt-4 pb-3 border-b border-border/70 bg-background/80 backdrop-blur">
+              <EmojiPicker.Search
+                placeholder={language === 'ja' ? '絵文字を検索...' : 'Search emojis...'}
+                className="w-full rounded-full border border-border/50 bg-muted/70 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
+            </div>
+            <EmojiPicker.Viewport className="flex-1 overflow-auto">
+              <EmojiPicker.Loading className="flex h-24 items-center justify-center text-muted-foreground">
+                {language === 'ja' ? '読み込み中...' : 'Loading...'}
+              </EmojiPicker.Loading>
+              <EmojiPicker.Empty className="flex h-24 items-center justify-center text-muted-foreground">
+                {language === 'ja' ? '絵文字が見つかりません' : 'No emoji found.'}
+              </EmojiPicker.Empty>
+              <EmojiPicker.List className="p-3" />
+            </EmojiPicker.Viewport>
+          </EmojiPicker.Root>
         </PopoverContent>
       </Popover>
       <Button

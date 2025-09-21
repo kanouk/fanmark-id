@@ -13,12 +13,13 @@
     "taken": "Taken",
     "premium": "Premium",
     "paymentRequired": "Payment Required",
+    "searchFanmarks": "Search fanmarks",
     "viewProfile": "View Profile",
     "recentlyAcquired": "Recently Acquired Fanmarks",
     "noResults": "No results found",
     "foundPerfect": "Found the perfect one? Sign up to claim it!",
     "joinThousands": "Join thousands of creators!",
-    "searchPlaceholder": "🔍 Emojis only... (1-2 emojis: paid, 3+ emojis: free)",
+    "searchPlaceholder": "Try your favorite fanmark!",
     "validationError": "Input must contain only emojis (no text, numbers, or symbols)",
     "emojiCountError": "Emoji combination must contain 1-5 emojis",
     "emojiCountLabel": "emojis",
@@ -71,6 +72,8 @@
     "errorValidating": "Error validating code"
   },
   "navigation": {
+    "home": "Home",
+    "dashboard": "Dashboard",
     "profile": "Profile",
     "logout": "Logout",
     "seeHowUsed": "See How It's Used"
@@ -303,6 +306,7 @@
     "home": "Home",
     "dashboard": "Dashboard",
     "profile": "Profile", 
-    "logout": "Logout"
+    "logout": "Logout",
+    "seeHowUsed": "See How It's Used"
   }
 }

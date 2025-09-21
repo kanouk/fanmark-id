@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { EmojiInput } from "@/components/EmojiInput";
-import { Search, Sparkles, Eye, Crown } from "lucide-react";
+import { Sparkles, Eye, Crown } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useFanmarkSearch, FanmarkSearchResult } from "@/hooks/useFanmarkSearch";
 
@@ -81,16 +81,15 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchP
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto space-y-6">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
       {/* Search Input */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-base-content/70 w-4 h-4 z-10" />
+      <div className="rounded-2xl border-2 border-primary/30 bg-background/90 px-6 py-6 shadow-[0_15px_35px_rgba(101,195,200,0.12)] backdrop-blur">
         <EmojiInput
           value={searchQuery}
           onChange={setSearchQuery}
           onSearchPerformed={onSearchPerformed}
           placeholder={t('search.searchPlaceholder')}
-          className="pl-10 py-3 text-lg rounded-full border-primary/50 focus:border-primary"
+          className="h-16 rounded-full border border-primary/30 bg-background px-8 text-lg font-medium shadow-none focus:border-primary focus:ring-4 focus:ring-primary/25"
           maxLength={50}
         />
       </div>
@@ -135,7 +134,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchP
       )}
 
       {result && searchQuery.trim() && !loading && (
-        <div className="space-y-2">
+        <div className="space-y-4">
           {/* Error Display */}
           {(result as any).error && (
             <div className="flex items-center justify-center p-3 rounded-lg border border-destructive/20 bg-destructive/5">
@@ -145,38 +144,38 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchP
           
           {/* Result Display */}
           {!(result as any).error && (
-            <div className="flex items-center justify-between p-4 rounded-lg border bg-card border-border">
-              <div className="flex items-center space-x-3">
-                <span className="text-2xl">{result.emoji_combination}</span>
+            <div className="flex flex-col gap-4 rounded-2xl border border-primary/20 bg-card/95 p-6 shadow-[0_20px_40px_rgba(239,159,188,0.15)] sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-4">
+                <span className="text-3xl">{result.emoji_combination}</span>
                 {result.short_id && (
                   <div className="text-sm text-muted-foreground">
                     fanmark.id/e/{result.short_id}
                   </div>
                 )}
                 {result.emoji_count && (
-                  <div className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded">
+                  <div className="rounded-full bg-secondary/70 px-3 py-1 text-xs text-secondary-foreground">
                     {result.emoji_count}{t('search.emojiCountLabel')}
                   </div>
                 )}
               </div>
-              <div className="flex items-center space-x-3">
+              <div className="flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center sm:gap-3">
                 {getStatusBadge(result)}
                 {result.status === 'available' && (
                   <Button 
                     onClick={() => handleRegister(result.emoji_combination)} 
                     size="sm" 
-                    className="bg-success text-success-content hover:bg-success/80 rounded-full"
+                    className="rounded-full bg-success text-success-content hover:bg-success/80"
                   >
                     <Sparkles className="w-3 h-3 mr-1" />
                     Register ✨
                   </Button>
                 )}
                 {result.status === 'payment_required' && (
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex flex-col items-stretch gap-1 text-right">
                     <Button 
                       onClick={handleSignupPrompt}
                       size="sm" 
-                      className="bg-info text-info-content hover:bg-info/80 rounded-full"
+                      className="rounded-full bg-info text-info-content hover:bg-info/80"
                     >
                       Pay ${result.price_usd?.toLocaleString()} 💳
                     </Button>
