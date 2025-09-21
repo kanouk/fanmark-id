@@ -76,9 +76,11 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
           </Button>
         </PopoverTrigger>
         <PopoverContent
-          className="p-0 border-base-300 bg-base-100"
+          className="p-0 border-base-300 bg-base-100 w-auto"
           align="end"
+          side="bottom"
           sideOffset={8}
+          collisionPadding={16}
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
         >

@@ -2,32 +2,41 @@ import React from 'react';
 import EmojiPicker, { EmojiClickData, Theme, EmojiStyle } from 'emoji-picker-react';
 import { useTheme } from 'next-themes';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface CustomEmojiPickerProps {
   onEmojiSelect: (emoji: string) => void;
   disabled?: boolean;
+  width?: number;
+  height?: number;
 }
 
 export const CustomEmojiPicker: React.FC<CustomEmojiPickerProps> = ({
   onEmojiSelect,
-  disabled = false
+  disabled = false,
+  width,
+  height
 }) => {
   const { resolvedTheme } = useTheme();
   const { t, language } = useTranslation();
+  const isMobile = useIsMobile();
 
   const handleEmojiClick = (emojiData: EmojiClickData) => {
     onEmojiSelect(emojiData.emoji);
   };
+
+  const pickerWidth = width || (isMobile ? 280 : 320);
+  const pickerHeight = height || (isMobile ? 300 : 400);
 
   return (
     <div className={disabled ? 'opacity-50 pointer-events-none' : ''}>
       <EmojiPicker
         onEmojiClick={handleEmojiClick}
         theme={resolvedTheme === 'dark' ? Theme.DARK : Theme.LIGHT}
-        width={320}
-        height={400}
+        width={pickerWidth}
+        height={pickerHeight}
         previewConfig={{
-          showPreview: true
+          showPreview: !isMobile
         }}
         searchPlaceHolder={language === 'ja' ? '絵文字を検索...' : 'Search emojis...'}
         skinTonesDisabled={false}
