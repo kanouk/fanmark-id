@@ -51,7 +51,7 @@ const Index = () => {
     }
     navigate("/auth");
   };
-  return <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50" data-theme="cupcake">
+  return <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
       {/* Navigation */}
       <div className="navbar bg-base-100/80 backdrop-blur-sm shadow-lg sticky top-0 z-50">
         <div className="navbar-start">
