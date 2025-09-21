@@ -84,7 +84,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
           </Button>
         </PopoverTrigger>
         <PopoverContent
-          className="p-0 border-base-300 bg-base-100 w-auto"
+          className="p-0 border bg-popover w-auto"
           align="end"
           side="bottom"
           sideOffset={8}

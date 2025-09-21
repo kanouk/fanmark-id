@@ -137,7 +137,7 @@ export const FanmarkAcquisition = ({ prefilledEmoji, onSuccess }: FanmarkAcquisi
             />
             {loading && (
               <div className="absolute right-14 top-1/2 transform -translate-y-1/2">
-                <Loader2 className="h-5 w-5 animate-spin text-base-content/70" />
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
             )}
           </div>

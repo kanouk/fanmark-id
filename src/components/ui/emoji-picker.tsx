@@ -43,15 +43,15 @@ export const CustomEmojiPicker: React.FC<CustomEmojiPickerProps> = ({
         emojiStyle={EmojiStyle.NATIVE}
         lazyLoadEmojis={true}
         style={{
-          '--epr-bg-color': 'oklch(var(--b1))',
-          '--epr-text-color': 'oklch(var(--bc))',
-          '--epr-border-color': 'oklch(var(--b3))',
-          '--epr-highlight-color': 'oklch(var(--p))',
-          '--epr-hover-bg-color': 'oklch(var(--b2))',
-          '--epr-focus-bg-color': 'oklch(var(--b2))',
-          '--epr-search-bg-color': 'oklch(var(--b2))',
-          '--epr-category-icon-active-color': 'oklch(var(--p))',
-          '--epr-skin-tone-picker-menu-color': 'oklch(var(--b1))'
+          '--epr-bg-color': 'hsl(var(--card))',
+          '--epr-text-color': 'hsl(var(--card-foreground))',
+          '--epr-border-color': 'hsl(var(--border))',
+          '--epr-highlight-color': 'hsl(var(--primary))',
+          '--epr-hover-bg-color': 'hsl(var(--muted))',
+          '--epr-focus-bg-color': 'hsl(var(--muted))',
+          '--epr-search-bg-color': 'hsl(var(--muted))',
+          '--epr-category-icon-active-color': 'hsl(var(--primary))',
+          '--epr-skin-tone-picker-menu-color': 'hsl(var(--card))'
         } as React.CSSProperties}
       />
     </div>
