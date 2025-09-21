@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useFanmarkSearch } from '@/hooks/useFanmarkSearch';
-import { FanmarkRegistrationForm } from '@/components/FanmarkRegistrationForm';
+import { FanmarkQuickRegistration } from '@/components/FanmarkQuickRegistration';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -102,9 +102,9 @@ export const FanmarkAcquisition = ({ prefilledEmoji, onSuccess }: FanmarkAcquisi
           >
             ← {t('common.back')}
           </Button>
-          <h3 className="text-lg font-semibold">{t('dashboard.registerFanmark')}</h3>
+          <h3 className="text-lg font-semibold">ファンマークを取得</h3>
         </div>
-        <FanmarkRegistrationForm
+        <FanmarkQuickRegistration
           prefilledEmoji={selectedEmoji}
           onSuccess={handleRegistrationSuccess}
           onCancel={() => setShowRegistrationForm(false)}

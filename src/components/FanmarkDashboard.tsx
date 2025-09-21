@@ -11,6 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { Edit, Trash2, Eye, Settings, Search, Plus } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FanmarkAcquisition } from '@/components/FanmarkAcquisition';
+import { FanmarkSettings } from '@/components/FanmarkSettings';
 
 interface Fanmark {
   id: string;
@@ -39,6 +40,7 @@ export const FanmarkDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('fanmarks');
+  const [settingsFanmark, setSettingsFanmark] = useState<Fanmark | null>(null);
   const [prefilledEmoji, setPrefilledEmoji] = useState<string | null>(null);
 
   useEffect(() => {
@@ -113,6 +115,11 @@ export const FanmarkDashboard = () => {
   const handleAcquisitionSuccess = () => {
     fetchUserData(); // Refresh fanmarks after successful registration
     setActiveTab('fanmarks'); // Switch back to fanmarks tab
+  };
+
+  const handleSettingsSuccess = () => {
+    fetchUserData(); // Refresh data after settings update
+    setSettingsFanmark(null);
   };
 
   if (loading) {
@@ -323,7 +330,12 @@ export const FanmarkDashboard = () => {
                               <Button size="sm" variant="ghost" className="btn-square">
                                 <Edit className="h-4 w-4" />
                               </Button>
-                              <Button size="sm" variant="ghost" className="btn-square">
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="btn-square"
+                                onClick={() => setSettingsFanmark(fanmark)}
+                              >
                                 <Settings className="h-4 w-4" />
                               </Button>
                               <Button 
@@ -365,6 +377,16 @@ export const FanmarkDashboard = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Settings Dialog */}
+      {settingsFanmark && (
+        <FanmarkSettings
+          fanmark={settingsFanmark}
+          open={!!settingsFanmark}
+          onOpenChange={(open) => !open && setSettingsFanmark(null)}
+          onSuccess={handleSettingsSuccess}
+        />
+      )}
     </div>
   );
 };
