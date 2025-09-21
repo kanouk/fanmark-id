@@ -1,7 +1,9 @@
 import React, { useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CustomEmojiPicker } from '@/components/ui/emoji-picker';
+import { Smile, Sparkles } from 'lucide-react';
 
 interface EmojiInputProps {
   value: string;
@@ -23,8 +25,6 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
   onSearchPerformed
 }) => {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
-  const [isInteracting, setIsInteracting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleEmojiSelect = (emoji: string) => {
@@ -47,61 +47,54 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
     }
   };
 
-  const handleInputFocus = () => {
-    setIsFocused(true);
-    setIsPickerOpen(true);
-  };
-
-  const handleInputBlur = () => {
-    setIsFocused(false);
-    setTimeout(() => {
-      if (!isInteracting) {
-        setIsPickerOpen(false);
-      }
-    }, 150);
-  };
-
   const handlePickerOpenChange = (open: boolean) => {
     setIsPickerOpen(open);
-    if (!open) {
-      setIsFocused(false);
-    }
   };
 
   return (
-    <div className="relative w-full">
+    <div className="w-full flex items-center gap-2">
+      <Input
+        ref={inputRef}
+        value={value}
+        onChange={handleInputChange}
+        placeholder={placeholder}
+        disabled={disabled}
+        maxLength={maxLength}
+        className={`${className} flex-1`}
+      />
       <Popover open={isPickerOpen} onOpenChange={handlePickerOpenChange}>
         <PopoverTrigger asChild>
-          <Input
-            ref={inputRef}
-            value={value}
-            onChange={handleInputChange}
-            onFocus={handleInputFocus}
-            onBlur={handleInputBlur}
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={(e) => e.stopPropagation()}
-            placeholder={placeholder}
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label={disabled ? '絵文字ピッカー（無効）' : '絵文字ピッカーを開く'}
+            title={disabled ? '絵文字ピッカー（無効）' : '絵文字ピッカーを開く'}
             disabled={disabled}
-            maxLength={maxLength}
-            className={className}
-          />
+          >
+            <Smile className="h-4 w-4" />
+          </Button>
         </PopoverTrigger>
-        <PopoverContent 
-          className="p-0 border-base-300 bg-base-100" 
-          align="start" 
-          sideOffset={4}
+        <PopoverContent
+          className="p-0 border-base-300 bg-base-100"
+          align="end"
+          sideOffset={8}
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
-          onMouseDown={() => setIsInteracting(true)}
-          onMouseUp={() => setTimeout(() => setIsInteracting(false), 0)}
-          onPointerLeave={() => setIsInteracting(false)}
         >
-          <CustomEmojiPicker
-            onEmojiSelect={handleEmojiSelect}
-            disabled={disabled}
-          />
+          <CustomEmojiPicker onEmojiSelect={handleEmojiSelect} disabled={disabled} />
         </PopoverContent>
       </Popover>
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        aria-label="AIでおすすめ（近日対応）"
+        title="近日対応予定: AIが自然文や画像からファンマを提案します"
+        disabled
+      >
+        <Sparkles className="h-4 w-4" />
+      </Button>
     </div>
   );
 };
