@@ -159,20 +159,9 @@ const Index = () => {
               {tWithBreaks('hero.description')}
             </p>
 
-            <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
+            <div className="mt-10 flex flex-col items-center justify-center">
               <Button size="lg" className="w-full sm:w-auto" onClick={handleSignupPrompt}>
-                {t('hero.tryButton')} ✨
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="w-full sm:w-auto"
-                onClick={() => {
-                  const section = document.querySelector('#examples');
-                  section?.scrollIntoView({ behavior: 'smooth' });
-                }}
-              >
-                {t('navigation.seeHowUsed')} 👀
+                {t('hero.tryButton')}
               </Button>
             </div>
           </div>
@@ -275,17 +264,9 @@ const Index = () => {
             <p className="mt-6 text-lg text-primary-foreground/90 sm:text-xl">
               {t('sections.ctaDescription')}
             </p>
-            <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <div className="mt-10 flex flex-col items-center justify-center">
               <Button size="lg" variant="secondary" className="px-8 shadow-[0_20px_40px_rgba(0,0,0,0.18)]" onClick={handleSignupPrompt}>
-                {t('hero.tryButton')} 🚀
-              </Button>
-              <Button
-                size="lg"
-                variant="ghost"
-                className="border border-primary-foreground/40 px-8 text-primary-foreground hover:bg-primary-foreground/10"
-                onClick={() => navigate('/pricing')}
-              >
-                {t('sections.pricing')} →
+                {t('hero.tryButton')}
               </Button>
             </div>
           </div>

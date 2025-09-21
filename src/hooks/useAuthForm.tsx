@@ -116,7 +116,7 @@ export const useAuthForm = () => {
         title: "ログインしました",
         description: "アプリケーションへようこそ！",
       });
-      navigate('/');
+      navigate('/dashboard');
     } catch (error: any) {
       setError(error.message || 'ログインに失敗しました');
     } finally {

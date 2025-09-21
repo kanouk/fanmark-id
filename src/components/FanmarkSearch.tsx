@@ -1,12 +1,13 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { EmojiInput } from "@/components/EmojiInput";
-import { Sparkles, Eye, Lock } from "lucide-react";
+import { Loader2 } from 'lucide-react';
 import { useTranslation } from "@/hooks/useTranslation";
 import { useFanmarkSearch, FanmarkSearchResult } from "@/hooks/useFanmarkSearch";
+import { FanmarkStatusBadge, FanmarkStatus } from "@/components/FanmarkStatusBadge";
+import { FiAlertTriangle, FiInfo } from 'react-icons/fi';
 
 interface FanmarkSearchProps {
   onSignupPrompt?: () => void;
@@ -23,16 +24,13 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchP
     result, 
     loading, 
     recentFanmarks, 
-    checkAvailability, 
-    registerFanmark, 
-    refetchRecent,
     getNormalizationInfo
   } = useFanmarkSearch();
 
   // Get normalization info for current search query
   const normalizationInfo = searchQuery.trim() && getNormalizationInfo ? getNormalizationInfo(searchQuery.trim()) : null;
 
-  const normalizeStatus = (status: FanmarkSearchResult['status']): 'available' | 'taken' | 'unavailable' => {
+  const normalizeStatus = (status: FanmarkSearchResult['status']): FanmarkStatus => {
     if (status === 'available' || status === 'payment_required') {
       return 'available';
     }
@@ -42,70 +40,34 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchP
     return 'unavailable';
   };
 
-  const getStatusBadge = (result: FanmarkSearchResult) => {
-    const status = normalizeStatus(result.status);
-
-    const badgeStyles = {
-      available: {
-        className: 'bg-green-100 text-green-800 border-green-200',
-        icon: <Sparkles className="h-3 w-3" />,
-        label: t('search.available'),
-      },
-      taken: {
-        className: 'bg-blue-100 text-blue-800 border-blue-200',
-        icon: <Eye className="h-3 w-3" />,
-        label: t('search.taken'),
-      },
-      unavailable: {
-        className: 'bg-rose-100 text-rose-800 border-rose-200',
-        icon: <Lock className="h-3 w-3" />,
-        label: t('search.unavailable'),
-      },
-    } as const;
-
-    const config = badgeStyles[status];
-    return (
-      <Badge className={`${config.className} inline-flex items-center gap-1 border`}>
-        {config.icon}
-        {config.label}
-      </Badge>
-    );
-  };
-
-  const handleRegister = async (emoji: string) => {
-    const response = await registerFanmark(emoji);
-    if (response.success) {
-      // Refresh search to show updated status
-      setSearchQuery(searchQuery);
-    } else {
-      console.error('Registration failed:', response.error);
-      // For now, prompt signup - later we'll handle authentication
-      onSignupPrompt?.();
-    }
-  };
-
-  const handleSignupPrompt = () => {
-    onSignupPrompt?.();
-  };
+  const getStatusBadge = (result: FanmarkSearchResult) => (
+    <FanmarkStatusBadge status={normalizeStatus(result.status)} />
+  );
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
+    <div className="space-y-6 overflow-visible">
       {/* Search Input */}
-      <div className="rounded-2xl border-2 border-primary/30 bg-background/90 px-6 py-6 shadow-[0_15px_35px_rgba(101,195,200,0.12)] backdrop-blur">
+      <div className="relative overflow-visible">
         <EmojiInput
           value={searchQuery}
           onChange={setSearchQuery}
           onSearchPerformed={onSearchPerformed}
           placeholder={t('search.searchPlaceholder')}
-          className="h-16 rounded-full border border-primary/30 bg-background px-8 text-lg font-medium shadow-none focus:border-primary focus:ring-4 focus:ring-primary/25"
-          maxLength={50}
+          className="h-16 text-center text-2xl"
+          maxLength={5}
+          disabled={loading}
         />
+        {loading && (
+          <div className="absolute right-14 top-1/2 -translate-y-1/2 transform">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        )}
       </div>
 
       {/* Skin Tone Normalization Info */}
       {normalizationInfo?.isNormalized && (
         <TooltipProvider>
-          <Alert className="border-primary/20 bg-gradient-to-r from-primary/5 to-secondary/5">
+          <Alert className="rounded-2xl border border-primary/15 bg-primary/5">
             <AlertDescription className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium text-primary">
@@ -131,16 +93,6 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchP
         </TooltipProvider>
       )}
 
-      {/* Status Display */}
-      {loading && searchQuery.trim() && (
-        <div className="flex items-center justify-center py-4">
-          <div className="inline-flex items-center space-x-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-            <span className="text-muted-foreground">{t('common.loading')}</span>
-          </div>
-        </div>
-      )}
-
       {result && searchQuery.trim() && !loading && (
         <div className="space-y-4">
           {/* Error Display */}
@@ -152,53 +104,24 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchP
           
           {/* Result Display */}
           {!(result as any).error && result.emoji_combination && (
-            <div className="flex flex-col gap-4 rounded-2xl border border-primary/20 bg-card/95 p-6 shadow-[0_20px_40px_rgba(239,159,188,0.15)] sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-4">
-                <span className="text-3xl">{result.emoji_combination}</span>
-                {result.short_id && (
-                  <div className="text-sm text-muted-foreground">
-                    fanmark.id/e/{result.short_id}
-                  </div>
-                )}
-                {result.emoji_count && (
-                  <div className="rounded-full bg-secondary/70 px-3 py-1 text-xs text-secondary-foreground">
-                    {result.emoji_count}{t('search.emojiCountLabel')}
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center sm:gap-3">
+            <div className={`rounded-2xl border p-5 ${result.status === 'invalid' ? 'border-rose-200 bg-rose-50' : 'border-primary/10 bg-muted/40'}`}>
+              <div className="flex w-full items-center gap-4">
+                <span className="text-3xl tracking-[0.3em]">{result.emoji_combination}</span>
                 {getStatusBadge(result)}
-                {result.status === 'available' && result.emoji_combination && (
-                  <Button 
-                    onClick={() => handleRegister(result.emoji_combination)} 
-                    size="sm" 
-                    className="rounded-full bg-success text-success-content hover:bg-success/80"
-                  >
-                    <Sparkles className="w-3 h-3 mr-1" />
-                    Register ✨
-                  </Button>
-                )}
-                {result.status === 'payment_required' && (
-                  <div className="flex flex-col items-stretch gap-1 text-right">
-                    <Button 
-                      onClick={handleSignupPrompt}
-                      size="sm" 
-                      className="rounded-full bg-info text-info-content hover:bg-info/80"
-                    >
-                      Pay ${result.price_usd?.toLocaleString()} 💳
-                    </Button>
-                    <span className="text-xs text-base-content/70">
-                      {result.emoji_count === 1 ? t('search.pricingLabels.premiumEmoji') : 
-                       result.emoji_count === 2 ? t('search.pricingLabels.paidEmoji') : t('search.pricingLabels.reservedEmoji')}
-                    </span>
-                  </div>
-                )}
-                {(result.status === 'taken' || result.status === 'premium') && (
-                  <Button variant="ghost" size="sm">
-                    {t('search.viewProfile')}
-                  </Button>
-                )}
               </div>
+              {result.status === 'invalid' && result.error && (
+                <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+                  <div className="mb-1 flex items-center gap-2 font-medium">
+                    <FiAlertTriangle className="h-4 w-4" />
+                    {t('dashboard.inputError')}
+                  </div>
+                  <div>{result.error}</div>
+                  <div className="mt-2 flex items-center gap-2 text-xs text-rose-600">
+                    <FiInfo className="h-3 w-3" />
+                    {t('dashboard.inputHint')}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -214,20 +137,8 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchP
             {recentFanmarks.map((fanmark, index) => (
               <Card key={`recent-${fanmark.id}-${index}`} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <span className="text-xl">{fanmark.emoji_combination || '❓'}</span>
-                      <div className="flex flex-col">
-                        <div className="text-sm text-base-content/70">
-                          fanmark.id/e/{fanmark.short_id}
-                        </div>
-                        {fanmark.owner && (
-                          <div className="text-xs text-base-content/70">
-                            by @{fanmark.owner.username}
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                  <div className="flex w-full items-center gap-3">
+                    <span className="text-xl tracking-[0.2em]">{fanmark.emoji_combination || '❓'}</span>
                     {getStatusBadge(fanmark)}
                   </div>
                 </CardContent>
@@ -237,10 +148,6 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchP
         </div>
       )}
 
-      {/* Stats */}
-      <div className="text-center text-sm text-base-content/70">
-        {t('search.joinThousands')}
-      </div>
     </div>
   );
 };

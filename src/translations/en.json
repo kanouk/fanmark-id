@@ -1,11 +1,11 @@
 {
   "hero": {
     "title": "fanmark.id",
-    "subtitle": "Create your unique address\nwith emoji marks",
-    "description": "Create your own unique short URL with emojis.\nSimple, memorable, and perfect for social media - a new kind of address service.",
+    "subtitle": "Claim your very own fanma",
+    "description": "A next-generation ID service that unlocks the full potential of fanma",
     "searchPlaceholder": "Search for your perfect emoji combination! 🔍",
     "searchButton": "Search",
-    "tryButton": "Try for Free",
+    "tryButton": "Get your fanma!",
     "signInButton": "Sign In"
   },
   "search": {
@@ -21,6 +21,7 @@
     "foundPerfect": "Found the perfect one? Sign up to claim it!",
     "joinThousands": "Join thousands of creators!",
     "searchPlaceholder": "Try your favorite fanma!",
+    "emojiInputHint": "Tap + to pick your first fanma",
     "validationError": "Input must contain only emojis (no text, numbers, or symbols)",
     "emojiCountError": "Emoji combination must contain 1-5 emojis",
     "emojiCountLabel": "emojis",
@@ -185,6 +186,7 @@
     "submit": "Submit",
     "back": "Back",
     "saving": "Saving...",
+    "clearAll": "Clear All",
     "enabled": "Enabled",
     "disabled": "Disabled",
     "userNotAuthenticated": "User not authenticated",
