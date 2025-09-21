@@ -91,10 +91,10 @@ export const FanmarkDashboard = () => {
 
   const getAccessTypeBadge = (accessType: string) => {
     const badges = {
-      profile: { emoji: '📄', label: t('dashboard.accessTypes.profile'), variant: 'default', className: 'badge-info' },
-      redirect: { emoji: '🔗', label: t('dashboard.accessTypes.redirect'), variant: 'default', className: 'badge-success' },
-      text: { emoji: '📝', label: t('dashboard.accessTypes.text'), variant: 'default', className: 'badge-warning' },
-      inactive: { emoji: '😴', label: t('dashboard.accessTypes.inactive'), variant: 'outline', className: 'badge-ghost' },
+      profile: { emoji: '📄', label: t('dashboard.accessTypes.profile'), variant: 'default', className: 'bg-blue-100 text-blue-800' },
+      redirect: { emoji: '🔗', label: t('dashboard.accessTypes.redirect'), variant: 'default', className: 'bg-green-100 text-green-800' },
+      text: { emoji: '📝', label: t('dashboard.accessTypes.text'), variant: 'default', className: 'bg-yellow-100 text-yellow-800' },
+      inactive: { emoji: '😴', label: t('dashboard.accessTypes.inactive'), variant: 'outline', className: 'bg-gray-100 text-gray-800' },
     };
     
     const badge = badges[accessType as keyof typeof badges] || badges.inactive;
@@ -126,7 +126,7 @@ export const FanmarkDashboard = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <span className="loading loading-spinner loading-lg"></span>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
       </div>
     );
   }
@@ -149,7 +149,7 @@ export const FanmarkDashboard = () => {
               onClick={() => setActiveTab('acquisition')}
               variant="default"
               size="lg"
-              className="btn-primary gap-2 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              className="gap-2 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
             >
               <Plus className="h-5 w-5" />
               <span className="hidden sm:inline">{t('dashboard.newFanmark')}</span>
@@ -195,7 +195,7 @@ export const FanmarkDashboard = () => {
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="w-full btn-outline btn-primary hover:btn-primary group/btn" 
+                      className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground group/btn" 
                       onClick={() => setActiveTab('acquisition')}
                     >
                       <span className="group-hover/btn:animate-pulse">✨</span>
@@ -298,7 +298,7 @@ export const FanmarkDashboard = () => {
                       </div>
                     </div>
                     {fanmarks.length === 0 && (
-                      <Badge variant="outline" className="badge-ghost">
+                      <Badge variant="outline" className="bg-muted text-muted-foreground">
                         {t('dashboard.noFanmarks')}
                       </Badge>
                     )}
@@ -320,7 +320,7 @@ export const FanmarkDashboard = () => {
                             onClick={() => setActiveTab('acquisition')}
                             variant="default"
                             size="lg"
-                            className="btn-primary gap-2 mt-6 shadow-lg hover:shadow-xl transition-all duration-300"
+                            className="gap-2 mt-6 shadow-lg hover:shadow-xl transition-all duration-300"
                           >
                             <Plus className="h-5 w-5" />
                             {t('dashboard.registerFirstFanmark')}
@@ -350,7 +350,7 @@ export const FanmarkDashboard = () => {
                                   <div className="flex items-center gap-3">
                                     <span className="text-3xl">{fanmark.emoji_combination}</span>
                                     {fanmark.is_premium && (
-                                      <Badge variant="secondary" className="badge-accent gap-1">
+                                      <Badge variant="secondary" className="bg-accent text-accent-foreground gap-1">
                                         💎 <span className="hidden xl:inline">Premium</span>
                                       </Badge>
                                     )}
@@ -373,30 +373,30 @@ export const FanmarkDashboard = () => {
                                 </td>
                                 <td>{getAccessTypeBadge(fanmark.access_type)}</td>
                                 <td>
-                                  <code className="badge badge-ghost font-mono text-sm">
+                                  <code className="bg-muted text-muted-foreground font-mono text-sm px-2 py-1 rounded">
                                     {fanmark.short_id}
                                   </code>
                                 </td>
                                 <td>
                                   <Badge 
                                     variant={fanmark.status === 'active' ? 'default' : 'destructive'}
-                                    className={fanmark.status === 'active' ? 'badge-success' : 'badge-error'}
+                                    className={fanmark.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
                                   >
                                     {fanmark.status}
                                   </Badge>
                                 </td>
                                 <td>
                                   <div className="flex gap-1">
-                                    <Button size="sm" variant="ghost" className="btn-square btn-sm hover:btn-info">
+                                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-blue-100">
                                       <Eye className="h-4 w-4" />
                                     </Button>
-                                    <Button size="sm" variant="ghost" className="btn-square btn-sm hover:btn-warning">
+                                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-yellow-100">
                                       <Edit className="h-4 w-4" />
                                     </Button>
                                     <Button 
                                       size="sm" 
                                       variant="ghost" 
-                                      className="btn-square btn-sm hover:btn-secondary"
+                                      className="h-8 w-8 p-0 hover:bg-secondary"
                                       onClick={() => setSettingsFanmark(fanmark)}
                                     >
                                       <Settings className="h-4 w-4" />
@@ -404,7 +404,7 @@ export const FanmarkDashboard = () => {
                                     <Button 
                                       size="sm" 
                                       variant="ghost" 
-                                      className="btn-square btn-sm hover:btn-error"
+                                      className="h-8 w-8 p-0 hover:bg-red-100"
                                     >
                                       <Trash2 className="h-4 w-4" />
                                     </Button>
@@ -430,7 +430,7 @@ export const FanmarkDashboard = () => {
                                   </div>
                                 </div>
                                 {fanmark.is_premium && (
-                                  <Badge variant="secondary" className="badge-accent">💎</Badge>
+                                  <Badge variant="secondary" className="bg-accent text-accent-foreground">💎</Badge>
                                 )}
                               </div>
                               
@@ -438,7 +438,7 @@ export const FanmarkDashboard = () => {
                                 {getAccessTypeBadge(fanmark.access_type)}
                                 <Badge 
                                   variant={fanmark.status === 'active' ? 'default' : 'destructive'}
-                                  className={fanmark.status === 'active' ? 'badge-success' : 'badge-error'}
+                                  className={fanmark.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
                                 >
                                   {fanmark.status}
                                 </Badge>
@@ -460,18 +460,18 @@ export const FanmarkDashboard = () => {
                               )}
 
                               <div className="flex gap-2">
-                                <Button size="sm" variant="outline" className="btn-outline btn-info flex-1">
+                                <Button size="sm" variant="outline" className="border-blue-200 text-blue-600 hover:bg-blue-50 flex-1">
                                   <Eye className="h-4 w-4 mr-1" />
                                   <span className="text-xs">表示</span>
                                 </Button>
-                                <Button size="sm" variant="outline" className="btn-outline btn-warning flex-1">
+                                <Button size="sm" variant="outline" className="border-yellow-200 text-yellow-600 hover:bg-yellow-50 flex-1">
                                   <Edit className="h-4 w-4 mr-1" />
                                   <span className="text-xs">編集</span>
                                 </Button>
                                 <Button 
                                   size="sm" 
                                   variant="outline" 
-                                  className="btn-outline btn-secondary flex-1"
+                                  className="border-gray-200 text-gray-600 hover:bg-gray-50 flex-1"
                                   onClick={() => setSettingsFanmark(fanmark)}
                                 >
                                   <Settings className="h-4 w-4 mr-1" />
@@ -510,7 +510,7 @@ export const FanmarkDashboard = () => {
                     {t('dashboard.comingSoonDescription')}
                   </p>
                 </div>
-                <Badge variant="outline" className="badge-warning self-start sm:self-center">
+                <Badge variant="outline" className="bg-yellow-100 text-yellow-800 self-start sm:self-center">
                   ✨ {t('dashboard.comingSoon')}
                 </Badge>
               </div>

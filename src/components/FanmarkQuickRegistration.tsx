@@ -199,7 +199,7 @@ export const FanmarkQuickRegistration = ({
             >
               {isSubmitting ? (
                 <>
-                  <span className="loading loading-spinner loading-sm mr-2"></span>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground mr-2"></div>
                   {t('registration.securing')}
                 </>
               ) : (

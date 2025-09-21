@@ -117,7 +117,7 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
             value={formData.display_name}
             onChange={(e) => setFormData(prev => ({ ...prev, display_name: e.target.value }))}
             placeholder={t('profile.displayNamePlaceholder')}
-            className="input input-bordered w-full"
+            className="w-full"
           />
         </div>
 

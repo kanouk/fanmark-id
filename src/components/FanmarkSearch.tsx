@@ -90,7 +90,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchP
           onChange={setSearchQuery}
           onSearchPerformed={onSearchPerformed}
           placeholder={t('search.searchPlaceholder')}
-          className="input input-bordered input-primary pl-10 py-3 text-lg rounded-full"
+          className="pl-10 py-3 text-lg rounded-full border-primary/50 focus:border-primary"
           maxLength={50}
         />
       </div>
@@ -128,8 +128,8 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchP
       {loading && searchQuery.trim() && (
         <div className="flex items-center justify-center py-4">
           <div className="inline-flex items-center space-x-2">
-            <span className="loading loading-spinner loading-md text-primary"></span>
-            <span className="text-base-content/70">{t('common.loading')}</span>
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+            <span className="text-muted-foreground">{t('common.loading')}</span>
           </div>
         </div>
       )}
@@ -145,16 +145,16 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchP
           
           {/* Result Display */}
           {!(result as any).error && (
-            <div className="flex items-center justify-between p-4 rounded-lg border bg-base-100 border-base-300">
+            <div className="flex items-center justify-between p-4 rounded-lg border bg-card border-border">
               <div className="flex items-center space-x-3">
                 <span className="text-2xl">{result.emoji_combination}</span>
                 {result.short_id && (
-                  <div className="text-sm text-base-content/70">
+                  <div className="text-sm text-muted-foreground">
                     fanmark.id/e/{result.short_id}
                   </div>
                 )}
                 {result.emoji_count && (
-                  <div className="text-xs text-base-content/70 bg-base-200 px-2 py-1 rounded">
+                  <div className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded">
                     {result.emoji_count}{t('search.emojiCountLabel')}
                   </div>
                 )}
