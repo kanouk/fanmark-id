@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CustomEmojiPicker } from '@/components/ui/emoji-picker';
-import { Smile } from 'lucide-react';
 
 interface EmojiInputProps {
   value: string;
@@ -45,33 +43,38 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
     }
   };
 
+  const handleInputFocus = () => {
+    setIsPickerOpen(true);
+  };
+
+  const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    // Don't close if clicking inside the popover
+    if (!e.relatedTarget || !e.currentTarget.parentElement?.contains(e.relatedTarget as Node)) {
+      // Delay closing to allow emoji selection
+      setTimeout(() => setIsPickerOpen(false), 150);
+    }
+  };
+
   return (
-    <div className="relative flex w-full">
-      <Input
-        value={value}
-        onChange={handleInputChange}
-        placeholder={placeholder}
-        disabled={disabled}
-        maxLength={maxLength}
-        className={`pr-12 ${className}`}
-      />
+    <div className="relative w-full">
       <Popover open={isPickerOpen} onOpenChange={setIsPickerOpen}>
         <PopoverTrigger asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
+          <Input
+            value={value}
+            onChange={handleInputChange}
+            onFocus={handleInputFocus}
+            onBlur={handleInputBlur}
+            placeholder={placeholder}
             disabled={disabled}
-            className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0 hover:bg-base-200"
-            aria-label="Open emoji picker"
-          >
-            <Smile className="h-4 w-4 text-base-content/70" />
-          </Button>
+            maxLength={maxLength}
+            className={className}
+          />
         </PopoverTrigger>
         <PopoverContent 
           className="p-0 border-base-300 bg-base-100" 
-          align="end" 
+          align="start" 
           sideOffset={4}
+          onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <CustomEmojiPicker
             onEmojiSelect={handleEmojiSelect}
