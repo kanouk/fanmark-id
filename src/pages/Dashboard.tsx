@@ -1,4 +1,5 @@
 import { FanmarkDashboard } from '@/components/FanmarkDashboard';
+import { Navigation } from '@/components/Navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
 
@@ -19,6 +20,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-base-100">
+      <Navigation />
       <FanmarkDashboard />
     </div>
   );

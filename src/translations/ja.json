@@ -111,11 +111,6 @@
       "special": "特殊文字を含む"
     }
   },
-  "navigation": {
-    "profile": "プロフィール",
-    "logout": "ログアウト",
-    "seeHowUsed": "みんなの使い方を見る"
-  },
   "sections": {
     "howUsed": "こんな風に使われてます",
     "howItWorks": "3ステップで完成",
@@ -205,5 +200,39 @@
     "email": "メールアドレス",
     "memberSince": "登録日",
     "role": "役割"
+  },
+  "dashboard": {
+    "title": "ダッシュボード",
+    "yourFanmarks": "あなたのファンマーク",
+    "premiumEmojis": "プレミアム絵文字",
+    "active": "アクティブ",
+    "searchPlaceholder": "ファンマークを検索！ 🔍",
+    "noFanmarks": "まだファンマークがありません",
+    "noFanmarksDescription": "最初のファンマークを登録してください！",
+    "noResults": "ファンマークが見つかりません",
+    "noResultsDescription": "別の検索語を試してください",
+    "emoji": "絵文字",
+    "displayName": "表示名",
+    "accessType": "アクセスタイプ",
+    "shortId": "ショートID",
+    "status": "ステータス",
+    "actions": "アクション",
+    "estimatedValue": "推定ポートフォリオ価値",
+    "comingSoon": "近日公開",
+    "comingSoonDescription": "プレミアムユーザー向けに近日公開！",
+    "accessTypes": {
+      "profile": "プロフィール",
+      "redirect": "リダイレクト", 
+      "text": "テキスト",
+      "inactive": "非アクティブ"
+    },
+    "errorLoadingData": "データの読み込みエラー",
+    "failedToLoadFanmarks": "ファンマークの読み込みに失敗しました"
+  },
+  "navigation": {
+    "home": "ホーム",
+    "dashboard": "ダッシュボード", 
+    "profile": "プロフィール",
+    "logout": "ログアウト"
   }
 }

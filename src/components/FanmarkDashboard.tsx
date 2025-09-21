@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,7 @@ interface Profile {
 
 export const FanmarkDashboard = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [fanmarks, setFanmarks] = useState<Fanmark[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,8 +66,8 @@ export const FanmarkDashboard = () => {
     } catch (error) {
       console.error('Error fetching user data:', error);
       toast({
-        title: 'Error loading data',
-        description: 'Failed to load your fanmarks',
+        title: t('dashboard.errorLoadingData'),
+        description: t('dashboard.failedToLoadFanmarks'),
         variant: 'destructive',
       });
     } finally {
@@ -75,10 +77,10 @@ export const FanmarkDashboard = () => {
 
   const getAccessTypeBadge = (accessType: string) => {
     const badges = {
-      profile: { emoji: '📄', label: 'Profile', className: 'bg-blue-100 text-blue-800' },
-      redirect: { emoji: '🔗', label: 'Redirect', className: 'bg-green-100 text-green-800' },
-      text: { emoji: '📝', label: 'Text', className: 'bg-yellow-100 text-yellow-800' },
-      inactive: { emoji: '😴', label: 'Inactive', className: 'bg-gray-100 text-gray-800' },
+      profile: { emoji: '📄', label: t('dashboard.accessTypes.profile'), className: 'bg-blue-100 text-blue-800' },
+      redirect: { emoji: '🔗', label: t('dashboard.accessTypes.redirect'), className: 'bg-green-100 text-green-800' },
+      text: { emoji: '📝', label: t('dashboard.accessTypes.text'), className: 'bg-yellow-100 text-yellow-800' },
+      inactive: { emoji: '😴', label: t('dashboard.accessTypes.inactive'), className: 'bg-gray-100 text-gray-800' },
     };
     
     const badge = badges[accessType as keyof typeof badges] || badges.inactive;
@@ -112,7 +114,7 @@ export const FanmarkDashboard = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Your Fanmarks</p>
+                <p className="text-sm font-medium text-gray-600">{t('dashboard.yourFanmarks')}</p>
                 <p className="text-3xl font-bold text-primary">
                   {fanmarks.length} / {profile?.emoji_limit || 10}
                 </p>
@@ -136,7 +138,7 @@ export const FanmarkDashboard = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Premium Emojis</p>
+                <p className="text-sm font-medium text-gray-600">{t('dashboard.premiumEmojis')}</p>
                 <p className="text-3xl font-bold text-yellow-600">
                   {fanmarks.filter(f => f.is_premium).length}
                 </p>
@@ -150,7 +152,7 @@ export const FanmarkDashboard = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Active</p>
+                <p className="text-sm font-medium text-gray-600">{t('dashboard.active')}</p>
                 <p className="text-3xl font-bold text-green-600">
                   {fanmarks.filter(f => f.access_type !== 'inactive').length}
                 </p>
@@ -167,7 +169,7 @@ export const FanmarkDashboard = () => {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
-              placeholder="Find your fanmark! 🔍"
+              placeholder={t('dashboard.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -180,9 +182,9 @@ export const FanmarkDashboard = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <span>🎨 Your Fanmarks</span>
+            <span>🎨 {t('dashboard.yourFanmarks')}</span>
             {fanmarks.length === 0 && (
-              <Badge variant="outline">No fanmarks yet</Badge>
+              <Badge variant="outline">{t('dashboard.noFanmarks')}</Badge>
             )}
           </CardTitle>
         </CardHeader>
@@ -191,10 +193,10 @@ export const FanmarkDashboard = () => {
             <div className="text-center py-8">
               <div className="text-6xl mb-4">🎯</div>
               <p className="text-lg text-gray-600 mb-2">
-                {searchQuery ? 'No fanmarks found' : 'No fanmarks registered yet'}
+                {searchQuery ? t('dashboard.noResults') : t('dashboard.noFanmarks')}
               </p>
               <p className="text-gray-500">
-                {searchQuery ? 'Try a different search term' : 'Start by registering your first fanmark!'}
+                {searchQuery ? t('dashboard.noResultsDescription') : t('dashboard.noFanmarksDescription')}
               </p>
             </div>
           ) : (
@@ -202,12 +204,12 @@ export const FanmarkDashboard = () => {
               <table className="table w-full">
                 <thead>
                   <tr>
-                    <th>Emoji</th>
-                    <th>Display Name</th>
-                    <th>Access Type</th>
-                    <th>Short ID</th>
-                    <th>Status</th>
-                    <th>Actions</th>
+                    <th>{t('dashboard.emoji')}</th>
+                    <th>{t('dashboard.displayName')}</th>
+                    <th>{t('dashboard.accessType')}</th>
+                    <th>{t('dashboard.shortId')}</th>
+                    <th>{t('dashboard.status')}</th>
+                    <th>{t('dashboard.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -281,10 +283,10 @@ export const FanmarkDashboard = () => {
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold">💰 Estimated Portfolio Value</h3>
-              <p className="text-gray-600">Coming soon for premium users!</p>
+              <h3 className="text-lg font-semibold">💰 {t('dashboard.estimatedValue')}</h3>
+              <p className="text-gray-600">{t('dashboard.comingSoonDescription')}</p>
             </div>
-            <Badge className="bg-purple-100 text-purple-800">Coming Soon</Badge>
+            <Badge className="bg-purple-100 text-purple-800">{t('dashboard.comingSoon')}</Badge>
           </div>
         </CardContent>
       </Card>
