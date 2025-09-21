@@ -2,6 +2,7 @@ import { useState } from 'react';
 import FanmarkSearch from '@/components/FanmarkSearch';
 import { FanmarkRegistrationForm } from '@/components/FanmarkRegistrationForm';
 import { useAuth } from '@/hooks/useAuth';
+import { useFanmarkSession } from '@/hooks/useFanmarkSession';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -12,6 +13,7 @@ interface FanmarkSearchWithRegistrationProps {
 
 export const FanmarkSearchWithRegistration = ({ onSignupPrompt }: FanmarkSearchWithRegistrationProps) => {
   const { user } = useAuth();
+  const { storeSearchData } = useFanmarkSession();
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
 
   const handleRegistrationSuccess = () => {
@@ -32,7 +34,10 @@ export const FanmarkSearchWithRegistration = ({ onSignupPrompt }: FanmarkSearchW
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <FanmarkSearch onSignupPrompt={onSignupPrompt} />
+          <FanmarkSearch 
+            onSignupPrompt={onSignupPrompt}
+            onSearchPerformed={storeSearchData}
+          />
           
           {user && (
             <div className="mt-6 text-center border-t pt-6">

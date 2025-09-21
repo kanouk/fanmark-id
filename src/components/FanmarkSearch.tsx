@@ -10,9 +10,10 @@ import { useFanmarkSearch, FanmarkSearchResult } from "@/hooks/useFanmarkSearch"
 
 interface FanmarkSearchProps {
   onSignupPrompt?: () => void;
+  onSearchPerformed?: (searchQuery: string) => void;
 }
 
-const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt }) => {
+const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchPerformed }) => {
   const { t } = useTranslation();
   const { 
     searchQuery, 
@@ -86,7 +87,12 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt }) => {
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-base-content/70 w-4 h-4" />
         <Input
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            if (e.target.value.trim()) {
+              onSearchPerformed?.(e.target.value);
+            }
+          }}
           placeholder={t('search.searchPlaceholder')}
           className="input input-bordered input-primary pl-10 pr-4 py-3 text-lg rounded-full"
         />
