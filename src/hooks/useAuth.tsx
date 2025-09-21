@@ -8,6 +8,7 @@ interface AuthContextType {
   loading: boolean;
   emailConfirmed: boolean;
   signOut: () => Promise<void>;
+  signingOut: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -56,10 +57,37 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return () => subscription.unsubscribe();
   }, []);
 
+  const [signingOut, setSigningOut] = useState(false);
+
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('Error signing out:', error);
+    if (signingOut) return; // Prevent double clicks
+    
+    try {
+      setSigningOut(true);
+      
+      // Clear local state first
+      setUser(null);
+      setSession(null);
+      setEmailConfirmed(false);
+      
+      // Clear localStorage
+      try {
+        localStorage.removeItem('sb-ppqgtbjykitqtiaisyji-auth-token');
+        localStorage.clear();
+      } catch (e) {
+        console.warn('Failed to clear localStorage:', e);
+      }
+      
+      // Attempt Supabase logout (may fail if session is already invalid)
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.warn('Supabase logout error (expected if session was invalid):', error);
+        // Don't throw - local logout is sufficient
+      }
+    } catch (error) {
+      console.error('Error during logout:', error);
+    } finally {
+      setSigningOut(false);
     }
   };
 
@@ -69,6 +97,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     loading,
     emailConfirmed,
     signOut,
+    signingOut,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

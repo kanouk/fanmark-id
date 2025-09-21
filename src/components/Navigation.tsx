@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useToast } from '@/hooks/use-toast';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -9,10 +10,29 @@ import { LogOut, User } from 'lucide-react';
 import { MdSpaceDashboard } from 'react-icons/md';
 
 export const Navigation = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, signingOut } = useAuth();
   const { profile } = useProfile();
   const { t } = useTranslation();
+  const { toast } = useToast();
   const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast({
+        title: t('navigation.logout'),
+        description: 'ログアウトしました',
+      });
+      navigate('/');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      toast({
+        title: 'エラー',
+        description: 'ログアウトに失敗しました',
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
@@ -74,15 +94,15 @@ export const Navigation = () => {
                   {t('navigation.profile')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onSelect={async (event) => {
+                  onSelect={(event) => {
                     event.preventDefault();
-                    await signOut();
-                    navigate('/');
+                    handleLogout();
                   }}
                   className="cursor-pointer"
+                  disabled={signingOut}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  {t('navigation.logout')}
+                  {signingOut ? 'ログアウト中...' : t('navigation.logout')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

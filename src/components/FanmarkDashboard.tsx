@@ -46,7 +46,7 @@ export const FanmarkDashboard = () => {
   const { toast } = useToast();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const fanmarkLimit = Math.max(profile?.emoji_limit || 10, 1);
+  const fanmarkLimit = 10; // Default limit
 
   const [fanmarks, setFanmarks] = useState<Fanmark[]>([]);
   const [loading, setLoading] = useState(true);
