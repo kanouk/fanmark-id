@@ -4,6 +4,10 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthFormData, AuthState } from '@/types/auth';
 
+interface CheckEmailExistsResponse {
+  exists: boolean;
+}
+
 export const useAuthForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -41,7 +45,7 @@ export const useAuthForm = () => {
 
   const checkEmailExists = async (email: string): Promise<boolean> => {
     try {
-      const { data, error } = await supabase.functions.invoke('check-email-exists', {
+      const { data, error } = await supabase.functions.invoke<CheckEmailExistsResponse>('check-email-exists', {
         body: { email }
       });
       
@@ -84,8 +88,9 @@ export const useAuthForm = () => {
         title: "確認メールを送信しました",
         description: "メール内のリンクをクリックしてアカウントを有効化してください。",
       });
-    } catch (error: any) {
-      setError(error.message || 'サインアップに失敗しました');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : undefined;
+      setError(message || 'サインアップに失敗しました');
     } finally {
       setLoading(false);
     }
@@ -117,8 +122,9 @@ export const useAuthForm = () => {
         description: "アプリケーションへようこそ！",
       });
       navigate('/dashboard');
-    } catch (error: any) {
-      setError(error.message || 'ログインに失敗しました');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : undefined;
+      setError(message || 'ログインに失敗しました');
     } finally {
       setLoading(false);
     }
@@ -142,8 +148,9 @@ export const useAuthForm = () => {
         title: "パスワードリセットメールを送信しました",
         description: "メール内のリンクをクリックしてパスワードをリセットしてください。",
       });
-    } catch (error: any) {
-      setError(error.message || 'パスワードリセットに失敗しました');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : undefined;
+      setError(message || 'パスワードリセットに失敗しました');
     } finally {
       setLoading(false);
     }
@@ -171,8 +178,9 @@ export const useAuthForm = () => {
         title: "確認メールを再送信しました",
         description: "メール内のリンクをクリックしてアカウントを有効化してください。",
       });
-    } catch (error: any) {
-      setError(error.message || '確認メールの再送信に失敗しました');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : undefined;
+      setError(message || '確認メールの再送信に失敗しました');
     } finally {
       setLoading(false);
     }

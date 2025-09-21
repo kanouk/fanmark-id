@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from './useTranslation';
 
+export type InvitationPerks = Record<string, unknown> | string[] | null;
+
 interface InvitationCodeResult {
   isValid: boolean;
   message: string;
-  perks?: any;
+  perks?: InvitationPerks;
 }
 
 export function useInvitationCode() {
@@ -20,7 +22,7 @@ export function useInvitationCode() {
     setValidationLoading(true);
     try {
       const { data, error } = await supabase
-        .from('invitation_codes')
+        .from<{ id: string; special_perks: InvitationPerks; max_uses: number; used_count: number; expires_at: string | null }>('invitation_codes')
         .select('id, special_perks, max_uses, used_count, expires_at')
         .eq('code', code.toUpperCase())
         .eq('is_active', true)

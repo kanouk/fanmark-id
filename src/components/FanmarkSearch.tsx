@@ -96,14 +96,14 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchP
       {result && searchQuery.trim() && !loading && (
         <div className="space-y-4">
           {/* Error Display */}
-          {(result as any).error && (
+          {result.error && (
             <div className="flex items-center justify-center p-3 rounded-lg border border-destructive/20 bg-destructive/5">
-              <span className="text-destructive text-sm font-medium">{(result as any).error}</span>
+              <span className="text-destructive text-sm font-medium">{result.error}</span>
             </div>
           )}
           
           {/* Result Display */}
-          {!(result as any).error && result.emoji_combination && (
+          {!result.error && result.emoji_combination && (
             <div className={`rounded-2xl border p-5 ${result.status === 'invalid' ? 'border-rose-200 bg-rose-50' : 'border-primary/10 bg-muted/40'}`}>
               <div className="flex w-full items-center gap-4">
                 <span className="text-3xl tracking-[0.3em]">{result.emoji_combination}</span>

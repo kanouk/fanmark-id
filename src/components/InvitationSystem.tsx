@@ -5,11 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useInvitationCode } from '@/hooks/useInvitationCode';
+import { useInvitationCode, InvitationPerks } from '@/hooks/useInvitationCode';
 import { useToast } from '@/hooks/use-toast';
 
 interface InvitationSystemProps {
-  onValidCode?: (code: string, perks?: any) => void;
+  onValidCode?: (code: string, perks?: InvitationPerks) => void;
 }
 
 export function InvitationSystem({ onValidCode }: InvitationSystemProps) {

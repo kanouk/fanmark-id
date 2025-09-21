@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,6 +7,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,6 +33,8 @@ import {
   FiMoon,
   FiImage
 } from 'react-icons/fi';
+
+type AccessType = 'profile' | 'redirect' | 'text' | 'inactive';
 
 const settingsSchema = z.object({
   accessType: z.enum(['profile', 'redirect', 'text', 'inactive']),
@@ -50,7 +61,7 @@ interface Fanmark {
   id: string;
   emoji_combination: string;
   display_name: string;
-  access_type: string;
+  access_type: AccessType;
   target_url?: string;
   text_content?: string;
   is_transferable: boolean;
@@ -77,6 +88,7 @@ export const FanmarkSettings = ({
     handleSubmit,
     watch,
     reset,
+    control,
     formState: { errors },
   } = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
@@ -88,7 +100,7 @@ export const FanmarkSettings = ({
   useEffect(() => {
     if (fanmark) {
       reset({
-        accessType: fanmark.access_type as any,
+        accessType: fanmark.access_type,
         displayName: fanmark.display_name,
         targetUrl: fanmark.target_url || '',
         textContent: fanmark.text_content || '',
@@ -155,35 +167,34 @@ export const FanmarkSettings = ({
   };
 
   const accessTypes = [
-    { 
-      value: 'profile', 
-      label: 'プロフィールページ', 
-      desc: '個人ページを作成します',
+    {
+      value: 'profile',
+      label: 'プロフィールページ',
+      desc: 'ファンとつながる専用プロフィールを表示します',
       icon: FiUser,
-      gradient: 'from-blue-400 to-cyan-400'
     },
-    { 
-      value: 'redirect', 
-      label: 'URL リダイレクト', 
-      desc: '指定したURLにリダイレクトします',
+    {
+      value: 'redirect',
+      label: 'URL リダイレクト',
+      desc: '指定先のURLへスムーズに案内します',
       icon: FiExternalLink,
-      gradient: 'from-purple-400 to-pink-400'
     },
-    { 
-      value: 'text', 
-      label: 'テキスト表示', 
-      desc: 'カスタムテキストを表示します',
+    {
+      value: 'text',
+      label: 'テキスト表示',
+      desc: '短いメッセージやお知らせを表示します',
       icon: FiFileText,
-      gradient: 'from-green-400 to-emerald-400'
     },
-    { 
-      value: 'inactive', 
-      label: '未設定', 
-      desc: '後で設定します',
+    {
+      value: 'inactive',
+      label: '未設定',
+      desc: 'まだ公開しない場合はこちら',
       icon: FiMoon,
-      gradient: 'from-gray-400 to-slate-400'
     },
   ];
+
+  const selectedAccessType = accessTypes.find((option) => option.value === accessType);
+  const SelectedAccessIcon = selectedAccessType?.icon ?? FiSettings;
 
   // Don't render if fanmark is null
   if (!fanmark) {
@@ -192,10 +203,10 @@ export const FanmarkSettings = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-background via-secondary/5 to-primary/5 border border-border/50 backdrop-blur-sm">
-        <DialogHeader className="space-y-6 pb-6 border-b border-border/20">
-          <DialogTitle className="text-3xl font-bold flex items-center gap-4 text-center justify-center">
-            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 border border-primary/30 animate-pulse">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl border border-primary/15 bg-background/95 backdrop-blur-xl shadow-[0_30px_60px_rgba(101,195,200,0.18)]">
+        <DialogHeader className="space-y-6 pb-6 border-b border-border/15">
+          <DialogTitle className="flex items-center justify-center gap-4 text-center text-3xl font-semibold tracking-tight">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 via-secondary/15 to-primary/10 border border-primary/20">
               <FiSettings className="w-8 h-8 text-primary" />
             </div>
             <div>
@@ -246,56 +257,58 @@ export const FanmarkSettings = ({
                   </div>
                   アクセスタイプ
                 </Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {accessTypes.map((option) => {
-                    const Icon = option.icon;
-                    const isSelected = accessType === option.value;
-                    
-                    return (
-                      <label
-                        key={option.value}
-                        className={`relative group cursor-pointer block transition-all duration-300 hover:scale-[1.02] ${
-                          isSelected ? 'scale-[1.02]' : ''
-                        }`}
-                      >
-                        <Card className={`overflow-hidden border transition-all duration-300 rounded-xl ${
-                          isSelected 
-                            ? 'border-primary bg-primary/5 shadow-lg shadow-primary/20 ring-2 ring-primary/20' 
-                            : 'border-border hover:border-primary/50 hover:bg-primary/5'
-                        }`}>
-                          <CardContent className="p-4">
-                            <div className={`absolute inset-0 bg-gradient-to-br ${option.gradient} opacity-0 transition-opacity duration-300 ${
-                              isSelected ? 'opacity-10' : 'group-hover:opacity-5'
-                            }`} />
-                            
-                            <div className="relative flex items-start gap-3">
-                              <input
-                                type="radio"
-                                value={option.value}
-                                {...register('accessType')}
-                                className="w-4 h-4 text-primary border-border focus:ring-primary focus:ring-2 mt-1"
-                              />
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <Icon className={`h-5 w-5 transition-colors duration-300 ${
-                                    isSelected ? 'text-primary' : 'text-muted-foreground'
-                                  }`} />
-                                  <div className={`font-semibold transition-colors duration-300 ${
-                                    isSelected ? 'text-primary' : 'text-foreground'
-                                  }`}>
-                                    {option.label}
+                <div className="space-y-4">
+                  <Controller
+                    name="accessType"
+                    control={control}
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange} defaultValue={field.value}>
+                        <SelectTrigger ref={field.ref} className="h-12 rounded-xl border border-border bg-background/80 px-4 text-left text-base font-medium shadow-sm transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1">
+                          <SelectValue placeholder="アクセスタイプを選択" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-2xl border border-border/60 bg-card/95 shadow-2xl shadow-primary/10">
+                          <SelectGroup>
+                            <SelectLabel className="px-4 pt-2 pb-1 text-xs tracking-[0.3em] text-muted-foreground uppercase">
+                              Access Options
+                            </SelectLabel>
+                            {accessTypes.map((option) => {
+                              const Icon = option.icon;
+                              return (
+                                <SelectItem key={option.value} value={option.value} className="py-3 pl-8 pr-3">
+                                  <div className="flex items-start gap-3">
+                                    <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                      <Icon className="h-4 w-4" />
+                                    </div>
+                                    <div className="flex flex-col gap-1 text-left">
+                                      <span className="text-sm font-semibold text-foreground">{option.label}</span>
+                                      <span className="text-xs text-muted-foreground leading-relaxed">{option.desc}</span>
+                                    </div>
                                   </div>
-                                </div>
-                                <div className="text-sm text-muted-foreground">
-                                  {option.desc}
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </label>
-                    );
-                  })}
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.accessType && (
+                    <p className="flex items-center gap-2 text-sm text-destructive">
+                      <FiAlertCircle className="w-4 h-4" />
+                      {errors.accessType.message ?? 'アクセスタイプを選択してください'}
+                    </p>
+                  )}
+                  {selectedAccessType && (
+                    <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm leading-relaxed text-muted-foreground">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                        <SelectedAccessIcon className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <div className="text-base font-semibold text-foreground">{selectedAccessType.label}</div>
+                        <div>{selectedAccessType.desc}</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -406,32 +419,32 @@ export const FanmarkSettings = ({
           </Card>
 
           {/* Action Buttons */}
-          <div className="flex gap-4 pt-6 border-t border-border/20">
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex-1 h-14 text-lg font-semibold bg-gradient-to-r from-primary via-secondary to-accent hover:from-primary/90 hover:via-secondary/90 hover:to-accent/90 disabled:opacity-50 transition-all duration-300 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
-            >
-              {isSubmitting ? (
-                <div className="flex items-center gap-3">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  保存中...
-                </div>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <FiSave className="h-5 w-5" />
-                  設定を保存
-                </div>
-              )}
-            </Button>
+          <div className="flex flex-col-reverse gap-3 pt-6 border-t border-border/20 sm:flex-row sm:justify-end">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
-              className="px-8 h-14 text-lg font-semibold border border-border hover:border-primary hover:text-primary hover:bg-primary/5 transition-all duration-300 rounded-xl hover:scale-[1.02] active:scale-[0.98]"
+              className="h-12 w-full rounded-full border border-border/70 bg-transparent px-6 text-base font-medium text-muted-foreground transition-colors duration-200 hover:border-primary/60 hover:bg-primary/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/30 sm:w-auto"
             >
               キャンセル
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="h-12 w-full rounded-full bg-gradient-to-r from-primary via-secondary to-primary px-6 text-base font-semibold text-primary-foreground shadow-[0_15px_35px_rgba(101,195,200,0.18)] transition-all duration-200 hover:brightness-[1.05] focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 disabled:opacity-60 sm:w-48"
+            >
+              {isSubmitting ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  保存中...
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2">
+                  <FiSave className="h-5 w-5" />
+                  設定を保存
+                </div>
+              )}
             </Button>
           </div>
         </form>

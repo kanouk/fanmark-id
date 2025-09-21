@@ -72,10 +72,11 @@ export const usePasswordReset = () => {
       });
 
       navigate('/');
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : undefined;
       toast({
         title: "エラー",
-        description: error.message || 'パスワードの更新に失敗しました',
+        description: message || 'パスワードの更新に失敗しました',
         variant: "destructive",
       });
     } finally {

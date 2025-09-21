@@ -10,9 +10,21 @@ import { useAvatarUpload } from '@/hooks/useAvatarUpload';
 import { Save, User, Link as LinkIcon, Globe, Upload, Trash2, Loader2 } from 'lucide-react';
 import { SiInstagram, SiX, SiTiktok, SiYoutube, SiLine, SiGithub } from 'react-icons/si';
 
+type SocialLinks = Record<string, string>;
+
+interface UserProfile {
+  display_name: string | null;
+  bio: string | null;
+  avatar_url: string | null;
+  is_public_profile: boolean;
+  social_links: SocialLinks;
+}
+
+type UpdateProfilePayload = Partial<UserProfile>;
+
 interface UserProfileFormProps {
-  profile: any;
-  onUpdate: (data: any) => Promise<void>;
+  profile: UserProfile | null;
+  onUpdate: (data: UpdateProfilePayload) => Promise<void>;
 }
 
 const SOCIAL_PLATFORMS = [
@@ -32,11 +44,11 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
-    display_name: profile?.display_name || '',
-    bio: profile?.bio || '',
-    avatar_url: profile?.avatar_url || '',
+    display_name: profile?.display_name ?? '',
+    bio: profile?.bio ?? '',
+    avatar_url: profile?.avatar_url ?? '',
     is_public_profile: profile?.is_public_profile ?? true,
-    social_links: profile?.social_links || {}
+    social_links: profile?.social_links ?? ({} as SocialLinks),
   });
 
   const handleSubmit = async (e: React.FormEvent) => {

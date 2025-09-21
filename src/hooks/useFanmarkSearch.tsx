@@ -19,6 +19,54 @@ export interface FanmarkSearchResult {
   };
 }
 
+type FanmarkStatusRaw = 'active' | 'inactive' | 'reserved' | 'archived' | 'pending';
+
+interface FanmarkRow {
+  id: string;
+  emoji_combination: string;
+  normalized_emoji: string;
+  short_id: string;
+  is_premium: boolean;
+  status: FanmarkStatusRaw;
+  user_id: string;
+}
+
+type AvailabilityRuleType = 'specific_pattern' | 'duplicate_pattern' | 'prefix_pattern' | 'count_based';
+
+type AvailabilityRuleConfig = {
+  patterns?: string[];
+  prefixes?: Record<string, number | string>;
+  pricing?: Record<string, number | string>;
+  enabled?: boolean;
+};
+
+interface AvailabilityRuleRecord {
+  rule_type: AvailabilityRuleType;
+  priority: number;
+  rule_config: AvailabilityRuleConfig | null;
+  is_available: boolean;
+  price_usd: number | null;
+}
+
+interface ProfileRow {
+  username: string | null;
+  display_name: string | null;
+}
+
+interface RegisterFanmarkResponse {
+  success: boolean;
+  fanmark?: FanmarkRow;
+  error?: string;
+}
+
+const SKIN_TONE_MODIFIER_REGEX = /\p{Emoji_Modifier}/u;
+const SKIN_TONE_MODIFIER_GLOBAL_REGEX = /\p{Emoji_Modifier}/gu;
+const EMOJI_CHARACTER_REGEX = /\p{Emoji}/u;
+const COMBINING_CHARACTERS = new Set([
+  String.fromCodePoint(0xfe0f),
+  String.fromCodePoint(0x200d),
+]);
+
 export function useFanmarkSearch() {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,7 +91,7 @@ export function useFanmarkSearch() {
   const fetchRecentFanmarks = async () => {
     try {
       const { data, error } = await supabase
-        .from('fanmarks')
+        .from<FanmarkRow>('fanmarks')
         .select(`
           id,
           emoji_combination,
@@ -61,17 +109,21 @@ export function useFanmarkSearch() {
         console.error('Supabase error fetching recent fanmarks:', error);
         throw error;
       }
-
       if (data) {
         console.log('Fetched recent fanmarks data:', data);
-        const fanmarksWithStatus: FanmarkSearchResult[] = data.map((fanmark: any) => {
-          const status: 'premium' | 'taken' = fanmark.is_premium ? 'premium' : 'taken';
-          return { 
-            ...fanmark, 
-            status,
-            owner: undefined // We'll fetch owner info separately if needed
-          };
-        });
+        const fanmarksWithStatus: FanmarkSearchResult[] = data.map((fanmark) => ({
+          id: fanmark.id,
+          emoji_combination: fanmark.emoji_combination,
+          normalized_emoji: fanmark.normalized_emoji,
+          short_id: fanmark.short_id,
+          is_premium: fanmark.is_premium,
+          status: fanmark.is_premium ? 'premium' : 'taken',
+          price_yen: undefined,
+          price_usd: undefined,
+          emoji_count: undefined,
+          error: undefined,
+          owner: undefined,
+        }));
         setRecentFanmarks(fanmarksWithStatus);
         console.log('Recent fanmarks updated:', fanmarksWithStatus);
       }
@@ -83,12 +135,12 @@ export function useFanmarkSearch() {
 
   // Normalize emoji by removing skin tone modifiers
   const normalizeEmoji = (emoji: string): string => {
-    return emoji.replace(/[\u{1F3FB}-\u{1F3FF}]/gu, '');
+    return emoji.replace(SKIN_TONE_MODIFIER_GLOBAL_REGEX, '');
   };
 
   // Check if emoji has skin tone modifiers
   const hasSkinToneModifiers = (emoji: string): boolean => {
-    return /[\u{1F3FB}-\u{1F3FF}]/gu.test(emoji);
+    return SKIN_TONE_MODIFIER_REGEX.test(emoji);
   };
 
   // Get normalization info for display
@@ -118,10 +170,14 @@ export function useFanmarkSearch() {
 
     // Count emoji characters - use simple array spread for better compatibility
     const emojiArray = [...cleanInput];
-    const emojiCount = emojiArray.filter(char => {
-      // Count characters that match emoji pattern but exclude modifiers
-      return char.match(/\p{Emoji}/u) && 
-             !char.match(/[\u{1F3FB}-\u{1F3FF}\u{FE0F}\u{200D}]/u);
+    const emojiCount = emojiArray.filter((char) => {
+      if (!EMOJI_CHARACTER_REGEX.test(char)) {
+        return false;
+      }
+      if (SKIN_TONE_MODIFIER_REGEX.test(char)) {
+        return false;
+      }
+      return !COMBINING_CHARACTERS.has(char);
     }).length;
     
     if (emojiCount < 1 || emojiCount > 5) {
@@ -136,7 +192,7 @@ export function useFanmarkSearch() {
     try {
       // Get all active availability rules ordered by priority
       const { data: rules } = await supabase
-        .from('fanmark_availability_rules')
+        .from<AvailabilityRuleRecord>('fanmark_availability_rules')
         .select('rule_type, priority, rule_config, is_available, price_usd')
         .eq('is_available', true)
         .order('priority', { ascending: true });
@@ -147,11 +203,11 @@ export function useFanmarkSearch() {
 
       // Check patterns in priority order (1=highest, 4=lowest)
       for (const rule of rules) {
-        const config = rule.rule_config as any || {};
+        const config: AvailabilityRuleConfig = rule.rule_config ?? {};
         
         switch (rule.rule_type) {
           case 'specific_pattern':
-            if (config.patterns && Array.isArray(config.patterns) && config.patterns.includes(normalizedEmoji)) {
+            if (config.patterns?.includes(normalizedEmoji)) {
               return {
                 requiresPayment: true,
                 priceUsd: rule.price_usd,
@@ -173,12 +229,13 @@ export function useFanmarkSearch() {
             break;
 
           case 'prefix_pattern':
-            if (config.prefixes && typeof config.prefixes === 'object') {
+            if (config.prefixes) {
               const firstEmoji = getFirstEmoji(normalizedEmoji);
-              if (firstEmoji && config.prefixes[firstEmoji]) {
+              if (firstEmoji && config.prefixes[firstEmoji] !== undefined) {
+                const prefixPrice = Number(config.prefixes[firstEmoji]);
                 return {
                   requiresPayment: true,
-                  priceUsd: config.prefixes[firstEmoji],
+                  priceUsd: Number.isNaN(prefixPrice) ? undefined : prefixPrice,
                   reason: 'prefix_pattern',
                   isAvailable: rule.is_available
                 };
@@ -186,9 +243,10 @@ export function useFanmarkSearch() {
             }
             break;
 
-          case 'count_based':
-            if (config.pricing && typeof config.pricing === 'object' && config.pricing[emojiCount.toString()]) {
-              const price = parseFloat(config.pricing[emojiCount.toString()]);
+          case 'count_based': {
+            const priceValue = config.pricing?.[emojiCount.toString()];
+            if (priceValue !== undefined) {
+              const price = typeof priceValue === 'number' ? priceValue : parseFloat(priceValue);
               return {
                 requiresPayment: price > 0,
                 priceUsd: price,
@@ -197,6 +255,7 @@ export function useFanmarkSearch() {
               };
             }
             break;
+          }
         }
       }
 
@@ -213,7 +272,8 @@ export function useFanmarkSearch() {
     let previousEmoji = '';
     
     for (const char of emojiArray) {
-      if (char.match(/\p{Emoji}/u) && !char.match(/[\u{1F3FB}-\u{1F3FF}\u{FE0F}\u{200D}]/u)) {
+      const isEmoji = EMOJI_CHARACTER_REGEX.test(char);
+      if (isEmoji && !SKIN_TONE_MODIFIER_REGEX.test(char) && !COMBINING_CHARACTERS.has(char)) {
         if (char === previousEmoji) {
           return true; // Found consecutive duplicate
         }
@@ -228,7 +288,7 @@ export function useFanmarkSearch() {
   const getFirstEmoji = (emoji: string): string | null => {
     const emojiArray = [...emoji];
     for (const char of emojiArray) {
-      if (char.match(/\p{Emoji}/u) && !char.match(/[\u{1F3FB}-\u{1F3FF}\u{FE0F}\u{200D}]/u)) {
+      if (EMOJI_CHARACTER_REGEX.test(char) && !SKIN_TONE_MODIFIER_REGEX.test(char) && !COMBINING_CHARACTERS.has(char)) {
         return char;
       }
     }
@@ -248,8 +308,9 @@ export function useFanmarkSearch() {
           short_id: '',
           is_premium: false,
           status: 'invalid', // Set correct status for validation errors
-          error: validation.error
-        } as any);
+          error: validation.error,
+          emoji_count: validation.emojiCount,
+        });
         setLoading(false);
         return;
       }
@@ -259,7 +320,7 @@ export function useFanmarkSearch() {
 
       // Check if fanmark already exists
       const { data: existingFanmark, error: searchError } = await supabase
-        .from('fanmarks')
+        .from<FanmarkRow>('fanmarks')
         .select(`
           id,
           emoji_combination,
@@ -278,7 +339,7 @@ export function useFanmarkSearch() {
       if (existingFanmark) {
         // Get owner profile separately
         const { data: ownerProfile } = await supabase
-          .from('profiles')
+          .from<ProfileRow>('profiles')
           .select('username, display_name')
           .eq('user_id', existingFanmark.user_id)
           .maybeSingle();
@@ -286,13 +347,19 @@ export function useFanmarkSearch() {
         // Fanmark is taken
         const status: 'premium' | 'taken' = existingFanmark.is_premium ? 'premium' : 'taken';
         setResult({
-          ...existingFanmark,
+          id: existingFanmark.id,
+          emoji_combination: existingFanmark.emoji_combination,
+          normalized_emoji: existingFanmark.normalized_emoji,
+          short_id: existingFanmark.short_id,
+          is_premium: existingFanmark.is_premium,
           status,
           price_usd: pricingInfo.priceUsd,
-          owner: ownerProfile ? {
-            username: ownerProfile.username,
-            display_name: ownerProfile.display_name
-          } : undefined
+          owner: ownerProfile
+            ? {
+                username: ownerProfile.username ?? '',
+                display_name: ownerProfile.display_name ?? '',
+              }
+            : undefined,
         });
       } else if (!pricingInfo.isAvailable) {
         // Fanmark pattern is not available
@@ -304,8 +371,8 @@ export function useFanmarkSearch() {
           is_premium: false,
           status: 'available', // Will show error message
           error: 'This emoji pattern is currently not available for registration',
-          emoji_count: validation.emojiCount
-        } as any);
+          emoji_count: validation.emojiCount,
+        });
       } else if (pricingInfo.requiresPayment) {
         // Fanmark requires payment
         setResult({
@@ -316,8 +383,8 @@ export function useFanmarkSearch() {
           is_premium: true,
           status: 'payment_required',
           price_usd: pricingInfo.priceUsd,
-          emoji_count: validation.emojiCount
-        } as any);
+          emoji_count: validation.emojiCount,
+        });
       } else {
         // Fanmark is available and free
         setResult({
@@ -327,8 +394,8 @@ export function useFanmarkSearch() {
           short_id: '',
           is_premium: false,
           status: 'available',
-          emoji_count: validation.emojiCount
-        } as any);
+          emoji_count: validation.emojiCount,
+        });
       }
     } catch (error) {
       console.error('Error searching fanmarks:', error);
@@ -338,9 +405,9 @@ export function useFanmarkSearch() {
     }
   };
 
-  const registerFanmark = async (emoji: string): Promise<{ success: boolean; error?: string; fanmark?: any }> => {
+  const registerFanmark = async (emoji: string): Promise<{ success: boolean; error?: string; fanmark?: FanmarkRow }> => {
     try {
-      const response = await supabase.functions.invoke('register-fanmark', {
+      const response = await supabase.functions.invoke<RegisterFanmarkResponse>('register-fanmark', {
         body: { emoji_combination: emoji }
       });
 
@@ -348,7 +415,10 @@ export function useFanmarkSearch() {
         return { success: false, error: response.error.message };
       }
 
-      return { success: true, fanmark: response.data.fanmark };
+      if (response.data?.fanmark) {
+        return { success: true, fanmark: response.data.fanmark };
+      }
+      return { success: false, error: response.data?.error ?? 'Registration failed' };
     } catch (error) {
       return { success: false, error: 'Registration failed' };
     }
@@ -357,7 +427,7 @@ export function useFanmarkSearch() {
   const checkAvailability = async (emoji: string): Promise<boolean> => {
     try {
       const { data, error } = await supabase
-        .from('fanmarks')
+        .from<FanmarkRow>('fanmarks')
         .select('id')
         .eq('normalized_emoji', emoji)
         .eq('status', 'active')

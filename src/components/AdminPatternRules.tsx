@@ -11,11 +11,17 @@ interface AvailabilityRule {
   id: string;
   rule_type: string;
   priority: number;
-  rule_config: any;
+  rule_config: RuleConfig | null;
   is_available: boolean;
   price_usd: number | null;
   description: string;
 }
+
+type RuleConfig = {
+  prefixes?: Record<string, number>;
+  patterns?: string[];
+  pricing?: Record<string, number>;
+};
 
 export function AdminPatternRules() {
   const [rules, setRules] = useState<AvailabilityRule[]>([]);
@@ -34,7 +40,7 @@ export function AdminPatternRules() {
         .order('priority', { ascending: true });
 
       if (error) throw error;
-      setRules(data || []);
+      setRules((data as AvailabilityRule[]) || []);
     } catch (error) {
       console.error('Error fetching rules:', error);
       toast({
@@ -77,7 +83,7 @@ export function AdminPatternRules() {
       const rule = rules.find(r => r.id === ruleId);
       if (!rule) return;
 
-      const config = { ...rule.rule_config };
+      const config: RuleConfig = { ...(rule.rule_config ?? {}) };
       if (!config.prefixes) config.prefixes = {};
       config.prefixes[emoji] = price;
 

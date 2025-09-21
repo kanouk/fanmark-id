@@ -12,6 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Heart, Sparkles, Users, Mail, Sparkle, ArrowLeft, CheckCircle2, Lock, Tag } from 'lucide-react';
+import { AuthFormData, AuthState } from '@/types/auth';
+import { PasswordRequirement as PasswordRequirementType } from '@/lib/password-validation';
 
 const Auth = () => {
   const { user, session } = useAuth();
@@ -199,9 +201,9 @@ const Auth = () => {
 
 // Login Form Component
 interface LoginFormProps {
-  formData: any;
-  authState: any;
-  updateFormData: (field: string, value: string) => void;
+  formData: AuthFormData;
+  authState: AuthState;
+  updateFormData: (field: keyof AuthFormData, value: string) => void;
   signIn: () => void;
   t: (key: string) => string;
 }
@@ -281,11 +283,11 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, t }: LoginForm
 
 // Sign Up Form Component  
 interface SignUpFormProps {
-  formData: any;
-  authState: any;
-  updateFormData: (field: string, value: string) => void;
+  formData: AuthFormData;
+  authState: AuthState;
+  updateFormData: (field: keyof AuthFormData, value: string) => void;
   signUp: () => void;
-  requirements: any[];
+  requirements: PasswordRequirementType[];
   isValid: boolean;
   username: string;
   setUsername: (value: string) => void;
@@ -367,7 +369,7 @@ const SignUpForm = ({
             {t('password.requirements.title')}
           </h4>
           <div className="space-y-1.5">
-            {requirements.map((req: any, index: number) => (
+            {requirements.map((req, index) => (
               <PasswordRequirement key={index} met={req.met} text={req.text} />
             ))}
           </div>

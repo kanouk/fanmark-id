@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,10 +17,58 @@ interface RegisterFanmarkRequest {
   isTransferable?: boolean;
 }
 
+type DatabaseClient = SupabaseClient<unknown, unknown, unknown>;
+
+type AvailabilityRuleType = 'specific_pattern' | 'duplicate_pattern' | 'prefix_pattern' | 'count_based';
+
+type AvailabilityRuleConfig = {
+  patterns?: string[];
+  prefixes?: Record<string, number | string>;
+  pricing?: Record<string, number | string>;
+  enabled?: boolean;
+};
+
+interface AvailabilityRuleRecord {
+  rule_type: AvailabilityRuleType;
+  priority: number;
+  rule_config: AvailabilityRuleConfig | null;
+  is_available: boolean;
+  price_usd: number | null;
+}
+
+interface FanmarkRow {
+  id: string;
+  short_id: string;
+  emoji_combination: string;
+  normalized_emoji: string;
+  user_id: string;
+}
+
+const SKIN_TONE_MODIFIER_REGEX = /\p{Emoji_Modifier}/u;
+const SKIN_TONE_MODIFIER_GLOBAL_REGEX = /\p{Emoji_Modifier}/gu;
+const EMOJI_CHARACTER_REGEX = /\p{Emoji}/u;
+const COMBINING_CHARACTERS = new Set([
+  String.fromCodePoint(0xfe0f),
+  String.fromCodePoint(0x200d),
+]);
+
+function getGraphemes(text: string): string[] {
+  if (typeof (Intl as { Segmenter?: typeof Intl.Segmenter }).Segmenter === 'function') {
+    const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+    return Array.from(segmenter.segment(text), (segment) => segment.segment);
+  }
+  return Array.from(text);
+}
+
+const isBaseEmoji = (char: string): boolean =>
+  EMOJI_CHARACTER_REGEX.test(char) &&
+  !SKIN_TONE_MODIFIER_REGEX.test(char) &&
+  !COMBINING_CHARACTERS.has(char);
+
 // Normalize emoji by removing skin tone modifiers
 function normalizeEmoji(emoji: string): string {
   // Remove skin tone modifiers (U+1F3FB-U+1F3FF)
-  return emoji.replace(/[\u{1F3FB}-\u{1F3FF}]/gu, '');
+  return emoji.replace(SKIN_TONE_MODIFIER_GLOBAL_REGEX, '');
 }
 
 // Generate short ID for fanmark
@@ -48,12 +97,8 @@ function validateEmojiCombination(emoji: string): { valid: boolean; error?: stri
   }
 
   // Count actual emoji characters (excluding modifiers)
-  const segments = [...new Intl.Segmenter().segment(cleanEmoji)];
-  const emojiCount = segments.filter(s => {
-    // Count base emojis, excluding modifiers and variation selectors
-    return s.segment.match(/\p{Emoji}/u) && 
-           !s.segment.match(/[\u{1F3FB}-\u{1F3FF}\u{FE0F}\u{200D}]/u);
-  }).length;
+  const segments = getGraphemes(cleanEmoji);
+  const emojiCount = segments.filter(isBaseEmoji).length;
   
   if (emojiCount < 1 || emojiCount > 5) {
     return { valid: false, error: 'Emoji combination must contain 1-5 emojis', emojiCount };
@@ -63,10 +108,14 @@ function validateEmojiCombination(emoji: string): { valid: boolean; error?: stri
 }
 
 // Check for pattern-based pricing using availability rules
-async function checkPatternBasedPricing(supabase: any, normalizedEmoji: string, emojiCount: number): Promise<{ requiresPayment: boolean; priceUsd?: number; reason?: string; isAvailable: boolean }> {
+async function checkPatternBasedPricing(
+  supabase: DatabaseClient,
+  normalizedEmoji: string,
+  emojiCount: number,
+): Promise<{ requiresPayment: boolean; priceUsd?: number; reason?: string; isAvailable: boolean }> {
   // Get all active availability rules ordered by priority
   const { data: rules } = await supabase
-    .from('fanmark_availability_rules')
+    .from<AvailabilityRuleRecord>('fanmark_availability_rules')
     .select('rule_type, priority, rule_config, is_available, price_usd')
     .eq('is_available', true)
     .order('priority', { ascending: true });
@@ -77,11 +126,11 @@ async function checkPatternBasedPricing(supabase: any, normalizedEmoji: string, 
 
   // Check patterns in priority order (1=highest, 4=lowest)
   for (const rule of rules) {
-    const config = rule.rule_config || {};
+    const config: AvailabilityRuleConfig = rule.rule_config ?? {};
     
     switch (rule.rule_type) {
       case 'specific_pattern':
-        if (config.patterns && config.patterns.includes(normalizedEmoji)) {
+        if (config.patterns?.includes(normalizedEmoji)) {
           return {
             requiresPayment: true,
             priceUsd: rule.price_usd,
@@ -105,10 +154,12 @@ async function checkPatternBasedPricing(supabase: any, normalizedEmoji: string, 
       case 'prefix_pattern':
         if (config.prefixes) {
           const firstEmoji = getFirstEmoji(normalizedEmoji);
-          if (firstEmoji && config.prefixes[firstEmoji]) {
+          const prefixPrice = firstEmoji ? config.prefixes[firstEmoji] : undefined;
+          if (firstEmoji && prefixPrice !== undefined) {
+            const parsedPrice = typeof prefixPrice === 'number' ? prefixPrice : Number(prefixPrice);
             return {
               requiresPayment: true,
-              priceUsd: config.prefixes[firstEmoji],
+              priceUsd: Number.isNaN(parsedPrice) ? undefined : parsedPrice,
               reason: 'prefix_pattern',
               isAvailable: rule.is_available
             };
@@ -117,10 +168,12 @@ async function checkPatternBasedPricing(supabase: any, normalizedEmoji: string, 
         break;
 
       case 'count_based':
-        if (config.pricing && config.pricing[emojiCount.toString()]) {
+        if (config.pricing && config.pricing[emojiCount.toString()] !== undefined) {
+          const priceValue = config.pricing[emojiCount.toString()];
+          const parsedPrice = typeof priceValue === 'number' ? priceValue : Number(priceValue);
           return {
-            requiresPayment: parseFloat(config.pricing[emojiCount.toString()]) > 0,
-            priceUsd: parseFloat(config.pricing[emojiCount.toString()]),
+            requiresPayment: parsedPrice > 0,
+            priceUsd: parsedPrice,
             reason: 'count_based',
             isAvailable: rule.is_available
           };
@@ -134,17 +187,15 @@ async function checkPatternBasedPricing(supabase: any, normalizedEmoji: string, 
 
 // Helper function to check for duplicate emojis
 function hasDuplicateEmojis(emoji: string): boolean {
-  const segments = [...new Intl.Segmenter().segment(emoji)];
-  const uniqueEmojis = new Set();
+  const segments = getGraphemes(emoji);
   let previousEmoji = '';
   
   for (const segment of segments) {
-    if (segment.segment.match(/\p{Emoji}/u) && !segment.segment.match(/[\u{1F3FB}-\u{1F3FF}\u{FE0F}\u{200D}]/u)) {
-      if (segment.segment === previousEmoji) {
+    if (isBaseEmoji(segment)) {
+      if (segment === previousEmoji) {
         return true; // Found consecutive duplicate
       }
-      uniqueEmojis.add(segment.segment);
-      previousEmoji = segment.segment;
+      previousEmoji = segment;
     }
   }
   
@@ -153,10 +204,10 @@ function hasDuplicateEmojis(emoji: string): boolean {
 
 // Helper function to get first emoji
 function getFirstEmoji(emoji: string): string | null {
-  const segments = [...new Intl.Segmenter().segment(emoji)];
+  const segments = getGraphemes(emoji);
   for (const segment of segments) {
-    if (segment.segment.match(/\p{Emoji}/u) && !segment.segment.match(/[\u{1F3FB}-\u{1F3FF}\u{FE0F}\u{200D}]/u)) {
-      return segment.segment;
+    if (isBaseEmoji(segment)) {
+      return segment;
     }
   }
   return null;
@@ -169,7 +220,7 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
+    const supabase: DatabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
@@ -242,11 +293,11 @@ serve(async (req) => {
     let attempts = 0;
     while (attempts < 10) {
       const { data: existing } = await supabase
-        .from('fanmarks')
+        .from<Pick<FanmarkRow, 'id'>>('fanmarks')
         .select('id')
         .eq('short_id', shortId)
-        .single();
-      
+        .maybeSingle();
+
       if (!existing) break;
       shortId = generateShortId();
       attempts++;
@@ -279,13 +330,13 @@ serve(async (req) => {
 
     // Check user's fanmark limit
     const { data: userProfile } = await supabase
-      .from('profiles')
+      .from<{ emoji_limit: number | null }>('profiles')
       .select('emoji_limit')
       .eq('user_id', user.id)
       .single();
 
     const { count: userFanmarkCount } = await supabase
-      .from('fanmarks')
+      .from<FanmarkRow>('fanmarks')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .eq('status', 'active');
@@ -300,7 +351,7 @@ serve(async (req) => {
 
     // Insert fanmark with conflict handling
     const { data: fanmark, error: insertError } = await supabase
-      .from('fanmarks')
+      .from<FanmarkRow>('fanmarks')
       .insert({
         emoji_combination: emoji,
         normalized_emoji: normalizedEmoji,
@@ -314,7 +365,7 @@ serve(async (req) => {
         display_name: displayName || null,
         is_transferable: isTransferable
       })
-      .select()
+      .select('id, emoji_combination, short_id')
       .single();
 
     if (insertError) {
@@ -325,6 +376,13 @@ serve(async (req) => {
         );
       }
       throw insertError;
+    }
+
+    if (!fanmark) {
+      return new Response(
+        JSON.stringify({ error: 'Failed to create fanmark' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Create emoji profile if requested
@@ -380,8 +438,9 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error registering fanmark:', error);
+    const message = error instanceof Error ? error.message : 'Internal server error';
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

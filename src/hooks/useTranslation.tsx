@@ -42,13 +42,17 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
   const t = (key: string): string => {
     try {
       const keys = key.split('.');
-      let value: any = translations[language];
-      
+      let value: unknown = translations[language];
+
       for (const k of keys) {
-        value = value?.[k];
+        if (typeof value === 'object' && value !== null && k in value) {
+          value = (value as Record<string, unknown>)[k];
+        } else {
+          return key;
+        }
       }
-      
-      return value || key;
+
+      return typeof value === 'string' ? value : key;
     } catch (error) {
       console.warn(`Translation error for key "${key}":`, error);
       return key;

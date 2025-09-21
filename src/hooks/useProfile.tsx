@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
+type SocialLinks = Record<string, string> | null;
+type InvitationPerks = Record<string, unknown> | string[] | null;
+
 interface Profile {
   id: string;
   user_id: string;
@@ -9,12 +12,12 @@ interface Profile {
   display_name: string | null;
   bio: string | null;
   avatar_url: string | null;
-  social_links: any;
+  social_links: SocialLinks;
   is_public_profile: boolean;
   role: string;
   subscription_status: string | null;
   invited_by_code: string | null;
-  invitation_perks: any;
+  invitation_perks: InvitationPerks;
   created_at: string;
   updated_at: string;
 }
@@ -57,7 +60,7 @@ export const useProfile = () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('profiles')
+        .from<Profile>('profiles')
         .select('*')
         .eq('user_id', user?.id)
         .single();
@@ -98,7 +101,7 @@ export const useProfile = () => {
     
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from<Pick<Profile, 'username' | 'user_id'>>('profiles')
         .select('username')
         .eq('username', username.toLowerCase())
         .neq('user_id', user?.id || '');

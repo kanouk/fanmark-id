@@ -62,13 +62,13 @@ export const FanmarkDashboard = () => {
   const fetchFanmarks = async () => {
     try {
       const { data, error } = await supabase
-        .from('fanmarks')
+        .from<Fanmark>('fanmarks')
         .select('*')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setFanmarks((data || []) as any);
+      setFanmarks(data ?? []);
     } catch (error) {
       console.error('Error fetching fanmarks:', error);
       toast({

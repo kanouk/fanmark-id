@@ -18,6 +18,17 @@ const quickRegistrationSchema = z.object({
 
 type QuickRegistrationFormData = z.infer<typeof quickRegistrationSchema>;
 
+interface RegisteredFanmark {
+  emoji_combination: string;
+  display_name: string;
+}
+
+interface RegisterFanmarkResponse {
+  success: boolean;
+  fanmark?: RegisteredFanmark;
+  error?: string;
+}
+
 interface FanmarkQuickRegistrationProps {
   prefilledEmoji?: string;
   onSuccess?: () => void;
@@ -33,7 +44,7 @@ export const FanmarkQuickRegistration = ({
 }: FanmarkQuickRegistrationProps) => {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [registeredFanmark, setRegisteredFanmark] = useState<any>(null);
+  const [registeredFanmark, setRegisteredFanmark] = useState<RegisteredFanmark | null>(null);
   const { t } = useTranslation();
 
   const {
@@ -61,7 +72,7 @@ export const FanmarkQuickRegistration = ({
     setIsSubmitting(true);
 
     try {
-      const { data: result, error } = await supabase.functions.invoke('register-fanmark', {
+      const { data: result, error } = await supabase.functions.invoke<RegisterFanmarkResponse>('register-fanmark', {
         body: {
           emoji: data.emojiCombination,
           accessType: 'inactive', // Default to inactive for quick registration
@@ -75,14 +86,14 @@ export const FanmarkQuickRegistration = ({
 
       if (error) throw error;
 
-      if (result.success) {
+      if (result?.success && result.fanmark) {
         setRegisteredFanmark(result.fanmark);
         toast({
           title: t('registration.quickSecured'),
           description: t('registration.quickSecuredDescription'),
         });
       } else {
-        throw new Error(result.error || 'Registration failed');
+        throw new Error(result?.error || 'Registration failed');
       }
     } catch (error) {
       console.error('Registration error:', error);

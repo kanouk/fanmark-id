@@ -1,5 +1,16 @@
 import { supabase } from "@/integrations/supabase/client";
 
+type SocialLinks = Record<string, string> | null;
+
+interface PublicProfileRow {
+  id: string;
+  username: string;
+  display_name: string | null;
+  bio: string | null;
+  avatar_url: string | null;
+  created_at: string;
+}
+
 // Type for public profile data (excluding sensitive fields)
 export interface PublicProfile {
   id: string;
@@ -8,7 +19,7 @@ export interface PublicProfile {
   display_name: string | null;
   bio: string | null;
   avatar_url: string | null;
-  social_links: any;
+  social_links: SocialLinks;
   created_at: string;
 }
 
@@ -28,7 +39,7 @@ export interface FullProfile extends PublicProfile {
  */
 export async function getPublicProfile(username: string): Promise<PublicProfile | null> {
   const { data, error } = await supabase
-    .from('public_profiles')
+    .from<PublicProfileRow>('public_profiles')
     .select('*')
     .eq('username', username)
     .maybeSingle();
@@ -41,7 +52,7 @@ export async function getPublicProfile(username: string): Promise<PublicProfile 
   return {
     ...data,
     user_id: '', // Not exposed in public view for security
-    social_links: null // Not exposed in public view for security
+    social_links: null, // Not exposed in public view for security
   };
 }
 
@@ -50,7 +61,7 @@ export async function getPublicProfile(username: string): Promise<PublicProfile 
  */
 export async function getPublicProfiles(limit = 10): Promise<PublicProfile[]> {
   const { data, error } = await supabase
-    .from('public_profiles')
+    .from<PublicProfileRow>('public_profiles')
     .select('*')
     .limit(limit);
 
@@ -62,7 +73,7 @@ export async function getPublicProfiles(limit = 10): Promise<PublicProfile[]> {
   return data.map(profile => ({
     ...profile,
     user_id: '', // Not exposed in public view for security
-    social_links: null // Not exposed in public view for security
+    social_links: null, // Not exposed in public view for security
   }));
 }
 
@@ -79,7 +90,7 @@ export async function getFullProfile(userId: string): Promise<FullProfile | null
   }
 
   const { data, error } = await supabase
-    .from('profiles')
+    .from<FullProfile>('profiles')
     .select('*')
     .eq('user_id', userId)
     .single();
