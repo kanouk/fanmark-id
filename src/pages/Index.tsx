@@ -277,7 +277,7 @@ const Index = () => {
       <footer className="footer footer-center p-10 bg-base-200 text-base-content">
         <div>
           <div className="text-2xl font-bold text-primary mb-4">
-            <span className="text-3xl">✨</span> fanmark.id
+            <span className="text-3xl">✨</span> <span className="text-gradient">fanmark.id</span>
           </div>
           <p className="text-base-content/70">{t('sections.footer')}</p>
         </div>

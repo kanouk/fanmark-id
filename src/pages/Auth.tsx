@@ -82,7 +82,7 @@ const Auth = () => {
         <footer className="border-t border-border/40 bg-background/80 backdrop-blur">
           <div className="container mx-auto px-4 py-10 text-center space-y-3">
             <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
-              <span className="text-3xl">✨</span> fanmark.id
+              <span className="text-3xl">✨</span> <span className="text-gradient">fanmark.id</span>
             </div>
             <p className="text-sm text-muted-foreground">{t('sections.footer')}</p>
           </div>
@@ -188,7 +188,7 @@ const Auth = () => {
       <footer className="border-t border-border/40 bg-background/80 backdrop-blur">
         <div className="container mx-auto px-4 py-10 text-center space-y-3">
           <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
-            <span className="text-3xl">✨</span> fanmark.id
+            <span className="text-3xl">✨</span> <span className="text-gradient">fanmark.id</span>
           </div>
           <p className="text-sm text-muted-foreground">{t('sections.footer')}</p>
         </div>
