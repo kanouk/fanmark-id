@@ -1,8 +1,8 @@
 # Welcome to your Lovable project
 
-## Project info
+## Site info
 
-**URL**: https://lovable.dev/projects/4b034aaa-3e53-4bab-a237-4d670d2b1d79
+**URL**: https://fanmark.id/
 
 ## How can I edit this code?
 
