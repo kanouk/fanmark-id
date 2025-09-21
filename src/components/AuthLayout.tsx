@@ -14,47 +14,51 @@ interface AuthLayoutProps {
   backLabel?: string;
 }
 
-export const AuthLayout = ({ 
-  title, 
-  description, 
-  children, 
+export const AuthLayout = ({
+  title,
+  description,
+  children,
   showBackButton = false,
-  backTo = "/",
-  backLabel
+  backTo = '/',
+  backLabel,
 }: AuthLayoutProps) => {
-  const { t, tWithBreaks } = useTranslation();
-  
-  return (
-    <div className="min-h-screen bg-muted/20 flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-foreground">{t('hero.title')}</h1>
-          <p className="text-muted-foreground">{tWithBreaks('hero.subtitle')}</p>
-        </div>
-        
-        <Card>
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">{title}</CardTitle>
-            <CardDescription className="text-center">
-              {description}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {children}
-          </CardContent>
-        </Card>
+  const { t } = useTranslation();
 
-        {showBackButton && (
-          <div className="text-center">
-            <Button variant="ghost" asChild>
-              <Link to={backTo} className="flex items-center space-x-2">
-                <ArrowLeft className="h-4 w-4" />
-                <span>{backLabel || t('auth.homeButton')}</span>
-              </Link>
-            </Button>
-          </div>
+  const hasHeaderContent = Boolean(title) || Boolean(description);
+  const resolvedBackLabel = backLabel ?? t('auth.homeButton');
+
+  return (
+    <div className="flex flex-col rounded-3xl border border-primary/20 bg-background/90 p-8 shadow-[0_26px_60px_rgba(101,195,200,0.18)] backdrop-blur">
+      <Card className="border-none bg-transparent shadow-none">
+        {hasHeaderContent && (
+          <CardHeader className="space-y-2 text-center">
+            {title && (
+              <CardTitle className="text-2xl font-bold text-foreground">
+                {title}
+              </CardTitle>
+            )}
+            {description && (
+              <CardDescription className="text-sm text-muted-foreground">
+                {description}
+              </CardDescription>
+            )}
+          </CardHeader>
         )}
-      </div>
+        <CardContent className="p-0">
+          {children}
+        </CardContent>
+      </Card>
+
+      {showBackButton && (
+        <div className="mt-6 flex justify-center">
+          <Button variant="ghost" asChild className="gap-2 text-sm text-muted-foreground">
+            <Link to={backTo}>
+              <ArrowLeft className="h-4 w-4" />
+              <span>{resolvedBackLabel}</span>
+            </Link>
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

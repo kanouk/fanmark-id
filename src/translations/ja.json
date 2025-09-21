@@ -107,24 +107,24 @@
     "signUpDescription": "新しいアカウントを作成してください",
     "passwordMismatch": "パスワードが一致しません",
     "homeButton": "ホームに戻る",
-    "welcome": "ファンマへようこそ",
-    "description": "コミュニティに参加して、あなただけの絵文字組み合わせを手に入れよう！"
+    "welcome": "fanmark.id へようこそ",
+    "description": "あなただけのファンマを手に入れよう！"
   },
   "password": {
     "requirements": {
       "title": "パスワード要件",
       "length": "8文字以上",
-      "uppercase": "大文字を含む",
-      "lowercase": "小文字を含む",
-      "number": "数字を含む",
-      "special": "特殊文字を含む"
+      "uppercase": "大文字をふくむ",
+      "lowercase": "小文字をふくむ",
+      "number": "数字をふくむ",
+      "special": "記号をふくむ"
     }
   },
   "sections": {
     "howUsed": "こんな風に使われてます",
     "howItWorks": "3ステップで完成",
     "step1": "ファンマを検索",
-    "step1Description": "お気に入りの絵文字の組み合わせを見つけよう",
+    "step1Description": "お気に入りのファンマを見つけよう",
     "step2": "アカウント作成",
     "step2Description": "簡単登録で、すぐに始められます",
     "step3": "URLを作成",
@@ -250,14 +250,14 @@
     "addFanmark": "ファンマを追加",
     "searchPlaceholder": "ファンマを検索...",
     "searchFanma": "ファンマを検索",
-    "searchSubtitle": "気になる絵文字を入れて、空き状況をチェックしよう。",
+    "searchSubtitle": "気になるファンマを入れて、空き状況をチェックしよう。",
     "noFanmarks": "ファンマなし",
     "noFanmarksYet": "まだファンマを登録していません",
     "noSearchResults": "該当するファンマが見つかりません",
     "noFanmarksDescription": "まだファンマがありません。新規取得タブから最初のファンマを作成しましょう！",
     "noResultsDescription": "検索に一致するファンマが見つかりませんでした。",
     "noFanmarksDescription": "まだファンマがありません。新規取得タブから最初のファンマを作成しましょう！",
-    "tryDifferentSearch": "別の絵文字やキーワードで試してみてください。",
+    "tryDifferentSearch": "別のファンマで試してみてください。",
     "getStarted": "まずはひとつ確保して、あなただけのアドレスを手に入れよう！",
     "createFirstFanma": "最初のファンマを作成",
     "emoji": "絵文字",
@@ -280,8 +280,8 @@
     "errorLoadingData": "データ読み込みエラー",
     "failedToLoadFanmarks": "ファンマの読み込みに失敗しました",
     "tips": "ヒント",
-    "tip1": "短い絵文字組み合わせほど価値が高くなります",
-    "tip2": "人気の絵文字は有料になる場合があります", 
+    "tip1": "短いファンマほど価値が高くなります",
+    "tip2": "人気のファンマは有料になる場合があります", 
     "tip3": "他のユーザーの最近の登録を参考にしてみましょう",
     "accessTypes": {
       "profile": "プロフィール",
@@ -290,8 +290,8 @@
       "inactive": "非アクティブ"
     },
     "getFanmaTitle": "新しいファンマを見つけて確保",
-    "getFanmaDescription": "人気の絵文字コンビをチェックして、誰よりも早くあなたのものにしよう。",
-    "recentFanmaTitle": "最近確保されたファンマ",
+    "getFanmaDescription": "イケてるファンマをチェックして、誰よりも早くあなたのものにしよう。",
+    "recentFanmaTitle": "最近取得したファンマ",
     "recentFanmaSubtitle": "気になるファンマをタップして、詳細や確保状況をチェックしよう。"
   },
   "registration": {
@@ -306,7 +306,7 @@
     "registerButton": "ファンマを登録",
     "quickRegister": "とりあえず確保",
     "quickRegisterTitle": "ファンマを確保",
-    "quickRegisterSubtitle": "まずは確保しておいて、後で詳細設定もできます",
+    "quickRegisterSubtitle": "まずはひとつ、お気に入りのファンマを手に入れてみよう！",
     "quickSecured": "ファンマを確保しました！ 🎉",
     "quickSecuredDescription": "いつでも設定を変更できます ✨",
     "quickSecuredInfo": "💡 このファンマは「未設定」状態です。マイファンマから設定を変更できます。",
@@ -323,7 +323,7 @@
     "textContent": "表示テキスト",
     "createProfile": "プロフィールページを作成（基本プロフィールを自動生成）",
     "allowTransfers": "譲渡を許可（デフォルト: 有効）",
-    "detailsNote": "📝 詳細設定（アクセスタイプ、URL、テキストなど）は後から「マイファンマ」で設定できます",
+    "detailsNote": "プロフィールや短縮URLとしても利用できたりします",
     "placeholders": {
       "emojiCombination": "絵文字を入力してください",
       "displayName": "可愛い表示名を選んでください",
