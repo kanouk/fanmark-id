@@ -7,12 +7,13 @@ const corsHeaders = {
 };
 
 interface RegisterFanmarkRequest {
-  emoji_combination: string;
-  access_type?: string;
-  target_url?: string;
-  text_content?: string;
-  display_name?: string;
-  is_transferable?: boolean;
+  emoji: string; // Changed from emoji_combination for consistency with frontend
+  accessType?: string;
+  displayName?: string;
+  targetUrl?: string;
+  textContent?: string;
+  createProfile?: boolean;
+  isTransferable?: boolean;
 }
 
 // Normalize emoji by removing skin tone modifiers
@@ -194,10 +195,10 @@ serve(async (req) => {
     }
 
     const body: RegisterFanmarkRequest = await req.json();
-    const { emoji_combination, access_type = 'inactive', target_url, text_content, display_name, is_transferable = true } = body;
+    const { emoji, accessType = 'inactive', displayName, targetUrl, textContent, createProfile = false, isTransferable = true } = body;
 
     // Validate emoji combination
-    const validation = validateEmojiCombination(emoji_combination);
+    const validation = validateEmojiCombination(emoji);
     if (!validation.valid) {
       return new Response(
         JSON.stringify({ error: validation.error }),
@@ -206,7 +207,7 @@ serve(async (req) => {
     }
 
     // Normalize emoji for database storage
-    const normalizedEmoji = normalizeEmoji(emoji_combination);
+    const normalizedEmoji = normalizeEmoji(emoji);
     
     // Check pattern-based pricing using new availability rules system
     const pricingInfo = await checkPatternBasedPricing(supabase, normalizedEmoji, validation.emojiCount);
@@ -259,9 +260,9 @@ serve(async (req) => {
     }
 
     // Validate URL if redirect type
-    if (access_type === 'redirect' && target_url) {
+    if (accessType === 'redirect' && targetUrl) {
       try {
-        const url = new URL(target_url);
+        const url = new URL(targetUrl);
         if (!['http:', 'https:'].includes(url.protocol)) {
           return new Response(
             JSON.stringify({ error: 'Only HTTP and HTTPS URLs are allowed' }),
@@ -301,12 +302,17 @@ serve(async (req) => {
     const { data: fanmark, error: insertError } = await supabase
       .from('fanmarks')
       .insert({
-        emoji_combination,
+        emoji_combination: emoji,
         normalized_emoji: normalizedEmoji,
         short_id: shortId,
         user_id: user.id,
         status: 'active',
-        is_premium: pricingInfo.requiresPayment
+        is_premium: pricingInfo.requiresPayment,
+        access_type: accessType,
+        target_url: targetUrl || null,
+        text_content: textContent || null,
+        display_name: displayName || null,
+        is_transferable: isTransferable
       })
       .select()
       .single();
@@ -321,6 +327,23 @@ serve(async (req) => {
       throw insertError;
     }
 
+    // Create emoji profile if requested
+    if (createProfile) {
+      const { error: profileError } = await supabase
+        .from('emoji_profiles')
+        .insert({
+          fanmark_id: fanmark.id,
+          user_id: user.id,
+          bio: `Welcome to ${displayName || emoji}'s profile!`,
+          is_public: true
+        });
+
+      if (profileError) {
+        console.error('Failed to create emoji profile:', profileError);
+        // Don't fail the whole registration for this
+      }
+    }
+
     // Log the registration
     const requestId = crypto.randomUUID();
     await supabase
@@ -332,10 +355,12 @@ serve(async (req) => {
         resource_id: fanmark.id,
         request_id: requestId,
         metadata: {
-          emoji_combination,
+          emoji_combination: emoji,
           normalized_emoji: normalizedEmoji,
           short_id: shortId,
-          access_type
+          access_type: accessType,
+          display_name: displayName,
+          create_profile: createProfile
         }
       });
 

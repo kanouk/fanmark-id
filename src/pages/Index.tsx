@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { LanguageToggle } from "@/components/LanguageToggle";
-import FanmarkSearch from "@/components/FanmarkSearch";
+import { FanmarkSearchWithRegistration } from "@/components/FanmarkSearchWithRegistration";
 import { InvitationSystem } from "@/components/InvitationSystem";
 import { Button } from "@/components/ui/button";
 import { User, LogOut } from 'lucide-react';
@@ -83,6 +83,9 @@ const Index = () => {
                   <li>
                     <span className="text-xs text-base-content/60 px-3 py-1 pointer-events-none">{user.email}</span>
                   </li>
+                  <li><a onClick={() => { navigate('/dashboard'); setUserMenuOpen(false); }} className="gap-2 active:bg-primary/20">
+                    <span className="text-sm">🎯</span> Dashboard
+                  </a></li>
                   <li><a onClick={() => { navigate('/profile'); setUserMenuOpen(false); }} className="gap-2 active:bg-primary/20">
                     <User className="w-4 h-4" /> {t('navigation.profile')}
                   </a></li>
@@ -129,7 +132,7 @@ const Index = () => {
       {/* Fanmark Search Section - Always show for search functionality */}
       <div className="py-16 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
         <div className="container mx-auto px-4">
-          <FanmarkSearch onSignupPrompt={handleSignupPrompt} />
+          <FanmarkSearchWithRegistration onSignupPrompt={handleSignupPrompt} />
         </div>
       </div>
 

@@ -47,6 +47,50 @@ export type Database = {
         }
         Relationships: []
       }
+      emoji_profiles: {
+        Row: {
+          bio: string | null
+          created_at: string
+          fanmark_id: string
+          id: string
+          is_public: boolean
+          social_links: Json | null
+          theme_settings: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          fanmark_id: string
+          id?: string
+          is_public?: boolean
+          social_links?: Json | null
+          theme_settings?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          fanmark_id?: string
+          id?: string
+          is_public?: boolean
+          social_links?: Json | null
+          theme_settings?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emoji_profiles_fanmark_id_fkey"
+            columns: ["fanmark_id"]
+            isOneToOne: false
+            referencedRelation: "fanmarks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fanmark_availability_rules: {
         Row: {
           created_at: string
@@ -88,35 +132,50 @@ export type Database = {
       }
       fanmarks: {
         Row: {
+          access_type: string
           created_at: string
+          display_name: string | null
           emoji_combination: string
           id: string
           is_premium: boolean
+          is_transferable: boolean
           normalized_emoji: string
           short_id: string
           status: string
+          target_url: string | null
+          text_content: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          access_type?: string
           created_at?: string
+          display_name?: string | null
           emoji_combination: string
           id?: string
           is_premium?: boolean
+          is_transferable?: boolean
           normalized_emoji: string
           short_id: string
           status?: string
+          target_url?: string | null
+          text_content?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          access_type?: string
           created_at?: string
+          display_name?: string | null
           emoji_combination?: string
           id?: string
           is_premium?: boolean
+          is_transferable?: boolean
           normalized_emoji?: string
           short_id?: string
           status?: string
+          target_url?: string | null
+          text_content?: string | null
           updated_at?: string
           user_id?: string
         }
