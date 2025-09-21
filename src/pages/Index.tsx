@@ -13,7 +13,7 @@ const Index = () => {
   const { user, signOut } = useAuth();
   const { profile } = useProfile();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, tWithBreaks } = useTranslation();
   const { settings, loading: settingsLoading } = useSystemSettings();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -111,10 +111,10 @@ const Index = () => {
               <span className="text-8xl">✨</span>
             </div>
             <h1 className="text-6xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent mb-6">
-              {t('hero.subtitle')}
+              {tWithBreaks('hero.subtitle')}
             </h1>
             <p className="text-xl mb-8 text-base-content/80">
-              {t('hero.description')}
+              {tWithBreaks('hero.description')}
             </p>
 
             <div className="flex flex-wrap gap-4 justify-center">
@@ -236,8 +236,8 @@ const Index = () => {
                 <p className="text-lg mb-4">
                   <span className="badge badge-secondary badge-lg px-[10px]">{t('sections.pricingDetails.longFree')}</span>
                 </p>
-                <p className="text-base-content/70 whitespace-pre-line">
-                  {t('sections.pricingDetails.description')}
+                <p className="text-base-content/70">
+                  {tWithBreaks('sections.pricingDetails.description')}
                 </p>
               </div>
             </div>
@@ -256,8 +256,8 @@ const Index = () => {
                 <p className="text-sm font-mono bg-base-200 p-3 rounded">
                   linktr.ee/my_awesome_musician_profile_2024
                 </p>
-                <p className="text-base-content/70 whitespace-pre-line">
-                  {t('sections.comparisonDetails.oldWay.problems')}
+                <p className="text-base-content/70">
+                  {tWithBreaks('sections.comparisonDetails.oldWay.problems')}
                 </p>
               </div>
             </div>
@@ -266,8 +266,8 @@ const Index = () => {
               <div className="card-body">
                 <h3 className="card-title text-success justify-center">{t('sections.comparisonDetails.fanmarkWay.title')}</h3>
                 <p className="text-2xl p-3">🎵🎤🎸</p>
-                <p className="text-base-content/70 whitespace-pre-line">
-                  {t('sections.comparisonDetails.fanmarkWay.benefits')}
+                <p className="text-base-content/70">
+                  {tWithBreaks('sections.comparisonDetails.fanmarkWay.benefits')}
                 </p>
               </div>
             </div>

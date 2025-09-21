@@ -9,6 +9,8 @@ interface TranslationContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
   t: (key: string) => string;
+  // Returns JSX with <br/> for \n in translations
+  tWithBreaks: (key: string) => ReactNode;
 }
 
 const TranslationContext = createContext<TranslationContextType | null>(null);
@@ -53,8 +55,23 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Render newlines as <br/> elements so JSON "\n" breaks appear on screen
+  const tWithBreaks = (key: string): ReactNode => {
+    const text = t(key);
+    // If no newline, return plain string to avoid extra nodes
+    if (!text.includes('\n')) return text;
+    const parts = text.split('\n');
+    return parts.map((part, i) => (
+      // wrap each segment to provide a stable key; insert <br/> before subsequent lines
+      <span key={`tbr-${key}-${i}`}>
+        {i > 0 && <br />}
+        {part}
+      </span>
+    ));
+  };
+
   return (
-    <TranslationContext.Provider value={{ language, setLanguage, t }}>
+    <TranslationContext.Provider value={{ language, setLanguage, t, tWithBreaks }}>
       {children}
     </TranslationContext.Provider>
   );
@@ -68,7 +85,8 @@ export function useTranslation() {
     return {
       language: 'ja' as Language,
       setLanguage: () => {},
-      t: (key: string) => key // Return the key as fallback
+      t: (key: string) => key, // Return the key as fallback
+      tWithBreaks: (key: string) => key
     };
   }
   return context;

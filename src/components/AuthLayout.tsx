@@ -22,14 +22,14 @@ export const AuthLayout = ({
   backTo = "/",
   backLabel
 }: AuthLayoutProps) => {
-  const { t } = useTranslation();
+  const { t, tWithBreaks } = useTranslation();
   
   return (
     <div className="min-h-screen bg-base-200 flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold text-base-content">{t('hero.title')}</h1>
-          <p className="text-base-content/70">{t('hero.subtitle')}</p>
+          <p className="text-base-content/70">{tWithBreaks('hero.subtitle')}</p>
         </div>
         
         <Card>
