@@ -4,7 +4,7 @@ import { FanmarkQuickRegistration } from '@/components/FanmarkQuickRegistration'
 import { useTranslation } from '@/hooks/useTranslation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { EmojiInput } from '@/components/EmojiInput';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Search, CheckCircle, XCircle, Clock, CreditCard } from 'lucide-react';
 
@@ -127,16 +127,17 @@ export const FanmarkAcquisition = ({ prefilledEmoji, onSuccess }: FanmarkAcquisi
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="relative">
-            <Input
+            <EmojiInput
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={setSearchQuery}
               placeholder={t('search.placeholder')}
               className="text-2xl h-16 text-center"
               disabled={loading}
+              maxLength={5}
             />
             {loading && (
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+              <div className="absolute right-14 top-1/2 transform -translate-y-1/2">
+                <Loader2 className="h-5 w-5 animate-spin text-base-content/70" />
               </div>
             )}
           </div>

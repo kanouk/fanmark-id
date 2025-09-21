@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { EmojiInput } from '@/components/EmojiInput';
 import { toast } from '@/hooks/use-toast';
 
 const registrationSchema = z.object({
@@ -130,13 +131,23 @@ export const FanmarkRegistrationForm = ({
             <Label htmlFor="emojiCombination" className="text-lg">
               🎯 Emoji Combination
             </Label>
-            <Input
-              id="emojiCombination"
-              {...register('emojiCombination')}
-              placeholder="Enter your emoji combination"
-              className="text-2xl text-center border-2 border-dashed"
-              disabled={!!prefilledEmoji}
-            />
+            {prefilledEmoji ? (
+              <Input
+                id="emojiCombination"
+                {...register('emojiCombination')}
+                placeholder="Enter your emoji combination"
+                className="text-2xl text-center border-2 border-dashed"
+                disabled={true}
+              />
+            ) : (
+              <EmojiInput
+                value={watch('emojiCombination')}
+                onChange={(value) => register('emojiCombination').onChange({ target: { value } })}
+                placeholder="Enter your emoji combination"
+                className="text-2xl text-center border-2 border-dashed"
+                maxLength={5}
+              />
+            )}
             {errors.emojiCombination && (
               <p className="text-sm text-red-500">{errors.emojiCombination.message}</p>
             )}

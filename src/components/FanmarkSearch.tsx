@@ -1,9 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { EmojiInput } from "@/components/EmojiInput";
 import { Search, Sparkles, Eye, Crown } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useFanmarkSearch, FanmarkSearchResult } from "@/hooks/useFanmarkSearch";
@@ -84,17 +84,14 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchP
     <div className="w-full max-w-2xl mx-auto space-y-6">
       {/* Search Input */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-base-content/70 w-4 h-4" />
-        <Input
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-base-content/70 w-4 h-4 z-10" />
+        <EmojiInput
           value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            if (e.target.value.trim()) {
-              onSearchPerformed?.(e.target.value);
-            }
-          }}
+          onChange={setSearchQuery}
+          onSearchPerformed={onSearchPerformed}
           placeholder={t('search.searchPlaceholder')}
-          className="input input-bordered input-primary pl-10 pr-4 py-3 text-lg rounded-full"
+          className="input input-bordered input-primary pl-10 py-3 text-lg rounded-full"
+          maxLength={10}
         />
       </div>
 
