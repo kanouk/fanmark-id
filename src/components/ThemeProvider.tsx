@@ -23,11 +23,15 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider = ({ children, defaultTheme = 'pastel' }: ThemeProviderProps) => {
-  const [theme, setTheme] = useState<Theme>(defaultTheme);
+  const [theme, setTheme] = useState<Theme>(() => {
+    const savedTheme = localStorage.getItem('fanmark-theme') as Theme;
+    return savedTheme || defaultTheme;
+  });
 
   useEffect(() => {
-    // Apply theme to document element
+    // Apply theme to document element and save to localStorage
     document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('fanmark-theme', theme);
   }, [theme]);
 
   return (

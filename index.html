@@ -3,6 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // Set theme immediately to prevent flash
+      const savedTheme = localStorage.getItem('fanmark-theme') || 'pastel';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
     <title>fanmark.id - ファンマでつくるあなただけのアドレス</title>
     <meta name="description" content="ファンマークIDでオリジナルのリンクページを作成。SNSやWebサイトを一つにまとめて、あなただけの特別なアドレスを手に入れよう。" />
     <meta name="author" content="fanmark.id" />
