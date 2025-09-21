@@ -21,7 +21,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
   onChange,
   placeholder,
   disabled = false,
-  maxLength = 10,
+  maxLength = 50,
   className = '',
   onSearchPerformed
 }) => {

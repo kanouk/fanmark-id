@@ -91,7 +91,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchP
           onSearchPerformed={onSearchPerformed}
           placeholder={t('search.searchPlaceholder')}
           className="input input-bordered input-primary pl-10 py-3 text-lg rounded-full"
-          maxLength={10}
+          maxLength={50}
         />
       </div>
 
