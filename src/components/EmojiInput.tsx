@@ -43,6 +43,12 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
+    console.log('EmojiInput: Input change detected', { 
+      newValue, 
+      length: newValue.length, 
+      maxLength, 
+      userAgent: navigator.userAgent.includes('Mobile') ? 'Mobile' : 'Desktop' 
+    });
     onChange(newValue);
     if (onSearchPerformed && newValue.trim()) {
       onSearchPerformed(newValue);
