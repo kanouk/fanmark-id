@@ -51,8 +51,7 @@ export function useFanmarkSearch() {
           short_id,
           is_premium,
           status,
-          user_id,
-          profiles(username, display_name)
+          user_id
         `)
         .eq('status', 'active')
         .order('created_at', { ascending: false })
@@ -70,10 +69,7 @@ export function useFanmarkSearch() {
           return { 
             ...fanmark, 
             status,
-            owner: fanmark.profiles ? {
-              username: fanmark.profiles.username,
-              display_name: fanmark.profiles.display_name
-            } : undefined
+            owner: undefined // We'll fetch owner info separately if needed
           };
         });
         setRecentFanmarks(fanmarksWithStatus);
@@ -285,7 +281,7 @@ export function useFanmarkSearch() {
           .from('profiles')
           .select('username, display_name')
           .eq('user_id', existingFanmark.user_id)
-          .single();
+          .maybeSingle();
 
         // Fanmark is taken
         const status: 'premium' | 'taken' = existingFanmark.is_premium ? 'premium' : 'taken';

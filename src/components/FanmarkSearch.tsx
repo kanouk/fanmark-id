@@ -143,7 +143,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchP
           )}
           
           {/* Result Display */}
-          {!(result as any).error && (
+          {!(result as any).error && result.emoji_combination && (
             <div className="flex flex-col gap-4 rounded-2xl border border-primary/20 bg-card/95 p-6 shadow-[0_20px_40px_rgba(239,159,188,0.15)] sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-4">
                 <span className="text-3xl">{result.emoji_combination}</span>
@@ -160,7 +160,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchP
               </div>
               <div className="flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center sm:gap-3">
                 {getStatusBadge(result)}
-                {result.status === 'available' && (
+                {result.status === 'available' && result.emoji_combination && (
                   <Button 
                     onClick={() => handleRegister(result.emoji_combination)} 
                     size="sm" 
@@ -208,7 +208,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchP
                 <CardContent className="p-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <span className="text-xl">{fanmark.emoji_combination}</span>
+                      <span className="text-xl">{fanmark.emoji_combination || '❓'}</span>
                       <div className="flex flex-col">
                         <div className="text-sm text-base-content/70">
                           fanmark.id/e/{fanmark.short_id}
