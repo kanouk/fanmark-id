@@ -1,11 +1,11 @@
 {
   "hero": {
     "title": "fanmark.id",
-    "subtitle": "Claim your very own fanma",
-    "description": "A next-generation ID service that unlocks the full potential of fanma",
+    "subtitle": "Claim your very own fanmark",
+    "description": "A next-generation ID service that unlocks the full potential of fanmark",
     "searchPlaceholder": "Search for your perfect emoji combination! 🔍",
     "searchButton": "Search",
-    "tryButton": "Get your fanma!",
+    "tryButton": "Get your fanmark!",
     "signInButton": "Sign In"
   },
   "search": {
@@ -14,14 +14,14 @@
     "unavailable": "Unavailable",
     "premium": "Premium",
     "paymentRequired": "Payment Required",
-    "searchFanmas": "Search fanma",
+    "searchFanmas": "Search fanmark",
     "viewProfile": "View Profile",
-    "recentlyAcquired": "Recently acquired fanma",
+    "recentlyAcquired": "Recently acquired fanmark",
     "noResults": "No results found",
     "foundPerfect": "Found the perfect one? Sign up to claim it!",
     "joinThousands": "Join thousands of creators!",
-    "searchPlaceholder": "Try your favorite fanma!",
-    "emojiInputHint": "Tap + to pick your first fanma",
+    "searchPlaceholder": "Try your favorite fanmark!",
+    "emojiInputHint": "Tap + to pick your first fanmark",
     "validationError": "Input must contain only emojis (no text, numbers, or symbols)",
     "emojiCountError": "Emoji combination must contain 1-5 emojis",
     "emojiCountLabel": "emojis",
@@ -31,8 +31,8 @@
     "registerPremium": "Register Premium",
     "ownedBy": "Owned by",
     "anonymous": "Anonymous",
-    "recentlyRegistered": "Recently registered fanma",
-    "noRecentFanmaYet": "No recent fanma registered yet",
+    "recentlyRegistered": "Recently registered fanmark",
+    "noRecentFanmaYet": "No recent fanmark registered yet",
     "pricingGuide": {
       "singleEmoji": "💎 1 emoji: $99.9",
       "doubleEmoji": "💳 2 emojis: $9.99", 
@@ -110,7 +110,7 @@
     "signUpDescription": "Create a new account",
     "passwordMismatch": "Passwords do not match",
     "homeButton": "Back to Home",
-    "welcome": "Welcome to Fanma",
+    "welcome": "Welcome to Fanmark",
     "description": "Join our community and claim your unique emoji combinations!"
   },
   "password": {
@@ -126,7 +126,7 @@
   "sections": {
     "howUsed": "How It's Being Used",
     "howItWorks": "3 Simple Steps",
-    "step1": "Search Fanmas",
+    "step1": "Search Fanmarks",
     "step1Description": "Find your favorite emoji combination",
     "step2": "Create Account",
     "step2Description": "Quick registration to get started",
@@ -135,7 +135,7 @@
     "pricing": "Pricing Plans",
     "comparison": "Service Comparison",
     "cta": "Get Started Now",
-    "ctaDescription": "Find your perfect fanma and start your new address experience",
+    "ctaDescription": "Find your perfect fanmark and start your new address experience",
     "footer": "© 2024 fanmark.id All rights reserved.",
     "examples": {
       "musician": {
@@ -160,8 +160,8 @@
       }
     },
     "pricingDetails": {
-      "shortPremium": "Short fanmas (1-2 emojis) are premium ✨",
-      "longFree": "Long fanmas (3+ emojis) are free! 🎉",
+      "shortPremium": "Short fanmarks (1-2 emojis) are premium ✨",
+      "longFree": "Long fanmarks (3+ emojis) are free! 🎉",
       "description": "Try it free first\nThen upgrade to shorter address if you like it"
     },
     "comparisonDetails": {
@@ -170,7 +170,7 @@
         "problems": "Too long to remember\nEasy to mistype\nHard to share..."
       },
       "fanmaWay": {
-        "title": "✨ With fanma",
+        "title": "✨ With fanmark",
         "benefits": "Unforgettable\nEasy to say\nShareable!"
       }
     }
@@ -192,14 +192,14 @@
     "userNotAuthenticated": "User not authenticated",
     "openEmojiPicker": "Open emoji picker",
     "aiRecommendationComingSoon": "AI recommendations (coming soon)",
-    "aiRecommendationDescription": "Coming soon: AI will suggest fanmas from natural text or images"
+    "aiRecommendationDescription": "Coming soon: AI will suggest fanmarks from natural text or images"
   },
   "profile": {
     "welcome": "Welcome to your profile!",
     "pageTitle": "Profile Settings",
     "pageSubtitle": "Keep your fanmark presence fresh by updating your personal details and links.",
     "editProfile": "Edit Profile",
-    "editProfileDescription": "Update your name, bio, and social links to make your fanma hub shine.",
+    "editProfileDescription": "Update your name, bio, and social links to make your fanmark hub shine.",
     "accountInfo": "Account Information",
     "accountInfoDescription": "Here’s a snapshot of your fanmark.id account. Reach out if anything looks off.",
     "accountSettings": "Account Settings",
@@ -281,7 +281,7 @@
     "inputError": "Invalid emoji",
     "inputHint": "Use 1 to 5 emoji characters only.",
     "errorLoadingData": "Error loading data",
-    "failedToLoadFanmarks": "Failed to load fanma",
+    "failedToLoadFanmarks": "Failed to load fanmark",
     "tips": "Tips",
     "tip1": "Shorter emoji combinations tend to be more valuable",
     "tip2": "Popular emojis may require payment",
@@ -292,33 +292,33 @@
       "text": "Text",
       "inactive": "Inactive"
     },
-    "getFanmaTitle": "Discover and secure new fanma",
+    "getFanmaTitle": "Discover and secure new fanmark",
     "getFanmaDescription": "Browse premium emoji combinations and lock them in before anyone else.",
-    "recentFanmaTitle": "Recently secured fanma",
-    "recentFanmaSubtitle": "Tap a fanma below to preview or secure it yourself."
+    "recentFanmaTitle": "Recently secured fanmark",
+    "recentFanmaSubtitle": "Tap a fanmark below to preview or secure it yourself."
   },
   "registration": {
-    "title": "Secure Your Fanma",
-    "successTitle": "Fanma Secured!",
-    "successMessage": "Your fanma is ready!",
+    "title": "Secure Your Fanmark",
+    "successTitle": "Fanmark Secured!",
+    "successMessage": "Your fanmark is ready!",
     "successDescription": "Great choice! This could be valuable later!",
     "failed": "Registration failed",
     "authRequired": "Authentication required",
-    "authDescription": "Please sign in to secure a fanma",
+    "authDescription": "Please sign in to secure a fanmark",
     "registering": "Registering...",
-    "registerButton": "Secure Fanma",
+    "registerButton": "Secure Fanmark",
     "quickRegister": "Quick Secure",
-    "quickRegisterTitle": "Secure Fanma",
+    "quickRegisterTitle": "Secure Fanmark",
     "quickRegisterSubtitle": "Secure it first, configure details later",
-    "quickSecured": "Fanma secured! 🎉",
+    "quickSecured": "Fanmark secured! 🎉",
     "quickSecuredDescription": "You can change settings anytime ✨",
-    "quickSecuredInfo": "💡 This fanma is in 'inactive' state. You can change settings from My Fanmas.",
+    "quickSecuredInfo": "💡 This fanmark is in 'inactive' state. You can change settings from My Fanmarks.",
     "configureLater": "Configure Later",
     "configureNow": "Configure Now",
     "securing": "Securing...",
     "cancel": "Cancel",
-    "customFanma": "Custom Fanma",
-    "registerCustom": "Secure custom fanma",
+    "customFanma": "Custom Fanmark",
+    "registerCustom": "Secure custom fanmark",
     "emojiCombination": "Emoji Combination",
     "displayName": "Display Name",
     "accessType": "Access Type",
@@ -326,11 +326,11 @@
     "textContent": "Text Content",
     "createProfile": "Create profile page (auto-generates basic profile)",
     "allowTransfers": "Allow transfers (default: enabled)",
-    "detailsNote": "📝 Detailed settings (access type, URL, text, etc.) can be configured later in 'My Fanmas'",
+    "detailsNote": "📝 Detailed settings (access type, URL, text, etc.) can be configured later in 'My Fanmarks'",
     "placeholders": {
       "emojiCombination": "Enter your emoji combination",
       "displayName": "Choose a cute display name",
-      "fanmarkName": "Name for this fanma",
+      "fanmarkName": "Name for this fanmark",
       "targetUrl": "https://example.com",
       "textContent": "Enter the text to display"
     },
