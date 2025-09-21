@@ -179,15 +179,15 @@ export const FanmarkSettings = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-base-100 to-base-200">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
         <DialogHeader className="space-y-4">
           <DialogTitle className="text-3xl font-bold flex items-center gap-3 text-center justify-center">
             <span className="text-5xl animate-bounce">{fanmark.emoji_combination}</span>
             <div>
-              <div className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              <div className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
                 ファンマ設定
               </div>
-              <div className="text-sm font-normal text-base-content/70">
+              <div className="text-sm font-normal text-muted-foreground">
                 あなたのファンマをカスタマイズ
               </div>
             </div>
@@ -196,7 +196,7 @@ export const FanmarkSettings = ({
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
           {/* Display Name */}
-          <Card className="overflow-hidden">
+          <Card className="overflow-hidden rounded-3xl border border-primary/15 bg-background/90 shadow-[0_20px_45px_rgba(101,195,200,0.14)] backdrop-blur">
             <CardContent className="p-6">
               <div className="space-y-3">
                 <Label htmlFor="displayName" className="text-lg font-semibold flex items-center gap-2">
@@ -210,7 +210,7 @@ export const FanmarkSettings = ({
                   className="text-lg h-12 border-2 focus:border-primary transition-all duration-300"
                 />
                 {errors.displayName && (
-                  <p className="text-sm text-error flex items-center gap-2">
+                  <p className="text-sm text-destructive flex items-center gap-2">
                     <span>⚠️</span>
                     {errors.displayName.message}
                   </p>
@@ -220,7 +220,7 @@ export const FanmarkSettings = ({
           </Card>
 
           {/* Access Type */}
-          <Card className="overflow-hidden">
+          <Card className="overflow-hidden rounded-3xl border border-primary/15 bg-background/90 shadow-[0_20px_45px_rgba(101,195,200,0.14)] backdrop-blur">
             <CardContent className="p-6">
               <div className="space-y-4">
                 <Label className="text-lg font-semibold flex items-center gap-2">
@@ -239,10 +239,10 @@ export const FanmarkSettings = ({
                           isSelected ? 'scale-105 shadow-lg' : ''
                         }`}
                       >
-                        <Card className={`overflow-hidden border-2 transition-all duration-300 ${
+                        <Card className={`overflow-hidden border-2 transition-all duration-300 rounded-2xl ${
                           isSelected 
                             ? 'border-primary shadow-primary/25 shadow-lg' 
-                            : 'border-base-300 hover:border-primary/50'
+                            : 'border-border hover:border-primary/50'
                         }`}>
                           <CardContent className="p-4">
                             <div className={`absolute inset-0 bg-gradient-to-br ${option.gradient} opacity-0 transition-opacity duration-300 ${
@@ -254,20 +254,20 @@ export const FanmarkSettings = ({
                                 type="radio"
                                 value={option.value}
                                 {...register('accessType')}
-                                className="radio radio-primary mt-1"
+                                className="w-4 h-4 text-primary border-border focus:ring-primary focus:ring-2 mt-1"
                               />
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
                                   <Icon className={`h-5 w-5 transition-colors duration-300 ${
-                                    isSelected ? 'text-primary' : 'text-base-content/60'
+                                    isSelected ? 'text-primary' : 'text-muted-foreground'
                                   }`} />
                                   <div className={`font-semibold transition-colors duration-300 ${
-                                    isSelected ? 'text-primary' : 'text-base-content'
+                                    isSelected ? 'text-primary' : 'text-foreground'
                                   }`}>
                                     {option.label}
                                   </div>
                                 </div>
-                                <div className="text-sm text-base-content/70">
+                                <div className="text-sm text-muted-foreground">
                                   {option.desc}
                                 </div>
                               </div>
@@ -284,7 +284,7 @@ export const FanmarkSettings = ({
 
           {/* Conditional Fields */}
           {accessType === 'redirect' && (
-            <Card className="overflow-hidden animate-fade-in">
+            <Card className="overflow-hidden animate-fade-in rounded-3xl border border-primary/15 bg-background/90 shadow-[0_20px_45px_rgba(101,195,200,0.14)] backdrop-blur">
               <CardContent className="p-6">
                 <div className="space-y-3">
                   <Label htmlFor="targetUrl" className="text-lg font-semibold flex items-center gap-2">
@@ -299,7 +299,7 @@ export const FanmarkSettings = ({
                     className="text-lg h-12 border-2 focus:border-primary transition-all duration-300"
                   />
                   {errors.targetUrl && (
-                    <p className="text-sm text-error flex items-center gap-2">
+                    <p className="text-sm text-destructive flex items-center gap-2">
                       <span>⚠️</span>
                       {errors.targetUrl.message}
                     </p>
@@ -310,7 +310,7 @@ export const FanmarkSettings = ({
           )}
 
           {accessType === 'text' && (
-            <Card className="overflow-hidden animate-fade-in">
+            <Card className="overflow-hidden animate-fade-in rounded-3xl border border-primary/15 bg-background/90 shadow-[0_20px_45px_rgba(101,195,200,0.14)] backdrop-blur">
               <CardContent className="p-6">
                 <div className="space-y-3">
                   <Label htmlFor="textContent" className="text-lg font-semibold flex items-center gap-2">
@@ -325,7 +325,7 @@ export const FanmarkSettings = ({
                     className="text-lg border-2 focus:border-primary transition-all duration-300 resize-none"
                   />
                   {errors.textContent && (
-                    <p className="text-sm text-error flex items-center gap-2">
+                    <p className="text-sm text-destructive flex items-center gap-2">
                       <span>⚠️</span>
                       {errors.textContent.message}
                     </p>
@@ -336,41 +336,41 @@ export const FanmarkSettings = ({
           )}
 
           {/* Additional Options */}
-          <Card className="overflow-hidden">
+          <Card className="overflow-hidden rounded-3xl border border-primary/15 bg-background/90 shadow-[0_20px_45px_rgba(101,195,200,0.14)] backdrop-blur">
             <CardContent className="p-6 space-y-6">
               {accessType === 'profile' && (
-                <div className="flex items-center gap-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
+                <div className="flex items-center gap-4 p-4 bg-primary/5 rounded-xl border border-primary/20">
                   <input
                     type="checkbox"
                     id="createProfile"
                     {...register('createProfile')}
-                    className="checkbox checkbox-primary"
+                    className="w-4 h-4 text-primary border-border focus:ring-primary focus:ring-2 rounded"
                   />
                   <Label htmlFor="createProfile" className="flex-1 cursor-pointer">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xl">🎨</span>
                       <span className="font-semibold">プロフィールページを作成</span>
                     </div>
-                    <div className="text-sm text-base-content/70">
+                    <div className="text-sm text-muted-foreground">
                       基本的なプロフィールを自動生成します
                     </div>
                   </Label>
                 </div>
               )}
 
-              <div className="flex items-center gap-4 p-4 bg-secondary/5 rounded-lg border border-secondary/20">
+              <div className="flex items-center gap-4 p-4 bg-secondary/5 rounded-xl border border-secondary/20">
                 <input
                   type="checkbox"
                   id="isTransferable"
                   {...register('isTransferable')}
-                  className="toggle toggle-secondary"
+                  className="w-4 h-4 text-secondary border-border focus:ring-secondary focus:ring-2 rounded"
                 />
                 <Label htmlFor="isTransferable" className="flex-1 cursor-pointer">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xl">🔄</span>
                     <span className="font-semibold">譲渡を許可する</span>
                   </div>
-                  <div className="text-sm text-base-content/70">
+                  <div className="text-sm text-muted-foreground">
                     他のユーザーにファンマを譲渡できます
                   </div>
                 </Label>
@@ -383,7 +383,7 @@ export const FanmarkSettings = ({
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 h-14 text-lg font-semibold bg-gradient-to-r from-primary to-secondary hover:from-primary-focus hover:to-secondary-focus disabled:opacity-50 transition-all duration-300"
+              className="flex-1 h-14 text-lg font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary hover:to-primary/90 disabled:opacity-50 transition-all duration-300 rounded-2xl shadow-lg"
             >
               {isSubmitting ? (
                 <div className="flex items-center gap-2">
@@ -402,7 +402,7 @@ export const FanmarkSettings = ({
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
-              className="px-8 h-14 text-lg font-semibold border-2 hover:border-primary hover:text-primary transition-all duration-300"
+              className="px-8 h-14 text-lg font-semibold border-2 hover:border-primary hover:text-primary transition-all duration-300 rounded-2xl"
             >
               キャンセル
             </Button>

@@ -83,27 +83,27 @@ export const FanmarkDashboard = () => {
 
   const getAccessTypeBadge = (accessType: string) => {
     let icon = <FiLayers className="h-3.5 w-3.5" />;
-    let className = 'border-gray-200 bg-gray-100 text-gray-700';
+    let className = 'border-gray-200/60 bg-gray-50 text-gray-600 shadow-sm';
     let label = t('dashboard.accessTypes.inactive');
 
     if (accessType === 'profile') {
       icon = <FiUser className="h-3.5 w-3.5" />;
-      className = 'border-blue-200 bg-blue-100/80 text-blue-800';
+      className = 'border-sky-200/60 bg-sky-50 text-sky-600 shadow-sm';
       label = t('dashboard.accessTypes.profile');
     } else if (accessType === 'redirect') {
       icon = <FiLink className="h-3.5 w-3.5" />;
-      className = 'border-green-200 bg-green-100/80 text-green-800';
+      className = 'border-emerald-200/60 bg-emerald-50 text-emerald-600 shadow-sm';
       label = t('dashboard.accessTypes.redirect');
     } else if (accessType === 'text') {
       icon = <FiFileText className="h-3.5 w-3.5" />;
-      className = 'border-yellow-200 bg-yellow-100/80 text-yellow-800';
+      className = 'border-amber-200/60 bg-amber-50 text-amber-600 shadow-sm';
       label = t('dashboard.accessTypes.text');
     }
 
     return (
-      <Badge variant="outline" className={`${className} flex items-center gap-2`}>
+      <Badge className={`${className} inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide`}>
         {icon}
-        {label}
+        <span>{label}</span>
       </Badge>
     );
   };
@@ -243,10 +243,10 @@ export const FanmarkDashboard = () => {
                         <table className="w-full">
                           <thead>
                             <tr className="bg-muted/50">
-                              <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.emoji')}</th>
+                              <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.fanmark')}</th>
                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.displayName')}</th>
                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.accessType')}</th>
-                              <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.shortId')}</th>
+                              <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.alias')}</th>
                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.status')}</th>
                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.actions')}</th>
                             </tr>
@@ -290,30 +290,23 @@ export const FanmarkDashboard = () => {
                                 </td>
                                 <td className="px-4 py-4">
                                   <Badge 
-                                    variant="outline"
-                                    className={`${fanmark.status === 'active' ? 'border-green-200 bg-green-100/70 text-green-800' : 'border-red-200 bg-red-100/70 text-red-800'} flex items-center gap-2`}
+                                    className={`${fanmark.status === 'active' ? 'border-emerald-200/60 bg-emerald-50 text-emerald-600' : 'border-rose-200/60 bg-rose-50 text-rose-600'} inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide shadow-sm`}
                                   >
                                     {fanmark.status === 'active' ? (
                                       <>
-                                        <FiCheckCircle className="h-4 w-4" />
-                                        {t('dashboard.statusActive')}
+                                        <FiCheckCircle className="h-3.5 w-3.5" />
+                                        <span>{t('dashboard.statusActive')}</span>
                                       </>
                                     ) : (
                                       <>
-                                        <FiMoon className="h-4 w-4" />
-                                        {t('dashboard.statusInactive')}
+                                        <FiMoon className="h-3.5 w-3.5" />
+                                        <span>{t('dashboard.statusInactive')}</span>
                                       </>
                                     )}
                                   </Badge>
                                 </td>
                                 <td className="px-4 py-4">
                                   <div className="flex gap-1">
-                                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-blue-100">
-                                      <Eye className="h-4 w-4" />
-                                    </Button>
-                                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-yellow-100">
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
                                     <Button 
                                       size="sm" 
                                       variant="ghost" 
@@ -321,13 +314,6 @@ export const FanmarkDashboard = () => {
                                       onClick={() => setSettingsFanmark(fanmark)}
                                     >
                                       <Settings className="h-4 w-4" />
-                                    </Button>
-                                    <Button 
-                                      size="sm" 
-                                      variant="ghost" 
-                                      className="h-8 w-8 p-0 hover:bg-red-100"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
                                     </Button>
                                   </div>
                                 </td>
@@ -359,25 +345,24 @@ export const FanmarkDashboard = () => {
                                 )}
                               </div>
                               
-                              <div className="flex items-center justify-between">
-                                {getAccessTypeBadge(fanmark.access_type)}
-                                <Badge 
-                                  variant="outline"
-                                  className={`${fanmark.status === 'active' ? 'border-green-200 bg-green-100/70 text-green-800' : 'border-red-200 bg-red-100/70 text-red-800'} flex items-center gap-2`}
-                                >
-                                  {fanmark.status === 'active' ? (
-                                    <>
-                                      <FiCheckCircle className="h-4 w-4" />
-                                      {t('dashboard.statusActive')}
-                                    </>
-                                  ) : (
-                                    <>
-                                      <FiMoon className="h-4 w-4" />
-                                      {t('dashboard.statusInactive')}
-                                    </>
-                                  )}
-                                </Badge>
-                              </div>
+                                <div className="flex items-center justify-between">
+                                  {getAccessTypeBadge(fanmark.access_type)}
+                                  <Badge 
+                                    className={`${fanmark.status === 'active' ? 'border-emerald-200/60 bg-emerald-50 text-emerald-600' : 'border-rose-200/60 bg-rose-50 text-rose-600'} inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide shadow-sm`}
+                                  >
+                                    {fanmark.status === 'active' ? (
+                                      <>
+                                        <FiCheckCircle className="h-3.5 w-3.5" />
+                                        <span>{t('dashboard.statusActive')}</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <FiMoon className="h-3.5 w-3.5" />
+                                        <span>{t('dashboard.statusInactive')}</span>
+                                      </>
+                                    )}
+                                  </Badge>
+                                </div>
 
                               {(fanmark.redirect_url || fanmark.profile_text) && (
                                 <div className="text-sm text-muted-foreground mb-3 p-2 bg-muted/30 rounded">
@@ -397,14 +382,6 @@ export const FanmarkDashboard = () => {
                               )}
 
                               <div className="flex gap-2">
-                                <Button size="sm" variant="outline" className="flex-1 border-blue-200 text-blue-600 hover:bg-blue-50">
-                                  <Eye className="mr-1 h-4 w-4" />
-                                  {t('dashboard.view')}
-                                </Button>
-                                <Button size="sm" variant="outline" className="flex-1 border-yellow-200 text-yellow-600 hover:bg-yellow-50">
-                                  <Edit className="mr-1 h-4 w-4" />
-                                  {t('dashboard.edit')}
-                                </Button>
                                 <Button 
                                   size="sm" 
                                   variant="outline" 
