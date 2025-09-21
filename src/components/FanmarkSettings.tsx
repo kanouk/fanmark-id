@@ -45,7 +45,7 @@ interface Fanmark {
 }
 
 interface FanmarkSettingsProps {
-  fanmark: Fanmark;
+  fanmark: Fanmark | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
@@ -73,17 +73,21 @@ export const FanmarkSettings = ({
 
   // Reset form when fanmark changes
   useEffect(() => {
-    reset({
-      accessType: fanmark.access_type as any,
-      displayName: fanmark.display_name,
-      targetUrl: fanmark.target_url || '',
-      textContent: fanmark.text_content || '',
-      createProfile: false, // This is a one-time action
-      isTransferable: fanmark.is_transferable,
-    });
+    if (fanmark) {
+      reset({
+        accessType: fanmark.access_type as any,
+        displayName: fanmark.display_name,
+        targetUrl: fanmark.target_url || '',
+        textContent: fanmark.text_content || '',
+        createProfile: false, // This is a one-time action
+        isTransferable: fanmark.is_transferable,
+      });
+    }
   }, [fanmark, reset]);
 
   const onSubmit = async (data: SettingsFormData) => {
+    if (!fanmark) return;
+    
     setIsSubmitting(true);
 
     try {
@@ -167,6 +171,11 @@ export const FanmarkSettings = ({
       gradient: 'from-gray-400 to-slate-400'
     },
   ];
+
+  // Don't render if fanmark is null
+  if (!fanmark) {
+    return null;
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
