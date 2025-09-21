@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CustomEmojiPicker } from '@/components/ui/emoji-picker';
@@ -24,6 +24,8 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
 }) => {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [isInteracting, setIsInteracting] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleEmojiSelect = (emoji: string) => {
     const newValue = value + emoji;
@@ -33,6 +35,8 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
         onSearchPerformed(newValue);
       }
     }
+    // keep picker open and refocus input for continuous entry
+    setTimeout(() => inputRef.current?.focus(), 0);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,12 +54,11 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
 
   const handleInputBlur = () => {
     setIsFocused(false);
-    // Don't close immediately to allow clicking on emoji picker
     setTimeout(() => {
-      if (!isFocused) {
+      if (!isInteracting) {
         setIsPickerOpen(false);
       }
-    }, 200);
+    }, 150);
   };
 
   const handlePickerOpenChange = (open: boolean) => {
@@ -68,21 +71,30 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
   return (
     <div className="relative w-full">
       <Popover open={isPickerOpen} onOpenChange={handlePickerOpenChange}>
-        <Input
-          value={value}
-          onChange={handleInputChange}
-          onFocus={handleInputFocus}
-          onBlur={handleInputBlur}
-          placeholder={placeholder}
-          disabled={disabled}
-          maxLength={maxLength}
-          className={className}
-        />
+        <PopoverTrigger asChild>
+          <Input
+            ref={inputRef}
+            value={value}
+            onChange={handleInputChange}
+            onFocus={handleInputFocus}
+            onBlur={handleInputBlur}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            placeholder={placeholder}
+            disabled={disabled}
+            maxLength={maxLength}
+            className={className}
+          />
+        </PopoverTrigger>
         <PopoverContent 
           className="p-0 border-base-300 bg-base-100" 
           align="start" 
           sideOffset={4}
           onOpenAutoFocus={(e) => e.preventDefault()}
+          onCloseAutoFocus={(e) => e.preventDefault()}
+          onMouseDown={() => setIsInteracting(true)}
+          onMouseUp={() => setTimeout(() => setIsInteracting(false), 0)}
+          onPointerLeave={() => setIsInteracting(false)}
         >
           <CustomEmojiPicker
             onEmojiSelect={handleEmojiSelect}
