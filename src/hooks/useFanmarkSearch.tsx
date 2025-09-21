@@ -8,7 +8,7 @@ export interface FanmarkSearchResult {
   normalized_emoji: string;
   short_id: string;
   is_premium: boolean;
-  status: 'available' | 'taken' | 'premium' | 'payment_required';
+  status: 'available' | 'taken' | 'premium' | 'payment_required' | 'invalid';
   price_yen?: number;
   price_usd?: number;
   emoji_count?: number;
@@ -251,7 +251,7 @@ export function useFanmarkSearch() {
           normalized_emoji: '',
           short_id: '',
           is_premium: false,
-          status: 'available', // Show as available but will show error
+          status: 'invalid', // Set correct status for validation errors
           error: validation.error
         } as any);
         setLoading(false);

@@ -64,6 +64,8 @@ export const FanmarkAcquisition = ({ prefilledEmoji, onSuccess }: FanmarkAcquisi
         return <CreditCard className="h-5 w-5 text-yellow-500" />;
       case 'payment_required':
         return <CreditCard className="h-5 w-5 text-orange-500" />;
+      case 'invalid':
+        return <XCircle className="h-5 w-5 text-red-500" />;
       default:
         return <Clock className="h-5 w-5 text-gray-500" />;
     }
@@ -140,7 +142,7 @@ export const FanmarkAcquisition = ({ prefilledEmoji, onSuccess }: FanmarkAcquisi
           </div>
 
           {result && (
-            <div className="border rounded-lg p-4 bg-gray-50">
+            <div className={`border rounded-lg p-4 ${result.status === 'invalid' ? 'bg-red-50 border-red-200' : 'bg-gray-50'}`}>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <span className="text-3xl">{result.emoji_combination}</span>
@@ -174,6 +176,16 @@ export const FanmarkAcquisition = ({ prefilledEmoji, onSuccess }: FanmarkAcquisi
                 <p className="text-sm text-gray-600">
                   {t('search.ownedBy')}: {result.owner.display_name || result.owner.username}
                 </p>
+              )}
+              
+              {result.status === 'invalid' && result.error && (
+                <div className="text-sm text-red-600 bg-red-100 p-3 rounded-md">
+                  <div className="font-medium mb-1">⚠️ 入力エラー</div>
+                  <div>{result.error}</div>
+                  <div className="mt-2 text-xs">
+                    💡 絵文字のみを1-5個まで入力してください
+                  </div>
+                </div>
               )}
             </div>
           )}
