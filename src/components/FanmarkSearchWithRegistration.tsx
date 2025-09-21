@@ -2,7 +2,7 @@ import { useState } from 'react';
 import FanmarkSearch from '@/components/FanmarkSearch';
 import { FanmarkRegistrationForm } from '@/components/FanmarkRegistrationForm';
 import { useAuth } from '@/hooks/useAuth';
-import { useFanmarkSession } from '@/hooks/useFanmarkSession';
+import { useTranslation } from '@/hooks/useTranslation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -13,7 +13,7 @@ interface FanmarkSearchWithRegistrationProps {
 
 export const FanmarkSearchWithRegistration = ({ onSignupPrompt }: FanmarkSearchWithRegistrationProps) => {
   const { user } = useAuth();
-  const { storeSearchData } = useFanmarkSession();
+  const { t } = useTranslation();
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
 
   const handleRegistrationSuccess = () => {
@@ -30,24 +30,23 @@ export const FanmarkSearchWithRegistration = ({ onSignupPrompt }: FanmarkSearchW
       <Card className="w-full max-w-4xl mx-auto">
         <CardHeader>
           <CardTitle className="text-3xl text-center">
-            🔍 Search & Register Your Fanmark
+            🔍 {t('search.searchFanmarks')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <FanmarkSearch 
             onSignupPrompt={onSignupPrompt}
-            onSearchPerformed={storeSearchData}
           />
           
           {user && (
             <div className="mt-6 text-center border-t pt-6">
-              <p className="text-gray-600 mb-4">Want to register a custom fanmark?</p>
+              <p className="text-gray-600 mb-4">{t('registration.customFanmark')}?</p>
               <Button 
                 onClick={() => setShowRegistrationForm(true)}
                 className="gap-2 bg-gradient-to-r from-pink-400 to-purple-400 hover:from-pink-500 hover:to-purple-500"
               >
                 <span>✨</span>
-                Register Custom Fanmark
+                {t('registration.registerCustom')}
               </Button>
             </div>
           )}
@@ -58,7 +57,7 @@ export const FanmarkSearchWithRegistration = ({ onSignupPrompt }: FanmarkSearchW
       <Dialog open={showRegistrationForm} onOpenChange={setShowRegistrationForm}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Register Your Fanmark</DialogTitle>
+            <DialogTitle>{t('registration.title')}</DialogTitle>
           </DialogHeader>
           <FanmarkRegistrationForm
             onSuccess={handleRegistrationSuccess}

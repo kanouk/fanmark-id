@@ -183,7 +183,10 @@
     "saving": "Saving...",
     "enabled": "Enabled",
     "disabled": "Disabled",
-    "userNotAuthenticated": "User not authenticated"
+    "userNotAuthenticated": "User not authenticated",
+    "openEmojiPicker": "Open emoji picker",
+    "aiRecommendationComingSoon": "AI recommendations (coming soon)",
+    "aiRecommendationDescription": "Coming soon: AI will suggest fanmarks from natural text or images"
   },
   "profile": {
     "welcome": "Welcome to your profile!",
@@ -246,6 +249,54 @@
       "redirect": "Redirect",
       "text": "Text",
       "inactive": "Inactive"
+    }
+  },
+  "registration": {
+    "title": "Register Your Fanmark",
+    "successTitle": "Fanmark Secured!",
+    "successMessage": "Your fanmark is ready! 🎉✨",
+    "successDescription": "Great choice! This could be valuable later! 💎",
+    "failed": "Registration failed",
+    "authRequired": "Authentication required",
+    "authDescription": "Please sign in to register a fanmark",
+    "registering": "Registering...",
+    "registerButton": "Register Fanmark",
+    "quickRegister": "Quick Secure",
+    "quickRegisterTitle": "Secure Fanmark",
+    "quickRegisterSubtitle": "Secure it first, configure details later",
+    "quickSecured": "Fanmark secured! 🎉",
+    "quickSecuredDescription": "You can change settings anytime ✨",
+    "quickSecuredInfo": "💡 This fanmark is in 'inactive' state. You can change settings from My Fanmarks.",
+    "configureLater": "Configure Later",
+    "configureNow": "Configure Now",
+    "securing": "Securing...",
+    "cancel": "Cancel",
+    "customFanmark": "Custom Fanmark",
+    "registerCustom": "Register Custom Fanmark",
+    "emojiCombination": "Emoji Combination",
+    "displayName": "Display Name",
+    "accessType": "Access Type",
+    "targetUrl": "Target URL",
+    "textContent": "Text Content",
+    "createProfile": "Create profile page (auto-generates basic profile)",
+    "allowTransfers": "Allow transfers (default: enabled)",
+    "detailsNote": "📝 Detailed settings (access type, URL, text, etc.) can be configured later in 'My Fanmarks'",
+    "placeholders": {
+      "emojiCombination": "Enter your emoji combination",
+      "displayName": "Choose a cute display name",
+      "fanmarkName": "Name for this fanmark",
+      "targetUrl": "https://example.com",
+      "textContent": "Enter the text to display"
+    },
+    "accessTypes": {
+      "profile": "📄 Profile Page",
+      "profileDesc": "Create a personal page",
+      "redirect": "🔗 URL Redirect", 
+      "redirectDesc": "Redirect to any URL",
+      "text": "📝 Text Display",
+      "textDesc": "Show custom text",
+      "inactive": "😴 Inactive",
+      "inactiveDesc": "Reserve for later"
     }
   },
   "navigation": {

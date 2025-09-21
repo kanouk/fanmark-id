@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const quickRegistrationSchema = z.object({
   emojiCombination: z.string().min(1, 'Emoji combination is required'),
@@ -33,6 +34,7 @@ export const FanmarkQuickRegistration = ({
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [registeredFanmark, setRegisteredFanmark] = useState<any>(null);
+  const { t } = useTranslation();
 
   const {
     register,
@@ -49,8 +51,8 @@ export const FanmarkQuickRegistration = ({
   const onSubmit = async (data: QuickRegistrationFormData) => {
     if (!user) {
       toast({
-        title: 'Authentication required',
-        description: 'Please sign in to register a fanmark',
+        title: t('registration.authRequired'),
+        description: t('registration.authDescription'),
         variant: 'destructive',
       });
       return;
@@ -76,8 +78,8 @@ export const FanmarkQuickRegistration = ({
       if (result.success) {
         setRegisteredFanmark(result.fanmark);
         toast({
-          title: 'ファンマークを確保しました！ 🎉',
-          description: 'いつでも設定を変更できます ✨',
+          title: t('registration.quickSecured'),
+          description: t('registration.quickSecuredDescription'),
         });
       } else {
         throw new Error(result.error || 'Registration failed');
@@ -85,7 +87,7 @@ export const FanmarkQuickRegistration = ({
     } catch (error) {
       console.error('Registration error:', error);
       toast({
-        title: 'Registration failed',
+        title: t('registration.failed'),
         description: error instanceof Error ? error.message : 'Something went wrong',
         variant: 'destructive',
       });
@@ -100,7 +102,7 @@ export const FanmarkQuickRegistration = ({
       <Card className="w-full max-w-2xl mx-auto">
         <CardHeader>
           <CardTitle className="text-2xl text-center text-green-600">
-            ✅ ファンマークを確保しました！
+            ✅ {t('registration.successTitle')}
           </CardTitle>
         </CardHeader>
         <CardContent className="text-center space-y-6">
@@ -111,7 +113,7 @@ export const FanmarkQuickRegistration = ({
             {registeredFanmark.display_name}
           </div>
           <div className="bg-blue-50 rounded-lg p-4 text-sm text-blue-800">
-            💡 このファンマークは「未設定」状態です。マイファンマークから設定を変更できます。
+            {t('registration.quickSecuredInfo')}
           </div>
           <div className="flex gap-3">
             <Button
@@ -122,7 +124,7 @@ export const FanmarkQuickRegistration = ({
               variant="outline"
               className="flex-1"
             >
-              後で設定する
+              {t('registration.configureLater')}
             </Button>
             <Button
               onClick={() => {
@@ -131,7 +133,7 @@ export const FanmarkQuickRegistration = ({
               }}
               className="flex-1 bg-gradient-to-r from-pink-400 to-purple-400 hover:from-pink-500 hover:to-purple-500"
             >
-              今すぐ設定する
+              {t('registration.configureNow')}
             </Button>
           </div>
         </CardContent>
@@ -143,10 +145,10 @@ export const FanmarkQuickRegistration = ({
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle className="text-2xl text-center">
-          ⚡ ファンマークを確保
+          ⚡ {t('registration.quickRegisterTitle')}
         </CardTitle>
         <p className="text-center text-gray-600">
-          まずは確保しておいて、後で詳細設定もできます
+          {t('registration.quickRegisterSubtitle')}
         </p>
       </CardHeader>
       <CardContent>
@@ -154,12 +156,12 @@ export const FanmarkQuickRegistration = ({
           {/* Emoji Combination */}
           <div className="space-y-2">
             <Label htmlFor="emojiCombination" className="text-lg">
-              🎯 絵文字の組み合わせ
+              🎯 {t('registration.emojiCombination')}
             </Label>
             <Input
               id="emojiCombination"
               {...register('emojiCombination')}
-              placeholder="絵文字を入力してください"
+              placeholder={t('registration.placeholders.emojiCombination')}
               className="text-2xl text-center border-2 border-dashed"
               disabled={!!prefilledEmoji}
             />
@@ -171,12 +173,12 @@ export const FanmarkQuickRegistration = ({
           {/* Display Name */}
           <div className="space-y-2">
             <Label htmlFor="displayName" className="text-lg">
-              ✨ 表示名
+              ✨ {t('registration.displayName')}
             </Label>
             <Input
               id="displayName"
               {...register('displayName')}
-              placeholder="このファンマークの名前"
+              placeholder={t('registration.placeholders.fanmarkName')}
               className="border-2 border-dotted border-pink-300"
             />
             {errors.displayName && (
@@ -185,7 +187,7 @@ export const FanmarkQuickRegistration = ({
           </div>
 
           <div className="bg-yellow-50 rounded-lg p-4 text-sm text-yellow-800">
-            📝 詳細設定（アクセスタイプ、URL、テキストなど）は後から「マイファンマーク」で設定できます
+            {t('registration.detailsNote')}
           </div>
 
           {/* Action Buttons */}
@@ -198,11 +200,10 @@ export const FanmarkQuickRegistration = ({
               {isSubmitting ? (
                 <>
                   <span className="loading loading-spinner loading-sm mr-2"></span>
-                  確保中...
+                  {t('registration.securing')}
                 </>
               ) : (
-                '⚡ とりあえず確保'
-              )}
+                `⚡ ${t('registration.quickRegister')}`)}
             </Button>
             {onCancel && (
               <Button
@@ -211,7 +212,7 @@ export const FanmarkQuickRegistration = ({
                 onClick={onCancel}
                 disabled={isSubmitting}
               >
-                キャンセル
+                {t('common.cancel')}
               </Button>
             )}
           </div>

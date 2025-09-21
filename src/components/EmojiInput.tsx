@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CustomEmojiPicker } from '@/components/ui/emoji-picker';
 import { Smile, Sparkles } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface EmojiInputProps {
   value: string;
@@ -26,6 +27,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
 }) => {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { t } = useTranslation();
 
   const handleEmojiSelect = (emoji: string) => {
     const newValue = value + emoji;
@@ -68,8 +70,8 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
             type="button"
             variant="outline"
             size="icon"
-            aria-label={disabled ? '絵文字ピッカー（無効）' : '絵文字ピッカーを開く'}
-            title={disabled ? '絵文字ピッカー（無効）' : '絵文字ピッカーを開く'}
+            aria-label={disabled ? t('common.disabled') : t('common.openEmojiPicker')}
+            title={disabled ? t('common.disabled') : t('common.openEmojiPicker')}
             disabled={disabled}
           >
             <Smile className="h-4 w-4" />
@@ -91,8 +93,8 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
         type="button"
         variant="outline"
         size="icon"
-        aria-label="AIでおすすめ（近日対応）"
-        title="近日対応予定: AIが自然文や画像からファンマを提案します"
+        aria-label={t('common.aiRecommendationComingSoon')}
+        title={t('common.aiRecommendationDescription')}
         disabled
       >
         <Sparkles className="h-4 w-4" />

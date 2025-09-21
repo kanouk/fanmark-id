@@ -183,7 +183,10 @@
     "saving": "保存中...",
     "enabled": "有効",
     "disabled": "無効",
-    "userNotAuthenticated": "ユーザーが認証されていません"
+    "userNotAuthenticated": "ユーザーが認証されていません",
+    "openEmojiPicker": "絵文字ピッカーを開く",
+    "aiRecommendationComingSoon": "AIでおすすめ（近日対応）",
+    "aiRecommendationDescription": "近日対応予定: AIが自然文や画像からファンマを提案します"
   },
   "profile": {
     "welcome": "プロフィールへようこそ！",
@@ -246,6 +249,54 @@
       "redirect": "リダイレクト",
       "text": "テキスト",
       "inactive": "非アクティブ"
+    }
+  },
+  "registration": {
+    "title": "ファンマークを登録",
+    "successTitle": "ファンマークを確保しました！",
+    "successMessage": "ファンマークが準備完了です！ 🎉✨",
+    "successDescription": "素晴らしい選択！後から価値が出るかもしれません！ 💎",
+    "failed": "登録に失敗しました",
+    "authRequired": "認証が必要です",
+    "authDescription": "ファンマークを登録するにはログインしてください",
+    "registering": "登録中...",
+    "registerButton": "ファンマークを登録",
+    "quickRegister": "とりあえず確保",
+    "quickRegisterTitle": "ファンマークを確保",
+    "quickRegisterSubtitle": "まずは確保しておいて、後で詳細設定もできます",
+    "quickSecured": "ファンマークを確保しました！ 🎉",
+    "quickSecuredDescription": "いつでも設定を変更できます ✨",
+    "quickSecuredInfo": "💡 このファンマークは「未設定」状態です。マイファンマークから設定を変更できます。",
+    "configureLater": "後で設定する",
+    "configureNow": "今すぐ設定する",
+    "securing": "確保中...",
+    "cancel": "キャンセル",
+    "customFanmark": "カスタムファンマーク",
+    "registerCustom": "カスタムファンマークを登録",
+    "emojiCombination": "絵文字の組み合わせ",
+    "displayName": "表示名",
+    "accessType": "アクセスタイプ",
+    "targetUrl": "リンク先URL",
+    "textContent": "表示テキスト",
+    "createProfile": "プロフィールページを作成（基本プロフィールを自動生成）",
+    "allowTransfers": "譲渡を許可（デフォルト: 有効）",
+    "detailsNote": "📝 詳細設定（アクセスタイプ、URL、テキストなど）は後から「マイファンマーク」で設定できます",
+    "placeholders": {
+      "emojiCombination": "絵文字を入力してください",
+      "displayName": "可愛い表示名を選んでください",
+      "fanmarkName": "このファンマークの名前",
+      "targetUrl": "https://example.com",
+      "textContent": "表示するテキストを入力してください"
+    },
+    "accessTypes": {
+      "profile": "📄 プロフィールページ",
+      "profileDesc": "個人ページを作成",
+      "redirect": "🔗 URLリダイレクト",
+      "redirectDesc": "任意のURLにリダイレクト",
+      "text": "📝 テキスト表示",
+      "textDesc": "カスタムテキストを表示",
+      "inactive": "😴 未設定",
+      "inactiveDesc": "後で設定"
     }
   },
   "navigation": {

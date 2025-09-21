@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { EmojiInput } from '@/components/EmojiInput';
 import { toast } from '@/hooks/use-toast';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const registrationSchema = z.object({
   emojiCombination: z.string().min(1, 'Emoji combination is required'),
@@ -47,6 +48,7 @@ export const FanmarkRegistrationForm = ({
 }: FanmarkRegistrationFormProps) => {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { t } = useTranslation();
 
   const {
     register,
@@ -72,8 +74,8 @@ export const FanmarkRegistrationForm = ({
   const onSubmit = async (data: RegistrationFormData) => {
     if (!user) {
       toast({
-        title: 'Authentication required',
-        description: 'Please sign in to register a fanmark',
+        title: t('registration.authRequired'),
+        description: t('registration.authDescription'),
         variant: 'destructive',
       });
       return;
@@ -98,8 +100,8 @@ export const FanmarkRegistrationForm = ({
 
       if (result.success) {
         toast({
-          title: 'Your fanmark is ready! 🎉✨',
-          description: 'Great choice! This could be valuable later! 💎',
+          title: t('registration.successMessage'),
+          description: t('registration.successDescription'),
         });
         onSuccess?.();
       } else {
@@ -108,7 +110,7 @@ export const FanmarkRegistrationForm = ({
     } catch (error) {
       console.error('Registration error:', error);
       toast({
-        title: 'Registration failed',
+        title: t('registration.failed'),
         description: error instanceof Error ? error.message : 'Something went wrong',
         variant: 'destructive',
       });
@@ -121,7 +123,7 @@ export const FanmarkRegistrationForm = ({
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle className="text-2xl text-center">
-          ✨ Register Your Fanmark ✨
+          ✨ {t('registration.title')} ✨
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -129,13 +131,13 @@ export const FanmarkRegistrationForm = ({
           {/* Emoji Combination */}
           <div className="space-y-2">
             <Label htmlFor="emojiCombination" className="text-lg">
-              🎯 Emoji Combination
+              🎯 {t('registration.emojiCombination')}
             </Label>
             {prefilledEmoji ? (
               <Input
                 id="emojiCombination"
                 {...register('emojiCombination')}
-                placeholder="Enter your emoji combination"
+                placeholder={t('registration.placeholders.emojiCombination')}
                 className="text-2xl text-center border-2 border-dashed"
                 disabled={true}
               />
@@ -143,7 +145,7 @@ export const FanmarkRegistrationForm = ({
               <EmojiInput
                 value={watch('emojiCombination')}
                 onChange={(value) => register('emojiCombination').onChange({ target: { value } })}
-                placeholder="Enter your emoji combination"
+                placeholder={t('registration.placeholders.emojiCombination')}
                 className="text-2xl text-center border-2 border-dashed"
                 maxLength={5}
               />
@@ -156,12 +158,12 @@ export const FanmarkRegistrationForm = ({
           {/* Display Name */}
           <div className="space-y-2">
             <Label htmlFor="displayName" className="text-lg">
-              ✨ Display Name
+              ✨ {t('registration.displayName')}
             </Label>
             <Input
               id="displayName"
               {...register('displayName')}
-              placeholder="Choose a cute display name"
+              placeholder={t('registration.placeholders.displayName')}
               className="border-2 border-dotted border-pink-300"
             />
             {errors.displayName && (
@@ -171,13 +173,13 @@ export const FanmarkRegistrationForm = ({
 
           {/* Access Type */}
           <div className="space-y-3">
-            <Label className="text-lg">🎮 Access Type</Label>
+            <Label className="text-lg">🎮 {t('registration.accessType')}</Label>
             <div className="grid grid-cols-2 gap-3">
               {[
-                { value: 'profile', label: '📄 Profile Page', desc: 'Create a personal page' },
-                { value: 'redirect', label: '🔗 URL Redirect', desc: 'Redirect to any URL' },
-                { value: 'text', label: '📝 Text Display', desc: 'Show custom text' },
-                { value: 'inactive', label: '😴 Inactive', desc: 'Reserve for later' },
+                { value: 'profile', label: t('registration.accessTypes.profile'), desc: t('registration.accessTypes.profileDesc') },
+                { value: 'redirect', label: t('registration.accessTypes.redirect'), desc: t('registration.accessTypes.redirectDesc') },
+                { value: 'text', label: t('registration.accessTypes.text'), desc: t('registration.accessTypes.textDesc') },
+                { value: 'inactive', label: t('registration.accessTypes.inactive'), desc: t('registration.accessTypes.inactiveDesc') },
               ].map((option) => (
                 <label
                   key={option.value}
@@ -202,12 +204,12 @@ export const FanmarkRegistrationForm = ({
           {accessType === 'redirect' && (
             <div className="space-y-2">
               <Label htmlFor="targetUrl" className="text-lg">
-                🔗 Target URL
+                🔗 {t('registration.targetUrl')}
               </Label>
               <Input
                 id="targetUrl"
                 {...register('targetUrl')}
-                placeholder="https://example.com"
+                placeholder={t('registration.placeholders.targetUrl')}
                 type="url"
               />
               {errors.targetUrl && (
@@ -220,12 +222,12 @@ export const FanmarkRegistrationForm = ({
           {accessType === 'text' && (
             <div className="space-y-2">
               <Label htmlFor="textContent" className="text-lg">
-                📝 Text Content
+                📝 {t('registration.textContent')}
               </Label>
               <Textarea
                 id="textContent"
                 {...register('textContent')}
-                placeholder="Enter the text to display"
+                placeholder={t('registration.placeholders.textContent')}
                 rows={4}
               />
               {errors.textContent && (
@@ -244,7 +246,7 @@ export const FanmarkRegistrationForm = ({
                 className="checkbox checkbox-primary"
               />
               <Label htmlFor="createProfile" className="text-lg">
-                🎨 Create profile page (auto-generates basic profile)
+                🎨 {t('registration.createProfile')}
               </Label>
             </div>
           )}
@@ -258,7 +260,7 @@ export const FanmarkRegistrationForm = ({
               className="toggle toggle-primary"
             />
             <Label htmlFor="isTransferable" className="text-lg">
-              🔄 Allow transfers (default: enabled)
+              🔄 {t('registration.allowTransfers')}
             </Label>
           </div>
 
@@ -272,10 +274,10 @@ export const FanmarkRegistrationForm = ({
               {isSubmitting ? (
                 <>
                   <span className="loading loading-spinner loading-sm mr-2"></span>
-                  Registering...
+                  {t('registration.registering')}
                 </>
               ) : (
-                '🎉 Register Fanmark'
+                `🎉 ${t('registration.registerButton')}`
               )}
             </Button>
             {onCancel && (
@@ -285,7 +287,7 @@ export const FanmarkRegistrationForm = ({
                 onClick={onCancel}
                 disabled={isSubmitting}
               >
-                Cancel
+                {t('common.cancel')}
               </Button>
             )}
           </div>
