@@ -41,7 +41,7 @@ const FanmarkSettingsPage = () => {
 
     try {
       const { data, error } = await supabase
-        .from<FanmarkRecord>('fanmarks')
+        .from('fanmarks')
         .select('id, emoji_combination, display_name, access_type, target_url, text_content, is_transferable, status, short_id')
         .eq('id', fanmarkId)
         .single();
@@ -60,7 +60,7 @@ const FanmarkSettingsPage = () => {
         id: data.id,
         emoji_combination: data.emoji_combination,
         display_name: data.display_name,
-        access_type: data.access_type,
+        access_type: data.access_type as 'profile' | 'redirect' | 'text' | 'inactive',
         target_url: data.target_url ?? undefined,
         text_content: data.text_content ?? undefined,
         is_transferable: data.is_transferable,

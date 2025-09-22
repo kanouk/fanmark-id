@@ -91,7 +91,7 @@ export const FanmarkDashboard = () => {
   const fetchFanmarks = useCallback(async () => {
     try {
       const { data, error } = await supabase
-        .from<Fanmark>('fanmarks')
+        .from('fanmarks')
         .select('*')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
