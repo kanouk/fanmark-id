@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -87,6 +88,7 @@ export const FanmarkSettings = ({
 }: FanmarkSettingsProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const {
     register,
@@ -366,11 +368,7 @@ export const FanmarkSettings = ({
                       size="sm"
                       onClick={() => {
                         if (fanmark?.id) {
-                          if (mode === 'dialog') {
-                            window.location.href = `/fanmarks/${fanmark.id}/profile/edit`;
-                          } else {
-                            window.open(`/fanmarks/${fanmark.id}/profile/edit`, '_blank');
-                          }
+                          navigate(`/fanmarks/${fanmark.id}/profile/edit`);
                         }
                       }}
                       className="inline-flex items-center gap-2 rounded-full border-border/60 text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/40 transition-colors"
