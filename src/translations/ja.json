@@ -288,7 +288,7 @@
     "statusActive": "アクティブ",
     "statusInactive": "停止中",
     "statusExpired": "期限切れ",
-    "statusGrace": "猶予",
+    "statusGrace": "期限切れ（猶予期間中）",
     "statusUnknown": "不明",
     "actions": "アクション",
     "view": "表示",
