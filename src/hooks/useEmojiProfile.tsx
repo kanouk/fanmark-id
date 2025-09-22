@@ -15,6 +15,32 @@ export interface EmojiProfile {
   updated_at: string;
 }
 
+// Public interface for emoji profile (without user_id for security)
+export interface PublicEmojiProfile {
+  id: string;
+  fanmark_id: string;
+  bio?: string;
+  social_links?: any;
+  theme_settings?: any;
+  created_at: string;
+  updated_at: string;
+}
+
+// Function to get public emoji profile data securely
+export const getPublicEmojiProfile = async (fanmarkId: string): Promise<PublicEmojiProfile | null> => {
+  try {
+    const { data, error } = await supabase.rpc('get_public_emoji_profile', {
+      profile_fanmark_id: fanmarkId
+    });
+    
+    if (error) throw error;
+    return data?.[0] || null;
+  } catch (error) {
+    console.error('Error fetching public emoji profile:', error);
+    return null;
+  }
+};
+
 export const useEmojiProfile = (fanmarkId: string) => {
   const { user } = useAuth();
   const { t } = useTranslation();

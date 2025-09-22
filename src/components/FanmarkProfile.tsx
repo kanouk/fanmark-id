@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Home, User, Globe, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
+import { getPublicEmojiProfile, type PublicEmojiProfile } from '@/hooks/useEmojiProfile';
 
 interface FanmarkData {
   emoji_combination: string;
@@ -15,6 +16,7 @@ interface FanmarkData {
   target_url?: string;
   text_content?: string;
   status: string;
+  id?: string; // Add fanmark id for potential profile loading
 }
 
 interface EmojiProfile {
@@ -39,15 +41,27 @@ interface FanmarkProfileProps {
 export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [emojiProfile, setEmojiProfile] = useState<EmojiProfile | null>(null);
+  const [emojiProfile, setEmojiProfile] = useState<PublicEmojiProfile | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // For security reasons, we can't load detailed profile information
-    // when accessing via emoji URL since we don't expose user_id
-    setLoading(false);
-  }, []);
+    const loadProfile = async () => {
+      // We can now safely load public profile data using the secure function
+      // This doesn't expose user_id or other sensitive information
+      if (fanmark.id && fanmark.access_type === 'profile') {
+        try {
+          const profile = await getPublicEmojiProfile(fanmark.id);
+          setEmojiProfile(profile);
+        } catch (error) {
+          console.error('Error loading public profile:', error);
+        }
+      }
+      setLoading(false);
+    };
+
+    loadProfile();
+  }, [fanmark.id, fanmark.access_type]);
 
   if (loading) {
     return (
@@ -63,7 +77,7 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
   }
 
   const displayName = fanmark.display_name || 'Anonymous';
-  const bio = `Profile for ${fanmark.emoji_combination}`;
+  const bio = emojiProfile?.bio || `Profile for ${fanmark.emoji_combination}`;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
@@ -94,9 +108,38 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
             </div>
 
             <div className="bg-muted/30 rounded-lg p-4">
-              <p className="text-sm text-muted-foreground text-center">
-                This is a simplified profile view. Full profile features are available when logged in.
-              </p>
+              {emojiProfile ? (
+                <div className="space-y-2">
+                  {emojiProfile.social_links && Object.keys(emojiProfile.social_links).length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-medium mb-2">Social Links</h3>
+                      <div className="flex gap-2 flex-wrap">
+                        {Object.entries(emojiProfile.social_links as Record<string, string>).map(([platform, url]) => (
+                          <Button
+                            key={platform}
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(url, '_blank')}
+                          >
+                            <Globe className="h-3 w-3 mr-1" />
+                            {platform}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div className="text-xs text-muted-foreground mt-4">
+                    <Calendar className="h-3 w-3 inline mr-1" />
+                    Profile created: {new Date(emojiProfile.created_at).toLocaleDateString()}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center">
+                  {fanmark.access_type === 'profile' 
+                    ? 'No detailed profile information available.'
+                    : 'This fanmark is not configured as a profile.'}
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
