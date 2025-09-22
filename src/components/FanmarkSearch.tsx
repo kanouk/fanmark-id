@@ -69,20 +69,27 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
     <div className="space-y-6 overflow-visible">
       {/* Search Input */}
       <div className="relative overflow-visible">
-        <EmojiInput
-          value={searchQuery}
-          onChange={setSearchQuery}
-          onSearchPerformed={onSearchPerformed}
-          placeholder={t('search.searchPlaceholder')}
-          className="h-16 text-center text-2xl"
-          maxLength={5}
-          disabled={loading}
-        />
-        {loading && (
-          <div className="absolute right-14 top-1/2 -translate-y-1/2 transform">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          <EmojiInput
+            value={searchQuery}
+            onChange={setSearchQuery}
+            onSearchPerformed={onSearchPerformed}
+            placeholder={t('search.searchPlaceholder')}
+            className="h-16 text-center text-2xl"
+            maxLength={5}
+            disabled={loading}
+          />
+          {loading && (
+            <div className="absolute right-14 top-1/2 -translate-y-1/2 transform">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          )}
+          {result && searchQuery.trim() && !loading && !result.error && result.emoji_combination && (
+            <div className="flex-shrink-0">
+              {getStatusBadge(result)}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Skin Tone Normalization Info */}
@@ -114,37 +121,18 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
         </TooltipProvider>
       )}
 
-      {result && searchQuery.trim() && !loading && (
-        <div className="space-y-4">
-          {/* Error Display */}
-          {result.error && (
-            <div className="flex items-center justify-center p-3 rounded-lg border border-destructive/20 bg-destructive/5">
-              <span className="text-destructive text-sm font-medium">{result.error}</span>
-            </div>
-          )}
-          
-          {/* Result Display */}
-          {!result.error && result.emoji_combination && (
-            <div className={`rounded-2xl border p-6 ${result.status === 'invalid' ? 'border-rose-200 bg-rose-50' : 'border-primary/10 bg-muted/40'}`}>
-              <div className="flex w-full items-center gap-5">
-                <span className="text-5xl tracking-[0.2em] leading-none">{result.emoji_combination}</span>
-                {getStatusBadge(result)}
-              </div>
-              {result.status === 'invalid' && result.error && (
-                <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
-                  <div className="mb-1 flex items-center gap-2 font-medium">
-                    <FiAlertTriangle className="h-4 w-4" />
-                    {t('dashboard.inputError')}
-                  </div>
-                  <div>{result.error}</div>
-                  <div className="mt-2 flex items-center gap-2 text-xs text-rose-600">
-                    <FiInfo className="h-3 w-3" />
-                    {t('dashboard.inputHint')}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+      {/* Error Display for invalid inputs */}
+      {result && searchQuery.trim() && !loading && result.status === 'invalid' && result.error && (
+        <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+          <div className="mb-1 flex items-center gap-2 font-medium">
+            <FiAlertTriangle className="h-4 w-4" />
+            {t('dashboard.inputError')}
+          </div>
+          <div>{result.error}</div>
+          <div className="mt-2 flex items-center gap-2 text-xs text-rose-600">
+            <FiInfo className="h-3 w-3" />
+            {t('dashboard.inputHint')}
+          </div>
         </div>
       )}
 

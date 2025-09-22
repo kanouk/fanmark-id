@@ -29,6 +29,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
 
   const segmenter = useMemo(() => {
     // Use fallback for better browser compatibility
@@ -86,6 +87,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
     }
     setDraggedIndex(index);
     setDragOverIndex(index);
+    setIsDragging(true);
     try {
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.setData('text/plain', String(index));
@@ -127,6 +129,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
     handleReorder(storedIndex, index);
     setDraggedIndex(null);
     setDragOverIndex(null);
+    setIsDragging(false);
   }, [disabled, draggedIndex, handleReorder]);
 
   const handleDragLeave = useCallback((index: number) => {
@@ -136,6 +139,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
   const handleDragEnd = useCallback(() => {
     setDraggedIndex(null);
     setDragOverIndex(null);
+    setIsDragging(false);
   }, []);
 
   const handleSelect = (index: number, emoji: string) => {
@@ -252,7 +256,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
                 </PopoverContent>
               </Popover>
 
-              {emoji && !disabled && (
+              {emoji && !disabled && !isDragging && (
                 <button
                   type="button"
                   onClick={() => handleRemove(index)}
