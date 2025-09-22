@@ -91,10 +91,10 @@ serve(async (req) => {
       }
     }
 
-    // Update the fanmark to inactive and clear license
+    // Update the fanmark to reserved and clear license
     const { error: fanmarkUpdateError } = await supabase
       .from('fanmarks')
-      .update({ status: 'inactive', access_type: 'inactive', current_license_id: null })
+      .update({ status: 'reserved', access_type: 'inactive', current_license_id: null })
       .eq('id', fanmark_id);
 
     if (fanmarkUpdateError) {
