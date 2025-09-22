@@ -75,68 +75,14 @@ export const FanmarkDashboard = () => {
 
   const handleReturnFanmark = async (fanmarkId: string) => {
     setReturningFanmarkId(fanmarkId);
-    
+
     try {
-      const fanmark = fanmarks.find(f => f.id === fanmarkId);
-      if (!fanmark) {
-        throw new Error('Fanmark not found');
-      }
+      const { data, error } = await supabase.functions.invoke('return-fanmark', {
+        body: { fanmark_id: fanmarkId },
+      });
 
-      console.log('Attempting to return fanmark:', fanmark);
-
-      // Update fanmark status to inactive - using a more specific approach
-      const { data: updateData, error: fanmarkError } = await supabase
-        .from('fanmarks')
-        .update({
-          status: 'inactive',
-          access_type: 'inactive',
-          current_license_id: null
-        })
-        .eq('id', fanmarkId)
-        .eq('user_id', user?.id) // Extra safety check
-        .select();
-
-      console.log('Fanmark update result:', { updateData, fanmarkError });
-
-      if (fanmarkError) {
-        console.error('Fanmark update error details:', fanmarkError);
-        throw fanmarkError;
-      }
-
-      // Update license status to expired if exists
-      if (fanmark.current_license_id) {
-        const { data: licenseData, error: licenseError } = await supabase
-          .from('fanmark_licenses')
-          .update({ status: 'expired' })
-          .eq('id', fanmark.current_license_id)
-          .select();
-
-        console.log('License update result:', { licenseData, licenseError });
-
-        if (licenseError) {
-          console.error('License update error:', licenseError);
-          // Don't throw here - fanmark update succeeded
-        }
-      }
-
-      // Log the return action
-      try {
-        const { error: auditError } = await supabase
-          .from('audit_logs')
-          .insert({
-            user_id: user?.id,
-            action: 'RETURN',
-            resource_type: 'fanmark',
-            resource_id: fanmarkId,
-            metadata: {
-              fanmark_emoji: fanmark.emoji_combination,
-              returned_at: new Date().toISOString()
-            }
-          });
-
-        if (auditError) console.warn('Failed to log audit:', auditError);
-      } catch (auditErr) {
-        console.warn('Audit logging failed:', auditErr);
+      if (error) {
+        throw error;
       }
 
       toast({
@@ -144,24 +90,13 @@ export const FanmarkDashboard = () => {
         description: t('dashboard.returnSuccessDescription'),
       });
 
-      // Refresh fanmarks list
       await fetchFanmarks();
-      
     } catch (error: any) {
-      console.error('Error returning fanmark:', error);
-      
-      let errorMessage = t('dashboard.returnErrorDescription');
-      
-      // Provide more specific error messages
-      if (error?.code === '42501') {
-        errorMessage = 'RLSポリシーエラー: 返却権限がありません';
-      } else if (error?.message) {
-        errorMessage = error.message;
-      }
-      
+      console.error('Error returning fanmark via function:', error);
+      const desc = error?.message || t('dashboard.returnErrorDescription');
       toast({
         title: t('dashboard.returnError'),
-        description: errorMessage,
+        description: desc,
         variant: 'destructive',
       });
     } finally {
