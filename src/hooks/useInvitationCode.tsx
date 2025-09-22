@@ -21,39 +21,60 @@ export function useInvitationCode() {
 
     setValidationLoading(true);
     try {
+      // Use the secure validation function
       const { data, error } = await supabase
-        .from('invitation_codes')
-        .select('id, special_perks, max_uses, used_count, expires_at')
-        .eq('code', code.toUpperCase())
-        .eq('is_active', true)
-        .maybeSingle();
+        .rpc('validate_invitation_code', { code_to_check: code.toUpperCase() });
 
       if (error) throw error;
 
-      if (!data) {
+      if (!data || data.length === 0 || !data[0].is_valid) {
         return { isValid: false, message: t('invitation.invalidCode') };
       }
 
-      // Check if code is expired
-      if (data.expires_at && new Date(data.expires_at) < new Date()) {
-        return { isValid: false, message: t('invitation.expiredCode') };
-      }
-
-      // Check if code has reached max uses
-      if (data.used_count >= data.max_uses) {
+      const result = data[0];
+      
+      // Check if code has remaining uses
+      if (result.remaining_uses <= 0) {
         return { isValid: false, message: t('invitation.codeFullyUsed') };
       }
 
       return {
         isValid: true,
         message: t('invitation.validCode'),
-        perks: data.special_perks as InvitationPerks,
+        perks: result.special_perks as InvitationPerks,
       };
     } catch (error) {
       console.error('Error validating invitation code:', error);
       return { isValid: false, message: t('invitation.errorValidating') };
     } finally {
       setValidationLoading(false);
+    }
+  };
+
+  const useCode = async (code: string): Promise<{ success: boolean; perks?: InvitationPerks; errorMessage?: string }> => {
+    try {
+      const { data, error } = await supabase
+        .rpc('use_invitation_code', { code_to_use: code.toUpperCase() });
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        return { success: false, errorMessage: t('invitation.invalidCode') };
+      }
+
+      const result = data[0];
+      
+      if (!result.success) {
+        return { success: false, errorMessage: result.error_message || t('invitation.invalidCode') };
+      }
+
+      return {
+        success: true,
+        perks: result.special_perks as InvitationPerks,
+      };
+    } catch (error) {
+      console.error('Error using invitation code:', error);
+      return { success: false, errorMessage: t('invitation.errorValidating') };
     }
   };
 
@@ -83,6 +104,7 @@ export function useInvitationCode() {
 
   return {
     validateCode,
+    useCode,
     validationLoading,
     joinWaitlist,
   };

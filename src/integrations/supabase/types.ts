@@ -542,6 +542,22 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      use_invitation_code: {
+        Args: { code_to_use: string }
+        Returns: {
+          error_message: string
+          special_perks: Json
+          success: boolean
+        }[]
+      }
+      validate_invitation_code: {
+        Args: { code_to_check: string }
+        Returns: {
+          is_valid: boolean
+          remaining_uses: number
+          special_perks: Json
+        }[]
+      }
     }
     Enums: {
       user_role: "user" | "admin"
