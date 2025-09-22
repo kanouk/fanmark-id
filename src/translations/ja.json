@@ -313,6 +313,10 @@
     "getFanmaDescription": "イケてるファンマをチェックして、誰よりも早くあなたのものにしよう。",
     "recentFanmaTitle": "最近取得したファンマ",
     "recentFanmaSubtitle": "気になるファンマをタップして、詳細や取得状況をチェックしよう。",
+    "acquisitionDate": "取得日",
+    "expirationDate": "返却予定日",
+    "daysRemaining": "あと{days}日",
+    "expiringSoon": "まもなく期限切れ",
     "actionsReturn": "ファンマを返却",
     "actionsCopyLink": "URLをコピー",
     "actionsSettings": "設定を開く"

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { format, differenceInDays } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +34,11 @@ interface Fanmark {
   updated_at: string;
   user_id: string;
   normalized_emoji: string;
+  fanmark_licenses?: {
+    license_start: string;
+    license_end: string;
+    status: string;
+  } | null;
 }
 
 interface Profile {
@@ -93,7 +99,14 @@ export const FanmarkDashboard = () => {
     try {
       const { data, error } = await supabase
         .from('fanmarks')
-        .select('*')
+        .select(`
+          *,
+          fanmark_licenses!current_license_id (
+            license_start,
+            license_end,
+            status
+          )
+        `)
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
@@ -104,6 +117,7 @@ export const FanmarkDashboard = () => {
         ...fanmark,
         tier_level: (fanmark as any).tier_level ?? null,
         current_license_id: (fanmark as any).current_license_id ?? null,
+        fanmark_licenses: (fanmark as any).fanmark_licenses || null,
       })) as Fanmark[];
       
       setFanmarks(fanmarksWithDefaults);
@@ -304,6 +318,8 @@ export const FanmarkDashboard = () => {
                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.fanmark')}</th>
                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.displayName')}</th>
                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.accessType')}</th>
+                              <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.acquisitionDate')}</th>
+                              <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.expirationDate')}</th>
                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.status')}</th>
                               <th className="text-left p-3 text-muted-foreground font-semibold"></th>
                             </tr>
@@ -312,6 +328,11 @@ export const FanmarkDashboard = () => {
                             {filteredFanmarks.map((fanmark) => {
                               const redirectUrl = fanmark.target_url ?? fanmark.redirect_url;
                               const textContent = fanmark.text_content ?? fanmark.profile_text;
+                              const licenseData = fanmark.fanmark_licenses;
+                              const acquisitionDate = licenseData?.license_start ? format(new Date(licenseData.license_start), 'yyyy/MM/dd') : '-';
+                              const expirationDate = licenseData?.license_end ? new Date(licenseData.license_end) : null;
+                              const daysRemaining = expirationDate ? differenceInDays(expirationDate, new Date()) : null;
+                              const isExpiringSoon = daysRemaining !== null && daysRemaining <= 3;
 
                               return (
                                 <tr key={fanmark.id} className="border-b transition-colors hover:bg-muted/30">
@@ -346,6 +367,28 @@ export const FanmarkDashboard = () => {
                                 </td>
                                 <td className="px-4 py-4">
                                   {getAccessTypeBadge(fanmark.access_type)}
+                                </td>
+                                <td className="px-4 py-4">
+                                  <div className="text-sm text-foreground">
+                                    {acquisitionDate}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-4">
+                                  <div className="text-sm">
+                                    {expirationDate ? (
+                                      <div className={`${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`}>
+                                        <div>{format(expirationDate, 'yyyy/MM/dd')}</div>
+                                        <div className="text-xs text-muted-foreground">
+                                          {daysRemaining !== null && daysRemaining >= 0 
+                                            ? t('dashboard.daysRemaining', { days: daysRemaining })
+                                            : t('dashboard.expiringSoon')
+                                          }
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <span className="text-muted-foreground">-</span>
+                                    )}
+                                  </div>
                                 </td>
                                 <td className="px-4 py-4">
                                   <Badge
@@ -427,6 +470,11 @@ export const FanmarkDashboard = () => {
                       {filteredFanmarks.map((fanmark) => {
                         const redirectUrl = fanmark.target_url ?? fanmark.redirect_url;
                         const textContent = fanmark.text_content ?? fanmark.profile_text;
+                        const licenseData = fanmark.fanmark_licenses;
+                        const acquisitionDate = licenseData?.license_start ? format(new Date(licenseData.license_start), 'yyyy/MM/dd') : '-';
+                        const expirationDate = licenseData?.license_end ? new Date(licenseData.license_end) : null;
+                        const daysRemaining = expirationDate ? differenceInDays(expirationDate, new Date()) : null;
+                        const isExpiringSoon = daysRemaining !== null && daysRemaining <= 3;
 
                         return (
                           <Card key={fanmark.id} className="rounded-3xl border border-primary/10 bg-background/80 transition-colors hover:border-primary/20">
@@ -464,6 +512,36 @@ export const FanmarkDashboard = () => {
                                       </>
                                     )}
                                   </Badge>
+                                </div>
+
+                                {/* Date Information */}
+                                <div className="grid grid-cols-2 gap-3 text-sm bg-muted/20 rounded-lg p-3">
+                                  <div>
+                                    <div className="text-xs text-muted-foreground font-medium mb-1">
+                                      {t('dashboard.acquisitionDate')}
+                                    </div>
+                                    <div className="text-foreground">{acquisitionDate}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-xs text-muted-foreground font-medium mb-1">
+                                      {t('dashboard.expirationDate')}
+                                    </div>
+                                    <div className={`${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`}>
+                                      {expirationDate ? (
+                                        <>
+                                          <div>{format(expirationDate, 'yyyy/MM/dd')}</div>
+                                          <div className="text-xs text-muted-foreground">
+                                            {daysRemaining !== null && daysRemaining >= 0 
+                                              ? t('dashboard.daysRemaining', { days: daysRemaining })
+                                              : t('dashboard.expiringSoon')
+                                            }
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <span className="text-muted-foreground">-</span>
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
 
                                 {(redirectUrl || textContent) && (

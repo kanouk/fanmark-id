@@ -313,6 +313,10 @@
     "getFanmaDescription": "Browse premium emoji combinations and obtain them before anyone else.",
     "recentFanmaTitle": "Recently obtained fanmarks",
     "recentFanmaSubtitle": "Tap a fanmark below to preview or obtain it yourself.",
+    "acquisitionDate": "Acquisition Date",
+    "expirationDate": "Expiration Date", 
+    "daysRemaining": "{days} days left",
+    "expiringSoon": "Expiring soon",
     "actionsReturn": "Return fanmark",
     "actionsCopyLink": "Copy URL",
     "actionsSettings": "Open settings"
