@@ -438,5 +438,25 @@
     "validation": {
       "accessTypeRequired": "Please choose an access type."
     }
+  },
+  "emojiProfile": {
+    "editProfileTitle": "Edit Profile Page",
+    "editProfileDescription": "Create your Linktree-style profile page",
+    "profilePreview": "Profile Preview",
+    "profilePreviewTitle": "Your Profile",
+    "defaultProfileTitle": "My Profile",
+    "coverImage": "Cover Image",
+    "coverImageHint": "Upload a cover image to personalize your profile",
+    "uploadCover": "Upload Cover",
+    "bio": "Bio",
+    "bioPlaceholder": "Tell your story in a few words...",
+    "themeColor": "Theme Color",
+    "socialLinks": "Social Links",
+    "publicProfile": "Public Profile",
+    "publicProfileDescription": "Make your profile visible to others",
+    "updateSuccess": "Profile Updated",
+    "updateSuccessDescription": "Your profile changes have been saved!",
+    "updateError": "Update Failed",
+    "updateErrorDescription": "Failed to update your profile. Please try again."
   }
 }

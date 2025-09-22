@@ -13,6 +13,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
 import Dashboard from "./pages/Dashboard";
 import FanmarkSettingsPage from "./pages/FanmarkSettingsPage";
+import EmojiProfileEdit from "./pages/EmojiProfileEdit";
 import NotFound from "./pages/NotFound";
 import { FanmarkAccess } from "./components/FanmarkAccess";
 
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/fanmarks/:fanmarkId/settings" element={<FanmarkSettingsPage />} />
+            <Route path="/fanmarks/:fanmarkId/profile/edit" element={<EmojiProfileEdit />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="/:emojiPath" element={<FanmarkAccess />} />
             <Route path="*" element={<NotFound />} />

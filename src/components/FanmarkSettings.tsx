@@ -364,8 +364,16 @@ export const FanmarkSettings = ({
                       type="button"
                       variant="outline"
                       size="sm"
-                      disabled
-                      className="inline-flex items-center gap-2 rounded-full border-border/60 text-muted-foreground opacity-70 cursor-not-allowed"
+                      onClick={() => {
+                        if (fanmark?.id) {
+                          if (mode === 'dialog') {
+                            window.location.href = `/fanmarks/${fanmark.id}/profile/edit`;
+                          } else {
+                            window.open(`/fanmarks/${fanmark.id}/profile/edit`, '_blank');
+                          }
+                        }
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full border-border/60 text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/40 transition-colors"
                     >
                       {t('fanmarkSettings.actions.editProfile')}
                     </Button>
