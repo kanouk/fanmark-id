@@ -407,10 +407,12 @@ export const FanmarkDashboard = () => {
                                     <div className="flex items-center gap-3">
                                       <span className="text-4xl tracking-[0.25em] leading-none">{fanmark.emoji_combination}</span>
                                        {fanmark.tier_level && (
-                                        <Badge variant="secondary" className="gap-1 border border-primary/30 bg-primary/10 text-primary">
-                                        <FiStar className="h-3 w-3" /> <span className="hidden xl:inline">Tier {fanmark.tier_level}</span>
-                                      </Badge>
-                                    )}
+                                        <Badge variant="secondary" className="inline-flex items-center gap-0.5 border border-primary/30 bg-primary/10 text-primary text-xs px-2 py-1 rounded-full whitespace-nowrap">
+                                          {Array.from({ length: fanmark.tier_level }, (_, i) => (
+                                            <FiStar key={i} className="h-2.5 w-2.5 fill-gray-400 text-gray-400" />
+                                          ))}
+                                        </Badge>
+                                      )}
                                   </div>
                                   <div className="mt-2 text-xs font-medium tracking-wide text-muted-foreground/70">
                                     {fanmark.short_id}
@@ -564,8 +566,10 @@ export const FanmarkDashboard = () => {
                                     </div>
                                   </div>
                                   {fanmark.tier_level && (
-                                    <Badge variant="secondary" className="border border-primary/30 bg-primary/10 text-primary">
-                                      <FiStar className="h-3 w-3" />
+                                    <Badge variant="secondary" className="inline-flex items-center gap-0.5 border border-primary/30 bg-primary/10 text-primary text-xs px-2 py-1 rounded-full whitespace-nowrap">
+                                      {Array.from({ length: fanmark.tier_level }, (_, i) => (
+                                        <FiStar key={i} className="h-2.5 w-2.5 fill-gray-400 text-gray-400" />
+                                      ))}
                                     </Badge>
                                   )}
                                 </div>

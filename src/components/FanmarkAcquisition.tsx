@@ -19,6 +19,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { FanmarkSearchResult } from '@/hooks/useFanmarkSearch';
+import { FanmarkStatusBadge } from '@/components/FanmarkStatusBadge';
 import { supabase } from '@/integrations/supabase/client';
 
 interface FanmarkAcquisitionProps {
@@ -53,6 +54,20 @@ export const FanmarkAcquisition = ({
     if (!searchResult) return false;
     return searchResult.status === 'available' || searchResult.status === 'payment_required';
   }, [searchResult]);
+
+  const getSearchAreaBackgroundClass = useMemo(() => {
+    if (!searchResult || !searchResult.emoji_combination || searchResult.error) {
+      return 'bg-background/90';
+    }
+
+    if (searchResult.status === 'available' || searchResult.status === 'payment_required') {
+      return 'bg-emerald-50/30';
+    } else if (searchResult.status === 'taken' || searchResult.status === 'premium') {
+      return user ? 'bg-sky-50/30' : 'bg-rose-50/30';
+    } else {
+      return 'bg-rose-50/30';
+    }
+  }, [searchResult, user]);
 
   const handleAcquireRequest = () => {
     if (!searchResult || !isResultAcquirable) return;
@@ -145,16 +160,18 @@ export const FanmarkAcquisition = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      <Card className="rounded-3xl border border-primary/15 bg-background/90 shadow-[0_15px_35px_rgba(101,195,200,0.12)] backdrop-blur">
+      <Card className={`rounded-3xl border border-primary/15 ${getSearchAreaBackgroundClass} shadow-[0_15px_35px_rgba(101,195,200,0.12)] backdrop-blur transition-colors duration-300`}>
         <CardHeader className="space-y-2 px-6 pt-6 pb-2">
           <CardTitle className="flex items-center justify-between text-lg font-semibold">
             <span className="flex items-center gap-2">
               <Search className="h-5 w-5" />
               {t('dashboard.searchFanma')}
             </span>
-            <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-              {t('dashboard.remainingFanmarksLabel', { remaining: remainingCapacity })}
-            </span>
+            {searchResult && searchResult.emoji_combination && !searchResult.error && (
+              <div className="flex-shrink-0">
+                <FanmarkStatusBadge status={searchResult.status === 'available' || searchResult.status === 'payment_required' ? 'available' : searchResult.status === 'taken' || searchResult.status === 'premium' ? (user ? 'taken' : 'unavailable') : 'unavailable'} />
+              </div>
+            )}
           </CardTitle>
           <p className="text-sm text-muted-foreground">
             {t('dashboard.searchSubtitle')}

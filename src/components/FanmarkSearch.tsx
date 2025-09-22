@@ -68,8 +68,8 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
   return (
     <div className="space-y-6 overflow-visible">
       {/* Search Input */}
-      <div className="relative overflow-visible">
-        <div className="flex items-center gap-3">
+      <div className="relative overflow-visible py-4">
+        <div className="mb-4">
           <EmojiInput
             value={searchQuery}
             onChange={setSearchQuery}
@@ -80,13 +80,8 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
             disabled={loading}
           />
           {loading && (
-            <div className="absolute right-14 top-1/2 -translate-y-1/2 transform">
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 transform">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            </div>
-          )}
-          {result && searchQuery.trim() && !loading && !result.error && result.emoji_combination && (
-            <div className="flex-shrink-0">
-              {getStatusBadge(result)}
             </div>
           )}
         </div>
