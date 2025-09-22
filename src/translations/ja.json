@@ -59,7 +59,7 @@
     "enterCode": "招待コードを入力してください",
     "codeValidation": "コードを確認中...",
     "invalidCode": "無効な招待コードです",
-    "expiredCode": "有効期限が切れています", 
+    "expiredCode": "有効期限が切れています",
     "joinWaitlist": "待機リストに参加",
     "waitlistSuccess": "待機リストに追加されました！",
     "emailPlaceholder": "メールアドレスを入力",
@@ -74,9 +74,11 @@
     "errorValidating": "コード検証エラー"
   },
   "navigation": {
+    "home": "ホーム",
+    "dashboard": "ダッシュボード",
     "profile": "プロフィール",
     "logout": "ログアウト",
-    "seeHowUsed": "使い方を見る"
+    "seeHowUsed": "みんなの使い方を見る"
   },
   "auth": {
     "login": "ログイン",
@@ -84,9 +86,8 @@
     "logout": "ログアウト",
     "email": "メールアドレス",
     "password": "パスワード",
-    "confirmPassword": "パスワード（確認）",
-    "username": "ユーザー名",
     "confirmPassword": "パスワード確認",
+    "username": "ユーザー名",
     "forgotPassword": "パスワードを忘れた場合",
     "resetPassword": "パスワードリセット",
     "newPassword": "新しいパスワード",
@@ -239,7 +240,7 @@
     "welcomeBadge": "保有ファンマ {{count}} 件",
     "subtitle": "あなたのファンマを育てて、新しい組み合わせも手に入れよう",
     "stats": {
-      "totalFanmarks": "確保済みファンマ",
+      "totalFanmarks": "取得済みファンマ",
       "limitLabel": "上限"
     },
     "tabs": {
@@ -248,7 +249,7 @@
       "getFanmarks": "ファンマを探す"
     },
     "yourFanmarks": "あなたのファンマ",
-    "manageFanmarks": "確保したファンマをまとめて管理し、必要に応じて設定を更新できます。",
+    "manageFanmarks": "取得したファンマをまとめて管理し、必要に応じて設定を更新できます。",
     "addFanmark": "ファンマを追加",
     "searchPlaceholder": "ファンマを検索...",
     "searchFanma": "ファンマを検索",
@@ -258,9 +259,8 @@
     "noSearchResults": "該当するファンマが見つかりません",
     "noFanmarksDescription": "まだファンマがありません。新規取得タブから最初のファンマを作成しましょう！",
     "noResultsDescription": "検索に一致するファンマが見つかりませんでした。",
-    "noFanmarksDescription": "まだファンマがありません。新規取得タブから最初のファンマを作成しましょう！",
     "tryDifferentSearch": "別のファンマで試してみてください。",
-    "getStarted": "まずはひとつ確保して、あなただけのアドレスを手に入れよう！",
+    "getStarted": "まずはひとつ取得して、あなただけのアドレスを手に入れよう！",
     "createFirstFanma": "最初のファンマを作成",
     "fanmark": "ファンマ",
     "displayName": "表示名",
@@ -283,7 +283,7 @@
     "failedToLoadFanmarks": "ファンマの読み込みに失敗しました",
     "tips": "ヒント",
     "tip1": "短いファンマほど価値が高くなります",
-    "tip2": "人気のファンマは有料になる場合があります", 
+    "tip2": "人気のファンマは有料になる場合があります",
     "tip3": "他のユーザーの最近の登録を参考にしてみましょう",
     "accessTypes": {
       "profile": "プロフィール",
@@ -291,14 +291,17 @@
       "text": "テキスト",
       "inactive": "非アクティブ"
     },
-    "getFanmaTitle": "新しいファンマを見つけて確保",
+    "getFanmaTitle": "新しいファンマを見つけて取得",
     "getFanmaDescription": "イケてるファンマをチェックして、誰よりも早くあなたのものにしよう。",
     "recentFanmaTitle": "最近取得したファンマ",
-    "recentFanmaSubtitle": "気になるファンマをタップして、詳細や確保状況をチェックしよう。"
+    "recentFanmaSubtitle": "気になるファンマをタップして、詳細や取得状況をチェックしよう。",
+    "actionsReturn": "ファンマを返却",
+    "actionsCopyLink": "URLをコピー",
+    "actionsSettings": "設定を開く"
   },
   "registration": {
     "title": "ファンマを登録",
-    "successTitle": "ファンマを確保しました！",
+    "successTitle": "ファンマを取得しました！",
     "successMessage": "ファンマが準備完了です！ 🎉✨",
     "successDescription": "素晴らしい選択！後から価値が出るかもしれません！ 💎",
     "failed": "登録に失敗しました",
@@ -306,15 +309,15 @@
     "authDescription": "ファンマを登録するにはログインしてください",
     "registering": "登録中...",
     "registerButton": "ファンマを登録",
-    "quickRegister": "とりあえず確保",
-    "quickRegisterTitle": "ファンマを確保",
+    "quickRegister": "とりあえず取得",
+    "quickRegisterTitle": "ファンマを取得",
     "quickRegisterSubtitle": "まずはひとつ、お気に入りのファンマを手に入れてみよう！",
-    "quickSecured": "ファンマを確保しました！ 🎉",
+    "quickSecured": "ファンマを取得しました！ 🎉",
     "quickSecuredDescription": "いつでも設定を変更できます ✨",
     "quickSecuredInfo": "💡 このファンマは「未設定」状態です。マイファンマから設定を変更できます。",
     "configureLater": "後で設定する",
     "configureNow": "今すぐ設定する",
-    "securing": "確保中...",
+    "securing": "取得中...",
     "cancel": "キャンセル",
     "customFanma": "カスタムファンマ",
     "registerCustom": "カスタムファンマを登録",
@@ -344,11 +347,57 @@
       "inactiveDesc": "後で設定"
     }
   },
-  "navigation": {
-    "home": "ホーム",
-    "dashboard": "ダッシュボード",
-    "profile": "プロフィール",
-    "logout": "ログアウト",
-    "seeHowUsed": "みんなの使い方を見る"
+  "fanmarkSettings": {
+    "title": "ファンマ設定",
+    "summary": {
+      "defaultName": "ファンマ"
+    },
+    "fields": {
+      "displayName": {
+        "label": "表示名",
+        "helper": "ファンに表示される名前です。",
+        "placeholder": "表示名を入力してください"
+      },
+      "accessType": {
+        "label": "アクセスタイプ",
+        "helper": "ファンマ訪問時の動作を選択してください。",
+        "placeholder": "アクセスタイプを選択"
+      },
+      "redirect": {
+        "label": "リダイレクト先URL"
+      },
+      "text": {
+        "label": "表示テキスト",
+        "placeholder": "表示するテキストを入力してください"
+      },
+      "profile": {
+        "label": "プロフィールページ",
+        "publish": "公開する"
+      },
+      "transfer": {
+        "label": "ファンマの譲渡",
+        "helper": "譲渡可否を設定します。",
+        "allow": "許可する"
+      }
+    },
+    "accessTypeOptions": {
+      "profile": "プロフィール",
+      "redirect": "URL リダイレクト",
+      "text": "テキスト表示",
+      "inactive": "未設定"
+    },
+    "actions": {
+      "editProfile": "プロフィールページを編集",
+      "save": "設定を保存"
+    },
+    "toast": {
+      "successTitle": "設定を更新しました ✨",
+      "successDescription": "ファンマの設定が正常に保存されました",
+      "errorTitle": "更新に失敗しました",
+      "errorDescription": "保存中に問題が発生しました"
+    },
+    "validation": {
+      "accessTypeRequired": "アクセスタイプを選択してください"
+    }
   }
 }

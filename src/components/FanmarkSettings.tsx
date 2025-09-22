@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
+import { useTranslation } from '@/hooks/useTranslation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
@@ -82,6 +83,7 @@ export const FanmarkSettings = ({
   onSuccess 
 }: FanmarkSettingsProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { t } = useTranslation();
 
   const {
     register,
@@ -148,8 +150,8 @@ export const FanmarkSettings = ({
       }
 
       toast({
-        title: '設定を更新しました ✨',
-        description: 'ファンマの設定が正常に保存されました',
+        title: t('fanmarkSettings.toast.successTitle'),
+        description: t('fanmarkSettings.toast.successDescription'),
       });
 
       onSuccess?.();
@@ -157,8 +159,8 @@ export const FanmarkSettings = ({
     } catch (error) {
       console.error('Settings update error:', error);
       toast({
-        title: '更新に失敗しました',
-        description: error instanceof Error ? error.message : 'Something went wrong',
+        title: t('fanmarkSettings.toast.errorTitle'),
+        description: error instanceof Error ? error.message : t('fanmarkSettings.toast.errorDescription'),
         variant: 'destructive',
       });
     } finally {
@@ -169,32 +171,28 @@ export const FanmarkSettings = ({
   const accessTypes = [
     {
       value: 'profile',
-      label: 'プロフィールページ',
-      desc: 'ファンとつながる専用プロフィールを表示します',
+      labelKey: 'fanmarkSettings.accessTypeOptions.profile',
       icon: FiUser,
     },
     {
       value: 'redirect',
-      label: 'URL リダイレクト',
-      desc: '指定先のURLへスムーズに案内します',
+      labelKey: 'fanmarkSettings.accessTypeOptions.redirect',
       icon: FiExternalLink,
     },
     {
       value: 'text',
-      label: 'テキスト表示',
-      desc: '短いメッセージやお知らせを表示します',
+      labelKey: 'fanmarkSettings.accessTypeOptions.text',
       icon: FiFileText,
     },
     {
       value: 'inactive',
-      label: '未設定',
-      desc: 'まだ公開しない場合はこちら',
+      labelKey: 'fanmarkSettings.accessTypeOptions.inactive',
       icon: FiMoon,
     },
   ];
 
-  const selectedAccessType = accessTypes.find((option) => option.value === accessType);
-  const SelectedAccessIcon = selectedAccessType?.icon ?? FiSettings;
+  const displayLabel = fanmark?.display_name ?? t('fanmarkSettings.summary.defaultName');
+
 
   // Don't render if fanmark is null
   if (!fanmark) {
@@ -204,216 +202,198 @@ export const FanmarkSettings = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl border border-primary/15 bg-background/95 backdrop-blur-xl shadow-[0_30px_60px_rgba(101,195,200,0.18)]">
-        <DialogHeader className="space-y-6 pb-6 border-b border-border/15">
-          <DialogTitle className="flex items-center justify-center gap-4 text-center text-3xl font-semibold tracking-tight">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 via-secondary/15 to-primary/10 border border-primary/20">
-              <FiSettings className="w-8 h-8 text-primary" />
+        <DialogHeader className="space-y-4 pb-6 border-b border-border/15">
+          <div className="flex items-center justify-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+              <FiSettings className="h-7 w-7" />
             </div>
-            <div>
-              <div className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-                ファンマ設定
-              </div>
-              <div className="text-sm font-normal text-muted-foreground mt-1">
-                {fanmark.emoji_combination} のカスタマイズ
-              </div>
-            </div>
-          </DialogTitle>
+            <DialogTitle className="text-2xl font-semibold tracking-tight text-foreground">
+              {t('fanmarkSettings.title')}
+            </DialogTitle>
+          </div>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 pt-4">
+          <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-muted/10 px-5 py-3">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">{fanmark.emoji_combination}</span>
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-foreground">{displayLabel}</span>
+                <span className="text-xs text-muted-foreground">{fanmark.short_id}</span>
+              </div>
+            </div>
+          </div>
           {/* Display Name */}
-          <Card className="overflow-hidden rounded-2xl border border-border/50 bg-card/80 shadow-lg shadow-primary/5 backdrop-blur hover:shadow-xl hover:shadow-primary/10 transition-all duration-300">
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                <Label htmlFor="displayName" className="text-lg font-semibold flex items-center gap-3">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary">
-                    <FiType className="w-4 h-4" />
+          <Card className="overflow-hidden rounded-2xl border border-border/50 bg-card/80 shadow-sm shadow-primary/5 backdrop-blur">
+            <CardContent className="p-6 space-y-4">
+              <Label htmlFor="displayName" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+                  <FiType className="h-4 w-4" />
+                </div>
+                {t('fanmarkSettings.fields.displayName.label')} <span className="ml-1 text-xs text-destructive">*</span>
+              </Label>
+              <p className="text-xs text-muted-foreground">{t('fanmarkSettings.fields.displayName.helper')}</p>
+              <Input
+                id="displayName"
+                {...register('displayName')}
+                placeholder={t('fanmarkSettings.fields.displayName.placeholder')}
+                className="h-12 rounded-xl border border-border focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+              />
+              {errors.displayName && (
+                <p className="flex items-center gap-2 text-sm text-destructive">
+                  <FiAlertCircle className="h-4 w-4" />
+                  {errors.displayName.message}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Access Type & Related Settings */}
+          <Card className="overflow-hidden rounded-2xl border border-border/50 bg-card/80 shadow-sm shadow-primary/5 backdrop-blur">
+            <CardContent className="p-6 space-y-6">
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/15 text-primary">
+                    <FiSettings className="h-4 w-4" />
                   </div>
-                  表示名
+                  {t('fanmarkSettings.fields.accessType.label')} <span className="ml-1 text-xs text-destructive">*</span>
                 </Label>
-                <Input
-                  id="displayName"
-                  {...register('displayName')}
-                  placeholder="表示名を入力してください"
-                  className="text-lg h-12 border border-border focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:border-transparent transition-all duration-300"
+                <p className="text-xs text-muted-foreground">{t('fanmarkSettings.fields.accessType.helper')}</p>
+                <Controller
+                  name="accessType"
+                  control={control}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange} defaultValue={field.value}>
+                      <SelectTrigger ref={field.ref} className="h-12 rounded-xl border border-border bg-background/80 px-5 text-left text-sm font-medium shadow-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1">
+                        <SelectValue placeholder={t('fanmarkSettings.fields.accessType.placeholder')} />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-2xl border border-border/60 bg-card/95 shadow-2xl shadow-primary/10">
+                        <SelectGroup>
+                          {accessTypes.map((option) => {
+                            const Icon = option.icon;
+                            return (
+                              <SelectItem key={option.value} value={option.value} className="py-3 pl-9 pr-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/15 text-primary">
+                                    <Icon className="h-4 w-4" />
+                                  </div>
+                                  <span className="text-sm font-semibold text-foreground">{t(option.labelKey)}</span>
+                                </div>
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  )}
                 />
-                {errors.displayName && (
-                  <p className="text-sm text-destructive flex items-center gap-2">
-                    <FiAlertCircle className="w-4 h-4" />
-                    {errors.displayName.message}
+                {errors.accessType && (
+                  <p className="flex items-center gap-2 text-sm text-destructive">
+                    <FiAlertCircle className="h-4 w-4" />
+                    {errors.accessType.message ?? t('fanmarkSettings.validation.accessTypeRequired')}
                   </p>
                 )}
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Access Type */}
-          <Card className="overflow-hidden rounded-2xl border border-border/50 bg-card/80 shadow-lg shadow-primary/5 backdrop-blur hover:shadow-xl hover:shadow-primary/10 transition-all duration-300">
-            <CardContent className="p-6">
-              <div className="space-y-5">
-                <Label className="text-lg font-semibold flex items-center gap-3">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-secondary/10 text-secondary">
-                    <FiSettings className="w-4 h-4" />
-                  </div>
-                  アクセスタイプ
-                </Label>
-                <div className="space-y-4">
-                  <Controller
-                    name="accessType"
-                    control={control}
-                    render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger ref={field.ref} className="h-12 rounded-xl border border-border bg-background/80 px-4 text-left text-base font-medium shadow-sm transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1">
-                          <SelectValue placeholder="アクセスタイプを選択" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-2xl border border-border/60 bg-card/95 shadow-2xl shadow-primary/10">
-                          <SelectGroup>
-                            <SelectLabel className="px-4 pt-2 pb-1 text-xs tracking-[0.3em] text-muted-foreground uppercase">
-                              Access Options
-                            </SelectLabel>
-                            {accessTypes.map((option) => {
-                              const Icon = option.icon;
-                              return (
-                                <SelectItem key={option.value} value={option.value} className="py-3 pl-8 pr-3">
-                                  <div className="flex items-start gap-3">
-                                    <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                      <Icon className="h-4 w-4" />
-                                    </div>
-                                    <div className="flex flex-col gap-1 text-left">
-                                      <span className="text-sm font-semibold text-foreground">{option.label}</span>
-                                      <span className="text-xs text-muted-foreground leading-relaxed">{option.desc}</span>
-                                    </div>
-                                  </div>
-                                </SelectItem>
-                              );
-                            })}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {errors.accessType && (
-                    <p className="flex items-center gap-2 text-sm text-destructive">
-                      <FiAlertCircle className="w-4 h-4" />
-                      {errors.accessType.message ?? 'アクセスタイプを選択してください'}
-                    </p>
+              {(accessType === 'redirect' || accessType === 'text' || accessType === 'profile') && (
+                <div className="space-y-4 rounded-xl border border-border/60 bg-background/70 p-4">
+                  {accessType === 'redirect' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="targetUrl" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                        <FiExternalLink className="h-3.5 w-3.5" />
+                        {t('fanmarkSettings.fields.redirect.label')}
+                      </Label>
+                      <Input
+                        id="targetUrl"
+                        {...register('targetUrl')}
+                        placeholder="https://example.com"
+                        type="url"
+                        className="h-11 rounded-lg border border-border focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+                      />
+                      {errors.targetUrl && (
+                        <p className="flex items-center gap-2 text-sm text-destructive">
+                          <FiAlertCircle className="h-4 w-4" />
+                          {errors.targetUrl.message}
+                        </p>
+                      )}
+                    </div>
                   )}
-                  {selectedAccessType && (
-                    <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm leading-relaxed text-muted-foreground">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15 text-primary">
-                        <SelectedAccessIcon className="h-4 w-4" />
+
+                  {accessType === 'text' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="textContent" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                        <FiEdit3 className="h-3.5 w-3.5" />
+                        {t('fanmarkSettings.fields.text.label')}
+                      </Label>
+                      <Textarea
+                        id="textContent"
+                        {...register('textContent')}
+                        placeholder={t('fanmarkSettings.fields.text.placeholder')}
+                        rows={4}
+                        className="rounded-lg border border-border focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+                      />
+                      {errors.textContent && (
+                        <p className="flex items-center gap-2 text-sm text-destructive">
+                          <FiAlertCircle className="h-4 w-4" />
+                          {errors.textContent.message}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {accessType === 'profile' && (
+                    <div className="space-y-3 rounded-xl border border-border/60 bg-background/70 p-4">
+                      <Label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                        <FiImage className="h-3.5 w-3.5" />
+                        {t('fanmarkSettings.fields.profile.label')}
+                      </Label>
+                      <div className="space-y-3 pl-6">
+                        <label className="flex items-center gap-2 text-sm text-foreground">
+                          <input
+                            type="checkbox"
+                            id="createProfile"
+                            {...register('createProfile')}
+                            className="h-5 w-5 rounded border-border text-primary focus:ring-primary"
+                          />
+                          {t('fanmarkSettings.fields.profile.publish')}
+                        </label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled
+                          className="inline-flex items-center gap-2 rounded-full border-border/60 text-muted-foreground opacity-70 cursor-not-allowed"
+                        >
+                          {t('fanmarkSettings.actions.editProfile')}
+                        </Button>
                       </div>
-                      <div>
-                        <div className="text-base font-semibold text-foreground">{selectedAccessType.label}</div>
-                        <div>{selectedAccessType.desc}</div>
-                      </div>
                     </div>
                   )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Conditional Fields */}
-          {accessType === 'redirect' && (
-            <Card className="overflow-hidden animate-fade-in rounded-2xl border border-border/50 bg-card/80 shadow-lg shadow-primary/5 backdrop-blur">
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <Label htmlFor="targetUrl" className="text-lg font-semibold flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-purple-500/10 text-purple-600">
-                      <FiExternalLink className="w-4 h-4" />
-                    </div>
-                    リダイレクト先URL
-                  </Label>
-                  <Input
-                    id="targetUrl"
-                    {...register('targetUrl')}
-                    placeholder="https://example.com"
-                    type="url"
-                    className="text-lg h-12 border border-border focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:border-transparent transition-all duration-300"
-                  />
-                  {errors.targetUrl && (
-                    <p className="text-sm text-destructive flex items-center gap-2">
-                      <FiAlertCircle className="w-4 h-4" />
-                      {errors.targetUrl.message}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {accessType === 'text' && (
-            <Card className="overflow-hidden animate-fade-in rounded-2xl border border-border/50 bg-card/80 shadow-lg shadow-primary/5 backdrop-blur">
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <Label htmlFor="textContent" className="text-lg font-semibold flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-green-500/10 text-green-600">
-                      <FiEdit3 className="w-4 h-4" />
-                    </div>
-                    表示テキスト
-                  </Label>
-                  <Textarea
-                    id="textContent"
-                    {...register('textContent')}
-                    placeholder="表示するテキストを入力してください"
-                    rows={4}
-                    className="text-lg border border-border focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:border-transparent transition-all duration-300 resize-none"
-                  />
-                  {errors.textContent && (
-                    <p className="text-sm text-destructive flex items-center gap-2">
-                      <FiAlertCircle className="w-4 h-4" />
-                      {errors.textContent.message}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Additional Options */}
-          <Card className="overflow-hidden rounded-2xl border border-border/50 bg-card/80 shadow-lg shadow-primary/5 backdrop-blur">
-            <CardContent className="p-6 space-y-6">
-              {accessType === 'profile' && (
-                <div className="flex items-start gap-4 p-5 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl border border-primary/20 hover:bg-gradient-to-r hover:from-primary/10 hover:to-secondary/10 transition-all duration-300">
-                  <input
-                    type="checkbox"
-                    id="createProfile"
-                    {...register('createProfile')}
-                    className="w-5 h-5 text-primary border-border focus:ring-primary focus:ring-2 rounded mt-0.5"
-                  />
-                  <Label htmlFor="createProfile" className="flex-1 cursor-pointer">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="flex items-center justify-center w-6 h-6 rounded-md bg-primary/10 text-primary">
-                        <FiImage className="w-3 h-3" />
-                      </div>
-                      <span className="font-semibold text-foreground">プロフィールページを作成</span>
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      基本的なプロフィールを自動生成します
-                    </div>
-                  </Label>
                 </div>
               )}
+            </CardContent>
+          </Card>
 
-              <div className="flex items-start gap-4 p-5 bg-gradient-to-r from-secondary/5 to-accent/5 rounded-xl border border-secondary/20 hover:bg-gradient-to-r hover:from-secondary/10 hover:to-accent/10 transition-all duration-300">
+          {/* Additional Options */}
+          <Card className="overflow-hidden rounded-2xl border border-border/50 bg-card/80 shadow-sm shadow-primary/5 backdrop-blur">
+            <CardContent className="p-6 space-y-4">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/15 text-primary">
+                    <FiRepeat className="h-4 w-4" />
+                  </div>
+                  {t('fanmarkSettings.fields.transfer.label')}
+                </Label>
+                <p className="text-xs text-muted-foreground">{t('fanmarkSettings.fields.transfer.helper')}</p>
+              </div>
+              <div className="flex items-center gap-2 pl-6">
                 <input
                   type="checkbox"
                   id="isTransferable"
                   {...register('isTransferable')}
-                  className="w-5 h-5 text-secondary border-border focus:ring-secondary focus:ring-2 rounded mt-0.5"
+                  className="h-5 w-5 rounded border-border text-primary focus:ring-primary"
                 />
-                <Label htmlFor="isTransferable" className="flex-1 cursor-pointer">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="flex items-center justify-center w-6 h-6 rounded-md bg-secondary/10 text-secondary">
-                      <FiRepeat className="w-3 h-3" />
-                    </div>
-                    <span className="font-semibold text-foreground">譲渡を許可する</span>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    他のユーザーにファンマを譲渡できます
-                  </div>
-                </Label>
+                <Label htmlFor="isTransferable" className="text-sm text-foreground">{t('fanmarkSettings.fields.transfer.allow')}</Label>
               </div>
             </CardContent>
           </Card>
@@ -425,24 +405,24 @@ export const FanmarkSettings = ({
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
-              className="h-12 w-full rounded-full border border-border/70 bg-transparent px-6 text-base font-medium text-muted-foreground transition-colors duration-200 hover:border-primary/60 hover:bg-primary/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/30 sm:w-auto"
+              className="h-12 w-full rounded-full border border-border bg-transparent px-6 text-base font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/30 sm:w-auto"
             >
-              キャンセル
+              {t('common.cancel')}
             </Button>
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="h-12 w-full rounded-full bg-gradient-to-r from-primary via-secondary to-primary px-6 text-base font-semibold text-primary-foreground shadow-[0_15px_35px_rgba(101,195,200,0.18)] transition-all duration-200 hover:brightness-[1.05] focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 disabled:opacity-60 sm:w-48"
+              className="h-12 w-full rounded-full bg-primary px-6 text-base font-semibold text-primary-foreground shadow-[0_12px_30px_rgba(101,195,200,0.18)] transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 disabled:opacity-60 sm:w-48"
             >
               {isSubmitting ? (
                 <div className="flex items-center justify-center gap-2">
                   <Loader2 className="h-5 w-5 animate-spin" />
-                  保存中...
+                  {t('common.saving')}
                 </div>
               ) : (
                 <div className="flex items-center justify-center gap-2">
                   <FiSave className="h-5 w-5" />
-                  設定を保存
+                  {t('fanmarkSettings.actions.save')}
                 </div>
               )}
             </Button>

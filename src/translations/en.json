@@ -35,7 +35,7 @@
     "noRecentFanmaYet": "No recent fanmark registered yet",
     "pricingGuide": {
       "singleEmoji": "💎 1 emoji: $99.9",
-      "doubleEmoji": "💳 2 emojis: $9.99", 
+      "doubleEmoji": "💳 2 emojis: $9.99",
       "multipleEmoji": "✨ 3+ emojis: Free"
     },
     "pricingLabels": {
@@ -88,7 +88,6 @@
     "password": "Password",
     "confirmPassword": "Confirm Password",
     "username": "Username",
-    "confirmPassword": "Confirm Password",
     "forgotPassword": "Forgot Password?",
     "resetPassword": "Reset Password",
     "newPassword": "New Password",
@@ -169,7 +168,7 @@
         "title": "😵 The Old Way",
         "problems": "Too long to remember\nEasy to mistype\nHard to share..."
       },
-      "fanmaWay": {
+      "fanmarkWay": {
         "title": "✨ With fanmark",
         "benefits": "Unforgettable\nEasy to say\nShareable!"
       }
@@ -238,31 +237,31 @@
   "dashboard": {
     "title": "Dashboard",
     "userFallback": "Creator",
-    "welcomeBadge": "You have {{count}} fanma",
-    "subtitle": "Manage, polish, and acquire the fanma that represent you.",
+    "welcomeBadge": "You have {{count}} fanmark",
+    "subtitle": "Manage, polish, and acquire the fanmark that represent you.",
     "stats": {
-      "totalFanmarks": "Fanma secured",
+      "totalFanmarks": "Fanmarks obtained",
       "limitLabel": "Limit"
     },
     "tabs": {
-      "myFanmarks": "My fanma",
-      "getFanma": "Discover fanma",
-      "getFanmarks": "Discover fanma"
+      "myFanmarks": "My fanmarks",
+      "getFanma": "Discover fanmarks",
+      "getFanmarks": "Discover fanmarks"
     },
-    "yourFanmarks": "Your fanma",
-    "manageFanmarks": "Everything you've secured lives here—tune and share each fanma easily.",
-    "addFanmark": "Add fanma",
-    "searchPlaceholder": "Search your fanma...",
-    "searchFanma": "Search fanma",
+    "yourFanmarks": "Your fanmarks",
+    "manageFanmarks": "Everything you've obtained lives here—tune and share each fanmark easily.",
+    "addFanmark": "Add fanmark",
+    "searchPlaceholder": "Search your fanmark...",
+    "searchFanma": "Search fanmarks",
     "searchSubtitle": "Try different emoji mixes and see what’s still available.",
-    "noFanmarks": "No fanma",
-    "noFanmarksYet": "You haven't registered any fanma yet",
-    "noSearchResults": "No fanma match your search",
+    "noFanmarks": "No fanmarks",
+    "noFanmarksYet": "You haven't registered any fanmarks yet",
+    "noSearchResults": "No fanmark match your search",
     "tryDifferentSearch": "Try another emoji combination or filter.",
-    "getStarted": "Secure your first fanma to make it yours forever!",
-    "createFirstFanma": "Create your first fanma",
-    "noResultsDescription": "No fanma found matching your search.",
-    "noFanmarksDescription": "No fanma yet. Create your first fanma from the discovery tab!",
+    "getStarted": "Obtain your first fanmark to make it yours forever!",
+    "createFirstFanma": "Create your first fanmark",
+    "noResultsDescription": "No fanmark found matching your search.",
+    "noFanmarksDescription": "No fanmarks yet. Create your first fanmark from the discovery tab!",
     "fanmark": "Fanmark",
     "displayName": "Display Name",
     "accessType": "Access Type",
@@ -276,7 +275,7 @@
     "settings": "Settings",
     "estimatedValue": "Estimated value",
     "comingSoon": "Coming soon",
-    "comingSoonDescription": "We're developing fanma valuation features",
+    "comingSoonDescription": "We're developing fanmark valuation features",
     "premiumLabel": "Premium",
     "inputError": "Invalid emoji",
     "inputHint": "Use 1 to 5 emoji characters only.",
@@ -292,30 +291,33 @@
       "text": "Text",
       "inactive": "Inactive"
     },
-    "getFanmaTitle": "Discover and secure new fanmark",
-    "getFanmaDescription": "Browse premium emoji combinations and lock them in before anyone else.",
-    "recentFanmaTitle": "Recently secured fanmark",
-    "recentFanmaSubtitle": "Tap a fanmark below to preview or secure it yourself."
+    "getFanmaTitle": "Discover and obtain new fanmarks",
+    "getFanmaDescription": "Browse premium emoji combinations and obtain them before anyone else.",
+    "recentFanmaTitle": "Recently obtained fanmarks",
+    "recentFanmaSubtitle": "Tap a fanmark below to preview or obtain it yourself.",
+    "actionsReturn": "Return fanmark",
+    "actionsCopyLink": "Copy URL",
+    "actionsSettings": "Open settings"
   },
   "registration": {
-    "title": "Secure Your Fanmark",
-    "successTitle": "Fanmark Secured!",
+    "title": "Obtain Your Fanmark",
+    "successTitle": "Fanmark Obtained!",
     "successMessage": "Your fanmark is ready!",
     "successDescription": "Great choice! This could be valuable later!",
     "failed": "Registration failed",
     "authRequired": "Authentication required",
-    "authDescription": "Please sign in to secure a fanmark",
+    "authDescription": "Please sign in to obtain a fanmark",
     "registering": "Registering...",
-    "registerButton": "Secure Fanmark",
-    "quickRegister": "Quick Secure",
-    "quickRegisterTitle": "Secure Fanmark",
-    "quickRegisterSubtitle": "Secure it first, configure details later",
-    "quickSecured": "Fanmark secured! 🎉",
+    "registerButton": "Obtain Fanmark",
+    "quickRegister": "Obtain Quickly",
+    "quickRegisterTitle": "Obtain Fanmark",
+    "quickRegisterSubtitle": "Obtain it first, configure details later",
+    "quickSecured": "Fanmark obtained! 🎉",
     "quickSecuredDescription": "You can change settings anytime ✨",
     "quickSecuredInfo": "💡 This fanmark is in 'inactive' state. You can change settings from My Fanmarks.",
     "configureLater": "Configure Later",
     "configureNow": "Configure Now",
-    "securing": "Securing...",
+    "securing": "Obtaining...",
     "cancel": "Cancel",
     "customFanma": "Custom Fanmark",
     "registerCustom": "Secure custom fanmark",
@@ -337,7 +339,7 @@
     "accessTypes": {
       "profile": "📄 Profile Page",
       "profileDesc": "Create a personal page",
-      "redirect": "🔗 URL Redirect", 
+      "redirect": "🔗 URL Redirect",
       "redirectDesc": "Redirect to any URL",
       "text": "📝 Text Display",
       "textDesc": "Show custom text",
@@ -345,11 +347,57 @@
       "inactiveDesc": "Reserve for later"
     }
   },
-  "navigation": {
-    "home": "Home",
-    "dashboard": "Dashboard",
-    "profile": "Profile", 
-    "logout": "Logout",
-    "seeHowUsed": "See How It's Used"
+  "fanmarkSettings": {
+    "title": "Fanmark settings",
+    "summary": {
+      "defaultName": "Fanmark"
+    },
+    "fields": {
+      "displayName": {
+        "label": "Display name",
+        "helper": "This name is shown to fans.",
+        "placeholder": "Enter a display name"
+      },
+      "accessType": {
+        "label": "Access type",
+        "helper": "Choose what happens when someone opens this fanmark.",
+        "placeholder": "Select an access type"
+      },
+      "redirect": {
+        "label": "Redirect URL"
+      },
+      "text": {
+        "label": "Display text",
+        "placeholder": "Enter the text to display"
+      },
+      "profile": {
+        "label": "Profile page",
+        "publish": "Publish"
+      },
+      "transfer": {
+        "label": "Fanmark transfer",
+        "helper": "Control whether this fanmark can be transferred.",
+        "allow": "Allow"
+      }
+    },
+    "accessTypeOptions": {
+      "profile": "Profile",
+      "redirect": "URL redirect",
+      "text": "Text",
+      "inactive": "Inactive"
+    },
+    "actions": {
+      "editProfile": "Edit profile page",
+      "save": "Save changes"
+    },
+    "toast": {
+      "successTitle": "Settings updated ✨",
+      "successDescription": "Your fanmark settings have been saved.",
+      "errorTitle": "Update failed",
+      "errorDescription": "We couldn't save your changes."
+    },
+    "validation": {
+      "accessTypeRequired": "Please choose an access type."
+    }
   }
 }

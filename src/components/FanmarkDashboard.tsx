@@ -5,11 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useTranslation } from '@/hooks/useTranslation';
-import { Search, Eye, Edit, Settings, Trash2, ExternalLink } from 'lucide-react';
+import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy, Undo2 } from 'lucide-react';
 import { FiTarget, FiLayers, FiCompass, FiStar, FiCheckCircle, FiMoon, FiFileText, FiUser, FiLink } from 'react-icons/fi';
 import { FanmarkAcquisition } from './FanmarkAcquisition';
 import { FanmarkSettings } from './FanmarkSettings';
@@ -206,10 +207,10 @@ export const FanmarkDashboard = () => {
                 </CardTitle>
               </CardHeader>
 
-              <CardContent className="space-y-4 px-6 pb-6">
+              <CardContent className="space-y-8 px-6 pb-6">
                 {filteredFanmarks.length === 0 ? (
                   <div className="py-14 text-center">
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
                         <FiLayers className="h-8 w-8" />
                       </div>
@@ -236,7 +237,7 @@ export const FanmarkDashboard = () => {
                     </div>
                   </div>
                 ) : (
-                    <div className="space-y-4">
+                  <div className="space-y-6">
                     {/* Desktop Table View */}
                     <div className="hidden lg:block">
                       <div className="overflow-x-auto">
@@ -246,22 +247,24 @@ export const FanmarkDashboard = () => {
                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.fanmark')}</th>
                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.displayName')}</th>
                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.accessType')}</th>
-                              <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.alias')}</th>
                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.status')}</th>
-                              <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.actions')}</th>
+                              <th className="text-left p-3 text-muted-foreground font-semibold"></th>
                             </tr>
                           </thead>
                           <tbody>
                             {filteredFanmarks.map((fanmark) => (
                               <tr key={fanmark.id} className="border-b transition-colors hover:bg-muted/30">
                                 <td className="px-4 py-4">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-2xl">{fanmark.emoji_combination}</span>
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-2xl tracking-[0.35em]">{fanmark.emoji_combination}</span>
                                     {fanmark.is_premium && (
                                       <Badge variant="secondary" className="gap-1 border border-primary/30 bg-primary/10 text-primary">
                                         <FiStar className="h-3 w-3" /> <span className="hidden xl:inline">{t('dashboard.premiumLabel')}</span>
                                       </Badge>
                                     )}
+                                  </div>
+                                  <div className="mt-2 text-xs font-medium tracking-wide text-muted-foreground/70">
+                                    {fanmark.short_id}
                                   </div>
                                 </td>
                                 <td className="px-4 py-4">
@@ -284,11 +287,6 @@ export const FanmarkDashboard = () => {
                                   {getAccessTypeBadge(fanmark.access_type)}
                                 </td>
                                 <td className="px-4 py-4">
-                                  <code className="bg-muted text-muted-foreground font-mono text-sm px-2 py-1 rounded">
-                                    {fanmark.short_id}
-                                  </code>
-                                </td>
-                                <td className="px-4 py-4">
                                   <Badge 
                                     className={`${fanmark.status === 'active' ? 'border-emerald-200/60 bg-emerald-50 text-emerald-600' : 'border-rose-200/60 bg-rose-50 text-rose-600'} inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide shadow-sm`}
                                   >
@@ -306,15 +304,53 @@ export const FanmarkDashboard = () => {
                                   </Badge>
                                 </td>
                                 <td className="px-4 py-4">
-                                  <div className="flex gap-1">
-                                    <Button 
-                                      size="sm" 
-                                      variant="ghost" 
-                                      className="h-8 w-8 p-0 hover:bg-secondary"
-                                      onClick={() => setSettingsFanmark(fanmark)}
-                                    >
-                                      <Settings className="h-4 w-4" />
-                                    </Button>
+                                  <div className="flex items-center gap-1.5">
+                                    <TooltipProvider delayDuration={200}>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-8 w-8 p-0 hover:bg-secondary"
+                                            aria-label={t('dashboard.actionsReturn')}
+                                          >
+                                            <Undo2 className="h-4 w-4" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>{t('dashboard.actionsReturn')}</TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                    <TooltipProvider delayDuration={200}>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-8 w-8 p-0 hover:bg-secondary"
+                                            aria-label={t('dashboard.actionsCopyLink')}
+                                          >
+                                            <Copy className="h-4 w-4" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>{t('dashboard.actionsCopyLink')}</TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                    <TooltipProvider delayDuration={200}>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-8 w-8 p-0 hover:bg-secondary"
+                                            onClick={() => setSettingsFanmark(fanmark)}
+                                            aria-label={t('dashboard.actionsSettings')}
+                                          >
+                                            <Settings className="h-4 w-4" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>{t('dashboard.actionsSettings')}</TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
                                   </div>
                                 </td>
                               </tr>
@@ -332,10 +368,10 @@ export const FanmarkDashboard = () => {
                             <div className="space-y-3">
                               <div className="flex items-start justify-between">
                                 <div className="flex items-center gap-3">
-                                  <span className="text-2xl">{fanmark.emoji_combination}</span>
+                                  <span className="text-2xl tracking-[0.35em]">{fanmark.emoji_combination}</span>
                                   <div>
                                     <h3 className="font-semibold text-foreground">{fanmark.display_name}</h3>
-                                    <code className="text-xs text-muted-foreground">{fanmark.short_id}</code>
+                                    <div className="text-xs font-medium tracking-wide text-muted-foreground/70">{fanmark.short_id}</div>
                                   </div>
                                 </div>
                                 {fanmark.is_premium && (
@@ -381,16 +417,53 @@ export const FanmarkDashboard = () => {
                                 </div>
                               )}
 
-                              <div className="flex gap-2">
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  className="flex-1 border-gray-200 text-gray-600 hover:bg-gray-50"
-                                  onClick={() => setSettingsFanmark(fanmark)}
-                                >
-                                  <Settings className="mr-1 h-4 w-4" />
-                                  {t('dashboard.settings')}
-                                </Button>
+                              <div className="flex items-center justify-end gap-2 pt-2">
+                                <TooltipProvider delayDuration={200}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-9 w-9 p-0 hover:bg-secondary"
+                                        aria-label={t('dashboard.actionsReturn')}
+                                      >
+                                        <Undo2 className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>{t('dashboard.actionsReturn')}</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                                <TooltipProvider delayDuration={200}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-9 w-9 p-0 hover:bg-secondary"
+                                        aria-label={t('dashboard.actionsCopyLink')}
+                                      >
+                                        <Copy className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>{t('dashboard.actionsCopyLink')}</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                                <TooltipProvider delayDuration={200}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-9 w-9 p-0 hover:bg-secondary"
+                                        onClick={() => setSettingsFanmark(fanmark)}
+                                        aria-label={t('dashboard.actionsSettings')}
+                                      >
+                                        <Settings className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>{t('dashboard.actionsSettings')}</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
                               </div>
                             </div>
                           </CardContent>
