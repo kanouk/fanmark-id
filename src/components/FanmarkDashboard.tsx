@@ -202,7 +202,7 @@ export const FanmarkDashboard = () => {
   // Helper function to determine if a fanmark is inactive/expired
   const isFanmarkInactive = (fanmark: Fanmark) => {
     const licenseData = fanmark.fanmark_licenses as any;
-    return !fanmark.current_license_id || licenseData?.status === 'expired' || fanmark.access_type === 'inactive';
+    return !fanmark.current_license_id || licenseData?.status === 'expired';
   };
 
   const getAccessTypeBadge = (accessType: string) => {
