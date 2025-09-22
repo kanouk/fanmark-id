@@ -1,14 +1,16 @@
+import { useEffect, useState } from 'react';
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/hooks/useTranslation";
 import { LanguageToggle } from "@/components/LanguageToggle";
-import { FanmarkSearchWithRegistration } from "@/components/FanmarkSearchWithRegistration";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { User, LogOut } from 'lucide-react';
 import { MdSpaceDashboard } from 'react-icons/md';
 import { useProfile } from '@/hooks/useProfile';
+import { FanmarkAcquisition } from '@/components/FanmarkAcquisition';
+import { supabase } from '@/integrations/supabase/client';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,11 +18,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+const FANMARK_LIMIT = 10;
+
 const Index = () => {
   const { user, signOut } = useAuth();
   const { profile } = useProfile();
   const navigate = useNavigate();
   const { t, tWithBreaks } = useTranslation();
+  const [fanmarkCount, setFanmarkCount] = useState(0);
   const exampleCards = [
     {
       key: 'musician',
@@ -57,6 +62,55 @@ const Index = () => {
 
   const handleSignupPrompt = () => {
     navigate("/auth");
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchFanmarkCount = async () => {
+      if (!user) {
+        if (isMounted) {
+          setFanmarkCount(0);
+        }
+        return;
+      }
+
+      try {
+        const { count, error } = await supabase
+          .from('fanmarks')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+
+        if (!isMounted) return;
+
+        if (error) {
+          console.error('Failed to fetch fanmark count:', error);
+          setFanmarkCount(0);
+          return;
+        }
+
+        setFanmarkCount(count ?? 0);
+      } catch (error) {
+        if (!isMounted) return;
+        console.error('Unexpected error fetching fanmark count:', error);
+        setFanmarkCount(0);
+      }
+    };
+
+    fetchFanmarkCount();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
+  const handleRequireAuth = (emoji: string) => {
+    try {
+      localStorage.setItem('fanmark.prefill', emoji);
+    } catch (error) {
+      console.warn('Failed to persist fanmark prefill before auth redirect:', error);
+    }
+    navigate('/auth', { state: { prefillFanmark: emoji } });
   };
 
   return <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
@@ -171,7 +225,12 @@ const Index = () => {
       {/* Fanmark Search Section - Always show for search functionality */}
       <div id="search" className="py-16 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
         <div className="container mx-auto px-4">
-          <FanmarkSearchWithRegistration onSignupPrompt={handleSignupPrompt} showRecent={false} />
+          <FanmarkAcquisition
+            fanmarkLimit={FANMARK_LIMIT}
+            currentCount={fanmarkCount}
+            onRequireAuth={handleRequireAuth}
+            onObtain={() => setFanmarkCount((count) => count + 1)}
+          />
         </div>
       </div>
 

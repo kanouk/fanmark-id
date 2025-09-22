@@ -108,9 +108,9 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
   const hasValue = segments.length > 0;
 
   return (
-    <div className={`flex w-full items-center gap-4 ${className}`}>
+    <div className={`flex w-full items-center gap-5 ${className}`}>
       <div className="flex flex-1" />
-      <div className="flex flex-wrap justify-center gap-3">
+      <div className="flex flex-wrap justify-center gap-4">
         {slots.map((_, index) => {
           const emoji = segments[index];
           const isActive = activeIndex === index;
@@ -120,9 +120,9 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
               type="button"
               disabled={disabled}
               onClick={() => handleOpenChange(index, true)}
-              className={`flex h-12 w-12 items-center justify-center rounded-2xl border text-2xl transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${emoji ? 'border-primary/40 bg-primary/5' : 'border-dashed border-primary/20 text-muted-foreground hover:border-primary/40 hover:text-primary'} ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+              className={`flex h-16 w-16 items-center justify-center rounded-2xl border text-4xl transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${emoji ? 'border-primary/40 bg-primary/5' : 'border-dashed border-primary/20 text-muted-foreground hover:border-primary/40 hover:text-primary'} ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
             >
-              {emoji ? emoji : <Plus className="h-5 w-5" />}
+              {emoji ? emoji : <Plus className="h-7 w-7" />}
             </button>
           );
 
@@ -185,7 +185,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
           );
         })}
       </div>
-      <div className="flex flex-1 justify-end gap-2">
+      <div className="flex flex-1 justify-end gap-3">
         <Button
           type="button"
           variant="ghost"
@@ -193,9 +193,9 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
           disabled={disabled || !hasValue}
           onClick={handleClear}
           aria-label={t('common.clearAll')}
-          className="h-10 w-10 rounded-full border border-primary/20 text-muted-foreground transition hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
+          className="h-12 w-12 rounded-full border border-primary/20 text-muted-foreground transition hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
         >
-          <Eraser className="h-4 w-4" />
+          <Eraser className="h-5 w-5" />
         </Button>
         <Button
           type="button"
@@ -204,9 +204,9 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
           aria-label={t('common.aiRecommendationComingSoon')}
           title={t('common.aiRecommendationDescription')}
           disabled
-          className="h-10 w-10 rounded-full border border-primary/20 text-primary"
+          className="h-12 w-12 rounded-full border border-primary/20 text-primary"
         >
-          <Sparkles className="h-4 w-4" />
+          <Sparkles className="h-5 w-5" />
         </Button>
       </div>
     </div>

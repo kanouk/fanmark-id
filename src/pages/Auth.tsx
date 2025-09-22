@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthForm } from '@/hooks/useAuthForm';
 import { usePasswordValidation } from '@/hooks/usePasswordValidation';
@@ -18,6 +18,7 @@ import { PasswordRequirement as PasswordRequirementType } from '@/lib/password-v
 const Auth = () => {
   const { user, session } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
   const { formData, authState, updateFormData, signUp, signIn, resendConfirmation } = useAuthForm();
   const { requirements, isValid } = usePasswordValidation(formData.password);
@@ -29,6 +30,18 @@ const Auth = () => {
       navigate('/dashboard');
     }
   }, [user, session, navigate]);
+
+  useEffect(() => {
+    const state = location.state as { prefillFanmark?: string } | null;
+    if (state?.prefillFanmark) {
+      try {
+        localStorage.setItem('fanmark.prefill', state.prefillFanmark);
+      } catch (error) {
+        console.warn('Failed to persist fanmark prefill on auth page:', error);
+      }
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location, navigate]);
 
 
   if (authState.awaitingConfirmation) {

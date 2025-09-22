@@ -42,6 +42,7 @@ interface FanmarkRow {
   emoji_combination: string;
   normalized_emoji: string;
   user_id: string;
+  display_order: number | null;
 }
 
 const SKIN_TONE_MODIFIER_REGEX = /\p{Emoji_Modifier}/u;
@@ -363,9 +364,10 @@ serve(async (req) => {
         target_url: targetUrl || null,
         text_content: textContent || null,
         display_name: displayName || null,
-        is_transferable: isTransferable
+        is_transferable: isTransferable,
+        display_order: userFanmarkCount ?? 0
       })
-      .select('id, emoji_combination, short_id')
+      .select('id, emoji_combination, short_id, display_order')
       .single();
 
     if (insertError) {

@@ -185,6 +185,7 @@
     "submit": "送信",
     "back": "戻る",
     "saving": "保存中...",
+    "processing": "処理中...",
     "clearAll": "すべてクリア",
     "enabled": "有効",
     "disabled": "無効",
@@ -254,6 +255,20 @@
     "searchPlaceholder": "ファンマを検索...",
     "searchFanma": "ファンマを検索",
     "searchSubtitle": "気になるファンマを入れて、空き状況をチェックしよう。",
+    "remainingFanmarksLabel": "残り {remaining} 枠",
+    "acquireButton": "このファンマを取得する",
+    "acquireLoginButton": "ログインして取得する",
+    "acquireConfirmTitle": "このファンマを取得しますか？",
+    "acquireConfirmDescription": "このファンマを取得すると、あと {remaining} 枠になります。",
+    "acquireConfirmAction": "取得する",
+    "acquireReadyMessage": "このファンマはすぐに取得できます。",
+    "acquireHint": "取得可能なファンマを検索するとボタンが有効になります。",
+    "acquireSuccessTitle": "取得が完了しました！",
+    "acquireSuccessDescription": "設定画面で詳細を編集しましょう。",
+    "acquireFailedTitle": "取得に失敗しました",
+    "acquireFailedDescription": "時間を置いて再度お試しください。",
+    "acquireLimitReachedTitle": "取得上限に達しています",
+    "acquireLimitReachedDescription": "不要なファンマを整理して枠を空けてください。",
     "noFanmarks": "ファンマなし",
     "noFanmarksYet": "まだファンマを登録していません",
     "noSearchResults": "該当するファンマが見つかりません",
@@ -297,7 +312,10 @@
     "recentFanmaSubtitle": "気になるファンマをタップして、詳細や取得状況をチェックしよう。",
     "actionsReturn": "ファンマを返却",
     "actionsCopyLink": "URLをコピー",
-    "actionsSettings": "設定を開く"
+    "actionsSettings": "設定を開く",
+    "reorderErrorTitle": "並び替えに失敗しました",
+    "reorderErrorDescription": "通信エラーが発生しました。しばらくしてから再試行してください。",
+    "reorderHandleLabel": "ドラッグして並び替える"
   },
   "registration": {
     "title": "ファンマを登録",
@@ -389,6 +407,13 @@
     "actions": {
       "editProfile": "プロフィールページを編集",
       "save": "設定を保存"
+    },
+    "errors": {
+      "notFound": "ファンマが見つかりませんでした。",
+      "loadFailed": "ファンマの情報を読み込めませんでした。",
+      "loadFailedTitle": "ファンマを表示できません",
+      "authRequiredTitle": "ログインが必要です",
+      "authRequiredDescription": "ファンマの設定を変更するにはログインしてください。"
     },
     "toast": {
       "successTitle": "設定を更新しました ✨",

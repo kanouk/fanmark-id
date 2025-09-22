@@ -1,0 +1,159 @@
+import { useEffect, useState, useCallback } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
+import { FanmarkSettings, Fanmark as FanmarkSettingsData } from '@/components/FanmarkSettings';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from '@/hooks/useTranslation';
+import { supabase } from '@/integrations/supabase/client';
+
+interface FanmarkRecord {
+  id: string;
+  emoji_combination: string;
+  display_name: string | null;
+  access_type: 'profile' | 'redirect' | 'text' | 'inactive';
+  target_url: string | null;
+  text_content: string | null;
+  is_transferable: boolean;
+  status: string;
+  short_id: string;
+  display_order: number | null;
+}
+
+const FanmarkSettingsPage = () => {
+  const { fanmarkId } = useParams<{ fanmarkId: string }>();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
+  const { toast } = useToast();
+  const { t } = useTranslation();
+
+  const [fanmark, setFanmark] = useState<FanmarkSettingsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  const loadFanmark = useCallback(async () => {
+    if (!fanmarkId) return;
+
+    setLoading(true);
+    setFetchError(null);
+
+    try {
+      const { data, error } = await supabase
+        .from<FanmarkRecord>('fanmarks')
+        .select('id, emoji_combination, display_name, access_type, target_url, text_content, is_transferable, status, short_id, display_order')
+        .eq('id', fanmarkId)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data) {
+        setFetchError(t('fanmarkSettings.errors.notFound'));
+        setFanmark(null);
+        return;
+      }
+
+      setFanmark({
+        id: data.id,
+        emoji_combination: data.emoji_combination,
+        display_name: data.display_name,
+        access_type: data.access_type,
+        target_url: data.target_url ?? undefined,
+        text_content: data.text_content ?? undefined,
+        is_transferable: data.is_transferable,
+        status: data.status,
+        short_id: data.short_id,
+        display_order: data.display_order,
+      });
+    } catch (error) {
+      console.error('Failed to load fanmark:', error);
+      setFetchError(t('fanmarkSettings.errors.loadFailed'));
+      setFanmark(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [fanmarkId, t]);
+
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!user) {
+      toast({
+        title: t('fanmarkSettings.errors.authRequiredTitle'),
+        description: t('fanmarkSettings.errors.authRequiredDescription'),
+        variant: 'destructive',
+      });
+      navigate('/auth', { replace: true });
+      return;
+    }
+
+    if (!fanmarkId) {
+      navigate('/dashboard', { replace: true });
+      return;
+    }
+
+    loadFanmark();
+  }, [authLoading, fanmarkId, user, loadFanmark, navigate, toast, t]);
+
+  const handleClose = () => {
+    navigate('/dashboard');
+  };
+
+  const handleSuccess = () => {
+    toast({
+      title: t('fanmarkSettings.toast.successTitle'),
+      description: t('fanmarkSettings.toast.successDescription'),
+    });
+    loadFanmark();
+  };
+
+  if (authLoading || loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
+        <div className="flex items-center gap-3 rounded-full border border-primary/20 bg-background/90 px-5 py-3 shadow-lg">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          <span className="text-sm font-medium text-muted-foreground">
+            {t('common.loading')}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  if (fetchError || !fanmark) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
+        <div className="mx-auto flex max-w-xl flex-col items-center gap-6 px-4 py-16 text-center">
+          <Card className="w-full border border-destructive/20 bg-background/95 shadow-[0_25px_60px_rgba(244,63,94,0.18)]">
+            <CardContent className="space-y-4 p-8">
+              <h2 className="text-xl font-semibold text-destructive">
+                {t('fanmarkSettings.errors.loadFailedTitle')}
+              </h2>
+              <p className="text-sm text-muted-foreground">{fetchError}</p>
+              <Button onClick={handleClose} className="rounded-full">
+                {t('common.back')}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <FanmarkSettings
+      fanmark={fanmark}
+      mode="page"
+      onClose={handleClose}
+      onSuccess={handleSuccess}
+      open
+      onOpenChange={() => undefined}
+    />
+  );
+};
+
+export default FanmarkSettingsPage;

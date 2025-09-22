@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -12,11 +13,20 @@ import { FiAlertTriangle, FiInfo } from 'react-icons/fi';
 interface FanmarkSearchProps {
   onSignupPrompt?: () => void;
   onSearchPerformed?: (searchQuery: string) => void;
+  onResultChange?: (result: FanmarkSearchResult | null) => void;
   statusVariant?: 'authenticated' | 'public';
   showRecent?: boolean;
+  initialQuery?: string;
 }
 
-const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchPerformed, statusVariant = 'authenticated', showRecent = true }) => {
+const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
+  onSignupPrompt,
+  onSearchPerformed,
+  onResultChange,
+  statusVariant = 'authenticated',
+  showRecent = true,
+  initialQuery,
+}) => {
   const { t } = useTranslation();
   const { 
     searchQuery, 
@@ -26,6 +36,17 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchP
     recentFanmarks, 
     getNormalizationInfo
   } = useFanmarkSearch();
+
+  useEffect(() => {
+    onResultChange?.(result);
+  }, [result, onResultChange]);
+
+  useEffect(() => {
+    if (initialQuery === undefined) return;
+    if (initialQuery !== searchQuery) {
+      setSearchQuery(initialQuery);
+    }
+  }, [initialQuery, searchQuery, setSearchQuery]);
 
   // Get normalization info for current search query
   const normalizationInfo = searchQuery.trim() && getNormalizationInfo ? getNormalizationInfo(searchQuery.trim()) : null;
@@ -41,7 +62,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchP
   };
 
   const getStatusBadge = (result: FanmarkSearchResult) => (
-    <FanmarkStatusBadge status={normalizeStatus(result.status)} />
+          <FanmarkStatusBadge status={normalizeStatus(result.status)} />
   );
 
   return (
@@ -104,9 +125,9 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchP
           
           {/* Result Display */}
           {!result.error && result.emoji_combination && (
-            <div className={`rounded-2xl border p-5 ${result.status === 'invalid' ? 'border-rose-200 bg-rose-50' : 'border-primary/10 bg-muted/40'}`}>
-              <div className="flex w-full items-center gap-4">
-                <span className="text-3xl tracking-[0.3em]">{result.emoji_combination}</span>
+            <div className={`rounded-2xl border p-6 ${result.status === 'invalid' ? 'border-rose-200 bg-rose-50' : 'border-primary/10 bg-muted/40'}`}>
+              <div className="flex w-full items-center gap-5">
+                <span className="text-5xl tracking-[0.2em] leading-none">{result.emoji_combination}</span>
                 {getStatusBadge(result)}
               </div>
               {result.status === 'invalid' && result.error && (
@@ -138,7 +159,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({ onSignupPrompt, onSearchP
               <Card key={`recent-${fanmark.id}-${index}`} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-3">
                   <div className="flex w-full items-center gap-3">
-                    <span className="text-xl tracking-[0.2em]">{fanmark.emoji_combination || '❓'}</span>
+                    <span className="text-3xl tracking-[0.15em] leading-none">{fanmark.emoji_combination || '❓'}</span>
                     {getStatusBadge(fanmark)}
                   </div>
                 </CardContent>

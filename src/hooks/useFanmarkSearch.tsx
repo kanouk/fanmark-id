@@ -451,5 +451,6 @@ export function useFanmarkSearch() {
     registerFanmark,
     refetchRecent: fetchRecentFanmarks,
     getNormalizationInfo,
+    setResult,
   };
 }

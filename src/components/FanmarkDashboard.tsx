@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback, useMemo, type CSSProperties, type ReactNode } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,11 +10,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useTranslation } from '@/hooks/useTranslation';
-import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy, Undo2 } from 'lucide-react';
+import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy, Undo2, GripVertical } from 'lucide-react';
+import { DndContext, PointerSensor, useSensor, useSensors, closestCenter, DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, arrayMove, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { FiTarget, FiLayers, FiCompass, FiStar, FiCheckCircle, FiMoon, FiFileText, FiUser, FiLink } from 'react-icons/fi';
 import { FanmarkAcquisition } from './FanmarkAcquisition';
-import { FanmarkSettings } from './FanmarkSettings';
-import { FanmarkSearchWithRegistration } from './FanmarkSearchWithRegistration';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Fanmark {
@@ -32,6 +33,7 @@ interface Fanmark {
   updated_at: string;
   user_id: string;
   normalized_emoji: string;
+  display_order: number | null;
 }
 
 interface Profile {
@@ -41,35 +43,101 @@ interface Profile {
   bio: string;
 }
 
+interface DashboardLocationState {
+  prefillFanmark?: string;
+}
+
+type TranslationFn = (key: string, vars?: Record<string, string | number>) => string;
+
 export const FanmarkDashboard = () => {
   const { user } = useAuth();
   const { profile } = useProfile();
   const { toast } = useToast();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const fanmarkLimit = 10; // Default limit
 
   const [fanmarks, setFanmarks] = useState<Fanmark[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('my-fanmarks');
-  const [settingsFanmark, setSettingsFanmark] = useState<Fanmark | null>(null);
+  const [prefilledEmoji, setPrefilledEmoji] = useState<string | undefined>();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    })
+  );
+
+  const [isDesktop, setIsDesktop] = useState(() => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+    return window.matchMedia('(min-width: 1024px)').matches;
+  });
 
   useEffect(() => {
-    if (user) {
-      fetchFanmarks();
-    }
-  }, [user]);
+    if (typeof window === 'undefined') return;
+    const mediaQuery = window.matchMedia('(min-width: 1024px)');
+    const listener = (event: MediaQueryListEvent) => setIsDesktop(event.matches);
+    setIsDesktop(mediaQuery.matches);
 
-  const fetchFanmarks = async () => {
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', listener);
+      return () => mediaQuery.removeEventListener('change', listener);
+    }
+
+    mediaQuery.addListener(listener);
+    return () => {
+      mediaQuery.removeListener(listener);
+    };
+  }, []);
+
+  const handleOpenSettings = (fanmarkId: string) => {
+    navigate(`/fanmarks/${fanmarkId}/settings`);
+  };
+
+  useEffect(() => {
+    const state = (location.state as DashboardLocationState | null)?.prefillFanmark;
+    let nextPrefill = state;
+
+    if (!nextPrefill) {
+      try {
+        const stored = localStorage.getItem('fanmark.prefill');
+        if (stored) {
+          nextPrefill = stored;
+          localStorage.removeItem('fanmark.prefill');
+        }
+      } catch (error) {
+        console.warn('Failed to access localStorage for fanmark prefill:', error);
+      }
+    }
+
+    if (nextPrefill) {
+      setPrefilledEmoji(nextPrefill);
+      setActiveTab('acquisition');
+      if (state) {
+        navigate(location.pathname, { replace: true });
+      }
+    }
+  }, [location, navigate]);
+
+  const fetchFanmarks = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from<Fanmark>('fanmarks')
         .select('*')
         .eq('user_id', user?.id)
+        .order('display_order', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setFanmarks(data ?? []);
+      const normalizedFanmarks = (data ?? []).map((fanmark, index) => ({
+        ...fanmark,
+        display_order: fanmark.display_order ?? index,
+      }));
+
+      setFanmarks(normalizedFanmarks);
     } catch (error) {
       console.error('Error fetching fanmarks:', error);
       toast({
@@ -80,7 +148,12 @@ export const FanmarkDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t, toast, user?.id]);
+
+  useEffect(() => {
+    if (!user) return;
+    fetchFanmarks();
+  }, [fetchFanmarks, user]);
 
   const getAccessTypeBadge = (accessType: string) => {
     let icon = <FiLayers className="h-3.5 w-3.5" />;
@@ -110,10 +183,62 @@ export const FanmarkDashboard = () => {
   };
 
   const filteredFanmarks = fanmarks;
+  const fanmarkIds = useMemo(() => filteredFanmarks.map((fanmark) => fanmark.id), [filteredFanmarks]);
 
-  const handleSignupPrompt = () => {
-    navigate('/auth');
+  const handleRequireAuth = (emoji: string) => {
+    try {
+      localStorage.setItem('fanmark.prefill', emoji);
+    } catch (error) {
+      console.warn('Failed to persist fanmark prefill before auth redirect:', error);
+    }
+    navigate('/auth', { state: { prefillFanmark: emoji } });
   };
+
+  const persistFanmarkOrder = useCallback(async (orderedFanmarks: Fanmark[]) => {
+    if (!user) return;
+    try {
+      await supabase
+        .from('fanmarks')
+        .upsert(
+          orderedFanmarks.map((fanmark, index) => ({
+            id: fanmark.id,
+            display_order: index,
+          }))
+        );
+    } catch (error) {
+      console.error('Error updating fanmark order:', error);
+      toast({
+        title: t('dashboard.reorderErrorTitle'),
+        description: t('dashboard.reorderErrorDescription'),
+        variant: 'destructive',
+      });
+      fetchFanmarks();
+    }
+  }, [fetchFanmarks, t, toast, user]);
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    setFanmarks((prevFanmarks) => {
+      const oldIndex = prevFanmarks.findIndex((fanmark) => fanmark.id === active.id);
+      const newIndex = prevFanmarks.findIndex((fanmark) => fanmark.id === over.id);
+
+      if (oldIndex === -1 || newIndex === -1) {
+        return prevFanmarks;
+      }
+
+      const reordered = arrayMove(prevFanmarks, oldIndex, newIndex).map((fanmark, index) => ({
+        ...fanmark,
+        display_order: index,
+      }));
+
+      void persistFanmarkOrder(reordered);
+      return reordered;
+    });
+  }, [persistFanmarkOrder]);
 
   if (loading) {
     return (
@@ -231,246 +356,69 @@ export const FanmarkDashboard = () => {
                           </Button>
                         </DialogTrigger>
                         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                          <FanmarkSearchWithRegistration onSignupPrompt={handleSignupPrompt} />
+                          <FanmarkAcquisition
+                            prefilledEmoji={prefilledEmoji}
+                            fanmarkLimit={fanmarkLimit}
+                            currentCount={fanmarks.length}
+                            onObtain={() => {
+                              setPrefilledEmoji(undefined);
+                              fetchFanmarks();
+                              setActiveTab('my-fanmarks');
+                            }}
+                            onRequireAuth={handleRequireAuth}
+                          />
                         </DialogContent>
                       </Dialog>
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-6">
-                    {/* Desktop Table View */}
-                    <div className="hidden lg:block">
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <thead>
-                            <tr className="bg-muted/50">
-                              <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.fanmark')}</th>
-                              <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.displayName')}</th>
-                              <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.accessType')}</th>
-                              <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.status')}</th>
-                              <th className="text-left p-3 text-muted-foreground font-semibold"></th>
-                            </tr>
-                          </thead>
-                          <tbody>
+                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <div className="space-y-6">
+                      {isDesktop ? (
+                        <SortableContext items={fanmarkIds} strategy={verticalListSortingStrategy}>
+                          <div className="overflow-x-auto">
+                            <table className="w-full">
+                              <thead>
+                                <tr className="bg-muted/50">
+                                  <th className="w-12 p-3 text-left text-muted-foreground font-semibold"></th>
+                                  <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.fanmark')}</th>
+                                  <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.displayName')}</th>
+                                  <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.accessType')}</th>
+                                  <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.status')}</th>
+                                  <th className="text-left p-3 text-muted-foreground font-semibold"></th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {filteredFanmarks.map((fanmark) => (
+                                  <SortableFanmarkTableRow
+                                    key={fanmark.id}
+                                    fanmark={fanmark}
+                                    t={t}
+                                    getAccessTypeBadge={getAccessTypeBadge}
+                                    onOpenSettings={handleOpenSettings}
+                                  />
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </SortableContext>
+                      ) : (
+                        <SortableContext items={fanmarkIds} strategy={verticalListSortingStrategy}>
+                          <div className="space-y-4">
                             {filteredFanmarks.map((fanmark) => (
-                              <tr key={fanmark.id} className="border-b transition-colors hover:bg-muted/30">
-                                <td className="px-4 py-4">
-                                  <div className="flex items-center gap-3">
-                                    <span className="text-2xl tracking-[0.35em]">{fanmark.emoji_combination}</span>
-                                    {fanmark.is_premium && (
-                                      <Badge variant="secondary" className="gap-1 border border-primary/30 bg-primary/10 text-primary">
-                                        <FiStar className="h-3 w-3" /> <span className="hidden xl:inline">{t('dashboard.premiumLabel')}</span>
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  <div className="mt-2 text-xs font-medium tracking-wide text-muted-foreground/70">
-                                    {fanmark.short_id}
-                                  </div>
-                                </td>
-                                <td className="px-4 py-4">
-                                  <div>
-                                    <div className="font-semibold text-foreground">{fanmark.display_name}</div>
-                                    {fanmark.access_type === 'redirect' && fanmark.redirect_url && (
-                                      <div className="text-sm text-muted-foreground truncate max-w-xs flex items-center gap-1">
-                                        <ExternalLink className="h-3 w-3" />
-                                        {fanmark.redirect_url}
-                                      </div>
-                                    )}
-                                    {fanmark.access_type === 'text' && fanmark.profile_text && (
-                                      <div className="flex max-w-xs items-center gap-1 truncate text-sm text-muted-foreground">
-                                        <FiFileText className="h-3 w-3" /> {fanmark.profile_text}
-                                      </div>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="px-4 py-4">
-                                  {getAccessTypeBadge(fanmark.access_type)}
-                                </td>
-                                <td className="px-4 py-4">
-                                  <Badge 
-                                    className={`${fanmark.status === 'active' ? 'border-emerald-200/60 bg-emerald-50 text-emerald-600' : 'border-rose-200/60 bg-rose-50 text-rose-600'} inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide shadow-sm`}
-                                  >
-                                    {fanmark.status === 'active' ? (
-                                      <>
-                                        <FiCheckCircle className="h-3.5 w-3.5" />
-                                        <span>{t('dashboard.statusActive')}</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <FiMoon className="h-3.5 w-3.5" />
-                                        <span>{t('dashboard.statusInactive')}</span>
-                                      </>
-                                    )}
-                                  </Badge>
-                                </td>
-                                <td className="px-4 py-4">
-                                  <div className="flex items-center gap-1.5">
-                                    <TooltipProvider delayDuration={200}>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-8 w-8 p-0 hover:bg-secondary"
-                                            aria-label={t('dashboard.actionsReturn')}
-                                          >
-                                            <Undo2 className="h-4 w-4" />
-                                          </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>{t('dashboard.actionsReturn')}</TooltipContent>
-                                      </Tooltip>
-                                    </TooltipProvider>
-                                    <TooltipProvider delayDuration={200}>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-8 w-8 p-0 hover:bg-secondary"
-                                            aria-label={t('dashboard.actionsCopyLink')}
-                                          >
-                                            <Copy className="h-4 w-4" />
-                                          </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>{t('dashboard.actionsCopyLink')}</TooltipContent>
-                                      </Tooltip>
-                                    </TooltipProvider>
-                                    <TooltipProvider delayDuration={200}>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-8 w-8 p-0 hover:bg-secondary"
-                                            onClick={() => setSettingsFanmark(fanmark)}
-                                            aria-label={t('dashboard.actionsSettings')}
-                                          >
-                                            <Settings className="h-4 w-4" />
-                                          </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>{t('dashboard.actionsSettings')}</TooltipContent>
-                                      </Tooltip>
-                                    </TooltipProvider>
-                                  </div>
-                                </td>
-                              </tr>
+                              <SortableFanmarkCard
+                                key={fanmark.id}
+                                fanmark={fanmark}
+                                t={t}
+                                getAccessTypeBadge={getAccessTypeBadge}
+                                onOpenSettings={handleOpenSettings}
+                              />
                             ))}
-                          </tbody>
-                        </table>
-                      </div>
+                          </div>
+                        </SortableContext>
+                      )}
                     </div>
-
-                    {/* Mobile Card View */}
-                    <div className="lg:hidden space-y-4">
-                      {filteredFanmarks.map((fanmark) => (
-                        <Card key={fanmark.id} className="rounded-3xl border border-primary/10 bg-background/80 transition-colors hover:border-primary/20">
-                          <CardContent className="p-5">
-                            <div className="space-y-3">
-                              <div className="flex items-start justify-between">
-                                <div className="flex items-center gap-3">
-                                  <span className="text-2xl tracking-[0.35em]">{fanmark.emoji_combination}</span>
-                                  <div>
-                                    <h3 className="font-semibold text-foreground">{fanmark.display_name}</h3>
-                                    <div className="text-xs font-medium tracking-wide text-muted-foreground/70">{fanmark.short_id}</div>
-                                  </div>
-                                </div>
-                                {fanmark.is_premium && (
-                                  <Badge variant="secondary" className="border border-primary/30 bg-primary/10 text-primary">
-                                    <FiStar className="h-3 w-3" />
-                                  </Badge>
-                                )}
-                              </div>
-                              
-                                <div className="flex items-center justify-between">
-                                  {getAccessTypeBadge(fanmark.access_type)}
-                                  <Badge 
-                                    className={`${fanmark.status === 'active' ? 'border-emerald-200/60 bg-emerald-50 text-emerald-600' : 'border-rose-200/60 bg-rose-50 text-rose-600'} inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide shadow-sm`}
-                                  >
-                                    {fanmark.status === 'active' ? (
-                                      <>
-                                        <FiCheckCircle className="h-3.5 w-3.5" />
-                                        <span>{t('dashboard.statusActive')}</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <FiMoon className="h-3.5 w-3.5" />
-                                        <span>{t('dashboard.statusInactive')}</span>
-                                      </>
-                                    )}
-                                  </Badge>
-                                </div>
-
-                              {(fanmark.redirect_url || fanmark.profile_text) && (
-                                <div className="text-sm text-muted-foreground mb-3 p-2 bg-muted/30 rounded">
-                                  {fanmark.access_type === 'redirect' && fanmark.redirect_url && (
-                                    <div className="flex items-center gap-1">
-                                      <ExternalLink className="h-3 w-3" />
-                                      <span className="truncate">{fanmark.redirect_url}</span>
-                                    </div>
-                                  )}
-                                  {fanmark.access_type === 'text' && fanmark.profile_text && (
-                                    <div className="flex items-start gap-1">
-                                      <FiFileText className="mt-0.5 h-3 w-3" />
-                                      <span className="line-clamp-2">{fanmark.profile_text}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-
-                              <div className="flex items-center justify-end gap-2 pt-2">
-                                <TooltipProvider delayDuration={200}>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-9 w-9 p-0 hover:bg-secondary"
-                                        aria-label={t('dashboard.actionsReturn')}
-                                      >
-                                        <Undo2 className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>{t('dashboard.actionsReturn')}</TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                                <TooltipProvider delayDuration={200}>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-9 w-9 p-0 hover:bg-secondary"
-                                        aria-label={t('dashboard.actionsCopyLink')}
-                                      >
-                                        <Copy className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>{t('dashboard.actionsCopyLink')}</TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                                <TooltipProvider delayDuration={200}>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-9 w-9 p-0 hover:bg-secondary"
-                                        onClick={() => setSettingsFanmark(fanmark)}
-                                        aria-label={t('dashboard.actionsSettings')}
-                                      >
-                                        <Settings className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>{t('dashboard.actionsSettings')}</TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
+                  </DndContext>
                 )}
               </CardContent>
             </Card>
@@ -490,20 +438,301 @@ export const FanmarkDashboard = () => {
                     {t('dashboard.getFanmaDescription')}
                   </p>
                 </div>
-                <FanmarkAcquisition />
+                <FanmarkAcquisition
+                  prefilledEmoji={prefilledEmoji}
+                  fanmarkLimit={fanmarkLimit}
+                  currentCount={fanmarks.length}
+                  onObtain={() => {
+                    setPrefilledEmoji(undefined);
+                    fetchFanmarks();
+                    setActiveTab('my-fanmarks');
+                  }}
+                  onRequireAuth={handleRequireAuth}
+                />
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
 
-        {/* Settings Dialog */}
-        <FanmarkSettings 
-          fanmark={settingsFanmark} 
-          open={!!settingsFanmark}
-          onOpenChange={(open) => !open && setSettingsFanmark(null)}
-          onSuccess={fetchFanmarks}
-        />
       </div>
     </section>
+  );
+};
+
+interface SortableFanmarkTableRowProps {
+  fanmark: Fanmark;
+  t: TranslationFn;
+  getAccessTypeBadge: (accessType: string) => ReactNode;
+  onOpenSettings: (fanmarkId: string) => void;
+}
+
+const SortableFanmarkTableRow = ({ fanmark, t, getAccessTypeBadge, onOpenSettings }: SortableFanmarkTableRowProps) => {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
+    id: fanmark.id,
+  });
+
+  const style: CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={style}
+      className={`border-b transition-colors ${isDragging ? 'bg-primary/10 shadow-lg' : 'hover:bg-muted/30'}`}
+    >
+      <td className="w-12 px-3 py-4 align-middle">
+        <button
+          type="button"
+          ref={setActivatorNodeRef}
+          {...attributes}
+          {...listeners}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-muted-foreground transition hover:border-primary/30 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 cursor-grab active:cursor-grabbing"
+          aria-label={t('dashboard.reorderHandleLabel')}
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+      </td>
+      <td className="px-4 py-4">
+        <div className="flex items-center gap-3">
+          <span className="text-4xl tracking-[0.25em] leading-none">{fanmark.emoji_combination}</span>
+          {fanmark.is_premium && (
+            <Badge variant="secondary" className="gap-1 border border-primary/30 bg-primary/10 text-primary">
+              <FiStar className="h-3 w-3" /> <span className="hidden xl:inline">{t('dashboard.premiumLabel')}</span>
+            </Badge>
+          )}
+        </div>
+        <div className="mt-2 text-xs font-medium tracking-wide text-muted-foreground/70">
+          {fanmark.short_id}
+        </div>
+      </td>
+      <td className="px-4 py-4">
+        <div>
+          <div className="font-semibold text-foreground">{fanmark.display_name}</div>
+          {fanmark.access_type === 'redirect' && fanmark.redirect_url && (
+            <div className="mt-1 flex max-w-xs items-center gap-1 truncate text-sm text-muted-foreground">
+              <ExternalLink className="h-3 w-3" />
+              {fanmark.redirect_url}
+            </div>
+          )}
+          {fanmark.access_type === 'text' && fanmark.profile_text && (
+            <div className="mt-1 flex max-w-xs items-center gap-1 truncate text-sm text-muted-foreground">
+              <FiFileText className="h-3 w-3" /> {fanmark.profile_text}
+            </div>
+          )}
+        </div>
+      </td>
+      <td className="px-4 py-4 align-middle">{getAccessTypeBadge(fanmark.access_type)}</td>
+      <td className="px-4 py-4 align-middle">
+        <Badge
+          className={`${fanmark.status === 'active' ? 'border-emerald-200/60 bg-emerald-50 text-emerald-600' : 'border-rose-200/60 bg-rose-50 text-rose-600'} inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide shadow-sm`}
+        >
+          {fanmark.status === 'active' ? (
+            <>
+              <FiCheckCircle className="h-3.5 w-3.5" />
+              <span>{t('dashboard.statusActive')}</span>
+            </>
+          ) : (
+            <>
+              <FiMoon className="h-3.5 w-3.5" />
+              <span>{t('dashboard.statusInactive')}</span>
+            </>
+          )}
+        </Badge>
+      </td>
+      <td className="px-4 py-4 align-middle">
+        <div className="flex items-center gap-1.5">
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0 hover:bg-secondary"
+                  aria-label={t('dashboard.actionsReturn')}
+                >
+                  <Undo2 className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t('dashboard.actionsReturn')}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0 hover:bg-secondary"
+                  aria-label={t('dashboard.actionsCopyLink')}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t('dashboard.actionsCopyLink')}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0 hover:bg-secondary"
+                  onClick={() => onOpenSettings(fanmark.id)}
+                  aria-label={t('dashboard.actionsSettings')}
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t('dashboard.actionsSettings')}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      </td>
+    </tr>
+  );
+};
+
+interface SortableFanmarkCardProps {
+  fanmark: Fanmark;
+  t: TranslationFn;
+  getAccessTypeBadge: (accessType: string) => ReactNode;
+  onOpenSettings: (fanmarkId: string) => void;
+}
+
+const SortableFanmarkCard = ({ fanmark, t, getAccessTypeBadge, onOpenSettings }: SortableFanmarkCardProps) => {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
+    id: fanmark.id,
+  });
+
+  const style: CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <Card
+      ref={setNodeRef}
+      style={style}
+      className={`rounded-3xl border border-primary/10 bg-background/80 transition-colors ${isDragging ? 'border-primary/40 bg-primary/5 shadow-lg' : 'hover:border-primary/20'}`}
+    >
+      <CardContent className="space-y-3 p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <button
+              type="button"
+              ref={setActivatorNodeRef}
+              {...attributes}
+              {...listeners}
+              className="mt-1 flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-muted-foreground transition hover:border-primary/30 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 cursor-grab active:cursor-grabbing"
+              aria-label={t('dashboard.reorderHandleLabel')}
+            >
+              <GripVertical className="h-4 w-4" />
+            </button>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-3">
+                <span className="text-4xl tracking-[0.2em] leading-none">{fanmark.emoji_combination}</span>
+                {fanmark.is_premium && (
+                  <Badge variant="secondary" className="border border-primary/30 bg-primary/10 text-primary">
+                    <FiStar className="h-3 w-3" />
+                  </Badge>
+                )}
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-semibold text-foreground">{fanmark.display_name}</h3>
+                <div className="text-xs font-medium tracking-wide text-muted-foreground/70">{fanmark.short_id}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between">
+          {getAccessTypeBadge(fanmark.access_type)}
+          <Badge
+            className={`${fanmark.status === 'active' ? 'border-emerald-200/60 bg-emerald-50 text-emerald-600' : 'border-rose-200/60 bg-rose-50 text-rose-600'} inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide shadow-sm`}
+          >
+            {fanmark.status === 'active' ? (
+              <>
+                <FiCheckCircle className="h-3.5 w-3.5" />
+                <span>{t('dashboard.statusActive')}</span>
+              </>
+            ) : (
+              <>
+                <FiMoon className="h-3.5 w-3.5" />
+                <span>{t('dashboard.statusInactive')}</span>
+              </>
+            )}
+          </Badge>
+        </div>
+
+        {(fanmark.redirect_url || fanmark.profile_text) && (
+          <div className="rounded bg-muted/30 p-3 text-sm text-muted-foreground">
+            {fanmark.access_type === 'redirect' && fanmark.redirect_url && (
+              <div className="flex items-center gap-1">
+                <ExternalLink className="h-3 w-3" />
+                <span className="truncate">{fanmark.redirect_url}</span>
+              </div>
+            )}
+            {fanmark.access_type === 'text' && fanmark.profile_text && (
+              <div className="mt-1 flex items-start gap-1">
+                <FiFileText className="mt-0.5 h-3 w-3" />
+                <span className="line-clamp-2">{fanmark.profile_text}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="flex items-center justify-end gap-2 pt-2">
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-9 w-9 p-0 hover:bg-secondary"
+                  aria-label={t('dashboard.actionsReturn')}
+                >
+                  <Undo2 className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t('dashboard.actionsReturn')}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-9 w-9 p-0 hover:bg-secondary"
+                  aria-label={t('dashboard.actionsCopyLink')}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t('dashboard.actionsCopyLink')}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-9 w-9 p-0 hover:bg-secondary"
+                  onClick={() => onOpenSettings(fanmark.id)}
+                  aria-label={t('dashboard.actionsSettings')}
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t('dashboard.actionsSettings')}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
