@@ -78,45 +78,66 @@ export const FanmarkDashboard = () => {
     
     try {
       const fanmark = fanmarks.find(f => f.id === fanmarkId);
-      if (!fanmark) return;
+      if (!fanmark) {
+        throw new Error('Fanmark not found');
+      }
 
-      // Update fanmark status to inactive
-      const { error: fanmarkError } = await supabase
+      console.log('Attempting to return fanmark:', fanmark);
+
+      // Update fanmark status to inactive - using a more specific approach
+      const { data: updateData, error: fanmarkError } = await supabase
         .from('fanmarks')
         .update({
           status: 'inactive',
           access_type: 'inactive',
           current_license_id: null
         })
-        .eq('id', fanmarkId);
+        .eq('id', fanmarkId)
+        .eq('user_id', user?.id) // Extra safety check
+        .select();
 
-      if (fanmarkError) throw fanmarkError;
+      console.log('Fanmark update result:', { updateData, fanmarkError });
+
+      if (fanmarkError) {
+        console.error('Fanmark update error details:', fanmarkError);
+        throw fanmarkError;
+      }
 
       // Update license status to expired if exists
       if (fanmark.current_license_id) {
-        const { error: licenseError } = await supabase
+        const { data: licenseData, error: licenseError } = await supabase
           .from('fanmark_licenses')
           .update({ status: 'expired' })
-          .eq('id', fanmark.current_license_id);
+          .eq('id', fanmark.current_license_id)
+          .select();
 
-        if (licenseError) throw licenseError;
+        console.log('License update result:', { licenseData, licenseError });
+
+        if (licenseError) {
+          console.error('License update error:', licenseError);
+          // Don't throw here - fanmark update succeeded
+        }
       }
 
       // Log the return action
-      const { error: auditError } = await supabase
-        .from('audit_logs')
-        .insert({
-          user_id: user?.id,
-          action: 'RETURN',
-          resource_type: 'fanmark',
-          resource_id: fanmarkId,
-          metadata: {
-            fanmark_emoji: fanmark.emoji_combination,
-            returned_at: new Date().toISOString()
-          }
-        });
+      try {
+        const { error: auditError } = await supabase
+          .from('audit_logs')
+          .insert({
+            user_id: user?.id,
+            action: 'RETURN',
+            resource_type: 'fanmark',
+            resource_id: fanmarkId,
+            metadata: {
+              fanmark_emoji: fanmark.emoji_combination,
+              returned_at: new Date().toISOString()
+            }
+          });
 
-      if (auditError) console.warn('Failed to log audit:', auditError);
+        if (auditError) console.warn('Failed to log audit:', auditError);
+      } catch (auditErr) {
+        console.warn('Audit logging failed:', auditErr);
+      }
 
       toast({
         title: t('dashboard.returnSuccess'),
@@ -126,11 +147,21 @@ export const FanmarkDashboard = () => {
       // Refresh fanmarks list
       await fetchFanmarks();
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error returning fanmark:', error);
+      
+      let errorMessage = t('dashboard.returnErrorDescription');
+      
+      // Provide more specific error messages
+      if (error?.code === '42501') {
+        errorMessage = 'RLSポリシーエラー: 返却権限がありません';
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: t('dashboard.returnError'),
-        description: t('dashboard.returnErrorDescription'),
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
