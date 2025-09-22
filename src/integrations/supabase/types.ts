@@ -527,6 +527,17 @@ export type Database = {
         Args: { user_email: string; user_id: string }
         Returns: string
       }
+      get_fanmark_by_emoji: {
+        Args: { emoji_combo: string }
+        Returns: {
+          access_type: string
+          display_name: string
+          emoji_combination: string
+          status: string
+          target_url: string
+          text_content: string
+        }[]
+      }
       is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean

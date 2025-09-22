@@ -8,10 +8,12 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { toast } from '@/hooks/use-toast';
 
 interface FanmarkData {
-  id: string;
   emoji_combination: string;
   display_name: string;
+  access_type: 'profile' | 'redirect' | 'text' | 'inactive';
+  target_url?: string;
   text_content?: string;
+  status: string;
 }
 
 interface FanmarkMessageProps {

@@ -9,10 +9,12 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
 
 interface FanmarkData {
-  id: string;
   emoji_combination: string;
   display_name: string;
-  user_id: string;
+  access_type: 'profile' | 'redirect' | 'text' | 'inactive';
+  target_url?: string;
+  text_content?: string;
+  status: string;
 }
 
 interface EmojiProfile {
@@ -42,44 +44,10 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        // Load emoji profile
-        const { data: emojiData, error: emojiError } = await supabase
-          .from('emoji_profiles')
-          .select('*')
-          .eq('fanmark_id', fanmark.id)
-          .eq('is_public', true)
-          .single();
-
-        if (emojiError && emojiError.code !== 'PGRST116') {
-          console.error('Error loading emoji profile:', emojiError);
-        } else {
-          setEmojiProfile(emojiData);
-        }
-
-        // Load user profile for basic info
-        const { data: userData, error: userError } = await supabase
-          .from('profiles')
-          .select('display_name, avatar_url, username')
-          .eq('user_id', fanmark.user_id)
-          .single();
-
-        if (userError && userError.code !== 'PGRST116') {
-          console.error('Error loading user profile:', userError);
-        } else {
-          setUserProfile(userData);
-        }
-
-        setLoading(false);
-      } catch (err) {
-        console.error('Error loading profile:', err);
-        setLoading(false);
-      }
-    };
-
-    loadProfile();
-  }, [fanmark.id, fanmark.user_id]);
+    // For security reasons, we can't load detailed profile information
+    // when accessing via emoji URL since we don't expose user_id
+    setLoading(false);
+  }, []);
 
   if (loading) {
     return (
@@ -94,9 +62,8 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
     );
   }
 
-  const displayName = fanmark.display_name || userProfile?.display_name || userProfile?.username || 'Anonymous';
-  const bio = emojiProfile?.bio || `Profile for ${fanmark.emoji_combination}`;
-  const socialLinks = emojiProfile?.social_links || {};
+  const displayName = fanmark.display_name || 'Anonymous';
+  const bio = `Profile for ${fanmark.emoji_combination}`;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
@@ -116,7 +83,6 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
           <CardContent className="p-6">
             <div className="flex items-start gap-4 mb-6">
               <Avatar className="h-16 w-16">
-                <AvatarImage src={userProfile?.avatar_url} />
                 <AvatarFallback>
                   {displayName.charAt(0).toUpperCase()}
                 </AvatarFallback>
@@ -127,39 +93,11 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
               </div>
             </div>
 
-            {/* Social Links */}
-            {Object.keys(socialLinks).length > 0 && (
-              <div className="space-y-3">
-                <h3 className="font-semibold flex items-center gap-2">
-                  <Globe className="h-4 w-4" />
-                  Links
-                </h3>
-                <div className="grid gap-2">
-                  {Object.entries(socialLinks).map(([platform, url]) => (
-                    <a
-                      key={platform}
-                      href={url as string}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 p-2 rounded-lg border border-border hover:bg-muted/50 transition-colors"
-                    >
-                      <span className="font-medium capitalize">{platform}</span>
-                      <span className="text-muted-foreground truncate">{url as string}</span>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Profile Info */}
-            {emojiProfile && (
-              <div className="mt-6 pt-6 border-t border-border">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  Created {new Date(emojiProfile.created_at).toLocaleDateString()}
-                </div>
-              </div>
-            )}
+            <div className="bg-muted/30 rounded-lg p-4">
+              <p className="text-sm text-muted-foreground text-center">
+                This is a simplified profile view. Full profile features are available when logged in.
+              </p>
+            </div>
           </CardContent>
         </Card>
 

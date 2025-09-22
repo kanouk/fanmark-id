@@ -9,14 +9,12 @@ import { FanmarkMessage } from './FanmarkMessage';
 import { useTranslation } from '@/hooks/useTranslation';
 
 interface FanmarkData {
-  id: string;
   emoji_combination: string;
   display_name: string;
   access_type: 'profile' | 'redirect' | 'text' | 'inactive';
   target_url?: string;
   text_content?: string;
   status: string;
-  user_id: string;
 }
 
 export const FanmarkAccess = () => {
@@ -39,29 +37,29 @@ export const FanmarkAccess = () => {
         // Decode the emoji path
         const decodedEmoji = decodeURIComponent(emojiPath);
         
-        // Query fanmarks by emoji_combination
+        // Use the secure function to get only essential fanmark data
         const { data, error } = await supabase
-          .from('fanmarks')
-          .select('*')
-          .eq('emoji_combination', decodedEmoji)
-          .eq('status', 'active')
-          .single();
+          .rpc('get_fanmark_by_emoji', { emoji_combo: decodedEmoji });
 
         if (error) {
-          if (error.code === 'PGRST116') {
-            setError('Fanmark not found');
-          } else {
-            setError('Failed to load fanmark');
-          }
+          console.error('Database error:', error);
+          setError('Failed to load fanmark');
           setLoading(false);
           return;
         }
 
-        setFanmark(data as FanmarkData);
+        if (!data || data.length === 0) {
+          setError('Fanmark not found');
+          setLoading(false);
+          return;
+        }
+
+        const fanmarkData = data[0] as FanmarkData;
+        setFanmark(fanmarkData);
 
         // Handle redirect immediately
-        if (data.access_type === 'redirect' && data.target_url) {
-          window.location.href = data.target_url;
+        if (fanmarkData.access_type === 'redirect' && fanmarkData.target_url) {
+          window.location.href = fanmarkData.target_url;
           return;
         }
 
