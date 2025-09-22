@@ -538,6 +538,18 @@ export type Database = {
           text_content: string
         }[]
       }
+      get_public_emoji_profile: {
+        Args: { profile_fanmark_id: string }
+        Returns: {
+          bio: string
+          created_at: string
+          fanmark_id: string
+          id: string
+          social_links: Json
+          theme_settings: Json
+          updated_at: string
+        }[]
+      }
       is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
