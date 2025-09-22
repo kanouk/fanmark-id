@@ -57,9 +57,10 @@ export const useEmojiProfile = (fanmarkId: string) => {
         .select('*')
         .eq('fanmark_id', fanmarkId)
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
+        console.error('Error fetching emoji profile:', error);
         throw error;
       }
 
@@ -82,6 +83,8 @@ export const useEmojiProfile = (fanmarkId: string) => {
         updated_at: new Date().toISOString(),
       };
 
+      console.log('Updating emoji profile with data:', profileData);
+
       const { data, error } = await supabase
         .from('emoji_profiles')
         .upsert(profileData, {
@@ -90,7 +93,12 @@ export const useEmojiProfile = (fanmarkId: string) => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating emoji profile:', error);
+        throw error;
+      }
+
+      console.log('Successfully updated emoji profile:', data);
 
       setProfile(data as EmojiProfile);
       return data;
