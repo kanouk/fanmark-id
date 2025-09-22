@@ -322,7 +322,14 @@
     "expiringSoon": "まもなく期限切れ",
     "actionsReturn": "ファンマを返却",
     "actionsCopyLink": "URLをコピー",
-    "actionsSettings": "設定を開く"
+    "actionsSettings": "設定を開く",
+    "returnConfirmTitle": "このファンマを返却しますか？",
+    "returnConfirmDescription": "ファンマが非アクティブになり、アクセス権限を失います。この操作は取り消せません。",
+    "returnConfirmAction": "返却する",
+    "returnSuccess": "ファンマを返却しました",
+    "returnSuccessDescription": "ファンマの返却が完了しました。",
+    "returnError": "返却に失敗しました",
+    "returnErrorDescription": "しばらく時間を置いてから再度お試しください。"
   },
   "registration": {
     "title": "ファンマを登録",

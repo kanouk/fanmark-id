@@ -6,13 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useTranslation } from '@/hooks/useTranslation';
-import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy, Undo2 } from 'lucide-react';
-import { FiTarget, FiLayers, FiCompass, FiStar, FiCheckCircle, FiMoon, FiFileText, FiUser, FiLink } from 'react-icons/fi';
+import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy } from 'lucide-react';
+import { FiTarget, FiLayers, FiCompass, FiStar, FiCheckCircle, FiMoon, FiFileText, FiUser, FiLink, FiCornerUpLeft } from 'react-icons/fi';
 import { FanmarkAcquisition } from './FanmarkAcquisition';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -65,9 +66,75 @@ export const FanmarkDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('my-fanmarks');
   const [prefilledEmoji, setPrefilledEmoji] = useState<string | undefined>();
+  const [returningFanmarkId, setReturningFanmarkId] = useState<string | null>(null);
 
   const handleOpenSettings = (fanmarkId: string) => {
     navigate(`/fanmarks/${fanmarkId}/settings`);
+  };
+
+  const handleReturnFanmark = async (fanmarkId: string) => {
+    setReturningFanmarkId(fanmarkId);
+    
+    try {
+      const fanmark = fanmarks.find(f => f.id === fanmarkId);
+      if (!fanmark) return;
+
+      // Update fanmark status to inactive
+      const { error: fanmarkError } = await supabase
+        .from('fanmarks')
+        .update({
+          status: 'inactive',
+          access_type: 'inactive',
+          current_license_id: null
+        })
+        .eq('id', fanmarkId);
+
+      if (fanmarkError) throw fanmarkError;
+
+      // Update license status to expired if exists
+      if (fanmark.current_license_id) {
+        const { error: licenseError } = await supabase
+          .from('fanmark_licenses')
+          .update({ status: 'expired' })
+          .eq('id', fanmark.current_license_id);
+
+        if (licenseError) throw licenseError;
+      }
+
+      // Log the return action
+      const { error: auditError } = await supabase
+        .from('audit_logs')
+        .insert({
+          user_id: user?.id,
+          action: 'RETURN',
+          resource_type: 'fanmark',
+          resource_id: fanmarkId,
+          metadata: {
+            fanmark_emoji: fanmark.emoji_combination,
+            returned_at: new Date().toISOString()
+          }
+        });
+
+      if (auditError) console.warn('Failed to log audit:', auditError);
+
+      toast({
+        title: t('dashboard.returnSuccess'),
+        description: t('dashboard.returnSuccessDescription'),
+      });
+
+      // Refresh fanmarks list
+      await fetchFanmarks();
+      
+    } catch (error) {
+      console.error('Error returning fanmark:', error);
+      toast({
+        title: t('dashboard.returnError'),
+        description: t('dashboard.returnErrorDescription'),
+        variant: 'destructive',
+      });
+    } finally {
+      setReturningFanmarkId(null);
+    }
   };
 
   useEffect(() => {
@@ -422,21 +489,43 @@ export const FanmarkDashboard = () => {
                                  </td>
                                 <td className="px-4 py-4">
                                   <div className="flex items-center gap-1.5">
-                                    <TooltipProvider delayDuration={200}>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-8 w-8 p-0 hover:bg-secondary"
-                                            aria-label={t('dashboard.actionsReturn')}
+                                    <AlertDialog>
+                                      <TooltipProvider delayDuration={200}>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <AlertDialogTrigger asChild>
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600 transition-colors"
+                                                aria-label={t('dashboard.actionsReturn')}
+                                                disabled={returningFanmarkId === fanmark.id}
+                                              >
+                                                <FiCornerUpLeft className="h-4 w-4" />
+                                              </Button>
+                                            </AlertDialogTrigger>
+                                          </TooltipTrigger>
+                                          <TooltipContent>{t('dashboard.actionsReturn')}</TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>{t('dashboard.returnConfirmTitle')}</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            {t('dashboard.returnConfirmDescription')}
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                                          <AlertDialogAction
+                                            onClick={() => handleReturnFanmark(fanmark.id)}
+                                            className="bg-red-600 hover:bg-red-700"
                                           >
-                                            <Undo2 className="h-4 w-4" />
-                                          </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>{t('dashboard.actionsReturn')}</TooltipContent>
-                                      </Tooltip>
-                                    </TooltipProvider>
+                                            {returningFanmarkId === fanmark.id ? t('common.processing') : t('dashboard.returnConfirmAction')}
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
                                     <TooltipProvider delayDuration={200}>
                                       <Tooltip>
                                         <TooltipTrigger asChild>
@@ -561,21 +650,43 @@ export const FanmarkDashboard = () => {
                                 )}
 
                                 <div className="flex items-center justify-end gap-2 pt-2">
-                                  <TooltipProvider delayDuration={200}>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          className="h-9 w-9 p-0 hover:bg-secondary"
-                                          aria-label={t('dashboard.actionsReturn')}
+                                  <AlertDialog>
+                                    <TooltipProvider delayDuration={200}>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <AlertDialogTrigger asChild>
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              className="h-9 w-9 p-0 hover:bg-red-100 hover:text-red-600 transition-colors"
+                                              aria-label={t('dashboard.actionsReturn')}
+                                              disabled={returningFanmarkId === fanmark.id}
+                                            >
+                                              <FiCornerUpLeft className="h-4 w-4" />
+                                            </Button>
+                                          </AlertDialogTrigger>
+                                        </TooltipTrigger>
+                                        <TooltipContent>{t('dashboard.actionsReturn')}</TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>{t('dashboard.returnConfirmTitle')}</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          {t('dashboard.returnConfirmDescription')}
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => handleReturnFanmark(fanmark.id)}
+                                          className="bg-red-600 hover:bg-red-700"
                                         >
-                                          <Undo2 className="h-4 w-4" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>{t('dashboard.actionsReturn')}</TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
+                                          {returningFanmarkId === fanmark.id ? t('common.processing') : t('dashboard.returnConfirmAction')}
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
                                   <TooltipProvider delayDuration={200}>
                                     <Tooltip>
                                       <TooltipTrigger asChild>

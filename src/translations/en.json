@@ -322,7 +322,14 @@
     "expiringSoon": "Expiring soon",
     "actionsReturn": "Return fanmark",
     "actionsCopyLink": "Copy URL",
-    "actionsSettings": "Open settings"
+    "actionsSettings": "Open settings",
+    "returnConfirmTitle": "Return this fanmark?",
+    "returnConfirmDescription": "This fanmark will become inactive and you will lose access. This action cannot be undone.",
+    "returnConfirmAction": "Return fanmark",
+    "returnSuccess": "Fanmark returned",
+    "returnSuccessDescription": "The fanmark has been returned successfully.",
+    "returnError": "Failed to return fanmark",
+    "returnErrorDescription": "Please try again later."
   },
   "registration": {
     "title": "Obtain Your Fanmark",
