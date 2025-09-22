@@ -135,7 +135,6 @@ export type Database = {
           access_type: string
           created_at: string
           display_name: string | null
-          display_order: number | null
           emoji_combination: string
           id: string
           is_premium: boolean
@@ -152,7 +151,6 @@ export type Database = {
           access_type?: string
           created_at?: string
           display_name?: string | null
-          display_order?: number | null
           emoji_combination: string
           id?: string
           is_premium?: boolean
@@ -169,7 +167,6 @@ export type Database = {
           access_type?: string
           created_at?: string
           display_name?: string | null
-          display_order?: number | null
           emoji_combination?: string
           id?: string
           is_premium?: boolean

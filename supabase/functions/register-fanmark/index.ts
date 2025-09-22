@@ -280,18 +280,8 @@ serve(async (req) => {
       );
     }
 
-    if (pricingInfo.requiresPayment) {
-      return new Response(
-        JSON.stringify({ 
-          error: `This emoji requires payment (${pricingInfo.reason || 'pricing rule'})`,
-          type: 'payment_required',
-          price_usd: pricingInfo.priceUsd,
-          emoji_count: validation.emojiCount,
-          reason: pricingInfo.reason
-        }),
-        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // Payment checks disabled: proceed without requiring payment
+
 
     // Generate unique short ID
     let shortId = generateShortId();
@@ -363,15 +353,14 @@ serve(async (req) => {
         short_id: shortId,
         user_id: user.id,
         status: 'active',
-        is_premium: pricingInfo.requiresPayment,
+        is_premium: false,
         access_type: accessType,
         target_url: targetUrl || null,
         text_content: textContent || null,
         display_name: displayName || null,
-        is_transferable: isTransferable,
-        display_order: userFanmarkCount ?? 0
+        is_transferable: isTransferable
       })
-      .select('id, emoji_combination, short_id, display_order')
+      .select('id, emoji_combination, short_id')
       .single();
 
     if (insertError) {
@@ -398,7 +387,7 @@ serve(async (req) => {
         .insert({
           fanmark_id: fanmark.id,
           user_id: user.id,
-          bio: `Welcome to ${displayName || emoji}'s profile!`,
+          bio: `Welcome to ${displayName || input_emoji_combination}'s profile!`,
           is_public: true
         });
 
