@@ -138,6 +138,33 @@ export const FanmarkDashboard = () => {
     fetchFanmarks();
   }, [fetchFanmarks, user]);
 
+  const getStatusBadge = (licenseStatus?: string) => {
+    let icon = <FiMoon className="h-3.5 w-3.5" />;
+    let className = 'border-gray-200/60 bg-gray-50 text-gray-600 shadow-sm';
+    let label = t('dashboard.statusUnknown');
+
+    if (licenseStatus === 'active') {
+      icon = <FiCheckCircle className="h-3.5 w-3.5" />;
+      className = 'border-emerald-200/60 bg-emerald-50 text-emerald-600 shadow-sm';
+      label = t('dashboard.statusActive');
+    } else if (licenseStatus === 'grace') {
+      icon = <FiTarget className="h-3.5 w-3.5" />;
+      className = 'border-amber-200/60 bg-amber-50 text-amber-600 shadow-sm';
+      label = t('dashboard.statusGrace');
+    } else if (licenseStatus === 'expired') {
+      icon = <FiTarget className="h-3.5 w-3.5" />;
+      className = 'border-rose-200/60 bg-rose-50 text-rose-600 shadow-sm';
+      label = t('dashboard.statusExpired');
+    }
+
+    return (
+      <Badge className={`${className} inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide`}>
+        {icon}
+        <span>{label}</span>
+      </Badge>
+    );
+  };
+
   const getAccessTypeBadge = (accessType: string) => {
     let icon = <FiLayers className="h-3.5 w-3.5" />;
     let className = 'border-gray-200/60 bg-gray-50 text-gray-600 shadow-sm';
@@ -390,23 +417,9 @@ export const FanmarkDashboard = () => {
                                     )}
                                   </div>
                                 </td>
-                                <td className="px-4 py-4">
-                                  <Badge
-                                    className={`${fanmark.status === 'active' ? 'border-emerald-200/60 bg-emerald-50 text-emerald-600' : 'border-rose-200/60 bg-rose-50 text-rose-600'} inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide shadow-sm`}
-                                  >
-                                    {fanmark.status === 'active' ? (
-                                      <>
-                                        <FiCheckCircle className="h-3.5 w-3.5" />
-                                        <span>{t('dashboard.statusActive')}</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <FiMoon className="h-3.5 w-3.5" />
-                                        <span>{t('dashboard.statusInactive')}</span>
-                                      </>
-                                    )}
-                                  </Badge>
-                                </td>
+                                 <td className="px-4 py-4">
+                                   {getStatusBadge(licenseData?.status)}
+                                 </td>
                                 <td className="px-4 py-4">
                                   <div className="flex items-center gap-1.5">
                                     <TooltipProvider delayDuration={200}>
@@ -495,24 +508,10 @@ export const FanmarkDashboard = () => {
                                   )}
                                 </div>
 
-                                <div className="flex items-center justify-between">
-                                  {getAccessTypeBadge(fanmark.access_type)}
-                                  <Badge
-                                    className={`${fanmark.status === 'active' ? 'border-emerald-200/60 bg-emerald-50 text-emerald-600' : 'border-rose-200/60 bg-rose-50 text-rose-600'} inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide shadow-sm`}
-                                  >
-                                    {fanmark.status === 'active' ? (
-                                      <>
-                                        <FiCheckCircle className="h-3.5 w-3.5" />
-                                        <span>{t('dashboard.statusActive')}</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <FiMoon className="h-3.5 w-3.5" />
-                                        <span>{t('dashboard.statusInactive')}</span>
-                                      </>
-                                    )}
-                                  </Badge>
-                                </div>
+                                 <div className="flex items-center justify-between">
+                                   {getAccessTypeBadge(fanmark.access_type)}
+                                   {getStatusBadge(licenseData?.status)}
+                                 </div>
 
                                 {/* Date Information */}
                                 <div className="grid grid-cols-2 gap-3 text-sm bg-muted/20 rounded-lg p-3">
