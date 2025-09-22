@@ -14,6 +14,7 @@ import Profile from "./pages/Profile";
 import Dashboard from "./pages/Dashboard";
 import FanmarkSettingsPage from "./pages/FanmarkSettingsPage";
 import NotFound from "./pages/NotFound";
+import { FanmarkAccess } from "./components/FanmarkAccess";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/fanmarks/:fanmarkId/settings" element={<FanmarkSettingsPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/:emojiPath" element={<FanmarkAccess />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

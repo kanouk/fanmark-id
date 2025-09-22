@@ -63,7 +63,7 @@ const FanmarkSettingsPage = () => {
         access_type: data.access_type as 'profile' | 'redirect' | 'text' | 'inactive',
         target_url: data.target_url ?? undefined,
         text_content: data.text_content ?? undefined,
-        is_transferable: data.is_transferable,
+        
         status: data.status,
         short_id: data.short_id,
       });

@@ -42,7 +42,6 @@ const settingsSchema = z.object({
   targetUrl: z.string().url().optional().or(z.literal('')),
   textContent: z.string().optional(),
   createProfile: z.boolean().default(false),
-  isTransferable: z.boolean().default(true),
 }).refine((data) => {
   if (data.accessType === 'redirect' && !data.targetUrl) {
     return false;
@@ -64,7 +63,7 @@ export interface Fanmark {
   access_type: AccessType;
   target_url?: string;
   text_content?: string;
-  is_transferable: boolean;
+  
   status: string;
   short_id: string;
 }
@@ -111,7 +110,6 @@ export const FanmarkSettings = ({
         targetUrl: fanmark.target_url || '',
         textContent: fanmark.text_content || '',
         createProfile: false, // This is a one-time action
-        isTransferable: fanmark.is_transferable,
       });
     }
   }, [fanmark, reset]);
@@ -137,7 +135,6 @@ export const FanmarkSettings = ({
           display_name: data.displayName,
           target_url: data.targetUrl || null,
           text_content: data.textContent || null,
-          is_transferable: data.isTransferable,
           updated_at: new Date().toISOString(),
         })
         .eq('id', fanmark.id);
@@ -380,29 +377,6 @@ export const FanmarkSettings = ({
         </CardContent>
       </Card>
 
-      {/* Additional Options */}
-      <Card className="overflow-hidden rounded-2xl border border-border/50 bg-card/80 shadow-sm shadow-primary/5 backdrop-blur">
-        <CardContent className="p-6 space-y-4">
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/15 text-primary">
-                <FiRepeat className="h-4 w-4" />
-              </div>
-              {t('fanmarkSettings.fields.transfer.label')}
-            </Label>
-            <p className="text-xs text-muted-foreground">{t('fanmarkSettings.fields.transfer.helper')}</p>
-          </div>
-          <div className="flex items-center gap-2 pl-6">
-            <input
-              type="checkbox"
-              id="isTransferable"
-              {...register('isTransferable')}
-              className="h-5 w-5 rounded border-border text-primary focus:ring-primary"
-            />
-            <Label htmlFor="isTransferable" className="text-sm text-foreground">{t('fanmarkSettings.fields.transfer.allow')}</Label>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Action Buttons */}
       <div className="flex flex-col-reverse gap-3 pt-6 border-t border-border/20 sm:flex-row sm:justify-end">

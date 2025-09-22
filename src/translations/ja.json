@@ -399,8 +399,8 @@
         "label": "リダイレクト先URL"
       },
       "text": {
-        "label": "表示テキスト",
-        "placeholder": "表示するテキストを入力してください"
+        "label": "伝言板",
+        "placeholder": "表示するメッセージを入力してください"
       },
       "profile": {
         "label": "プロフィールページ",
@@ -415,7 +415,7 @@
     "accessTypeOptions": {
       "profile": "プロフィール",
       "redirect": "URL リダイレクト",
-      "text": "テキスト表示",
+      "text": "伝言板",
       "inactive": "未設定"
     },
     "actions": {

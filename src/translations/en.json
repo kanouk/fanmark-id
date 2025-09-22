@@ -399,8 +399,8 @@
         "label": "Redirect URL"
       },
       "text": {
-        "label": "Display text",
-        "placeholder": "Enter the text to display"
+        "label": "Message board",
+        "placeholder": "Enter the message to display"
       },
       "profile": {
         "label": "Profile page",
@@ -415,7 +415,7 @@
     "accessTypeOptions": {
       "profile": "Profile",
       "redirect": "URL redirect",
-      "text": "Text",
+      "text": "Message board",
       "inactive": "Inactive"
     },
     "actions": {
