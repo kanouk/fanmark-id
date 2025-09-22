@@ -315,10 +315,7 @@
     "recentFanmaSubtitle": "気になるファンマをタップして、詳細や取得状況をチェックしよう。",
     "actionsReturn": "ファンマを返却",
     "actionsCopyLink": "URLをコピー",
-    "actionsSettings": "設定を開く",
-    "reorderErrorTitle": "並び替えに失敗しました",
-    "reorderErrorDescription": "通信エラーが発生しました。しばらくしてから再試行してください。",
-    "reorderHandleLabel": "ドラッグして並び替える"
+    "actionsSettings": "設定を開く"
   },
   "registration": {
     "title": "ファンマを登録",

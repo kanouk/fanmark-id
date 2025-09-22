@@ -19,7 +19,6 @@ interface FanmarkRecord {
   is_transferable: boolean;
   status: string;
   short_id: string;
-  display_order: number | null;
 }
 
 const FanmarkSettingsPage = () => {
@@ -42,7 +41,7 @@ const FanmarkSettingsPage = () => {
 
     try {
       const { data, error } = await supabase
-        .from('fanmarks')
+        .from<FanmarkRecord>('fanmarks')
         .select('id, emoji_combination, display_name, access_type, target_url, text_content, is_transferable, status, short_id')
         .eq('id', fanmarkId)
         .single();
@@ -58,15 +57,15 @@ const FanmarkSettingsPage = () => {
       }
 
       setFanmark({
-        id: (data as any).id,
-        emoji_combination: (data as any).emoji_combination,
-        display_name: (data as any).display_name,
-        access_type: (data as any).access_type,
-        target_url: (data as any).target_url ?? undefined,
-        text_content: (data as any).text_content ?? undefined,
-        is_transferable: (data as any).is_transferable,
-        status: (data as any).status,
-        short_id: (data as any).short_id,
+        id: data.id,
+        emoji_combination: data.emoji_combination,
+        display_name: data.display_name,
+        access_type: data.access_type,
+        target_url: data.target_url ?? undefined,
+        text_content: data.text_content ?? undefined,
+        is_transferable: data.is_transferable,
+        status: data.status,
+        short_id: data.short_id,
       });
     } catch (error) {
       console.error('Failed to load fanmark:', error);

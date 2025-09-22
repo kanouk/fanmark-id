@@ -27,6 +27,8 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
 }) => {
   const { t, language } = useTranslation();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   const segmenter = useMemo(() => {
     // Use fallback for better browser compatibility
@@ -60,6 +62,81 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
     },
     [onChange, onSearchPerformed, maxLength]
   );
+
+  const handleReorder = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      if (fromIndex === toIndex) return;
+      const currentSegments = [...segments];
+      const [movedEmoji] = currentSegments.splice(fromIndex, 1);
+      if (!movedEmoji) {
+        return;
+      }
+      const clampedIndex = Math.min(toIndex, currentSegments.length);
+      currentSegments.splice(clampedIndex, 0, movedEmoji);
+      updateValue(currentSegments);
+      setActiveIndex(null);
+    },
+    [segments, updateValue]
+  );
+
+  const handleDragStart = useCallback((event: React.DragEvent<HTMLButtonElement>, index: number) => {
+    if (disabled || !segments[index]) {
+      event.preventDefault();
+      return;
+    }
+    setDraggedIndex(index);
+    setDragOverIndex(index);
+    try {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', String(index));
+    } catch (error) {
+      // dataTransfer might not be available in some environments; ignore
+    }
+    setActiveIndex(null);
+  }, [disabled, segments]);
+
+  const handleDragOver = useCallback((event: React.DragEvent<HTMLButtonElement>, index: number) => {
+    if (disabled) return;
+    event.preventDefault();
+    try {
+      event.dataTransfer.dropEffect = 'move';
+    } catch (error) {
+      // Ignore if dropEffect is not supported
+    }
+    if (dragOverIndex !== index) {
+      setDragOverIndex(index);
+    }
+  }, [disabled, dragOverIndex]);
+
+  const handleDrop = useCallback((event: React.DragEvent<HTMLButtonElement>, index: number) => {
+    if (disabled) return;
+    event.preventDefault();
+    const storedIndex = (() => {
+      if (draggedIndex !== null) return draggedIndex;
+      const data = event.dataTransfer.getData('text/plain');
+      const parsed = Number.parseInt(data, 10);
+      return Number.isInteger(parsed) ? parsed : null;
+    })();
+
+    if (storedIndex === null || storedIndex === index) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    handleReorder(storedIndex, index);
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  }, [disabled, draggedIndex, handleReorder]);
+
+  const handleDragLeave = useCallback((index: number) => {
+    setDragOverIndex((current) => (current === index ? null : current));
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  }, []);
 
   const handleSelect = (index: number, emoji: string) => {
     if (disabled) return;
@@ -106,12 +183,24 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
           const emoji = segments[index];
           const isActive = activeIndex === index;
 
+          const isDragging = draggedIndex === index;
+          const isDragTarget = dragOverIndex === index;
+
           const triggerButton = (
             <button
               type="button"
               disabled={disabled}
-              onClick={() => handleOpenChange(index, true)}
-              className={`flex h-16 w-16 items-center justify-center rounded-2xl border text-4xl transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${emoji ? 'border-primary/40 bg-primary/5' : 'border-dashed border-primary/20 text-muted-foreground hover:border-primary/40 hover:text-primary'} ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+              onClick={() => {
+                if (draggedIndex !== null) return;
+                handleOpenChange(index, true);
+              }}
+              className={`flex h-16 w-16 items-center justify-center rounded-2xl border text-4xl transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${emoji ? 'border-primary/40 bg-primary/5' : 'border-dashed border-primary/20 text-muted-foreground hover:border-primary/40 hover:text-primary'} ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${isDragging ? 'ring-2 ring-primary/50' : ''} ${isDragTarget ? 'border-primary/60 bg-primary/10' : ''}`}
+              draggable={!disabled && Boolean(emoji)}
+              onDragStart={(event) => handleDragStart(event, index)}
+              onDragOver={(event) => handleDragOver(event, index)}
+              onDrop={(event) => handleDrop(event, index)}
+              onDragLeave={() => handleDragLeave(index)}
+              onDragEnd={handleDragEnd}
             >
               {emoji ? emoji : <Plus className="h-7 w-7" />}
             </button>

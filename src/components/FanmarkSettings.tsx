@@ -67,7 +67,6 @@ export interface Fanmark {
   is_transferable: boolean;
   status: string;
   short_id: string;
-  display_order?: number | null;
 }
 
 interface FanmarkSettingsProps {

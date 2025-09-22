@@ -315,10 +315,7 @@
     "recentFanmaSubtitle": "Tap a fanmark below to preview or obtain it yourself.",
     "actionsReturn": "Return fanmark",
     "actionsCopyLink": "Copy URL",
-    "actionsSettings": "Open settings",
-    "reorderErrorTitle": "Could not update order",
-    "reorderErrorDescription": "Please check your connection and try again.",
-    "reorderHandleLabel": "Drag to reorder"
+    "actionsSettings": "Open settings"
   },
   "registration": {
     "title": "Obtain Your Fanmark",
