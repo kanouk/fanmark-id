@@ -121,6 +121,15 @@ export default function EmojiProfileEdit() {
                 </div>
               )}
               <div className="space-y-2">
+                {profile?.theme_settings?.profile_image_url && (
+                  <div className="w-20 h-20 mx-auto mb-4">
+                    <img
+                      src={profile.theme_settings.profile_image_url}
+                      alt="Profile"
+                      className="w-full h-full object-cover rounded-full border-2 border-primary/20"
+                    />
+                  </div>
+                )}
                 <h3 className="font-semibold text-lg">
                   {profile?.bio ? t('emojiProfile.profilePreviewTitle') : t('emojiProfile.defaultProfileTitle')}
                 </h3>

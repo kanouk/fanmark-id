@@ -36,6 +36,7 @@ const profileSchema = z.object({
   }).optional(),
   theme_settings: z.object({
     cover_image_url: z.string().optional(),
+    profile_image_url: z.string().optional(),
     theme_color: z.string().optional(),
     button_style: z.string().optional(),
   }).optional(),
@@ -67,6 +68,8 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting }: EmojiProfile
   const { uploadAvatar, uploading } = useAvatarUpload();
   const [coverImageUrl, setCoverImageUrl] = useState(profile?.theme_settings?.cover_image_url || '');
   const [coverImageUploading, setCoverImageUploading] = useState(false);
+  const [profileImageUrl, setProfileImageUrl] = useState(profile?.theme_settings?.profile_image_url || '');
+  const [profileImageUploading, setProfileImageUploading] = useState(false);
 
   const {
     register,
@@ -92,6 +95,7 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting }: EmojiProfile
       },
       theme_settings: {
         cover_image_url: profile?.theme_settings?.cover_image_url || '',
+        profile_image_url: profile?.theme_settings?.profile_image_url || '',
         theme_color: profile?.theme_settings?.theme_color || '#3B82F6',
         button_style: profile?.theme_settings?.button_style || 'rounded',
       },
@@ -126,9 +130,39 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting }: EmojiProfile
     }
   };
 
+  const handleProfileImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setProfileImageUploading(true);
+    try {
+      const imageUrl = await uploadAvatar(file);
+      setProfileImageUrl(imageUrl);
+      setValue('theme_settings.profile_image_url', imageUrl);
+      toast({
+        title: 'Profile image uploaded',
+        description: 'Your profile image has been updated successfully.',
+      });
+    } catch (error) {
+      console.error('Profile image upload error:', error);
+      toast({
+        title: 'Upload failed',
+        description: 'Failed to upload profile image. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setProfileImageUploading(false);
+    }
+  };
+
   const removeCoverImage = () => {
     setCoverImageUrl('');
     setValue('theme_settings.cover_image_url', '');
+  };
+
+  const removeProfileImage = () => {
+    setProfileImageUrl('');
+    setValue('theme_settings.profile_image_url', '');
   };
 
   const onSubmit = async (data: ProfileFormData) => {
@@ -144,6 +178,7 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting }: EmojiProfile
         theme_settings: {
           ...data.theme_settings,
           cover_image_url: coverImageUrl,
+          profile_image_url: profileImageUrl,
         },
       });
     } catch (error) {
@@ -185,21 +220,81 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting }: EmojiProfile
               <p className="text-sm text-muted-foreground mb-4">
                 {t('emojiProfile.coverImageHint')}
               </p>
-              <Label htmlFor="cover-upload" className="cursor-pointer">
-                <Button type="button" variant="outline" disabled={coverImageUploading}>
-                  {coverImageUploading ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <Upload className="h-4 w-4 mr-2" />
-                  )}
-                  {t('emojiProfile.uploadCover')}
-                </Button>
-              </Label>
+              <Button 
+                type="button" 
+                variant="outline" 
+                disabled={coverImageUploading}
+                onClick={() => document.getElementById('cover-upload')?.click()}
+              >
+                {coverImageUploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Upload className="h-4 w-4 mr-2" />
+                )}
+                {t('emojiProfile.uploadCover')}
+              </Button>
               <input
                 id="cover-upload"
                 type="file"
                 accept="image/*"
                 onChange={handleCoverImageUpload}
+                className="hidden"
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Profile Image */}
+      <Card className="overflow-hidden rounded-2xl border border-border/50 bg-card/80 shadow-sm shadow-primary/5 backdrop-blur">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+            <ImageIcon className="h-5 w-5" />
+            {t('emojiProfile.profileImage')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {profileImageUrl ? (
+            <div className="relative w-32 h-32 mx-auto">
+              <img
+                src={profileImageUrl}
+                alt="Profile"
+                className="w-full h-full object-cover rounded-full"
+              />
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                onClick={removeProfileImage}
+                className="absolute top-0 right-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="border-2 border-dashed border-border rounded-xl p-8 text-center">
+              <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-sm text-muted-foreground mb-4">
+                {t('emojiProfile.profileImageHint')}
+              </p>
+              <Button 
+                type="button" 
+                variant="outline" 
+                disabled={profileImageUploading}
+                onClick={() => document.getElementById('profile-upload')?.click()}
+              >
+                {profileImageUploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Upload className="h-4 w-4 mr-2" />
+                )}
+                {t('emojiProfile.uploadProfile')}
+              </Button>
+              <input
+                id="profile-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleProfileImageUpload}
                 className="hidden"
               />
             </div>

@@ -442,6 +442,9 @@
   "emojiProfile": {
     "editProfileTitle": "Edit Profile Page",
     "editProfileDescription": "Create your Linktree-style profile page",
+    "profileImage": "Profile Image",
+    "profileImageHint": "Upload a profile image that will be displayed in a circular format",
+    "uploadProfile": "Upload Profile Image",
     "profilePreview": "Profile Preview",
     "profilePreviewTitle": "Your Profile",
     "defaultProfileTitle": "My Profile",
