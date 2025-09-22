@@ -550,7 +550,25 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_waitlist_email_by_id: {
+        Args: { waitlist_id: string }
+        Returns: string
+      }
+      get_waitlist_secure: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: {
+          created_at: string
+          email_hash: string
+          id: string
+          referral_source: string
+          status: string
+        }[]
+      }
       is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_super_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
