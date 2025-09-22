@@ -51,7 +51,7 @@ export const FanmarkAcquisition = ({
 
   const isResultAcquirable = useMemo(() => {
     if (!searchResult) return false;
-    return searchResult.status === 'available' || searchResult.status === 'payment_required';
+    return searchResult.status === 'available';
   }, [searchResult]);
 
   const handleAcquireRequest = () => {
@@ -80,7 +80,7 @@ export const FanmarkAcquisition = ({
 
     try {
       const response = await supabase.functions.invoke<{ success: boolean; fanmark?: { id: string; emoji_combination?: string }; error?: string }>('register-fanmark', {
-        body: { emoji_combination: searchResult.emoji_combination },
+        body: { input_emoji_combination: searchResult.emoji_combination },
       });
 
       if (response.error || !response.data?.success || !response.data.fanmark) {
@@ -98,11 +98,21 @@ export const FanmarkAcquisition = ({
       navigate(`/fanmarks/${fanmark.id}/settings`, { state: { isNew: true } });
     } catch (error) {
       console.error('Fanmark registration failed:', error);
-      toast({
-        title: t('dashboard.acquireFailedTitle'),
-        description: error instanceof Error ? error.message : t('dashboard.acquireFailedDescription'),
-        variant: 'destructive',
-      });
+      
+      // Handle specific error cases
+      if (error instanceof Error && error.message.includes('payment')) {
+        toast({
+          title: t('dashboard.paymentRequiredTitle'),
+          description: t('dashboard.paymentRequiredDescription'),
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: t('dashboard.acquireFailedTitle'),
+          description: error instanceof Error ? error.message : t('dashboard.acquireFailedDescription'),
+          variant: 'destructive',
+        });
+      }
     } finally {
       setIsRegistering(false);
       setIsConfirmOpen(false);
@@ -169,10 +179,15 @@ export const FanmarkAcquisition = ({
           />
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            {searchResult && isResultAcquirable ? (
+            {searchResult && searchResult.status === 'available' ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Sparkles className="h-4 w-4 text-primary" />
                 <span>{t('dashboard.acquireReadyMessage')}</span>
+              </div>
+            ) : searchResult && searchResult.status === 'payment_required' ? (
+              <div className="flex items-center gap-2 text-sm text-destructive">
+                <FiAlertTriangle className="h-4 w-4" />
+                <span>{t('dashboard.paymentRequiredMessage')}</span>
               </div>
             ) : (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">

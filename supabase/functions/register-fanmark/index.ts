@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 interface RegisterFanmarkRequest {
-  emoji: string; // Changed from emoji_combination for consistency with frontend
+  input_emoji_combination: string; // Semantic parameter name for incoming emoji combination
   accessType?: string;
   displayName?: string;
   targetUrl?: string;
@@ -247,11 +247,14 @@ serve(async (req) => {
     }
 
     const body: RegisterFanmarkRequest = await req.json();
-    const { emoji, accessType = 'inactive', displayName, targetUrl, textContent, createProfile = false, isTransferable = true } = body;
+    console.log('Received request body:', body);
+    const { input_emoji_combination, accessType = 'inactive', displayName, targetUrl, textContent, createProfile = false, isTransferable = true } = body;
 
     // Validate emoji combination
-    const validation = validateEmojiCombination(emoji);
+    console.log('Validating emoji combination:', input_emoji_combination);
+    const validation = validateEmojiCombination(input_emoji_combination);
     if (!validation.valid) {
+      console.error('Validation failed:', validation.error);
       return new Response(
         JSON.stringify({ error: validation.error }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -259,7 +262,8 @@ serve(async (req) => {
     }
 
     // Normalize emoji for database storage
-    const normalizedEmoji = normalizeEmoji(emoji);
+    const normalizedEmoji = normalizeEmoji(input_emoji_combination);
+    console.log('Normalized emoji:', normalizedEmoji);
     
     // Check pattern-based pricing using new availability rules system
     const pricingInfo = await checkPatternBasedPricing(supabase, normalizedEmoji, validation.emojiCount);
@@ -354,7 +358,7 @@ serve(async (req) => {
     const { data: fanmark, error: insertError } = await supabase
       .from<FanmarkRow>('fanmarks')
       .insert({
-        emoji_combination: emoji,
+        emoji_combination: input_emoji_combination,
         normalized_emoji: normalizedEmoji,
         short_id: shortId,
         user_id: user.id,
@@ -415,7 +419,7 @@ serve(async (req) => {
         resource_id: fanmark.id,
         request_id: requestId,
         metadata: {
-          emoji_combination: emoji,
+          emoji_combination: input_emoji_combination,
           normalized_emoji: normalizedEmoji,
           short_id: shortId,
           access_type: accessType,

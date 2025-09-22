@@ -408,7 +408,7 @@ export function useFanmarkSearch() {
   const registerFanmark = async (emoji: string): Promise<{ success: boolean; error?: string; fanmark?: FanmarkRow }> => {
     try {
       const response = await supabase.functions.invoke<RegisterFanmarkResponse>('register-fanmark', {
-        body: { emoji_combination: emoji }
+        body: { input_emoji_combination: emoji }
       });
 
       if (response.error) {
