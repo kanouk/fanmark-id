@@ -202,7 +202,12 @@ export const FanmarkAcquisition = ({
               onClick={handleAcquireRequest}
               disabled={!searchResult || !isResultAcquirable || remainingCapacity <= 0}
             >
-              {user ? t('dashboard.acquireButton') : t('dashboard.acquireLoginButton')}
+              {!user 
+                ? t('dashboard.acquireLoginButton') 
+                : searchResult?.status === 'payment_required' 
+                  ? t('dashboard.paymentRequiredTitle')
+                  : t('dashboard.acquireButton')
+              }
             </Button>
           </div>
         </CardContent>
