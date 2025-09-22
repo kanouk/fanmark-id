@@ -15,6 +15,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy } from 'lucide-react';
 import { FiTarget, FiLayers, FiCompass, FiStar, FiCheckCircle, FiMoon, FiFileText, FiUser, FiLink, FiCornerUpLeft } from 'react-icons/fi';
 import { FanmarkAcquisition } from './FanmarkAcquisition';
+// Fixed Undo2 import issue - using FiCornerUpLeft instead
 import { supabase } from '@/integrations/supabase/client';
 
 interface Fanmark {
