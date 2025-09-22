@@ -199,6 +199,12 @@ export const FanmarkDashboard = () => {
     );
   };
 
+  // Helper function to determine if a fanmark is inactive/expired
+  const isFanmarkInactive = (fanmark: Fanmark) => {
+    const licenseData = fanmark.fanmark_licenses as any;
+    return !fanmark.current_license_id || licenseData?.status === 'expired' || fanmark.access_type === 'inactive';
+  };
+
   const getAccessTypeBadge = (accessType: string) => {
     let icon = <FiLayers className="h-3.5 w-3.5" />;
     let className = 'border-gray-200/60 bg-gray-50 text-gray-600 shadow-sm';
@@ -396,7 +402,7 @@ export const FanmarkDashboard = () => {
                               const isExpiringSoon = daysRemaining !== null && daysRemaining <= 3;
 
                               return (
-                                <tr key={fanmark.id} className="border-b transition-colors hover:bg-muted/30">
+                                <tr key={fanmark.id} className={`border-b transition-colors hover:bg-muted/30 ${isFanmarkInactive(fanmark) ? 'opacity-50 bg-muted/20' : ''}`}>
                                   <td className="px-4 py-4">
                                     <div className="flex items-center gap-3">
                                       <span className="text-4xl tracking-[0.25em] leading-none">{fanmark.emoji_combination}</span>
@@ -546,7 +552,7 @@ export const FanmarkDashboard = () => {
                         const isExpiringSoon = daysRemaining !== null && daysRemaining <= 3;
 
                         return (
-                          <Card key={fanmark.id} className="rounded-3xl border border-primary/10 bg-background/80 transition-colors hover:border-primary/20">
+                          <Card key={fanmark.id} className={`rounded-3xl border border-primary/10 bg-background/80 transition-colors hover:border-primary/20 ${isFanmarkInactive(fanmark) ? 'opacity-50 bg-muted/20' : ''}`}>
                             <CardContent className="p-5">
                               <div className="space-y-3">
                                 <div className="flex items-start justify-between">
