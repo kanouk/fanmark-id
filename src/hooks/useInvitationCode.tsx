@@ -22,7 +22,7 @@ export function useInvitationCode() {
     setValidationLoading(true);
     try {
       const { data, error } = await supabase
-        .from<{ id: string; special_perks: InvitationPerks; max_uses: number; used_count: number; expires_at: string | null }>('invitation_codes')
+        .from('invitation_codes')
         .select('id, special_perks, max_uses, used_count, expires_at')
         .eq('code', code.toUpperCase())
         .eq('is_active', true)
@@ -47,7 +47,7 @@ export function useInvitationCode() {
       return {
         isValid: true,
         message: t('invitation.validCode'),
-        perks: data.special_perks,
+        perks: data.special_perks as InvitationPerks,
       };
     } catch (error) {
       console.error('Error validating invitation code:', error);

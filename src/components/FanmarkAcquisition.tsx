@@ -161,7 +161,7 @@ export const FanmarkAcquisition = ({
         </CardHeader>
         <CardContent className="space-y-5 px-6 pb-6">
           <FanmarkSearch
-            onSignupPrompt={onRequireAuth}
+            onSignupPrompt={() => onRequireAuth?.('')}
             statusVariant={user ? 'authenticated' : 'public'}
             showRecent={false}
             onResultChange={setSearchResult}

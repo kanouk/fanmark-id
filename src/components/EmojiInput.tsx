@@ -28,27 +28,18 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
   const { t, language } = useTranslation();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
-  const segmenter = useMemo<Intl.Segmenter | null>(() => {
-    if (typeof Intl === 'undefined' || !('Segmenter' in Intl)) {
-      return null;
-    }
-    try {
-      return new Intl.Segmenter(language, { granularity: 'grapheme' });
-    } catch (error) {
-      console.warn('Failed to create Intl.Segmenter:', error);
-      return null;
-    }
-  }, [language]);
+  const segmenter = useMemo(() => {
+    // Use fallback for better browser compatibility
+    return null;
+  }, []);
 
   const splitGraphemes = useCallback(
     (text: string) => {
       if (!text) return [] as string[];
-      if (segmenter) {
-        return Array.from(segmenter.segment(text), (segment) => segment.segment);
-      }
+      // Use simple Array.from for better compatibility
       return Array.from(text);
     },
-    [segmenter]
+    []
   );
 
   const segments = useMemo(() => {

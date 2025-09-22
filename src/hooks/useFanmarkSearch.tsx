@@ -91,7 +91,7 @@ export function useFanmarkSearch() {
   const fetchRecentFanmarks = async () => {
     try {
       const { data, error } = await supabase
-        .from<FanmarkRow>('fanmarks')
+        .from('fanmarks')
         .select(`
           id,
           emoji_combination,
@@ -192,7 +192,7 @@ export function useFanmarkSearch() {
     try {
       // Get all active availability rules ordered by priority
       const { data: rules } = await supabase
-        .from<AvailabilityRuleRecord>('fanmark_availability_rules')
+        .from('fanmark_availability_rules')
         .select('rule_type, priority, rule_config, is_available, price_usd')
         .eq('is_available', true)
         .order('priority', { ascending: true });
@@ -203,7 +203,7 @@ export function useFanmarkSearch() {
 
       // Check patterns in priority order (1=highest, 4=lowest)
       for (const rule of rules) {
-        const config: AvailabilityRuleConfig = rule.rule_config ?? {};
+        const config: AvailabilityRuleConfig = (rule.rule_config as AvailabilityRuleConfig) ?? {};
         
         switch (rule.rule_type) {
           case 'specific_pattern':
@@ -320,7 +320,7 @@ export function useFanmarkSearch() {
 
       // Check if fanmark already exists
       const { data: existingFanmark, error: searchError } = await supabase
-        .from<FanmarkRow>('fanmarks')
+        .from('fanmarks')
         .select(`
           id,
           emoji_combination,
@@ -339,7 +339,7 @@ export function useFanmarkSearch() {
       if (existingFanmark) {
         // Get owner profile separately
         const { data: ownerProfile } = await supabase
-          .from<ProfileRow>('profiles')
+          .from('profiles')
           .select('username, display_name')
           .eq('user_id', existingFanmark.user_id)
           .maybeSingle();
@@ -427,7 +427,7 @@ export function useFanmarkSearch() {
   const checkAvailability = async (emoji: string): Promise<boolean> => {
     try {
       const { data, error } = await supabase
-        .from<FanmarkRow>('fanmarks')
+        .from('fanmarks')
         .select('id')
         .eq('normalized_emoji', emoji)
         .eq('status', 'active')

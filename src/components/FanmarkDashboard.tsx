@@ -24,8 +24,8 @@ interface Fanmark {
   display_name: string | null;
   short_id: string;
   access_type: string;
-  redirect_url: string | null;
-  profile_text: string | null;
+  target_url: string | null;
+  text_content: string | null;
   is_premium: boolean;
   is_transferable: boolean;
   status: string;
@@ -33,7 +33,6 @@ interface Fanmark {
   updated_at: string;
   user_id: string;
   normalized_emoji: string;
-  display_order: number | null;
 }
 
 interface Profile {
@@ -125,19 +124,13 @@ export const FanmarkDashboard = () => {
   const fetchFanmarks = useCallback(async () => {
     try {
       const { data, error } = await supabase
-        .from<Fanmark>('fanmarks')
+        .from('fanmarks')
         .select('*')
         .eq('user_id', user?.id)
-        .order('display_order', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      const normalizedFanmarks = (data ?? []).map((fanmark, index) => ({
-        ...fanmark,
-        display_order: fanmark.display_order ?? index,
-      }));
-
-      setFanmarks(normalizedFanmarks);
+      setFanmarks(data ?? []);
     } catch (error) {
       console.error('Error fetching fanmarks:', error);
       toast({
@@ -195,26 +188,9 @@ export const FanmarkDashboard = () => {
   };
 
   const persistFanmarkOrder = useCallback(async (orderedFanmarks: Fanmark[]) => {
-    if (!user) return;
-    try {
-      await supabase
-        .from('fanmarks')
-        .upsert(
-          orderedFanmarks.map((fanmark, index) => ({
-            id: fanmark.id,
-            display_order: index,
-          }))
-        );
-    } catch (error) {
-      console.error('Error updating fanmark order:', error);
-      toast({
-        title: t('dashboard.reorderErrorTitle'),
-        description: t('dashboard.reorderErrorDescription'),
-        variant: 'destructive',
-      });
-      fetchFanmarks();
-    }
-  }, [fetchFanmarks, t, toast, user]);
+    // Display order functionality removed as column doesn't exist
+    console.log('Fanmark order persistence disabled - display_order column not available');
+  }, []);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
@@ -230,10 +206,7 @@ export const FanmarkDashboard = () => {
         return prevFanmarks;
       }
 
-      const reordered = arrayMove(prevFanmarks, oldIndex, newIndex).map((fanmark, index) => ({
-        ...fanmark,
-        display_order: index,
-      }));
+      const reordered = arrayMove(prevFanmarks, oldIndex, newIndex);
 
       void persistFanmarkOrder(reordered);
       return reordered;
@@ -510,15 +483,15 @@ const SortableFanmarkTableRow = ({ fanmark, t, getAccessTypeBadge, onOpenSetting
       <td className="px-4 py-4">
         <div>
           <div className="font-semibold text-foreground">{fanmark.display_name}</div>
-          {fanmark.access_type === 'redirect' && fanmark.redirect_url && (
+          {fanmark.access_type === 'redirect' && fanmark.target_url && (
             <div className="mt-1 flex max-w-xs items-center gap-1 truncate text-sm text-muted-foreground">
               <ExternalLink className="h-3 w-3" />
-              {fanmark.redirect_url}
+              {fanmark.target_url}
             </div>
           )}
-          {fanmark.access_type === 'text' && fanmark.profile_text && (
+          {fanmark.access_type === 'text' && fanmark.text_content && (
             <div className="mt-1 flex max-w-xs items-center gap-1 truncate text-sm text-muted-foreground">
-              <FiFileText className="h-3 w-3" /> {fanmark.profile_text}
+              <FiFileText className="h-3 w-3" /> {fanmark.text_content}
             </div>
           )}
         </div>
@@ -667,18 +640,18 @@ const SortableFanmarkCard = ({ fanmark, t, getAccessTypeBadge, onOpenSettings }:
           </Badge>
         </div>
 
-        {(fanmark.redirect_url || fanmark.profile_text) && (
+        {(fanmark.target_url || fanmark.text_content) && (
           <div className="rounded bg-muted/30 p-3 text-sm text-muted-foreground">
-            {fanmark.access_type === 'redirect' && fanmark.redirect_url && (
+            {fanmark.access_type === 'redirect' && fanmark.target_url && (
               <div className="flex items-center gap-1">
                 <ExternalLink className="h-3 w-3" />
-                <span className="truncate">{fanmark.redirect_url}</span>
+                <span className="truncate">{fanmark.target_url}</span>
               </div>
             )}
-            {fanmark.access_type === 'text' && fanmark.profile_text && (
+            {fanmark.access_type === 'text' && fanmark.text_content && (
               <div className="mt-1 flex items-start gap-1">
                 <FiFileText className="mt-0.5 h-3 w-3" />
-                <span className="line-clamp-2">{fanmark.profile_text}</span>
+                <span className="line-clamp-2">{fanmark.text_content}</span>
               </div>
             )}
           </div>

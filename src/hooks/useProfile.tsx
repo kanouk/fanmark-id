@@ -60,13 +60,13 @@ export const useProfile = () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from<Profile>('profiles')
+        .from('profiles')
         .select('*')
         .eq('user_id', user?.id)
         .single();
 
       if (error) throw error;
-      setProfile(data);
+      setProfile(data as Profile);
     } catch (error) {
       console.error('Error fetching profile:', error);
     } finally {
@@ -82,8 +82,9 @@ export const useProfile = () => {
         .from('profiles')
         .update({
           ...updates,
-          updated_at: new Date().toISOString()
-        })
+          updated_at: new Date().toISOString(),
+          invitation_perks: updates.invitation_perks as any
+        } as any)
         .eq('user_id', user.id);
 
       if (error) throw error;
@@ -101,7 +102,7 @@ export const useProfile = () => {
     
     try {
       const { data, error } = await supabase
-        .from<Pick<Profile, 'username' | 'user_id'>>('profiles')
+        .from('profiles')
         .select('username')
         .eq('username', username.toLowerCase())
         .neq('user_id', user?.id || '');

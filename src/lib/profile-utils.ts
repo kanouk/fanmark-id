@@ -39,7 +39,7 @@ export interface FullProfile extends PublicProfile {
  */
 export async function getPublicProfile(username: string): Promise<PublicProfile | null> {
   const { data, error } = await supabase
-    .from<PublicProfileRow>('public_profiles')
+    .from('public_profiles')
     .select('*')
     .eq('username', username)
     .maybeSingle();
@@ -50,7 +50,7 @@ export async function getPublicProfile(username: string): Promise<PublicProfile 
 
   // Transform to match PublicProfile interface (add missing fields with null values)
   return {
-    ...data,
+    ...(data as any),
     user_id: '', // Not exposed in public view for security
     social_links: null, // Not exposed in public view for security
   };
@@ -61,7 +61,7 @@ export async function getPublicProfile(username: string): Promise<PublicProfile 
  */
 export async function getPublicProfiles(limit = 10): Promise<PublicProfile[]> {
   const { data, error } = await supabase
-    .from<PublicProfileRow>('public_profiles')
+    .from('public_profiles')
     .select('*')
     .limit(limit);
 
@@ -71,7 +71,7 @@ export async function getPublicProfiles(limit = 10): Promise<PublicProfile[]> {
 
   // Transform to match PublicProfile interface (add missing fields)
   return data.map(profile => ({
-    ...profile,
+    ...(profile as any),
     user_id: '', // Not exposed in public view for security
     social_links: null, // Not exposed in public view for security
   }));
@@ -90,7 +90,7 @@ export async function getFullProfile(userId: string): Promise<FullProfile | null
   }
 
   const { data, error } = await supabase
-    .from<FullProfile>('profiles')
+    .from('profiles')
     .select('*')
     .eq('user_id', userId)
     .single();
@@ -99,7 +99,7 @@ export async function getFullProfile(userId: string): Promise<FullProfile | null
     return null;
   }
 
-  return data;
+  return data as FullProfile;
 }
 
 /**
