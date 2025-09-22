@@ -51,7 +51,7 @@ export const FanmarkAcquisition = ({
 
   const isResultAcquirable = useMemo(() => {
     if (!searchResult) return false;
-    return searchResult.status === 'available';
+    return searchResult.status === 'available' || searchResult.status === 'payment_required';
   }, [searchResult]);
 
   const handleAcquireRequest = () => {
@@ -99,20 +99,11 @@ export const FanmarkAcquisition = ({
     } catch (error) {
       console.error('Fanmark registration failed:', error);
       
-      // Handle specific error cases
-      if (error instanceof Error && error.message.includes('payment')) {
-        toast({
-          title: t('dashboard.paymentRequiredTitle'),
-          description: t('dashboard.paymentRequiredDescription'),
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: t('dashboard.acquireFailedTitle'),
-          description: error instanceof Error ? error.message : t('dashboard.acquireFailedDescription'),
-          variant: 'destructive',
-        });
-      }
+      toast({
+        title: t('dashboard.acquireFailedTitle'),
+        description: error instanceof Error ? error.message : t('dashboard.acquireFailedDescription'),
+        variant: 'destructive',
+      });
     } finally {
       setIsRegistering(false);
       setIsConfirmOpen(false);
@@ -179,15 +170,10 @@ export const FanmarkAcquisition = ({
           />
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            {searchResult && searchResult.status === 'available' ? (
+            {searchResult && (searchResult.status === 'available' || searchResult.status === 'payment_required') ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Sparkles className="h-4 w-4 text-primary" />
                 <span>{t('dashboard.acquireReadyMessage')}</span>
-              </div>
-            ) : searchResult && searchResult.status === 'payment_required' ? (
-              <div className="flex items-center gap-2 text-sm text-destructive">
-                <FiAlertTriangle className="h-4 w-4" />
-                <span>{t('dashboard.paymentRequiredMessage')}</span>
               </div>
             ) : (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -202,12 +188,7 @@ export const FanmarkAcquisition = ({
               onClick={handleAcquireRequest}
               disabled={!searchResult || !isResultAcquirable || remainingCapacity <= 0}
             >
-              {!user 
-                ? t('dashboard.acquireLoginButton') 
-                : searchResult?.status === 'payment_required' 
-                  ? t('dashboard.paymentRequiredTitle')
-                  : t('dashboard.acquireButton')
-              }
+              {user ? t('dashboard.acquireButton') : t('dashboard.acquireLoginButton')}
             </Button>
           </div>
         </CardContent>
