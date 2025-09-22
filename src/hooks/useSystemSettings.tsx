@@ -5,6 +5,7 @@ interface SystemSettings {
   invitation_mode: boolean;
   max_fanmarks_per_user: number;
   premium_pricing: number;
+  max_emoji_characters: number;
 }
 
 export function useSystemSettings() {
@@ -12,6 +13,7 @@ export function useSystemSettings() {
     invitation_mode: false,
     max_fanmarks_per_user: 10,
     premium_pricing: 1000,
+    max_emoji_characters: 5,
   });
   const [loading, setLoading] = useState(true);
 
@@ -36,6 +38,8 @@ export function useSystemSettings() {
             acc.max_fanmarks_per_user = parseInt(setting_value, 10);
           } else if (setting_key === 'premium_pricing') {
             acc.premium_pricing = parseInt(setting_value, 10);
+          } else if (setting_key === 'max_emoji_characters') {
+            acc.max_emoji_characters = parseInt(setting_value, 10);
           }
           return acc;
         }, {} as Partial<SystemSettings>);

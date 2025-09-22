@@ -42,6 +42,8 @@ interface FanmarkRow {
   emoji_combination: string;
   normalized_emoji: string;
   user_id: string;
+  tier_level?: number;
+  current_license_id?: string;
 }
 
 const SKIN_TONE_MODIFIER_REGEX = /\p{Emoji_Modifier}/u;
@@ -81,8 +83,40 @@ function generateShortId(): string {
   return result;
 }
 
+// Get max emoji characters from system settings
+async function getMaxEmojiCharacters(supabase: DatabaseClient): Promise<number> {
+  const { data } = await supabase
+    .from('system_settings')
+    .select('setting_value')
+    .eq('setting_key', 'max_emoji_characters')
+    .eq('is_public', true)
+    .single();
+  
+  return data ? parseInt(data.setting_value, 10) : 5; // Default to 5
+}
+
+// Determine tier based on emoji count
+function determineTier(emojiCount: number): number {
+  if (emojiCount >= 3) return 1; // Tier1: 3-5 characters
+  if (emojiCount === 2) return 2; // Tier2: 2 characters  
+  if (emojiCount === 1) return 3; // Tier3: 1 character
+  return 1; // Default to Tier1
+}
+
+// Get tier configuration
+async function getTierConfig(supabase: DatabaseClient, tierLevel: number): Promise<{ initial_license_days: number; monthly_price_usd: number } | null> {
+  const { data } = await supabase
+    .from('fanmark_tiers')
+    .select('initial_license_days, monthly_price_usd')
+    .eq('tier_level', tierLevel)
+    .eq('is_active', true)
+    .single();
+    
+  return data;
+}
+
 // Validate emoji combination - strict emoji-only validation
-function validateEmojiCombination(emoji: string): { valid: boolean; error?: string; emojiCount: number } {
+async function validateEmojiCombination(supabase: DatabaseClient, emoji: string): Promise<{ valid: boolean; error?: string; emojiCount: number }> {
   if (!emoji || emoji.trim().length === 0) {
     return { valid: false, error: 'Emoji combination is required', emojiCount: 0 };
   }
@@ -100,8 +134,11 @@ function validateEmojiCombination(emoji: string): { valid: boolean; error?: stri
   const segments = getGraphemes(cleanEmoji);
   const emojiCount = segments.filter(isBaseEmoji).length;
   
-  if (emojiCount < 1 || emojiCount > 5) {
-    return { valid: false, error: 'Emoji combination must contain 1-5 emojis', emojiCount };
+  // Get max emoji characters from system settings
+  const maxEmojiCharacters = await getMaxEmojiCharacters(supabase);
+  
+  if (emojiCount < 1 || emojiCount > maxEmojiCharacters) {
+    return { valid: false, error: `Emoji combination must contain 1-${maxEmojiCharacters} emojis`, emojiCount };
   }
 
   return { valid: true, emojiCount };
@@ -251,7 +288,7 @@ serve(async (req) => {
 
     // Validate emoji combination
     console.log('Validating emoji combination:', input_emoji_combination);
-    const validation = validateEmojiCombination(input_emoji_combination);
+    const validation = await validateEmojiCombination(supabase, input_emoji_combination);
     if (!validation.valid) {
       console.error('Validation failed:', validation.error);
       return new Response(
@@ -263,6 +300,19 @@ serve(async (req) => {
     // Normalize emoji for database storage
     const normalizedEmoji = normalizeEmoji(input_emoji_combination);
     console.log('Normalized emoji:', normalizedEmoji);
+    
+    // Determine tier level based on emoji count
+    const tierLevel = determineTier(validation.emojiCount);
+    console.log('Determined tier level:', tierLevel);
+    
+    // Get tier configuration
+    const tierConfig = await getTierConfig(supabase, tierLevel);
+    if (!tierConfig) {
+      return new Response(
+        JSON.stringify({ error: 'Tier configuration not found' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     
     // Check pattern-based pricing using new availability rules system
     const pricingInfo = await checkPatternBasedPricing(supabase, normalizedEmoji, validation.emojiCount);
@@ -278,8 +328,6 @@ serve(async (req) => {
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    // Payment checks disabled: proceed without requiring payment
 
 
     // Generate unique short ID
@@ -345,21 +393,21 @@ serve(async (req) => {
 
     // Insert fanmark with conflict handling
     const { data: fanmark, error: insertError } = await supabase
-      .from<FanmarkRow>('fanmarks')
+      .from('fanmarks')
       .insert({
         emoji_combination: input_emoji_combination,
         normalized_emoji: normalizedEmoji,
         short_id: shortId,
         user_id: user.id,
         status: 'active',
-        is_premium: pricingInfo.requiresPayment,
+        tier_level: tierLevel,
         access_type: accessType,
         target_url: targetUrl || null,
         text_content: textContent || null,
         display_name: displayName || null,
         is_transferable: isTransferable
       })
-      .select('id, emoji_combination, short_id')
+      .select('id, emoji_combination, short_id, tier_level')
       .single();
 
     if (insertError) {
@@ -377,6 +425,37 @@ serve(async (req) => {
         JSON.stringify({ error: 'Failed to create fanmark' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Create initial license for the fanmark
+    const licenseEndDate = new Date();
+    licenseEndDate.setDate(licenseEndDate.getDate() + tierConfig.initial_license_days);
+
+    const { data: license, error: licenseError } = await supabase
+      .from('fanmark_licenses')
+      .insert({
+        fanmark_id: fanmark.id,
+        user_id: user.id,
+        tier_level: tierLevel,
+        license_start: new Date().toISOString(),
+        license_end: licenseEndDate.toISOString(),
+        status: 'active',
+        is_initial_license: true
+      })
+      .select('id')
+      .single();
+
+    if (licenseError) {
+      console.error('Failed to create initial license:', licenseError);
+      // Don't fail registration for this
+    }
+
+    // Update fanmark with license reference
+    if (license) {
+      await supabase
+        .from('fanmarks')
+        .update({ current_license_id: license.id })
+        .eq('id', fanmark.id);
     }
 
     // Create emoji profile if requested

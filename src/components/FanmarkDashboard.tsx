@@ -25,7 +25,8 @@ interface Fanmark {
   text_content: string | null;
   redirect_url?: string | null;
   profile_text?: string | null;
-  is_premium: boolean;
+  tier_level: number | null;
+  current_license_id: string | null;
   is_transferable: boolean;
   status: string;
   created_at: string;
@@ -97,7 +98,15 @@ export const FanmarkDashboard = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setFanmarks(data ?? []);
+      
+      // Cast data to match our interface, ensuring all fields are present
+      const fanmarksWithDefaults = (data ?? []).map(fanmark => ({
+        ...fanmark,
+        tier_level: (fanmark as any).tier_level ?? null,
+        current_license_id: (fanmark as any).current_license_id ?? null,
+      })) as Fanmark[];
+      
+      setFanmarks(fanmarksWithDefaults);
     } catch (error) {
       console.error('Error fetching fanmarks:', error);
       toast({
@@ -309,9 +318,9 @@ export const FanmarkDashboard = () => {
                                   <td className="px-4 py-4">
                                     <div className="flex items-center gap-3">
                                       <span className="text-4xl tracking-[0.25em] leading-none">{fanmark.emoji_combination}</span>
-                                      {fanmark.is_premium && (
+                                       {fanmark.tier_level && (
                                         <Badge variant="secondary" className="gap-1 border border-primary/30 bg-primary/10 text-primary">
-                                        <FiStar className="h-3 w-3" /> <span className="hidden xl:inline">{t('dashboard.premiumLabel')}</span>
+                                        <FiStar className="h-3 w-3" /> <span className="hidden xl:inline">Tier {fanmark.tier_level}</span>
                                       </Badge>
                                     )}
                                   </div>
@@ -431,7 +440,7 @@ export const FanmarkDashboard = () => {
                                       <div className="text-xs font-medium tracking-wide text-muted-foreground/70">{fanmark.short_id}</div>
                                     </div>
                                   </div>
-                                  {fanmark.is_premium && (
+                                  {fanmark.tier_level && (
                                     <Badge variant="secondary" className="border border-primary/30 bg-primary/10 text-primary">
                                       <FiStar className="h-3 w-3" />
                                     </Badge>

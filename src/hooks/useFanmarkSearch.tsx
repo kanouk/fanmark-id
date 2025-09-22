@@ -7,7 +7,7 @@ export interface FanmarkSearchResult {
   emoji_combination: string;
   normalized_emoji: string;
   short_id: string;
-  is_premium: boolean;
+  tier_level?: number;
   status: 'available' | 'taken' | 'premium' | 'payment_required' | 'invalid';
   price_yen?: number;
   price_usd?: number;
@@ -26,7 +26,7 @@ interface FanmarkRow {
   emoji_combination: string;
   normalized_emoji: string;
   short_id: string;
-  is_premium: boolean;
+  tier_level?: number;
   status: FanmarkStatusRaw;
   user_id: string;
 }
@@ -97,7 +97,7 @@ export function useFanmarkSearch() {
           emoji_combination,
           normalized_emoji,
           short_id,
-          is_premium,
+          tier_level,
           status,
           user_id
         `)
@@ -111,13 +111,13 @@ export function useFanmarkSearch() {
       }
       if (data) {
         console.log('Fetched recent fanmarks data:', data);
-        const fanmarksWithStatus: FanmarkSearchResult[] = data.map((fanmark) => ({
+        const fanmarksWithStatus: FanmarkSearchResult[] = (data as any[]).map((fanmark: any) => ({
           id: fanmark.id,
           emoji_combination: fanmark.emoji_combination,
           normalized_emoji: fanmark.normalized_emoji,
           short_id: fanmark.short_id,
-          is_premium: fanmark.is_premium,
-          status: fanmark.is_premium ? 'premium' : 'taken',
+          tier_level: fanmark.tier_level,
+          status: fanmark.tier_level ? 'premium' : 'taken',
           price_yen: undefined,
           price_usd: undefined,
           emoji_count: undefined,
@@ -306,7 +306,7 @@ export function useFanmarkSearch() {
           emoji_combination: query,
           normalized_emoji: '',
           short_id: '',
-          is_premium: false,
+          tier_level: undefined,
           status: 'invalid', // Set correct status for validation errors
           error: validation.error,
           emoji_count: validation.emojiCount,
@@ -326,7 +326,7 @@ export function useFanmarkSearch() {
           emoji_combination,
           normalized_emoji,
           short_id,
-          is_premium,
+          tier_level,
           status,
           user_id
         `)
@@ -337,21 +337,22 @@ export function useFanmarkSearch() {
       if (searchError) throw searchError;
 
       if (existingFanmark) {
+        const fanmark = existingFanmark as any;
         // Get owner profile separately
         const { data: ownerProfile } = await supabase
           .from('profiles')
           .select('username, display_name')
-          .eq('user_id', existingFanmark.user_id)
+          .eq('user_id', fanmark.user_id)
           .maybeSingle();
 
         // Fanmark is taken
-        const status: 'premium' | 'taken' = existingFanmark.is_premium ? 'premium' : 'taken';
+        const status: 'premium' | 'taken' = fanmark.tier_level ? 'premium' : 'taken';
         setResult({
-          id: existingFanmark.id,
-          emoji_combination: existingFanmark.emoji_combination,
-          normalized_emoji: existingFanmark.normalized_emoji,
-          short_id: existingFanmark.short_id,
-          is_premium: existingFanmark.is_premium,
+          id: fanmark.id,
+          emoji_combination: fanmark.emoji_combination,
+          normalized_emoji: fanmark.normalized_emoji,
+          short_id: fanmark.short_id,
+          tier_level: fanmark.tier_level,
           status,
           price_usd: pricingInfo.priceUsd,
           owner: ownerProfile
@@ -368,7 +369,7 @@ export function useFanmarkSearch() {
           emoji_combination: query,
           normalized_emoji: normalizedQuery,
           short_id: '',
-          is_premium: false,
+          tier_level: undefined,
           status: 'available', // Will show error message
           error: 'This emoji pattern is currently not available for registration',
           emoji_count: validation.emojiCount,
@@ -380,7 +381,7 @@ export function useFanmarkSearch() {
           emoji_combination: query,
           normalized_emoji: normalizedQuery,
           short_id: '',
-          is_premium: true,
+          tier_level: undefined,
           status: 'payment_required',
           price_usd: pricingInfo.priceUsd,
           emoji_count: validation.emojiCount,
@@ -392,7 +393,7 @@ export function useFanmarkSearch() {
           emoji_combination: query,
           normalized_emoji: normalizedQuery,
           short_id: '',
-          is_premium: false,
+          tier_level: undefined,
           status: 'available',
           emoji_count: validation.emojiCount,
         });
