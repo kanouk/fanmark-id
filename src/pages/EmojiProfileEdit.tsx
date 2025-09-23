@@ -6,7 +6,7 @@ import { useEmojiProfile } from '@/hooks/useEmojiProfile';
 import { EmojiProfileForm } from '@/components/EmojiProfileForm';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, ArrowLeft, User, Palette } from 'lucide-react';
+import { Loader2, User, Palette, X } from 'lucide-react';
 
 export default function EmojiProfileEdit() {
   const { fanmarkId } = useParams<{ fanmarkId: string }>();
@@ -49,7 +49,7 @@ export default function EmojiProfileEdit() {
     }
   };
 
-  const handleBack = () => {
+  const handleClose = () => {
     navigate(`/fanmarks/${fanmarkId}/settings`);
   };
 
@@ -70,49 +70,36 @@ export default function EmojiProfileEdit() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      <div className="mx-auto flex max-w-4xl flex-col gap-6 px-4 py-10 sm:px-6">
+      <div className="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-12 sm:px-8 lg:px-12">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleBack}
-              className="flex items-center gap-2 rounded-full"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              {t('common.back')}
-            </Button>
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 text-primary">
-                <User className="h-6 w-6" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                  {t('emojiProfile.editProfileTitle')}
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  {t('emojiProfile.editProfileDescription')}
-                </p>
-              </div>
-            </div>
+        <div className="text-center space-y-4">
+          <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-primary/20 to-primary/10 text-primary mx-auto">
+            <User className="h-8 w-8" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">
+              {t('emojiProfile.editProfileTitle')}
+            </h1>
+            <p className="text-base text-muted-foreground max-w-2xl mx-auto">
+              {t('emojiProfile.editProfileDescription')}
+            </p>
           </div>
         </div>
 
         {/* Profile Preview Card */}
-        <div className="rounded-2xl border border-border/50 bg-card/80 shadow-sm shadow-primary/5 backdrop-blur p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <Palette className="h-5 w-5 text-primary" />
-            <h2 className="font-semibold text-foreground">
+        <div className="rounded-3xl border border-border/50 bg-card/80 shadow-lg shadow-primary/10 backdrop-blur p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <Palette className="h-6 w-6 text-primary" />
+            <h2 className="text-xl font-semibold text-foreground">
               {t('emojiProfile.profilePreview')}
             </h2>
           </div>
           
           {/* Preview */}
-          <div className="bg-background/80 rounded-xl p-4 border border-border/30">
+          <div className="bg-background/80 rounded-2xl p-6 border border-border/30">
             <div className="text-center">
               {profile?.theme_settings?.cover_image_url && (
-                <div className="w-full h-32 mb-4 rounded-lg overflow-hidden">
+                <div className="w-full h-40 mb-6 rounded-xl overflow-hidden">
                   <img
                     src={profile.theme_settings.cover_image_url}
                     alt="Cover"
@@ -120,32 +107,32 @@ export default function EmojiProfileEdit() {
                   />
                 </div>
               )}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {profile?.theme_settings?.profile_image_url && (
-                  <div className="w-20 h-20 mx-auto mb-4">
+                  <div className="w-24 h-24 mx-auto mb-6">
                     <img
                       src={profile.theme_settings.profile_image_url}
                       alt="Profile"
-                      className="w-full h-full object-cover rounded-full border-2 border-primary/20"
+                      className="w-full h-full object-cover rounded-full border-3 border-primary/20"
                     />
                   </div>
                 )}
-                <h3 className="font-semibold text-lg">
+                <h3 className="font-semibold text-xl">
                   {profile?.bio ? t('emojiProfile.profilePreviewTitle') : t('emojiProfile.defaultProfileTitle')}
                 </h3>
                 {profile?.bio && (
-                  <p className="text-sm text-muted-foreground">{profile.bio}</p>
+                  <p className="text-base text-muted-foreground max-w-md mx-auto">{profile.bio}</p>
                 )}
                 {profile?.social_links && Object.keys(profile.social_links).length > 0 && (
-                  <div className="flex justify-center gap-2 mt-4">
+                  <div className="flex justify-center gap-3 mt-6">
                     {Object.entries(profile.social_links).map(([platform, url]) => (
                       url && (
                         <div
                           key={platform}
-                          className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center"
+                          className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center"
                           style={{ backgroundColor: `${profile.theme_settings?.theme_color || '#3B82F6'}20` }}
                         >
-                          <span className="text-xs font-semibold">
+                          <span className="text-sm font-semibold">
                             {platform.charAt(0).toUpperCase()}
                           </span>
                         </div>
@@ -163,6 +150,7 @@ export default function EmojiProfileEdit() {
           profile={profile}
           onSave={handleSave}
           isSubmitting={isSubmitting}
+          onClose={handleClose}
         />
       </div>
     </div>
