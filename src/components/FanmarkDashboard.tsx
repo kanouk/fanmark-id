@@ -442,10 +442,7 @@ export const FanmarkDashboard = () => {
                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.displayName')}</th>
                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.accessType')}</th>
                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.acquisitionDate')}</th>
-                              <th className="text-muted-foreground font-semibold text-left p-3">
-                                返却予定日<br />
-                                <span className="text-xs">（返却日）</span>
-                              </th>
+                               <th className="text-muted-foreground font-semibold text-left p-3">返却日</th>
                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.status')}</th>
                               <th className="text-left p-3 text-muted-foreground font-semibold"></th>
                             </tr>
@@ -501,86 +498,77 @@ export const FanmarkDashboard = () => {
                                     {acquisitionDate}
                                   </div>
                                 </td>
-                                <td className="px-4 py-4">
-                                  <div className="text-sm">
-                                    {expirationDate ? (
-                                      <div className={`${isExpiringSoon && !isReturned(fanmark) ? 'text-destructive' : 'text-foreground'}`}>
-                                        <div>{format(expirationDate, 'yyyy/MM/dd')}</div>
-                                        <div className="text-xs text-muted-foreground">
-                                          {isReturned(fanmark) 
-                                            ? `${acquisitionDate} - ${format(expirationDate, 'yyyy/MM/dd')}`
-                                            : (daysRemaining !== null && daysRemaining >= 0 
-                                              ? t('dashboard.daysRemaining', { days: daysRemaining })
-                                              : t('dashboard.expiringSoon')
-                                            )
-                                          }
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <span className="text-muted-foreground">-</span>
-                                    )}
-                                  </div>
-                                </td>
+                                 <td className="px-4 py-4">
+                                   <div className="space-y-2">
+                                     {expirationDate ? (
+                                       <div>
+                                         <div className={`text-sm ${isExpiringSoon && !isReturned(fanmark) ? 'text-destructive' : 'text-foreground'}`}>
+                                           {format(expirationDate, 'yyyy/MM/dd')}
+                                           {!isReturned(fanmark) && daysRemaining !== null && daysRemaining >= 0 && (
+                                             <Badge variant="secondary" className="ml-2 text-xs px-2 py-0.5">
+                                               {t('dashboard.daysRemaining', { days: daysRemaining })}
+                                             </Badge>
+                                           )}
+                                         </div>
+                                         {!isReturned(fanmark) && (
+                                           <AlertDialog>
+                                             <AlertDialogTrigger asChild>
+                                               <Button
+                                                 size="sm"
+                                                 variant="outline"
+                                                 className="h-7 px-2 text-xs hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                                                 disabled={returningFanmarkId === fanmark.id}
+                                               >
+                                                 <FiCornerUpLeft className="h-3 w-3 mr-1" />
+                                                 返却
+                                               </Button>
+                                             </AlertDialogTrigger>
+                                             <AlertDialogContent>
+                                               <AlertDialogHeader>
+                                                 <AlertDialogTitle>{t('dashboard.returnConfirmTitle')}</AlertDialogTitle>
+                                                 <AlertDialogDescription>
+                                                   {t('dashboard.returnConfirmDescription')}
+                                                 </AlertDialogDescription>
+                                               </AlertDialogHeader>
+                                               <AlertDialogFooter>
+                                                 <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                                                 <AlertDialogAction
+                                                   onClick={() => handleReturnFanmark(fanmark.id)}
+                                                   className="bg-red-600 hover:bg-red-700"
+                                                 >
+                                                   {returningFanmarkId === fanmark.id ? t('common.processing') : t('dashboard.returnConfirmAction')}
+                                                 </AlertDialogAction>
+                                               </AlertDialogFooter>
+                                             </AlertDialogContent>
+                                           </AlertDialog>
+                                         )}
+                                       </div>
+                                     ) : (
+                                       <span className="text-muted-foreground text-sm">-</span>
+                                     )}
+                                   </div>
+                                 </td>
                                  <td className="px-4 py-4">
                                    {getStatusBadge(licenseData?.status)}
                                  </td>
-                                <td className="px-4 py-4">
-                                  <div className="flex items-center gap-1.5">
-                                    <AlertDialog>
-                                      <TooltipProvider delayDuration={200}>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <AlertDialogTrigger asChild>
-                                              <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600 transition-colors"
-                                                aria-label={t('dashboard.actionsReturn')}
-                                                disabled={returningFanmarkId === fanmark.id}
-                                              >
-                                                <FiCornerUpLeft className="h-4 w-4" />
-                                              </Button>
-                                            </AlertDialogTrigger>
-                                          </TooltipTrigger>
-                                          <TooltipContent>{t('dashboard.actionsReturn')}</TooltipContent>
-                                        </Tooltip>
-                                      </TooltipProvider>
-                                      <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                          <AlertDialogTitle>{t('dashboard.returnConfirmTitle')}</AlertDialogTitle>
-                                          <AlertDialogDescription>
-                                            {t('dashboard.returnConfirmDescription')}
-                                          </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                          <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                                          <AlertDialogAction
-                                            onClick={() => handleReturnFanmark(fanmark.id)}
-                                            className="bg-red-600 hover:bg-red-700"
-                                          >
-                                            {returningFanmarkId === fanmark.id ? t('common.processing') : t('dashboard.returnConfirmAction')}
-                                          </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                      </AlertDialogContent>
-                                    </AlertDialog>
-                                    <TooltipProvider delayDuration={200}>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-8 w-8 p-0 hover:bg-secondary"
-                                            onClick={() => handleOpenSettings(fanmark.id)}
-                                            aria-label={t('dashboard.actionsSettings')}
-                                          >
-                                            <Settings className="h-4 w-4" />
-                                          </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>{t('dashboard.actionsSettings')}</TooltipContent>
-                                      </Tooltip>
-                                    </TooltipProvider>
-                                  </div>
-                                </td>
+                                 <td className="px-4 py-4">
+                                   <TooltipProvider delayDuration={200}>
+                                     <Tooltip>
+                                       <TooltipTrigger asChild>
+                                         <Button
+                                           size="sm"
+                                           variant="ghost"
+                                           className="h-8 w-8 p-0 hover:bg-secondary"
+                                           onClick={() => handleOpenSettings(fanmark.id)}
+                                           aria-label={t('dashboard.actionsSettings')}
+                                         >
+                                           <Settings className="h-4 w-4" />
+                                         </Button>
+                                       </TooltipTrigger>
+                                       <TooltipContent>{t('dashboard.actionsSettings')}</TooltipContent>
+                                     </Tooltip>
+                                   </TooltipProvider>
+                                 </td>
                                 </tr>
                               );
                             })}
@@ -634,29 +622,26 @@ export const FanmarkDashboard = () => {
                                     </div>
                                     <div className="text-foreground">{acquisitionDate}</div>
                                   </div>
-                                  <div>
-                                    <div className="text-xs text-muted-foreground font-medium mb-1">
-                                      返却予定日（返却日）
-                                    </div>
-                                    <div className={`${isExpiringSoon && !isReturned(fanmark) ? 'text-destructive' : 'text-foreground'}`}>
-                                      {expirationDate ? (
-                                        <>
-                                          <div>{format(expirationDate, 'yyyy/MM/dd')}</div>
-                                          <div className="text-xs text-muted-foreground">
-                                            {isReturned(fanmark) 
-                                              ? `${acquisitionDate} - ${format(expirationDate, 'yyyy/MM/dd')}`
-                                              : (daysRemaining !== null && daysRemaining >= 0 
-                                                ? t('dashboard.daysRemaining', { days: daysRemaining })
-                                                : t('dashboard.expiringSoon')
-                                              )
-                                            }
-                                          </div>
-                                        </>
-                                      ) : (
-                                        <span className="text-muted-foreground">-</span>
-                                      )}
-                                    </div>
-                                  </div>
+                                   <div>
+                                     <div className="text-xs text-muted-foreground font-medium mb-1">
+                                       返却日
+                                     </div>
+                                     <div className={`${isExpiringSoon && !isReturned(fanmark) ? 'text-destructive' : 'text-foreground'}`}>
+                                       {expirationDate ? (
+                                         <>
+                                           <div>{format(expirationDate, 'yyyy/MM/dd')}
+                                             {!isReturned(fanmark) && daysRemaining !== null && daysRemaining >= 0 && (
+                                               <Badge variant="secondary" className="ml-2 text-xs px-2 py-0.5">
+                                                 {t('dashboard.daysRemaining', { days: daysRemaining })}
+                                               </Badge>
+                                             )}
+                                           </div>
+                                         </>
+                                       ) : (
+                                         <span className="text-muted-foreground">-</span>
+                                       )}
+                                     </div>
+                                   </div>
                                 </div>
 
                                 {(redirectUrl || textContent) && (
@@ -676,61 +661,58 @@ export const FanmarkDashboard = () => {
                                   </div>
                                 )}
 
-                                <div className="flex items-center justify-end gap-2 pt-2">
-                                  <AlertDialog>
-                                    <TooltipProvider delayDuration={200}>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <AlertDialogTrigger asChild>
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              className="h-9 w-9 p-0 hover:bg-red-100 hover:text-red-600 transition-colors"
-                                              aria-label={t('dashboard.actionsReturn')}
-                                              disabled={returningFanmarkId === fanmark.id}
-                                            >
-                                              <FiCornerUpLeft className="h-4 w-4" />
-                                            </Button>
-                                          </AlertDialogTrigger>
-                                        </TooltipTrigger>
-                                        <TooltipContent>{t('dashboard.actionsReturn')}</TooltipContent>
-                                      </Tooltip>
-                                    </TooltipProvider>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>{t('dashboard.returnConfirmTitle')}</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          {t('dashboard.returnConfirmDescription')}
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                                        <AlertDialogAction
-                                          onClick={() => handleReturnFanmark(fanmark.id)}
-                                          className="bg-red-600 hover:bg-red-700"
-                                        >
-                                          {returningFanmarkId === fanmark.id ? t('common.processing') : t('dashboard.returnConfirmAction')}
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
-                                  <TooltipProvider delayDuration={200}>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          className="h-9 w-9 p-0 hover:bg-secondary"
-                                          onClick={() => handleOpenSettings(fanmark.id)}
-                                          aria-label={t('dashboard.actionsSettings')}
-                                        >
-                                          <Settings className="h-4 w-4" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>{t('dashboard.actionsSettings')}</TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                </div>
+                                 <div className="flex items-center justify-between pt-2">
+                                   <div>
+                                     {!isReturned(fanmark) && (
+                                       <AlertDialog>
+                                         <AlertDialogTrigger asChild>
+                                           <Button
+                                             size="sm"
+                                             variant="outline"
+                                             className="h-7 px-2 text-xs hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                                             disabled={returningFanmarkId === fanmark.id}
+                                           >
+                                             <FiCornerUpLeft className="h-3 w-3 mr-1" />
+                                             返却
+                                           </Button>
+                                         </AlertDialogTrigger>
+                                         <AlertDialogContent>
+                                           <AlertDialogHeader>
+                                             <AlertDialogTitle>{t('dashboard.returnConfirmTitle')}</AlertDialogTitle>
+                                             <AlertDialogDescription>
+                                               {t('dashboard.returnConfirmDescription')}
+                                             </AlertDialogDescription>
+                                           </AlertDialogHeader>
+                                           <AlertDialogFooter>
+                                             <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                                             <AlertDialogAction
+                                               onClick={() => handleReturnFanmark(fanmark.id)}
+                                               className="bg-red-600 hover:bg-red-700"
+                                             >
+                                               {returningFanmarkId === fanmark.id ? t('common.processing') : t('dashboard.returnConfirmAction')}
+                                             </AlertDialogAction>
+                                           </AlertDialogFooter>
+                                         </AlertDialogContent>
+                                       </AlertDialog>
+                                     )}
+                                   </div>
+                                   <TooltipProvider delayDuration={200}>
+                                     <Tooltip>
+                                       <TooltipTrigger asChild>
+                                         <Button
+                                           size="sm"
+                                           variant="ghost"
+                                           className="h-9 w-9 p-0 hover:bg-secondary"
+                                           onClick={() => handleOpenSettings(fanmark.id)}
+                                           aria-label={t('dashboard.actionsSettings')}
+                                         >
+                                           <Settings className="h-4 w-4" />
+                                         </Button>
+                                       </TooltipTrigger>
+                                       <TooltipContent>{t('dashboard.actionsSettings')}</TooltipContent>
+                                     </Tooltip>
+                                   </TooltipProvider>
+                                 </div>
                               </div>
                             </CardContent>
                           </Card>
