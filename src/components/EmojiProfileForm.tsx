@@ -11,7 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAvatarUpload } from '@/hooks/useAvatarUpload';
 import { EmojiProfile } from '@/hooks/useEmojiProfile';
-import { Loader2, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Upload, X, Image as ImageIcon, FileText, Link, Shield } from 'lucide-react';
 import { 
   FiInstagram, 
   FiTwitter, 
@@ -25,6 +25,7 @@ import {
   SiTwitch, 
   SiDiscord 
 } from 'react-icons/si';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const profileSchema = z.object({
   bio: z.string().max(500, 'Bio must be 500 characters or less').optional(),
@@ -193,265 +194,238 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose }: Emo
   };
 
   return (
-    <div className="space-y-8">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+    <div className="space-y-10">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
         {/* Cover Image */}
-        <Card className="overflow-hidden rounded-3xl border border-border/50 bg-card/80 shadow-lg shadow-primary/10 backdrop-blur">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-3 text-xl font-semibold">
-              <ImageIcon className="h-6 w-6 text-primary" />
-              {t('emojiProfile.coverImage')}
-            </CardTitle>
+        <Card className="overflow-hidden">
+          <CardHeader className="pb-6">
+            <div className="flex items-center gap-3">
+              <ImageIcon className="h-4 w-4 text-primary" />
+              <CardTitle className="text-base">カバー画像</CardTitle>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              プロフィールページの背景として表示される画像をアップロードしてください
+            </p>
           </CardHeader>
-          <CardContent className="space-y-6">
-            {coverImageUrl ? (
-              <div className="relative">
-                <img
-                  src={coverImageUrl}
-                  alt="Cover"
-                  className="w-full h-56 object-cover rounded-2xl"
-                />
+          <CardContent className="space-y-6 p-10">
+            <div className="space-y-6">
+              {(coverImageUrl || profile?.theme_settings?.cover_image_url) && (
+                <div className="relative">
+                  <img
+                    src={coverImageUrl || profile?.theme_settings?.cover_image_url}
+                    alt="Cover preview"
+                    className="w-full h-40 object-cover rounded-lg border border-border"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-2 right-2"
+                    onClick={removeCoverImage}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+              <div className="flex items-center gap-4">
                 <Button
                   type="button"
-                  variant="destructive"
-                  size="sm"
-                  onClick={removeCoverImage}
-                  className="absolute top-3 right-3 rounded-full"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ) : (
-              <div className="border-2 border-dashed border-border rounded-2xl p-12 text-center">
-                <ImageIcon className="h-16 w-16 mx-auto text-muted-foreground mb-6" />
-                <p className="text-base text-muted-foreground mb-6 max-w-sm mx-auto">
-                  {t('emojiProfile.coverImageHint')}
-                </p>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="lg"
+                  variant="outline"
+                  onClick={() => document.getElementById('cover-image-upload')?.click()}
                   disabled={coverImageUploading}
-                  onClick={() => document.getElementById('cover-upload')?.click()}
-                  className="rounded-full px-8"
+                  className="flex items-center gap-2 h-9"
                 >
                   {coverImageUploading ? (
-                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Upload className="h-5 w-5 mr-2" />
+                    <Upload className="h-4 w-4" />
                   )}
-                  {t('emojiProfile.uploadCover')}
+                  <span className="text-sm">{coverImageUploading ? 'アップロード中...' : 'カバー画像をアップロード'}</span>
                 </Button>
                 <input
-                  id="cover-upload"
+                  id="cover-image-upload"
                   type="file"
                   accept="image/*"
                   onChange={handleCoverImageUpload}
                   className="hidden"
                 />
               </div>
-            )}
+            </div>
           </CardContent>
         </Card>
 
         {/* Profile Image */}
-        <Card className="overflow-hidden rounded-3xl border border-border/50 bg-card/80 shadow-lg shadow-primary/10 backdrop-blur">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-3 text-xl font-semibold">
-              <ImageIcon className="h-6 w-6 text-primary" />
-              {t('emojiProfile.profileImage')}
-            </CardTitle>
+        <Card>
+          <CardHeader className="pb-6">
+            <div className="flex items-center gap-3">
+              <ImageIcon className="h-4 w-4 text-primary" />
+              <CardTitle className="text-base">プロフィール画像</CardTitle>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              プロフィールの顔となる画像をアップロードしてください
+            </p>
           </CardHeader>
-          <CardContent className="space-y-6">
-            {profileImageUrl ? (
-              <div className="relative w-40 h-40 mx-auto">
-                <img
-                  src={profileImageUrl}
-                  alt="Profile"
-                  className="w-full h-full object-cover rounded-full border-4 border-primary/20"
-                />
+          <CardContent className="space-y-6 p-10">
+            <div className="space-y-6">
+              {(profileImageUrl || profile?.theme_settings?.profile_image_url) && (
+                <div className="relative w-24 h-24 mx-auto">
+                  <img
+                    src={profileImageUrl || profile?.theme_settings?.profile_image_url}
+                    alt="Profile preview"
+                    className="w-full h-full object-cover rounded-full border-2 border-border"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute -top-2 -right-2 w-6 h-6 rounded-full p-0"
+                    onClick={removeProfileImage}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+              <div className="flex justify-center">
                 <Button
                   type="button"
-                  variant="destructive"
-                  size="sm"
-                  onClick={removeProfileImage}
-                  className="absolute top-2 right-2 rounded-full"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ) : (
-              <div className="border-2 border-dashed border-border rounded-2xl p-12 text-center">
-                <ImageIcon className="h-16 w-16 mx-auto text-muted-foreground mb-6" />
-                <p className="text-base text-muted-foreground mb-6 max-w-sm mx-auto">
-                  {t('emojiProfile.profileImageHint')}
-                </p>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="lg"
+                  variant="outline"
+                  onClick={() => document.getElementById('profile-image-upload')?.click()}
                   disabled={profileImageUploading}
-                  onClick={() => document.getElementById('profile-upload')?.click()}
-                  className="rounded-full px-8"
+                  className="flex items-center gap-2 h-9"
                 >
                   {profileImageUploading ? (
-                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Upload className="h-5 w-5 mr-2" />
+                    <Upload className="h-4 w-4" />
                   )}
-                  {t('emojiProfile.uploadProfile')}
+                  <span className="text-sm">{profileImageUploading ? 'アップロード中...' : 'プロフィール画像をアップロード'}</span>
                 </Button>
                 <input
-                  id="profile-upload"
+                  id="profile-image-upload"
                   type="file"
                   accept="image/*"
                   onChange={handleProfileImageUpload}
                   className="hidden"
                 />
               </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Bio */}
-        <Card className="overflow-hidden rounded-3xl border border-border/50 bg-card/80 shadow-lg shadow-primary/10 backdrop-blur">
-          <CardContent className="p-8 space-y-6">
-            <Label htmlFor="bio" className="text-base font-semibold text-foreground">
-              {t('emojiProfile.bio')}
-            </Label>
-            <Textarea
-              id="bio"
-              {...register('bio')}
-              placeholder={t('emojiProfile.bioPlaceholder')}
-              rows={5}
-              className="rounded-2xl border border-border focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 text-base p-4"
-            />
-            {errors.bio && (
-              <p className="text-sm text-destructive">{errors.bio.message}</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Theme Color */}
-        <Card className="overflow-hidden rounded-3xl border border-border/50 bg-card/80 shadow-lg shadow-primary/10 backdrop-blur">
-          <CardContent className="p-8 space-y-6">
-            <Label htmlFor="themeColor" className="text-base font-semibold text-foreground">
-              {t('emojiProfile.themeColor')}
-            </Label>
-            <div className="flex items-center gap-6">
-              <Controller
-                name="theme_settings.theme_color"
-                control={control}
-                render={({ field }) => (
-                  <input
-                    type="color"
-                    {...field}
-                    className="w-20 h-12 rounded-2xl border border-border cursor-pointer"
-                  />
-                )}
-              />
-              <div 
-                className="flex-1 h-12 rounded-2xl border border-border"
-                style={{ backgroundColor: themeColor }}
-              />
             </div>
           </CardContent>
         </Card>
 
-        {/* Social Links */}
-        <Card className="overflow-hidden rounded-3xl border border-border/50 bg-card/80 shadow-lg shadow-primary/10 backdrop-blur">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-xl font-semibold">
-              {t('emojiProfile.socialLinks')}
-            </CardTitle>
+        {/* Bio */}
+        <Card>
+          <CardHeader className="pb-6">
+            <div className="flex items-center gap-3">
+              <FileText className="h-4 w-4 text-primary" />
+              <CardTitle className="text-base">自己紹介</CardTitle>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              あなたについて教えてください
+            </p>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-6 sm:grid-cols-2">
-              {socialPlatforms.map((platform) => {
-                const Icon = platform.icon;
-                return (
-                  <div key={platform.key} className="space-y-3">
-                    <Label 
-                      htmlFor={platform.key}
-                      className="flex items-center gap-3 text-base font-medium"
-                    >
-                      <Icon className="h-5 w-5 text-primary" />
-                      {platform.label}
-                    </Label>
-                    <Input
-                      id={platform.key}
-                      {...register(`social_links.${platform.key as keyof ProfileFormData['social_links']}`)}
-                      placeholder={platform.placeholder}
-                      className="h-12 rounded-2xl border border-border focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 text-base"
-                    />
-                    {errors.social_links?.[platform.key as keyof ProfileFormData['social_links']] && (
-                      <p className="text-sm text-destructive">
-                        {errors.social_links[platform.key as keyof ProfileFormData['social_links']]?.message}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
+          <CardContent className="p-10">
+            <div className="space-y-3">
+              <Textarea
+                {...register('bio')}
+                placeholder="あなたの自己紹介を書いてください..."
+                className="min-h-[100px] resize-none text-sm"
+              />
+              {errors.bio && (
+                <p className="text-xs text-destructive">{errors.bio.message}</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+
+        {/* Social Links */}
+        <Card>
+          <CardHeader className="pb-6">
+            <div className="flex items-center gap-3">
+              <Link className="h-4 w-4 text-primary" />
+              <CardTitle className="text-base">ソーシャルリンク</CardTitle>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              SNSのプロフィールリンクを追加してください
+            </p>
+          </CardHeader>
+          <CardContent className="p-10">
+            <div className="space-y-8">
+              {socialPlatforms.map((platform) => (
+                <div key={platform.key} className="space-y-3">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <platform.icon className="h-4 w-4" />
+                    {platform.label}
+                  </Label>
+                  <Input
+                    {...register(`social_links.${platform.key as keyof ProfileFormData['social_links']}`)}
+                    placeholder={platform.placeholder}
+                    className="w-full h-9 text-sm"
+                  />
+                  {errors.social_links?.[platform.key as keyof ProfileFormData['social_links']] && (
+                    <p className="text-xs text-destructive">
+                      {errors.social_links[platform.key as keyof ProfileFormData['social_links']]?.message}
+                    </p>
+                  )}
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
 
         {/* Privacy Settings */}
-        <Card className="overflow-hidden rounded-3xl border border-border/50 bg-card/80 shadow-lg shadow-primary/10 backdrop-blur">
-          <CardContent className="p-8">
-            <div className="flex items-start justify-between">
-              <div className="space-y-2">
-                <Label className="text-base font-semibold text-foreground">
-                  {t('emojiProfile.publicProfile')}
+        <Card>
+          <CardHeader className="pb-6">
+            <div className="flex items-center gap-3">
+              <Shield className="h-4 w-4 text-primary" />
+              <CardTitle className="text-base">プライバシー設定</CardTitle>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              プロフィールの公開設定を選択してください
+            </p>
+          </CardHeader>
+          <CardContent className="p-10">
+            <div className="space-y-6">
+              <div className="flex items-center space-x-3">
+                <Controller
+                  name="is_public"
+                  control={control}
+                  render={({ field }) => (
+                    <Checkbox
+                      id="is_public"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  )}
+                />
+                <Label htmlFor="is_public" className="text-sm">
+                  プロフィールを公開する
                 </Label>
-                <p className="text-sm text-muted-foreground max-w-md">
-                  {t('emojiProfile.publicProfileDescription')}
-                </p>
               </div>
-              <Controller
-                name="is_public"
-                control={control}
-                render={({ field }) => (
-                  <input
-                    type="checkbox"
-                    checked={field.value}
-                    onChange={field.onChange}
-                    className="h-6 w-6 rounded border-border text-primary focus:ring-primary mt-1"
-                  />
-                )}
-              />
+              <p className="text-xs text-muted-foreground">
+                公開すると、他のユーザーがあなたのプロフィールを閲覧できるようになります
+              </p>
             </div>
           </CardContent>
         </Card>
       </form>
 
       {/* Action Buttons */}
-      <div className="sticky bottom-0 bg-gradient-to-t from-background to-background/80 backdrop-blur pt-8 pb-6">
-        <div className="flex gap-4 justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            size="lg"
-            onClick={onClose}
-            className="px-8 rounded-full"
-          >
-            {t('common.close')}
+      <div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border p-8 mt-12">
+        <div className="flex gap-4 justify-end max-w-5xl mx-auto">
+          <Button type="button" variant="outline" onClick={onClose} className="px-8 h-10 text-sm">
+            閉じる
           </Button>
-          <Button
-            type="submit"
-            form="profile-form"
-            disabled={isSubmitting}
-            size="lg"
-            className="px-8 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-200"
+          <Button type="submit" disabled={isSubmitting} className="px-8 h-10 text-sm"
             onClick={handleSubmit(onSubmit)}
           >
             {isSubmitting ? (
-              <div className="flex items-center gap-2">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                {t('common.saving')}
-              </div>
+              <>
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                保存中...
+              </>
             ) : (
-              t('common.save')
+              '保存'
             )}
           </Button>
         </div>
