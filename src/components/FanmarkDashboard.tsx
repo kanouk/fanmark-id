@@ -392,7 +392,10 @@ export const FanmarkDashboard = () => {
                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.displayName')}</th>
                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.accessType')}</th>
                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.acquisitionDate')}</th>
-                              <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.expirationDate')}</th>
+                              <th className="text-muted-foreground font-semibold text-left p-3">
+                                返却予定日<br />
+                                <span className="text-xs">（返却日）</span>
+                              </th>
                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.status')}</th>
                               <th className="text-left p-3 text-muted-foreground font-semibold"></th>
                             </tr>
@@ -598,7 +601,7 @@ export const FanmarkDashboard = () => {
                                   </div>
                                   <div>
                                     <div className="text-xs text-muted-foreground font-medium mb-1">
-                                      {t('dashboard.expirationDate')}
+                                      返却予定日（返却日）
                                     </div>
                                     <div className={`${isExpiringSoon && !isReturned(fanmark) ? 'text-destructive' : 'text-foreground'}`}>
                                       {expirationDate ? (
