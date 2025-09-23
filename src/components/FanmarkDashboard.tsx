@@ -139,7 +139,7 @@ export const FanmarkDashboard = () => {
         .from('fanmark_licenses')
         .select(`
           *,
-          fanmarks!inner(
+          fanmarks!fanmark_id (
             id,
             emoji_combination,
             display_name,
@@ -158,7 +158,7 @@ export const FanmarkDashboard = () => {
             current_license_id
           )
         `)
-        .eq('fanmarks.user_id', user?.id)
+        .eq('user_id', user?.id)
         .order('license_end', { ascending: false });
 
       if (licensesError) throw licensesError;
