@@ -308,9 +308,9 @@
     "tip3": "他のユーザーの最近の登録を参考にしてみましょう",
     "accessTypes": {
       "profile": "プロフィール",
-      "redirect": "リダイレクト",
-      "text": "テキスト",
-      "inactive": "非アクティブ"
+      "redirect": "アドレス転送",
+      "text": "伝言板",
+      "inactive": "なにもしない"
     },
     "getFanmaTitle": "新しいファンマを見つけて取得",
     "getFanmaDescription": "イケてるファンマをチェックして、誰よりも早くあなたのものにしよう。",
@@ -413,9 +413,9 @@
       }
     },
     "accessTypeOptions": {
-      "profile": "プロフィール",
-      "redirect": "URL リダイレクト",
-      "text": "伝言板",
+      "profile": "プロフィールを表示",
+      "redirect": "指定のアドレスへ転送する",
+      "text": "ミニ伝言板を表示する",
       "inactive": "なにもしない"
     },
     "actions": {

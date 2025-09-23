@@ -236,7 +236,7 @@ export const FanmarkSettings = ({
               <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/15 text-primary">
                 <FiSettings className="h-4 w-4" />
               </div>
-              {t('fanmarkSettings.fields.accessType.label')} <span className="ml-1 text-xs text-destructive">*</span>
+              {t('fanmarkSettings.fields.accessType.label')}
             </Label>
             <p className="text-xs text-muted-foreground">{t('fanmarkSettings.fields.accessType.helper')}</p>
             <Controller

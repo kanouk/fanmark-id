@@ -458,21 +458,22 @@ export const FanmarkDashboard = () => {
 
                               return (
                                 <tr key={fanmark.id} className={`border-b transition-colors hover:bg-muted/30 ${isFanmarkInactive(fanmark) ? 'opacity-50 bg-muted/20' : ''}`}>
-                                  <td className="px-4 py-4">
-                                    <div className="flex items-center gap-3">
-                                      <span className="text-4xl tracking-[0.25em] leading-none">{fanmark.emoji_combination}</span>
-                                       {fanmark.tier_level && (
-                                        <Badge variant="secondary" className="inline-flex items-center gap-0.5 border border-primary/30 bg-primary/10 text-primary text-xs px-2 py-1 rounded-full whitespace-nowrap">
-                                          {Array.from({ length: fanmark.tier_level }, (_, i) => (
-                                            <FiStar key={i} className="h-2.5 w-2.5 fill-gray-400 text-gray-400" />
-                                          ))}
-                                        </Badge>
-                                      )}
-                                  </div>
-                                  <div className="mt-2 text-xs font-medium tracking-wide text-muted-foreground/70">
-                                    {fanmark.short_id}
-                                  </div>
-                                </td>
+                                   <td className="px-4 py-4">
+                                     <div className="flex items-center gap-3">
+                                       <span className="text-4xl tracking-[0.25em] leading-none">{fanmark.emoji_combination}</span>
+                                       <div className="flex flex-col">
+                                         <div className="mt-1">
+                                           {fanmark.tier_level && (
+                                             <Badge variant="secondary" className="inline-flex items-center gap-0.5 border border-primary/30 bg-primary/10 text-primary text-xs px-2 py-1 rounded-full whitespace-nowrap min-w-[60px] justify-center">
+                                               {Array.from({ length: fanmark.tier_level }, (_, i) => (
+                                                 <FiStar key={i} className="h-2.5 w-2.5 fill-gray-400 text-gray-400" />
+                                               ))}
+                                             </Badge>
+                                           )}
+                                         </div>
+                                       </div>
+                                     </div>
+                                   </td>
                                 <td className="px-4 py-4">
                                   {getAccessTypeBadge(fanmark.access_type)}
                                 </td>
@@ -545,7 +546,7 @@ export const FanmarkDashboard = () => {
                                            onClick={() => handleOpenSettings(fanmark.id)}
                                            aria-label={t('dashboard.actionsSettings')}
                                          >
-                                           <Settings className="h-4 w-4" />
+                                            <Settings className="h-5 w-5" />
                                          </Button>
                                        </TooltipTrigger>
                                        <TooltipContent>{t('dashboard.actionsSettings')}</TooltipContent>
@@ -576,20 +577,20 @@ export const FanmarkDashboard = () => {
                             <CardContent className="p-5">
                               <div className="space-y-3">
                                 <div className="flex items-start justify-between">
-                                  <div className="flex items-center gap-3">
-                                    <span className="text-3xl tracking-[0.25em] leading-none">{fanmark.emoji_combination}</span>
-                                    <div>
-                                      <h3 className="font-semibold text-foreground">{fanmark.display_name}</h3>
-                                      <div className="text-xs font-medium tracking-wide text-muted-foreground/70">{fanmark.short_id}</div>
-                                    </div>
-                                  </div>
-                                  {fanmark.tier_level && (
-                                    <Badge variant="secondary" className="inline-flex items-center gap-0.5 border border-primary/30 bg-primary/10 text-primary text-xs px-2 py-1 rounded-full whitespace-nowrap">
-                                      {Array.from({ length: fanmark.tier_level }, (_, i) => (
-                                        <FiStar key={i} className="h-2.5 w-2.5 fill-gray-400 text-gray-400" />
-                                      ))}
-                                    </Badge>
-                                  )}
+                                   <div className="flex items-center gap-3">
+                                     <span className="text-3xl tracking-[0.25em] leading-none">{fanmark.emoji_combination}</span>
+                                     <div>
+                                       <div className="mt-1">
+                                         {fanmark.tier_level && (
+                                           <Badge variant="secondary" className="inline-flex items-center gap-0.5 border border-primary/30 bg-primary/10 text-primary text-xs px-2 py-1 rounded-full whitespace-nowrap min-w-[60px] justify-center">
+                                             {Array.from({ length: fanmark.tier_level }, (_, i) => (
+                                               <FiStar key={i} className="h-2.5 w-2.5 fill-gray-400 text-gray-400" />
+                                             ))}
+                                           </Badge>
+                                         )}
+                                       </div>
+                                     </div>
+                                   </div>
                                 </div>
 
                                  <div className="flex items-center justify-between">
@@ -689,7 +690,7 @@ export const FanmarkDashboard = () => {
                                            onClick={() => handleOpenSettings(fanmark.id)}
                                            aria-label={t('dashboard.actionsSettings')}
                                          >
-                                           <Settings className="h-4 w-4" />
+                                           <Settings className="h-5 w-5" />
                                          </Button>
                                        </TooltipTrigger>
                                        <TooltipContent>{t('dashboard.actionsSettings')}</TooltipContent>
