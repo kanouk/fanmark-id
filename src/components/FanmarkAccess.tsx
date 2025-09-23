@@ -121,14 +121,15 @@ export const FanmarkAccess = () => {
           <Card className="w-96">
             <CardContent className="p-8 text-center space-y-4">
               <div className="text-6xl mb-4">{fanmark.emoji_combination}</div>
-              <h1 className="text-xl font-semibold">{fanmark.display_name}</h1>
-              <p className="text-muted-foreground">
-                This fanmark is currently inactive.
+              <p className="text-lg font-medium text-foreground">
+                あなたもファンマを取得しよう！
               </p>
-              <Button onClick={() => navigate('/')} className="w-full">
-                <Home className="h-4 w-4 mr-2" />
-                Go to Home
-              </Button>
+              <div 
+                onClick={() => navigate('/')} 
+                className="text-2xl font-bold text-primary cursor-pointer hover:text-primary/80 transition-colors"
+              >
+                fanmark.id
+              </div>
             </CardContent>
           </Card>
         </div>
