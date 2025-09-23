@@ -8,12 +8,13 @@ export interface FanmarkSearchResult {
   normalized_emoji: string;
   short_id: string;
   tier_level?: number;
-  status: 'available' | 'taken' | 'premium' | 'payment_required' | 'invalid';
+  status: 'available' | 'not_available' | 'invalid';
   price_yen?: number;
   price_usd?: number;
   emoji_count?: number;
   error?: string;
   owner?: {
+    user_id: string;
     username: string;
     display_name: string;
   };
@@ -99,6 +100,7 @@ export function useFanmarkSearch() {
           short_id,
           tier_level,
           status,
+          current_license_id,
           user_id
         `)
         .eq('status', 'active')
@@ -117,7 +119,7 @@ export function useFanmarkSearch() {
           normalized_emoji: fanmark.normalized_emoji,
           short_id: fanmark.short_id,
           tier_level: fanmark.tier_level,
-          status: fanmark.tier_level ? 'premium' : 'taken',
+          status: fanmark.current_license_id ? 'not_available' : 'available',
           price_yen: undefined,
           price_usd: undefined,
           emoji_count: undefined,
@@ -187,118 +189,9 @@ export function useFanmarkSearch() {
     return { valid: true, emojiCount };
   };
 
-  // Check pattern-based pricing using availability rules
-  const checkPatternBasedPricing = async (normalizedEmoji: string, emojiCount: number): Promise<{ requiresPayment: boolean; priceUsd?: number; reason?: string; isAvailable: boolean }> => {
-    try {
-      // Get all active availability rules ordered by priority
-      const { data: rules } = await supabase
-        .from('fanmark_availability_rules')
-        .select('rule_type, priority, rule_config, is_available, price_usd')
-        .eq('is_available', true)
-        .order('priority', { ascending: true });
-
-      if (!rules) {
-        return { requiresPayment: false, isAvailable: true };
-      }
-
-      // Check patterns in priority order (1=highest, 4=lowest)
-      for (const rule of rules) {
-        const config: AvailabilityRuleConfig = (rule.rule_config as AvailabilityRuleConfig) ?? {};
-        
-        switch (rule.rule_type) {
-          case 'specific_pattern':
-            if (config.patterns?.includes(normalizedEmoji)) {
-              return {
-                requiresPayment: true,
-                priceUsd: rule.price_usd,
-                reason: 'specific_pattern',
-                isAvailable: rule.is_available
-              };
-            }
-            break;
-
-          case 'duplicate_pattern':
-            if (config.enabled && hasDuplicateEmojis(normalizedEmoji)) {
-              return {
-                requiresPayment: true,
-                priceUsd: rule.price_usd,
-                reason: 'duplicate_pattern',
-                isAvailable: rule.is_available
-              };
-            }
-            break;
-
-          case 'prefix_pattern':
-            if (config.prefixes) {
-              const firstEmoji = getFirstEmoji(normalizedEmoji);
-              if (firstEmoji && config.prefixes[firstEmoji] !== undefined) {
-                const prefixPrice = Number(config.prefixes[firstEmoji]);
-                return {
-                  requiresPayment: true,
-                  priceUsd: Number.isNaN(prefixPrice) ? undefined : prefixPrice,
-                  reason: 'prefix_pattern',
-                  isAvailable: rule.is_available
-                };
-              }
-            }
-            break;
-
-          case 'count_based': {
-            const priceValue = config.pricing?.[emojiCount.toString()];
-            if (priceValue !== undefined) {
-              const price = typeof priceValue === 'number' ? priceValue : parseFloat(priceValue);
-              return {
-                requiresPayment: price > 0,
-                priceUsd: price,
-                reason: 'count_based',
-                isAvailable: rule.is_available
-              };
-            }
-            break;
-          }
-        }
-      }
-
-      return { requiresPayment: false, isAvailable: true };
-    } catch (error) {
-      console.error('Error checking pattern-based pricing:', error);
-      return { requiresPayment: false, isAvailable: true };
-    }
-  };
-
-  // Helper function to check for duplicate emojis
-  const hasDuplicateEmojis = (emoji: string): boolean => {
-    const emojiArray = [...emoji];
-    let previousEmoji = '';
-    
-    for (const char of emojiArray) {
-      const isEmoji = EMOJI_CHARACTER_REGEX.test(char);
-      if (isEmoji && !SKIN_TONE_MODIFIER_REGEX.test(char) && !COMBINING_CHARACTERS.has(char)) {
-        if (char === previousEmoji) {
-          return true; // Found consecutive duplicate
-        }
-        previousEmoji = char;
-      }
-    }
-    
-    return false;
-  };
-
-  // Helper function to get first emoji
-  const getFirstEmoji = (emoji: string): string | null => {
-    const emojiArray = [...emoji];
-    for (const char of emojiArray) {
-      if (EMOJI_CHARACTER_REGEX.test(char) && !SKIN_TONE_MODIFIER_REGEX.test(char) && !COMBINING_CHARACTERS.has(char)) {
-        return char;
-      }
-    }
-    return null;
-  };
-
-  const searchFanmarks = async (query: string) => {
+   const searchFanmarks = async (query: string) => {
     setLoading(true);
     try {
-      // Validate input first
       const validation = validateEmojiInput(query);
       if (!validation.valid) {
         setResult({
@@ -307,19 +200,16 @@ export function useFanmarkSearch() {
           normalized_emoji: '',
           short_id: '',
           tier_level: undefined,
-          status: 'invalid', // Set correct status for validation errors
+          status: 'invalid',
           error: validation.error,
           emoji_count: validation.emojiCount,
         });
-        setLoading(false);
         return;
       }
-
+  
       const normalizedQuery = normalizeEmoji(query);
-      const pricingInfo = await checkPatternBasedPricing(normalizedQuery, validation.emojiCount);
-
-      // Check if fanmark already exists
-      const { data: existingFanmark, error: searchError } = await supabase
+  
+      const { data: fanmark, error: searchError } = await supabase
         .from('fanmarks')
         .select(`
           id,
@@ -328,68 +218,18 @@ export function useFanmarkSearch() {
           short_id,
           tier_level,
           status,
-          user_id
+          user_id,
+          current_license_id
         `)
         .eq('normalized_emoji', normalizedQuery)
-        .eq('status', 'active')
         .maybeSingle();
-
+  
       if (searchError) throw searchError;
-
-      if (existingFanmark) {
-        const fanmark = existingFanmark as any;
-        // Get owner profile separately
-        const { data: ownerProfile } = await supabase
-          .from('profiles')
-          .select('username, display_name')
-          .eq('user_id', fanmark.user_id)
-          .maybeSingle();
-
-        // Fanmark is taken
-        const status: 'premium' | 'taken' = fanmark.tier_level ? 'premium' : 'taken';
+  
+      // レコードなし → 登録可能
+      if (!fanmark) {
         setResult({
-          id: fanmark.id,
-          emoji_combination: fanmark.emoji_combination,
-          normalized_emoji: fanmark.normalized_emoji,
-          short_id: fanmark.short_id,
-          tier_level: fanmark.tier_level,
-          status,
-          price_usd: pricingInfo.priceUsd,
-          owner: ownerProfile
-            ? {
-                username: ownerProfile.username ?? '',
-                display_name: ownerProfile.display_name ?? '',
-              }
-            : undefined,
-        });
-      } else if (!pricingInfo.isAvailable) {
-        // Fanmark pattern is not available
-        setResult({
-          id: 'not_available',
-          emoji_combination: query,
-          normalized_emoji: normalizedQuery,
-          short_id: '',
-          tier_level: undefined,
-          status: 'available', // Will show error message
-          error: 'This emoji pattern is currently not available for registration',
-          emoji_count: validation.emojiCount,
-        });
-      } else if (pricingInfo.requiresPayment) {
-        // Fanmark requires payment
-        setResult({
-          id: 'payment_required',
-          emoji_combination: query,
-          normalized_emoji: normalizedQuery,
-          short_id: '',
-          tier_level: undefined,
-          status: 'payment_required',
-          price_usd: pricingInfo.priceUsd,
-          emoji_count: validation.emojiCount,
-        });
-      } else {
-        // Fanmark is available and free
-        setResult({
-          id: 'available',
+          id: '',
           emoji_combination: query,
           normalized_emoji: normalizedQuery,
           short_id: '',
@@ -397,15 +237,73 @@ export function useFanmarkSearch() {
           status: 'available',
           emoji_count: validation.emojiCount,
         });
+        return;
       }
+  
+      // レコードありだが active 以外 → invalid（禁止/保留など）
+      if (fanmark.status !== 'active') {
+        setResult({
+          id: fanmark.id,
+          emoji_combination: fanmark.emoji_combination,
+          normalized_emoji: fanmark.normalized_emoji,
+          short_id: fanmark.short_id,
+          tier_level: fanmark.tier_level,
+          status: 'invalid',
+          error: 'This emoji pattern is not allowed or not active.',
+          emoji_count: validation.emojiCount,
+        });
+        return;
+      }
+  
+      // active のみ：占有状況を判定
+      const isTaken = !!fanmark.current_license_id;
+      let ownerUserId: string | null = null;
+  
+      if (isTaken) {
+        // 現在の保持者を licenses から取得（RLS要確認）
+        const { data: license } = await supabase
+          .from('fanmark_licenses')
+          .select('user_id, status')
+          .eq('id', fanmark.current_license_id)
+          .maybeSingle();
+  
+        ownerUserId = license?.status === 'active' ? license.user_id : null;
+      }
+  
+      // 保持者プロフィール（あれば）
+      let ownerProfile: { username: string | null; display_name: string | null } | null = null;
+      if (ownerUserId) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('username, display_name')
+          .eq('user_id', ownerUserId)
+          .maybeSingle();
+        ownerProfile = data ?? null;
+      }
+  
+      setResult({
+        id: fanmark.id,
+        emoji_combination: fanmark.emoji_combination,
+        normalized_emoji: fanmark.normalized_emoji,
+        short_id: fanmark.short_id,
+        tier_level: fanmark.tier_level,
+        status: isTaken ? 'not_available' : 'available',
+        owner: ownerUserId && ownerProfile
+          ? {
+              user_id: ownerUserId,
+              username: ownerProfile.username ?? '',
+              display_name: ownerProfile.display_name ?? '',
+            }
+          : undefined,
+      });
     } catch (error) {
       console.error('Error searching fanmarks:', error);
       setResult(null);
     } finally {
       setLoading(false);
     }
-  };
-
+  };  
+  
   const registerFanmark = async (emoji: string): Promise<{ success: boolean; error?: string; fanmark?: FanmarkRow }> => {
     try {
       const response = await supabase.functions.invoke<RegisterFanmarkResponse>('register-fanmark', {
@@ -427,20 +325,22 @@ export function useFanmarkSearch() {
 
   const checkAvailability = async (emoji: string): Promise<boolean> => {
     try {
-      const { data, error } = await supabase
+      const { data: fanmark, error } = await supabase
         .from('fanmarks')
-        .select('id')
+        .select('id, status, current_license_id')
         .eq('normalized_emoji', emoji)
-        .eq('status', 'active')
         .maybeSingle();
-
+  
       if (error) throw error;
-      return !data; // Available if no data found
+  
+      if (!fanmark) return true;                // レコードなし → available
+      if (fanmark.status !== 'active') return false; // 禁止/無効 →取得不可
+      return !fanmark.current_license_id;       // 空きなら取得可
     } catch (error) {
       console.error('Error checking availability:', error);
       return false;
     }
-  };
+  };  
 
   return {
     searchQuery,

@@ -50,24 +50,20 @@ export const FanmarkAcquisition = ({
     return Math.max(fanmarkLimit - currentCount, 0);
   }, [fanmarkLimit, currentCount]);
 
-  const isResultAcquirable = useMemo(() => {
-    if (!searchResult) return false;
-    return searchResult.status === 'available' || searchResult.status === 'payment_required';
-  }, [searchResult]);
+  const isResultAcquirable = useMemo(() => searchResult?.status === 'available', [searchResult]);
+
+  const isOwnedByMe = useMemo(() => {
+    return !!(searchResult?.owner?.user_id && user?.id && searchResult.owner.user_id === user.id);
+  }, [searchResult?.owner?.user_id, user?.id]);
 
   const getSearchAreaBackgroundClass = useMemo(() => {
     if (!searchResult || !searchResult.emoji_combination || searchResult.error) {
       return 'bg-background/90';
     }
-
-    if (searchResult.status === 'available' || searchResult.status === 'payment_required') {
-      return 'bg-emerald-50/30';
-    } else if (searchResult.status === 'taken' || searchResult.status === 'premium') {
-      return user ? 'bg-sky-50/30' : 'bg-rose-50/30';
-    } else {
-      return 'bg-rose-50/30';
-    }
-  }, [searchResult, user]);
+    if (searchResult.status === 'available') return 'bg-emerald-50/30';
+    // not_available
+    return isOwnedByMe ? 'bg-sky-50/30' : 'bg-rose-50/30';
+  }, [searchResult, isOwnedByMe]);
 
   const handleAcquireRequest = () => {
     if (!searchResult || !isResultAcquirable) return;
@@ -169,7 +165,13 @@ export const FanmarkAcquisition = ({
             </span>
             {searchResult && searchResult.emoji_combination && !searchResult.error && (
               <div className="flex-shrink-0">
-                <FanmarkStatusBadge status={searchResult.status === 'available' || searchResult.status === 'payment_required' ? 'available' : searchResult.status === 'taken' || searchResult.status === 'premium' ? (user ? 'taken' : 'unavailable') : 'unavailable'} />
+                <FanmarkStatusBadge
+                  status={
+                    searchResult.status === 'available'
+                      ? 'available'
+                      : (isOwnedByMe ? 'taken' : 'unavailable')
+                  }
+                />
               </div>
             )}
           </CardTitle>
@@ -187,7 +189,7 @@ export const FanmarkAcquisition = ({
           />
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            {searchResult && (searchResult.status === 'available' || searchResult.status === 'payment_required') ? (
+            {searchResult && searchResult.status === 'available' ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Sparkles className="h-4 w-4 text-primary" />
                 <span>{t('dashboard.acquireReadyMessage')}</span>
