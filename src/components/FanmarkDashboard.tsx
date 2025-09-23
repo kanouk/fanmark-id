@@ -205,6 +205,12 @@ export const FanmarkDashboard = () => {
     return !fanmark.current_license_id || licenseData?.status === 'expired';
   };
 
+  // Helper function to determine if a fanmark is returned/expired
+  const isReturned = (fanmark: Fanmark) => {
+    const licenseData = fanmark.fanmark_licenses as any;
+    return licenseData?.status === 'expired';
+  };
+
   const getAccessTypeBadge = (accessType: string) => {
     let icon = <FiLayers className="h-3.5 w-3.5" />;
     let className = 'border-gray-200/60 bg-gray-50 text-gray-600 shadow-sm';
@@ -445,12 +451,15 @@ export const FanmarkDashboard = () => {
                                 <td className="px-4 py-4">
                                   <div className="text-sm">
                                     {expirationDate ? (
-                                      <div className={`${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`}>
+                                      <div className={`${isExpiringSoon && !isReturned(fanmark) ? 'text-destructive' : 'text-foreground'}`}>
                                         <div>{format(expirationDate, 'yyyy/MM/dd')}</div>
                                         <div className="text-xs text-muted-foreground">
-                                          {daysRemaining !== null && daysRemaining >= 0 
-                                            ? t('dashboard.daysRemaining', { days: daysRemaining })
-                                            : t('dashboard.expiringSoon')
+                                          {isReturned(fanmark) 
+                                            ? '返却済み'
+                                            : (daysRemaining !== null && daysRemaining >= 0 
+                                              ? t('dashboard.daysRemaining', { days: daysRemaining })
+                                              : t('dashboard.expiringSoon')
+                                            )
                                           }
                                         </div>
                                       </div>
@@ -591,14 +600,17 @@ export const FanmarkDashboard = () => {
                                     <div className="text-xs text-muted-foreground font-medium mb-1">
                                       {t('dashboard.expirationDate')}
                                     </div>
-                                    <div className={`${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`}>
+                                    <div className={`${isExpiringSoon && !isReturned(fanmark) ? 'text-destructive' : 'text-foreground'}`}>
                                       {expirationDate ? (
                                         <>
                                           <div>{format(expirationDate, 'yyyy/MM/dd')}</div>
                                           <div className="text-xs text-muted-foreground">
-                                            {daysRemaining !== null && daysRemaining >= 0 
-                                              ? t('dashboard.daysRemaining', { days: daysRemaining })
-                                              : t('dashboard.expiringSoon')
+                                            {isReturned(fanmark) 
+                                              ? '返却済み'
+                                              : (daysRemaining !== null && daysRemaining >= 0 
+                                                ? t('dashboard.daysRemaining', { days: daysRemaining })
+                                                : t('dashboard.expiringSoon')
+                                              )
                                             }
                                           </div>
                                         </>
