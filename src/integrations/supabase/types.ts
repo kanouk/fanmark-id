@@ -103,13 +103,6 @@ export type Database = {
             referencedRelation: "fanmarks"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "emoji_profiles_fanmark_id_fkey"
-            columns: ["fanmark_id"]
-            isOneToOne: false
-            referencedRelation: "fanmarks_public_search"
-            referencedColumns: ["id"]
-          },
         ]
       }
       fanmark_availability_rules: {
@@ -208,13 +201,6 @@ export type Database = {
             columns: ["fanmark_id"]
             isOneToOne: false
             referencedRelation: "fanmarks"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_fanmark_licenses_fanmark_id"
-            columns: ["fanmark_id"]
-            isOneToOne: false
-            referencedRelation: "fanmarks_public_search"
             referencedColumns: ["id"]
           },
           {
@@ -569,47 +555,6 @@ export type Database = {
         }
         Relationships: []
       }
-      fanmarks_public_search: {
-        Row: {
-          created_at: string | null
-          current_license_id: string | null
-          emoji_combination: string | null
-          id: string | null
-          normalized_emoji: string | null
-          short_id: string | null
-          status: string | null
-          tier_level: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          current_license_id?: string | null
-          emoji_combination?: string | null
-          id?: string | null
-          normalized_emoji?: string | null
-          short_id?: string | null
-          status?: string | null
-          tier_level?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          current_license_id?: string | null
-          emoji_combination?: string | null
-          id?: string | null
-          normalized_emoji?: string | null
-          short_id?: string | null
-          status?: string | null
-          tier_level?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_fanmarks_current_license_id"
-            columns: ["current_license_id"]
-            isOneToOne: false
-            referencedRelation: "fanmark_licenses"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       my_fanmark_claims_v1: {
         Row: {
           fanmark_id: string | null
@@ -643,13 +588,6 @@ export type Database = {
             columns: ["fanmark_id"]
             isOneToOne: false
             referencedRelation: "fanmarks"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_fanmark_licenses_fanmark_id"
-            columns: ["fanmark_id"]
-            isOneToOne: false
-            referencedRelation: "fanmarks_public_search"
             referencedColumns: ["id"]
           },
         ]
