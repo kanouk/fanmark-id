@@ -134,70 +134,47 @@ export const FanmarkDashboard = () => {
     
     setLoading(true);
     try {
-      // First, get all fanmarks
-      const { data: fanmarksData, error: fanmarksError } = await supabase
-        .from('fanmarks')
+      // Get all licenses for this user with fanmark details
+      const { data: licensesData, error: licensesError } = await supabase
+        .from('fanmark_licenses')
         .select(`
           *,
-          fanmark_licenses!current_license_id (
-            license_start,
-            license_end,
-            status
+          fanmarks!inner(
+            id,
+            emoji_combination,
+            display_name,
+            short_id,
+            access_type,
+            target_url,
+            text_content,
+            redirect_url,
+            profile_text,
+            is_transferable,
+            status,
+            created_at,
+            updated_at,
+            user_id,
+            normalized_emoji,
+            current_license_id
           )
         `)
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
+        .eq('fanmarks.user_id', user?.id)
+        .order('license_end', { ascending: false });
 
-      if (fanmarksError) throw fanmarksError;
+      if (licensesError) throw licensesError;
 
-      // For fanmarks without current_license_id, get their latest license by tier_level
-      const fanmarksWithoutCurrentLicense = (fanmarksData ?? []).filter(
-        fanmark => !fanmark.current_license_id && fanmark.tier_level
-      );
-
-      let latestLicensesByTier: Record<number, any> = {};
-      if (fanmarksWithoutCurrentLicense.length > 0) {
-        const tierLevels = fanmarksWithoutCurrentLicense.map(f => f.tier_level).filter(Boolean);
+      // Transform the data to match the expected Fanmark interface
+      const fanmarksWithDefaults = (licensesData ?? []).map(license => {
+        const fanmarkData = (license as any).fanmarks;
         
-        const { data: licensesData, error: licensesError } = await supabase
-          .from('fanmark_licenses')
-          .select('*')
-          .in('tier_level', tierLevels)
-          .order('license_end', { ascending: false });
-
-        if (licensesError) {
-          console.error('Error fetching licenses:', licensesError);
-        } else {
-          // Group licenses by tier_level and get the latest one for each
-          (licensesData ?? []).forEach(license => {
-            if (!latestLicensesByTier[license.tier_level]) {
-              latestLicensesByTier[license.tier_level] = license;
-            }
-          });
-        }
-      }
-
-      // Merge the data
-      const fanmarksWithDefaults = (fanmarksData ?? []).map(fanmark => {
-        let licenseData = (fanmark as any).fanmark_licenses;
-        
-        // If no current license but has tier_level, find the latest license for this tier
-        if (!licenseData && !fanmark.current_license_id && fanmark.tier_level) {
-          const latestLicense = latestLicensesByTier[fanmark.tier_level];
-          if (latestLicense) {
-            licenseData = {
-              license_start: latestLicense.license_start,
-              license_end: latestLicense.license_end,
-              status: latestLicense.status
-            };
-          }
-        }
-
         return {
-          ...fanmark,
-          tier_level: (fanmark as any).tier_level ?? null,
-          current_license_id: (fanmark as any).current_license_id ?? null,
-          fanmark_licenses: licenseData || null,
+          ...fanmarkData,
+          tier_level: license.tier_level,
+          fanmark_licenses: {
+            license_start: license.license_start,
+            license_end: license.license_end,
+            status: license.status
+          }
         };
       }) as Fanmark[];
       
