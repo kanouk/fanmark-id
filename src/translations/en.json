@@ -246,9 +246,9 @@
       "limitLabel": "Limit"
     },
     "tabs": {
-      "myFanmarks": "My fanmarks",
-      "getFanma": "Discover fanmarks",
-      "getFanmarks": "Discover fanmarks"
+      "myFanmarks": "Your fanmarks",
+      "getFanma": "Find new fanmarks",
+      "getFanmarks": "Find new fanmarks"
     },
     "yourFanmarks": "Your fanmarks",
     "manageFanmarks": "Everything you've obtained lives here—tune and share each fanmark easily.",

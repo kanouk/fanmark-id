@@ -246,9 +246,9 @@
       "limitLabel": "上限"
     },
     "tabs": {
-      "myFanmarks": "マイファンマ",
-      "getFanma": "ファンマを探す",
-      "getFanmarks": "ファンマを探す"
+      "myFanmarks": "あなたのファンマ",
+      "getFanma": "新しいファンマを探す",
+      "getFanmarks": "新しいファンマを探す"
     },
     "yourFanmarks": "あなたのファンマ",
     "manageFanmarks": "取得したファンマをまとめて管理し、必要に応じて設定を更新できます。",

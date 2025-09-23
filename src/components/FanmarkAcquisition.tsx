@@ -60,9 +60,9 @@ export const FanmarkAcquisition = ({
     if (!searchResult || !searchResult.emoji_combination || searchResult.error) {
       return 'bg-background/90';
     }
-    if (searchResult.status === 'available') return 'bg-emerald-50/30';
+    if (searchResult.status === 'available') return 'bg-emerald-100/50';
     // not_available
-    return isOwnedByMe ? 'bg-sky-50/30' : 'bg-rose-50/30';
+    return isOwnedByMe ? 'bg-sky-100/50' : 'bg-rose-100/50';
   }, [searchResult, isOwnedByMe]);
 
   const handleAcquireRequest = () => {
@@ -159,8 +159,8 @@ export const FanmarkAcquisition = ({
       <Card className={`rounded-3xl border border-primary/15 ${getSearchAreaBackgroundClass} shadow-[0_15px_35px_rgba(101,195,200,0.12)] backdrop-blur transition-colors duration-300`}>
         <CardHeader className="space-y-2 px-6 pt-6 pb-2">
           <CardTitle className="flex items-center justify-between text-lg font-semibold">
-            <span className="flex items-center gap-2">
-              <Search className="h-5 w-5" />
+            <span className="flex items-center gap-2 text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              <Search className="h-6 w-6 text-primary" />
               {t('dashboard.searchFanma')}
             </span>
             {searchResult && searchResult.emoji_combination && !searchResult.error && (
@@ -194,12 +194,7 @@ export const FanmarkAcquisition = ({
                 <Sparkles className="h-4 w-4 text-primary" />
                 <span>{t('dashboard.acquireReadyMessage')}</span>
               </div>
-            ) : (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <FiAlertTriangle className="h-4 w-4 text-muted-foreground/60" />
-                <span>{t('dashboard.acquireHint')}</span>
-              </div>
-            )}
+            ) : null}
 
             <Button
               size="lg"
