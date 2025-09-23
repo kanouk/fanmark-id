@@ -180,7 +180,7 @@
     "tryAgain": "再試行",
     "close": "閉じる",
     "save": "保存",
-    "cancel": "キャンセル",
+    "cancel": "閉じる",
     "continue": "続ける",
     "submit": "送信",
     "back": "戻る",
@@ -386,9 +386,9 @@
     },
     "fields": {
       "displayName": {
-        "label": "表示名",
-        "helper": "ファンに表示される名前です。",
-        "placeholder": "表示名を入力してください"
+        "label": "ファンマ名",
+        "helper": "ファンマに名前をつけてください。ここでつけた名前はどこにも表示されません。",
+        "placeholder": "ファンマ名を入力してください"
       },
       "accessType": {
         "label": "アクセスタイプ",
@@ -416,7 +416,7 @@
       "profile": "プロフィール",
       "redirect": "URL リダイレクト",
       "text": "伝言板",
-      "inactive": "未設定"
+      "inactive": "なにもしない"
     },
     "actions": {
       "editProfile": "プロフィールページを編集",

@@ -437,15 +437,14 @@ export const FanmarkDashboard = () => {
                       <div className="overflow-x-auto">
                         <table className="w-full">
                           <thead>
-                            <tr className="bg-muted/50">
-                              <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.fanmark')}</th>
-                              <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.displayName')}</th>
-                              <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.accessType')}</th>
-                              <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.acquisitionDate')}</th>
-                               <th className="text-muted-foreground font-semibold text-left p-3">返却日</th>
-                              <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.status')}</th>
-                              <th className="text-left p-3 text-muted-foreground font-semibold"></th>
-                            </tr>
+                             <tr className="bg-muted/50">
+                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.fanmark')}</th>
+                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.accessType')}</th>
+                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.acquisitionDate')}</th>
+                                <th className="text-muted-foreground font-semibold text-left p-3">返却日</th>
+                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.status')}</th>
+                               <th className="text-left p-3 text-muted-foreground font-semibold"></th>
+                             </tr>
                           </thead>
                           <tbody>
                             {filteredFanmarks.map((fanmark) => {
@@ -472,22 +471,6 @@ export const FanmarkDashboard = () => {
                                   </div>
                                   <div className="mt-2 text-xs font-medium tracking-wide text-muted-foreground/70">
                                     {fanmark.short_id}
-                                  </div>
-                                </td>
-                                <td className="px-4 py-4">
-                                  <div>
-                                    <div className="font-semibold text-foreground">{fanmark.display_name}</div>
-                                    {fanmark.access_type === 'redirect' && redirectUrl && (
-                                      <div className="mt-1 flex max-w-xs items-center gap-1 truncate text-sm text-muted-foreground">
-                                        <ExternalLink className="h-3 w-3" />
-                                        {redirectUrl}
-                                      </div>
-                                    )}
-                                    {fanmark.access_type === 'text' && textContent && (
-                                      <div className="mt-1 flex max-w-xs items-center gap-1 truncate text-sm text-muted-foreground">
-                                        <FiFileText className="h-3 w-3" /> {textContent}
-                                      </div>
-                                    )}
                                   </div>
                                 </td>
                                 <td className="px-4 py-4">
