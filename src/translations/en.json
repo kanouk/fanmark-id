@@ -242,6 +242,7 @@
     "subtitle": "Manage, polish, and acquire the fanmark that represent you.",
     "stats": {
       "totalFanmarks": "Fanmarks obtained",
+      "activeFanmarks": "Current fanmarks",
       "limitLabel": "Limit"
     },
     "tabs": {
