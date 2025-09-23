@@ -189,13 +189,6 @@ export const FanmarkAcquisition = ({
           />
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-            {searchResult && searchResult.status === 'available' ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Sparkles className="h-4 w-4 text-primary" />
-                <span>{t('dashboard.acquireReadyMessage')}</span>
-              </div>
-            ) : null}
-
             <Button
               size="lg"
               className="rounded-full px-6"
@@ -204,24 +197,16 @@ export const FanmarkAcquisition = ({
             >
               {user ? t('dashboard.acquireButton') : t('dashboard.acquireLoginButton')}
             </Button>
+            
+            {searchResult?.status === 'available' && user && remainingCapacity <= 0 && (
+              <div className="text-red-500 text-sm mt-2 text-center">
+                {t('dashboard.acquireLimitReachedDescription')}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      <Card className="rounded-3xl border border-primary/10 bg-background/80 shadow-[0_10px_25px_rgba(101,195,200,0.08)]">
-        <CardContent className="pt-6">
-          <div className="rounded-2xl bg-gradient-to-r from-primary/10 to-accent/10 p-4">
-            <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-primary">
-              <FiInfo className="h-4 w-4" /> {t('dashboard.tips')}
-            </h4>
-            <ul className="space-y-1 text-sm text-muted-foreground">
-              <li>• {t('dashboard.tip1')}</li>
-              <li>• {t('dashboard.tip2')}</li>
-              <li>• {t('dashboard.tip3')}</li>
-            </ul>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };

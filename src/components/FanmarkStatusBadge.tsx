@@ -16,17 +16,17 @@ export const FanmarkStatusBadge = ({ status, className }: FanmarkStatusBadgeProp
   const styles: Record<FanmarkStatus, { className: string; icon: JSX.Element; label: string }> = {
     available: {
       className: "border-emerald-200 bg-emerald-50 text-emerald-600",
-      icon: <Sparkles className="h-3.5 w-3.5" />,
+      icon: <Sparkles className="h-4 w-4" />,
       label: t("search.available"),
     },
     taken: {
       className: "border-sky-200 bg-sky-50 text-sky-600",
-      icon: <Eye className="h-3.5 w-3.5" />,
+      icon: <Eye className="h-4 w-4" />,
       label: t("search.taken"),
     },
     unavailable: {
       className: "border-rose-200 bg-rose-50 text-rose-600",
-      icon: <Lock className="h-3.5 w-3.5" />,
+      icon: <Lock className="h-4 w-4" />,
       label: t("search.unavailable"),
     },
   };
@@ -36,7 +36,7 @@ export const FanmarkStatusBadge = ({ status, className }: FanmarkStatusBadgeProp
   return (
     <Badge
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide shadow-sm",
+        "inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-semibold tracking-wide shadow-sm",
         "ml-auto",
         config.className,
         className,
