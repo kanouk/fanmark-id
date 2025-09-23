@@ -86,7 +86,28 @@ export type Database = {
             foreignKeyName: "emoji_profiles_fanmark_id_fkey"
             columns: ["fanmark_id"]
             isOneToOne: false
+            referencedRelation: "fanmark_search_auth_v1"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emoji_profiles_fanmark_id_fkey"
+            columns: ["fanmark_id"]
+            isOneToOne: false
+            referencedRelation: "fanmark_search_public_v1"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emoji_profiles_fanmark_id_fkey"
+            columns: ["fanmark_id"]
+            isOneToOne: false
             referencedRelation: "fanmarks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emoji_profiles_fanmark_id_fkey"
+            columns: ["fanmark_id"]
+            isOneToOne: false
+            referencedRelation: "fanmarks_public_search"
             referencedColumns: ["id"]
           },
         ]
@@ -172,7 +193,28 @@ export type Database = {
             foreignKeyName: "fk_fanmark_licenses_fanmark_id"
             columns: ["fanmark_id"]
             isOneToOne: false
+            referencedRelation: "fanmark_search_auth_v1"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_fanmark_licenses_fanmark_id"
+            columns: ["fanmark_id"]
+            isOneToOne: false
+            referencedRelation: "fanmark_search_public_v1"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_fanmark_licenses_fanmark_id"
+            columns: ["fanmark_id"]
+            isOneToOne: false
             referencedRelation: "fanmarks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_fanmark_licenses_fanmark_id"
+            columns: ["fanmark_id"]
+            isOneToOne: false
+            referencedRelation: "fanmarks_public_search"
             referencedColumns: ["id"]
           },
           {
@@ -494,6 +536,124 @@ export type Database = {
       }
     }
     Views: {
+      fanmark_search_auth_v1: {
+        Row: {
+          created_at: string | null
+          emoji_combination: string | null
+          id: string | null
+          is_active: boolean | null
+          is_taken: boolean | null
+          normalized_emoji: string | null
+          owner_display_name: string | null
+          owner_user_id: string | null
+          owner_username: string | null
+          short_id: string | null
+          status: string | null
+          tier_level: number | null
+        }
+        Relationships: []
+      }
+      fanmark_search_public_v1: {
+        Row: {
+          created_at: string | null
+          emoji_combination: string | null
+          id: string | null
+          is_active: boolean | null
+          is_taken: boolean | null
+          normalized_emoji: string | null
+          owner_display_name: string | null
+          owner_username: string | null
+          short_id: string | null
+          status: string | null
+          tier_level: number | null
+        }
+        Relationships: []
+      }
+      fanmarks_public_search: {
+        Row: {
+          created_at: string | null
+          current_license_id: string | null
+          emoji_combination: string | null
+          id: string | null
+          normalized_emoji: string | null
+          short_id: string | null
+          status: string | null
+          tier_level: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_license_id?: string | null
+          emoji_combination?: string | null
+          id?: string | null
+          normalized_emoji?: string | null
+          short_id?: string | null
+          status?: string | null
+          tier_level?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          current_license_id?: string | null
+          emoji_combination?: string | null
+          id?: string | null
+          normalized_emoji?: string | null
+          short_id?: string | null
+          status?: string | null
+          tier_level?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_fanmarks_current_license_id"
+            columns: ["current_license_id"]
+            isOneToOne: false
+            referencedRelation: "fanmark_licenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      my_fanmark_claims_v1: {
+        Row: {
+          fanmark_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          fanmark_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          fanmark_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_fanmark_licenses_fanmark_id"
+            columns: ["fanmark_id"]
+            isOneToOne: false
+            referencedRelation: "fanmark_search_auth_v1"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_fanmark_licenses_fanmark_id"
+            columns: ["fanmark_id"]
+            isOneToOne: false
+            referencedRelation: "fanmark_search_public_v1"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_fanmark_licenses_fanmark_id"
+            columns: ["fanmark_id"]
+            isOneToOne: false
+            referencedRelation: "fanmarks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_fanmark_licenses_fanmark_id"
+            columns: ["fanmark_id"]
+            isOneToOne: false
+            referencedRelation: "fanmarks_public_search"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_profiles: {
         Row: {
           avatar_url: string | null
