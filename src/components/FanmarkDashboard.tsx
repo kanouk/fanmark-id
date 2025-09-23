@@ -384,12 +384,12 @@ export const FanmarkDashboard = () => {
               <CardHeader className="px-6 pt-6 pb-2">
                 <CardTitle className="flex items-center justify-between">
                   <div className="text-center space-y-2">
-                    <div className="flex items-center justify-center gap-2">
-                      <FiLayers className="h-5 w-5" />
-                      <h2 className="text-xl font-bold text-foreground">
-                        {t('dashboard.yourFanmarks')}
-                      </h2>
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <FiLayers className="h-6 w-6" />
                     </div>
+                    <h2 className="text-xl font-bold text-foreground">
+                      {t('dashboard.yourFanmarks')}
+                    </h2>
                     <p className="text-sm text-muted-foreground">
                       {t('dashboard.manageFanmarks')}
                     </p>
@@ -443,14 +443,15 @@ export const FanmarkDashboard = () => {
                       <div className="overflow-x-auto">
                         <table className="w-full">
                           <thead>
-                             <tr className="bg-muted/50">
-                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.fanmark')}</th>
-                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.accessType')}</th>
-                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.acquisitionDate')}</th>
-                                <th className="text-muted-foreground font-semibold text-left p-3">返却日</th>
-                               <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.status')}</th>
-                               <th className="text-left p-3 text-muted-foreground font-semibold"></th>
-                             </tr>
+                              <tr className="bg-muted/50">
+                                <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.fanmark')}</th>
+                                <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.accessType')}</th>
+                                <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.acquisitionDate')}</th>
+                                 <th className="text-muted-foreground font-semibold text-left p-3">返却日</th>
+                                <th className="text-muted-foreground font-semibold text-left p-3">{t('dashboard.status')}</th>
+                                <th className="text-left p-3 text-muted-foreground font-semibold"></th>
+                                <th className="text-left p-3 text-muted-foreground font-semibold"></th>
+                              </tr>
                           </thead>
                           <tbody>
                             {filteredFanmarks.map((fanmark) => {
@@ -532,24 +533,48 @@ export const FanmarkDashboard = () => {
                                  <td className="px-4 py-4">
                                    {getStatusBadge(licenseData?.status)}
                                  </td>
-                                 <td className="px-4 py-4">
-                                   <TooltipProvider delayDuration={200}>
-                                     <Tooltip>
-                                       <TooltipTrigger asChild>
-                                         <Button
-                                           size="sm"
-                                           variant="ghost"
-                                           className="h-8 w-8 p-0 hover:bg-secondary"
-                                           onClick={() => handleOpenSettings(fanmark.id)}
-                                           aria-label={t('dashboard.actionsSettings')}
-                                         >
-                                            <Settings className="h-5 w-5" />
-                                         </Button>
-                                       </TooltipTrigger>
-                                       <TooltipContent>{t('dashboard.actionsSettings')}</TooltipContent>
-                                     </Tooltip>
-                                   </TooltipProvider>
-                                 </td>
+                                  <td className="px-4 py-4">
+                                    <TooltipProvider delayDuration={200}>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-8 w-8 p-0 hover:bg-secondary"
+                                            onClick={() => {
+                                              navigator.clipboard.writeText(`https://fanmark.id/${fanmark.emoji_combination}`);
+                                              toast({
+                                                title: "コピーしました",
+                                                description: `https://fanmark.id/${fanmark.emoji_combination}`,
+                                              });
+                                            }}
+                                            aria-label="ファンマをコピー"
+                                          >
+                                             <Copy className="h-4 w-4" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>ファンマをコピー</TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  </td>
+                                  <td className="px-4 py-4">
+                                    <TooltipProvider delayDuration={200}>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-8 w-8 p-0 hover:bg-secondary"
+                                            onClick={() => handleOpenSettings(fanmark.id)}
+                                            aria-label={t('dashboard.actionsSettings')}
+                                          >
+                                             <Settings className="h-5 w-5" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>{t('dashboard.actionsSettings')}</TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  </td>
                                 </tr>
                               );
                             })}
@@ -631,58 +656,80 @@ export const FanmarkDashboard = () => {
                                   </div>
                                 )}
 
-                                 <div className="flex items-center justify-between pt-2">
-                                   <div>
-                                     {!isReturned(fanmark) && (
-                                       <AlertDialog>
-                                         <AlertDialogTrigger asChild>
-                                           <Button
-                                             size="sm"
-                                             variant="outline"
-                                             className="h-7 px-2 text-xs hover:bg-red-50 hover:text-red-600 hover:border-red-200"
-                                             disabled={returningFanmarkId === fanmark.id}
-                                           >
-                                             <FiCornerUpLeft className="h-3 w-3 mr-1" />
-                                             返却
-                                           </Button>
-                                         </AlertDialogTrigger>
-                                         <AlertDialogContent>
-                                           <AlertDialogHeader>
-                                             <AlertDialogTitle>{t('dashboard.returnConfirmTitle')}</AlertDialogTitle>
-                                             <AlertDialogDescription>
-                                               {t('dashboard.returnConfirmDescription')}
-                                             </AlertDialogDescription>
-                                           </AlertDialogHeader>
-                                           <AlertDialogFooter>
-                                             <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                                             <AlertDialogAction
-                                               onClick={() => handleReturnFanmark(fanmark.id)}
-                                               className="bg-red-600 hover:bg-red-700"
-                                             >
-                                               {returningFanmarkId === fanmark.id ? t('common.processing') : t('dashboard.returnConfirmAction')}
-                                             </AlertDialogAction>
-                                           </AlertDialogFooter>
-                                         </AlertDialogContent>
-                                       </AlertDialog>
-                                     )}
-                                   </div>
-                                   <TooltipProvider delayDuration={200}>
-                                     <Tooltip>
-                                       <TooltipTrigger asChild>
-                                         <Button
-                                           size="sm"
-                                           variant="ghost"
-                                           className="h-9 w-9 p-0 hover:bg-secondary"
-                                           onClick={() => handleOpenSettings(fanmark.id)}
-                                           aria-label={t('dashboard.actionsSettings')}
-                                         >
-                                           <Settings className="h-5 w-5" />
-                                         </Button>
-                                       </TooltipTrigger>
-                                       <TooltipContent>{t('dashboard.actionsSettings')}</TooltipContent>
-                                     </Tooltip>
-                                   </TooltipProvider>
-                                 </div>
+                                  <div className="flex items-center justify-between pt-2">
+                                    <div className="flex items-center gap-2">
+                                      {!isReturned(fanmark) && (
+                                        <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              className="h-7 px-2 text-xs hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                                              disabled={returningFanmarkId === fanmark.id}
+                                            >
+                                              <FiCornerUpLeft className="h-3 w-3 mr-1" />
+                                              返却
+                                            </Button>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                              <AlertDialogTitle>{t('dashboard.returnConfirmTitle')}</AlertDialogTitle>
+                                              <AlertDialogDescription>
+                                                {t('dashboard.returnConfirmDescription')}
+                                              </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                                              <AlertDialogAction
+                                                onClick={() => handleReturnFanmark(fanmark.id)}
+                                                className="bg-red-600 hover:bg-red-700"
+                                              >
+                                                {returningFanmarkId === fanmark.id ? t('common.processing') : t('dashboard.returnConfirmAction')}
+                                              </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                        </AlertDialog>
+                                      )}
+                                      <TooltipProvider delayDuration={200}>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              className="h-8 w-8 p-0 hover:bg-secondary"
+                                              onClick={() => {
+                                                navigator.clipboard.writeText(`https://fanmark.id/${fanmark.emoji_combination}`);
+                                                toast({
+                                                  title: "コピーしました",
+                                                  description: `https://fanmark.id/${fanmark.emoji_combination}`,
+                                                });
+                                              }}
+                                              aria-label="ファンマをコピー"
+                                            >
+                                               <Copy className="h-4 w-4" />
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>ファンマをコピー</TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    </div>
+                                    <TooltipProvider delayDuration={200}>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-9 w-9 p-0 hover:bg-secondary"
+                                            onClick={() => handleOpenSettings(fanmark.id)}
+                                            aria-label={t('dashboard.actionsSettings')}
+                                          >
+                                            <Settings className="h-5 w-5" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>{t('dashboard.actionsSettings')}</TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  </div>
                               </div>
                             </CardContent>
                           </Card>

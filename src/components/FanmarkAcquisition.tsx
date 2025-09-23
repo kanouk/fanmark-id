@@ -60,9 +60,9 @@ export const FanmarkAcquisition = ({
     if (!searchResult || !searchResult.emoji_combination || searchResult.error) {
       return 'bg-background/90';
     }
-    if (searchResult.status === 'available') return 'bg-emerald-100/50';
+    if (searchResult.status === 'available') return 'bg-emerald-50/30';
     // not_available
-    return isOwnedByMe ? 'bg-sky-100/50' : 'bg-rose-100/50';
+    return isOwnedByMe ? 'bg-sky-50/30' : 'bg-rose-50/30';
   }, [searchResult, isOwnedByMe]);
 
   const handleAcquireRequest = () => {
@@ -188,7 +188,7 @@ export const FanmarkAcquisition = ({
             initialQuery={prefilledEmoji}
           />
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
             {searchResult && searchResult.status === 'available' ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Sparkles className="h-4 w-4 text-primary" />
