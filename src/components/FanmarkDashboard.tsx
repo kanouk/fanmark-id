@@ -130,29 +130,53 @@ export const FanmarkDashboard = () => {
   }, [location, navigate]);
 
   const fetchFanmarks = useCallback(async () => {
+    if (!user?.id) return;
+    
+    setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('fanmarks')
+      // Get all licenses for this user with fanmark details
+      const { data: licensesData, error: licensesError } = await supabase
+        .from('fanmark_licenses')
         .select(`
           *,
-          fanmark_licenses!current_license_id (
-            license_start,
-            license_end,
-            status
+          fanmarks!fanmark_id (
+            id,
+            emoji_combination,
+            display_name,
+            short_id,
+            access_type,
+            target_url,
+            text_content,
+            redirect_url,
+            profile_text,
+            is_transferable,
+            status,
+            created_at,
+            updated_at,
+            user_id,
+            normalized_emoji,
+            current_license_id
           )
         `)
         .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
+        .order('license_end', { ascending: false });
 
-      if (error) throw error;
-      
-      // Cast data to match our interface, ensuring all fields are present
-      const fanmarksWithDefaults = (data ?? []).map(fanmark => ({
-        ...fanmark,
-        tier_level: (fanmark as any).tier_level ?? null,
-        current_license_id: (fanmark as any).current_license_id ?? null,
-        fanmark_licenses: (fanmark as any).fanmark_licenses || null,
-      })) as Fanmark[];
+      if (licensesError) throw licensesError;
+
+      // Transform the data to match the expected Fanmark interface
+      const fanmarksWithDefaults = (licensesData ?? []).map(license => {
+        const fanmarkData = (license as any).fanmarks;
+        
+        return {
+          ...fanmarkData,
+          tier_level: license.tier_level,
+          fanmark_licenses: {
+            license_start: license.license_start,
+            license_end: license.license_end,
+            status: license.status
+          }
+        };
+      }) as Fanmark[];
       
       setFanmarks(fanmarksWithDefaults);
     } catch (error) {
