@@ -17,6 +17,7 @@ import { FiTarget, FiLayers, FiCompass, FiStar, FiCheckCircle, FiMoon, FiFileTex
 import { FanmarkAcquisition } from './FanmarkAcquisition';
 // Fixed Undo2 import issue - using FiCornerUpLeft instead
 import { supabase } from '@/integrations/supabase/client';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
 
 interface Fanmark {
   id: string;
@@ -61,7 +62,7 @@ export const FanmarkDashboard = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const fanmarkLimit = 10; // Default limit
+  const { settings } = useSystemSettings();
 
   const [fanmarks, setFanmarks] = useState<Fanmark[]>([]);
   const [loading, setLoading] = useState(true);
@@ -238,6 +239,11 @@ export const FanmarkDashboard = () => {
     );
   };
 
+  const activeFanmarks = fanmarks.filter(f => {
+    const licenseData = f.fanmark_licenses as any;
+    return licenseData?.status === 'active' || licenseData?.status === 'grace';
+  }).length;
+  
   const filteredFanmarks = fanmarks;
 
   const handleRequireAuth = (emoji: string) => {
@@ -280,9 +286,9 @@ export const FanmarkDashboard = () => {
                   </p>
                   <div className="flex items-baseline gap-3">
                     <span className="text-3xl font-bold text-primary">{fanmarks.length}</span>
-                    <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      {t('dashboard.stats.limitLabel')}: {fanmarkLimit}
-                    </span>
+                     <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                       {t('dashboard.stats.limitLabel')}: {settings.max_fanmarks_per_user}
+                     </span>
                   </div>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -290,10 +296,10 @@ export const FanmarkDashboard = () => {
                 </div>
               </div>
               <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden mt-4">
-                <div 
-                  className="bg-primary h-2.5 rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min((fanmarks.length / fanmarkLimit) * 100, 100)}%` }}
-                />
+                 <div 
+                   className="bg-primary h-2.5 rounded-full transition-all duration-500"
+                   style={{ width: `${Math.min((activeFanmarks / settings.max_fanmarks_per_user) * 100, 100)}%` }}
+                 />
               </div>
             </CardContent>
           </Card>
@@ -365,17 +371,17 @@ export const FanmarkDashboard = () => {
                           </Button>
                         </DialogTrigger>
                         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                          <FanmarkAcquisition
-                            prefilledEmoji={prefilledEmoji}
-                            fanmarkLimit={fanmarkLimit}
-                            currentCount={fanmarks.length}
-                            onObtain={() => {
-                              setPrefilledEmoji(undefined);
-                              fetchFanmarks();
-                              setActiveTab('my-fanmarks');
-                            }}
-                            onRequireAuth={handleRequireAuth}
-                          />
+                           <FanmarkAcquisition
+                             prefilledEmoji={prefilledEmoji}
+                             fanmarkLimit={settings.max_fanmarks_per_user}
+                             currentCount={activeFanmarks}
+                             onObtain={() => {
+                               setPrefilledEmoji(undefined);
+                               fetchFanmarks();
+                               setActiveTab('my-fanmarks');
+                             }}
+                             onRequireAuth={handleRequireAuth}
+                           />
                         </DialogContent>
                       </Dialog>
                     </div>
@@ -513,21 +519,6 @@ export const FanmarkDashboard = () => {
                                         </AlertDialogFooter>
                                       </AlertDialogContent>
                                     </AlertDialog>
-                                    <TooltipProvider delayDuration={200}>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-8 w-8 p-0 hover:bg-secondary"
-                                            aria-label={t('dashboard.actionsCopyLink')}
-                                          >
-                                            <Copy className="h-4 w-4" />
-                                          </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>{t('dashboard.actionsCopyLink')}</TooltipContent>
-                                      </Tooltip>
-                                    </TooltipProvider>
                                     <TooltipProvider delayDuration={200}>
                                       <Tooltip>
                                         <TooltipTrigger asChild>
@@ -686,21 +677,6 @@ export const FanmarkDashboard = () => {
                                           size="sm"
                                           variant="ghost"
                                           className="h-9 w-9 p-0 hover:bg-secondary"
-                                          aria-label={t('dashboard.actionsCopyLink')}
-                                        >
-                                          <Copy className="h-4 w-4" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>{t('dashboard.actionsCopyLink')}</TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                  <TooltipProvider delayDuration={200}>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          className="h-9 w-9 p-0 hover:bg-secondary"
                                           onClick={() => handleOpenSettings(fanmark.id)}
                                           aria-label={t('dashboard.actionsSettings')}
                                         >
@@ -737,17 +713,17 @@ export const FanmarkDashboard = () => {
                     {t('dashboard.getFanmaDescription')}
                   </p>
                 </div>
-                <FanmarkAcquisition
-                  prefilledEmoji={prefilledEmoji}
-                  fanmarkLimit={fanmarkLimit}
-                  currentCount={fanmarks.length}
-                  onObtain={() => {
-                    setPrefilledEmoji(undefined);
-                    fetchFanmarks();
-                    setActiveTab('my-fanmarks');
-                  }}
-                  onRequireAuth={handleRequireAuth}
-                />
+                 <FanmarkAcquisition
+                   prefilledEmoji={prefilledEmoji}
+                   fanmarkLimit={settings.max_fanmarks_per_user}
+                   currentCount={activeFanmarks}
+                   onObtain={() => {
+                     setPrefilledEmoji(undefined);
+                     fetchFanmarks();
+                     setActiveTab('my-fanmarks');
+                   }}
+                   onRequireAuth={handleRequireAuth}
+                 />
               </CardContent>
             </Card>
           </TabsContent>
