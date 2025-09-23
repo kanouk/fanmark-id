@@ -124,12 +124,16 @@ export const FanmarkAccess = () => {
               <p className="text-lg font-medium text-foreground">
                 あなたもファンマを取得しよう！
               </p>
-              <div 
-                onClick={() => navigate('/')} 
-                className="text-2xl font-bold text-primary cursor-pointer hover:text-primary/80 transition-colors"
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                className="group flex items-center gap-2 text-lg font-semibold text-foreground transition-transform hover:translate-y-[-1px]"
               >
-                fanmark.id
-              </div>
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
+                  ✨
+                </span>
+                <span className="text-gradient text-2xl">fanmark.id</span>
+              </button>
             </CardContent>
           </Card>
         </div>

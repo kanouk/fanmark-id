@@ -328,15 +328,6 @@ export const FanmarkSettings = ({
                     {t('fanmarkSettings.fields.profile.label')}
                   </Label>
                   <div className="space-y-3 pl-6">
-                    <label className="flex items-center gap-2 text-sm text-foreground">
-                      <input
-                        type="checkbox"
-                        id="createProfile"
-                        {...register('createProfile')}
-                        className="h-5 w-5 rounded border-border text-primary focus:ring-primary"
-                      />
-                      {t('fanmarkSettings.fields.profile.publish')}
-                    </label>
                     <Button
                       type="button"
                       variant="outline"
