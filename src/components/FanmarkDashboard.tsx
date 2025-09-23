@@ -243,8 +243,32 @@ export const FanmarkDashboard = () => {
     const licenseData = f.fanmark_licenses as any;
     return licenseData?.status === 'active' || licenseData?.status === 'grace';
   }).length;
+
+  const sortedFanmarks = fanmarks.sort((a, b) => {
+    // Sort by status first (active/grace before expired)
+    const aLicenseData = a.fanmark_licenses as any;
+    const bLicenseData = b.fanmark_licenses as any;
+    const aIsActive = aLicenseData?.status === 'active' || aLicenseData?.status === 'grace';
+    const bIsActive = bLicenseData?.status === 'active' || bLicenseData?.status === 'grace';
+    
+    if (aIsActive !== bIsActive) {
+      return aIsActive ? -1 : 1;
+    }
+    
+    // For active fanmarks, sort by expiration date (closest expiration first)
+    if (aIsActive && bIsActive) {
+      const aExpiration = aLicenseData?.license_end ? new Date(aLicenseData.license_end).getTime() : 0;
+      const bExpiration = bLicenseData?.license_end ? new Date(bLicenseData.license_end).getTime() : 0;
+      return aExpiration - bExpiration;
+    }
+    
+    // For expired fanmarks, sort by acquisition date (newest first)
+    const aAcquisition = aLicenseData?.license_start ? new Date(aLicenseData.license_start).getTime() : 0;
+    const bAcquisition = bLicenseData?.license_start ? new Date(bLicenseData.license_start).getTime() : 0;
+    return bAcquisition - aAcquisition;
+  });
   
-  const filteredFanmarks = fanmarks;
+  const filteredFanmarks = sortedFanmarks;
 
   const handleRequireAuth = (emoji: string) => {
     try {
