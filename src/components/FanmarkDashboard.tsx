@@ -136,10 +136,11 @@ export const FanmarkDashboard = () => {
         .from('fanmarks')
         .select(`
           *,
-          fanmark_licenses!current_license_id (
+          fanmark_licenses!fanmark_id (
             license_start,
             license_end,
-            status
+            status,
+            created_at
           )
         `)
         .eq('user_id', user?.id)
@@ -147,13 +148,32 @@ export const FanmarkDashboard = () => {
 
       if (error) throw error;
       
-      // Cast data to match our interface, ensuring all fields are present
-      const fanmarksWithDefaults = (data ?? []).map(fanmark => ({
-        ...fanmark,
-        tier_level: (fanmark as any).tier_level ?? null,
-        current_license_id: (fanmark as any).current_license_id ?? null,
-        fanmark_licenses: (fanmark as any).fanmark_licenses || null,
-      })) as Fanmark[];
+      // Process fanmarks to select the most recent license for each
+      const fanmarksWithDefaults = (data ?? []).map(fanmark => {
+        const licenses = (fanmark as any).fanmark_licenses || [];
+        
+        // Select the most recent license (active/grace first, then most recent expired)
+        let selectedLicense = null;
+        if (licenses.length > 0) {
+          // First try to find an active or grace license
+          const activeLicense = licenses.find((l: any) => l.status === 'active' || l.status === 'grace');
+          if (activeLicense) {
+            selectedLicense = activeLicense;
+          } else {
+            // If no active license, get the most recent one by creation date
+            selectedLicense = licenses.sort((a: any, b: any) => 
+              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            )[0];
+          }
+        }
+        
+        return {
+          ...fanmark,
+          tier_level: (fanmark as any).tier_level ?? null,
+          current_license_id: (fanmark as any).current_license_id ?? null,
+          fanmark_licenses: selectedLicense,
+        };
+      }) as Fanmark[];
       
       setFanmarks(fanmarksWithDefaults);
     } catch (error) {
