@@ -260,26 +260,16 @@ export function useFanmarkSearch() {
       let ownerUserId: string | null = null;
   
       if (isTaken) {
-        // 現在の保持者を licenses から取得（RLS要確認）
-        const { data: license } = await supabase
-          .from('fanmark_licenses')
-          .select('user_id, status')
-          .eq('id', fanmark.current_license_id)
-          .maybeSingle();
-  
-        ownerUserId = license?.status === 'active' ? license.user_id : null;
+      // Use secure function to check ownership without exposing user data
+      const { data: ownershipStatus } = await supabase
+        .rpc('get_fanmark_ownership_status', { fanmark_license_id: fanmark.current_license_id });
+
+      ownerUserId = ownershipStatus?.[0]?.has_active_license ? 'hidden_for_privacy' : null;
       }
   
-      // 保持者プロフィール（あれば）
+      // For privacy protection, we no longer expose owner profile details
+      // Users can only see if a fanmark is taken or available
       let ownerProfile: { username: string | null; display_name: string | null } | null = null;
-      if (ownerUserId) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('username, display_name')
-          .eq('user_id', ownerUserId)
-          .maybeSingle();
-        ownerProfile = data ?? null;
-      }
   
       setResult({
         id: fanmark.id,
@@ -288,13 +278,8 @@ export function useFanmarkSearch() {
         short_id: fanmark.short_id,
         tier_level: fanmark.tier_level,
         status: isTaken ? 'not_available' : 'available',
-        owner: ownerUserId && ownerProfile
-          ? {
-              user_id: ownerUserId,
-              username: ownerProfile.username ?? '',
-              display_name: ownerProfile.display_name ?? '',
-            }
-          : undefined,
+        // For privacy protection, we no longer expose owner details
+        owner: undefined,
       });
     } catch (error) {
       console.error('Error searching fanmarks:', error);

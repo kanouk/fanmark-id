@@ -636,6 +636,13 @@ export type Database = {
           text_content: string
         }[]
       }
+      get_fanmark_ownership_status: {
+        Args: { fanmark_license_id: string }
+        Returns: {
+          has_active_license: boolean
+          is_taken: boolean
+        }[]
+      }
       get_public_emoji_profile: {
         Args: { profile_fanmark_id: string }
         Returns: {
@@ -664,6 +671,10 @@ export type Database = {
       }
       is_admin: {
         Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_fanmark_licensed: {
+        Args: { fanmark_license_id: string }
         Returns: boolean
       }
       is_super_admin: {
