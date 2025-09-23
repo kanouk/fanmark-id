@@ -163,8 +163,20 @@ export const FanmarkDashboard = () => {
 
       if (licensesError) throw licensesError;
 
+      // Group licenses by fanmark_id and keep only the latest one for each fanmark
+      const latestLicensesByFanmark = new Map<string, any>();
+      (licensesData ?? []).forEach(license => {
+        const fanmarkId = license.fanmark_id;
+        const existing = latestLicensesByFanmark.get(fanmarkId);
+        
+        // Keep the license with the latest license_end date
+        if (!existing || new Date(license.license_end) > new Date(existing.license_end)) {
+          latestLicensesByFanmark.set(fanmarkId, license);
+        }
+      });
+
       // Transform the data to match the expected Fanmark interface
-      const fanmarksWithDefaults = (licensesData ?? []).map(license => {
+      const fanmarksWithDefaults = Array.from(latestLicensesByFanmark.values()).map(license => {
         const fanmarkData = (license as any).fanmarks;
         
         return {
