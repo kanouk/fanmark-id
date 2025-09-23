@@ -329,102 +329,137 @@ serve(async (req) => {
       );
     }
 
+    // Check if a fanmark record already exists for this normalized emoji
+    const { data: existingFanmark } = await supabase
+      .from<FanmarkRow>('fanmarks')
+      .select('id, status, current_license_id, user_id, tier_level, emoji_combination, short_id')
+      .eq('normalized_emoji', normalizedEmoji)
+      .maybeSingle();
 
-    // Generate unique short ID
-    let shortId = generateShortId();
-    let attempts = 0;
-    while (attempts < 10) {
-      const { data: existing } = await supabase
-        .from<Pick<FanmarkRow, 'id'>>('fanmarks')
-        .select('id')
-        .eq('short_id', shortId)
-        .maybeSingle();
-
-      if (!existing) break;
-      shortId = generateShortId();
-      attempts++;
-    }
-
-    if (attempts >= 10) {
-      return new Response(
-        JSON.stringify({ error: 'Failed to generate unique ID' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Validate URL if redirect type
-    if (accessType === 'redirect' && targetUrl) {
-      try {
-        const url = new URL(targetUrl);
-        if (!['http:', 'https:'].includes(url.protocol)) {
-          return new Response(
-            JSON.stringify({ error: 'Only HTTP and HTTPS URLs are allowed' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-      } catch {
+    // If a record exists:
+    // - If it's not active, block registration.
+    // - If it has an active/current license, block as taken.
+    // - If it's active and unlicensed, reuse the record instead of inserting a new one.
+    if (existingFanmark) {
+      if (existingFanmark.status !== 'active') {
         return new Response(
-          JSON.stringify({ error: 'Invalid URL format' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ error: 'This emoji pattern is not active and cannot be registered' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-    }
-
-    // Check user's fanmark limit
-    const { data: userProfile } = await supabase
-      .from<{ emoji_limit: number | null }>('profiles')
-      .select('emoji_limit')
-      .eq('user_id', user.id)
-      .single();
-
-    const { count: userFanmarkCount } = await supabase
-      .from<FanmarkRow>('fanmarks')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('status', 'active');
-
-    const limit = userProfile?.emoji_limit || 10;
-    if (userFanmarkCount && userFanmarkCount >= limit) {
-      return new Response(
-        JSON.stringify({ error: `You have reached your limit of ${limit} fanmarks` }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Insert fanmark with conflict handling
-    const { data: fanmark, error: insertError } = await supabase
-      .from('fanmarks')
-      .insert({
-        emoji_combination: input_emoji_combination,
-        normalized_emoji: normalizedEmoji,
-        short_id: shortId,
-        user_id: user.id,
-        status: 'active',
-        tier_level: tierLevel,
-        access_type: accessType,
-        target_url: targetUrl || null,
-        text_content: textContent || null,
-        display_name: displayName || null,
-        is_transferable: isTransferable
-      })
-      .select('id, emoji_combination, short_id, tier_level')
-      .single();
-
-    if (insertError) {
-      if (insertError.code === '23505') { // Unique constraint violation
+      if (existingFanmark.current_license_id) {
         return new Response(
           JSON.stringify({ error: 'This emoji combination is already taken' }),
           { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      throw insertError;
     }
 
-    if (!fanmark) {
-      return new Response(
-        JSON.stringify({ error: 'Failed to create fanmark' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Either reuse existing fanmark (active & unlicensed) or create a new one
+    let fanmarkId: string;
+    let fanmarkEmojiCombination: string;
+    let fanmarkShortId: string;
+    let effectiveTierLevel = tierLevel;
+
+    if (existingFanmark) {
+      // Reuse the existing row; update owner to the current user (optional but keeps counts aligned)
+      const { error: updateOwnerErr } = await supabase
+        .from('fanmarks')
+        .update({ user_id: user.id })
+        .eq('id', existingFanmark.id);
+
+      if (updateOwnerErr) {
+        console.error('Failed to update fanmark owner:', updateOwnerErr);
+      }
+
+      fanmarkId = existingFanmark.id;
+      fanmarkEmojiCombination = existingFanmark.emoji_combination;
+      fanmarkShortId = existingFanmark.short_id;
+      // Keep the existing tier_level if present
+      if (existingFanmark.tier_level) {
+        effectiveTierLevel = existingFanmark.tier_level;
+      }
+    } else {
+      // Generate unique short ID
+      let shortId = generateShortId();
+      let attempts = 0;
+      while (attempts < 10) {
+        const { data: existing } = await supabase
+          .from<Pick<FanmarkRow, 'id'>>('fanmarks')
+          .select('id')
+          .eq('short_id', shortId)
+          .maybeSingle();
+
+        if (!existing) break;
+        shortId = generateShortId();
+        attempts++;
+      }
+
+      if (attempts >= 10) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to generate unique ID' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Validate URL if redirect type
+      if (accessType === 'redirect' && targetUrl) {
+        try {
+          const url = new URL(targetUrl);
+          if (!['http:', 'https:'].includes(url.protocol)) {
+            return new Response(
+              JSON.stringify({ error: 'Only HTTP and HTTPS URLs are allowed' }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        } catch {
+          return new Response(
+            JSON.stringify({ error: 'Invalid URL format' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+
+      // Insert fanmark with conflict handling
+      const { data: inserted, error: insertError } = await supabase
+        .from('fanmarks')
+        .insert({
+          emoji_combination: input_emoji_combination,
+          normalized_emoji: normalizedEmoji,
+          short_id: shortId,
+          user_id: user.id,
+          status: 'active',
+          tier_level: effectiveTierLevel,
+          access_type: accessType,
+          target_url: targetUrl || null,
+          text_content: textContent || null,
+          display_name: displayName || null,
+          is_transferable: isTransferable
+        })
+        .select('id, emoji_combination, short_id, tier_level')
+        .single();
+
+      if (insertError) {
+        if (insertError.code === '23505') { // Unique constraint violation (emoji already exists)
+          return new Response(
+            JSON.stringify({ error: 'This emoji combination is already taken' }),
+            { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        throw insertError;
+      }
+
+      if (!inserted) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to create fanmark' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      fanmarkId = inserted.id;
+      fanmarkEmojiCombination = inserted.emoji_combination;
+      fanmarkShortId = inserted.short_id;
+      effectiveTierLevel = inserted.tier_level ?? effectiveTierLevel;
     }
 
     // Create initial license for the fanmark
@@ -434,9 +469,9 @@ serve(async (req) => {
     const { data: license, error: licenseError } = await supabase
       .from('fanmark_licenses')
       .insert({
-        fanmark_id: fanmark.id,
+        fanmark_id: fanmarkId,
         user_id: user.id,
-        tier_level: tierLevel,
+        tier_level: effectiveTierLevel,
         license_start: new Date().toISOString(),
         license_end: licenseEndDate.toISOString(),
         status: 'active',
@@ -455,7 +490,7 @@ serve(async (req) => {
       await supabase
         .from('fanmarks')
         .update({ current_license_id: license.id })
-        .eq('id', fanmark.id);
+        .eq('id', fanmarkId);
     }
 
     // Create emoji profile if requested
@@ -463,7 +498,7 @@ serve(async (req) => {
       const { error: profileError } = await supabase
         .from('emoji_profiles')
         .insert({
-          fanmark_id: fanmark.id,
+          fanmark_id: fanmarkId,
           user_id: user.id,
           bio: `Welcome to ${displayName || input_emoji_combination}'s profile!`,
           is_public: true
@@ -483,12 +518,12 @@ serve(async (req) => {
         user_id: user.id,
         action: 'register_fanmark',
         resource_type: 'fanmark',
-        resource_id: fanmark.id,
+        resource_id: fanmarkId,
         request_id: requestId,
         metadata: {
           emoji_combination: input_emoji_combination,
           normalized_emoji: normalizedEmoji,
-          short_id: shortId,
+          short_id: fanmarkShortId,
           access_type: accessType,
           display_name: displayName,
           create_profile: createProfile
@@ -499,11 +534,11 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         fanmark: {
-          id: fanmark.id,
-          emoji_combination: fanmark.emoji_combination,
-          short_id: fanmark.short_id,
-          canonical_url: `/e/${fanmark.short_id}`,
-          display_url: `/emoji/${encodeURIComponent(fanmark.emoji_combination)}`
+          id: fanmarkId,
+          emoji_combination: fanmarkEmojiCombination,
+          short_id: fanmarkShortId,
+          canonical_url: `/e/${fanmarkShortId}`,
+          display_url: `/emoji/${encodeURIComponent(fanmarkEmojiCombination)}`
         }
       }),
       { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
