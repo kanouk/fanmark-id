@@ -106,8 +106,13 @@ const FanmarkSettingsPage = () => {
       title: t('fanmarkSettings.toast.successTitle'),
       description: t('fanmarkSettings.toast.successDescription'),
     });
-    // ダッシュボードに遷移
-    navigate('/dashboard');
+    // データを再読み込みしてからダッシュボードに遷移
+    loadFanmark().then(() => {
+      navigate('/dashboard');
+    }).catch(() => {
+      // エラーが発生してもダッシュボードに遷移
+      navigate('/dashboard');
+    });
   };
 
   if (authLoading || loading) {
