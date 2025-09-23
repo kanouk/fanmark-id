@@ -1,8 +1,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Home, MessageSquare, Copy } from 'lucide-react';
+import { Copy } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
 import { toast } from '@/hooks/use-toast';
@@ -43,7 +42,6 @@ export const FanmarkMessage = ({ fanmark }: FanmarkMessageProps) => {
     }
   };
 
-  const displayName = fanmark.display_name || 'Message Board';
   const message = fanmark.text_content || 'No message available.';
 
   return (
@@ -52,24 +50,14 @@ export const FanmarkMessage = ({ fanmark }: FanmarkMessageProps) => {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="text-8xl mb-4">{fanmark.emoji_combination}</div>
-          <h1 className="text-3xl font-bold mb-2">{displayName}</h1>
-          <Badge variant="secondary" className="mb-4">
-            <MessageSquare className="h-3 w-3 mr-1" />
-            Message Board
-          </Badge>
         </div>
 
         {/* Message Content */}
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                Message
-              </h2>
-              
-              <div className="bg-muted/30 rounded-lg p-4 min-h-[100px]">
-                <p className="whitespace-pre-wrap text-foreground leading-relaxed">
+        <Card className="mb-8">
+          <CardContent className="p-8">
+            <div className="space-y-6">
+              <div className="bg-muted/30 rounded-lg p-6 min-h-[120px]">
+                <p className="whitespace-pre-wrap text-foreground leading-relaxed text-lg">
                   {message}
                 </p>
               </div>
@@ -91,11 +79,14 @@ export const FanmarkMessage = ({ fanmark }: FanmarkMessageProps) => {
           </CardContent>
         </Card>
 
-        {/* Back to Home */}
+        {/* fanmark.id Logo */}
         <div className="text-center">
-          <Button onClick={() => navigate('/')} variant="outline">
-            <Home className="h-4 w-4 mr-2" />
-            Go to Home
+          <Button 
+            onClick={() => navigate('/')} 
+            variant="ghost"
+            className="text-lg font-bold hover:bg-transparent p-0"
+          >
+            fanmark.id
           </Button>
         </div>
       </div>

@@ -119,7 +119,7 @@ export function useFanmarkSearch() {
           normalized_emoji: fanmark.normalized_emoji,
           short_id: fanmark.short_id,
           tier_level: fanmark.tier_level,
-          status: fanmark.current_license_id ? 'not_available' : 'available',
+          status: 'not_available', // All recent fanmarks are already taken
           price_yen: undefined,
           price_usd: undefined,
           emoji_count: undefined,

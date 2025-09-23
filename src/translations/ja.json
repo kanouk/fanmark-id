@@ -81,6 +81,7 @@
     "seeHowUsed": "みんなの使い方を見る"
   },
   "auth": {
+    "title": "fanmark.id",
     "login": "ログイン",
     "signUp": "新規登録",
     "logout": "ログアウト",

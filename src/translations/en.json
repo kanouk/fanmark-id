@@ -81,6 +81,7 @@
     "seeHowUsed": "See How It's Used"
   },
   "auth": {
+    "title": "fanmark.id",
     "login": "Login",
     "signUp": "Sign Up",
     "logout": "Logout",
