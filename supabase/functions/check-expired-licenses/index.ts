@@ -149,7 +149,10 @@ serve(async (req) => {
             .from('fanmarks')
             .update({ 
               current_license_id: null,
-              access_type: 'inactive'
+              access_type: 'inactive',
+              display_name: null,
+              target_url: null,
+              text_content: null
             })
             .eq('id', license.fanmark_id);
 

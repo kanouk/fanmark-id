@@ -91,10 +91,16 @@ serve(async (req) => {
       }
     }
 
-    // Clear current_license_id and set access_type to inactive (don't change fanmark status)
+    // Clear current_license_id and user-configurable fields; set access_type to inactive (don't change fanmark status)
     const { error: fanmarkUpdateError } = await supabase
       .from('fanmarks')
-      .update({ access_type: 'inactive', current_license_id: null })
+      .update({ 
+        access_type: 'inactive', 
+        current_license_id: null,
+        display_name: null,
+        target_url: null,
+        text_content: null
+      })
       .eq('id', fanmark_id);
 
     if (fanmarkUpdateError) {
