@@ -455,7 +455,7 @@ export const FanmarkDashboard = () => {
                                         <div>{format(expirationDate, 'yyyy/MM/dd')}</div>
                                         <div className="text-xs text-muted-foreground">
                                           {isReturned(fanmark) 
-                                            ? '返却済み'
+                                            ? `${acquisitionDate} - ${format(expirationDate, 'yyyy/MM/dd')}`
                                             : (daysRemaining !== null && daysRemaining >= 0 
                                               ? t('dashboard.daysRemaining', { days: daysRemaining })
                                               : t('dashboard.expiringSoon')
@@ -606,7 +606,7 @@ export const FanmarkDashboard = () => {
                                           <div>{format(expirationDate, 'yyyy/MM/dd')}</div>
                                           <div className="text-xs text-muted-foreground">
                                             {isReturned(fanmark) 
-                                              ? '返却済み'
+                                              ? `${acquisitionDate} - ${format(expirationDate, 'yyyy/MM/dd')}`
                                               : (daysRemaining !== null && daysRemaining >= 0 
                                                 ? t('dashboard.daysRemaining', { days: daysRemaining })
                                                 : t('dashboard.expiringSoon')
