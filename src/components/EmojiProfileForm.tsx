@@ -28,6 +28,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 
 const profileSchema = z.object({
+  display_name: z.string().min(1, '名前を入力してください').max(50, '名前は50文字以内で入力してください'),
   bio: z.string().max(500, 'Bio must be 500 characters or less').optional(),
   social_links: z.object({
     instagram: z.string().url('Invalid URL').optional().or(z.literal('')),
@@ -88,6 +89,7 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose }: Emo
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
+      display_name: profile?.display_name || '',
       bio: profile?.bio || '',
       social_links: {
         instagram: profile?.social_links?.instagram || '',
@@ -308,6 +310,31 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose }: Emo
                   className="hidden"
                 />
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Display Name */}
+        <Card>
+          <CardHeader className="pb-6">
+            <div className="flex items-center gap-3">
+              <FileText className="h-4 w-4 text-primary" />
+              <CardTitle className="text-base">表示名</CardTitle>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              プロフィールに表示される名前を入力してください
+            </p>
+          </CardHeader>
+          <CardContent className="p-10">
+            <div className="space-y-3">
+              <Input
+                {...register('display_name')}
+                placeholder="あなたの名前"
+                className="w-full h-9 text-sm"
+              />
+              {errors.display_name && (
+                <p className="text-xs text-destructive">{errors.display_name.message}</p>
+              )}
             </div>
           </CardContent>
         </Card>

@@ -7,6 +7,7 @@ export interface EmojiProfile {
   id: string;
   fanmark_id: string;
   user_id: string;
+  display_name?: string;
   bio?: string;
   social_links?: Record<string, any>;
   theme_settings?: Record<string, any>;
@@ -19,6 +20,7 @@ export interface EmojiProfile {
 export interface PublicEmojiProfile {
   id: string;
   fanmark_id: string;
+  display_name?: string;
   bio?: string;
   social_links?: any;
   theme_settings?: any;
