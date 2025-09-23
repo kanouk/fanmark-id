@@ -208,7 +208,8 @@ export const FanmarkDashboard = () => {
   // Helper function to determine if a fanmark is returned/expired
   const isReturned = (fanmark: Fanmark) => {
     const licenseData = fanmark.fanmark_licenses as any;
-    return licenseData?.status === 'expired';
+    // 返却済みの条件: current_license_idがnullまたはstatusがexpired
+    return !fanmark.current_license_id || licenseData?.status === 'expired';
   };
 
   const getAccessTypeBadge = (accessType: string) => {
@@ -458,7 +459,10 @@ export const FanmarkDashboard = () => {
                                         <div>{format(expirationDate, 'yyyy/MM/dd')}</div>
                                         <div className="text-xs text-muted-foreground">
                                           {isReturned(fanmark) 
-                                            ? `${acquisitionDate} - ${format(expirationDate, 'yyyy/MM/dd')}`
+                                            ? (acquisitionDate !== '-' && expirationDate 
+                                              ? `${acquisitionDate} - ${format(expirationDate, 'yyyy/MM/dd')}`
+                                              : '返却済み'
+                                            )
                                             : (daysRemaining !== null && daysRemaining >= 0 
                                               ? t('dashboard.daysRemaining', { days: daysRemaining })
                                               : t('dashboard.expiringSoon')
@@ -467,7 +471,16 @@ export const FanmarkDashboard = () => {
                                         </div>
                                       </div>
                                     ) : (
-                                      <span className="text-muted-foreground">-</span>
+                                      <div className="text-sm">
+                                        {isReturned(fanmark) ? (
+                                          <div className="text-foreground">
+                                            <div>-</div>
+                                            <div className="text-xs text-muted-foreground">返却済み</div>
+                                          </div>
+                                        ) : (
+                                          <span className="text-muted-foreground">-</span>
+                                        )}
+                                      </div>
                                     )}
                                   </div>
                                 </td>
@@ -609,7 +622,10 @@ export const FanmarkDashboard = () => {
                                           <div>{format(expirationDate, 'yyyy/MM/dd')}</div>
                                           <div className="text-xs text-muted-foreground">
                                             {isReturned(fanmark) 
-                                              ? `${acquisitionDate} - ${format(expirationDate, 'yyyy/MM/dd')}`
+                                              ? (acquisitionDate !== '-' && expirationDate 
+                                                ? `${acquisitionDate} - ${format(expirationDate, 'yyyy/MM/dd')}`
+                                                : '返却済み'
+                                              )
                                               : (daysRemaining !== null && daysRemaining >= 0 
                                                 ? t('dashboard.daysRemaining', { days: daysRemaining })
                                                 : t('dashboard.expiringSoon')
@@ -618,7 +634,16 @@ export const FanmarkDashboard = () => {
                                           </div>
                                         </>
                                       ) : (
-                                        <span className="text-muted-foreground">-</span>
+                                        <div>
+                                          {isReturned(fanmark) ? (
+                                            <>
+                                              <div>-</div>
+                                              <div className="text-xs text-muted-foreground">返却済み</div>
+                                            </>
+                                          ) : (
+                                            <span className="text-muted-foreground">-</span>
+                                          )}
+                                        </div>
                                       )}
                                     </div>
                                   </div>
