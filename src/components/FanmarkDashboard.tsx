@@ -130,8 +130,12 @@ export const FanmarkDashboard = () => {
   }, [location, navigate]);
 
   const fetchFanmarks = useCallback(async () => {
+    if (!user?.id) return;
+    
+    setLoading(true);
     try {
-      const { data, error } = await supabase
+      // First, get all fanmarks
+      const { data: fanmarksData, error: fanmarksError } = await supabase
         .from('fanmarks')
         .select(`
           *,
@@ -144,15 +148,58 @@ export const FanmarkDashboard = () => {
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      
-      // Cast data to match our interface, ensuring all fields are present
-      const fanmarksWithDefaults = (data ?? []).map(fanmark => ({
-        ...fanmark,
-        tier_level: (fanmark as any).tier_level ?? null,
-        current_license_id: (fanmark as any).current_license_id ?? null,
-        fanmark_licenses: (fanmark as any).fanmark_licenses || null,
-      })) as Fanmark[];
+      if (fanmarksError) throw fanmarksError;
+
+      // For fanmarks without current_license_id, get their latest license by tier_level
+      const fanmarksWithoutCurrentLicense = (fanmarksData ?? []).filter(
+        fanmark => !fanmark.current_license_id && fanmark.tier_level
+      );
+
+      let latestLicensesByTier: Record<number, any> = {};
+      if (fanmarksWithoutCurrentLicense.length > 0) {
+        const tierLevels = fanmarksWithoutCurrentLicense.map(f => f.tier_level).filter(Boolean);
+        
+        const { data: licensesData, error: licensesError } = await supabase
+          .from('fanmark_licenses')
+          .select('*')
+          .in('tier_level', tierLevels)
+          .order('license_end', { ascending: false });
+
+        if (licensesError) {
+          console.error('Error fetching licenses:', licensesError);
+        } else {
+          // Group licenses by tier_level and get the latest one for each
+          (licensesData ?? []).forEach(license => {
+            if (!latestLicensesByTier[license.tier_level]) {
+              latestLicensesByTier[license.tier_level] = license;
+            }
+          });
+        }
+      }
+
+      // Merge the data
+      const fanmarksWithDefaults = (fanmarksData ?? []).map(fanmark => {
+        let licenseData = (fanmark as any).fanmark_licenses;
+        
+        // If no current license but has tier_level, find the latest license for this tier
+        if (!licenseData && !fanmark.current_license_id && fanmark.tier_level) {
+          const latestLicense = latestLicensesByTier[fanmark.tier_level];
+          if (latestLicense) {
+            licenseData = {
+              license_start: latestLicense.license_start,
+              license_end: latestLicense.license_end,
+              status: latestLicense.status
+            };
+          }
+        }
+
+        return {
+          ...fanmark,
+          tier_level: (fanmark as any).tier_level ?? null,
+          current_license_id: (fanmark as any).current_license_id ?? null,
+          fanmark_licenses: licenseData || null,
+        };
+      }) as Fanmark[];
       
       setFanmarks(fanmarksWithDefaults);
     } catch (error) {
