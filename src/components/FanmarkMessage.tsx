@@ -80,14 +80,17 @@ export const FanmarkMessage = ({ fanmark }: FanmarkMessageProps) => {
         </Card>
 
         {/* fanmark.id Logo */}
-        <div className="text-center">
-          <Button 
-            onClick={() => navigate('/')} 
-            variant="ghost"
-            className="text-lg font-bold hover:bg-transparent p-0"
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="group flex items-center gap-2 text-lg font-semibold text-foreground transition-transform hover:translate-y-[-1px]"
           >
-            fanmark.id
-          </Button>
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
+              ✨
+            </span>
+            <span className="text-gradient text-2xl">fanmark.id</span>
+          </button>
         </div>
       </div>
     </div>
