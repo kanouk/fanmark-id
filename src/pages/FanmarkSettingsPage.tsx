@@ -106,7 +106,8 @@ const FanmarkSettingsPage = () => {
       title: t('fanmarkSettings.toast.successTitle'),
       description: t('fanmarkSettings.toast.successDescription'),
     });
-    loadFanmark();
+    // ダッシュボードに遷移
+    navigate('/dashboard');
   };
 
   if (authLoading || loading) {
