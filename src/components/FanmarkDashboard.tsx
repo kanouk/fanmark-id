@@ -232,6 +232,17 @@ export const FanmarkDashboard = () => {
     return licenseData?.status === 'expired';
   };
 
+  const getTierOvalStyle = (tierLevel: number) => {
+    if (tierLevel === 1) {
+      return 'bg-gray-100 border border-gray-300';
+    } else if (tierLevel === 2) {
+      return 'bg-gradient-to-r from-blue-100 to-purple-100 border border-blue-300';
+    } else if (tierLevel === 3) {
+      return 'bg-gradient-to-r from-amber-100 via-orange-100 to-pink-100 border-2 border-amber-400 shadow-lg';
+    }
+    return 'bg-gray-50 border border-gray-200';
+  };
+
   const getAccessTypeBadge = (accessType: string) => {
     let icon = <FiLayers className="h-3.5 w-3.5" />;
     let className = 'border-gray-200/60 bg-gray-50 text-gray-600 shadow-sm';
@@ -325,15 +336,12 @@ export const FanmarkDashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    {t('dashboard.stats.totalFanmarks')}
-                  </p>
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-3xl font-bold text-primary">{fanmarks.length}</span>
-                     <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                       {t('dashboard.stats.limitLabel')}: {settings.max_fanmarks_per_user}
-                     </span>
-                  </div>
+                   <p className="text-sm font-medium text-muted-foreground">
+                     {t('dashboard.stats.activeFanmarks')}
+                   </p>
+                   <div className="flex items-baseline gap-3">
+                     <span className="text-3xl font-bold text-primary">{activeFanmarks}/{settings.max_fanmarks_per_user}</span>
+                   </div>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                   <FiTarget className="h-6 w-6" />
@@ -458,22 +466,20 @@ export const FanmarkDashboard = () => {
 
                               return (
                                 <tr key={fanmark.id} className={`border-b transition-colors hover:bg-muted/30 ${isFanmarkInactive(fanmark) ? 'opacity-50 bg-muted/20' : ''}`}>
-                                   <td className="px-4 py-4">
-                                     <div className="flex items-center gap-3">
-                                       <span className="text-4xl tracking-[0.25em] leading-none">{fanmark.emoji_combination}</span>
-                                       <div className="flex flex-col">
-                                         <div className="mt-1">
-                                           {fanmark.tier_level && (
-                                             <Badge variant="secondary" className="inline-flex items-center gap-0.5 border border-primary/30 bg-primary/10 text-primary text-xs px-2 py-1 rounded-full whitespace-nowrap min-w-[60px] justify-center">
-                                               {Array.from({ length: fanmark.tier_level }, (_, i) => (
-                                                 <FiStar key={i} className="h-2.5 w-2.5 fill-gray-400 text-gray-400" />
-                                               ))}
-                                             </Badge>
-                                           )}
-                                         </div>
-                                       </div>
-                                     </div>
-                                   </td>
+                                    <td className="px-4 py-4">
+                                      <div className="flex items-center gap-3">
+                                        <div className={`flex items-center gap-1 px-3 py-2 rounded-full ${getTierOvalStyle(fanmark.tier_level || 1)}`}>
+                                          <span className="text-3xl tracking-[0.05em] leading-none">{fanmark.emoji_combination}</span>
+                                          {fanmark.tier_level && (
+                                            <Badge variant="secondary" className="inline-flex items-center gap-0.5 border border-primary/30 bg-primary/10 text-primary text-xs px-2 py-1 rounded-full whitespace-nowrap min-w-[60px] justify-center ml-2">
+                                              {Array.from({ length: fanmark.tier_level }, (_, i) => (
+                                                <FiStar key={i} className="h-2.5 w-2.5 fill-gray-400 text-gray-400" />
+                                              ))}
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </td>
                                 <td className="px-4 py-4">
                                   {getAccessTypeBadge(fanmark.access_type)}
                                 </td>
@@ -577,20 +583,16 @@ export const FanmarkDashboard = () => {
                             <CardContent className="p-5">
                               <div className="space-y-3">
                                 <div className="flex items-start justify-between">
-                                   <div className="flex items-center gap-3">
-                                     <span className="text-3xl tracking-[0.25em] leading-none">{fanmark.emoji_combination}</span>
-                                     <div>
-                                       <div className="mt-1">
-                                         {fanmark.tier_level && (
-                                           <Badge variant="secondary" className="inline-flex items-center gap-0.5 border border-primary/30 bg-primary/10 text-primary text-xs px-2 py-1 rounded-full whitespace-nowrap min-w-[60px] justify-center">
-                                             {Array.from({ length: fanmark.tier_level }, (_, i) => (
-                                               <FiStar key={i} className="h-2.5 w-2.5 fill-gray-400 text-gray-400" />
-                                             ))}
-                                           </Badge>
-                                         )}
-                                       </div>
-                                     </div>
-                                   </div>
+                                   <div className={`flex items-center gap-1 px-3 py-2 rounded-full ${getTierOvalStyle(fanmark.tier_level || 1)}`}>
+                                      <span className="text-3xl tracking-[0.05em] leading-none">{fanmark.emoji_combination}</span>
+                                      {fanmark.tier_level && (
+                                        <Badge variant="secondary" className="inline-flex items-center gap-0.5 border border-primary/30 bg-primary/10 text-primary text-xs px-2 py-1 rounded-full whitespace-nowrap min-w-[60px] justify-center ml-2">
+                                          {Array.from({ length: fanmark.tier_level }, (_, i) => (
+                                            <FiStar key={i} className="h-2.5 w-2.5 fill-gray-400 text-gray-400" />
+                                          ))}
+                                        </Badge>
+                                      )}
+                                    </div>
                                 </div>
 
                                  <div className="flex items-center justify-between">

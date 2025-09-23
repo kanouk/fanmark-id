@@ -242,6 +242,7 @@
     "subtitle": "あなたのファンマを育てて、新しい組み合わせも手に入れよう",
     "stats": {
       "totalFanmarks": "取得済みファンマ",
+      "activeFanmarks": "現在のファンマ",
       "limitLabel": "上限"
     },
     "tabs": {
