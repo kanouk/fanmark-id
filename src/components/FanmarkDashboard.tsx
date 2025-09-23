@@ -499,17 +499,17 @@ export const FanmarkDashboard = () => {
                                   </div>
                                 </td>
                                  <td className="px-4 py-4">
-                                   <div className="space-y-2">
+                                   <div className="flex items-center gap-2">
                                      {expirationDate ? (
-                                       <div>
+                                       <>
                                          <div className={`text-sm ${isExpiringSoon && !isReturned(fanmark) ? 'text-destructive' : 'text-foreground'}`}>
                                            {format(expirationDate, 'yyyy/MM/dd')}
-                                           {!isReturned(fanmark) && daysRemaining !== null && daysRemaining >= 0 && (
-                                             <Badge variant="secondary" className="ml-2 text-xs px-2 py-0.5">
-                                               {t('dashboard.daysRemaining', { days: daysRemaining })}
-                                             </Badge>
-                                           )}
                                          </div>
+                                         {!isReturned(fanmark) && daysRemaining !== null && daysRemaining >= 0 && (
+                                           <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                                             {t('dashboard.daysRemaining', { days: daysRemaining })}
+                                           </Badge>
+                                         )}
                                          {!isReturned(fanmark) && (
                                            <AlertDialog>
                                              <AlertDialogTrigger asChild>
@@ -542,7 +542,7 @@ export const FanmarkDashboard = () => {
                                              </AlertDialogContent>
                                            </AlertDialog>
                                          )}
-                                       </div>
+                                       </>
                                      ) : (
                                        <span className="text-muted-foreground text-sm">-</span>
                                      )}
