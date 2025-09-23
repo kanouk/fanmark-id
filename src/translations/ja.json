@@ -412,6 +412,12 @@
         "label": "ファンマの譲渡",
         "helper": "譲渡可否を設定します。",
         "allow": "許可する"
+      },
+      "passwordProtection": {
+        "label": "パスワード保護",
+        "lockCheckbox": "鍵をかける",
+        "passwordPlaceholder": "1234",
+        "passwordHelper": "4桁の数字を入力してください"
       }
     },
     "accessTypeOptions": {

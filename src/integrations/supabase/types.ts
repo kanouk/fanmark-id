@@ -253,12 +253,14 @@ export type Database = {
       }
       fanmarks: {
         Row: {
+          access_password: string | null
           access_type: string
           created_at: string
           current_license_id: string | null
           display_name: string | null
           emoji_combination: string
           id: string
+          is_password_protected: boolean
           is_transferable: boolean
           normalized_emoji: string
           short_id: string
@@ -270,12 +272,14 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          access_password?: string | null
           access_type?: string
           created_at?: string
           current_license_id?: string | null
           display_name?: string | null
           emoji_combination: string
           id?: string
+          is_password_protected?: boolean
           is_transferable?: boolean
           normalized_emoji: string
           short_id: string
@@ -287,12 +291,14 @@ export type Database = {
           user_id: string
         }
         Update: {
+          access_password?: string | null
           access_type?: string
           created_at?: string
           current_license_id?: string | null
           display_name?: string | null
           emoji_combination?: string
           id?: string
+          is_password_protected?: boolean
           is_transferable?: boolean
           normalized_emoji?: string
           short_id?: string
@@ -628,9 +634,11 @@ export type Database = {
       get_fanmark_by_emoji: {
         Args: { emoji_combo: string }
         Returns: {
+          access_password: string
           access_type: string
           display_name: string
           emoji_combination: string
+          is_password_protected: boolean
           status: string
           target_url: string
           text_content: string

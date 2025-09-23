@@ -32,8 +32,10 @@ import {
   FiUser,
   FiFileText,
   FiMoon,
-  FiImage
+  FiImage,
+  FiLock
 } from 'react-icons/fi';
+import { Checkbox } from '@/components/ui/checkbox';
 
 type AccessType = 'profile' | 'redirect' | 'text' | 'inactive';
 
@@ -43,11 +45,16 @@ const settingsSchema = z.object({
   targetUrl: z.string().url().optional().or(z.literal('')),
   textContent: z.string().optional(),
   createProfile: z.boolean().default(false),
+  isPasswordProtected: z.boolean().default(false),
+  accessPassword: z.string().optional(),
 }).refine((data) => {
   if (data.accessType === 'redirect' && !data.targetUrl) {
     return false;
   }
   if (data.accessType === 'text' && !data.textContent) {
+    return false;
+  }
+  if (data.isPasswordProtected && (!data.accessPassword || !/^\d{4}$/.test(data.accessPassword))) {
     return false;
   }
   return true;
@@ -64,7 +71,8 @@ export interface Fanmark {
   access_type: AccessType;
   target_url?: string;
   text_content?: string;
-  
+  is_password_protected?: boolean;
+  access_password?: string;
   status: string;
   short_id: string;
 }
@@ -103,6 +111,8 @@ export const FanmarkSettings = ({
 
   const accessType = watch('accessType');
 
+  const isPasswordProtected = watch('isPasswordProtected');
+
   // Reset form when fanmark changes
   useEffect(() => {
     if (fanmark) {
@@ -112,6 +122,8 @@ export const FanmarkSettings = ({
         targetUrl: fanmark.target_url || '',
         textContent: fanmark.text_content || '',
         createProfile: false, // This is a one-time action
+        isPasswordProtected: fanmark.is_password_protected || false,
+        accessPassword: fanmark.access_password || '',
       });
     }
   }, [fanmark, reset]);
@@ -137,6 +149,8 @@ export const FanmarkSettings = ({
           display_name: data.displayName,
           target_url: data.targetUrl || null,
           text_content: data.textContent || null,
+          is_password_protected: data.isPasswordProtected,
+          access_password: data.isPasswordProtected ? data.accessPassword : null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', fanmark.id);
@@ -318,6 +332,59 @@ export const FanmarkSettings = ({
                       {errors.textContent.message}
                     </p>
                   )}
+                </div>
+              )}
+
+              {accessType === 'text' && (
+                <div className="space-y-3 rounded-xl border border-border/60 bg-background/70 p-4">
+                  <Label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                    <FiLock className="h-3.5 w-3.5" />
+                    パスワード保護
+                  </Label>
+                  <div className="space-y-3 pl-6">
+                    <div className="flex items-center space-x-2">
+                      <Controller
+                        name="isPasswordProtected"
+                        control={control}
+                        render={({ field }) => (
+                          <Checkbox
+                            id="password-protection"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        )}
+                      />
+                      <Label htmlFor="password-protection" className="text-sm font-medium">
+                        鍵をかける
+                      </Label>
+                    </div>
+                    
+                    {isPasswordProtected && (
+                      <div className="space-y-2">
+                        <Label htmlFor="accessPassword" className="text-xs text-muted-foreground">
+                          4桁の数字を入力してください
+                        </Label>
+                        <Input
+                          id="accessPassword"
+                          {...register('accessPassword')}
+                          placeholder="1234"
+                          maxLength={4}
+                          pattern="[0-9]*"
+                          className="h-10 w-24 rounded-lg border border-border text-center font-mono text-lg focus-visible:ring-2 focus-visible:ring-primary"
+                          onInput={(e) => {
+                            // Only allow numbers
+                            const target = e.target as HTMLInputElement;
+                            target.value = target.value.replace(/[^0-9]/g, '');
+                          }}
+                        />
+                        {errors.accessPassword && (
+                          <p className="text-xs text-destructive">
+                            4桁の数字を入力してください
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 

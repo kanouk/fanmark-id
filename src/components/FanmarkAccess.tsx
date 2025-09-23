@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Home, AlertCircle } from 'lucide-react';
 import { FanmarkProfile } from './FanmarkProfile';
 import { FanmarkMessage } from './FanmarkMessage';
+import { PasswordProtection } from './PasswordProtection';
 import { useTranslation } from '@/hooks/useTranslation';
 
 interface FanmarkData {
@@ -15,6 +16,8 @@ interface FanmarkData {
   target_url?: string;
   text_content?: string;
   status: string;
+  is_password_protected?: boolean;
+  access_password?: string;
 }
 
 export const FanmarkAccess = () => {
@@ -24,6 +27,7 @@ export const FanmarkAccess = () => {
   const [fanmark, setFanmark] = useState<FanmarkData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isPasswordVerified, setIsPasswordVerified] = useState(false);
 
   useEffect(() => {
     const loadFanmark = async () => {
@@ -113,6 +117,15 @@ export const FanmarkAccess = () => {
       return <FanmarkProfile fanmark={fanmark} />;
     
     case 'text':
+      // Check if password protection is enabled
+      if (fanmark.is_password_protected && !isPasswordVerified) {
+        return (
+          <PasswordProtection 
+            fanmark={fanmark} 
+            onSuccess={() => setIsPasswordVerified(true)} 
+          />
+        );
+      }
       return <FanmarkMessage fanmark={fanmark} />;
     
     case 'inactive':
