@@ -76,17 +76,16 @@ export const FanmarkAccess = () => {
     loadFanmark();
   }, [emojiPath]);
 
+  // Trigger redirect after verification for redirect access types
+  useEffect(() => {
+    if (isPasswordVerified && fanmark?.access_type === 'redirect' && fanmark.target_url) {
+      window.location.href = fanmark.target_url;
+    }
+  }, [isPasswordVerified, fanmark]);
+
   // Handle password verification success for all access types
   const handlePasswordSuccess = () => {
-    // Use a timeout to ensure smooth transition
-    setTimeout(() => {
-      setIsPasswordVerified(true);
-      
-      // Handle immediate redirect after password verification
-      if (fanmark && fanmark.access_type === 'redirect' && fanmark.target_url) {
-        window.location.href = fanmark.target_url;
-      }
-    }, 100);
+    setIsPasswordVerified(true);
   };
 
   if (loading) {
@@ -139,6 +138,18 @@ export const FanmarkAccess = () => {
     
     case 'text':
       return <FanmarkMessage fanmark={fanmark} />;
+
+    case 'redirect':
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex items-center justify-center">
+          <Card className="w-96">
+            <CardContent className="p-8 text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+              <p className="text-muted-foreground">{t('common.loading')}</p>
+            </CardContent>
+          </Card>
+        </div>
+      );
     
     case 'inactive':
       return (
