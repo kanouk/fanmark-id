@@ -55,6 +55,9 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
     if (status === 'available') {
       return 'available';
     }
+    if (status === 'taken') {
+      return 'taken';
+    }
     if (status === 'not_available') {
       return statusVariant === 'public' ? 'unavailable' : 'taken';
     }

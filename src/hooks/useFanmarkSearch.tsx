@@ -253,25 +253,26 @@ export function useFanmarkSearch() {
       }
   
       // Check if fanmark has active license and who owns it
-      const { data: licenses } = await supabase
+      const { data: licenses, error: licenseError } = await supabase
         .from('fanmark_licenses')
         .select(`
-          id, 
-          user_id, 
+          id,
+          user_id,
           status,
-          user_settings (
-            username,
-            display_name
-          )
+          license_end
         `)
         .eq('fanmark_id', fanmark.id)
         .eq('status', 'active')
         .gt('license_end', new Date().toISOString());
 
-      const isTaken = !!licenses && licenses.length > 0;
+      if (licenseError) {
+        console.error('Error fetching licenses:', licenseError);
+      }
+
+      const isTaken = Array.isArray(licenses) && licenses.length > 0;
       
       if (!isTaken) {
-        // No active license - available for registration
+        // No active license visible to this user -> available for registration
         setResult({
           id: fanmark.id,
           emoji_combination: fanmark.emoji_combination,
@@ -286,11 +287,10 @@ export function useFanmarkSearch() {
 
       // There's an active license - check if current user owns it
       const currentUserId = user?.id;
-      const userLicense = licenses.find(license => license.user_id === currentUserId);
+      const userLicense = licenses.find((license: any) => license.user_id === currentUserId);
       
       if (userLicense) {
         // Current user owns this fanmark
-        const userSettings = userLicense.user_settings as any;
         setResult({
           id: fanmark.id,
           emoji_combination: fanmark.emoji_combination,
@@ -300,9 +300,9 @@ export function useFanmarkSearch() {
           status: 'taken',
           emoji_count: validation.emojiCount,
           owner: {
-            user_id: currentUserId,
-            username: userSettings?.username || '',
-            display_name: userSettings?.display_name || '',
+            user_id: currentUserId as string,
+            username: '',
+            display_name: '',
           },
         });
       } else {
