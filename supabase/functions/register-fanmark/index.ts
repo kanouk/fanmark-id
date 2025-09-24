@@ -41,9 +41,7 @@ interface FanmarkRow {
   short_id: string;
   emoji_combination: string;
   normalized_emoji: string;
-  user_id: string;
-  tier_level?: number;
-  current_license_id?: string;
+  status: string;
 }
 
 const SKIN_TONE_MODIFIER_REGEX = /\p{Emoji_Modifier}/u;
@@ -332,7 +330,7 @@ serve(async (req) => {
     // Check if a fanmark record already exists for this normalized emoji
     const { data: existingFanmark } = await supabase
       .from<FanmarkRow>('fanmarks')
-      .select('id, status, current_license_id, user_id, tier_level, emoji_combination, short_id')
+      .select('id, status, emoji_combination, short_id')
       .eq('normalized_emoji', normalizedEmoji)
       .maybeSingle();
 
@@ -347,7 +345,14 @@ serve(async (req) => {
           { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      if (existingFanmark.current_license_id) {
+      const { data: existingActiveLicense } = await supabase
+        .from('fanmark_licenses')
+        .select('id')
+        .eq('fanmark_id', existingFanmark.id)
+        .eq('status', 'active')
+        .gt('license_end', new Date().toISOString())
+        .maybeSingle();
+      if (existingActiveLicense) {
         return new Response(
           JSON.stringify({ error: 'This emoji combination is already taken' }),
           { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -359,25 +364,20 @@ serve(async (req) => {
     let fanmarkId: string;
     let fanmarkEmojiCombination: string;
     let fanmarkShortId: string;
-    let effectiveTierLevel = tierLevel;
-
     if (existingFanmark) {
-      // Reuse the existing row; update owner to the current user (optional but keeps counts aligned)
-      const { error: updateOwnerErr } = await supabase
-        .from('fanmarks')
-        .update({ user_id: user.id })
-        .eq('id', existingFanmark.id);
-
-      if (updateOwnerErr) {
-        console.error('Failed to update fanmark owner:', updateOwnerErr);
-      }
-
       fanmarkId = existingFanmark.id;
       fanmarkEmojiCombination = existingFanmark.emoji_combination;
       fanmarkShortId = existingFanmark.short_id;
-      // Keep the existing tier_level if present
-      if (existingFanmark.tier_level) {
-        effectiveTierLevel = existingFanmark.tier_level;
+
+      // Optionally update access type if provided
+      if (accessType) {
+        const { error: accessTypeErr } = await supabase
+          .from('fanmarks')
+          .update({ access_type: accessType })
+          .eq('id', existingFanmark.id);
+        if (accessTypeErr) {
+          console.error('Failed to update access type:', accessTypeErr);
+        }
       }
     } else {
       // Generate unique short ID
@@ -427,20 +427,14 @@ serve(async (req) => {
           emoji_combination: input_emoji_combination,
           normalized_emoji: normalizedEmoji,
           short_id: shortId,
-          user_id: user.id,
           status: 'active',
-          tier_level: effectiveTierLevel,
-          access_type: accessType,
-          target_url: targetUrl || null,
-          text_content: textContent || null,
-          display_name: displayName || null,
-          is_transferable: isTransferable
+          access_type: accessType || 'inactive',
         })
-        .select('id, emoji_combination, short_id, tier_level')
+        .select('id, emoji_combination, short_id')
         .single();
 
       if (insertError) {
-        if (insertError.code === '23505') { // Unique constraint violation (emoji already exists)
+        if ((insertError as any).code === '23505') { // Unique constraint violation (emoji already exists)
           return new Response(
             JSON.stringify({ error: 'This emoji combination is already taken' }),
             { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -459,7 +453,6 @@ serve(async (req) => {
       fanmarkId = inserted.id;
       fanmarkEmojiCombination = inserted.emoji_combination;
       fanmarkShortId = inserted.short_id;
-      effectiveTierLevel = inserted.tier_level ?? effectiveTierLevel;
     }
 
     // Create initial license for the fanmark
@@ -471,8 +464,6 @@ serve(async (req) => {
       .insert({
         fanmark_id: fanmarkId,
         user_id: user.id,
-        tier_level: effectiveTierLevel,
-        license_start: new Date().toISOString(),
         license_end: licenseEndDate.toISOString(),
         status: 'active',
         is_initial_license: true
@@ -485,27 +476,55 @@ serve(async (req) => {
       // Don't fail registration for this
     }
 
-    // Update fanmark with license reference
-    if (license) {
-      await supabase
-        .from('fanmarks')
-        .update({ current_license_id: license.id })
-        .eq('id', fanmarkId);
+    // Save basic configurations if provided
+    if (displayName) {
+      const { error: basicCfgErr } = await supabase
+        .from('fanmark_basic_configs')
+        .upsert(
+          { fanmark_id: fanmarkId, fanmark_name: displayName },
+          { onConflict: 'fanmark_id' as any }
+        );
+      if (basicCfgErr) {
+        console.error('Failed to upsert basic config:', basicCfgErr);
+      }
     }
 
-    // Create emoji profile if requested
+    if (accessType === 'redirect' && targetUrl) {
+      const { error: redirectErr } = await supabase
+        .from('fanmark_redirect_configs')
+        .upsert(
+          { fanmark_id: fanmarkId, target_url: targetUrl },
+          { onConflict: 'fanmark_id' as any }
+        );
+      if (redirectErr) {
+        console.error('Failed to upsert redirect config:', redirectErr);
+      }
+    }
+
+    if (accessType === 'text' && textContent) {
+      const { error: messageErr } = await supabase
+        .from('fanmark_messageboard_configs')
+        .upsert(
+          { fanmark_id: fanmarkId, content: textContent },
+          { onConflict: 'fanmark_id' as any }
+        );
+      if (messageErr) {
+        console.error('Failed to upsert messageboard config:', messageErr);
+      }
+    }
     if (createProfile) {
       const { error: profileError } = await supabase
-        .from('emoji_profiles')
+        .from('fanmark_profiles')
         .insert({
           fanmark_id: fanmarkId,
           user_id: user.id,
+          display_name: displayName || null,
           bio: `Welcome to ${displayName || input_emoji_combination}'s profile!`,
           is_public: true
         });
 
       if (profileError) {
-        console.error('Failed to create emoji profile:', profileError);
+        console.error('Failed to create fanmark profile:', profileError);
         // Don't fail the whole registration for this
       }
     }
