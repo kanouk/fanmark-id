@@ -65,8 +65,8 @@ export const PasswordProtection = ({ fanmark, onSuccess }: PasswordProtectionPro
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8 flex-1">
-        <div className="max-w-4xl mx-auto space-y-10">
+      <div className="container mx-auto px-4 flex-1 flex items-center justify-center">
+        <div className="max-w-4xl mx-auto">
           {/* Password Protection Section */}
           <Card className="overflow-hidden bg-gradient-to-br from-background/90 to-background/70 border border-primary/20 shadow-xl backdrop-blur-sm">
             <CardContent className="p-0">
