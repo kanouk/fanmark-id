@@ -54,7 +54,7 @@ const settingsSchema = z.object({
   if (data.accessType === 'text' && !data.textContent) {
     return false;
   }
-  if (data.isPasswordProtected && (!data.accessPassword || !/^\d{4}$/.test(data.accessPassword))) {
+  if (data.accessType !== 'inactive' && data.isPasswordProtected && (!data.accessPassword || !/^\d{4}$/.test(data.accessPassword))) {
     return false;
   }
   return true;
@@ -180,17 +180,29 @@ export const FanmarkSettings = ({
         if (textError) throw textError;
       }
 
-      // Handle password protection
-      if (data.isPasswordProtected && data.accessPassword) {
-        const { error: passwordError } = await supabase
+      // Handle password protection for all access types except inactive
+      if (data.accessType !== 'inactive' && data.isPasswordProtected && data.accessPassword) {
+        await supabase
           .from('fanmark_password_configs')
           .upsert({
             fanmark_id: fanmark.id,
-            access_password: data.accessPassword
-          }, {
-            onConflict: 'fanmark_id'
+            access_password: data.accessPassword,
+            is_enabled: true
           });
-        if (passwordError) throw passwordError;
+      } else if (data.accessType !== 'inactive' && !data.isPasswordProtected) {
+        // Disable password protection but keep the password
+        const { data: existingPassword } = await supabase
+          .from('fanmark_password_configs')
+          .select('access_password')
+          .eq('fanmark_id', fanmark.id)
+          .maybeSingle();
+
+        if (existingPassword) {
+          await supabase
+            .from('fanmark_password_configs')
+            .update({ is_enabled: false })
+            .eq('fanmark_id', fanmark.id);
+        }
       }
 
       // Create fanmark profile if requested
@@ -371,7 +383,8 @@ export const FanmarkSettings = ({
                 </div>
               )}
 
-              {accessType === 'text' && (
+              {/* Password Protection - Available for profile, redirect, and text types */}
+              {(accessType === 'profile' || accessType === 'redirect' || accessType === 'text') && (
                 <div className="space-y-3 rounded-xl border border-border/60 bg-background/70 p-4">
                   <Label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                     <FiLock className="h-3.5 w-3.5" />

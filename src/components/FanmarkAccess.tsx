@@ -62,11 +62,8 @@ export const FanmarkAccess = () => {
         const fanmarkData = data[0] as FanmarkData;
         setFanmark(fanmarkData);
 
-        // Handle redirect immediately
-        if (fanmarkData.access_type === 'redirect' && fanmarkData.target_url) {
-          window.location.href = fanmarkData.target_url;
-          return;
-        }
+        // Don't redirect immediately if password protected
+        // The redirect will happen after password verification
 
         setLoading(false);
       } catch (err) {
@@ -78,6 +75,16 @@ export const FanmarkAccess = () => {
 
     loadFanmark();
   }, [emojiPath]);
+
+  // Handle password verification success for all access types
+  const handlePasswordSuccess = () => {
+    setIsPasswordVerified(true);
+    
+    // Handle immediate redirect after password verification
+    if (fanmark && fanmark.access_type === 'redirect' && fanmark.target_url) {
+      window.location.href = fanmark.target_url;
+    }
+  };
 
   if (loading) {
     return (
@@ -112,21 +119,22 @@ export const FanmarkAccess = () => {
     );
   }
 
-  // Handle different access types
+  // Handle password protection for all access types
+  if (fanmark.is_password_protected && !isPasswordVerified) {
+    return (
+      <PasswordProtection 
+        fanmark={fanmark} 
+        onSuccess={handlePasswordSuccess} 
+      />
+    );
+  }
+
+  // Handle different access types after password verification
   switch (fanmark.access_type) {
     case 'profile':
       return <FanmarkProfile fanmark={fanmark} />;
     
     case 'text':
-      // Check if password protection is enabled
-      if (fanmark.is_password_protected && !isPasswordVerified) {
-        return (
-          <PasswordProtection 
-            fanmark={fanmark} 
-            onSuccess={() => setIsPasswordVerified(true)} 
-          />
-        );
-      }
       return <FanmarkMessage fanmark={fanmark} />;
     
     case 'inactive':
