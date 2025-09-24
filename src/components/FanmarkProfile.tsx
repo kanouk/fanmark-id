@@ -56,23 +56,49 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
 
   useEffect(() => {
     const loadProfile = async () => {
-      console.log('Fanmark data:', fanmark);
-      console.log('Fanmark ID:', fanmark.id);
-      console.log('Access type:', fanmark.access_type);
+      console.log('🔍 Loading fanmark profile...');
+      console.log('📋 Fanmark data:', fanmark);
+      console.log('🆔 Fanmark ID:', fanmark.id);
+      console.log('🎯 Access type:', fanmark.access_type);
 
       if (fanmark.id && fanmark.access_type === 'profile') {
         try {
-          console.log('Attempting to load profile for ID:', fanmark.id);
+          console.log('🚀 Attempting to load profile for ID:', fanmark.id);
+          const startTime = Date.now();
           const profile = await getPublicEmojiProfile(fanmark.id);
-          console.log('Loaded profile:', profile);
+          const loadTime = Date.now() - startTime;
+          
+          console.log('✅ Profile loaded successfully in', loadTime, 'ms');
+          console.log('📊 Profile data:', {
+            id: profile?.id,
+            fanmark_id: profile?.fanmark_id,
+            display_name: profile?.display_name,
+            bio: profile?.bio,
+            social_links: profile?.social_links,
+            theme_settings: profile?.theme_settings,
+            updated_at: profile?.updated_at
+          });
+          
           setEmojiProfile(profile);
+          
+          if (profile) {
+            console.log('🎉 Profile set successfully');
+          } else {
+            console.log('⚠️ No profile data returned from function');
+          }
         } catch (error) {
-          console.error('Error loading public profile:', error);
+          console.error('❌ Error loading public profile:', error);
+          console.error('🔧 Error details:', {
+            name: error?.name,
+            message: error?.message,
+            stack: error?.stack
+          });
         }
       } else {
-        console.log('Conditions not met - ID:', fanmark.id, 'Access type:', fanmark.access_type);
+        console.log('❌ Conditions not met - ID:', fanmark.id, 'Access type:', fanmark.access_type);
       }
       setLoading(false);
+      console.log('🏁 Profile loading completed');
     };
 
     loadProfile();
