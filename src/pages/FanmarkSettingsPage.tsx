@@ -40,32 +40,33 @@ const FanmarkSettingsPage = () => {
     setFetchError(null);
 
     try {
-      const { data, error } = await supabase
-        .from('fanmarks')
-        .select('id, emoji_combination, access_type, status, short_id')
-        .eq('id', fanmarkId)
-        .single();
+      // Use the new comprehensive function to get all fanmark data
+      const { data, error } = await supabase.rpc('get_fanmark_complete_data', {
+        fanmark_id_param: fanmarkId
+      });
 
       if (error) {
         throw error;
       }
 
-      if (!data) {
+      if (!data || data.length === 0) {
         setFetchError(t('fanmarkSettings.errors.notFound'));
         setFanmark(null);
         return;
       }
 
+      const fanmarkData = data[0]; // Get first result since function returns array
+
       setFanmark({
-        id: data.id,
-        emoji_combination: data.emoji_combination,
-        fanmark_name: data.emoji_combination, // Use emoji_combination as fanmark_name
-        access_type: data.access_type as 'profile' | 'redirect' | 'text' | 'inactive',
-        target_url: undefined, // Removed from fanmarks table, fetch from config tables if needed
-        text_content: undefined, // Removed from fanmarks table, fetch from config tables if needed
+        id: fanmarkData.id,
+        emoji_combination: fanmarkData.emoji_combination,
+        fanmark_name: fanmarkData.fanmark_name || fanmarkData.emoji_combination,
+        access_type: fanmarkData.access_type as 'profile' | 'redirect' | 'text' | 'inactive',
+        target_url: fanmarkData.target_url ?? undefined,
+        text_content: fanmarkData.text_content ?? undefined,
         
-        status: data.status,
-        short_id: data.short_id,
+        status: fanmarkData.status,
+        short_id: fanmarkData.short_id,
       });
     } catch (error) {
       console.error('Failed to load fanmark:', error);

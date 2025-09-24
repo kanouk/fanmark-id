@@ -149,13 +149,6 @@ export type Database = {
             foreignKeyName: "fk_fanmark_licenses_fanmark_id"
             columns: ["fanmark_id"]
             isOneToOne: false
-            referencedRelation: "fanmark_complete_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_fanmark_licenses_fanmark_id"
-            columns: ["fanmark_id"]
-            isOneToOne: false
             referencedRelation: "fanmarks"
             referencedColumns: ["id"]
           },
@@ -553,27 +546,6 @@ export type Database = {
       }
     }
     Views: {
-      fanmark_complete_view: {
-        Row: {
-          access_password: string | null
-          access_type: string | null
-          created_at: string | null
-          current_owner_id: string | null
-          emoji_combination: string | null
-          fanmark_name: string | null
-          has_active_license: boolean | null
-          id: string | null
-          is_password_protected: boolean | null
-          license_end: string | null
-          normalized_emoji: string | null
-          short_id: string | null
-          status: string | null
-          target_url: string | null
-          text_content: string | null
-          updated_at: string | null
-        }
-        Relationships: []
-      }
       public_profiles: {
         Row: {
           avatar_url: string | null
@@ -618,6 +590,27 @@ export type Database = {
           status: string
           target_url: string
           text_content: string
+        }[]
+      }
+      get_fanmark_complete_data: {
+        Args: { emoji_combo_param?: string; fanmark_id_param?: string }
+        Returns: {
+          access_password: string
+          access_type: string
+          created_at: string
+          current_owner_id: string
+          emoji_combination: string
+          fanmark_name: string
+          has_active_license: boolean
+          id: string
+          is_password_protected: boolean
+          license_end: string
+          normalized_emoji: string
+          short_id: string
+          status: string
+          target_url: string
+          text_content: string
+          updated_at: string
         }[]
       }
       get_fanmark_ownership_status: {

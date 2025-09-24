@@ -143,24 +143,35 @@ export const FanmarkDashboard = () => {
 
   const fetchFanmarks = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('fanmarks')
+      const { data: licenses, error } = await supabase
+        .from('fanmark_licenses')
         .select(`
-          *,
-          fanmark_licenses!fanmark_id (
-            license_start,
-            license_end,
+          id,
+          fanmark_id,
+          license_start,
+          license_end,
+          status,
+          created_at,
+          fanmarks (
+            id,
+            emoji_combination,
+            normalized_emoji,
+            short_id,
+            access_type,
             status,
-            created_at
+            created_at,
+            updated_at
           )
         `)
         .eq('user_id', user?.id)
+        .eq('status', 'active')
+        .gt('license_end', new Date().toISOString())
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       
       // Process fanmarks to select the most recent license for each
-      const fanmarksWithDefaults = (data ?? []).map(fanmark => {
+      const fanmarksWithDefaults = (licenses ?? []).map(license => {
         const licenses = (fanmark as any).fanmark_licenses || [];
         
         // Select the most recent license (active/grace first, then most recent expired)
