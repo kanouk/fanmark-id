@@ -252,7 +252,7 @@
       "getFanmarks": "Find new fanmarks"
     },
     "yourFanmarks": "Your fanmarks",
-    "manageFanmarks": "Everything you've obtained lives here—tune and share each fanmark easily.",
+    "manageFanmarks": "Manage your obtained fanmarks and update settings as needed.",
     "addFanmark": "Add fanmark",
     "searchPlaceholder": "Search your fanmark...",
     "searchFanma": "Search fanmarks",
@@ -322,16 +322,21 @@
     "expirationDate": "Expiration Date", 
     "daysRemaining": "{days} days left",
     "expiringSoon": "Expiring soon",
-    "actionsReturn": "Return fanmark",
     "actionsCopyLink": "Copy URL",
+    "copyFanmarkLink": "Copy fanmark link",
     "actionsSettings": "Open settings",
+    "actionsReturn": "Return fanmark",
     "returnConfirmTitle": "Return this fanmark?",
     "returnConfirmDescription": "This fanmark will become inactive and you will lose access. This action cannot be undone.",
     "returnConfirmAction": "Return fanmark",
     "returnSuccess": "Fanmark returned",
     "returnSuccessDescription": "The fanmark has been returned successfully.",
     "returnError": "Failed to return fanmark",
-    "returnErrorDescription": "Please try again later."
+    "returnErrorDescription": "Please try again later.",
+    "returnDate": "Return Date",
+    "remainingDays": "Days Left",
+    "returned": "Returned",
+    "copyFanmarkLink": "Copy fanmark link"
   },
   "registration": {
     "title": "Obtain Your Fanmark",

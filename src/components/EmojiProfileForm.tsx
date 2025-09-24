@@ -11,7 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAvatarUpload } from '@/hooks/useAvatarUpload';
 import { EmojiProfile } from '@/hooks/useEmojiProfile';
-import { Loader2, Upload, X, Image as ImageIcon, FileText, Link, Shield } from 'lucide-react';
+import { Loader2, Upload, X, Image as ImageIcon, FileText, Link, Shield, User } from 'lucide-react';
 import { 
   FiInstagram, 
   FiTwitter, 
@@ -196,201 +196,215 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose }: Emo
   };
 
   return (
-    <div className="space-y-10">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
-        {/* Cover Image */}
-        <Card className="overflow-hidden">
-          <CardHeader className="pb-6">
+    <div className="space-y-8">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+        {/* Profile Preview */}
+        <Card className="rounded-3xl border border-primary/20 bg-background/90 shadow-[0_20px_45px_rgba(101,195,200,0.14)] backdrop-blur card-pop">
+          <CardHeader className="pb-6 px-10 pt-8 space-y-4">
             <div className="flex items-center gap-3">
-              <ImageIcon className="h-4 w-4 text-primary" />
-              <CardTitle className="text-base">カバー画像</CardTitle>
+              <div className="p-2 rounded-xl bg-primary/10">
+                <ImageIcon className="h-5 w-5 text-primary" />
+              </div>
+              <CardTitle className="text-lg font-semibold">プロフィール画像</CardTitle>
             </div>
-            <p className="text-xs text-muted-foreground">
-              プロフィールページの背景として表示される画像をアップロードしてください
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              カバー画像とプロフィール画像をアップロードして、完成イメージを確認してください
             </p>
           </CardHeader>
-          <CardContent className="space-y-6 p-10">
-            <div className="space-y-6">
-              {(coverImageUrl || profile?.theme_settings?.cover_image_url) && (
-                <div className="relative">
-                  <img
-                    src={coverImageUrl || profile?.theme_settings?.cover_image_url}
-                    alt="Cover preview"
-                    className="w-full h-40 object-cover rounded-lg border border-border"
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    className="absolute top-2 right-2"
-                    onClick={removeCoverImage}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-              <div className="flex items-center gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => document.getElementById('cover-image-upload')?.click()}
-                  disabled={coverImageUploading}
-                  className="flex items-center gap-2 h-9"
-                >
-                  {coverImageUploading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Upload className="h-4 w-4" />
-                  )}
-                  <span className="text-sm">{coverImageUploading ? 'アップロード中...' : 'カバー画像をアップロード'}</span>
-                </Button>
+          <CardContent className="space-y-8 p-10">
+            {/* Profile Preview Display */}
+            <div className="relative">
+              {/* Cover Image Area */}
+              <div className="group relative w-full h-48 rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 via-accent/10 to-primary/5 border-2 border-dashed border-primary/20 hover:border-primary/30 transition-colors cursor-pointer"
+                   onClick={() => document.getElementById('cover-image-upload')?.click()}
+              >
+                {(coverImageUrl || profile?.theme_settings?.cover_image_url) ? (
+                  <>
+                    <img
+                      src={coverImageUrl || profile?.theme_settings?.cover_image_url}
+                      alt="Cover preview"
+                      className="w-full h-full object-cover"
+                    />
+                    {/* Cover Image Overlay with Edit Button */}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-center justify-center">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <div className="bg-background/90 backdrop-blur rounded-full p-3 shadow-lg">
+                          {coverImageUploading ? (
+                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                          ) : (
+                            <Upload className="h-6 w-6 text-primary" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-3 right-3 h-8 w-8 rounded-full p-0 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeCoverImage();
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </>
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      {coverImageUploading ? (
+                        <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                      ) : (
+                        <div className="bg-primary/5 rounded-full p-4 group-hover:bg-primary/10 transition-colors">
+                          <Upload className="h-8 w-8 text-primary/60" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
                 <input
                   id="cover-image-upload"
                   type="file"
                   accept="image/*"
                   onChange={handleCoverImageUpload}
                   className="hidden"
+                  disabled={coverImageUploading}
                 />
               </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Profile Image */}
-        <Card>
-          <CardHeader className="pb-6">
-            <div className="flex items-center gap-3">
-              <ImageIcon className="h-4 w-4 text-primary" />
-              <CardTitle className="text-base">プロフィール画像</CardTitle>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              プロフィールの顔となる画像をアップロードしてください
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-6 p-10">
-            <div className="space-y-6">
-              {(profileImageUrl || profile?.theme_settings?.profile_image_url) && (
-                <div className="relative w-24 h-24 mx-auto">
-                  <img
-                    src={profileImageUrl || profile?.theme_settings?.profile_image_url}
-                    alt="Profile preview"
-                    className="w-full h-full object-cover rounded-full border-2 border-border"
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    className="absolute -top-2 -right-2 w-6 h-6 rounded-full p-0"
-                    onClick={removeProfileImage}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              )}
-              <div className="flex justify-center">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => document.getElementById('profile-image-upload')?.click()}
-                  disabled={profileImageUploading}
-                  className="flex items-center gap-2 h-9"
+              {/* Profile Image Area - Positioned over cover image */}
+              <div className="absolute -bottom-12 left-6">
+                <div className="group relative w-24 h-24 rounded-full bg-background border-4 border-background shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+                     onClick={() => document.getElementById('profile-image-upload')?.click()}
                 >
-                  {profileImageUploading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                  {(profileImageUrl || profile?.theme_settings?.profile_image_url) ? (
+                    <>
+                      <div className="w-full h-full rounded-full overflow-hidden">
+                        <img
+                          src={profileImageUrl || profile?.theme_settings?.profile_image_url}
+                          alt="Profile preview"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      {/* Profile Image Overlay */}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-center justify-center rounded-full">
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          <div className="bg-background/90 backdrop-blur rounded-full p-2 shadow-lg">
+                            {profileImageUploading ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                            ) : (
+                              <Upload className="h-4 w-4 text-primary" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute -top-1 -right-1 w-7 h-7 rounded-full p-0 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeProfileImage();
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </>
                   ) : (
-                    <Upload className="h-4 w-4" />
+                    <div className="w-full h-full bg-primary/10 border-2 border-dashed border-primary/20 group-hover:border-primary/40 group-hover:bg-primary/15 transition-colors flex items-center justify-center rounded-full">
+                      {profileImageUploading ? (
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      ) : (
+                        <Upload className="h-6 w-6 text-primary/60" />
+                      )}
+                    </div>
                   )}
-                  <span className="text-sm">{profileImageUploading ? 'アップロード中...' : 'プロフィール画像をアップロード'}</span>
-                </Button>
-                <input
-                  id="profile-image-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleProfileImageUpload}
-                  className="hidden"
-                />
+                  <input
+                    id="profile-image-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleProfileImageUpload}
+                    className="hidden"
+                    disabled={profileImageUploading}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Display Name & Bio Section - positioned under profile image */}
+            <div className="pt-8 pl-6 pr-6">
+              <div className="grid gap-6 md:grid-cols-2">
+                {/* Display Name */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <User className="h-4 w-4 text-primary" />
+                    表示名
+                  </Label>
+                  <Input
+                    {...register('display_name')}
+                    placeholder="あなたの名前"
+                    className="w-full h-10 text-sm rounded-xl border-2 border-border hover:border-primary/30 focus:border-primary transition-colors px-3"
+                  />
+                  {errors.display_name && (
+                    <p className="text-xs text-destructive font-medium">{errors.display_name.message}</p>
+                  )}
+                </div>
+
+                {/* Bio */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" />
+                    自己紹介
+                  </Label>
+                  <Textarea
+                    {...register('bio')}
+                    placeholder="簡単な自己紹介..."
+                    className="min-h-[80px] resize-none text-sm rounded-xl border-2 border-border hover:border-primary/30 focus:border-primary transition-colors p-3 leading-relaxed"
+                    maxLength={200}
+                  />
+                  {errors.bio && (
+                    <p className="text-xs text-destructive font-medium">{errors.bio.message}</p>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Display Name */}
-        <Card>
-          <CardHeader className="pb-6">
-            <div className="flex items-center gap-3">
-              <FileText className="h-4 w-4 text-primary" />
-              <CardTitle className="text-base">表示名</CardTitle>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              プロフィールに表示される名前を入力してください
-            </p>
-          </CardHeader>
-          <CardContent className="p-10">
-            <div className="space-y-3">
-              <Input
-                {...register('display_name')}
-                placeholder="あなたの名前"
-                className="w-full h-9 text-sm"
-              />
-              {errors.display_name && (
-                <p className="text-xs text-destructive">{errors.display_name.message}</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Bio */}
-        <Card>
-          <CardHeader className="pb-6">
-            <div className="flex items-center gap-3">
-              <FileText className="h-4 w-4 text-primary" />
-              <CardTitle className="text-base">自己紹介</CardTitle>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              あなたについて教えてください
-            </p>
-          </CardHeader>
-          <CardContent className="p-10">
-            <div className="space-y-3">
-              <Textarea
-                {...register('bio')}
-                placeholder="あなたの自己紹介を書いてください..."
-                className="min-h-[100px] resize-none text-sm"
-              />
-              {errors.bio && (
-                <p className="text-xs text-destructive">{errors.bio.message}</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
 
 
         {/* Social Links */}
-        <Card>
-          <CardHeader className="pb-6">
+        <Card className="rounded-3xl border border-primary/20 bg-background/90 shadow-[0_20px_45px_rgba(101,195,200,0.14)] backdrop-blur card-pop">
+          <CardHeader className="pb-6 px-10 pt-8 space-y-4">
             <div className="flex items-center gap-3">
-              <Link className="h-4 w-4 text-primary" />
-              <CardTitle className="text-base">ソーシャルリンク</CardTitle>
+              <div className="p-2 rounded-xl bg-primary/10">
+                <Link className="h-5 w-5 text-primary" />
+              </div>
+              <CardTitle className="text-lg font-semibold">ソーシャルリンク</CardTitle>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               SNSのプロフィールリンクを追加してください
             </p>
           </CardHeader>
           <CardContent className="p-10">
-            <div className="space-y-8">
+            <div className="grid gap-6 md:grid-cols-2">
               {socialPlatforms.map((platform) => (
                 <div key={platform.key} className="space-y-3">
-                  <Label className="text-sm font-medium flex items-center gap-2">
-                    <platform.icon className="h-4 w-4" />
+                  <Label className="text-sm font-medium flex items-center gap-3">
+                    <div className="p-1.5 rounded-lg bg-primary/5">
+                      <platform.icon className="h-4 w-4 text-primary" />
+                    </div>
                     {platform.label}
                   </Label>
                   <Input
                     {...register(`social_links.${platform.key as keyof ProfileFormData['social_links']}`)}
                     placeholder={platform.placeholder}
-                    className="w-full h-9 text-sm"
+                    className="w-full h-12 text-base rounded-2xl border-2 border-border hover:border-primary/30 focus:border-primary transition-colors px-4"
                   />
                   {errors.social_links?.[platform.key as keyof ProfileFormData['social_links']] && (
-                    <p className="text-xs text-destructive">
+                    <p className="text-sm text-destructive font-medium">
                       {errors.social_links[platform.key as keyof ProfileFormData['social_links']]?.message}
                     </p>
                   )}
@@ -401,19 +415,21 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose }: Emo
         </Card>
 
         {/* Privacy Settings */}
-        <Card>
-          <CardHeader className="pb-6">
+        <Card className="rounded-3xl border border-primary/20 bg-background/90 shadow-[0_20px_45px_rgba(101,195,200,0.14)] backdrop-blur card-pop">
+          <CardHeader className="pb-6 px-10 pt-8 space-y-4">
             <div className="flex items-center gap-3">
-              <Shield className="h-4 w-4 text-primary" />
-              <CardTitle className="text-base">プライバシー設定</CardTitle>
+              <div className="p-2 rounded-xl bg-primary/10">
+                <Shield className="h-5 w-5 text-primary" />
+              </div>
+              <CardTitle className="text-lg font-semibold">プライバシー設定</CardTitle>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               プロフィールの公開設定を選択してください
             </p>
           </CardHeader>
           <CardContent className="p-10">
             <div className="space-y-6">
-              <div className="flex items-center space-x-3">
+              <div className="flex items-start space-x-4 p-4 rounded-2xl bg-primary/5 border border-primary/10">
                 <Controller
                   name="is_public"
                   control={control}
@@ -422,37 +438,40 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose }: Emo
                       id="is_public"
                       checked={field.value}
                       onCheckedChange={field.onChange}
+                      className="mt-1"
                     />
                   )}
                 />
-                <Label htmlFor="is_public" className="text-sm">
-                  プロフィールを公開する
-                </Label>
+                <div className="space-y-2">
+                  <Label htmlFor="is_public" className="text-base font-medium cursor-pointer">
+                    プロフィールを公開する
+                  </Label>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    公開すると、他のユーザーがあなたのプロフィールを閲覧できるようになります
+                  </p>
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                公開すると、他のユーザーがあなたのプロフィールを閲覧できるようになります
-              </p>
             </div>
           </CardContent>
         </Card>
       </form>
 
-      {/* Action Buttons */}
-      <div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border p-8 mt-12">
-        <div className="flex gap-4 justify-end max-w-5xl mx-auto">
-          <Button type="button" variant="outline" onClick={onClose} className="px-8 h-10 text-sm">
-            閉じる
-          </Button>
-          <Button type="submit" disabled={isSubmitting} className="px-8 h-10 text-sm"
+      {/* Action Button */}
+      <div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border/40 p-8 mt-12">
+        <div className="flex justify-center">
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="px-10 h-12 text-base rounded-2xl bg-primary hover:bg-primary/90 btn-pop"
             onClick={handleSubmit(onSubmit)}
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <Loader2 className="h-5 w-5 animate-spin mr-3" />
                 保存中...
               </>
             ) : (
-              '保存'
+              '保存する'
             )}
           </Button>
         </div>

@@ -6,7 +6,7 @@ import { useEmojiProfile } from '@/hooks/useEmojiProfile';
 import { EmojiProfileForm } from '@/components/EmojiProfileForm';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, User, Palette, X } from 'lucide-react';
+import { Loader2, X, User } from 'lucide-react';
 
 export default function EmojiProfileEdit() {
   const { fanmarkId } = useParams<{ fanmarkId: string }>();
@@ -70,29 +70,51 @@ export default function EmojiProfileEdit() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      <div className="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-12 sm:px-8 lg:px-12">
-        {/* Header */}
-        <div className="text-center space-y-6 mb-12">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 text-primary mx-auto">
-            <User className="h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground mb-3">
-              {t('emojiProfile.editProfileTitle')}
-            </h1>
-            <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
-              {t('emojiProfile.editProfileDescription')}
-            </p>
-          </div>
+      {/* Close Button */}
+      <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border/40">
+        <div className="container mx-auto px-4 py-4 flex justify-end">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleClose}
+            className="rounded-full h-10 w-10 p-0 hover:bg-primary/10"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </div>
+      </div>
 
-        {/* Form */}
-        <EmojiProfileForm
-          profile={profile}
-          onSave={handleSave}
-          isSubmitting={isSubmitting}
-          onClose={handleClose}
-        />
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto space-y-10">
+          {/* Header */}
+          <div className="text-center space-y-6">
+            <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 via-accent/20 to-primary/10 flex items-center justify-center shadow-lg">
+              {/* Display fanmarkId as emojis if it contains emojis, otherwise show user icon */}
+              {fanmarkId && /\p{Emoji}/u.test(fanmarkId) ? (
+                <span className="text-4xl">{fanmarkId}</span>
+              ) : (
+                <User className="h-10 w-10 text-primary" />
+              )}
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-foreground mb-4 text-gradient">
+                {t('emojiProfile.editProfileTitle')}
+              </h1>
+              <p className="text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                {t('emojiProfile.editProfileDescription')}
+              </p>
+            </div>
+          </div>
+
+          {/* Form */}
+          <EmojiProfileForm
+            profile={profile}
+            onSave={handleSave}
+            isSubmitting={isSubmitting}
+            onClose={handleClose}
+          />
+        </div>
       </div>
     </div>
   );
