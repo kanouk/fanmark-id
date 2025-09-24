@@ -22,13 +22,13 @@ import {
 } from 'react-icons/si';
 
 interface FanmarkData {
+  id: string;
   emoji_combination: string;
   fanmark_name: string;
   access_type: 'profile' | 'redirect' | 'text' | 'inactive';
   target_url?: string;
   text_content?: string;
   status: string;
-  id?: string;
 }
 
 const socialPlatforms = [

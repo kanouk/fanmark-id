@@ -519,6 +519,7 @@ export type Database = {
           access_type: string
           emoji_combination: string
           fanmark_name: string
+          id: string
           is_password_protected: boolean
           status: string
           target_url: string

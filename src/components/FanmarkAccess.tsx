@@ -10,6 +10,7 @@ import { PasswordProtection } from './PasswordProtection';
 import { useTranslation } from '@/hooks/useTranslation';
 
 interface FanmarkData {
+  id: string;
   emoji_combination: string;
   fanmark_name: string;
   access_type: 'profile' | 'redirect' | 'text' | 'inactive';
