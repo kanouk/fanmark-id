@@ -44,13 +44,13 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
     try {
       await onUpdate(formData);
       toast({
-        title: '✨ Settings Updated',
-        description: 'Your user settings have been updated successfully.',
+        title: '✨ ' + t('userSettings.updateSuccess'),
+        description: t('userSettings.updateSuccessDescription'),
       });
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to update settings.',
+        title: t('common.error'),
+        description: t('userSettings.updateError'),
         variant: 'destructive',
       });
     } finally {
@@ -67,13 +67,13 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
       setFormData(prev => ({ ...prev, avatar_url: avatarUrl }));
       await onUpdate({ avatar_url: avatarUrl });
       toast({
-        title: '✨ Avatar Uploaded',
-        description: 'Your avatar has been uploaded successfully.',
+        title: '✨ ' + t('userSettings.avatarUploadSuccess'),
+        description: t('userSettings.avatarUploadDescription'),
       });
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to upload avatar.',
+        title: t('common.error'),
+        description: t('userSettings.avatarUploadError'),
         variant: 'destructive',
       });
     } finally {
@@ -91,13 +91,13 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
       setFormData(prev => ({ ...prev, avatar_url: '' }));
       await onUpdate({ avatar_url: null });
       toast({
-        title: '✨ Avatar Removed',
-        description: 'Your avatar has been removed.',
+        title: '✨ ' + t('userSettings.avatarRemoveSuccess'),
+        description: t('userSettings.avatarRemoveDescription'),
       });
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to remove avatar.',
+        title: t('common.error'),
+        description: t('userSettings.avatarRemoveError'),
         variant: 'destructive',
       });
     }
@@ -123,8 +123,8 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
             )}
           </div>
           <div className="space-y-2 text-sm text-muted-foreground">
-            <p className="font-medium text-foreground">Avatar</p>
-            <p>Upload your profile picture</p>
+            <p className="font-medium text-foreground">{t('userSettings.avatar')}</p>
+            <p>{t('userSettings.avatarHint')}</p>
           </div>
           <div className="flex w-full flex-col gap-2">
             <Button
@@ -140,7 +140,7 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
               ) : (
                 <Upload className="h-4 w-4" />
               )}
-              {uploading ? 'Uploading...' : 'Upload Avatar'}
+              {uploading ? t('userSettings.uploading') : t('userSettings.uploadAvatar')}
             </Button>
             {formData.avatar_url && (
               <Button
@@ -151,7 +151,7 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
                 className="w-full gap-2 rounded-full text-destructive hover:bg-destructive/10"
               >
                 <Trash2 className="h-4 w-4" />
-                Remove Avatar
+                {t('userSettings.removeAvatar')}
               </Button>
             )}
           </div>
@@ -161,33 +161,33 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
           <div className="space-y-2">
             <Label htmlFor="display_name" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
               <User className="h-4 w-4" />
-              Display Name
+              {t('userSettings.displayName')}
             </Label>
             <Input
               id="display_name"
               value={formData.display_name}
               onChange={(e) => setFormData(prev => ({ ...prev, display_name: e.target.value }))}
-              placeholder="Enter your display name"
+              placeholder={t('userSettings.displayNamePlaceholder')}
               className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none focus-visible:ring-2 focus-visible:ring-primary/40"
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="username" className="text-sm font-semibold text-muted-foreground">
-              Username
+              {t('userSettings.username')}
             </Label>
             <Input
               id="username"
               value={formData.username}
               onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-              placeholder="Enter your username"
+              placeholder={t('userSettings.usernamePlaceholder')}
               className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none focus-visible:ring-2 focus-visible:ring-primary/40"
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="plan_type" className="text-sm font-semibold text-muted-foreground">
-              Plan Type
+              {t('userSettings.planType')}
             </Label>
             <select
               id="plan_type"
@@ -195,14 +195,14 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
               onChange={(e) => setFormData(prev => ({ ...prev, plan_type: e.target.value as 'free' | 'creator' }))}
               className="h-11 w-full rounded-2xl border border-primary/15 bg-background/80 px-3 text-base shadow-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
-              <option value="free">Free Plan</option>
-              <option value="creator">Creator Plan</option>
+              <option value="free">{t('userSettings.planTypeFree')}</option>
+              <option value="creator">{t('userSettings.planTypeCreator')}</option>
             </select>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="preferred_language" className="text-sm font-semibold text-muted-foreground">
-              Preferred Language
+              {t('userSettings.preferredLanguage')}
             </Label>
             <select
               id="preferred_language"
@@ -210,8 +210,8 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
               onChange={(e) => setFormData(prev => ({ ...prev, preferred_language: e.target.value as 'en' | 'ja' }))}
               className="h-11 w-full rounded-2xl border border-primary/15 bg-background/80 px-3 text-base shadow-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
-              <option value="en">English</option>
-              <option value="ja">日本語</option>
+              <option value="en">{t('userSettings.languageEnglish')}</option>
+              <option value="ja">{t('userSettings.languageJapanese')}</option>
             </select>
           </div>
         </div>
@@ -226,12 +226,12 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
           {loading ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Saving...
+              {t('userSettings.saving')}
             </>
           ) : (
             <>
               <Save className="h-4 w-4" />
-              Save Changes
+              {t('userSettings.saveChanges')}
             </>
           )}
         </Button>

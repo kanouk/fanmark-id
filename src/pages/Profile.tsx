@@ -42,10 +42,10 @@ const Profile = () => {
           <div className="space-y-10">
             <div className="space-y-2 text-center">
               <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-                User Settings
+                {t('userSettings.pageTitle')}
               </h1>
               <p className="text-sm text-muted-foreground sm:text-base">
-                Manage your account settings and preferences
+                {t('userSettings.pageSubtitle')}
               </p>
             </div>
 
@@ -75,7 +75,7 @@ const Profile = () => {
                     <p className="text-sm text-muted-foreground">@{profile.username}</p>
                   )}
                   <p className="text-sm text-muted-foreground">
-                    Language: {profile?.preferred_language === 'ja' ? '日本語' : 'English'}
+                    {t('userSettings.preferredLanguage')}: {profile?.preferred_language === 'ja' ? t('userSettings.languageJapanese') : t('userSettings.languageEnglish')}
                   </p>
                 </div>
               </CardContent>
@@ -88,14 +88,14 @@ const Profile = () => {
                   className="gap-2 rounded-full py-3 px-4 text-base font-medium transition-all duration-200 data-[state=active]:bg-primary/15 data-[state=active]:text-foreground data-[state=active]:shadow-lg"
                 >
                   <Settings className="h-4 w-4" />
-                  Edit Settings
+                  {t('userSettings.editSettings')}
                 </TabsTrigger>
                 <TabsTrigger
                   value="settings"
                   className="gap-2 rounded-full py-3 px-4 text-base font-medium transition-all duration-200 data-[state=active]:bg-primary/15 data-[state=active]:text-foreground data-[state=active]:shadow-lg"
                 >
                   <Info className="h-4 w-4" />
-                  Account Info
+                  {t('userSettings.accountInfo')}
                 </TabsTrigger>
               </TabsList>
 
@@ -104,9 +104,9 @@ const Profile = () => {
                   <CardHeader className="flex flex-col gap-2 px-6 pt-6 pb-4">
                     <CardTitle className="flex items-center gap-2 text-lg font-semibold">
                       <User className="h-5 w-5 text-primary" />
-                      Edit Settings
+                      {t('userSettings.editSettings')}
                     </CardTitle>
-                    <p className="text-sm text-muted-foreground">Update your account settings and preferences</p>
+                    <p className="text-sm text-muted-foreground">{t('userSettings.editSettingsDescription')}</p>
                   </CardHeader>
                   <CardContent className="px-6 pb-6 pt-6">
                     <UserProfileForm profile={profile} onUpdate={updateProfile} />
@@ -119,16 +119,16 @@ const Profile = () => {
                   <CardHeader className="flex flex-col gap-2 px-6 pt-6 pb-4">
                     <CardTitle className="flex items-center gap-2 text-lg font-semibold">
                       <Info className="h-5 w-5 text-primary" />
-                      Account Information
+                      {t('userSettings.accountInfo')}
                     </CardTitle>
-                    <p className="text-sm text-muted-foreground">View your account details and settings</p>
+                    <p className="text-sm text-muted-foreground">{t('userSettings.accountInfoDescription')}</p>
                   </CardHeader>
                   <CardContent className="space-y-4 p-6">
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-1.5">
                         <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                           <MdOutlineMail className="h-4 w-4" />
-                          Email
+                          {t('userSettings.email')}
                         </p>
                         <div className="rounded-2xl border border-primary/10 bg-background/80 px-4 py-3 text-sm text-foreground">
                           {user?.email}
@@ -137,7 +137,7 @@ const Profile = () => {
                       <div className="space-y-1.5">
                         <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                           <RiCalendarCheckLine className="h-4 w-4" />
-                          Member Since
+                          {t('userSettings.memberSince')}
                         </p>
                         <div className="rounded-2xl border border-primary/10 bg-background/80 px-4 py-3 text-sm text-foreground">
                           {profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : 'N/A'}
@@ -146,21 +146,21 @@ const Profile = () => {
                       <div className="space-y-1.5">
                         <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                           <HiOutlineSparkles className="h-4 w-4" />
-                          Plan Type
+                          {t('userSettings.planType')}
                         </p>
                         <div className="flex items-center gap-2 rounded-2xl border border-primary/10 bg-background/80 px-4 py-3 text-sm text-foreground">
                           <Badge className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary">
-                            {profile?.plan_type === 'creator' ? 'Creator Plan' : 'Free Plan'}
+                            {profile?.plan_type === 'creator' ? t('userSettings.planTypeCreator') : t('userSettings.planTypeFree')}
                           </Badge>
                         </div>
                       </div>
                       <div className="space-y-1.5">
                         <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                           <FiGlobe className="h-4 w-4" />
-                          Preferred Language
+                          {t('userSettings.preferredLanguage')}
                         </p>
                         <div className="rounded-2xl border border-primary/10 bg-background/80 px-4 py-3 text-sm text-foreground">
-                          {profile?.preferred_language === 'ja' ? '日本語' : 'English'}
+                          {profile?.preferred_language === 'ja' ? t('userSettings.languageJapanese') : t('userSettings.languageEnglish')}
                         </div>
                       </div>
                     </div>
