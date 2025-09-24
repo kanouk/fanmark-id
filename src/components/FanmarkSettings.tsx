@@ -146,11 +146,6 @@ export const FanmarkSettings = ({
         .from('fanmarks')
         .update({
           access_type: data.accessType,
-          fanmark_name: data.displayName,
-          target_url: data.targetUrl || null,
-          text_content: data.textContent || null,
-          is_password_protected: data.isPasswordProtected,
-          access_password: data.isPasswordProtected ? data.accessPassword : null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', fanmark.id);

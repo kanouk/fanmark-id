@@ -7,7 +7,7 @@ export interface FanmarkSearchResult {
   emoji_combination: string;
   normalized_emoji: string;
   short_id: string;
-  tier_level?: number;
+  tier_level?: number; // Deprecated - keeping for backward compatibility
   status: 'available' | 'not_available' | 'invalid';
   price_yen?: number;
   price_usd?: number;
@@ -27,7 +27,7 @@ interface FanmarkRow {
   emoji_combination: string;
   normalized_emoji: string;
   short_id: string;
-  tier_level?: number;
+  tier_level?: number; // Deprecated - no longer exists in fanmarks table
   status: FanmarkStatusRaw;
   user_id: string;
 }
@@ -98,10 +98,7 @@ export function useFanmarkSearch() {
           emoji_combination,
           normalized_emoji,
           short_id,
-          tier_level,
-          status,
-          current_license_id,
-          user_id
+          status
         `)
         .eq('status', 'active')
         .order('created_at', { ascending: false })
@@ -118,7 +115,7 @@ export function useFanmarkSearch() {
           emoji_combination: fanmark.emoji_combination,
           normalized_emoji: fanmark.normalized_emoji,
           short_id: fanmark.short_id,
-          tier_level: fanmark.tier_level,
+          tier_level: 1, // Default value since removed from schema
           status: 'not_available', // All recent fanmarks are already taken
           price_yen: undefined,
           price_usd: undefined,
@@ -199,7 +196,7 @@ export function useFanmarkSearch() {
           emoji_combination: query,
           normalized_emoji: '',
           short_id: '',
-          tier_level: undefined,
+          tier_level: 1, // Default value
           status: 'invalid',
           error: validation.error,
           emoji_count: validation.emojiCount,
@@ -230,7 +227,7 @@ export function useFanmarkSearch() {
           emoji_combination: query,
           normalized_emoji: normalizedQuery,
           short_id: '',
-          tier_level: undefined,
+          tier_level: 1, // Default value
           status: 'available',
           emoji_count: validation.emojiCount,
         });
