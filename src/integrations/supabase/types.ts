@@ -639,8 +639,8 @@ export type Database = {
         Returns: {
           access_password: string
           access_type: string
-          display_name: string
           emoji_combination: string
+          fanmark_name: string
           is_password_protected: boolean
           status: string
           target_url: string

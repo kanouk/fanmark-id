@@ -21,7 +21,7 @@ import {
 
 interface FanmarkData {
   emoji_combination: string;
-  display_name: string;
+  fanmark_name: string;
   access_type: 'profile' | 'redirect' | 'text' | 'inactive';
   target_url?: string;
   text_content?: string;
@@ -80,7 +80,7 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
     );
   }
 
-  const displayName = emojiProfile?.display_name || fanmark.display_name || 'Anonymous';
+  const displayName = emojiProfile?.display_name || fanmark.fanmark_name || 'Anonymous';
   const bio = emojiProfile?.bio || '';
   const coverImage = emojiProfile?.theme_settings?.cover_image_url;
   const profileImage = emojiProfile?.theme_settings?.profile_image_url;
