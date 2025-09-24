@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAvatarUpload } from '@/hooks/useAvatarUpload';
+import { useCoverImageUpload } from '@/hooks/useCoverImageUpload';
 import { EmojiProfile } from '@/hooks/useEmojiProfile';
 import { Loader2, Upload, X, Image as ImageIcon, FileText, Link, Shield, User } from 'lucide-react';
 import { 
@@ -74,6 +75,7 @@ const socialPlatforms = [
 export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose }: EmojiProfileFormProps) => {
   const { t } = useTranslation();
   const { uploadAvatar, uploading } = useAvatarUpload();
+  const { uploadCoverImage, uploading: coverUploading } = useCoverImageUpload();
   const [coverImageUrl, setCoverImageUrl] = useState(profile?.theme_settings?.cover_image_url || '');
   const [coverImageUploading, setCoverImageUploading] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState(profile?.theme_settings?.profile_image_url || '');
@@ -120,7 +122,7 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose }: Emo
 
     setCoverImageUploading(true);
     try {
-      const imageUrl = await uploadAvatar(file);
+      const imageUrl = await uploadCoverImage(file);
       setCoverImageUrl(imageUrl);
       setValue('theme_settings.cover_image_url', imageUrl);
       toast({
@@ -229,7 +231,7 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose }: Emo
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-center justify-center">
                       <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                         <div className="bg-background/90 backdrop-blur rounded-full p-3 shadow-lg">
-                          {coverImageUploading ? (
+                          {(coverImageUploading || coverUploading) ? (
                             <Loader2 className="h-6 w-6 animate-spin text-primary" />
                           ) : (
                             <Upload className="h-6 w-6 text-primary" />
@@ -253,9 +255,9 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose }: Emo
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
-                      {coverImageUploading ? (
-                        <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-                      ) : (
+                        {(coverImageUploading || coverUploading) ? (
+                          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                        ) : (
                         <div className="bg-primary/5 rounded-full p-4 group-hover:bg-primary/10 transition-colors">
                           <Upload className="h-8 w-8 text-primary/60" />
                         </div>
@@ -269,7 +271,7 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose }: Emo
                   accept="image/*"
                   onChange={handleCoverImageUpload}
                   className="hidden"
-                  disabled={coverImageUploading}
+                  disabled={coverImageUploading || coverUploading}
                 />
               </div>
 
