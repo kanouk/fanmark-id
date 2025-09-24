@@ -176,7 +176,7 @@ const Profile = () => {
           <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
             <span className="text-3xl">✨</span> <span className="text-gradient">fanmark.id</span>
           </div>
-          <p className="text-sm text-muted-foreground">Simplify your digital presence</p>
+          <p className="text-sm text-muted-foreground">{t('sections.footer')}</p>
         </div>
       </footer>
     </div>

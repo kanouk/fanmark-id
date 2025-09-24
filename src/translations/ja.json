@@ -124,6 +124,14 @@
       "special": "記号をふくむ"
     }
   },
+  "messageBoard": {
+    "title": "伝言板",
+    "messageFromOwner": "ファンマオーナーからメッセージが届いています",
+    "passwordProtection": "パスワード保護",
+    "passwordProtectedMessage": "この伝言板はパスワードで保護されています",
+    "enterPassword": "4桁の数字を入力してください",
+    "autoValidationNote": "4桁の数字を入力すると自動で認証されます"
+  },
   "sections": {
     "howUsed": "こんな風に使われてます",
     "howItWorks": "3ステップで完成",
@@ -137,7 +145,7 @@
     "comparison": "他サービスとの比較",
     "cta": "今すぐ始めよう",
     "ctaDescription": "あなただけのファンマを見つけて、新しいアドレス体験を始めましょう",
-    "footer": "© 2024 fanmark.id All rights reserved.",
+    "footer": "© 2025 fanmark.id All rights reserved.",
     "examples": {
       "musician": {
         "title": "ミュージシャン",
@@ -465,7 +473,7 @@
     "accessTypeOptions": {
       "profile": "プロフィールを表示",
       "redirect": "指定のアドレスへ転送する",
-      "text": "ミニ伝言板を表示する",
+      "text": "伝言板を表示する",
       "inactive": "なにもしない"
     },
     "actions": {

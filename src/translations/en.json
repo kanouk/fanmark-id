@@ -124,6 +124,14 @@
       "special": "Contains special character"
     }
   },
+  "messageBoard": {
+    "title": "Message Board",
+    "messageFromOwner": "You have received a message from the fanmark owner",
+    "passwordProtection": "Password Protection",
+    "passwordProtectedMessage": "This message board is password protected",
+    "enterPassword": "Enter 4-digit password",
+    "autoValidationNote": "Automatically validates when 4 digits are entered"
+  },
   "sections": {
     "howUsed": "How It's Being Used",
     "howItWorks": "3 Simple Steps",
@@ -137,7 +145,7 @@
     "comparison": "Service Comparison",
     "cta": "Get Started Now",
     "ctaDescription": "Find your perfect fanmark and start your new address experience",
-    "footer": "© 2024 fanmark.id All rights reserved.",
+    "footer": "© 2025 fanmark.id All rights reserved.",
     "examples": {
       "musician": {
         "title": "Musician",

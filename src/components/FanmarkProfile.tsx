@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Loader2, ExternalLink, Share, Heart, Copy, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -67,7 +66,7 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
           const startTime = Date.now();
           const profile = await getPublicEmojiProfile(fanmark.id);
           const loadTime = Date.now() - startTime;
-          
+
           console.log('✅ Profile loaded successfully in', loadTime, 'ms');
           console.log('📊 Profile data:', {
             id: profile?.id,
@@ -78,9 +77,9 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
             theme_settings: profile?.theme_settings,
             updated_at: profile?.updated_at
           });
-          
+
           setEmojiProfile(profile);
-          
+
           if (profile) {
             console.log('🎉 Profile set successfully');
           } else {
@@ -139,12 +138,10 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex items-center justify-center">
-        <Card className="w-96 rounded-3xl border border-primary/20 shadow-lg">
-          <CardContent className="p-8 text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-            <p className="text-muted-foreground">{t('common.loading')}</p>
-          </CardContent>
-        </Card>
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          {t('common.loading')}
+        </div>
       </div>
     );
   }
@@ -157,9 +154,9 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      <div className="container mx-auto px-4 py-8 max-w-md">
-        {/* Header Actions */}
-        <div className="flex justify-between items-center mb-6">
+      {/* Header Actions */}
+      <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border/40">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2 text-muted-foreground">
             <span className="text-2xl">{fanmark.emoji_combination}</span>
             <Button
@@ -197,130 +194,131 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
             </Button>
           </div>
         </div>
+      </div>
 
-        {/* Cover Image */}
-        <div className="relative mb-6">
-          <div
-            className="w-full h-48 rounded-3xl overflow-hidden bg-gradient-to-r from-primary/20 via-accent/20 to-primary/10 shadow-lg mb-6"
-            style={coverImage ? {
-              backgroundImage: `url(${coverImage})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            } : {}}
-          >
-            {!coverImage && (
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="text-center space-y-2 text-primary/70">
-                  <div className="text-6xl animate-float">✨</div>
-                  <p className="text-sm font-medium px-4">素敵なプロフィールページ</p>
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto space-y-10">
+          {/* Profile Preview Section - Matching Edit Page Layout */}
+          <Card className="overflow-hidden bg-gradient-to-br from-background/90 to-background/70 border border-primary/20 shadow-xl backdrop-blur-sm">
+            <CardContent className="p-0">
+              {/* Cover Image */}
+              <div
+                className="relative h-48 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/10"
+                style={coverImage ? {
+                  backgroundImage: `url(${coverImage})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center'
+                } : {}}
+              >
+                {!coverImage && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center text-primary/60">
+                      <div className="text-6xl mb-2">✨</div>
+                      <p className="text-sm font-medium">カバー画像</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Profile Image Overlay */}
+                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2">
+                  <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-background shadow-lg bg-background">
+                    {profileImage ? (
+                      <img
+                        src={profileImage}
+                        alt={displayName}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 via-accent/20 to-primary/10">
+                        <User className="h-8 w-8 text-primary" />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            )}
-          </div>
 
-          {/* Profile Image */}
-          <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2">
-            <div className="relative">
-              <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-background shadow-xl bg-background">
-                {profileImage ? (
-                  <img
-                    src={profileImage}
-                    alt={displayName}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 via-accent/20 to-primary/10">
-                    <User className="h-8 w-8 text-primary" />
+              {/* Profile Content */}
+              <div className="px-8 pt-16 pb-8">
+                <div className="text-center mb-8">
+                  <h1 className="text-3xl font-bold tracking-tight text-foreground mb-4">
+                    {displayName}
+                  </h1>
+                  {bio && (
+                    <p className="text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                      {bio}
+                    </p>
+                  )}
+                </div>
+
+                {/* Social Links */}
+                {Object.keys(socialLinks).length > 0 && (
+                  <div className="space-y-4">
+                    <h2 className="text-lg font-semibold text-foreground text-center mb-6">
+                      ソーシャルリンク
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {Object.entries(socialLinks).map(([platform, url]) => {
+                        const platformConfig = socialPlatforms.find(p => p.key === platform);
+                        if (!platformConfig || !url) return null;
+
+                        const Icon = platformConfig.icon;
+
+                        return (
+                          <button
+                            key={platform}
+                            onClick={() => window.open(url, '_blank')}
+                            className="group flex items-center gap-4 p-4 rounded-2xl bg-background/50 border border-primary/10 hover:border-primary/20 hover:bg-background/70 transition-all duration-200 hover:scale-[1.02]"
+                          >
+                            <div className={`p-3 rounded-full bg-gradient-to-r ${platformConfig.color} ${platformConfig.textColor} flex items-center justify-center shadow-lg`}>
+                              <Icon className="h-5 w-5" />
+                            </div>
+                            <div className="flex-1 text-left">
+                              <span className="font-medium text-foreground">{platformConfig.label}</span>
+                              <p className="text-sm text-muted-foreground truncate">{url}</p>
+                            </div>
+                            <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
-              <div className="absolute -bottom-1 -right-1">
-                <Badge className="bg-emerald-500 text-white border-2 border-background rounded-full px-2 py-1 text-xs shadow-lg">
-                  アクティブ
-                </Badge>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Profile Info */}
-        <div className="text-center mb-8 mt-16">
-          <h1 className="text-2xl font-bold text-foreground mb-3">
-            {displayName}
-          </h1>
-          {bio && (
-            <p className="text-foreground/80 leading-relaxed text-sm px-4 mb-4">
-              {bio}
-            </p>
-          )}
-        </div>
-
-        {/* Social Links */}
-        {Object.keys(socialLinks).length > 0 && (
-          <div className="space-y-3 mb-8">
-            {Object.entries(socialLinks).map(([platform, url]) => {
-              const platformConfig = socialPlatforms.find(p => p.key === platform);
-              if (!platformConfig || !url) return null;
-
-              const Icon = platformConfig.icon;
-
-              return (
-                <Card key={platform} className="overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-lg rounded-2xl border border-primary/10">
-                  <CardContent className="p-0">
-                    <button
-                      onClick={() => window.open(url, '_blank')}
-                      className="w-full p-4 flex items-center gap-4 text-left hover:bg-primary/5 transition-all duration-200"
-                    >
-                      <div className={`p-3 rounded-full bg-gradient-to-r ${platformConfig.color} ${platformConfig.textColor} flex items-center justify-center shadow-lg`}>
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <div className="flex-1">
-                        <span className="font-medium text-foreground">{platformConfig.label}</span>
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">{url}</p>
-                      </div>
-                      <ExternalLink className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    </button>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-
-        {/* No Content State */}
-        {!bio && Object.keys(socialLinks).length === 0 && (
-          <Card className="mb-8 rounded-3xl border border-primary/15 bg-background/90 shadow-lg backdrop-blur">
-            <CardContent className="p-8 text-center">
-              <div className="space-y-4">
-                <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
-                  <User className="h-8 w-8 text-primary/50" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-foreground mb-2">プロフィールを作成中</h3>
-                  <p className="text-sm text-muted-foreground">
-                    まもなく素敵なプロフィールが公開されます
-                  </p>
-                </div>
-              </div>
             </CardContent>
           </Card>
-        )}
 
-        {/* fanmark.id Logo */}
-        <div className="text-center pt-8">
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="group inline-flex items-center gap-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 via-accent/20 to-primary/10 text-xl transition-all group-hover:scale-105 shadow-lg">
-              ✨
-            </span>
-            <div className="text-left">
-              <div className="text-gradient text-lg font-bold">fanmark.id</div>
-              <div className="text-xs text-muted-foreground">あなたのファンマークを見つけよう</div>
-            </div>
-          </button>
+          {/* No Content State */}
+          {!bio && Object.keys(socialLinks).length === 0 && (
+            <Card className="bg-background/90 border border-primary/20 shadow-xl backdrop-blur-sm">
+              <CardContent className="p-12 text-center">
+                <div className="space-y-6">
+                  <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 via-accent/20 to-primary/10 flex items-center justify-center shadow-lg">
+                    <User className="h-10 w-10 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-foreground mb-3">プロフィールを作成中</h3>
+                    <p className="text-base text-muted-foreground max-w-md mx-auto leading-relaxed">
+                      まもなく素敵なプロフィールが公開されます。しばらくお待ちください。
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Footer Logo - Matching Edit Page Style */}
+          <div className="text-center pt-8 border-t border-border/50">
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="group inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-lg transition-all group-hover:scale-105">
+                ✨
+              </span>
+              <span className="text-gradient text-lg font-semibold">fanmark.id</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
