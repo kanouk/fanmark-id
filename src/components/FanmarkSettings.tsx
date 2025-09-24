@@ -142,22 +142,13 @@ export const FanmarkSettings = ({
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase
-        .from('fanmarks')
-        .update({
-          access_type: data.accessType,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', fanmark.id);
-
-      if (error) throw error;
-
-      // Update fanmark basic config (fanmark name)
+      // Update fanmark basic config (fanmark name and access type)
       const { error: basicConfigError } = await supabase
         .from('fanmark_basic_configs')
         .upsert({
           fanmark_id: fanmark.id,
-          fanmark_name: data.fanmarkName
+          fanmark_name: data.fanmarkName,
+          access_type: data.accessType
         }, {
           onConflict: 'fanmark_id'
         });

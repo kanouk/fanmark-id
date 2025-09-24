@@ -157,7 +157,6 @@ export const FanmarkDashboard = () => {
             emoji_combination,
             normalized_emoji,
             short_id,
-            access_type,
             status,
             created_at,
             updated_at
@@ -177,6 +176,7 @@ export const FanmarkDashboard = () => {
         return {
           ...fanmark,
           // Fill in required properties from Fanmark interface
+          access_type: 'inactive', // Default value since it's now in fanmark_basic_configs
           fanmark_name: fanmark.emoji_combination, // Use emoji as name since display_name is in configs
           target_url: null, // Now in separate config table
           text_content: null, // Now in separate config table

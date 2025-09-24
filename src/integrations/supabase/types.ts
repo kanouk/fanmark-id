@@ -88,6 +88,7 @@ export type Database = {
       }
       fanmark_basic_configs: {
         Row: {
+          access_type: string
           created_at: string
           fanmark_id: string
           fanmark_name: string | null
@@ -95,6 +96,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          access_type?: string
           created_at?: string
           fanmark_id: string
           fanmark_name?: string | null
@@ -102,6 +104,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          access_type?: string
           created_at?: string
           fanmark_id?: string
           fanmark_name?: string | null
@@ -306,7 +309,6 @@ export type Database = {
       }
       fanmarks: {
         Row: {
-          access_type: string
           created_at: string
           emoji_combination: string
           id: string
@@ -316,7 +318,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          access_type?: string
           created_at?: string
           emoji_combination: string
           id?: string
@@ -326,7 +327,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          access_type?: string
           created_at?: string
           emoji_combination?: string
           id?: string

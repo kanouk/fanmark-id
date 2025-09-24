@@ -369,15 +369,19 @@ serve(async (req) => {
       fanmarkEmojiCombination = existingFanmark.emoji_combination;
       fanmarkShortId = existingFanmark.short_id;
 
-      // Optionally update access type if provided
-      if (accessType) {
-        const { error: accessTypeErr } = await supabase
-          .from('fanmarks')
-          .update({ access_type: accessType })
-          .eq('id', existingFanmark.id);
-        if (accessTypeErr) {
-          console.error('Failed to update access type:', accessTypeErr);
-        }
+      // Update access type in basic config for existing fanmark
+      const { error: existingBasicCfgErr } = await supabase
+        .from('fanmark_basic_configs')
+        .upsert(
+          { 
+            fanmark_id: existingFanmark.id, 
+            access_type: accessType,
+            fanmark_name: displayName || existingFanmark.emoji_combination
+          },
+          { onConflict: 'fanmark_id' as any }
+        );
+      if (existingBasicCfgErr) {
+        console.error('Failed to update existing fanmark basic config:', existingBasicCfgErr);
       }
     } else {
       // Generate unique short ID
@@ -428,7 +432,6 @@ serve(async (req) => {
           normalized_emoji: normalizedEmoji,
           short_id: shortId,
           status: 'active',
-          access_type: accessType || 'inactive',
         })
         .select('id, emoji_combination, short_id')
         .single();
@@ -476,17 +479,19 @@ serve(async (req) => {
       // Don't fail registration for this
     }
 
-    // Save basic configurations if provided
-    if (displayName) {
-      const { error: basicCfgErr } = await supabase
-        .from('fanmark_basic_configs')
-        .upsert(
-          { fanmark_id: fanmarkId, fanmark_name: displayName },
-          { onConflict: 'fanmark_id' as any }
-        );
-      if (basicCfgErr) {
-        console.error('Failed to upsert basic config:', basicCfgErr);
-      }
+    // Save basic configurations (name and access type)
+    const { error: basicCfgErr } = await supabase
+      .from('fanmark_basic_configs')
+      .upsert(
+        { 
+          fanmark_id: fanmarkId, 
+          fanmark_name: displayName || null,
+          access_type: accessType
+        },
+        { onConflict: 'fanmark_id' as any }
+      );
+    if (basicCfgErr) {
+      console.error('Failed to upsert basic config:', basicCfgErr);
     }
 
     if (accessType === 'redirect' && targetUrl) {
