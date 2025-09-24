@@ -439,7 +439,7 @@
   "fanmarkSettings": {
     "title": "ファンマ設定",
     "summary": {
-      "defaultName": "マイファンマ"
+      "defaultName": "新しいファンマ"
     },
     "fields": {
       "displayName": {

@@ -440,7 +440,7 @@
   "fanmarkSettings": {
     "title": "Fanmark settings",
     "summary": {
-      "defaultName": "My Fanmark"
+      "defaultName": "New Fanmark"
     },
     "fields": {
       "displayName": {
