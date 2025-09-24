@@ -15,6 +15,7 @@ export default function EmojiProfileEdit() {
   const { user } = useAuth();
   const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cachedFanmark, setCachedFanmark] = useState<{emoji_combination: string, display_name: string | null} | null>(null);
 
   const { profile, loading, updateProfile } = useEmojiProfile(fanmarkId!);
 
@@ -26,7 +27,24 @@ export default function EmojiProfileEdit() {
       });
       return;
     }
-  }, [user, navigate, location]);
+
+    // Load cached fanmark data from localStorage
+    try {
+      const cached = localStorage.getItem('fanmark_settings_cache');
+      if (cached) {
+        const data = JSON.parse(cached);
+        // Check if data is less than 5 minutes old and matches current fanmarkId
+        if (data.fanmarkId === fanmarkId && Date.now() - data.timestamp < 5 * 60 * 1000) {
+          setCachedFanmark({
+            emoji_combination: data.emoji_combination,
+            display_name: data.display_name
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error loading cached fanmark data:', error);
+    }
+  }, [user, navigate, location, fanmarkId]);
 
   const handleSave = async (data: any) => {
     setIsSubmitting(true);
@@ -90,9 +108,9 @@ export default function EmojiProfileEdit() {
           {/* Header */}
           <div className="text-center space-y-6">
             <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 via-accent/20 to-primary/10 flex items-center justify-center shadow-lg">
-              {/* Display fanmarkId as emojis if it contains emojis, otherwise show user icon */}
-              {fanmarkId && /\p{Emoji}/u.test(fanmarkId) ? (
-                <span className="text-4xl">{fanmarkId}</span>
+              {/* Display cached emoji combination, or fallback to user icon */}
+              {cachedFanmark?.emoji_combination ? (
+                <span className="text-4xl">{cachedFanmark.emoji_combination}</span>
               ) : (
                 <User className="h-10 w-10 text-primary" />
               )}

@@ -71,6 +71,17 @@ export const FanmarkDashboard = () => {
   const [returningFanmarkId, setReturningFanmarkId] = useState<string | null>(null);
 
   const handleOpenSettings = (fanmarkId: string) => {
+    // Find and cache fanmark data for profile edit page
+    const fanmark = fanmarks.find(f => f.id === fanmarkId);
+    if (fanmark) {
+      const fanmarkData = {
+        emoji_combination: fanmark.emoji_combination,
+        display_name: fanmark.display_name,
+        fanmarkId: fanmarkId,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('fanmark_settings_cache', JSON.stringify(fanmarkData));
+    }
     navigate(`/fanmarks/${fanmarkId}/settings`);
   };
 
