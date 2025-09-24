@@ -56,10 +56,10 @@ serve(async (req) => {
 
     const userId = authData.user.id;
 
-    // Fetch the fanmark and verify ownership
+    // Fetch the fanmark
     const { data: fanmark, error: fetchError } = await supabase
       .from('fanmarks')
-      .select('id, user_id, emoji_combination, current_license_id')
+      .select('id, emoji_combination')
       .eq('id', fanmark_id)
       .maybeSingle();
 
@@ -71,45 +71,75 @@ serve(async (req) => {
       });
     }
 
-    if (!fanmark || fanmark.user_id !== userId) {
-      return new Response(JSON.stringify({ error: 'Fanmark not found or not owned by user' }), {
+    if (!fanmark) {
+      return new Response(JSON.stringify({ error: 'Fanmark not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Expire current license if exists
-    if (fanmark.current_license_id) {
-      const { error: licenseError } = await supabase
-        .from('fanmark_licenses')
-        .update({ status: 'expired' })
-        .eq('id', fanmark.current_license_id);
+    // Find active license for this fanmark owned by current user
+    const { data: activeLicense, error: licenseError } = await supabase
+      .from('fanmark_licenses')
+      .select('id, user_id')
+      .eq('fanmark_id', fanmark_id)
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .gt('license_end', new Date().toISOString())
+      .maybeSingle();
 
-      if (licenseError) {
-        console.warn('Failed to expire license:', licenseError);
-        // continue anyway
-      }
-    }
-
-    // Clear current_license_id and user-configurable fields; set access_type to inactive (don't change fanmark status)
-    const { error: fanmarkUpdateError } = await supabase
-      .from('fanmarks')
-      .update({ 
-        access_type: 'inactive', 
-        current_license_id: null,
-        display_name: null,
-        target_url: null,
-        text_content: null
-      })
-      .eq('id', fanmark_id);
-
-    if (fanmarkUpdateError) {
-      console.error('Fanmark update error:', fanmarkUpdateError);
-      return new Response(JSON.stringify({ error: 'Failed to update fanmark' }), {
-        status: 403,
+    if (licenseError) {
+      console.error('Error fetching license:', licenseError);
+      return new Response(JSON.stringify({ error: 'Failed to fetch license' }), {
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    if (!activeLicense) {
+      return new Response(JSON.stringify({ error: 'No active license found for this fanmark' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Expire the license
+    const { error: expireLicenseError } = await supabase
+      .from('fanmark_licenses')
+      .update({ status: 'expired' })
+      .eq('id', activeLicense.id);
+
+    if (expireLicenseError) {
+      console.error('Failed to expire license:', expireLicenseError);
+      return new Response(JSON.stringify({ error: 'Failed to expire license' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Set access_type to inactive in basic config
+    const { error: basicConfigError } = await supabase
+      .from('fanmark_basic_configs')
+      .update({ access_type: 'inactive' })
+      .eq('fanmark_id', fanmark_id);
+
+    if (basicConfigError) {
+      console.warn('Failed to update basic config:', basicConfigError);
+    }
+
+    // Clean up configuration tables
+    const deleteOperations = [
+      supabase.from('fanmark_redirect_configs').delete().eq('fanmark_id', fanmark_id),
+      supabase.from('fanmark_messageboard_configs').delete().eq('fanmark_id', fanmark_id),
+      supabase.from('fanmark_password_configs').delete().eq('fanmark_id', fanmark_id)
+    ];
+
+    const deleteResults = await Promise.allSettled(deleteOperations);
+    deleteResults.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.warn(`Failed to delete config ${index}:`, result.reason);
+      }
+    });
 
     // Log the return action
     const { error: auditError } = await supabase
