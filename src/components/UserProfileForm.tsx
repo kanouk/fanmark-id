@@ -3,38 +3,24 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useAvatarUpload } from '@/hooks/useAvatarUpload';
-import { Save, User, Link as LinkIcon, Globe, Upload, Trash2, Loader2 } from 'lucide-react';
-import { SiInstagram, SiX, SiTiktok, SiYoutube, SiLine, SiGithub } from 'react-icons/si';
+import { Save, User, Upload, Trash2, Loader2 } from 'lucide-react';
 
-type SocialLinks = Record<string, string>;
-
-interface UserProfile {
+interface UserSettings {
   display_name: string | null;
-  bio: string | null;
+  username: string;
   avatar_url: string | null;
-  is_public_profile: boolean;
-  social_links: SocialLinks;
+  plan_type: 'free' | 'creator';
+  preferred_language: 'en' | 'ja';
 }
 
-type UpdateProfilePayload = Partial<UserProfile>;
+type UpdateSettingsPayload = Partial<UserSettings>;
 
 interface UserProfileFormProps {
-  profile: UserProfile | null;
-  onUpdate: (data: UpdateProfilePayload) => Promise<void>;
+  profile: UserSettings | null;
+  onUpdate: (data: UpdateSettingsPayload) => Promise<void>;
 }
-
-const SOCIAL_PLATFORMS = [
-  { key: 'instagram', label: 'Instagram', icon: <SiInstagram className="h-4 w-4" />, placeholder: '@username' },
-  { key: 'twitter', label: 'X', icon: <SiX className="h-4 w-4" />, placeholder: '@username' },
-  { key: 'tiktok', label: 'TikTok', icon: <SiTiktok className="h-4 w-4" />, placeholder: '@username' },
-  { key: 'youtube', label: 'YouTube', icon: <SiYoutube className="h-4 w-4" />, placeholder: '@channel' },
-  { key: 'line', label: 'LINE', icon: <SiLine className="h-4 w-4" />, placeholder: 'LINE ID' },
-  { key: 'github', label: 'GitHub', icon: <SiGithub className="h-4 w-4" />, placeholder: 'username' },
-];
 
 export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => {
   const { t } = useTranslation();
@@ -45,10 +31,10 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
 
   const [formData, setFormData] = useState({
     display_name: profile?.display_name ?? '',
-    bio: profile?.bio ?? '',
+    username: profile?.username ?? '',
     avatar_url: profile?.avatar_url ?? '',
-    is_public_profile: profile?.is_public_profile ?? true,
-    social_links: profile?.social_links ?? ({} as SocialLinks),
+    plan_type: profile?.plan_type ?? 'free' as 'free' | 'creator',
+    preferred_language: profile?.preferred_language ?? 'en' as 'en' | 'ja',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,28 +44,18 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
     try {
       await onUpdate(formData);
       toast({
-        title: '✨ ' + t('profile.updateSuccess'),
-        description: t('profile.updateSuccessDescription'),
+        title: '✨ Settings Updated',
+        description: 'Your user settings have been updated successfully.',
       });
     } catch (error) {
       toast({
-        title: t('common.error'),
-        description: t('profile.updateError'),
+        title: 'Error',
+        description: 'Failed to update settings.',
         variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
-  };
-
-  const updateSocialLink = (platform: string, url: string) => {
-    setFormData(prev => ({
-      ...prev,
-      social_links: {
-        ...prev.social_links,
-        [platform]: url
-      }
-    }));
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -91,13 +67,13 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
       setFormData(prev => ({ ...prev, avatar_url: avatarUrl }));
       await onUpdate({ avatar_url: avatarUrl });
       toast({
-        title: '✨ ' + t('profile.avatarUploadSuccess'),
-        description: t('profile.avatarUploadDescription'),
+        title: '✨ Avatar Uploaded',
+        description: 'Your avatar has been uploaded successfully.',
       });
     } catch (error) {
       toast({
-        title: t('common.error'),
-        description: t('profile.avatarUploadError'),
+        title: 'Error',
+        description: 'Failed to upload avatar.',
         variant: 'destructive',
       });
     } finally {
@@ -115,13 +91,13 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
       setFormData(prev => ({ ...prev, avatar_url: '' }));
       await onUpdate({ avatar_url: null });
       toast({
-        title: '✨ ' + t('profile.avatarRemoveSuccess'),
-        description: t('profile.avatarRemoveDescription'),
+        title: '✨ Avatar Removed',
+        description: 'Your avatar has been removed.',
       });
     } catch (error) {
       toast({
-        title: t('common.error'),
-        description: t('profile.avatarRemoveError'),
+        title: 'Error',
+        description: 'Failed to remove avatar.',
         variant: 'destructive',
       });
     }
@@ -147,8 +123,8 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
             )}
           </div>
           <div className="space-y-2 text-sm text-muted-foreground">
-            <p className="font-medium text-foreground">{t('profile.avatarLabel')}</p>
-            <p>{t('profile.avatarHint')}</p>
+            <p className="font-medium text-foreground">Avatar</p>
+            <p>Upload your profile picture</p>
           </div>
           <div className="flex w-full flex-col gap-2">
             <Button
@@ -164,7 +140,7 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
               ) : (
                 <Upload className="h-4 w-4" />
               )}
-              {uploading ? t('common.loading') : t('profile.uploadAvatar')}
+              {uploading ? 'Uploading...' : 'Upload Avatar'}
             </Button>
             {formData.avatar_url && (
               <Button
@@ -175,7 +151,7 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
                 className="w-full gap-2 rounded-full text-destructive hover:bg-destructive/10"
               >
                 <Trash2 className="h-4 w-4" />
-                {t('profile.removeAvatar')}
+                Remove Avatar
               </Button>
             )}
           </div>
@@ -185,81 +161,58 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
           <div className="space-y-2">
             <Label htmlFor="display_name" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
               <User className="h-4 w-4" />
-              {t('profile.displayName')}
+              Display Name
             </Label>
             <Input
               id="display_name"
               value={formData.display_name}
               onChange={(e) => setFormData(prev => ({ ...prev, display_name: e.target.value }))}
-              placeholder={t('profile.displayNamePlaceholder')}
+              placeholder="Enter your display name"
               className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none focus-visible:ring-2 focus-visible:ring-primary/40"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="bio" className="text-sm font-semibold text-muted-foreground">
-              {t('profile.bio')}
-            </Label>
-            <Textarea
-              id="bio"
-              value={formData.bio}
-              onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
-              placeholder={t('profile.bioPlaceholder')}
-              className="min-h-[120px] rounded-2xl border border-primary/15 bg-background/80 text-sm shadow-none focus-visible:ring-2 focus-visible:ring-primary/40"
-              maxLength={140}
-            />
-            <div className="flex justify-end text-xs text-muted-foreground">{formData.bio.length}/140</div>
-          </div>
-
-          <div className="rounded-3xl border border-primary/15 bg-background/80 p-5">
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-1">
-                <p className="text-sm font-semibold text-foreground">{t('profile.publicProfile')}</p>
-                <p className="text-xs text-muted-foreground">{t('profile.publicProfileDescription')}</p>
-              </div>
-              <Switch
-                checked={formData.is_public_profile}
-                onCheckedChange={(checked) =>
-                  setFormData(prev => ({ ...prev, is_public_profile: checked }))
-                }
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <h3 className="flex items-center gap-2 text-lg font-semibold text-foreground">
-          <LinkIcon className="h-5 w-5 text-primary" />
-          {t('profile.socialLinks')}
-        </h3>
-        <div className="grid gap-4 md:grid-cols-2">
-          {SOCIAL_PLATFORMS.map((item) => (
-            <div key={item.key} className="space-y-2">
-              <Label className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                {item.icon}
-                {item.label}
-              </Label>
-              <Input
-                value={formData.social_links[item.key as keyof typeof formData.social_links] || ''}
-                onChange={(e) => updateSocialLink(item.key, e.target.value)}
-                placeholder={item.placeholder}
-                className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-sm focus-visible:ring-2 focus-visible:ring-primary/40"
-              />
-            </div>
-          ))}
-          <div className="space-y-2 md:col-span-2">
-            <Label className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-              <Globe className="h-4 w-4" />
-              {t('profile.website')}
+            <Label htmlFor="username" className="text-sm font-semibold text-muted-foreground">
+              Username
             </Label>
             <Input
-              type="url"
-              value={formData.social_links.website || ''}
-              onChange={(e) => updateSocialLink('website', e.target.value)}
-              placeholder="https://yoursite.com"
-              className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-sm focus-visible:ring-2 focus-visible:ring-primary/40"
+              id="username"
+              value={formData.username}
+              onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
+              placeholder="Enter your username"
+              className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none focus-visible:ring-2 focus-visible:ring-primary/40"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="plan_type" className="text-sm font-semibold text-muted-foreground">
+              Plan Type
+            </Label>
+            <select
+              id="plan_type"
+              value={formData.plan_type}
+              onChange={(e) => setFormData(prev => ({ ...prev, plan_type: e.target.value as 'free' | 'creator' }))}
+              className="h-11 w-full rounded-2xl border border-primary/15 bg-background/80 px-3 text-base shadow-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              <option value="free">Free Plan</option>
+              <option value="creator">Creator Plan</option>
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="preferred_language" className="text-sm font-semibold text-muted-foreground">
+              Preferred Language
+            </Label>
+            <select
+              id="preferred_language"
+              value={formData.preferred_language}
+              onChange={(e) => setFormData(prev => ({ ...prev, preferred_language: e.target.value as 'en' | 'ja' }))}
+              className="h-11 w-full rounded-2xl border border-primary/15 bg-background/80 px-3 text-base shadow-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              <option value="en">English</option>
+              <option value="ja">日本語</option>
+            </select>
           </div>
         </div>
       </div>
@@ -273,12 +226,12 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
           {loading ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              {t('common.saving')}
+              Saving...
             </>
           ) : (
             <>
               <Save className="h-4 w-4" />
-              {t('profile.saveChanges')}
+              Save Changes
             </>
           )}
         </Button>

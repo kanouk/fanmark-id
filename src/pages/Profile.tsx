@@ -5,15 +5,14 @@ import { useProfile } from '@/hooks/useProfile';
 import { useTranslation } from '@/hooks/useTranslation';
 import { UserProfileForm } from '@/components/UserProfileForm';
 import { Navigation } from '@/components/Navigation';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { User, Settings, Gift, Info } from 'lucide-react';
+import { User, Settings, Info } from 'lucide-react';
 import { MdOutlineMail } from 'react-icons/md';
 import { RiCalendarCheckLine } from 'react-icons/ri';
 import { HiOutlineSparkles } from 'react-icons/hi2';
-import { FiEye } from 'react-icons/fi';
+import { FiGlobe } from 'react-icons/fi';
 
 const Profile = () => {
   const { user } = useAuth();
@@ -43,10 +42,10 @@ const Profile = () => {
           <div className="space-y-10">
             <div className="space-y-2 text-center">
               <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-                {t('profile.pageTitle')}
+                User Settings
               </h1>
               <p className="text-sm text-muted-foreground sm:text-base">
-                {t('profile.pageSubtitle')}
+                Manage your account settings and preferences
               </p>
             </div>
 
@@ -66,41 +65,20 @@ const Profile = () => {
                 <div className="space-y-2 text-center sm:text-left">
                   <div className="flex flex-col items-center gap-2 sm:flex-row sm:items-center">
                     <h2 className="text-2xl font-semibold text-foreground">
-                      {profile?.display_name || t('profile.welcome')}
+                      {profile?.display_name || profile?.username || 'Welcome'}
                     </h2>
                     <Badge className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                      {profile?.subscription_status === 'premium' ? t('profile.planPremium') : t('profile.planFree')}
+                      {profile?.plan_type === 'creator' ? 'Creator Plan' : 'Free Plan'}
                     </Badge>
                   </div>
                   {profile?.username && (
                     <p className="text-sm text-muted-foreground">@{profile.username}</p>
                   )}
-                  {profile?.bio && (
-                    <p className="text-sm text-muted-foreground">{profile.bio}</p>
-                  )}
+                  <p className="text-sm text-muted-foreground">
+                    Language: {profile?.preferred_language === 'ja' ? '日本語' : 'English'}
+                  </p>
                 </div>
               </CardContent>
-              {profile?.invited_by_code && (
-                <CardContent className="border-t border-primary/10 bg-primary/5 p-6">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-2 text-sm text-primary">
-                      <Gift className="h-4 w-4" />
-                      <span>
-                        {t('profile.invitedBy')}: {profile.invited_by_code}
-                      </span>
-                    </div>
-                    {profile.invitation_perks && Object.keys(profile.invitation_perks).length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {Object.entries(profile.invitation_perks).map(([key, value]) => (
-                          <Badge key={key} variant="outline" className="rounded-full border-primary/30 text-xs text-primary">
-                            {key}: {String(value)}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              )}
             </Card>
 
             <Tabs defaultValue="edit" className="space-y-6">
@@ -110,14 +88,14 @@ const Profile = () => {
                   className="gap-2 rounded-full py-3 px-4 text-base font-medium transition-all duration-200 data-[state=active]:bg-primary/15 data-[state=active]:text-foreground data-[state=active]:shadow-lg"
                 >
                   <Settings className="h-4 w-4" />
-                  {t('profile.editProfile')}
+                  Edit Settings
                 </TabsTrigger>
                 <TabsTrigger
                   value="settings"
                   className="gap-2 rounded-full py-3 px-4 text-base font-medium transition-all duration-200 data-[state=active]:bg-primary/15 data-[state=active]:text-foreground data-[state=active]:shadow-lg"
                 >
                   <Info className="h-4 w-4" />
-                  {t('profile.accountInfo')}
+                  Account Info
                 </TabsTrigger>
               </TabsList>
 
@@ -126,9 +104,9 @@ const Profile = () => {
                   <CardHeader className="flex flex-col gap-2 px-6 pt-6 pb-4">
                     <CardTitle className="flex items-center gap-2 text-lg font-semibold">
                       <User className="h-5 w-5 text-primary" />
-                      {t('profile.editProfile')}
+                      Edit Settings
                     </CardTitle>
-                    <p className="text-sm text-muted-foreground">{t('profile.editProfileDescription')}</p>
+                    <p className="text-sm text-muted-foreground">Update your account settings and preferences</p>
                   </CardHeader>
                   <CardContent className="px-6 pb-6 pt-6">
                     <UserProfileForm profile={profile} onUpdate={updateProfile} />
@@ -141,16 +119,16 @@ const Profile = () => {
                   <CardHeader className="flex flex-col gap-2 px-6 pt-6 pb-4">
                     <CardTitle className="flex items-center gap-2 text-lg font-semibold">
                       <Info className="h-5 w-5 text-primary" />
-                      {t('profile.accountInfo')}
+                      Account Information
                     </CardTitle>
-                    <p className="text-sm text-muted-foreground">{t('profile.accountInfoDescription')}</p>
+                    <p className="text-sm text-muted-foreground">View your account details and settings</p>
                   </CardHeader>
                   <CardContent className="space-y-4 p-6">
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-1.5">
                         <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                           <MdOutlineMail className="h-4 w-4" />
-                          {t('profile.email')}
+                          Email
                         </p>
                         <div className="rounded-2xl border border-primary/10 bg-background/80 px-4 py-3 text-sm text-foreground">
                           {user?.email}
@@ -159,7 +137,7 @@ const Profile = () => {
                       <div className="space-y-1.5">
                         <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                           <RiCalendarCheckLine className="h-4 w-4" />
-                          {t('profile.memberSince')}
+                          Member Since
                         </p>
                         <div className="rounded-2xl border border-primary/10 bg-background/80 px-4 py-3 text-sm text-foreground">
                           {profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : 'N/A'}
@@ -168,21 +146,21 @@ const Profile = () => {
                       <div className="space-y-1.5">
                         <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                           <HiOutlineSparkles className="h-4 w-4" />
-                          {t('profile.planLabel')}
+                          Plan Type
                         </p>
                         <div className="flex items-center gap-2 rounded-2xl border border-primary/10 bg-background/80 px-4 py-3 text-sm text-foreground">
                           <Badge className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary">
-                            {profile?.subscription_status === 'premium' ? t('profile.planPremium') : t('profile.planFree')}
+                            {profile?.plan_type === 'creator' ? 'Creator Plan' : 'Free Plan'}
                           </Badge>
                         </div>
                       </div>
                       <div className="space-y-1.5">
                         <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                          <FiEye className="h-4 w-4" />
-                          {t('profile.publicProfile')}
+                          <FiGlobe className="h-4 w-4" />
+                          Preferred Language
                         </p>
                         <div className="rounded-2xl border border-primary/10 bg-background/80 px-4 py-3 text-sm text-foreground">
-                          {profile?.is_public_profile ? t('common.enabled') : t('common.disabled')}
+                          {profile?.preferred_language === 'ja' ? '日本語' : 'English'}
                         </div>
                       </div>
                     </div>
@@ -198,7 +176,7 @@ const Profile = () => {
           <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
             <span className="text-3xl">✨</span> <span className="text-gradient">fanmark.id</span>
           </div>
-          <p className="text-sm text-muted-foreground">{t('sections.footer')}</p>
+          <p className="text-sm text-muted-foreground">Simplify your digital presence</p>
         </div>
       </footer>
     </div>

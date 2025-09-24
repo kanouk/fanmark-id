@@ -2,29 +2,21 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
-type SocialLinks = Record<string, string> | null;
-type InvitationPerks = Record<string, unknown> | string[] | null;
-
-interface Profile {
+interface UserSettings {
   id: string;
   user_id: string;
   username: string;
   display_name: string | null;
-  bio: string | null;
   avatar_url: string | null;
-  social_links: SocialLinks;
-  is_public_profile: boolean;
-  role: string;
-  subscription_status: string | null;
-  invited_by_code: string | null;
-  invitation_perks: InvitationPerks;
+  plan_type: 'free' | 'creator';
+  preferred_language: 'en' | 'ja';
   created_at: string;
   updated_at: string;
 }
 
 export const useProfile = () => {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,12 +33,12 @@ export const useProfile = () => {
     if (!user) return;
 
     const channel = supabase
-      .channel('profile-updates')
+      .channel('user-settings-updates')
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `user_id=eq.${user.id}` },
+        { event: 'UPDATE', schema: 'public', table: 'user_settings', filter: `user_id=eq.${user.id}` },
         (payload) => {
-          setProfile(payload.new as Profile);
+          setProfile(payload.new as UserSettings);
         }
       )
       .subscribe();
@@ -60,13 +52,13 @@ export const useProfile = () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('profiles')
+        .from('user_settings')
         .select('*')
         .eq('user_id', user?.id)
         .single();
 
       if (error) throw error;
-      setProfile(data as Profile);
+      setProfile(data as UserSettings);
     } catch (error) {
       console.error('Error fetching profile:', error);
     } finally {
@@ -74,17 +66,16 @@ export const useProfile = () => {
     }
   };
 
-  const updateProfile = async (updates: Partial<Omit<Profile, 'role' | 'user_id' | 'id'>>) => {
+  const updateProfile = async (updates: Partial<Omit<UserSettings, 'user_id' | 'id'>>) => {
     if (!user || !profile) return;
 
     try {
       const { error } = await supabase
-        .from('profiles')
+        .from('user_settings')
         .update({
           ...updates,
           updated_at: new Date().toISOString(),
-          invitation_perks: updates.invitation_perks as any
-        } as any)
+        })
         .eq('user_id', user.id);
 
       if (error) throw error;
@@ -102,7 +93,7 @@ export const useProfile = () => {
     
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('user_settings')
         .select('username')
         .eq('username', username.toLowerCase())
         .neq('user_id', user?.id || '');
