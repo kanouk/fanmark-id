@@ -70,16 +70,6 @@ export const PasswordProtection = ({ fanmark, onSuccess }: PasswordProtectionPro
           {/* Password Protection Section */}
           <Card className="overflow-hidden bg-gradient-to-br from-background/90 to-background/70 border border-primary/20 shadow-xl backdrop-blur-sm">
             <CardContent className="p-0">
-              {/* Header */}
-              <div className="relative bg-gradient-to-r from-primary/20 via-accent/20 to-primary/10 px-8 py-12">
-                <div className="text-center">
-                  <div className="mb-6">
-                    <span className="text-6xl">{fanmark.emoji_combination}</span>
-                  </div>
-                  <h1 className="text-3xl font-bold text-foreground mb-4">{t('passwordProtection.title')}</h1>
-                </div>
-              </div>
-
               {/* Password Input */}
               <div className="px-8 py-12">
                 <div className="max-w-md mx-auto text-center space-y-8">
