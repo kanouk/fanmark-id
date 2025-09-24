@@ -164,8 +164,7 @@ export const FanmarkDashboard = () => {
           )
         `)
         .eq('user_id', user?.id)
-        .eq('status', 'active')
-        .gt('license_end', new Date().toISOString())
+        .in('status', ['active', 'expired'])
         .order('created_at', { ascending: false });
 
       if (licensesError) throw licensesError;
@@ -654,24 +653,26 @@ export const FanmarkDashboard = () => {
                                        </Tooltip>
                                     </div>
                                   </td>
-                                  <td className="px-6 py-5">
-                                    <div className="min-h-[2.5rem] flex items-center">
-                                       <Tooltip>
-                                         <TooltipTrigger asChild>
-                                           <Button
-                                             size="sm"
-                                             variant="ghost"
-                                             className="h-9 w-9 p-0 rounded-full hover:bg-primary/10 transition-colors"
-                                             onClick={() => handleOpenSettings(fanmark.id)}
-                                             aria-label={t('dashboard.actionsSettings')}
-                                           >
-                                              <Settings className="h-5 w-5" />
-                                           </Button>
-                                         </TooltipTrigger>
-                                         <TooltipContent>{t('dashboard.actionsSettings')}</TooltipContent>
-                                       </Tooltip>
-                                    </div>
-                                  </td>
+                                   <td className="px-6 py-5">
+                                     <div className="min-h-[2.5rem] flex items-center">
+                                        {!isReturned(fanmark) && (
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-9 w-9 p-0 rounded-full hover:bg-primary/10 transition-colors"
+                                                onClick={() => handleOpenSettings(fanmark.id)}
+                                                aria-label={t('dashboard.actionsSettings')}
+                                              >
+                                                 <Settings className="h-5 w-5" />
+                                              </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>{t('dashboard.actionsSettings')}</TooltipContent>
+                                          </Tooltip>
+                                        )}
+                                     </div>
+                                   </td>
                                 </tr>
                               );
                             })}
@@ -812,20 +813,22 @@ export const FanmarkDashboard = () => {
                                          <TooltipContent>{t('dashboard.copyFanmarkLink')}</TooltipContent>
                                        </Tooltip>
                                     </div>
-                                     <Tooltip>
-                                       <TooltipTrigger asChild>
-                                         <Button
-                                           size="sm"
-                                           variant="ghost"
-                                           className="h-9 w-9 p-0 hover:bg-secondary"
-                                           onClick={() => handleOpenSettings(fanmark.id)}
-                                           aria-label={t('dashboard.actionsSettings')}
-                                         >
-                                           <Settings className="h-5 w-5" />
-                                         </Button>
-                                       </TooltipTrigger>
-                                       <TooltipContent>{t('dashboard.actionsSettings')}</TooltipContent>
-                                     </Tooltip>
+                                      {!isReturned(fanmark) && (
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              className="h-9 w-9 p-0 hover:bg-secondary"
+                                              onClick={() => handleOpenSettings(fanmark.id)}
+                                              aria-label={t('dashboard.actionsSettings')}
+                                            >
+                                              <Settings className="h-5 w-5" />
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>{t('dashboard.actionsSettings')}</TooltipContent>
+                                        </Tooltip>
+                                      )}
                                   </div>
                               </div>
                             </CardContent>
