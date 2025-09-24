@@ -158,6 +158,8 @@ export const FanmarkSettings = ({
         .upsert({
           fanmark_id: fanmark.id,
           fanmark_name: data.fanmarkName
+        }, {
+          onConflict: 'fanmark_id'
         });
 
       if (basicConfigError) throw basicConfigError;
@@ -169,6 +171,8 @@ export const FanmarkSettings = ({
           .upsert({
             fanmark_id: fanmark.id,
             target_url: data.targetUrl
+          }, {
+            onConflict: 'fanmark_id'
           });
         if (redirectError) throw redirectError;
       }
@@ -179,6 +183,8 @@ export const FanmarkSettings = ({
           .upsert({
             fanmark_id: fanmark.id,
             content: data.textContent
+          }, {
+            onConflict: 'fanmark_id'
           });
         if (textError) throw textError;
       }
@@ -190,6 +196,8 @@ export const FanmarkSettings = ({
           .upsert({
             fanmark_id: fanmark.id,
             access_password: data.accessPassword
+          }, {
+            onConflict: 'fanmark_id'
           });
         if (passwordError) throw passwordError;
       }
