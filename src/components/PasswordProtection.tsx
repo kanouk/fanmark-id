@@ -46,7 +46,7 @@ export const PasswordProtection = ({ fanmark, onSuccess }: PasswordProtectionPro
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex flex-col">
       {/* Header Navigation */}
       <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
         <div className="container mx-auto flex items-center justify-between px-4 py-4 md:px-6">
@@ -65,7 +65,7 @@ export const PasswordProtection = ({ fanmark, onSuccess }: PasswordProtectionPro
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 flex-1">
         <div className="max-w-4xl mx-auto space-y-10">
           {/* Password Protection Section */}
           <Card className="overflow-hidden bg-gradient-to-br from-background/90 to-background/70 border border-primary/20 shadow-xl backdrop-blur-sm">
