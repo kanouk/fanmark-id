@@ -181,28 +181,40 @@ export const FanmarkSettings = ({
       }
 
       // Handle password protection for all access types except inactive
-      if (data.accessType !== 'inactive' && data.isPasswordProtected && data.accessPassword) {
-        await supabase
-          .from('fanmark_password_configs')
-          .upsert({
-            fanmark_id: fanmark.id,
-            access_password: data.accessPassword,
-            is_enabled: true
-          });
-      } else if (data.accessType !== 'inactive' && !data.isPasswordProtected) {
-        // Disable password protection but keep the password
-        const { data: existingPassword } = await supabase
-          .from('fanmark_password_configs')
-          .select('access_password')
-          .eq('fanmark_id', fanmark.id)
-          .maybeSingle();
-
-        if (existingPassword) {
+      if (data.accessType !== 'inactive') {
+        if (data.isPasswordProtected && data.accessPassword) {
+          // Enable password protection with password
           await supabase
             .from('fanmark_password_configs')
-            .update({ is_enabled: false })
-            .eq('fanmark_id', fanmark.id);
+            .upsert({
+              fanmark_id: fanmark.id,
+              access_password: data.accessPassword,
+              is_enabled: true
+            });
+        } else {
+          // Disable password protection or remove password
+          const { data: existingPassword } = await supabase
+            .from('fanmark_password_configs')
+            .select('id')
+            .eq('fanmark_id', fanmark.id)
+            .maybeSingle();
+
+          if (existingPassword) {
+            await supabase
+              .from('fanmark_password_configs')
+              .update({ 
+                is_enabled: false,
+                access_password: data.accessPassword || ''
+              })
+              .eq('fanmark_id', fanmark.id);
+          }
         }
+      } else {
+        // For inactive access type, disable password protection entirely
+        await supabase
+          .from('fanmark_password_configs')
+          .update({ is_enabled: false })
+          .eq('fanmark_id', fanmark.id);
       }
 
       // Create fanmark profile if requested
