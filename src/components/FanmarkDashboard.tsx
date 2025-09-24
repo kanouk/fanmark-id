@@ -159,7 +159,17 @@ export const FanmarkDashboard = () => {
             short_id,
             status,
             created_at,
-            updated_at
+            updated_at,
+            fanmark_basic_configs (
+              access_type,
+              fanmark_name
+            ),
+            fanmark_redirect_configs (
+              target_url
+            ),
+            fanmark_messageboard_configs (
+              content
+            )
           )
         `)
         .eq('user_id', user?.id)
@@ -171,15 +181,18 @@ export const FanmarkDashboard = () => {
       
       // Process fanmarks to select the most recent license for each
       const fanmarksWithDefaults = (licenses ?? []).map(license => {
-        const fanmark = license.fanmarks;
+        const fanmark = license.fanmarks as any;
+        const basicConfig = fanmark?.fanmark_basic_configs?.[0];
+        const redirectConfig = fanmark?.fanmark_redirect_configs?.[0];
+        const messageConfig = fanmark?.fanmark_messageboard_configs?.[0];
         
         return {
           ...fanmark,
           // Fill in required properties from Fanmark interface
-          access_type: 'inactive', // Default value since it's now in fanmark_basic_configs
-          fanmark_name: fanmark.emoji_combination, // Use emoji as name since display_name is in configs
-          target_url: null, // Now in separate config table
-          text_content: null, // Now in separate config table
+          access_type: basicConfig?.access_type || 'inactive',
+          fanmark_name: basicConfig?.fanmark_name || fanmark.emoji_combination,
+          target_url: redirectConfig?.target_url || null,
+          text_content: messageConfig?.content || null,
           redirect_url: null,
           profile_text: null,
           tier_level: null, // Removed from fanmarks table
