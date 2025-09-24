@@ -77,9 +77,11 @@ const Index = () => {
 
       try {
         const { count, error } = await supabase
-          .from('fanmarks')
+          .from('fanmark_licenses')
           .select('id', { count: 'exact', head: true })
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .gt('license_end', new Date().toISOString());
 
         if (!isMounted) return;
 

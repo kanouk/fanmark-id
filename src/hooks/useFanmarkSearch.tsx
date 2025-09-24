@@ -216,10 +216,7 @@ export function useFanmarkSearch() {
           emoji_combination,
           normalized_emoji,
           short_id,
-          tier_level,
-          status,
-          user_id,
-          current_license_id
+          status
         `)
         .eq('normalized_emoji', normalizedQuery)
         .maybeSingle();
@@ -315,7 +312,7 @@ export function useFanmarkSearch() {
     try {
       const { data: fanmark, error } = await supabase
         .from('fanmarks')
-        .select('id, status, current_license_id')
+        .select('id, status')
         .eq('normalized_emoji', emoji)
         .maybeSingle();
   
@@ -323,7 +320,16 @@ export function useFanmarkSearch() {
   
       if (!fanmark) return true;                // レコードなし → available
       if (fanmark.status !== 'active') return false; // 禁止/無効 →取得不可
-      return !fanmark.current_license_id;       // 空きなら取得可
+      
+      // Check if there are active licenses for this fanmark
+      const { data: licenses } = await supabase
+        .from('fanmark_licenses')
+        .select('id')
+        .eq('fanmark_id', fanmark.id)
+        .eq('status', 'active')
+        .gt('license_end', new Date().toISOString());
+      
+      return !licenses || licenses.length === 0;       // 空きなら取得可
     } catch (error) {
       console.error('Error checking availability:', error);
       return false;
