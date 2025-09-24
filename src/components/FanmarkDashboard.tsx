@@ -172,28 +172,33 @@ export const FanmarkDashboard = () => {
       
       // Process fanmarks to select the most recent license for each
       const fanmarksWithDefaults = (licenses ?? []).map(license => {
-        const licenses = (fanmark as any).fanmark_licenses || [];
-        
-        // Select the most recent license (active/grace first, then most recent expired)
-        let selectedLicense = null;
-        if (licenses.length > 0) {
-          // First try to find an active or grace license
-          const activeLicense = licenses.find((l: any) => l.status === 'active' || l.status === 'grace');
-          if (activeLicense) {
-            selectedLicense = activeLicense;
-          } else {
-            // If no active license, get the most recent one by creation date
-            selectedLicense = licenses.sort((a: any, b: any) => 
-              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-            )[0];
-          }
-        }
+        const fanmark = license.fanmarks;
         
         return {
           ...fanmark,
-          tier_level: (fanmark as any).tier_level ?? null,
-          current_license_id: (fanmark as any).current_license_id ?? null,
-          fanmark_licenses: selectedLicense,
+          // Fill in required properties from Fanmark interface
+          fanmark_name: fanmark.emoji_combination, // Use emoji as name since display_name is in configs
+          target_url: null, // Now in separate config table
+          text_content: null, // Now in separate config table
+          redirect_url: null,
+          profile_text: null,
+          tier_level: null, // Removed from fanmarks table
+          current_license_id: license.id,
+          is_transferable: true, // Default value
+          user_id: '', // Not available in new schema
+          // Add license information for compatibility
+          current_license: {
+            id: license.id,
+            license_start: license.license_start,
+            license_end: license.license_end,
+            status: license.status,
+            created_at: license.created_at
+          },
+          fanmark_licenses: {
+            license_start: license.license_start,
+            license_end: license.license_end,
+            status: license.status
+          }
         };
       }) as Fanmark[];
       
