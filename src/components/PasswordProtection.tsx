@@ -125,19 +125,12 @@ export const PasswordProtection = ({ fanmark, onSuccess }: PasswordProtectionPro
       </div>
 
       {/* Footer */}
-      <footer className="footer footer-center p-10 bg-base-200/50 text-base-content mt-16">
-        <div>
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="group inline-flex items-center gap-2 text-lg font-medium text-foreground transition-transform hover:translate-y-[-1px] mb-4"
-          >
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
-              ✨
-            </span>
-            <span className="text-gradient text-2xl font-semibold">fanmark.id</span>
-          </button>
-          <p className="text-muted-foreground">{t('sections.footer')}</p>
+      <footer className="border-t border-border/40 bg-background/80 backdrop-blur">
+        <div className="container mx-auto px-4 py-10 text-center space-y-3">
+          <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
+            <span className="text-3xl">✨</span> <span className="text-gradient">fanmark.id</span>
+          </div>
+          <p className="text-sm text-muted-foreground">{t('sections.footer')}</p>
         </div>
       </footer>
 
