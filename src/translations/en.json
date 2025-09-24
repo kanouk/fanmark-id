@@ -132,6 +132,11 @@
     "enterPassword": "Enter 4-digit password",
     "autoValidationNote": "Automatically validates when 4 digits are entered"
   },
+  "passwordProtection": {
+    "title": "Password Authentication",
+    "description": "This fanmark is password protected",
+    "enterPassword": "Enter 4-digit password"
+  },
   "sections": {
     "howUsed": "How It's Being Used",
     "howItWorks": "3 Simple Steps",

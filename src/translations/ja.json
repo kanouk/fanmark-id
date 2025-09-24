@@ -132,6 +132,11 @@
     "enterPassword": "4桁の数字を入力してください",
     "autoValidationNote": "4桁の数字を入力すると自動で認証されます"
   },
+  "passwordProtection": {
+    "title": "パスワード認証",
+    "description": "このファンマはパスワードで保護されています",
+    "enterPassword": "4桁の数字を入力してください"
+  },
   "sections": {
     "howUsed": "こんな風に使われてます",
     "howItWorks": "3ステップで完成",

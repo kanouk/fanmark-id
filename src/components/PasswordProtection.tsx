@@ -76,7 +76,7 @@ export const PasswordProtection = ({ fanmark, onSuccess }: PasswordProtectionPro
                   <div className="mb-6">
                     <span className="text-6xl">{fanmark.emoji_combination}</span>
                   </div>
-                  <h1 className="text-3xl font-bold text-foreground mb-4">{t('messageBoard.title')}</h1>
+                  <h1 className="text-3xl font-bold text-foreground mb-4">{t('passwordProtection.title')}</h1>
                 </div>
               </div>
 
@@ -88,10 +88,10 @@ export const PasswordProtection = ({ fanmark, onSuccess }: PasswordProtectionPro
                       <div className="p-3 rounded-full bg-primary/20 backdrop-blur-sm">
                         <Lock className="h-6 w-6 text-primary" />
                       </div>
-                      <h2 className="text-xl font-semibold text-foreground">{t('messageBoard.passwordProtection')}</h2>
-                    </div>
-                    <p className="text-muted-foreground">{t('messageBoard.passwordProtectedMessage')}</p>
-                    <p className="text-muted-foreground text-sm">{t('messageBoard.enterPassword')}</p>
+                       <h2 className="text-xl font-semibold text-foreground">{t('passwordProtection.title')}</h2>
+                     </div>
+                     <p className="text-muted-foreground">{t('passwordProtection.description')}</p>
+                     <p className="text-muted-foreground text-sm">{t('passwordProtection.enterPassword')}</p>
                   </div>
 
                   <div className="flex justify-center">
@@ -126,9 +126,6 @@ export const PasswordProtection = ({ fanmark, onSuccess }: PasswordProtectionPro
                     </div>
                   </div>
 
-                  <p className="text-sm text-muted-foreground">
-                    {t('messageBoard.autoValidationNote')}
-                  </p>
                 </div>
               </div>
             </CardContent>
