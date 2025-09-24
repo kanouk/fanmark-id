@@ -78,12 +78,15 @@ export const FanmarkAccess = () => {
 
   // Handle password verification success for all access types
   const handlePasswordSuccess = () => {
-    setIsPasswordVerified(true);
-    
-    // Handle immediate redirect after password verification
-    if (fanmark && fanmark.access_type === 'redirect' && fanmark.target_url) {
-      window.location.href = fanmark.target_url;
-    }
+    // Use a timeout to ensure smooth transition
+    setTimeout(() => {
+      setIsPasswordVerified(true);
+      
+      // Handle immediate redirect after password verification
+      if (fanmark && fanmark.access_type === 'redirect' && fanmark.target_url) {
+        window.location.href = fanmark.target_url;
+      }
+    }, 100);
   };
 
   if (loading) {
