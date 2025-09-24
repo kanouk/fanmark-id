@@ -54,7 +54,7 @@ const settingsSchema = z.object({
   if (data.accessType === 'text' && !data.textContent) {
     return false;
   }
-  if (data.accessType !== 'inactive' && data.isPasswordProtected && (!data.accessPassword || !/^\d{4}$/.test(data.accessPassword))) {
+  if (data.accessType !== 'inactive' && data.isPasswordProtected && data.accessPassword && !/^\d{4}$/.test(data.accessPassword)) {
     return false;
   }
   return true;
@@ -182,39 +182,43 @@ export const FanmarkSettings = ({
 
       // Handle password protection for all access types except inactive
       if (data.accessType !== 'inactive') {
-        if (data.isPasswordProtected && data.accessPassword) {
-          // Enable password protection with password
+        if (data.isPasswordProtected) {
+          // Enable password protection
           await supabase
             .from('fanmark_password_configs')
             .upsert({
               fanmark_id: fanmark.id,
-              access_password: data.accessPassword,
+              access_password: data.accessPassword || fanmark.access_password || '',
               is_enabled: true
+            }, {
+              onConflict: 'fanmark_id'
             });
         } else {
-          // Disable password protection or remove password
-          const { data: existingPassword } = await supabase
+          // Disable password protection but keep the password for potential re-enabling
+          await supabase
             .from('fanmark_password_configs')
-            .select('id')
-            .eq('fanmark_id', fanmark.id)
-            .maybeSingle();
-
-          if (existingPassword) {
-            await supabase
-              .from('fanmark_password_configs')
-              .update({ 
-                is_enabled: false,
-                access_password: data.accessPassword || ''
-              })
-              .eq('fanmark_id', fanmark.id);
-          }
+            .upsert({
+              fanmark_id: fanmark.id,
+              access_password: data.accessPassword || fanmark.access_password || '',
+              is_enabled: false
+            }, {
+              onConflict: 'fanmark_id'
+            });
         }
       } else {
         // For inactive access type, disable password protection entirely
-        await supabase
+        const { data: existingPassword } = await supabase
           .from('fanmark_password_configs')
-          .update({ is_enabled: false })
-          .eq('fanmark_id', fanmark.id);
+          .select('id')
+          .eq('fanmark_id', fanmark.id)
+          .maybeSingle();
+
+        if (existingPassword) {
+          await supabase
+            .from('fanmark_password_configs')
+            .update({ is_enabled: false })
+            .eq('fanmark_id', fanmark.id);
+        }
       }
 
       // Create fanmark profile if requested
