@@ -22,7 +22,7 @@ import { useSystemSettings } from '@/hooks/useSystemSettings';
 interface Fanmark {
   id: string;
   emoji_combination: string;
-  display_name: string | null;
+  fanmark_name: string | null;
   short_id: string;
   access_type: string;
   target_url: string | null;
@@ -76,7 +76,7 @@ export const FanmarkDashboard = () => {
     if (fanmark) {
       const fanmarkData = {
         emoji_combination: fanmark.emoji_combination,
-        display_name: fanmark.display_name,
+        fanmark_name: fanmark.fanmark_name,
         fanmarkId: fanmarkId,
         timestamp: Date.now()
       };

@@ -12,7 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface FanmarkRecord {
   id: string;
   emoji_combination: string;
-  display_name: string | null;
+  fanmark_name: string | null;
   access_type: 'profile' | 'redirect' | 'text' | 'inactive';
   target_url: string | null;
   text_content: string | null;
@@ -42,7 +42,7 @@ const FanmarkSettingsPage = () => {
     try {
       const { data, error } = await supabase
         .from('fanmarks')
-        .select('id, emoji_combination, display_name, access_type, target_url, text_content, is_transferable, status, short_id')
+        .select('id, emoji_combination, fanmark_name, access_type, target_url, text_content, is_transferable, status, short_id')
         .eq('id', fanmarkId)
         .single();
 
@@ -59,7 +59,7 @@ const FanmarkSettingsPage = () => {
       setFanmark({
         id: data.id,
         emoji_combination: data.emoji_combination,
-        display_name: data.display_name,
+        fanmark_name: data.fanmark_name,
         access_type: data.access_type as 'profile' | 'redirect' | 'text' | 'inactive',
         target_url: data.target_url ?? undefined,
         text_content: data.text_content ?? undefined,

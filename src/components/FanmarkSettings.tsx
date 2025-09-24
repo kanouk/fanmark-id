@@ -67,7 +67,7 @@ type SettingsFormData = z.infer<typeof settingsSchema>;
 export interface Fanmark {
   id: string;
   emoji_combination: string;
-  display_name: string | null;
+  fanmark_name: string | null;
   access_type: AccessType;
   target_url?: string;
   text_content?: string;
@@ -118,7 +118,7 @@ export const FanmarkSettings = ({
     if (fanmark) {
       reset({
         accessType: fanmark.access_type,
-        displayName: fanmark.display_name,
+        displayName: fanmark.fanmark_name,
         targetUrl: fanmark.target_url || '',
         textContent: fanmark.text_content || '',
         createProfile: false, // This is a one-time action
@@ -146,7 +146,7 @@ export const FanmarkSettings = ({
         .from('fanmarks')
         .update({
           access_type: data.accessType,
-          display_name: data.displayName,
+          fanmark_name: data.displayName,
           target_url: data.targetUrl || null,
           text_content: data.textContent || null,
           is_password_protected: data.isPasswordProtected,
@@ -218,7 +218,7 @@ export const FanmarkSettings = ({
     },
   ];
 
-  const displayLabel = fanmark?.display_name ?? t('fanmarkSettings.summary.defaultName');
+  const displayLabel = fanmark?.fanmark_name ?? t('fanmarkSettings.summary.defaultName');
 
 
   // Don't render if fanmark is null

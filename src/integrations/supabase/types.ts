@@ -260,8 +260,8 @@ export type Database = {
           access_type: string
           created_at: string
           current_license_id: string | null
-          display_name: string | null
           emoji_combination: string
+          fanmark_name: string | null
           id: string
           is_password_protected: boolean
           is_transferable: boolean
@@ -279,8 +279,8 @@ export type Database = {
           access_type?: string
           created_at?: string
           current_license_id?: string | null
-          display_name?: string | null
           emoji_combination: string
+          fanmark_name?: string | null
           id?: string
           is_password_protected?: boolean
           is_transferable?: boolean
@@ -298,8 +298,8 @@ export type Database = {
           access_type?: string
           created_at?: string
           current_license_id?: string | null
-          display_name?: string | null
           emoji_combination?: string
+          fanmark_name?: string | null
           id?: string
           is_password_protected?: boolean
           is_transferable?: boolean

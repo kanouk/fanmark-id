@@ -11,7 +11,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 
 interface FanmarkData {
   emoji_combination: string;
-  display_name: string;
+  fanmark_name: string;
   access_type: 'profile' | 'redirect' | 'text' | 'inactive';
   target_url?: string;
   text_content?: string;
