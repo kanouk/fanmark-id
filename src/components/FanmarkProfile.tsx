@@ -7,7 +7,6 @@ import { getPublicEmojiProfile, type PublicEmojiProfile } from '@/hooks/useEmoji
 import { LanguageToggle } from '@/components/LanguageToggle';
 import {
   FiInstagram,
-  FiTwitter,
   FiGithub,
   FiYoutube,
   FiGlobe
@@ -16,7 +15,8 @@ import {
   SiTiktok,
   SiLine,
   SiTwitch,
-  SiDiscord
+  SiDiscord,
+  SiX
 } from 'react-icons/si';
 
 interface FanmarkData {
@@ -30,15 +30,15 @@ interface FanmarkData {
 }
 
 const socialPlatforms = [
-  { key: 'instagram', label: 'Instagram', icon: FiInstagram, color: 'from-purple-500 to-pink-500', textColor: 'text-white' },
-  { key: 'tiktok', label: 'TikTok', icon: SiTiktok, color: 'from-black to-gray-800', textColor: 'text-white' },
-  { key: 'x', label: 'X', icon: FiTwitter, color: 'from-black to-gray-800', textColor: 'text-white' },
-  { key: 'github', label: 'GitHub', icon: FiGithub, color: 'from-gray-800 to-gray-900', textColor: 'text-white' },
-  { key: 'youtube', label: 'YouTube', icon: FiYoutube, color: 'from-red-500 to-red-600', textColor: 'text-white' },
-  { key: 'line', label: 'LINE', icon: SiLine, color: 'from-green-400 to-green-500', textColor: 'text-white' },
-  { key: 'twitch', label: 'Twitch', icon: SiTwitch, color: 'from-purple-500 to-purple-600', textColor: 'text-white' },
-  { key: 'discord', label: 'Discord', icon: SiDiscord, color: 'from-indigo-500 to-indigo-600', textColor: 'text-white' },
-  { key: 'website', label: 'ウェブサイト', icon: FiGlobe, color: 'from-primary to-accent', textColor: 'text-white' },
+  { key: 'instagram', label: 'Instagram', icon: FiInstagram },
+  { key: 'tiktok', label: 'TikTok', icon: SiTiktok },
+  { key: 'x', label: 'X', icon: SiX },
+  { key: 'github', label: 'GitHub', icon: FiGithub },
+  { key: 'youtube', label: 'YouTube', icon: FiYoutube },
+  { key: 'line', label: 'LINE', icon: SiLine },
+  { key: 'twitch', label: 'Twitch', icon: SiTwitch },
+  { key: 'discord', label: 'Discord', icon: SiDiscord },
+  { key: 'website', label: 'ウェブサイト', icon: FiGlobe },
 ];
 
 interface FanmarkProfileProps {
@@ -182,10 +182,10 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
 
               {/* Profile Content */}
               <div className="px-8 pt-16 pb-8">
-                <div className="text-center mb-8">
-                  <h1 className="text-3xl font-bold tracking-tight text-foreground mb-4">
-                    {displayName}
-                  </h1>
+                 <div className="text-center mb-8">
+                   <h1 className="text-3xl font-bold tracking-tight text-foreground mb-4">
+                     {displayName} {fanmark.emoji_combination}
+                   </h1>
                   {bio && (
                     <p className="text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed">
                       {bio}
@@ -206,22 +206,22 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
 
                         const Icon = platformConfig.icon;
 
-                        return (
-                          <button
-                            key={platform}
-                            onClick={() => window.open(url, '_blank')}
-                            className="group flex items-center gap-4 p-4 rounded-2xl bg-background/50 border border-primary/10 hover:border-primary/20 hover:bg-background/70 transition-all duration-200 hover:scale-[1.02]"
-                          >
-                            <div className={`p-3 rounded-full bg-gradient-to-r ${platformConfig.color} ${platformConfig.textColor} flex items-center justify-center shadow-lg`}>
-                              <Icon className="h-5 w-5" />
-                            </div>
-                            <div className="flex-1 text-left">
-                              <span className="font-medium text-foreground">{platformConfig.label}</span>
-                              <p className="text-sm text-muted-foreground truncate">{url}</p>
-                            </div>
-                            <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                          </button>
-                        );
+                         return (
+                           <button
+                             key={platform}
+                             onClick={() => window.open(url, '_blank')}
+                             className="group flex items-center gap-4 p-4 rounded-2xl bg-background/50 border border-primary/20 hover:border-primary/40 hover:bg-background/70 hover:shadow-[0_10px_30px_rgba(101,195,200,0.2)] transition-all duration-300 hover:scale-[1.02]"
+                           >
+                             <div className="p-3 rounded-full bg-gradient-to-br from-primary/20 via-accent/20 to-primary/10 text-primary flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
+                               <Icon className="h-5 w-5" />
+                             </div>
+                             <div className="flex-1 text-left">
+                               <span className="font-medium text-foreground">{platformConfig.label}</span>
+                               <p className="text-sm text-muted-foreground truncate">{url}</p>
+                             </div>
+                             <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                           </button>
+                         );
                       })}
                     </div>
                   </div>
