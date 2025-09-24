@@ -337,6 +337,61 @@ export const FanmarkSettings = ({
             )}
           </div>
 
+          {/* Password Protection - Common setting for all access types except inactive */}
+          {accessType !== 'inactive' && (
+            <div className="space-y-3 rounded-xl border border-border/60 bg-background/70 p-4">
+              <Label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                <FiLock className="h-3.5 w-3.5" />
+                {t('fanmarkSettings.fields.passwordProtection.label')}
+              </Label>
+              <div className="space-y-3 pl-6">
+                <div className="flex items-center space-x-2">
+                  <Controller
+                    name="isPasswordProtected"
+                    control={control}
+                    render={({ field }) => (
+                      <Checkbox
+                        id="password-protection"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    )}
+                  />
+                  <Label htmlFor="password-protection" className="text-sm font-medium">
+                    {t('fanmarkSettings.fields.passwordProtection.lockCheckbox')}
+                  </Label>
+                </div>
+                
+                {isPasswordProtected && (
+                  <div className="space-y-2">
+                    <Label htmlFor="accessPassword" className="text-xs text-muted-foreground">
+                      {t('fanmarkSettings.fields.passwordProtection.passwordHelper')}
+                    </Label>
+                    <Input
+                      id="accessPassword"
+                      {...register('accessPassword')}
+                      placeholder={t('fanmarkSettings.fields.passwordProtection.passwordPlaceholder')}
+                      maxLength={4}
+                      pattern="[0-9]*"
+                      className="h-10 w-24 rounded-lg border border-border text-center font-mono text-lg focus-visible:ring-2 focus-visible:ring-primary"
+                      onInput={(e) => {
+                        // Only allow numbers
+                        const target = e.target as HTMLInputElement;
+                        target.value = target.value.replace(/[^0-9]/g, '');
+                      }}
+                    />
+                    {errors.accessPassword && (
+                      <p className="text-xs text-destructive">
+                        {t('fanmarkSettings.fields.passwordProtection.passwordHelper')}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Access Type Specific Settings */}
           {(accessType === 'redirect' || accessType === 'text' || accessType === 'profile') && (
             <div className="space-y-4 rounded-xl border border-border/60 bg-background/70 p-4">
               {accessType === 'redirect' && (
@@ -380,60 +435,6 @@ export const FanmarkSettings = ({
                       {errors.textContent.message}
                     </p>
                   )}
-                </div>
-              )}
-
-              {/* Password Protection - Available for profile, redirect, and text types */}
-              {(accessType === 'profile' || accessType === 'redirect' || accessType === 'text') && (
-                <div className="space-y-3 rounded-xl border border-border/60 bg-background/70 p-4">
-                  <Label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                    <FiLock className="h-3.5 w-3.5" />
-                    {t('fanmarkSettings.fields.passwordProtection.label')}
-                  </Label>
-                  <div className="space-y-3 pl-6">
-                    <div className="flex items-center space-x-2">
-                      <Controller
-                        name="isPasswordProtected"
-                        control={control}
-                        render={({ field }) => (
-                          <Checkbox
-                            id="password-protection"
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        )}
-                      />
-                      <Label htmlFor="password-protection" className="text-sm font-medium">
-                        {t('fanmarkSettings.fields.passwordProtection.lockCheckbox')}
-                      </Label>
-                    </div>
-                    
-                    {isPasswordProtected && (
-                      <div className="space-y-2">
-                        <Label htmlFor="accessPassword" className="text-xs text-muted-foreground">
-                          {t('fanmarkSettings.fields.passwordProtection.passwordHelper')}
-                        </Label>
-                        <Input
-                          id="accessPassword"
-                          {...register('accessPassword')}
-                          placeholder={t('fanmarkSettings.fields.passwordProtection.passwordPlaceholder')}
-                          maxLength={4}
-                          pattern="[0-9]*"
-                          className="h-10 w-24 rounded-lg border border-border text-center font-mono text-lg focus-visible:ring-2 focus-visible:ring-primary"
-                          onInput={(e) => {
-                            // Only allow numbers
-                            const target = e.target as HTMLInputElement;
-                            target.value = target.value.replace(/[^0-9]/g, '');
-                          }}
-                        />
-                        {errors.accessPassword && (
-                          <p className="text-xs text-destructive">
-                            {t('fanmarkSettings.fields.passwordProtection.passwordHelper')}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
                 </div>
               )}
 
