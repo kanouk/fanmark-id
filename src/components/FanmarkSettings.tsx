@@ -157,10 +157,10 @@ export const FanmarkSettings = ({
 
       if (error) throw error;
 
-      // Create emoji profile if requested
+      // Create fanmark profile if requested
       if (data.createProfile && data.accessType === 'profile') {
         const { error: profileError } = await supabase
-          .from('emoji_profiles')
+          .from('fanmark_profiles')
           .upsert({
             fanmark_id: fanmark.id,
             user_id: (await supabase.auth.getUser()).data.user?.id,

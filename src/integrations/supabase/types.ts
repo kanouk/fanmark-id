@@ -599,6 +599,21 @@ export type Database = {
           is_taken: boolean
         }[]
       }
+      get_public_emoji_profile: {
+        Args: { profile_fanmark_id: string }
+        Returns: {
+          bio: string
+          created_at: string
+          display_name: string
+          fanmark_id: string
+          id: string
+          is_public: boolean
+          social_links: Json
+          theme_settings: Json
+          updated_at: string
+          user_id: string
+        }[]
+      }
       get_public_fanmark_profile: {
         Args: { profile_fanmark_id: string }
         Returns: {

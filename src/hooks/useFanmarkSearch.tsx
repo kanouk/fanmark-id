@@ -242,29 +242,32 @@ export function useFanmarkSearch() {
   
       // レコードありだが active 以外 → invalid（禁止/保留など）
       if (fanmark.status !== 'active') {
-        setResult({
-          id: fanmark.id,
-          emoji_combination: fanmark.emoji_combination,
-          normalized_emoji: fanmark.normalized_emoji,
-          short_id: fanmark.short_id,
-          tier_level: fanmark.tier_level,
-          status: 'invalid',
-          error: 'This emoji pattern is not allowed or not active.',
-          emoji_count: validation.emojiCount,
-        });
+      setResult({
+        id: fanmark.id,
+        emoji_combination: fanmark.emoji_combination,
+        normalized_emoji: fanmark.normalized_emoji,
+        short_id: fanmark.short_id,
+        tier_level: 1, // Default tier level since removed from fanmarks table
+        status: 'invalid',
+        error: 'This emoji pattern is not allowed or not active.',
+        emoji_count: validation.emojiCount,
+      });
         return;
       }
   
-      // active のみ：占有状況を判定
-      const isTaken = !!fanmark.current_license_id;
-      let ownerUserId: string | null = null;
-  
-      if (isTaken) {
-      // Use secure function to check ownership without exposing user data
-      const { data: ownershipStatus } = await supabase
-        .rpc('get_fanmark_ownership_status', { fanmark_license_id: fanmark.current_license_id });
+      // Check if fanmark has active license
+      const { data: licenses } = await supabase
+        .from('fanmark_licenses')
+        .select('id, user_id, status')
+        .eq('fanmark_id', fanmark.id)
+        .eq('status', 'active')
+        .gt('license_end', new Date().toISOString());
 
-      ownerUserId = ownershipStatus?.[0]?.has_active_license ? 'hidden_for_privacy' : null;
+      const isTaken = !!licenses && licenses.length > 0;
+      let ownerUserId: string | null = null;
+
+      if (isTaken) {
+        ownerUserId = 'hidden_for_privacy';
       }
   
       // For privacy protection, we no longer expose owner profile details
@@ -276,7 +279,7 @@ export function useFanmarkSearch() {
         emoji_combination: fanmark.emoji_combination,
         normalized_emoji: fanmark.normalized_emoji,
         short_id: fanmark.short_id,
-        tier_level: fanmark.tier_level,
+        tier_level: 1, // Default tier level since removed from fanmarks table
         status: isTaken ? 'not_available' : 'available',
         // For privacy protection, we no longer expose owner details
         owner: undefined,

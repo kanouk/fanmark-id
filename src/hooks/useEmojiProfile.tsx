@@ -55,7 +55,7 @@ export const useEmojiProfile = (fanmarkId: string) => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('emoji_profiles')
+        .from('fanmark_profiles')
         .select('*')
         .eq('fanmark_id', fanmarkId)
         .eq('user_id', user.id)
@@ -88,7 +88,7 @@ export const useEmojiProfile = (fanmarkId: string) => {
       console.log('Updating emoji profile with data:', profileData);
 
       const { data, error } = await supabase
-        .from('emoji_profiles')
+        .from('fanmark_profiles')
         .upsert(profileData, {
           onConflict: 'fanmark_id,user_id'
         })
