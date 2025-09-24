@@ -41,7 +41,7 @@ type AccessType = 'profile' | 'redirect' | 'text' | 'inactive';
 
 const settingsSchema = z.object({
   accessType: z.enum(['profile', 'redirect', 'text', 'inactive']),
-  displayName: z.string().min(1, 'Display name is required'),
+  fanmarkName: z.string().min(1, 'Fanmark name is required'),
   targetUrl: z.string().url().optional().or(z.literal('')),
   textContent: z.string().optional(),
   createProfile: z.boolean().default(false),
@@ -118,7 +118,7 @@ export const FanmarkSettings = ({
     if (fanmark) {
       reset({
         accessType: fanmark.access_type,
-        displayName: fanmark.fanmark_name,
+        fanmarkName: fanmark.fanmark_name || '',
         targetUrl: fanmark.target_url || '',
         textContent: fanmark.text_content || '',
         createProfile: false, // This is a one-time action
@@ -151,6 +151,48 @@ export const FanmarkSettings = ({
         .eq('id', fanmark.id);
 
       if (error) throw error;
+
+      // Update fanmark basic config (fanmark name)
+      const { error: basicConfigError } = await supabase
+        .from('fanmark_basic_configs')
+        .upsert({
+          fanmark_id: fanmark.id,
+          fanmark_name: data.fanmarkName
+        });
+
+      if (basicConfigError) throw basicConfigError;
+
+      // Update specific config tables based on access type
+      if (data.accessType === 'redirect' && data.targetUrl) {
+        const { error: redirectError } = await supabase
+          .from('fanmark_redirect_configs')
+          .upsert({
+            fanmark_id: fanmark.id,
+            target_url: data.targetUrl
+          });
+        if (redirectError) throw redirectError;
+      }
+
+      if (data.accessType === 'text' && data.textContent) {
+        const { error: textError } = await supabase
+          .from('fanmark_messageboard_configs')
+          .upsert({
+            fanmark_id: fanmark.id,
+            content: data.textContent
+          });
+        if (textError) throw textError;
+      }
+
+      // Handle password protection
+      if (data.isPasswordProtected && data.accessPassword) {
+        const { error: passwordError } = await supabase
+          .from('fanmark_password_configs')
+          .upsert({
+            fanmark_id: fanmark.id,
+            access_password: data.accessPassword
+          });
+        if (passwordError) throw passwordError;
+      }
 
       // Create fanmark profile if requested
       if (data.createProfile && data.accessType === 'profile') {
@@ -414,7 +456,7 @@ export const FanmarkSettings = ({
       {/* Fanmark Name */}
       <Card className="overflow-hidden rounded-2xl border border-border/50 bg-card/80 shadow-sm shadow-primary/5 backdrop-blur">
         <CardContent className="p-6 space-y-4">
-          <Label htmlFor="displayName" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+          <Label htmlFor="fanmarkName" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
             <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
               <FiType className="h-4 w-4" />
             </div>
@@ -422,15 +464,15 @@ export const FanmarkSettings = ({
           </Label>
           <p className="text-xs text-muted-foreground">{t('fanmarkSettings.fields.displayName.helper')}</p>
           <Input
-            id="displayName"
-            {...register('displayName')}
+            id="fanmarkName"
+            {...register('fanmarkName')}
             placeholder={t('fanmarkSettings.fields.displayName.placeholder')}
             className="h-12 rounded-xl border border-border focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
           />
-          {errors.displayName && (
+          {errors.fanmarkName && (
             <p className="flex items-center gap-2 text-sm text-destructive">
               <FiAlertCircle className="h-4 w-4" />
-              {errors.displayName.message}
+              {errors.fanmarkName.message}
             </p>
           )}
         </CardContent>

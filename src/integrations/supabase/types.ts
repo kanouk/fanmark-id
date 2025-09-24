@@ -89,22 +89,22 @@ export type Database = {
       fanmark_basic_configs: {
         Row: {
           created_at: string
-          display_name: string | null
           fanmark_id: string
+          fanmark_name: string | null
           id: string
           updated_at: string
         }
         Insert: {
           created_at?: string
-          display_name?: string | null
           fanmark_id: string
+          fanmark_name?: string | null
           id?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
-          display_name?: string | null
           fanmark_id?: string
+          fanmark_name?: string | null
           id?: string
           updated_at?: string
         }

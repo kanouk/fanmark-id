@@ -13,14 +13,14 @@ import { useTranslation } from '@/hooks/useTranslation';
 
 const quickRegistrationSchema = z.object({
   emojiCombination: z.string().min(1, 'Emoji combination is required'),
-  displayName: z.string().min(1, 'Display name is required'),
+  fanmarkName: z.string().min(1, 'Fanmark name is required'),
 });
 
 type QuickRegistrationFormData = z.infer<typeof quickRegistrationSchema>;
 
 interface RegisteredFanmark {
   emoji_combination: string;
-  display_name: string;
+  fanmark_name: string;
 }
 
 interface RegisterFanmarkResponse {
@@ -55,7 +55,7 @@ export const FanmarkQuickRegistration = ({
     resolver: zodResolver(quickRegistrationSchema),
     defaultValues: {
       emojiCombination: prefilledEmoji || '',
-      displayName: '',
+      fanmarkName: '',
     },
   });
 
@@ -76,7 +76,7 @@ export const FanmarkQuickRegistration = ({
         body: {
           emoji: data.emojiCombination,
           accessType: 'inactive', // Default to inactive for quick registration
-          displayName: data.displayName,
+          fanmarkName: data.fanmarkName,
           targetUrl: null,
           textContent: null,
           createProfile: false,
@@ -121,7 +121,7 @@ export const FanmarkQuickRegistration = ({
             {registeredFanmark.emoji_combination}
           </div>
           <div className="text-xl font-semibold">
-            {registeredFanmark.display_name}
+            {registeredFanmark.fanmark_name}
           </div>
           <div className="bg-blue-50 rounded-lg p-4 text-sm text-blue-800">
             {t('registration.quickSecuredInfo')}
@@ -183,17 +183,17 @@ export const FanmarkQuickRegistration = ({
 
           {/* Display Name */}
           <div className="space-y-2">
-            <Label htmlFor="displayName" className="text-lg">
+            <Label htmlFor="fanmarkName" className="text-lg">
               ✨ {t('registration.displayName')}
             </Label>
             <Input
-              id="displayName"
-              {...register('displayName')}
+              id="fanmarkName"
+              {...register('fanmarkName')}
               placeholder={t('registration.placeholders.fanmarkName')}
               className="border-2 border-dotted border-pink-300"
             />
-            {errors.displayName && (
-              <p className="text-sm text-red-500">{errors.displayName.message}</p>
+            {errors.fanmarkName && (
+              <p className="text-sm text-red-500">{errors.fanmarkName.message}</p>
             )}
           </div>
 
