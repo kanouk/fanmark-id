@@ -252,60 +252,55 @@ export function useFanmarkSearch() {
         return;
       }
   
-      // Check if fanmark has active license and who owns it
-      const { data: licenses, error: licenseError } = await supabase
-        .from('fanmark_licenses')
-        .select(`
-          id,
-          user_id,
-          status,
-          license_end
-        `)
-        .eq('fanmark_id', fanmark.id)
-        .eq('status', 'active')
-        .gt('license_end', new Date().toISOString());
+      // Use the new secure availability checking function
+      const { data: availabilityData, error: availabilityError } = await supabase
+        .rpc('check_fanmark_availability', { fanmark_uuid: fanmark.id });
 
-      if (licenseError) {
-        console.error('Error fetching licenses:', licenseError);
+      if (availabilityError) {
+        console.error('Error checking availability:', availabilityError);
+        throw availabilityError;
       }
 
-      const isTaken = Array.isArray(licenses) && licenses.length > 0;
+      const availability = availabilityData?.[0];
       
-      if (!isTaken) {
-        // No active license visible to this user -> available for registration
-        setResult({
-          id: fanmark.id,
-          emoji_combination: fanmark.emoji_combination,
-          normalized_emoji: fanmark.normalized_emoji,
-          short_id: fanmark.short_id,
-          tier_level: 1,
-          status: 'available',
-          emoji_count: validation.emojiCount,
-        });
-        return;
+      if (!availability) {
+        throw new Error('Failed to check fanmark availability');
       }
 
-      // There's an active license - check if current user owns it
-      const currentUserId = user?.id;
-      const userLicense = licenses.find((license: any) => license.user_id === currentUserId);
-      
-      if (userLicense) {
-        // Current user owns this fanmark
-        setResult({
-          id: fanmark.id,
-          emoji_combination: fanmark.emoji_combination,
-          normalized_emoji: fanmark.normalized_emoji,
-          short_id: fanmark.short_id,
-          tier_level: 1,
-          status: 'taken',
-          emoji_count: validation.emojiCount,
-          owner: {
-            user_id: currentUserId as string,
-            username: '',
-            display_name: '',
-          },
-        });
-      } else {
+      // If fanmark has active license, check if current user owns it
+      if (availability.has_active_license) {
+        // Check if current user owns this fanmark by looking at their own licenses
+        const currentUserId = user?.id;
+        if (currentUserId) {
+          const { data: userLicense, error: userLicenseError } = await supabase
+            .from('fanmark_licenses')
+            .select('id, user_id, status, license_end')
+            .eq('fanmark_id', fanmark.id)
+            .eq('user_id', currentUserId)
+            .eq('status', 'active')
+            .gt('license_end', new Date().toISOString())
+            .maybeSingle();
+
+          if (!userLicenseError && userLicense) {
+            // Current user owns this fanmark
+            setResult({
+              id: fanmark.id,
+              emoji_combination: fanmark.emoji_combination,
+              normalized_emoji: fanmark.normalized_emoji,
+              short_id: fanmark.short_id,
+              tier_level: 1,
+              status: 'taken',
+              emoji_count: validation.emojiCount,
+              owner: {
+                user_id: currentUserId,
+                username: '',
+                display_name: '',
+              },
+            });
+            return;
+          }
+        }
+
         // Someone else owns this fanmark
         setResult({
           id: fanmark.id,
@@ -316,6 +311,17 @@ export function useFanmarkSearch() {
           status: 'not_available',
           emoji_count: validation.emojiCount,
           owner: undefined, // Privacy protection - don't expose other user's info
+        });
+      } else {
+        // No active license -> available for registration
+        setResult({
+          id: fanmark.id,
+          emoji_combination: fanmark.emoji_combination,
+          normalized_emoji: fanmark.normalized_emoji,
+          short_id: fanmark.short_id,
+          tier_level: 1,
+          status: 'available',
+          emoji_count: validation.emojiCount,
         });
       }
     } catch (error) {

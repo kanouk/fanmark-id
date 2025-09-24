@@ -501,6 +501,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_fanmark_availability: {
+        Args: { fanmark_uuid: string }
+        Returns: {
+          has_active_license: boolean
+          is_available: boolean
+        }[]
+      }
       generate_safe_display_name: {
         Args: { user_email: string; user_id: string }
         Returns: string
