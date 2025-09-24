@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, ExternalLink, Share, Heart, Copy, User } from 'lucide-react';
+import { Loader2, ExternalLink, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
 import { getPublicEmojiProfile, type PublicEmojiProfile } from '@/hooks/useEmojiProfile';
-import { toast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
+import { LanguageToggle } from '@/components/LanguageToggle';
 import {
   FiInstagram,
   FiTwitter,
@@ -51,7 +50,6 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
   const { t } = useTranslation();
   const [emojiProfile, setEmojiProfile] = useState<PublicEmojiProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isLiked, setIsLiked] = useState(false);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -103,37 +101,6 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
     loadProfile();
   }, [fanmark.id, fanmark.access_type]);
 
-  const handleShare = async () => {
-    const url = `https://fanmark.id/${fanmark.emoji_combination}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: displayName,
-          url: url,
-        });
-      } catch (error) {
-        navigator.clipboard.writeText(url);
-        toast({
-          title: "リンクをコピーしました",
-          description: url,
-        });
-      }
-    } else {
-      navigator.clipboard.writeText(url);
-      toast({
-        title: "リンクをコピーしました",
-        description: url,
-      });
-    }
-  };
-
-  const handleLike = () => {
-    setIsLiked(!isLiked);
-    toast({
-      title: isLiked ? "いいねを取り消しました" : "いいねしました！",
-      description: isLiked ? "" : "このプロフィールが気に入りました",
-    });
-  };
 
   if (loading) {
     return (
@@ -153,50 +120,26 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
   const socialLinks = emojiProfile?.social_links as Record<string, string> || {};
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      {/* Header Actions */}
-      <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border/40">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <span className="text-2xl">{fanmark.emoji_combination}</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                navigator.clipboard.writeText(`https://fanmark.id/${fanmark.emoji_combination}`);
-                toast({
-                  title: "URLをコピーしました",
-                  description: `https://fanmark.id/${fanmark.emoji_combination}`,
-                });
-              }}
-              className="h-8 w-8 p-0 rounded-full hover:bg-primary/10"
-            >
-              <Copy className="h-3 w-3" />
-            </Button>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex flex-col">
+      {/* Header Navigation */}
+      <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
+        <div className="container mx-auto flex items-center justify-between px-4 py-4 md:px-6">
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="group flex items-center gap-2 text-lg font-semibold text-foreground transition-transform hover:translate-y-[-1px]"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
+              ✨
+            </span>
+            <span className="text-gradient text-2xl">fanmark.id</span>
+          </button>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLike}
-              className="rounded-full h-10 w-10 p-0 hover:bg-red-50 hover:text-red-500"
-            >
-              <Heart className={`h-4 w-4 ${isLiked ? 'fill-current text-red-500' : ''}`} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleShare}
-              className="rounded-full h-10 w-10 p-0 hover:bg-primary/10"
-            >
-              <Share className="h-4 w-4" />
-            </Button>
-          </div>
+          <LanguageToggle />
         </div>
-      </div>
+      </header>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 flex-1">
         <div className="max-w-4xl mx-auto space-y-10">
           {/* Profile Preview Section - Matching Edit Page Layout */}
           <Card className="overflow-hidden bg-gradient-to-br from-background/90 to-background/70 border border-primary/20 shadow-xl backdrop-blur-sm">
@@ -306,21 +249,18 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
             </Card>
           )}
 
-          {/* Footer Logo - Matching Edit Page Style */}
-          <div className="text-center pt-8 border-t border-border/50">
-            <button
-              type="button"
-              onClick={() => navigate('/')}
-              className="group inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-lg transition-all group-hover:scale-105">
-                ✨
-              </span>
-              <span className="text-gradient text-lg font-semibold">fanmark.id</span>
-            </button>
-          </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="border-t border-border/40 bg-background/80 backdrop-blur">
+        <div className="container mx-auto px-4 py-10 text-center space-y-3">
+          <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
+            <span className="text-3xl">✨</span> <span className="text-gradient">fanmark.id</span>
+          </div>
+          <p className="text-sm text-muted-foreground">{t('sections.footer')}</p>
+        </div>
+      </footer>
     </div>
   );
 };
