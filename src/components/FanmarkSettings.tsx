@@ -339,7 +339,7 @@ export const FanmarkSettings = ({
                 <div className="space-y-3 rounded-xl border border-border/60 bg-background/70 p-4">
                   <Label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                     <FiLock className="h-3.5 w-3.5" />
-                    パスワード保護
+                    {t('fanmarkSettings.fields.passwordProtection.label')}
                   </Label>
                   <div className="space-y-3 pl-6">
                     <div className="flex items-center space-x-2">
@@ -355,19 +355,19 @@ export const FanmarkSettings = ({
                         )}
                       />
                       <Label htmlFor="password-protection" className="text-sm font-medium">
-                        鍵をかける
+                        {t('fanmarkSettings.fields.passwordProtection.lockCheckbox')}
                       </Label>
                     </div>
                     
                     {isPasswordProtected && (
                       <div className="space-y-2">
                         <Label htmlFor="accessPassword" className="text-xs text-muted-foreground">
-                          4桁の数字を入力してください
+                          {t('fanmarkSettings.fields.passwordProtection.passwordHelper')}
                         </Label>
                         <Input
                           id="accessPassword"
                           {...register('accessPassword')}
-                          placeholder="1234"
+                          placeholder={t('fanmarkSettings.fields.passwordProtection.passwordPlaceholder')}
                           maxLength={4}
                           pattern="[0-9]*"
                           className="h-10 w-24 rounded-lg border border-border text-center font-mono text-lg focus-visible:ring-2 focus-visible:ring-primary"
@@ -379,7 +379,7 @@ export const FanmarkSettings = ({
                         />
                         {errors.accessPassword && (
                           <p className="text-xs text-destructive">
-                            4桁の数字を入力してください
+                            {t('fanmarkSettings.fields.passwordProtection.passwordHelper')}
                           </p>
                         )}
                       </div>

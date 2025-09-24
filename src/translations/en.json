@@ -412,6 +412,12 @@
         "label": "Fanmark transfer",
         "helper": "Control whether this fanmark can be transferred.",
         "allow": "Allow"
+      },
+      "passwordProtection": {
+        "label": "Password Protection",
+        "lockCheckbox": "Lock with password",
+        "passwordPlaceholder": "1234",
+        "passwordHelper": "Enter a 4-digit number"
       }
     },
     "accessTypeOptions": {
