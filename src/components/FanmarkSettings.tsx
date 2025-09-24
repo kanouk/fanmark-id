@@ -278,7 +278,9 @@ export const FanmarkSettings = ({
     },
   ];
 
-  const displayLabel = fanmark?.fanmark_name ?? t('fanmarkSettings.summary.defaultName');
+  // Watch fanmark name for real-time updates
+  const watchedFanmarkName = watch('fanmarkName');
+  const displayLabel = watchedFanmarkName || fanmark?.fanmark_name || t('fanmarkSettings.summary.defaultName');
 
 
   // Don't render if fanmark is null
@@ -301,6 +303,31 @@ export const FanmarkSettings = ({
   const formContent = (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 pt-4">
       {summaryCard}
+
+      {/* Fanmark Name */}
+      <Card className="overflow-hidden rounded-2xl border border-border/50 bg-card/80 shadow-sm shadow-primary/5 backdrop-blur">
+        <CardContent className="p-6 space-y-4">
+          <Label htmlFor="fanmarkName" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+              <FiType className="h-4 w-4" />
+            </div>
+            {t('fanmarkSettings.fields.displayName.label')}
+          </Label>
+          <p className="text-xs text-muted-foreground">{t('fanmarkSettings.fields.displayName.helper')}</p>
+          <Input
+            id="fanmarkName"
+            {...register('fanmarkName')}
+            placeholder={t('fanmarkSettings.fields.displayName.placeholder')}
+            className="h-12 rounded-xl border border-border focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+          />
+          {errors.fanmarkName && (
+            <p className="flex items-center gap-2 text-sm text-destructive">
+              <FiAlertCircle className="h-4 w-4" />
+              {errors.fanmarkName.message}
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Access Type & Related Settings */}
       <Card className="overflow-hidden rounded-2xl border border-border/50 bg-card/80 shadow-sm shadow-primary/5 backdrop-blur">
@@ -478,30 +505,6 @@ export const FanmarkSettings = ({
         </CardContent>
       </Card>
 
-      {/* Fanmark Name */}
-      <Card className="overflow-hidden rounded-2xl border border-border/50 bg-card/80 shadow-sm shadow-primary/5 backdrop-blur">
-        <CardContent className="p-6 space-y-4">
-          <Label htmlFor="fanmarkName" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
-              <FiType className="h-4 w-4" />
-            </div>
-            {t('fanmarkSettings.fields.displayName.label')}
-          </Label>
-          <p className="text-xs text-muted-foreground">{t('fanmarkSettings.fields.displayName.helper')}</p>
-          <Input
-            id="fanmarkName"
-            {...register('fanmarkName')}
-            placeholder={t('fanmarkSettings.fields.displayName.placeholder')}
-            className="h-12 rounded-xl border border-border focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
-          />
-          {errors.fanmarkName && (
-            <p className="flex items-center gap-2 text-sm text-destructive">
-              <FiAlertCircle className="h-4 w-4" />
-              {errors.fanmarkName.message}
-            </p>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Action Buttons */}
       <div className="flex flex-col-reverse gap-3 pt-6 border-t border-border/20 sm:flex-row sm:justify-end">
