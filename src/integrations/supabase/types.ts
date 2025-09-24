@@ -51,6 +51,7 @@ export type Database = {
         Row: {
           bio: string | null
           created_at: string
+          display_name: string | null
           fanmark_id: string
           id: string
           is_public: boolean
@@ -62,6 +63,7 @@ export type Database = {
         Insert: {
           bio?: string | null
           created_at?: string
+          display_name?: string | null
           fanmark_id: string
           id?: string
           is_public?: boolean
@@ -73,6 +75,7 @@ export type Database = {
         Update: {
           bio?: string | null
           created_at?: string
+          display_name?: string | null
           fanmark_id?: string
           id?: string
           is_public?: boolean
