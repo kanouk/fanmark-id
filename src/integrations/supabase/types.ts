@@ -149,6 +149,13 @@ export type Database = {
             foreignKeyName: "fk_fanmark_licenses_fanmark_id"
             columns: ["fanmark_id"]
             isOneToOne: false
+            referencedRelation: "fanmark_complete_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_fanmark_licenses_fanmark_id"
+            columns: ["fanmark_id"]
+            isOneToOne: false
             referencedRelation: "fanmarks"
             referencedColumns: ["id"]
           },
@@ -546,6 +553,27 @@ export type Database = {
       }
     }
     Views: {
+      fanmark_complete_view: {
+        Row: {
+          access_password: string | null
+          access_type: string | null
+          created_at: string | null
+          current_owner_id: string | null
+          emoji_combination: string | null
+          fanmark_name: string | null
+          has_active_license: boolean | null
+          id: string | null
+          is_password_protected: boolean | null
+          license_end: string | null
+          normalized_emoji: string | null
+          short_id: string | null
+          status: string | null
+          target_url: string | null
+          text_content: string | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
       public_profiles: {
         Row: {
           avatar_url: string | null
