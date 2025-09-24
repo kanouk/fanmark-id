@@ -47,67 +47,6 @@ export type Database = {
         }
         Relationships: []
       }
-      emoji_profiles: {
-        Row: {
-          bio: string | null
-          created_at: string
-          display_name: string | null
-          fanmark_id: string
-          id: string
-          is_public: boolean
-          social_links: Json | null
-          theme_settings: Json | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          bio?: string | null
-          created_at?: string
-          display_name?: string | null
-          fanmark_id: string
-          id?: string
-          is_public?: boolean
-          social_links?: Json | null
-          theme_settings?: Json | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          bio?: string | null
-          created_at?: string
-          display_name?: string | null
-          fanmark_id?: string
-          id?: string
-          is_public?: boolean
-          social_links?: Json | null
-          theme_settings?: Json | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "emoji_profiles_fanmark_id_fkey"
-            columns: ["fanmark_id"]
-            isOneToOne: false
-            referencedRelation: "fanmark_search_auth_v1"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "emoji_profiles_fanmark_id_fkey"
-            columns: ["fanmark_id"]
-            isOneToOne: false
-            referencedRelation: "fanmark_search_public_v1"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "emoji_profiles_fanmark_id_fkey"
-            columns: ["fanmark_id"]
-            isOneToOne: false
-            referencedRelation: "fanmarks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       fanmark_availability_rules: {
         Row: {
           created_at: string
@@ -147,6 +86,30 @@ export type Database = {
         }
         Relationships: []
       }
+      fanmark_basic_configs: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          fanmark_id: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          fanmark_id: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          fanmark_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fanmark_licenses: {
         Row: {
           created_at: string
@@ -156,7 +119,6 @@ export type Database = {
           license_end: string
           license_start: string
           status: string
-          tier_level: number
           updated_at: string
           user_id: string
         }
@@ -168,7 +130,6 @@ export type Database = {
           license_end: string
           license_start?: string
           status?: string
-          tier_level: number
           updated_at?: string
           user_id: string
         }
@@ -180,7 +141,6 @@ export type Database = {
           license_end?: string
           license_start?: string
           status?: string
-          tier_level?: number
           updated_at?: string
           user_id?: string
         }
@@ -189,31 +149,121 @@ export type Database = {
             foreignKeyName: "fk_fanmark_licenses_fanmark_id"
             columns: ["fanmark_id"]
             isOneToOne: false
-            referencedRelation: "fanmark_search_auth_v1"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_fanmark_licenses_fanmark_id"
-            columns: ["fanmark_id"]
-            isOneToOne: false
-            referencedRelation: "fanmark_search_public_v1"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_fanmark_licenses_fanmark_id"
-            columns: ["fanmark_id"]
-            isOneToOne: false
             referencedRelation: "fanmarks"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "fk_fanmark_licenses_tier_level"
-            columns: ["tier_level"]
-            isOneToOne: false
-            referencedRelation: "fanmark_tiers"
-            referencedColumns: ["tier_level"]
-          },
         ]
+      }
+      fanmark_messageboard_configs: {
+        Row: {
+          content: string | null
+          created_at: string
+          fanmark_id: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          fanmark_id: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          fanmark_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      fanmark_password_configs: {
+        Row: {
+          access_password: string
+          created_at: string
+          fanmark_id: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          access_password: string
+          created_at?: string
+          fanmark_id: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          access_password?: string
+          created_at?: string
+          fanmark_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      fanmark_profiles: {
+        Row: {
+          bio: string | null
+          created_at: string
+          display_name: string | null
+          fanmark_id: string
+          id: string
+          is_public: boolean
+          social_links: Json | null
+          theme_settings: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          fanmark_id: string
+          id?: string
+          is_public?: boolean
+          social_links?: Json | null
+          theme_settings?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          fanmark_id?: string
+          id?: string
+          is_public?: boolean
+          social_links?: Json | null
+          theme_settings?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      fanmark_redirect_configs: {
+        Row: {
+          created_at: string
+          fanmark_id: string
+          id: string
+          target_url: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          fanmark_id: string
+          id?: string
+          target_url: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          fanmark_id?: string
+          id?: string
+          target_url?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       fanmark_tiers: {
         Row: {
@@ -256,71 +306,36 @@ export type Database = {
       }
       fanmarks: {
         Row: {
-          access_password: string | null
           access_type: string
           created_at: string
-          current_license_id: string | null
           emoji_combination: string
-          fanmark_name: string | null
           id: string
-          is_password_protected: boolean
-          is_transferable: boolean
           normalized_emoji: string
           short_id: string
           status: string
-          target_url: string | null
-          text_content: string | null
-          tier_level: number | null
           updated_at: string
-          user_id: string
         }
         Insert: {
-          access_password?: string | null
           access_type?: string
           created_at?: string
-          current_license_id?: string | null
           emoji_combination: string
-          fanmark_name?: string | null
           id?: string
-          is_password_protected?: boolean
-          is_transferable?: boolean
           normalized_emoji: string
           short_id: string
           status?: string
-          target_url?: string | null
-          text_content?: string | null
-          tier_level?: number | null
           updated_at?: string
-          user_id: string
         }
         Update: {
-          access_password?: string | null
           access_type?: string
           created_at?: string
-          current_license_id?: string | null
           emoji_combination?: string
-          fanmark_name?: string | null
           id?: string
-          is_password_protected?: boolean
-          is_transferable?: boolean
           normalized_emoji?: string
           short_id?: string
           status?: string
-          target_url?: string | null
-          text_content?: string | null
-          tier_level?: number | null
           updated_at?: string
-          user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "fk_fanmarks_current_license_id"
-            columns: ["current_license_id"]
-            isOneToOne: false
-            referencedRelation: "fanmark_licenses"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       invitation_codes: {
         Row: {
@@ -531,76 +546,6 @@ export type Database = {
       }
     }
     Views: {
-      fanmark_search_auth_v1: {
-        Row: {
-          created_at: string | null
-          emoji_combination: string | null
-          id: string | null
-          is_active: boolean | null
-          is_taken: boolean | null
-          normalized_emoji: string | null
-          owner_display_name: string | null
-          owner_user_id: string | null
-          owner_username: string | null
-          short_id: string | null
-          status: string | null
-          tier_level: number | null
-        }
-        Relationships: []
-      }
-      fanmark_search_public_v1: {
-        Row: {
-          created_at: string | null
-          emoji_combination: string | null
-          id: string | null
-          is_active: boolean | null
-          is_taken: boolean | null
-          normalized_emoji: string | null
-          owner_display_name: string | null
-          owner_username: string | null
-          short_id: string | null
-          status: string | null
-          tier_level: number | null
-        }
-        Relationships: []
-      }
-      my_fanmark_claims_v1: {
-        Row: {
-          fanmark_id: string | null
-          user_id: string | null
-        }
-        Insert: {
-          fanmark_id?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          fanmark_id?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_fanmark_licenses_fanmark_id"
-            columns: ["fanmark_id"]
-            isOneToOne: false
-            referencedRelation: "fanmark_search_auth_v1"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_fanmark_licenses_fanmark_id"
-            columns: ["fanmark_id"]
-            isOneToOne: false
-            referencedRelation: "fanmark_search_public_v1"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_fanmark_licenses_fanmark_id"
-            columns: ["fanmark_id"]
-            isOneToOne: false
-            referencedRelation: "fanmarks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       public_profiles: {
         Row: {
           avatar_url: string | null
@@ -654,11 +599,12 @@ export type Database = {
           is_taken: boolean
         }[]
       }
-      get_public_emoji_profile: {
+      get_public_fanmark_profile: {
         Args: { profile_fanmark_id: string }
         Returns: {
           bio: string
           created_at: string
+          display_name: string
           fanmark_id: string
           id: string
           social_links: Json
