@@ -376,90 +376,6 @@ export type Database = {
         }
         Relationships: []
       }
-      profiles: {
-        Row: {
-          avatar_url: string | null
-          bio: string | null
-          created_at: string
-          display_name: string | null
-          emoji_limit: number | null
-          id: string
-          invitation_perks: Json | null
-          invited_by_code: string | null
-          is_public_profile: boolean | null
-          role: Database["public"]["Enums"]["user_role"] | null
-          social_links: Json | null
-          subscription_end_date: string | null
-          subscription_status: string | null
-          updated_at: string
-          user_id: string
-          username: string
-        }
-        Insert: {
-          avatar_url?: string | null
-          bio?: string | null
-          created_at?: string
-          display_name?: string | null
-          emoji_limit?: number | null
-          id?: string
-          invitation_perks?: Json | null
-          invited_by_code?: string | null
-          is_public_profile?: boolean | null
-          role?: Database["public"]["Enums"]["user_role"] | null
-          social_links?: Json | null
-          subscription_end_date?: string | null
-          subscription_status?: string | null
-          updated_at?: string
-          user_id: string
-          username: string
-        }
-        Update: {
-          avatar_url?: string | null
-          bio?: string | null
-          created_at?: string
-          display_name?: string | null
-          emoji_limit?: number | null
-          id?: string
-          invitation_perks?: Json | null
-          invited_by_code?: string | null
-          is_public_profile?: boolean | null
-          role?: Database["public"]["Enums"]["user_role"] | null
-          social_links?: Json | null
-          subscription_end_date?: string | null
-          subscription_status?: string | null
-          updated_at?: string
-          user_id?: string
-          username?: string
-        }
-        Relationships: []
-      }
-      public_profile_cache: {
-        Row: {
-          avatar_url: string | null
-          bio: string | null
-          created_at: string
-          display_name: string | null
-          id: string
-          username: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          bio?: string | null
-          created_at?: string
-          display_name?: string | null
-          id: string
-          username?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          bio?: string | null
-          created_at?: string
-          display_name?: string | null
-          id?: string
-          username?: string | null
-        }
-        Relationships: []
-      }
       reserved_emoji_patterns: {
         Row: {
           created_at: string
@@ -520,6 +436,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_settings: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          plan_type: Database["public"]["Enums"]["user_plan"]
+          preferred_language: Database["public"]["Enums"]["user_language"]
+          updated_at: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          plan_type?: Database["public"]["Enums"]["user_plan"]
+          preferred_language?: Database["public"]["Enums"]["user_language"]
+          updated_at?: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          plan_type?: Database["public"]["Enums"]["user_plan"]
+          preferred_language?: Database["public"]["Enums"]["user_language"]
+          updated_at?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
       waitlist: {
         Row: {
           created_at: string
@@ -546,33 +498,7 @@ export type Database = {
       }
     }
     Views: {
-      public_profiles: {
-        Row: {
-          avatar_url: string | null
-          bio: string | null
-          created_at: string | null
-          display_name: string | null
-          id: string | null
-          username: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          bio?: string | null
-          created_at?: string | null
-          display_name?: string | null
-          id?: string | null
-          username?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          bio?: string | null
-          created_at?: string | null
-          display_name?: string | null
-          id?: string | null
-          username?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       generate_safe_display_name: {
@@ -692,6 +618,8 @@ export type Database = {
       }
     }
     Enums: {
+      user_language: "en" | "ja"
+      user_plan: "free" | "creator"
       user_role: "user" | "admin"
     }
     CompositeTypes: {
@@ -820,6 +748,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      user_language: ["en", "ja"],
+      user_plan: ["free", "creator"],
       user_role: ["user", "admin"],
     },
   },
