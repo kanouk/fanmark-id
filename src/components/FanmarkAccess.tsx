@@ -62,8 +62,14 @@ export const FanmarkAccess = () => {
         const fanmarkData = data[0] as FanmarkData;
         setFanmark(fanmarkData);
 
-        // Don't redirect immediately if password protected
-        // The redirect will happen after password verification
+        // Immediately redirect if it's a redirect type without password protection
+        if (fanmarkData.access_type === 'redirect' && 
+            fanmarkData.target_url && 
+            !fanmarkData.is_password_protected) {
+          console.log('Redirecting to:', fanmarkData.target_url);
+          window.location.href = fanmarkData.target_url;
+          return; // Don't set loading to false, let the redirect happen
+        }
 
         setLoading(false);
       } catch (err) {
