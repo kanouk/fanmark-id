@@ -11,7 +11,7 @@ interface SystemSettings {
 export function useSystemSettings() {
   const [settings, setSettings] = useState<SystemSettings>({
     invitation_mode: false,
-    max_fanmarks_per_user: 10,
+    max_fanmarks_per_user: 3,
     premium_pricing: 1000,
     max_emoji_characters: 5,
   });

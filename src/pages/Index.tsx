@@ -11,6 +11,7 @@ import { MdSpaceDashboard } from 'react-icons/md';
 import { useProfile } from '@/hooks/useProfile';
 import { FanmarkAcquisition } from '@/components/FanmarkAcquisition';
 import { supabase } from '@/integrations/supabase/client';
+import { useFanmarkLimit } from '@/hooks/useFanmarkLimit';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,14 +19,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-const FANMARK_LIMIT = 10;
-
 const Index = () => {
   const { user, signOut } = useAuth();
   const { profile } = useProfile();
   const navigate = useNavigate();
   const { t, tWithBreaks } = useTranslation();
   const [fanmarkCount, setFanmarkCount] = useState(0);
+  const { limit: fanmarkLimit, loading: limitLoading } = useFanmarkLimit();
   const exampleCards = [
     {
       key: 'musician',
@@ -228,7 +228,7 @@ const Index = () => {
       <div id="search" className="py-16 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
         <div className="container mx-auto px-4">
           <FanmarkAcquisition
-            fanmarkLimit={FANMARK_LIMIT}
+            fanmarkLimit={fanmarkLimit}
             currentCount={fanmarkCount}
             onRequireAuth={handleRequireAuth}
             onObtain={() => setFanmarkCount((count) => count + 1)}
