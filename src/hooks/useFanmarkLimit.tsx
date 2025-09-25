@@ -12,10 +12,11 @@ export function useFanmarkLimit() {
     return { limit: 0, loading };
   }
 
-  // Plan-based limits
+  // Plan-based limits from database settings
   const planLimits = {
-    free: settings.max_fanmarks_per_user, // Use system setting (should be 3)
-    creator: 50, // Creator plan gets more fanmarks
+    free: settings.max_fanmarks_per_user, // 3 fanmarks
+    creator: settings.creator_fanmarks_limit, // 10 fanmarks  
+    max: settings.max_fanmarks_limit, // 50 fanmarks
   };
 
   const userPlan = profile?.plan_type || 'free';

@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 interface SystemSettings {
   invitation_mode: boolean;
   max_fanmarks_per_user: number;
+  creator_fanmarks_limit: number;
+  max_fanmarks_limit: number;
   premium_pricing: number;
   max_emoji_characters: number;
 }
@@ -12,6 +14,8 @@ export function useSystemSettings() {
   const [settings, setSettings] = useState<SystemSettings>({
     invitation_mode: false,
     max_fanmarks_per_user: 3,
+    creator_fanmarks_limit: 10,
+    max_fanmarks_limit: 50,
     premium_pricing: 1000,
     max_emoji_characters: 5,
   });
@@ -36,6 +40,10 @@ export function useSystemSettings() {
             acc.invitation_mode = setting_value === 'true';
           } else if (setting_key === 'max_fanmarks_per_user') {
             acc.max_fanmarks_per_user = parseInt(setting_value, 10);
+          } else if (setting_key === 'creator_fanmarks_limit') {
+            acc.creator_fanmarks_limit = parseInt(setting_value, 10);
+          } else if (setting_key === 'max_fanmarks_limit') {
+            acc.max_fanmarks_limit = parseInt(setting_value, 10);
           } else if (setting_key === 'premium_pricing') {
             acc.premium_pricing = parseInt(setting_value, 10);
           } else if (setting_key === 'max_emoji_characters') {

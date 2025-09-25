@@ -631,7 +631,7 @@ export type Database = {
     }
     Enums: {
       user_language: "en" | "ja"
-      user_plan: "free" | "creator"
+      user_plan: "free" | "creator" | "max"
       user_role: "user" | "admin"
     }
     CompositeTypes: {
@@ -761,7 +761,7 @@ export const Constants = {
   public: {
     Enums: {
       user_language: ["en", "ja"],
-      user_plan: ["free", "creator"],
+      user_plan: ["free", "creator", "max"],
       user_role: ["user", "admin"],
     },
   },
