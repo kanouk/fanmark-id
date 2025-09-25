@@ -17,7 +17,7 @@ interface RegisterFanmarkRequest {
   isTransferable?: boolean;
 }
 
-type DatabaseClient = SupabaseClient<unknown, unknown, unknown>;
+type DatabaseClient = SupabaseClient;
 
 type AvailabilityRuleType = 'specific_pattern' | 'duplicate_pattern' | 'prefix_pattern' | 'count_based';
 
@@ -88,7 +88,7 @@ async function getMaxEmojiCharacters(supabase: DatabaseClient): Promise<number> 
     .select('setting_value')
     .eq('setting_key', 'max_emoji_characters')
     .eq('is_public', true)
-    .single();
+    .maybeSingle() as { data: { setting_value: string } | null };
   
   return data ? parseInt(data.setting_value, 10) : 5; // Default to 5
 }
@@ -150,10 +150,10 @@ async function checkPatternBasedPricing(
 ): Promise<{ requiresPayment: boolean; priceUsd?: number; reason?: string; isAvailable: boolean }> {
   // Get all active availability rules ordered by priority
   const { data: rules } = await supabase
-    .from<AvailabilityRuleRecord>('fanmark_availability_rules')
+    .from('fanmark_availability_rules')
     .select('rule_type, priority, rule_config, is_available, price_usd')
     .eq('is_available', true)
-    .order('priority', { ascending: true });
+    .order('priority', { ascending: true }) as { data: AvailabilityRuleRecord[] | null };
 
   if (!rules) {
     return { requiresPayment: false, isAvailable: true };
@@ -168,7 +168,7 @@ async function checkPatternBasedPricing(
         if (config.patterns?.includes(normalizedEmoji)) {
           return {
             requiresPayment: true,
-            priceUsd: rule.price_usd,
+            priceUsd: rule.price_usd || undefined,
             reason: 'specific_pattern',
             isAvailable: rule.is_available
           };
@@ -179,7 +179,7 @@ async function checkPatternBasedPricing(
         if (config.enabled && hasDuplicateEmojis(normalizedEmoji)) {
           return {
             requiresPayment: true,
-            priceUsd: rule.price_usd,
+            priceUsd: rule.price_usd || undefined,
             reason: 'duplicate_pattern',
             isAvailable: rule.is_available
           };
@@ -329,10 +329,10 @@ serve(async (req) => {
 
     // Check if a fanmark record already exists for this normalized emoji
     const { data: existingFanmark } = await supabase
-      .from<FanmarkRow>('fanmarks')
+      .from('fanmarks')
       .select('id, status, emoji_combination, short_id')
       .eq('normalized_emoji', normalizedEmoji)
-      .maybeSingle();
+      .maybeSingle() as { data: FanmarkRow | null };
 
     // If a record exists:
     // - If it's not active, block registration.
@@ -389,10 +389,10 @@ serve(async (req) => {
       let attempts = 0;
       while (attempts < 10) {
         const { data: existing } = await supabase
-          .from<Pick<FanmarkRow, 'id'>>('fanmarks')
+          .from('fanmarks')
           .select('id')
           .eq('short_id', shortId)
-          .maybeSingle();
+          .maybeSingle() as { data: { id: string } | null };
 
         if (!existing) break;
         shortId = generateShortId();

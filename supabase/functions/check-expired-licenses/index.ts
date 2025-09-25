@@ -48,7 +48,20 @@ serve(async (req) => {
       `)
       .eq('status', 'active')
       .lt('license_end', now.toISOString())
-      .eq('fanmarks.status', 'active');
+      .eq('fanmarks.status', 'active') as { 
+        data: Array<{
+          id: string;
+          fanmark_id: string;
+          user_id: string;
+          license_end: string;
+          fanmarks: {
+            id: string;
+            emoji_combination: string;
+            status: string;
+          };
+        }> | null;
+        error: any;
+      };
 
     // Find licenses in grace period that need to be fully expired
     const { data: graceExpiredLicenses, error: graceExpiredError } = await supabase
@@ -66,7 +79,20 @@ serve(async (req) => {
       `)
       .eq('status', 'grace')
       .lt('license_end', graceDeadline.toISOString())
-      .eq('fanmarks.status', 'active');
+      .eq('fanmarks.status', 'active') as { 
+        data: Array<{
+          id: string;
+          fanmark_id: string;
+          user_id: string;
+          license_end: string;
+          fanmarks: {
+            id: string;
+            emoji_combination: string;
+            status: string;
+          };
+        }> | null;
+        error: any;
+      };
 
     if (justExpiredError || graceExpiredError) {
       console.error('Error fetching expired licenses:', justExpiredError || graceExpiredError);
