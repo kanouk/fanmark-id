@@ -501,7 +501,36 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_fanmark_profiles: {
+        Row: {
+          bio: string | null
+          created_at: string | null
+          display_name: string | null
+          fanmark_id: string | null
+          social_links: Json | null
+          theme_settings: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          fanmark_id?: string | null
+          social_links?: Json | null
+          theme_settings?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          fanmark_id?: string | null
+          social_links?: Json | null
+          theme_settings?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       check_fanmark_availability: {
@@ -565,12 +594,9 @@ export type Database = {
           created_at: string
           display_name: string
           fanmark_id: string
-          id: string
-          is_public: boolean
           social_links: Json
           theme_settings: Json
           updated_at: string
-          user_id: string
         }[]
       }
       get_public_fanmark_profile: {
