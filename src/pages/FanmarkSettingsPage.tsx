@@ -65,7 +65,6 @@ const FanmarkSettingsPage = () => {
         target_url: fanmarkData.target_url ?? undefined,
         text_content: fanmarkData.text_content ?? undefined,
         is_password_protected: fanmarkData.is_password_protected ?? false,
-        access_password: fanmarkData.access_password ?? undefined,
         status: fanmarkData.status,
         short_id: fanmarkData.short_id,
       });

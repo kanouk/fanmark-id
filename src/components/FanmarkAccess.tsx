@@ -18,7 +18,6 @@ interface FanmarkData {
   text_content?: string;
   status: string;
   is_password_protected?: boolean;
-  access_password?: string;
 }
 
 export const FanmarkAccess = () => {

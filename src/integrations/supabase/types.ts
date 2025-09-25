@@ -519,7 +519,6 @@ export type Database = {
       get_fanmark_by_emoji: {
         Args: { emoji_combo: string }
         Returns: {
-          access_password: string
           access_type: string
           emoji_combination: string
           fanmark_name: string
@@ -533,7 +532,6 @@ export type Database = {
       get_fanmark_complete_data: {
         Args: { emoji_combo_param?: string; fanmark_id_param?: string }
         Returns: {
-          access_password: string
           access_type: string
           created_at: string
           current_owner_id: string
@@ -605,9 +603,21 @@ export type Database = {
         Args: { fanmark_license_id: string }
         Returns: boolean
       }
+      is_fanmark_password_protected: {
+        Args: { fanmark_uuid: string }
+        Returns: boolean
+      }
       is_super_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      upsert_fanmark_password_config: {
+        Args: {
+          enable_password: boolean
+          fanmark_uuid: string
+          new_password: string
+        }
+        Returns: string
       }
       use_invitation_code: {
         Args: { code_to_use: string }
@@ -624,6 +634,10 @@ export type Database = {
           remaining_uses: number
           special_perks: Json
         }[]
+      }
+      verify_fanmark_password: {
+        Args: { fanmark_uuid: string; provided_password: string }
+        Returns: boolean
       }
     }
     Enums: {

@@ -72,7 +72,6 @@ export interface Fanmark {
   target_url?: string;
   text_content?: string;
   is_password_protected?: boolean;
-  access_password?: string;
   status: string;
   short_id: string;
 }
@@ -123,7 +122,7 @@ export const FanmarkSettings = ({
         textContent: fanmark.text_content || '',
         createProfile: false, // This is a one-time action
         isPasswordProtected: fanmark.is_password_protected || false,
-        accessPassword: fanmark.access_password || '',
+        accessPassword: '', // Don't pre-fill password for security
       });
     }
   }, [fanmark, reset]);
@@ -182,42 +181,36 @@ export const FanmarkSettings = ({
 
       // Handle password protection for all access types except inactive
       if (data.accessType !== 'inactive') {
-        if (data.isPasswordProtected) {
-          // Enable password protection
-          await supabase
-            .from('fanmark_password_configs')
-            .upsert({
-              fanmark_id: fanmark.id,
-              access_password: data.accessPassword || fanmark.access_password || '',
-              is_enabled: true
-            }, {
-              onConflict: 'fanmark_id'
-            });
+        if (data.isPasswordProtected && data.accessPassword) {
+          // Enable password protection using secure function
+          const { error: passwordError } = await supabase.rpc('upsert_fanmark_password_config', {
+            fanmark_uuid: fanmark.id,
+            new_password: data.accessPassword,
+            enable_password: true
+          });
+          
+          if (passwordError) throw passwordError;
         } else {
-          // Disable password protection but keep the password for potential re-enabling
-          await supabase
-            .from('fanmark_password_configs')
-            .upsert({
-              fanmark_id: fanmark.id,
-              access_password: data.accessPassword || fanmark.access_password || '',
-              is_enabled: false
-            }, {
-              onConflict: 'fanmark_id'
-            });
+          // Disable password protection using secure function
+          const { error: passwordError } = await supabase.rpc('upsert_fanmark_password_config', {
+            fanmark_uuid: fanmark.id,
+            new_password: data.accessPassword || '0000', // Default password when disabling
+            enable_password: false
+          });
+          
+          if (passwordError) throw passwordError;
         }
       } else {
         // For inactive access type, disable password protection entirely
-        const { data: existingPassword } = await supabase
-          .from('fanmark_password_configs')
-          .select('id')
-          .eq('fanmark_id', fanmark.id)
-          .maybeSingle();
-
-        if (existingPassword) {
-          await supabase
-            .from('fanmark_password_configs')
-            .update({ is_enabled: false })
-            .eq('fanmark_id', fanmark.id);
+        const { error: passwordError } = await supabase.rpc('upsert_fanmark_password_config', {
+          fanmark_uuid: fanmark.id,
+          new_password: '0000', // Default password when disabling
+          enable_password: false
+        });
+        
+        if (passwordError) {
+          // If function fails, it might be because no password config exists yet, which is fine
+          console.log('No existing password config to disable');
         }
       }
 

@@ -6,11 +6,12 @@ import { toast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Lock } from 'lucide-react';
 import { LanguageToggle } from '@/components/LanguageToggle';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PasswordProtectionProps {
   fanmark: {
+    id: string;
     emoji_combination: string;
-    access_password?: string;
   };
   onSuccess: () => void;
 }
@@ -24,15 +25,40 @@ export const PasswordProtection = ({ fanmark, onSuccess }: PasswordProtectionPro
 
   useEffect(() => {
     if (password.length === 4) {
-      if (password === fanmark.access_password) {
-        onSuccess();
-      } else {
-        setIsShaking(true);
-        setPassword('');
-        setTimeout(() => setIsShaking(false), 500);
-      }
+      // Use secure password verification function
+      const verifyPassword = async () => {
+        try {
+          const { data: isValid, error } = await supabase.rpc('verify_fanmark_password', {
+            fanmark_uuid: fanmark.id,
+            provided_password: password
+          });
+
+          if (error) {
+            console.error('Password verification error:', error);
+            setIsShaking(true);
+            setPassword('');
+            setTimeout(() => setIsShaking(false), 500);
+            return;
+          }
+
+          if (isValid) {
+            onSuccess();
+          } else {
+            setIsShaking(true);
+            setPassword('');
+            setTimeout(() => setIsShaking(false), 500);
+          }
+        } catch (error) {
+          console.error('Password verification failed:', error);
+          setIsShaking(true);
+          setPassword('');
+          setTimeout(() => setIsShaking(false), 500);
+        }
+      };
+
+      verifyPassword();
     }
-  }, [password, fanmark.access_password, onSuccess]);
+  }, [password, fanmark.id, onSuccess]);
 
   useEffect(() => {
     // コンポーネントがマウントされた時にOTP入力にフォーカスを当てる
