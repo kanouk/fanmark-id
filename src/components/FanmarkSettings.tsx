@@ -118,7 +118,7 @@ export const FanmarkSettings = ({
     if (fanmark) {
       reset({
         accessType: fanmark.access_type,
-        fanmarkName: fanmark.fanmark_name || '',
+        fanmarkName: fanmark.fanmark_name || t('fanmarkSettings.summary.defaultName'),
         targetUrl: fanmark.target_url || '',
         textContent: fanmark.text_content || '',
         createProfile: false, // This is a one-time action

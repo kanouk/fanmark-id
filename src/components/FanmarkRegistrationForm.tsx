@@ -60,7 +60,7 @@ export const FanmarkRegistrationForm = ({
     defaultValues: {
       emojiCombination: prefilledEmoji || '',
       accessType: 'inactive',
-      displayName: '',
+      displayName: t('fanmarkSettings.summary.defaultName'),
       targetUrl: '',
       textContent: '',
       createProfile: false,
