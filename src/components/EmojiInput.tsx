@@ -30,6 +30,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [isAnimating, setIsAnimating] = useState<boolean>(false);
 
   const splitGraphemes = useCallback(
     (text: string) => {
@@ -76,15 +77,27 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
   const handleReorder = useCallback(
     (fromIndex: number, toIndex: number) => {
       if (fromIndex === toIndex) return;
-      const currentSegments = [...segments];
-      const [movedEmoji] = currentSegments.splice(fromIndex, 1);
-      if (!movedEmoji) {
-        return;
-      }
-      const clampedIndex = Math.min(toIndex, currentSegments.length);
-      currentSegments.splice(clampedIndex, 0, movedEmoji);
-      updateValue(currentSegments);
-      setActiveIndex(null);
+
+      setIsAnimating(true);
+
+      // Smooth animation delay before reordering
+      setTimeout(() => {
+        const currentSegments = [...segments];
+        const [movedEmoji] = currentSegments.splice(fromIndex, 1);
+        if (!movedEmoji) {
+          setIsAnimating(false);
+          return;
+        }
+        const clampedIndex = Math.min(toIndex, currentSegments.length);
+        currentSegments.splice(clampedIndex, 0, movedEmoji);
+        updateValue(currentSegments);
+        setActiveIndex(null);
+
+        // Reset animation state after reorder completes
+        setTimeout(() => {
+          setIsAnimating(false);
+        }, 150);
+      }, 0);
     },
     [segments, updateValue]
   );
@@ -149,6 +162,11 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
     setDraggedIndex(null);
     setDragOverIndex(null);
     setIsDragging(false);
+
+    // Clear animation state after a brief delay
+    setTimeout(() => {
+      setIsAnimating(false);
+    }, 200);
   }, []);
 
   const handleSelect = (index: number, emoji: string) => {
@@ -189,9 +207,9 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
   const hasValue = segments.length > 0;
 
   return (
-    <div className={`flex w-full items-center gap-5 ${className}`}>
+    <div className={`flex w-full items-center gap-2 sm:gap-5 ${className}`}>
       <div className="flex flex-1" />
-      <div className="flex flex-wrap justify-center gap-4">
+      <div className="flex flex-wrap justify-center gap-2 sm:gap-4 transition-all duration-300 ease-out">
         {slots.map((_, index) => {
           const emoji = segments[index];
           const isActive = activeIndex === index;
@@ -207,7 +225,10 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
                 if (draggedIndex !== null) return;
                 handleOpenChange(index, true);
               }}
-              className={`flex h-16 w-16 items-center justify-center rounded-2xl border text-4xl transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${emoji ? 'border-primary/40 bg-primary/5' : 'border-dashed border-primary/20 text-muted-foreground hover:border-primary/40 hover:text-primary'} ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${isDragging ? 'ring-2 ring-primary/50' : ''} ${isDragTarget ? 'border-primary/60 bg-primary/10' : ''}`}
+              className={`flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl border text-2xl sm:text-4xl transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${emoji ? 'border-primary/40 bg-primary/5' : 'border-dashed border-primary/20 text-muted-foreground hover:border-primary/40 hover:text-primary'} ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${isDragging ? 'ring-2 ring-primary/50 scale-105 shadow-lg z-10 opacity-80' : ''} ${isDragTarget && !isDragging ? 'border-primary/60 bg-primary/10 scale-105' : ''}`}
+              style={{
+                zIndex: isDragging ? 10 : 1,
+              }}
               draggable={!disabled && Boolean(emoji)}
               onDragStart={(event) => handleDragStart(event, index)}
               onDragOver={(event) => handleDragOver(event, index)}
@@ -215,12 +236,12 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
               onDragLeave={() => handleDragLeave(index)}
               onDragEnd={handleDragEnd}
             >
-              {emoji ? emoji : <Plus className="h-7 w-7" />}
+              {emoji ? emoji : <Plus className="h-5 w-5 sm:h-7 sm:w-7" />}
             </button>
           );
 
           return (
-            <div key={index} className="group relative">
+            <div key={index} className="group relative transition-all duration-200 ease-out">
               <Popover
                 open={isActive}
                 onOpenChange={(open) => handleOpenChange(index, open)}
@@ -269,16 +290,16 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
                 <button
                   type="button"
                   onClick={() => handleRemove(index)}
-                  className="absolute -top-2 -right-2 hidden h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground transition hover:scale-105 group-hover:flex"
+                  className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 hidden h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground transition hover:scale-105 group-hover:flex"
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                 </button>
               )}
             </div>
           );
         })}
       </div>
-      <div className="flex flex-1 justify-end gap-3">
+      <div className="flex flex-1 justify-end gap-2 sm:gap-3">
         <Button
           type="button"
           variant="ghost"
@@ -286,9 +307,9 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
           disabled={disabled || !hasValue}
           onClick={handleClear}
           aria-label={t('common.clearAll')}
-          className="h-12 w-12 rounded-full border border-primary/20 text-muted-foreground transition hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
+          className="h-10 w-10 sm:h-12 sm:w-12 rounded-full border border-primary/20 text-muted-foreground transition hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
         >
-          <Eraser className="h-5 w-5" />
+          <Eraser className="h-4 w-4 sm:h-5 sm:w-5" />
         </Button>
         <Button
           type="button"
@@ -297,9 +318,9 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
           aria-label={t('common.aiRecommendationComingSoon')}
           title={t('common.aiRecommendationDescription')}
           disabled
-          className="h-12 w-12 rounded-full border border-primary/20 text-primary"
+          className="h-10 w-10 sm:h-12 sm:w-12 rounded-full border border-primary/20 text-primary"
         >
-          <Sparkles className="h-5 w-5" />
+          <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />
         </Button>
       </div>
     </div>

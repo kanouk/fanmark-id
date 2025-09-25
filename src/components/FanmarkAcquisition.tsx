@@ -188,24 +188,22 @@ export const FanmarkAcquisition = ({
             initialQuery={prefilledEmoji}
           />
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-            <div className="flex flex-col gap-2 items-end">
-              <Button
-                size="lg"
-                className="rounded-full px-6"
-                onClick={handleAcquireRequest}
-                disabled={!searchResult || !isResultAcquirable || remainingCapacity <= 0}
-              >
-                {user ? t('dashboard.acquireButton') : t('dashboard.acquireLoginButton')}
-              </Button>
-              
-              <div className="min-h-[2.5rem] flex items-center">
-                {searchResult?.status === 'available' && user && remainingCapacity <= 0 && (
-                  <div className="text-red-500 text-sm text-center">
-                    {t('dashboard.acquireLimitReachedDescription')}
-                  </div>
-                )}
-              </div>
+          <div className="flex flex-col gap-3 items-center">
+            <Button
+              size="lg"
+              className="rounded-full px-6"
+              onClick={handleAcquireRequest}
+              disabled={!searchResult || !isResultAcquirable || remainingCapacity <= 0}
+            >
+              {user ? t('dashboard.acquireButton') : t('dashboard.acquireLoginButton')}
+            </Button>
+
+            <div className="min-h-[2.5rem] flex items-center justify-center">
+              {searchResult?.status === 'available' && user && remainingCapacity <= 0 && (
+                <div className="text-red-500 text-sm text-center">
+                  {t('dashboard.acquireLimitReachedDescription')}
+                </div>
+              )}
             </div>
           </div>
         </CardContent>

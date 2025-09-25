@@ -320,7 +320,7 @@
     "acquireFailedTitle": "Could not obtain fanmark",
     "acquireFailedDescription": "Please try again in a moment.",
     "acquireLimitReachedTitle": "You've reached the limit",
-    "acquireLimitReachedDescription": "Free up a slot by releasing or transferring a fanmark.",
+    "acquireLimitReachedDescription": "Fanmark slots are full",
     "paymentRequiredMessage": "This fanmark requires payment.",
     "paymentRequiredTitle": "Payment required",
     "paymentRequiredDescription": "This fanmark requires payment to obtain.",

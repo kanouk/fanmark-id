@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useTranslation } from '@/hooks/useTranslation';
 import { UserProfileForm } from '@/components/UserProfileForm';
-import { Navigation } from '@/components/Navigation';
+import { LanguageToggle } from '@/components/LanguageToggle';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -36,7 +36,23 @@ const Profile = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      <Navigation />
+      {/* Header Navigation */}
+      <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
+        <div className="container mx-auto flex items-center justify-between px-4 py-4 md:px-6">
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="group flex items-center gap-2 text-lg font-semibold text-foreground transition-transform hover:translate-y-[-1px]"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
+              ✨
+            </span>
+            <span className="text-gradient text-2xl">fanmark.id</span>
+          </button>
+
+          <LanguageToggle />
+        </div>
+      </header>
       <main className="flex-1">
         <section className="container mx-auto px-4 py-12">
           <div className="space-y-10">
