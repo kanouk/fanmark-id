@@ -153,6 +153,21 @@ export function useFanmarkSearch() {
     };
   };
 
+  // Split text into proper grapheme clusters (complex emojis as single units)
+  const splitGraphemes = (text: string): string[] => {
+    if (!text) return [];
+    
+    // Use Intl.Segmenter for accurate grapheme cluster splitting if available
+    if (typeof Intl !== 'undefined' && (Intl as any).Segmenter) {
+      const segmenter = new (Intl as any).Segmenter('en', { granularity: 'grapheme' });
+      return Array.from(segmenter.segment(text), (segment: any) => segment.segment);
+    }
+    
+    // Fallback: Advanced regex for complex emoji support
+    const complexEmojiRegex = /\p{Extended_Pictographic}(?:\p{Emoji_Modifier}|\uFE0F|\u200D(?:\p{Extended_Pictographic}|\p{Emoji_Modifier}))*|\p{Regional_Indicator}{2}|./gu;
+    return text.match(complexEmojiRegex) || [];
+  };
+
   // Validate emoji input - strict emoji-only validation
   const validateEmojiInput = (input: string): { valid: boolean; error?: string; emojiCount: number } => {
     if (!input || input.trim().length === 0) {
@@ -167,16 +182,11 @@ export function useFanmarkSearch() {
       return { valid: false, error: t('search.validationError'), emojiCount: 0 };
     }
 
-    // Count emoji characters - use simple array spread for better compatibility
-    const emojiArray = [...cleanInput];
-    const emojiCount = emojiArray.filter((char) => {
-      if (!EMOJI_CHARACTER_REGEX.test(char)) {
-        return false;
-      }
-      if (SKIN_TONE_MODIFIER_REGEX.test(char)) {
-        return false;
-      }
-      return !COMBINING_CHARACTERS.has(char);
+    // Count emojis using proper grapheme segmentation
+    const emojiGraphemes = splitGraphemes(cleanInput);
+    const emojiCount = emojiGraphemes.filter((grapheme) => {
+      // Check if the grapheme contains emoji characters
+      return /\p{Emoji}/u.test(grapheme);
     }).length;
     
     if (emojiCount < 1 || emojiCount > 5) {

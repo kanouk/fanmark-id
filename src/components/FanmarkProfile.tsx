@@ -67,7 +67,6 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
 
           console.log('✅ Profile loaded successfully in', loadTime, 'ms');
           console.log('📊 Profile data:', {
-            id: profile?.id,
             fanmark_id: profile?.fanmark_id,
             display_name: profile?.display_name,
             bio: profile?.bio,

@@ -16,9 +16,8 @@ export interface EmojiProfile {
   updated_at: string;
 }
 
-// Public interface for emoji profile (without user_id for security)
+// Public interface for emoji profile (without user_id and id for security)
 export interface PublicEmojiProfile {
-  id: string;
   fanmark_id: string;
   display_name?: string;
   bio?: string;

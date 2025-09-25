@@ -31,16 +31,25 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
 
-  const segmenter = useMemo(() => {
-    // Use fallback for better browser compatibility
-    return null;
-  }, []);
-
   const splitGraphemes = useCallback(
     (text: string) => {
       if (!text) return [] as string[];
-      // Use simple Array.from for better compatibility
-      return Array.from(text);
+      
+      // Use Intl.Segmenter for accurate grapheme cluster splitting if available
+      if (typeof Intl !== 'undefined' && (Intl as any).Segmenter) {
+        const segmenter = new (Intl as any).Segmenter('en', { granularity: 'grapheme' });
+        return Array.from(segmenter.segment(text), (segment: any) => segment.segment);
+      }
+      
+      // Fallback: Advanced regex for complex emoji support
+      // This regex handles:
+      // - Extended pictographic characters (most emojis)
+      // - Skin tone modifiers
+      // - Variation selectors (like ️)
+      // - Zero-width joiners for compound emojis
+      // - Regional indicator symbols for flags
+      const complexEmojiRegex = /\p{Extended_Pictographic}(?:\p{Emoji_Modifier}|\uFE0F|\u200D(?:\p{Extended_Pictographic}|\p{Emoji_Modifier}))*|\p{Regional_Indicator}{2}|./gu;
+      return text.match(complexEmojiRegex) || [];
     },
     []
   );
