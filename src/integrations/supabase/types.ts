@@ -501,36 +501,7 @@ export type Database = {
       }
     }
     Views: {
-      public_fanmark_profiles: {
-        Row: {
-          bio: string | null
-          created_at: string | null
-          display_name: string | null
-          fanmark_id: string | null
-          social_links: Json | null
-          theme_settings: Json | null
-          updated_at: string | null
-        }
-        Insert: {
-          bio?: string | null
-          created_at?: string | null
-          display_name?: string | null
-          fanmark_id?: string | null
-          social_links?: Json | null
-          theme_settings?: Json | null
-          updated_at?: string | null
-        }
-        Update: {
-          bio?: string | null
-          created_at?: string | null
-          display_name?: string | null
-          fanmark_id?: string | null
-          social_links?: Json | null
-          theme_settings?: Json | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       check_fanmark_availability: {
