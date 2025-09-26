@@ -220,7 +220,7 @@ export const FanmarkAcquisition = ({
                 onClick={handleVisitFanmark}
               >
                 <ExternalLink className="h-4 w-4" />
-                このファンマへ移動する
+                {t('dashboard.visitFanmarkButton')}
               </Button>
             )}
 

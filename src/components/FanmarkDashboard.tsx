@@ -286,7 +286,7 @@ export const FanmarkDashboard = () => {
     }
 
     return (
-      <Badge className={`${className} inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide`}>
+      <Badge className={`${className} inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide whitespace-nowrap`}>
         {icon}
         <span>{label}</span>
       </Badge>
@@ -336,7 +336,7 @@ export const FanmarkDashboard = () => {
     }
 
     return (
-      <Badge className={`${className} inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide`}>
+      <Badge className={`${className} inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide whitespace-nowrap`}>
         {icon}
         <span>{label}</span>
       </Badge>
@@ -547,13 +547,23 @@ export const FanmarkDashboard = () => {
                                 <tr key={fanmark.id} className={`border-b border-primary/5 transition-all duration-200 hover:bg-primary/5 hover:shadow-sm ${isFanmarkInactive(fanmark) ? 'opacity-60 bg-muted/10' : ''}`}>
                                       <td className="px-6 py-5">
                                         <div className="min-h-[2.5rem] flex items-center">
-                                          <div className={`flex items-center px-4 py-3 rounded-full shadow-sm transition-transform hover:scale-105 whitespace-nowrap ${getTierOvalStyle(fanmark.tier_level || 1)}`}>
-                                            <span className="text-2xl tracking-[0.05em] leading-none">{fanmark.emoji_combination}</span>
+                                          <div
+                                            className={`flex items-center px-4 py-3 rounded-full shadow-sm transition-transform hover:scale-105 whitespace-nowrap cursor-pointer ${getTierOvalStyle(fanmark.tier_level || 1)}`}
+                                            onClick={() => {
+                                              navigator.clipboard.writeText(fanmark.emoji_combination);
+                                              toast({
+                                                title: t('dashboard.emojiCopiedTitle'),
+                                                description: fanmark.emoji_combination,
+                                              });
+                                            }}
+                                            title={t('dashboard.clickToCopyEmoji')}
+                                          >
+                                            <span className="text-2xl tracking-[0.05em] leading-none select-none">{fanmark.emoji_combination}</span>
                                           </div>
                                         </div>
                                      </td>
                                 <td className="px-6 py-5">
-                                  <div className="min-h-[2.5rem] flex items-center">
+                                  <div className="min-h-[2.5rem] flex items-center min-w-fit">
                                     {getAccessTypeBadge(fanmark.access_type)}
                                   </div>
                                 </td>
@@ -625,12 +635,12 @@ export const FanmarkDashboard = () => {
                                    </div>
                                  </td>
                                  <td className="px-6 py-5">
-                                   <div className="min-h-[2.5rem] flex items-center">
+                                   <div className="min-h-[2.5rem] flex items-center min-w-fit">
                                      {getStatusBadge(licenseData?.status)}
                                    </div>
                                  </td>
                                   <td className="px-6 py-5">
-                                    <div className="min-h-[2.5rem] flex items-center">
+                                    <div className="min-h-[2.5rem] flex items-center gap-2">
                                        <Tooltip>
                                          <TooltipTrigger asChild>
                                            <Button
@@ -638,10 +648,28 @@ export const FanmarkDashboard = () => {
                                              variant="ghost"
                                              className="h-9 w-9 p-0 rounded-full hover:bg-primary/10 transition-colors"
                                              onClick={() => {
-                                               navigator.clipboard.writeText(`https://fanmark.id/${fanmark.emoji_combination}`);
+                                               window.open(`/${fanmark.emoji_combination}`, '_blank', 'noopener,noreferrer');
+                                             }}
+                                             aria-label="ファンマに移動"
+                                           >
+                                              <ExternalLink className="h-4 w-4" />
+                                           </Button>
+                                         </TooltipTrigger>
+                                         <TooltipContent>{t('dashboard.visitFanmarkTooltip')}</TooltipContent>
+                                       </Tooltip>
+                                       <Tooltip>
+                                         <TooltipTrigger asChild>
+                                           <Button
+                                             size="sm"
+                                             variant="ghost"
+                                             className="h-9 w-9 p-0 rounded-full hover:bg-primary/10 transition-colors"
+                                             onClick={() => {
+                                               const currentOrigin = window.location.origin;
+                                               const fullUrl = `${currentOrigin}/${fanmark.emoji_combination}`;
+                                               navigator.clipboard.writeText(fullUrl);
                                                toast({
-                                                 title: "コピーしました",
-                                                 description: `https://fanmark.id/${fanmark.emoji_combination}`,
+                                                 title: t('dashboard.urlCopiedTitle'),
+                                                 description: fullUrl,
                                                });
                                              }}
                                              aria-label="ファンマをコピー"
@@ -697,14 +725,28 @@ export const FanmarkDashboard = () => {
                             <CardContent className="p-5">
                               <div className="space-y-3">
                                  <div className="flex items-start justify-between">
-                                    <div className={`flex items-center px-3 py-2 rounded-full ${getTierOvalStyle(fanmark.tier_level || 1)}`}>
-                                      <span className="text-3xl tracking-[0.05em] leading-none">{fanmark.emoji_combination}</span>
+                                    <div
+                                      className={`flex items-center px-3 py-2 rounded-full cursor-pointer hover:scale-105 transition-transform ${getTierOvalStyle(fanmark.tier_level || 1)}`}
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(fanmark.emoji_combination);
+                                        toast({
+                                          title: t('dashboard.emojiCopiedTitle'),
+                                          description: fanmark.emoji_combination,
+                                        });
+                                      }}
+                                      title={t('dashboard.clickToCopyEmoji')}
+                                    >
+                                      <span className="text-3xl tracking-[0.05em] leading-none select-none">{fanmark.emoji_combination}</span>
                                     </div>
                                  </div>
 
-                                 <div className="flex items-center justify-between">
-                                   {getAccessTypeBadge(fanmark.access_type)}
-                                   {getStatusBadge(licenseData?.status)}
+                                 <div className="flex items-center justify-between gap-2">
+                                   <div className="flex-shrink-0">
+                                     {getAccessTypeBadge(fanmark.access_type)}
+                                   </div>
+                                   <div className="flex-shrink-0">
+                                     {getStatusBadge(licenseData?.status)}
+                                   </div>
                                  </div>
 
                                 {/* Date Information */}
@@ -799,10 +841,28 @@ export const FanmarkDashboard = () => {
                                              variant="ghost"
                                              className="h-8 w-8 p-0 hover:bg-secondary"
                                              onClick={() => {
-                                               navigator.clipboard.writeText(`https://fanmark.id/${fanmark.emoji_combination}`);
+                                               window.open(`/${fanmark.emoji_combination}`, '_blank', 'noopener,noreferrer');
+                                             }}
+                                             aria-label="ファンマに移動"
+                                           >
+                                              <ExternalLink className="h-4 w-4" />
+                                           </Button>
+                                         </TooltipTrigger>
+                                         <TooltipContent>{t('dashboard.visitFanmarkTooltip')}</TooltipContent>
+                                       </Tooltip>
+                                       <Tooltip>
+                                         <TooltipTrigger asChild>
+                                           <Button
+                                             size="sm"
+                                             variant="ghost"
+                                             className="h-8 w-8 p-0 hover:bg-secondary"
+                                             onClick={() => {
+                                               const currentOrigin = window.location.origin;
+                                               const fullUrl = `${currentOrigin}/${fanmark.emoji_combination}`;
+                                               navigator.clipboard.writeText(fullUrl);
                                                toast({
-                                                 title: "コピーしました",
-                                                 description: `https://fanmark.id/${fanmark.emoji_combination}`,
+                                                 title: t('dashboard.urlCopiedTitle'),
+                                                 description: fullUrl,
                                                });
                                              }}
                                              aria-label="ファンマをコピー"

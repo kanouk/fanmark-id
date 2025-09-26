@@ -321,6 +321,7 @@
     "acquireFailedDescription": "Please try again in a moment.",
     "acquireLimitReachedTitle": "You've reached the limit",
     "acquireLimitReachedDescription": "Fanmark slots are full",
+    "visitFanmarkButton": "Visit this fanmark",
     "paymentRequiredMessage": "This fanmark requires payment.",
     "paymentRequiredTitle": "Payment required",
     "paymentRequiredDescription": "This fanmark requires payment to obtain.",
@@ -387,7 +388,11 @@
     "returnDate": "Return Date",
     "remainingDays": "Days Left",
     "returned": "Returned",
-    "copyFanmarkLink": "Copy fanmark link"
+    "copyFanmarkLink": "Copy fanmark link",
+    "emojiCopiedTitle": "Emoji copied",
+    "urlCopiedTitle": "Copied",
+    "visitFanmarkTooltip": "Visit fanmark",
+    "clickToCopyEmoji": "Click to copy emoji"
   },
   "registration": {
     "title": "Obtain Your Fanmark",

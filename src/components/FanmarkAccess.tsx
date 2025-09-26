@@ -103,7 +103,7 @@ export const FanmarkAccess = () => {
         
         // 成功後、URLを統一された形式に更新（ブラウザ履歴を置き換え）
         const currentPath = window.location.pathname;
-        const expectedPath = `/emoji/${normalizedEmoji}`;
+        const expectedPath = `/${normalizedEmoji}`;
         if (currentPath !== expectedPath) {
           window.history.replaceState(null, '', expectedPath);
           console.log('🔄 URL normalized in address bar:', { from: currentPath, to: expectedPath });

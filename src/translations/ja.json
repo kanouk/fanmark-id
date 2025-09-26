@@ -321,6 +321,7 @@
     "acquireFailedDescription": "時間を置いて再度お試しください。",
     "acquireLimitReachedTitle": "取得上限に達しています",
     "acquireLimitReachedDescription": "ファンマの枠がいっぱいです",
+    "visitFanmarkButton": "このファンマへ移動する",
     "paymentRequiredMessage": "このファンマは有料です。",
     "paymentRequiredTitle": "支払いが必要です",
     "paymentRequiredDescription": "このファンマの取得には支払いが必要です。",
@@ -386,7 +387,11 @@
     "returnSuccess": "ファンマを返却しました",
     "returnSuccessDescription": "ファンマの返却が完了しました。",
     "returnError": "返却に失敗しました",
-    "returnErrorDescription": "しばらく時間を置いてから再度お試しください。"
+    "returnErrorDescription": "しばらく時間を置いてから再度お試しください。",
+    "emojiCopiedTitle": "絵文字をコピーしました",
+    "urlCopiedTitle": "コピーしました",
+    "visitFanmarkTooltip": "ファンマに移動",
+    "clickToCopyEmoji": "クリックして絵文字をコピー"
   },
   "registration": {
     "title": "ファンマを登録",
