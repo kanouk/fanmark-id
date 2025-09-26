@@ -637,13 +637,12 @@ export const FanmarkDashboard = () => {
                                              size="sm"
                                              variant="ghost"
                                              className="h-9 w-9 p-0 rounded-full hover:bg-primary/10 transition-colors"
-                                              onClick={() => {
-                                                const encodedEmoji = encodeURIComponent(fanmark.emoji_combination);
-                                                navigator.clipboard.writeText(`https://fanmark.id/${encodedEmoji}`);
-                                                toast({
-                                                  title: "コピーしました",
-                                                  description: `https://fanmark.id/${fanmark.emoji_combination}`,
-                                                });
+                                             onClick={() => {
+                                               navigator.clipboard.writeText(`https://fanmark.id/${fanmark.emoji_combination}`);
+                                               toast({
+                                                 title: "コピーしました",
+                                                 description: `https://fanmark.id/${fanmark.emoji_combination}`,
+                                               });
                                              }}
                                              aria-label="ファンマをコピー"
                                            >
@@ -799,12 +798,11 @@ export const FanmarkDashboard = () => {
                                              size="sm"
                                              variant="ghost"
                                              className="h-8 w-8 p-0 hover:bg-secondary"
-                                              onClick={() => {
-                                                const encodedEmoji = encodeURIComponent(fanmark.emoji_combination);
-                                                navigator.clipboard.writeText(`https://fanmark.id/${encodedEmoji}`);
-                                                toast({
-                                                  title: "コピーしました",
-                                                  description: `https://fanmark.id/${fanmark.emoji_combination}`,
+                                             onClick={() => {
+                                               navigator.clipboard.writeText(`https://fanmark.id/${fanmark.emoji_combination}`);
+                                               toast({
+                                                 title: "コピーしました",
+                                                 description: `https://fanmark.id/${fanmark.emoji_combination}`,
                                                });
                                              }}
                                              aria-label="ファンマをコピー"

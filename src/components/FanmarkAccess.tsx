@@ -20,27 +20,41 @@ interface FanmarkData {
   is_password_protected?: boolean;
 }
 
-const safeDecodeEmojiPath = (path: string): string => {
+const normalizeEmojiPath = (path: string): string => {
   if (!path) return '';
   
-  console.log('🔍 Decoding emoji path:', { original: path, length: path.length });
+  console.log('🔍 Normalizing emoji path:', { original: path, length: path.length });
   
   try {
-    // 既にデコードされている場合はそのまま返す
-    const decoded = decodeURIComponent(path);
-    const isAlreadyDecoded = path === decoded;
+    // Step 1: 安全なデコード（エンコード判定つき）
+    let decoded = path;
+    try {
+      const testDecode = decodeURIComponent(path);
+      if (testDecode !== path) {
+        decoded = testDecode;
+        console.log('📝 Decoded from percent-encoding:', { decoded });
+      }
+    } catch {
+      // デコードエラーの場合はそのまま使用
+    }
     
-    console.log('📝 Decode result:', { 
-      decoded, 
-      isAlreadyDecoded, 
-      decodedLength: decoded.length,
-      originalLength: path.length
+    // Step 2: Unicode NFC 正規化
+    const normalized = decoded.normalize('NFC');
+    
+    // Step 3: 連続する Variation Selector-16 (U+FE0F) を単一化
+    const cleanedUp = normalized.replace(/\uFE0F+/g, '\uFE0F');
+    
+    console.log('✨ Final normalized emoji:', { 
+      original: path,
+      decoded,
+      normalized,
+      cleanedUp,
+      finalLength: cleanedUp.length
     });
     
-    return isAlreadyDecoded ? path : decoded;
+    return cleanedUp;
   } catch (error) {
-    console.error('❌ Emoji decode error:', error, { path });
-    // エラー時は元の値を返す
+    console.error('❌ Emoji normalization error:', error, { path });
     return path;
   }
 };
@@ -63,13 +77,13 @@ export const FanmarkAccess = () => {
       }
 
       try {
-        // 安全なデコード処理を使用
-        const decodedEmoji = safeDecodeEmojiPath(emojiPath);
-        console.log('🎯 Final emoji for database query:', { decodedEmoji, length: decodedEmoji.length });
+        // 絵文字パスの正規化処理
+        const normalizedEmoji = normalizeEmojiPath(emojiPath);
+        console.log('🎯 Final emoji for database query:', { normalizedEmoji, length: normalizedEmoji.length });
         
         // Use the secure function to get only essential fanmark data
         const { data, error } = await supabase
-          .rpc('get_fanmark_by_emoji', { emoji_combo: decodedEmoji });
+          .rpc('get_fanmark_by_emoji', { emoji_combo: normalizedEmoji });
 
         if (error) {
           console.error('Database error:', error);
@@ -86,6 +100,14 @@ export const FanmarkAccess = () => {
 
         const fanmarkData = data[0] as FanmarkData;
         setFanmark(fanmarkData);
+        
+        // 成功後、URLを統一された形式に更新（ブラウザ履歴を置き換え）
+        const currentPath = window.location.pathname;
+        const expectedPath = `/emoji/${normalizedEmoji}`;
+        if (currentPath !== expectedPath) {
+          window.history.replaceState(null, '', expectedPath);
+          console.log('🔄 URL normalized in address bar:', { from: currentPath, to: expectedPath });
+        }
 
         // Immediately redirect if it's a redirect type without password protection
         if (fanmarkData.access_type === 'redirect' && 
