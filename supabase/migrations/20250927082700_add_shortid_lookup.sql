@@ -32,7 +32,7 @@ BEGIN
     LEFT JOIN fanmark_redirect_configs rc ON f.id = rc.fanmark_id
     LEFT JOIN fanmark_messageboard_configs mc ON f.id = mc.fanmark_id
     LEFT JOIN fanmark_password_configs pc ON f.id = pc.fanmark_id
-    WHERE f.emoji_combination = emoji_combo
+    WHERE f.normalized_emoji = emoji_combo
     AND f.status = 'active';
 END;
 $$;

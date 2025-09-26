@@ -70,21 +70,19 @@ export const normalizeEmojiPath = (path: string): string => {
       // デコードエラーの場合はそのまま使用
     }
 
-    // Step 2: Unicode NFC 正規化
-    const normalized = decoded.normalize('NFC');
+    // Step 2: Edge Functionと同じ正規化ロジック
+    // Remove skin tone modifiers (U+1F3FB-U+1F3FF) to match server-side normalization
+    const SKIN_TONE_MODIFIER_GLOBAL_REGEX = /\p{Emoji_Modifier}/gu;
+    const normalizedForDatabase = decoded.replace(SKIN_TONE_MODIFIER_GLOBAL_REGEX, '');
 
-    // Step 3: 連続する Variation Selector-16 (U+FE0F) を単一化
-    const cleanedUp = normalized.replace(/\uFE0F+/g, '\uFE0F');
-
-    console.log('✨ Final normalized emoji:', {
+    console.log('✨ Final normalized emoji (matches database):', {
       original: path,
       decoded,
-      normalized,
-      cleanedUp,
-      finalLength: cleanedUp.length
+      normalizedForDatabase,
+      finalLength: normalizedForDatabase.length
     });
 
-    return cleanedUp;
+    return normalizedForDatabase;
   } catch (error) {
     console.error('❌ Emoji normalization error:', error, { path });
     return path;
