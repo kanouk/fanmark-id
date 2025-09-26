@@ -12,7 +12,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useAvatarUpload } from '@/hooks/useAvatarUpload';
 import { useCoverImageUpload } from '@/hooks/useCoverImageUpload';
 import { EmojiProfile } from '@/hooks/useEmojiProfile';
-import { Loader2, Upload, X, Image as ImageIcon, FileText, Link, Shield, User } from 'lucide-react';
+import { Loader2, Upload, X, Image as ImageIcon, FileText, Link, Shield, User, Eye } from 'lucide-react';
 import { 
   FiInstagram, 
   FiTwitter, 
@@ -48,7 +48,6 @@ const profileSchema = z.object({
     theme_color: z.string().optional(),
     button_style: z.string().optional(),
   }).optional(),
-  is_public: z.boolean().default(false),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -58,6 +57,7 @@ interface EmojiProfileFormProps {
   onSave: (data: Partial<EmojiProfile>) => Promise<void>;
   isSubmitting: boolean;
   onClose: () => void;
+  onPreview?: () => void;
 }
 
 const socialPlatforms = [
@@ -72,7 +72,7 @@ const socialPlatforms = [
   { key: 'website', label: 'Website', icon: FiGlobe, placeholder: 'https://yourwebsite.com' },
 ];
 
-export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose }: EmojiProfileFormProps) => {
+export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose, onPreview }: EmojiProfileFormProps) => {
   const { t } = useTranslation();
   const { uploadAvatar, uploading } = useAvatarUpload();
   const { uploadCoverImage, uploading: coverUploading } = useCoverImageUpload();
@@ -347,7 +347,7 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose }: Emo
                   <Input
                     {...register('display_name')}
                     placeholder="あなたの名前"
-                    className="w-full h-10 text-sm rounded-xl border-2 border-border hover:border-primary/30 focus:border-primary transition-colors px-3"
+                    className="w-full h-10 text-sm rounded-xl border-2 border-border hover:border-primary/30 focus:border-primary transition-colors px-3 placeholder:text-muted-foreground/40"
                   />
                   {errors.display_name && (
                     <p className="text-xs text-destructive font-medium">{errors.display_name.message}</p>
@@ -363,7 +363,7 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose }: Emo
                   <Textarea
                     {...register('bio')}
                     placeholder="簡単な自己紹介..."
-                    className="min-h-[80px] resize-none text-sm rounded-xl border-2 border-border hover:border-primary/30 focus:border-primary transition-colors p-3 leading-relaxed"
+                    className="min-h-[80px] resize-none text-sm rounded-xl border-2 border-border hover:border-primary/30 focus:border-primary transition-colors p-3 leading-relaxed placeholder:text-muted-foreground/40"
                     maxLength={200}
                   />
                   {errors.bio && (
@@ -403,7 +403,7 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose }: Emo
                   <Input
                     {...register(`social_links.${platform.key as keyof ProfileFormData['social_links']}`)}
                     placeholder={platform.placeholder}
-                    className="w-full h-12 text-base rounded-2xl border-2 border-border hover:border-primary/30 focus:border-primary transition-colors px-4"
+                    className="w-full h-12 text-base rounded-2xl border-2 border-border hover:border-primary/30 focus:border-primary transition-colors px-4 placeholder:text-muted-foreground/40"
                   />
                   {errors.social_links?.[platform.key as keyof ProfileFormData['social_links']] && (
                     <p className="text-sm text-destructive font-medium">
@@ -417,50 +417,23 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose }: Emo
         </Card>
 
         {/* Privacy Settings */}
-        <Card className="rounded-3xl border border-primary/20 bg-background/90 shadow-[0_20px_45px_rgba(101,195,200,0.14)] backdrop-blur card-pop">
-          <CardHeader className="pb-6 px-10 pt-8 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-primary/10">
-                <Shield className="h-5 w-5 text-primary" />
-              </div>
-              <CardTitle className="text-lg font-semibold">プライバシー設定</CardTitle>
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              プロフィールの公開設定を選択してください
-            </p>
-          </CardHeader>
-          <CardContent className="p-10">
-            <div className="space-y-6">
-              <div className="flex items-start space-x-4 p-4 rounded-2xl bg-primary/5 border border-primary/10">
-                <Controller
-                  name="is_public"
-                  control={control}
-                  render={({ field }) => (
-                    <Checkbox
-                      id="is_public"
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      className="mt-1"
-                    />
-                  )}
-                />
-                <div className="space-y-2">
-                  <Label htmlFor="is_public" className="text-base font-medium cursor-pointer">
-                    プロフィールを公開する
-                  </Label>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    公開すると、他のユーザーがあなたのプロフィールを閲覧できるようになります
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </form>
 
       {/* Action Button */}
       <div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border/40 p-8 mt-12">
-        <div className="flex justify-center">
+        <div className="flex justify-center gap-4">
+          {onPreview && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isSubmitting}
+              className="px-8 h-12 text-base rounded-2xl border-primary/20 hover:border-primary/40 hover:bg-primary/5"
+              onClick={onPreview}
+            >
+              <Eye className="h-5 w-5 mr-2" />
+              {t('emojiProfile.preview')}
+            </Button>
+          )}
           <Button
             type="submit"
             disabled={isSubmitting}

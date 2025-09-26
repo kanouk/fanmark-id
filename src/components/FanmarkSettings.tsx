@@ -20,7 +20,7 @@ import { toast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Eye, Edit } from 'lucide-react';
 import { 
   FiType, 
   FiSettings, 
@@ -47,6 +47,7 @@ const settingsSchema = z.object({
   createProfile: z.boolean().default(false),
   isPasswordProtected: z.boolean().default(false),
   accessPassword: z.string().optional(),
+  is_public: z.boolean().default(false),
 }).refine((data) => {
   if (data.accessType === 'redirect' && !data.targetUrl) {
     return false;
@@ -123,6 +124,7 @@ export const FanmarkSettings = ({
         createProfile: false, // This is a one-time action
         isPasswordProtected: fanmark.is_password_protected || false,
         accessPassword: '', // Don't pre-fill password for security
+        is_public: fanmark.is_public || false,
       });
     }
   }, [fanmark, reset]);
@@ -222,12 +224,25 @@ export const FanmarkSettings = ({
             fanmark_id: fanmark.id,
             user_id: (await supabase.auth.getUser()).data.user?.id,
             bio: `Profile for ${fanmark.emoji_combination}`,
-            is_public: true,
+            is_public: data.is_public,
           });
 
         if (profileError) {
           console.error('Profile creation error:', profileError);
           // Don't fail the whole operation if profile creation fails
+        }
+      }
+
+      // Update existing profile's public setting if profile type is selected
+      if (data.accessType === 'profile') {
+        const { error: profileUpdateError } = await supabase
+          .from('fanmark_profiles')
+          .update({ is_public: data.is_public })
+          .eq('fanmark_id', fanmark.id);
+
+        if (profileUpdateError) {
+          console.error('Profile update error:', profileUpdateError);
+          // Don't fail the whole operation if profile update fails
         }
       }
 
@@ -254,14 +269,14 @@ export const FanmarkSettings = ({
 
   const accessTypes = [
     {
-      value: 'profile',
-      labelKey: 'fanmarkSettings.accessTypeOptions.profile',
-      icon: FiUser,
-    },
-    {
       value: 'redirect',
       labelKey: 'fanmarkSettings.accessTypeOptions.redirect',
       icon: FiExternalLink,
+    },
+    {
+      value: 'profile',
+      labelKey: 'fanmarkSettings.accessTypeOptions.profile',
+      icon: FiUser,
     },
     {
       value: 'text',
@@ -453,7 +468,7 @@ export const FanmarkSettings = ({
               )}
 
               {accessType === 'text' && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Label htmlFor="textContent" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                     <FiEdit3 className="h-3.5 w-3.5" />
                     {t('fanmarkSettings.fields.text.label')}
@@ -471,6 +486,22 @@ export const FanmarkSettings = ({
                       {errors.textContent.message}
                     </p>
                   )}
+                  <div className="pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (fanmark?.id) {
+                          navigate(`/fanmarks/${fanmark.id}/messageboard/preview`);
+                        }
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full border-border/60 text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/40 transition-colors"
+                    >
+                      <Eye className="h-4 w-4" />
+                      プレビュー
+                    </Button>
+                  </div>
                 </div>
               )}
 
@@ -481,19 +512,60 @@ export const FanmarkSettings = ({
                     {t('fanmarkSettings.fields.profile.label')}
                   </Label>
                   <div className="space-y-3 pl-6">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        if (fanmark?.id) {
-                          navigate(`/fanmarks/${fanmark.id}/profile/edit`);
-                        }
-                      }}
-                      className="inline-flex items-center gap-2 rounded-full border-border/60 text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/40 transition-colors"
-                    >
-                      {t('fanmarkSettings.actions.editProfile')}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (fanmark?.id) {
+                            navigate(`/fanmarks/${fanmark.id}/profile/edit`);
+                          }
+                        }}
+                        className="inline-flex items-center gap-2 rounded-full border-border/60 text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/40 transition-colors"
+                      >
+                        <Edit className="h-4 w-4" />
+                        {t('fanmarkSettings.actions.editProfile')}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (fanmark?.id) {
+                            navigate(`/fanmarks/${fanmark.id}/profile/preview`);
+                          }
+                        }}
+                        className="inline-flex items-center gap-2 rounded-full border-border/60 text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/40 transition-colors"
+                      >
+                        <Eye className="h-4 w-4" />
+                        {t('emojiProfile.preview')}
+                      </Button>
+                    </div>
+
+                    {/* Profile Privacy Settings */}
+                    <div className="flex items-start space-x-4 p-4 rounded-xl bg-primary/5 border border-primary/10">
+                      <Controller
+                        name="is_public"
+                        control={control}
+                        render={({ field }) => (
+                          <Checkbox
+                            id="is_public"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            className="mt-1"
+                          />
+                        )}
+                      />
+                      <div className="space-y-2">
+                        <Label htmlFor="is_public" className="text-sm font-medium cursor-pointer">
+                          プロフィールを公開する
+                        </Label>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          公開すると、他のユーザーがあなたのプロフィールを閲覧できるようになります
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

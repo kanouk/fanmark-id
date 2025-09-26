@@ -8,17 +8,28 @@ import { LanguageToggle } from '@/components/LanguageToggle';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { User, Settings, Info } from 'lucide-react';
-import { MdOutlineMail } from 'react-icons/md';
+import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { User, Settings, Info, LogOut } from 'lucide-react';
+import { MdOutlineMail, MdSpaceDashboard } from 'react-icons/md';
 import { RiCalendarCheckLine } from 'react-icons/ri';
 import { HiOutlineSparkles } from 'react-icons/hi2';
 import { FiGlobe } from 'react-icons/fi';
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, signOut, signingOut } = useAuth();
   const { profile, loading, updateProfile } = useProfile();
   const { t } = useTranslation();
   const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
 
   useEffect(() => {
     if (!user) {
@@ -50,7 +61,66 @@ const Profile = () => {
             <span className="text-gradient text-2xl">fanmark.id</span>
           </button>
 
-          <LanguageToggle />
+          <div className="flex items-center gap-2">
+            <LanguageToggle />
+            {user && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-primary/30 bg-primary/10 p-0 shadow-[0_4px_12px_hsl(var(--primary)_/_0.15)] transition-transform hover:-translate-y-0.5 hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    aria-label={t('navigation.userMenu')}
+                  >
+                    <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-primary/10">
+                      {profile?.avatar_url ? (
+                        <img src={profile.avatar_url} alt="Avatar" className="absolute inset-0 h-full w-full object-cover" />
+                      ) : (
+                        <User className="h-4 w-4 text-primary" />
+                      )}
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                    {user.email}
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={(event) => {
+                      event.preventDefault();
+                      navigate('/dashboard');
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <MdSpaceDashboard className="mr-2 h-4 w-4" />
+                    {t('navigation.dashboard')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={(event) => {
+                      event.preventDefault();
+                      // Already on profile page, no need to navigate
+                    }}
+                    className="cursor-pointer bg-primary/5"
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    {t('navigation.profile')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={(event) => {
+                      event.preventDefault();
+                      handleLogout();
+                    }}
+                    className="cursor-pointer"
+                    disabled={signingOut}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    {signingOut ? t('navigation.loggingOut') : t('navigation.logout')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         </div>
       </header>
       <main className="flex-1">

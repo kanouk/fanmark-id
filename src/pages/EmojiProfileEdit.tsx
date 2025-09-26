@@ -6,7 +6,7 @@ import { useEmojiProfile } from '@/hooks/useEmojiProfile';
 import { EmojiProfileForm } from '@/components/EmojiProfileForm';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, X, User } from 'lucide-react';
+import { Loader2, X, User, Eye } from 'lucide-react';
 
 export default function EmojiProfileEdit() {
   const { fanmarkId } = useParams<{ fanmarkId: string }>();
@@ -71,6 +71,10 @@ export default function EmojiProfileEdit() {
     navigate(`/fanmarks/${fanmarkId}/settings`);
   };
 
+  const handlePreview = () => {
+    navigate(`/fanmarks/${fanmarkId}/profile/preview`);
+  };
+
   if (!user) {
     return null;
   }
@@ -107,12 +111,16 @@ export default function EmojiProfileEdit() {
         <div className="max-w-4xl mx-auto space-y-10">
           {/* Header */}
           <div className="text-center space-y-6">
-            <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 via-accent/20 to-primary/10 flex items-center justify-center shadow-lg">
-              {/* Display cached emoji combination, or fallback to user icon */}
-              {cachedFanmark?.emoji_combination ? (
-                <span className="text-4xl">{cachedFanmark.emoji_combination}</span>
+            <div className="mx-auto flex items-center justify-center">
+              {/* Display cached emoji combination, profile emoji, or fallback to user icon with background */}
+              {(cachedFanmark?.emoji_combination || profile?.fanmark?.emoji_combination) ? (
+                <span className="text-6xl leading-none text-center">
+                  {cachedFanmark?.emoji_combination || profile?.fanmark?.emoji_combination}
+                </span>
               ) : (
-                <User className="h-10 w-10 text-primary" />
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 via-accent/20 to-primary/10 flex items-center justify-center shadow-lg">
+                  <User className="h-10 w-10 text-primary" />
+                </div>
               )}
             </div>
             <div>
@@ -131,6 +139,7 @@ export default function EmojiProfileEdit() {
             onSave={handleSave}
             isSubmitting={isSubmitting}
             onClose={handleClose}
+            onPreview={handlePreview}
           />
         </div>
       </div>

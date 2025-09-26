@@ -538,7 +538,7 @@
       "inactive": "なにもしない"
     },
     "actions": {
-      "editProfile": "プロフィールページを編集",
+      "editProfile": "編集",
       "save": "設定を保存"
     },
     "errors": {
@@ -579,6 +579,8 @@
     "updateSuccess": "プロフィールを更新しました",
     "updateSuccessDescription": "プロフィールの変更が保存されました！",
     "updateError": "更新に失敗しました",
-    "updateErrorDescription": "プロフィールの更新に失敗しました。もう一度お試しください。"
+    "updateErrorDescription": "プロフィールの更新に失敗しました。もう一度お試しください。",
+    "preview": "プレビュー",
+    "backToEdit": "編集"
   }
 }

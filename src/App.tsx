@@ -16,6 +16,8 @@ import Profile from "./pages/Profile";
 import Dashboard from "./pages/Dashboard";
 import FanmarkSettingsPage from "./pages/FanmarkSettingsPage";
 import EmojiProfileEdit from "./pages/EmojiProfileEdit";
+import FanmarkProfilePreview from "./pages/FanmarkProfilePreview";
+import FanmarkMessageboardPreview from "./pages/FanmarkMessageboardPreview";
 import NotFound from "./pages/NotFound";
 import { FanmarkAccess } from "./components/FanmarkAccess";
 
@@ -38,6 +40,8 @@ const MainApp = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/fanmarks/:fanmarkId/settings" element={<FanmarkSettingsPage />} />
             <Route path="/fanmarks/:fanmarkId/profile/edit" element={<EmojiProfileEdit />} />
+            <Route path="/fanmarks/:fanmarkId/profile/preview" element={<FanmarkProfilePreview />} />
+            <Route path="/fanmarks/:fanmarkId/messageboard/preview" element={<FanmarkMessageboardPreview />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="/:emojiPath" element={<FanmarkAccess />} />
             <Route path="*" element={<NotFound />} />

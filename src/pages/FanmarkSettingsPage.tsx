@@ -56,11 +56,12 @@ const FanmarkSettingsPage = () => {
       }
 
       const fanmarkData = data[0]; // Get first result since function returns array
+      const isNew = location.state?.isNew || false;
 
       setFanmark({
         id: fanmarkData.id,
         emoji_combination: fanmarkData.emoji_combination,
-        fanmark_name: fanmarkData.fanmark_name || fanmarkData.emoji_combination,
+        fanmark_name: fanmarkData.fanmark_name?.trim() || null,
         access_type: fanmarkData.access_type as 'profile' | 'redirect' | 'text' | 'inactive',
         target_url: fanmarkData.target_url ?? undefined,
         text_content: fanmarkData.text_content ?? undefined,

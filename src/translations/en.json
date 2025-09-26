@@ -539,7 +539,7 @@
       "inactive": "Inactive"
     },
     "actions": {
-      "editProfile": "Edit profile page",
+      "editProfile": "Edit",
       "save": "Save changes"
     },
     "errors": {
@@ -580,6 +580,8 @@
     "updateSuccess": "Profile Updated",
     "updateSuccessDescription": "Your profile changes have been saved!",
     "updateError": "Update Failed",
-    "updateErrorDescription": "Failed to update your profile. Please try again."
+    "updateErrorDescription": "Failed to update your profile. Please try again.",
+    "preview": "Preview",
+    "backToEdit": "Edit"
   }
 }
