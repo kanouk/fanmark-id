@@ -8,6 +8,7 @@ interface SystemSettings {
   max_fanmarks_limit: number;
   premium_pricing: number;
   max_emoji_characters: number;
+  grace_period_days: number;
 }
 
 export function useSystemSettings() {
@@ -18,6 +19,7 @@ export function useSystemSettings() {
     max_fanmarks_limit: 50,
     premium_pricing: 1000,
     max_emoji_characters: 5,
+    grace_period_days: 7,
   });
   const [loading, setLoading] = useState(true);
 
@@ -48,6 +50,8 @@ export function useSystemSettings() {
             acc.premium_pricing = parseInt(setting_value, 10);
           } else if (setting_key === 'max_emoji_characters') {
             acc.max_emoji_characters = parseInt(setting_value, 10);
+          } else if (setting_key === 'grace_period_days') {
+            acc.grace_period_days = parseInt(setting_value, 10);
           }
           return acc;
         }, {} as Partial<SystemSettings>);

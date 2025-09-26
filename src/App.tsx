@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { TranslationProvider } from "@/hooks/useTranslation";
+import { useSubdomain } from "@/hooks/useSubdomain";
+import AdminApp from "./components/AdminApp";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -19,7 +21,7 @@ import { FanmarkAccess } from "./components/FanmarkAccess";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const MainApp = () => (
   <QueryClientProvider client={queryClient}>
     <TranslationProvider>
       <AuthProvider>
@@ -46,5 +48,17 @@ const App = () => (
     </TranslationProvider>
   </QueryClientProvider>
 );
+
+const App = () => {
+  const { isAdmin } = useSubdomain();
+  
+  // 管理画面サブドメインの場合は管理画面アプリを表示
+  if (isAdmin) {
+    return <AdminApp />;
+  }
+  
+  // 通常のファンマークアプリを表示
+  return <MainApp />;
+};
 
 export default App;
