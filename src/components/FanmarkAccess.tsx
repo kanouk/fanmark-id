@@ -20,6 +20,31 @@ interface FanmarkData {
   is_password_protected?: boolean;
 }
 
+const safeDecodeEmojiPath = (path: string): string => {
+  if (!path) return '';
+  
+  console.log('🔍 Decoding emoji path:', { original: path, length: path.length });
+  
+  try {
+    // 既にデコードされている場合はそのまま返す
+    const decoded = decodeURIComponent(path);
+    const isAlreadyDecoded = path === decoded;
+    
+    console.log('📝 Decode result:', { 
+      decoded, 
+      isAlreadyDecoded, 
+      decodedLength: decoded.length,
+      originalLength: path.length
+    });
+    
+    return isAlreadyDecoded ? path : decoded;
+  } catch (error) {
+    console.error('❌ Emoji decode error:', error, { path });
+    // エラー時は元の値を返す
+    return path;
+  }
+};
+
 export const FanmarkAccess = () => {
   const { emojiPath } = useParams<{ emojiPath: string }>();
   const navigate = useNavigate();
@@ -38,8 +63,9 @@ export const FanmarkAccess = () => {
       }
 
       try {
-        // Decode the emoji path
-        const decodedEmoji = decodeURIComponent(emojiPath);
+        // 安全なデコード処理を使用
+        const decodedEmoji = safeDecodeEmojiPath(emojiPath);
+        console.log('🎯 Final emoji for database query:', { decodedEmoji, length: decodedEmoji.length });
         
         // Use the secure function to get only essential fanmark data
         const { data, error } = await supabase
