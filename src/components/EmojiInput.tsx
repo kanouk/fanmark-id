@@ -247,7 +247,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
       if (!navigator.clipboard) {
         toast({
           title: t('common.error'),
-          description: 'クリップボード機能がサポートされていません',
+          description: t('common.clipboardNotSupported'),
           variant: 'destructive',
         });
         return;
@@ -258,7 +258,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
       if (!clipboardText.trim()) {
         toast({
           title: t('common.error'),
-          description: 'クリップボードが空です',
+          description: t('common.clipboardEmpty'),
           variant: 'destructive',
         });
         return;
@@ -269,9 +269,8 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
 
       if (extractedEmojis.length === 0) {
         toast({
-          title: t('common.error'),
-          description: 'クリップボードに絵文字が見つかりませんでした',
-          variant: 'destructive',
+          title: t('common.noEmojisFound'),
+          description: t('common.noEmojisFoundDesc'),
         });
         return;
       }
@@ -317,7 +316,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
       console.error('Paste failed:', error);
       toast({
         title: t('common.error'),
-        description: 'クリップボードの読み取りに失敗しました',
+        description: t('common.clipboardReadFailed'),
         variant: 'destructive',
       });
     }
@@ -438,7 +437,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
               size="sm"
               disabled={disabled}
               onClick={handlePaste}
-              aria-label="クリップボードから貼り付け"
+              aria-label={t('common.pasteFromClipboard')}
               className="h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"
             >
               <Clipboard className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
@@ -490,7 +489,7 @@ export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
           size="sm"
           disabled={disabled}
           onClick={onPaste}
-          aria-label="クリップボードから貼り付け"
+          aria-label={t('common.pasteFromClipboard')}
           className="h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"
         >
           <Clipboard className="h-3 w-3 sm:h-3.5 sm:w-3.5" />

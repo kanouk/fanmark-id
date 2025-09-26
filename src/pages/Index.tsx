@@ -64,6 +64,16 @@ const Index = () => {
     navigate("/auth");
   };
 
+  const handleScrollToSearch = () => {
+    const searchSection = document.getElementById('search');
+    if (searchSection) {
+      searchSection.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
 
@@ -139,7 +149,7 @@ const Index = () => {
                 <DropdownMenuTrigger asChild>
                   <button
                     className="flex h-10 w-10 items-center justify-center rounded-full border border-primary/30 bg-primary/10 shadow-[0_4px_12px_hsl(var(--primary)_/_0.15)] transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                    aria-label="User menu"
+                    aria-label={t('navigation.userMenu')}
                   >
                     <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-primary/10">
                       {profile?.avatar_url ? (
@@ -216,7 +226,7 @@ const Index = () => {
             </p>
 
             <div className="mt-10 flex flex-col items-center justify-center">
-              <Button size="lg" className="w-full sm:w-auto" onClick={handleSignupPrompt}>
+              <Button size="lg" className="w-full sm:w-auto" onClick={handleScrollToSearch}>
                 {t('hero.tryButton')}
               </Button>
             </div>

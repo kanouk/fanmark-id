@@ -71,7 +71,7 @@ export const FanmarkAccess = () => {
   useEffect(() => {
     const loadFanmark = async () => {
       if (!emojiPath) {
-        setError('Invalid fanmark URL');
+        setError(t('common.invalidFanmarkUrl'));
         setLoading(false);
         return;
       }
@@ -87,13 +87,13 @@ export const FanmarkAccess = () => {
 
         if (error) {
           console.error('Database error:', error);
-          setError('Failed to load fanmark');
+          setError(t('common.failedToLoadFanmark'));
           setLoading(false);
           return;
         }
 
         if (!data || data.length === 0) {
-          setError('Fanmark not found');
+          setError(t('common.fanmarkNotFound'));
           setLoading(false);
           return;
         }
@@ -121,7 +121,7 @@ export const FanmarkAccess = () => {
         setLoading(false);
       } catch (err) {
         console.error('Error loading fanmark:', err);
-        setError('Failed to load fanmark');
+        setError(t('common.failedToLoadFanmark'));
         setLoading(false);
       }
     };
@@ -160,13 +160,13 @@ export const FanmarkAccess = () => {
         <Card className="w-96">
           <CardContent className="p-8 text-center space-y-4">
             <AlertCircle className="h-12 w-12 mx-auto text-destructive" />
-            <h1 className="text-xl font-semibold">Fanmark not found</h1>
+            <h1 className="text-xl font-semibold">{t('common.fanmarkNotFound')}</h1>
             <p className="text-muted-foreground">
-              {error || 'This fanmark does not exist or is not available.'}
+              {error || t('common.fanmarkNotFoundDescription')}
             </p>
             <Button onClick={() => navigate('/')} className="w-full">
               <Home className="h-4 w-4 mr-2" />
-              Go to Home
+              {t('common.goToHome')}
             </Button>
           </CardContent>
         </Card>
@@ -211,7 +211,7 @@ export const FanmarkAccess = () => {
             <CardContent className="p-8 text-center space-y-4">
               <div className="text-6xl mb-4">{fanmark.emoji_combination}</div>
               <p className="text-lg font-medium text-foreground">
-                あなたもファンマを取得しよう！
+                {t('common.getYourFanmark')}
               </p>
               <div className="flex justify-center">
                 <button
@@ -236,13 +236,13 @@ export const FanmarkAccess = () => {
           <Card className="w-96">
             <CardContent className="p-8 text-center space-y-4">
               <AlertCircle className="h-12 w-12 mx-auto text-destructive" />
-              <h1 className="text-xl font-semibold">Invalid Access Type</h1>
+              <h1 className="text-xl font-semibold">{t('common.invalidAccessType')}</h1>
               <p className="text-muted-foreground">
-                This fanmark has an invalid configuration.
+                {t('common.invalidConfiguration')}
               </p>
               <Button onClick={() => navigate('/')} className="w-full">
                 <Home className="h-4 w-4 mr-2" />
-                Go to Home
+                {t('common.goToHome')}
               </Button>
             </CardContent>
           </Card>

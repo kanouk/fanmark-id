@@ -61,14 +61,14 @@ export const FanmarkMessage = ({ fanmark }: FanmarkMessageProps) => {
       } catch (error) {
         navigator.clipboard.writeText(url);
         toast({
-          title: "リンクをコピーしました",
+          title: t('common.linkCopied'),
           description: url,
         });
       }
     } else {
       navigator.clipboard.writeText(url);
       toast({
-        title: "リンクをコピーしました",
+        title: t('common.linkCopied'),
         description: url,
       });
     }

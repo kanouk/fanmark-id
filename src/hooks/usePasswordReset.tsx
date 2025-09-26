@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/integrations/supabase/client';
 
 export const usePasswordReset = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
   
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -50,8 +52,8 @@ export const usePasswordReset = () => {
   const resetPassword = async () => {
     if (password !== confirmPassword) {
       toast({
-        title: "エラー",
-        description: "パスワードが一致しません",
+        title: t('common.error'),
+        description: t('common.passwordMismatch'),
         variant: "destructive",
       });
       return;
@@ -67,16 +69,16 @@ export const usePasswordReset = () => {
       if (error) throw error;
 
       toast({
-        title: "パスワードを更新しました",
-        description: "新しいパスワードでログインできます。",
+        title: t('common.passwordUpdated'),
+        description: t('common.passwordUpdatedDesc'),
       });
 
       navigate('/');
     } catch (error) {
       const message = error instanceof Error ? error.message : undefined;
       toast({
-        title: "エラー",
-        description: message || 'パスワードの更新に失敗しました',
+        title: t('common.error'),
+        description: message || t('common.error'),
         variant: "destructive",
       });
     } finally {

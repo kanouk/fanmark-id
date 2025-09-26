@@ -214,7 +214,7 @@ export const FanmarkAcquisition = ({
                   if (!navigator.clipboard) {
                     toast({
                       title: t('common.error'),
-                      description: 'クリップボード機能がサポートされていません',
+                      description: t('common.clipboardNotSupported'),
                       variant: 'destructive',
                     });
                     return;
@@ -224,7 +224,7 @@ export const FanmarkAcquisition = ({
                   if (!clipboardText.trim()) {
                     toast({
                       title: t('common.error'),
-                      description: 'クリップボードが空です',
+                      description: t('common.clipboardEmpty'),
                       variant: 'destructive',
                     });
                     return;
@@ -235,9 +235,8 @@ export const FanmarkAcquisition = ({
 
                   if (emojis.length === 0) {
                     toast({
-                      title: t('common.error'),
-                      description: 'クリップボードに絵文字が見つかりませんでした',
-                      variant: 'destructive',
+                      title: t('common.noEmojisFound'),
+                      description: t('common.noEmojisFoundDesc'),
                     });
                     return;
                   }
@@ -253,7 +252,7 @@ export const FanmarkAcquisition = ({
                 } catch (error) {
                   toast({
                     title: t('common.error'),
-                    description: 'クリップボードの読み取りに失敗しました',
+                    description: t('common.clipboardReadFailed'),
                     variant: 'destructive',
                   });
                 }

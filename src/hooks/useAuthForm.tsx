@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthFormData, AuthState } from '@/types/auth';
 
@@ -11,6 +12,7 @@ interface CheckEmailExistsResponse {
 export const useAuthForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
   
   const [formData, setFormData] = useState<AuthFormData>({
     email: '',
@@ -85,8 +87,8 @@ export const useAuthForm = () => {
 
       setAwaitingConfirmation(true);
       toast({
-        title: "確認メールを送信しました",
-        description: "メール内のリンクをクリックしてアカウントを有効化してください。",
+        title: t('common.confirmationEmailSent'),
+        description: t('common.confirmationEmailDesc'),
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : undefined;
@@ -118,8 +120,8 @@ export const useAuthForm = () => {
       }
 
       toast({
-        title: "ログインしました",
-        description: "アプリケーションへようこそ！",
+        title: t('common.loginSuccess'),
+        description: t('common.loginSuccessDesc'),
       });
       navigate('/dashboard');
     } catch (error) {
@@ -145,8 +147,8 @@ export const useAuthForm = () => {
       if (error) throw error;
 
       toast({
-        title: "パスワードリセットメールを送信しました",
-        description: "メール内のリンクをクリックしてパスワードをリセットしてください。",
+        title: t('common.resetEmailSent'),
+        description: t('common.resetEmailDesc'),
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : undefined;
@@ -175,8 +177,8 @@ export const useAuthForm = () => {
       if (error) throw error;
 
       toast({
-        title: "確認メールを再送信しました",
-        description: "メール内のリンクをクリックしてアカウントを有効化してください。",
+        title: t('common.confirmationResent'),
+        description: t('common.confirmationEmailDesc'),
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : undefined;

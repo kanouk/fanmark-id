@@ -21,14 +21,14 @@ export const Navigation = () => {
       await signOut();
       toast({
         title: t('navigation.logout'),
-        description: 'ログアウトしました',
+        description: t('common.logoutSuccess'),
       });
       navigate('/');
     } catch (error) {
       console.error('Logout failed:', error);
       toast({
-        title: 'エラー',
-        description: 'ログアウトに失敗しました',
+        title: t('common.error'),
+        description: t('common.logoutFailed'),
         variant: 'destructive',
       });
     }
@@ -57,7 +57,7 @@ export const Navigation = () => {
               <DropdownMenuTrigger asChild>
                 <button
                   className="flex h-10 w-10 items-center justify-center rounded-full border border-primary/30 bg-primary/10 shadow-[0_4px_12px_hsl(var(--primary)_/_0.15)] transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                  aria-label="User menu"
+                  aria-label={t('navigation.userMenu')}
                 >
                   <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-primary/10">
                     {profile?.avatar_url ? (
@@ -102,7 +102,7 @@ export const Navigation = () => {
                   disabled={signingOut}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  {signingOut ? 'ログアウト中...' : t('navigation.logout')}
+                  {signingOut ? t('navigation.loggingOut') : t('navigation.logout')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

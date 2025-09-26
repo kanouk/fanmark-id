@@ -650,7 +650,7 @@ export const FanmarkDashboard = () => {
                                              onClick={() => {
                                                window.open(`/${fanmark.emoji_combination}`, '_blank', 'noopener,noreferrer');
                                              }}
-                                             aria-label="ファンマに移動"
+                                             aria-label={t('common.visitFanmarkAriaLabel')}
                                            >
                                               <ExternalLink className="h-4 w-4" />
                                            </Button>
@@ -672,7 +672,7 @@ export const FanmarkDashboard = () => {
                                                  description: fullUrl,
                                                });
                                              }}
-                                             aria-label="ファンマをコピー"
+                                             aria-label={t('common.copyFanmarkAriaLabel')}
                                            >
                                               <Copy className="h-4 w-4" />
                                            </Button>
@@ -843,7 +843,7 @@ export const FanmarkDashboard = () => {
                                              onClick={() => {
                                                window.open(`/${fanmark.emoji_combination}`, '_blank', 'noopener,noreferrer');
                                              }}
-                                             aria-label="ファンマに移動"
+                                             aria-label={t('common.visitFanmarkAriaLabel')}
                                            >
                                               <ExternalLink className="h-4 w-4" />
                                            </Button>
@@ -865,7 +865,7 @@ export const FanmarkDashboard = () => {
                                                  description: fullUrl,
                                                });
                                              }}
-                                             aria-label="ファンマをコピー"
+                                             aria-label={t('common.copyFanmarkAriaLabel')}
                                            >
                                               <Copy className="h-4 w-4" />
                                            </Button>
