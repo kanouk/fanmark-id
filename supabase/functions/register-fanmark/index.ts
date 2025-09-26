@@ -561,7 +561,7 @@ serve(async (req) => {
           id: fanmarkId,
           emoji_combination: fanmarkEmojiCombination,
           short_id: fanmarkShortId,
-          canonical_url: `/e/${fanmarkShortId}`,
+          canonical_url: `/a/${fanmarkShortId}`,
           display_url: `/emoji/${encodeURIComponent(fanmarkEmojiCombination)}`
         }
       }),

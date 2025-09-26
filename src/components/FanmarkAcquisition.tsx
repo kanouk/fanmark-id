@@ -6,6 +6,7 @@ import FanmarkSearch from '@/components/FanmarkSearch';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { navigateToFanmark } from '@/utils/emojiUrl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -128,8 +129,7 @@ export const FanmarkAcquisition = ({
   const handleVisitFanmark = useCallback(() => {
     if (!searchResult?.emoji_combination) return;
 
-    const fanmarkUrl = `/${searchResult.emoji_combination}`;
-    window.open(fanmarkUrl, '_blank', 'noopener,noreferrer');
+    navigateToFanmark(searchResult.emoji_combination, true);
   }, [searchResult?.emoji_combination]);
 
   return (

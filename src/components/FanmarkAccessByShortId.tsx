@@ -8,7 +8,6 @@ import { FanmarkProfile } from './FanmarkProfile';
 import { FanmarkMessage } from './FanmarkMessage';
 import { PasswordProtection } from './PasswordProtection';
 import { useTranslation } from '@/hooks/useTranslation';
-import { normalizeEmojiPath, updateAddressBarDisplay } from '@/utils/emojiUrl';
 
 interface FanmarkData {
   id: string;
@@ -19,12 +18,10 @@ interface FanmarkData {
   text_content?: string;
   status: string;
   is_password_protected?: boolean;
-  short_id?: string;
 }
 
-
-export const FanmarkAccess = () => {
-  const { emojiPath } = useParams<{ emojiPath: string }>();
+export const FanmarkAccessByShortId = () => {
+  const { shortId } = useParams<{ shortId: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [fanmark, setFanmark] = useState<FanmarkData | null>(null);
@@ -34,20 +31,18 @@ export const FanmarkAccess = () => {
 
   useEffect(() => {
     const loadFanmark = async () => {
-      if (!emojiPath) {
+      if (!shortId) {
         setError(t('common.invalidFanmarkUrl'));
         setLoading(false);
         return;
       }
 
       try {
-        // 絵文字パスの正規化処理
-        const normalizedEmoji = normalizeEmojiPath(emojiPath);
-        console.log('🎯 Final emoji for database query:', { normalizedEmoji, length: normalizedEmoji.length });
-        
-        // Use the secure function to get only essential fanmark data
+        console.log('🎯 Loading fanmark by short_id:', shortId);
+
+        // Use the new function to get fanmark data by short_id
         const { data, error } = await supabase
-          .rpc('get_fanmark_by_emoji', { emoji_combo: normalizedEmoji });
+          .rpc('get_fanmark_by_short_id', { shortid_param: shortId });
 
         if (error) {
           console.error('Database error:', error);
@@ -65,17 +60,9 @@ export const FanmarkAccess = () => {
         const fanmarkData = data[0] as FanmarkData;
         setFanmark(fanmarkData);
 
-        // NEW: Redirect to short_id URL format for better UX
-        if (fanmarkData.short_id) {
-          const shortIdPath = `/a/${fanmarkData.short_id}`;
-          console.log('🔄 Redirecting to short_id URL:', { from: window.location.pathname, to: shortIdPath });
-          navigate(shortIdPath, { replace: true });
-          return; // Don't proceed with rendering, let the redirect happen
-        }
-
         // Immediately redirect if it's a redirect type without password protection
-        if (fanmarkData.access_type === 'redirect' && 
-            fanmarkData.target_url && 
+        if (fanmarkData.access_type === 'redirect' &&
+            fanmarkData.target_url &&
             !fanmarkData.is_password_protected) {
           console.log('Redirecting to:', fanmarkData.target_url);
           window.location.href = fanmarkData.target_url;
@@ -91,7 +78,7 @@ export const FanmarkAccess = () => {
     };
 
     loadFanmark();
-  }, [emojiPath]);
+  }, [shortId, t]);
 
   // Trigger redirect after verification for redirect access types
   useEffect(() => {
@@ -141,9 +128,9 @@ export const FanmarkAccess = () => {
   // Handle password protection for all access types
   if (fanmark.is_password_protected && !isPasswordVerified) {
     return (
-      <PasswordProtection 
-        fanmark={fanmark} 
-        onSuccess={handlePasswordSuccess} 
+      <PasswordProtection
+        fanmark={fanmark}
+        onSuccess={handlePasswordSuccess}
       />
     );
   }
@@ -152,7 +139,7 @@ export const FanmarkAccess = () => {
   switch (fanmark.access_type) {
     case 'profile':
       return <FanmarkProfile fanmark={fanmark} />;
-    
+
     case 'text':
       return <FanmarkMessage fanmark={fanmark} />;
 
@@ -167,7 +154,7 @@ export const FanmarkAccess = () => {
           </Card>
         </div>
       );
-    
+
     case 'inactive':
       return (
         <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex items-center justify-center">
@@ -193,7 +180,7 @@ export const FanmarkAccess = () => {
           </Card>
         </div>
       );
-    
+
     default:
       return (
         <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex items-center justify-center">

@@ -18,6 +18,7 @@ import { FanmarkAcquisition } from './FanmarkAcquisition';
 // Using Undo2 for return/return action
 import { supabase } from '@/integrations/supabase/client';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
+import { navigateToFanmark, getFanmarkUrlForClipboard } from '@/utils/emojiUrl';
 
 interface Fanmark {
   id: string;
@@ -648,7 +649,7 @@ export const FanmarkDashboard = () => {
                                              variant="ghost"
                                              className="h-9 w-9 p-0 rounded-full hover:bg-primary/10 transition-colors"
                                              onClick={() => {
-                                               window.open(`/${fanmark.emoji_combination}`, '_blank', 'noopener,noreferrer');
+                                               navigateToFanmark(fanmark.emoji_combination, true);
                                              }}
                                              aria-label={t('common.visitFanmarkAriaLabel')}
                                            >
@@ -664,8 +665,7 @@ export const FanmarkDashboard = () => {
                                              variant="ghost"
                                              className="h-9 w-9 p-0 rounded-full hover:bg-primary/10 transition-colors"
                                              onClick={() => {
-                                               const currentOrigin = window.location.origin;
-                                               const fullUrl = `${currentOrigin}/${fanmark.emoji_combination}`;
+                                               const fullUrl = getFanmarkUrlForClipboard(fanmark.emoji_combination);
                                                navigator.clipboard.writeText(fullUrl);
                                                toast({
                                                  title: t('dashboard.urlCopiedTitle'),
@@ -841,7 +841,7 @@ export const FanmarkDashboard = () => {
                                              variant="ghost"
                                              className="h-8 w-8 p-0 hover:bg-secondary"
                                              onClick={() => {
-                                               window.open(`/${fanmark.emoji_combination}`, '_blank', 'noopener,noreferrer');
+                                               navigateToFanmark(fanmark.emoji_combination, true);
                                              }}
                                              aria-label={t('common.visitFanmarkAriaLabel')}
                                            >
@@ -857,8 +857,7 @@ export const FanmarkDashboard = () => {
                                              variant="ghost"
                                              className="h-8 w-8 p-0 hover:bg-secondary"
                                              onClick={() => {
-                                               const currentOrigin = window.location.origin;
-                                               const fullUrl = `${currentOrigin}/${fanmark.emoji_combination}`;
+                                               const fullUrl = getFanmarkUrlForClipboard(fanmark.emoji_combination);
                                                navigator.clipboard.writeText(fullUrl);
                                                toast({
                                                  title: t('dashboard.urlCopiedTitle'),

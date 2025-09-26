@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
 import { toast } from '@/hooks/use-toast';
 import { LanguageToggle } from '@/components/LanguageToggle';
+import { getFanmarkUrlForClipboard } from '@/utils/emojiUrl';
 
 interface FanmarkData {
   emoji_combination: string;
@@ -51,7 +52,7 @@ export const FanmarkMessage = ({ fanmark }: FanmarkMessageProps) => {
   };
 
   const handleShare = async () => {
-    const url = `https://fanmark.id/${fanmark.emoji_combination}`;
+    const url = getFanmarkUrlForClipboard(fanmark.emoji_combination, 'https://fanmark.id');
     if (navigator.share) {
       try {
         await navigator.share({
