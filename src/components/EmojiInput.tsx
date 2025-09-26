@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { EmojiPicker } from 'frimousse';
-import { Sparkles, Plus, X, Eraser, Clipboard } from 'lucide-react';
+import { Plus, X, Eraser, Clipboard } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
 
@@ -14,6 +14,7 @@ interface EmojiInputProps {
   maxLength?: number;
   className?: string;
   onSearchPerformed?: (query: string) => void;
+  showUtilities?: boolean;
 }
 
 const DEFAULT_MAX_LENGTH = 5;
@@ -25,6 +26,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
   maxLength = DEFAULT_MAX_LENGTH,
   className = '',
   onSearchPerformed,
+  showUtilities = true,
 }) => {
   const { t, language } = useTranslation();
   const { toast } = useToast();
@@ -331,10 +333,11 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
   const hasValue = segments.length > 0;
 
   return (
-    <div className={`flex w-full items-center gap-2 sm:gap-5 ${className}`}>
-      <div className="flex flex-1" />
-      <div className="flex flex-wrap justify-center gap-2 sm:gap-4 transition-all duration-300 ease-out">
-        {slots.map((_, index) => {
+    <div className={`w-full ${showUtilities ? 'space-y-0.5 sm:space-y-3' : ''} ${className}`}>
+      {/* メイン入力エリア */}
+      <div className="flex justify-center">
+        <div className="flex gap-1 sm:gap-4 transition-all duration-300 ease-out max-w-fit">
+          {slots.map((_, index) => {
           const emoji = segments[index];
           const isActive = activeIndex === index;
 
@@ -349,7 +352,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
                 if (draggedIndex !== null) return;
                 handleOpenChange(index, true);
               }}
-              className={`flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl border text-2xl sm:text-4xl transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${emoji ? 'border-primary/40 bg-primary/5' : 'border-dashed border-primary/20 text-muted-foreground hover:border-primary/40 hover:text-primary'} ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${isDragging ? 'ring-2 ring-primary/50 scale-105 shadow-lg z-10 opacity-80' : ''} ${isDragTarget && !isDragging ? 'border-primary/60 bg-primary/10 scale-105' : ''}`}
+              className={`flex h-14 w-14 sm:h-20 sm:w-20 items-center justify-center rounded-2xl border text-2xl sm:text-4xl transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${emoji ? 'border-primary/40 bg-primary/5' : 'border-dashed border-primary/20 text-muted-foreground hover:border-primary/40 hover:text-primary'} ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${isDragging ? 'ring-2 ring-primary/50 scale-105 shadow-lg z-10 opacity-80' : ''} ${isDragTarget && !isDragging ? 'border-primary/60 bg-primary/10 scale-105' : ''}`}
               style={{
                 zIndex: isDragging ? 10 : 1,
               }}
@@ -360,7 +363,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
               onDragLeave={() => handleDragLeave(index)}
               onDragEnd={handleDragEnd}
             >
-              {emoji ? emoji : <Plus className="h-5 w-5 sm:h-7 sm:w-7" />}
+              {emoji ? emoji : <Plus className="h-5 w-5 sm:h-8 sm:w-8" />}
             </button>
           );
 
@@ -422,40 +425,88 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
             </div>
           );
         })}
+        </div>
       </div>
-      <div className="flex flex-1 justify-end gap-2 sm:gap-3">
+
+      {/* 便利ツール */}
+      {showUtilities && (
+        <div className="flex justify-center">
+          <div className="flex items-center gap-1 sm:gap-3 rounded-full bg-muted/30 px-2 sm:px-4 py-1.5 sm:py-2 border border-primary/10 max-w-fit">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={disabled}
+              onClick={handlePaste}
+              aria-label="クリップボードから貼り付け"
+              className="h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"
+            >
+              <Clipboard className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <span className="hidden sm:inline text-xs">{language === 'ja' ? '貼り付け' : 'Paste'}</span>
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={disabled || !hasValue}
+              onClick={handleClear}
+              aria-label={t('common.clearAll')}
+              className="h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"
+            >
+              <Eraser className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <span className="hidden sm:inline text-xs">{language === 'ja' ? 'クリア' : 'Clear'}</span>
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Separate utilities component for flexible positioning
+interface EmojiInputUtilitiesProps {
+  disabled?: boolean;
+  hasValue: boolean;
+  onPaste: () => void;
+  onClear: () => void;
+  language: string;
+  t: (key: string) => string;
+}
+
+export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
+  disabled = false,
+  hasValue,
+  onPaste,
+  onClear,
+  language,
+  t,
+}) => {
+  return (
+    <div className="flex justify-center">
+      <div className="flex items-center gap-1 sm:gap-3 rounded-full bg-muted/30 px-2 sm:px-4 py-1.5 sm:py-2 border border-primary/10 max-w-fit">
         <Button
           type="button"
           variant="ghost"
-          size="icon"
+          size="sm"
           disabled={disabled}
-          onClick={handlePaste}
+          onClick={onPaste}
           aria-label="クリップボードから貼り付け"
-          className="h-10 w-10 sm:h-12 sm:w-12 rounded-full border border-primary/20 text-muted-foreground transition hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
+          className="h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"
         >
-          <Clipboard className="h-4 w-4 sm:h-5 sm:w-5" />
+          <Clipboard className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+          <span className="hidden sm:inline text-xs">{language === 'ja' ? '貼り付け' : 'Paste'}</span>
         </Button>
         <Button
           type="button"
           variant="ghost"
-          size="icon"
+          size="sm"
           disabled={disabled || !hasValue}
-          onClick={handleClear}
+          onClick={onClear}
           aria-label={t('common.clearAll')}
-          className="h-10 w-10 sm:h-12 sm:w-12 rounded-full border border-primary/20 text-muted-foreground transition hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
+          className="h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"
         >
-          <Eraser className="h-4 w-4 sm:h-5 sm:w-5" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          aria-label={t('common.aiRecommendationComingSoon')}
-          title={t('common.aiRecommendationDescription')}
-          disabled
-          className="h-10 w-10 sm:h-12 sm:w-12 rounded-full border border-primary/20 text-primary"
-        >
-          <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />
+          <Eraser className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+          <span className="hidden sm:inline text-xs">{language === 'ja' ? 'クリア' : 'Clear'}</span>
         </Button>
       </div>
     </div>

@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { FanmarkSearchResult } from '@/hooks/useFanmarkSearch';
 import { FanmarkStatusBadge } from '@/components/FanmarkStatusBadge';
+import { EmojiInputUtilities } from '@/components/EmojiInput';
 import { supabase } from '@/integrations/supabase/client';
 
 interface FanmarkAcquisitionProps {
@@ -37,7 +38,7 @@ export const FanmarkAcquisition = ({
   onObtain,
   onRequireAuth,
 }: FanmarkAcquisitionProps) => {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -45,6 +46,7 @@ export const FanmarkAcquisition = ({
   const [searchResult, setSearchResult] = useState<FanmarkSearchResult | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [searchUtilities, setSearchUtilities] = useState<{ setQuery: (query: string) => void; clearQuery: () => void } | null>(null);
 
   const remainingCapacity = useMemo(() => {
     return Math.max(fanmarkLimit - currentCount, 0);
@@ -188,50 +190,127 @@ export const FanmarkAcquisition = ({
             {t('dashboard.searchSubtitle')}
           </p>
         </CardHeader>
-        <CardContent className="space-y-5 px-6 pb-6">
-          <FanmarkSearch
-            onSignupPrompt={() => onRequireAuth?.('')}
-            statusVariant={user ? 'authenticated' : 'public'}
-            showRecent={false}
-            onResultChange={setSearchResult}
-            initialQuery={prefilledEmoji}
-          />
+        <CardContent className="px-6 pb-6">
+          {/* ファンマ入力グループ - 入力と便利ツールが一体 */}
+          <div className="mt-6 mb-10">
+            <FanmarkSearch
+              onSignupPrompt={() => onRequireAuth?.('')}
+              statusVariant={user ? 'authenticated' : 'public'}
+              showRecent={false}
+              onResultChange={setSearchResult}
+              initialQuery={prefilledEmoji}
+              onUtilitiesRef={setSearchUtilities}
+            />
 
-          <div className="flex flex-col gap-3 items-center">
-            {/* Show acquisition button for available fanmarks */}
-            {isResultAcquirable && (
-              <Button
-                size="lg"
-                className="rounded-full px-6 gap-2"
-                onClick={handleAcquireRequest}
-                disabled={!searchResult || remainingCapacity <= 0}
-              >
-                <Plus className="h-4 w-4" />
-                {user ? t('dashboard.acquireButton') : t('dashboard.acquireLoginButton')}
-              </Button>
-            )}
+            {/* 便利ツール - レスポンシブ間隔 */}
+            <div className="flex justify-center mt-1 sm:mt-6">
+            <EmojiInputUtilities
+              disabled={false}
+              hasValue={!!searchResult?.emoji_combination}
+              onPaste={async () => {
+                if (!searchUtilities) return;
 
-            {/* Show visit button for taken fanmarks */}
-            {isTaken && searchResult?.emoji_combination && (
-              <Button
-                size="lg"
-                variant="outline"
-                className="rounded-full px-6 gap-2"
-                onClick={handleVisitFanmark}
-              >
-                <ExternalLink className="h-4 w-4" />
-                {t('dashboard.visitFanmarkButton')}
-              </Button>
-            )}
+                try {
+                  if (!navigator.clipboard) {
+                    toast({
+                      title: t('common.error'),
+                      description: 'クリップボード機能がサポートされていません',
+                      variant: 'destructive',
+                    });
+                    return;
+                  }
 
-            <div className="min-h-[2.5rem] flex items-center justify-center">
+                  const clipboardText = await navigator.clipboard.readText();
+                  if (!clipboardText.trim()) {
+                    toast({
+                      title: t('common.error'),
+                      description: 'クリップボードが空です',
+                      variant: 'destructive',
+                    });
+                    return;
+                  }
+
+                  const emojiRegex = /[\p{Emoji_Presentation}\p{Extended_Pictographic}][\p{Emoji_Modifier}\p{Variation_Selector}\p{Emoji_Modifier_Base}\p{Emoji_Component}]*|[\u{1F1E6}-\u{1F1FF}]{2}/gu;
+                  const emojis = clipboardText.match(emojiRegex) || [];
+
+                  if (emojis.length === 0) {
+                    toast({
+                      title: t('common.error'),
+                      description: 'クリップボードに絵文字が見つかりませんでした',
+                      variant: 'destructive',
+                    });
+                    return;
+                  }
+
+                  const limitedEmojis = emojis.slice(0, 5).join('');
+                  searchUtilities.setQuery(limitedEmojis);
+
+                  toast({
+                    title: language === 'ja' ? '貼り付け完了' : 'Pasted',
+                    description: `${Math.min(emojis.length, 5)}個の絵文字を貼り付けました`,
+                  });
+
+                } catch (error) {
+                  toast({
+                    title: t('common.error'),
+                    description: 'クリップボードの読み取りに失敗しました',
+                    variant: 'destructive',
+                  });
+                }
+              }}
+              onClear={() => {
+                if (searchUtilities) {
+                  searchUtilities.clearQuery();
+                  toast({
+                    title: language === 'ja' ? 'クリア完了' : 'Cleared',
+                  });
+                }
+              }}
+              language={language}
+              t={t}
+            />
+            </div>
+          </div>
+
+          {/* アクションボタン - 入力グループから分離 */}
+          {searchResult && (
+            <div className="flex flex-col gap-4 items-center">
+              {/* Show acquisition button for available fanmarks */}
+              {isResultAcquirable && (
+                <Button
+                  size="lg"
+                  className="rounded-full px-8 py-3 gap-3 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                  onClick={handleAcquireRequest}
+                  disabled={!searchResult || remainingCapacity <= 0}
+                >
+                  <Plus className="h-5 w-5" />
+                  {user ? t('dashboard.acquireButton') : t('dashboard.acquireLoginButton')}
+                </Button>
+              )}
+
+              {/* Show visit button for taken fanmarks */}
+              {isTaken && searchResult?.emoji_combination && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="rounded-full px-8 py-3 gap-3 text-base font-semibold border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all duration-300"
+                  onClick={handleVisitFanmark}
+                >
+                  <ExternalLink className="h-5 w-5" />
+                  {t('dashboard.visitFanmarkButton')}
+                </Button>
+              )}
+
+              {/* エラーメッセージ */}
               {searchResult?.status === 'available' && user && remainingCapacity <= 0 && (
-                <div className="text-red-500 text-sm text-center">
-                  {t('dashboard.acquireLimitReachedDescription')}
+                <div className="text-center p-4 rounded-xl bg-red-50 border border-red-200">
+                  <div className="text-red-600 font-medium">
+                    {t('dashboard.acquireLimitReachedDescription')}
+                  </div>
                 </div>
               )}
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 

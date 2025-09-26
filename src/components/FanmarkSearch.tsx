@@ -17,6 +17,7 @@ interface FanmarkSearchProps {
   statusVariant?: 'authenticated' | 'public';
   showRecent?: boolean;
   initialQuery?: string;
+  onUtilitiesRef?: (utilities: { setQuery: (query: string) => void; clearQuery: () => void }) => void;
 }
 
 const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
@@ -26,6 +27,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
   statusVariant = 'authenticated',
   showRecent = true,
   initialQuery,
+  onUtilitiesRef,
 }) => {
   const { t } = useTranslation();
   const { 
@@ -47,6 +49,16 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
       setSearchQuery(initialQuery);
     }
   }, [initialQuery, searchQuery, setSearchQuery]);
+
+  // Expose utilities to parent component
+  useEffect(() => {
+    if (onUtilitiesRef) {
+      onUtilitiesRef({
+        setQuery: setSearchQuery,
+        clearQuery: () => setSearchQuery(''),
+      });
+    }
+  }, [onUtilitiesRef, setSearchQuery]);
 
   // Get normalization info for current search query
   const normalizationInfo = searchQuery.trim() && getNormalizationInfo ? getNormalizationInfo(searchQuery.trim()) : null;
@@ -70,10 +82,10 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
   );
 
   return (
-    <div className="space-y-6 overflow-visible">
+    <div className="overflow-visible space-y-4">
       {/* Search Input */}
-      <div className="relative overflow-visible py-4">
-        <div className="mb-4">
+      <div className="relative overflow-visible">
+        <div>
           <EmojiInput
             value={searchQuery}
             onChange={setSearchQuery}
@@ -82,6 +94,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
             className="h-16 text-center text-2xl"
             maxLength={5}
             disabled={loading}
+            showUtilities={false}
           />
           {loading && (
             <div className="absolute right-4 top-1/2 -translate-y-1/2 transform">
@@ -122,7 +135,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
 
       {/* Error Display for invalid inputs */}
       {result && searchQuery.trim() && !loading && result.status === 'invalid' && result.error && (
-        <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
           <div className="mb-1 flex items-center gap-2 font-medium">
             <FiAlertTriangle className="h-4 w-4" />
             {t('dashboard.inputError')}
@@ -137,7 +150,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
 
       {/* Recently Acquired Fanmarks */}
       {showRecent && !searchQuery && recentFanmarks.length > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <h3 className="text-sm font-medium text-base-content/70">
             {t('search.recentlyAcquired')}
           </h3>
