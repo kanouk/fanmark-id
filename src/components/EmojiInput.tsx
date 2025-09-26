@@ -2,8 +2,9 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { EmojiPicker } from 'frimousse';
-import { Sparkles, Plus, X, Eraser } from 'lucide-react';
+import { Sparkles, Plus, X, Eraser, Clipboard } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useToast } from '@/hooks/use-toast';
 
 interface EmojiInputProps {
   value: string;
@@ -26,6 +27,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
   onSearchPerformed,
 }) => {
   const { t, language } = useTranslation();
+  const { toast } = useToast();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -35,13 +37,13 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
   const splitGraphemes = useCallback(
     (text: string) => {
       if (!text) return [] as string[];
-      
+
       // Use Intl.Segmenter for accurate grapheme cluster splitting if available
       if (typeof Intl !== 'undefined' && (Intl as any).Segmenter) {
         const segmenter = new (Intl as any).Segmenter('en', { granularity: 'grapheme' });
         return Array.from(segmenter.segment(text), (segment: any) => segment.segment);
       }
-      
+
       // Fallback: Advanced regex for complex emoji support
       // This regex handles:
       // - Extended pictographic characters (most emojis)
@@ -53,6 +55,44 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
       return text.match(complexEmojiRegex) || [];
     },
     []
+  );
+
+  const isEmojiOnly = useCallback(
+    (text: string) => {
+      if (!text) return true;
+
+      // More comprehensive emoji validation
+      const emojiOnlyRegex = /^[\p{Emoji_Presentation}\p{Extended_Pictographic}][\p{Emoji_Modifier}\p{Variation_Selector}\p{Emoji_Modifier_Base}\p{Emoji_Component}]*|[\p{Regional_Indicator}]{2}$/u;
+      const segments = splitGraphemes(text);
+
+      return segments.every(segment => {
+        // Check if each segment is a valid emoji
+        return emojiOnlyRegex.test(segment) || /^[\u{1F1E6}-\u{1F1FF}]{2}$/u.test(segment);
+      });
+    },
+    [splitGraphemes]
+  );
+
+  const extractEmojis = useCallback(
+    (text: string) => {
+      if (!text) return [];
+
+      const segments = splitGraphemes(text);
+      const emojiSegments: string[] = [];
+
+      // More comprehensive emoji detection regex
+      const emojiRegex = /[\p{Emoji_Presentation}\p{Extended_Pictographic}][\p{Emoji_Modifier}\p{Variation_Selector}\p{Emoji_Modifier_Base}\p{Emoji_Component}]*|[\u{1F1E6}-\u{1F1FF}]{2}/u;
+
+      segments.forEach(segment => {
+        // Check if this segment is an emoji
+        if (emojiRegex.test(segment)) {
+          emojiSegments.push(segment);
+        }
+      });
+
+      return emojiSegments;
+    },
+    [splitGraphemes]
   );
 
   const segments = useMemo(() => {
@@ -197,6 +237,90 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
     setActiveIndex(null);
   };
 
+  const handlePaste = async () => {
+    if (disabled) return;
+
+    try {
+      // Check if clipboard API is available
+      if (!navigator.clipboard) {
+        toast({
+          title: t('common.error'),
+          description: 'クリップボード機能がサポートされていません',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const clipboardText = await navigator.clipboard.readText();
+
+      if (!clipboardText.trim()) {
+        toast({
+          title: t('common.error'),
+          description: 'クリップボードが空です',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Extract emojis from the clipboard content
+      const extractedEmojis = extractEmojis(clipboardText);
+
+      if (extractedEmojis.length === 0) {
+        toast({
+          title: t('common.error'),
+          description: 'クリップボードに絵文字が見つかりませんでした',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Limit to maxLength
+      const limitedEmojis = extractedEmojis.slice(0, maxLength);
+      const wasEmojiOnly = isEmojiOnly(clipboardText);
+
+      // Determine appropriate message
+      let title = '貼り付け完了';
+      let description = '';
+
+      if (!wasEmojiOnly && limitedEmojis.length > 0) {
+        if (extractedEmojis.length > maxLength) {
+          // Extracted emojis + truncated
+          title = '絵文字を抽出して貼り付けました';
+          description = `${extractedEmojis.length}個の絵文字を見つけて、先頭${maxLength}個を貼り付けました`;
+        } else {
+          // Only extracted emojis
+          title = '絵文字を抽出して貼り付けました';
+          description = `${limitedEmojis.length}個の絵文字を抽出しました`;
+        }
+      } else if (wasEmojiOnly) {
+        if (extractedEmojis.length > maxLength) {
+          // Pure emojis + truncated
+          title = '文字数を調整しました';
+          description = `先頭${maxLength}個の絵文字を貼り付けました`;
+        } else {
+          // Pure emojis, no truncation
+          description = `${limitedEmojis.length}個の絵文字を貼り付けました`;
+        }
+      }
+
+      toast({
+        title,
+        description,
+      });
+
+      updateValue(limitedEmojis);
+      setActiveIndex(null);
+
+    } catch (error) {
+      console.error('Paste failed:', error);
+      toast({
+        title: t('common.error'),
+        description: 'クリップボードの読み取りに失敗しました',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleOpenChange = (index: number, open: boolean) => {
     if (disabled) return;
     setActiveIndex(open ? index : null);
@@ -300,6 +424,17 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
         })}
       </div>
       <div className="flex flex-1 justify-end gap-2 sm:gap-3">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          disabled={disabled}
+          onClick={handlePaste}
+          aria-label="クリップボードから貼り付け"
+          className="h-10 w-10 sm:h-12 sm:w-12 rounded-full border border-primary/20 text-muted-foreground transition hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
+        >
+          <Clipboard className="h-4 w-4 sm:h-5 sm:w-5" />
+        </Button>
         <Button
           type="button"
           variant="ghost"

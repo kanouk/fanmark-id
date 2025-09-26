@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Sparkles } from 'lucide-react';
+import { Search, Sparkles, ExternalLink, Plus } from 'lucide-react';
 import { FiInfo, FiAlertTriangle } from 'react-icons/fi';
 import FanmarkSearch from '@/components/FanmarkSearch';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -55,6 +55,8 @@ export const FanmarkAcquisition = ({
   const isOwnedByMe = useMemo(() => {
     return !!(searchResult?.owner?.user_id && user?.id && searchResult.owner.user_id === user.id);
   }, [searchResult?.owner?.user_id, user?.id]);
+
+  const isTaken = useMemo(() => searchResult?.status === 'taken' || searchResult?.status === 'not_available', [searchResult?.status]);
 
   const getSearchAreaBackgroundClass = useMemo(() => {
     if (!searchResult || !searchResult.emoji_combination || searchResult.error) {
@@ -120,6 +122,13 @@ export const FanmarkAcquisition = ({
       setIsConfirmOpen(false);
     }
   }, [navigate, onObtain, searchResult, t, toast]);
+
+  const handleVisitFanmark = useCallback(() => {
+    if (!searchResult?.emoji_combination) return;
+
+    const fanmarkUrl = `/${searchResult.emoji_combination}`;
+    window.open(fanmarkUrl, '_blank', 'noopener,noreferrer');
+  }, [searchResult?.emoji_combination]);
 
   return (
     <div className="space-y-6">
@@ -189,14 +198,31 @@ export const FanmarkAcquisition = ({
           />
 
           <div className="flex flex-col gap-3 items-center">
-            <Button
-              size="lg"
-              className="rounded-full px-6"
-              onClick={handleAcquireRequest}
-              disabled={!searchResult || !isResultAcquirable || remainingCapacity <= 0}
-            >
-              {user ? t('dashboard.acquireButton') : t('dashboard.acquireLoginButton')}
-            </Button>
+            {/* Show acquisition button for available fanmarks */}
+            {isResultAcquirable && (
+              <Button
+                size="lg"
+                className="rounded-full px-6 gap-2"
+                onClick={handleAcquireRequest}
+                disabled={!searchResult || remainingCapacity <= 0}
+              >
+                <Plus className="h-4 w-4" />
+                {user ? t('dashboard.acquireButton') : t('dashboard.acquireLoginButton')}
+              </Button>
+            )}
+
+            {/* Show visit button for taken fanmarks */}
+            {isTaken && searchResult?.emoji_combination && (
+              <Button
+                size="lg"
+                variant="outline"
+                className="rounded-full px-6 gap-2"
+                onClick={handleVisitFanmark}
+              >
+                <ExternalLink className="h-4 w-4" />
+                このファンマへ移動する
+              </Button>
+            )}
 
             <div className="min-h-[2.5rem] flex items-center justify-center">
               {searchResult?.status === 'available' && user && remainingCapacity <= 0 && (
