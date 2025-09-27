@@ -1,4 +1,7 @@
 -- Update get_fanmark_by_emoji to include short_id for redirect capability
+-- First drop the existing function to avoid return type conflicts
+DROP FUNCTION IF EXISTS public.get_fanmark_by_emoji(text);
+
 CREATE OR REPLACE FUNCTION public.get_fanmark_by_emoji(emoji_combo text)
 RETURNS TABLE(
   id uuid,
