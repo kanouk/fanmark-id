@@ -15,7 +15,7 @@ interface UserSettings {
   display_name: string | null;
   username: string;
   avatar_url: string | null;
-  plan_type: 'free' | 'creator' | 'business' | 'admin';
+  plan_type: 'free' | 'creator' | 'business' | 'enterprise' | 'admin';
   preferred_language: 'en' | 'ja';
 }
 
@@ -33,7 +33,7 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
   const { uploadAvatar, deleteAvatar, uploading } = useAvatarUpload();
   const [loading, setLoading] = useState(false);
   const [showFanmarkSelection, setShowFanmarkSelection] = useState(false);
-  const [pendingPlanChange, setPendingPlanChange] = useState<'free' | 'creator' | 'business' | 'admin' | null>(null);
+  const [pendingPlanChange, setPendingPlanChange] = useState<'free' | 'creator' | 'business' | 'enterprise' | 'admin' | null>(null);
   const [currentFanmarks, setCurrentFanmarks] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -41,21 +41,22 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
     display_name: profile?.display_name ?? '',
     username: profile?.username ?? '',
     avatar_url: profile?.avatar_url ?? '',
-    plan_type: profile?.plan_type ?? 'free' as 'free' | 'creator' | 'business' | 'admin',
+    plan_type: profile?.plan_type ?? 'free' as 'free' | 'creator' | 'business' | 'enterprise' | 'admin',
     preferred_language: profile?.preferred_language ?? 'en' as 'en' | 'ja',
   });
 
-  const getPlanLimit = (planType: 'free' | 'creator' | 'business' | 'admin'): number => {
+  const getPlanLimit = (planType: 'free' | 'creator' | 'business' | 'enterprise' | 'admin'): number => {
     switch (planType) {
       case 'free': return 3;
       case 'creator': return 10;
       case 'business': return 50;
+      case 'enterprise': return 100;
       case 'admin': return -1; // unlimited
       default: return 3;
     }
   };
 
-  const checkForPlanDowngrade = async (newPlanType: 'free' | 'creator' | 'business' | 'admin') => {
+  const checkForPlanDowngrade = async (newPlanType: 'free' | 'creator' | 'business' | 'enterprise' | 'admin') => {
     const currentPlanType = profile?.plan_type || 'free';
     const currentLimit = getPlanLimit(currentPlanType);
     const newLimit = getPlanLimit(newPlanType);

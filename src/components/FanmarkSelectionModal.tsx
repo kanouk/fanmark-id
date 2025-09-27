@@ -19,7 +19,7 @@ interface Fanmark {
 interface FanmarkSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  newPlanType: 'free' | 'creator' | 'business' | 'admin';
+  newPlanType: 'free' | 'creator' | 'business' | 'enterprise' | 'admin';
   newPlanLimit: number;
   currentFanmarks: Fanmark[];
   onConfirm: (selectedFanmarkIds: string[]) => Promise<void>;

@@ -34,6 +34,7 @@ export function useFanmarkLimit() {
       free: settings.max_fanmarks_per_user, // 3 fanmarks
       creator: settings.creator_fanmarks_limit, // 10 fanmarks  
       business: settings.business_fanmarks_limit, // 50 fanmarks
+      enterprise: settings.enterprise_fanmarks_limit, // 100 fanmarks
       max: settings.max_fanmarks_limit, // 50 fanmarks (legacy)
     };
     limit = planLimits[userPlan as keyof typeof planLimits] || planLimits.free;

@@ -1,18 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-
-interface UserSettings {
-  id: string;
-  user_id: string;
-  username: string;
-  display_name: string | null;
-  avatar_url: string | null;
-  plan_type: 'free' | 'creator' | 'business' | 'admin';
-  preferred_language: 'en' | 'ja';
-  created_at: string;
-  updated_at: string;
-}
+import { UserSettings } from '@/lib/profile-utils';
 
 export const useProfile = () => {
   const { user } = useAuth();
