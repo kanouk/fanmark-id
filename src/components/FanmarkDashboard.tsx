@@ -20,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { useFanmarkLimit } from '@/hooks/useFanmarkLimit';
 import { navigateToFanmark, getFanmarkUrlForClipboard } from '@/utils/emojiUrl';
+import { GraceStatusCountdown } from './GraceStatusCountdown';
 
 interface Fanmark {
   id: string;
@@ -648,14 +649,20 @@ export const FanmarkDashboard = () => {
                                    </div>
                                  </td>
                                   <td className="px-6 py-5">
-                                    <div className="min-h-[2.5rem] flex items-center gap-2 min-w-fit">
-                                      {getStatusBadge(licenseData?.status, licenseData?.plan_excluded)}
-                                      {licenseData?.plan_excluded && (
-                                        <span className="text-xs text-muted-foreground">
-                                          {t('fanmarkStatus.extensionNotPossible')}
-                                        </span>
-                                      )}
-                                    </div>
+                                     <div className="min-h-[2.5rem] flex items-center gap-2 min-w-fit">
+                                       {getStatusBadge(licenseData?.status, licenseData?.plan_excluded)}
+                                       {licenseData?.plan_excluded && (
+                                         <span className="text-xs text-muted-foreground">
+                                           {t('fanmarkStatus.extensionNotPossible')}
+                                         </span>
+                                       )}
+                                       {licenseData?.status === 'grace' && licenseData?.license_end && (
+                                         <GraceStatusCountdown 
+                                           licenseEnd={licenseData.license_end}
+                                           className="ml-2"
+                                         />
+                                       )}
+                                     </div>
                                   </td>
                                   <td className="px-6 py-5">
                                     <div className="min-h-[2.5rem] flex items-center gap-2">
@@ -777,10 +784,17 @@ export const FanmarkDashboard = () => {
                                           {t('fanmarkStatus.extensionNotPossible')}
                                         </p>
                                       </div>
-                                    )}
-                                  </div>
+                                     )}
+                                     {licenseData?.status === 'grace' && licenseData?.license_end && (
+                                       <div className="mt-2">
+                                         <GraceStatusCountdown 
+                                           licenseEnd={licenseData.license_end}
+                                         />
+                                       </div>
+                                     )}
+                                   </div>
 
-                                {/* Date Information */}
+                                 {/* Date Information */}
                                 <div className="grid grid-cols-3 gap-3 text-sm bg-muted/20 rounded-lg p-3">
                                   <div>
                                     <div className="text-xs text-muted-foreground font-medium mb-1">
