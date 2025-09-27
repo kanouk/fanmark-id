@@ -18,6 +18,7 @@ import { FanmarkAcquisition } from './FanmarkAcquisition';
 // Using Undo2 for return/return action
 import { supabase } from '@/integrations/supabase/client';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
+import { useFanmarkLimit } from '@/hooks/useFanmarkLimit';
 import { navigateToFanmark, getFanmarkUrlForClipboard } from '@/utils/emojiUrl';
 
 interface Fanmark {
@@ -64,6 +65,7 @@ export const FanmarkDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { settings } = useSystemSettings();
+  const { limit: fanmarkLimit } = useFanmarkLimit();
 
   const [fanmarks, setFanmarks] = useState<Fanmark[]>([]);
   const [loading, setLoading] = useState(true);
@@ -414,7 +416,7 @@ export const FanmarkDashboard = () => {
                      {t('dashboard.stats.activeFanmarks')}
                    </p>
                    <div className="flex items-baseline gap-3">
-                     <span className="text-3xl font-bold text-primary">{activeFanmarks}/{settings.max_fanmarks_per_user}</span>
+                     <span className="text-3xl font-bold text-primary">{activeFanmarks}/{fanmarkLimit}</span>
                    </div>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -424,7 +426,7 @@ export const FanmarkDashboard = () => {
               <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden mt-4">
                  <div 
                    className="bg-primary h-2.5 rounded-full transition-all duration-500"
-                   style={{ width: `${Math.min((activeFanmarks / settings.max_fanmarks_per_user) * 100, 100)}%` }}
+                   style={{ width: `${Math.min((activeFanmarks / fanmarkLimit) * 100, 100)}%` }}
                  />
               </div>
             </CardContent>
@@ -503,7 +505,7 @@ export const FanmarkDashboard = () => {
                           </DialogHeader>
                            <FanmarkAcquisition
                              prefilledEmoji={prefilledEmoji}
-                             fanmarkLimit={settings.max_fanmarks_per_user}
+                             fanmarkLimit={fanmarkLimit}
                              currentCount={activeFanmarks}
                              onObtain={() => {
                                setPrefilledEmoji(undefined);
@@ -917,7 +919,7 @@ export const FanmarkDashboard = () => {
                 </div>
                  <FanmarkAcquisition
                    prefilledEmoji={prefilledEmoji}
-                   fanmarkLimit={settings.max_fanmarks_per_user}
+                   fanmarkLimit={fanmarkLimit}
                    currentCount={activeFanmarks}
                    onObtain={() => {
                      setPrefilledEmoji(undefined);
