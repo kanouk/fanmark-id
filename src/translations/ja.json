@@ -417,8 +417,8 @@
     },
     "tabs": {
       "myFanmarks": "あなたのファンマ",
-      "getFanma": "新しいファンマを探す",
-      "getFanmarks": "新しいファンマを探す"
+      "getFanma": "ファンマを探す",
+      "getFanmarks": "ファンマを探す"
     },
     "yourFanmarks": "あなたのファンマ",
     "manageFanmarks": "取得したファンマの情報を確認したり、設定を変更したりできます",

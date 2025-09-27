@@ -603,7 +603,7 @@ export const FanmarkDashboard = () => {
                                    <div className="min-h-[2.5rem] flex items-center gap-2">
                                      {!isReturned(fanmark) && daysRemaining !== null && daysRemaining >= 0 ? (
                                        <>
-                                         <div className={`text-sm font-medium ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`}>
+                                         <div className={`text-sm font-medium whitespace-nowrap ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`}>
                                            {t('dashboard.daysRemaining', { days: daysRemaining })}
                                          </div>
                                           <Tooltip>
@@ -816,7 +816,7 @@ export const FanmarkDashboard = () => {
                                      </div>
                                      <div>
                                        {!isReturned(fanmark) && daysRemaining !== null && daysRemaining >= 0 ? (
-                                         <span className={`text-sm font-medium ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`}>
+                                         <span className={`text-sm font-medium whitespace-nowrap ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`}>
                                            {t('dashboard.daysRemaining', { days: daysRemaining })}
                                          </span>
                                        ) : isReturned(fanmark) ? (
