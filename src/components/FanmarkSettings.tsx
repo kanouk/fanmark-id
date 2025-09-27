@@ -451,7 +451,7 @@ export const FanmarkSettings = ({
                     ) : (
                       // State 2: Set (show label + change button)
                       <div className="flex items-center gap-2 h-10">
-                        <div className="flex-1 h-10 px-3 py-2 rounded-lg border border-border bg-muted/50 flex items-center text-sm text-muted-foreground">
+                        <div className="w-24 h-10 px-3 py-2 rounded-lg border border-border bg-muted/50 flex items-center justify-center text-sm text-muted-foreground">
                           {t('fanmarkSettings.fields.passwordProtection.passwordSet')}
                         </div>
                         <Button
