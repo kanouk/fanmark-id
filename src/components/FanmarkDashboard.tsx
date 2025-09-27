@@ -558,7 +558,7 @@ export const FanmarkDashboard = () => {
                               const isExpiringSoon = daysRemaining !== null && daysRemaining <= 3;
 
                               return (
-                                <tr key={fanmark.id} className={`border-b border-primary/5 transition-all duration-200 ${isFanmarkInactive(fanmark) ? 'bg-gray-200 dark:bg-gray-700' : 'hover:bg-primary/5 hover:shadow-sm'}`}>
+                                <tr key={fanmark.id} className={`border-b border-primary/5 transition-all duration-200 ${isFanmarkInactive(fanmark) ? 'bg-gray-200 dark:bg-gray-700' : licenseData?.status === 'grace' ? 'bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-950/50' : 'hover:bg-primary/5 hover:shadow-sm'}`}>
                                       <td className="px-6 py-5">
                                         <div className="min-h-[2.5rem] flex items-center">
                                           <div
@@ -743,7 +743,7 @@ export const FanmarkDashboard = () => {
                         const isExpiringSoon = daysRemaining !== null && daysRemaining <= 3;
 
                         return (
-                          <Card key={fanmark.id} className={`rounded-3xl border border-primary/10 transition-colors ${isFanmarkInactive(fanmark) ? 'bg-gray-200 dark:bg-gray-700' : 'bg-background/80 hover:border-primary/20'}`}>
+                          <Card key={fanmark.id} className={`rounded-3xl border border-primary/10 transition-colors ${isFanmarkInactive(fanmark) ? 'bg-gray-200 dark:bg-gray-700' : licenseData?.status === 'grace' ? 'bg-amber-50 dark:bg-amber-950/30 hover:border-amber-200' : 'bg-background/80 hover:border-primary/20'}`}>
                             <CardContent className="p-5">
                               <div className="space-y-3">
                                  <div className="flex items-start justify-between">
