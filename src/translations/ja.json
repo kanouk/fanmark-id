@@ -304,6 +304,20 @@
     "noExtensionWarning": "選択されなかったファンマは期限延長ができなくなります",
     "finalSelectionWarning": "この選択は今回のみ可能で、後から変更はできません",
     "selectionCount": "{selected}/{limit}個選択中",
+    "selectFanmarks": "保持するファンマを選択してください",
+    "selectPrompt": "{limit}個のファンマを選択してください",
+    "selectionStatus": "{selected}個選択済み",
+    "progressDescription": "{selected}個選択済み（あと{remaining}個選択してください）",
+    "selectionComplete": "選択完了",
+    "selectionInProgress": "選択中",
+    "selectedLabel": "選択済み",
+    "clickToSelect": "クリックして選択",
+    "readyToConfirm": "選択完了！確定できます",
+    "selectRemaining": "あと{remaining}個選択してください",
+    "proceedButton": "この選択で進める",
+    "confirmationTitle": "プラン変更の最終確認",
+    "confirmationDescription": "{selected}個のファンマを保持し、{excluded}個のファンマがプラン対象外になります。この操作は取り消せません。",
+    "finalConfirm": "確定する",
     "confirmButton": "選択を確定",
     "excludedLabel": "プラン対象外になります",
     "remainingDays": "あと{days}日",
@@ -315,10 +329,11 @@
     "errorDescription": "プラン変更に失敗しました。もう一度お試しください"
   },
   "accessTypes": {
-    "inactive": "未設定",
+    "inactive": "なにもしない",
     "profile": "プロフィール",
-    "redirect": "リダイレクト",
-    "messageboard": "メッセージボード"
+    "redirect": "アドレス転送",
+    "messageboard": "伝言板",
+    "text": "伝言板"
   },
   "fanmarkStatus": {
     "planExcluded": "プラン対象外",

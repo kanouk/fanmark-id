@@ -17,7 +17,7 @@ import { HiOutlineSparkles } from 'react-icons/hi2';
 import { FiGlobe } from 'react-icons/fi';
 
 const Profile = () => {
-  const { user, signOut, signingOut } = useAuth();
+  const { user, signOut, signingOut, loading: authLoading } = useAuth();
   const { profile, loading, updateProfile } = useProfile();
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -32,12 +32,12 @@ const Profile = () => {
   };
 
   useEffect(() => {
-    if (!user) {
+    if (!authLoading && !user) {
       navigate('/auth');
     }
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
         <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>

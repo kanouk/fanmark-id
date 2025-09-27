@@ -1,0 +1,2 @@
+- ダウングレード画面 src/components/FanmarkSelectionModal.tsx
+- デザインの新規作成時および修正時は、サービスのトーンを踏襲し、美しく、わかりやすく、控えめで上品なデザインとする

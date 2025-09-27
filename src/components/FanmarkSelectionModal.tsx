@@ -2,12 +2,9 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, AlertTriangle } from 'lucide-react';
-import { FiUser, FiExternalLink, FiFileText, FiMoon } from 'react-icons/fi';
-import { RiCalendarCheckLine } from 'react-icons/ri';
+import { Loader2, AlertTriangle, Clock, CheckCircle2 } from 'lucide-react';
+import { FiUser, FiExternalLink, FiFileText, FiMoon, FiCheck } from 'react-icons/fi';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Fanmark {
@@ -39,17 +36,11 @@ export const FanmarkSelectionModal = ({
   const { t } = useTranslation();
   const [selectedFanmarks, setSelectedFanmarks] = useState<Set<string>>(new Set());
   const [processing, setProcessing] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
-  // Initialize with the first N fanmarks selected (based on creation date)
+  // Initialize with no fanmarks selected
   useEffect(() => {
-    if (currentFanmarks.length > 0) {
-      const initialSelection = new Set(
-        currentFanmarks
-          .slice(0, newPlanLimit)
-          .map(f => f.id)
-      );
-      setSelectedFanmarks(initialSelection);
-    }
+    setSelectedFanmarks(new Set());
   }, [currentFanmarks, newPlanLimit]);
 
   const handleFanmarkToggle = (fanmarkId: string) => {
@@ -78,142 +69,205 @@ export const FanmarkSelectionModal = ({
   const isSelected = (fanmarkId: string) => selectedFanmarks.has(fanmarkId);
   const isSelectionComplete = selectedFanmarks.size === newPlanLimit;
 
+  const handleShowConfirmation = () => {
+    if (!isSelectionComplete) return;
+    setShowConfirmation(true);
+  };
+
+  const handleFinalConfirm = async () => {
+    setShowConfirmation(false);
+    await handleConfirm();
+  };
+
   const getAccessTypeIcon = (accessType: string | null) => {
     switch (accessType) {
       case 'profile':
-        return <FiUser className="h-4 w-4 text-blue-500" />;
+        return <FiUser className="h-3 w-3 text-blue-500" />;
       case 'redirect':
-        return <FiExternalLink className="h-4 w-4 text-green-500" />;
+        return <FiExternalLink className="h-3 w-3 text-green-500" />;
+      case 'text':
+        return <FiFileText className="h-3 w-3 text-amber-600" />;
       case 'messageboard':
-        return <FiFileText className="h-4 w-4 text-purple-500" />;
+        return <FiFileText className="h-3 w-3 text-amber-600" />;
       default:
-        return <FiMoon className="h-4 w-4 text-muted-foreground" />;
+        return <FiMoon className="h-3 w-3 text-muted-foreground" />;
     }
   };
 
+  if (showConfirmation) {
+    return (
+      <Dialog open={isOpen} onOpenChange={() => false}>
+        <DialogContent className="max-w-md [&>button]:hidden">
+          <DialogHeader className="space-y-3">
+            <DialogTitle className="text-lg font-semibold">
+              {t('planDowngrade.confirmationTitle')}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              {t('planDowngrade.confirmationDescription', {
+                selected: selectedFanmarks.size,
+                excluded: currentFanmarks.length - selectedFanmarks.size
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="pt-4">
+            <div className="flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowConfirmation(false)}
+                disabled={processing}
+                className="px-4"
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button
+                onClick={handleFinalConfirm}
+                disabled={processing}
+                className="px-4 bg-primary"
+              >
+                {processing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {t('planDowngrade.processingTitle')}
+                  </>
+                ) : (
+                  t('planDowngrade.finalConfirm')
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
-    <Dialog open={isOpen} onOpenChange={() => !processing && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
-        <DialogHeader className="space-y-4">
-          <DialogTitle className="text-xl font-bold">
+    <Dialog open={isOpen} onOpenChange={() => false}>
+      <DialogContent className="max-w-3xl max-h-[70vh] overflow-hidden [&>button]:hidden">
+        <DialogHeader className="space-y-3 pb-4 border-b">
+          <DialogTitle className="text-lg font-semibold">
             {t('planDowngrade.modalTitle')}
           </DialogTitle>
-          <div className="space-y-2">
-            <DialogDescription className="text-base">
-              {t('planDowngrade.newPlanLimit', { limit: newPlanLimit })}
-            </DialogDescription>
-            <div className="space-y-1">
-              <p className="text-sm text-amber-600 dark:text-amber-400 flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4" />
-                {t('planDowngrade.noExtensionWarning')}
-              </p>
-              <p className="text-sm font-medium text-destructive">
-                {t('planDowngrade.finalSelectionWarning')}
-              </p>
+          <DialogDescription className="text-sm text-muted-foreground">
+            {t('planDowngrade.newPlanLimit', { limit: newPlanLimit })}
+          </DialogDescription>
+
+          <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+              <div className="space-y-1">
+                <p className="text-xs text-amber-800 dark:text-amber-200">
+                  {t('planDowngrade.noExtensionWarning')}
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-300 font-medium">
+                  {t('planDowngrade.finalSelectionWarning')}
+                </p>
+              </div>
             </div>
           </div>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {/* Selection Counter */}
-          <div className="flex items-center justify-between">
-            <Badge 
-              variant={isSelectionComplete ? "default" : "secondary"}
-              className="text-sm px-3 py-1"
-            >
-              {t('planDowngrade.selectionCount', { 
-                selected: selectedFanmarks.size, 
-                limit: newPlanLimit 
-              })}
-            </Badge>
+          <div className="bg-muted/30 border rounded-lg p-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-foreground">
+                  {t('planDowngrade.selectFanmarks')}
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {selectedFanmarks.size === 0
+                    ? t('planDowngrade.selectPrompt', { limit: newPlanLimit })
+                    : t('planDowngrade.selectionStatus', { selected: selectedFanmarks.size })
+                  }
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {isSelectionComplete && (
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Fanmark Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-80 overflow-y-auto">
             {currentFanmarks.map((fanmark) => {
               const selected = isSelected(fanmark.id);
               const canSelect = selected || selectedFanmarks.size < newPlanLimit;
               const remainingDays = Math.max(0, Math.ceil(
                 (new Date(fanmark.license_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
               ));
-              
+
               return (
-                <Card 
+                <div
                   key={fanmark.id}
-                  className={`min-h-[140px] cursor-pointer transition-all duration-200 hover:scale-105 ${
-                    selected 
-                      ? 'border-primary bg-primary/5 shadow-md ring-2 ring-primary/20' 
+                  className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                    selected
+                      ? 'border-primary bg-primary/5'
                       : canSelect
-                        ? 'border-border hover:border-primary/50 hover:shadow-md'
-                        : 'border-border bg-muted/50 opacity-60'
+                        ? 'border-border hover:border-primary/50 bg-background'
+                        : 'border-border bg-muted/20 opacity-50 cursor-not-allowed'
                   }`}
                   onClick={() => canSelect && handleFanmarkToggle(fanmark.id)}
                 >
-                  <CardContent className="p-4 h-full flex flex-col">
-                    {/* Top: Emoji and Checkbox */}
-                    <div className="flex items-start justify-between mb-3">
-                      <span className="text-4xl leading-none">
-                        {fanmark.emoji_combination}
+                  {/* Top: Emoji and Selection Indicator */}
+                  <div className="flex items-start justify-between mb-2">
+                    <span className="text-2xl leading-none">
+                      {fanmark.emoji_combination}
+                    </span>
+                    <div className="flex-shrink-0">
+                      {selected ? (
+                        <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                          <FiCheck className="h-2.5 w-2.5 text-primary-foreground" />
+                        </div>
+                      ) : canSelect ? (
+                        <div className="w-4 h-4 border border-muted-foreground/30 rounded-full hover:border-primary/50 transition-colors" />
+                      ) : (
+                        <div className="w-4 h-4 border border-muted-foreground/20 rounded-full bg-muted/20" />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Information */}
+                  <div className="space-y-1 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      <span>{t('planDowngrade.remainingDays', { days: remainingDays })}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {getAccessTypeIcon(fanmark.access_type)}
+                      <span className="truncate">
+                        {fanmark.access_type ?
+                          t(`accessTypes.${fanmark.access_type}`) :
+                          t('accessTypes.inactive')
+                        }
                       </span>
-                      <Checkbox
-                        checked={selected}
-                        disabled={!canSelect}
-                        className="flex-shrink-0"
-                      />
                     </div>
-                    
-                    {/* Middle: Information */}
-                    <div className="space-y-2 flex-1">
-                      <div className="flex items-center gap-2">
-                        <RiCalendarCheckLine className="h-4 w-4 text-orange-500" />
-                        <span className="text-sm font-medium">
-                          {t('planDowngrade.remainingDays', { days: remainingDays })}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {getAccessTypeIcon(fanmark.access_type)}
-                        <span className="text-sm">
-                          {fanmark.access_type ? 
-                            t(`accessTypes.${fanmark.access_type}`) : 
-                            t('accessTypes.inactive')
-                          }
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {/* Bottom: Excluded badge */}
-                    {!selected && selectedFanmarks.size >= newPlanLimit && (
-                      <div className="mt-2">
-                        <Badge 
-                          variant="destructive" 
-                          className="text-xs"
-                        >
-                          {t('planDowngrade.excludedLabel')}
-                        </Badge>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                  </div>
+
+                </div>
               );
             })}
           </div>
 
-          {/* Confirm Button */}
-          <div className="flex justify-end pt-4 border-t">
-            <Button
-              onClick={handleConfirm}
-              disabled={!isSelectionComplete || processing}
-              className="px-8"
-            >
-              {processing ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {t('planDowngrade.processingTitle')}
-                </>
+          {/* Action Button */}
+          <div className="pt-3 border-t">
+            <div className="text-center">
+              {isSelectionComplete ? (
+                <Button
+                  onClick={handleShowConfirmation}
+                  className="w-full bg-primary hover:bg-primary/90"
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  {t('planDowngrade.proceedButton')}
+                </Button>
               ) : (
-                t('planDowngrade.confirmButton')
+                <div className="text-xs text-muted-foreground py-2">
+                  {t('planDowngrade.selectRemaining', { remaining: newPlanLimit - selectedFanmarks.size })}
+                </div>
               )}
-            </Button>
+            </div>
           </div>
         </div>
       </DialogContent>
