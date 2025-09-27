@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { EmojiPicker } from 'frimousse';
-import { Plus, X, Eraser, Clipboard } from 'lucide-react';
+import { Plus, X, Eraser, Clipboard, Keyboard } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
 
@@ -35,6 +37,8 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
+  const [showDirectInput, setShowDirectInput] = useState<boolean>(false);
+  const [directInputText, setDirectInputText] = useState<string>('');
 
   const splitGraphemes = useCallback(
     (text: string) => {
@@ -322,6 +326,68 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
     }
   };
 
+  const handleDirectInput = () => {
+    if (disabled) return;
+    setDirectInputText('');
+    setShowDirectInput(true);
+  };
+
+  const handleDirectInputConfirm = () => {
+    if (!directInputText.trim()) {
+      setShowDirectInput(false);
+      return;
+    }
+
+    // Extract emojis from the input text
+    const extractedEmojis = extractEmojis(directInputText);
+
+    if (extractedEmojis.length === 0) {
+      toast({
+        title: t('common.noEmojisFound'),
+        description: t('common.noEmojisFoundDesc'),
+      });
+      return;
+    }
+
+    // Limit to maxLength
+    const limitedEmojis = extractedEmojis.slice(0, maxLength);
+    const wasEmojiOnly = isEmojiOnly(directInputText);
+
+    // Determine appropriate message
+    let title = '入力完了';
+    let description = '';
+
+    if (!wasEmojiOnly && limitedEmojis.length > 0) {
+      if (extractedEmojis.length > maxLength) {
+        // Extracted emojis + truncated
+        title = '絵文字を抽出しました';
+        description = `${extractedEmojis.length}個の絵文字を見つけて、先頭${maxLength}個を入力しました`;
+      } else {
+        // Only extracted emojis
+        title = '絵文字を抽出しました';
+        description = `${limitedEmojis.length}個の絵文字を抽出しました`;
+      }
+    } else if (wasEmojiOnly) {
+      if (extractedEmojis.length > maxLength) {
+        // Pure emojis + truncated
+        title = '文字数を調整しました';
+        description = `先頭${maxLength}個の絵文字を入力しました`;
+      } else {
+        // Pure emojis, no truncation
+        description = `${limitedEmojis.length}個の絵文字を入力しました`;
+      }
+    }
+
+    toast({
+      title,
+      description,
+    });
+
+    updateValue(limitedEmojis);
+    setShowDirectInput(false);
+    setDirectInputText('');
+  };
+
   const handleOpenChange = (index: number, open: boolean) => {
     if (disabled) return;
     setActiveIndex(open ? index : null);
@@ -436,6 +502,18 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
               variant="ghost"
               size="sm"
               disabled={disabled}
+              onClick={handleDirectInput}
+              aria-label={language === 'ja' ? '直接入力' : 'Direct Input'}
+              className="h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"
+            >
+              <Keyboard className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <span className="hidden sm:inline text-xs">{language === 'ja' ? '直接入力' : 'Type'}</span>
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={disabled}
               onClick={handlePaste}
               aria-label={t('common.pasteFromClipboard')}
               className="h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"
@@ -458,6 +536,55 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
           </div>
         </div>
       )}
+
+      {/* 直接入力モーダル */}
+      <Dialog open={showDirectInput} onOpenChange={setShowDirectInput}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold">
+              {language === 'ja' ? '絵文字を直接入力' : 'Direct Emoji Input'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                {language === 'ja'
+                  ? '絵文字を含む文字を入力してください。絵文字のみが抽出されます。'
+                  : 'Enter text containing emojis. Only emojis will be extracted.'}
+              </p>
+              <Input
+                value={directInputText}
+                onChange={(e) => setDirectInputText(e.target.value)}
+                placeholder={language === 'ja' ? 'ここに入力してください...' : 'Type here...'}
+                className="text-base"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleDirectInputConfirm();
+                  }
+                }}
+                autoFocus
+              />
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowDirectInput(false)}
+                className="px-4"
+              >
+                {language === 'ja' ? 'キャンセル' : 'Cancel'}
+              </Button>
+              <Button
+                onClick={handleDirectInputConfirm}
+                disabled={!directInputText.trim()}
+                className="px-4"
+              >
+                {language === 'ja' ? '確定' : 'Confirm'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
@@ -468,6 +595,7 @@ interface EmojiInputUtilitiesProps {
   hasValue: boolean;
   onPaste: () => void;
   onClear: () => void;
+  onDirectInput?: (input: string) => void;
   language: string;
   t: (key: string) => string;
 }
@@ -477,37 +605,123 @@ export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
   hasValue,
   onPaste,
   onClear,
+  onDirectInput,
   language,
   t,
 }) => {
+  const [showDirectInput, setShowDirectInput] = useState<boolean>(false);
+  const [directInputText, setDirectInputText] = useState<string>('');
+
+  const handleDirectInputClick = () => {
+    if (disabled || !onDirectInput) return;
+    setDirectInputText('');
+    setShowDirectInput(true);
+  };
+
+  const handleDirectInputConfirm = () => {
+    if (!directInputText.trim()) {
+      setShowDirectInput(false);
+      return;
+    }
+
+    onDirectInput?.(directInputText);
+    setShowDirectInput(false);
+    setDirectInputText('');
+  };
+
   return (
-    <div className="flex justify-center">
-      <div className="flex items-center gap-1 sm:gap-3 rounded-full bg-muted/30 px-2 sm:px-4 py-1.5 sm:py-2 border border-primary/10 max-w-fit">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={disabled}
-          onClick={onPaste}
-          aria-label={t('common.pasteFromClipboard')}
-          className="h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"
-        >
-          <Clipboard className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-          <span className="hidden sm:inline text-xs">{language === 'ja' ? '貼り付け' : 'Paste'}</span>
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={disabled || !hasValue}
-          onClick={onClear}
-          aria-label={t('common.clearAll')}
-          className="h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"
-        >
-          <Eraser className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-          <span className="hidden sm:inline text-xs">{language === 'ja' ? 'クリア' : 'Clear'}</span>
-        </Button>
+    <>
+      <div className="flex justify-center">
+        <div className="flex items-center gap-1 sm:gap-3 rounded-full bg-muted/30 px-2 sm:px-4 py-1.5 sm:py-2 border border-primary/10 max-w-fit">
+          {onDirectInput && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={disabled}
+              onClick={handleDirectInputClick}
+              aria-label={language === 'ja' ? '直接入力' : 'Direct Input'}
+              className="h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"
+            >
+              <Keyboard className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <span className="hidden sm:inline text-xs">{language === 'ja' ? '直接入力' : 'Type'}</span>
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={disabled}
+            onClick={onPaste}
+            aria-label={t('common.pasteFromClipboard')}
+            className="h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"
+          >
+            <Clipboard className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+            <span className="hidden sm:inline text-xs">{language === 'ja' ? '貼り付け' : 'Paste'}</span>
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={disabled || !hasValue}
+            onClick={onClear}
+            aria-label={t('common.clearAll')}
+            className="h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"
+          >
+            <Eraser className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+            <span className="hidden sm:inline text-xs">{language === 'ja' ? 'クリア' : 'Clear'}</span>
+          </Button>
+        </div>
       </div>
-    </div>
+
+      {/* 直接入力モーダル */}
+      <Dialog open={showDirectInput} onOpenChange={setShowDirectInput}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold">
+              {language === 'ja' ? '絵文字を直接入力' : 'Direct Emoji Input'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                {language === 'ja'
+                  ? '絵文字を含む文字を入力してください。絵文字のみが抽出されます。'
+                  : 'Enter text containing emojis. Only emojis will be extracted.'}
+              </p>
+              <Input
+                value={directInputText}
+                onChange={(e) => setDirectInputText(e.target.value)}
+                placeholder={language === 'ja' ? 'ここに入力してください...' : 'Type here...'}
+                className="text-base"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleDirectInputConfirm();
+                  }
+                }}
+                autoFocus
+              />
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowDirectInput(false)}
+                className="px-4"
+              >
+                {language === 'ja' ? 'キャンセル' : 'Cancel'}
+              </Button>
+              <Button
+                onClick={handleDirectInputConfirm}
+                disabled={!directInputText.trim()}
+                className="px-4"
+              >
+                {language === 'ja' ? '確定' : 'Confirm'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };

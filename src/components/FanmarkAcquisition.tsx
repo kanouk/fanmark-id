@@ -260,6 +260,28 @@ export const FanmarkAcquisition = ({
                   });
                 }
               }}
+              onDirectInput={(input: string) => {
+                if (!searchUtilities || !input.trim()) return;
+
+                const emojiRegex = /[\p{Emoji_Presentation}\p{Extended_Pictographic}][\p{Emoji_Modifier}\p{Variation_Selector}\p{Emoji_Modifier_Base}\p{Emoji_Component}]*|[\u{1F1E6}-\u{1F1FF}]{2}/gu;
+                const emojis = input.match(emojiRegex) || [];
+
+                if (emojis.length === 0) {
+                  toast({
+                    title: t('common.noEmojisFound'),
+                    description: t('common.noEmojisFoundDesc'),
+                  });
+                  return;
+                }
+
+                const limitedEmojis = emojis.slice(0, 5).join('');
+                searchUtilities.setQuery(limitedEmojis);
+
+                toast({
+                  title: language === 'ja' ? '入力完了' : 'Input Complete',
+                  description: `${Math.min(emojis.length, 5)}個の絵文字を入力しました`,
+                });
+              }}
               onClear={() => {
                 if (searchUtilities) {
                   searchUtilities.clearQuery();
