@@ -7,6 +7,7 @@ import { EmojiProfileForm } from '@/components/EmojiProfileForm';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, X, User, Eye } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function EmojiProfileEdit() {
   const { fanmarkId } = useParams<{ fanmarkId: string }>();
@@ -16,8 +17,54 @@ export default function EmojiProfileEdit() {
   const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cachedFanmark, setCachedFanmark] = useState<{emoji_combination: string, display_name: string | null} | null>(null);
+  const [licenseId, setLicenseId] = useState<string | null>(null);
+  const [licenseLoading, setLicenseLoading] = useState(true);
 
-  const { profile, loading, updateProfile } = useEmojiProfile(fanmarkId!);
+  const { profile, loading, updateProfile } = useEmojiProfile(licenseId!);
+
+  // Fetch license_id from fanmarkId
+  useEffect(() => {
+    if (!user || !fanmarkId) return;
+
+    const fetchLicenseId = async () => {
+      setLicenseLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('fanmark_licenses')
+          .select('id')
+          .eq('fanmark_id', fanmarkId)
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .gt('license_end', new Date().toISOString())
+          .single();
+
+        if (error) {
+          console.error('Error fetching license:', error);
+          toast({
+            title: t('emojiProfile.licenseError'),
+            description: t('emojiProfile.licenseErrorDescription'),
+            variant: 'destructive',
+          });
+          navigate(`/fanmarks/${fanmarkId}/settings`);
+          return;
+        }
+
+        setLicenseId(data.id);
+      } catch (error) {
+        console.error('Error fetching license:', error);
+        toast({
+          title: t('emojiProfile.licenseError'),
+          description: t('emojiProfile.licenseErrorDescription'),
+          variant: 'destructive',
+        });
+        navigate(`/fanmarks/${fanmarkId}/settings`);
+      } finally {
+        setLicenseLoading(false);
+      }
+    };
+
+    fetchLicenseId();
+  }, [user, fanmarkId, navigate, t]);
 
   useEffect(() => {
     if (!user) {
@@ -79,7 +126,7 @@ export default function EmojiProfileEdit() {
     return null;
   }
 
-  if (loading) {
+  if (licenseLoading || loading || !licenseId) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex items-center justify-center">
         <div className="flex items-center gap-2 text-muted-foreground">

@@ -656,6 +656,8 @@
     "updateSuccessDescription": "Your profile changes have been saved!",
     "updateError": "Update Failed",
     "updateErrorDescription": "Failed to update your profile. Please try again.",
+    "licenseError": "License Error",
+    "licenseErrorDescription": "No valid license found. Returning to settings page.",
     "preview": "Preview",
     "backToEdit": "Edit"
   },

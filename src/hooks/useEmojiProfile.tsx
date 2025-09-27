@@ -41,14 +41,17 @@ export const getPublicEmojiProfile = async (licenseId: string): Promise<PublicEm
   }
 };
 
-export const useEmojiProfile = (licenseId: string) => {
+export const useEmojiProfile = (licenseId: string | null) => {
   const { user } = useAuth();
   const { t } = useTranslation();
   const [profile, setProfile] = useState<EmojiProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async () => {
-    if (!user || !licenseId) return;
+    if (!user || !licenseId) {
+      setLoading(false);
+      return;
+    }
     
     setLoading(true);
     try {
