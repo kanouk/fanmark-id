@@ -300,9 +300,9 @@
     "uploading": "Uploading..."
   },
   "planDowngrade": {
-    "modalTitle": "Fanmark Selection for Plan Change",
-    "newPlanLimit": "New plan allows up to {limit} fanmarks",
-    "noExtensionWarning": "Unselected fanmarks will not be extendable",
+    "modalTitle": "Fanma Selection for Plan Change",
+    "newPlanLimit": "New plan allows up to {limit} fanmas",
+    "noExtensionWarning": "Unselected fanmas will not be extendable",
     "finalSelectionWarning": "This selection can only be made now and cannot be changed later",
     "selectionCount": "{selected}/{limit} selected",
     "confirmButton": "Confirm Selection",

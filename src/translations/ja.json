@@ -299,9 +299,9 @@
     "uploading": "アップロード中..."
   },
   "planDowngrade": {
-    "modalTitle": "プラン変更に伴うファンマーク選択",
+    "modalTitle": "プラン変更に伴うファンマ選択",
     "newPlanLimit": "新プランでは{limit}個まで保持可能です",
-    "noExtensionWarning": "選択されなかったファンマークは期限延長ができなくなります",
+    "noExtensionWarning": "選択されなかったファンマは期限延長ができなくなります",
     "finalSelectionWarning": "この選択は今回のみ可能で、後から変更はできません",
     "selectionCount": "{selected}/{limit}個選択中",
     "confirmButton": "選択を確定",

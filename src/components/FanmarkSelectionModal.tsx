@@ -6,6 +6,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, AlertTriangle } from 'lucide-react';
+import { FiUser, FiExternalLink, FiFileText, FiMoon } from 'react-icons/fi';
+import { RiCalendarCheckLine } from 'react-icons/ri';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Fanmark {
@@ -76,6 +78,19 @@ export const FanmarkSelectionModal = ({
   const isSelected = (fanmarkId: string) => selectedFanmarks.has(fanmarkId);
   const isSelectionComplete = selectedFanmarks.size === newPlanLimit;
 
+  const getAccessTypeIcon = (accessType: string | null) => {
+    switch (accessType) {
+      case 'profile':
+        return <FiUser className="h-4 w-4 text-blue-500" />;
+      case 'redirect':
+        return <FiExternalLink className="h-4 w-4 text-green-500" />;
+      case 'messageboard':
+        return <FiFileText className="h-4 w-4 text-purple-500" />;
+      default:
+        return <FiMoon className="h-4 w-4 text-muted-foreground" />;
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={() => !processing && onClose()}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
@@ -114,66 +129,69 @@ export const FanmarkSelectionModal = ({
           </div>
 
           {/* Fanmark Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
             {currentFanmarks.map((fanmark) => {
               const selected = isSelected(fanmark.id);
               const canSelect = selected || selectedFanmarks.size < newPlanLimit;
+              const remainingDays = Math.max(0, Math.ceil(
+                (new Date(fanmark.license_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+              ));
               
               return (
                 <Card 
                   key={fanmark.id}
-                  className={`cursor-pointer transition-all duration-200 ${
+                  className={`min-h-[140px] cursor-pointer transition-all duration-200 hover:scale-105 ${
                     selected 
-                      ? 'border-primary bg-primary/5 shadow-md' 
+                      ? 'border-primary bg-primary/5 shadow-md ring-2 ring-primary/20' 
                       : canSelect
-                        ? 'border-border hover:border-primary/50'
+                        ? 'border-border hover:border-primary/50 hover:shadow-md'
                         : 'border-border bg-muted/50 opacity-60'
                   }`}
                   onClick={() => canSelect && handleFanmarkToggle(fanmark.id)}
                 >
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
+                  <CardContent className="p-4 h-full flex flex-col">
+                    {/* Top: Emoji and Checkbox */}
+                    <div className="flex items-start justify-between mb-3">
+                      <span className="text-4xl leading-none">
+                        {fanmark.emoji_combination}
+                      </span>
                       <Checkbox
                         checked={selected}
                         disabled={!canSelect}
-                        className="mt-1"
+                        className="flex-shrink-0"
                       />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-3">
-                          <span className="text-3xl">
-                            {fanmark.emoji_combination}
-                          </span>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Badge 
-                                variant="secondary" 
-                                className="text-xs px-2 py-0.5"
-                              >
-                                {fanmark.access_type ? 
-                                  t(`accessTypes.${fanmark.access_type}`) : 
-                                  t('accessTypes.inactive')
-                                }
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              {t('planDowngrade.remainingDays', {
-                                days: Math.max(0, Math.ceil(
-                                  (new Date(fanmark.license_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-                                ))
-                              })}
-                            </p>
-                          </div>
-                        </div>
-                        {!selected && (
-                          <Badge 
-                            variant="destructive" 
-                            className="text-xs"
-                          >
-                            {t('planDowngrade.excludedLabel')}
-                          </Badge>
-                        )}
+                    </div>
+                    
+                    {/* Middle: Information */}
+                    <div className="space-y-2 flex-1">
+                      <div className="flex items-center gap-2">
+                        <RiCalendarCheckLine className="h-4 w-4 text-orange-500" />
+                        <span className="text-sm font-medium">
+                          {t('planDowngrade.remainingDays', { days: remainingDays })}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {getAccessTypeIcon(fanmark.access_type)}
+                        <span className="text-sm">
+                          {fanmark.access_type ? 
+                            t(`accessTypes.${fanmark.access_type}`) : 
+                            t('accessTypes.inactive')
+                          }
+                        </span>
                       </div>
                     </div>
+                    
+                    {/* Bottom: Excluded badge */}
+                    {!selected && selectedFanmarks.size >= newPlanLimit && (
+                      <div className="mt-2">
+                        <Badge 
+                          variant="destructive" 
+                          className="text-xs"
+                        >
+                          {t('planDowngrade.excludedLabel')}
+                        </Badge>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               );
