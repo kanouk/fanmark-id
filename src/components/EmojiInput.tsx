@@ -442,7 +442,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
                   {triggerButton}
                 </PopoverTrigger>
                 <PopoverContent
-                  className="w-[360px] max-w-[95vw] rounded-2xl border border-border bg-card p-0 shadow-[0_20px_45px_rgba(101,195,200,0.18)]"
+                  className="w-[400px] max-w-[95vw] rounded-2xl border border-border bg-card p-0 shadow-[0_20px_45px_rgba(101,195,200,0.18)]"
                   align="center"
                   side="bottom"
                   sideOffset={8}
