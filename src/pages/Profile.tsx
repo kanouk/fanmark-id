@@ -236,7 +236,10 @@ const Profile = () => {
                         </p>
                         <div className="flex items-center gap-2 rounded-2xl border border-primary/10 bg-background/80 px-4 py-3 text-sm text-foreground">
                           <Badge className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary">
-                            {profile?.plan_type === 'creator' ? t('userSettings.planTypeCreator') : t('userSettings.planTypeFree')}
+                            {profile?.plan_type === 'creator' ? t('userSettings.planTypeCreator') :
+                             profile?.plan_type === 'business' ? t('userSettings.planTypeBusiness') :
+                             profile?.plan_type === 'admin' ? t('userSettings.planTypeAdmin') :
+                             t('userSettings.planTypeFree')}
                           </Badge>
                         </div>
                       </div>

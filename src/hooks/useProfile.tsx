@@ -8,7 +8,7 @@ interface UserSettings {
   username: string;
   display_name: string | null;
   avatar_url: string | null;
-  plan_type: 'free' | 'creator' | 'business' | 'enterprise' | 'admin';
+  plan_type: 'free' | 'creator' | 'business' | 'admin';
   preferred_language: 'en' | 'ja';
   created_at: string;
   updated_at: string;
