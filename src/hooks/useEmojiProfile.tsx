@@ -41,6 +41,23 @@ export const getPublicEmojiProfile = async (licenseId: string): Promise<PublicEm
   }
 };
 
+// Function for owners to get their own profile (regardless of public status) - for preview purposes
+export const getOwnerEmojiProfile = async (licenseId: string): Promise<EmojiProfile | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('fanmark_profiles')
+      .select('*')
+      .eq('license_id', licenseId)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data as EmojiProfile;
+  } catch (error) {
+    console.error('Error fetching owner emoji profile:', error);
+    return null;
+  }
+};
+
 export const useEmojiProfile = (licenseId: string | null) => {
   const { user } = useAuth();
   const { t } = useTranslation();

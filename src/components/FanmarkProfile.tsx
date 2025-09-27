@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Loader2, ExternalLink, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -107,6 +108,46 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
         <div className="flex items-center gap-2 text-muted-foreground">
           <Loader2 className="h-6 w-6 animate-spin" />
           {t('common.loading')}
+        </div>
+      </div>
+    );
+  }
+
+  // If profile is null after loading (meaning it's private), show private message
+  if (!emojiProfile) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex flex-col">
+        {/* Header Navigation */}
+        <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
+          <div className="container mx-auto flex items-center justify-between px-4 py-4 md:px-6">
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="group flex items-center gap-2 text-lg font-semibold text-foreground transition-transform hover:translate-y-[-1px]"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
+                ✨
+              </span>
+              <span className="text-gradient text-2xl">fanmark.id</span>
+            </button>
+            <LanguageToggle />
+          </div>
+        </header>
+
+        <div className="container mx-auto px-4 py-8 flex-1 flex items-center justify-center">
+          <Card className="w-96">
+            <CardContent className="p-8 text-center space-y-4">
+              <div className="text-6xl mb-4">{fanmark.emoji_combination}</div>
+              <h1 className="text-xl font-semibold text-foreground">プライベートプロフィール</h1>
+              <p className="text-muted-foreground">
+                このプロフィールは非公開に設定されています。
+              </p>
+              <Button onClick={() => navigate('/')} className="w-full mt-4">
+                <span className="mr-2">🏠</span>
+                ホームに戻る
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );

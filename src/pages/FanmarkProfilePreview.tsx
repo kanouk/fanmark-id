@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, ExternalLink, User, X, Edit } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useEmojiProfile } from '@/hooks/useEmojiProfile';
+import { getOwnerEmojiProfile, type EmojiProfile } from '@/hooks/useEmojiProfile';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import {
   FiInstagram,
@@ -38,8 +38,8 @@ export default function FanmarkProfilePreview() {
   const location = useLocation();
   const { t } = useTranslation();
   const [cachedFanmark, setCachedFanmark] = useState<{emoji_combination: string, display_name: string | null} | null>(null);
-
-  const { profile, loading } = useEmojiProfile(fanmarkId!);
+  const [profile, setProfile] = useState<EmojiProfile | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Load cached fanmark data from localStorage
@@ -58,6 +58,28 @@ export default function FanmarkProfilePreview() {
     } catch (error) {
       console.error('Error loading cached fanmark data:', error);
     }
+  }, [fanmarkId]);
+
+  // Load owner profile (for preview - shows regardless of public status)
+  useEffect(() => {
+    const loadOwnerProfile = async () => {
+      if (!fanmarkId) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const ownerProfile = await getOwnerEmojiProfile(fanmarkId);
+        setProfile(ownerProfile);
+      } catch (error) {
+        console.error('Error loading owner profile for preview:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadOwnerProfile();
   }, [fanmarkId]);
 
   const handleClose = () => {
