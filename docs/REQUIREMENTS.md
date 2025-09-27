@@ -120,18 +120,3 @@
 ## 15. リスクと対応方針
 - Supabaseエッジ関数やRPCが失敗した場合のエラーハンドリングを強化し、ユーザーへの再試行導線を明確化する必要がある（現状はトーストで通知しつつ、追加対策が求められる）。
 - プロフィールやファンマ設定の保存失敗時には詳細ログを確認し、監査テーブルとの連携で問題追跡を行う。
-
-## 16. 開発ドキュメント
-
-### 📋 開発ワークフロー
-- **[開発ワークフロー詳細](docs/DEVELOPMENT_WORKFLOW.md)** - Lovable + Claude Code + Supabase を組み合わせた開発手順
-- **[Supabase Migration ガイド](docs/SUPABASE_MIGRATION_GUIDE.md)** - データベースマイグレーション作成・管理のベストプラクティス
-
-### 🔧 技術仕様
-- **フロントエンド**: React + TypeScript + Tailwind CSS
-- **バックエンド**: Supabase (PostgreSQL + Edge Functions)
-- **認証**: Supabase Auth
-- **デプロイ**: Lovable (フロントエンド) + GitHub-Supabase連携 (バックエンド)
-
-### 🚀 開発環境セットアップ
-詳細な環境構築手順は [開発ワークフローガイド](docs/DEVELOPMENT_WORKFLOW.md) を参照してください。
