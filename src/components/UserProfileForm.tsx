@@ -11,7 +11,7 @@ interface UserSettings {
   display_name: string | null;
   username: string;
   avatar_url: string | null;
-  plan_type: 'free' | 'creator';
+  plan_type: 'free' | 'creator' | 'business' | 'enterprise' | 'admin';
   preferred_language: 'en' | 'ja';
 }
 
@@ -33,7 +33,7 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
     display_name: profile?.display_name ?? '',
     username: profile?.username ?? '',
     avatar_url: profile?.avatar_url ?? '',
-    plan_type: profile?.plan_type ?? 'free' as 'free' | 'creator',
+    plan_type: profile?.plan_type ?? 'free' as 'free' | 'creator' | 'business' | 'enterprise' | 'admin',
     preferred_language: profile?.preferred_language ?? 'en' as 'en' | 'ja',
   });
 
@@ -192,11 +192,14 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
             <select
               id="plan_type"
               value={formData.plan_type}
-              onChange={(e) => setFormData(prev => ({ ...prev, plan_type: e.target.value as 'free' | 'creator' }))}
+              onChange={(e) => setFormData(prev => ({ ...prev, plan_type: e.target.value as 'free' | 'creator' | 'business' | 'enterprise' | 'admin' }))}
               className="h-11 w-full rounded-2xl border border-primary/15 bg-background/80 px-3 text-base shadow-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               <option value="free">{t('userSettings.planTypeFree')}</option>
               <option value="creator">{t('userSettings.planTypeCreator')}</option>
+              <option value="business">Business (¥10,000/月)</option>
+              <option value="enterprise">Enterprise (カスタム料金)</option>
+              <option value="admin">Admin</option>
             </select>
           </div>
 

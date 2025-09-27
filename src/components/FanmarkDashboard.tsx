@@ -65,7 +65,7 @@ export const FanmarkDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { settings } = useSystemSettings();
-  const { limit: fanmarkLimit } = useFanmarkLimit();
+  const { limit: fanmarkLimit, isUnlimited } = useFanmarkLimit();
 
   const [fanmarks, setFanmarks] = useState<Fanmark[]>([]);
   const [loading, setLoading] = useState(true);
@@ -416,7 +416,9 @@ export const FanmarkDashboard = () => {
                      {t('dashboard.stats.activeFanmarks')}
                    </p>
                    <div className="flex items-baseline gap-3">
-                     <span className="text-3xl font-bold text-primary">{activeFanmarks}/{fanmarkLimit}</span>
+                     <span className="text-3xl font-bold text-primary">
+                       {activeFanmarks}/{isUnlimited ? '∞' : fanmarkLimit}
+                     </span>
                    </div>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -426,7 +428,7 @@ export const FanmarkDashboard = () => {
               <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden mt-4">
                  <div 
                    className="bg-primary h-2.5 rounded-full transition-all duration-500"
-                   style={{ width: `${Math.min((activeFanmarks / fanmarkLimit) * 100, 100)}%` }}
+                   style={{ width: `${isUnlimited ? 0 : Math.min((activeFanmarks / fanmarkLimit) * 100, 100)}%` }}
                  />
               </div>
             </CardContent>
@@ -505,7 +507,7 @@ export const FanmarkDashboard = () => {
                           </DialogHeader>
                            <FanmarkAcquisition
                              prefilledEmoji={prefilledEmoji}
-                             fanmarkLimit={fanmarkLimit}
+                             fanmarkLimit={isUnlimited ? -1 : fanmarkLimit}
                              currentCount={activeFanmarks}
                              onObtain={() => {
                                setPrefilledEmoji(undefined);
@@ -919,7 +921,7 @@ export const FanmarkDashboard = () => {
                 </div>
                  <FanmarkAcquisition
                    prefilledEmoji={prefilledEmoji}
-                   fanmarkLimit={fanmarkLimit}
+                   fanmarkLimit={isUnlimited ? -1 : fanmarkLimit}
                    currentCount={activeFanmarks}
                    onObtain={() => {
                      setPrefilledEmoji(undefined);

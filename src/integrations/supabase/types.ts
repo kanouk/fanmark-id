@@ -47,6 +47,39 @@ export type Database = {
         }
         Relationships: []
       }
+      enterprise_user_settings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fanmarks_limit: number | null
+          custom_pricing: number | null
+          id: string
+          notes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fanmarks_limit?: number | null
+          custom_pricing?: number | null
+          id?: string
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fanmarks_limit?: number | null
+          custom_pricing?: number | null
+          id?: string
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       fanmark_availability_rules: {
         Row: {
           created_at: string
@@ -524,6 +557,20 @@ export type Database = {
           fanmark_name: string
           id: string
           is_password_protected: boolean
+          short_id: string
+          status: string
+          target_url: string
+          text_content: string
+        }[]
+      }
+      get_fanmark_by_short_id: {
+        Args: { shortid_param: string }
+        Returns: {
+          access_type: string
+          emoji_combination: string
+          fanmark_name: string
+          id: string
+          is_password_protected: boolean
           status: string
           target_url: string
           text_content: string
@@ -642,7 +689,13 @@ export type Database = {
     }
     Enums: {
       user_language: "en" | "ja"
-      user_plan: "free" | "creator" | "max"
+      user_plan:
+        | "free"
+        | "creator"
+        | "max"
+        | "business"
+        | "enterprise"
+        | "admin"
       user_role: "user" | "admin"
     }
     CompositeTypes: {
@@ -772,7 +825,7 @@ export const Constants = {
   public: {
     Enums: {
       user_language: ["en", "ja"],
-      user_plan: ["free", "creator", "max"],
+      user_plan: ["free", "creator", "max", "business", "enterprise", "admin"],
       user_role: ["user", "admin"],
     },
   },
