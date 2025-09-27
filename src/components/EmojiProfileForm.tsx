@@ -110,7 +110,6 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose, onPre
         theme_color: profile?.theme_settings?.theme_color || '#3B82F6',
         button_style: profile?.theme_settings?.button_style || 'rounded',
       },
-      is_public: profile?.is_public ?? false,
     },
   });
 

@@ -11,7 +11,6 @@ export interface EmojiProfile {
   bio?: string;
   social_links?: Record<string, any>;
   theme_settings?: Record<string, any>;
-  is_public: boolean;
   created_at: string;
   updated_at: string;
 }

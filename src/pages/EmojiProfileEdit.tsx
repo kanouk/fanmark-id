@@ -113,9 +113,9 @@ export default function EmojiProfileEdit() {
           <div className="text-center space-y-6">
             <div className="mx-auto flex items-center justify-center">
               {/* Display cached emoji combination, profile emoji, or fallback to user icon with background */}
-              {(cachedFanmark?.emoji_combination || profile?.fanmark?.emoji_combination) ? (
+              {cachedFanmark?.emoji_combination ? (
                 <span className="text-6xl leading-none text-center">
-                  {cachedFanmark?.emoji_combination || profile?.fanmark?.emoji_combination}
+                  {cachedFanmark?.emoji_combination}
                 </span>
               ) : (
                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 via-accent/20 to-primary/10 flex items-center justify-center shadow-lg">
