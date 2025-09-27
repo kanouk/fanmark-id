@@ -84,9 +84,23 @@ p, span {
 }
 
 @layer components {
+  /* frimousse の幅制御 - 見切れ防止 */
+  [frimousse-root] {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  [frimousse-list] {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0 0.5rem;
+  }
+
   [frimousse-row] {
     gap: 0.4rem;
     padding: 0.15rem 0.25rem;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   [frimousse-emoji] {
@@ -97,6 +111,7 @@ p, span {
     border-radius: 9999px;
     font-size: 1.4rem;
     transition: transform 150ms ease, background-color 150ms ease;
+    box-sizing: border-box;
   }
 
   [frimousse-emoji]:hover {

@@ -442,11 +442,11 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
                   {triggerButton}
                 </PopoverTrigger>
                 <PopoverContent
-                  className="w-[360px] max-w-[90vw] rounded-2xl border border-border bg-card p-0 shadow-[0_20px_45px_rgba(101,195,200,0.18)]"
-                  align="start"
+                  className="w-[360px] max-w-[95vw] rounded-2xl border border-border bg-card p-0 shadow-[0_20px_45px_rgba(101,195,200,0.18)]"
+                  align="center"
                   side="bottom"
                   sideOffset={8}
-                  collisionPadding={16}
+                  collisionPadding={20}
                   onOpenAutoFocus={(e) => e.preventDefault()}
                   onCloseAutoFocus={(e) => e.preventDefault()}
                 >
@@ -457,7 +457,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
                         handleSelect(index, selected);
                       }
                     }}
-                    className="flex h-[360px] flex-col"
+                    className="flex h-[360px] flex-col w-full overflow-hidden"
                   >
                     <div className="border-b border-border/70 bg-background/80 px-4 pt-4 pb-3 backdrop-blur">
                       <EmojiPicker.Search
