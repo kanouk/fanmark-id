@@ -149,33 +149,42 @@ export type Database = {
       fanmark_licenses: {
         Row: {
           created_at: string
+          excluded_at: string | null
+          excluded_from_plan: string | null
           fanmark_id: string
           id: string
           is_initial_license: boolean
           license_end: string
           license_start: string
+          plan_excluded: boolean | null
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          excluded_at?: string | null
+          excluded_from_plan?: string | null
           fanmark_id: string
           id?: string
           is_initial_license?: boolean
           license_end: string
           license_start?: string
+          plan_excluded?: boolean | null
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          excluded_at?: string | null
+          excluded_from_plan?: string | null
           fanmark_id?: string
           id?: string
           is_initial_license?: boolean
           license_end?: string
           license_start?: string
+          plan_excluded?: boolean | null
           status?: string
           updated_at?: string
           user_id?: string

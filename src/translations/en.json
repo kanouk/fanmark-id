@@ -285,8 +285,30 @@
     "planTypeFree": "Free",
     "planTypeCreator": "Creator",
     "planTypeBusiness": "Business",
-    "planTypeAdmin": "Admin",
-    "preferredLanguage": "Preferred Language",
+  "planTypeAdmin": "Admin",
+  
+  "planDowngrade": {
+    "modalTitle": "Fanmark Selection for Plan Change",
+    "newPlanLimit": "New plan allows up to {limit} fanmarks",
+    "noExtensionWarning": "Unselected fanmarks will not be extendable",
+    "finalSelectionWarning": "This selection can only be made now and cannot be changed later",
+    "selectionCount": "{selected}/{limit} selected",
+    "confirmButton": "Confirm Selection",
+    "excludedLabel": "Will be plan excluded",
+    "processingTitle": "Processing plan change...",
+    "processingDescription": "Please wait",
+    "successTitle": "Plan Change Complete",
+    "successDescription": "Your plan has been successfully changed",
+    "errorTitle": "Plan Change Error",
+    "errorDescription": "Failed to change plan. Please try again"
+  },
+  
+  "fanmarkStatus": {
+    "planExcluded": "Plan Excluded",
+    "extensionNotPossible": "Extension not possible"
+  },
+  
+  "preferredLanguage": "Preferred Language",
     "languageEnglish": "English",
     "languageJapanese": "日本語",
     "saveChanges": "Save Changes",

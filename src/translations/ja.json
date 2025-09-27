@@ -285,8 +285,30 @@
     "planTypeFree": "フリー",
     "planTypeCreator": "クリエーター",
     "planTypeBusiness": "ビジネス",
-    "planTypeAdmin": "管理者",
-    "preferredLanguage": "言語設定",
+  "planTypeAdmin": "管理者",
+  
+  "planDowngrade": {
+    "modalTitle": "プラン変更に伴うファンマーク選択",
+    "newPlanLimit": "新プランでは{limit}個まで保持可能です",
+    "noExtensionWarning": "選択されなかったファンマークは期限延長ができなくなります",
+    "finalSelectionWarning": "この選択は今回のみ可能で、後から変更はできません",
+    "selectionCount": "{selected}/{limit}個選択中",
+    "confirmButton": "選択を確定",
+    "excludedLabel": "プラン対象外になります",
+    "processingTitle": "プラン変更を処理中...",
+    "processingDescription": "しばらくお待ちください",
+    "successTitle": "プラン変更完了",
+    "successDescription": "プランが正常に変更されました",
+    "errorTitle": "プラン変更エラー",
+    "errorDescription": "プラン変更に失敗しました。もう一度お試しください"
+  },
+  
+  "fanmarkStatus": {
+    "planExcluded": "プラン対象外",
+    "extensionNotPossible": "延長不可"
+  },
+  
+  "preferredLanguage": "言語設定",
     "languageEnglish": "English",
     "languageJapanese": "日本語",
     "saveChanges": "変更を保存",

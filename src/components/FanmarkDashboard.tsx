@@ -43,6 +43,9 @@ interface Fanmark {
     license_start: string;
     license_end: string;
     status: string;
+    plan_excluded?: boolean;
+    excluded_at?: string | null;
+    excluded_from_plan?: string | null;
   } | null;
 }
 
@@ -155,6 +158,9 @@ export const FanmarkDashboard = () => {
           license_start,
           license_end,
           status,
+          plan_excluded,
+          excluded_at,
+          excluded_from_plan,
           created_at,
           fanmarks (
             id,
@@ -246,7 +252,10 @@ export const FanmarkDashboard = () => {
           fanmark_licenses: {
             license_start: license.license_start,
             license_end: license.license_end,
-            status: license.status
+            status: license.status,
+            plan_excluded: license.plan_excluded,
+            excluded_at: license.excluded_at,
+            excluded_from_plan: license.excluded_from_plan
           }
         };
       }) as Fanmark[];
@@ -269,12 +278,16 @@ export const FanmarkDashboard = () => {
     fetchFanmarks();
   }, [fetchFanmarks, user]);
 
-  const getStatusBadge = (licenseStatus?: string) => {
+  const getStatusBadge = (licenseStatus?: string, isPlanExcluded?: boolean) => {
     let icon = <FiMoon className="h-3.5 w-3.5" />;
     let className = 'border-gray-200/60 bg-gray-50 text-gray-600 shadow-sm';
     let label = t('dashboard.statusUnknown');
 
-    if (licenseStatus === 'active') {
+    if (isPlanExcluded) {
+      icon = <FiTarget className="h-3.5 w-3.5" />;
+      className = 'border-amber-200/60 bg-amber-50 text-amber-600 shadow-sm';
+      label = t('fanmarkStatus.planExcluded');
+    } else if (licenseStatus === 'active') {
       icon = <FiCheckCircle className="h-3.5 w-3.5" />;
       className = 'border-emerald-200/60 bg-emerald-50 text-emerald-600 shadow-sm';
       label = t('dashboard.statusActive');
@@ -639,11 +652,16 @@ export const FanmarkDashboard = () => {
                                      )}
                                    </div>
                                  </td>
-                                 <td className="px-6 py-5">
-                                   <div className="min-h-[2.5rem] flex items-center min-w-fit">
-                                     {getStatusBadge(licenseData?.status)}
-                                   </div>
-                                 </td>
+                                  <td className="px-6 py-5">
+                                    <div className="min-h-[2.5rem] flex items-center gap-2 min-w-fit">
+                                      {getStatusBadge(licenseData?.status, licenseData?.plan_excluded)}
+                                      {licenseData?.plan_excluded && (
+                                        <span className="text-xs text-muted-foreground">
+                                          {t('fanmarkStatus.extensionNotPossible')}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
                                   <td className="px-6 py-5">
                                     <div className="min-h-[2.5rem] flex items-center gap-2">
                                        <Tooltip>
@@ -744,14 +762,28 @@ export const FanmarkDashboard = () => {
                                     </div>
                                  </div>
 
-                                 <div className="flex items-center justify-between gap-2">
-                                   <div className="flex-shrink-0">
-                                     {getAccessTypeBadge(fanmark.access_type)}
-                                   </div>
-                                   <div className="flex-shrink-0">
-                                     {getStatusBadge(licenseData?.status)}
-                                   </div>
-                                 </div>
+                                  <div className="space-y-2">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <div className="flex-shrink-0">
+                                        {getAccessTypeBadge(fanmark.access_type)}
+                                      </div>
+                                      <div className="flex-shrink-0">
+                                        {getStatusBadge(licenseData?.status, licenseData?.plan_excluded)}
+                                      </div>
+                                    </div>
+                                    {licenseData?.plan_excluded && (
+                                      <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-2">
+                                        <div className="flex items-center gap-2">
+                                          <Badge variant="destructive" className="text-xs">
+                                            🔒 {t('fanmarkStatus.planExcluded')}
+                                          </Badge>
+                                        </div>
+                                        <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                                          {t('fanmarkStatus.extensionNotPossible')}
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
 
                                 {/* Date Information */}
                                 <div className="grid grid-cols-3 gap-3 text-sm bg-muted/20 rounded-lg p-3">
