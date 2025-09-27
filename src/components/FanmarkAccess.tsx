@@ -22,6 +22,7 @@ interface FanmarkData {
   status: string;
   is_password_protected?: boolean;
   short_id?: string;
+  license_id?: string;
 }
 
 

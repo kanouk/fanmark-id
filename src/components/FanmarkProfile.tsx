@@ -28,6 +28,7 @@ interface FanmarkData {
   target_url?: string;
   text_content?: string;
   status: string;
+  license_id?: string;
 }
 
 const socialPlatforms = [
@@ -61,9 +62,9 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
 
       if (fanmark.id && fanmark.access_type === 'profile') {
         try {
-          console.log('🚀 Attempting to load profile for ID:', fanmark.id);
+          console.log('🚀 Attempting to load profile for license_id:', fanmark.license_id || fanmark.id);
           const startTime = Date.now();
-          const profile = await getPublicEmojiProfile(fanmark.id);
+          const profile = await getPublicEmojiProfile(fanmark.license_id || fanmark.id);
           const loadTime = Date.now() - startTime;
 
           console.log('✅ Profile loaded successfully in', loadTime, 'ms');
