@@ -30,7 +30,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
   onSearchPerformed,
   showUtilities = true,
 }) => {
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -461,16 +461,16 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
                   >
                     <div className="border-b border-border/70 bg-background/80 px-4 pt-4 pb-3 backdrop-blur">
                       <EmojiPicker.Search
-                        placeholder={language === 'ja' ? '絵文字を検索...' : 'Search emojis...'}
+                        placeholder={t('common.searchEmojis')}
                         className="w-full rounded-full border border-border/50 bg-muted/70 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                       />
                     </div>
                     <EmojiPicker.Viewport className="flex-1 overflow-auto">
                       <EmojiPicker.Loading className="flex h-24 items-center justify-center text-muted-foreground">
-                        {language === 'ja' ? '読み込み中...' : 'Loading...'}
+                        {t('common.loading')}
                       </EmojiPicker.Loading>
                       <EmojiPicker.Empty className="flex h-24 items-center justify-center text-muted-foreground">
-                        {language === 'ja' ? '絵文字が見つかりません' : 'No emoji found.'}
+                        {t('common.noEmojiFound')}
                       </EmojiPicker.Empty>
                       <EmojiPicker.List className="p-3" />
                     </EmojiPicker.Viewport>
@@ -503,11 +503,11 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
               size="sm"
               disabled={disabled}
               onClick={handleDirectInput}
-              aria-label={language === 'ja' ? '直接入力' : 'Direct Input'}
+              aria-label={t('common.directInput')}
               className="h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"
             >
               <Keyboard className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              <span className="hidden sm:inline text-xs">{language === 'ja' ? '直接入力' : 'Type'}</span>
+              <span className="text-xs">{t('common.directInput')}</span>
             </Button>
             <Button
               type="button"
@@ -519,7 +519,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
               className="h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"
             >
               <Clipboard className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              <span className="hidden sm:inline text-xs">{language === 'ja' ? '貼り付け' : 'Paste'}</span>
+              <span className="text-xs">{t('common.paste')}</span>
             </Button>
             <Button
               type="button"
@@ -531,7 +531,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
               className="h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"
             >
               <Eraser className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              <span className="hidden sm:inline text-xs">{language === 'ja' ? 'クリア' : 'Clear'}</span>
+              <span className="text-xs">{t('common.clear')}</span>
             </Button>
           </div>
         </div>
@@ -542,20 +542,18 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="text-lg font-semibold">
-              {language === 'ja' ? '絵文字を直接入力' : 'Direct Emoji Input'}
+              {t('common.directInput')}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">
-                {language === 'ja'
-                  ? '絵文字を含む文字を入力してください。絵文字のみが抽出されます。'
-                  : 'Enter text containing emojis. Only emojis will be extracted.'}
+                {t('common.directInputDescription')}
               </p>
               <Input
                 value={directInputText}
                 onChange={(e) => setDirectInputText(e.target.value)}
-                placeholder={language === 'ja' ? 'ここに入力してください...' : 'Type here...'}
+                placeholder={t('common.directInputPlaceholder')}
                 className="text-base"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -572,14 +570,14 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
                 onClick={() => setShowDirectInput(false)}
                 className="px-4"
               >
-                {language === 'ja' ? 'キャンセル' : 'Cancel'}
+                {t('common.cancel')}
               </Button>
               <Button
                 onClick={handleDirectInputConfirm}
                 disabled={!directInputText.trim()}
                 className="px-4"
               >
-                {language === 'ja' ? '確定' : 'Confirm'}
+                {t('common.confirm')}
               </Button>
             </div>
           </div>
@@ -596,8 +594,6 @@ interface EmojiInputUtilitiesProps {
   onPaste: () => void;
   onClear: () => void;
   onDirectInput?: (input: string) => void;
-  language: string;
-  t: (key: string) => string;
 }
 
 export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
@@ -606,9 +602,8 @@ export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
   onPaste,
   onClear,
   onDirectInput,
-  language,
-  t,
 }) => {
+  const { t } = useTranslation();
   const [showDirectInput, setShowDirectInput] = useState<boolean>(false);
   const [directInputText, setDirectInputText] = useState<string>('');
 
@@ -640,11 +635,11 @@ export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
               size="sm"
               disabled={disabled}
               onClick={handleDirectInputClick}
-              aria-label={language === 'ja' ? '直接入力' : 'Direct Input'}
+              aria-label={t('common.directInput')}
               className="h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"
             >
               <Keyboard className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              <span className="hidden sm:inline text-xs">{language === 'ja' ? '直接入力' : 'Type'}</span>
+              <span className="text-xs">{t('common.directInput')}</span>
             </Button>
           )}
           <Button
@@ -657,7 +652,7 @@ export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
             className="h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"
           >
             <Clipboard className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-            <span className="hidden sm:inline text-xs">{language === 'ja' ? '貼り付け' : 'Paste'}</span>
+            <span className="text-xs">{t('common.paste')}</span>
           </Button>
           <Button
             type="button"
@@ -669,7 +664,7 @@ export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
             className="h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"
           >
             <Eraser className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-            <span className="hidden sm:inline text-xs">{language === 'ja' ? 'クリア' : 'Clear'}</span>
+            <span className="text-xs">{t('common.clear')}</span>
           </Button>
         </div>
       </div>
@@ -679,20 +674,18 @@ export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="text-lg font-semibold">
-              {language === 'ja' ? '絵文字を直接入力' : 'Direct Emoji Input'}
+              {t('common.directInput')}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">
-                {language === 'ja'
-                  ? '絵文字を含む文字を入力してください。絵文字のみが抽出されます。'
-                  : 'Enter text containing emojis. Only emojis will be extracted.'}
+                {t('common.directInputDescription')}
               </p>
               <Input
                 value={directInputText}
                 onChange={(e) => setDirectInputText(e.target.value)}
-                placeholder={language === 'ja' ? 'ここに入力してください...' : 'Type here...'}
+                placeholder={t('common.directInputPlaceholder')}
                 className="text-base"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -709,14 +702,14 @@ export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
                 onClick={() => setShowDirectInput(false)}
                 className="px-4"
               >
-                {language === 'ja' ? 'キャンセル' : 'Cancel'}
+                {t('common.cancel')}
               </Button>
               <Button
                 onClick={handleDirectInputConfirm}
                 disabled={!directInputText.trim()}
                 className="px-4"
               >
-                {language === 'ja' ? '確定' : 'Confirm'}
+                {t('common.confirm')}
               </Button>
             </div>
           </div>

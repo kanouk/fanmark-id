@@ -1,8 +1,6 @@
 import { useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { EmojiInput } from "@/components/EmojiInput";
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from "@/hooks/useTranslation";
@@ -104,34 +102,6 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
         </div>
       </div>
 
-      {/* Skin Tone Normalization Info */}
-      {normalizationInfo?.isNormalized && (
-        <TooltipProvider>
-          <Alert className="rounded-2xl border border-primary/15 bg-primary/5">
-            <AlertDescription className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium text-primary">
-                  {t('search.skinTone.normalizationInfo')}
-                </span>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge 
-                      variant="outline" 
-                      className="bg-primary/10 border-primary/30 text-primary cursor-help"
-                    >
-                      {normalizationInfo?.normalized} {t('search.skinTone.allVariationsIncluded')}
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-sm">{t('search.skinTone.tooltip')}</p>
-                    <p className="text-xs mt-1 opacity-75">{t('search.skinTone.example')}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-            </AlertDescription>
-          </Alert>
-        </TooltipProvider>
-      )}
 
       {/* Error Display for invalid inputs */}
       {result && searchQuery.trim() && !loading && result.status === 'invalid' && result.error && (

@@ -39,7 +39,7 @@ export const FanmarkAcquisition = ({
   onObtain,
   onRequireAuth,
 }: FanmarkAcquisitionProps) => {
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -248,7 +248,7 @@ export const FanmarkAcquisition = ({
                   searchUtilities.setQuery(limitedEmojis);
 
                   toast({
-                    title: language === 'ja' ? '貼り付け完了' : 'Pasted',
+                    title: t('common.paste') + '完了',
                     description: `${Math.min(emojis.length, 5)}個の絵文字を貼り付けました`,
                   });
 
@@ -278,7 +278,7 @@ export const FanmarkAcquisition = ({
                 searchUtilities.setQuery(limitedEmojis);
 
                 toast({
-                  title: language === 'ja' ? '入力完了' : 'Input Complete',
+                  title: t('common.directInput') + '完了',
                   description: `${Math.min(emojis.length, 5)}個の絵文字を入力しました`,
                 });
               }}
@@ -286,12 +286,10 @@ export const FanmarkAcquisition = ({
                 if (searchUtilities) {
                   searchUtilities.clearQuery();
                   toast({
-                    title: language === 'ja' ? 'クリア完了' : 'Cleared',
+                    title: t('common.clear') + '完了',
                   });
                 }
               }}
-              language={language}
-              t={t}
             />
             </div>
           </div>
