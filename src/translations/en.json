@@ -313,21 +313,54 @@
     "noExtensionWarning": "Unselected fanmas will not be extendable",
     "finalSelectionWarning": "This selection can only be made now and cannot be changed later",
     "selectionCount": "{selected}/{limit} selected",
+    "selectFanmarks": "Please select fanmarks to keep",
+    "selectPrompt": "{limit} fanmarks need to be selected",
+    "selectionStatus": "{selected} selected",
+    "progressDescription": "{selected} selected (please select {remaining} more)",
     "confirmButton": "Confirm Selection",
     "excludedLabel": "Will be plan excluded",
     "remainingDays": "{days} days remaining",
+    "loadingFanmarks": "Loading fanmarks...",
+    "noFanmarks": "No fanmarks available to keep",
+    "validationRequired": "Please select the required number of fanmarks",
+    "processingSelection": "Processing selection...",
+    "selectionComplete": "Selection completed",
+    "cancelButton": "Cancel",
+    "backButton": "Back",
+    "nextButton": "Next",
+    "selectionInProgress": "Selecting",
+    "selectedLabel": "Selected",
+    "clickToSelect": "Click to select",
+    "readyToConfirm": "Ready to confirm!",
+    "selectRemaining": "Please select {remaining} more",
+    "proceedButton": "Proceed with selection",
+    "confirmationTitle": "Final Plan Change Confirmation",
+    "confirmationDescription": "{selected} fanmarks will be kept and {excluded} fanmarks will be excluded from plan. This cannot be undone.",
+    "finalConfirm": "Confirm",
     "processingTitle": "Processing plan change...",
     "processingDescription": "Please wait",
     "successTitle": "Plan Change Complete",
     "successDescription": "Your plan has been successfully changed",
     "errorTitle": "Plan Change Error",
-    "errorDescription": "Failed to change plan. Please try again"
+    "errorDescription": "Failed to change plan. Please try again",
+    "accessTypes": {
+      "profile": "Profile",
+      "redirect": "Redirect",
+      "text": "Text",
+      "inactive": "Inactive"
+    },
+    "errors": {
+      "loadingFailed": "Failed to load fanmarks",
+      "errorTitle": "An error occurred",
+      "errorDescription": "Please try again later."
+    }
   },
   "accessTypes": {
     "inactive": "Inactive",
     "profile": "Profile",
     "redirect": "Redirect",
-    "messageboard": "Messageboard"
+    "messageboard": "Messageboard",
+    "text": "Text"
   },
   "fanmarkStatus": {
     "planExcluded": "Plan Excluded",

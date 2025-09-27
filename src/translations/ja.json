@@ -316,7 +316,13 @@
     "selectPrompt": "{limit}個のファンマを選択してください",
     "selectionStatus": "{selected}個選択済み",
     "progressDescription": "{selected}個選択済み（あと{remaining}個選択してください）",
-    "selectionComplete": "選択完了",
+    "loadingFanmarks": "ファンマを読み込み中...",
+    "noFanmarks": "保持できるファンマがありません",
+    "validationRequired": "必要な数のファンマを選択してください",
+    "processingSelection": "選択内容を処理中...",
+    "cancelButton": "キャンセル",
+    "backButton": "戻る",
+    "nextButton": "次へ",
     "selectionInProgress": "選択中",
     "selectedLabel": "選択済み",
     "clickToSelect": "クリックして選択",
@@ -334,7 +340,18 @@
     "successTitle": "プラン変更完了",
     "successDescription": "プランが正常に変更されました",
     "errorTitle": "プラン変更エラー",
-    "errorDescription": "プラン変更に失敗しました。もう一度お試しください"
+    "errorDescription": "プラン変更に失敗しました。もう一度お試しください",
+    "accessTypes": {
+      "profile": "プロフィール",
+      "redirect": "リダイレクト",
+      "text": "テキスト",
+      "inactive": "非アクティブ"
+    },
+    "errors": {
+      "loadingFailed": "ファンマ一覧の読み込みに失敗しました",
+      "errorTitle": "エラーが発生しました",
+      "errorDescription": "しばらく時間をおいて再度お試しください。"
+    }
   },
   "accessTypes": {
     "inactive": "なにもしない",
