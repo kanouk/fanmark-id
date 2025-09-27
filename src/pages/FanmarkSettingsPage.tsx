@@ -68,6 +68,7 @@ const FanmarkSettingsPage = () => {
         is_password_protected: fanmarkData.is_password_protected ?? false,
         status: fanmarkData.status,
         short_id: fanmarkData.short_id,
+        license_id: fanmarkData.license_id,
       });
     } catch (error) {
       console.error('Failed to load fanmark:', error);

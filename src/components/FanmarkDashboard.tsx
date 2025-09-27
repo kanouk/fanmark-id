@@ -186,11 +186,14 @@ export const FanmarkDashboard = () => {
       // Get all fanmark IDs to fetch configs
       const fanmarkIds = licenses.map(license => license.fanmark_id).filter(Boolean);
 
-      // Fetch basic configs for all fanmarks
+      // Get all license IDs to fetch configs
+      const licenseIds = licenses.map(license => license.id).filter(Boolean);
+
+      // Fetch basic configs for all licenses
       const { data: basicConfigs, error: configError } = await supabase
         .from('fanmark_basic_configs')
-        .select('fanmark_id, access_type, fanmark_name')
-        .in('fanmark_id', fanmarkIds);
+        .select('license_id, access_type, fanmark_name')
+        .in('license_id', licenseIds);
 
       if (configError) {
         console.warn('Error fetching basic configs:', configError);
@@ -199,8 +202,8 @@ export const FanmarkDashboard = () => {
       // Fetch redirect configs
       const { data: redirectConfigs, error: redirectError } = await supabase
         .from('fanmark_redirect_configs')
-        .select('fanmark_id, target_url')
-        .in('fanmark_id', fanmarkIds);
+        .select('license_id, target_url')
+        .in('license_id', licenseIds);
 
       if (redirectError) {
         console.warn('Error fetching redirect configs:', redirectError);
@@ -209,24 +212,24 @@ export const FanmarkDashboard = () => {
       // Fetch message configs
       const { data: messageConfigs, error: messageError } = await supabase
         .from('fanmark_messageboard_configs')
-        .select('fanmark_id, content')
-        .in('fanmark_id', fanmarkIds);
+        .select('license_id, content')
+        .in('license_id', licenseIds);
 
       if (messageError) {
         console.warn('Error fetching message configs:', messageError);
       }
 
       // Create lookup maps for configs
-      const basicConfigMap = new Map((basicConfigs || []).map(config => [config.fanmark_id, config]));
-      const redirectConfigMap = new Map((redirectConfigs || []).map(config => [config.fanmark_id, config]));
-      const messageConfigMap = new Map((messageConfigs || []).map(config => [config.fanmark_id, config]));
+      const basicConfigMap = new Map((basicConfigs || []).map(config => [config.license_id, config]));
+      const redirectConfigMap = new Map((redirectConfigs || []).map(config => [config.license_id, config]));
+      const messageConfigMap = new Map((messageConfigs || []).map(config => [config.license_id, config]));
 
       // Process fanmarks with their configs
       const fanmarksWithDefaults = licenses.map(license => {
         const fanmark = license.fanmarks as any;
-        const basicConfig = basicConfigMap.get(license.fanmark_id);
-        const redirectConfig = redirectConfigMap.get(license.fanmark_id);
-        const messageConfig = messageConfigMap.get(license.fanmark_id);
+        const basicConfig = basicConfigMap.get(license.id);
+        const redirectConfig = redirectConfigMap.get(license.id);
+        const messageConfig = messageConfigMap.get(license.id);
         
         return {
           ...fanmark,
@@ -235,6 +238,7 @@ export const FanmarkDashboard = () => {
           fanmark_name: basicConfig?.fanmark_name || fanmark.emoji_combination,
           target_url: redirectConfig?.target_url || null,
           text_content: messageConfig?.content || null,
+          license_id: license.id,
           redirect_url: null,
           profile_text: null,
           tier_level: null, // Removed from fanmarks table

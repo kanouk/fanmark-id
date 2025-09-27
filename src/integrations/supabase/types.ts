@@ -123,28 +123,36 @@ export type Database = {
         Row: {
           access_type: string
           created_at: string
-          fanmark_id: string
           fanmark_name: string | null
           id: string
+          license_id: string
           updated_at: string
         }
         Insert: {
           access_type?: string
           created_at?: string
-          fanmark_id: string
           fanmark_name?: string | null
           id?: string
+          license_id: string
           updated_at?: string
         }
         Update: {
           access_type?: string
           created_at?: string
-          fanmark_id?: string
           fanmark_name?: string | null
           id?: string
+          license_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fanmark_basic_configs_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: true
+            referencedRelation: "fanmark_licenses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fanmark_licenses: {
         Row: {
@@ -203,115 +211,144 @@ export type Database = {
         Row: {
           content: string | null
           created_at: string
-          fanmark_id: string
           id: string
+          license_id: string
           updated_at: string
         }
         Insert: {
           content?: string | null
           created_at?: string
-          fanmark_id: string
           id?: string
+          license_id: string
           updated_at?: string
         }
         Update: {
           content?: string | null
           created_at?: string
-          fanmark_id?: string
           id?: string
+          license_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fanmark_messageboard_configs_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: true
+            referencedRelation: "fanmark_licenses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fanmark_password_configs: {
         Row: {
           access_password: string
           created_at: string
-          fanmark_id: string
           id: string
           is_enabled: boolean
+          license_id: string
           updated_at: string
         }
         Insert: {
           access_password: string
           created_at?: string
-          fanmark_id: string
           id?: string
           is_enabled?: boolean
+          license_id: string
           updated_at?: string
         }
         Update: {
           access_password?: string
           created_at?: string
-          fanmark_id?: string
           id?: string
           is_enabled?: boolean
+          license_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fanmark_password_configs_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: true
+            referencedRelation: "fanmark_licenses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fanmark_profiles: {
         Row: {
           bio: string | null
           created_at: string
           display_name: string | null
-          fanmark_id: string
           id: string
           is_public: boolean
+          license_id: string
           social_links: Json | null
           theme_settings: Json | null
           updated_at: string
-          user_id: string
         }
         Insert: {
           bio?: string | null
           created_at?: string
           display_name?: string | null
-          fanmark_id: string
           id?: string
           is_public?: boolean
+          license_id: string
           social_links?: Json | null
           theme_settings?: Json | null
           updated_at?: string
-          user_id: string
         }
         Update: {
           bio?: string | null
           created_at?: string
           display_name?: string | null
-          fanmark_id?: string
           id?: string
           is_public?: boolean
+          license_id?: string
           social_links?: Json | null
           theme_settings?: Json | null
           updated_at?: string
-          user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fanmark_profiles_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: true
+            referencedRelation: "fanmark_licenses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fanmark_redirect_configs: {
         Row: {
           created_at: string
-          fanmark_id: string
           id: string
+          license_id: string
           target_url: string
           updated_at: string
         }
         Insert: {
           created_at?: string
-          fanmark_id: string
           id?: string
+          license_id: string
           target_url: string
           updated_at?: string
         }
         Update: {
           created_at?: string
-          fanmark_id?: string
           id?: string
+          license_id?: string
           target_url?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fanmark_redirect_configs_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: true
+            referencedRelation: "fanmark_licenses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fanmark_tiers: {
         Row: {
@@ -597,6 +634,7 @@ export type Database = {
           id: string
           is_password_protected: boolean
           license_end: string
+          license_id: string
           normalized_emoji: string
           short_id: string
           status: string
@@ -613,12 +651,12 @@ export type Database = {
         }[]
       }
       get_public_emoji_profile: {
-        Args: { profile_fanmark_id: string }
+        Args: { profile_license_id: string }
         Returns: {
           bio: string
           created_at: string
           display_name: string
-          fanmark_id: string
+          license_id: string
           social_links: Json
           theme_settings: Json
           updated_at: string
@@ -670,7 +708,7 @@ export type Database = {
       upsert_fanmark_password_config: {
         Args: {
           enable_password: boolean
-          fanmark_uuid: string
+          license_uuid: string
           new_password: string
         }
         Returns: string

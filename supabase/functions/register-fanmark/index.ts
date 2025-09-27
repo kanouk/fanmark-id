@@ -479,58 +479,60 @@ serve(async (req) => {
       // Don't fail registration for this
     }
 
-    // Save basic configurations (name and access type)
-    const { error: basicCfgErr } = await supabase
-      .from('fanmark_basic_configs')
-      .upsert(
-        { 
-          fanmark_id: fanmarkId, 
-          fanmark_name: displayName || null,
-          access_type: accessType
-        },
-        { onConflict: 'fanmark_id' as any }
-      );
-    if (basicCfgErr) {
-      console.error('Failed to upsert basic config:', basicCfgErr);
-    }
-
-    if (accessType === 'redirect' && targetUrl) {
-      const { error: redirectErr } = await supabase
-        .from('fanmark_redirect_configs')
+    // Save basic configurations (name and access type) - use license.id
+    if (license) {
+      const { error: basicCfgErr } = await supabase
+        .from('fanmark_basic_configs')
         .upsert(
-          { fanmark_id: fanmarkId, target_url: targetUrl },
-          { onConflict: 'fanmark_id' as any }
+          { 
+            license_id: license.id, 
+            fanmark_name: displayName || null,
+            access_type: accessType
+          },
+          { onConflict: 'license_id' as any }
         );
-      if (redirectErr) {
-        console.error('Failed to upsert redirect config:', redirectErr);
+      if (basicCfgErr) {
+        console.error('Failed to upsert basic config:', basicCfgErr);
       }
-    }
 
-    if (accessType === 'text' && textContent) {
-      const { error: messageErr } = await supabase
-        .from('fanmark_messageboard_configs')
-        .upsert(
-          { fanmark_id: fanmarkId, content: textContent },
-          { onConflict: 'fanmark_id' as any }
-        );
-      if (messageErr) {
-        console.error('Failed to upsert messageboard config:', messageErr);
+      if (accessType === 'redirect' && targetUrl) {
+        const { error: redirectErr } = await supabase
+          .from('fanmark_redirect_configs')
+          .upsert(
+            { license_id: license.id, target_url: targetUrl },
+            { onConflict: 'license_id' as any }
+          );
+        if (redirectErr) {
+          console.error('Failed to upsert redirect config:', redirectErr);
+        }
       }
-    }
-    if (createProfile) {
-      const { error: profileError } = await supabase
-        .from('fanmark_profiles')
-        .insert({
-          fanmark_id: fanmarkId,
-          user_id: user.id,
-          display_name: displayName || null,
-          bio: `Welcome to ${displayName || input_emoji_combination}'s profile!`,
-          is_public: true
-        });
 
-      if (profileError) {
-        console.error('Failed to create fanmark profile:', profileError);
-        // Don't fail the whole registration for this
+      if (accessType === 'text' && textContent) {
+        const { error: messageErr } = await supabase
+          .from('fanmark_messageboard_configs')
+          .upsert(
+            { license_id: license.id, content: textContent },
+            { onConflict: 'license_id' as any }
+          );
+        if (messageErr) {
+          console.error('Failed to upsert messageboard config:', messageErr);
+        }
+      }
+      
+      if (createProfile) {
+        const { error: profileError } = await supabase
+          .from('fanmark_profiles')
+          .insert({
+            license_id: license.id,
+            display_name: displayName || null,
+            bio: `Welcome to ${displayName || input_emoji_combination}'s profile!`,
+            is_public: true
+          });
+
+        if (profileError) {
+          console.error('Failed to create fanmark profile:', profileError);
+          // Don't fail the whole registration for this
+        }
       }
     }
 

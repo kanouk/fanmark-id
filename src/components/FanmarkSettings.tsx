@@ -75,6 +75,7 @@ export interface Fanmark {
   is_password_protected?: boolean;
   status: string;
   short_id: string;
+  license_id: string;
 }
 
 interface FanmarkSettingsProps {
@@ -146,11 +147,11 @@ export const FanmarkSettings = ({
       const { error: basicConfigError } = await supabase
         .from('fanmark_basic_configs')
         .upsert({
-          fanmark_id: fanmark.id,
+          license_id: fanmark.license_id,
           fanmark_name: data.fanmarkName,
           access_type: data.accessType
         }, {
-          onConflict: 'fanmark_id'
+          onConflict: 'license_id'
         });
 
       if (basicConfigError) throw basicConfigError;
@@ -160,10 +161,10 @@ export const FanmarkSettings = ({
         const { error: redirectError } = await supabase
           .from('fanmark_redirect_configs')
           .upsert({
-            fanmark_id: fanmark.id,
+            license_id: fanmark.license_id,
             target_url: data.targetUrl
           }, {
-            onConflict: 'fanmark_id'
+            onConflict: 'license_id'
           });
         if (redirectError) throw redirectError;
       }
@@ -172,10 +173,10 @@ export const FanmarkSettings = ({
         const { error: textError } = await supabase
           .from('fanmark_messageboard_configs')
           .upsert({
-            fanmark_id: fanmark.id,
+            license_id: fanmark.license_id,
             content: data.textContent
           }, {
-            onConflict: 'fanmark_id'
+            onConflict: 'license_id'
           });
         if (textError) throw textError;
       }
@@ -185,7 +186,7 @@ export const FanmarkSettings = ({
         if (data.isPasswordProtected && data.accessPassword) {
           // Enable password protection using secure function
           const { error: passwordError } = await supabase.rpc('upsert_fanmark_password_config', {
-            fanmark_uuid: fanmark.id,
+            license_uuid: fanmark.license_id,
             new_password: data.accessPassword,
             enable_password: true
           });
@@ -194,7 +195,7 @@ export const FanmarkSettings = ({
         } else {
           // Disable password protection using secure function
           const { error: passwordError } = await supabase.rpc('upsert_fanmark_password_config', {
-            fanmark_uuid: fanmark.id,
+            license_uuid: fanmark.license_id,
             new_password: data.accessPassword || '0000', // Default password when disabling
             enable_password: false
           });
@@ -204,7 +205,7 @@ export const FanmarkSettings = ({
       } else {
         // For inactive access type, disable password protection entirely
         const { error: passwordError } = await supabase.rpc('upsert_fanmark_password_config', {
-          fanmark_uuid: fanmark.id,
+          license_uuid: fanmark.license_id,
           new_password: '0000', // Default password when disabling
           enable_password: false
         });
@@ -220,10 +221,11 @@ export const FanmarkSettings = ({
         const { error: profileError } = await supabase
           .from('fanmark_profiles')
           .upsert({
-            fanmark_id: fanmark.id,
-            user_id: (await supabase.auth.getUser()).data.user?.id,
+            license_id: fanmark.license_id,
             bio: `Profile for ${fanmark.emoji_combination}`,
             is_public: data.is_public,
+          }, {
+            onConflict: 'license_id'
           });
 
         if (profileError) {
@@ -237,7 +239,7 @@ export const FanmarkSettings = ({
         const { error: profileUpdateError } = await supabase
           .from('fanmark_profiles')
           .update({ is_public: data.is_public })
-          .eq('fanmark_id', fanmark.id);
+          .eq('license_id', fanmark.license_id);
 
         if (profileUpdateError) {
           console.error('Profile update error:', profileUpdateError);

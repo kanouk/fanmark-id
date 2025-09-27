@@ -127,11 +127,11 @@ serve(async (req) => {
       console.warn('Failed to update basic config:', basicConfigError);
     }
 
-    // Clean up configuration tables
+    // Clean up configuration tables using license_id
     const deleteOperations = [
-      supabase.from('fanmark_redirect_configs').delete().eq('fanmark_id', fanmark_id),
-      supabase.from('fanmark_messageboard_configs').delete().eq('fanmark_id', fanmark_id),
-      supabase.from('fanmark_password_configs').delete().eq('fanmark_id', fanmark_id)
+      supabase.from('fanmark_redirect_configs').delete().eq('license_id', activeLicense.id),
+      supabase.from('fanmark_messageboard_configs').delete().eq('license_id', activeLicense.id),
+      supabase.from('fanmark_password_configs').delete().eq('license_id', activeLicense.id)
     ];
 
     const deleteResults = await Promise.allSettled(deleteOperations);
