@@ -54,13 +54,15 @@ export const MessageboardLoading = ({ fanmarkEmoji }: MessageboardLoadingProps) 
             {/* 中央のアイコンと絵文字 */}
             <div className="relative z-10 flex items-center gap-3">
               {fanmarkEmoji && (
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary/10 to-accent/10 text-3xl animate-bounce"
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary/10 to-accent/10 animate-bounce"
                      style={{ animationDuration: '1.5s' }}>
-                  {fanmarkEmoji}
+                  <div className="text-3xl leading-none flex items-center justify-center max-w-[3.5rem] text-center" style={{ letterSpacing: '0.1em' }}>
+                    {fanmarkEmoji}
+                  </div>
                 </div>
               )}
 
-              <div className="flex items-center gap-2 text-primary animate-pulse">
+              <div className="flex items-center justify-center text-primary animate-pulse">
                 <FiArrowRight className="h-6 w-6" />
               </div>
 

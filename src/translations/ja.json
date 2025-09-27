@@ -574,7 +574,7 @@
     "fields": {
       "displayName": {
         "label": "ファンマ名",
-        "helper": "ファンマに名前をつけてください。ここでつけた名前はどこにも表示されません。",
+        "helper": "ファンマにわかりやすい名前をつけてください。他のユーザーからは見えません。",
         "placeholder": "ファンマ名を入力してください"
       },
       "accessType": {
@@ -583,7 +583,7 @@
         "placeholder": "アクセスタイプを選択"
       },
       "redirect": {
-        "label": "リダイレクト先URL"
+        "label": "転送先URL"
       },
       "text": {
         "label": "伝言板",

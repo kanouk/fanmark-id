@@ -92,13 +92,13 @@ export const PasswordProtection = ({ fanmark, onSuccess }: PasswordProtectionPro
       </header>
 
       <div className="container mx-auto px-4 flex-1 flex items-center justify-center">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto w-full">
           {/* Password Protection Section */}
-          <Card className="overflow-hidden bg-gradient-to-br from-background/90 to-background/70 border border-primary/20 shadow-xl backdrop-blur-sm">
+          <Card className="overflow-hidden bg-gradient-to-br from-background/90 to-background/70 border border-primary/20 shadow-xl backdrop-blur-sm mx-4 sm:mx-0">
             <CardContent className="p-0">
               {/* Password Input */}
-              <div className="px-8 py-12">
-                <div className="max-w-md mx-auto text-center space-y-8">
+              <div className="px-4 sm:px-8 py-8 sm:py-12">
+                <div className="max-w-md mx-auto text-center space-y-6 sm:space-y-8">
                   <div className="space-y-4">
                     <div className="inline-flex items-center gap-3 mb-4">
                       <div className="p-3 rounded-full bg-primary/20 backdrop-blur-sm">
@@ -110,32 +110,32 @@ export const PasswordProtection = ({ fanmark, onSuccess }: PasswordProtectionPro
                      <p className="text-muted-foreground text-sm">{t('passwordProtection.enterPassword')}</p>
                   </div>
 
-                  <div className="flex justify-center">
-                    <div className={`${isShaking ? 'animate-shake' : ''}`}>
+                  <div className="flex justify-center px-4">
+                    <div className={`${isShaking ? 'animate-shake' : ''} w-full max-w-xs`}>
                       <InputOTP
                         ref={otpRef}
                         value={password}
                         onChange={setPassword}
                         maxLength={4}
                         pattern="[0-9]*"
-                        className="gap-6"
+                        className="gap-3 sm:gap-6"
                       >
-                        <InputOTPGroup className="gap-6">
+                        <InputOTPGroup className="gap-3 sm:gap-6 w-full justify-center">
                           <InputOTPSlot
                             index={0}
-                            className="h-20 w-20 text-3xl font-bold border-2 border-border/40 focus:border-primary/60 hover:border-primary/40 bg-gradient-to-br from-background to-background/90 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 focus:scale-105 hover:scale-102 !rounded-2xl"
+                            className="h-14 w-14 sm:h-20 sm:w-20 text-2xl sm:text-3xl font-bold border-2 border-border/40 focus:border-primary/60 hover:border-primary/40 bg-gradient-to-br from-background to-background/90 rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 focus:scale-105 hover:scale-102"
                           />
                           <InputOTPSlot
                             index={1}
-                            className="h-20 w-20 text-3xl font-bold border-2 border-border/40 focus:border-primary/60 hover:border-primary/40 bg-gradient-to-br from-background to-background/90 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 focus:scale-105 hover:scale-102"
+                            className="h-14 w-14 sm:h-20 sm:w-20 text-2xl sm:text-3xl font-bold border-2 border-border/40 focus:border-primary/60 hover:border-primary/40 bg-gradient-to-br from-background to-background/90 rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 focus:scale-105 hover:scale-102"
                           />
                           <InputOTPSlot
                             index={2}
-                            className="h-20 w-20 text-3xl font-bold border-2 border-border/40 focus:border-primary/60 hover:border-primary/40 bg-gradient-to-br from-background to-background/90 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 focus:scale-105 hover:scale-102"
+                            className="h-14 w-14 sm:h-20 sm:w-20 text-2xl sm:text-3xl font-bold border-2 border-border/40 focus:border-primary/60 hover:border-primary/40 bg-gradient-to-br from-background to-background/90 rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 focus:scale-105 hover:scale-102"
                           />
                           <InputOTPSlot
                             index={3}
-                            className="h-20 w-20 text-3xl font-bold border-2 border-border/40 focus:border-primary/60 hover:border-primary/40 bg-gradient-to-br from-background to-background/90 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 focus:scale-105 hover:scale-102 !rounded-2xl"
+                            className="h-14 w-14 sm:h-20 sm:w-20 text-2xl sm:text-3xl font-bold border-2 border-border/40 focus:border-primary/60 hover:border-primary/40 bg-gradient-to-br from-background to-background/90 rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 focus:scale-105 hover:scale-102"
                           />
                         </InputOTPGroup>
                       </InputOTP>
