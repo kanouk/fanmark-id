@@ -40,9 +40,9 @@ export const FanmarkAccessByShortId = () => {
       try {
         console.log('🎯 Loading fanmark by short_id:', shortId);
 
-        // Use existing function to get fanmark data by short_id
+        // Use the dedicated function to get fanmark data by short_id
         const { data, error } = await supabase
-          .rpc('get_fanmark_by_emoji', { emoji_combo: shortId });
+          .rpc('get_fanmark_by_short_id', { shortid_param: shortId });
 
         if (error) {
           console.error('Database error:', error);
