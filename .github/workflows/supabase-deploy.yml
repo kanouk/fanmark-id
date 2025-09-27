@@ -28,8 +28,17 @@ jobs:
           echo "Password set: $([ -n "$SUPABASE_DB_PASSWORD" ] && echo "yes" || echo "no")"
           echo "Token set: $([ -n "$SUPABASE_ACCESS_TOKEN" ] && echo "yes" || echo "no")"
 
+      - name: Login to Supabase
+        run: |
+          echo "$SUPABASE_ACCESS_TOKEN" | supabase login --token -
+
       - name: Link Supabase project
-        run: supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
+        run: |
+          if [ -z "$SUPABASE_PROJECT_ID" ]; then
+            echo "Error: SUPABASE_PROJECT_ID is not set"
+            exit 1
+          fi
+          supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
 
       - name: Run migrations
         run: supabase db push
