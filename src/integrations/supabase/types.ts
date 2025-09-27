@@ -618,6 +618,7 @@ export type Database = {
           fanmark_name: string
           id: string
           is_password_protected: boolean
+          license_id: string
           status: string
           target_url: string
           text_content: string
