@@ -285,8 +285,19 @@
     "planTypeFree": "フリー",
     "planTypeCreator": "クリエーター",
     "planTypeBusiness": "ビジネス",
-  "planTypeAdmin": "管理者",
-  
+    "planTypeAdmin": "管理者",
+    "preferredLanguage": "言語設定",
+    "languageEnglish": "English",
+    "languageJapanese": "日本語",
+    "saveChanges": "変更を保存",
+    "updateSuccess": "設定を更新しました",
+    "updateSuccessDescription": "ユーザー設定が正常に更新されました",
+    "updateError": "設定の更新に失敗しました",
+    "email": "メールアドレス",
+    "memberSince": "登録日",
+    "saving": "保存中...",
+    "uploading": "アップロード中..."
+  },
   "planDowngrade": {
     "modalTitle": "プラン変更に伴うファンマーク選択",
     "newPlanLimit": "新プランでは{limit}個まで保持可能です",
@@ -302,23 +313,9 @@
     "errorTitle": "プラン変更エラー",
     "errorDescription": "プラン変更に失敗しました。もう一度お試しください"
   },
-  
   "fanmarkStatus": {
     "planExcluded": "プラン対象外",
     "extensionNotPossible": "延長不可"
-  },
-  
-  "preferredLanguage": "言語設定",
-    "languageEnglish": "English",
-    "languageJapanese": "日本語",
-    "saveChanges": "変更を保存",
-    "updateSuccess": "設定を更新しました",
-    "updateSuccessDescription": "ユーザー設定が正常に更新されました",
-    "updateError": "設定の更新に失敗しました",
-    "email": "メールアドレス",
-    "memberSince": "登録日",
-    "saving": "保存中...",
-    "uploading": "アップロード中..."
   },
   "profile": {
     "welcome": "プロフィールへようこそ！",

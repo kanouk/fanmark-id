@@ -285,8 +285,20 @@
     "planTypeFree": "Free",
     "planTypeCreator": "Creator",
     "planTypeBusiness": "Business",
-  "planTypeAdmin": "Admin",
+    "planTypeAdmin": "Admin",
   
+  "preferredLanguage": "Preferred Language",
+    "languageEnglish": "English",
+    "languageJapanese": "日本語",
+    "saveChanges": "Save Changes",
+    "updateSuccess": "Settings Updated",
+    "updateSuccessDescription": "Your user settings have been updated successfully",
+    "updateError": "Failed to update settings",
+    "email": "Email",
+    "memberSince": "Member Since",
+    "saving": "Saving...",
+    "uploading": "Uploading..."
+  },
   "planDowngrade": {
     "modalTitle": "Fanmark Selection for Plan Change",
     "newPlanLimit": "New plan allows up to {limit} fanmarks",
@@ -302,23 +314,9 @@
     "errorTitle": "Plan Change Error",
     "errorDescription": "Failed to change plan. Please try again"
   },
-  
   "fanmarkStatus": {
     "planExcluded": "Plan Excluded",
     "extensionNotPossible": "Extension not possible"
-  },
-  
-  "preferredLanguage": "Preferred Language",
-    "languageEnglish": "English",
-    "languageJapanese": "日本語",
-    "saveChanges": "Save Changes",
-    "updateSuccess": "Settings Updated",
-    "updateSuccessDescription": "Your user settings have been updated successfully",
-    "updateError": "Failed to update settings",
-    "email": "Email",
-    "memberSince": "Member Since",
-    "saving": "Saving...",
-    "uploading": "Uploading..."
   },
   "profile": {
     "welcome": "Welcome to your profile!",
