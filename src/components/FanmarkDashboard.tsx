@@ -174,7 +174,7 @@ export const FanmarkDashboard = () => {
           )
         `)
         .eq('user_id', user?.id)
-        .in('status', ['active', 'expired'])
+        .in('status', ['active', 'expired', 'grace'])
         .order('created_at', { ascending: false });
 
       if (licensesError) throw licensesError;
@@ -373,8 +373,8 @@ export const FanmarkDashboard = () => {
     // First sort by status (active only at top)
     const aLicenseData = a.fanmark_licenses as any;
     const bLicenseData = b.fanmark_licenses as any;
-    const aIsActive = aLicenseData?.status === 'active';
-    const bIsActive = bLicenseData?.status === 'active';
+    const aIsActive = aLicenseData?.status === 'active' || aLicenseData?.status === 'grace';
+    const bIsActive = bLicenseData?.status === 'active' || bLicenseData?.status === 'grace';
 
     if (aIsActive !== bIsActive) {
       return aIsActive ? -1 : 1; // Active first
@@ -578,7 +578,7 @@ export const FanmarkDashboard = () => {
                                      </td>
                                 <td className="px-6 py-5">
                                   <div className="min-h-[2.5rem] flex items-center min-w-fit">
-                                    {!isFanmarkInactive(fanmark) && getAccessTypeBadge(fanmark.access_type)}
+                                    {!isFanmarkInactive(fanmark) && licenseData?.status !== 'grace' && getAccessTypeBadge(fanmark.access_type)}
                                   </div>
                                 </td>
                                 <td className="px-6 py-5">
@@ -601,7 +601,11 @@ export const FanmarkDashboard = () => {
                                  </td>
                                  <td className="px-6 py-5">
                                    <div className="min-h-[2.5rem] flex items-center gap-2">
-                                     {!isReturned(fanmark) && daysRemaining !== null && daysRemaining >= 0 ? (
+                                     {licenseData?.status === 'grace' && licenseData?.license_end ? (
+                                       <GraceStatusCountdown
+                                         licenseEnd={licenseData.license_end}
+                                       />
+                                     ) : !isReturned(fanmark) && daysRemaining !== null && daysRemaining >= 0 ? (
                                        <>
                                          <div className={`text-sm font-medium whitespace-nowrap ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`}>
                                            {t('dashboard.daysRemaining', { days: daysRemaining })}
@@ -656,12 +660,6 @@ export const FanmarkDashboard = () => {
                                            {t('fanmarkStatus.extensionNotPossible')}
                                          </span>
                                        )}
-                                       {licenseData?.status === 'grace' && licenseData?.license_end && (
-                                         <GraceStatusCountdown 
-                                           licenseEnd={licenseData.license_end}
-                                           className="ml-2"
-                                         />
-                                       )}
                                      </div>
                                   </td>
                                   <td className="px-6 py-5">
@@ -707,7 +705,7 @@ export const FanmarkDashboard = () => {
                                   </td>
                                    <td className="px-6 py-5">
                                      <div className="min-h-[2.5rem] flex items-center">
-                                        {!isReturned(fanmark) && (
+                                        {!isReturned(fanmark) && licenseData?.status !== 'grace' && (
                                           <Tooltip>
                                             <TooltipTrigger asChild>
                                               <Button
@@ -767,7 +765,7 @@ export const FanmarkDashboard = () => {
                                   <div className="space-y-2">
                                     <div className="flex items-center justify-between gap-2">
                                       <div className="flex-shrink-0">
-                                        {!isFanmarkInactive(fanmark) && getAccessTypeBadge(fanmark.access_type)}
+                                        {!isFanmarkInactive(fanmark) && licenseData?.status !== 'grace' && getAccessTypeBadge(fanmark.access_type)}
                                       </div>
                                       <div className="flex-shrink-0">
                                         {getStatusBadge(licenseData?.status, licenseData?.plan_excluded)}
@@ -784,13 +782,6 @@ export const FanmarkDashboard = () => {
                                           {t('fanmarkStatus.extensionNotPossible')}
                                         </p>
                                       </div>
-                                     )}
-                                     {licenseData?.status === 'grace' && licenseData?.license_end && (
-                                       <div className="mt-2">
-                                         <GraceStatusCountdown 
-                                           licenseEnd={licenseData.license_end}
-                                         />
-                                       </div>
                                      )}
                                    </div>
 
@@ -815,7 +806,11 @@ export const FanmarkDashboard = () => {
                                        {t('dashboard.remainingDays')}
                                      </div>
                                      <div>
-                                       {!isReturned(fanmark) && daysRemaining !== null && daysRemaining >= 0 ? (
+                                       {licenseData?.status === 'grace' && licenseData?.license_end ? (
+                                         <GraceStatusCountdown
+                                           licenseEnd={licenseData.license_end}
+                                         />
+                                       ) : !isReturned(fanmark) && daysRemaining !== null && daysRemaining >= 0 ? (
                                          <span className={`text-sm font-medium whitespace-nowrap ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`}>
                                            {t('dashboard.daysRemaining', { days: daysRemaining })}
                                          </span>
@@ -847,7 +842,7 @@ export const FanmarkDashboard = () => {
 
                                   <div className="flex items-center justify-between pt-2">
                                     <div className="flex items-center gap-2">
-                                      {!isReturned(fanmark) && (
+                                      {!isReturned(fanmark) && licenseData?.status !== 'grace' && (
                                         <AlertDialog>
                                           <AlertDialogTrigger asChild>
                                             <Button
@@ -917,7 +912,7 @@ export const FanmarkDashboard = () => {
                                          <TooltipContent>{t('dashboard.copyFanmarkLink')}</TooltipContent>
                                        </Tooltip>
                                     </div>
-                                      {!isReturned(fanmark) && (
+                                      {!isReturned(fanmark) && licenseData?.status !== 'grace' && (
                                         <Tooltip>
                                           <TooltipTrigger asChild>
                                             <Button

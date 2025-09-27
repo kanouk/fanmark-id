@@ -39,19 +39,18 @@ export const GraceStatusCountdown = ({ licenseEnd, className }: GraceStatusCount
   }, [licenseEnd]);
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-        <Clock className="h-3 w-3" />
-        <span>{t('dashboard.timeRemaining')}: {timeRemaining}</span>
-      </div>
-      <Button 
-        size="sm" 
+    <div className={`flex flex-col items-start gap-2 ${className}`}>
+      <Button
+        size="sm"
         variant="outline"
         disabled={true}
-        className="h-7 px-2 text-xs opacity-60 cursor-not-allowed"
+        className="h-7 px-2 text-xs opacity-60 cursor-not-allowed w-fit"
       >
-        {t('dashboard.extendDisabled')}
+        {t('dashboard.extendButton')}
       </Button>
+      <div className="text-xs text-destructive font-medium">
+        <span>{t('dashboard.graceTimeRemaining', { time: timeRemaining })}</span>
+      </div>
     </div>
   );
 };

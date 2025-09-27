@@ -474,6 +474,8 @@
     "extend": "延長する",
     "extendDisabled": "延長する（処理中）",
     "timeRemaining": "残り時間",
+    "extendButton": "延長する",
+    "graceTimeRemaining": "あと {{time}}",
     "inputError": "絵文字の入力エラー",
     "inputHint": "絵文字のみを1〜5個まで入力してください",
     "errorLoadingData": "データ読み込みエラー",
