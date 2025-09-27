@@ -307,12 +307,19 @@
     "selectionCount": "{selected}/{limit} selected",
     "confirmButton": "Confirm Selection",
     "excludedLabel": "Will be plan excluded",
+    "remainingDays": "{days} days remaining",
     "processingTitle": "Processing plan change...",
     "processingDescription": "Please wait",
     "successTitle": "Plan Change Complete",
     "successDescription": "Your plan has been successfully changed",
     "errorTitle": "Plan Change Error",
     "errorDescription": "Failed to change plan. Please try again"
+  },
+  "accessTypes": {
+    "inactive": "Inactive",
+    "profile": "Profile",
+    "redirect": "Redirect",
+    "messageboard": "Messageboard"
   },
   "fanmarkStatus": {
     "planExcluded": "Plan Excluded",

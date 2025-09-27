@@ -65,18 +65,20 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
       return false;
     }
 
-    // Fetch current active fanmarks
+    // Fetch current active fanmarks with license details
     const { data: licenses, error } = await supabase
       .from('fanmark_licenses')
       .select(`
         id,
         fanmark_id,
+        license_end,
         fanmarks (
           id,
           emoji_combination
         ),
         fanmark_basic_configs (
-          fanmark_name
+          fanmark_name,
+          access_type
         )
       `)
       .eq('user_id', user?.id)
@@ -89,7 +91,9 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
       id: license.fanmark_id,
       emoji_combination: (license.fanmarks as any)?.emoji_combination || '',
       fanmark_name: (license.fanmark_basic_configs as any)?.fanmark_name || null,
-      license_id: license.id
+      license_id: license.id,
+      license_end: license.license_end,
+      access_type: (license.fanmark_basic_configs as any)?.access_type || null
     })) || [];
 
     // Check if downgrade requires fanmark selection

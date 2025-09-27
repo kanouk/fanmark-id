@@ -13,6 +13,8 @@ interface Fanmark {
   emoji_combination: string;
   fanmark_name: string | null;
   license_id: string;
+  license_end: string;
+  access_type: string | null;
 }
 
 interface FanmarkSelectionModalProps {
@@ -137,13 +139,30 @@ export const FanmarkSelectionModal = ({
                         className="mt-1"
                       />
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-2xl">
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className="text-3xl">
                             {fanmark.emoji_combination}
                           </span>
-                          <span className="font-medium truncate">
-                            {fanmark.fanmark_name || fanmark.emoji_combination}
-                          </span>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge 
+                                variant="secondary" 
+                                className="text-xs px-2 py-0.5"
+                              >
+                                {fanmark.access_type ? 
+                                  t(`accessTypes.${fanmark.access_type}`) : 
+                                  t('accessTypes.inactive')
+                                }
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {t('planDowngrade.remainingDays', {
+                                days: Math.max(0, Math.ceil(
+                                  (new Date(fanmark.license_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+                                ))
+                              })}
+                            </p>
+                          </div>
                         </div>
                         {!selected && (
                           <Badge 

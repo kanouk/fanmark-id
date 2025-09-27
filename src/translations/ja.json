@@ -306,12 +306,19 @@
     "selectionCount": "{selected}/{limit}個選択中",
     "confirmButton": "選択を確定",
     "excludedLabel": "プラン対象外になります",
+    "remainingDays": "あと{days}日",
     "processingTitle": "プラン変更を処理中...",
     "processingDescription": "しばらくお待ちください",
     "successTitle": "プラン変更完了",
     "successDescription": "プランが正常に変更されました",
     "errorTitle": "プラン変更エラー",
     "errorDescription": "プラン変更に失敗しました。もう一度お試しください"
+  },
+  "accessTypes": {
+    "inactive": "未設定",
+    "profile": "プロフィール",
+    "redirect": "リダイレクト",
+    "messageboard": "メッセージボード"
   },
   "fanmarkStatus": {
     "planExcluded": "プラン対象外",
