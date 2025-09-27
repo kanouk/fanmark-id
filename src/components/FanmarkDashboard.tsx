@@ -572,13 +572,13 @@ export const FanmarkDashboard = () => {
                                             }}
                                             title={t('dashboard.clickToCopyEmoji')}
                                           >
-                                            <span className="text-2xl tracking-[0.05em] leading-none select-none">{fanmark.emoji_combination}</span>
+                                            <span className="text-2xl leading-none select-none" style={{ letterSpacing: '0.2em' }}>{fanmark.emoji_combination}</span>
                                           </div>
                                         </div>
                                      </td>
                                 <td className="px-6 py-5">
                                   <div className="min-h-[2.5rem] flex items-center min-w-fit">
-                                    {getAccessTypeBadge(fanmark.access_type)}
+                                    {!isFanmarkInactive(fanmark) && getAccessTypeBadge(fanmark.access_type)}
                                   </div>
                                 </td>
                                 <td className="px-6 py-5">
@@ -760,14 +760,14 @@ export const FanmarkDashboard = () => {
                                       }}
                                       title={t('dashboard.clickToCopyEmoji')}
                                     >
-                                      <span className="text-3xl tracking-[0.05em] leading-none select-none">{fanmark.emoji_combination}</span>
+                                      <span className="text-3xl leading-none select-none" style={{ letterSpacing: '0.2em' }}>{fanmark.emoji_combination}</span>
                                     </div>
                                  </div>
 
                                   <div className="space-y-2">
                                     <div className="flex items-center justify-between gap-2">
                                       <div className="flex-shrink-0">
-                                        {getAccessTypeBadge(fanmark.access_type)}
+                                        {!isFanmarkInactive(fanmark) && getAccessTypeBadge(fanmark.access_type)}
                                       </div>
                                       <div className="flex-shrink-0">
                                         {getStatusBadge(licenseData?.status, licenseData?.plan_excluded)}
