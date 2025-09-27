@@ -100,6 +100,7 @@ export const FanmarkSettings = ({
   restoreEditingState,
 }: FanmarkSettingsProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditingPassword, setIsEditingPassword] = useState(false);
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -109,6 +110,7 @@ export const FanmarkSettings = ({
     watch,
     reset,
     control,
+    setValue,
     formState: { errors },
   } = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
@@ -427,36 +429,59 @@ export const FanmarkSettings = ({
                 {isPasswordProtected && (
                   <div className="space-y-2">
                     <Label htmlFor="accessPassword" className="text-xs text-muted-foreground">
-                      {fanmark?.is_password_protected && !watch('accessPassword') ? 
-                        t('fanmarkSettings.fields.passwordProtection.currentPasswordSet') : 
-                        t('fanmarkSettings.fields.passwordProtection.passwordHelper')
-                      }
+                      {t('fanmarkSettings.fields.passwordProtection.passwordHelper')}
                     </Label>
-                    <Input
-                      id="accessPassword"
-                      {...register('accessPassword')}
-                      placeholder={
-                        fanmark?.is_password_protected && !watch('accessPassword') ? 
-                          "****" : 
-                          t('fanmarkSettings.fields.passwordProtection.passwordPlaceholder')
-                      }
-                      maxLength={4}
-                      pattern="[0-9]*"
-                      className={cn(
-                        "h-10 w-24 rounded-lg border border-border text-center font-mono text-lg focus-visible:ring-2 focus-visible:ring-primary",
-                        fanmark?.is_password_protected && !watch('accessPassword') && "text-muted-foreground"
-                      )}
-                      onInput={(e) => {
-                        // Only allow numbers
-                        const target = e.target as HTMLInputElement;
-                        target.value = target.value.replace(/[^0-9]/g, '');
-                      }}
-                    />
-                    {fanmark?.is_password_protected && !watch('accessPassword') && (
-                      <p className="text-xs text-muted-foreground">
-                        {t('fanmarkSettings.fields.passwordProtection.changePasswordHint')}
-                      </p>
+                    
+                    {/* Password input states */}
+                    {(!fanmark?.is_password_protected || isEditingPassword) ? (
+                      // State 1: Not set OR State 3: Editing
+                      <Input
+                        id="accessPassword"
+                        {...register('accessPassword')}
+                        placeholder={t('fanmarkSettings.fields.passwordProtection.passwordPlaceholder')}
+                        maxLength={4}
+                        pattern="[0-9]*"
+                        className="h-10 w-24 rounded-lg border border-border text-center font-mono text-lg focus-visible:ring-2 focus-visible:ring-primary"
+                        onInput={(e) => {
+                          // Only allow numbers
+                          const target = e.target as HTMLInputElement;
+                          target.value = target.value.replace(/[^0-9]/g, '');
+                        }}
+                      />
+                    ) : (
+                      // State 2: Set (show label + change button)
+                      <div className="flex items-center gap-2 h-10">
+                        <div className="flex-1 h-10 px-3 py-2 rounded-lg border border-border bg-muted/50 flex items-center text-sm text-muted-foreground">
+                          {t('fanmarkSettings.fields.passwordProtection.passwordSet')}
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsEditingPassword(true)}
+                          className="h-10 px-3"
+                        >
+                          {t('fanmarkSettings.fields.passwordProtection.changeButton')}
+                        </Button>
+                      </div>
                     )}
+                    
+                    {/* Cancel button when editing existing password */}
+                    {fanmark?.is_password_protected && isEditingPassword && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setIsEditingPassword(false);
+                          setValue('accessPassword', '');
+                        }}
+                        className="h-8 px-2 text-xs"
+                      >
+                        {t('common.cancel')}
+                      </Button>
+                    )}
+                    
                     {errors.accessPassword && (
                       <p className="text-xs text-destructive">
                         {t('fanmarkSettings.fields.passwordProtection.passwordHelper')}
