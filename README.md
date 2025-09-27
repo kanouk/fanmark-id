@@ -1,4 +1,4 @@
-# fanmark.id 要件定義書
+# fanmark.id readme
 
 ## 1. ドキュメント情報
 - 作成日: 2025-09-24
