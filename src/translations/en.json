@@ -513,7 +513,10 @@
     "emojiCopiedTitle": "Emoji copied",
     "urlCopiedTitle": "Copied",
     "visitFanmarkTooltip": "Visit fanmark",
-    "clickToCopyEmoji": "Click to copy emoji"
+    "clickToCopyEmoji": "Click to copy emoji",
+    "sortBy": "Sort by",
+    "sortByAcquisition": "Acquisition date (newest)",
+    "sortByExpiration": "Days remaining (least)"
   },
   "registration": {
     "title": "Obtain Your Fanmark",
@@ -655,5 +658,13 @@
     "updateErrorDescription": "Failed to update your profile. Please try again.",
     "preview": "Preview",
     "backToEdit": "Edit"
+  },
+  "acquisition": {
+    "title": "Acquiring fanmark...",
+    "processing": "Processing request...",
+    "validating": "Validating fanmark...",
+    "registering": "Registering fanmark...",
+    "finalizing": "Finalizing...",
+    "pleaseWait": "Please wait"
   }
 }

@@ -510,7 +510,10 @@
     "emojiCopiedTitle": "絵文字をコピーしました",
     "urlCopiedTitle": "コピーしました",
     "visitFanmarkTooltip": "ファンマに移動",
-    "clickToCopyEmoji": "クリックして絵文字をコピー"
+    "clickToCopyEmoji": "クリックして絵文字をコピー",
+    "sortBy": "並び替え",
+    "sortByAcquisition": "取得日順（新しい順）",
+    "sortByExpiration": "残り日数順（少ない順）"
   },
   "registration": {
     "title": "ファンマを登録",
@@ -652,5 +655,13 @@
     "updateErrorDescription": "プロフィールの更新に失敗しました。もう一度お試しください。",
     "preview": "プレビュー",
     "backToEdit": "編集"
+  },
+  "acquisition": {
+    "title": "ファンマ取得中...",
+    "processing": "リクエストを処理中...",
+    "validating": "ファンマの有効性を確認中...",
+    "registering": "ファンマを登録中...",
+    "finalizing": "最終処理中...",
+    "pleaseWait": "しばらくお待ちください"
   }
 }

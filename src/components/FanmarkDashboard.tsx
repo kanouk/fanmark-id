@@ -368,31 +368,22 @@ export const FanmarkDashboard = () => {
     return licenseData?.status === 'active' || licenseData?.status === 'grace';
   }).length;
 
-  const sortedFanmarks = fanmarks.sort((a, b) => {
-    // Sort by status first (active/grace before expired)
+  const filteredFanmarks = fanmarks.sort((a, b) => {
+    // First sort by status (active only at top)
     const aLicenseData = a.fanmark_licenses as any;
     const bLicenseData = b.fanmark_licenses as any;
-    const aIsActive = aLicenseData?.status === 'active' || aLicenseData?.status === 'grace';
-    const bIsActive = bLicenseData?.status === 'active' || bLicenseData?.status === 'grace';
-    
+    const aIsActive = aLicenseData?.status === 'active';
+    const bIsActive = bLicenseData?.status === 'active';
+
     if (aIsActive !== bIsActive) {
-      return aIsActive ? -1 : 1;
+      return aIsActive ? -1 : 1; // Active first
     }
-    
-    // For active fanmarks, sort by expiration date (closest expiration first)
-    if (aIsActive && bIsActive) {
-      const aExpiration = aLicenseData?.license_end ? new Date(aLicenseData.license_end).getTime() : 0;
-      const bExpiration = bLicenseData?.license_end ? new Date(bLicenseData.license_end).getTime() : 0;
-      return aExpiration - bExpiration;
-    }
-    
-    // For expired fanmarks, sort by acquisition date (newest first)
+
+    // Second sort by acquisition date (newest first)
     const aAcquisition = aLicenseData?.license_start ? new Date(aLicenseData.license_start).getTime() : 0;
     const bAcquisition = bLicenseData?.license_start ? new Date(bLicenseData.license_start).getTime() : 0;
     return bAcquisition - aAcquisition;
   });
-  
-  const filteredFanmarks = sortedFanmarks;
 
   const handleRequireAuth = (emoji: string) => {
     try {
@@ -566,7 +557,7 @@ export const FanmarkDashboard = () => {
                               const isExpiringSoon = daysRemaining !== null && daysRemaining <= 3;
 
                               return (
-                                <tr key={fanmark.id} className={`border-b border-primary/5 transition-all duration-200 hover:bg-primary/5 hover:shadow-sm ${isFanmarkInactive(fanmark) ? 'opacity-60 bg-muted/10' : ''}`}>
+                                <tr key={fanmark.id} className={`border-b border-primary/5 transition-all duration-200 ${isFanmarkInactive(fanmark) ? 'bg-gray-200 dark:bg-gray-700' : 'hover:bg-primary/5 hover:shadow-sm'}`}>
                                       <td className="px-6 py-5">
                                         <div className="min-h-[2.5rem] flex items-center">
                                           <div
@@ -747,7 +738,7 @@ export const FanmarkDashboard = () => {
                         const isExpiringSoon = daysRemaining !== null && daysRemaining <= 3;
 
                         return (
-                          <Card key={fanmark.id} className={`rounded-3xl border border-primary/10 bg-background/80 transition-colors hover:border-primary/20 ${isFanmarkInactive(fanmark) ? 'opacity-50 bg-muted/20' : ''}`}>
+                          <Card key={fanmark.id} className={`rounded-3xl border border-primary/10 transition-colors ${isFanmarkInactive(fanmark) ? 'bg-gray-200 dark:bg-gray-700' : 'bg-background/80 hover:border-primary/20'}`}>
                             <CardContent className="p-5">
                               <div className="space-y-3">
                                  <div className="flex items-start justify-between">

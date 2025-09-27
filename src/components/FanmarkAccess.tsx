@@ -7,6 +7,8 @@ import { Loader2, Home, AlertCircle } from 'lucide-react';
 import { FanmarkProfile } from './FanmarkProfile';
 import { FanmarkMessage } from './FanmarkMessage';
 import { PasswordProtection } from './PasswordProtection';
+import { RedirectLoading } from './RedirectLoading';
+import { MessageboardLoading } from './MessageboardLoading';
 import { useTranslation } from '@/hooks/useTranslation';
 import { normalizeEmojiPath, updateAddressBarDisplay } from '@/utils/emojiUrl';
 
@@ -31,6 +33,8 @@ export const FanmarkAccess = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPasswordVerified, setIsPasswordVerified] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [isShowingMessageboard, setIsShowingMessageboard] = useState(false);
 
   useEffect(() => {
     const loadFanmark = async () => {
@@ -63,7 +67,6 @@ export const FanmarkAccess = () => {
         }
 
         const fanmarkData = data[0] as FanmarkData;
-        setFanmark(fanmarkData);
 
         // NEW: Redirect to short_id URL format for better UX
         if (fanmarkData.short_id) {
@@ -73,15 +76,32 @@ export const FanmarkAccess = () => {
           return; // Don't proceed with rendering, let the redirect happen
         }
 
-        // Immediately redirect if it's a redirect type without password protection
-        if (fanmarkData.access_type === 'redirect' && 
-            fanmarkData.target_url && 
+        // Show redirect loading and then redirect if it's a redirect type without password protection
+        if (fanmarkData.access_type === 'redirect' &&
+            fanmarkData.target_url &&
             !fanmarkData.is_password_protected) {
           console.log('Redirecting to:', fanmarkData.target_url);
-          window.location.href = fanmarkData.target_url;
-          return; // Don't set loading to false, let the redirect happen
+          setFanmark(fanmarkData); // Set fanmark for RedirectLoading
+          setIsRedirecting(true);
+          setLoading(false); // Stop loading immediately
+          setTimeout(() => {
+            window.location.href = fanmarkData.target_url!;
+          }, 2000); // Show redirect loading for 2 seconds
+          return;
         }
 
+        // Show messageboard loading for text type without password protection
+        if (fanmarkData.access_type === 'text' && !fanmarkData.is_password_protected) {
+          setFanmark(fanmarkData);
+          setIsShowingMessageboard(true);
+          setLoading(false);
+          setTimeout(() => {
+            setIsShowingMessageboard(false);
+          }, 1500); // Show messageboard loading for 1.5 seconds
+          return;
+        }
+
+        setFanmark(fanmarkData);
         setLoading(false);
       } catch (err) {
         console.error('Error loading fanmark:', err);
@@ -93,10 +113,20 @@ export const FanmarkAccess = () => {
     loadFanmark();
   }, [emojiPath]);
 
-  // Trigger redirect after verification for redirect access types
+  // Trigger redirect/messageboard after verification
   useEffect(() => {
-    if (isPasswordVerified && fanmark?.access_type === 'redirect' && fanmark.target_url) {
-      window.location.href = fanmark.target_url;
+    if (isPasswordVerified && fanmark) {
+      if (fanmark.access_type === 'redirect' && fanmark.target_url) {
+        setIsRedirecting(true);
+        setTimeout(() => {
+          window.location.href = fanmark.target_url!;
+        }, 2000); // Show loading for 2 seconds
+      } else if (fanmark.access_type === 'text') {
+        setIsShowingMessageboard(true);
+        setTimeout(() => {
+          setIsShowingMessageboard(false);
+        }, 1500); // Show messageboard loading for 1.5 seconds
+      }
     }
   }, [isPasswordVerified, fanmark]);
 
@@ -148,11 +178,30 @@ export const FanmarkAccess = () => {
     );
   }
 
+  // Show redirect loading screen when redirecting
+  if (isRedirecting && fanmark.access_type === 'redirect' && fanmark.target_url) {
+    return (
+      <RedirectLoading
+        targetUrl={fanmark.target_url}
+        fanmarkEmoji={fanmark.emoji_combination}
+      />
+    );
+  }
+
+  // Show messageboard loading screen when showing messageboard
+  if (isShowingMessageboard && fanmark.access_type === 'text') {
+    return (
+      <MessageboardLoading
+        fanmarkEmoji={fanmark.emoji_combination}
+      />
+    );
+  }
+
   // Handle different access types after password verification
   switch (fanmark.access_type) {
     case 'profile':
       return <FanmarkProfile fanmark={fanmark} />;
-    
+
     case 'text':
       return <FanmarkMessage fanmark={fanmark} />;
 

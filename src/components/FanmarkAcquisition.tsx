@@ -22,6 +22,7 @@ import {
 import { FanmarkSearchResult } from '@/hooks/useFanmarkSearch';
 import { FanmarkStatusBadge } from '@/components/FanmarkStatusBadge';
 import { EmojiInputUtilities } from '@/components/EmojiInput';
+import { FanmarkAcquisitionLoading } from '@/components/FanmarkAcquisitionLoading';
 import { supabase } from '@/integrations/supabase/client';
 
 interface FanmarkAcquisitionProps {
@@ -137,6 +138,11 @@ export const FanmarkAcquisition = ({
 
   return (
     <div className="space-y-6">
+      {/* ファンマ取得中のローディング画面 */}
+      {isRegistering && (
+        <FanmarkAcquisitionLoading emoji={searchResult?.emoji_combination} />
+      )}
+
       <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
         <AlertDialogContent className="rounded-3xl border border-primary/20 bg-background/95 shadow-[0_25px_60px_rgba(101,195,200,0.2)]">
           <AlertDialogHeader className="space-y-3 text-center">
