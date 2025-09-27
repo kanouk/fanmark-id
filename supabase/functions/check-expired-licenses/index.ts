@@ -20,17 +20,23 @@ serve(async (req) => {
 
     console.log('Starting expired license check...');
 
-    // Get grace period from system settings
+    // Get grace period from system settings (should be 1 day = 24 hours for cooldown)
     const { data: gracePeriodData } = await supabase
       .from('system_settings')
       .select('setting_value')
       .eq('setting_key', 'grace_period_days')
       .single();
     
-    const gracePeriodDays = parseInt(gracePeriodData?.setting_value || '7', 10);
-    const gracePeriodMs = gracePeriodDays * 24 * 60 * 60 * 1000;
+    const gracePeriodDays = parseInt(gracePeriodData?.setting_value || '1', 10);
+    const gracePeriodHours = gracePeriodDays * 24; // Convert to hours for precise control
+    const gracePeriodMs = gracePeriodHours * 60 * 60 * 1000;
     const now = new Date();
-    const graceDeadline = new Date(now.getTime() - gracePeriodMs);
+    
+    console.log(`Grace period set to ${gracePeriodDays} days (${gracePeriodHours} hours)`);
+    
+    // For licenses that are in grace status, check if they've exceeded the grace period
+    // Grace period starts from license_end date
+    const graceDeadlineTime = now.getTime();
 
     // Find licenses that just expired (need to go to grace)
     const { data: justExpiredLicenses, error: justExpiredError } = await supabase
@@ -64,6 +70,7 @@ serve(async (req) => {
       };
 
     // Find licenses in grace period that need to be fully expired
+    // Grace period is 24 hours from the license_end date
     const { data: graceExpiredLicenses, error: graceExpiredError } = await supabase
       .from('fanmark_licenses')
       .select(`
@@ -78,8 +85,7 @@ serve(async (req) => {
         )
       `)
       .eq('status', 'grace')
-      .lt('license_end', graceDeadline.toISOString())
-      .eq('fanmarks.status', 'active') as { 
+      .eq('fanmarks.status', 'active') as {
         data: Array<{
           id: string;
           fanmark_id: string;
@@ -99,20 +105,28 @@ serve(async (req) => {
       throw justExpiredError || graceExpiredError;
     }
 
-    const totalLicenses = (justExpiredLicenses?.length || 0) + (graceExpiredLicenses?.length || 0);
+    // Filter grace expired licenses - check if grace period (24 hours from license_end) has passed
+    const filteredGraceExpiredLicenses = graceExpiredLicenses?.filter(license => {
+      const licenseEndTime = new Date(license.license_end).getTime();
+      const graceEndTime = licenseEndTime + gracePeriodMs;
+      return graceDeadlineTime >= graceEndTime;
+    }) || [];
+
+    const totalLicenses = (justExpiredLicenses?.length || 0) + filteredGraceExpiredLicenses.length;
     
     if (totalLicenses === 0) {
       console.log('No expired licenses found');
       return new Response(
         JSON.stringify({ 
           message: 'No expired licenses found',
-          processed: 0 
+          processed: 0,
+          grace_period_hours: gracePeriodHours
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Found ${justExpiredLicenses?.length || 0} licenses to move to grace and ${graceExpiredLicenses?.length || 0} grace licenses to expire`);
+    console.log(`Found ${justExpiredLicenses?.length || 0} licenses to move to grace and ${filteredGraceExpiredLicenses.length} grace licenses to expire`);
 
     let processedCount = 0;
 
@@ -156,8 +170,8 @@ serve(async (req) => {
     }
 
     // Process licenses whose grace period has expired
-    if (graceExpiredLicenses) {
-      for (const license of graceExpiredLicenses) {
+    if (filteredGraceExpiredLicenses.length > 0) {
+      for (const license of filteredGraceExpiredLicenses) {
         try {
           // Mark license as fully expired
           const { error: licenseUpdateError } = await supabase
@@ -170,22 +184,37 @@ serve(async (req) => {
             continue;
           }
 
-          // Clear current_license_id from fanmark (but don't change fanmark status)
-          const { error: fanmarkUpdateError } = await supabase
-            .from('fanmarks')
-            .update({ 
-              current_license_id: null,
-              access_type: 'inactive',
-              display_name: null,
-              target_url: null,
-              text_content: null
-            })
-            .eq('id', license.fanmark_id);
+          // Delete all config data for expired licenses
+          const { error: basicConfigDeleteError } = await supabase
+            .from('fanmark_basic_configs')
+            .delete()
+            .eq('license_id', license.id);
 
-          if (fanmarkUpdateError) {
-            console.error(`Error updating fanmark ${license.fanmark_id}:`, fanmarkUpdateError);
-            continue;
+          const { error: redirectConfigDeleteError } = await supabase
+            .from('fanmark_redirect_configs')
+            .delete()
+            .eq('license_id', license.id);
+
+          const { error: messageConfigDeleteError } = await supabase
+            .from('fanmark_messageboard_configs')
+            .delete()
+            .eq('license_id', license.id);
+
+          const { error: passwordConfigDeleteError } = await supabase
+            .from('fanmark_password_configs')
+            .delete()
+            .eq('license_id', license.id);
+
+          // Note: Keep fanmark record but configs are now deleted
+          if (basicConfigDeleteError || redirectConfigDeleteError || messageConfigDeleteError || passwordConfigDeleteError) {
+            console.error(`Error deleting configs for license ${license.id}:`, {
+              basicConfigDeleteError,
+              redirectConfigDeleteError, 
+              messageConfigDeleteError,
+              passwordConfigDeleteError
+            });
           }
+
 
           // Log the full expiration event
           await supabase
@@ -217,9 +246,10 @@ serve(async (req) => {
       JSON.stringify({ 
         message: `Successfully processed ${processedCount} licenses`,
         processed: processedCount,
-        grace_transitions: justExpiredLicenses?.length || 0,
-        full_expirations: graceExpiredLicenses?.length || 0,
-        total_found: totalLicenses
+        licenses_to_grace: justExpiredLicenses?.length || 0,
+        licenses_to_expired: filteredGraceExpiredLicenses.length,
+        total_found: totalLicenses,
+        grace_period_hours: gracePeriodHours
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

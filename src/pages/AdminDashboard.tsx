@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminSettings } from "@/components/AdminSettings";
 import { SecureWaitlistAdmin } from "@/components/SecureWaitlistAdmin";
 import { AdminPatternRules } from "@/components/AdminPatternRules";
+import { AdminExpirationTest } from "@/components/AdminExpirationTest";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
@@ -25,10 +26,11 @@ const AdminDashboard = () => {
       
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="settings" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="settings">システム設定</TabsTrigger>
             <TabsTrigger value="waitlist">ウェイトリスト</TabsTrigger>
             <TabsTrigger value="patterns">パターンルール</TabsTrigger>
+            <TabsTrigger value="expiration">失効処理</TabsTrigger>
             <TabsTrigger value="analytics">統計情報</TabsTrigger>
           </TabsList>
           
@@ -56,6 +58,10 @@ const AdminDashboard = () => {
                 <AdminPatternRules />
               </CardContent>
             </Card>
+          </TabsContent>
+          
+          <TabsContent value="expiration">
+            <AdminExpirationTest />
           </TabsContent>
           
           <TabsContent value="analytics">
