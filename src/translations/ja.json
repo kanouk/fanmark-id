@@ -596,7 +596,9 @@
         "label": "パスワード保護",
         "lockCheckbox": "鍵をかける",
         "passwordPlaceholder": "1234",
-        "passwordHelper": "4桁の数字を入力してください"
+        "passwordHelper": "4桁の数字を入力してください",
+        "currentPasswordSet": "パスワードが設定済みです",
+        "changePasswordHint": "新しいパスワードを入力すると変更されます"
       }
     },
     "accessTypeOptions": {

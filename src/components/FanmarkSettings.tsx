@@ -21,6 +21,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, Eye, Edit } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { 
   FiType, 
   FiSettings, 
@@ -426,21 +427,36 @@ export const FanmarkSettings = ({
                 {isPasswordProtected && (
                   <div className="space-y-2">
                     <Label htmlFor="accessPassword" className="text-xs text-muted-foreground">
-                      {t('fanmarkSettings.fields.passwordProtection.passwordHelper')}
+                      {fanmark?.is_password_protected && !watch('accessPassword') ? 
+                        t('fanmarkSettings.fields.passwordProtection.currentPasswordSet') : 
+                        t('fanmarkSettings.fields.passwordProtection.passwordHelper')
+                      }
                     </Label>
                     <Input
                       id="accessPassword"
                       {...register('accessPassword')}
-                      placeholder={t('fanmarkSettings.fields.passwordProtection.passwordPlaceholder')}
+                      placeholder={
+                        fanmark?.is_password_protected && !watch('accessPassword') ? 
+                          "****" : 
+                          t('fanmarkSettings.fields.passwordProtection.passwordPlaceholder')
+                      }
                       maxLength={4}
                       pattern="[0-9]*"
-                      className="h-10 w-24 rounded-lg border border-border text-center font-mono text-lg focus-visible:ring-2 focus-visible:ring-primary"
+                      className={cn(
+                        "h-10 w-24 rounded-lg border border-border text-center font-mono text-lg focus-visible:ring-2 focus-visible:ring-primary",
+                        fanmark?.is_password_protected && !watch('accessPassword') && "text-muted-foreground"
+                      )}
                       onInput={(e) => {
                         // Only allow numbers
                         const target = e.target as HTMLInputElement;
                         target.value = target.value.replace(/[^0-9]/g, '');
                       }}
                     />
+                    {fanmark?.is_password_protected && !watch('accessPassword') && (
+                      <p className="text-xs text-muted-foreground">
+                        {t('fanmarkSettings.fields.passwordProtection.changePasswordHint')}
+                      </p>
+                    )}
                     {errors.accessPassword && (
                       <p className="text-xs text-destructive">
                         {t('fanmarkSettings.fields.passwordProtection.passwordHelper')}

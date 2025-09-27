@@ -599,7 +599,9 @@
         "label": "Password Protection",
         "lockCheckbox": "Lock with password",
         "passwordPlaceholder": "1234",
-        "passwordHelper": "Enter a 4-digit number"
+        "passwordHelper": "Enter a 4-digit number",
+        "currentPasswordSet": "Password is already set",
+        "changePasswordHint": "Enter a new password to change it"
       }
     },
     "accessTypeOptions": {
