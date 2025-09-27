@@ -22,8 +22,14 @@ jobs:
         with:
           version: latest
 
+      - name: Verify environment variables
+        run: |
+          echo "Project ID length: ${#SUPABASE_PROJECT_ID}"
+          echo "Password set: $([ -n "$SUPABASE_DB_PASSWORD" ] && echo "yes" || echo "no")"
+          echo "Token set: $([ -n "$SUPABASE_ACCESS_TOKEN" ] && echo "yes" || echo "no")"
+
       - name: Link Supabase project
-        run: supabase link --project-ref $SUPABASE_PROJECT_ID
+        run: supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
 
       - name: Run migrations
         run: supabase db push
