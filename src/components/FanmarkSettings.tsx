@@ -78,6 +78,7 @@ export interface Fanmark {
   status: string;
   short_id: string;
   license_id: string;
+  is_public: boolean;
 }
 
 interface FanmarkSettingsProps {
@@ -132,7 +133,7 @@ export const FanmarkSettings = ({
         createProfile: false, // This is a one-time action
         isPasswordProtected: fanmark.is_password_protected || false,
         accessPassword: '', // Don't pre-fill password for security
-        is_public: false,
+        is_public: fanmark.is_public,
       };
 
       reset(formData);

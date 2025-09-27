@@ -633,6 +633,7 @@ export type Database = {
           has_active_license: boolean
           id: string
           is_password_protected: boolean
+          is_public: boolean
           license_end: string
           license_id: string
           normalized_emoji: string
