@@ -153,8 +153,16 @@ const Profile = () => {
                     <h2 className="text-2xl font-semibold text-foreground">
                       {profile?.display_name || profile?.username || 'Welcome'}
                     </h2>
-                    <Badge className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                      {profile?.plan_type === 'creator' ? 'Creator Plan' : 'Free Plan'}
+                    <Badge className={`rounded-full px-3 py-1 text-xs font-medium ${
+                      profile?.plan_type === 'admin' ? 'border border-red-300 bg-red-100 text-red-700' :
+                      profile?.plan_type === 'business' ? 'border border-purple-300 bg-purple-100 text-purple-700' :
+                      profile?.plan_type === 'creator' ? 'border border-blue-300 bg-blue-100 text-blue-700' :
+                      'border border-gray-300 bg-gray-100 text-gray-700'
+                    }`}>
+                      {profile?.plan_type === 'admin' ? 'Admin' :
+                       profile?.plan_type === 'business' ? 'Business' :
+                       profile?.plan_type === 'creator' ? 'Creator' :
+                       'Free'}
                     </Badge>
                   </div>
                   {profile?.username && (
@@ -235,11 +243,16 @@ const Profile = () => {
                           {t('userSettings.planType')}
                         </p>
                         <div className="flex items-center gap-2 rounded-2xl border border-primary/10 bg-background/80 px-4 py-3 text-sm text-foreground">
-                          <Badge className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary">
-                            {profile?.plan_type === 'creator' ? t('userSettings.planTypeCreator') :
-                             profile?.plan_type === 'business' ? t('userSettings.planTypeBusiness') :
-                             profile?.plan_type === 'admin' ? t('userSettings.planTypeAdmin') :
-                             t('userSettings.planTypeFree')}
+                          <Badge className={`rounded-full px-3 py-1 text-xs font-medium ${
+                            profile?.plan_type === 'admin' ? 'border border-red-300 bg-red-100 text-red-700' :
+                            profile?.plan_type === 'business' ? 'border border-purple-300 bg-purple-100 text-purple-700' :
+                            profile?.plan_type === 'creator' ? 'border border-blue-300 bg-blue-100 text-blue-700' :
+                            'border border-gray-300 bg-gray-100 text-gray-700'
+                          }`}>
+                            {profile?.plan_type === 'admin' ? 'Admin' :
+                             profile?.plan_type === 'business' ? 'Business' :
+                             profile?.plan_type === 'creator' ? 'Creator' :
+                             'Free'}
                           </Badge>
                         </div>
                       </div>

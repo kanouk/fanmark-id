@@ -50,6 +50,9 @@ export const FanmarkAcquisition = ({
   const [searchUtilities, setSearchUtilities] = useState<{ setQuery: (query: string) => void; clearQuery: () => void } | null>(null);
 
   const remainingCapacity = useMemo(() => {
+    if (fanmarkLimit === -1) {
+      return Infinity; // Admin用の無制限
+    }
     return Math.max(fanmarkLimit - currentCount, 0);
   }, [fanmarkLimit, currentCount]);
 
@@ -78,7 +81,7 @@ export const FanmarkAcquisition = ({
       return;
     }
 
-    if (remainingCapacity <= 0) {
+    if (fanmarkLimit !== -1 && remainingCapacity <= 0) {
       toast({
         title: t('dashboard.acquireLimitReachedTitle'),
         description: t('dashboard.acquireLimitReachedDescription'),
@@ -145,7 +148,7 @@ export const FanmarkAcquisition = ({
             </AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-muted-foreground">
               {t('dashboard.acquireConfirmDescription', {
-                remaining: Math.max(remainingCapacity - 1, 0),
+                remaining: fanmarkLimit === -1 ? '∞' : Math.max(remainingCapacity - 1, 0),
               })}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -280,7 +283,7 @@ export const FanmarkAcquisition = ({
                   size="lg"
                   className="rounded-full px-8 py-3 gap-3 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
                   onClick={handleAcquireRequest}
-                  disabled={!searchResult || remainingCapacity <= 0}
+                  disabled={!searchResult || (fanmarkLimit !== -1 && remainingCapacity <= 0)}
                 >
                   <Plus className="h-5 w-5" />
                   {user ? t('dashboard.acquireButton') : t('dashboard.acquireLoginButton')}
@@ -301,7 +304,7 @@ export const FanmarkAcquisition = ({
               )}
 
               {/* エラーメッセージ */}
-              {searchResult?.status === 'available' && user && remainingCapacity <= 0 && (
+              {searchResult?.status === 'available' && user && fanmarkLimit !== -1 && remainingCapacity <= 0 && (
                 <div className="text-center p-4 rounded-xl bg-red-50 border border-red-200">
                   <div className="text-red-600 font-medium">
                     {t('dashboard.acquireLimitReachedDescription')}
