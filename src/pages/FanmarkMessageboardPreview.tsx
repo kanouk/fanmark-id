@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
@@ -21,10 +21,17 @@ interface Fanmark {
 export default function FanmarkMessageboardPreview() {
   const { fanmarkId } = useParams<{ fanmarkId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
   const { user } = useAuth();
   const [fanmark, setFanmark] = useState<Fanmark | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // location state から渡されたプレビュー内容と編集状態を取得
+  const locationState = location.state as {
+    previewContent?: string;
+    editingState?: any;
+  } | null;
 
   useEffect(() => {
     if (!user) {
@@ -92,7 +99,10 @@ export default function FanmarkMessageboardPreview() {
     );
   }
 
-  const message = fanmark.text_content || 'メッセージがありません';
+  // プレビュー内容を決定（優先順位: location state > DB の内容 > デフォルト）
+  const message = locationState?.previewContent !== undefined
+    ? (locationState.previewContent || 'メッセージがありません')
+    : (fanmark?.text_content || 'メッセージがありません');
 
   // URLをリンクに変換する関数
   const linkifyText = (text: string) => {
@@ -136,7 +146,14 @@ export default function FanmarkMessageboardPreview() {
           <div className="flex items-center gap-4">
             <Button
               variant="outline"
-              onClick={() => navigate(`/fanmarks/${fanmarkId}/settings`)}
+              onClick={() => {
+                // 編集状態を復元するために state を渡して戻る
+                navigate(`/fanmarks/${fanmarkId}/settings`, {
+                  state: {
+                    restoreEditingState: locationState?.editingState
+                  }
+                });
+              }}
               className="flex items-center gap-2 rounded-full"
             >
               <ArrowLeft className="h-4 w-4" />

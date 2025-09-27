@@ -57,6 +57,7 @@ const FanmarkSettingsPage = () => {
 
       const fanmarkData = data[0]; // Get first result since function returns array
       const isNew = location.state?.isNew || false;
+      const restoreEditingState = location.state?.restoreEditingState;
 
       setFanmark({
         id: fanmarkData.id,
@@ -151,6 +152,9 @@ const FanmarkSettingsPage = () => {
     );
   }
 
+  // location state から編集状態復元データを取得
+  const restoreEditingState = location.state?.restoreEditingState;
+
   return (
     <FanmarkSettings
       fanmark={fanmark}
@@ -159,6 +163,7 @@ const FanmarkSettingsPage = () => {
       onSuccess={handleSuccess}
       open
       onOpenChange={() => undefined}
+      restoreEditingState={restoreEditingState}
     />
   );
 };

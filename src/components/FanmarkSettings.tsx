@@ -52,9 +52,10 @@ const settingsSchema = z.object({
   if (data.accessType === 'redirect' && !data.targetUrl) {
     return false;
   }
-  if (data.accessType === 'text' && !data.textContent) {
-    return false;
-  }
+  // 伝言板のメッセージは空でも保存可能にする
+  // if (data.accessType === 'text' && !data.textContent) {
+  //   return false;
+  // }
   if (data.accessType !== 'inactive' && data.isPasswordProtected && data.accessPassword && !/^\d{4}$/.test(data.accessPassword)) {
     return false;
   }
@@ -85,6 +86,7 @@ interface FanmarkSettingsProps {
   onOpenChange?: (open: boolean) => void;
   onClose?: () => void;
   onSuccess?: () => void;
+  restoreEditingState?: any;
 }
 
 export const FanmarkSettings = ({
@@ -94,6 +96,7 @@ export const FanmarkSettings = ({
   onOpenChange,
   onClose,
   onSuccess,
+  restoreEditingState,
 }: FanmarkSettingsProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { t } = useTranslation();
@@ -117,7 +120,8 @@ export const FanmarkSettings = ({
   // Reset form when fanmark changes
   useEffect(() => {
     if (fanmark) {
-      reset({
+      // 編集状態復元データがある場合はそれを使用、そうでなければ通常のデータ
+      const formData = restoreEditingState || {
         accessType: fanmark.access_type,
         fanmarkName: fanmark.fanmark_name || t('fanmarkSettings.summary.defaultName'),
         targetUrl: fanmark.target_url || '',
@@ -125,9 +129,12 @@ export const FanmarkSettings = ({
         createProfile: false, // This is a one-time action
         isPasswordProtected: fanmark.is_password_protected || false,
         accessPassword: '', // Don't pre-fill password for security
-      });
+        is_public: false,
+      };
+
+      reset(formData);
     }
-  }, [fanmark, reset]);
+  }, [fanmark, reset, restoreEditingState, t]);
 
   const handleClose = () => {
     if (mode === 'dialog') {
@@ -169,12 +176,12 @@ export const FanmarkSettings = ({
         if (redirectError) throw redirectError;
       }
 
-      if (data.accessType === 'text' && data.textContent) {
+      if (data.accessType === 'text') {
         const { error: textError } = await supabase
           .from('fanmark_messageboard_configs')
           .upsert({
             license_id: fanmark.license_id,
-            content: data.textContent
+            content: data.textContent || ''
           }, {
             onConflict: 'license_id'
           });
@@ -293,6 +300,8 @@ export const FanmarkSettings = ({
 
   // Watch fanmark name for real-time updates
   const watchedFanmarkName = watch('fanmarkName');
+  const watchedTextContent = watch('textContent');
+  const watchedAccessType = watch('accessType');
   const displayLabel = watchedFanmarkName || fanmark?.fanmark_name || t('fanmarkSettings.summary.defaultName');
 
 
@@ -494,7 +503,20 @@ export const FanmarkSettings = ({
                       size="sm"
                       onClick={() => {
                         if (fanmark?.id) {
-                          navigate(`/fanmarks/${fanmark.id}/messageboard/preview`);
+                          // 現在の入力状態をプレビューに渡す
+                          navigate(`/fanmarks/${fanmark.id}/messageboard/preview`, {
+                            state: {
+                              previewContent: watchedTextContent || '',
+                              editingState: {
+                                accessType: watchedAccessType,
+                                fanmarkName: watchedFanmarkName,
+                                textContent: watchedTextContent,
+                                isPasswordProtected: watch('isPasswordProtected'),
+                                accessPassword: watch('accessPassword'),
+                                is_public: watch('is_public')
+                              }
+                            }
+                          });
                         }
                       }}
                       className="inline-flex items-center gap-2 rounded-full border-border/60 text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/40 transition-colors"
