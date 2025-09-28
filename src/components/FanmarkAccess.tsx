@@ -69,6 +69,10 @@ export const FanmarkAccess = () => {
 
         const fanmarkData = data[0] as FanmarkData;
 
+        if (!fanmarkData.license_id) {
+          console.warn('Loaded fanmark without license_id. Profile access requires active license linkage.');
+        }
+
         // NEW: Redirect to short_id URL format for better UX
         if (fanmarkData.short_id) {
           const shortIdPath = `/a/${fanmarkData.short_id}`;

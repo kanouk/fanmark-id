@@ -598,7 +598,9 @@ export const FanmarkSettings = ({
                         size="sm"
                         onClick={() => {
                           if (fanmark?.id) {
-                            navigate(`/fanmarks/${fanmark.id}/profile/preview`);
+                            navigate(`/fanmarks/${fanmark.id}/profile/preview`, {
+                              state: { from: 'settings' }
+                            });
                           }
                         }}
                         className="inline-flex items-center gap-2 rounded-full border-border/60 text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/40 transition-colors"

@@ -151,7 +151,7 @@ export const FanmarkRegistrationForm = ({
               />
             )}
             {errors.emojiCombination && (
-              <p className="text-sm text-red-500">{errors.emojiCombination.message}</p>
+              <p className="text-sm text-destructive">{errors.emojiCombination.message}</p>
             )}
           </div>
 
@@ -167,7 +167,7 @@ export const FanmarkRegistrationForm = ({
               className="border-2 border-dotted border-pink-300"
             />
             {errors.displayName && (
-              <p className="text-sm text-red-500">{errors.displayName.message}</p>
+              <p className="text-sm text-destructive">{errors.displayName.message}</p>
             )}
           </div>
 
@@ -213,7 +213,7 @@ export const FanmarkRegistrationForm = ({
                 type="url"
               />
               {errors.targetUrl && (
-                <p className="text-sm text-red-500">{errors.targetUrl.message}</p>
+                <p className="text-sm text-destructive">{errors.targetUrl.message}</p>
               )}
             </div>
           )}
@@ -231,7 +231,7 @@ export const FanmarkRegistrationForm = ({
                 rows={4}
               />
               {errors.textContent && (
-                <p className="text-sm text-red-500">{errors.textContent.message}</p>
+                <p className="text-sm text-destructive">{errors.textContent.message}</p>
               )}
             </div>
           )}

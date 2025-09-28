@@ -617,7 +617,7 @@ export const FanmarkDashboard = () => {
                                                   <Button
                                                     size="sm"
                                                     variant="ghost"
-                                                    className="h-7 w-7 p-0 rounded-full hover:bg-red-50 hover:text-red-600 transition-colors"
+                                                    className="h-7 w-7 p-0 rounded-full hover:bg-primary/10 hover:text-primary transition-colors"
                                                     disabled={returningFanmarkId === fanmark.id}
                                                   >
                                                     <Undo2 className="h-3.5 w-3.5" />
@@ -634,7 +634,7 @@ export const FanmarkDashboard = () => {
                                                <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                                                <AlertDialogAction
                                                  onClick={() => handleReturnFanmark(fanmark.id)}
-                                                 className="bg-red-600 hover:bg-red-700"
+                                                 className="bg-destructive hover:bg-destructive/90"
                                                >
                                                  {returningFanmarkId === fanmark.id ? t('common.processing') : t('dashboard.returnConfirmAction')}
                                                </AlertDialogAction>
@@ -848,7 +848,7 @@ export const FanmarkDashboard = () => {
                                             <Button
                                               size="sm"
                                               variant="outline"
-                                              className="h-7 px-2 text-xs hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                                              className="h-7 px-2 text-xs hover:bg-primary/10 hover:text-primary hover:border-primary/40"
                                               disabled={returningFanmarkId === fanmark.id}
                                             >
                                               <Undo2 className="h-3 w-3 mr-1" />
@@ -866,7 +866,7 @@ export const FanmarkDashboard = () => {
                                               <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                                               <AlertDialogAction
                                                 onClick={() => handleReturnFanmark(fanmark.id)}
-                                                className="bg-red-600 hover:bg-red-700"
+                                                className="bg-destructive hover:bg-destructive/90"
                                               >
                                                 {returningFanmarkId === fanmark.id ? t('common.processing') : t('dashboard.returnConfirmAction')}
                                               </AlertDialogAction>

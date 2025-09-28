@@ -177,7 +177,7 @@ export const FanmarkQuickRegistration = ({
               disabled={!!prefilledEmoji}
             />
             {errors.emojiCombination && (
-              <p className="text-sm text-red-500">{errors.emojiCombination.message}</p>
+              <p className="text-sm text-destructive">{errors.emojiCombination.message}</p>
             )}
           </div>
 
@@ -193,7 +193,7 @@ export const FanmarkQuickRegistration = ({
               className="border-2 border-dotted border-pink-300"
             />
             {errors.fanmarkName && (
-              <p className="text-sm text-red-500">{errors.fanmarkName.message}</p>
+              <p className="text-sm text-destructive">{errors.fanmarkName.message}</p>
             )}
           </div>
 

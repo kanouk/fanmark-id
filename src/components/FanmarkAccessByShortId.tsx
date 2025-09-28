@@ -20,6 +20,7 @@ interface FanmarkData {
   text_content?: string;
   status: string;
   is_password_protected?: boolean;
+  license_id?: string;
 }
 
 export const FanmarkAccessByShortId = () => {
@@ -62,6 +63,10 @@ export const FanmarkAccessByShortId = () => {
         }
 
         const fanmarkData = data[0] as FanmarkData;
+
+        if (!fanmarkData.license_id) {
+          console.warn('Loaded fanmark without license_id. Profile access requires active license linkage.');
+        }
 
         // Show redirect loading and then redirect if it's a redirect type without password protection
         if (fanmarkData.access_type === 'redirect' &&

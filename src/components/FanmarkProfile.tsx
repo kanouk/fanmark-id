@@ -60,11 +60,24 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
       console.log('🆔 Fanmark ID:', fanmark.id);
       console.log('🎯 Access type:', fanmark.access_type);
 
-      if (fanmark.id && fanmark.access_type === 'profile') {
+      if (fanmark.access_type !== 'profile') {
+        console.log('⚠️ Fanmark access type is not profile. Skipping profile load.');
+        setLoading(false);
+        return;
+      }
+
+      if (!fanmark.license_id) {
+        console.warn('⚠️ FanmarkProfile invoked without license_id. Profile data cannot be resolved.');
+        setEmojiProfile(null);
+        setLoading(false);
+        return;
+      }
+
+      if (fanmark.id && fanmark.license_id) {
         try {
-          console.log('🚀 Attempting to load profile for license_id:', fanmark.license_id || fanmark.id);
+          console.log('🚀 Attempting to load profile for license_id:', fanmark.license_id);
           const startTime = Date.now();
-          const profile = await getPublicEmojiProfile(fanmark.license_id || fanmark.id);
+          const profile = await getPublicEmojiProfile(fanmark.license_id);
           const loadTime = Date.now() - startTime;
 
           console.log('✅ Profile loaded successfully in', loadTime, 'ms');
@@ -92,15 +105,13 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
             stack: error?.stack
           });
         }
-      } else {
-        console.log('❌ Conditions not met - ID:', fanmark.id, 'Access type:', fanmark.access_type);
       }
       setLoading(false);
       console.log('🏁 Profile loading completed');
     };
 
     loadProfile();
-  }, [fanmark.id, fanmark.access_type]);
+  }, [fanmark.id, fanmark.access_type, fanmark.license_id]);
 
 
   if (loading) {
@@ -114,7 +125,9 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
     );
   }
 
-  // If profile is null after loading (meaning it's private), show private message
+  const licenseMissing = fanmark.access_type === 'profile' && !fanmark.license_id;
+
+  // If profile is null after loading, show appropriate fallback
   if (!emojiProfile) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex flex-col">
@@ -139,9 +152,13 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
           <Card className="w-96">
             <CardContent className="p-8 text-center space-y-4">
               <div className="text-6xl mb-4">{fanmark.emoji_combination}</div>
-              <h1 className="text-xl font-semibold text-foreground">プライベートプロフィール</h1>
+              <h1 className="text-xl font-semibold text-foreground">
+                {licenseMissing ? 'プロフィールを表示できません' : 'プライベートプロフィール'}
+              </h1>
               <p className="text-muted-foreground">
-                このプロフィールは非公開に設定されています。
+                {licenseMissing
+                  ? 'アクティブなライセンスが見つからないため、プロフィール情報にアクセスできません。'
+                  : 'このプロフィールは非公開に設定されています。'}
               </p>
               <Button onClick={() => navigate('/')} className="w-full mt-4">
                 <span className="mr-2">🏠</span>

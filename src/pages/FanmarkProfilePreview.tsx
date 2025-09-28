@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, ExternalLink, User, X, Edit } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
+import { supabase } from '@/integrations/supabase/client';
 import { getOwnerEmojiProfile, type EmojiProfile } from '@/hooks/useEmojiProfile';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import {
@@ -38,7 +39,9 @@ export default function FanmarkProfilePreview() {
   const location = useLocation();
   const { t } = useTranslation();
   const [cachedFanmark, setCachedFanmark] = useState<{emoji_combination: string, display_name: string | null} | null>(null);
+  const [cameFromEdit, setCameFromEdit] = useState(false);
   const [profile, setProfile] = useState<EmojiProfile | null>(null);
+  const [licenseId, setLicenseId] = useState<string | null | undefined>(undefined);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -60,34 +63,98 @@ export default function FanmarkProfilePreview() {
     }
   }, [fanmarkId]);
 
-  // Load owner profile (for preview - shows regardless of public status)
   useEffect(() => {
-    const loadOwnerProfile = async () => {
+    const state = (location.state as { from?: string } | null)?.from;
+    setCameFromEdit(state === 'profile-edit');
+  }, [location.state]);
+
+  // Resolve active license linked to the fanmark
+  useEffect(() => {
+    const resolveLicense = async () => {
       if (!fanmarkId) {
+        setLicenseId(null);
+        setProfile(null);
         setLoading(false);
         return;
       }
 
       setLoading(true);
+
       try {
-        const ownerProfile = await getOwnerEmojiProfile(fanmarkId);
+        const { data, error } = await supabase.rpc('get_fanmark_complete_data', {
+          fanmark_id_param: fanmarkId
+        });
+
+        if (error) throw error;
+
+        const record = Array.isArray(data) ? data[0] : data;
+
+        if (!record?.license_id) {
+          console.warn('No active license found for fanmark preview. Profile data will be unavailable.');
+          setLicenseId(null);
+          setProfile(null);
+          setLoading(false);
+          return;
+        }
+
+        setLicenseId(record.license_id);
+      } catch (error) {
+        console.error('Error resolving fanmark license for preview:', error);
+        setLicenseId(null);
+        setProfile(null);
+        setLoading(false);
+      }
+    };
+
+    resolveLicense();
+  }, [fanmarkId]);
+
+  // Load owner profile once license is resolved (preview ignores public flag)
+  useEffect(() => {
+    const loadOwnerProfile = async () => {
+      if (!licenseId) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        const ownerProfile = await getOwnerEmojiProfile(licenseId);
         setProfile(ownerProfile);
       } catch (error) {
         console.error('Error loading owner profile for preview:', error);
+        setProfile(null);
       } finally {
         setLoading(false);
       }
     };
 
-    loadOwnerProfile();
-  }, [fanmarkId]);
+    // Avoid firing until license resolution completed (licenseId undefined)
+    if (licenseId !== undefined) {
+      loadOwnerProfile();
+    }
+  }, [licenseId]);
 
-  const handleClose = () => {
+  const navigateBackToSettings = () => {
+    navigate(`/fanmarks/${fanmarkId}/settings`);
+  };
+
+  const navigateBackToEdit = () => {
     navigate(`/fanmarks/${fanmarkId}/profile/edit`);
   };
 
+  const handleClose = () => {
+    if (cameFromEdit) {
+      navigateBackToEdit();
+      return;
+    }
+
+    navigateBackToSettings();
+  };
+
   const handleEditProfile = () => {
-    navigate(`/fanmarks/${fanmarkId}/profile/edit`);
+    navigateBackToEdit();
   };
 
   if (loading) {

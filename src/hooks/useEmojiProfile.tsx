@@ -32,9 +32,16 @@ export const getPublicEmojiProfile = async (licenseId: string): Promise<PublicEm
     const { data, error } = await supabase.rpc('get_public_emoji_profile', {
       profile_license_id: licenseId
     });
-    
+
     if (error) throw error;
-    return (data as unknown) as PublicEmojiProfile || null;
+
+    if (!data) {
+      return null;
+    }
+
+    const profileRecord = Array.isArray(data) ? data[0] : data;
+
+    return (profileRecord ?? null) as PublicEmojiProfile | null;
   } catch (error) {
     console.error('Error fetching public emoji profile:', error);
     return null;

@@ -331,8 +331,8 @@ export const FanmarkAcquisition = ({
 
               {/* エラーメッセージ */}
               {searchResult?.status === 'available' && user && fanmarkLimit !== -1 && remainingCapacity <= 0 && (
-                <div className="text-center p-4 rounded-xl bg-red-50 border border-red-200">
-                  <div className="text-red-600 font-medium">
+                <div className="text-center p-4 rounded-xl bg-destructive/10 border border-destructive/20">
+                  <div className="text-destructive font-medium">
                     {t('dashboard.acquireLimitReachedDescription')}
                   </div>
                 </div>

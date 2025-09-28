@@ -119,7 +119,9 @@ export default function EmojiProfileEdit() {
   };
 
   const handlePreview = () => {
-    navigate(`/fanmarks/${fanmarkId}/profile/preview`);
+    navigate(`/fanmarks/${fanmarkId}/profile/preview`, {
+      state: { from: 'profile-edit' }
+    });
   };
 
   if (!user) {
