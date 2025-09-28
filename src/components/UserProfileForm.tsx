@@ -16,7 +16,6 @@ interface UserSettings {
   username: string;
   avatar_url: string | null;
   plan_type: 'free' | 'creator' | 'business' | 'enterprise' | 'admin';
-  preferred_language: 'en' | 'ja';
 }
 
 type UpdateSettingsPayload = Partial<UserSettings>;
@@ -42,7 +41,6 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
     username: profile?.username ?? '',
     avatar_url: profile?.avatar_url ?? '',
     plan_type: profile?.plan_type ?? 'free' as 'free' | 'creator' | 'business' | 'enterprise' | 'admin',
-    preferred_language: profile?.preferred_language ?? 'en' as 'en' | 'ja',
   });
 
   const getPlanLimit = (planType: 'free' | 'creator' | 'business' | 'enterprise' | 'admin'): number => {
@@ -326,20 +324,6 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
             </select>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="preferred_language" className="text-sm font-semibold text-muted-foreground">
-              {t('userSettings.preferredLanguage')}
-            </Label>
-            <select
-              id="preferred_language"
-              value={formData.preferred_language}
-              onChange={(e) => setFormData(prev => ({ ...prev, preferred_language: e.target.value as 'en' | 'ja' }))}
-              className="h-11 w-full rounded-2xl border border-primary/15 bg-background/80 px-3 text-base shadow-none focus-visible:ring-2 focus-visible:ring-primary/40"
-            >
-              <option value="en">{t('userSettings.languageEnglish')}</option>
-              <option value="ja">{t('userSettings.languageJapanese')}</option>
-            </select>
-          </div>
         </div>
       </div>
 

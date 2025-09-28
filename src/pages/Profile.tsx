@@ -14,7 +14,6 @@ import { User, Settings, Info, LogOut } from 'lucide-react';
 import { MdOutlineMail, MdSpaceDashboard } from 'react-icons/md';
 import { RiCalendarCheckLine } from 'react-icons/ri';
 import { HiOutlineSparkles } from 'react-icons/hi2';
-import { FiGlobe } from 'react-icons/fi';
 
 const Profile = () => {
   const { user, signOut, signingOut, loading: authLoading } = useAuth();
@@ -168,9 +167,6 @@ const Profile = () => {
                   {profile?.username && (
                     <p className="text-sm text-muted-foreground">@{profile.username}</p>
                   )}
-                  <p className="text-sm text-muted-foreground">
-                    {t('userSettings.preferredLanguage')}: {profile?.preferred_language === 'ja' ? t('userSettings.languageJapanese') : t('userSettings.languageEnglish')}
-                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -254,15 +250,6 @@ const Profile = () => {
                              profile?.plan_type === 'creator' ? 'Creator' :
                              'Free'}
                           </Badge>
-                        </div>
-                      </div>
-                      <div className="space-y-1.5">
-                        <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                          <FiGlobe className="h-4 w-4" />
-                          {t('userSettings.preferredLanguage')}
-                        </p>
-                        <div className="rounded-2xl border border-primary/10 bg-background/80 px-4 py-3 text-sm text-foreground">
-                          {profile?.preferred_language === 'ja' ? t('userSettings.languageJapanese') : t('userSettings.languageEnglish')}
                         </div>
                       </div>
                     </div>

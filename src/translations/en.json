@@ -294,10 +294,6 @@
     "planTypeCreator": "Creator",
     "planTypeBusiness": "Business",
     "planTypeAdmin": "Admin",
-  
-  "preferredLanguage": "Preferred Language",
-    "languageEnglish": "English",
-    "languageJapanese": "日本語",
     "saveChanges": "Save Changes",
     "updateSuccess": "Settings Updated",
     "updateSuccessDescription": "Your user settings have been updated successfully",

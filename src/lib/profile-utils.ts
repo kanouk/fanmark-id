@@ -8,7 +8,6 @@ export interface UserSettings {
   display_name: string | null;
   avatar_url: string | null;
   plan_type: 'free' | 'creator' | 'business' | 'enterprise' | 'admin';
-  preferred_language: 'en' | 'ja';
   created_at: string;
   updated_at: string;
 }
