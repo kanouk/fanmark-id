@@ -13,7 +13,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy, Undo2 } from 'lucide-react';
-import { FiTarget, FiLayers, FiCompass, FiStar, FiCheckCircle, FiMoon, FiFileText, FiUser, FiLink } from 'react-icons/fi';
+import { FiTarget, FiLayers, FiCompass, FiStar, FiCheckCircle, FiMoon, FiUser, FiLink, FiFileText } from 'react-icons/fi';
 import { FanmarkAcquisition } from './FanmarkAcquisition';
 // Using Undo2 for return/return action
 import { supabase } from '@/integrations/supabase/client';
@@ -28,10 +28,6 @@ interface Fanmark {
   fanmark_name: string | null;
   short_id: string;
   access_type: string;
-  target_url: string | null;
-  text_content: string | null;
-  redirect_url?: string | null;
-  profile_text?: string | null;
   tier_level: number | null;
   current_license_id: string | null;
   is_transferable: boolean;
@@ -200,48 +196,20 @@ export const FanmarkDashboard = () => {
         console.warn('Error fetching basic configs:', configError);
       }
 
-      // Fetch redirect configs
-      const { data: redirectConfigs, error: redirectError } = await supabase
-        .from('fanmark_redirect_configs')
-        .select('license_id, target_url')
-        .in('license_id', licenseIds);
-
-      if (redirectError) {
-        console.warn('Error fetching redirect configs:', redirectError);
-      }
-
-      // Fetch message configs
-      const { data: messageConfigs, error: messageError } = await supabase
-        .from('fanmark_messageboard_configs')
-        .select('license_id, content')
-        .in('license_id', licenseIds);
-
-      if (messageError) {
-        console.warn('Error fetching message configs:', messageError);
-      }
-
       // Create lookup maps for configs
       const basicConfigMap = new Map((basicConfigs || []).map(config => [config.license_id, config]));
-      const redirectConfigMap = new Map((redirectConfigs || []).map(config => [config.license_id, config]));
-      const messageConfigMap = new Map((messageConfigs || []).map(config => [config.license_id, config]));
 
       // Process fanmarks with their configs
       const fanmarksWithDefaults = licenses.map(license => {
         const fanmark = license.fanmarks as any;
         const basicConfig = basicConfigMap.get(license.id);
-        const redirectConfig = redirectConfigMap.get(license.id);
-        const messageConfig = messageConfigMap.get(license.id);
         
         return {
           ...fanmark,
           // Fill in required properties from Fanmark interface
           access_type: basicConfig?.access_type || 'inactive',
           fanmark_name: basicConfig?.fanmark_name || fanmark.emoji_combination,
-          target_url: redirectConfig?.target_url || null,
-          text_content: messageConfig?.content || null,
           license_id: license.id,
-          redirect_url: null,
-          profile_text: null,
           tier_level: null, // Removed from fanmarks table
           current_license_id: license.id,
           is_transferable: true, // Default value
@@ -549,8 +517,6 @@ export const FanmarkDashboard = () => {
                           </thead>
                           <tbody>
                             {filteredFanmarks.map((fanmark) => {
-                              const redirectUrl = fanmark.target_url ?? fanmark.redirect_url;
-                              const textContent = fanmark.text_content ?? fanmark.profile_text;
                               const licenseData = fanmark.fanmark_licenses;
                               const acquisitionDate = licenseData?.license_start ? format(new Date(licenseData.license_start), 'yyyy/MM/dd') : '-';
                               const expirationDate = licenseData?.license_end ? new Date(licenseData.license_end) : null;
@@ -610,19 +576,23 @@ export const FanmarkDashboard = () => {
                                          <div className={`text-sm font-medium whitespace-nowrap ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`}>
                                            {t('dashboard.daysRemaining', { days: daysRemaining })}
                                          </div>
-                                          <Tooltip>
-                                            <TooltipTrigger asChild>
-                                              <AlertDialog>
-                                                <AlertDialogTrigger asChild>
-                                                  <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    className="h-7 w-7 p-0 rounded-full hover:bg-primary/10 hover:text-primary transition-colors"
-                                                    disabled={returningFanmarkId === fanmark.id}
-                                                  >
-                                                    <Undo2 className="h-3.5 w-3.5" />
-                                                  </Button>
-                                                </AlertDialogTrigger>
+                                         <AlertDialog>
+                                           <Tooltip>
+                                             <TooltipTrigger asChild>
+                                               <AlertDialogTrigger asChild>
+                                                 <Button
+                                                   size="sm"
+                                                   variant="ghost"
+                                                   className="h-7 w-7 p-0 rounded-full hover:bg-primary/10 hover:text-primary transition-colors"
+                                                   disabled={returningFanmarkId === fanmark.id}
+                                                   aria-label={t('dashboard.actionsReturn')}
+                                                 >
+                                                   <Undo2 className="h-3.5 w-3.5" />
+                                                 </Button>
+                                               </AlertDialogTrigger>
+                                             </TooltipTrigger>
+                                             <TooltipContent>{t('dashboard.actionsReturn')}</TooltipContent>
+                                           </Tooltip>
                                            <AlertDialogContent>
                                              <AlertDialogHeader>
                                                <AlertDialogTitle>{t('dashboard.returnConfirmTitle')}</AlertDialogTitle>
@@ -639,11 +609,8 @@ export const FanmarkDashboard = () => {
                                                  {returningFanmarkId === fanmark.id ? t('common.processing') : t('dashboard.returnConfirmAction')}
                                                </AlertDialogAction>
                                              </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                              </AlertDialog>
-                                            </TooltipTrigger>
-                                            <TooltipContent>{t('dashboard.actionsReturn')}</TooltipContent>
-                                          </Tooltip>
+                                           </AlertDialogContent>
+                                         </AlertDialog>
                                        </>
                                      ) : isReturned(fanmark) ? (
                                        <span className="text-muted-foreground text-sm">{t('dashboard.returned')}</span>
@@ -734,8 +701,6 @@ export const FanmarkDashboard = () => {
                     {/* Mobile Card View */}
                     <div className="lg:hidden space-y-4">
                       {filteredFanmarks.map((fanmark) => {
-                        const redirectUrl = fanmark.target_url ?? fanmark.redirect_url;
-                        const textContent = fanmark.text_content ?? fanmark.profile_text;
                         const licenseData = fanmark.fanmark_licenses;
                         const acquisitionDate = licenseData?.license_start ? format(new Date(licenseData.license_start), 'yyyy/MM/dd') : '-';
                         const expirationDate = licenseData?.license_end ? new Date(licenseData.license_end) : null;
@@ -805,11 +770,9 @@ export const FanmarkDashboard = () => {
                                      <div className="text-xs text-muted-foreground font-medium mb-1">
                                        {t('dashboard.remainingDays')}
                                      </div>
-                                     <div>
+                                     <div className="flex items-center gap-2">
                                        {licenseData?.status === 'grace' && licenseData?.license_end ? (
-                                         <GraceStatusCountdown
-                                           licenseEnd={licenseData.license_end}
-                                         />
+                                         <GraceStatusCountdown licenseEnd={licenseData.license_end} />
                                        ) : !isReturned(fanmark) && daysRemaining !== null && daysRemaining >= 0 ? (
                                          <span className={`text-sm font-medium whitespace-nowrap ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`}>
                                            {t('dashboard.daysRemaining', { days: daysRemaining })}
@@ -819,42 +782,25 @@ export const FanmarkDashboard = () => {
                                        ) : (
                                          <span className="text-muted-foreground text-sm">-</span>
                                        )}
-                                     </div>
-                                   </div>
-                                </div>
 
-                                {(redirectUrl || textContent) && (
-                                  <div className="text-sm text-muted-foreground mb-3 rounded bg-muted/30 p-2">
-                                    {fanmark.access_type === 'redirect' && redirectUrl && (
-                                      <div className="flex items-center gap-1">
-                                        <ExternalLink className="h-3 w-3" />
-                                        <span className="truncate">{redirectUrl}</span>
-                                      </div>
-                                    )}
-                                    {fanmark.access_type === 'text' && textContent && (
-                                      <div className="flex items-start gap-1">
-                                        <FiFileText className="mt-0.5 h-3 w-3" />
-                                        <span className="line-clamp-2">{textContent}</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-
-                                  <div className="flex items-center justify-between pt-2">
-                                    <div className="flex items-center gap-2">
-                                      {!isReturned(fanmark) && licenseData?.status !== 'grace' && (
+                                      {!isReturned(fanmark) && licenseData?.status !== 'grace' && daysRemaining !== null && daysRemaining >= 0 && (
                                         <AlertDialog>
-                                          <AlertDialogTrigger asChild>
-                                            <Button
-                                              size="sm"
-                                              variant="outline"
-                                              className="h-7 px-2 text-xs hover:bg-primary/10 hover:text-primary hover:border-primary/40"
-                                              disabled={returningFanmarkId === fanmark.id}
-                                            >
-                                              <Undo2 className="h-3 w-3 mr-1" />
-                                              {t('dashboard.actionsReturn')}
-                                            </Button>
-                                          </AlertDialogTrigger>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <AlertDialogTrigger asChild>
+                                                <Button
+                                                  size="icon"
+                                                  variant="ghost"
+                                                  className="h-7 w-7 rounded-full hover:bg-primary/10 hover:text-primary"
+                                                  disabled={returningFanmarkId === fanmark.id}
+                                                  aria-label={t('dashboard.actionsReturn')}
+                                                >
+                                                  <Undo2 className="h-3.5 w-3.5" />
+                                                </Button>
+                                              </AlertDialogTrigger>
+                                            </TooltipTrigger>
+                                            <TooltipContent>{t('dashboard.actionsReturn')}</TooltipContent>
+                                          </Tooltip>
                                           <AlertDialogContent>
                                             <AlertDialogHeader>
                                               <AlertDialogTitle>{t('dashboard.returnConfirmTitle')}</AlertDialogTitle>
@@ -874,6 +820,12 @@ export const FanmarkDashboard = () => {
                                           </AlertDialogContent>
                                         </AlertDialog>
                                       )}
+                                     </div>
+                                   </div>
+                                </div>
+
+                                  <div className="flex items-center justify-between pt-2">
+                                    <div className="flex items-center gap-2">
                                        <Tooltip>
                                          <TooltipTrigger asChild>
                                            <Button
