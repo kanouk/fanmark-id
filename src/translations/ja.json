@@ -225,6 +225,7 @@
     "goToHome": "ホームに戻る",
     "fanmarkNotFound": "ファンマが見つかりません",
     "fanmarkNotFoundDescription": "このファンマは存在しないか、利用できません。",
+    "fanmarkNotAcquiredDescription": "該当のファンマはまだ取得されていません。",
     "invalidAccessType": "無効なアクセスタイプ",
     "invalidConfiguration": "このファンマは無効な設定です。",
     "invalidFanmarkUrl": "無効なファンマURL",

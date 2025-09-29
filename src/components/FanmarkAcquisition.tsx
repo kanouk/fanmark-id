@@ -51,11 +51,11 @@ export const FanmarkAcquisition = ({
   const [searchUtilities, setSearchUtilities] = useState<{ setQuery: (query: string) => void; clearQuery: () => void } | null>(null);
 
   const remainingCapacity = useMemo(() => {
-    if (fanmarkLimit === -1) {
-      return Infinity; // Admin用の無制限
+    if (!user || fanmarkLimit === -1) {
+      return Infinity; // 非ログイン時/無制限
     }
     return Math.max(fanmarkLimit - currentCount, 0);
-  }, [fanmarkLimit, currentCount]);
+  }, [fanmarkLimit, currentCount, user]);
 
   const isResultAcquirable = useMemo(() => searchResult?.status === 'available', [searchResult]);
 

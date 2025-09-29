@@ -225,6 +225,7 @@
     "goToHome": "Go to Home",
     "fanmarkNotFound": "Fanmark not found",
     "fanmarkNotFoundDescription": "This fanmark does not exist or is not available.",
+    "fanmarkNotAcquiredDescription": "This fanmark has not been claimed yet.",
     "invalidAccessType": "Invalid Access Type",
     "invalidConfiguration": "This fanmark has an invalid configuration.",
     "invalidFanmarkUrl": "Invalid fanmark URL",

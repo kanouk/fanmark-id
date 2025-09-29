@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { PasswordProtection } from './PasswordProtection';
 import { RedirectLoading } from './RedirectLoading';
 import { MessageboardLoading } from './MessageboardLoading';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useToast } from '@/hooks/use-toast';
 
 interface FanmarkData {
   id: string;
@@ -27,18 +28,31 @@ export const FanmarkAccessByShortId = () => {
   const { shortId } = useParams<{ shortId: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [fanmark, setFanmark] = useState<FanmarkData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isPasswordVerified, setIsPasswordVerified] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isShowingMessageboard, setIsShowingMessageboard] = useState(false);
 
+  const handleFanmarkUnavailable = useCallback(
+    (descriptionKey: string, variant: 'default' | 'destructive' = 'default') => {
+      setLoading(false);
+      toast({
+        title: t('common.fanmarkNotFound'),
+        description: t(descriptionKey),
+        variant: variant === 'destructive' ? 'destructive' : undefined,
+      });
+
+      navigate('/', { replace: true });
+    },
+    [navigate, setLoading, toast, t]
+  );
+
   useEffect(() => {
     const loadFanmark = async () => {
       if (!shortId) {
-        setError(t('common.invalidFanmarkUrl'));
-        setLoading(false);
+        handleFanmarkUnavailable('common.invalidFanmarkUrl', 'destructive');
         return;
       }
 
@@ -51,14 +65,12 @@ export const FanmarkAccessByShortId = () => {
 
         if (error) {
           console.error('Database error:', error);
-          setError(t('common.failedToLoadFanmark'));
-          setLoading(false);
+          handleFanmarkUnavailable('common.failedToLoadFanmark', 'destructive');
           return;
         }
 
         if (!data || (Array.isArray(data) && data.length === 0)) {
-          setError(t('common.fanmarkNotFound'));
-          setLoading(false);
+          handleFanmarkUnavailable('common.fanmarkNotAcquiredDescription');
           return;
         }
 
@@ -97,13 +109,12 @@ export const FanmarkAccessByShortId = () => {
         setLoading(false);
       } catch (err) {
         console.error('Error loading fanmark:', err);
-        setError(t('common.failedToLoadFanmark'));
-        setLoading(false);
+        handleFanmarkUnavailable('common.failedToLoadFanmark', 'destructive');
       }
     };
 
     loadFanmark();
-  }, [shortId, t]);
+  }, [shortId, handleFanmarkUnavailable]);
 
   // Trigger redirect/messageboard after verification
   useEffect(() => {
@@ -140,24 +151,8 @@ export const FanmarkAccessByShortId = () => {
     );
   }
 
-  if (error || !fanmark) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex items-center justify-center">
-        <Card className="w-96">
-          <CardContent className="p-8 text-center space-y-4">
-            <AlertCircle className="h-12 w-12 mx-auto text-destructive" />
-            <h1 className="text-xl font-semibold">{t('common.fanmarkNotFound')}</h1>
-            <p className="text-muted-foreground">
-              {error || t('common.fanmarkNotFoundDescription')}
-            </p>
-            <Button onClick={() => navigate('/')} className="w-full">
-              <Home className="h-4 w-4 mr-2" />
-              {t('common.goToHome')}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
+  if (!fanmark) {
+    return null;
   }
 
   // Handle password protection for all access types

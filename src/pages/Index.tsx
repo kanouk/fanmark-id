@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from "@/hooks/useAuth";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "@/hooks/useTranslation";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { Button } from "@/components/ui/button";
@@ -23,9 +23,11 @@ const Index = () => {
   const { user, signOut } = useAuth();
   const { profile } = useProfile();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t, tWithBreaks } = useTranslation();
   const [fanmarkCount, setFanmarkCount] = useState(0);
   const { limit: fanmarkLimit, loading: limitLoading } = useFanmarkLimit();
+  const [prefilledEmoji, setPrefilledEmoji] = useState<string | undefined>();
   const exampleCards = [
     {
       key: 'musician',
@@ -124,6 +126,52 @@ const Index = () => {
     }
     navigate('/auth', { state: { prefillFanmark: emoji } });
   };
+
+  useEffect(() => {
+    let nextPrefill = (location.state as { prefillFanmark?: string } | null)?.prefillFanmark;
+    let shouldClearState = Boolean(nextPrefill);
+
+    if (!nextPrefill) {
+      try {
+        const stored = localStorage.getItem('fanmark.prefill');
+        if (stored) {
+          nextPrefill = stored;
+          localStorage.removeItem('fanmark.prefill');
+        }
+      } catch (error) {
+        console.warn('Failed to access localStorage for fanmark prefill:', error);
+      }
+    }
+
+    if (nextPrefill) {
+      setPrefilledEmoji(nextPrefill);
+    }
+
+    if (shouldClearState) {
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location, navigate]);
+
+  useEffect(() => {
+    if (!prefilledEmoji) return;
+
+    const timer = window.setTimeout(() => {
+      setPrefilledEmoji(undefined);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [prefilledEmoji]);
+
+  useEffect(() => {
+    if (!prefilledEmoji) return;
+
+    const searchSection = document.getElementById('search');
+    if (searchSection) {
+      setTimeout(() => {
+        searchSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 0);
+    }
+  }, [prefilledEmoji]);
 
   return <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
       {/* Navigation */}
@@ -240,6 +288,7 @@ const Index = () => {
           <FanmarkAcquisition
             fanmarkLimit={fanmarkLimit}
             currentCount={fanmarkCount}
+            prefilledEmoji={prefilledEmoji}
             onRequireAuth={handleRequireAuth}
             onObtain={() => setFanmarkCount((count) => count + 1)}
           />
