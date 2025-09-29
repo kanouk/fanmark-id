@@ -666,6 +666,27 @@
     "preview": "プレビュー",
     "backToEdit": "編集"
   },
+  "fanmarkDetails": {
+    "notFound": "ファンマークが見つかりません",
+    "notFoundDescription": "お探しのファンマークは存在しないか、削除されています。",
+    "currentStatus": "現在の状況",
+    "firstAcquisition": "初回取得",
+    "licenseHistory": "取得履歴",
+    "active": "アクティブ",
+    "available": "利用可能",
+    "owner": "所有者",
+    "expiresOn": "有効期限",
+    "date": "日付",
+    "firstOwner": "初回所有者",
+    "neverAcquired": "取得履歴なし",
+    "started": "開始日",
+    "expires": "終了日",
+    "noHistory": "ライセンス履歴がありません",
+    "initial": "初回",
+    "favorite": "お気に入りに追加",
+    "unfavorite": "お気に入りから削除",
+    "visitPage": "ページを表示"
+  },
   "acquisition": {
     "title": "ファンマ取得中...",
     "processing": "リクエストを処理中...",

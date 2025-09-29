@@ -154,6 +154,35 @@ export type Database = {
           },
         ]
       }
+      fanmark_favorites: {
+        Row: {
+          created_at: string
+          fanmark_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          fanmark_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          fanmark_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fanmark_favorites_fanmark_id_fkey"
+            columns: ["fanmark_id"]
+            isOneToOne: false
+            referencedRelation: "fanmarks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fanmark_licenses: {
         Row: {
           created_at: string
@@ -646,6 +675,27 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_fanmark_details_by_short_id: {
+        Args: { shortid_param: string }
+        Returns: {
+          current_license_end: string
+          current_license_id: string
+          current_license_start: string
+          current_owner_display_name: string
+          current_owner_username: string
+          emoji_combination: string
+          fanmark_created_at: string
+          fanmark_id: string
+          first_acquired_date: string
+          first_owner_display_name: string
+          first_owner_username: string
+          is_currently_active: boolean
+          is_favorited: boolean
+          license_history: Json
+          normalized_emoji: string
+          short_id: string
+        }[]
+      }
       get_fanmark_ownership_status: {
         Args: { fanmark_license_id: string }
         Returns: {
@@ -706,6 +756,10 @@ export type Database = {
       }
       is_super_admin: {
         Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      toggle_fanmark_favorite: {
+        Args: { fanmark_uuid: string }
         Returns: boolean
       }
       upsert_fanmark_password_config: {

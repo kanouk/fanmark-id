@@ -668,6 +668,27 @@
     "preview": "Preview",
     "backToEdit": "Edit"
   },
+  "fanmarkDetails": {
+    "notFound": "Fanmark Not Found",
+    "notFoundDescription": "The fanmark you're looking for doesn't exist or has been removed.",
+    "currentStatus": "Current Status",
+    "firstAcquisition": "First Acquisition",
+    "licenseHistory": "License History",
+    "active": "Active",
+    "available": "Available",
+    "owner": "Owner",
+    "expiresOn": "Expires on",
+    "date": "Date",
+    "firstOwner": "First Owner",
+    "neverAcquired": "Never acquired",
+    "started": "Started",
+    "expires": "Expires",
+    "noHistory": "No license history available",
+    "initial": "Initial",
+    "favorite": "Add to Favorites",
+    "unfavorite": "Remove from Favorites",
+    "visitPage": "Visit Page"
+  },
   "acquisition": {
     "title": "Acquiring fanmark...",
     "processing": "Processing request...",
