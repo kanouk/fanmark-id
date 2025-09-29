@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthForm } from '@/hooks/useAuthForm';
@@ -11,7 +11,8 @@ import { PasswordRequirement } from '@/components/PasswordRequirement';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Heart, Sparkles, Users, Mail, Sparkle, ArrowLeft, CheckCircle2, Lock, Tag } from 'lucide-react';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Heart, Users, Mail, Sparkle, ArrowLeft, Lock, Tag, Info, Check, X } from 'lucide-react';
 import { AuthFormData, AuthState } from '@/types/auth';
 import { PasswordRequirement as PasswordRequirementType } from '@/lib/password-validation';
 
@@ -123,56 +124,38 @@ const Auth = () => {
           <LanguageToggle />
         </div>
       </header>
-      <div className="flex flex-1 items-center justify-center px-4 py-16">
-        <div className="grid w-full max-w-5xl gap-10 lg:grid-cols-2">
-          <div className="hidden flex-col justify-center space-y-6 rounded-3xl border border-primary/20 bg-background/70 p-10 text-center shadow-[0_26px_60px_rgba(101,195,200,0.18)] backdrop-blur lg:flex">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <Sparkles className="h-6 w-6" />
-            </div>
-            <div className="space-y-3">
-              <h1 className="text-3xl font-bold text-foreground">
-                {t('auth.welcome')}
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {t('auth.description')}
-              </p>
-            </div>
-            <div className="grid gap-4 text-left text-sm text-muted-foreground">
-              <div className="flex items-start gap-3">
-                <CheckCircle2 className="mt-0.5 h-5 w-5 text-primary" />
-                <span>{t('registration.quickRegisterSubtitle')}</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircle2 className="mt-0.5 h-5 w-5 text-primary" />
-                <span>{t('search.joinThousands')}</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircle2 className="mt-0.5 h-5 w-5 text-primary" />
-                <span>{t('registration.detailsNote')}</span>
-              </div>
-            </div>
+      <div className="flex flex-1 items-start justify-center px-4 py-14 md:py-20">
+        <div className="w-full max-w-4xl space-y-10">
+          <div className="space-y-4 text-center md:text-left">
+            <h1 className="text-3xl font-bold text-foreground sm:text-4xl">
+              {t('auth.pageTitle')}
+            </h1>
+            <p className="mx-auto max-w-2xl text-sm text-muted-foreground md:mx-0 md:text-base">
+              {t('auth.pageDescription')}
+            </p>
           </div>
-          <AuthLayout title={t('auth.title')} description={t('auth.description')}>
-            <div className="space-y-6">
+
+          <div className="rounded-3xl border border-primary/20 bg-background/90 p-6 shadow-[0_22px_55px_rgba(101,195,200,0.16)] backdrop-blur md:p-10">
+            <div className="space-y-8">
               <Tabs defaultValue="login" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-2 gap-3 rounded-full border border-primary/20 bg-background/80 p-3 backdrop-blur">
+                <TabsList className="grid w-full grid-cols-2 gap-2 rounded-full border border-primary/20 bg-background/80 p-2 backdrop-blur">
                   <TabsTrigger
                     value="login"
-                    className="flex items-center justify-center gap-2 rounded-full py-4 text-base font-semibold tracking-wide data-[state=active]:bg-primary/15 data-[state=active]:text-foreground data-[state=active]:shadow-lg"
+                    className="flex items-center justify-center gap-2 rounded-full py-3 text-sm font-semibold tracking-wide transition-colors data-[state=active]:bg-primary/15 data-[state=active]:text-foreground data-[state=active]:shadow-lg"
                   >
                     <Users className="h-4 w-4" />
                     {t('auth.login')}
                   </TabsTrigger>
                   <TabsTrigger
                     value="signup"
-                    className="flex items-center justify-center gap-2 rounded-full py-4 text-base font-semibold tracking-wide data-[state=active]:bg-primary/15 data-[state=active]:text-foreground data-[state=active]:shadow-lg"
+                    className="flex items-center justify-center gap-2 rounded-full py-3 text-sm font-semibold tracking-wide transition-colors data-[state=active]:bg-primary/15 data-[state=active]:text-foreground data-[state=active]:shadow-lg"
                   >
                     <Heart className="h-4 w-4" />
                     {t('auth.signUp')}
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="login" className="rounded-3xl border border-primary/15 bg-background/90 p-8 shadow-[0_20px_45px_rgba(101,195,200,0.14)]">
+                <TabsContent value="login" className="rounded-2xl border border-primary/15 bg-background/95 p-6 shadow-[0_18px_40px_rgba(101,195,200,0.12)] md:p-8">
                   <LoginForm
                     formData={formData}
                     authState={authState}
@@ -182,7 +165,7 @@ const Auth = () => {
                   />
                 </TabsContent>
 
-                <TabsContent value="signup" className="rounded-3xl border border-primary/15 bg-background/90 p-8 shadow-[0_20px_45px_rgba(101,195,200,0.14)]">
+                <TabsContent value="signup" className="rounded-2xl border border-primary/15 bg-background/95 p-6 shadow-[0_18px_40px_rgba(101,195,200,0.12)] md:p-8">
                   <SignUpForm
                     formData={formData}
                     authState={authState}
@@ -197,7 +180,7 @@ const Auth = () => {
                 </TabsContent>
               </Tabs>
             </div>
-          </AuthLayout>
+          </div>
         </div>
       </div>
       <footer className="border-t border-border/40 bg-background/80 backdrop-blur">
@@ -212,6 +195,23 @@ const Auth = () => {
   );
 };
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const InputStatusIcon = ({ status, className }: { status: boolean | null; className?: string }) => {
+  if (status === null) return null;
+  const base = 'pointer-events-none absolute right-3 top-1/2 -translate-y-1/2';
+  const classes = className ? `${base} ${className}` : base;
+  return (
+    <span className={classes}>
+      {status ? (
+        <Check className="h-4 w-4 text-emerald-500" />
+      ) : (
+        <X className="h-4 w-4 text-destructive" />
+      )}
+    </span>
+  );
+};
+
 // Login Form Component
 interface LoginFormProps {
   formData: AuthFormData;
@@ -221,78 +221,89 @@ interface LoginFormProps {
   t: (key: string) => string;
 }
 
-const LoginForm = ({ formData, authState, updateFormData, signIn, t }: LoginFormProps) => (
-  <form
-    onSubmit={(e) => {
-      e.preventDefault();
-      signIn();
-    }}
-    className="space-y-5"
-  >
-    <div className="space-y-2">
-      <Label htmlFor="auth-email" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-        <Mail className="h-4 w-4" />
-        {t('auth.email')}
-      </Label>
-      <Input
-        id="auth-email"
-        type="email"
-        value={formData.email}
-        onChange={(e) => updateFormData('email', e.target.value)}
-        placeholder="you@example.com"
-        required
-        autoComplete="email"
-        className="h-12 rounded-full border border-primary/15 bg-background/80 text-base shadow-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary/40"
-      />
-    </div>
+const LoginForm = ({ formData, authState, updateFormData, signIn, t }: LoginFormProps) => {
+  const emailStatus = formData.email ? EMAIL_REGEX.test(formData.email) : null;
+  const passwordStatus = formData.password ? formData.password.length > 0 : null;
 
-    <div className="space-y-2">
-      <Label htmlFor="auth-password" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-        <Lock className="h-4 w-4" />
-        {t('auth.password')}
-      </Label>
-      <Input
-        id="auth-password"
-        type="password"
-        value={formData.password}
-        onChange={(e) => updateFormData('password', e.target.value)}
-        required
-        autoComplete="current-password"
-        className="h-12 rounded-full border border-primary/15 bg-background/80 text-base shadow-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary/40"
-      />
-    </div>
-
-    {authState.error && (
-      <div className="rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-        {authState.error}
-      </div>
-    )}
-
-    <Button
-      type="submit"
-      disabled={authState.loading}
-      className="w-full gap-2 rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 hover:shadow-xl"
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        signIn();
+      }}
+      className="space-y-6"
     >
-      {authState.loading ? (
-        <>
-          <Users className="h-4 w-4 animate-spin" />
-          {t('common.loading')}
-        </>
-      ) : (
-        <>
-          <Users className="h-4 w-4" />
-          {t('auth.login')}
-        </>
-      )}
-    </Button>
+      <div className="space-y-2">
+        <Label htmlFor="auth-email" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+          <Mail className="h-4 w-4" />
+          {t('auth.email')}
+        </Label>
+        <div className="relative">
+          <Input
+            id="auth-email"
+            type="email"
+            value={formData.email}
+            onChange={(e) => updateFormData('email', e.target.value)}
+            placeholder="you@example.com"
+            required
+            autoComplete="email"
+            className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-10 focus-visible:ring-2 focus-visible:ring-primary/40"
+          />
+          <InputStatusIcon status={emailStatus} />
+        </div>
+      </div>
 
-    <div className="text-center text-sm">
-      <Link to="/forgot-password" className="text-primary underline-offset-2 transition hover:underline">
-        {t('auth.forgotPassword')}
-      </Link>
-    </div>
-  </form>
-);
+      <div className="space-y-2">
+        <Label htmlFor="auth-password" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+          <Lock className="h-4 w-4" />
+          {t('auth.password')}
+        </Label>
+        <div className="relative">
+          <Input
+            id="auth-password"
+            type="password"
+            value={formData.password}
+            onChange={(e) => updateFormData('password', e.target.value)}
+            required
+            autoComplete="current-password"
+            className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-10 focus-visible:ring-2 focus-visible:ring-primary/40"
+          />
+          <InputStatusIcon status={passwordStatus} />
+        </div>
+      </div>
+
+      {authState.error && (
+        <div className="rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {authState.error}
+        </div>
+      )}
+
+      <Button
+        type="submit"
+        disabled={authState.loading}
+        className="w-full gap-2 rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 hover:shadow-xl"
+      >
+        {authState.loading ? (
+          <>
+            <Users className="h-4 w-4 animate-spin" />
+            {t('common.loading')}
+          </>
+        ) : (
+          <>
+            <Users className="h-4 w-4" />
+            {t('auth.login')}
+          </>
+        )}
+      </Button>
+
+      <div className="text-center text-sm">
+        <Link to="/forgot-password" className="text-primary underline-offset-2 transition hover:underline">
+          {t('auth.forgotPassword')}
+        </Link>
+      </div>
+    </form>
+  );
+};
 
 // Sign Up Form Component  
 interface SignUpFormProps {
@@ -317,94 +328,156 @@ const SignUpForm = ({
   username,
   setUsername,
   t,
-}: SignUpFormProps) => (
-  <form
-    onSubmit={(e) => {
-      e.preventDefault();
-      signUp();
-    }}
-    className="space-y-5"
-  >
-    <div className="space-y-2">
-      <Label htmlFor="signup-username" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-        <Tag className="h-4 w-4" />
-        {t('auth.username')}
-      </Label>
-      <div className="flex items-center overflow-hidden rounded-full border border-primary/15 bg-background/80">
-        <span className="px-4 text-sm text-muted-foreground">@</span>
-        <Input
-          id="signup-username"
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-          placeholder="yourname"
-          maxLength={20}
-          autoComplete="off"
-          className="h-12 flex-1 border-0 bg-transparent text-base text-foreground shadow-none placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
-        />
-      </div>
-    </div>
+}: SignUpFormProps) => {
+  const [passwordPopoverOpen, setPasswordPopoverOpen] = useState(false);
+  const blurTimeoutRef = useRef<number | null>(null);
 
-    <div className="space-y-2">
-      <Label htmlFor="signup-email" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-        <Mail className="h-4 w-4" />
-        {t('auth.email')}
-      </Label>
-      <Input
-        id="signup-email"
-        type="email"
-        value={formData.email}
-        onChange={(e) => updateFormData('email', e.target.value)}
-        placeholder="you@example.com"
-        required
-        autoComplete="email"
-        className="h-12 rounded-full border border-primary/15 bg-background/80 text-base shadow-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary/40"
-      />
-    </div>
+  const usernameStatus = username ? username.trim().length >= 3 : null;
+  const emailStatus = formData.email ? EMAIL_REGEX.test(formData.email) : null;
+  const passwordStatus = formData.password ? isValid : null;
+  const confirmStatus = formData.confirmPassword
+    ? formData.confirmPassword === formData.password && formData.confirmPassword.length > 0
+    : null;
 
-    <div className="space-y-2">
-      <Label htmlFor="signup-password" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-        <Lock className="h-4 w-4" />
-        {t('auth.password')}
-      </Label>
-      <Input
-        id="signup-password"
-        type="password"
-        value={formData.password}
-        onChange={(e) => updateFormData('password', e.target.value)}
-        required
-        autoComplete="new-password"
-        className="h-12 rounded-full border border-primary/15 bg-background/80 text-base shadow-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary/40"
-      />
-      {formData.password && (
-        <div className="rounded-2xl border border-primary/10 bg-primary/5 px-4 py-3 text-xs text-muted-foreground">
-          <h4 className="mb-2 font-semibold text-primary">
-            {t('password.requirements.title')}
-          </h4>
-          <div className="space-y-1.5">
-            {requirements.map((req, index) => (
-              <PasswordRequirement key={index} met={req.met} text={req.text} />
-            ))}
-          </div>
+  const handlePasswordFocus = () => {
+    if (blurTimeoutRef.current) {
+      window.clearTimeout(blurTimeoutRef.current);
+      blurTimeoutRef.current = null;
+    }
+    setPasswordPopoverOpen(true);
+  };
+
+  const handlePasswordBlur = () => {
+    blurTimeoutRef.current = window.setTimeout(() => {
+      setPasswordPopoverOpen(false);
+    }, 150);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (blurTimeoutRef.current) {
+        window.clearTimeout(blurTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        signUp();
+      }}
+      className="space-y-6"
+    >
+      <div className="space-y-2">
+        <Label htmlFor="signup-username" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+          <Tag className="h-4 w-4" />
+          {t('auth.username')}
+        </Label>
+        <div className="relative flex items-center gap-2 rounded-2xl border border-primary/15 bg-background/80 px-3 py-1.5 pr-12 focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/20">
+          <span className="text-sm font-medium text-muted-foreground">@</span>
+          <Input
+            id="signup-username"
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+            placeholder="yourname"
+            maxLength={20}
+            autoComplete="off"
+            className="h-11 flex-1 border-0 bg-transparent text-base text-foreground shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          />
+          <InputStatusIcon status={usernameStatus} />
         </div>
-      )}
-    </div>
+      </div>
 
-    <div className="space-y-2">
-      <Label htmlFor="signup-confirm" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-        <Lock className="h-4 w-4" />
-        {t('auth.confirmPassword')}
-      </Label>
-      <Input
-        id="signup-confirm"
-        type="password"
-        value={formData.confirmPassword || ''}
-        onChange={(e) => updateFormData('confirmPassword', e.target.value)}
-        required
-        autoComplete="new-password"
-        className="h-12 rounded-full border border-primary/15 bg-background/80 text-base shadow-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary/40"
-      />
-    </div>
+      <div className="space-y-2">
+        <Label htmlFor="signup-email" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+          <Mail className="h-4 w-4" />
+          {t('auth.email')}
+        </Label>
+        <div className="relative">
+          <Input
+            id="signup-email"
+            type="email"
+            value={formData.email}
+            onChange={(e) => updateFormData('email', e.target.value)}
+            placeholder="you@example.com"
+            required
+            autoComplete="email"
+            className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-10 focus-visible:ring-2 focus-visible:ring-primary/40"
+          />
+          <InputStatusIcon status={emailStatus} />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="signup-password" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+          <Lock className="h-4 w-4" />
+          {t('auth.password')}
+        </Label>
+        <div className="relative">
+          <Input
+            id="signup-password"
+            type="password"
+            value={formData.password}
+            onChange={(e) => updateFormData('password', e.target.value)}
+            onFocus={handlePasswordFocus}
+            onBlur={handlePasswordBlur}
+            required
+            autoComplete="new-password"
+            className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-16 focus-visible:ring-2 focus-visible:ring-primary/40"
+          />
+          <InputStatusIcon status={passwordStatus} className="right-3" />
+          <Popover open={passwordPopoverOpen} onOpenChange={setPasswordPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-10 top-1/2 h-7 w-7 -translate-y-1/2 rounded-full bg-primary/10 p-0 text-primary hover:bg-primary/20"
+                aria-label={t('password.requirements.title')}
+              >
+                <Info className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="end"
+              sideOffset={10}
+              onOpenAutoFocus={(e) => e.preventDefault()}
+              onCloseAutoFocus={(e) => e.preventDefault()}
+              className="w-64 rounded-2xl border border-primary/20 bg-background/95 p-4 shadow-xl backdrop-blur"
+            >
+              <h4 className="mb-2 text-sm font-semibold text-primary">
+                {t('password.requirements.title')}
+              </h4>
+              <div className="space-y-1.5 text-xs text-muted-foreground">
+                {requirements.map((req, index) => (
+                  <PasswordRequirement key={index} met={req.met} text={req.text} />
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="signup-confirm" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+          <Lock className="h-4 w-4" />
+          {t('auth.confirmPassword')}
+        </Label>
+        <div className="relative">
+          <Input
+            id="signup-confirm"
+            type="password"
+            value={formData.confirmPassword || ''}
+            onChange={(e) => updateFormData('confirmPassword', e.target.value)}
+            required
+            autoComplete="new-password"
+            className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-10 focus-visible:ring-2 focus-visible:ring-primary/40"
+          />
+          <InputStatusIcon status={confirmStatus} />
+        </div>
+      </div>
 
     {authState.error && (
       <div className="rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -430,6 +503,7 @@ const SignUpForm = ({
       )}
     </Button>
   </form>
-);
+  );
+};
 
 export default Auth;

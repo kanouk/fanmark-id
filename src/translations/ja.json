@@ -114,7 +114,9 @@
     "passwordMismatch": "パスワードが一致しません",
     "homeButton": "ホームに戻る",
     "welcome": "fanmark.id へようこそ",
-    "description": "あなただけのファンマを手に入れよう！"
+    "description": "あなただけのファンマを手に入れよう！",
+    "pageTitle": "fanmark.id に参加",
+    "pageDescription": "ログイン・新規ユーザ登録してあなただけのファンマを手に入れよう！"
   },
   "password": {
     "requirements": {
@@ -244,6 +246,9 @@
     "logoutSuccess": "ログアウトしました",
     "logoutFailed": "ログアウトに失敗しました",
     "linkCopied": "リンクをコピーしました",
+    "badgeLabel": "アカウント",
+    "pageTitle": "fanmark.id アカウントにアクセス",
+    "pageDescription": "サインインまたは新規登録して、ファンマの管理やプロフィールのカスタマイズ、新しい絵文字の組み合わせをチェックしましょう。",
     "rulesFetchError": "ルールの取得に失敗しました",
     "updateComplete": "更新完了",
     "rulesUpdateError": "ルールの更新に失敗しました",

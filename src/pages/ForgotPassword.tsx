@@ -8,7 +8,22 @@ import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
 import { AuthLayout } from "@/components/AuthLayout";
 import { LanguageToggle } from "@/components/LanguageToggle";
-import { Mail, Sparkles, RefreshCw } from "lucide-react";
+import { Mail, Sparkles, RefreshCw, Check, X } from "lucide-react";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const InputStatusIcon = ({ status }: { status: boolean | null }) => {
+  if (status === null) return null;
+  return (
+    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+      {status ? (
+        <Check className="h-4 w-4 text-emerald-500" />
+      ) : (
+        <X className="h-4 w-4 text-destructive" />
+      )}
+    </span>
+  );
+};
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -52,6 +67,7 @@ const ForgotPassword = () => {
   };
 
   const descriptionText = isSubmitted ? t('auth.resetEmailSent') : t('auth.forgotPasswordDescription');
+  const emailStatus = email ? EMAIL_REGEX.test(email) : null;
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
@@ -115,16 +131,19 @@ const ForgotPassword = () => {
                     <Mail className="h-4 w-4" />
                     {t('auth.email')}
                   </Label>
-                  <Input
-                    id="reset-email"
-                    type="email"
-                    placeholder={t('invitation.emailPlaceholder')}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    autoComplete="email"
-                    className="h-12 rounded-full border border-primary/15 bg-background/80 text-base shadow-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary/40"
-                  />
+                  <div className="relative">
+                    <Input
+                      id="reset-email"
+                      type="email"
+                      placeholder={t('invitation.emailPlaceholder')}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      autoComplete="email"
+                      className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-10 focus-visible:ring-2 focus-visible:ring-primary/40"
+                    />
+                    <InputStatusIcon status={emailStatus} />
+                  </div>
                 </div>
                 <Button
                   type="submit"

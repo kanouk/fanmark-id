@@ -7,7 +7,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthLayout } from "@/components/AuthLayout";
 import { PasswordRequirement } from "@/components/PasswordRequirement";
-import { Sparkles, Lock, ShieldCheck } from "lucide-react";
+import { Sparkles, Lock, ShieldCheck, Check, X } from "lucide-react";
+
+const InputStatusIcon = ({ status }: { status: boolean | null }) => {
+  if (status === null) return null;
+  return (
+    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+      {status ? (
+        <Check className="h-4 w-4 text-emerald-500" />
+      ) : (
+        <X className="h-4 w-4 text-destructive" />
+      )}
+    </span>
+  );
+};
 import { useNavigate } from "react-router-dom";
 
 const ResetPassword = () => {
@@ -25,6 +38,11 @@ const ResetPassword = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
+  const passwordStatus = password ? isValid : null;
+  const confirmStatus = confirmPassword
+    ? confirmPassword === password && confirmPassword.length > 0
+    : null;
+
   const form = (
     <form
       onSubmit={(e) => {
@@ -38,17 +56,20 @@ const ResetPassword = () => {
           <Lock className="h-4 w-4" />
           {t('auth.newPassword')}
         </Label>
-        <Input
-          id="reset-password"
-          type="password"
-          placeholder={t('password.requirements.length')}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          minLength={8}
-          autoComplete="new-password"
-          className="h-12 rounded-full border border-primary/15 bg-background/80 text-base shadow-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary/40"
-        />
+        <div className="relative">
+          <Input
+            id="reset-password"
+            type="password"
+            placeholder={t('password.requirements.length')}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={8}
+            autoComplete="new-password"
+            className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-10 focus-visible:ring-2 focus-visible:ring-primary/40"
+          />
+          <InputStatusIcon status={passwordStatus} />
+        </div>
         {password && (
           <div className="rounded-2xl border border-primary/10 bg-primary/5 px-4 py-3 text-xs text-muted-foreground">
             <h4 className="mb-2 font-semibold text-primary">{t('password.requirements.title')}</h4>
@@ -66,15 +87,18 @@ const ResetPassword = () => {
           <ShieldCheck className="h-4 w-4" />
           {t('auth.confirmNewPassword')}
         </Label>
-        <Input
-          id="reset-confirm"
-          type="password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          required
-          autoComplete="new-password"
-          className="h-12 rounded-full border border-primary/15 bg-background/80 text-base shadow-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary/40"
-        />
+        <div className="relative">
+          <Input
+            id="reset-confirm"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            autoComplete="new-password"
+            className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-10 focus-visible:ring-2 focus-visible:ring-primary/40"
+          />
+          <InputStatusIcon status={confirmStatus} />
+        </div>
         {confirmPassword && password !== confirmPassword && (
           <p className="text-xs text-destructive">{t('auth.passwordMismatch')}</p>
         )}

@@ -114,7 +114,9 @@
     "passwordMismatch": "Passwords do not match",
     "homeButton": "Back to Home",
     "welcome": "Welcome to Fanmark",
-    "description": "Join our community and claim your unique emoji combinations!"
+    "description": "Join our community and claim your unique emoji combinations!",
+    "pageTitle": "Join fanmark.id",
+    "pageDescription": "Sign in or create a new account to get your own fanmark!"
   },
   "password": {
     "requirements": {
@@ -244,6 +246,9 @@
     "logoutSuccess": "Logged out successfully",
     "logoutFailed": "Failed to log out",
     "linkCopied": "Link copied",
+    "badgeLabel": "Account",
+    "pageTitle": "Access your fanmark.id account",
+    "pageDescription": "Sign in or create a new account to manage your fanmarks, customize your profile, and explore new emoji combinations.",
     "rulesFetchError": "Failed to fetch rules",
     "updateComplete": "Update complete",
     "rulesUpdateError": "Failed to update rules",
