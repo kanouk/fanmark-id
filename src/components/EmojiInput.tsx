@@ -404,7 +404,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
         <div
           className="w-full max-w-[min(100%,40rem)] px-[clamp(0.75rem,6vw,2.5rem)]"
         >
-          <div className="grid grid-cols-[repeat(5,minmax(0,1fr))] gap-[clamp(0.4rem,2.5vw,1.4rem)] transition-all duration-300 ease-out">
+          <div className="grid grid-cols-5 place-items-center gap-[clamp(0.4rem,2.5vw,1.2rem)] transition-all duration-300 ease-out">
           {slots.map((_, index) => {
           const emoji = segments[index];
           const isActive = activeIndex === index;
@@ -420,7 +420,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
                 if (draggedIndex !== null) return;
                 handleOpenChange(index, true);
               }}
-              className={`flex aspect-square w-full max-w-[clamp(2.2rem,17vw,5.4rem)] items-center justify-center rounded-[clamp(1.2rem,5vw,1.8rem)] border-[clamp(1px,0.45vw,1.5px)] text-[clamp(1.9rem,6.5vw,3.2rem)] transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${emoji ? 'border-primary/60 bg-primary/5 shadow-md lg:shadow-lg' : 'border-dashed border-primary/30 text-muted-foreground hover:border-primary/60 hover:text-primary'} ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${isDragging ? 'ring-2 ring-primary/50 scale-105 shadow-lg z-10 opacity-80' : ''} ${isDragTarget && !isDragging ? 'border-primary/70 bg-primary/10 scale-105' : ''}`}
+              className={`flex size-[clamp(2.4rem,16vw,5.2rem)] items-center justify-center rounded-[clamp(1.15rem,4.6vw,1.7rem)] border-[clamp(1px,0.45vw,1.5px)] text-[clamp(1.8rem,6vw,3rem)] transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${emoji ? 'border-primary/60 bg-primary/5 shadow-md lg:shadow-lg' : 'border-dashed border-primary/30 text-muted-foreground hover:border-primary/60 hover:text-primary'} ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${isDragging ? 'ring-2 ring-primary/50 scale-105 shadow-lg z-10 opacity-80' : ''} ${isDragTarget && !isDragging ? 'border-primary/70 bg-primary/10 scale-105' : ''}`}
               style={{
                 zIndex: isDragging ? 10 : 1,
               }}
@@ -431,7 +431,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
               onDragLeave={() => handleDragLeave(index)}
               onDragEnd={handleDragEnd}
             >
-              {emoji ? emoji : <Plus className="h-[clamp(1.1rem,4.5vw,2.3rem)] w-[clamp(1.1rem,4.5vw,2.3rem)]" />}
+              {emoji ? emoji : <Plus className="h-[clamp(1rem,4vw,2.1rem)] w-[clamp(1rem,4vw,2.1rem)]" />}
             </button>
           );
 

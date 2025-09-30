@@ -688,7 +688,18 @@
     "initial": "Initial",
     "favorite": "Add to Favorites",
     "unfavorite": "Remove from Favorites",
-    "visitPage": "Visit Page"
+    "visitPage": "Open Fanmark",
+    "shortId": "Short ID",
+    "createdAt": "Created {{date}}",
+    "currentHolder": "Current holder",
+    "licenseEnds": "License ends",
+    "statusGrace": "Grace period",
+    "statusExpired": "Expired",
+    "statusUpcoming": "Upcoming",
+    "notScheduled": "Not scheduled",
+    "neverAcquiredShort": "Not acquired",
+    "statusInactive": "Inactive",
+    "statusUnknown": "Status: {{status}}"
   },
   "acquisition": {
     "title": "Acquiring fanmark...",

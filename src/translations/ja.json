@@ -686,7 +686,18 @@
     "initial": "初回",
     "favorite": "お気に入りに追加",
     "unfavorite": "お気に入りから削除",
-    "visitPage": "ページを表示"
+    "visitPage": "ファンマアクセス",
+    "shortId": "ショートID",
+    "createdAt": "{{date}} 作成",
+    "currentHolder": "現在の所有者",
+    "licenseEnds": "終了予定日",
+    "statusGrace": "猶予期間",
+    "statusExpired": "期限切れ",
+    "statusUpcoming": "開始前",
+    "notScheduled": "未スケジュール",
+    "neverAcquiredShort": "未取得",
+    "statusInactive": "非アクティブ",
+    "statusUnknown": "ステータス: {{status}}"
   },
   "acquisition": {
     "title": "ファンマ取得中...",
