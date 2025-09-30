@@ -525,23 +525,37 @@ export const FanmarkDashboard = () => {
 
                               return (
                                 <tr key={fanmark.id} className={`border-b border-primary/5 transition-all duration-200 ${isFanmarkInactive(fanmark) ? 'bg-gray-200 dark:bg-gray-700' : licenseData?.status === 'grace' ? 'bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-950/50' : 'hover:bg-primary/5 hover:shadow-sm'}`}>
-                                      <td className="px-6 py-5">
-                                        <div className="min-h-[2.5rem] flex items-center">
-                                          <div
-                                            className={`flex items-center px-4 py-3 rounded-full shadow-sm transition-transform hover:scale-105 whitespace-nowrap cursor-pointer ${getTierOvalStyle(fanmark.tier_level || 1)}`}
-                                            onClick={() => {
-                                              navigator.clipboard.writeText(fanmark.emoji_combination);
-                                              toast({
-                                                title: t('dashboard.emojiCopiedTitle'),
-                                                description: fanmark.emoji_combination,
-                                              });
-                                            }}
-                                            title={t('dashboard.clickToCopyEmoji')}
-                                          >
-                                            <span className="text-2xl leading-none select-none" style={{ letterSpacing: '0.2em' }}>{fanmark.emoji_combination}</span>
-                                          </div>
-                                        </div>
-                                     </td>
+                                       <td className="px-6 py-5">
+                                         <div className="min-h-[2.5rem] flex items-center gap-3">
+                                           <div
+                                             className={`flex items-center px-4 py-3 rounded-full shadow-sm transition-transform hover:scale-105 whitespace-nowrap cursor-pointer ${getTierOvalStyle(fanmark.tier_level || 1)}`}
+                                             onClick={() => {
+                                               navigator.clipboard.writeText(fanmark.emoji_combination);
+                                               toast({
+                                                 title: t('dashboard.emojiCopiedTitle'),
+                                                 description: fanmark.emoji_combination,
+                                               });
+                                             }}
+                                             title={t('dashboard.clickToCopyEmoji')}
+                                           >
+                                             <span className="text-2xl leading-none select-none" style={{ letterSpacing: '0.2em' }}>{fanmark.emoji_combination}</span>
+                                           </div>
+                                           <Tooltip>
+                                             <TooltipTrigger asChild>
+                                               <Button
+                                                 variant="secondary"
+                                                 size="sm"
+                                                 className="h-7 px-2 text-xs hover:bg-primary/10 hover:text-primary transition-colors"
+                                                 onClick={() => navigate(`/f/${fanmark.short_id}`)}
+                                                 aria-label={t('dashboard.viewDetails')}
+                                               >
+                                                 {fanmark.short_id}
+                                               </Button>
+                                             </TooltipTrigger>
+                                             <TooltipContent>{t('dashboard.viewDetails')}</TooltipContent>
+                                           </Tooltip>
+                                         </div>
+                                      </td>
                                 <td className="px-6 py-5">
                                   <div className="min-h-[2.5rem] flex items-center min-w-fit">
                                     {!isFanmarkInactive(fanmark) && licenseData?.status !== 'grace' && getAccessTypeBadge(fanmark.access_type)}
@@ -711,21 +725,37 @@ export const FanmarkDashboard = () => {
                           <Card key={fanmark.id} className={`rounded-3xl border border-primary/10 transition-colors ${isFanmarkInactive(fanmark) ? 'bg-gray-200 dark:bg-gray-700' : licenseData?.status === 'grace' ? 'bg-amber-50 dark:bg-amber-950/30 hover:border-amber-200' : 'bg-background/80 hover:border-primary/20'}`}>
                             <CardContent className="p-5">
                               <div className="space-y-3">
-                                 <div className="flex items-start justify-between">
-                                    <div
-                                      className={`flex items-center px-3 py-2 rounded-full cursor-pointer hover:scale-105 transition-transform ${getTierOvalStyle(fanmark.tier_level || 1)}`}
-                                      onClick={() => {
-                                        navigator.clipboard.writeText(fanmark.emoji_combination);
-                                        toast({
-                                          title: t('dashboard.emojiCopiedTitle'),
-                                          description: fanmark.emoji_combination,
-                                        });
-                                      }}
-                                      title={t('dashboard.clickToCopyEmoji')}
-                                    >
-                                      <span className="text-3xl leading-none select-none" style={{ letterSpacing: '0.2em' }}>{fanmark.emoji_combination}</span>
-                                    </div>
-                                 </div>
+                                  <div className="flex items-start justify-between">
+                                     <div className="flex items-center gap-3">
+                                       <div
+                                         className={`flex items-center px-3 py-2 rounded-full cursor-pointer hover:scale-105 transition-transform ${getTierOvalStyle(fanmark.tier_level || 1)}`}
+                                         onClick={() => {
+                                           navigator.clipboard.writeText(fanmark.emoji_combination);
+                                           toast({
+                                             title: t('dashboard.emojiCopiedTitle'),
+                                             description: fanmark.emoji_combination,
+                                           });
+                                         }}
+                                         title={t('dashboard.clickToCopyEmoji')}
+                                       >
+                                         <span className="text-3xl leading-none select-none" style={{ letterSpacing: '0.2em' }}>{fanmark.emoji_combination}</span>
+                                       </div>
+                                       <Tooltip>
+                                         <TooltipTrigger asChild>
+                                           <Button
+                                             variant="secondary"
+                                             size="sm"
+                                             className="h-7 px-2 text-xs hover:bg-primary/10 hover:text-primary transition-colors"
+                                             onClick={() => navigate(`/f/${fanmark.short_id}`)}
+                                             aria-label={t('dashboard.viewDetails')}
+                                           >
+                                             {fanmark.short_id}
+                                           </Button>
+                                         </TooltipTrigger>
+                                         <TooltipContent>{t('dashboard.viewDetails')}</TooltipContent>
+                                       </Tooltip>
+                                     </div>
+                                  </div>
 
                                   <div className="space-y-2">
                                     <div className="flex items-center justify-between gap-2">
