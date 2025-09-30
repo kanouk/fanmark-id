@@ -11,7 +11,8 @@ import { RedirectLoading } from './RedirectLoading';
 import { MessageboardLoading } from './MessageboardLoading';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
-import { normalizeEmojiPath } from '@/utils/emojiUrl';
+import { normalizeEmojiPath, isEmojiOnly } from '@/utils/emojiUrl';
+import NotFound from '@/pages/NotFound';
 
 interface FanmarkData {
   id: string;
@@ -60,18 +61,33 @@ export const FanmarkAccess = () => {
     [navigate, setLoading, toast, t]
   );
 
-  useEffect(() => {
-    const loadFanmark = async () => {
-      if (!emojiPath) {
-        handleFanmarkUnavailable(null, 'common.invalidFanmarkUrl', 'destructive');
-        return;
-      }
+  const decodedEmojiPath = React.useMemo(() => {
+    if (!emojiPath) return '';
+    try {
+      return decodeURIComponent(emojiPath);
+    } catch {
+      return emojiPath;
+    }
+  }, [emojiPath]);
 
+  const shouldShortCircuitToNotFound = React.useMemo(() => {
+    if (!decodedEmojiPath) return true;
+    return !isEmojiOnly(decodedEmojiPath);
+  }, [decodedEmojiPath]);
+
+  useEffect(() => {
+    if (shouldShortCircuitToNotFound) {
+      setFanmark(null);
+      setLoading(false);
+      return;
+    }
+
+    const loadFanmark = async () => {
       try {
         // 絵文字パスの正規化処理
-        const normalizedEmoji = normalizeEmojiPath(emojiPath);
+        const normalizedEmoji = normalizeEmojiPath(decodedEmojiPath);
         console.log('🎯 Final emoji for database query:', { normalizedEmoji, length: normalizedEmoji.length });
-        
+
         // Use the secure function to get only essential fanmark data
         const { data, error } = await supabase
           .rpc('get_fanmark_by_emoji', { emoji_combo: normalizedEmoji });
@@ -142,7 +158,7 @@ export const FanmarkAccess = () => {
     };
 
     loadFanmark();
-  }, [emojiPath, handleFanmarkUnavailable]);
+  }, [decodedEmojiPath, shouldShortCircuitToNotFound, handleFanmarkUnavailable]);
 
   // Trigger redirect/messageboard after verification
   useEffect(() => {
@@ -165,6 +181,10 @@ export const FanmarkAccess = () => {
   const handlePasswordSuccess = () => {
     setIsPasswordVerified(true);
   };
+
+  if (shouldShortCircuitToNotFound) {
+    return <NotFound />;
+  }
 
   if (loading) {
     return (

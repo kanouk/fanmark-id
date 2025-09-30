@@ -7,6 +7,16 @@
  * 絵文字をURL安全な形式にエンコード
  * ブラウザの自動エンコーディングに対応
  */
+const EMOJI_ONLY_REGEX = /^[\p{Emoji}\p{Emoji_Modifier}\p{Emoji_Component}\p{Emoji_Modifier_Base}\p{Emoji_Presentation}\u200D\uFE0F]+$/u;
+
+export const isEmojiOnly = (candidate: string | null | undefined): boolean => {
+  if (!candidate) return false;
+  const value = candidate.trim();
+  if (value.length === 0) return false;
+
+  return EMOJI_ONLY_REGEX.test(value);
+};
+
 export const encodeEmojiForUrl = (emoji: string): string => {
   if (!emoji) return '';
 
