@@ -519,7 +519,8 @@ export const FanmarkDashboard = () => {
                             {filteredFanmarks.map((fanmark) => {
                               const licenseData = fanmark.fanmark_licenses;
                               const acquisitionDate = licenseData?.license_start ? format(new Date(licenseData.license_start), 'yyyy/MM/dd') : '-';
-                              const expirationDate = licenseData?.license_end ? new Date(licenseData.license_end) : null;
+                              const effectiveEndDate = licenseData?.excluded_at || licenseData?.license_end;
+                              const expirationDate = effectiveEndDate ? new Date(effectiveEndDate) : null;
                               const daysRemaining = expirationDate ? differenceInDays(expirationDate, new Date()) : null;
                               const isExpiringSoon = daysRemaining !== null && daysRemaining <= 3;
 
@@ -717,7 +718,8 @@ export const FanmarkDashboard = () => {
                       {filteredFanmarks.map((fanmark) => {
                         const licenseData = fanmark.fanmark_licenses;
                         const acquisitionDate = licenseData?.license_start ? format(new Date(licenseData.license_start), 'yyyy/MM/dd') : '-';
-                        const expirationDate = licenseData?.license_end ? new Date(licenseData.license_end) : null;
+                        const effectiveEndDate = licenseData?.excluded_at || licenseData?.license_end;
+                        const expirationDate = effectiveEndDate ? new Date(effectiveEndDate) : null;
                         const daysRemaining = expirationDate ? differenceInDays(expirationDate, new Date()) : null;
                         const isExpiringSoon = daysRemaining !== null && daysRemaining <= 3;
 
