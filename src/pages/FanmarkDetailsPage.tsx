@@ -9,7 +9,7 @@ import { Heart, Calendar, User, Clock, ExternalLink, History } from 'lucide-reac
 import { format } from 'date-fns';
 import { ja, enUS } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
-import { encodeEmojiForUrl } from '@/utils/emojiUrl';
+import { encodeEmojiForUrl, splitEmojiGraphemes } from '@/utils/emojiUrl';
 
 export default function FanmarkDetailsPage() {
   const { shortId } = useParams<{ shortId: string }>();
@@ -68,51 +68,6 @@ export default function FanmarkDetailsPage() {
     });
   };
 
-  const highlightCards = [
-    {
-      label: t('fanmarkDetails.currentStatus'),
-      value: details.is_currently_active ? t('fanmarkDetails.active') : t('fanmarkDetails.available'),
-      helper: details.is_currently_active
-        ? (details.current_license_end
-            ? `${t('fanmarkDetails.licenseEnds')}: ${formatDate(details.current_license_end)}`
-            : t('fanmarkDetails.notScheduled'))
-        : undefined,
-      icon: Clock,
-      tone: details.is_currently_active
-        ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-600'
-        : 'border-muted-foreground/20 bg-muted/40 text-muted-foreground',
-    },
-    {
-      label: t('fanmarkDetails.currentHolder'),
-      value: details.current_owner_display_name
-        ? details.current_owner_display_name
-        : details.current_owner_username
-          ? `@${details.current_owner_username}`
-          : t('fanmarkDetails.available'),
-      helper: details.current_owner_display_name && details.current_owner_username
-        ? `@${details.current_owner_username}`
-        : undefined,
-      icon: User,
-      tone: (details.current_owner_display_name || details.current_owner_username)
-        ? 'border-primary/30 bg-primary/10 text-primary'
-        : 'border-muted-foreground/20 bg-muted/40 text-muted-foreground',
-    },
-    {
-      label: t('fanmarkDetails.licenseEnds'),
-      value: details.current_license_end ? formatDate(details.current_license_end) : t('fanmarkDetails.notScheduled'),
-      helper: details.current_license_start ? `${t('fanmarkDetails.started')}: ${formatDate(details.current_license_start)}` : undefined,
-      icon: Calendar,
-      tone: 'border-purple-500/20 bg-purple-500/10 text-purple-600',
-    },
-    {
-      label: t('fanmarkDetails.firstAcquisition'),
-      value: details.first_acquired_date ? formatDate(details.first_acquired_date) : t('fanmarkDetails.neverAcquiredShort'),
-      helper: details.first_owner_display_name ? `${t('fanmarkDetails.firstOwner')}: ${details.first_owner_display_name}` : undefined,
-      icon: History,
-      tone: 'border-amber-500/20 bg-amber-500/10 text-amber-600',
-    },
-  ];
-
   const licenseStatusMeta = (status: string) => {
     const normalized = status?.toLowerCase?.() ?? '';
     switch (normalized) {
@@ -153,21 +108,21 @@ export default function FanmarkDetailsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/40">
-      <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-        <section className="rounded-[32px] border border-primary/10 bg-card/80 p-8 text-center shadow-xl ring-1 ring-primary/5 sm:p-12">
+      <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
+        <section className="p-6 text-center sm:p-10">
           <div className="flex flex-col items-center gap-6">
-            <div className="flex h-28 w-28 items-center justify-center rounded-[2.75rem] border border-primary/20 bg-primary/10 text-6xl shadow-inner md:h-32 md:w-32 md:text-7xl">
-              {details.emoji_combination}
+            <div className="flex flex-wrap items-center justify-center gap-3 rounded-[2.75rem] border border-primary/20 bg-primary/10 px-8 py-6 text-5xl shadow-inner md:px-10 md:py-7 md:text-6xl">
+              {splitEmojiGraphemes(details.emoji_combination).map((segment, index) => (
+                <span key={`${segment}-${index}`} className="inline-flex min-w-[2.4rem] justify-center">
+                  {segment}
+                </span>
+              ))}
             </div>
-            <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-primary/70">
-                {t('fanmarkDetails.shortId')}
-                <span className="text-xs tracking-normal text-foreground">{details.short_id}</span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {t('fanmarkDetails.createdAt', { date: formatDate(details.fanmark_created_at) })}
-              </p>
-            </div>
+            <Badge
+              className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${details.is_currently_active ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600' : 'border-muted-foreground/30 bg-muted/40 text-muted-foreground'}`}
+            >
+              {details.is_currently_active ? t('fanmarkDetails.active') : t('fanmarkDetails.available')}
+            </Badge>
             <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center">
               {user && (
                 <Button
@@ -179,178 +134,54 @@ export default function FanmarkDetailsPage() {
                   {details.is_favorited ? t('fanmarkDetails.unfavorite') : t('fanmarkDetails.favorite')}
                 </Button>
               )}
-              <Button
-                variant="secondary"
-                asChild
-                className="gap-2 sm:w-auto"
-              >
+              <Button variant="secondary" asChild className="gap-2 sm:w-auto">
                 <a href={`/${encodeEmojiForUrl(details.emoji_combination)}`} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4" />
                   {t('fanmarkDetails.visitPage')}
                 </a>
               </Button>
-              <Button variant="outline" onClick={() => window.history.back()} className="sm:w-auto">
-                {t('common.goBack')}
-              </Button>
             </div>
           </div>
-
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {highlightCards.map((item) => {
-              const Icon = item.icon;
-              return (
-                <div
-                  key={item.label}
-                  className="rounded-2xl border border-primary/10 bg-background/80 p-4 shadow-sm"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-primary/70">
-                      {item.label}
-                    </span>
-                    <span className={`flex h-10 w-10 items-center justify-center rounded-full border ${item.tone}`}>
-                      <Icon className="h-4 w-4" aria-hidden />
-                    </span>
-                  </div>
-                  <p className="mt-3 text-lg font-semibold text-foreground">{item.value}</p>
-                  {item.helper && (
-                    <p className="mt-1 text-xs text-muted-foreground">{item.helper}</p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
         </section>
-
-        <section className="mt-8 grid gap-6 lg:grid-cols-2">
-          <Card className="border border-primary/10 bg-card/80 shadow-sm">
-            <CardHeader className="space-y-1">
-              <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
-                <Clock className="h-5 w-5" />
-                {t('fanmarkDetails.currentStatus')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm">
-              <Badge
-                className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${details.is_currently_active ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600' : 'border-muted-foreground/30 bg-muted/40 text-muted-foreground'}`}
-              >
-                {details.is_currently_active ? t('fanmarkDetails.active') : t('fanmarkDetails.available')}
-              </Badge>
-
-              <dl className="space-y-3">
-                <div className="flex items-start justify-between gap-4">
-                  <dt className="text-muted-foreground">{t('fanmarkDetails.owner')}</dt>
-                  <dd className="text-right text-foreground">
-                    {details.current_owner_display_name ? (
-                      <div className="space-y-1">
-                        <span className="font-medium text-foreground">{details.current_owner_display_name}</span>
-                        {details.current_owner_username && (
-                          <span className="block text-xs text-muted-foreground">@{details.current_owner_username}</span>
-                        )}
-                      </div>
-                    ) : details.current_owner_username ? (
-                      <span className="font-medium text-foreground">@{details.current_owner_username}</span>
-                    ) : (
-                      <span className="text-muted-foreground">{t('fanmarkDetails.available')}</span>
-                    )}
-                  </dd>
-                </div>
-
-                {details.current_license_start && (
-                  <div className="flex items-start justify-between gap-4">
-                    <dt className="text-muted-foreground">{t('fanmarkDetails.started')}</dt>
-                    <dd className="text-right text-foreground">{formatDateTime(details.current_license_start)}</dd>
-                  </div>
-                )}
-
-                {details.current_license_end && (
-                  <div className="flex items-start justify-between gap-4">
-                    <dt className="text-muted-foreground">{t('fanmarkDetails.expiresOn')}</dt>
-                    <dd className="text-right text-foreground">{formatDateTime(details.current_license_end)}</dd>
-                  </div>
-                )}
-              </dl>
-            </CardContent>
-          </Card>
-
-          <Card className="border border-primary/10 bg-card/80 shadow-sm">
-            <CardHeader className="space-y-1">
+        <section className="mt-10">
+          <Card className="border border-primary/10 bg-muted/40 backdrop-blur rounded-3xl">
+            <CardHeader className="space-y-1 px-6 pt-6">
               <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
                 <Calendar className="h-5 w-5" />
-                {t('fanmarkDetails.firstAcquisition')}
+                {t('fanmarkDetails.ownershipHistory')}
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 text-sm">
-              {details.first_acquired_date ? (
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between gap-4">
-                    <span className="text-muted-foreground">{t('fanmarkDetails.date')}</span>
-                    <span className="text-right font-medium text-foreground">{formatDate(details.first_acquired_date)}</span>
-                  </div>
-                  {details.first_owner_display_name && (
-                    <div className="flex items-start justify-between gap-4">
-                      <span className="text-muted-foreground">{t('fanmarkDetails.firstOwner')}</span>
-                      <span className="text-right font-medium text-foreground">{details.first_owner_display_name}</span>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <p className="rounded-2xl border border-dashed border-primary/20 bg-muted/40 p-5 text-sm text-muted-foreground">
-                  {t('fanmarkDetails.neverAcquired')}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </section>
-
-        <section className="mt-8">
-          <Card className="border border-primary/10 bg-card/80 shadow-sm">
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-lg font-semibold text-foreground">
-                {t('fanmarkDetails.licenseHistory')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+            <CardContent className="overflow-x-auto px-6 pb-6">
               {details.license_history && details.license_history.length > 0 ? (
-                <ul className="space-y-4">
-                  {details.license_history.map((item, index) => {
-                    const meta = licenseStatusMeta(item.status);
-                    return (
-                      <li
-                        key={`${item.license_start}-${index}`}
-                        className="rounded-2xl border border-primary/10 bg-background/70 p-5 shadow-sm"
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide ${meta.className}`}>
-                              {meta.label}
-                            </span>
-                            {item.is_initial_license && (
-                              <span className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-primary">
-                                {t('fanmarkDetails.initial')}
-                              </span>
-                            )}
-                          </div>
-                          {(item.display_name || item.username) && (
-                            <span className="text-sm font-medium text-foreground">
-                              {item.display_name || `@${item.username}`}
-                            </span>
-                          )}
-                        </div>
-
-                        <dl className="mt-4 grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
-                          <div>
-                            <dt>{t('fanmarkDetails.started')}</dt>
-                            <dd className="font-medium text-foreground">{formatDateTime(item.license_start)}</dd>
-                          </div>
-                          <div>
-                            <dt>{t('fanmarkDetails.expires')}</dt>
-                            <dd className="font-medium text-foreground">{formatDateTime(item.license_end)}</dd>
-                          </div>
-                        </dl>
-                      </li>
-                    );
-                  })}
-                </ul>
+                <table className="min-w-full divide-y divide-border text-sm">
+                  <thead className="bg-muted/50 text-muted-foreground">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-semibold">
+                        {t('fanmarkDetails.started')}
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold">
+                        {t('fanmarkDetails.expires')}
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold">
+                        {t('fanmarkDetails.owner')}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/60">
+                    {details.license_history.map((item, index) => {
+                      const holder = item.display_name || (item.username ? `@${item.username}` : '—');
+                      return (
+                        <tr key={`${item.license_start}-${index}`} className="bg-background">
+                          <td className="px-4 py-3 text-foreground">{formatDateTime(item.license_start)}</td>
+                          <td className="px-4 py-3 text-foreground">{formatDateTime(item.license_end)}</td>
+                          <td className="px-4 py-3">
+                            <span className="text-foreground">{holder}</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               ) : (
                 <p className="rounded-2xl border border-dashed border-primary/20 bg-muted/40 p-6 text-sm text-muted-foreground">
                   {t('fanmarkDetails.noHistory')}
