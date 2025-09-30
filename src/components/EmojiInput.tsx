@@ -401,7 +401,10 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
     <div className={`w-full ${showUtilities ? 'space-y-6 sm:space-y-8' : ''} ${className}`}>
       {/* メイン入力エリア */}
       <div className="flex justify-center">
-        <div className="flex gap-4 sm:gap-10 transition-all duration-300 ease-out max-w-fit">
+        <div
+          className="w-full max-w-[min(100%,40rem)] px-[clamp(0.75rem,6vw,2.5rem)]"
+        >
+          <div className="grid grid-cols-[repeat(5,minmax(0,1fr))] gap-[clamp(0.4rem,2.5vw,1.4rem)] transition-all duration-300 ease-out">
           {slots.map((_, index) => {
           const emoji = segments[index];
           const isActive = activeIndex === index;
@@ -417,7 +420,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
                 if (draggedIndex !== null) return;
                 handleOpenChange(index, true);
               }}
-              className={`flex h-[5.4rem] w-[5.4rem] sm:h-24 sm:w-24 items-center justify-center rounded-[28px] border-[1.5px] text-4xl sm:text-5xl tracking-[0.08em] transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${emoji ? 'border-primary/60 bg-primary/5 shadow-md sm:shadow-lg' : 'border-dashed border-primary/30 text-muted-foreground hover:border-primary/60 hover:text-primary'} ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${isDragging ? 'ring-2 ring-primary/50 scale-105 shadow-lg z-10 opacity-80' : ''} ${isDragTarget && !isDragging ? 'border-primary/70 bg-primary/10 scale-105' : ''}`}
+              className={`flex aspect-square w-full max-w-[clamp(2.2rem,17vw,5.4rem)] items-center justify-center rounded-[clamp(1.2rem,5vw,1.8rem)] border-[clamp(1px,0.45vw,1.5px)] text-[clamp(1.9rem,6.5vw,3.2rem)] transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${emoji ? 'border-primary/60 bg-primary/5 shadow-md lg:shadow-lg' : 'border-dashed border-primary/30 text-muted-foreground hover:border-primary/60 hover:text-primary'} ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${isDragging ? 'ring-2 ring-primary/50 scale-105 shadow-lg z-10 opacity-80' : ''} ${isDragTarget && !isDragging ? 'border-primary/70 bg-primary/10 scale-105' : ''}`}
               style={{
                 zIndex: isDragging ? 10 : 1,
               }}
@@ -428,7 +431,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
               onDragLeave={() => handleDragLeave(index)}
               onDragEnd={handleDragEnd}
             >
-              {emoji ? emoji : <Plus className="h-9 w-9 sm:h-12 sm:w-12" />}
+              {emoji ? emoji : <Plus className="h-[clamp(1.1rem,4.5vw,2.3rem)] w-[clamp(1.1rem,4.5vw,2.3rem)]" />}
             </button>
           );
 
@@ -490,13 +493,14 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
             </div>
           );
         })}
+          </div>
         </div>
       </div>
 
       {/* 便利ツール */}
       {showUtilities && (
-        <div className="flex justify-center">
-          <div className="flex items-center gap-1 sm:gap-3 rounded-full bg-muted/30 px-2 sm:px-4 py-1.5 sm:py-2 border border-primary/10 max-w-fit">
+        <div className="flex justify-center mt-[clamp(1.2rem,4vw,1.8rem)] sm:mt-6">
+          <div className="flex items-center gap-[clamp(0.35rem,2vw,0.9rem)] sm:gap-3 rounded-full bg-muted/30 px-[clamp(0.7rem,3.5vw,1rem)] sm:px-4 py-[clamp(0.6rem,2.5vw,0.9rem)] sm:py-2.5 border border-primary/20 max-w-fit shadow-sm">
             <Button
               type="button"
               variant="ghost"
@@ -504,10 +508,10 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
               disabled={disabled}
               onClick={handleDirectInput}
               aria-label={t('common.directInput')}
-              className="h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"
+              className="h-[clamp(2.2rem,7vw,2.6rem)] sm:h-8 px-[clamp(0.5rem,2vw,0.8rem)] sm:px-3 rounded-full text-[clamp(0.65rem,2.3vw,0.8rem)] font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-[clamp(0.35rem,1.6vw,0.6rem)] sm:gap-1.5"
             >
-              <Keyboard className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              <span className="text-xs">{t('common.directInput')}</span>
+              <Keyboard className="h-[clamp(0.85rem,3vw,1rem)] w-[clamp(0.85rem,3vw,1rem)] sm:h-3.5 sm:w-3.5" />
+              <span className="text-[clamp(0.65rem,2.3vw,0.8rem)]">{t('common.directInput')}</span>
             </Button>
             <Button
               type="button"
@@ -516,10 +520,10 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
               disabled={disabled}
               onClick={handlePaste}
               aria-label={t('common.pasteFromClipboard')}
-              className="h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"
+              className="h-[clamp(2.2rem,7vw,2.6rem)] sm:h-8 px-[clamp(0.5rem,2vw,0.8rem)] sm:px-3 rounded-full text-[clamp(0.65rem,2.3vw,0.8rem)] font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-[clamp(0.35rem,1.6vw,0.6rem)] sm:gap-1.5"
             >
-              <Clipboard className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              <span className="text-xs">{t('common.paste')}</span>
+              <Clipboard className="h-[clamp(0.85rem,3vw,1rem)] w-[clamp(0.85rem,3vw,1rem)] sm:h-3.5 sm:w-3.5" />
+              <span className="text-[clamp(0.65rem,2.3vw,0.8rem)]">{t('common.paste')}</span>
             </Button>
             <Button
               type="button"
@@ -528,10 +532,10 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
               disabled={disabled || !hasValue}
               onClick={handleClear}
               aria-label={t('common.clearAll')}
-              className="h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"
+              className="h-[clamp(2.2rem,7vw,2.6rem)] sm:h-8 px-[clamp(0.5rem,2vw,0.8rem)] sm:px-3 rounded-full text-[clamp(0.65rem,2.3vw,0.8rem)] font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-[clamp(0.35rem,1.6vw,0.6rem)] sm:gap-1.5"
             >
-              <Eraser className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              <span className="text-xs">{t('common.clear')}</span>
+              <Eraser className="h-[clamp(0.85rem,3vw,1rem)] w-[clamp(0.85rem,3vw,1rem)] sm:h-3.5 sm:w-3.5" />
+              <span className="text-[clamp(0.65rem,2.3vw,0.8rem)]">{t('common.clear')}</span>
             </Button>
           </div>
         </div>
