@@ -173,10 +173,13 @@ serve(async (req) => {
     if (filteredGraceExpiredLicenses.length > 0) {
       for (const license of filteredGraceExpiredLicenses) {
         try {
-          // Mark license as fully expired
+          // Mark license as fully expired and set excluded_at to current time
           const { error: licenseUpdateError } = await supabase
             .from('fanmark_licenses')
-            .update({ status: 'expired' })
+            .update({ 
+              status: 'expired',
+              excluded_at: new Date().toISOString()
+            })
             .eq('id', license.id);
 
           if (licenseUpdateError) {
