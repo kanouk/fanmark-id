@@ -7,37 +7,57 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  const startTime = Date.now();
+  console.log('=== LICENSE EXPIRATION CHECK STARTED ===', new Date().toISOString());
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    // Environment check
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    
+    console.log('Environment check:', {
+      hasUrl: !!supabaseUrl,
+      hasKey: !!supabaseKey,
+      urlPrefix: supabaseUrl.substring(0, 30)
+    });
 
-    console.log('Starting expired license check...');
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing required environment variables');
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    console.log('✓ Supabase client initialized');
 
     // Get grace period from system settings (should be 1 day = 24 hours for cooldown)
-    const { data: gracePeriodData } = await supabase
+    console.log('Fetching grace period setting...');
+    const { data: gracePeriodData, error: gracePeriodError } = await supabase
       .from('system_settings')
       .select('setting_value')
       .eq('setting_key', 'grace_period_days')
       .single();
     
+    if (gracePeriodError) {
+      console.error('ERROR fetching grace period:', gracePeriodError);
+      throw new Error(`Failed to fetch grace period: ${gracePeriodError.message}`);
+    }
+
     const gracePeriodDays = parseInt(gracePeriodData?.setting_value || '1', 10);
     const gracePeriodHours = gracePeriodDays * 24; // Convert to hours for precise control
     const gracePeriodMs = gracePeriodHours * 60 * 60 * 1000;
     const now = new Date();
     
-    console.log(`Grace period set to ${gracePeriodDays} days (${gracePeriodHours} hours)`);
+    console.log(`✓ Grace period: ${gracePeriodDays} days (${gracePeriodHours} hours)`);
     
     // For licenses that are in grace status, check if they've exceeded the grace period
     // Grace period starts from license_end date
     const graceDeadlineTime = now.getTime();
 
+    console.log('Querying for expired licenses...');
     // Find licenses that just expired (need to go to grace)
     const { data: justExpiredLicenses, error: justExpiredError } = await supabase
       .from('fanmark_licenses')
@@ -101,21 +121,33 @@ serve(async (req) => {
       };
 
     if (justExpiredError || graceExpiredError) {
-      console.error('Error fetching expired licenses:', justExpiredError || graceExpiredError);
+      console.error('❌ ERROR fetching expired licenses:', justExpiredError || graceExpiredError);
       throw justExpiredError || graceExpiredError;
     }
+
+    console.log(`✓ Query results: ${justExpiredLicenses?.length || 0} active->grace, ${graceExpiredLicenses?.length || 0} grace candidates`);
 
     // Filter grace expired licenses - check if grace period (24 hours from license_end) has passed
     const filteredGraceExpiredLicenses = graceExpiredLicenses?.filter(license => {
       const licenseEndTime = new Date(license.license_end).getTime();
       const graceEndTime = licenseEndTime + gracePeriodMs;
-      return graceDeadlineTime >= graceEndTime;
+      const shouldExpire = graceDeadlineTime >= graceEndTime;
+      
+      if (shouldExpire) {
+        const hoursSinceGraceEnd = (graceDeadlineTime - graceEndTime) / (1000 * 60 * 60);
+        console.log(`  License ${license.id} (${license.fanmarks?.emoji_combination}): ${hoursSinceGraceEnd.toFixed(1)}h overdue`);
+      }
+      
+      return shouldExpire;
     }) || [];
 
     const totalLicenses = (justExpiredLicenses?.length || 0) + filteredGraceExpiredLicenses.length;
     
+    console.log(`✓ Filtered: ${filteredGraceExpiredLicenses.length} licenses ready to expire`);
+    
     if (totalLicenses === 0) {
-      console.log('No expired licenses found');
+      const elapsed = Date.now() - startTime;
+      console.log(`✓ No expired licenses found (${elapsed}ms)`);
       return new Response(
         JSON.stringify({ 
           message: 'No expired licenses found',
@@ -126,12 +158,17 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Found ${justExpiredLicenses?.length || 0} licenses to move to grace and ${filteredGraceExpiredLicenses.length} grace licenses to expire`);
+    console.log(`Processing: ${justExpiredLicenses?.length || 0} active->grace, ${filteredGraceExpiredLicenses.length} grace->expired`);
 
     let processedCount = 0;
+    let graceSuccessCount = 0;
+    let expiredSuccessCount = 0;
+    const errors: Array<{type: string; id: string; error: string}> = [];
 
     // Process licenses that just expired (move to grace)
-    if (justExpiredLicenses) {
+    if (justExpiredLicenses && justExpiredLicenses.length > 0) {
+      console.log(`\n--- Processing ${justExpiredLicenses.length} licenses: active -> grace ---`);
+      
       for (const license of justExpiredLicenses) {
         try {
           // Mark license as in grace period
@@ -141,12 +178,14 @@ serve(async (req) => {
             .eq('id', license.id);
 
           if (licenseUpdateError) {
-            console.error(`Error updating license ${license.id} to grace:`, licenseUpdateError);
+            const errMsg = licenseUpdateError.message || 'Unknown error';
+            console.error(`  ❌ Failed ${license.id}: ${errMsg}`);
+            errors.push({type: 'grace_update', id: license.id, error: errMsg});
             continue;
           }
 
           // Log the grace period start
-          await supabase
+          const { error: auditError } = await supabase
             .from('audit_logs')
             .insert({
               user_id: license.user_id,
@@ -160,17 +199,26 @@ serve(async (req) => {
               }
             });
 
+          if (auditError) {
+            console.warn(`  ⚠️ Audit log failed for ${license.id}: ${auditError.message}`);
+          }
+
           processedCount++;
-          console.log(`Moved license to grace period for fanmark: ${license.fanmarks?.emoji_combination}`);
+          graceSuccessCount++;
+          console.log(`  ✓ ${license.fanmarks?.emoji_combination} -> grace`);
 
         } catch (error) {
-          console.error(`Error processing license ${license.id} for grace:`, error);
+          const errMsg = error instanceof Error ? error.message : 'Unknown error';
+          console.error(`  ❌ Exception processing ${license.id}: ${errMsg}`);
+          errors.push({type: 'grace_exception', id: license.id, error: errMsg});
         }
       }
     }
 
     // Process licenses whose grace period has expired
     if (filteredGraceExpiredLicenses.length > 0) {
+      console.log(`\n--- Processing ${filteredGraceExpiredLicenses.length} licenses: grace -> expired ---`);
+      
       for (const license of filteredGraceExpiredLicenses) {
         try {
           // Mark license as fully expired and set excluded_at to current time
@@ -183,11 +231,17 @@ serve(async (req) => {
             .eq('id', license.id);
 
           if (licenseUpdateError) {
-            console.error(`Error updating license ${license.id} to expired:`, licenseUpdateError);
+            const errMsg = licenseUpdateError.message || 'Unknown error';
+            console.error(`  ❌ Failed ${license.id}: ${errMsg}`);
+            errors.push({type: 'expired_update', id: license.id, error: errMsg});
             continue;
           }
 
+          console.log(`  ✓ ${license.fanmarks?.emoji_combination} marked as expired`);
+
           // Delete all config data for expired licenses
+          let configDeleteErrors = 0;
+          
           const { error: basicConfigDeleteError } = await supabase
             .from('fanmark_basic_configs')
             .delete()
@@ -210,17 +264,19 @@ serve(async (req) => {
 
           // Note: Keep fanmark record but configs are now deleted
           if (basicConfigDeleteError || redirectConfigDeleteError || messageConfigDeleteError || passwordConfigDeleteError) {
-            console.error(`Error deleting configs for license ${license.id}:`, {
-              basicConfigDeleteError,
-              redirectConfigDeleteError, 
-              messageConfigDeleteError,
-              passwordConfigDeleteError
+            configDeleteErrors++;
+            console.warn(`  ⚠️ Config deletion errors for ${license.id}:`, {
+              basic: basicConfigDeleteError?.message,
+              redirect: redirectConfigDeleteError?.message,
+              message: messageConfigDeleteError?.message,
+              password: passwordConfigDeleteError?.message
             });
+          } else {
+            console.log(`  ✓ Configs deleted`);
           }
 
-
           // Log the full expiration event
-          await supabase
+          const { error: auditError } = await supabase
             .from('audit_logs')
             .insert({
               user_id: license.user_id,
@@ -230,38 +286,77 @@ serve(async (req) => {
               metadata: {
                 fanmark_id: license.fanmark_id,
                 expired_at: new Date().toISOString(),
-                license_end: license.license_end
+                license_end: license.license_end,
+                config_deletion_errors: configDeleteErrors
               }
             });
 
+          if (auditError) {
+            console.warn(`  ⚠️ Audit log failed for ${license.id}: ${auditError.message}`);
+          }
+
           processedCount++;
-          console.log(`Fully expired license for fanmark: ${license.fanmarks?.emoji_combination}`);
+          expiredSuccessCount++;
 
         } catch (error) {
-          console.error(`Error processing license ${license.id} for expiration:`, error);
+          const errMsg = error instanceof Error ? error.message : 'Unknown error';
+          console.error(`  ❌ Exception processing ${license.id}: ${errMsg}`);
+          errors.push({type: 'expired_exception', id: license.id, error: errMsg});
         }
       }
     }
 
-    console.log(`Processed ${processedCount} expired licenses`);
+    const elapsed = Date.now() - startTime;
+    
+    console.log('\n=== PROCESSING COMPLETE ===');
+    console.log(`Total processed: ${processedCount}`);
+    console.log(`  Active -> Grace: ${graceSuccessCount}`);
+    console.log(`  Grace -> Expired: ${expiredSuccessCount}`);
+    console.log(`  Errors: ${errors.length}`);
+    console.log(`Elapsed time: ${elapsed}ms`);
+    
+    if (errors.length > 0) {
+      console.log('\nErrors encountered:');
+      errors.forEach(err => console.log(`  ${err.type} [${err.id}]: ${err.error}`));
+    }
 
     return new Response(
       JSON.stringify({ 
+        success: true,
         message: `Successfully processed ${processedCount} licenses`,
         processed: processedCount,
-        licenses_to_grace: justExpiredLicenses?.length || 0,
-        licenses_to_expired: filteredGraceExpiredLicenses.length,
-        total_found: totalLicenses,
-        grace_period_hours: gracePeriodHours
+        details: {
+          active_to_grace: graceSuccessCount,
+          grace_to_expired: expiredSuccessCount,
+          found: {
+            active_expired: justExpiredLicenses?.length || 0,
+            grace_expired: filteredGraceExpiredLicenses.length,
+            total: totalLicenses
+          }
+        },
+        grace_period_hours: gracePeriodHours,
+        elapsed_ms: elapsed,
+        errors: errors.length > 0 ? errors : undefined
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
+    const elapsed = Date.now() - startTime;
+    console.error('\n=== FATAL ERROR ===');
     console.error('Error in check-expired-licenses function:', error);
+    console.error(`Elapsed time: ${elapsed}ms`);
+    
     const message = error instanceof Error ? error.message : 'Internal server error';
+    const stack = error instanceof Error ? error.stack : undefined;
+    
     return new Response(
-      JSON.stringify({ error: message }),
+      JSON.stringify({ 
+        success: false,
+        error: message,
+        stack: stack,
+        elapsed_ms: elapsed
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
