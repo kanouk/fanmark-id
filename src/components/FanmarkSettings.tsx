@@ -269,9 +269,20 @@ export const FanmarkSettings = ({
       }
     } catch (error) {
       console.error('Settings update error:', error);
+      
+      // Check for specific RLS policy violation errors
+      let errorMessage = t('fanmarkSettings.toast.errorDescription');
+      
+      if (error && typeof error === 'object' && 'code' in error) {
+        // PostgreSQL error code 42501 = insufficient privilege (RLS violation)
+        if (error.code === '42501') {
+          errorMessage = t('fanmarkSettings.errors.licenseExpired');
+        }
+      }
+      
       toast({
         title: t('fanmarkSettings.toast.errorTitle'),
-        description: error instanceof Error ? error.message : t('fanmarkSettings.toast.errorDescription'),
+        description: error instanceof Error ? error.message : errorMessage,
         variant: 'destructive',
       });
     } finally {

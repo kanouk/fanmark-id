@@ -60,6 +60,20 @@ const FanmarkSettingsPage = () => {
       const isNew = location.state?.isNew || false;
       const restoreEditingState = location.state?.restoreEditingState;
 
+      // Check if license is valid (active or grace period)
+      const licenseEndUTC = fanmarkData.license_end ? new Date(fanmarkData.license_end + 'Z') : null;
+      const nowUTC = new Date();
+      const isLicenseValid = fanmarkData.has_active_license || 
+        (licenseEndUTC && licenseEndUTC > nowUTC);
+
+      if (!isLicenseValid && !fanmarkData.has_active_license) {
+        toast({
+          title: t('fanmarkSettings.errors.licenseExpiredTitle'),
+          description: t('fanmarkSettings.errors.licenseExpiredDescription'),
+          variant: 'destructive',
+        });
+      }
+
       setFanmark({
         id: fanmarkData.id,
         emoji_combination: fanmarkData.emoji_combination,

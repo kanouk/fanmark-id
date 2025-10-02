@@ -628,7 +628,10 @@
       "loadFailed": "ファンマの情報を読み込めませんでした。",
       "loadFailedTitle": "ファンマを表示できません",
       "authRequiredTitle": "ログインが必要です",
-      "authRequiredDescription": "ファンマの設定を変更するにはログインしてください。"
+      "authRequiredDescription": "ファンマの設定を変更するにはログインしてください。",
+      "licenseExpired": "ライセンスが期限切れのため、設定を変更できません。ライセンスを更新してください。",
+      "licenseExpiredTitle": "ライセンス期限切れ",
+      "licenseExpiredDescription": "このファンマのライセンスが期限切れです。設定を変更するには、ライセンスを更新してください。"
     },
     "toast": {
       "successTitle": "設定を更新しました ✨",
