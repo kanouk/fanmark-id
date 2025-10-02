@@ -633,7 +633,9 @@
       "authRequiredDescription": "Please sign in to manage your fanmarks.",
       "licenseExpired": "License expired. Cannot modify settings. Please renew your license.",
       "licenseExpiredTitle": "License Expired",
-      "licenseExpiredDescription": "This fanmark's license has expired. Please renew to modify settings."
+      "licenseExpiredDescription": "This fanmark's license has expired. Please renew to modify settings.",
+      "graceStatusEdit": "Cannot edit fanmark during grace period.",
+      "graceStatusDescription": "This fanmark is in grace period. You can only renew the license or wait for expiration."
     },
     "toast": {
       "successTitle": "Settings updated ✨",

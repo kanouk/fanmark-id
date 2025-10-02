@@ -631,7 +631,9 @@
       "authRequiredDescription": "ファンマの設定を変更するにはログインしてください。",
       "licenseExpired": "ライセンスが期限切れのため、設定を変更できません。ライセンスを更新してください。",
       "licenseExpiredTitle": "ライセンス期限切れ",
-      "licenseExpiredDescription": "このファンマのライセンスが期限切れです。設定を変更するには、ライセンスを更新してください。"
+      "licenseExpiredDescription": "このファンマのライセンスが期限切れです。設定を変更するには、ライセンスを更新してください。",
+      "graceStatusEdit": "失効処理中のファンマは編集できません。",
+      "graceStatusDescription": "このファンマは失効処理中です。延長処理を行うか、失効を待つ必要があります。"
     },
     "toast": {
       "successTitle": "設定を更新しました ✨",
