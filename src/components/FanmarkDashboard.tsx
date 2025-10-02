@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { format, differenceInDays } from 'date-fns';
-import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
+import { differenceInDays } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +22,7 @@ import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { useFanmarkLimit } from '@/hooks/useFanmarkLimit';
 import { navigateToFanmark, getFanmarkUrlForClipboard } from '@/utils/emojiUrl';
 import { GraceStatusCountdown } from './GraceStatusCountdown';
+import { parseDateString } from '@/lib/utils';
 
 interface Fanmark {
   id: string;
@@ -350,8 +351,10 @@ export const FanmarkDashboard = () => {
     }
 
     // Second sort by acquisition date (newest first)
-    const aAcquisition = aLicenseData?.license_start ? new Date(aLicenseData.license_start).getTime() : 0;
-    const bAcquisition = bLicenseData?.license_start ? new Date(bLicenseData.license_start).getTime() : 0;
+    const aAcquisitionDate = parseDateString(aLicenseData?.license_start);
+    const bAcquisitionDate = parseDateString(bLicenseData?.license_start);
+    const aAcquisition = aAcquisitionDate ? aAcquisitionDate.getTime() : 0;
+    const bAcquisition = bAcquisitionDate ? bAcquisitionDate.getTime() : 0;
     return bAcquisition - aAcquisition;
   });
 
@@ -519,10 +522,10 @@ export const FanmarkDashboard = () => {
                           <tbody>
                              {filteredFanmarks.map((fanmark) => {
                               const licenseData = fanmark.fanmark_licenses;
-                              // Parse dates as UTC
-                              const acquisitionDate = licenseData?.license_start ? formatInTimeZone(new Date(licenseData.license_start + 'Z'), 'Asia/Tokyo', 'yyyy/MM/dd') : '-';
+                              const acquisitionDateValue = parseDateString(licenseData?.license_start);
+                              const acquisitionDate = acquisitionDateValue ? formatInTimeZone(acquisitionDateValue, 'Asia/Tokyo', 'yyyy/MM/dd') : '-';
                               const effectiveEndDate = licenseData?.excluded_at || licenseData?.license_end;
-                              const expirationDateUTC = effectiveEndDate ? new Date(effectiveEndDate + 'Z') : null;
+                              const expirationDateUTC = parseDateString(effectiveEndDate);
                               // Calculate days remaining using UTC times
                               const nowUTC = new Date();
                               const daysRemaining = expirationDateUTC ? differenceInDays(expirationDateUTC, nowUTC) : null;
@@ -721,9 +724,10 @@ export const FanmarkDashboard = () => {
                     <div className="lg:hidden space-y-4">
                       {filteredFanmarks.map((fanmark) => {
                         const licenseData = fanmark.fanmark_licenses;
-                        const acquisitionDate = licenseData?.license_start ? format(new Date(licenseData.license_start), 'yyyy/MM/dd') : '-';
+                        const acquisitionDateValue = parseDateString(licenseData?.license_start);
+                        const acquisitionDate = acquisitionDateValue ? formatInTimeZone(acquisitionDateValue, 'Asia/Tokyo', 'yyyy/MM/dd') : '-';
                         const effectiveEndDate = licenseData?.excluded_at || licenseData?.license_end;
-                        const expirationDate = effectiveEndDate ? new Date(effectiveEndDate) : null;
+                        const expirationDate = parseDateString(effectiveEndDate);
                         const daysRemaining = expirationDate ? differenceInDays(expirationDate, new Date()) : null;
                         const isExpiringSoon = daysRemaining !== null && daysRemaining <= 3;
 
@@ -799,7 +803,7 @@ export const FanmarkDashboard = () => {
                                        {t('dashboard.returnDate')}
                                      </div>
                                      <div className="text-foreground">
-                                       {expirationDate ? format(expirationDate, 'yyyy/MM/dd') : '-'}
+                                       {expirationDate ? formatInTimeZone(expirationDate, 'Asia/Tokyo', 'yyyy/MM/dd') : '-'}
                                      </div>
                                    </div>
                                    <div>
