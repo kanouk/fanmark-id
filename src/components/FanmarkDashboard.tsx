@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { format, differenceInDays } from 'date-fns';
+import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -516,12 +517,15 @@ export const FanmarkDashboard = () => {
                               </tr>
                           </thead>
                           <tbody>
-                            {filteredFanmarks.map((fanmark) => {
+                             {filteredFanmarks.map((fanmark) => {
                               const licenseData = fanmark.fanmark_licenses;
-                              const acquisitionDate = licenseData?.license_start ? format(new Date(licenseData.license_start), 'yyyy/MM/dd') : '-';
+                              // Parse dates as UTC
+                              const acquisitionDate = licenseData?.license_start ? formatInTimeZone(new Date(licenseData.license_start + 'Z'), 'Asia/Tokyo', 'yyyy/MM/dd') : '-';
                               const effectiveEndDate = licenseData?.excluded_at || licenseData?.license_end;
-                              const expirationDate = effectiveEndDate ? new Date(effectiveEndDate) : null;
-                              const daysRemaining = expirationDate ? differenceInDays(expirationDate, new Date()) : null;
+                              const expirationDateUTC = effectiveEndDate ? new Date(effectiveEndDate + 'Z') : null;
+                              // Calculate days remaining using UTC times
+                              const nowUTC = new Date();
+                              const daysRemaining = expirationDateUTC ? differenceInDays(expirationDateUTC, nowUTC) : null;
                               const isExpiringSoon = daysRemaining !== null && daysRemaining <= 3;
 
                               return (
@@ -571,9 +575,9 @@ export const FanmarkDashboard = () => {
                                 </td>
                                  <td className="px-6 py-5">
                                    <div className="min-h-[2.5rem] flex items-center">
-                                     {expirationDate ? (
+                                     {expirationDateUTC ? (
                                        <div className="text-sm text-foreground font-medium">
-                                         {format(expirationDate, 'yyyy/MM/dd')}
+                                         {formatInTimeZone(expirationDateUTC, 'Asia/Tokyo', 'yyyy/MM/dd')}
                                        </div>
                                      ) : (
                                        <span className="text-muted-foreground text-sm">-</span>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/useTranslation';
+import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
 import { Clock } from 'lucide-react';
 
 interface GraceStatusCountdownProps {
@@ -14,11 +15,11 @@ export const GraceStatusCountdown = ({ licenseEnd, className }: GraceStatusCount
 
   useEffect(() => {
     const updateCountdown = () => {
-      const endTime = new Date(licenseEnd);
-      // Grace period is 24 hours from license end
-      const graceEndTime = new Date(endTime.getTime() + 24 * 60 * 60 * 1000);
-      const now = new Date();
-      const diff = graceEndTime.getTime() - now.getTime();
+      // Parse license_end as UTC and add 24 hours for grace period
+      const endTimeUTC = new Date(licenseEnd + 'Z'); // Ensure UTC parsing
+      const graceEndTimeUTC = new Date(endTimeUTC.getTime() + 24 * 60 * 60 * 1000);
+      const nowUTC = new Date(); // Current time in UTC
+      const diff = graceEndTimeUTC.getTime() - nowUTC.getTime();
 
       if (diff <= 0) {
         setTimeRemaining('00:00:00');
