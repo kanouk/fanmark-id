@@ -687,7 +687,7 @@
     "firstOwner": "初回所有者",
     "neverAcquired": "取得履歴なし",
     "started": "取得日",
-    "expires": "失効予定日",
+    "expires": "失効（予定）日",
     "noHistory": "ライセンス履歴がありません",
     "initial": "初回",
     "favorite": "お気に入りに追加",

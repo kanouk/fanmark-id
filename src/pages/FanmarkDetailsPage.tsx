@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Heart, Calendar, User, Clock, ExternalLink, History } from 'lucide-react';
-import { format } from 'date-fns';
 import { ja, enUS } from 'date-fns/locale';
+import { formatInTimeZone } from 'date-fns-tz';
+import { parseDateString } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { encodeEmojiForUrl, splitEmojiGraphemes } from '@/utils/emojiUrl';
 
@@ -56,14 +57,20 @@ export default function FanmarkDetailsPage() {
     );
   }
 
-  const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'PPP', {
+  const formatDate = (dateString?: string | null): string => {
+    if (!dateString) return '—';
+    const parsed = parseDateString(dateString);
+    if (!parsed) return '—';
+    return formatInTimeZone(parsed, 'Asia/Tokyo', 'PPP', {
       locale: language === 'ja' ? ja : enUS,
     });
   };
 
-  const formatDateTime = (dateString: string) => {
-    return format(new Date(dateString), 'PPP p', {
+  const formatDateTime = (dateString?: string | null): string => {
+    if (!dateString) return '—';
+    const parsed = parseDateString(dateString);
+    if (!parsed) return '—';
+    return formatInTimeZone(parsed, 'Asia/Tokyo', 'PPP p', {
       locale: language === 'ja' ? ja : enUS,
     });
   };
@@ -173,7 +180,11 @@ export default function FanmarkDetailsPage() {
                       return (
                         <tr key={`${item.license_start}-${index}`} className="bg-background">
                           <td className="px-4 py-3 text-foreground">{formatDateTime(item.license_start)}</td>
-                          <td className="px-4 py-3 text-foreground">{formatDateTime(item.license_end)}</td>
+                          <td className="px-4 py-3 text-foreground">
+                            {item.status === 'expired' && item.excluded_at 
+                              ? formatDateTime(item.excluded_at)
+                              : formatDateTime(item.license_end)}
+                          </td>
                           <td className="px-4 py-3">
                             <span className="text-foreground">{holder}</span>
                           </td>
