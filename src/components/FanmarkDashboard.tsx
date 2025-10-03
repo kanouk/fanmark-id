@@ -558,7 +558,7 @@ export const FanmarkDashboard = () => {
                               </tr>
                           </thead>
                           <tbody>
-                             {filteredFanmarks.map((fanmark) => {
+                             {filteredFanmarks.map((fanmark, idx) => {
                               const licenseData = fanmark.fanmark_licenses;
                               const acquisitionDateValue = parseDateString(licenseData?.license_start);
                               const acquisitionDate = acquisitionDateValue ? formatInTimeZone(acquisitionDateValue, 'Asia/Tokyo', 'yyyy/MM/dd') : '-';
@@ -769,7 +769,7 @@ export const FanmarkDashboard = () => {
 
                     {/* Mobile Card View */}
                     <div className="lg:hidden space-y-4">
-                      {filteredFanmarks.map((fanmark) => {
+                      {filteredFanmarks.map((fanmark, idx) => {
                         const licenseData = fanmark.fanmark_licenses;
                         const acquisitionDateValue = parseDateString(licenseData?.license_start);
                         const acquisitionDate = acquisitionDateValue ? formatInTimeZone(acquisitionDateValue, 'Asia/Tokyo', 'yyyy/MM/dd') : '-';
