@@ -66,16 +66,7 @@ export default function FanmarkDetailsPage() {
     });
   };
 
-  const formatDateTime = (dateString?: string | null): string => {
-    if (!dateString) return '—';
-    const parsed = parseDateString(dateString);
-    if (!parsed) return '—';
-    return formatInTimeZone(parsed, 'Asia/Tokyo', 'PPP p', {
-      locale: language === 'ja' ? ja : enUS,
-    });
-  };
-
-  const licenseStatusMeta = (status: string) => {
+  const licenseStatusMeta = (status: string, licenseEnd?: string | null) => {
     const normalized = status?.toLowerCase?.() ?? '';
     switch (normalized) {
       case 'active':
@@ -85,10 +76,16 @@ export default function FanmarkDetailsPage() {
         };
       case 'grace':
       case 'grace_period':
-        return {
-          label: t('fanmarkDetails.statusGrace'),
-          className: 'border-amber-500/25 bg-amber-500/10 text-amber-600',
-        };
+        {
+          const parsedEnd = licenseEnd ? parseDateString(licenseEnd) : null;
+          const isReturnProcessing = parsedEnd ? parsedEnd.getTime() > Date.now() : false;
+          return {
+            label: isReturnProcessing
+              ? t('fanmarkDetails.statusReturnProcessing')
+              : t('fanmarkDetails.statusGrace'),
+            className: 'border-amber-500/25 bg-amber-500/10 text-amber-600',
+          };
+        }
       case 'expired':
         return {
           label: t('fanmarkDetails.statusExpired'),
@@ -113,6 +110,15 @@ export default function FanmarkDetailsPage() {
     }
   };
 
+  const formatDateTime = (dateString?: string | null): string => {
+    if (!dateString) return '—';
+    const parsed = parseDateString(dateString);
+    if (!parsed) return '—';
+    return formatInTimeZone(parsed, 'Asia/Tokyo', 'PPP p', {
+      locale: language === 'ja' ? ja : enUS,
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/40">
       <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
@@ -125,10 +131,8 @@ export default function FanmarkDetailsPage() {
                 </span>
               ))}
             </div>
-            <Badge
-              className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${details.is_currently_active ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600' : 'border-muted-foreground/30 bg-muted/40 text-muted-foreground'}`}
-            >
-              {details.is_currently_active ? t('fanmarkDetails.active') : t('fanmarkDetails.available')}
+            <Badge className="rounded-full border border-border/50 bg-muted/60 px-3 py-1 text-[0.7rem] font-medium tracking-wide text-muted-foreground">
+              {details.short_id}
             </Badge>
             <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center">
               {user && (
@@ -170,6 +174,9 @@ export default function FanmarkDetailsPage() {
                         {t('fanmarkDetails.expires')}
                       </th>
                       <th className="px-4 py-3 text-left font-semibold">
+                        {t('fanmarkDetails.statusColumn')}
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold">
                         {t('fanmarkDetails.owner')}
                       </th>
                     </tr>
@@ -177,6 +184,7 @@ export default function FanmarkDetailsPage() {
                   <tbody className="divide-y divide-border/60">
                     {details.license_history.map((item, index) => {
                       const holder = item.display_name || (item.username ? `@${item.username}` : '—');
+                      const statusMeta = licenseStatusMeta(item.status, item.license_end);
                       return (
                         <tr key={`${item.license_start}-${index}`} className="bg-background">
                           <td className="px-4 py-3 text-foreground">{formatDateTime(item.license_start)}</td>
@@ -186,6 +194,11 @@ export default function FanmarkDetailsPage() {
                               : item.status === 'grace' && item.grace_expires_at
                               ? formatDateTime(item.grace_expires_at)
                               : formatDateTime(item.license_end)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide ${statusMeta.className}`}>
+                              <span>{statusMeta.label}</span>
+                            </Badge>
                           </td>
                           <td className="px-4 py-3">
                             <span className="text-foreground">{holder}</span>
