@@ -24,6 +24,39 @@ import { navigateToFanmark, getFanmarkUrlForClipboard } from '@/utils/emojiUrl';
 import { GraceStatusCountdown } from './GraceStatusCountdown';
 import { parseDateString } from '@/lib/utils';
 
+const CountdownDisplay = ({ target, className }: { target: Date | string; className?: string }) => {
+  const { t } = useTranslation();
+  const targetKey = target instanceof Date ? target.toISOString() : target;
+  const compute = () => formatCountdown(target);
+  const [time, setTime] = useState(compute);
+
+  useEffect(() => {
+    setTime(compute());
+    const interval = setInterval(() => {
+      setTime(compute());
+    }, 1000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetKey]);
+
+  return (
+    <span className={className}>{t('dashboard.countdown', { time })}</span>
+  );
+};
+
+const formatCountdown = (target: Date | string | null) => {
+  if (!target) return '00:00:00';
+  const targetDate = target instanceof Date ? target : parseDateString(target);
+  if (!targetDate) return '00:00:00';
+  const diffMs = targetDate.getTime() - Date.now();
+  if (diffMs <= 0) return '00:00:00';
+  const totalSeconds = Math.floor(diffMs / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+};
+
 interface Fanmark {
   id: string;
   emoji_combination: string;
@@ -256,7 +289,7 @@ export const FanmarkDashboard = () => {
     fetchFanmarks();
   }, [fetchFanmarks, user]);
 
-  const getStatusBadge = (licenseStatus?: string, isPlanExcluded?: boolean) => {
+  const getStatusBadge = (licenseStatus?: string, isPlanExcluded?: boolean, licenseEnd?: string | null) => {
     let icon = <FiMoon className="h-3.5 w-3.5" />;
     let className = 'border-gray-200/60 bg-gray-50 text-gray-600 shadow-sm';
     let label = t('dashboard.statusUnknown');
@@ -270,9 +303,11 @@ export const FanmarkDashboard = () => {
       className = 'border-emerald-200/60 bg-emerald-50 text-emerald-600 shadow-sm';
       label = t('dashboard.statusActive');
     } else if (licenseStatus === 'grace') {
+      const parsedEnd = licenseEnd ? parseDateString(licenseEnd) : null;
+      const isReturnProcessing = parsedEnd ? parsedEnd.getTime() > Date.now() : false;
       icon = <FiTarget className="h-3.5 w-3.5" />;
       className = 'border-amber-200/60 bg-amber-50 text-amber-600 shadow-sm';
-      label = t('dashboard.statusGrace');
+      label = isReturnProcessing ? t('dashboard.statusReturnProcessing') : t('dashboard.statusGrace');
     } else if (licenseStatus === 'expired') {
       icon = <FiTarget className="h-3.5 w-3.5" />;
       className = 'border-rose-200/60 bg-rose-50 text-rose-600 shadow-sm';
@@ -529,13 +564,17 @@ export const FanmarkDashboard = () => {
                               const acquisitionDate = acquisitionDateValue ? formatInTimeZone(acquisitionDateValue, 'Asia/Tokyo', 'yyyy/MM/dd') : '-';
                               const effectiveEndDate = licenseData?.excluded_at || licenseData?.license_end;
                               const expirationDateUTC = parseDateString(effectiveEndDate);
-                              // Calculate days remaining using UTC times
                               const nowUTC = new Date();
+                              const msRemaining = expirationDateUTC ? expirationDateUTC.getTime() - nowUTC.getTime() : null;
                               const daysRemaining = expirationDateUTC ? differenceInDays(expirationDateUTC, nowUTC) : null;
-                              const isExpiringSoon = daysRemaining !== null && daysRemaining <= 3;
+                              const isExpiringSoon = msRemaining !== null && msRemaining <= 3 * 24 * 60 * 60 * 1000;
+                              const isCountdownActive = msRemaining !== null && msRemaining <= 24 * 60 * 60 * 1000;
+                              const timeDisplayClass = `font-medium whitespace-nowrap ${isCountdownActive ? 'text-xs' : 'text-sm'} ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`;
+
+                              const rowKey = `${fanmark.id}-${fanmark.current_license_id ?? licenseData?.license_end ?? index}`;
 
                               return (
-                                <tr key={fanmark.id} className={`border-b border-primary/5 transition-all duration-200 ${isFanmarkInactive(fanmark) ? 'bg-gray-200 dark:bg-gray-700' : licenseData?.status === 'grace' ? 'bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-950/50' : 'hover:bg-primary/5 hover:shadow-sm'}`}>
+                                <tr key={rowKey} className={`border-b border-primary/5 transition-all duration-200 ${isFanmarkInactive(fanmark) ? 'bg-gray-200 dark:bg-gray-700' : licenseData?.status === 'grace' ? 'bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-950/50' : 'hover:bg-primary/5 hover:shadow-sm'}`}>
                                        <td className="px-6 py-5">
                                          <div className="min-h-[2.5rem] flex items-end gap-3">
                                            <div
@@ -581,71 +620,77 @@ export const FanmarkDashboard = () => {
                                  <td className="px-6 py-5">
                                    <div className="min-h-[2.5rem] flex items-center">
                                      {expirationDateUTC ? (
-                                       <div className="text-sm text-foreground font-medium">
-                                         {formatInTimeZone(expirationDateUTC, 'Asia/Tokyo', 'yyyy/MM/dd')}
+                                       <div className="flex items-center gap-2 text-sm text-foreground font-medium">
+                                         <span>{formatInTimeZone(expirationDateUTC, 'Asia/Tokyo', 'yyyy/MM/dd')}</span>
+                                         {!isReturned(fanmark) && licenseData?.status !== 'grace' && (
+                                           <AlertDialog>
+                                             <Tooltip>
+                                               <TooltipTrigger asChild>
+                                                 <AlertDialogTrigger asChild>
+                                                   <Button
+                                                     size="sm"
+                                                     variant="ghost"
+                                                     className="h-7 w-7 p-0 rounded-full hover:bg-primary/10 hover:text-primary transition-colors"
+                                                     disabled={returningFanmarkId === fanmark.id}
+                                                     aria-label={t('dashboard.actionsReturn')}
+                                                   >
+                                                     <Undo2 className="h-3.5 w-3.5" />
+                                                   </Button>
+                                                 </AlertDialogTrigger>
+                                               </TooltipTrigger>
+                                               <TooltipContent>{t('dashboard.actionsReturn')}</TooltipContent>
+                                             </Tooltip>
+                                             <AlertDialogContent>
+                                               <AlertDialogHeader>
+                                                 <AlertDialogTitle>{t('dashboard.returnConfirmTitle')}</AlertDialogTitle>
+                                                 <AlertDialogDescription>
+                                                   {t('dashboard.returnConfirmDescription')}
+                                                 </AlertDialogDescription>
+                                               </AlertDialogHeader>
+                                               <AlertDialogFooter>
+                                                 <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                                                 <AlertDialogAction
+                                                   onClick={() => handleReturnFanmark(fanmark.id)}
+                                                   className="bg-destructive hover:bg-destructive/90"
+                                                 >
+                                                   {returningFanmarkId === fanmark.id ? t('common.processing') : t('dashboard.returnConfirmAction')}
+                                                 </AlertDialogAction>
+                                               </AlertDialogFooter>
+                                             </AlertDialogContent>
+                                           </AlertDialog>
+                                         )}
                                        </div>
                                      ) : (
                                        <span className="text-muted-foreground text-sm">-</span>
                                      )}
-                                   </div>
-                                 </td>
+                                  </div>
+                                </td>
                                   <td className="px-6 py-5">
-                                    <div className="min-h-[2.5rem] flex items-center gap-2">
+                                   <div className="min-h-[2.5rem] flex items-center gap-2">
                                       {licenseData?.status === 'grace' && licenseData?.grace_expires_at ? (
                                         <GraceStatusCountdown
                                           graceExpiresAt={licenseData.grace_expires_at}
                                         />
-                                      ) : !isReturned(fanmark) && daysRemaining !== null && daysRemaining >= 0 ? (
+                                      ) : !isReturned(fanmark) && expirationDateUTC ? (
                                        <>
-                                         <div className={`text-sm font-medium whitespace-nowrap ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`}>
-                                           {t('dashboard.daysRemaining', { days: daysRemaining })}
+                                        <div className={timeDisplayClass}>
+                                          {isCountdownActive ? (
+                                            <CountdownDisplay target={expirationDateUTC} />
+                                          ) : (
+                                            t('dashboard.daysRemaining', { days: daysRemaining ?? 0 })
+                                          )}
                                          </div>
-                                         <AlertDialog>
-                                           <Tooltip>
-                                             <TooltipTrigger asChild>
-                                               <AlertDialogTrigger asChild>
-                                                 <Button
-                                                   size="sm"
-                                                   variant="ghost"
-                                                   className="h-7 w-7 p-0 rounded-full hover:bg-primary/10 hover:text-primary transition-colors"
-                                                   disabled={returningFanmarkId === fanmark.id}
-                                                   aria-label={t('dashboard.actionsReturn')}
-                                                 >
-                                                   <Undo2 className="h-3.5 w-3.5" />
-                                                 </Button>
-                                               </AlertDialogTrigger>
-                                             </TooltipTrigger>
-                                             <TooltipContent>{t('dashboard.actionsReturn')}</TooltipContent>
-                                           </Tooltip>
-                                           <AlertDialogContent>
-                                             <AlertDialogHeader>
-                                               <AlertDialogTitle>{t('dashboard.returnConfirmTitle')}</AlertDialogTitle>
-                                               <AlertDialogDescription>
-                                                 {t('dashboard.returnConfirmDescription')}
-                                               </AlertDialogDescription>
-                                             </AlertDialogHeader>
-                                             <AlertDialogFooter>
-                                               <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                                               <AlertDialogAction
-                                                 onClick={() => handleReturnFanmark(fanmark.id)}
-                                                 className="bg-destructive hover:bg-destructive/90"
-                                               >
-                                                 {returningFanmarkId === fanmark.id ? t('common.processing') : t('dashboard.returnConfirmAction')}
-                                               </AlertDialogAction>
-                                             </AlertDialogFooter>
-                                           </AlertDialogContent>
-                                         </AlertDialog>
-                                       </>
-                                     ) : isReturned(fanmark) ? (
-                                       <span className="text-muted-foreground text-sm">{t('dashboard.returned')}</span>
-                                     ) : (
-                                       <span className="text-muted-foreground text-sm">-</span>
-                                     )}
+                                        </>
+                                      ) : isReturned(fanmark) ? (
+                                        <span className="text-muted-foreground text-sm">{t('dashboard.returned')}</span>
+                                      ) : (
+                                        <span className="text-muted-foreground text-sm">-</span>
+                                      )}
                                    </div>
                                  </td>
                                   <td className="px-6 py-5">
                                      <div className="min-h-[2.5rem] flex items-center gap-2 min-w-fit">
-                                       {getStatusBadge(licenseData?.status, licenseData?.plan_excluded)}
+                                       {getStatusBadge(licenseData?.status, licenseData?.plan_excluded, licenseData?.license_end)}
                                        {licenseData?.plan_excluded && (
                                          <span className="text-xs text-muted-foreground">
                                            {t('fanmarkStatus.extensionNotPossible')}
@@ -730,11 +775,17 @@ export const FanmarkDashboard = () => {
                         const acquisitionDate = acquisitionDateValue ? formatInTimeZone(acquisitionDateValue, 'Asia/Tokyo', 'yyyy/MM/dd') : '-';
                         const effectiveEndDate = licenseData?.excluded_at || licenseData?.license_end;
                         const expirationDate = parseDateString(effectiveEndDate);
-                        const daysRemaining = expirationDate ? differenceInDays(expirationDate, new Date()) : null;
-                        const isExpiringSoon = daysRemaining !== null && daysRemaining <= 3;
+                        const now = new Date();
+                        const msRemainingMobile = expirationDate ? expirationDate.getTime() - now.getTime() : null;
+                        const daysRemaining = expirationDate ? differenceInDays(expirationDate, now) : null;
+                        const isExpiringSoon = msRemainingMobile !== null && msRemainingMobile <= 3 * 24 * 60 * 60 * 1000;
+                        const isCountdownActiveMobile = msRemainingMobile !== null && msRemainingMobile <= 24 * 60 * 60 * 1000;
+                        const mobileTimeDisplayClass = `font-medium whitespace-nowrap ${isCountdownActiveMobile ? 'text-xs' : 'text-sm'} ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`;
+
+                        const cardKey = `${fanmark.id}-${fanmark.current_license_id ?? licenseData?.license_end ?? index}`;
 
                         return (
-                          <Card key={fanmark.id} className={`rounded-3xl border border-primary/10 transition-colors ${isFanmarkInactive(fanmark) ? 'bg-gray-200 dark:bg-gray-700' : licenseData?.status === 'grace' ? 'bg-amber-50 dark:bg-amber-950/30 hover:border-amber-200' : 'bg-background/80 hover:border-primary/20'}`}>
+                          <Card key={cardKey} className={`rounded-3xl border border-primary/10 transition-colors ${isFanmarkInactive(fanmark) ? 'bg-gray-200 dark:bg-gray-700' : licenseData?.status === 'grace' ? 'bg-amber-50 dark:bg-amber-950/30 hover:border-amber-200' : 'bg-background/80 hover:border-primary/20'}`}>
                             <CardContent className="p-5">
                               <div className="space-y-3">
                                   <div className="flex items-start justify-between">
@@ -774,7 +825,7 @@ export const FanmarkDashboard = () => {
                                         {!isFanmarkInactive(fanmark) && licenseData?.status !== 'grace' && getAccessTypeBadge(fanmark.access_type)}
                                       </div>
                                       <div className="flex-shrink-0">
-                                        {getStatusBadge(licenseData?.status, licenseData?.plan_excluded)}
+                                        {getStatusBadge(licenseData?.status, licenseData?.plan_excluded, licenseData?.license_end)}
                                       </div>
                                     </div>
                                     {licenseData?.plan_excluded && (
@@ -814,9 +865,13 @@ export const FanmarkDashboard = () => {
                                       <div className="flex items-center gap-2">
                                         {licenseData?.status === 'grace' && licenseData?.grace_expires_at ? (
                                           <GraceStatusCountdown graceExpiresAt={licenseData.grace_expires_at} />
-                                        ) : !isReturned(fanmark) && daysRemaining !== null && daysRemaining >= 0 ? (
-                                         <span className={`text-sm font-medium whitespace-nowrap ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`}>
-                                           {t('dashboard.daysRemaining', { days: daysRemaining })}
+                                        ) : !isReturned(fanmark) && expirationDate ? (
+                                         <span className={mobileTimeDisplayClass}>
+                                           {isCountdownActiveMobile ? (
+                                             <CountdownDisplay target={expirationDate} />
+                                           ) : (
+                                             t('dashboard.daysRemaining', { days: daysRemaining ?? 0 })
+                                           )}
                                          </span>
                                        ) : isReturned(fanmark) ? (
                                          <span className="text-muted-foreground text-sm">{t('dashboard.returned')}</span>
