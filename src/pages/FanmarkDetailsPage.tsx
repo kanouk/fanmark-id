@@ -5,6 +5,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Navigation } from '@/components/Navigation';
 import { Heart, Calendar, User, Clock, ExternalLink, History } from 'lucide-react';
 import { ja, enUS } from 'date-fns/locale';
 import { formatInTimeZone } from 'date-fns-tz';
@@ -120,9 +121,11 @@ export default function FanmarkDetailsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/40">
-      <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
-        <section className="p-6 text-center sm:p-10">
+    <div className="flex min-h-screen flex-col bg-gradient-to-b from-background via-background to-muted/40">
+      <Navigation />
+      <main className="flex-1">
+        <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
+          <section className="p-6 text-center sm:p-10">
           <div className="flex flex-col items-center gap-6">
             <div className="flex flex-wrap items-center justify-center gap-3 rounded-[2.75rem] border border-primary/20 bg-primary/10 px-8 py-6 text-5xl shadow-inner md:px-10 md:py-7 md:text-6xl">
               {splitEmojiGraphemes(details.emoji_combination).map((segment, index) => (
@@ -153,8 +156,8 @@ export default function FanmarkDetailsPage() {
               </Button>
             </div>
           </div>
-        </section>
-        <section className="mt-10">
+          </section>
+          <section className="mt-10">
           <Card className="border border-primary/10 bg-muted/40 backdrop-blur rounded-3xl">
             <CardHeader className="space-y-1 px-6 pt-6">
               <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
@@ -215,8 +218,17 @@ export default function FanmarkDetailsPage() {
               )}
             </CardContent>
           </Card>
-        </section>
-      </div>
+          </section>
+        </div>
+      </main>
+      <footer className="border-t border-border/40 bg-background/80 backdrop-blur">
+        <div className="container mx-auto px-4 py-10 text-center space-y-3">
+          <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
+            <span className="text-3xl">✨</span> <span className="text-gradient">fanmark.id</span>
+          </div>
+          <p className="text-sm text-muted-foreground">{t('sections.footer')}</p>
+        </div>
+      </footer>
     </div>
   );
 }
