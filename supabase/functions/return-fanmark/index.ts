@@ -103,10 +103,14 @@ serve(async (req) => {
       });
     }
 
-    // Expire the license
+    // Expire the license and record the actual exclusion time
+    const now = new Date().toISOString();
     const { error: expireLicenseError } = await supabase
       .from('fanmark_licenses')
-      .update({ status: 'expired' })
+      .update({ 
+        status: 'expired',
+        excluded_at: now
+      })
       .eq('id', activeLicense.id);
 
     if (expireLicenseError) {
