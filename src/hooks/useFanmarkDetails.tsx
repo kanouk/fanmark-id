@@ -13,6 +13,7 @@ export interface FanmarkDetails {
   current_owner_display_name?: string;
   current_license_start?: string;
   current_license_end?: string;
+  current_license_status?: string;
   is_currently_active: boolean;
   first_acquired_date?: string;
   first_owner_username?: string;

@@ -681,6 +681,7 @@ export type Database = {
           current_license_end: string
           current_license_id: string
           current_license_start: string
+          current_license_status: string
           current_owner_display_name: string
           current_owner_username: string
           emoji_combination: string
