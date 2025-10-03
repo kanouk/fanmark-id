@@ -90,7 +90,7 @@ serve(async (req) => {
       };
 
     // Find licenses in grace period that need to be fully expired
-    // Grace period is 24 hours from the license_end date
+    // Use grace_expires_at for direct comparison (no calculation needed)
     const { data: graceExpiredLicenses, error: graceExpiredError } = await supabase
       .from('fanmark_licenses')
       .select(`
@@ -98,6 +98,7 @@ serve(async (req) => {
         fanmark_id,
         user_id,
         license_end,
+        grace_expires_at,
         fanmarks!inner(
           id,
           emoji_combination,
@@ -105,12 +106,14 @@ serve(async (req) => {
         )
       `)
       .eq('status', 'grace')
+      .lte('grace_expires_at', now.toISOString())
       .eq('fanmarks.status', 'active') as {
         data: Array<{
           id: string;
           fanmark_id: string;
           user_id: string;
           license_end: string;
+          grace_expires_at: string;
           fanmarks: {
             id: string;
             emoji_combination: string;
@@ -125,25 +128,14 @@ serve(async (req) => {
       throw justExpiredError || graceExpiredError;
     }
 
-    console.log(`✓ Query results: ${justExpiredLicenses?.length || 0} active->grace, ${graceExpiredLicenses?.length || 0} grace candidates`);
+    console.log(`✓ Query results: ${justExpiredLicenses?.length || 0} active->grace, ${graceExpiredLicenses?.length || 0} grace->expired ready`);
 
-    // Filter grace expired licenses - check if grace period (24 hours from license_end) has passed
-    const filteredGraceExpiredLicenses = graceExpiredLicenses?.filter(license => {
-      const licenseEndTime = new Date(license.license_end).getTime();
-      const graceEndTime = licenseEndTime + gracePeriodMs;
-      const shouldExpire = graceDeadlineTime >= graceEndTime;
-      
-      if (shouldExpire) {
-        const hoursSinceGraceEnd = (graceDeadlineTime - graceEndTime) / (1000 * 60 * 60);
-        console.log(`  License ${license.id} (${license.fanmarks?.emoji_combination}): ${hoursSinceGraceEnd.toFixed(1)}h overdue`);
-      }
-      
-      return shouldExpire;
-    }) || [];
+    // No filtering needed - grace_expires_at query already filtered correctly
+    const filteredGraceExpiredLicenses = graceExpiredLicenses || [];
 
     const totalLicenses = (justExpiredLicenses?.length || 0) + filteredGraceExpiredLicenses.length;
     
-    console.log(`✓ Filtered: ${filteredGraceExpiredLicenses.length} licenses ready to expire`);
+    console.log(`✓ Total to process: ${totalLicenses} licenses`);
     
     if (totalLicenses === 0) {
       const elapsed = Date.now() - startTime;
@@ -171,10 +163,18 @@ serve(async (req) => {
       
       for (const license of justExpiredLicenses) {
         try {
-          // Mark license as in grace period
+          // Calculate grace_expires_at (license_end + grace_period_days)
+          const licenseEndDate = new Date(license.license_end);
+          const graceExpiresAt = new Date(licenseEndDate);
+          graceExpiresAt.setDate(graceExpiresAt.getDate() + gracePeriodDays);
+
+          // Mark license as in grace period with grace_expires_at
           const { error: licenseUpdateError } = await supabase
             .from('fanmark_licenses')
-            .update({ status: 'grace' })
+            .update({ 
+              status: 'grace',
+              grace_expires_at: graceExpiresAt.toISOString()
+            })
             .eq('id', license.id);
 
           if (licenseUpdateError) {
@@ -194,8 +194,9 @@ serve(async (req) => {
               resource_id: license.id,
               metadata: {
                 fanmark_id: license.fanmark_id,
-                grace_started_at: new Date().toISOString(),
-                license_end: license.license_end
+                grace_started_at: now.toISOString(),
+                license_end: license.license_end,
+                grace_expires_at: graceExpiresAt.toISOString()
               }
             });
 

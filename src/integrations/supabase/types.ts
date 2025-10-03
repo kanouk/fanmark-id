@@ -189,6 +189,7 @@ export type Database = {
           excluded_at: string | null
           excluded_from_plan: string | null
           fanmark_id: string
+          grace_expires_at: string | null
           id: string
           is_initial_license: boolean
           license_end: string
@@ -203,6 +204,7 @@ export type Database = {
           excluded_at?: string | null
           excluded_from_plan?: string | null
           fanmark_id: string
+          grace_expires_at?: string | null
           id?: string
           is_initial_license?: boolean
           license_end: string
@@ -217,6 +219,7 @@ export type Database = {
           excluded_at?: string | null
           excluded_from_plan?: string | null
           fanmark_id?: string
+          grace_expires_at?: string | null
           id?: string
           is_initial_license?: boolean
           license_end?: string

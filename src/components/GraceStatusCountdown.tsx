@@ -4,23 +4,22 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { parseDateString } from '@/lib/utils';
 
 interface GraceStatusCountdownProps {
-  licenseEnd: string;
+  graceExpiresAt: string;
   className?: string;
 }
 
-export const GraceStatusCountdown = ({ licenseEnd, className }: GraceStatusCountdownProps) => {
+export const GraceStatusCountdown = ({ graceExpiresAt, className }: GraceStatusCountdownProps) => {
   const { t } = useTranslation();
   const [timeRemaining, setTimeRemaining] = useState<string>('');
 
   useEffect(() => {
-    const endTimeUTC = parseDateString(licenseEnd);
-    if (!endTimeUTC) {
+    const graceEndTimeUTC = parseDateString(graceExpiresAt);
+    if (!graceEndTimeUTC) {
       setTimeRemaining('--:--:--');
       return;
     }
 
     const updateCountdown = () => {
-      const graceEndTimeUTC = new Date(endTimeUTC.getTime() + 24 * 60 * 60 * 1000);
       const nowUTC = new Date(); // Current time in UTC
       const diff = graceEndTimeUTC.getTime() - nowUTC.getTime();
 
@@ -40,7 +39,7 @@ export const GraceStatusCountdown = ({ licenseEnd, className }: GraceStatusCount
     const interval = setInterval(updateCountdown, 1000);
 
     return () => clearInterval(interval);
-  }, [licenseEnd]);
+  }, [graceExpiresAt]);
 
   return (
     <div className={`flex flex-col items-start gap-2 ${className}`}>

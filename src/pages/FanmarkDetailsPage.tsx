@@ -183,6 +183,8 @@ export default function FanmarkDetailsPage() {
                           <td className="px-4 py-3 text-foreground">
                             {item.status === 'expired' && item.excluded_at 
                               ? formatDateTime(item.excluded_at)
+                              : item.status === 'grace' && item.grace_expires_at
+                              ? formatDateTime(item.grace_expires_at)
                               : formatDateTime(item.license_end)}
                           </td>
                           <td className="px-4 py-3">

@@ -41,6 +41,7 @@ interface Fanmark {
   fanmark_licenses?: {
     license_start: string;
     license_end: string;
+    grace_expires_at?: string | null;
     status: string;
     plan_excluded?: boolean;
     excluded_at?: string | null;
@@ -156,6 +157,7 @@ export const FanmarkDashboard = () => {
           fanmark_id,
           license_start,
           license_end,
+          grace_expires_at,
           status,
           plan_excluded,
           excluded_at,
@@ -227,6 +229,7 @@ export const FanmarkDashboard = () => {
           fanmark_licenses: {
             license_start: license.license_start,
             license_end: license.license_end,
+            grace_expires_at: license.grace_expires_at,
             status: license.status,
             plan_excluded: license.plan_excluded,
             excluded_at: license.excluded_at,
@@ -587,13 +590,13 @@ export const FanmarkDashboard = () => {
                                      )}
                                    </div>
                                  </td>
-                                 <td className="px-6 py-5">
-                                   <div className="min-h-[2.5rem] flex items-center gap-2">
-                                     {licenseData?.status === 'grace' && licenseData?.license_end ? (
-                                       <GraceStatusCountdown
-                                         licenseEnd={licenseData.license_end}
-                                       />
-                                     ) : !isReturned(fanmark) && daysRemaining !== null && daysRemaining >= 0 ? (
+                                  <td className="px-6 py-5">
+                                    <div className="min-h-[2.5rem] flex items-center gap-2">
+                                      {licenseData?.status === 'grace' && licenseData?.grace_expires_at ? (
+                                        <GraceStatusCountdown
+                                          graceExpiresAt={licenseData.grace_expires_at}
+                                        />
+                                      ) : !isReturned(fanmark) && daysRemaining !== null && daysRemaining >= 0 ? (
                                        <>
                                          <div className={`text-sm font-medium whitespace-nowrap ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`}>
                                            {t('dashboard.daysRemaining', { days: daysRemaining })}
@@ -810,10 +813,10 @@ export const FanmarkDashboard = () => {
                                      <div className="text-xs text-muted-foreground font-medium mb-1">
                                        {t('dashboard.remainingDays')}
                                      </div>
-                                     <div className="flex items-center gap-2">
-                                       {licenseData?.status === 'grace' && licenseData?.license_end ? (
-                                         <GraceStatusCountdown licenseEnd={licenseData.license_end} />
-                                       ) : !isReturned(fanmark) && daysRemaining !== null && daysRemaining >= 0 ? (
+                                      <div className="flex items-center gap-2">
+                                        {licenseData?.status === 'grace' && licenseData?.grace_expires_at ? (
+                                          <GraceStatusCountdown graceExpiresAt={licenseData.grace_expires_at} />
+                                        ) : !isReturned(fanmark) && daysRemaining !== null && daysRemaining >= 0 ? (
                                          <span className={`text-sm font-medium whitespace-nowrap ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`}>
                                            {t('dashboard.daysRemaining', { days: daysRemaining })}
                                          </span>

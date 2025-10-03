@@ -345,18 +345,40 @@ serve(async (req) => {
           { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      const { data: existingActiveLicense } = await supabase
+      // Check for active license or grace period license
+      const { data: existingLicense } = await supabase
         .from('fanmark_licenses')
-        .select('id')
+        .select('id, status, grace_expires_at')
         .eq('fanmark_id', existingFanmark.id)
-        .eq('status', 'active')
-        .gt('license_end', new Date().toISOString())
+        .in('status', ['active', 'grace'])
         .maybeSingle();
-      if (existingActiveLicense) {
-        return new Response(
-          JSON.stringify({ error: 'This emoji combination is already taken' }),
-          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+      
+      if (existingLicense) {
+        // If active, it's taken
+        if (existingLicense.status === 'active') {
+          return new Response(
+            JSON.stringify({ error: 'This emoji combination is already taken' }),
+            { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        // If grace, check if grace period has expired
+        if (existingLicense.status === 'grace' && existingLicense.grace_expires_at) {
+          const graceExpiresAt = new Date(existingLicense.grace_expires_at);
+          const now = new Date();
+          
+          if (graceExpiresAt > now) {
+            // Still in grace period - cannot acquire
+            return new Response(
+              JSON.stringify({ 
+                error: 'This fanmark is in grace period and cannot be acquired yet',
+                available_at: existingLicense.grace_expires_at,
+                type: 'grace_period'
+              }),
+              { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        }
       }
     }
 
@@ -469,7 +491,8 @@ serve(async (req) => {
         user_id: user.id,
         license_end: licenseEndDate.toISOString(),
         status: 'active',
-        is_initial_license: true
+        is_initial_license: true,
+        grace_expires_at: null  // Explicitly set to null for new licenses
       })
       .select('id')
       .single();

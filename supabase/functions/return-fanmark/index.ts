@@ -103,13 +103,30 @@ serve(async (req) => {
       });
     }
 
-    // Expire the license and record the actual exclusion time
-    const now = new Date().toISOString();
+    // Get grace period setting
+    const { data: gracePeriodSetting } = await supabase
+      .from('system_settings')
+      .select('setting_value')
+      .eq('setting_key', 'grace_period_days')
+      .single();
+    
+    const gracePeriodDays = gracePeriodSetting?.setting_value 
+      ? parseInt(gracePeriodSetting.setting_value, 10) 
+      : 2; // Default 2 days (48 hours)
+
+    // Calculate grace_expires_at (now + grace period)
+    const now = new Date();
+    const graceExpiresAt = new Date(now);
+    graceExpiresAt.setDate(graceExpiresAt.getDate() + gracePeriodDays);
+
+    // Update license status to grace (not expired immediately)
+    // During grace period, user cannot re-acquire this fanmark
     const { error: expireLicenseError } = await supabase
       .from('fanmark_licenses')
       .update({ 
-        status: 'expired',
-        excluded_at: now
+        status: 'grace',
+        grace_expires_at: graceExpiresAt.toISOString(),
+        excluded_at: null  // Will be set when grace → expired
       })
       .eq('id', activeLicense.id);
 
@@ -121,29 +138,9 @@ serve(async (req) => {
       });
     }
 
-    // Set access_type to inactive in basic config
-    const { error: basicConfigError } = await supabase
-      .from('fanmark_basic_configs')
-      .update({ access_type: 'inactive' })
-      .eq('fanmark_id', fanmark_id);
-
-    if (basicConfigError) {
-      console.warn('Failed to update basic config:', basicConfigError);
-    }
-
-    // Clean up configuration tables using license_id
-    const deleteOperations = [
-      supabase.from('fanmark_redirect_configs').delete().eq('license_id', activeLicense.id),
-      supabase.from('fanmark_messageboard_configs').delete().eq('license_id', activeLicense.id),
-      supabase.from('fanmark_password_configs').delete().eq('license_id', activeLicense.id)
-    ];
-
-    const deleteResults = await Promise.allSettled(deleteOperations);
-    deleteResults.forEach((result, index) => {
-      if (result.status === 'rejected') {
-        console.warn(`Failed to delete config ${index}:`, result.reason);
-      }
-    });
+    // Keep configurations during grace period
+    // They will be cleaned up when grace → expired transition happens
+    // This allows users to still view their fanmark during grace period
 
     // Log the return action
     const { error: auditError } = await supabase
@@ -155,7 +152,8 @@ serve(async (req) => {
         resource_id: fanmark_id,
         metadata: {
           fanmark_emoji: fanmark.emoji_combination,
-          returned_at: new Date().toISOString(),
+          returned_at: now.toISOString(),
+          grace_expires_at: graceExpiresAt.toISOString(),
         },
       });
 

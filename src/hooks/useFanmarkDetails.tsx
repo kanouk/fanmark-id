@@ -25,6 +25,7 @@ export interface FanmarkDetails {
 export interface LicenseHistoryItem {
   license_start: string;
   license_end: string;
+  grace_expires_at?: string | null;
   excluded_at?: string | null;
   username?: string;
   display_name?: string;
@@ -65,6 +66,7 @@ export const useFanmarkDetails = (shortId: string | undefined) => {
             ? fanmarkData.license_history.map((item: any) => ({
                 license_start: item.license_start,
                 license_end: item.license_end,
+                grace_expires_at: item.grace_expires_at ?? null,
                 excluded_at: item.excluded_at ?? null,
                 username: item.username,
                 display_name: item.display_name,
