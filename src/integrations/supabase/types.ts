@@ -681,6 +681,7 @@ export type Database = {
       get_fanmark_details_by_short_id: {
         Args: { shortid_param: string }
         Returns: {
+          current_grace_expires_at: string
           current_license_end: string
           current_license_id: string
           current_license_start: string

@@ -14,6 +14,7 @@ export interface FanmarkDetails {
   current_license_start?: string;
   current_license_end?: string;
   current_license_status?: string;
+  current_grace_expires_at?: string;
   is_currently_active: boolean;
   first_acquired_date?: string;
   first_owner_username?: string;
