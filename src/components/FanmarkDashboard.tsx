@@ -76,6 +76,7 @@ interface Fanmark {
     license_end: string;
     grace_expires_at?: string | null;
     status: string;
+    is_returned?: boolean | null;
     plan_excluded?: boolean;
     excluded_at?: string | null;
     excluded_from_plan?: string | null;
@@ -192,6 +193,7 @@ export const FanmarkDashboard = () => {
           license_end,
           grace_expires_at,
           status,
+          is_returned,
           plan_excluded,
           excluded_at,
           excluded_from_plan,
@@ -264,6 +266,7 @@ export const FanmarkDashboard = () => {
             license_end: license.license_end,
             grace_expires_at: license.grace_expires_at,
             status: license.status,
+            is_returned: license.is_returned,
             plan_excluded: license.plan_excluded,
             excluded_at: license.excluded_at,
             excluded_from_plan: license.excluded_from_plan
@@ -297,6 +300,7 @@ export const FanmarkDashboard = () => {
       graceExpiresAt: licenseData?.grace_expires_at ?? null,
       status: licenseData?.status ?? null,
       gracePeriodDays: gracePeriodDaysSetting,
+      isReturned: licenseData?.is_returned ?? null,
     });
   };
 
@@ -353,8 +357,7 @@ export const FanmarkDashboard = () => {
   // Helper function to determine if a fanmark is returned/expired
   const isReturned = (fanmark: Fanmark) => {
     const licenseData = fanmark.fanmark_licenses as any;
-    const timing = getLicenseTiming(licenseData);
-    return timing.status === 'expired';
+    return Boolean(licenseData?.is_returned);
   };
 
   const getTierOvalStyle = (tierLevel: number) => {

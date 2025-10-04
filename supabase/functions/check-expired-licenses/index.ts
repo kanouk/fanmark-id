@@ -192,7 +192,8 @@ serve(async (req) => {
             .from('fanmark_licenses')
             .update({ 
               status: 'grace',
-              grace_expires_at: graceExpiresAt.toISOString()
+              grace_expires_at: graceExpiresAt.toISOString(),
+              is_returned: false
             })
             .eq('id', license.id);
 

@@ -67,7 +67,7 @@ export default function FanmarkDetailsPage() {
     });
   };
 
-  const licenseStatusMeta = (status: string, licenseEnd?: string | null) => {
+  const licenseStatusMeta = (status: string, isReturned?: boolean) => {
     const normalized = status?.toLowerCase?.() ?? '';
     switch (normalized) {
       case 'active':
@@ -78,8 +78,7 @@ export default function FanmarkDetailsPage() {
       case 'grace':
       case 'grace_period':
         {
-          const parsedEnd = licenseEnd ? parseDateString(licenseEnd) : null;
-          const isReturnProcessing = parsedEnd ? parsedEnd.getTime() > Date.now() : false;
+          const isReturnProcessing = Boolean(isReturned);
           return {
             label: isReturnProcessing
               ? t('fanmarkDetails.statusReturnProcessing')
@@ -187,16 +186,12 @@ export default function FanmarkDetailsPage() {
                   <tbody className="divide-y divide-border/60">
                     {details.license_history.map((item, index) => {
                       const holder = item.display_name || (item.username ? `@${item.username}` : '—');
-                      const statusMeta = licenseStatusMeta(item.status, item.license_end);
+                      const statusMeta = licenseStatusMeta(item.status, item.is_returned);
                       return (
                         <tr key={`${item.license_start}-${index}`} className="bg-background">
                           <td className="px-4 py-3 text-foreground">{formatDateTime(item.license_start)}</td>
                           <td className="px-4 py-3 text-foreground">
-                            {item.status === 'expired' && item.excluded_at 
-                              ? formatDateTime(item.excluded_at)
-                              : item.status === 'grace' && item.grace_expires_at
-                              ? formatDateTime(item.grace_expires_at)
-                              : formatDateTime(item.license_end)}
+                            {formatDateTime(item.license_end)}
                           </td>
                           <td className="px-4 py-3">
                             <Badge className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide ${statusMeta.className}`}>

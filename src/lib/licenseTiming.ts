@@ -30,6 +30,7 @@ export interface LicenseTimingInput {
   graceExpiresAt?: string | null;
   status?: string | null;
   gracePeriodDays?: number | null;
+  isReturned?: boolean | null;
 }
 
 export interface LicenseTimingResult {
@@ -58,6 +59,7 @@ export function deriveLicenseTiming(input: LicenseTimingInput): LicenseTimingRes
       : null;
 
   const normalizedStatus = input.status?.toLowerCase() ?? '';
+  const isReturnedFlag = Boolean(input.isReturned);
   const licenseEndTime = licenseEndDate?.getTime() ?? null;
   const graceExpiryTime = graceExpiresDate?.getTime() ?? null;
   const nowTime = now.getTime();
@@ -65,7 +67,7 @@ export function deriveLicenseTiming(input: LicenseTimingInput): LicenseTimingRes
   let derived: DerivedLicenseStatus;
 
   if (normalizedStatus === 'grace') {
-    if (licenseEndTime !== null && licenseEndTime > nowTime) {
+    if (isReturnedFlag) {
       derived = 'grace-return';
     } else if (graceExpiryTime !== null && graceExpiryTime > nowTime) {
       derived = 'grace';

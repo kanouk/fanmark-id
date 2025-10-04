@@ -144,6 +144,7 @@ serve(async (req) => {
         status: 'grace',
         license_end: updatedLicenseEnd,
         grace_expires_at: graceExpiresAt.toISOString(),
+        is_returned: true,
         excluded_at: null  // Will be set when grace → expired
       })
       .eq('id', activeLicense.id);

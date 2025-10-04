@@ -15,6 +15,7 @@ export interface FanmarkDetails {
   current_license_end?: string;
   current_license_status?: string;
   current_grace_expires_at?: string;
+  current_is_returned?: boolean;
   is_currently_active: boolean;
   first_acquired_date?: string;
   first_owner_username?: string;
@@ -28,6 +29,7 @@ export interface LicenseHistoryItem {
   license_end: string;
   grace_expires_at?: string | null;
   excluded_at?: string | null;
+  is_returned?: boolean;
   username?: string;
   display_name?: string;
   status: string;
@@ -61,14 +63,15 @@ export const useFanmarkDetails = (shortId: string | undefined) => {
         setDetails(null);
       } else {
         const fanmarkData = data[0];
-        setDetails({
-          ...fanmarkData,
+       setDetails({
+         ...fanmarkData,
           license_history: Array.isArray(fanmarkData.license_history) 
             ? fanmarkData.license_history.map((item: any) => ({
                 license_start: item.license_start,
                 license_end: item.license_end,
                 grace_expires_at: item.grace_expires_at ?? null,
                 excluded_at: item.excluded_at ?? null,
+                is_returned: item.is_returned ?? false,
                 username: item.username,
                 display_name: item.display_name,
                 status: item.status,
