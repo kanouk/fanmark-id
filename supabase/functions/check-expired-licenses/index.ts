@@ -6,6 +6,22 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Round up to next UTC midnight (0:00:00.000)
+function roundUpToNextUtcMidnight(input: Date): Date {
+  const d = new Date(input);
+  if (
+    d.getUTCHours() === 0 &&
+    d.getUTCMinutes() === 0 &&
+    d.getUTCSeconds() === 0 &&
+    d.getUTCMilliseconds() === 0
+  ) {
+    return d; // Already at UTC midnight
+  }
+  d.setUTCHours(0, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d;
+}
+
 serve(async (req) => {
   const startTime = Date.now();
   console.log('=== LICENSE EXPIRATION CHECK STARTED ===', new Date().toISOString());
@@ -164,9 +180,11 @@ serve(async (req) => {
       for (const license of justExpiredLicenses) {
         try {
           // Calculate grace_expires_at (license_end + grace_period_days)
+          // Round up to next UTC midnight for consistent batch processing
           const licenseEndDate = new Date(license.license_end);
-          const graceExpiresAt = new Date(licenseEndDate);
-          graceExpiresAt.setDate(graceExpiresAt.getDate() + gracePeriodDays);
+          const base = new Date(licenseEndDate);
+          base.setDate(base.getDate() + gracePeriodDays);
+          const graceExpiresAt = roundUpToNextUtcMidnight(base);
 
           // Mark license as in grace period with grace_expires_at
           const { error: licenseUpdateError } = await supabase

@@ -6,6 +6,22 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Round up to next UTC midnight (0:00:00.000)
+function roundUpToNextUtcMidnight(input: Date): Date {
+  const d = new Date(input);
+  if (
+    d.getUTCHours() === 0 &&
+    d.getUTCMinutes() === 0 &&
+    d.getUTCSeconds() === 0 &&
+    d.getUTCMilliseconds() === 0
+  ) {
+    return d; // Already at UTC midnight
+  }
+  d.setUTCHours(0, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d;
+}
+
 interface ReturnRequestBody {
   fanmark_id: string;
 }
@@ -115,9 +131,11 @@ serve(async (req) => {
       : 2; // Default 2 days (48 hours)
 
     // Calculate grace_expires_at (now + grace period)
+    // Round up to next UTC midnight for consistent batch processing
     const now = new Date();
-    const graceExpiresAt = new Date(now);
-    graceExpiresAt.setDate(graceExpiresAt.getDate() + gracePeriodDays);
+    const base = new Date(now);
+    base.setDate(base.getDate() + gracePeriodDays);
+    const graceExpiresAt = roundUpToNextUtcMidnight(base);
 
     // Update license status to grace (not expired immediately)
     // During grace period, user cannot re-acquire this fanmark

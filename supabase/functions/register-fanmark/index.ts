@@ -248,6 +248,22 @@ function getFirstEmoji(emoji: string): string | null {
   return null;
 }
 
+// Round up to next UTC midnight (0:00:00.000)
+function roundUpToNextUtcMidnight(input: Date): Date {
+  const d = new Date(input);
+  if (
+    d.getUTCHours() === 0 &&
+    d.getUTCMinutes() === 0 &&
+    d.getUTCSeconds() === 0 &&
+    d.getUTCMilliseconds() === 0
+  ) {
+    return d; // Already at UTC midnight
+  }
+  d.setUTCHours(0, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -481,8 +497,11 @@ serve(async (req) => {
     }
 
     // Create initial license for the fanmark
-    const licenseEndDate = new Date();
-    licenseEndDate.setDate(licenseEndDate.getDate() + tierConfig.initial_license_days);
+    // Round up to next UTC midnight for consistent batch processing
+    const now = new Date();
+    const licenseEndRaw = new Date(now);
+    licenseEndRaw.setDate(licenseEndRaw.getDate() + tierConfig.initial_license_days);
+    const licenseEndDate = roundUpToNextUtcMidnight(licenseEndRaw);
 
     const { data: license, error: licenseError } = await supabase
       .from('fanmark_licenses')
