@@ -363,6 +363,18 @@
       "name": "管理者"
     }
   },
+  "qr": {
+    "title": "SCAN & SHARE",
+    "subtitle": "ファンマ QR",
+    "titleFallback": "ファンマ QR",
+    "description": "お友だちやファンにファンマIDを伝えよう！",
+    "copyButton": "ショートリンクをコピー",
+    "copySuccessTitle": "ショートリンクをコピーしました",
+    "copyErrorTitle": "コピーできませんでした",
+    "copyErrorDescription": "もう一度お試しください。",
+    "loadErrorTitle": "ファンマ情報を読み込めませんでした",
+    "loadErrorDescription": "ファンマが利用できないか、リンクが正しくない可能性があります。"
+  },
   "planDowngrade": {
     "modalTitle": "プラン変更に伴うファンマ選択",
     "newPlanLimit": "新プランでは{limit}個まで保持可能です",
@@ -564,6 +576,7 @@
     "actionsCopyLink": "ファンマリンクをコピーする",
     "copyFanmarkLink": "ファンマリンクをコピーする",
     "actionsSettings": "設定を開く",
+    "actionsQRCode": "QRコードを表示",
     "returnConfirmTitle": "このファンマを返却しますか？",
     "returnConfirmDescription": "ファンマが非アクティブになり、アクセス権限を失います。この操作は取り消せません。",
     "returnConfirmAction": "返却する",
@@ -575,6 +588,7 @@
     "emojiCopiedTitle": "絵文字をコピーしました",
     "urlCopiedTitle": "コピーしました",
     "visitFanmarkTooltip": "ファンマに移動",
+    "qrTooltip": "QRコードページを開く",
     "clickToCopyEmoji": "クリックして絵文字をコピー",
     "sortBy": "並び替え",
     "sortByAcquisition": "取得日順（新しい順）",

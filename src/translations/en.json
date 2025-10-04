@@ -363,6 +363,18 @@
       "name": "Admin"
     }
   },
+  "qr": {
+    "title": "Scan & Share",
+    "subtitle": "Show this fanmark to the world",
+    "titleFallback": "Fanmark QR",
+    "description": "Use this QR code to guide friends straight to your fanmark page. It links to the short URL so anyone can visit instantly.",
+    "copyButton": "Copy short link",
+    "copySuccessTitle": "Short link copied",
+    "copyErrorTitle": "Copy failed",
+    "copyErrorDescription": "Please try again.",
+    "loadErrorTitle": "Could not load this fanmark",
+    "loadErrorDescription": "The fanmark may be unavailable or the link might be incorrect."
+  },
   "planDowngrade": {
     "modalTitle": "Fanma Selection for Plan Change",
     "newPlanLimit": "New plan allows up to {limit} fanmas",
@@ -561,6 +573,7 @@
     "actionsCopyLink": "Copy URL",
     "copyFanmarkLink": "Copy fanmark link",
     "actionsSettings": "Open settings",
+    "actionsQRCode": "Show QR code",
     "actionsReturn": "Return fanmark",
     "returnConfirmTitle": "Return this fanmark?",
     "returnConfirmDescription": "This fanmark will become inactive and you will lose access. This action cannot be undone.",
@@ -576,6 +589,7 @@
     "emojiCopiedTitle": "Emoji copied",
     "urlCopiedTitle": "Copied",
     "visitFanmarkTooltip": "Visit fanmark",
+    "qrTooltip": "Open QR code page",
     "clickToCopyEmoji": "Click to copy emoji",
     "sortBy": "Sort by",
     "sortByAcquisition": "Acquisition date (newest)",

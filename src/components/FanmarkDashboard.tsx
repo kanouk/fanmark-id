@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useTranslation } from '@/hooks/useTranslation';
-import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy, Undo2 } from 'lucide-react';
+import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy, Undo2, QrCode } from 'lucide-react';
 import { FiTarget, FiLayers, FiCompass, FiStar, FiCheckCircle, FiMoon, FiUser, FiLink, FiFileText } from 'react-icons/fi';
 import { FanmarkAcquisition } from './FanmarkAcquisition';
 // Using Undo2 for return/return action
@@ -760,6 +760,22 @@ export const FanmarkDashboard = () => {
                                          </TooltipTrigger>
                                          <TooltipContent>{t('dashboard.visitFanmarkTooltip')}</TooltipContent>
                                        </Tooltip>
+                                       {fanmark.short_id && (
+                                         <Tooltip>
+                                           <TooltipTrigger asChild>
+                                             <Button
+                                               size="sm"
+                                               variant="ghost"
+                                               className="h-9 w-9 p-0 rounded-full hover:bg-primary/10 transition-colors"
+                                               onClick={() => navigate(`/q/${fanmark.short_id}`)}
+                                               aria-label={t('dashboard.actionsQRCode')}
+                                             >
+                                               <QrCode className="h-4 w-4" />
+                                             </Button>
+                                           </TooltipTrigger>
+                                           <TooltipContent>{t('dashboard.qrTooltip')}</TooltipContent>
+                                         </Tooltip>
+                                       )}
                                        <Tooltip>
                                          <TooltipTrigger asChild>
                                            <Button
@@ -976,27 +992,43 @@ export const FanmarkDashboard = () => {
 
                                   <div className="flex items-center justify-between pt-2">
                                     <div className="flex items-center gap-2">
-                                       <Tooltip>
-                                         <TooltipTrigger asChild>
-                                           <Button
-                                             size="sm"
-                                             variant="ghost"
-                                             className="h-8 w-8 p-0 hover:bg-secondary"
-                                             onClick={() => {
-                                               navigateToFanmark(fanmark.emoji_combination, true);
-                                             }}
-                                             aria-label={t('common.visitFanmarkAriaLabel')}
-                                           >
-                                              <ExternalLink className="h-4 w-4" />
-                                           </Button>
-                                         </TooltipTrigger>
-                                         <TooltipContent>{t('dashboard.visitFanmarkTooltip')}</TooltipContent>
-                                       </Tooltip>
-                                       <Tooltip>
-                                         <TooltipTrigger asChild>
-                                           <Button
-                                             size="sm"
-                                             variant="ghost"
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-8 w-8 p-0 hover:bg-secondary"
+                                            onClick={() => {
+                                              navigateToFanmark(fanmark.emoji_combination, true);
+                                            }}
+                                            aria-label={t('common.visitFanmarkAriaLabel')}
+                                          >
+                                             <ExternalLink className="h-4 w-4" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>{t('dashboard.visitFanmarkTooltip')}</TooltipContent>
+                                      </Tooltip>
+                                      {fanmark.short_id && (
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              className="h-8 w-8 p-0 hover:bg-secondary"
+                                              onClick={() => navigate(`/q/${fanmark.short_id}`)}
+                                              aria-label={t('dashboard.actionsQRCode')}
+                                            >
+                                              <QrCode className="h-4 w-4" />
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>{t('dashboard.qrTooltip')}</TooltipContent>
+                                        </Tooltip>
+                                      )}
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
                                              className="h-8 w-8 p-0 hover:bg-secondary"
                                              onClick={() => {
                                                const fullUrl = getFanmarkUrlForClipboard(fanmark.emoji_combination);

@@ -153,6 +153,13 @@ export const getFanmarkUrlForClipboard = (emoji: string, baseUrl?: string): stri
   return `${base}/${emoji}`;
 };
 
+export const getFanmarkShortUrl = (shortId: string, baseUrl?: string): string => {
+  if (!shortId) return '';
+
+  const base = baseUrl || window.location.origin;
+  return `${base}/a/${shortId}`;
+};
+
 /**
  * URLからアドレスバーの表示を更新
  * History APIを使用してエンコードされたURLを絵文字表示に変更

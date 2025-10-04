@@ -23,6 +23,7 @@ import { FanmarkAccess } from "./components/FanmarkAccess";
 import { FanmarkAccessByShortId } from "./components/FanmarkAccessByShortId";
 import FanmarkDetailsPage from "./pages/FanmarkDetailsPage";
 import PlanSelection from "./pages/PlanSelection";
+import FanmarkPublicQR from "./pages/FanmarkPublicQR";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,7 @@ const MainApp = () => (
             <Route path="/fanmarks/:fanmarkId/profile/edit" element={<EmojiProfileEdit />} />
             <Route path="/fanmarks/:fanmarkId/profile/preview" element={<FanmarkProfilePreview />} />
             <Route path="/fanmarks/:fanmarkId/messageboard/preview" element={<FanmarkMessageboardPreview />} />
+            <Route path="/q/:shortId" element={<FanmarkPublicQR />} />
             {/* Short ID route for clean URLs */}
             <Route path="/a/:shortId" element={<FanmarkAccessByShortId />} />
             {/* Fanmark details route - must come before emojiPath */}
