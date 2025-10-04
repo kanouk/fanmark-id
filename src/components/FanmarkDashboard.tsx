@@ -292,9 +292,8 @@ export const FanmarkDashboard = () => {
   const gracePeriodDaysSetting = settings?.grace_period_days ?? null;
 
   const getLicenseTiming = (licenseData: Fanmark['fanmark_licenses']) => {
-    const effectiveEnd = licenseData?.excluded_at ?? licenseData?.license_end ?? null;
     return deriveLicenseTiming({
-      licenseEnd: effectiveEnd,
+      licenseEnd: licenseData?.license_end ?? null,
       graceExpiresAt: licenseData?.grace_expires_at ?? null,
       status: licenseData?.status ?? null,
       gracePeriodDays: gracePeriodDaysSetting,
@@ -575,6 +574,7 @@ export const FanmarkDashboard = () => {
                           <thead>
                               <tr className="bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 border-b border-primary/10">
                                 <th className="text-muted-foreground font-medium text-xs uppercase tracking-wide text-left px-6 py-4">{t('dashboard.fanmark')}</th>
+                                <th className="text-muted-foreground font-medium text-xs uppercase tracking-wide text-left px-6 py-4">{t('dashboard.fanmarkId')}</th>
                                 <th className="text-muted-foreground font-medium text-xs uppercase tracking-wide text-left px-6 py-4">{t('dashboard.accessType')}</th>
                                 <th className="text-muted-foreground font-medium text-xs uppercase tracking-wide text-left px-6 py-4">{t('dashboard.acquisitionDate')}</th>
                                  <th className="text-muted-foreground font-medium text-xs uppercase tracking-wide text-left px-6 py-4">{t('dashboard.returnDate')}</th>
@@ -592,7 +592,7 @@ export const FanmarkDashboard = () => {
                               const timing = getLicenseTiming(licenseData);
                               const expirationDateUTC = timing.licenseEndDate;
                               const msRemaining = timing.remainingMs;
-                              const daysRemaining = timing.remainingCalendarDays;
+                              const daysRemaining = timing.remainingWholeDays;
                               const isExpiringSoon = msRemaining !== null && msRemaining > 0 && msRemaining <= 3 * 24 * 60 * 60 * 1000;
                               const isCountdownActive = msRemaining !== null && msRemaining > 0 && msRemaining <= 24 * 60 * 60 * 1000;
                               const timeDisplayClass = `font-medium whitespace-nowrap ${isCountdownActive ? 'text-xs' : 'text-sm'} ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`;
@@ -607,7 +607,7 @@ export const FanmarkDashboard = () => {
                               return (
                                 <tr key={rowKey} className={`border-b border-primary/5 transition-all duration-200 ${rowVisualState}`}>
                                        <td className="px-6 py-5">
-                                         <div className="min-h-[2.5rem] flex items-end gap-3">
+                                         <div className="min-h-[2.5rem] flex items-end">
                                            <div
                                              className={`flex items-center px-4 py-3 rounded-full shadow-sm transition-transform hover:scale-105 whitespace-nowrap cursor-pointer ${getTierOvalStyle(fanmark.tier_level || 1)}`}
                                              onClick={() => {
@@ -621,21 +621,25 @@ export const FanmarkDashboard = () => {
                                            >
                                              <span className="text-2xl leading-none select-none" style={{ letterSpacing: '0.2em' }}>{fanmark.emoji_combination}</span>
                                            </div>
-                                           <Tooltip>
-                                             <TooltipTrigger asChild>
-                                               <button
-                                                 type="button"
-                                                 onClick={() => navigate(`/f/${fanmark.short_id}`)}
-                                                 className="rounded-full border border-border/50 bg-muted/60 px-3 py-1 text-[0.7rem] font-medium tracking-wide text-muted-foreground transition-colors hover:bg-muted/80"
-                                                 aria-label={t('dashboard.viewDetails')}
-                                               >
-                                                 {fanmark.short_id}
-                                               </button>
-                                             </TooltipTrigger>
-                                             <TooltipContent>{t('dashboard.viewDetails')}</TooltipContent>
-                                           </Tooltip>
                                          </div>
                                       </td>
+                                <td className="px-6 py-5">
+                                  <div className="min-h-[2.5rem] flex items-center">
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button
+                                          type="button"
+                                          onClick={() => navigate(`/f/${fanmark.short_id}`)}
+                                          className="rounded-full border border-border/50 bg-muted/60 px-3 py-1 text-[0.7rem] font-medium tracking-wide text-muted-foreground transition-colors hover:bg-muted/80"
+                                          aria-label={t('dashboard.viewDetails')}
+                                        >
+                                          {fanmark.short_id}
+                                        </button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>{t('dashboard.viewDetails')}</TooltipContent>
+                                    </Tooltip>
+                                  </div>
+                                </td>
                                 <td className="px-6 py-5">
                                   <div className="min-h-[2.5rem] flex items-center min-w-fit">
                                     {!isFanmarkInactive(fanmark) && timing.status === 'active' && getAccessTypeBadge(fanmark.access_type)}
@@ -805,7 +809,7 @@ export const FanmarkDashboard = () => {
                         const timing = getLicenseTiming(licenseData);
                         const expirationDate = timing.licenseEndDate;
                         const msRemainingMobile = timing.remainingMs;
-                        const daysRemaining = timing.remainingCalendarDays;
+                        const daysRemaining = timing.remainingWholeDays;
                         const isExpiringSoon = msRemainingMobile !== null && msRemainingMobile > 0 && msRemainingMobile <= 3 * 24 * 60 * 60 * 1000;
                         const isCountdownActiveMobile = msRemainingMobile !== null && msRemainingMobile > 0 && msRemainingMobile <= 24 * 60 * 60 * 1000;
                         const mobileTimeDisplayClass = `font-medium whitespace-nowrap ${isCountdownActiveMobile ? 'text-xs' : 'text-sm'} ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`;
@@ -821,36 +825,23 @@ export const FanmarkDashboard = () => {
                           <Card key={cardKey} className={`rounded-3xl border border-primary/10 transition-colors ${cardVisualState}`}>
                             <CardContent className="p-5">
                               <div className="space-y-3">
-                                  <div className="flex items-start justify-between">
-                                     <div className="flex items-end gap-3">
-                                       <div
-                                         className={`flex items-center px-3 py-2 rounded-full cursor-pointer hover:scale-105 transition-transform ${getTierOvalStyle(fanmark.tier_level || 1)}`}
-                                         onClick={() => {
-                                           navigator.clipboard.writeText(fanmark.emoji_combination);
-                                           toast({
-                                             title: t('dashboard.emojiCopiedTitle'),
-                                             description: fanmark.emoji_combination,
-                                           });
-                                         }}
-                                         title={t('dashboard.clickToCopyEmoji')}
-                                       >
-                                         <span className="text-3xl leading-none select-none" style={{ letterSpacing: '0.2em' }}>{fanmark.emoji_combination}</span>
-                                       </div>
-                                       <Tooltip>
-                                         <TooltipTrigger asChild>
-                                           <button
-                                             type="button"
-                                             onClick={() => navigate(`/f/${fanmark.short_id}`)}
-                                             className="rounded-full border border-border/50 bg-muted/60 px-3 py-1 text-[0.7rem] font-medium tracking-wide text-muted-foreground transition-colors hover:bg-muted/80"
-                                             aria-label={t('dashboard.viewDetails')}
-                                           >
-                                             {fanmark.short_id}
-                                           </button>
-                                         </TooltipTrigger>
-                                         <TooltipContent>{t('dashboard.viewDetails')}</TooltipContent>
-                                       </Tooltip>
-                                     </div>
-                                  </div>
+                                     <div className="flex items-start justify-between">
+                                    <div className="flex items-end gap-3">
+                                      <div
+                                        className={`flex items-center px-3 py-2 rounded-full cursor-pointer hover:scale-105 transition-transform ${getTierOvalStyle(fanmark.tier_level || 1)}`}
+                                        onClick={() => {
+                                          navigator.clipboard.writeText(fanmark.emoji_combination);
+                                          toast({
+                                            title: t('dashboard.emojiCopiedTitle'),
+                                            description: fanmark.emoji_combination,
+                                          });
+                                        }}
+                                        title={t('dashboard.clickToCopyEmoji')}
+                                      >
+                                        <span className="text-3xl leading-none select-none" style={{ letterSpacing: '0.2em' }}>{fanmark.emoji_combination}</span>
+                                      </div>
+                                    </div>
+                                 </div>
 
                                   <div className="space-y-2">
                                     <div className="flex items-center justify-between gap-2">
@@ -860,6 +851,24 @@ export const FanmarkDashboard = () => {
                                       <div className="flex-shrink-0">
                                         {getStatusBadge(timing, licenseData?.plan_excluded)}
                                       </div>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                        {t('dashboard.fanmarkId')}
+                                      </span>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <button
+                                            type="button"
+                                            onClick={() => navigate(`/f/${fanmark.short_id}`)}
+                                            className="rounded-full border border-border/50 bg-muted/60 px-3 py-1 text-[0.7rem] font-medium tracking-wide text-muted-foreground transition-colors hover:bg-muted/80"
+                                            aria-label={t('dashboard.viewDetails')}
+                                          >
+                                            {fanmark.short_id}
+                                          </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>{t('dashboard.viewDetails')}</TooltipContent>
+                                      </Tooltip>
                                     </div>
                                     {licenseData?.plan_excluded && (
                                       <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-2">

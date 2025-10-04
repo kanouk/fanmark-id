@@ -62,7 +62,8 @@ serve(async (req) => {
       throw new Error(`Failed to fetch grace period: ${gracePeriodError.message}`);
     }
 
-    const gracePeriodDays = parseInt(gracePeriodData?.setting_value || '1', 10);
+    const gracePeriodDaysRaw = gracePeriodData?.setting_value ? parseInt(gracePeriodData.setting_value, 10) : NaN;
+    const gracePeriodDays = Number.isFinite(gracePeriodDaysRaw) && gracePeriodDaysRaw > 0 ? gracePeriodDaysRaw : 1;
     const gracePeriodHours = gracePeriodDays * 24; // Convert to hours for precise control
     const gracePeriodMs = gracePeriodHours * 60 * 60 * 1000;
     const now = new Date();

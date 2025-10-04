@@ -1,4 +1,3 @@
-import { differenceInCalendarDays } from 'date-fns';
 import { parseDateString } from '@/lib/utils';
 
 const MS_IN_DAY = 24 * 60 * 60 * 1000;
@@ -39,7 +38,7 @@ export interface LicenseTimingResult {
   licenseEndDate: Date | null;
   graceExpiresDate: Date | null;
   remainingMs: number | null;
-  remainingCalendarDays: number | null;
+  remainingWholeDays: number | null;
 }
 
 export function deriveLicenseTiming(input: LicenseTimingInput): LicenseTimingResult {
@@ -53,7 +52,10 @@ export function deriveLicenseTiming(input: LicenseTimingInput): LicenseTimingRes
   }
 
   const remainingMs = licenseEndDate ? licenseEndDate.getTime() - now.getTime() : null;
-  const remainingCalendarDays = licenseEndDate ? differenceInCalendarDays(licenseEndDate, now) : null;
+  const remainingWholeDays =
+    remainingMs !== null
+      ? Math.floor(remainingMs / MS_IN_DAY)
+      : null;
 
   const normalizedStatus = input.status?.toLowerCase() ?? '';
   const licenseEndTime = licenseEndDate?.getTime() ?? null;
@@ -96,6 +98,6 @@ export function deriveLicenseTiming(input: LicenseTimingInput): LicenseTimingRes
     licenseEndDate,
     graceExpiresDate,
     remainingMs,
-    remainingCalendarDays,
+    remainingWholeDays,
   };
 }

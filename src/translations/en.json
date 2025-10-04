@@ -458,6 +458,7 @@
     "noResultsDescription": "No fanmark found matching your search.",
     "noFanmarksDescription": "No fanmarks yet. Create your first fanmark from the discovery tab!",
     "fanmark": "Fanmark",
+    "fanmarkId": "Fanmark ID",
     "displayName": "Display Name",
     "accessType": "Access Type",
     "alias": "Alias",

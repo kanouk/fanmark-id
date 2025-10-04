@@ -126,23 +126,23 @@ serve(async (req) => {
       .eq('setting_key', 'grace_period_days')
       .single();
     
-    const gracePeriodDays = gracePeriodSetting?.setting_value 
-      ? parseInt(gracePeriodSetting.setting_value, 10) 
-      : 2; // Default 2 days (48 hours)
+    const gracePeriodDaysRaw = gracePeriodSetting?.setting_value ? parseInt(gracePeriodSetting.setting_value, 10) : NaN;
+    const gracePeriodDays = Number.isFinite(gracePeriodDaysRaw) && gracePeriodDaysRaw > 0 ? gracePeriodDaysRaw : 1; // Default 1 day (24 hours)
 
-    // Calculate grace_expires_at (now + grace period)
-    // Round up to next UTC midnight for consistent batch processing
     const now = new Date();
-    const base = new Date(now);
-    base.setDate(base.getDate() + gracePeriodDays);
-    const graceExpiresAt = roundUpToNextUtcMidnight(base);
+    const updatedLicenseEnd = now.toISOString();
 
-    // Update license status to grace (not expired immediately)
-    // During grace period, user cannot re-acquire this fanmark
+    // Calculate grace_expires_at from the updated license_end
+    const graceBase = new Date(now);
+    graceBase.setDate(graceBase.getDate() + gracePeriodDays);
+    const graceExpiresAt = roundUpToNextUtcMidnight(graceBase);
+
+    // Update license fields for grace period
     const { error: expireLicenseError } = await supabase
       .from('fanmark_licenses')
       .update({ 
         status: 'grace',
+        license_end: updatedLicenseEnd,
         grace_expires_at: graceExpiresAt.toISOString(),
         excluded_at: null  // Will be set when grace → expired
       })
