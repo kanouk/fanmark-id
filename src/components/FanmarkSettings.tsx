@@ -163,16 +163,18 @@ export const FanmarkSettings = ({
       if (cached) {
         const parsed = JSON.parse(cached);
         if (parsed && typeof parsed === 'object') {
-          const { timestamp, form, meta } = parsed as {
+          const { timestamp, data, form, meta } = parsed as {
             timestamp?: number;
+            data?: Partial<SettingsFormData>;
             form?: Partial<SettingsFormData>;
             meta?: { isEditingPassword?: boolean };
           };
+          const draftPayload = form ?? data;
           if (!timestamp || Date.now() - timestamp <= DRAFT_TTL) {
-            if (form) {
+            if (draftPayload) {
               nextFormData = {
                 ...nextFormData,
-                ...form,
+                ...draftPayload,
               };
             }
             if (meta && typeof meta.isEditingPassword === 'boolean') {

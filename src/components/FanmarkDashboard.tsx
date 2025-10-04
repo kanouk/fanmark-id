@@ -24,7 +24,7 @@ import { GraceStatusCountdown } from './GraceStatusCountdown';
 import { parseDateString } from '@/lib/utils';
 import { deriveLicenseTiming, type LicenseTimingResult } from '@/lib/licenseTiming';
 
-const CountdownDisplay = ({ target, className }: { target: Date | string; className?: string }) => {
+const CountdownDisplay = ({ target, className, showLabel = true }: { target: Date | string; className?: string; showLabel?: boolean }) => {
   const { t } = useTranslation();
   const targetKey = target instanceof Date ? target.toISOString() : target;
   const compute = () => formatCountdown(target);
@@ -40,9 +40,18 @@ const CountdownDisplay = ({ target, className }: { target: Date | string; classN
   }, [targetKey]);
 
   return (
-    <span className={className}>{t('dashboard.countdown', { time })}</span>
+    <span className={className}>{showLabel ? t('dashboard.countdown', { time }) : time}</span>
   );
 };
+
+const CountdownBubble = ({ target }: { target: Date | string }) => (
+  <div className="pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2">
+    <div className="relative rounded-full bg-primary text-primary-foreground px-3 py-1 text-xs font-semibold shadow-md shadow-primary/30">
+      <CountdownDisplay target={target} className="font-mono tabular-nums tracking-[0.1em] min-w-[4.5rem] inline-block text-center" showLabel={false} />
+      <div className="absolute left-1/2 -top-[3px] h-2 w-2 -translate-x-1/2 rotate-45 bg-primary" />
+    </div>
+  </div>
+);
 
 const formatCountdown = (target: Date | string | null) => {
   if (!target) return '00:00:00';
@@ -703,24 +712,23 @@ export const FanmarkDashboard = () => {
                                      )}
                                   </div>
                                 </td>
-                                  <td className="px-6 py-5">
-                                   <div className="min-h-[2.5rem] flex items-center gap-2">
+                                  <td className="px-6 py-5 align-middle">
+                                   <div className="relative min-h-[2.5rem] flex items-center gap-2">
                                       {(timing.status === 'grace' || timing.status === 'grace-return') && timing.graceExpiresDate ? (
                                         <GraceStatusCountdown
                                           graceExpiresAt={timing.graceExpiresDate.toISOString()}
                                         />
                                       ) : timing.status === 'active' && expirationDateUTC ? (
                                          <div className={timeDisplayClass}>
-                                          {isCountdownActive ? (
-                                            <CountdownDisplay target={expirationDateUTC} />
-                                          ) : (
-                                            t('dashboard.daysRemaining', { days: Math.max(daysRemaining ?? 0, 0) })
-                                          )}
+                                          {t('dashboard.daysRemaining', { days: Math.max(daysRemaining ?? 0, 0) })}
                                          </div>
                                       ) : isReturned(fanmark) ? (
                                         <span className="text-muted-foreground text-sm">{t('dashboard.returned')}</span>
                                       ) : (
                                         <span className="text-muted-foreground text-sm">-</span>
+                                      )}
+                                      {timing.status === 'active' && isCountdownActive && expirationDateUTC && (
+                                        <CountdownBubble target={expirationDateUTC} />
                                       )}
                                    </div>
                                  </td>
@@ -815,7 +823,7 @@ export const FanmarkDashboard = () => {
                         const daysRemaining = timing.remainingWholeDays;
                         const isExpiringSoon = msRemainingMobile !== null && msRemainingMobile > 0 && msRemainingMobile <= 3 * 24 * 60 * 60 * 1000;
                         const isCountdownActiveMobile = msRemainingMobile !== null && msRemainingMobile > 0 && msRemainingMobile <= 24 * 60 * 60 * 1000;
-                        const mobileTimeDisplayClass = `font-medium whitespace-nowrap ${isCountdownActiveMobile ? 'text-xs' : 'text-sm'} ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`;
+                        const mobileTimeDisplayClass = `font-medium whitespace-nowrap text-sm ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`;
 
                         const cardKey = `${fanmark.id}-${fanmark.current_license_id ?? licenseData?.license_end ?? idx}`;
                         const cardVisualState = isFanmarkInactive(fanmark)
@@ -825,7 +833,7 @@ export const FanmarkDashboard = () => {
                             : 'bg-background/80 hover:border-primary/20';
 
                         return (
-                          <Card key={cardKey} className={`rounded-3xl border border-primary/10 transition-colors ${cardVisualState}`}>
+                         <Card key={cardKey} className={`rounded-3xl border border-primary/10 transition-colors ${cardVisualState}`}>
                             <CardContent className="p-5">
                               <div className="space-y-3">
                                      <div className="flex items-start justify-between">
@@ -911,18 +919,19 @@ export const FanmarkDashboard = () => {
                                         {(timing.status === 'grace' || timing.status === 'grace-return') && timing.graceExpiresDate ? (
                                           <GraceStatusCountdown graceExpiresAt={timing.graceExpiresDate.toISOString()} />
                                         ) : timing.status === 'active' && expirationDate ? (
-                                         <span className={mobileTimeDisplayClass}>
-                                           {isCountdownActiveMobile ? (
-                                             <CountdownDisplay target={expirationDate} />
-                                           ) : (
-                                             t('dashboard.daysRemaining', { days: Math.max(daysRemaining ?? 0, 0) })
-                                           )}
-                                         </span>
-                                       ) : isReturned(fanmark) ? (
-                                         <span className="text-muted-foreground text-sm">{t('dashboard.returned')}</span>
-                                       ) : (
-                                         <span className="text-muted-foreground text-sm">-</span>
-                                       )}
+                                          <div className="relative pb-6">
+                                            <span className={mobileTimeDisplayClass}>
+                                              {t('dashboard.daysRemaining', { days: Math.max(daysRemaining ?? 0, 0) })}
+                                            </span>
+                                            {isCountdownActiveMobile && (
+                                              <CountdownBubble target={expirationDate} />
+                                            )}
+                                          </div>
+                                        ) : isReturned(fanmark) ? (
+                                          <span className="text-muted-foreground text-sm">{t('dashboard.returned')}</span>
+                                        ) : (
+                                          <span className="text-muted-foreground text-sm">-</span>
+                                        )}
 
                                       {!isReturned(fanmark) && timing.status === 'active' && daysRemaining !== null && daysRemaining >= 0 && (
                                         <AlertDialog>
