@@ -1,76 +1,89 @@
-# Grace Period Specification
+# グレースピリオド仕様書
 
-## Overview
-This document describes the grace period management system for fanmark licenses, implemented to ensure a consistent 48-hour grace period for both manual returns and natural expiration.
+## 概要
+本ドキュメントでは、ファンマークライセンスのグレースピリオド管理システムについて説明します。このシステムは、有効期限イベント後に最低24時間のグレースピリオドを保証しつつ、実際の有効期限切り替えを次の日次バッチウィンドウ（UTC深夜0時）に合わせるように実装されています。
 
-## Purpose
-- Enforce a mandatory 48-hour grace period before a fanmark can be re-acquired
-- Prevent immediate re-acquisition after manual return
-- Provide clear visibility of when a fanmark will become available again
-- Prepare the system for future extension and billing features
+## 目的
+- ファンマークが再取得可能になる前に、最低24時間の猶予期間を強制する
+- 手動返却後の即座の再取得を防止する
+- ファンマークがいつ再び利用可能になるかを明確に表示する
+- 将来の延長機能や課金機能に向けてシステムを準備する
 
-## Database Schema
+## データベーススキーマ
 
-### New Column: `grace_expires_at`
+### 新規カラム: `grace_expires_at`
 ```sql
-ALTER TABLE fanmark_licenses 
+ALTER TABLE fanmark_licenses
 ADD COLUMN grace_expires_at TIMESTAMP WITH TIME ZONE;
 ```
 
-**Purpose**: Explicitly tracks when the grace period expires and the fanmark becomes available for re-acquisition.
+**目的**: グレースピリオドがいつ終了し、ファンマークが再取得可能になるかを明示的に追跡します。
 
-## License Status Lifecycle
+## ライセンスステータスのライフサイクル
 
-### 1. Active Status
-- **license_end**: The scheduled end date of the license (can be extended)
+### 1. アクティブステータス
+- **license_end**: ライセンスの予定終了日（延長可能）
 - **grace_expires_at**: `NULL`
 - **excluded_at**: `NULL`
-- **Description**: User has full access to the fanmark and can configure it
+- **説明**: ユーザーはファンマークへのフルアクセスを持ち、設定を変更できます
 
-### 2. Grace Status
-- **license_end**: Original scheduled end date (preserved for extension restoration)
-- **grace_expires_at**: Date when grace period expires and fanmark can be re-acquired
-  - Natural expiration: `license_end + grace_period_days`
-  - Manual return: `now + grace_period_days`
+## ライセンス終了日の正規化
+- 新規発行されるすべてのライセンスは、計算された有効期限日のUTC 00:00:00に`license_end`を保存します
+- ライセンスを延長する際は、永続化する前に新しい`license_end`をUTC深夜0時に丸めることで、この規約を維持する必要があります
+- これにより、自然な有効期限切れが常に日の境界で正確に開始され、バッチ処理を決定論的に保ちます
+
+### 2. グレースステータス
+- **license_end**: 元の予定終了日（延長復元のために保持）
+- **grace_expires_at**: グレースピリオドが終了し、ファンマークが再取得可能になる日時
+  - 自然な有効期限切れ: `roundUpToNextUtcMidnight(license_end + grace_period_days)`
+  - 手動返却: `roundUpToNextUtcMidnight(now + grace_period_days)`
 - **excluded_at**: `NULL`
-- **Description**: Fanmark is in grace period, configurations are still accessible but cannot be modified. Fanmark cannot be re-acquired by anyone.
+- **説明**: ファンマークはグレースピリオド中で、設定にはアクセスできますが変更はできません。誰もファンマークを再取得できません。
 
-### 3. Expired Status
-- **license_end**: Original scheduled end date (historical record)
-- **grace_expires_at**: Grace expiration date (historical record)
-- **excluded_at**: Timestamp when license fully expired (grace → expired transition)
-- **Description**: Fanmark is fully expired, configurations deleted, available for re-acquisition
+### 3. 期限切れステータス
+- **license_end**: 元の予定終了日（履歴記録）
+- **grace_expires_at**: グレース期限切れ日時（履歴記録）
+- **excluded_at**: ライセンスが完全に期限切れになったタイムスタンプ（グレース→期限切れの遷移）
+- **説明**: ファンマークは完全に期限切れで、設定は削除され、再取得可能です
 
-## Grace Period Calculation
+## グレースピリオドの計算
 
-### Default Grace Period
-- **Duration**: 2 days (48 hours)
-- **Configured in**: `system_settings` table, `grace_period_days` setting
+### デフォルトのグレースピリオド
+- **基本期間**: `system_settings.grace_period_days`で設定可能（デフォルトは1日 = 24時間）
+- **調整ルール**: 基本期間が経過した後、実際の`grace_expires_at`は次のUTC深夜0時に切り上げられ、バッチ処理と一致させます
 
-### Calculation Methods
+### 計算方法
 
-#### Natural Expiration (license_end reached)
+#### 自然な有効期限切れ（license_endに到達）
+- `license_end`は予定終了日のUTC 00:00:00に保存されます（ライセンス作成時に設定）
+- グレース計算:
+  ```typescript
+  const base = addDays(license_end, grace_period_days);
+  const grace_expires_at = roundUpToNextUtcMidnight(base);
+  ```
+
+#### 手動返却
+- `now`は返却タイムスタンプ（UTC）
+- グレース計算:
+  ```typescript
+  const base = addDays(now, grace_period_days);
+  const grace_expires_at = roundUpToNextUtcMidnight(base);
+  ```
+
+> `roundUpToNextUtcMidnight`は、入力がすでに正確に深夜0時でない限り、次のUTC日の開始時刻を返します。すでに深夜0時の場合は、同じタイムスタンプを返します。
+
+## 再取得ルール
+
+### 利用可能性チェック
+ファンマークは以下の場合に再取得可能です:
+1. アクティブなライセンスが存在しない（`status = 'active'`）
+2. グレースピリオドが有効でない:
+   - `grace`ライセンスが存在しない
+   - または`grace`ライセンスが存在するが`grace_expires_at <= now`
+
+### 実装
 ```typescript
-grace_expires_at = license_end + grace_period_days
-```
-
-#### Manual Return
-```typescript
-grace_expires_at = now + grace_period_days
-```
-
-## Re-acquisition Rules
-
-### Availability Check
-A fanmark can be re-acquired if:
-1. No active license exists (`status = 'active'`)
-2. No grace period is in effect:
-   - Either no `grace` license exists
-   - OR `grace` license exists but `grace_expires_at <= now`
-
-### Implementation
-```typescript
-// In register-fanmark edge function
+// register-fanmark Edge Functionにて
 const { data: existingLicense } = await supabase
   .from('fanmark_licenses')
   .select('id, status, grace_expires_at')
@@ -82,164 +95,167 @@ if (existingLicense) {
   if (existingLicense.status === 'active') {
     return error('Already taken');
   }
-  
-  if (existingLicense.status === 'grace' && 
+
+  if (existingLicense.status === 'grace' &&
       new Date(existingLicense.grace_expires_at) > new Date()) {
     return error('In grace period', { available_at: grace_expires_at });
   }
 }
 ```
 
-## Edge Function Behavior
+## Edge Functionの動作
 
 ### return-fanmark
-**Before**: Immediately set status to `expired`, delete configs
-**After**: Set status to `grace`, calculate `grace_expires_at`, preserve configs
+**変更前**: ステータスを即座に`expired`に設定し、設定を削除
+**変更後**: ステータスを`grace`に設定し、`grace_expires_at`を計算し、設定を保持
 
 ```typescript
-// Calculate grace period
-const gracePeriodDays = 2; // from settings
-const graceExpiresAt = new Date();
-graceExpiresAt.setDate(graceExpiresAt.getDate() + gracePeriodDays);
+// グレースピリオドウィンドウを計算
+const gracePeriodDays = settings.grace_period_days; // 通常1日（24時間）
+const base = addDays(new Date(), gracePeriodDays);
+const graceExpiresAt = roundUpToNextUtcMidnight(base);
 
-// Update to grace status
+// グレースステータスに更新
 update({
   status: 'grace',
-  grace_expires_at: graceExpiresAt,
+  grace_expires_at: graceExpiresAt.toISOString(),
   excluded_at: null
 });
 ```
 
 ### check-expired-licenses
-**Before**: Calculate grace expiration using `license_end + grace_period_ms`
-**After**: Use `grace_expires_at` for direct comparison
+**変更前**: `license_end + grace_period_ms`を使用してグレース期限を計算
+**変更後**: 直接比較のために`grace_expires_at`を使用
 
 ```typescript
-// Active → Grace (natural expiration)
-const graceExpiresAt = new Date(license_end);
-graceExpiresAt.setDate(graceExpiresAt.getDate() + gracePeriodDays);
+// アクティブ → グレース（自然な有効期限切れ）
+const base = addDays(new Date(license_end), gracePeriodDays);
+const graceExpiresAt = roundUpToNextUtcMidnight(base);
 
 update({
   status: 'grace',
-  grace_expires_at: graceExpiresAt
+  grace_expires_at: graceExpiresAt.toISOString()
 });
 
-// Grace → Expired
-// Query: WHERE status = 'grace' AND grace_expires_at <= now
+// グレース → 期限切れ
+// クエリ: WHERE status = 'grace' AND grace_expires_at <= now
 update({
   status: 'expired',
   excluded_at: now
 });
-// Delete all configs
+// すべての設定を削除
 ```
 
 ### register-fanmark
-**Before**: Check only for `status = 'active'` licenses
-**After**: Check for both `active` and `grace` with future `grace_expires_at`
+**変更前**: `status = 'active'`のライセンスのみをチェック
+**変更後**: `active`と、将来の`grace_expires_at`を持つ`grace`の両方をチェック
 
 ```typescript
+const todayUtcMidnight = truncateToUtcMidnight(new Date());
+const licenseEnd = addDays(todayUtcMidnight, tierConfig.initial_license_days);
+
 insert({
   fanmark_id,
   user_id,
-  license_end,
+  license_end: licenseEnd.toISOString(),
   status: 'active',
-  grace_expires_at: null  // Explicitly null for new licenses
+  grace_expires_at: null  // 新規ライセンスでは明示的にnull
 });
 ```
 
-## Frontend Display
+## フロントエンドの表示
 
-### Dashboard
-- Show grace countdown when `status = 'grace'`
-- Use `grace_expires_at` for countdown timer
-- Display "Cannot be extended" during grace period
+### ダッシュボード
+- `status = 'grace'`の場合、グレースカウントダウンを表示
+- カウントダウンタイマーに`grace_expires_at`を使用
+- グレースピリオド中は「延長不可」と表示
 
-### Details Page
-- History table shows `grace_expires_at` for grace licenses
-- Shows `excluded_at` for expired licenses
-- Shows `license_end` for active licenses
+### 詳細ページ
+- 履歴テーブルはグレースライセンスの`grace_expires_at`を表示
+- 期限切れライセンスの`excluded_at`を表示
+- アクティブライセンスの`license_end`を表示
 
-### Components Updated
-- `GraceStatusCountdown.tsx`: Changed prop from `licenseEnd` to `graceExpiresAt`
-- `FanmarkDashboard.tsx`: Added `grace_expires_at` to license queries
-- `FanmarkDetailsPage.tsx`: Display logic updated for grace period dates
+### 更新されたコンポーネント
+- `GraceStatusCountdown.tsx`: プロップを`licenseEnd`から`graceExpiresAt`に変更
+- `FanmarkDashboard.tsx`: ライセンスクエリに`grace_expires_at`を追加
+- `FanmarkDetailsPage.tsx`: グレースピリオド日付の表示ロジックを更新
 
-## Future Extensions
+## 将来の拡張
 
-### License Extension
-When implementing paid extensions:
+### ライセンス延長
+有料延長を実装する際:
 ```typescript
-// Restore from grace to active
+// グレースからアクティブに復元
 update({
   status: 'active',
-  license_end: new_end_date,
+  license_end: truncateToUtcMidnight(new_end_date).toISOString(),
   grace_expires_at: null,
   excluded_at: null
 });
 ```
 
-### Billing Integration
-- Check `grace_expires_at` to determine if extension is still possible
-- Prevent extension attempts after grace period expires
-- Use `license_end` as the base date for extension calculations
+### 課金統合
+- `grace_expires_at`をチェックして延長が可能かどうかを判断
+- グレースピリオド終了後の延長試行を防止
+- 延長計算の基準日として`license_end`を使用
 
-## Migration Notes
+## マイグレーション注意事項
 
-### Backfill Strategy
-1. Existing `grace` licenses: `grace_expires_at = license_end + grace_period_days`
-2. Existing `expired` licenses: `grace_expires_at = license_end + grace_period_days` (historical)
-3. New licenses: `grace_expires_at = NULL`
+### バックフィル戦略
+1. 既存の`grace`ライセンス: `grace_expires_at = license_end + grace_period_days`
+2. 既存の`expired`ライセンス: `grace_expires_at = license_end + grace_period_days`（履歴）
+3. 新規ライセンス: `grace_expires_at = NULL`
 
-### Deployment Order
-1. Run database migration (add column + backfill)
-2. Deploy edge functions
-3. Deploy frontend changes
+### デプロイ順序
+1. データベースマイグレーションを実行（カラム追加 + バックフィル）
+2. Edge Functionをデプロイ
+3. フロントエンドの変更をデプロイ
 
-### Rollback Considerations
-- Column can remain even if feature is rolled back
-- Remove feature by reverting edge function logic
-- Column does not break existing functionality
+### ロールバック考慮事項
+- 機能がロールバックされてもカラムは残せます
+- Edge Functionのロジックを元に戻すことで機能を削除
+- カラムは既存の機能を壊しません
 
-## Performance Optimizations
+## パフォーマンス最適化
 
-### Indexes
+### インデックス
 ```sql
--- Grace expiration queries
-CREATE INDEX idx_fanmark_licenses_grace_expires 
-ON fanmark_licenses(grace_expires_at) 
+-- グレース期限クエリ
+CREATE INDEX idx_fanmark_licenses_grace_expires
+ON fanmark_licenses(grace_expires_at)
 WHERE status = 'grace';
 
--- Re-acquisition checks
-CREATE INDEX idx_fanmark_licenses_fanmark_grace 
+-- 再取得チェック
+CREATE INDEX idx_fanmark_licenses_fanmark_grace
 ON fanmark_licenses(fanmark_id, status, grace_expires_at)
 WHERE status IN ('active', 'grace');
 ```
 
-## Testing Scenarios
+## テストシナリオ
 
-1. **Manual Return**: Verify grace period is 48 hours from return time
-2. **Natural Expiration**: Verify grace period is 48 hours from license_end
-3. **Re-acquisition During Grace**: Should be blocked with available_at timestamp
-4. **Re-acquisition After Grace**: Should succeed
-5. **Grace to Expired Transition**: Verify configs are deleted and excluded_at is set
-6. **Countdown Display**: Verify accurate time remaining display
-7. **Cron Job**: Verify batch processing correctly transitions licenses
+1. **手動返却**: グレースピリオドが最低24時間続き、そのウィンドウ後の次のUTC深夜0時に終了することを確認
+2. **自然な有効期限切れ**: グレースピリオドがUTC 00:00に始まり、設定されたウィンドウ後の次のUTC深夜0時に終了することを確認
+3. **グレース中の再取得**: available_atタイムスタンプでブロックされるべき
+4. **グレース後の再取得**: 成功するべき
+5. **グレースから期限切れへの遷移**: 設定が削除され、excluded_atが設定されることを確認
+6. **カウントダウン表示**: 正確な残り時間表示を確認
+7. **Cronジョブ**: バッチ処理がライセンスを正しく遷移させることを確認
 
-## Security Considerations
+## セキュリティ考慮事項
 
-- Grace period enforcement happens server-side in edge functions
-- Frontend displays are informational only
-- Re-acquisition checks use database-level queries
-- No client-side bypasses possible
+- グレースピリオドの強制はEdge Function側で行われます
+- フロントエンドの表示は情報提供のみです
+- 再取得チェックはデータベースレベルのクエリを使用します
+- クライアント側のバイパスは不可能です
 
-## Monitoring
+## モニタリング
 
-### Audit Logs
-- `return_fanmark`: Includes `grace_expires_at` in metadata
-- `license_grace_started`: Natural expiration to grace
-- `license_expired`: Grace to expired transition
+### 監査ログ
+- `return_fanmark`: メタデータに`grace_expires_at`を含む
+- `license_grace_started`: 自然な有効期限切れからグレースへ
+- `license_expired`: グレースから期限切れへの遷移
 
-### Key Metrics
-- Average grace period duration
-- Number of re-acquisition attempts during grace
-- Grace to expired transition success rate
+### 主要メトリクス
+- 平均グレースピリオド期間
+- グレース中の再取得試行回数
+- グレースから期限切れへの遷移成功率
