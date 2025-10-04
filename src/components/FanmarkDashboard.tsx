@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { differenceInDays } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,6 +22,7 @@ import { useFanmarkLimit } from '@/hooks/useFanmarkLimit';
 import { navigateToFanmark, getFanmarkUrlForClipboard } from '@/utils/emojiUrl';
 import { GraceStatusCountdown } from './GraceStatusCountdown';
 import { parseDateString } from '@/lib/utils';
+import { deriveLicenseTiming, type LicenseTimingResult } from '@/lib/licenseTiming';
 
 const CountdownDisplay = ({ target, className }: { target: Date | string; className?: string }) => {
   const { t } = useTranslation();
@@ -289,7 +289,19 @@ export const FanmarkDashboard = () => {
     fetchFanmarks();
   }, [fetchFanmarks, user]);
 
-  const getStatusBadge = (licenseStatus?: string, isPlanExcluded?: boolean, licenseEnd?: string | null) => {
+  const gracePeriodDaysSetting = settings?.grace_period_days ?? null;
+
+  const getLicenseTiming = (licenseData: Fanmark['fanmark_licenses']) => {
+    const effectiveEnd = licenseData?.excluded_at ?? licenseData?.license_end ?? null;
+    return deriveLicenseTiming({
+      licenseEnd: effectiveEnd,
+      graceExpiresAt: licenseData?.grace_expires_at ?? null,
+      status: licenseData?.status ?? null,
+      gracePeriodDays: gracePeriodDaysSetting,
+    });
+  };
+
+  const getStatusBadge = (timing: LicenseTimingResult, isPlanExcluded?: boolean) => {
     let icon = <FiMoon className="h-3.5 w-3.5" />;
     let className = 'border-gray-200/60 bg-gray-50 text-gray-600 shadow-sm';
     let label = t('dashboard.statusUnknown');
@@ -298,20 +310,30 @@ export const FanmarkDashboard = () => {
       icon = <FiTarget className="h-3.5 w-3.5" />;
       className = 'border-amber-200/60 bg-amber-50 text-amber-600 shadow-sm';
       label = t('fanmarkStatus.planExcluded');
-    } else if (licenseStatus === 'active') {
-      icon = <FiCheckCircle className="h-3.5 w-3.5" />;
-      className = 'border-emerald-200/60 bg-emerald-50 text-emerald-600 shadow-sm';
-      label = t('dashboard.statusActive');
-    } else if (licenseStatus === 'grace') {
-      const parsedEnd = licenseEnd ? parseDateString(licenseEnd) : null;
-      const isReturnProcessing = parsedEnd ? parsedEnd.getTime() > Date.now() : false;
-      icon = <FiTarget className="h-3.5 w-3.5" />;
-      className = 'border-amber-200/60 bg-amber-50 text-amber-600 shadow-sm';
-      label = isReturnProcessing ? t('dashboard.statusReturnProcessing') : t('dashboard.statusGrace');
-    } else if (licenseStatus === 'expired') {
-      icon = <FiTarget className="h-3.5 w-3.5" />;
-      className = 'border-rose-200/60 bg-rose-50 text-rose-600 shadow-sm';
-      label = t('dashboard.statusExpired');
+    } else {
+      switch (timing.status) {
+        case 'active':
+          icon = <FiCheckCircle className="h-3.5 w-3.5" />;
+          className = 'border-emerald-200/60 bg-emerald-50 text-emerald-600 shadow-sm';
+          label = t('dashboard.statusActive');
+          break;
+        case 'grace-return':
+          icon = <FiTarget className="h-3.5 w-3.5" />;
+          className = 'border-amber-200/60 bg-amber-50 text-amber-600 shadow-sm';
+          label = t('dashboard.statusReturnProcessing');
+          break;
+        case 'grace':
+          icon = <FiTarget className="h-3.5 w-3.5" />;
+          className = 'border-amber-200/60 bg-amber-50 text-amber-600 shadow-sm';
+          label = t('dashboard.statusGrace');
+          break;
+        case 'expired':
+        default:
+          icon = <FiTarget className="h-3.5 w-3.5" />;
+          className = 'border-rose-200/60 bg-rose-50 text-rose-600 shadow-sm';
+          label = t('dashboard.statusExpired');
+          break;
+      }
     }
 
     return (
@@ -325,13 +347,15 @@ export const FanmarkDashboard = () => {
   // Helper function to determine if a fanmark is inactive/expired
   const isFanmarkInactive = (fanmark: Fanmark) => {
     const licenseData = fanmark.fanmark_licenses as any;
-    return !fanmark.current_license_id || licenseData?.status === 'expired';
+    const timing = getLicenseTiming(licenseData);
+    return timing.status === 'expired';
   };
 
   // Helper function to determine if a fanmark is returned/expired
   const isReturned = (fanmark: Fanmark) => {
     const licenseData = fanmark.fanmark_licenses as any;
-    return licenseData?.status === 'expired';
+    const timing = getLicenseTiming(licenseData);
+    return timing.status === 'expired';
   };
 
   const getTierOvalStyle = (tierLevel: number) => {
@@ -374,15 +398,18 @@ export const FanmarkDashboard = () => {
 
   const activeFanmarks = fanmarks.filter(f => {
     const licenseData = f.fanmark_licenses as any;
-    return licenseData?.status === 'active' || licenseData?.status === 'grace';
+    const timing = getLicenseTiming(licenseData);
+    return timing.status !== 'expired';
   }).length;
 
   const filteredFanmarks = fanmarks.sort((a, b) => {
     // First sort by status (active only at top)
     const aLicenseData = a.fanmark_licenses as any;
     const bLicenseData = b.fanmark_licenses as any;
-    const aIsActive = aLicenseData?.status === 'active' || aLicenseData?.status === 'grace';
-    const bIsActive = bLicenseData?.status === 'active' || bLicenseData?.status === 'grace';
+    const aTiming = getLicenseTiming(aLicenseData);
+    const bTiming = getLicenseTiming(bLicenseData);
+    const aIsActive = aTiming.status !== 'expired';
+    const bIsActive = bTiming.status !== 'expired';
 
     if (aIsActive !== bIsActive) {
       return aIsActive ? -1 : 1; // Active first
@@ -562,19 +589,23 @@ export const FanmarkDashboard = () => {
                               const licenseData = fanmark.fanmark_licenses;
                               const acquisitionDateValue = parseDateString(licenseData?.license_start);
                               const acquisitionDate = acquisitionDateValue ? formatInTimeZone(acquisitionDateValue, 'Asia/Tokyo', 'yyyy/MM/dd') : '-';
-                              const effectiveEndDate = licenseData?.excluded_at || licenseData?.license_end;
-                              const expirationDateUTC = parseDateString(effectiveEndDate);
-                              const nowUTC = new Date();
-                              const msRemaining = expirationDateUTC ? expirationDateUTC.getTime() - nowUTC.getTime() : null;
-                              const daysRemaining = expirationDateUTC ? differenceInDays(expirationDateUTC, nowUTC) : null;
-                              const isExpiringSoon = msRemaining !== null && msRemaining <= 3 * 24 * 60 * 60 * 1000;
-                              const isCountdownActive = msRemaining !== null && msRemaining <= 24 * 60 * 60 * 1000;
+                              const timing = getLicenseTiming(licenseData);
+                              const expirationDateUTC = timing.licenseEndDate;
+                              const msRemaining = timing.remainingMs;
+                              const daysRemaining = timing.remainingCalendarDays;
+                              const isExpiringSoon = msRemaining !== null && msRemaining > 0 && msRemaining <= 3 * 24 * 60 * 60 * 1000;
+                              const isCountdownActive = msRemaining !== null && msRemaining > 0 && msRemaining <= 24 * 60 * 60 * 1000;
                               const timeDisplayClass = `font-medium whitespace-nowrap ${isCountdownActive ? 'text-xs' : 'text-sm'} ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`;
 
                               const rowKey = `${fanmark.id}-${fanmark.current_license_id ?? licenseData?.license_end ?? idx}`;
+                              const rowVisualState = isFanmarkInactive(fanmark)
+                                ? 'bg-gray-200 dark:bg-gray-700'
+                                : (timing.status === 'grace' || timing.status === 'grace-return')
+                                  ? 'bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-950/50'
+                                  : 'hover:bg-primary/5 hover:shadow-sm';
 
                               return (
-                                <tr key={rowKey} className={`border-b border-primary/5 transition-all duration-200 ${isFanmarkInactive(fanmark) ? 'bg-gray-200 dark:bg-gray-700' : licenseData?.status === 'grace' ? 'bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-950/50' : 'hover:bg-primary/5 hover:shadow-sm'}`}>
+                                <tr key={rowKey} className={`border-b border-primary/5 transition-all duration-200 ${rowVisualState}`}>
                                        <td className="px-6 py-5">
                                          <div className="min-h-[2.5rem] flex items-end gap-3">
                                            <div
@@ -607,7 +638,7 @@ export const FanmarkDashboard = () => {
                                       </td>
                                 <td className="px-6 py-5">
                                   <div className="min-h-[2.5rem] flex items-center min-w-fit">
-                                    {!isFanmarkInactive(fanmark) && licenseData?.status !== 'grace' && getAccessTypeBadge(fanmark.access_type)}
+                                    {!isFanmarkInactive(fanmark) && timing.status === 'active' && getAccessTypeBadge(fanmark.access_type)}
                                   </div>
                                 </td>
                                 <td className="px-6 py-5">
@@ -622,7 +653,7 @@ export const FanmarkDashboard = () => {
                                      {expirationDateUTC ? (
                                        <div className="flex items-center gap-2 text-sm text-foreground font-medium">
                                          <span>{formatInTimeZone(expirationDateUTC, 'Asia/Tokyo', 'yyyy/MM/dd')}</span>
-                                         {!isReturned(fanmark) && licenseData?.status !== 'grace' && (
+                                         {!isReturned(fanmark) && timing.status === 'active' && (
                                            <AlertDialog>
                                              <Tooltip>
                                                <TooltipTrigger asChild>
@@ -667,20 +698,18 @@ export const FanmarkDashboard = () => {
                                 </td>
                                   <td className="px-6 py-5">
                                    <div className="min-h-[2.5rem] flex items-center gap-2">
-                                      {licenseData?.status === 'grace' && licenseData?.grace_expires_at ? (
+                                      {(timing.status === 'grace' || timing.status === 'grace-return') && timing.graceExpiresDate ? (
                                         <GraceStatusCountdown
-                                          graceExpiresAt={licenseData.grace_expires_at}
+                                          graceExpiresAt={timing.graceExpiresDate.toISOString()}
                                         />
-                                      ) : !isReturned(fanmark) && expirationDateUTC ? (
-                                       <>
-                                        <div className={timeDisplayClass}>
+                                      ) : timing.status === 'active' && expirationDateUTC ? (
+                                         <div className={timeDisplayClass}>
                                           {isCountdownActive ? (
                                             <CountdownDisplay target={expirationDateUTC} />
                                           ) : (
-                                            t('dashboard.daysRemaining', { days: daysRemaining ?? 0 })
+                                            t('dashboard.daysRemaining', { days: Math.max(daysRemaining ?? 0, 0) })
                                           )}
                                          </div>
-                                        </>
                                       ) : isReturned(fanmark) ? (
                                         <span className="text-muted-foreground text-sm">{t('dashboard.returned')}</span>
                                       ) : (
@@ -689,8 +718,8 @@ export const FanmarkDashboard = () => {
                                    </div>
                                  </td>
                                   <td className="px-6 py-5">
-                                     <div className="min-h-[2.5rem] flex items-center gap-2 min-w-fit">
-                                       {getStatusBadge(licenseData?.status, licenseData?.plan_excluded, licenseData?.license_end)}
+                                    <div className="min-h-[2.5rem] flex items-center gap-2 min-w-fit">
+                                       {getStatusBadge(timing, licenseData?.plan_excluded)}
                                        {licenseData?.plan_excluded && (
                                          <span className="text-xs text-muted-foreground">
                                            {t('fanmarkStatus.extensionNotPossible')}
@@ -740,8 +769,8 @@ export const FanmarkDashboard = () => {
                                     </div>
                                   </td>
                                    <td className="px-6 py-5">
-                                     <div className="min-h-[2.5rem] flex items-center">
-                                        {!isReturned(fanmark) && licenseData?.status !== 'grace' && (
+                                    <div className="min-h-[2.5rem] flex items-center">
+                                       {!isReturned(fanmark) && timing.status === 'active' && (
                                           <Tooltip>
                                             <TooltipTrigger asChild>
                                               <Button
@@ -773,19 +802,23 @@ export const FanmarkDashboard = () => {
                         const licenseData = fanmark.fanmark_licenses;
                         const acquisitionDateValue = parseDateString(licenseData?.license_start);
                         const acquisitionDate = acquisitionDateValue ? formatInTimeZone(acquisitionDateValue, 'Asia/Tokyo', 'yyyy/MM/dd') : '-';
-                        const effectiveEndDate = licenseData?.excluded_at || licenseData?.license_end;
-                        const expirationDate = parseDateString(effectiveEndDate);
-                        const now = new Date();
-                        const msRemainingMobile = expirationDate ? expirationDate.getTime() - now.getTime() : null;
-                        const daysRemaining = expirationDate ? differenceInDays(expirationDate, now) : null;
-                        const isExpiringSoon = msRemainingMobile !== null && msRemainingMobile <= 3 * 24 * 60 * 60 * 1000;
-                        const isCountdownActiveMobile = msRemainingMobile !== null && msRemainingMobile <= 24 * 60 * 60 * 1000;
+                        const timing = getLicenseTiming(licenseData);
+                        const expirationDate = timing.licenseEndDate;
+                        const msRemainingMobile = timing.remainingMs;
+                        const daysRemaining = timing.remainingCalendarDays;
+                        const isExpiringSoon = msRemainingMobile !== null && msRemainingMobile > 0 && msRemainingMobile <= 3 * 24 * 60 * 60 * 1000;
+                        const isCountdownActiveMobile = msRemainingMobile !== null && msRemainingMobile > 0 && msRemainingMobile <= 24 * 60 * 60 * 1000;
                         const mobileTimeDisplayClass = `font-medium whitespace-nowrap ${isCountdownActiveMobile ? 'text-xs' : 'text-sm'} ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`;
 
                         const cardKey = `${fanmark.id}-${fanmark.current_license_id ?? licenseData?.license_end ?? idx}`;
+                        const cardVisualState = isFanmarkInactive(fanmark)
+                          ? 'bg-gray-200 dark:bg-gray-700'
+                          : (timing.status === 'grace' || timing.status === 'grace-return')
+                            ? 'bg-amber-50 dark:bg-amber-950/30 hover:border-amber-200'
+                            : 'bg-background/80 hover:border-primary/20';
 
                         return (
-                          <Card key={cardKey} className={`rounded-3xl border border-primary/10 transition-colors ${isFanmarkInactive(fanmark) ? 'bg-gray-200 dark:bg-gray-700' : licenseData?.status === 'grace' ? 'bg-amber-50 dark:bg-amber-950/30 hover:border-amber-200' : 'bg-background/80 hover:border-primary/20'}`}>
+                          <Card key={cardKey} className={`rounded-3xl border border-primary/10 transition-colors ${cardVisualState}`}>
                             <CardContent className="p-5">
                               <div className="space-y-3">
                                   <div className="flex items-start justify-between">
@@ -822,10 +855,10 @@ export const FanmarkDashboard = () => {
                                   <div className="space-y-2">
                                     <div className="flex items-center justify-between gap-2">
                                       <div className="flex-shrink-0">
-                                        {!isFanmarkInactive(fanmark) && licenseData?.status !== 'grace' && getAccessTypeBadge(fanmark.access_type)}
+                                        {!isFanmarkInactive(fanmark) && timing.status === 'active' && getAccessTypeBadge(fanmark.access_type)}
                                       </div>
                                       <div className="flex-shrink-0">
-                                        {getStatusBadge(licenseData?.status, licenseData?.plan_excluded, licenseData?.license_end)}
+                                        {getStatusBadge(timing, licenseData?.plan_excluded)}
                                       </div>
                                     </div>
                                     {licenseData?.plan_excluded && (
@@ -863,14 +896,14 @@ export const FanmarkDashboard = () => {
                                        {t('dashboard.remainingDays')}
                                      </div>
                                       <div className="flex items-center gap-2">
-                                        {licenseData?.status === 'grace' && licenseData?.grace_expires_at ? (
-                                          <GraceStatusCountdown graceExpiresAt={licenseData.grace_expires_at} />
-                                        ) : !isReturned(fanmark) && expirationDate ? (
+                                        {(timing.status === 'grace' || timing.status === 'grace-return') && timing.graceExpiresDate ? (
+                                          <GraceStatusCountdown graceExpiresAt={timing.graceExpiresDate.toISOString()} />
+                                        ) : timing.status === 'active' && expirationDate ? (
                                          <span className={mobileTimeDisplayClass}>
                                            {isCountdownActiveMobile ? (
                                              <CountdownDisplay target={expirationDate} />
                                            ) : (
-                                             t('dashboard.daysRemaining', { days: daysRemaining ?? 0 })
+                                             t('dashboard.daysRemaining', { days: Math.max(daysRemaining ?? 0, 0) })
                                            )}
                                          </span>
                                        ) : isReturned(fanmark) ? (
@@ -879,7 +912,7 @@ export const FanmarkDashboard = () => {
                                          <span className="text-muted-foreground text-sm">-</span>
                                        )}
 
-                                      {!isReturned(fanmark) && licenseData?.status !== 'grace' && daysRemaining !== null && daysRemaining >= 0 && (
+                                      {!isReturned(fanmark) && timing.status === 'active' && daysRemaining !== null && daysRemaining >= 0 && (
                                         <AlertDialog>
                                           <Tooltip>
                                             <TooltipTrigger asChild>
@@ -960,7 +993,7 @@ export const FanmarkDashboard = () => {
                                          <TooltipContent>{t('dashboard.copyFanmarkLink')}</TooltipContent>
                                        </Tooltip>
                                     </div>
-                                      {!isReturned(fanmark) && licenseData?.status !== 'grace' && (
+                                      {!isReturned(fanmark) && timing.status === 'active' && (
                                         <Tooltip>
                                           <TooltipTrigger asChild>
                                             <Button

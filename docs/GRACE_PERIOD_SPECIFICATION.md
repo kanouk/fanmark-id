@@ -28,9 +28,9 @@ ADD COLUMN grace_expires_at TIMESTAMP WITH TIME ZONE;
 - **説明**: ユーザーはファンマークへのフルアクセスを持ち、設定を変更できます
 
 ## ライセンス終了日の正規化
-- 新規発行されるすべてのライセンスは、計算された有効期限日のUTC 00:00:00に`license_end`を保存します
-- ライセンスを延長する際は、永続化する前に新しい`license_end`をUTC深夜0時に丸めることで、この規約を維持する必要があります
-- これにより、自然な有効期限切れが常に日の境界で正確に開始され、バッチ処理を決定論的に保ちます
+- 新規発行時は、取得タイムスタンプにティア日数を加算した後、次のUTC深夜0時へ切り上げた値を`license_end`として保存します（すでに0時ちょうどの場合はそのまま）
+- ライセンスを延長する際も同じ丸め込みルールを適用し、保存前に次のUTC 0時へ切り上げます
+- これにより、自然な有効期限切れは必ず日付境界で始まりつつ、取得時刻そのものは追跡用に保持されます
 
 ### 2. グレースステータス
 - **license_end**: 元の予定終了日（延長復元のために保持）
@@ -151,8 +151,8 @@ update({
 **変更後**: `active`と、将来の`grace_expires_at`を持つ`grace`の両方をチェック
 
 ```typescript
-const todayUtcMidnight = truncateToUtcMidnight(new Date());
-const licenseEnd = addDays(todayUtcMidnight, tierConfig.initial_license_days);
+const licenseEndRaw = addDays(new Date(), tierConfig.initial_license_days);
+const licenseEnd = roundUpToNextUtcMidnight(licenseEndRaw);
 
 insert({
   fanmark_id,
@@ -188,7 +188,7 @@ insert({
 // グレースからアクティブに復元
 update({
   status: 'active',
-  license_end: truncateToUtcMidnight(new_end_date).toISOString(),
+  license_end: roundUpToNextUtcMidnight(new_end_date).toISOString(),
   grace_expires_at: null,
   excluded_at: null
 });

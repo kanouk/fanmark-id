@@ -12,28 +12,17 @@ export function parseDateString(value?: string | null): Date | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
 
-  const normalised = trimmed.includes(' ') ? trimmed.replace(' ', 'T') : trimmed;
-
-  const isoParsed = parseISO(normalised);
-  if (isValid(isoParsed)) {
-    return isoParsed;
-  }
-
-  const jsDate = new Date(trimmed);
-  if (!Number.isNaN(jsDate.getTime())) {
-    return jsDate;
-  }
-
+  const normalised = trimmed.includes(" ") ? trimmed.replace(" ", "T") : trimmed;
   const hasTimezone = /([zZ]|[+-]\d{2}:?\d{2})$/.test(normalised);
-  if (!hasTimezone) {
-    const appendedIso = normalised.endsWith('Z') ? normalised : `${normalised}Z`;
-    const appendedParsed = parseISO(appendedIso);
-    if (isValid(appendedParsed)) {
-      return appendedParsed;
-    }
+  const ensureUtc = hasTimezone ? normalised : `${normalised.endsWith("Z") ? normalised : `${normalised}Z`}`;
+
+  const parsed = parseISO(ensureUtc);
+  if (isValid(parsed)) {
+    return parsed;
   }
 
-  return null;
+  const jsDate = new Date(ensureUtc);
+  return Number.isNaN(jsDate.getTime()) ? null : jsDate;
 }
 
 export function calculateRemainingDays(endDate: string): number {
