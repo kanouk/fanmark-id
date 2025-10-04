@@ -5,6 +5,7 @@ import { AdminSettings } from "@/components/AdminSettings";
 import { SecureWaitlistAdmin } from "@/components/SecureWaitlistAdmin";
 import { AdminPatternRules } from "@/components/AdminPatternRules";
 import { AdminExpirationTest } from "@/components/AdminExpirationTest";
+import { AdminDataReset } from "@/components/AdminDataReset";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import {
@@ -366,6 +367,12 @@ const AdminDashboard = () => {
                 失効処理
               </TabsTrigger>
               <TabsTrigger
+                value="data-reset"
+                className="flex-1 rounded-xl px-5 py-3 text-sm font-medium transition-all data-[state=active]:bg-card data-[state=active]:text-foreground sm:flex-none"
+              >
+                データ管理
+              </TabsTrigger>
+              <TabsTrigger
                 value="analytics"
                 className="flex-1 rounded-xl px-5 py-3 text-sm font-medium transition-all data-[state=active]:bg-card data-[state=active]:text-foreground sm:flex-none"
               >
@@ -587,6 +594,10 @@ const AdminDashboard = () => {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="data-reset" className="space-y-8">
+              <AdminDataReset />
             </TabsContent>
 
             <TabsContent value="analytics" className="space-y-8">
