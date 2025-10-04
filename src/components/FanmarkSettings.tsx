@@ -102,6 +102,7 @@ export const FanmarkSettings = ({
 }: FanmarkSettingsProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditingPassword, setIsEditingPassword] = useState(false);
+  const [hydratedDraftKey, setHydratedDraftKey] = useState<string | null>(null);
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -121,24 +122,107 @@ export const FanmarkSettings = ({
 
   const isPasswordProtected = watch('isPasswordProtected');
 
-  // Reset form when fanmark changes
+  const draftStorageKey = fanmark ? `fanmark_settings_draft_${fanmark.id}` : null;
+  const DRAFT_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+  // Reset form when fanmark changes or when draft needs hydration
   useEffect(() => {
-    if (fanmark) {
-      // 編集状態復元データがある場合はそれを使用、そうでなければ通常のデータ
-      const formData = restoreEditingState || {
-        accessType: fanmark.access_type,
-        fanmarkName: fanmark.fanmark_name || t('fanmarkSettings.summary.defaultName'),
-        targetUrl: fanmark.target_url || '',
-        textContent: fanmark.text_content || '',
-        createProfile: false, // This is a one-time action
-        isPasswordProtected: fanmark.is_password_protected || false,
-        accessPassword: '', // Don't pre-fill password for security
-        is_public: fanmark.is_public,
+    if (!fanmark || !draftStorageKey) return;
+
+    const shouldHydrateFromRestore = Boolean(restoreEditingState);
+    if (!shouldHydrateFromRestore && hydratedDraftKey === draftStorageKey) {
+      return;
+    }
+
+    let nextFormData: SettingsFormData = {
+      accessType: fanmark.access_type,
+      fanmarkName: fanmark.fanmark_name || t('fanmarkSettings.summary.defaultName'),
+      targetUrl: fanmark.target_url || '',
+      textContent: fanmark.text_content || '',
+      createProfile: false,
+      isPasswordProtected: fanmark.is_password_protected || false,
+      accessPassword: '',
+      is_public: fanmark.is_public,
+    };
+
+    let initialEditing = false;
+
+    if (restoreEditingState) {
+      nextFormData = {
+        ...nextFormData,
+        ...restoreEditingState,
       };
 
-      reset(formData);
+      if (typeof restoreEditingState.isEditingPassword === 'boolean') {
+        initialEditing = restoreEditingState.isEditingPassword;
+      }
     }
-  }, [fanmark, reset, restoreEditingState, t]);
+
+    try {
+      const cached = localStorage.getItem(draftStorageKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && typeof parsed === 'object') {
+          const { timestamp, form, meta } = parsed as {
+            timestamp?: number;
+            form?: Partial<SettingsFormData>;
+            meta?: { isEditingPassword?: boolean };
+          };
+          if (!timestamp || Date.now() - timestamp <= DRAFT_TTL) {
+            if (form) {
+              nextFormData = {
+                ...nextFormData,
+                ...form,
+              };
+            }
+            if (meta && typeof meta.isEditingPassword === 'boolean') {
+              initialEditing = meta.isEditingPassword;
+            }
+          } else {
+            localStorage.removeItem(draftStorageKey);
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load fanmark settings draft:', error);
+    }
+
+    if (!fanmark.is_password_protected && nextFormData.isPasswordProtected) {
+      initialEditing = true;
+    }
+
+    reset(nextFormData);
+    setIsEditingPassword(initialEditing);
+    setHydratedDraftKey(draftStorageKey);
+  }, [fanmark, draftStorageKey, reset, restoreEditingState, hydratedDraftKey, t]);
+
+  // Persist draft as the user edits
+  useEffect(() => {
+    if (!draftStorageKey) return;
+    const subscription = watch((values) => {
+      try {
+        const { accessPassword, ...rest } = values;
+        localStorage.setItem(
+          draftStorageKey,
+          JSON.stringify({
+            timestamp: Date.now(),
+            form: rest,
+            meta: { isEditingPassword },
+          })
+        );
+      } catch (error) {
+        console.warn('Failed to persist fanmark settings draft:', error);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [watch, draftStorageKey, isEditingPassword]);
+
+  useEffect(() => {
+    if (!isPasswordProtected) {
+      setIsEditingPassword(false);
+    }
+  }, [isPasswordProtected]);
 
   const handleClose = () => {
     if (mode === 'dialog') {
@@ -256,6 +340,11 @@ export const FanmarkSettings = ({
           console.error('Profile update error:', profileUpdateError);
           // Don't fail the whole operation if profile update fails
         }
+      }
+
+      if (draftStorageKey) {
+        localStorage.removeItem(draftStorageKey);
+        setHydratedDraftKey(null);
       }
 
       toast({
