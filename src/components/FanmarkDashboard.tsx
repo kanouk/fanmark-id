@@ -558,7 +558,7 @@ export const FanmarkDashboard = () => {
                               </tr>
                           </thead>
                           <tbody>
-                             {filteredFanmarks.map((fanmark) => {
+                             {filteredFanmarks.map((fanmark, idx) => {
                               const licenseData = fanmark.fanmark_licenses;
                               const acquisitionDateValue = parseDateString(licenseData?.license_start);
                               const acquisitionDate = acquisitionDateValue ? formatInTimeZone(acquisitionDateValue, 'Asia/Tokyo', 'yyyy/MM/dd') : '-';
@@ -571,7 +571,7 @@ export const FanmarkDashboard = () => {
                               const isCountdownActive = msRemaining !== null && msRemaining <= 24 * 60 * 60 * 1000;
                               const timeDisplayClass = `font-medium whitespace-nowrap ${isCountdownActive ? 'text-xs' : 'text-sm'} ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`;
 
-                              const rowKey = `${fanmark.id}-${fanmark.current_license_id ?? licenseData?.license_end ?? index}`;
+                              const rowKey = `${fanmark.id}-${fanmark.current_license_id ?? licenseData?.license_end ?? idx}`;
 
                               return (
                                 <tr key={rowKey} className={`border-b border-primary/5 transition-all duration-200 ${isFanmarkInactive(fanmark) ? 'bg-gray-200 dark:bg-gray-700' : licenseData?.status === 'grace' ? 'bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-950/50' : 'hover:bg-primary/5 hover:shadow-sm'}`}>
@@ -769,7 +769,7 @@ export const FanmarkDashboard = () => {
 
                     {/* Mobile Card View */}
                     <div className="lg:hidden space-y-4">
-                      {filteredFanmarks.map((fanmark) => {
+                      {filteredFanmarks.map((fanmark, idx) => {
                         const licenseData = fanmark.fanmark_licenses;
                         const acquisitionDateValue = parseDateString(licenseData?.license_start);
                         const acquisitionDate = acquisitionDateValue ? formatInTimeZone(acquisitionDateValue, 'Asia/Tokyo', 'yyyy/MM/dd') : '-';
@@ -782,7 +782,7 @@ export const FanmarkDashboard = () => {
                         const isCountdownActiveMobile = msRemainingMobile !== null && msRemainingMobile <= 24 * 60 * 60 * 1000;
                         const mobileTimeDisplayClass = `font-medium whitespace-nowrap ${isCountdownActiveMobile ? 'text-xs' : 'text-sm'} ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`;
 
-                        const cardKey = `${fanmark.id}-${fanmark.current_license_id ?? licenseData?.license_end ?? index}`;
+                        const cardKey = `${fanmark.id}-${fanmark.current_license_id ?? licenseData?.license_end ?? idx}`;
 
                         return (
                           <Card key={cardKey} className={`rounded-3xl border border-primary/10 transition-colors ${isFanmarkInactive(fanmark) ? 'bg-gray-200 dark:bg-gray-700' : licenseData?.status === 'grace' ? 'bg-amber-50 dark:bg-amber-950/30 hover:border-amber-200' : 'bg-background/80 hover:border-primary/20'}`}>
