@@ -11,8 +11,7 @@ import { PasswordRequirement } from '@/components/PasswordRequirement';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { Heart, Users, Mail, Sparkle, ArrowLeft, Lock, Tag, Info, Check, X } from 'lucide-react';
+import { Heart, Users, Mail, Sparkle, ArrowLeft, Lock, Check, X } from 'lucide-react';
 import { AuthFormData, AuthState } from '@/types/auth';
 import { PasswordRequirement as PasswordRequirementType } from '@/lib/password-validation';
 
@@ -23,8 +22,6 @@ const Auth = () => {
   const { t } = useTranslation();
   const { formData, authState, updateFormData, signUp, signIn, resendConfirmation } = useAuthForm();
   const { requirements, isValid } = usePasswordValidation(formData.password);
-
-  const [username, setUsername] = useState('');
 
   useEffect(() => {
     if (user && session) {
@@ -173,8 +170,6 @@ const Auth = () => {
                     signUp={signUp}
                     requirements={requirements}
                     isValid={isValid}
-                    username={username}
-                    setUsername={setUsername}
                     t={t}
                   />
                 </TabsContent>
@@ -313,8 +308,6 @@ interface SignUpFormProps {
   signUp: () => void;
   requirements: PasswordRequirementType[];
   isValid: boolean;
-  username: string;
-  setUsername: (value: string) => void;
   t: (key: string) => string;
 }
 
@@ -325,16 +318,14 @@ const SignUpForm = ({
   signUp,
   requirements,
   isValid,
-  username,
-  setUsername,
   t,
 }: SignUpFormProps) => {
   const [passwordPopoverOpen, setPasswordPopoverOpen] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
   const blurTimeoutRef = useRef<number | null>(null);
 
-  const usernameStatus = username ? username.trim().length >= 3 : null;
   const emailStatus = formData.email ? EMAIL_REGEX.test(formData.email) : null;
-  const passwordStatus = formData.password ? isValid : null;
+  const passwordStatus = formData.password ? (isValid ? true : false) : null;
   const confirmStatus = formData.confirmPassword
     ? formData.confirmPassword === formData.password && formData.confirmPassword.length > 0
     : null;
@@ -344,14 +335,25 @@ const SignUpForm = ({
       window.clearTimeout(blurTimeoutRef.current);
       blurTimeoutRef.current = null;
     }
-    setPasswordPopoverOpen(true);
+    setPasswordFocused(true);
+    setPasswordPopoverOpen(!isValid);
   };
 
   const handlePasswordBlur = () => {
+    setPasswordFocused(false);
     blurTimeoutRef.current = window.setTimeout(() => {
       setPasswordPopoverOpen(false);
     }, 150);
   };
+
+  useEffect(() => {
+    if (passwordFocused && !isValid) {
+      setPasswordPopoverOpen(true);
+    }
+    if (isValid) {
+      setPasswordPopoverOpen(false);
+    }
+  }, [isValid, passwordFocused]);
 
   useEffect(() => {
     return () => {
@@ -369,27 +371,6 @@ const SignUpForm = ({
       }}
       className="space-y-6"
     >
-      <div className="space-y-2">
-        <Label htmlFor="signup-username" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-          <Tag className="h-4 w-4" />
-          {t('auth.username')}
-        </Label>
-        <div className="relative flex items-center gap-2 rounded-2xl border border-primary/15 bg-background/80 px-3 py-1.5 pr-12 focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/20">
-          <span className="text-sm font-medium text-muted-foreground">@</span>
-          <Input
-            id="signup-username"
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-            placeholder="yourname"
-            maxLength={20}
-            autoComplete="off"
-            className="h-11 flex-1 border-0 bg-transparent text-base text-foreground shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-          />
-          <InputStatusIcon status={usernameStatus} />
-        </div>
-      </div>
-
       <div className="space-y-2">
         <Label htmlFor="signup-email" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
           <Mail className="h-4 w-4" />
@@ -428,35 +409,21 @@ const SignUpForm = ({
             className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-16 focus-visible:ring-2 focus-visible:ring-primary/40"
           />
           <InputStatusIcon status={passwordStatus} className="right-3" />
-          <Popover open={passwordPopoverOpen} onOpenChange={setPasswordPopoverOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="absolute right-10 top-1/2 h-7 w-7 -translate-y-1/2 rounded-full bg-primary/10 p-0 text-primary hover:bg-primary/20"
-                aria-label={t('password.requirements.title')}
-              >
-                <Info className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent
-              align="end"
-              sideOffset={10}
-              onOpenAutoFocus={(e) => e.preventDefault()}
-              onCloseAutoFocus={(e) => e.preventDefault()}
-              className="w-64 rounded-2xl border border-primary/20 bg-background/95 p-4 shadow-xl backdrop-blur"
-            >
-              <h4 className="mb-2 text-sm font-semibold text-primary">
-                {t('password.requirements.title')}
-              </h4>
-              <div className="space-y-1.5 text-xs text-muted-foreground">
-                {requirements.map((req, index) => (
-                  <PasswordRequirement key={index} met={req.met} text={req.text} />
-                ))}
+          {passwordPopoverOpen && !isValid && (
+            <div className="pointer-events-none absolute left-0 top-[calc(100%+0.75rem)] z-10">
+              <div className="relative min-w-[14rem] max-w-[16rem] rounded-2xl border border-primary/20 bg-background/95 p-4 shadow-xl backdrop-blur">
+                <div className="absolute left-8 -top-2 h-4 w-4 rotate-45 border-l border-t border-primary/20 bg-background/95" />
+                <h4 className="mb-2 text-sm font-semibold text-primary">
+                  {t('password.requirements.title')}
+                </h4>
+                <div className="space-y-1.5 text-xs text-muted-foreground">
+                  {requirements.map((req, index) => (
+                    <PasswordRequirement key={index} met={req.met} text={req.text} />
+                  ))}
+                </div>
               </div>
-            </PopoverContent>
-          </Popover>
+            </div>
+          )}
         </div>
       </div>
 
@@ -487,7 +454,7 @@ const SignUpForm = ({
 
     <Button
       type="submit"
-      disabled={authState.loading || !isValid || !username.trim()}
+      disabled={authState.loading || !isValid}
       className="w-full gap-2 rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 hover:shadow-xl"
     >
       {authState.loading ? (

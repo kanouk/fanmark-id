@@ -299,7 +299,11 @@
     "planTypeFree": "フリー",
     "planTypeCreator": "クリエーター",
     "planTypeBusiness": "ビジネス",
+    "planTypeEnterprise": "エンタープライズ",
     "planTypeAdmin": "管理者",
+    "planLimitInfo": "同時に {limit} 個まで保有できます",
+    "planUnlimited": "無制限にファンマを保有できます",
+    "changePlan": "プラン変更",
     "saveChanges": "変更を保存",
     "updateSuccess": "設定を更新しました",
     "updateSuccessDescription": "ユーザー設定が正常に更新されました",
@@ -308,6 +312,56 @@
     "memberSince": "登録日",
     "saving": "保存中...",
     "uploading": "アップロード中..."
+  },
+  "planSelection": {
+    "title": "あなたにぴったりのプランを選択",
+    "subtitle": "必要になったらいつでもアップグレード。落ち着いた体験のまま、シンプルに。",
+    "perMonth": "/ 月",
+    "popularBadge": "人気",
+    "currentPlanLabel": "現在のプラン: {plan}",
+    "backToSettings": "設定に戻る",
+    "currentPlanCta": "現在のプラン",
+    "choosePlanCta": "{plan} に変更",
+    "successTitle": "プランを更新しました",
+    "successDescription": "{plan} プランに変更されました。",
+    "errorTitle": "プランを更新できませんでした",
+    "errorDescription": "少し時間をおいてもう一度お試しください。",
+    "errorNoUser": "再度ログインしてからプランを変更してください。",
+    "errorNoProfile": "プロフィール情報を読み込めませんでした。",
+    "features": {
+      "limit": "同時に {limit} 個のファンマを保有"
+    },
+    "free": {
+      "name": "フリー",
+      "description": "まずは気軽にファンマを体験したい方へ。",
+      "feature1": "基本的なダッシュボード機能",
+      "feature2": "コミュニティアップデートへのアクセス"
+    },
+    "creator": {
+      "name": "クリエーター",
+      "description": "もっと多くのファンマを運用したい方に。",
+      "feature1": "優先サポートと先行機能アクセス",
+      "feature2": "カスタマイズ機能の拡張"
+    },
+    "business": {
+      "name": "ビジネス",
+      "description": "複数のファンマをチームで運用する方へ。",
+      "feature1": "アナリティクスのスナップショット",
+      "feature2": "チーム向けコラボレーション機能"
+    },
+    "enterprise": {
+      "name": "エンタープライズ",
+      "description": "専任サポートやセキュリティ対応など、貴社に合わせて設計します。",
+      "feature1": "導入・移行の個別サポート",
+      "feature2": "専任カスタマーサクセス",
+      "feature3": "セキュリティ／コンプライアンス対応",
+      "price": "料金はご相談",
+      "ctaDescription": "まずはお気軽にお問い合わせください。",
+      "contactCta": "お問い合わせ"
+    },
+    "admin": {
+      "name": "管理者"
+    }
   },
   "planDowngrade": {
     "modalTitle": "プラン変更に伴うファンマ選択",

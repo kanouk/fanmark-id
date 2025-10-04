@@ -1,0 +1,352 @@
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useToast } from '@/hooks/use-toast';
+import { useProfile } from '@/hooks/useProfile';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { FanmarkSelectionModal } from '@/components/FanmarkSelectionModal';
+import {
+  getPlanLimit,
+  evaluatePlanDowngrade,
+  excludeFanmarksFromPlan,
+  formatPlanPrice,
+  type PlanType,
+  type ActiveFanmark,
+} from '@/lib/plan-utils';
+import { Check, ArrowLeft, Loader2, Sparkle, Crown, Star } from 'lucide-react';
+
+interface PlanCardCopy {
+  type: PlanType;
+  name: string;
+  description: string;
+  highlight?: boolean;
+  badge?: string;
+  price: string;
+  monthlySuffix?: string;
+  features: string[];
+}
+
+const CUSTOMER_PLANS: PlanType[] = ['free', 'creator', 'business'];
+
+const PlanSelection = () => {
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  const { profile, loading, updateProfile } = useProfile();
+  const { user } = useAuth();
+
+  const [processingPlan, setProcessingPlan] = useState<PlanType | null>(null);
+  const [pendingPlan, setPendingPlan] = useState<PlanType | null>(null);
+  const [currentFanmarks, setCurrentFanmarks] = useState<ActiveFanmark[]>([]);
+  const [showSelectionModal, setShowSelectionModal] = useState(false);
+
+  const planCards = useMemo<PlanCardCopy[]>(() => CUSTOMER_PLANS.map((planType) => {
+    return {
+      type: planType,
+      name: t(`planSelection.${planType}.name`),
+      description: t(`planSelection.${planType}.description`),
+      highlight: planType === 'creator',
+      badge: planType === 'creator' ? t('planSelection.popularBadge') : undefined,
+      price: formatPlanPrice(planType),
+      monthlySuffix: planType === 'free' ? undefined : t('planSelection.perMonth'),
+      features: [
+        t('planSelection.features.limit', { limit: getPlanLimit(planType) }),
+        t(`planSelection.${planType}.feature1`),
+        t(`planSelection.${planType}.feature2`),
+      ],
+    };
+  }), [t]);
+
+  const enterpriseCard = useMemo<PlanCardCopy>(() => ({
+    type: 'enterprise',
+    name: t('planSelection.enterprise.name'),
+    description: t('planSelection.enterprise.description'),
+    price: t('planSelection.enterprise.price'),
+    features: [
+      t('planSelection.enterprise.feature1'),
+      t('planSelection.enterprise.feature2'),
+      t('planSelection.enterprise.feature3'),
+    ],
+  }), [t]);
+
+  const handlePlanChange = async (planType: PlanType) => {
+    if (!profile || planType === profile.plan_type) {
+      return;
+    }
+
+    if (!user) {
+      toast({
+        title: t('common.error'),
+        description: t('planSelection.errorNoUser'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setProcessingPlan(planType);
+
+    try {
+      const { requiresSelection, fanmarks } = await evaluatePlanDowngrade(
+        user.id,
+        profile.plan_type,
+        planType
+      );
+
+      if (requiresSelection) {
+        setPendingPlan(planType);
+        setCurrentFanmarks(fanmarks);
+        setShowSelectionModal(true);
+        return;
+      }
+
+      await applyPlanChange(planType);
+    } catch (error) {
+      console.error('Error updating plan:', error);
+      toast({
+        title: t('planSelection.errorTitle'),
+        description: t('planSelection.errorDescription'),
+        variant: 'destructive',
+      });
+    } finally {
+      setProcessingPlan(null);
+    }
+  };
+
+  const applyPlanChange = async (newPlan: PlanType) => {
+    await updateProfile({ plan_type: newPlan });
+    toast({
+      title: t('planSelection.successTitle'),
+      description: t('planSelection.successDescription', { plan: t(`planSelection.${newPlan}.name`) }),
+    });
+  };
+
+  const handleFanmarkSelectionConfirm = async (selectedFanmarkIds: string[]) => {
+    if (!pendingPlan || !profile) return;
+
+    const previousPlan = profile.plan_type;
+    setProcessingPlan(pendingPlan);
+
+    try {
+      await updateProfile({ plan_type: pendingPlan });
+
+      const unselectedLicenseIds = currentFanmarks
+        .filter(fanmark => !selectedFanmarkIds.includes(fanmark.id))
+        .map(fanmark => fanmark.license_id);
+
+      await excludeFanmarksFromPlan(unselectedLicenseIds, previousPlan);
+
+      toast({
+        title: t('planSelection.successTitle'),
+        description: t('planSelection.successDescription', { plan: t(`planSelection.${pendingPlan}.name`) }),
+      });
+      setShowSelectionModal(false);
+      setPendingPlan(null);
+      setCurrentFanmarks([]);
+    } catch (error) {
+      console.error('Error updating fanmark plan selection:', error);
+      toast({
+        title: t('planSelection.errorTitle'),
+        description: t('planSelection.errorDescription'),
+        variant: 'destructive',
+      });
+    } finally {
+      setProcessingPlan(null);
+    }
+  };
+
+  const isCurrentPlan = (planType: PlanType) => profile?.plan_type === planType;
+
+  const getPlanIcon = (planType: PlanType) => {
+    switch (planType) {
+      case 'creator':
+        return <Sparkle className="h-6 w-6 text-primary" />;
+      case 'business':
+        return <Crown className="h-6 w-6 text-primary" />;
+      case 'free':
+      default:
+        return <Star className="h-6 w-6 text-primary" />;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
+        <div className="rounded-3xl border border-primary/20 bg-background/90 px-8 py-10 text-center shadow-[0_22px_55px_rgba(101,195,200,0.16)]">
+          <p className="text-sm text-muted-foreground">{t('planSelection.errorNoProfile')}</p>
+          <Button className="mt-6 rounded-full" onClick={() => navigate('/profile')}>
+            {t('planSelection.backToSettings')}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 pb-24">
+      <div className="mx-auto max-w-6xl px-4 pt-10">
+        <div className="mb-8 flex items-center">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/profile')}
+            className="h-10 w-10 rounded-full border border-primary/20 bg-background/90 text-foreground hover:bg-primary/10"
+            aria-label={t('planSelection.backToSettings')}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <header className="space-y-4 text-center">
+          <Badge className="mx-auto w-fit rounded-full bg-primary/10 px-4 py-1 text-primary">
+            {t('planSelection.currentPlanLabel', { plan: t(`planSelection.${profile.plan_type}.name`) })}
+          </Badge>
+          <h1 className="text-3xl font-semibold text-foreground md:text-4xl">
+            {t('planSelection.title')}
+          </h1>
+          <p className="mx-auto max-w-2xl text-sm text-muted-foreground md:text-base">
+            {t('planSelection.subtitle')}
+          </p>
+        </header>
+
+        <section className="mt-12 grid gap-6 md:grid-cols-3">
+          {planCards.map(card => (
+            <div
+              key={card.type}
+              className={`relative flex h-full flex-col gap-6 rounded-3xl border border-primary/10 bg-background/95 p-6 shadow-[0_20px_45px_rgba(101,195,200,0.12)] backdrop-blur transition-transform hover:-translate-y-1 hover:shadow-[0_25px_55px_rgba(101,195,200,0.16)] ${
+                card.highlight ? 'border-primary/40 bg-primary/5' : ''
+              }`}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-2 text-left">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                    {getPlanIcon(card.type)}
+                    <span>{card.name}</span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-bold text-foreground">{card.price}</span>
+                    {card.monthlySuffix && (
+                      <span className="text-xs text-muted-foreground">{card.monthlySuffix}</span>
+                    )}
+                  </div>
+                </div>
+                {card.badge && (
+                  <Badge className="rounded-full bg-primary px-3 py-1 text-primary-foreground">
+                    {card.badge}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {card.description}
+              </p>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                {card.features.map(feature => (
+                  <li key={feature} className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-primary" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-auto pt-2">
+                <Button
+                  className="w-full rounded-full"
+                  variant={isCurrentPlan(card.type) ? 'outline' : 'default'}
+                  disabled={processingPlan !== null || isCurrentPlan(card.type)}
+                  onClick={() => handlePlanChange(card.type)}
+                >
+                  {processingPlan === card.type ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {t('common.loading')}
+                    </>
+                  ) : isCurrentPlan(card.type) ? (
+                    t('planSelection.currentPlanCta')
+                  ) : (
+                    t('planSelection.choosePlanCta', { plan: card.name })
+                  )}
+                </Button>
+              </div>
+            </div>
+          ))}
+        </section>
+
+        <section className="mt-12">
+          <div className="rounded-3xl border border-primary/15 bg-background/95 p-8 shadow-[0_20px_45px_rgba(101,195,200,0.12)] backdrop-blur">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="max-w-2xl space-y-4">
+                <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                  <ShieldIcon />
+                  <span>{enterpriseCard.name}</span>
+                </div>
+                <p className="text-sm text-muted-foreground md:text-base">
+                  {enterpriseCard.description}
+                </p>
+                <ul className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+                  {enterpriseCard.features.map(feature => (
+                    <li key={feature} className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-primary" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="flex flex-col items-start gap-4 rounded-2xl border border-primary/10 bg-primary/5 p-6">
+                <span className="text-2xl font-semibold text-foreground">{enterpriseCard.price}</span>
+                <p className="text-sm text-muted-foreground">
+                  {t('planSelection.enterprise.ctaDescription')}
+                </p>
+                <Button
+                  variant="default"
+                  className="rounded-full"
+                  onClick={() => window.open('mailto:hello@fanmark.id?subject=Enterprise%20Plan%20Inquiry')}
+                >
+                  {t('planSelection.enterprise.contactCta')}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {showSelectionModal && pendingPlan && (
+        <FanmarkSelectionModal
+          isOpen={showSelectionModal}
+          onClose={() => {
+            setShowSelectionModal(false);
+            setPendingPlan(null);
+            setCurrentFanmarks([]);
+            setProcessingPlan(null);
+          }}
+          newPlanType={pendingPlan}
+          newPlanLimit={getPlanLimit(pendingPlan)}
+          currentFanmarks={currentFanmarks}
+          onConfirm={handleFanmarkSelectionConfirm}
+        />
+      )}
+    </div>
+  );
+};
+
+const ShieldIcon = () => (
+  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+    <ShieldOutline />
+  </div>
+);
+
+const ShieldOutline = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-4 w-4">
+    <path d="M12 3l7 4v5c0 4.97-3.58 9.54-7 10-3.42-.46-7-5.03-7-10V7l7-4z" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+export default PlanSelection;

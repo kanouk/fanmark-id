@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,15 +7,21 @@ import { useToast } from '@/hooks/use-toast';
 import { useAvatarUpload } from '@/hooks/useAvatarUpload';
 import { Save, User, Upload, Trash2, Loader2 } from 'lucide-react';
 import { FanmarkSelectionModal } from './FanmarkSelectionModal';
-import { supabase } from '@/integrations/supabase/client';
-import { useFanmarkLimit } from '@/hooks/useFanmarkLimit';
 import { useAuth } from '@/hooks/useAuth';
+import {
+  getPlanLimit,
+  evaluatePlanDowngrade,
+  excludeFanmarksFromPlan,
+  type PlanType,
+  type ActiveFanmark,
+} from '@/lib/plan-utils';
+import { useNavigate } from 'react-router-dom';
 
 interface UserSettings {
   display_name: string | null;
   username: string;
   avatar_url: string | null;
-  plan_type: 'free' | 'creator' | 'business' | 'enterprise' | 'admin';
+  plan_type: PlanType;
 }
 
 type UpdateSettingsPayload = Partial<UserSettings>;
@@ -30,80 +36,73 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
   const { toast } = useToast();
   const { user } = useAuth();
   const { uploadAvatar, deleteAvatar, uploading } = useAvatarUpload();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showFanmarkSelection, setShowFanmarkSelection] = useState(false);
-  const [pendingPlanChange, setPendingPlanChange] = useState<'free' | 'creator' | 'business' | 'enterprise' | 'admin' | null>(null);
-  const [currentFanmarks, setCurrentFanmarks] = useState<any[]>([]);
+  const [pendingPlanChange, setPendingPlanChange] = useState<PlanType | null>(null);
+  const [currentFanmarks, setCurrentFanmarks] = useState<ActiveFanmark[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     display_name: profile?.display_name ?? '',
     username: profile?.username ?? '',
     avatar_url: profile?.avatar_url ?? '',
-    plan_type: profile?.plan_type ?? 'free' as 'free' | 'creator' | 'business' | 'enterprise' | 'admin',
+    plan_type: (profile?.plan_type ?? 'free') as PlanType,
   });
 
-  const getPlanLimit = (planType: 'free' | 'creator' | 'business' | 'enterprise' | 'admin'): number => {
+  const getPlanLabel = (planType: PlanType) => {
     switch (planType) {
-      case 'free': return 3;
-      case 'creator': return 10;
-      case 'business': return 50;
-      case 'enterprise': return 100;
-      case 'admin': return -1; // unlimited
-      default: return 3;
+      case 'creator':
+        return t('userSettings.planTypeCreator');
+      case 'business':
+        return t('userSettings.planTypeBusiness');
+      case 'enterprise':
+        return t('userSettings.planTypeEnterprise');
+      case 'admin':
+        return t('userSettings.planTypeAdmin');
+      case 'free':
+      default:
+        return t('userSettings.planTypeFree');
     }
   };
 
-  const checkForPlanDowngrade = async (newPlanType: 'free' | 'creator' | 'business' | 'enterprise' | 'admin') => {
-    const currentPlanType = profile?.plan_type || 'free';
-    const currentLimit = getPlanLimit(currentPlanType);
-    const newLimit = getPlanLimit(newPlanType);
-    
-    // Skip check for admin (unlimited) or if not actually downgrading
-    if (newPlanType === 'admin' || newLimit >= currentLimit) {
+  const getPlanLimitCopy = (planType: PlanType) => {
+    const limit = getPlanLimit(planType);
+    if (limit === -1) {
+      return t('userSettings.planUnlimited');
+    }
+    return t('userSettings.planLimitInfo', { limit });
+  };
+
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      plan_type: (profile?.plan_type ?? 'free') as PlanType,
+    }));
+  }, [profile?.plan_type]);
+
+  const checkForPlanDowngrade = async (newPlanType: PlanType) => {
+    const currentPlanType = (profile?.plan_type || 'free') as PlanType;
+
+    try {
+      const { requiresSelection, fanmarks } = await evaluatePlanDowngrade(
+        user?.id,
+        currentPlanType,
+        newPlanType
+      );
+
+      if (requiresSelection) {
+        setCurrentFanmarks(fanmarks as ActiveFanmark[]);
+        setPendingPlanChange(newPlanType);
+        setShowFanmarkSelection(true);
+        return true;
+      }
+
       return false;
+    } catch (error) {
+      console.error('Error evaluating plan downgrade:', error);
+      throw error;
     }
-
-    // Fetch current active fanmarks with license details
-    const { data: licenses, error } = await supabase
-      .from('fanmark_licenses')
-      .select(`
-        id,
-        fanmark_id,
-        license_end,
-        fanmarks (
-          id,
-          emoji_combination
-        ),
-        fanmark_basic_configs (
-          fanmark_name,
-          access_type
-        )
-      `)
-      .eq('user_id', user?.id)
-      .eq('status', 'active')
-      .gt('license_end', new Date().toISOString());
-
-    if (error) throw error;
-
-    const activeFanmarks = licenses?.map(license => ({
-      id: license.fanmark_id,
-      emoji_combination: (license.fanmarks as any)?.emoji_combination || '',
-      fanmark_name: (license.fanmark_basic_configs as any)?.fanmark_name || null,
-      license_id: license.id,
-      license_end: license.license_end,
-      access_type: (license.fanmark_basic_configs as any)?.access_type || null
-    })) || [];
-
-    // Check if downgrade requires fanmark selection
-    if (activeFanmarks.length > newLimit) {
-      setCurrentFanmarks(activeFanmarks);
-      setPendingPlanChange(newPlanType);
-      setShowFanmarkSelection(true);
-      return true;
-    }
-
-    return false;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -148,18 +147,7 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
         .filter(fm => !selectedFanmarkIds.includes(fm.id))
         .map(fm => fm.license_id);
 
-      if (unselectedLicenseIds.length > 0) {
-        const { error } = await supabase
-          .from('fanmark_licenses')
-          .update({
-            plan_excluded: true,
-            excluded_at: new Date().toISOString(),
-            excluded_from_plan: profile?.plan_type || 'free'
-          })
-          .in('id', unselectedLicenseIds);
-
-        if (error) throw error;
-      }
+      await excludeFanmarksFromPlan(unselectedLicenseIds, profile?.plan_type || 'free');
 
       setFormData(updatedFormData);
       setShowFanmarkSelection(false);
@@ -311,17 +299,20 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
             <Label htmlFor="plan_type" className="text-sm font-semibold text-muted-foreground">
               {t('userSettings.planType')}
             </Label>
-            <select
-              id="plan_type"
-              value={formData.plan_type}
-              onChange={(e) => setFormData(prev => ({ ...prev, plan_type: e.target.value as 'free' | 'creator' | 'business' | 'admin' }))}
-              className="h-11 w-full rounded-2xl border border-primary/15 bg-background/80 px-3 text-base shadow-none focus-visible:ring-2 focus-visible:ring-primary/40"
-            >
-              <option value="free">{t('userSettings.planTypeFree')}</option>
-              <option value="creator">{t('userSettings.planTypeCreator')}</option>
-              <option value="business">{t('userSettings.planTypeBusiness')}</option>
-              <option value="admin">{t('userSettings.planTypeAdmin')}</option>
-            </select>
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/15 bg-background/80 px-4 py-3">
+              <div>
+                <p className="text-sm font-medium text-foreground">{getPlanLabel(formData.plan_type)}</p>
+                <p className="text-xs text-muted-foreground">{getPlanLimitCopy(formData.plan_type)}</p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-full border-primary/20 bg-primary/5 text-primary hover:bg-primary/10"
+                onClick={() => navigate('/plans')}
+              >
+                {t('userSettings.changePlan')}
+              </Button>
+            </div>
           </div>
 
         </div>

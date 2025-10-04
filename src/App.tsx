@@ -22,6 +22,7 @@ import NotFound from "./pages/NotFound";
 import { FanmarkAccess } from "./components/FanmarkAccess";
 import { FanmarkAccessByShortId } from "./components/FanmarkAccessByShortId";
 import FanmarkDetailsPage from "./pages/FanmarkDetailsPage";
+import PlanSelection from "./pages/PlanSelection";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const MainApp = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/plans" element={<PlanSelection />} />
             <Route path="/fanmarks/:fanmarkId/settings" element={<FanmarkSettingsPage />} />
             <Route path="/fanmarks/:fanmarkId/profile/edit" element={<EmojiProfileEdit />} />
             <Route path="/fanmarks/:fanmarkId/profile/preview" element={<FanmarkProfilePreview />} />

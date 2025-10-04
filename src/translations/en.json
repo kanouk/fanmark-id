@@ -299,7 +299,11 @@
     "planTypeFree": "Free",
     "planTypeCreator": "Creator",
     "planTypeBusiness": "Business",
+    "planTypeEnterprise": "Enterprise",
     "planTypeAdmin": "Admin",
+    "planLimitInfo": "Up to {limit} active fanmarks",
+    "planUnlimited": "Unlimited fanmarks",
+    "changePlan": "Change Plan",
     "saveChanges": "Save Changes",
     "updateSuccess": "Settings Updated",
     "updateSuccessDescription": "Your user settings have been updated successfully",
@@ -308,6 +312,56 @@
     "memberSince": "Member Since",
     "saving": "Saving...",
     "uploading": "Uploading..."
+  },
+  "planSelection": {
+    "title": "Pick the plan that fits your flow",
+    "subtitle": "Upgrade when you need more fanmarks – keep everything elegant and simple.",
+    "perMonth": "/ month",
+    "popularBadge": "Most popular",
+    "currentPlanLabel": "Current plan: {plan}",
+    "backToSettings": "Back to settings",
+    "currentPlanCta": "Current plan",
+    "choosePlanCta": "Switch to {plan}",
+    "successTitle": "Plan updated",
+    "successDescription": "You’re now on the {plan} plan.",
+    "errorTitle": "Could not update plan",
+    "errorDescription": "Please try again in a moment.",
+    "errorNoUser": "Please sign in again to change plans.",
+    "errorNoProfile": "We couldn’t load your profile information.",
+    "features": {
+      "limit": "Own up to {limit} fanmarks simultaneously"
+    },
+    "free": {
+      "name": "Free",
+      "description": "A gentle starting point for discovering fanmarks at your own pace.",
+      "feature1": "Core dashboard and fanmark publishing",
+      "feature2": "Community updates and tips"
+    },
+    "creator": {
+      "name": "Creator",
+      "description": "Designed for growing creators ready to share more fanmarks.",
+      "feature1": "Priority support & early feature access",
+      "feature2": "Enhanced customization options"
+    },
+    "business": {
+      "name": "Business",
+      "description": "Scalable management tools for teams handling multiple fanmarks.",
+      "feature1": "Advanced analytics snapshots",
+      "feature2": "Team-ready collaboration tools"
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "description": "Tailored onboarding, compliance support, and dedicated success assistance.",
+      "feature1": "Custom onboarding & migration support",
+      "feature2": "Dedicated success manager",
+      "feature3": "Security & compliance reviews",
+      "price": "Custom pricing",
+      "ctaDescription": "Let’s design the right plan together for your organization.",
+      "contactCta": "Contact us"
+    },
+    "admin": {
+      "name": "Admin"
+    }
   },
   "planDowngrade": {
     "modalTitle": "Fanma Selection for Plan Change",
