@@ -158,7 +158,7 @@ export default function FanmarkDetailsPage() {
           </section>
           <section className="mt-10">
           <Card className="border border-primary/10 bg-muted/40 backdrop-blur rounded-3xl">
-            <CardHeader className="space-y-1 px-6 pt-6">
+            <CardHeader className="px-6 pt-6 pb-2">
               <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
                 <Calendar className="h-5 w-5" />
                 {t('fanmarkDetails.ownershipHistory')}
@@ -166,7 +166,7 @@ export default function FanmarkDetailsPage() {
             </CardHeader>
             <CardContent className="overflow-x-auto px-6 pb-6">
               {details.license_history && details.license_history.length > 0 ? (
-                <table className="min-w-full divide-y divide-border text-sm">
+                <table className="mt-3 min-w-full divide-y divide-border text-sm">
                   <thead className="bg-muted/50 text-muted-foreground">
                     <tr>
                       <th className="px-4 py-3 text-left font-semibold">
