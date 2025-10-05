@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
 import { useProfile } from '@/hooks/useProfile';
@@ -32,6 +32,9 @@ const CUSTOMER_PLANS: PlanType[] = ['free', 'creator', 'business'];
 
 const PlanSelection = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const locationState = (location.state as { from?: string } | null) ?? null;
+  const backPath = locationState?.from ?? '/profile';
   const { t } = useTranslation();
   const { toast } = useToast();
   const { profile, loading, updateProfile } = useProfile();
@@ -215,7 +218,7 @@ const PlanSelection = () => {
             type="button"
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/profile')}
+            onClick={() => navigate(backPath)}
             className="h-10 w-10 rounded-full border border-primary/20 bg-background/90 text-foreground hover:bg-primary/10"
             aria-label={t('planSelection.backToSettings')}
           >

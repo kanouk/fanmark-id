@@ -15,7 +15,7 @@ import {
   type ActiveFanmark,
 } from '@/lib/plan-utils';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface UserSettings {
   display_name: string | null;
@@ -37,6 +37,7 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
   const { user } = useAuth();
   const { uploadAvatar, deleteAvatar, uploading } = useAvatarUpload();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [showFanmarkSelection, setShowFanmarkSelection] = useState(false);
   const [pendingPlanChange, setPendingPlanChange] = useState<PlanType | null>(null);
@@ -324,7 +325,7 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
                 type="button"
                 variant="outline"
                 className="rounded-full border-primary/20 bg-primary/5 text-primary hover:bg-primary/10"
-                onClick={() => navigate('/plans')}
+                onClick={() => navigate('/plans', { state: { from: location.pathname } })}
               >
                 {t('userSettings.changePlan')}
               </Button>

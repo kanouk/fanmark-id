@@ -402,7 +402,7 @@ export const FanmarkDashboard = () => {
   const activeFanmarks = fanmarks.filter(f => {
     const licenseData = f.fanmark_licenses as any;
     const timing = getLicenseTiming(licenseData);
-    return timing.status !== 'expired';
+    return timing.status === 'active' && !isReturned(f);
   }).length;
 
   const statusWeight: Record<LicenseTimingResult['status'], number> = {
@@ -486,6 +486,15 @@ export const FanmarkDashboard = () => {
                    className="bg-primary h-2.5 rounded-full transition-all duration-500"
                    style={{ width: `${isUnlimited ? 0 : Math.min((activeFanmarks / fanmarkLimit) * 100, 100)}%` }}
                  />
+              </div>
+              <div className="mt-6 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => navigate('/plans', { state: { from: location.pathname } })}
+                  className="text-xs text-muted-foreground hover:text-primary hover:underline"
+                >
+                  {t('dashboard.stats.upgradePlan')}
+                </button>
               </div>
             </CardContent>
           </Card>

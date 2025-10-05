@@ -482,7 +482,8 @@
     "subtitle": "Manage, polish, and acquire the fanmark that represent you.",
     "stats": {
       "totalFanmarks": "Fanmarks obtained",
-      "activeFanmarks": "Current fanmarks",
+      "activeFanmarks": "Active fanmarks",
+      "upgradePlan": "Need more fanmarks?",
       "limitLabel": "Limit"
     },
     "tabs": {

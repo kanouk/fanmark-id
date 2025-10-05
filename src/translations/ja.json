@@ -481,7 +481,8 @@
     "subtitle": "あなたのファンマを管理したり、新しいファンマを探すことができます",
     "stats": {
       "totalFanmarks": "取得済みファンマ",
-      "activeFanmarks": "取得できるファンマ数",
+      "activeFanmarks": "取得済みファンマ",
+      "upgradePlan": "もっとファンマを増やす",
       "limitLabel": "上限"
     },
     "tabs": {
