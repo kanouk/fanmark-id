@@ -1,59 +1,23 @@
 import { useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { useParams } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useToast } from '@/hooks/use-toast';
 import { useFanmarkByShortId } from '@/hooks/useFanmarkByShortId';
 import { getFanmarkShortUrl } from '@/utils/emojiUrl';
 import FanmarkQRCodeCard from '@/components/FanmarkQRCodeCard';
-import { Loader2, ArrowLeft, Copy, AlertTriangle } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 
 const FanmarkPublicQR = () => {
   const { shortId } = useParams<{ shortId: string }>();
-  const navigate = useNavigate();
   const { t } = useTranslation();
-  const { toast } = useToast();
   const { data, loading, error } = useFanmarkByShortId(shortId);
 
   const shareUrl = useMemo(() => getFanmarkShortUrl(shortId || ''), [shortId]);
-
-  const handleCopy = () => {
-    if (!shareUrl) return;
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      toast({
-        title: t('qr.copySuccessTitle'),
-        description: shareUrl,
-      });
-    }).catch(() => {
-      toast({
-        title: t('qr.copyErrorTitle'),
-        description: t('qr.copyErrorDescription'),
-        variant: 'destructive',
-      });
-    });
-  };
-
-  const handleBack = () => {
-    navigate(-1);
-  };
 
   const showContent = !loading && !error && data && !!shortId;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
       <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-10">
-        <div className="flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleBack}
-            className="h-10 w-10 rounded-full border border-primary/20 bg-background/90 text-foreground hover:bg-primary/10"
-            aria-label={t('common.back')}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </div>
-
         <div className="flex flex-1 flex-col items-center justify-center gap-10 py-12 text-center">
           <div className="space-y-4">
             <p className="text-sm font-semibold uppercase tracking-[0.35em] text-primary/70">{t('qr.title')}</p>
@@ -89,20 +53,7 @@ const FanmarkPublicQR = () => {
           )}
 
           {showContent && (
-            <>
-              <FanmarkQRCodeCard emoji={data.emoji_combination} url={shareUrl} shortId={shortId || ''} />
-              <div className="flex flex-col items-center gap-3">
-                <p className="text-sm font-medium text-muted-foreground">{shareUrl}</p>
-                <Button
-                  onClick={handleCopy}
-                  variant="outline"
-                  className="gap-2 rounded-full border-primary/20 bg-primary/5 text-primary hover:bg-primary/10"
-                >
-                  <Copy className="h-4 w-4" />
-                  {t('qr.copyButton')}
-                </Button>
-              </div>
-            </>
+            <FanmarkQRCodeCard emoji={data.emoji_combination} url={shareUrl} shortId={shortId || ''} />
           )}
         </div>
       </div>

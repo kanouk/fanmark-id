@@ -763,7 +763,7 @@ export const FanmarkDashboard = () => {
                                           </DropdownMenuItem>
                                           {fanmark.short_id && (
                                             <DropdownMenuItem
-                                              onSelect={() => navigate(`/q/${fanmark.short_id}`)}
+                                              onSelect={() => window.open(`/q/${fanmark.short_id}`, '_blank', 'noopener,noreferrer')}
                                               className="gap-2"
                                             >
                                               <QrCode className="h-4 w-4 text-primary" />
@@ -975,7 +975,7 @@ export const FanmarkDashboard = () => {
                                         </DropdownMenuItem>
                                         {fanmark.short_id && (
                                           <DropdownMenuItem
-                                            onSelect={() => navigate(`/q/${fanmark.short_id}`)}
+                                            onSelect={() => window.open(`/q/${fanmark.short_id}`, '_blank', 'noopener,noreferrer')}
                                             className="gap-2"
                                           >
                                             <QrCode className="h-4 w-4 text-primary" />
