@@ -11,10 +11,10 @@ import { useAuth } from '@/hooks/useAuth';
 import {
   getPlanLimit,
   evaluatePlanDowngrade,
-  excludeFanmarksFromPlan,
   type PlanType,
   type ActiveFanmark,
 } from '@/lib/plan-utils';
+import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 
 interface UserSettings {
@@ -147,7 +147,23 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
         .filter(fm => !selectedFanmarkIds.includes(fm.id))
         .map(fm => fm.license_id);
 
-      await excludeFanmarksFromPlan(unselectedLicenseIds, profile?.plan_type || 'free');
+      if (unselectedLicenseIds.length > 0) {
+        const { error: bulkReturnError, data: bulkReturnData } = await supabase.functions.invoke<{
+          success: boolean;
+          failed?: Array<{ licenseId: string; error: string }>;
+        }>('bulk-return-fanmarks', {
+          body: { license_ids: unselectedLicenseIds },
+        });
+
+        if (bulkReturnError) {
+          throw bulkReturnError;
+        }
+
+        if (bulkReturnData?.failed && bulkReturnData.failed.length > 0) {
+          console.error('Failed to return some fanmarks:', bulkReturnData.failed);
+          throw new Error('Failed to return selected fanmarks');
+        }
+      }
 
       setFormData(updatedFormData);
       setShowFanmarkSelection(false);

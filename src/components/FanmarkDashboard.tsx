@@ -8,11 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useTranslation } from '@/hooks/useTranslation';
-import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy, Undo2, QrCode } from 'lucide-react';
+import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy, Undo2, QrCode, MoreHorizontal, Menu } from 'lucide-react';
 import { FiTarget, FiLayers, FiCompass, FiStar, FiCheckCircle, FiMoon, FiUser, FiLink, FiFileText } from 'react-icons/fi';
 import { FanmarkAcquisition } from './FanmarkAcquisition';
 // Using Undo2 for return/return action
@@ -86,7 +87,6 @@ interface Fanmark {
     grace_expires_at?: string | null;
     status: string;
     is_returned?: boolean | null;
-    plan_excluded?: boolean;
     excluded_at?: string | null;
     excluded_from_plan?: string | null;
   } | null;
@@ -203,7 +203,6 @@ export const FanmarkDashboard = () => {
           grace_expires_at,
           status,
           is_returned,
-          plan_excluded,
           excluded_at,
           excluded_from_plan,
           created_at,
@@ -276,7 +275,6 @@ export const FanmarkDashboard = () => {
             grace_expires_at: license.grace_expires_at,
             status: license.status,
             is_returned: license.is_returned,
-            plan_excluded: license.plan_excluded,
             excluded_at: license.excluded_at,
             excluded_from_plan: license.excluded_from_plan
           }
@@ -313,39 +311,33 @@ export const FanmarkDashboard = () => {
     });
   };
 
-  const getStatusBadge = (timing: LicenseTimingResult, isPlanExcluded?: boolean) => {
+  const getStatusBadge = (timing: LicenseTimingResult) => {
     let icon = <FiMoon className="h-3.5 w-3.5" />;
     let className = 'border-gray-200/60 bg-gray-50 text-gray-600 shadow-sm';
     let label = t('dashboard.statusUnknown');
 
-    if (isPlanExcluded) {
-      icon = <FiTarget className="h-3.5 w-3.5" />;
-      className = 'border-amber-200/60 bg-amber-50 text-amber-600 shadow-sm';
-      label = t('fanmarkStatus.planExcluded');
-    } else {
-      switch (timing.status) {
-        case 'active':
-          icon = <FiCheckCircle className="h-3.5 w-3.5" />;
-          className = 'border-emerald-200/60 bg-emerald-50 text-emerald-600 shadow-sm';
-          label = t('dashboard.statusActive');
-          break;
-        case 'grace-return':
-          icon = <FiTarget className="h-3.5 w-3.5" />;
-          className = 'border-amber-200/60 bg-amber-50 text-amber-600 shadow-sm';
-          label = t('dashboard.statusReturnProcessing');
-          break;
-        case 'grace':
-          icon = <FiTarget className="h-3.5 w-3.5" />;
-          className = 'border-amber-200/60 bg-amber-50 text-amber-600 shadow-sm';
-          label = t('dashboard.statusGrace');
-          break;
-        case 'expired':
-        default:
-          icon = <FiTarget className="h-3.5 w-3.5" />;
-          className = 'border-rose-200/60 bg-rose-50 text-rose-600 shadow-sm';
-          label = t('dashboard.statusExpired');
-          break;
-      }
+    switch (timing.status) {
+      case 'active':
+        icon = <FiCheckCircle className="h-3.5 w-3.5" />;
+        className = 'border-emerald-200/60 bg-emerald-50 text-emerald-600 shadow-sm';
+        label = t('dashboard.statusActive');
+        break;
+      case 'grace-return':
+        icon = <FiTarget className="h-3.5 w-3.5" />;
+        className = 'border-amber-200/60 bg-amber-50 text-amber-600 shadow-sm';
+        label = t('dashboard.statusReturnProcessing');
+        break;
+      case 'grace':
+        icon = <FiTarget className="h-3.5 w-3.5" />;
+        className = 'border-amber-200/60 bg-amber-50 text-amber-600 shadow-sm';
+        label = t('dashboard.statusGrace');
+        break;
+      case 'expired':
+      default:
+        icon = <FiTarget className="h-3.5 w-3.5" />;
+        className = 'border-rose-200/60 bg-rose-50 text-rose-600 shadow-sm';
+        label = t('dashboard.statusExpired');
+        break;
     }
 
     return (
@@ -413,20 +405,27 @@ export const FanmarkDashboard = () => {
     return timing.status !== 'expired';
   }).length;
 
+  const statusWeight: Record<LicenseTimingResult['status'], number> = {
+    active: 0,
+    'grace-return': 2,
+    grace: 3,
+    expired: 4,
+  };
+
   const filteredFanmarks = fanmarks.sort((a, b) => {
-    // First sort by status (active only at top)
     const aLicenseData = a.fanmark_licenses as any;
     const bLicenseData = b.fanmark_licenses as any;
     const aTiming = getLicenseTiming(aLicenseData);
     const bTiming = getLicenseTiming(bLicenseData);
-    const aIsActive = aTiming.status !== 'expired';
-    const bIsActive = bTiming.status !== 'expired';
 
-    if (aIsActive !== bIsActive) {
-      return aIsActive ? -1 : 1; // Active first
+    const aWeight = statusWeight[aTiming.status] ?? 9;
+    const bWeight = statusWeight[bTiming.status] ?? 9;
+
+    if (aWeight !== bWeight) {
+      return aWeight - bWeight;
     }
 
-    // Second sort by acquisition date (newest first)
+    // Within the same status, sort by acquisition date (newest first)
     const aAcquisitionDate = parseDateString(aLicenseData?.license_start);
     const bAcquisitionDate = parseDateString(bLicenseData?.license_start);
     const aAcquisition = aAcquisitionDate ? aAcquisitionDate.getTime() : 0;
@@ -593,7 +592,6 @@ export const FanmarkDashboard = () => {
                                 <th className="text-muted-foreground font-medium text-xs uppercase tracking-wide text-left px-6 py-4">{t('dashboard.remainingDays')}</th>
                                 <th className="text-muted-foreground font-medium text-xs uppercase tracking-wide text-left px-6 py-4">{t('dashboard.status')}</th>
                                 <th className="text-left px-6 py-4 w-12"></th>
-                                <th className="text-left px-6 py-4 w-12"></th>
                               </tr>
                           </thead>
                           <tbody>
@@ -734,91 +732,71 @@ export const FanmarkDashboard = () => {
                                  </td>
                                   <td className="px-6 py-5">
                                     <div className="min-h-[2.5rem] flex items-center gap-2 min-w-fit">
-                                       {getStatusBadge(timing, licenseData?.plan_excluded)}
-                                       {licenseData?.plan_excluded && (
-                                         <span className="text-xs text-muted-foreground">
-                                           {t('fanmarkStatus.extensionNotPossible')}
-                                         </span>
-                                       )}
+                                       {getStatusBadge(timing)}
                                      </div>
                                   </td>
                                   <td className="px-6 py-5">
-                                    <div className="min-h-[2.5rem] flex items-center gap-2">
-                                       <Tooltip>
-                                         <TooltipTrigger asChild>
-                                           <Button
-                                             size="sm"
-                                             variant="ghost"
-                                             className="h-9 w-9 p-0 rounded-full hover:bg-primary/10 transition-colors"
-                                             onClick={() => {
-                                               navigateToFanmark(fanmark.emoji_combination, true);
-                                             }}
-                                             aria-label={t('common.visitFanmarkAriaLabel')}
-                                           >
-                                              <ExternalLink className="h-4 w-4" />
-                                           </Button>
-                                         </TooltipTrigger>
-                                         <TooltipContent>{t('dashboard.visitFanmarkTooltip')}</TooltipContent>
-                                       </Tooltip>
-                                       {fanmark.short_id && (
-                                         <Tooltip>
-                                           <TooltipTrigger asChild>
-                                             <Button
-                                               size="sm"
-                                               variant="ghost"
-                                               className="h-9 w-9 p-0 rounded-full hover:bg-primary/10 transition-colors"
-                                               onClick={() => navigate(`/q/${fanmark.short_id}`)}
-                                               aria-label={t('dashboard.actionsQRCode')}
-                                             >
-                                               <QrCode className="h-4 w-4" />
-                                             </Button>
-                                           </TooltipTrigger>
-                                           <TooltipContent>{t('dashboard.qrTooltip')}</TooltipContent>
-                                         </Tooltip>
-                                       )}
-                                       <Tooltip>
-                                         <TooltipTrigger asChild>
-                                           <Button
-                                             size="sm"
-                                             variant="ghost"
-                                             className="h-9 w-9 p-0 rounded-full hover:bg-primary/10 transition-colors"
-                                             onClick={() => {
-                                               const fullUrl = getFanmarkUrlForClipboard(fanmark.emoji_combination);
-                                               navigator.clipboard.writeText(fullUrl);
-                                               toast({
-                                                 title: t('dashboard.urlCopiedTitle'),
-                                                 description: fullUrl,
-                                               });
-                                             }}
-                                             aria-label={t('common.copyFanmarkAriaLabel')}
-                                           >
-                                              <Copy className="h-4 w-4" />
-                                           </Button>
-                                         </TooltipTrigger>
-                                         <TooltipContent>{t('dashboard.copyFanmarkLink')}</TooltipContent>
-                                       </Tooltip>
-                                    </div>
-                                  </td>
-                                   <td className="px-6 py-5">
-                                    <div className="min-h-[2.5rem] flex items-center">
-                                       {!isReturned(fanmark) && timing.status === 'active' && (
-                                          <Tooltip>
-                                            <TooltipTrigger asChild>
+                                    <div className="flex items-center">
+                                      <DropdownMenu>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <DropdownMenuTrigger asChild>
                                               <Button
                                                 size="sm"
                                                 variant="ghost"
-                                                className="h-9 w-9 p-0 rounded-full hover:bg-primary/10 transition-colors"
-                                                onClick={() => handleOpenSettings(fanmark.id)}
-                                                aria-label={t('dashboard.actionsSettings')}
+                                                className="h-9 w-9 rounded-full hover:bg-primary/10 transition-colors"
+                                                aria-label={t('dashboard.actionsMenu')}
                                               >
-                                                 <Settings className="h-5 w-5" />
+                                                <Menu className="h-4 w-4" />
                                               </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent>{t('dashboard.actionsSettings')}</TooltipContent>
-                                          </Tooltip>
-                                        )}
-                                     </div>
-                                   </td>
+                                            </DropdownMenuTrigger>
+                                          </TooltipTrigger>
+                                          <TooltipContent>{t('dashboard.actionsMenu')}</TooltipContent>
+                                        </Tooltip>
+                                        <DropdownMenuContent align="end" className="w-44">
+                                          <DropdownMenuItem
+                                            onSelect={() => navigateToFanmark(fanmark.emoji_combination, true)}
+                                            className="gap-2"
+                                          >
+                                            <ExternalLink className="h-4 w-4 text-primary" />
+                                            <span>{t('dashboard.visitFanmarkTooltip')}</span>
+                                          </DropdownMenuItem>
+                                          {fanmark.short_id && (
+                                            <DropdownMenuItem
+                                              onSelect={() => navigate(`/q/${fanmark.short_id}`)}
+                                              className="gap-2"
+                                            >
+                                              <QrCode className="h-4 w-4 text-primary" />
+                                              <span>{t('dashboard.actionsQRCode')}</span>
+                                            </DropdownMenuItem>
+                                          )}
+                                          <DropdownMenuItem
+                                            onSelect={() => {
+                                              const fullUrl = getFanmarkUrlForClipboard(fanmark.emoji_combination);
+                                              navigator.clipboard.writeText(fullUrl);
+                                              toast({
+                                                title: t('dashboard.urlCopiedTitle'),
+                                                description: fullUrl,
+                                              });
+                                            }}
+                                            className="gap-2"
+                                          >
+                                            <Copy className="h-4 w-4 text-primary" />
+                                            <span>{t('dashboard.copyFanmarkLink')}</span>
+                                          </DropdownMenuItem>
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem
+                                            onSelect={() => handleOpenSettings(fanmark.id)}
+                                            className="gap-2"
+                                            disabled={isReturned(fanmark) || timing.status !== 'active'}
+                                          >
+                                            <Settings className="h-4 w-4 text-primary" />
+                                            <span>{t('dashboard.actionsSettings')}</span>
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </div>
+                                  </td>
                                 </tr>
                               );
                             })}
@@ -868,6 +846,9 @@ export const FanmarkDashboard = () => {
                                         <span className="text-3xl leading-none select-none" style={{ letterSpacing: '0.2em' }}>{fanmark.emoji_combination}</span>
                                       </div>
                                     </div>
+                                    <div className="flex flex-col items-end gap-1">
+                                      {getStatusBadge(timing)}
+                                    </div>
                                  </div>
 
                                   <div className="space-y-2">
@@ -875,14 +856,6 @@ export const FanmarkDashboard = () => {
                                       <div className="flex-shrink-0">
                                         {!isFanmarkInactive(fanmark) && timing.status === 'active' && getAccessTypeBadge(fanmark.access_type)}
                                       </div>
-                                      <div className="flex-shrink-0">
-                                        {getStatusBadge(timing, licenseData?.plan_excluded)}
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center justify-between gap-2">
-                                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                                        {t('dashboard.fanmarkId')}
-                                      </span>
                                       <Tooltip>
                                         <TooltipTrigger asChild>
                                           <button
@@ -897,18 +870,6 @@ export const FanmarkDashboard = () => {
                                         <TooltipContent>{t('dashboard.viewDetails')}</TooltipContent>
                                       </Tooltip>
                                     </div>
-                                    {licenseData?.plan_excluded && (
-                                      <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-2">
-                                        <div className="flex items-center gap-2">
-                                          <Badge variant="destructive" className="text-xs">
-                                            🔒 {t('fanmarkStatus.planExcluded')}
-                                          </Badge>
-                                        </div>
-                                        <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                                          {t('fanmarkStatus.extensionNotPossible')}
-                                        </p>
-                                      </div>
-                                     )}
                                    </div>
 
                                  {/* Date Information */}
@@ -931,139 +892,123 @@ export const FanmarkDashboard = () => {
                                      <div className="text-xs text-muted-foreground font-medium mb-1">
                                        {t('dashboard.remainingDays')}
                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        {(timing.status === 'grace' || timing.status === 'grace-return') && timing.graceExpiresDate ? (
-                                          <GraceStatusCountdown graceExpiresAt={timing.graceExpiresDate.toISOString()} />
-                                        ) : timing.status === 'active' && expirationDate ? (
-                                          <div className="relative pb-6">
-                                            <span className={mobileTimeDisplayClass}>
-                                              {t('dashboard.daysRemaining', { days: Math.max(daysRemaining ?? 0, 0) })}
-                                            </span>
-                                            {isCountdownActiveMobile && (
-                                              <CountdownBubble target={expirationDate} />
-                                            )}
-                                          </div>
-                                        ) : isReturned(fanmark) ? (
-                                          <span className="text-muted-foreground text-sm">{t('dashboard.returned')}</span>
-                                        ) : (
-                                          <span className="text-muted-foreground text-sm">-</span>
-                                        )}
-
-                                      {!isReturned(fanmark) && timing.status === 'active' && daysRemaining !== null && daysRemaining >= 0 && (
-                                        <AlertDialog>
-                                          <Tooltip>
-                                            <TooltipTrigger asChild>
-                                              <AlertDialogTrigger asChild>
-                                                <Button
-                                                  size="icon"
-                                                  variant="ghost"
-                                                  className="h-7 w-7 rounded-full hover:bg-primary/10 hover:text-primary"
-                                                  disabled={returningFanmarkId === fanmark.id}
-                                                  aria-label={t('dashboard.actionsReturn')}
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div>
+                                          {(timing.status === 'grace' || timing.status === 'grace-return') && timing.graceExpiresDate ? (
+                                            <GraceStatusCountdown graceExpiresAt={timing.graceExpiresDate.toISOString()} />
+                                          ) : timing.status === 'active' && expirationDate ? (
+                                            <div className="relative pb-6">
+                                              <span className={mobileTimeDisplayClass}>
+                                                {t('dashboard.daysRemaining', { days: Math.max(daysRemaining ?? 0, 0) })}
+                                              </span>
+                                              {isCountdownActiveMobile && (
+                                                <CountdownBubble target={expirationDate} />
+                                              )}
+                                            </div>
+                                          ) : isReturned(fanmark) ? (
+                                            <span className="text-muted-foreground text-sm">{t('dashboard.returned')}</span>
+                                          ) : (
+                                            <span className="text-muted-foreground text-sm">-</span>
+                                          )}
+                                        </div>
+                                        {!isReturned(fanmark) && timing.status === 'active' && daysRemaining !== null && daysRemaining >= 0 && (
+                                          <AlertDialog>
+                                            <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                <AlertDialogTrigger asChild>
+                                                  <Button
+                                                    size="icon"
+                                                    variant="ghost"
+                                                    className="h-7 w-7 rounded-full hover:bg-primary/10 hover:text-primary"
+                                                    disabled={returningFanmarkId === fanmark.id}
+                                                    aria-label={t('dashboard.actionsReturn')}
+                                                  >
+                                                    <Undo2 className="h-3.5 w-3.5" />
+                                                  </Button>
+                                                </AlertDialogTrigger>
+                                              </TooltipTrigger>
+                                              <TooltipContent>{t('dashboard.actionsReturn')}</TooltipContent>
+                                            </Tooltip>
+                                            <AlertDialogContent>
+                                              <AlertDialogHeader>
+                                                <AlertDialogTitle>{t('dashboard.returnConfirmTitle')}</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                  {t('dashboard.returnConfirmDescription')}
+                                                </AlertDialogDescription>
+                                              </AlertDialogHeader>
+                                              <AlertDialogFooter>
+                                                <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                                                <AlertDialogAction
+                                                  onClick={() => handleReturnFanmark(fanmark.id)}
+                                                  className="bg-destructive hover:bg-destructive/90"
                                                 >
-                                                  <Undo2 className="h-3.5 w-3.5" />
-                                                </Button>
-                                              </AlertDialogTrigger>
-                                            </TooltipTrigger>
-                                            <TooltipContent>{t('dashboard.actionsReturn')}</TooltipContent>
-                                          </Tooltip>
-                                          <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                              <AlertDialogTitle>{t('dashboard.returnConfirmTitle')}</AlertDialogTitle>
-                                              <AlertDialogDescription>
-                                                {t('dashboard.returnConfirmDescription')}
-                                              </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                                              <AlertDialogAction
-                                                onClick={() => handleReturnFanmark(fanmark.id)}
-                                                className="bg-destructive hover:bg-destructive/90"
-                                              >
-                                                {returningFanmarkId === fanmark.id ? t('common.processing') : t('dashboard.returnConfirmAction')}
-                                              </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                          </AlertDialogContent>
-                                        </AlertDialog>
-                                      )}
+                                                  {returningFanmarkId === fanmark.id ? t('common.processing') : t('dashboard.returnConfirmAction')}
+                                                </AlertDialogAction>
+                                              </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                          </AlertDialog>
+                                        )}
                                      </div>
                                    </div>
                                 </div>
 
-                                  <div className="flex items-center justify-between pt-2">
-                                    <div className="flex items-center gap-2">
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-8 w-8 p-0 hover:bg-secondary"
-                                            onClick={() => {
-                                              navigateToFanmark(fanmark.emoji_combination, true);
-                                            }}
-                                            aria-label={t('common.visitFanmarkAriaLabel')}
+                                  <div className="flex items-center justify-end pt-2">
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="gap-2 px-3 hover:bg-secondary"
+                                          aria-label={t('dashboard.actionsMenu')}
+                                        >
+                                          <Menu className="h-4 w-4" />
+                                          <span className="text-sm">{t('dashboard.actionsMenu')}</span>
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end" className="w-44">
+                                        <DropdownMenuItem
+                                          onSelect={() => navigateToFanmark(fanmark.emoji_combination, true)}
+                                          className="gap-2"
+                                        >
+                                          <ExternalLink className="h-4 w-4 text-primary" />
+                                          <span>{t('dashboard.visitFanmarkTooltip')}</span>
+                                        </DropdownMenuItem>
+                                        {fanmark.short_id && (
+                                          <DropdownMenuItem
+                                            onSelect={() => navigate(`/q/${fanmark.short_id}`)}
+                                            className="gap-2"
                                           >
-                                             <ExternalLink className="h-4 w-4" />
-                                          </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>{t('dashboard.visitFanmarkTooltip')}</TooltipContent>
-                                      </Tooltip>
-                                      {fanmark.short_id && (
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              className="h-8 w-8 p-0 hover:bg-secondary"
-                                              onClick={() => navigate(`/q/${fanmark.short_id}`)}
-                                              aria-label={t('dashboard.actionsQRCode')}
-                                            >
-                                              <QrCode className="h-4 w-4" />
-                                            </Button>
-                                          </TooltipTrigger>
-                                          <TooltipContent>{t('dashboard.qrTooltip')}</TooltipContent>
-                                        </Tooltip>
-                                      )}
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                             className="h-8 w-8 p-0 hover:bg-secondary"
-                                             onClick={() => {
-                                               const fullUrl = getFanmarkUrlForClipboard(fanmark.emoji_combination);
-                                               navigator.clipboard.writeText(fullUrl);
-                                               toast({
-                                                 title: t('dashboard.urlCopiedTitle'),
-                                                 description: fullUrl,
-                                               });
-                                             }}
-                                             aria-label={t('common.copyFanmarkAriaLabel')}
-                                           >
-                                              <Copy className="h-4 w-4" />
-                                           </Button>
-                                         </TooltipTrigger>
-                                         <TooltipContent>{t('dashboard.copyFanmarkLink')}</TooltipContent>
-                                       </Tooltip>
-                                    </div>
-                                      {!isReturned(fanmark) && timing.status === 'active' && (
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              className="h-9 w-9 p-0 hover:bg-secondary"
-                                              onClick={() => handleOpenSettings(fanmark.id)}
-                                              aria-label={t('dashboard.actionsSettings')}
-                                            >
-                                              <Settings className="h-5 w-5" />
-                                            </Button>
-                                          </TooltipTrigger>
-                                          <TooltipContent>{t('dashboard.actionsSettings')}</TooltipContent>
-                                        </Tooltip>
-                                      )}
+                                            <QrCode className="h-4 w-4 text-primary" />
+                                            <span>{t('dashboard.actionsQRCode')}</span>
+                                          </DropdownMenuItem>
+                                        )}
+                                        <DropdownMenuItem
+                                          onSelect={() => {
+                                            const fullUrl = getFanmarkUrlForClipboard(fanmark.emoji_combination);
+                                            navigator.clipboard.writeText(fullUrl);
+                                            toast({
+                                              title: t('dashboard.urlCopiedTitle'),
+                                              description: fullUrl,
+                                            });
+                                          }}
+                                          className="gap-2"
+                                        >
+                                          <Copy className="h-4 w-4 text-primary" />
+                                          <span>{t('dashboard.copyFanmarkLink')}</span>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                          onSelect={() => handleOpenSettings(fanmark.id)}
+                                          className="gap-2"
+                                          disabled={isReturned(fanmark) || timing.status !== 'active'}
+                                        >
+                                          <Settings className="h-4 w-4 text-primary" />
+                                          <span>{t('dashboard.actionsSettings')}</span>
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
                                   </div>
-                              </div>
+                                </div>
                             </CardContent>
                           </Card>
                         );

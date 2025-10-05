@@ -10,11 +10,11 @@ import { FanmarkSelectionModal } from '@/components/FanmarkSelectionModal';
 import {
   getPlanLimit,
   evaluatePlanDowngrade,
-  excludeFanmarksFromPlan,
   formatPlanPrice,
   type PlanType,
   type ActiveFanmark,
 } from '@/lib/plan-utils';
+import { supabase } from '@/integrations/supabase/client';
 import { Check, ArrowLeft, Loader2, Sparkle, Crown, Star } from 'lucide-react';
 
 interface PlanCardCopy {
@@ -135,7 +135,23 @@ const PlanSelection = () => {
         .filter(fanmark => !selectedFanmarkIds.includes(fanmark.id))
         .map(fanmark => fanmark.license_id);
 
-      await excludeFanmarksFromPlan(unselectedLicenseIds, previousPlan);
+      if (unselectedLicenseIds.length > 0) {
+        const { error: bulkReturnError, data: bulkReturnData } = await supabase.functions.invoke<{
+          success: boolean;
+          failed?: Array<{ licenseId: string; error: string }>;
+        }>('bulk-return-fanmarks', {
+          body: { license_ids: unselectedLicenseIds },
+        });
+
+        if (bulkReturnError) {
+          throw bulkReturnError;
+        }
+
+        if (bulkReturnData?.failed && bulkReturnData.failed.length > 0) {
+          console.error('Failed to return some fanmarks:', bulkReturnData.failed);
+          throw new Error('Failed to return selected fanmarks');
+        }
+      }
 
       toast({
         title: t('planSelection.successTitle'),
