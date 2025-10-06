@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import addMonths from 'date-fns/addMonths';
+import { addMonths } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';

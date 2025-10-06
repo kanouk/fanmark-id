@@ -74,6 +74,16 @@ interface DashboardLocationState {
   prefillFanmark?: string;
 }
 
+interface ExtendLicenseResponse {
+  success: boolean;
+  license?: {
+    id: string;
+    license_end: string | null;
+    grace_expires_at: string | null;
+    status: string | null;
+  } | null;
+}
+
 export const FanmarkDashboard = () => {
   const { user } = useAuth();
   const { profile } = useProfile();
@@ -171,16 +181,50 @@ export const FanmarkDashboard = () => {
   const handleExtendSubmit = async () => {
     if (!extendTarget || !extendSelectedPlan) return;
     setExtendProcessing(true);
+
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      toast({
-        title: t('dashboard.extendDialog.confirmTitle'),
-        description: t('dashboard.extendDialog.mockProcessing', { months: extendSelectedPlan }),
+      const { data, error } = await supabase.functions.invoke<ExtendLicenseResponse>('extend-fanmark-license', {
+        body: {
+          fanmark_id: extendTarget.fanmarkId,
+          months: extendSelectedPlan,
+        },
       });
+
+      if (error) {
+        throw new Error(error.message ?? 'extend-fanmark-license failed');
+      }
+
+      const updatedLicense = data?.license;
+      const extendedUntil = updatedLicense?.license_end
+        ? formatInTimeZone(new Date(updatedLicense.license_end), 'Asia/Tokyo', 'yyyy/MM/dd')
+        : null;
+
+      toast({
+        title: t('dashboard.extendDialog.successTitle'),
+        description: extendedUntil
+          ? t('dashboard.extendDialog.successDescriptionWithDate', {
+              months: extendSelectedPlan,
+              date: extendedUntil,
+            })
+          : t('dashboard.extendDialog.successDescription', {
+              months: extendSelectedPlan,
+            }),
+      });
+
       await fetchFanmarks();
       setExtendDialogOpen(false);
       setExtendTarget(null);
       setExtendSelectedPlan(null);
+    } catch (extendError) {
+      console.error('Error extending fanmark license:', extendError);
+      const message = extendError instanceof Error ? extendError.message : null;
+      toast({
+        title: t('dashboard.extendDialog.errorTitle'),
+        description: message
+          ? t('dashboard.extendDialog.errorDescription', { message })
+          : t('dashboard.extendDialog.errorDescriptionFallback'),
+        variant: 'destructive',
+      });
     } finally {
       setExtendProcessing(false);
     }

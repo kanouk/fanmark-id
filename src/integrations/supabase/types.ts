@@ -650,10 +650,15 @@ export type Database = {
           fanmark_name: string
           id: string
           is_password_protected: boolean
-          license_id: string
+          license_id: string | null
+          license_status: string | null
+          license_end: string | null
+          grace_expires_at: string | null
+          is_returned: boolean | null
+          short_id: string
           status: string
-          target_url: string
-          text_content: string
+          target_url: string | null
+          text_content: string | null
         }[]
       }
       get_fanmark_complete_data: {
