@@ -548,7 +548,7 @@
     "timeRemaining": "残り時間",
     "extendButton": "延長する",
     "extendMenuLabel": "期間を延長する",
-    "extendHint": "メニューから有効期限を延長することができます。",
+    "extendHint": "その他の操作から有効期限を延長することができます。",
     "graceTimeRemaining": "あと {{time}}",
     "inputError": "絵文字の入力エラー",
     "inputHint": "絵文字のみを1〜5個まで入力してください",

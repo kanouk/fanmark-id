@@ -549,7 +549,7 @@
     "timeRemaining": "Time Remaining",
     "extendButton": "Extend",
     "extendMenuLabel": "Extend Period",
-    "extendHint": "You can extend the expiration from the menu.",
+    "extendHint": "You can extend the expiration from Other Actions.",
     "graceTimeRemaining": "{{time}} left",
     "inputError": "Invalid emoji",
     "inputHint": "Use 1 to 5 emoji characters only.",
