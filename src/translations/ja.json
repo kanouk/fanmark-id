@@ -547,6 +547,8 @@
     "extendDisabled": "延長する（処理中）",
     "timeRemaining": "残り時間",
     "extendButton": "延長する",
+    "extendMenuLabel": "期間を延長する",
+    "extendHint": "メニューから有効期限を延長することができます。",
     "graceTimeRemaining": "あと {{time}}",
     "inputError": "絵文字の入力エラー",
     "inputHint": "絵文字のみを1〜5個まで入力してください",
@@ -595,7 +597,20 @@
     "sortBy": "並び替え",
     "sortByAcquisition": "取得日順（新しい順）",
     "sortByExpiration": "残り日数順（少ない順）",
-    "countdown": "あと {{time}}"
+    "countdown": "あと {{time}}",
+    "extendDialog": {
+      "title": "ファンマの有効期限を延長",
+      "subtitle": "延長期間を選択してください。料金は現在テスト実装のため請求されません。",
+      "currentExpiration": "現在の有効期限",
+      "graceExpiration": "失効予定",
+      "selectPlan": "延長プランを選択",
+      "confirmTitle": "延長処理を行いました",
+      "mockProcessing": "{months}ヶ月分の延長を仮処理しました（課金はまだ行われません）",
+      "buttonConfirm": "延長する",
+      "buttonCancel": "キャンセル",
+      "planLabel": "{months}ヶ月",
+      "planPrice": "¥{price}"
+    }
   },
   "registration": {
     "title": "ファンマを登録",

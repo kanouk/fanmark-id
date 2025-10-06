@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Sparkles, Star } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
+import { FanmarkEmojiBadge } from '@/components/FanmarkEmojiBadge';
 
 interface FanmarkAcquisitionLoadingProps {
   emoji?: string;
@@ -41,11 +42,11 @@ export const FanmarkAcquisitionLoading = ({ emoji }: FanmarkAcquisitionLoadingPr
             </div>
 
             {/* 中央の絵文字 */}
-            <div className="relative z-10 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary/10 to-accent/10 animate-bounce"
-                 style={{ animationDuration: '1.5s' }}>
-              <div className="text-4xl leading-none flex items-center justify-center max-w-[4rem] text-center" style={{ letterSpacing: '0.1em' }}>
-                {emoji || '✨'}
-              </div>
+            <div
+              className="relative z-10 flex h-20 min-w-[5rem] items-center justify-center rounded-full bg-gradient-to-br from-primary/10 to-accent/10 px-6 animate-bounce"
+              style={{ animationDuration: '1.5s' }}
+            >
+              <FanmarkEmojiBadge emoji={emoji || '✨'} className="text-4xl leading-none" />
             </div>
 
             {/* 飛び回るスパークル */}

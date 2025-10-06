@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/useTranslation';
 import { parseDateString } from '@/lib/utils';
 
@@ -42,23 +41,10 @@ export const GraceStatusCountdown = ({ graceExpiresAt, className }: GraceStatusC
   }, [graceExpiresAt]);
 
   return (
-    <div className={`relative flex items-center justify-center ${className}`}>
-      <Button
-        size="sm"
-        variant="outline"
-        disabled={true}
-        className="h-7 px-3 text-xs opacity-60 cursor-not-allowed"
-      >
-        {t('dashboard.extendButton')}
-      </Button>
-      <div className="pointer-events-none absolute left-1/2 bottom-[115%] -translate-x-1/2">
-        <div className="relative rounded-full bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold shadow-md shadow-primary/30">
-          <span className="font-mono tabular-nums tracking-[0.015em] whitespace-nowrap">
-            {t('dashboard.countdown', { time: timeRemaining })}
-          </span>
-          <div className="absolute left-1/2 -bottom-[4px] h-2.5 w-2.5 -translate-x-1/2 rotate-45 bg-primary" />
-        </div>
-      </div>
+    <div className={`inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary ${className ?? ''}`}>
+      <span className="font-mono tabular-nums tracking-[0.015em] whitespace-nowrap">
+        {t('dashboard.countdown', { time: timeRemaining })}
+      </span>
     </div>
   );
 };

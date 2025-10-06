@@ -548,6 +548,8 @@
     "extendDisabled": "Extend (Processing)",
     "timeRemaining": "Time Remaining",
     "extendButton": "Extend",
+    "extendMenuLabel": "Extend Period",
+    "extendHint": "You can extend the expiration from the menu.",
     "graceTimeRemaining": "{{time}} left",
     "inputError": "Invalid emoji",
     "inputHint": "Use 1 to 5 emoji characters only.",
@@ -596,7 +598,20 @@
     "sortBy": "Sort by",
     "sortByAcquisition": "Acquisition date (newest)",
     "sortByExpiration": "Days remaining (least)",
-    "countdown": "in {{time}}"
+    "countdown": "in {{time}}",
+    "extendDialog": {
+      "title": "Extend fanmark license",
+      "subtitle": "Choose how long you want to extend. No payment is processed yet during this test phase.",
+      "currentExpiration": "Current expiration",
+      "graceExpiration": "Grace period ends",
+      "selectPlan": "Select an extension plan",
+      "confirmTitle": "Extension simulated",
+      "mockProcessing": "Simulated a {months}-month extension (billing to be added later).",
+      "buttonConfirm": "Extend",
+      "buttonCancel": "Cancel",
+      "planLabel": "{months} month(s)",
+      "planPrice": "¥{price}"
+    }
   },
   "registration": {
     "title": "Obtain Your Fanmark",

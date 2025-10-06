@@ -41,7 +41,7 @@ export const FanmarkMessage = ({ fanmark }: FanmarkMessageProps) => {
             href={part}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary hover:text-primary/80 underline underline-offset-4 decoration-2 transition-colors font-medium"
+            className="text-primary hover:text-primary/80 underline underline-offset-4 decoration-2 transition-colors font-medium break-words"
           >
             {part}
           </a>
@@ -116,7 +116,7 @@ export const FanmarkMessage = ({ fanmark }: FanmarkMessageProps) => {
                 <div className="max-w-3xl mx-auto">
                   <div className="bg-muted/30 rounded-lg p-8 min-h-[200px] flex items-center justify-center">
                     <div className="w-full text-center">
-                      <div className="whitespace-pre-wrap text-foreground/90 leading-relaxed text-xl font-normal tracking-wide">
+                      <div className="whitespace-pre-wrap break-words text-foreground/90 leading-relaxed text-lg font-normal tracking-wide">
                         {linkifyText(message)}
                       </div>
                     </div>

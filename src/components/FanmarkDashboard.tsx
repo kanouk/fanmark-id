@@ -6,53 +6,24 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useTranslation } from '@/hooks/useTranslation';
-import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy, Undo2, QrCode, MoreHorizontal, Menu } from 'lucide-react';
-import { FiTarget, FiLayers, FiCompass, FiStar, FiCheckCircle, FiMoon, FiUser, FiLink, FiFileText } from 'react-icons/fi';
+import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy, Undo2, QrCode, MoreVertical } from 'lucide-react';
+import { FiTarget, FiLayers, FiCompass, FiStar, FiCheckCircle, FiMoon, FiUser, FiLink, FiFileText, FiClock } from 'react-icons/fi';
 import { FanmarkAcquisition } from './FanmarkAcquisition';
+import { ExtendLicenseDialog, type ExtendLicenseTarget } from './ExtendLicenseDialog';
 // Using Undo2 for return/return action
 import { supabase } from '@/integrations/supabase/client';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { useFanmarkLimit } from '@/hooks/useFanmarkLimit';
 import { navigateToFanmark, getFanmarkUrlForClipboard } from '@/utils/emojiUrl';
-import { GraceStatusCountdown } from './GraceStatusCountdown';
 import { parseDateString } from '@/lib/utils';
 import { deriveLicenseTiming, type LicenseTimingResult } from '@/lib/licenseTiming';
-
-const CountdownDisplay = ({ target, className, showLabel = true }: { target: Date | string; className?: string; showLabel?: boolean }) => {
-  const { t } = useTranslation();
-  const targetKey = target instanceof Date ? target.toISOString() : target;
-  const compute = () => formatCountdown(target);
-  const [time, setTime] = useState(compute);
-
-  useEffect(() => {
-    setTime(compute());
-    const interval = setInterval(() => {
-      setTime(compute());
-    }, 1000);
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [targetKey]);
-
-  return (
-    <span className={className}>{showLabel ? t('dashboard.countdown', { time }) : time}</span>
-  );
-};
-
-const CountdownBubble = ({ target }: { target: Date | string }) => (
-  <div className="pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2">
-    <div className="relative rounded-full bg-primary text-primary-foreground px-3 py-1 text-xs font-semibold shadow-md shadow-primary/30">
-      <CountdownDisplay target={target} className="font-mono tabular-nums tracking-[0.1em] min-w-[4.5rem] inline-block text-center" showLabel={false} />
-      <div className="absolute left-1/2 -top-[3px] h-2 w-2 -translate-x-1/2 rotate-45 bg-primary" />
-    </div>
-  </div>
-);
 
 const formatCountdown = (target: Date | string | null) => {
   if (!target) return '00:00:00';
@@ -118,6 +89,12 @@ export const FanmarkDashboard = () => {
   const [activeTab, setActiveTab] = useState('my-fanmarks');
   const [prefilledEmoji, setPrefilledEmoji] = useState<string | undefined>();
   const [returningFanmarkId, setReturningFanmarkId] = useState<string | null>(null);
+  const [returnDialogOpen, setReturnDialogOpen] = useState(false);
+  const [returnTargetFanmark, setReturnTargetFanmark] = useState<Fanmark | null>(null);
+  const [extendDialogOpen, setExtendDialogOpen] = useState(false);
+  const [extendTarget, setExtendTarget] = useState<ExtendLicenseTarget | null>(null);
+  const [extendSelectedPlan, setExtendSelectedPlan] = useState<number | null>(null);
+  const [extendProcessing, setExtendProcessing] = useState(false);
 
   const handleOpenSettings = (fanmarkId: string) => {
     // Find and cache fanmark data for profile edit page
@@ -162,6 +139,50 @@ export const FanmarkDashboard = () => {
       });
     } finally {
       setReturningFanmarkId(null);
+    }
+  };
+
+  const openReturnDialog = (fanmark: Fanmark) => {
+    setReturnTargetFanmark(fanmark);
+    setReturnDialogOpen(true);
+  };
+
+  const handleConfirmReturn = async () => {
+    if (!returnTargetFanmark) return;
+    await handleReturnFanmark(returnTargetFanmark.id);
+    setReturnDialogOpen(false);
+    setReturnTargetFanmark(null);
+  };
+
+  const openExtendDialog = (fanmark: Fanmark, timing: LicenseTimingResult) => {
+    const licenseData = fanmark.fanmark_licenses;
+    setExtendTarget({
+      fanmarkId: fanmark.id,
+      emoji: fanmark.emoji_combination,
+      shortId: fanmark.short_id,
+      licenseEnd: licenseData?.license_end ?? null,
+      graceExpiresAt: licenseData?.grace_expires_at ?? null,
+      status: timing.status,
+    });
+    setExtendSelectedPlan(null);
+    setExtendDialogOpen(true);
+  };
+
+  const handleExtendSubmit = async () => {
+    if (!extendTarget || !extendSelectedPlan) return;
+    setExtendProcessing(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 800));
+      toast({
+        title: t('dashboard.extendDialog.confirmTitle'),
+        description: t('dashboard.extendDialog.mockProcessing', { months: extendSelectedPlan }),
+      });
+      await fetchFanmarks();
+      setExtendDialogOpen(false);
+      setExtendTarget(null);
+      setExtendSelectedPlan(null);
+    } finally {
+      setExtendProcessing(false);
     }
   };
 
@@ -614,7 +635,15 @@ export const FanmarkDashboard = () => {
                               const daysRemaining = timing.remainingWholeDays;
                               const isExpiringSoon = msRemaining !== null && msRemaining > 0 && msRemaining <= 3 * 24 * 60 * 60 * 1000;
                               const isCountdownActive = msRemaining !== null && msRemaining > 0 && msRemaining <= 24 * 60 * 60 * 1000;
-                              const timeDisplayClass = `font-medium whitespace-nowrap ${isCountdownActive ? 'text-xs' : 'text-sm'} ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`;
+                              const graceMsRemaining = timing.graceExpiresDate ? timing.graceExpiresDate.getTime() - Date.now() : null;
+                              const isGraceCountdownActive = graceMsRemaining !== null && graceMsRemaining > 0 && graceMsRemaining <= 24 * 60 * 60 * 1000;
+                              const isSmallCountdown =
+                                (timing.status === 'active' && isCountdownActive) ||
+                                ((timing.status === 'grace' || timing.status === 'grace-return') && isGraceCountdownActive);
+                              const timeDisplayClass = `font-medium whitespace-nowrap ${isSmallCountdown ? 'text-xs' : 'text-sm'} ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`;
+                              const isGraceReturn = timing.status === 'grace-return';
+                              const canReturn = !isReturned(fanmark) && timing.status === 'active';
+                              const canExtend = (['active', 'grace', 'grace-return'].includes(timing.status)) && (!isReturned(fanmark) || isGraceReturn);
 
                               const rowKey = `${fanmark.id}-${fanmark.current_license_id ?? licenseData?.license_end ?? idx}`;
                               const rowVisualState = isFanmarkInactive(fanmark)
@@ -671,60 +700,28 @@ export const FanmarkDashboard = () => {
                                     </div>
                                   </div>
                                 </td>
-                                 <td className="px-6 py-5">
-                                   <div className="min-h-[2.5rem] flex items-center">
-                                     {expirationDateUTC ? (
-                                       <div className="flex items-center gap-2 text-sm text-foreground font-medium">
-                                         <span>{formatInTimeZone(expirationDateUTC, 'Asia/Tokyo', 'yyyy/MM/dd')}</span>
-                                         {!isReturned(fanmark) && timing.status === 'active' && (
-                                           <AlertDialog>
-                                             <Tooltip>
-                                               <TooltipTrigger asChild>
-                                                 <AlertDialogTrigger asChild>
-                                                   <Button
-                                                     size="sm"
-                                                     variant="ghost"
-                                                     className="h-7 w-7 p-0 rounded-full hover:bg-primary/10 hover:text-primary transition-colors"
-                                                     disabled={returningFanmarkId === fanmark.id}
-                                                     aria-label={t('dashboard.actionsReturn')}
-                                                   >
-                                                     <Undo2 className="h-3.5 w-3.5" />
-                                                   </Button>
-                                                 </AlertDialogTrigger>
-                                               </TooltipTrigger>
-                                               <TooltipContent>{t('dashboard.actionsReturn')}</TooltipContent>
-                                             </Tooltip>
-                                             <AlertDialogContent>
-                                               <AlertDialogHeader>
-                                                 <AlertDialogTitle>{t('dashboard.returnConfirmTitle')}</AlertDialogTitle>
-                                                 <AlertDialogDescription>
-                                                   {t('dashboard.returnConfirmDescription')}
-                                                 </AlertDialogDescription>
-                                               </AlertDialogHeader>
-                                               <AlertDialogFooter>
-                                                 <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                                                 <AlertDialogAction
-                                                   onClick={() => handleReturnFanmark(fanmark.id)}
-                                                   className="bg-destructive hover:bg-destructive/90"
-                                                 >
-                                                   {returningFanmarkId === fanmark.id ? t('common.processing') : t('dashboard.returnConfirmAction')}
-                                                 </AlertDialogAction>
-                                               </AlertDialogFooter>
-                                             </AlertDialogContent>
-                                           </AlertDialog>
-                                         )}
-                                       </div>
-                                     ) : (
-                                       <span className="text-muted-foreground text-sm">-</span>
-                                     )}
+                                <td className="px-6 py-5">
+                                  <div className="min-h-[2.5rem] flex items-center text-sm text-foreground font-medium">
+                                    {expirationDateUTC ? (
+                                      <span>{formatInTimeZone(expirationDateUTC, 'Asia/Tokyo', 'yyyy/MM/dd')}</span>
+                                    ) : (
+                                      <span className="text-muted-foreground">-</span>
+                                    )}
                                   </div>
                                 </td>
                                   <td className="px-6 py-5 align-middle">
                                    <div className="relative min-h-[2.5rem] flex items-center gap-2">
                                       {(timing.status === 'grace' || timing.status === 'grace-return') && timing.graceExpiresDate ? (
-                                        <GraceStatusCountdown
-                                          graceExpiresAt={timing.graceExpiresDate.toISOString()}
-                                        />
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <span className={`${timeDisplayClass} text-destructive underline decoration-dotted underline-offset-4`}>
+                                              {t('dashboard.countdown', { time: formatCountdown(timing.graceExpiresDate) })}
+                                            </span>
+                                          </TooltipTrigger>
+                                          <TooltipContent className="rounded-2xl border border-rose-200 bg-rose-100 px-4 py-2 text-[0.7rem] font-medium text-rose-900 shadow-lg">
+                                            {t('dashboard.extendHint')}
+                                          </TooltipContent>
+                                        </Tooltip>
                                       ) : timing.status === 'active' && expirationDateUTC ? (
                                          <div className={timeDisplayClass}>
                                           {t('dashboard.daysRemaining', { days: Math.max(daysRemaining ?? 0, 0) })}
@@ -734,9 +731,7 @@ export const FanmarkDashboard = () => {
                                       ) : (
                                         <span className="text-muted-foreground text-sm">-</span>
                                       )}
-                                      {timing.status === 'active' && isCountdownActive && expirationDateUTC && (
-                                        <CountdownBubble target={expirationDateUTC} />
-                                      )}
+                                      {/* Bubble removed per design */}
                                    </div>
                                  </td>
                                   <td className="px-6 py-5">
@@ -753,16 +748,16 @@ export const FanmarkDashboard = () => {
                                               <Button
                                                 size="sm"
                                                 variant="ghost"
-                                                className="h-9 w-9 rounded-full hover:bg-primary/10 transition-colors"
+                                                className="h-10 w-10 rounded-full border border-primary/40 bg-primary/5 text-primary hover:bg-primary/10 transition-colors"
                                                 aria-label={t('dashboard.actionsMenu')}
                                               >
-                                                <Menu className="h-4 w-4" />
+                                                <MoreVertical className="h-5 w-5" />
                                               </Button>
                                             </DropdownMenuTrigger>
                                           </TooltipTrigger>
                                           <TooltipContent>{t('dashboard.actionsMenu')}</TooltipContent>
                                         </Tooltip>
-                                        <DropdownMenuContent align="end" className="w-44">
+                                        <DropdownMenuContent align="end" sideOffset={8} collisionPadding={16} className="w-48">
                                           <DropdownMenuItem
                                             onSelect={() => navigateToFanmark(fanmark.emoji_combination, true)}
                                             className="gap-2"
@@ -792,6 +787,28 @@ export const FanmarkDashboard = () => {
                                           >
                                             <Copy className="h-4 w-4 text-primary" />
                                             <span>{t('dashboard.copyFanmarkLink')}</span>
+                                          </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onSelect={() => {
+                                            if (!canExtend) return;
+                                            openExtendDialog(fanmark, timing);
+                                          }}
+                                          className="gap-2"
+                                          disabled={!canExtend}
+                                        >
+                                          <FiClock className="h-4 w-4 text-primary" />
+                                          <span>{t('dashboard.extendMenuLabel')}</span>
+                                        </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onSelect={() => {
+                                              if (!canReturn) return;
+                                              openReturnDialog(fanmark);
+                                            }}
+                                            className="gap-2"
+                                            disabled={!canReturn}
+                                          >
+                                            <Undo2 className="h-4 w-4 text-primary" />
+                                            <span>{t('dashboard.actionsReturn')}</span>
                                           </DropdownMenuItem>
                                           <DropdownMenuSeparator />
                                           <DropdownMenuItem
@@ -827,6 +844,9 @@ export const FanmarkDashboard = () => {
                         const isExpiringSoon = msRemainingMobile !== null && msRemainingMobile > 0 && msRemainingMobile <= 3 * 24 * 60 * 60 * 1000;
                         const isCountdownActiveMobile = msRemainingMobile !== null && msRemainingMobile > 0 && msRemainingMobile <= 24 * 60 * 60 * 1000;
                         const mobileTimeDisplayClass = `font-medium whitespace-nowrap text-sm ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`;
+                        const isGraceReturn = timing.status === 'grace-return';
+                        const canReturn = !isReturned(fanmark) && timing.status === 'active';
+                        const canExtend = (['active', 'grace', 'grace-return'].includes(timing.status)) && (!isReturned(fanmark) || isGraceReturn);
 
                         const cardKey = `${fanmark.id}-${fanmark.current_license_id ?? licenseData?.license_end ?? idx}`;
                         const cardVisualState = isFanmarkInactive(fanmark)
@@ -904,15 +924,21 @@ export const FanmarkDashboard = () => {
                                       <div className="flex items-start justify-between gap-2">
                                         <div>
                                           {(timing.status === 'grace' || timing.status === 'grace-return') && timing.graceExpiresDate ? (
-                                            <GraceStatusCountdown graceExpiresAt={timing.graceExpiresDate.toISOString()} />
+                                            <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                <span className={`${mobileTimeDisplayClass} text-destructive underline decoration-dotted underline-offset-4`}>
+                                                  {t('dashboard.countdown', { time: formatCountdown(timing.graceExpiresDate) })}
+                                                </span>
+                                              </TooltipTrigger>
+                                              <TooltipContent className="rounded-2xl border border-rose-200 bg-rose-100 px-4 py-2 text-[0.7rem] font-medium text-rose-900 shadow-lg">
+                                                {t('dashboard.extendHint')}
+                                              </TooltipContent>
+                                            </Tooltip>
                                           ) : timing.status === 'active' && expirationDate ? (
-                                            <div className="relative pb-6">
+                                            <div>
                                               <span className={mobileTimeDisplayClass}>
                                                 {t('dashboard.daysRemaining', { days: Math.max(daysRemaining ?? 0, 0) })}
                                               </span>
-                                              {isCountdownActiveMobile && (
-                                                <CountdownBubble target={expirationDate} />
-                                              )}
                                             </div>
                                           ) : isReturned(fanmark) ? (
                                             <span className="text-muted-foreground text-sm">{t('dashboard.returned')}</span>
@@ -920,43 +946,6 @@ export const FanmarkDashboard = () => {
                                             <span className="text-muted-foreground text-sm">-</span>
                                           )}
                                         </div>
-                                        {!isReturned(fanmark) && timing.status === 'active' && daysRemaining !== null && daysRemaining >= 0 && (
-                                          <AlertDialog>
-                                            <Tooltip>
-                                              <TooltipTrigger asChild>
-                                                <AlertDialogTrigger asChild>
-                                                  <Button
-                                                    size="icon"
-                                                    variant="ghost"
-                                                    className="h-7 w-7 rounded-full hover:bg-primary/10 hover:text-primary"
-                                                    disabled={returningFanmarkId === fanmark.id}
-                                                    aria-label={t('dashboard.actionsReturn')}
-                                                  >
-                                                    <Undo2 className="h-3.5 w-3.5" />
-                                                  </Button>
-                                                </AlertDialogTrigger>
-                                              </TooltipTrigger>
-                                              <TooltipContent>{t('dashboard.actionsReturn')}</TooltipContent>
-                                            </Tooltip>
-                                            <AlertDialogContent>
-                                              <AlertDialogHeader>
-                                                <AlertDialogTitle>{t('dashboard.returnConfirmTitle')}</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                  {t('dashboard.returnConfirmDescription')}
-                                                </AlertDialogDescription>
-                                              </AlertDialogHeader>
-                                              <AlertDialogFooter>
-                                                <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                                                <AlertDialogAction
-                                                  onClick={() => handleReturnFanmark(fanmark.id)}
-                                                  className="bg-destructive hover:bg-destructive/90"
-                                                >
-                                                  {returningFanmarkId === fanmark.id ? t('common.processing') : t('dashboard.returnConfirmAction')}
-                                                </AlertDialogAction>
-                                              </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                          </AlertDialog>
-                                        )}
                                      </div>
                                    </div>
                                 </div>
@@ -967,14 +956,14 @@ export const FanmarkDashboard = () => {
                                         <Button
                                           size="sm"
                                           variant="ghost"
-                                          className="gap-2 px-3 hover:bg-secondary"
+                                          className="gap-2 px-3 rounded-full border border-primary/40 bg-primary/5 text-primary hover:bg-primary/10"
                                           aria-label={t('dashboard.actionsMenu')}
                                         >
-                                          <Menu className="h-4 w-4" />
+                                          <MoreVertical className="h-5 w-5" />
                                           <span className="text-sm">{t('dashboard.actionsMenu')}</span>
                                         </Button>
                                       </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end" className="w-44">
+                                      <DropdownMenuContent align="end" sideOffset={8} collisionPadding={16} className="w-48">
                                         <DropdownMenuItem
                                           onSelect={() => navigateToFanmark(fanmark.emoji_combination, true)}
                                           className="gap-2"
@@ -991,19 +980,41 @@ export const FanmarkDashboard = () => {
                                             <span>{t('dashboard.actionsQRCode')}</span>
                                           </DropdownMenuItem>
                                         )}
+                                       <DropdownMenuItem
+                                         onSelect={() => {
+                                           const fullUrl = getFanmarkUrlForClipboard(fanmark.emoji_combination);
+                                           navigator.clipboard.writeText(fullUrl);
+                                           toast({
+                                             title: t('dashboard.urlCopiedTitle'),
+                                             description: fullUrl,
+                                           });
+                                         }}
+                                         className="gap-2"
+                                       >
+                                         <Copy className="h-4 w-4 text-primary" />
+                                         <span>{t('dashboard.copyFanmarkLink')}</span>
+                                       </DropdownMenuItem>
                                         <DropdownMenuItem
                                           onSelect={() => {
-                                            const fullUrl = getFanmarkUrlForClipboard(fanmark.emoji_combination);
-                                            navigator.clipboard.writeText(fullUrl);
-                                            toast({
-                                              title: t('dashboard.urlCopiedTitle'),
-                                              description: fullUrl,
-                                            });
+                                            if (!canExtend) return;
+                                            openExtendDialog(fanmark, timing);
                                           }}
                                           className="gap-2"
+                                          disabled={!canExtend}
                                         >
-                                          <Copy className="h-4 w-4 text-primary" />
-                                          <span>{t('dashboard.copyFanmarkLink')}</span>
+                                          <FiClock className="h-4 w-4 text-primary" />
+                                          <span>{t('dashboard.extendMenuLabel')}</span>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onSelect={() => {
+                                            if (!canReturn) return;
+                                            openReturnDialog(fanmark);
+                                          }}
+                                          className="gap-2"
+                                          disabled={!canReturn}
+                                        >
+                                          <Undo2 className="h-4 w-4 text-primary" />
+                                          <span>{t('dashboard.actionsReturn')}</span>
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem
@@ -1060,6 +1071,56 @@ export const FanmarkDashboard = () => {
         </Tabs>
 
       </div>
+      <ExtendLicenseDialog
+        target={extendTarget}
+        open={extendDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            if (extendProcessing) return;
+            setExtendDialogOpen(false);
+            setExtendTarget(null);
+            setExtendSelectedPlan(null);
+          } else {
+            setExtendDialogOpen(true);
+          }
+        }}
+        onChangePlan={setExtendSelectedPlan}
+        onSubmit={handleExtendSubmit}
+        isProcessing={extendProcessing}
+        selectedPlan={extendSelectedPlan}
+      />
+
+      <AlertDialog
+        open={returnDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            if (returningFanmarkId) return;
+            setReturnDialogOpen(false);
+            setReturnTargetFanmark(null);
+          } else {
+            setReturnDialogOpen(true);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('dashboard.returnConfirmTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('dashboard.returnConfirmDescription')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={Boolean(returningFanmarkId)}>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmReturn}
+              className="bg-destructive hover:bg-destructive/90"
+              disabled={Boolean(returningFanmarkId)}
+            >
+              {returningFanmarkId === returnTargetFanmark?.id ? t('common.processing') : t('dashboard.returnConfirmAction')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 };
