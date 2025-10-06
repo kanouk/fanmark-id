@@ -438,29 +438,25 @@ export const FanmarkDashboard = () => {
   };
 
   const getAccessTypeBadge = (accessType: string) => {
-    let icon = <FiMoon className="h-3.5 w-3.5" />;
-    let className = 'border-gray-200/60 bg-gray-50 text-gray-600 shadow-sm';
+    let IconComponent = FiMoon;
     let label = t('dashboard.accessTypes.inactive');
 
     if (accessType === 'profile') {
-      icon = <FiUser className="h-3.5 w-3.5" />;
-      className = 'border-sky-200/60 bg-sky-50 text-sky-600 shadow-sm';
+      IconComponent = FiUser;
       label = t('dashboard.accessTypes.profile');
     } else if (accessType === 'redirect') {
-      icon = <FiLink className="h-3.5 w-3.5" />;
-      className = 'border-emerald-200/60 bg-emerald-50 text-emerald-600 shadow-sm';
+      IconComponent = FiLink;
       label = t('dashboard.accessTypes.redirect');
     } else if (accessType === 'text') {
-      icon = <FiFileText className="h-3.5 w-3.5" />;
-      className = 'border-amber-200/60 bg-amber-50 text-amber-600 shadow-sm';
+      IconComponent = FiFileText;
       label = t('dashboard.accessTypes.text');
     }
 
     return (
-      <Badge className={`${className} inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide whitespace-nowrap`}>
-        {icon}
+      <span className="inline-flex items-center gap-2 whitespace-nowrap text-sm font-medium text-muted-foreground">
+        <IconComponent className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
         <span>{label}</span>
-      </Badge>
+      </span>
     );
   };
 
