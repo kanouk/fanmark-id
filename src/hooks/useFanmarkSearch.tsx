@@ -60,6 +60,25 @@ interface RegisterFanmarkResponse {
   error?: string;
 }
 
+interface CheckFanmarkAvailabilityResponse {
+  available?: boolean;
+  fanmark_id?: string | null;
+  reason?: string | null;
+  tier_level?: number | null;
+  price?: number | null;
+  license_days?: number | null;
+}
+
+interface FanmarkCompleteDataRow {
+  id: string;
+  emoji_combination: string;
+  normalized_emoji: string;
+  short_id: string;
+  status: string;
+  has_active_license: boolean;
+  current_owner_id: string | null;
+}
+
 const SKIN_TONE_MODIFIER_REGEX = /\p{Emoji_Modifier}/u;
 const SKIN_TONE_MODIFIER_GLOBAL_REGEX = /\p{Emoji_Modifier}/gu;
 const EMOJI_CHARACTER_REGEX = /\p{Emoji}/u;
@@ -219,121 +238,109 @@ export function useFanmarkSearch() {
   
       const normalizedQuery = normalizeEmoji(query);
   
-      const { data: fanmark, error: searchError } = await supabase
-        .from('fanmarks')
-        .select(`
-          id,
-          emoji_combination,
-          normalized_emoji,
-          short_id,
-          status
-        `)
-        .eq('normalized_emoji', normalizedQuery)
-        .maybeSingle();
-  
-      if (searchError) throw searchError;
-  
-      // レコードなし → 登録可能
-      if (!fanmark) {
-        setResult({
-          id: '',
-          emoji_combination: query,
-          normalized_emoji: normalizedQuery,
-          short_id: '',
-          tier_level: 1, // Default value
-          status: 'available',
-          emoji_count: validation.emojiCount,
-        });
-        return;
-      }
-  
-      // レコードありだが active 以外 → invalid（禁止/保留など）
-      if (fanmark.status !== 'active') {
-        setResult({
-          id: fanmark.id,
-          emoji_combination: fanmark.emoji_combination,
-          normalized_emoji: fanmark.normalized_emoji,
-          short_id: fanmark.short_id,
-          tier_level: 1, // Default tier level since removed from fanmarks table
-          status: 'invalid',
-          error: 'This emoji pattern is not allowed or not active.',
-          emoji_count: validation.emojiCount,
-        });
-        return;
-      }
-  
-      // Use the new secure availability checking function
-      const { data: availabilityData, error: availabilityError } = await supabase
-        .rpc('check_fanmark_availability', { fanmark_uuid: fanmark.id });
+      const { data: availabilityRaw, error: availabilityError } = await supabase
+        .rpc('check_fanmark_availability', { input_emoji: normalizedQuery } as { input_emoji: string });
 
       if (availabilityError) {
         console.error('Error checking availability:', availabilityError);
         throw availabilityError;
       }
 
-      const availability = availabilityData?.[0];
-      
-      if (!availability) {
-        throw new Error('Failed to check fanmark availability');
+      const availability = (availabilityRaw ?? null) as CheckFanmarkAvailabilityResponse | null;
+
+      if (!availability || typeof availability.available !== 'boolean') {
+        throw new Error('Failed to determine fanmark availability');
       }
 
-      // If fanmark has active license, check if current user owns it
-      if (availability.has_active_license) {
-        // Check if current user owns this fanmark by looking at their own licenses
-        const currentUserId = user?.id;
-        if (currentUserId) {
-          const { data: userLicense, error: userLicenseError } = await supabase
-            .from('fanmark_licenses')
-            .select('id, user_id, status, license_end')
-            .eq('fanmark_id', fanmark.id)
-            .eq('user_id', currentUserId)
-            .eq('status', 'active')
-            .gt('license_end', new Date().toISOString())
-            .maybeSingle();
-
-          if (!userLicenseError && userLicense) {
-            // Current user owns this fanmark
-            setResult({
-              id: fanmark.id,
-              emoji_combination: fanmark.emoji_combination,
-              normalized_emoji: fanmark.normalized_emoji,
-              short_id: fanmark.short_id,
-              tier_level: 1,
-              status: 'taken',
-              emoji_count: validation.emojiCount,
-              owner: {
-                user_id: currentUserId,
-                username: '',
-                display_name: '',
-              },
-            });
-            return;
-          }
-        }
-
-        // Someone else owns this fanmark
+      // 未登録のファンマークは即座に available 扱い
+      if (!availability.fanmark_id) {
         setResult({
-          id: fanmark.id,
-          emoji_combination: fanmark.emoji_combination,
-          normalized_emoji: fanmark.normalized_emoji,
-          short_id: fanmark.short_id,
-          tier_level: 1,
-          status: 'not_available',
-          emoji_count: validation.emojiCount,
-          owner: undefined, // Privacy protection - don't expose other user's info
-        });
-      } else {
-        // No active license -> available for registration
-        setResult({
-          id: fanmark.id,
-          emoji_combination: fanmark.emoji_combination,
-          normalized_emoji: fanmark.normalized_emoji,
-          short_id: fanmark.short_id,
+          id: '',
+          emoji_combination: query,
+          normalized_emoji: normalizedQuery,
+          short_id: '',
           tier_level: 1,
           status: 'available',
           emoji_count: validation.emojiCount,
         });
+        return;
       }
+
+      const { data: fanmarkDetails, error: fanmarkDetailsError } = await supabase
+        .rpc('get_fanmark_complete_data', { fanmark_id_param: availability.fanmark_id } as { fanmark_id_param: string });
+
+      if (fanmarkDetailsError) {
+        console.error('Error fetching fanmark details:', fanmarkDetailsError);
+        throw fanmarkDetailsError;
+      }
+
+      const fanmarkData = Array.isArray(fanmarkDetails) && fanmarkDetails.length > 0
+        ? (fanmarkDetails[0] as unknown as FanmarkCompleteDataRow)
+        : null;
+
+      if (!fanmarkData) {
+        throw new Error('Failed to load fanmark details');
+      }
+
+      const currentUserId = user?.id || null;
+      const isOwnedByCurrentUser = !!(currentUserId && fanmarkData.current_owner_id === currentUserId);
+
+      // ステータスが active でないものは利用不可として扱う
+      if (fanmarkData.status !== 'active') {
+        setResult({
+          id: fanmarkData.id,
+          emoji_combination: fanmarkData.emoji_combination,
+          normalized_emoji: fanmarkData.normalized_emoji,
+          short_id: fanmarkData.short_id,
+          tier_level: 1,
+          status: 'invalid',
+          error: 'This emoji pattern is not allowed or not active.',
+          emoji_count: validation.emojiCount,
+        });
+        return;
+      }
+
+      if (!fanmarkData.has_active_license) {
+        setResult({
+          id: fanmarkData.id,
+          emoji_combination: fanmarkData.emoji_combination,
+          normalized_emoji: fanmarkData.normalized_emoji,
+          short_id: fanmarkData.short_id,
+          tier_level: 1,
+          status: 'available',
+          emoji_count: validation.emojiCount,
+        });
+        return;
+      }
+
+      if (isOwnedByCurrentUser) {
+        setResult({
+          id: fanmarkData.id,
+          emoji_combination: fanmarkData.emoji_combination,
+          normalized_emoji: fanmarkData.normalized_emoji,
+          short_id: fanmarkData.short_id,
+          tier_level: 1,
+          status: 'taken',
+          emoji_count: validation.emojiCount,
+          owner: {
+            user_id: currentUserId,
+            username: '',
+            display_name: '',
+          },
+        });
+        return;
+      }
+
+      setResult({
+        id: fanmarkData.id,
+        emoji_combination: fanmarkData.emoji_combination,
+        normalized_emoji: fanmarkData.normalized_emoji,
+        short_id: fanmarkData.short_id,
+        tier_level: 1,
+        status: 'not_available',
+        emoji_count: validation.emojiCount,
+        owner: undefined,
+      });
     } catch (error) {
       console.error('Error searching fanmarks:', error);
       setResult(null);
@@ -363,31 +370,38 @@ export function useFanmarkSearch() {
 
   const checkAvailability = async (emoji: string): Promise<boolean> => {
     try {
-      const { data: fanmark, error } = await supabase
-        .from('fanmarks')
-        .select('id, status')
-        .eq('normalized_emoji', emoji)
-        .maybeSingle();
-  
+      const normalizedEmoji = normalizeEmoji(emoji);
+      const { data: availabilityRaw, error } = await supabase
+        .rpc('check_fanmark_availability', { input_emoji: normalizedEmoji } as { input_emoji: string });
+
       if (error) throw error;
-  
-      if (!fanmark) return true;                // レコードなし → available
-      if (fanmark.status !== 'active') return false; // 禁止/無効 →取得不可
-      
-      // Check if there are active licenses for this fanmark
-      const { data: licenses } = await supabase
-        .from('fanmark_licenses')
-        .select('id')
-        .eq('fanmark_id', fanmark.id)
-        .eq('status', 'active')
-        .gt('license_end', new Date().toISOString());
-      
-      return !licenses || licenses.length === 0;       // 空きなら取得可
+
+      const availability = (availabilityRaw ?? null) as CheckFanmarkAvailabilityResponse | null;
+
+      if (!availability || typeof availability.available !== 'boolean') {
+        return false;
+      }
+
+      if (!availability.available && availability.fanmark_id) {
+        // 詳細を参照して status を確認し、非アクティブ状態の場合は取得不可とする
+        const { data: fanmarkDetails } = await supabase
+          .rpc('get_fanmark_complete_data', { fanmark_id_param: availability.fanmark_id } as { fanmark_id_param: string });
+
+        const fanmarkData = Array.isArray(fanmarkDetails) && fanmarkDetails.length > 0
+          ? (fanmarkDetails[0] as unknown as FanmarkCompleteDataRow)
+          : null;
+
+        if (fanmarkData && fanmarkData.status !== 'active') {
+          return false;
+        }
+      }
+
+      return availability.available === true;
     } catch (error) {
       console.error('Error checking availability:', error);
       return false;
     }
-  };  
+  };
 
   return {
     searchQuery,
