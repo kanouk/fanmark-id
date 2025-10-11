@@ -5,6 +5,7 @@ import { AdminSettings } from "@/components/AdminSettings";
 import { AdminExpirationTest } from "@/components/AdminExpirationTest";
 import { AdminDataReset } from "@/components/AdminDataReset";
 import { AdminPlanSettings } from "@/components/AdminPlanSettings";
+import { AdminUserManagement } from "@/components/AdminUserManagement";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { LogOut, ShieldCheck, Sparkles } from "lucide-react";
@@ -44,6 +45,12 @@ const AdminDashboard = () => {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="flex w-full flex-wrap gap-2 rounded-2xl bg-muted/30 p-2">
               <TabsTrigger
+                value="users"
+                className="flex-1 rounded-xl px-5 py-3 text-sm font-medium transition-all data-[state=active]:bg-card data-[state=active]:text-foreground sm:flex-none"
+              >
+                ユーザー管理
+              </TabsTrigger>
+              <TabsTrigger
                 value="settings"
                 className="flex-1 rounded-xl px-5 py-3 text-sm font-medium transition-all data-[state=active]:bg-card data-[state=active]:text-foreground sm:flex-none"
               >
@@ -68,6 +75,22 @@ const AdminDashboard = () => {
                 データ管理
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="users" className="space-y-8">
+              <Card className="border-border/60 shadow-sm">
+                <CardHeader className="space-y-3 p-6 pb-4">
+                  <CardTitle className="text-xl font-semibold text-foreground">
+                    ユーザー管理
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    プラン変更、アカウント停止、パスワードリセットを含むユーザー管理操作を行います。操作はすべて監査ログに記録されます。
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-6 p-6 pt-0">
+                  <AdminUserManagement />
+                </CardContent>
+              </Card>
+            </TabsContent>
 
             <TabsContent value="settings" className="space-y-8">
               <Card className="border-border/60 shadow-sm">
