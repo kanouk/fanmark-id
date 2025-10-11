@@ -235,7 +235,7 @@ export const AdminUserManagement: React.FC = () => {
 
   const listQuery = useQuery<ListUsersResponse>({
     queryKey: listQueryKey,
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
     queryFn: async ({ queryKey }) => {
       const params = queryKey[1] as {
         search: string | null;
@@ -525,7 +525,7 @@ export const AdminUserManagement: React.FC = () => {
                   </TableRow>
                 )}
 
-                {!listQuery.isLoading && listQuery.data?.data.length === 0 && (
+                {!listQuery.isPending && listQuery.data?.data.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5}>
                       <div className="py-12 text-center text-muted-foreground">
@@ -867,8 +867,8 @@ export const AdminUserManagement: React.FC = () => {
             <Button variant="outline" onClick={() => setIsPlanDialogOpen(false)}>
               キャンセル
             </Button>
-            <Button onClick={() => planMutation.mutate()} disabled={planMutation.isLoading}>
-              {planMutation.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            <Button onClick={() => planMutation.mutate()} disabled={planMutation.isPending}>
+              {planMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               プランを更新
             </Button>
           </DialogFooter>
@@ -898,10 +898,10 @@ export const AdminUserManagement: React.FC = () => {
             <AlertDialogCancel>キャンセル</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => statusMutation.mutate()}
-              disabled={statusMutation.isLoading}
+              disabled={statusMutation.isPending}
               className={statusAction === "suspend" ? "bg-destructive hover:bg-destructive/90" : ""}
             >
-              {statusMutation.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {statusMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {statusAction === "suspend" ? "停止する" : "停止を解除する"}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -927,8 +927,8 @@ export const AdminUserManagement: React.FC = () => {
             <Button variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>
               キャンセル
             </Button>
-            <Button onClick={() => passwordMutation.mutate()} disabled={passwordMutation.isLoading}>
-              {passwordMutation.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            <Button onClick={() => passwordMutation.mutate()} disabled={passwordMutation.isPending}>
+              {passwordMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               リンクを生成
             </Button>
           </DialogFooter>

@@ -269,7 +269,7 @@ export const FanmarkDashboard = () => {
           status,
           is_returned,
           excluded_at,
-          excluded_from_plan,
+          plan_excluded,
           created_at,
           fanmarks (
             id,
@@ -339,9 +339,9 @@ export const FanmarkDashboard = () => {
             license_end: license.license_end,
             grace_expires_at: license.grace_expires_at,
             status: license.status,
-            is_returned: license.is_returned,
-            excluded_at: license.excluded_at,
-            excluded_from_plan: license.excluded_from_plan
+            is_returned: license.is_returned ?? false,
+            excluded_at: license.excluded_at ?? null,
+            excluded_from_plan: license.plan_excluded ?? false
           }
         };
       }) as Fanmark[];

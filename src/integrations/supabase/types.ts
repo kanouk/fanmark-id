@@ -192,6 +192,7 @@ export type Database = {
           grace_expires_at: string | null
           id: string
           is_initial_license: boolean
+          is_returned: boolean
           license_end: string
           license_start: string
           plan_excluded: boolean | null
@@ -207,6 +208,7 @@ export type Database = {
           grace_expires_at?: string | null
           id?: string
           is_initial_license?: boolean
+          is_returned?: boolean
           license_end: string
           license_start?: string
           plan_excluded?: boolean | null
@@ -222,6 +224,7 @@ export type Database = {
           grace_expires_at?: string | null
           id?: string
           is_initial_license?: boolean
+          is_returned?: boolean
           license_end?: string
           license_start?: string
           plan_excluded?: boolean | null
@@ -623,6 +626,10 @@ export type Database = {
         Args: { fanmark_emoji: string }
         Returns: boolean
       }
+      count_fanmark_emoji_units: {
+        Args: { input: string }
+        Returns: number
+      }
       generate_safe_display_name: {
         Args: { user_email: string; user_id: string }
         Returns: string
@@ -648,17 +655,17 @@ export type Database = {
           access_type: string
           emoji_combination: string
           fanmark_name: string
+          grace_expires_at: string
           id: string
           is_password_protected: boolean
-          license_id: string | null
-          license_status: string | null
-          license_end: string | null
-          grace_expires_at: string | null
-          is_returned: boolean | null
+          is_returned: boolean
+          license_end: string
+          license_id: string
+          license_status: string
           short_id: string
           status: string
-          target_url: string | null
-          text_content: string | null
+          target_url: string
+          text_content: string
         }[]
       }
       get_fanmark_complete_data: {
@@ -687,6 +694,7 @@ export type Database = {
         Args: { shortid_param: string }
         Returns: {
           current_grace_expires_at: string
+          current_is_returned: boolean
           current_license_end: string
           current_license_id: string
           current_license_start: string
