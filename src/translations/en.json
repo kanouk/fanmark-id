@@ -620,7 +620,8 @@
       "buttonConfirm": "Extend",
       "buttonCancel": "Cancel",
       "planLabel": "{months} month(s)",
-      "planPrice": "¥{price}"
+      "planPrice": "¥{price}",
+      "planUnavailable": "No extension plans available"
     }
   },
   "registration": {

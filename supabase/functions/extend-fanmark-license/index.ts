@@ -19,6 +19,7 @@ interface LicenseWithFanmark {
     user_input_fanmark: string;
     short_id: string;
     status: string;
+    tier_level: number | null;
   } | null;
 }
 
@@ -113,7 +114,8 @@ serve(async (req) => {
           id,
           user_input_fanmark,
           short_id,
-          status
+          status,
+          tier_level
         )
       `)
       .eq('fanmark_id', fanmarkId)
@@ -142,6 +144,36 @@ serve(async (req) => {
 
     if (licenseRecord.fanmarks?.status !== 'active') {
       return new Response(JSON.stringify({ error: 'Fanmark is not active' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const tierLevel = licenseRecord.fanmarks?.tier_level ?? null;
+    if (!tierLevel) {
+      return new Response(JSON.stringify({ error: 'Tier information not found for this fanmark' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { data: pricing, error: pricingError } = await supabase
+      .from('fanmark_tier_extension_prices')
+      .select('price_yen, is_active')
+      .eq('tier_level', tierLevel)
+      .eq('months', months)
+      .maybeSingle();
+
+    if (pricingError) {
+      console.error('Failed to fetch tier pricing:', pricingError);
+      return new Response(JSON.stringify({ error: 'Failed to fetch pricing information' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!pricing || pricing.is_active === false) {
+      return new Response(JSON.stringify({ error: 'Selected plan is not available' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -206,6 +238,8 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       success: true,
       license: updated,
+      price_yen: pricing.price_yen,
+      tier_level: tierLevel,
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

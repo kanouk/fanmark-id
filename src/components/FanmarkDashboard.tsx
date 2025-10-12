@@ -16,7 +16,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy, Undo2, QrCode, MoreVertical } from 'lucide-react';
 import { FiTarget, FiLayers, FiCompass, FiStar, FiCheckCircle, FiMoon, FiUser, FiLink, FiFileText, FiClock } from 'react-icons/fi';
 import { FanmarkAcquisition } from './FanmarkAcquisition';
-import { ExtendLicenseDialog, type ExtendLicenseTarget } from './ExtendLicenseDialog';
+import { ExtendLicenseDialog, type ExtendLicenseTarget, type ExtendPlanOption } from './ExtendLicenseDialog';
 // Using Undo2 for return/return action
 import { supabase } from '@/integrations/supabase/client';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
@@ -99,6 +99,8 @@ interface ExtendLicenseResponse {
     grace_expires_at: string | null;
     status: string | null;
   } | null;
+  price_yen?: number;
+  tier_level?: number;
 }
 
 export const FanmarkDashboard = () => {
@@ -120,7 +122,8 @@ export const FanmarkDashboard = () => {
   const [returnTargetFanmark, setReturnTargetFanmark] = useState<Fanmark | null>(null);
   const [extendDialogOpen, setExtendDialogOpen] = useState(false);
   const [extendTarget, setExtendTarget] = useState<ExtendLicenseTarget | null>(null);
-  const [extendSelectedPlan, setExtendSelectedPlan] = useState<number | null>(null);
+  const [extendSelectedPlan, setExtendSelectedPlan] = useState<ExtendPlanOption | null>(null);
+  const [extendPlans, setExtendPlans] = useState<ExtendPlanOption[]>([]);
   const [extendProcessing, setExtendProcessing] = useState(false);
 
   const handleOpenSettings = (fanmarkId: string) => {
@@ -192,9 +195,14 @@ export const FanmarkDashboard = () => {
       licenseEnd: licenseData?.license_end ?? null,
       graceExpiresAt: licenseData?.grace_expires_at ?? null,
       status: timing.status,
+      tierLevel: fanmark.tier_level ?? null,
     });
     setExtendSelectedPlan(null);
     setExtendDialogOpen(true);
+  };
+
+  const handleChangePlan = (plan: ExtendPlanOption | null) => {
+    setExtendSelectedPlan(plan);
   };
 
   const handleExtendSubmit = async () => {
@@ -205,7 +213,7 @@ export const FanmarkDashboard = () => {
       const { data, error } = await supabase.functions.invoke<ExtendLicenseResponse>('extend-fanmark-license', {
         body: {
           fanmark_id: extendTarget.fanmarkId,
-          months: extendSelectedPlan,
+          months: extendSelectedPlan.months,
         },
       });
 
@@ -218,15 +226,17 @@ export const FanmarkDashboard = () => {
         ? formatInTimeZone(new Date(updatedLicense.license_end), 'Asia/Tokyo', 'yyyy/MM/dd')
         : null;
 
+      const priceYen = data?.price_yen ?? extendSelectedPlan.price;
+
       toast({
         title: t('dashboard.extendDialog.successTitle'),
         description: extendedUntil
           ? t('dashboard.extendDialog.successDescriptionWithDate', {
-              months: extendSelectedPlan,
+              months: extendSelectedPlan.months,
               date: extendedUntil,
             })
           : t('dashboard.extendDialog.successDescription', {
-              months: extendSelectedPlan,
+              months: extendSelectedPlan.months,
             }),
       });
 
@@ -298,7 +308,8 @@ export const FanmarkDashboard = () => {
             short_id,
             status,
             created_at,
-            updated_at
+            updated_at,
+            tier_level
           )
         `)
         .eq('user_id', user?.id)
@@ -340,6 +351,7 @@ export const FanmarkDashboard = () => {
             status: string;
             created_at: string;
             updated_at: string;
+            tier_level?: number | null;
           } | null;
 
           if (!fanmark) {
@@ -378,7 +390,7 @@ export const FanmarkDashboard = () => {
             access_type: basicConfig?.access_type || 'inactive',
             fanmark_name: basicConfig?.fanmark_name || displayFanmark || userInputValue || '',
             license_id: license.id,
-            tier_level: null, // Removed from fanmarks table
+            tier_level: typeof fanmark.tier_level === 'number' ? fanmark.tier_level : null,
             current_license_id: license.id,
             is_transferable: true, // Default value
             user_id: '', // Not available in new schema
@@ -1214,7 +1226,7 @@ export const FanmarkDashboard = () => {
             setExtendDialogOpen(true);
           }
         }}
-        onChangePlan={setExtendSelectedPlan}
+        onChangePlan={handleChangePlan}
         onSubmit={handleExtendSubmit}
         isProcessing={extendProcessing}
         selectedPlan={extendSelectedPlan}

@@ -1,10 +1,16 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { addMonths } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatInTimeZone } from 'date-fns-tz';
+import { supabase } from '@/integrations/supabase/client';
+
+export interface ExtendPlanOption {
+  months: number;
+  price: number;
+}
 
 export interface ExtendLicenseTarget {
   fanmarkId: string;
@@ -13,29 +19,18 @@ export interface ExtendLicenseTarget {
   licenseEnd?: string | null;
   graceExpiresAt?: string | null;
   status?: string | null;
+  tierLevel?: number | null;
 }
 
 interface ExtendLicenseDialogProps {
   target: ExtendLicenseTarget | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onChangePlan: (months: number) => void;
+  onChangePlan: (plan: ExtendPlanOption | null) => void;
   onSubmit: () => void;
   isProcessing: boolean;
-  selectedPlan?: number | null;
+  selectedPlan?: ExtendPlanOption | null;
 }
-
-interface ExtendPlan {
-  months: number;
-  price: number;
-}
-
-const plans: ExtendPlan[] = [
-  { months: 1, price: 1000 },
-  { months: 2, price: 2000 },
-  { months: 3, price: 3000 },
-  { months: 6, price: 5000 },
-];
 
 export const ExtendLicenseDialog = ({
   target,
@@ -47,7 +42,56 @@ export const ExtendLicenseDialog = ({
   selectedPlan,
 }: ExtendLicenseDialogProps) => {
   const { t } = useTranslation();
-  const initialPlan = plans[0]?.months ?? null;
+  const [plans, setPlans] = useState<ExtendPlanOption[]>([]);
+  const [loadingPlans, setLoadingPlans] = useState(false);
+  const selectedPlanRef = useRef<ExtendPlanOption | null | undefined>(selectedPlan);
+
+  useEffect(() => {
+    selectedPlanRef.current = selectedPlan;
+  }, [selectedPlan]);
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      if (!open || !target?.tierLevel) {
+        setPlans([]);
+        return;
+      }
+
+      setLoadingPlans(true);
+      try {
+        const { data, error } = await supabase
+          .from('fanmark_tier_extension_prices')
+          .select('months, price_yen')
+          .eq('tier_level', target.tierLevel)
+          .eq('is_active', true)
+          .order('months', { ascending: true });
+
+        if (error) throw error;
+
+        const options = (data ?? []).map(item => ({ months: item.months, price: item.price_yen }));
+        setPlans(options);
+
+        if (!selectedPlanRef.current) {
+          if (options.length > 0) {
+            onChangePlan(options[0]);
+          } else {
+            onChangePlan(null);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load extension plans:', err);
+        setPlans([]);
+        onChangePlan(null);
+      } finally {
+        setLoadingPlans(false);
+      }
+    };
+
+    fetchPlans();
+    // Intentionally re-run when open state or target tier changes
+  }, [open, target?.tierLevel]);
+
+  const initialPlan = plans[0] ?? null;
   const activePlan = selectedPlan ?? initialPlan ?? null;
 
   useEffect(() => {
@@ -64,7 +108,7 @@ export const ExtendLicenseDialog = ({
   const formattedExtendedExpiration = useMemo(() => {
     if (!target?.licenseEnd || !activePlan) return null;
     const base = new Date(target.licenseEnd);
-    const extended = addMonths(base, activePlan);
+    const extended = addMonths(base, activePlan.months);
     return formatInTimeZone(extended, 'Asia/Tokyo', 'yyyy/MM/dd');
   }, [target?.licenseEnd, activePlan]);
 
@@ -110,7 +154,7 @@ export const ExtendLicenseDialog = ({
                   )}
                 >
                   <span className="block text-center">
-                    {formattedExtendedExpiration ?? t('dashboard.extendDialog.extendedExpirationPlaceholder', { months: activePlan ?? initialPlan ?? 1 })}
+                    {formattedExtendedExpiration ?? t('dashboard.extendDialog.extendedExpirationPlaceholder', { months: activePlan?.months ?? initialPlan?.months ?? 1 })}
                   </span>
                 </div>
               </div>
@@ -125,6 +169,11 @@ export const ExtendLicenseDialog = ({
 
           <div>
             <div className="mt-3 grid grid-cols-2 gap-3">
+              {plans.length === 0 && !loadingPlans && (
+                <div className="col-span-2 text-sm text-muted-foreground text-center">
+                  {t('dashboard.extendDialog.planUnavailable')}
+                </div>
+              )}
               {plans.map(plan => (
                 <button
                   key={plan.months}
@@ -132,11 +181,11 @@ export const ExtendLicenseDialog = ({
                   className={cn(
                     'rounded-xl border px-4 py-3 text-left transition-colors hover:border-primary',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary',
-                    activePlan === plan.months
+                    activePlan?.months === plan.months
                       ? 'border-primary bg-primary/10 text-primary'
                       : 'border-border/60 bg-background/80 text-foreground'
                   )}
-                  onClick={() => onChangePlan(plan.months)}
+                  onClick={() => onChangePlan(plan)}
                   disabled={isProcessing}
                 >
                   <div className="text-sm font-semibold">

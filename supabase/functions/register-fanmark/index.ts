@@ -46,6 +46,7 @@ interface FanmarkRow {
   status: string;
   emoji_ids: string[] | null;
   normalized_emoji_ids: string[] | null;
+  tier_level: number | null;
 }
 
 const SKIN_TONE_MODIFIER_REGEX = /\p{Emoji_Modifier}/u;
@@ -432,7 +433,7 @@ serve(async (req) => {
       const normalizedIdsLiteral = toPgUuidArrayLiteral(normalizedEmojiIds);
       const { data, error } = await supabase
         .from('fanmarks')
-        .select('id, status, user_input_fanmark, short_id, emoji_ids, normalized_emoji_ids')
+        .select('id, status, user_input_fanmark, short_id, emoji_ids, normalized_emoji_ids, tier_level')
         .filter('normalized_emoji_ids', 'eq', normalizedIdsLiteral)
         .maybeSingle() as { data: FanmarkRow | null; error: any };
 
@@ -447,7 +448,7 @@ serve(async (req) => {
     if (!existingFanmark) {
       const { data, error } = await supabase
         .from('fanmarks')
-        .select('id, status, user_input_fanmark, short_id, emoji_ids, normalized_emoji_ids')
+        .select('id, status, user_input_fanmark, short_id, emoji_ids, normalized_emoji_ids, tier_level')
         .eq('normalized_emoji', normalizedEmoji)
         .maybeSingle() as { data: FanmarkRow | null; error: any };
 
@@ -544,6 +545,21 @@ serve(async (req) => {
       }
 
       // Update access type in basic config for existing fanmark
+      const updates: { tier_level?: number } = {};
+      if (!existingFanmark.tier_level || existingFanmark.tier_level !== tierLevel) {
+        updates.tier_level = tierLevel;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        const { error: updateTierError } = await supabase
+          .from('fanmarks')
+          .update(updates)
+          .eq('id', existingFanmark.id);
+        if (updateTierError) {
+          console.error('Failed to update tier level for existing fanmark:', updateTierError);
+        }
+      }
+
       const { error: existingBasicCfgErr } = await supabase
         .from('fanmark_basic_configs')
         .upsert(
@@ -608,8 +624,9 @@ serve(async (req) => {
           status: 'active',
           emoji_ids: emojiIds,
           normalized_emoji_ids: normalizedEmojiIds,
+          tier_level: tierLevel,
         })
-        .select('id, user_input_fanmark, short_id, emoji_ids, normalized_emoji_ids')
+        .select('id, user_input_fanmark, short_id, emoji_ids, normalized_emoji_ids, tier_level')
         .single();
 
       if (insertError) {

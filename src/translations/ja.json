@@ -619,7 +619,8 @@
       "buttonConfirm": "延長する",
       "buttonCancel": "キャンセル",
       "planLabel": "{months}ヶ月",
-      "planPrice": "¥{price}"
+      "planPrice": "¥{price}",
+      "planUnavailable": "利用可能な延長プランがありません"
     }
   },
   "registration": {
