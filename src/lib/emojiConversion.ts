@@ -1,7 +1,7 @@
 import { emojiCatalogEntries, emojiToId, emojiIdToEmoji } from '@/data/emojiCatalog';
-import { splitEmojiGraphemes } from '@/utils/emojiUrl';
 
 const FE_VARIATION_SELECTOR_REGEX = /\uFE0F+/g;
+const ZWJ_REGEX = /\u200D+/g;
 const SKIN_TONE_CODEPOINTS = new Set(['1F3FB', '1F3FC', '1F3FD', '1F3FE', '1F3FF']);
 const SKIN_TONE_MODIFIER_GLOBAL_REGEX = /\p{Emoji_Modifier}/gu;
 
@@ -13,8 +13,30 @@ const toNormalizedCodepointKey = (codepoints: string[]) =>
 
 type EmojiCatalogEntry = (typeof emojiCatalogEntries)[number];
 
+type LookupEntry = {
+  key: string;
+  id: string;
+  priority: number;
+  length: number;
+};
+
 const emojiIdToRecord = new Map<string, EmojiCatalogEntry>();
 const normalizedCodepointsToId = new Map<string, string>();
+const keyToId = new Map<string, { id: string; priority: number }>();
+const lookupEntries: LookupEntry[] = [];
+let maxLookupKeyLength = 0;
+
+const registerLookupKey = (key: string, id: string, priority: number) => {
+  if (!key) return;
+  lookupEntries.push({ key, id, priority, length: key.length });
+  const existing = keyToId.get(key);
+  if (!existing || existing.priority > priority) {
+    keyToId.set(key, { id, priority });
+  }
+  if (key.length > maxLookupKeyLength) {
+    maxLookupKeyLength = key.length;
+  }
+};
 
 for (const entry of emojiCatalogEntries) {
   emojiIdToRecord.set(entry.id, entry);
@@ -23,22 +45,92 @@ for (const entry of emojiCatalogEntries) {
   if (!normalizedCodepointsToId.has(normalizedKey) || !hasSkinTone) {
     normalizedCodepointsToId.set(normalizedKey, entry.id);
   }
+
+  const normalizedEmoji = normalizeEmojiForLookup(entry.emoji);
+  registerLookupKey(entry.emoji, entry.id, 0);
+  registerLookupKey(normalizedEmoji, entry.id, 1);
+  const withoutVS = normalizedEmoji.replace(FE_VARIATION_SELECTOR_REGEX, '');
+  registerLookupKey(withoutVS, entry.id, 2);
+  const withoutZWJ = normalizedEmoji.replace(ZWJ_REGEX, '');
+  registerLookupKey(withoutZWJ, entry.id, 3);
+  registerLookupKey(withoutVS.replace(ZWJ_REGEX, ''), entry.id, 4);
 }
+
+Object.keys(emojiToId).forEach((key) => registerLookupKey(key, emojiToId[key], 1));
+
+lookupEntries.sort((a, b) => {
+  if (b.length !== a.length) {
+    return b.length - a.length;
+  }
+  return a.priority - b.priority;
+});
+
+const lookupEntriesByFirstChar = new Map<string, LookupEntry[]>();
+for (const entry of lookupEntries) {
+  const first = entry.key.charAt(0);
+  if (!lookupEntriesByFirstChar.has(first)) {
+    lookupEntriesByFirstChar.set(first, []);
+  }
+  lookupEntriesByFirstChar.get(first)!.push(entry);
+}
+
+for (const entries of lookupEntriesByFirstChar.values()) {
+  entries.sort((a, b) => {
+    if (b.length !== a.length) {
+      return b.length - a.length;
+    }
+    return a.priority - b.priority;
+  });
+}
+
+export const segmentEmojiSequence = (emojiSequence: string): string[] => {
+  if (!emojiSequence) return [];
+
+  const segments: string[] = [];
+  let index = 0;
+  const totalLength = emojiSequence.length;
+
+  while (index < totalLength) {
+    let matchedEntry: LookupEntry | null = null;
+    const remaining = totalLength - index;
+    const maxLength = Math.min(maxLookupKeyLength, remaining);
+
+    for (const entry of lookupEntries) {
+      if (entry.length > maxLength) {
+        continue;
+      }
+      if (emojiSequence.startsWith(entry.key, index)) {
+        matchedEntry = entry;
+        break;
+      }
+    }
+
+    if (matchedEntry) {
+      segments.push(matchedEntry.key);
+      index += matchedEntry.length;
+      continue;
+    }
+
+    const [fallback] = Array.from(emojiSequence.slice(index));
+    if (!fallback) {
+      break;
+    }
+    segments.push(fallback);
+    index += fallback.length;
+  }
+
+  return segments;
+};
 
 export const convertEmojiSequenceToIds = (emojiSequence: string): string[] => {
   if (!emojiSequence) return [];
 
-  const segments = splitEmojiGraphemes(emojiSequence);
+  const segments = segmentEmojiSequence(emojiSequence);
   if (segments.length === 0) return [];
 
   return segments.map((segment) => {
-    const normalized = normalizeEmojiForLookup(segment);
-    const candidates = [
-      normalized,
-      `${normalized}\uFE0F`,
-      normalized.replace(/\uFE0F/g, ""),
-    ];
-    const id = candidates.reduce<string | undefined>((found, key) => found ?? emojiToId[key], undefined);
+    const entry = keyToId.get(segment);
+    const id = entry?.id ?? emojiToId[segment];
     if (!id) {
       throw new Error(`この絵文字はサポートされていません: ${segment}`);
     }
@@ -94,6 +186,70 @@ export const convertEmojiSequenceToIdPair = (emojiSequence: string): {
   return { emojiIds, normalizedEmojiIds };
 };
 
+const sanitizeForCanonicalization = (input: string): string =>
+  input.replace(/\s/g, '').replace(/\uFE0E/g, '\uFE0F');
+
+const MAX_WINDOW = 10;
+
+export const canonicalizeEmojiString = (input: string): string => {
+  if (!input) {
+    return '';
+  }
+
+  const sanitized = sanitizeForCanonicalization(input);
+  if (!sanitized) {
+    return '';
+  }
+
+  const result: string[] = [];
+  let index = 0;
+
+  while (index < sanitized.length) {
+    const firstChar = sanitized.charAt(index);
+    const candidates = lookupEntriesByFirstChar.get(firstChar) ?? [];
+    let match: LookupEntry | null = null;
+    let consumed = 0;
+
+    for (const entry of candidates) {
+      const key = entry.key;
+      if (sanitized.startsWith(key, index)) {
+        match = entry;
+        consumed = key.length;
+        break;
+      }
+
+      const remainingSlice = sanitized.slice(index);
+      if (key.startsWith(remainingSlice)) {
+        match = entry;
+        consumed = Math.min(remainingSlice.length, key.length);
+        break;
+      }
+    }
+
+    if (match) {
+      let canonical = match.key;
+      try {
+        canonical = convertEmojiIdsToSequence([match.id]);
+      } catch (error) {
+        console.warn('canonicalizeEmojiString: failed to convert entry id', {
+          entry: match,
+          error,
+        });
+      }
+
+      result.push(canonical);
+      index += consumed;
+      continue;
+    }
+
+    const fallback = sanitized[index];
+    result.push(fallback);
+    index += fallback.length;
+  }
+
+  return result.join('');
+};
+
 export const resolveFanmarkDisplay = (
   fallback: string | undefined,
   ids?: (string | null)[] | null,
@@ -108,8 +264,7 @@ export const resolveFanmarkDisplay = (
   try {
     const rebuilt = convertEmojiIdsToSequence(validIds);
     return rebuilt || base;
-  } catch (error) {
-    console.warn('Failed to rebuild fanmark display from ids:', { validIds, error });
+  } catch {
     return base;
   }
 };

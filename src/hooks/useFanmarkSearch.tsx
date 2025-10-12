@@ -1,7 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from './useTranslation';
-import { convertEmojiSequenceToIdPair, resolveFanmarkDisplay, stripSkinToneModifiers } from '@/lib/emojiConversion';
+import {
+  canonicalizeEmojiString,
+  convertEmojiSequenceToIdPair,
+  resolveFanmarkDisplay,
+  stripSkinToneModifiers,
+} from '@/lib/emojiConversion';
 
 export interface FanmarkSearchResult {
   id: string;
@@ -189,47 +194,36 @@ export function useFanmarkSearch() {
     };
   };
 
-  // Split text into proper grapheme clusters (complex emojis as single units)
-  const splitGraphemes = (text: string): string[] => {
-    if (!text) return [];
-    
-    // Use Intl.Segmenter for accurate grapheme cluster splitting if available
-    if (typeof Intl !== 'undefined' && (Intl as any).Segmenter) {
-      const segmenter = new (Intl as any).Segmenter('en', { granularity: 'grapheme' });
-      return Array.from(segmenter.segment(text), (segment: any) => segment.segment);
-    }
-    
-    // Fallback: Advanced regex for complex emoji support
-    const complexEmojiRegex = /\p{Extended_Pictographic}(?:\p{Emoji_Modifier}|\uFE0F|\u200D(?:\p{Extended_Pictographic}|\p{Emoji_Modifier}))*|\p{Regional_Indicator}{2}|./gu;
-    return text.match(complexEmojiRegex) || [];
-  };
-
   // Validate emoji input - strict emoji-only validation
-  const validateEmojiInput = (input: string): { valid: boolean; error?: string; emojiCount: number } => {
+  const validateEmojiInput = (
+    input: string,
+  ): { valid: boolean; error?: string; emojiCount: number; pair?: { emojiIds: string[]; normalizedEmojiIds: string[] } } => {
     if (!input || input.trim().length === 0) {
       return { valid: false, error: t('search.emojiRequired'), emojiCount: 0 };
     }
 
-    const cleanInput = input.replace(/\s/g, '');
-    
-    // Check if string contains only emojis
-    const emojiRegex = /^[\p{Emoji}\p{Emoji_Modifier}\p{Emoji_Component}\p{Emoji_Modifier_Base}\p{Emoji_Presentation}]+$/u;
-    if (!emojiRegex.test(cleanInput)) {
-      return { valid: false, error: t('search.validationError'), emojiCount: 0 };
-    }
+    const cleanInput = canonicalizeEmojiString(input);
 
-    // Count emojis using proper grapheme segmentation
-    const emojiGraphemes = splitGraphemes(cleanInput);
-    const emojiCount = emojiGraphemes.filter((grapheme) => {
-      // Check if the grapheme contains emoji characters
-      return /\p{Emoji}/u.test(grapheme);
-    }).length;
-    
-    if (emojiCount < 1 || emojiCount > 5) {
-      return { valid: false, error: t('search.emojiCountError'), emojiCount };
+    try {
+      const pair = convertEmojiSequenceToIdPair(cleanInput);
+      const emojiCount = pair.emojiIds.length;
+      if (emojiCount < 1 || emojiCount > 5) {
+        return { valid: false, error: t('search.emojiCountError'), emojiCount };
+      }
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[useFanmarkSearch.validateEmojiInput] canonical', {
+          input,
+          canonical: cleanInput,
+          emojiIds: pair.emojiIds,
+          normalizedEmojiIds: pair.normalizedEmojiIds,
+        });
+      }
+      return { valid: true, emojiCount, pair };
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message ? error.message : t('search.validationError');
+      return { valid: false, error: message, emojiCount: 0 };
     }
-
-    return { valid: true, emojiCount };
   };
 
    const searchFanmarks = async (query: string) => {
@@ -253,49 +247,16 @@ export function useFanmarkSearch() {
         });
         return;
       }
-  
-      const compactQuery = query.replace(/\s/g, '');
+ 
+      const compactQuery = canonicalizeEmojiString(query);
       const normalizedQuery = normalizeEmoji(compactQuery);
-
-      let emojiIds: string[];
-      let normalizedEmojiIds: string[];
-      try {
-        const pair = convertEmojiSequenceToIdPair(compactQuery);
-        emojiIds = pair.emojiIds;
-        normalizedEmojiIds = pair.normalizedEmojiIds;
-      } catch (conversionError) {
-        setResult({
-          id: 'invalid',
-          user_input_fanmark: query,
-          fanmark: query,
-          emoji_ids: [],
-          normalized_emoji_ids: [],
-          normalized_emoji: normalizedQuery,
-          short_id: '',
-          tier_level: 1,
-          status: 'invalid',
-          error: conversionError instanceof Error ? conversionError.message : t('search.validationError'),
-          emoji_count: validation.emojiCount,
-        });
-        return;
+      const pair = validation.pair;
+      if (!pair) {
+        throw new Error('emoji conversion pair missing');
       }
 
-      if (emojiIds.length === 0) {
-        setResult({
-          id: 'invalid',
-          user_input_fanmark: query,
-          fanmark: query,
-          emoji_ids: [],
-          normalized_emoji_ids: [],
-          normalized_emoji: normalizedQuery,
-          short_id: '',
-          tier_level: 1,
-          status: 'invalid',
-          error: t('search.validationError'),
-          emoji_count: validation.emojiCount,
-        });
-        return;
-      }
+      const emojiIds = pair.emojiIds;
+      const normalizedEmojiIds = pair.normalizedEmojiIds;
 
       const { data: availabilityRaw, error: availabilityError } = await supabase
         .rpc('check_fanmark_availability', { input_emoji_ids: normalizedEmojiIds } as { input_emoji_ids: string[] });

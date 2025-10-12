@@ -275,7 +275,7 @@ export const FanmarkAcquisition = ({
 
                   toast({
                     title: t('common.paste') + '完了',
-                    description: `${Math.min(emojis.length, 5)}個の絵文字を貼り付けました`,
+                    description: t('common.pasteCompleted'),
                   });
 
                 } catch (error) {
@@ -305,7 +305,7 @@ export const FanmarkAcquisition = ({
 
                 toast({
                   title: t('common.directInput') + '完了',
-                  description: `${Math.min(emojis.length, 5)}個の絵文字を入力しました`,
+                  description: t('common.inputCompleted'),
                 });
               }}
               onClear={() => {

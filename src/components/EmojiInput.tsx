@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -7,6 +7,18 @@ import { EmojiPicker } from 'frimousse';
 import { Plus, X, Eraser, Clipboard, Keyboard } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
+import {
+  segmentEmojiSequence,
+  convertEmojiSequenceToIdPair,
+  convertEmojiIdsToSequence,
+  canonicalizeEmojiString,
+} from '@/lib/emojiConversion';
+
+const normalizeInput = (text: string) => {
+  if (!text) return '';
+
+  return canonicalizeEmojiString(text);
+};
 
 interface EmojiInputProps {
   value: string;
@@ -39,85 +51,93 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
   const [showDirectInput, setShowDirectInput] = useState<boolean>(false);
   const [directInputText, setDirectInputText] = useState<string>('');
+  const lastValidSegmentsRef = useRef<string[]>([]);
+
+  const segmentInput = useCallback((text: string) => {
+    if (!text) return [] as string[];
+
+    try {
+      const normalized = normalizeInput(text);
+      const segments = segmentEmojiSequence(normalized);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[EmojiInput] segmentInput marker');
+        console.log('[EmojiInput] segmentInput', {
+          text,
+          normalized,
+          segments,
+        });
+      }
+      return segments;
+    } catch (error) {
+      console.error('Failed to segment input text:', error);
+      return [];
+    }
+  }, []);
 
   const splitGraphemes = useCallback(
     (text: string) => {
       if (!text) return [] as string[];
 
-      // Use Intl.Segmenter for accurate grapheme cluster splitting if available
       if (typeof Intl !== 'undefined' && (Intl as any).Segmenter) {
         const segmenter = new (Intl as any).Segmenter('en', { granularity: 'grapheme' });
         return Array.from(segmenter.segment(text), (segment: any) => segment.segment);
       }
 
-      // Fallback: Advanced regex for complex emoji support
-      // This regex handles:
-      // - Extended pictographic characters (most emojis)
-      // - Skin tone modifiers
-      // - Variation selectors (like ️)
-      // - Zero-width joiners for compound emojis
-      // - Regional indicator symbols for flags
-      const complexEmojiRegex = /\p{Extended_Pictographic}(?:\p{Emoji_Modifier}|\uFE0F|\u200D(?:\p{Extended_Pictographic}|\p{Emoji_Modifier}))*|\p{Regional_Indicator}{2}|./gu;
-      return text.match(complexEmojiRegex) || [];
+      return segmentInput(text);
     },
-    []
+    [segmentInput]
   );
 
   const isEmojiOnly = useCallback(
     (text: string) => {
-      if (!text) return true;
+      if (!text.trim()) return true;
 
-      // More comprehensive emoji validation
-      const emojiOnlyRegex = /^[\p{Emoji_Presentation}\p{Extended_Pictographic}][\p{Emoji_Modifier}\p{Variation_Selector}\p{Emoji_Modifier_Base}\p{Emoji_Component}]*|[\p{Regional_Indicator}]{2}$/u;
-      const segments = splitGraphemes(text);
+      const normalizedText = normalizeInput(text);
+      const segments = segmentInput(normalizedText);
+      if (segments.length === 0) {
+        return false;
+      }
 
-      return segments.every(segment => {
-        // Check if each segment is a valid emoji
-        return emojiOnlyRegex.test(segment) || /^[\u{1F1E6}-\u{1F1FF}]{2}$/u.test(segment);
-      });
+      const joined = segments.join('');
+
+      try {
+        convertEmojiSequenceToIdPair(joined);
+        return true;
+      } catch {
+        return false;
+      }
     },
-    [splitGraphemes]
-  );
-
-  const extractEmojis = useCallback(
-    (text: string) => {
-      if (!text) return [];
-
-      const segments = splitGraphemes(text);
-      const emojiSegments: string[] = [];
-
-      // More comprehensive emoji detection regex
-      const emojiRegex = /[\p{Emoji_Presentation}\p{Extended_Pictographic}][\p{Emoji_Modifier}\p{Variation_Selector}\p{Emoji_Modifier_Base}\p{Emoji_Component}]*|[\u{1F1E6}-\u{1F1FF}]{2}/u;
-
-      segments.forEach(segment => {
-        // Check if this segment is an emoji
-        if (emojiRegex.test(segment)) {
-          emojiSegments.push(segment);
-        }
-      });
-
-      return emojiSegments;
-    },
-    [splitGraphemes]
+    [segmentInput]
   );
 
   const segments = useMemo(() => {
+    const segmented = segmentInput(value);
+    if (segmented.length > 0) {
+      return segmented.slice(0, maxLength);
+    }
+
     const graphemes = splitGraphemes(value);
     if (graphemes.length > maxLength) {
       return graphemes.slice(0, maxLength);
     }
     return graphemes;
-  }, [splitGraphemes, value, maxLength]);
+  }, [segmentInput, splitGraphemes, value, maxLength]);
 
 
   const updateValue = useCallback(
     (newSegments: string[]) => {
       const trimmed = newSegments.slice(0, maxLength);
-      const nextValue = trimmed.join('');
+      const nextValue = normalizeInput(trimmed.join(''));
+
       onChange(nextValue);
       onSearchPerformed?.(nextValue);
+      if (nextValue) {
+        lastValidSegmentsRef.current = segmentInput(nextValue);
+      } else {
+        lastValidSegmentsRef.current = [];
+      }
     },
-    [onChange, onSearchPerformed, maxLength]
+    [onChange, onSearchPerformed, maxLength, segmentInput]
   );
 
   const handleReorder = useCallback(
@@ -268,10 +288,8 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
         return;
       }
 
-      // Extract emojis from the clipboard content
-      const extractedEmojis = extractEmojis(clipboardText);
-
-      if (extractedEmojis.length === 0) {
+      const sanitized = normalizeInput(clipboardText);
+      if (!sanitized) {
         toast({
           title: t('common.noEmojisFound'),
           description: t('common.noEmojisFoundDesc'),
@@ -279,41 +297,53 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
         return;
       }
 
-      // Limit to maxLength
-      const limitedEmojis = extractedEmojis.slice(0, maxLength);
-      const wasEmojiOnly = isEmojiOnly(clipboardText);
+      const wasEmojiOnly = isEmojiOnly(sanitized);
+      let segments = segmentInput(sanitized);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[EmojiInput] handlePaste', { sanitized, wasEmojiOnly, segments });
+      }
+
+      if (segments.length === 0) {
+        toast({
+          title: t('common.noEmojisFound'),
+          description: t('common.noEmojisFoundDesc'),
+        });
+        return;
+      }
+
+      const canonicalSequence = normalizeInput(segments.join(''));
+      const canonicalSegments = segmentInput(canonicalSequence);
+      const canonicalCount = canonicalSegments.length;
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[EmojiInput] handlePaste canonical count', { canonicalCount, canonicalSegments });
+      }
+
+      const limitedSegments = canonicalSegments.slice(0, maxLength);
+      const limitedValue = limitedSegments.join('');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[EmojiInput] handlePaste limited', { limitedSegments, limitedValue });
+      }
+
+      let wasTruncated = false;
+      if (canonicalCount > limitedSegments.length) {
+        wasTruncated = true;
+      }
+
+      const limitedPair = convertEmojiSequenceToIdPair(limitedValue);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[EmojiInput] handlePaste limited conversion', { limitedValue, limitedPair });
+      }
 
       // Determine appropriate message
-      let title = '貼り付け完了';
-      let description = '';
-
-      if (!wasEmojiOnly && limitedEmojis.length > 0) {
-        if (extractedEmojis.length > maxLength) {
-          // Extracted emojis + truncated
-          title = '絵文字を抽出して貼り付けました';
-          description = `${extractedEmojis.length}個の絵文字を見つけて、先頭${maxLength}個を貼り付けました`;
-        } else {
-          // Only extracted emojis
-          title = '絵文字を抽出して貼り付けました';
-          description = `${limitedEmojis.length}個の絵文字を抽出しました`;
-        }
-      } else if (wasEmojiOnly) {
-        if (extractedEmojis.length > maxLength) {
-          // Pure emojis + truncated
-          title = '文字数を調整しました';
-          description = `先頭${maxLength}個の絵文字を貼り付けました`;
-        } else {
-          // Pure emojis, no truncation
-          description = `${limitedEmojis.length}個の絵文字を貼り付けました`;
-        }
-      }
+      const title = '貼り付け完了';
+      const description = '絵文字を貼り付けました';
 
       toast({
         title,
         description,
       });
 
-      updateValue(limitedEmojis);
+      updateValue(limitedSegments);
       setActiveIndex(null);
 
     } catch (error) {
@@ -328,7 +358,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
 
   const handleDirectInput = () => {
     if (disabled) return;
-    setDirectInputText('');
+    setDirectInputText(value);
     setShowDirectInput(true);
   };
 
@@ -338,10 +368,8 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
       return;
     }
 
-    // Extract emojis from the input text
-    const extractedEmojis = extractEmojis(directInputText);
-
-    if (extractedEmojis.length === 0) {
+    const sanitized = normalizeInput(directInputText);
+    if (!sanitized) {
       toast({
         title: t('common.noEmojisFound'),
         description: t('common.noEmojisFoundDesc'),
@@ -349,41 +377,54 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
       return;
     }
 
-    // Limit to maxLength
-    const limitedEmojis = extractedEmojis.slice(0, maxLength);
-    const wasEmojiOnly = isEmojiOnly(directInputText);
+    const wasEmojiOnly = isEmojiOnly(sanitized);
+
+    let segments = segmentInput(sanitized);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[EmojiInput] handleDirectInputConfirm', { sanitized, wasEmojiOnly, segments });
+    }
+
+    if (segments.length === 0) {
+      toast({
+        title: t('common.noEmojisFound'),
+        description: t('common.noEmojisFoundDesc'),
+      });
+      return;
+    }
+
+    const canonicalSequence = normalizeInput(segments.join(''));
+    const canonicalSegments = segmentInput(canonicalSequence);
+    const canonicalCount = canonicalSegments.length;
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[EmojiInput] handleDirectInputConfirm canonical count', { canonicalCount, canonicalSegments });
+    }
+
+    const limitedSegments = canonicalSegments.slice(0, maxLength);
+    const limitedValue = limitedSegments.join('');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[EmojiInput] handleDirectInputConfirm limited', { limitedSegments, limitedValue });
+    }
+
+    let wasTruncated = false;
+    if (canonicalCount > limitedSegments.length) {
+      wasTruncated = true;
+    }
+
+    const limitedPair = convertEmojiSequenceToIdPair(limitedValue);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[EmojiInput] handleDirectInputConfirm limited conversion', { limitedValue, limitedPair });
+    }
 
     // Determine appropriate message
-    let title = '入力完了';
-    let description = '';
-
-    if (!wasEmojiOnly && limitedEmojis.length > 0) {
-      if (extractedEmojis.length > maxLength) {
-        // Extracted emojis + truncated
-        title = '絵文字を抽出しました';
-        description = `${extractedEmojis.length}個の絵文字を見つけて、先頭${maxLength}個を入力しました`;
-      } else {
-        // Only extracted emojis
-        title = '絵文字を抽出しました';
-        description = `${limitedEmojis.length}個の絵文字を抽出しました`;
-      }
-    } else if (wasEmojiOnly) {
-      if (extractedEmojis.length > maxLength) {
-        // Pure emojis + truncated
-        title = '文字数を調整しました';
-        description = `先頭${maxLength}個の絵文字を入力しました`;
-      } else {
-        // Pure emojis, no truncation
-        description = `${limitedEmojis.length}個の絵文字を入力しました`;
-      }
-    }
+    const title = '入力完了';
+    const description = '絵文字を入力しました';
 
     toast({
       title,
       description,
     });
 
-    updateValue(limitedEmojis);
+    updateValue(limitedSegments);
     setShowDirectInput(false);
     setDirectInputText('');
   };

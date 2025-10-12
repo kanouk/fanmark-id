@@ -349,11 +349,19 @@ export const FanmarkDashboard = () => {
           const rawEmojiIds = Array.isArray(fanmark.emoji_ids)
             ? (fanmark.emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
             : [];
+          const fallbackEmojiString =
+            (typeof fanmark.user_input_fanmark === 'string' && fanmark.user_input_fanmark.length > 0
+              ? fanmark.user_input_fanmark
+              : null) ??
+            (typeof fanmark.normalized_emoji === 'string' && fanmark.normalized_emoji.length > 0
+              ? fanmark.normalized_emoji
+              : null) ??
+            '';
           const userInputValue =
             typeof fanmark.user_input_fanmark === 'string' && fanmark.user_input_fanmark.length > 0
               ? fanmark.user_input_fanmark
               : '';
-          const resolvedDisplay = resolveFanmarkDisplay(userInputValue, rawEmojiIds);
+          const resolvedDisplay = resolveFanmarkDisplay(userInputValue || fallbackEmojiString, rawEmojiIds);
           const displayFanmark = resolvedDisplay || userInputValue;
           const emojiKey = rawEmojiIds.length > 0
             ? rawEmojiIds.join(':')

@@ -5,7 +5,7 @@ import {
   convertEmojiIdsToSequence,
   convertEmojiIdsToNormalizedIds,
   convertEmojiSequenceToNormalizedIds,
-} from "../src/lib/emoji-master-utils.js";
+} from "../src/lib/emoji-master-utils.ts";
 
 const sampleRecords: EmojiMasterRecord[] = [
   {
@@ -54,6 +54,7 @@ const testEmojis = [
   { label: "Medium skin tone hand", emoji: "👋🏽" },
   { label: "Family (man woman girl)", emoji: "👨‍👩‍👧" },
   { label: "Rainbow flag", emoji: "🏳️‍🌈" },
+  { label: "SMILING FACE WITH SMILING EYES + ZWJ ARROW", emoji: "🙂‍↔️" },
 ];
 
 const main = async () => {
