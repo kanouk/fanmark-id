@@ -17,7 +17,11 @@ import {
   SiLine,
   SiTwitch,
   SiDiscord,
-  SiX
+  SiX,
+  SiBluesky,
+  SiSnapchat,
+  SiThreads,
+  SiBereal
 } from 'react-icons/si';
 
 interface FanmarkData {
@@ -35,12 +39,16 @@ interface FanmarkData {
 const socialPlatforms = [
   { key: 'instagram', label: 'Instagram', icon: FiInstagram },
   { key: 'tiktok', label: 'TikTok', icon: SiTiktok },
-  { key: 'x', label: 'X', icon: SiX },
-  { key: 'github', label: 'GitHub', icon: FiGithub },
+  { key: 'x', label: 'X (Twitter)', icon: SiX },
   { key: 'youtube', label: 'YouTube', icon: FiYoutube },
+  { key: 'bereal', label: 'BeReal', icon: SiBereal },
   { key: 'line', label: 'LINE', icon: SiLine },
-  { key: 'twitch', label: 'Twitch', icon: SiTwitch },
+  { key: 'threads', label: 'Threads', icon: SiThreads },
+  { key: 'bluesky', label: 'BlueSky', icon: SiBluesky },
+  { key: 'github', label: 'GitHub', icon: FiGithub },
   { key: 'discord', label: 'Discord', icon: SiDiscord },
+  { key: 'snapchat', label: 'Snapchat', icon: SiSnapchat },
+  { key: 'twitch', label: 'Twitch', icon: SiTwitch },
   { key: 'website', label: 'ウェブサイト', icon: FiGlobe },
 ];
 
@@ -175,8 +183,12 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
   const displayName = emojiProfile?.display_name || fanmark.fanmark_name || 'Anonymous';
   const bio = emojiProfile?.bio || '';
   const coverImage = emojiProfile?.theme_settings?.cover_image_url;
+  const coverImagePosition = typeof emojiProfile?.theme_settings?.cover_image_position === 'number'
+    ? emojiProfile?.theme_settings?.cover_image_position
+    : 50;
   const profileImage = emojiProfile?.theme_settings?.profile_image_url;
   const socialLinks = emojiProfile?.social_links as Record<string, string> || {};
+  const fanmarkValue = fanmark.fanmark || fanmark.user_input_fanmark || '';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex flex-col">
@@ -204,14 +216,17 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
           <Card className="overflow-hidden bg-gradient-to-br from-background/90 to-background/70 border border-primary/20 shadow-xl backdrop-blur-sm">
             <CardContent className="p-0">
               {/* Cover Image */}
-              <div
-                className="relative h-48 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/10"
-                style={coverImage ? {
-                  backgroundImage: `url(${coverImage})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center'
-                } : {}}
-              >
+              <div className="relative h-48 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/10">
+                {coverImage ? (
+                  <div className="absolute inset-0 overflow-hidden rounded-none">
+                    <img
+                      src={coverImage}
+                      alt="Cover"
+                      className="h-full w-full object-cover"
+                      style={{ objectPosition: `50% ${coverImagePosition}%` }}
+                    />
+                  </div>
+                ) : null}
                 {!coverImage && (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center text-primary/60">
@@ -240,11 +255,18 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
               </div>
 
               {/* Profile Content */}
-              <div className="px-8 pt-16 pb-8">
-                 <div className="text-center mb-8">
-                   <h1 className="text-3xl font-bold tracking-tight text-foreground mb-4">
-                     {displayName} {fanmark.fanmark || fanmark.user_input_fanmark}
-                   </h1>
+              <div className="px-8 pt-20 md:pt-24 pb-8">
+                <div className="text-center mb-8 space-y-4">
+                  <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                    {displayName}
+                  </h1>
+                  {fanmarkValue && (
+                    <div className="flex justify-center">
+                      <span className="inline-flex items-center px-3 py-1 text-2xl md:text-3xl font-semibold text-primary tracking-[0.4em] leading-none">
+                        {fanmarkValue}
+                      </span>
+                    </div>
+                  )}
                   {bio && (
                     <p className="text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed">
                       {bio}

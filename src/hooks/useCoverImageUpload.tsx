@@ -8,7 +8,7 @@ export const useCoverImageUpload = () => {
   const { t } = useTranslation();
   const [uploading, setUploading] = useState(false);
 
-  const uploadCoverImage = async (file: File): Promise<string> => {
+  const uploadCoverImage = async (file: File): Promise<{ url: string; width: number; height: number }> => {
     if (!user) throw new Error(t('common.userNotAuthenticated'));
     
     setUploading(true);
@@ -18,12 +18,12 @@ export const useCoverImageUpload = () => {
       const fileName = `${user.id}/${Date.now()}_cover.${fileExt}`;
 
       // Resize image for cover images (larger dimensions, maintain aspect ratio)
-      const resizedFile = await resizeCoverImage(file, 1200, 400);
+      const resized = await resizeCoverImage(file, 2400, 1200);
 
       // Upload to Supabase Storage (cover-images bucket)
       const { data, error } = await supabase.storage
         .from('cover-images')
-        .upload(fileName, resizedFile, {
+        .upload(fileName, resized.file, {
           cacheControl: '3600',
           upsert: true
         });
@@ -35,13 +35,17 @@ export const useCoverImageUpload = () => {
         .from('cover-images')
         .getPublicUrl(data.path);
 
-      return publicUrl;
+      return {
+        url: publicUrl,
+        width: resized.width,
+        height: resized.height,
+      };
     } finally {
       setUploading(false);
     }
   };
 
-  const resizeCoverImage = (file: File, maxWidth: number, maxHeight: number): Promise<File> => {
+  const resizeCoverImage = (file: File, maxWidth: number, maxHeight: number): Promise<{ file: File; width: number; height: number }> => {
     return new Promise((resolve) => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d')!;
@@ -76,7 +80,7 @@ export const useCoverImageUpload = () => {
               type: file.type,
               lastModified: Date.now(),
             });
-            resolve(resizedFile);
+            resolve({ file: resizedFile, width, height });
           }
         }, file.type, 0.95); // Higher quality (95%) for cover images
       };

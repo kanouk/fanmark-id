@@ -18,18 +18,26 @@ import {
   SiLine,
   SiTwitch,
   SiDiscord,
-  SiX
+  SiX,
+  SiBluesky,
+  SiSnapchat,
+  SiThreads,
+  SiBereal
 } from 'react-icons/si';
 
 const socialPlatforms = [
   { key: 'instagram', label: 'Instagram', icon: FiInstagram },
   { key: 'tiktok', label: 'TikTok', icon: SiTiktok },
-  { key: 'x', label: 'X', icon: SiX },
-  { key: 'github', label: 'GitHub', icon: FiGithub },
+  { key: 'x', label: 'X (Twitter)', icon: SiX },
   { key: 'youtube', label: 'YouTube', icon: FiYoutube },
+  { key: 'bereal', label: 'BeReal', icon: SiBereal },
   { key: 'line', label: 'LINE', icon: SiLine },
-  { key: 'twitch', label: 'Twitch', icon: SiTwitch },
+  { key: 'threads', label: 'Threads', icon: SiThreads },
+  { key: 'bluesky', label: 'BlueSky', icon: SiBluesky },
+  { key: 'github', label: 'GitHub', icon: FiGithub },
   { key: 'discord', label: 'Discord', icon: SiDiscord },
+  { key: 'snapchat', label: 'Snapchat', icon: SiSnapchat },
+  { key: 'twitch', label: 'Twitch', icon: SiTwitch },
   { key: 'website', label: 'ウェブサイト', icon: FiGlobe },
 ];
 
@@ -173,6 +181,9 @@ export default function FanmarkProfilePreview() {
   const displayName = profile?.display_name || cachedFanmark?.display_name || 'マイプロフィール';
   const bio = profile?.bio || '';
   const coverImage = profile?.theme_settings?.cover_image_url;
+  const coverImagePosition = typeof profile?.theme_settings?.cover_image_position === 'number'
+    ? profile?.theme_settings?.cover_image_position
+    : 50;
   const profileImage = profile?.theme_settings?.profile_image_url;
   const socialLinks = profile?.social_links as Record<string, string> || {};
 
@@ -227,14 +238,17 @@ export default function FanmarkProfilePreview() {
           <Card className="overflow-hidden bg-gradient-to-br from-background/90 to-background/70 border border-primary/20 shadow-xl backdrop-blur-sm">
             <CardContent className="p-0">
               {/* Cover Image */}
-              <div
-                className="relative h-48 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/10"
-                style={coverImage ? {
-                  backgroundImage: `url(${coverImage})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center'
-                } : {}}
-              >
+              <div className="relative h-48 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/10">
+                {coverImage ? (
+                  <div className="absolute inset-0 overflow-hidden">
+                    <img
+                      src={coverImage}
+                      alt="Cover"
+                      className="h-full w-full object-cover"
+                      style={{ objectPosition: `50% ${coverImagePosition}%` }}
+                    />
+                  </div>
+                ) : null}
                 {!coverImage && (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center text-primary/60">
@@ -263,7 +277,7 @@ export default function FanmarkProfilePreview() {
               </div>
 
               {/* Profile Content */}
-              <div className="px-8 pt-16 pb-8">
+              <div className="px-8 pt-20 md:pt-24 pb-8">
                  <div className="text-center mb-8">
                    <h1 className="text-3xl font-bold tracking-tight text-foreground mb-4">
                      {displayName} {cachedFanmark?.fanmark || cachedFanmark?.user_input_fanmark}

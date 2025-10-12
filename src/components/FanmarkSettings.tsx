@@ -80,6 +80,7 @@ export interface Fanmark {
   status: string;
   short_id: string;
   license_id: string;
+  is_public?: boolean;
 }
 
 interface FanmarkSettingsProps {
@@ -143,6 +144,7 @@ export const FanmarkSettings = ({
       createProfile: false,
       isPasswordProtected: fanmark.is_password_protected || false,
       accessPassword: '',
+      is_public: fanmark.is_public ?? false,
     };
 
     let initialEditing = false;
@@ -194,6 +196,10 @@ export const FanmarkSettings = ({
     }
 
     reset(nextFormData);
+    if (nextFormData.accessType === 'profile') {
+      setValue('createProfile', true, { shouldDirty: false, shouldTouch: false, shouldValidate: false });
+    }
+    setValue('is_public', nextFormData.is_public ?? false, { shouldDirty: false, shouldTouch: false, shouldValidate: false });
     setIsEditingPassword(initialEditing);
     setHydratedDraftKey(draftStorageKey);
   }, [fanmark, draftStorageKey, reset, restoreEditingState, hydratedDraftKey, t]);
