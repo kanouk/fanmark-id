@@ -78,6 +78,20 @@ const FanmarkSettingsPage = () => {
         ? (fanmarkData.emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
         : [];
 
+      // Fetch is_public from fanmark_profiles table directly if access_type is 'profile'
+      let isPublic = false;
+      if (fanmarkData.access_type === 'profile' && fanmarkData.license_id) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('fanmark_profiles')
+          .select('is_public')
+          .eq('license_id', fanmarkData.license_id)
+          .maybeSingle();
+
+        if (!profileError && profileData) {
+          isPublic = profileData.is_public ?? false;
+        }
+      }
+
       setFanmark({
         id: fanmarkData.id,
         user_input_fanmark: fanmarkData.user_input_fanmark,
@@ -91,8 +105,8 @@ const FanmarkSettingsPage = () => {
         status: fanmarkData.status,
         short_id: fanmarkData.short_id,
         license_id: fanmarkData.license_id,
-        is_public: fanmarkData.is_public ?? false,
-        
+        is_public: isPublic,
+
       });
     } catch (error) {
       console.error('Failed to load fanmark:', error);
