@@ -29,8 +29,15 @@ Deno.serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    // Check if user is admin (kanouk@gmail.com only)
-    if (user.email !== 'kanouk@gmail.com') {
+    // Check if user has admin role
+    const { data: adminRole, error: roleError } = await supabaseClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (roleError || !adminRole) {
       console.error('Unauthorized reset attempt by:', user.email);
       
       // Log unauthorized attempt

@@ -6,8 +6,6 @@ export const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const ADMIN_EMAIL_ALLOWLIST = new Set<string>(["kanouk@gmail.com"]);
-
 export interface AdminContext {
   supabase: SupabaseClient;
   adminUser: User;
@@ -49,22 +47,19 @@ async function isAdminUser(
   client: SupabaseClient,
   user: User,
 ): Promise<boolean> {
-  if (ADMIN_EMAIL_ALLOWLIST.has(user.email ?? "")) {
-    return true;
-  }
-
-  const { data: profile, error } = await client
-    .from("user_settings")
-    .select("plan_type")
+  const { data: roles, error } = await client
+    .from("user_roles")
+    .select("role")
     .eq("user_id", user.id)
+    .eq("role", "admin")
     .maybeSingle();
 
   if (error) {
-    console.error("Failed to load admin profile:", error);
+    console.error("Failed to check admin role:", error);
     return false;
   }
 
-  return profile?.plan_type === "admin";
+  return roles !== null;
 }
 
 export async function requireAdminContext(req: Request): Promise<AdminContext | Response> {
