@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { convertEmojiSequenceToIdPair } from '@/lib/emojiConversion';
 
 const quickRegistrationSchema = z.object({
   emojiCombination: z.string().min(1, 'Emoji combination is required'),
@@ -19,13 +20,21 @@ const quickRegistrationSchema = z.object({
 type QuickRegistrationFormData = z.infer<typeof quickRegistrationSchema>;
 
 interface RegisteredFanmark {
-  emoji_combination: string;
+  id: string;
+  user_input_fanmark: string;
+  emoji_ids?: string[];
+  normalized_emoji_ids?: string[];
   fanmark_name: string;
 }
 
 interface RegisterFanmarkResponse {
   success: boolean;
-  fanmark?: RegisteredFanmark;
+  fanmark?: {
+    id: string;
+    user_input_fanmark: string;
+    emoji_ids?: string[];
+    normalized_emoji_ids?: string[];
+  };
   error?: string;
 }
 
@@ -72,11 +81,30 @@ export const FanmarkQuickRegistration = ({
     setIsSubmitting(true);
 
     try {
+      const compactEmoji = data.emojiCombination.replace(/\s/g, '');
+      let emojiIds: string[] = [];
+      let normalizedEmojiIds: string[] = [];
+      try {
+        const pair = convertEmojiSequenceToIdPair(compactEmoji);
+        emojiIds = pair.emojiIds;
+        normalizedEmojiIds = pair.normalizedEmojiIds;
+      } catch (conversionError) {
+        const message = conversionError instanceof Error ? conversionError.message : 'Invalid emoji sequence';
+        toast({
+          title: t('registration.failed'),
+          description: message,
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const { data: result, error } = await supabase.functions.invoke<RegisterFanmarkResponse>('register-fanmark', {
         body: {
-          emoji: data.emojiCombination,
-          accessType: 'inactive', // Default to inactive for quick registration
-          fanmarkName: data.fanmarkName,
+          user_input_fanmark: data.emojiCombination,
+          emoji_ids: emojiIds,
+          normalized_emoji_ids: normalizedEmojiIds,
+          accessType: 'inactive',
+          displayName: data.fanmarkName,
           targetUrl: null,
           textContent: null,
           createProfile: false,
@@ -87,7 +115,13 @@ export const FanmarkQuickRegistration = ({
       if (error) throw error;
 
       if (result?.success && result.fanmark) {
-        setRegisteredFanmark(result.fanmark);
+        setRegisteredFanmark({
+          id: result.fanmark.id,
+          user_input_fanmark: result.fanmark.user_input_fanmark,
+          emoji_ids: result.fanmark.emoji_ids,
+          normalized_emoji_ids: result.fanmark.normalized_emoji_ids,
+          fanmark_name: data.fanmarkName,
+        });
         toast({
           title: t('registration.quickSecured'),
           description: t('registration.quickSecuredDescription'),
@@ -118,7 +152,7 @@ export const FanmarkQuickRegistration = ({
         </CardHeader>
         <CardContent className="text-center space-y-6">
           <div className="text-6xl mb-4">
-            {registeredFanmark.emoji_combination}
+            {registeredFanmark.user_input_fanmark}
           </div>
           <div className="text-xl font-semibold">
             {registeredFanmark.fanmark_name}

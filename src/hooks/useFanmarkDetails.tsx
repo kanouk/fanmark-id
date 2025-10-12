@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { resolveFanmarkDisplay } from '@/lib/emojiConversion';
 import { useAuth } from './useAuth';
 
 export interface FanmarkDetails {
   fanmark_id: string;
-  emoji_combination: string;
+  user_input_fanmark: string;
+  emoji_ids: string[];
+  fanmark: string;
   normalized_emoji: string;
   short_id: string;
   fanmark_created_at: string;
@@ -59,12 +62,19 @@ export const useFanmarkDetails = (shortId: string | undefined) => {
       if (error) throw error;
 
       if (!data || data.length === 0) {
-        setError('Fanmark not found');
+        setError('not-found');
         setDetails(null);
       } else {
         const fanmarkData = data[0];
-       setDetails({
-         ...fanmarkData,
+        const emojiIds = Array.isArray(fanmarkData.emoji_ids)
+          ? (fanmarkData.emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
+          : [];
+        const displayFanmark = resolveFanmarkDisplay(fanmarkData.user_input_fanmark ?? '', emojiIds);
+
+        setDetails({
+          ...fanmarkData,
+          emoji_ids: emojiIds,
+          fanmark: displayFanmark,
           license_history: Array.isArray(fanmarkData.license_history) 
             ? fanmarkData.license_history.map((item: any) => ({
                 license_start: item.license_start,
@@ -82,7 +92,7 @@ export const useFanmarkDetails = (shortId: string | undefined) => {
       }
     } catch (err) {
       console.error('Error fetching fanmark details:', err);
-      setError('Failed to load fanmark details');
+      setError('load-failed');
       setDetails(null);
     } finally {
       setLoading(false);

@@ -161,7 +161,7 @@ Deno.serve(async (req) => {
   const { data: licenseRows, error: licenseError } = await supabase
     .from("fanmark_licenses")
     .select(`id, status, license_end, grace_expires_at, plan_excluded, excluded_at, excluded_from_plan,
-             fanmark_id, fanmarks ( id, emoji_combination ),
+             fanmark_id, fanmarks ( id, user_input_fanmark ),
              fanmark_basic_configs ( fanmark_name, access_type )`)
     .eq("user_id", userId)
     .order("updated_at", { ascending: false })
@@ -189,7 +189,7 @@ Deno.serve(async (req) => {
       excludedAt: row.excluded_at ?? null,
       excludedFromPlan: row.excluded_from_plan ?? null,
       fanmarkId: row.fanmark_id,
-      emoji: row.fanmarks?.emoji_combination ?? "",
+      emoji: row.fanmarks?.user_input_fanmark ?? "",
       fanmarkName: row.fanmark_basic_configs?.fanmark_name ?? null,
       accessType: row.fanmark_basic_configs?.access_type ?? null,
     });

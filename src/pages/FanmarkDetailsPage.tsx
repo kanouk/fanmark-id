@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Navigation } from '@/components/Navigation';
-import { Heart, Calendar, User, Clock, ExternalLink, History } from 'lucide-react';
+import { Heart, Calendar, User, Clock, ExternalLink, History, AlertTriangle } from 'lucide-react';
 import { ja, enUS } from 'date-fns/locale';
 import { formatInTimeZone } from 'date-fns-tz';
 import { parseDateString } from '@/lib/utils';
@@ -39,21 +39,37 @@ export default function FanmarkDetailsPage() {
   }
 
   if (error || !details) {
+    const isLoadFailed = error === 'load-failed';
+    const title = t(isLoadFailed ? 'fanmarkDetails.loadFailedTitle' : 'fanmarkDetails.notFound');
+    const description = t(isLoadFailed ? 'fanmarkDetails.loadFailedDescription' : 'fanmarkDetails.notFoundDescription');
+
     return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <Card className="text-center">
-          <CardContent className="pt-6">
-            <h1 className="text-2xl font-bold mb-4">
-              {error || t('fanmarkDetails.notFound')}
-            </h1>
-            <p className="text-muted-foreground mb-4">
-              {t('fanmarkDetails.notFoundDescription')}
-            </p>
-            <Button onClick={() => window.history.back()}>
-              {t('common.goBack')}
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-xl">
+          <Card className="border border-primary/15 bg-background/90 shadow-[0_28px_70px_rgba(101,195,200,0.18)] backdrop-blur-md rounded-3xl">
+            <CardContent className="px-8 py-12 text-center space-y-6">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/12 text-primary shadow-inner shadow-primary/20">
+                <AlertTriangle className="h-7 w-7" />
+              </div>
+              <div className="space-y-2">
+                <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+                  {title}
+                </h1>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {description}
+                </p>
+              </div>
+              <div className="flex justify-center">
+                <Button
+                  onClick={() => window.history.back()}
+                  className="rounded-full px-6"
+                >
+                  {t('common.goBack')}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -125,9 +141,9 @@ export default function FanmarkDetailsPage() {
       <main className="flex-1">
         <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
           <section className="p-6 text-center sm:p-10">
-          <div className="flex flex-col items-center gap-6">
+            <div className="flex flex-col items-center gap-6">
             <div className="flex flex-wrap items-center justify-center gap-3 rounded-[2.75rem] border border-primary/20 bg-primary/10 px-8 py-6 text-5xl shadow-inner md:px-10 md:py-7 md:text-6xl">
-              {splitEmojiGraphemes(details.emoji_combination).map((segment, index) => (
+              {splitEmojiGraphemes(details.fanmark).map((segment, index) => (
                 <span key={`${segment}-${index}`} className="inline-flex min-w-[2.4rem] justify-center">
                   {segment}
                 </span>
@@ -148,7 +164,7 @@ export default function FanmarkDetailsPage() {
                 </Button>
               )}
               <Button variant="secondary" asChild className="gap-2 sm:w-auto">
-                <a href={`/${encodeEmojiForUrl(details.emoji_combination)}`} target="_blank" rel="noopener noreferrer">
+                <a href={`/${encodeEmojiForUrl(details.fanmark)}`} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4" />
                   {t('fanmarkDetails.visitPage')}
                 </a>

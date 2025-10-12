@@ -16,7 +16,7 @@ interface LicenseWithFanmark {
   excluded_from_plan: string | null;
   fanmarks: {
     id: string;
-    emoji_combination: string;
+    user_input_fanmark: string;
     short_id: string;
     status: string;
   } | null;
@@ -111,7 +111,7 @@ serve(async (req) => {
         excluded_from_plan,
         fanmarks!inner (
           id,
-          emoji_combination,
+          user_input_fanmark,
           short_id,
           status
         )

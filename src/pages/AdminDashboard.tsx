@@ -6,6 +6,7 @@ import { AdminExpirationTest } from "@/components/AdminExpirationTest";
 import { AdminDataReset } from "@/components/AdminDataReset";
 import { AdminPlanSettings } from "@/components/AdminPlanSettings";
 import { AdminUserManagement } from "@/components/AdminUserManagement";
+import { AdminEmojiMaster } from "@/components/AdminEmojiMaster";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { LogOut, ShieldCheck, Sparkles } from "lucide-react";
@@ -51,6 +52,12 @@ const AdminDashboard = () => {
                 ユーザー管理
               </TabsTrigger>
               <TabsTrigger
+                value="emoji-master"
+                className="flex-1 rounded-xl px-5 py-3 text-sm font-medium transition-all data-[state=active]:bg-card data-[state=active]:text-foreground sm:flex-none"
+              >
+                絵文字マスタ
+              </TabsTrigger>
+              <TabsTrigger
                 value="settings"
                 className="flex-1 rounded-xl px-5 py-3 text-sm font-medium transition-all data-[state=active]:bg-card data-[state=active]:text-foreground sm:flex-none"
               >
@@ -88,6 +95,22 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent className="space-y-6 p-6 pt-0">
                   <AdminUserManagement />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="emoji-master" className="space-y-8">
+              <Card className="border-border/60 shadow-sm">
+                <CardHeader className="space-y-3 p-6 pb-4">
+                  <CardTitle className="text-xl font-semibold text-foreground">
+                    絵文字マスタ管理
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    絵文字マスタの表示・インポート・手動修正を行います。既存ユーザー機能に影響を与えないよう運用してください。
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-6 p-6 pt-0">
+                  <AdminEmojiMaster />
                 </CardContent>
               </Card>
             </TabsContent>

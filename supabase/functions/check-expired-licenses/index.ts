@@ -85,7 +85,7 @@ serve(async (req) => {
         license_end,
         fanmarks!inner(
           id,
-          emoji_combination,
+          user_input_fanmark,
           status
         )
       `)
@@ -99,7 +99,7 @@ serve(async (req) => {
           license_end: string;
           fanmarks: {
             id: string;
-            emoji_combination: string;
+            user_input_fanmark: string;
             status: string;
           };
         }> | null;
@@ -118,7 +118,7 @@ serve(async (req) => {
         grace_expires_at,
         fanmarks!inner(
           id,
-          emoji_combination,
+          user_input_fanmark,
           status
         )
       `)
@@ -133,7 +133,7 @@ serve(async (req) => {
           grace_expires_at: string;
           fanmarks: {
             id: string;
-            emoji_combination: string;
+            user_input_fanmark: string;
             status: string;
           };
         }> | null;
@@ -226,7 +226,7 @@ serve(async (req) => {
 
           processedCount++;
           graceSuccessCount++;
-          console.log(`  ✓ ${license.fanmarks?.emoji_combination} -> grace`);
+        console.log(`  ✓ ${license.fanmarks?.user_input_fanmark} -> grace`);
 
         } catch (error) {
           const errMsg = error instanceof Error ? error.message : 'Unknown error';
@@ -258,7 +258,7 @@ serve(async (req) => {
             continue;
           }
 
-          console.log(`  ✓ ${license.fanmarks?.emoji_combination} marked as expired`);
+        console.log(`  ✓ ${license.fanmarks?.user_input_fanmark} marked as expired`);
 
           // Delete all config data for expired licenses
           let configDeleteErrors = 0;

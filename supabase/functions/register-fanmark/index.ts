@@ -8,7 +8,9 @@ const corsHeaders = {
 };
 
 interface RegisterFanmarkRequest {
-  input_emoji_combination: string; // Semantic parameter name for incoming emoji combination
+  user_input_fanmark: string; // Semantic parameter name for incoming fanmark string
+  emoji_ids?: string[];
+  normalized_emoji_ids?: string[];
   accessType?: string;
   displayName?: string;
   targetUrl?: string;
@@ -39,9 +41,11 @@ interface AvailabilityRuleRecord {
 interface FanmarkRow {
   id: string;
   short_id: string;
-  emoji_combination: string;
+  user_input_fanmark: string;
   normalized_emoji: string;
   status: string;
+  emoji_ids: string[] | null;
+  normalized_emoji_ids: string[] | null;
 }
 
 const SKIN_TONE_MODIFIER_REGEX = /\p{Emoji_Modifier}/u;
@@ -51,6 +55,11 @@ const COMBINING_CHARACTERS = new Set([
   String.fromCodePoint(0xfe0f),
   String.fromCodePoint(0x200d),
 ]);
+
+const FE_VARIATION_SELECTOR_REGEX = /\uFE0F+/g;
+
+const normalizeEmojiForLookup = (emoji: string): string =>
+  emoji.normalize('NFC').replace(FE_VARIATION_SELECTOR_REGEX, '\uFE0F');
 
 function getGraphemes(text: string): string[] {
   if (typeof (Intl as { Segmenter?: typeof Intl.Segmenter }).Segmenter === 'function') {
@@ -69,6 +78,40 @@ const isBaseEmoji = (char: string): boolean =>
 function normalizeEmoji(emoji: string): string {
   // Remove skin tone modifiers (U+1F3FB-U+1F3FF)
   return emoji.replace(SKIN_TONE_MODIFIER_GLOBAL_REGEX, '');
+}
+
+async function convertEmojiSequenceToIds(
+  supabase: DatabaseClient,
+  emojiSequence: string,
+): Promise<string[]> {
+  const segments = getGraphemes(emojiSequence);
+  if (segments.length === 0) {
+    return [];
+  }
+
+  const normalizedSegments = segments.map(normalizeEmojiForLookup);
+  const { data, error } = await supabase
+    .from('emoji_master')
+    .select('id, emoji')
+    .in('emoji', normalizedSegments);
+
+  if (error) {
+    console.error('Failed to resolve emoji IDs:', error);
+    throw new Error('Failed to resolve emoji IDs');
+  }
+
+  const rows = data ?? [];
+  const lookup = new Map(
+    rows.map((row: { id: string; emoji: string }) => [normalizeEmojiForLookup(row.emoji), row.id]),
+  );
+
+  return normalizedSegments.map((segment) => {
+    const id = lookup.get(segment);
+    if (!id) {
+      throw new Error(`Emoji not found in master: ${segment}`);
+    }
+    return id;
+  });
 }
 
 // Generate short ID for fanmark
@@ -264,6 +307,9 @@ function roundUpToNextUtcMidnight(input: Date): Date {
   return d;
 }
 
+const toPgUuidArrayLiteral = (ids: string[]): string =>
+  `{${ids.map((id) => `"${id}"`).join(',')}}`;
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -298,11 +344,28 @@ serve(async (req) => {
 
     const body: RegisterFanmarkRequest = await req.json();
     console.log('Received request body:', body);
-    const { input_emoji_combination, accessType = 'inactive', displayName, targetUrl, textContent, createProfile = false, isTransferable = true } = body;
+    const {
+      user_input_fanmark,
+      emoji_ids: inputEmojiIds,
+      normalized_emoji_ids: inputNormalizedEmojiIds,
+      accessType = 'inactive',
+      displayName,
+      targetUrl,
+      textContent,
+      createProfile = false,
+      isTransferable = true
+    } = body;
 
-    // Validate emoji combination
-    console.log('Validating emoji combination:', input_emoji_combination);
-    const validation = await validateEmojiCombination(supabase, input_emoji_combination);
+    if (typeof user_input_fanmark !== 'string' || user_input_fanmark.trim().length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'Emoji combination is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate fanmark string
+    console.log('Validating user input fanmark:', user_input_fanmark);
+    const validation = await validateEmojiCombination(supabase, user_input_fanmark);
     if (!validation.valid) {
       console.error('Validation failed:', validation.error);
       return new Response(
@@ -311,8 +374,28 @@ serve(async (req) => {
       );
     }
 
+    const cleanEmoji = user_input_fanmark.replace(/\s/g, '');
+    let emojiIds = Array.isArray(inputEmojiIds) ? inputEmojiIds.filter(Boolean) : [];
+    if (emojiIds.length === 0) {
+      // Fallback for legacy clients: resolve IDs on the backend (will be removed once migration completes)
+      emojiIds = await convertEmojiSequenceToIds(supabase, cleanEmoji);
+    }
+
+    if (emojiIds.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'emoji_ids are required to register a fanmark' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Normalize emoji for database storage
-    const normalizedEmoji = normalizeEmoji(input_emoji_combination);
+    const normalizedEmoji = normalizeEmoji(cleanEmoji);
+    let normalizedEmojiIds = Array.isArray(inputNormalizedEmojiIds)
+      ? inputNormalizedEmojiIds.filter(Boolean)
+      : [];
+    if (normalizedEmojiIds.length === 0) {
+      normalizedEmojiIds = await convertEmojiSequenceToIds(supabase, normalizedEmoji);
+    }
     console.log('Normalized emoji:', normalizedEmoji);
     
     // Determine tier level based on emoji count
@@ -343,12 +426,38 @@ serve(async (req) => {
       );
     }
 
-    // Check if a fanmark record already exists for this normalized emoji
-    const { data: existingFanmark } = await supabase
-      .from('fanmarks')
-      .select('id, status, emoji_combination, short_id')
-      .eq('normalized_emoji', normalizedEmoji)
-      .maybeSingle() as { data: FanmarkRow | null };
+    // Check if a fanmark record already exists for this normalized emoji ids
+    let existingFanmark: FanmarkRow | null = null;
+    if (normalizedEmojiIds.length > 0) {
+      const normalizedIdsLiteral = toPgUuidArrayLiteral(normalizedEmojiIds);
+      const { data, error } = await supabase
+        .from('fanmarks')
+        .select('id, status, user_input_fanmark, short_id, emoji_ids, normalized_emoji_ids')
+        .filter('normalized_emoji_ids', 'eq', normalizedIdsLiteral)
+        .maybeSingle() as { data: FanmarkRow | null; error: any };
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Failed to lookup fanmark by normalized_emoji_ids:', error);
+      }
+      if (data) {
+        existingFanmark = data;
+      }
+    }
+
+    if (!existingFanmark) {
+      const { data, error } = await supabase
+        .from('fanmarks')
+        .select('id, status, user_input_fanmark, short_id, emoji_ids, normalized_emoji_ids')
+        .eq('normalized_emoji', normalizedEmoji)
+        .maybeSingle() as { data: FanmarkRow | null; error: any };
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Failed legacy fanmark lookup by normalized_emoji:', error);
+      }
+      if (data) {
+        existingFanmark = data;
+      }
+    }
 
     // If a record exists:
     // - If it's not active, block registration.
@@ -400,12 +509,39 @@ serve(async (req) => {
 
     // Either reuse existing fanmark (active & unlicensed) or create a new one
     let fanmarkId: string;
-    let fanmarkEmojiCombination: string;
+    let fanmarkUserInput: string;
     let fanmarkShortId: string;
+    let fanmarkEmojiIds: string[] = emojiIds;
+    let fanmarkNormalizedEmojiIds: string[] = normalizedEmojiIds;
     if (existingFanmark) {
       fanmarkId = existingFanmark.id;
-      fanmarkEmojiCombination = existingFanmark.emoji_combination;
+      fanmarkUserInput = existingFanmark.user_input_fanmark;
       fanmarkShortId = existingFanmark.short_id;
+      if (existingFanmark.emoji_ids && existingFanmark.emoji_ids.length > 0) {
+        fanmarkEmojiIds = existingFanmark.emoji_ids;
+      } else {
+        const { error: updateEmojiIdsError } = await supabase
+          .from('fanmarks')
+          .update({ emoji_ids: emojiIds })
+          .eq('id', existingFanmark.id);
+        if (updateEmojiIdsError) {
+          console.error('Failed to update emoji_ids for existing fanmark:', updateEmojiIdsError);
+        }
+        fanmarkEmojiIds = emojiIds;
+      }
+
+      if (existingFanmark.normalized_emoji_ids && existingFanmark.normalized_emoji_ids.length > 0) {
+        fanmarkNormalizedEmojiIds = existingFanmark.normalized_emoji_ids;
+      } else {
+        const { error: updateNormalizedIdsError } = await supabase
+          .from('fanmarks')
+          .update({ normalized_emoji_ids: normalizedEmojiIds, normalized_emoji: normalizedEmoji })
+          .eq('id', existingFanmark.id);
+        if (updateNormalizedIdsError) {
+          console.error('Failed to update normalized_emoji_ids for existing fanmark:', updateNormalizedIdsError);
+        }
+        fanmarkNormalizedEmojiIds = normalizedEmojiIds;
+      }
 
       // Update access type in basic config for existing fanmark
       const { error: existingBasicCfgErr } = await supabase
@@ -414,7 +550,7 @@ serve(async (req) => {
           { 
             fanmark_id: existingFanmark.id, 
             access_type: accessType,
-            fanmark_name: displayName || existingFanmark.emoji_combination
+            fanmark_name: displayName || existingFanmark.user_input_fanmark
           },
           { onConflict: 'fanmark_id' as any }
         );
@@ -466,12 +602,14 @@ serve(async (req) => {
       const { data: inserted, error: insertError } = await supabase
         .from('fanmarks')
         .insert({
-          emoji_combination: input_emoji_combination,
+          user_input_fanmark: user_input_fanmark,
           normalized_emoji: normalizedEmoji,
           short_id: shortId,
           status: 'active',
+          emoji_ids: emojiIds,
+          normalized_emoji_ids: normalizedEmojiIds,
         })
-        .select('id, emoji_combination, short_id')
+        .select('id, user_input_fanmark, short_id, emoji_ids, normalized_emoji_ids')
         .single();
 
       if (insertError) {
@@ -492,8 +630,10 @@ serve(async (req) => {
       }
 
       fanmarkId = inserted.id;
-      fanmarkEmojiCombination = inserted.emoji_combination;
+      fanmarkUserInput = inserted.user_input_fanmark;
       fanmarkShortId = inserted.short_id;
+      fanmarkEmojiIds = inserted.emoji_ids ?? emojiIds;
+      fanmarkNormalizedEmojiIds = inserted.normalized_emoji_ids ?? normalizedEmojiIds;
     }
 
     // Create initial license for the fanmark
@@ -567,7 +707,7 @@ serve(async (req) => {
           .insert({
             license_id: license.id,
             display_name: displayName || null,
-            bio: `Welcome to ${displayName || input_emoji_combination}'s profile!`,
+            bio: `Welcome to ${displayName || user_input_fanmark}'s profile!`,
             is_public: true
           });
 
@@ -589,8 +729,10 @@ serve(async (req) => {
         resource_id: fanmarkId,
         request_id: requestId,
         metadata: {
-          emoji_combination: input_emoji_combination,
+          user_input_fanmark: user_input_fanmark,
           normalized_emoji: normalizedEmoji,
+          emoji_ids: fanmarkEmojiIds,
+          normalized_emoji_ids: fanmarkNormalizedEmojiIds,
           short_id: fanmarkShortId,
           access_type: accessType,
           display_name: displayName,
@@ -603,10 +745,12 @@ serve(async (req) => {
         success: true,
         fanmark: {
           id: fanmarkId,
-          emoji_combination: fanmarkEmojiCombination,
+          user_input_fanmark: fanmarkUserInput,
+          emoji_ids: fanmarkEmojiIds,
+          normalized_emoji_ids: fanmarkNormalizedEmojiIds,
           short_id: fanmarkShortId,
           canonical_url: `/a/${fanmarkShortId}`,
-          display_url: `/emoji/${encodeURIComponent(fanmarkEmojiCombination)}`
+          display_url: `/emoji/${encodeURIComponent(fanmarkUserInput)}`
         }
       }),
       { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

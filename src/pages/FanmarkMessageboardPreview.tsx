@@ -7,10 +7,13 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useAuth } from '@/hooks/useAuth';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { supabase } from '@/integrations/supabase/client';
+import { resolveFanmarkDisplay } from '@/lib/emojiConversion';
 
 interface Fanmark {
   id: string;
-  emoji_combination: string;
+  user_input_fanmark: string;
+  emoji_ids: string[];
+  fanmark: string;
   fanmark_name: string | null;
   access_type: 'profile' | 'redirect' | 'text' | 'inactive';
   target_url?: string;
@@ -58,11 +61,17 @@ export default function FanmarkMessageboardPreview() {
         }
 
         const fanmarkData = data[0];
+        const emojiIds = Array.isArray(fanmarkData.emoji_ids)
+          ? (fanmarkData.emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
+          : [];
+        const displayFanmark = resolveFanmarkDisplay(fanmarkData.user_input_fanmark ?? '', emojiIds);
 
         const fanmark: Fanmark = {
           id: fanmarkData.id,
-          emoji_combination: fanmarkData.emoji_combination,
-          fanmark_name: fanmarkData.fanmark_name || fanmarkData.emoji_combination,
+          user_input_fanmark: fanmarkData.user_input_fanmark,
+          emoji_ids: emojiIds,
+          fanmark: displayFanmark,
+          fanmark_name: fanmarkData.fanmark_name || displayFanmark,
           access_type: fanmarkData.access_type as 'profile' | 'redirect' | 'text' | 'inactive',
           text_content: fanmarkData.text_content || '',
           is_password_protected: fanmarkData.is_password_protected || false,
@@ -173,7 +182,7 @@ export default function FanmarkMessageboardPreview() {
               <div className="relative bg-gradient-to-r from-primary/20 via-accent/20 to-primary/10 px-8 py-12">
                 <div className="text-center">
                   <div className="inline-flex items-center gap-3 mb-6">
-                    <span className="text-6xl">{fanmark.emoji_combination}</span>
+                    <span className="text-6xl">{fanmark.fanmark}</span>
                   </div>
                   <h1 className="text-3xl font-bold text-foreground mb-2">{t('messageBoard.title')}</h1>
                   <p className="text-muted-foreground">{t('messageBoard.messageFromOwner')}</p>

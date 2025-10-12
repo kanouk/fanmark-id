@@ -33,7 +33,7 @@ export interface ReturnContext {
 export interface ReturnResult {
   licenseId: string;
   fanmarkId: string;
-  fanmarkEmoji: string;
+  fanmark: string;
   graceExpiresAt: string;
 }
 
@@ -56,7 +56,7 @@ async function fetchGracePeriodDays(ctx: ReturnContext): Promise<number> {
 async function logReturnAction(
   ctx: ReturnContext,
   fanmarkId: string,
-  fanmarkEmoji: string,
+  fanmark: string,
   graceExpiresAt: string,
   nowIso: string,
 ): Promise<void> {
@@ -68,7 +68,7 @@ async function logReturnAction(
       resource_type: 'fanmark',
       resource_id: fanmarkId,
       metadata: {
-        fanmark_emoji: fanmarkEmoji,
+        user_input_fanmark: fanmark,
         returned_at: nowIso,
         grace_expires_at: graceExpiresAt,
       },
@@ -110,7 +110,7 @@ async function fetchLicenseWithFanmark(
     .from('fanmark_licenses')
     .select(
       `id, fanmark_id, user_id, status, license_end,
-       fanmarks ( id, emoji_combination )`
+       fanmarks ( id, user_input_fanmark )`
     )
     .eq('id', licenseId)
     .maybeSingle();
@@ -127,7 +127,7 @@ async function fetchLicenseWithFanmark(
         user_id: string;
         status: string;
         license_end: string;
-        fanmarks: { id: string; emoji_combination: string } | null;
+        fanmarks: { id: string; user_input_fanmark: string } | null;
       })
     | null;
 }
@@ -157,13 +157,13 @@ export async function returnFanmarkByLicenseId(
 
   await transitionLicenseToGrace(ctx, license.id, nowIso, graceExpiresAtIso);
 
-  const fanmarkEmoji = license.fanmarks?.emoji_combination ?? '';
-  await logReturnAction(ctx, license.fanmark_id, fanmarkEmoji, graceExpiresAtIso, nowIso);
+  const fanmark = license.fanmarks?.user_input_fanmark ?? '';
+  await logReturnAction(ctx, license.fanmark_id, fanmark, graceExpiresAtIso, nowIso);
 
   return {
     licenseId: license.id,
     fanmarkId: license.fanmark_id,
-    fanmarkEmoji,
+    fanmark,
     graceExpiresAt: graceExpiresAtIso,
   };
 }
@@ -198,4 +198,3 @@ export function createSupabaseClient(): SupabaseClient {
   const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
   return createClient(url, key);
 }
-

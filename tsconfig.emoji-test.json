@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "outDir": "tmp/emoji-test",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": [
+    "scripts/test-emoji-conversion.ts",
+    "src/lib/emoji-master-utils.ts",
+    "src/utils/emojiUrl.ts"
+  ]
+}

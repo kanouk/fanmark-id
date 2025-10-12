@@ -9,7 +9,8 @@ import { LanguageToggle } from '@/components/LanguageToggle';
 import { getFanmarkUrlForClipboard } from '@/utils/emojiUrl';
 
 interface FanmarkData {
-  emoji_combination: string;
+  user_input_fanmark: string;
+  fanmark?: string;
   fanmark_name: string;
   access_type: 'profile' | 'redirect' | 'text' | 'inactive';
   target_url?: string;
@@ -52,7 +53,7 @@ export const FanmarkMessage = ({ fanmark }: FanmarkMessageProps) => {
   };
 
   const handleShare = async () => {
-    const url = getFanmarkUrlForClipboard(fanmark.emoji_combination, 'https://fanmark.id');
+    const url = getFanmarkUrlForClipboard(fanmark.fanmark || fanmark.user_input_fanmark, 'https://fanmark.id');
     if (navigator.share) {
       try {
         await navigator.share({
@@ -104,7 +105,7 @@ export const FanmarkMessage = ({ fanmark }: FanmarkMessageProps) => {
               <div className="relative bg-gradient-to-r from-primary/20 via-accent/20 to-primary/10 px-8 py-12">
                 <div className="text-center">
                   <div className="inline-flex items-center gap-3 mb-6">
-                    <span className="text-4xl" style={{ letterSpacing: '0.3em' }}>{fanmark.emoji_combination}</span>
+                    <span className="text-4xl" style={{ letterSpacing: '0.3em' }}>{fanmark.fanmark || fanmark.user_input_fanmark}</span>
                   </div>
                   <h1 className="text-3xl font-bold text-foreground mb-2">{t('messageBoard.title')}</h1>
                   <p className="text-muted-foreground">{t('messageBoard.messageFromOwner')}</p>

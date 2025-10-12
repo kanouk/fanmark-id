@@ -8,10 +8,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/integrations/supabase/client';
+import { resolveFanmarkDisplay } from '@/lib/emojiConversion';
 
 interface FanmarkRecord {
   id: string;
-  emoji_combination: string;
+  user_input_fanmark: string;
+  emoji_ids: string[];
   fanmark_name: string | null;
   access_type: 'profile' | 'redirect' | 'text' | 'inactive';
   target_url: string | null;
@@ -72,9 +74,15 @@ const FanmarkSettingsPage = () => {
         return;
       }
 
+      const emojiIds = Array.isArray(fanmarkData.emoji_ids)
+        ? (fanmarkData.emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
+        : [];
+
       setFanmark({
         id: fanmarkData.id,
-        emoji_combination: fanmarkData.emoji_combination,
+        user_input_fanmark: fanmarkData.user_input_fanmark,
+        emoji_ids: emojiIds,
+        fanmark: resolveFanmarkDisplay(fanmarkData.user_input_fanmark, emojiIds),
         fanmark_name: fanmarkData.fanmark_name?.trim() || null,
         access_type: fanmarkData.access_type as 'profile' | 'redirect' | 'text' | 'inactive',
         target_url: fanmarkData.target_url ?? undefined,

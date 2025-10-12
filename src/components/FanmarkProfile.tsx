@@ -22,7 +22,8 @@ import {
 
 interface FanmarkData {
   id: string;
-  emoji_combination: string;
+  user_input_fanmark: string;
+  fanmark?: string;
   fanmark_name: string;
   access_type: 'profile' | 'redirect' | 'text' | 'inactive';
   target_url?: string;
@@ -151,7 +152,7 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
         <div className="container mx-auto px-4 py-8 flex-1 flex items-center justify-center">
           <Card className="w-96">
             <CardContent className="p-8 text-center space-y-4">
-              <div className="text-6xl mb-4">{fanmark.emoji_combination}</div>
+              <div className="text-6xl mb-4">{fanmark.fanmark || fanmark.user_input_fanmark}</div>
               <h1 className="text-xl font-semibold text-foreground">
                 {licenseMissing ? 'プロフィールを表示できません' : 'プライベートプロフィール'}
               </h1>
@@ -242,7 +243,7 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
               <div className="px-8 pt-16 pb-8">
                  <div className="text-center mb-8">
                    <h1 className="text-3xl font-bold tracking-tight text-foreground mb-4">
-                     {displayName} {fanmark.emoji_combination}
+                     {displayName} {fanmark.fanmark || fanmark.user_input_fanmark}
                    </h1>
                   {bio && (
                     <p className="text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed">

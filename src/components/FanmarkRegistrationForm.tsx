@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { EmojiInput } from '@/components/EmojiInput';
 import { toast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { convertEmojiSequenceToIdPair } from '@/lib/emojiConversion';
 
 const registrationSchema = z.object({
   emojiCombination: z.string().min(1, 'Emoji combination is required'),
@@ -84,9 +85,28 @@ export const FanmarkRegistrationForm = ({
     setIsSubmitting(true);
 
     try {
+      const compactEmoji = data.emojiCombination.replace(/\s/g, '');
+      let emojiIds: string[] = [];
+      let normalizedEmojiIds: string[] = [];
+      try {
+        const pair = convertEmojiSequenceToIdPair(compactEmoji);
+        emojiIds = pair.emojiIds;
+        normalizedEmojiIds = pair.normalizedEmojiIds;
+      } catch (conversionError) {
+        const message = conversionError instanceof Error ? conversionError.message : 'Invalid emoji sequence';
+        toast({
+          title: t('registration.failed'),
+          description: message,
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const { data: result, error } = await supabase.functions.invoke('register-fanmark', {
         body: {
-          emoji: data.emojiCombination,
+          user_input_fanmark: data.emojiCombination,
+          emoji_ids: emojiIds,
+          normalized_emoji_ids: normalizedEmojiIds,
           accessType: data.accessType,
           displayName: data.displayName,
           targetUrl: data.targetUrl || null,

@@ -129,7 +129,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
               <Card key={`recent-${fanmark.id}-${index}`} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-3">
                   <div className="flex w-full items-center gap-3">
-                    <span className="text-3xl tracking-[0.15em] leading-none">{fanmark.emoji_combination || '❓'}</span>
+                    <span className="text-3xl tracking-[0.15em] leading-none">{(fanmark.fanmark || fanmark.user_input_fanmark) || '❓'}</span>
                     {getStatusBadge(fanmark)}
                   </div>
                 </CardContent>

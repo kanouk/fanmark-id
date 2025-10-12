@@ -1,11 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from './useTranslation';
+import { convertEmojiSequenceToIdPair, resolveFanmarkDisplay, stripSkinToneModifiers } from '@/lib/emojiConversion';
 
 export interface FanmarkSearchResult {
   id: string;
-  emoji_combination: string;
+  user_input_fanmark: string;
+  fanmark?: string;
+  emoji_ids?: string[];
   normalized_emoji: string;
+  normalized_emoji_ids?: string[];
   short_id: string;
   tier_level?: number; // Deprecated - keeping for backward compatibility
   status: 'available' | 'taken' | 'not_available' | 'invalid';
@@ -24,8 +28,11 @@ type FanmarkStatusRaw = 'active' | 'inactive' | 'reserved' | 'archived' | 'pendi
 
 interface FanmarkRow {
   id: string;
-  emoji_combination: string;
+  user_input_fanmark: string;
+  emoji_ids?: string[];
+  fanmark?: string;
   normalized_emoji: string;
+  normalized_emoji_ids?: string[];
   short_id: string;
   tier_level?: number; // Deprecated - no longer exists in fanmarks table
   status: FanmarkStatusRaw;
@@ -71,7 +78,8 @@ interface CheckFanmarkAvailabilityResponse {
 
 interface FanmarkCompleteDataRow {
   id: string;
-  emoji_combination: string;
+  user_input_fanmark: string;
+  emoji_ids?: string[];
   normalized_emoji: string;
   short_id: string;
   status: string;
@@ -80,7 +88,6 @@ interface FanmarkCompleteDataRow {
 }
 
 const SKIN_TONE_MODIFIER_REGEX = /\p{Emoji_Modifier}/u;
-const SKIN_TONE_MODIFIER_GLOBAL_REGEX = /\p{Emoji_Modifier}/gu;
 const EMOJI_CHARACTER_REGEX = /\p{Emoji}/u;
 const COMBINING_CHARACTERS = new Set([
   String.fromCodePoint(0xfe0f),
@@ -114,7 +121,9 @@ export function useFanmarkSearch() {
         .from('fanmarks')
         .select(`
           id,
-          emoji_combination,
+          user_input_fanmark,
+          emoji_ids,
+          normalized_emoji_ids,
           normalized_emoji,
           short_id,
           status
@@ -129,19 +138,29 @@ export function useFanmarkSearch() {
       }
       if (data) {
         console.log('Fetched recent fanmarks data:', data);
-        const fanmarksWithStatus: FanmarkSearchResult[] = (data as any[]).map((fanmark: any) => ({
-          id: fanmark.id,
-          emoji_combination: fanmark.emoji_combination,
-          normalized_emoji: fanmark.normalized_emoji,
-          short_id: fanmark.short_id,
-          tier_level: 1, // Default value since removed from schema
-          status: 'not_available', // All recent fanmarks are already taken
-          price_yen: undefined,
-          price_usd: undefined,
-          emoji_count: undefined,
-          error: undefined,
-          owner: undefined,
-        }));
+        const fanmarksWithStatus: FanmarkSearchResult[] = (data as any[]).map((fanmark: any) => {
+          const ids = Array.isArray(fanmark.emoji_ids)
+            ? (fanmark.emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
+            : [];
+          return {
+            id: fanmark.id,
+            user_input_fanmark: fanmark.user_input_fanmark,
+            fanmark: resolveFanmarkDisplay(fanmark.user_input_fanmark, ids),
+            emoji_ids: ids,
+            normalized_emoji_ids: Array.isArray(fanmark.normalized_emoji_ids)
+              ? (fanmark.normalized_emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
+              : [],
+            normalized_emoji: fanmark.normalized_emoji,
+            short_id: fanmark.short_id,
+            tier_level: 1, // Default value since removed from schema
+            status: 'not_available', // All recent fanmarks are already taken
+            price_yen: undefined,
+            price_usd: undefined,
+            emoji_count: undefined,
+            error: undefined,
+            owner: undefined,
+          };
+        });
         setRecentFanmarks(fanmarksWithStatus);
         console.log('Recent fanmarks updated:', fanmarksWithStatus);
       }
@@ -152,9 +171,7 @@ export function useFanmarkSearch() {
   };
 
   // Normalize emoji by removing skin tone modifiers
-  const normalizeEmoji = (emoji: string): string => {
-    return emoji.replace(SKIN_TONE_MODIFIER_GLOBAL_REGEX, '');
-  };
+  const normalizeEmoji = (emoji: string): string => stripSkinToneModifiers(emoji);
 
   // Check if emoji has skin tone modifiers
   const hasSkinToneModifiers = (emoji: string): boolean => {
@@ -225,7 +242,8 @@ export function useFanmarkSearch() {
       if (!validation.valid) {
         setResult({
           id: 'invalid',
-          emoji_combination: query,
+          user_input_fanmark: query,
+          fanmark: query,
           normalized_emoji: '',
           short_id: '',
           tier_level: 1, // Default value
@@ -236,10 +254,51 @@ export function useFanmarkSearch() {
         return;
       }
   
-      const normalizedQuery = normalizeEmoji(query);
-  
+      const compactQuery = query.replace(/\s/g, '');
+      const normalizedQuery = normalizeEmoji(compactQuery);
+
+      let emojiIds: string[];
+      let normalizedEmojiIds: string[];
+      try {
+        const pair = convertEmojiSequenceToIdPair(compactQuery);
+        emojiIds = pair.emojiIds;
+        normalizedEmojiIds = pair.normalizedEmojiIds;
+      } catch (conversionError) {
+        setResult({
+          id: 'invalid',
+          user_input_fanmark: query,
+          fanmark: query,
+          emoji_ids: [],
+          normalized_emoji_ids: [],
+          normalized_emoji: normalizedQuery,
+          short_id: '',
+          tier_level: 1,
+          status: 'invalid',
+          error: conversionError instanceof Error ? conversionError.message : t('search.validationError'),
+          emoji_count: validation.emojiCount,
+        });
+        return;
+      }
+
+      if (emojiIds.length === 0) {
+        setResult({
+          id: 'invalid',
+          user_input_fanmark: query,
+          fanmark: query,
+          emoji_ids: [],
+          normalized_emoji_ids: [],
+          normalized_emoji: normalizedQuery,
+          short_id: '',
+          tier_level: 1,
+          status: 'invalid',
+          error: t('search.validationError'),
+          emoji_count: validation.emojiCount,
+        });
+        return;
+      }
+
       const { data: availabilityRaw, error: availabilityError } = await supabase
-        .rpc('check_fanmark_availability', { input_emoji: normalizedQuery } as { input_emoji: string });
+        .rpc('check_fanmark_availability', { input_emoji_ids: normalizedEmojiIds } as { input_emoji_ids: string[] });
 
       if (availabilityError) {
         console.error('Error checking availability:', availabilityError);
@@ -256,7 +315,10 @@ export function useFanmarkSearch() {
       if (!availability.fanmark_id) {
         setResult({
           id: '',
-          emoji_combination: query,
+          user_input_fanmark: query,
+          fanmark: resolveFanmarkDisplay(query, emojiIds),
+          emoji_ids: emojiIds,
+          normalized_emoji_ids: normalizedEmojiIds,
           normalized_emoji: normalizedQuery,
           short_id: '',
           tier_level: 1,
@@ -289,7 +351,10 @@ export function useFanmarkSearch() {
       if (fanmarkData.status !== 'active') {
         setResult({
           id: fanmarkData.id,
-          emoji_combination: fanmarkData.emoji_combination,
+          user_input_fanmark: fanmarkData.user_input_fanmark,
+          fanmark: resolveFanmarkDisplay(fanmarkData.user_input_fanmark, fanmarkData.emoji_ids),
+          emoji_ids: fanmarkData.emoji_ids,
+          normalized_emoji_ids: normalizedEmojiIds,
           normalized_emoji: fanmarkData.normalized_emoji,
           short_id: fanmarkData.short_id,
           tier_level: 1,
@@ -303,7 +368,10 @@ export function useFanmarkSearch() {
       if (!fanmarkData.has_active_license) {
         setResult({
           id: fanmarkData.id,
-          emoji_combination: fanmarkData.emoji_combination,
+          user_input_fanmark: fanmarkData.user_input_fanmark,
+          fanmark: resolveFanmarkDisplay(fanmarkData.user_input_fanmark, fanmarkData.emoji_ids),
+          emoji_ids: fanmarkData.emoji_ids,
+          normalized_emoji_ids: normalizedEmojiIds,
           normalized_emoji: fanmarkData.normalized_emoji,
           short_id: fanmarkData.short_id,
           tier_level: 1,
@@ -316,7 +384,10 @@ export function useFanmarkSearch() {
       if (isOwnedByCurrentUser) {
         setResult({
           id: fanmarkData.id,
-          emoji_combination: fanmarkData.emoji_combination,
+          user_input_fanmark: fanmarkData.user_input_fanmark,
+          fanmark: resolveFanmarkDisplay(fanmarkData.user_input_fanmark, fanmarkData.emoji_ids),
+          emoji_ids: fanmarkData.emoji_ids,
+          normalized_emoji_ids: normalizedEmojiIds,
           normalized_emoji: fanmarkData.normalized_emoji,
           short_id: fanmarkData.short_id,
           tier_level: 1,
@@ -333,7 +404,10 @@ export function useFanmarkSearch() {
 
       setResult({
         id: fanmarkData.id,
-        emoji_combination: fanmarkData.emoji_combination,
+        user_input_fanmark: fanmarkData.user_input_fanmark,
+        fanmark: resolveFanmarkDisplay(fanmarkData.user_input_fanmark, fanmarkData.emoji_ids),
+        emoji_ids: fanmarkData.emoji_ids,
+        normalized_emoji_ids: normalizedEmojiIds,
         normalized_emoji: fanmarkData.normalized_emoji,
         short_id: fanmarkData.short_id,
         tier_level: 1,
@@ -351,8 +425,22 @@ export function useFanmarkSearch() {
   
   const registerFanmark = async (emoji: string): Promise<{ success: boolean; error?: string; fanmark?: FanmarkRow }> => {
     try {
+      const compactEmoji = emoji.replace(/\s/g, '');
+      let emojiIds: string[] = [];
+      let normalizedEmojiIds: string[] = [];
+      try {
+        const pair = convertEmojiSequenceToIdPair(compactEmoji);
+        emojiIds = pair.emojiIds;
+        normalizedEmojiIds = pair.normalizedEmojiIds;
+      } catch (conversionError) {
+        return {
+          success: false,
+          error: conversionError instanceof Error ? conversionError.message : 'Invalid emoji sequence',
+        };
+      }
+
       const response = await supabase.functions.invoke<RegisterFanmarkResponse>('register-fanmark', {
-        body: { input_emoji_combination: emoji }
+        body: { user_input_fanmark: emoji, emoji_ids: emojiIds, normalized_emoji_ids: normalizedEmojiIds }
       });
 
       if (response.error) {
@@ -360,7 +448,14 @@ export function useFanmarkSearch() {
       }
 
       if (response.data?.fanmark) {
-        return { success: true, fanmark: response.data.fanmark };
+        const fanmarkRecord = response.data.fanmark;
+        return {
+          success: true,
+          fanmark: {
+            ...fanmarkRecord,
+            fanmark: resolveFanmarkDisplay(fanmarkRecord.user_input_fanmark, fanmarkRecord.emoji_ids),
+          },
+        };
       }
       return { success: false, error: response.data?.error ?? 'Registration failed' };
     } catch (error) {
@@ -370,9 +465,22 @@ export function useFanmarkSearch() {
 
   const checkAvailability = async (emoji: string): Promise<boolean> => {
     try {
-      const normalizedEmoji = normalizeEmoji(emoji);
+      const compactEmoji = emoji.replace(/\s/g, '');
+      let normalizedEmojiIds: string[];
+      try {
+        const pair = convertEmojiSequenceToIdPair(compactEmoji);
+        normalizedEmojiIds = pair.normalizedEmojiIds;
+      } catch (conversionError) {
+        console.error('Error converting emoji to ids:', conversionError);
+        return false;
+      }
+
+      if (normalizedEmojiIds.length === 0) {
+        return false;
+      }
+
       const { data: availabilityRaw, error } = await supabase
-        .rpc('check_fanmark_availability', { input_emoji: normalizedEmoji } as { input_emoji: string });
+        .rpc('check_fanmark_availability', { input_emoji_ids: normalizedEmojiIds } as { input_emoji_ids: string[] });
 
       if (error) throw error;
 

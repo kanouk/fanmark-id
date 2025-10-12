@@ -133,7 +133,7 @@ excluded_from_plan = 'business'
 
 #### プラン対象外ファンマーク
 ```
-[プラン対象外] 🔒 emoji_combination
+[プラン対象外] 🔒 user_input_fanmark
 期限: 2025-02-01 (延長不可)
 ```
 - 「プラン対象外」バッジ表示

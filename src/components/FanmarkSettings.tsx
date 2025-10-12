@@ -69,7 +69,9 @@ type SettingsFormData = z.infer<typeof settingsSchema>;
 
 export interface Fanmark {
   id: string;
-  emoji_combination: string;
+  user_input_fanmark: string;
+  emoji_ids?: string[];
+  fanmark?: string;
   fanmark_name: string | null;
   access_type: AccessType;
   target_url?: string;
@@ -319,7 +321,7 @@ export const FanmarkSettings = ({
           .from('fanmark_profiles')
           .upsert({
             license_id: fanmark.license_id,
-            bio: `Profile for ${fanmark.emoji_combination}`,
+            bio: `Profile for ${fanmark.fanmark || fanmark.user_input_fanmark}`,
             is_public: data.is_public,
           }, {
             onConflict: 'license_id'
@@ -419,7 +421,7 @@ export const FanmarkSettings = ({
   const summaryCard = (
     <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-muted/10 px-5 py-3">
       <div className="flex items-center gap-3">
-        <span className="text-2xl">{fanmark.emoji_combination}</span>
+        <span className="text-2xl">{fanmark.fanmark || fanmark.user_input_fanmark}</span>
         <div className="flex flex-col">
           <span className="text-sm font-semibold text-foreground">{displayLabel}</span>
           <span className="text-xs text-muted-foreground">{fanmark.short_id}</span>

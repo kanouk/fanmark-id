@@ -52,8 +52,8 @@ const FanmarkPublicQR = () => {
             </div>
           )}
 
-          {showContent && (
-            <FanmarkQRCodeCard emoji={data.emoji_combination} url={shareUrl} shortId={shortId || ''} />
+          {showContent && data && (
+            <FanmarkQRCodeCard emoji={data.fanmark} url={shareUrl} shortId={shortId || ''} />
           )}
         </div>
       </div>

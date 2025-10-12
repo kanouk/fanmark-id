@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { formatInTimeZone } from 'date-fns-tz';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +24,14 @@ import { useFanmarkLimit } from '@/hooks/useFanmarkLimit';
 import { navigateToFanmark, getFanmarkUrlForClipboard } from '@/utils/emojiUrl';
 import { parseDateString } from '@/lib/utils';
 import { deriveLicenseTiming, type LicenseTimingResult } from '@/lib/licenseTiming';
+import { resolveFanmarkDisplay } from '@/lib/emojiConversion';
+
+const LICENSE_STATUS_WEIGHT: Record<LicenseTimingResult['status'], number> = {
+  active: 0,
+  'grace-return': 2,
+  grace: 3,
+  expired: 4,
+};
 
 const formatCountdown = (target: Date | string | null) => {
   if (!target) return '00:00:00';
@@ -40,7 +48,10 @@ const formatCountdown = (target: Date | string | null) => {
 
 interface Fanmark {
   id: string;
-  emoji_combination: string;
+  user_input_fanmark: string;
+  emoji_ids: string[];
+  fanmark: string;
+  emoji_key: string;
   fanmark_name: string | null;
   short_id: string;
   access_type: string;
@@ -51,7 +62,6 @@ interface Fanmark {
   created_at: string;
   updated_at: string;
   user_id: string;
-  normalized_emoji: string;
   fanmark_licenses?: {
     license_start: string;
     license_end: string;
@@ -61,6 +71,13 @@ interface Fanmark {
     excluded_at?: string | null;
     excluded_from_plan?: string | null;
   } | null;
+  current_license?: {
+    id: string;
+    license_start: string;
+    license_end: string;
+    status: string;
+    created_at: string;
+  };
 }
 
 interface Profile {
@@ -111,7 +128,9 @@ export const FanmarkDashboard = () => {
     const fanmark = fanmarks.find(f => f.id === fanmarkId);
     if (fanmark) {
       const fanmarkData = {
-        emoji_combination: fanmark.emoji_combination,
+        user_input_fanmark: fanmark.user_input_fanmark,
+        fanmark: fanmark.fanmark,
+        emoji_ids: fanmark.emoji_ids,
         fanmark_name: fanmark.fanmark_name,
         fanmarkId: fanmarkId,
         timestamp: Date.now()
@@ -168,7 +187,7 @@ export const FanmarkDashboard = () => {
     const licenseData = fanmark.fanmark_licenses;
     setExtendTarget({
       fanmarkId: fanmark.id,
-      emoji: fanmark.emoji_combination,
+      emoji: fanmark.fanmark,
       shortId: fanmark.short_id,
       licenseEnd: licenseData?.license_end ?? null,
       graceExpiresAt: licenseData?.grace_expires_at ?? null,
@@ -273,6 +292,8 @@ export const FanmarkDashboard = () => {
           created_at,
           fanmarks (
             id,
+            user_input_fanmark,
+            emoji_ids,
             emoji_combination,
             normalized_emoji,
             short_id,
@@ -292,9 +313,6 @@ export const FanmarkDashboard = () => {
         return;
       }
 
-      // Get all fanmark IDs to fetch configs
-      const fanmarkIds = licenses.map(license => license.fanmark_id).filter(Boolean);
-
       // Get all license IDs to fetch configs
       const licenseIds = licenses.map(license => license.id).filter(Boolean);
 
@@ -312,39 +330,76 @@ export const FanmarkDashboard = () => {
       const basicConfigMap = new Map((basicConfigs || []).map(config => [config.license_id, config]));
 
       // Process fanmarks with their configs
-      const fanmarksWithDefaults = licenses.map(license => {
-        const fanmark = license.fanmarks as any;
-        const basicConfig = basicConfigMap.get(license.id);
-        
-        return {
-          ...fanmark,
-          // Fill in required properties from Fanmark interface
-          access_type: basicConfig?.access_type || 'inactive',
-          fanmark_name: basicConfig?.fanmark_name || fanmark.emoji_combination,
-          license_id: license.id,
-          tier_level: null, // Removed from fanmarks table
-          current_license_id: license.id,
-          is_transferable: true, // Default value
-          user_id: '', // Not available in new schema
-          // Add license information for compatibility
-          current_license: {
-            id: license.id,
-            license_start: license.license_start,
-            license_end: license.license_end,
-            status: license.status,
-            created_at: license.created_at
-          },
-          fanmark_licenses: {
-            license_start: license.license_start,
-            license_end: license.license_end,
-            grace_expires_at: license.grace_expires_at,
-            status: license.status,
-            is_returned: license.is_returned ?? false,
-            excluded_at: license.excluded_at ?? null,
-            excluded_from_plan: license.plan_excluded ?? false
+      const fanmarksWithDefaults = licenses
+        .map((license) => {
+          const fanmark = license.fanmarks as {
+            id: string;
+            user_input_fanmark?: string | null;
+            emoji_ids?: (string | null)[] | null;
+            emoji_combination?: string | null;
+            normalized_emoji?: string | null;
+            short_id: string;
+            status: string;
+            created_at: string;
+            updated_at: string;
+          } | null;
+
+          if (!fanmark) {
+            return null;
           }
-        };
-      }) as Fanmark[];
+
+          const rawEmojiIds = Array.isArray(fanmark.emoji_ids)
+            ? (fanmark.emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
+            : [];
+          const fallbackEmojiString =
+            typeof fanmark.emoji_combination === 'string' && fanmark.emoji_combination.length > 0
+              ? fanmark.emoji_combination
+              : '';
+          const userInputValue =
+            typeof fanmark.user_input_fanmark === 'string' && fanmark.user_input_fanmark.length > 0
+              ? fanmark.user_input_fanmark
+              : '';
+          const resolvedDisplay = resolveFanmarkDisplay(userInputValue, rawEmojiIds);
+          const displayFanmark = resolvedDisplay || fallbackEmojiString || userInputValue;
+          const emojiKey = rawEmojiIds.length > 0
+            ? rawEmojiIds.join(':')
+            : resolvedDisplay || fallbackEmojiString || userInputValue || fanmark.id;
+          const basicConfig = basicConfigMap.get(license.id);
+
+          return {
+            ...fanmark,
+            user_input_fanmark: userInputValue,
+            emoji_ids: rawEmojiIds,
+            fanmark: displayFanmark,
+            emoji_key: emojiKey,
+            // Fill in required properties from Fanmark interface
+            access_type: basicConfig?.access_type || 'inactive',
+            fanmark_name: basicConfig?.fanmark_name || displayFanmark || userInputValue || fallbackEmojiString || '',
+            license_id: license.id,
+            tier_level: null, // Removed from fanmarks table
+            current_license_id: license.id,
+            is_transferable: true, // Default value
+            user_id: '', // Not available in new schema
+            // Add license information for compatibility
+            current_license: {
+              id: license.id,
+              license_start: license.license_start,
+              license_end: license.license_end,
+              status: license.status,
+              created_at: license.created_at,
+            },
+            fanmark_licenses: {
+              license_start: license.license_start,
+              license_end: license.license_end,
+              grace_expires_at: license.grace_expires_at,
+              status: license.status,
+              is_returned: license.is_returned,
+              excluded_at: license.excluded_at,
+              excluded_from_plan: license.excluded_from_plan,
+            },
+          } as Fanmark;
+        })
+        .filter((item): item is Fanmark => item !== null);
       
       setFanmarks(fanmarksWithDefaults);
     } catch (error) {
@@ -460,39 +515,68 @@ export const FanmarkDashboard = () => {
     );
   };
 
-  const activeFanmarks = fanmarks.filter(f => {
+  const dedupedFanmarks = useMemo(() => {
+    const map = new Map<string, Fanmark>();
+    fanmarks.forEach((fanmark) => {
+      const key = fanmark.emoji_key || fanmark.id;
+      const existing = map.get(key);
+      if (!existing) {
+        map.set(key, fanmark);
+        return;
+      }
+
+      const existingTiming = getLicenseTiming(existing.fanmark_licenses as Fanmark['fanmark_licenses']);
+      const currentTiming = getLicenseTiming(fanmark.fanmark_licenses as Fanmark['fanmark_licenses']);
+      const existingWeight = LICENSE_STATUS_WEIGHT[existingTiming.status] ?? Number.MAX_SAFE_INTEGER;
+      const currentWeight = LICENSE_STATUS_WEIGHT[currentTiming.status] ?? Number.MAX_SAFE_INTEGER;
+
+      if (currentWeight < existingWeight) {
+        map.set(key, fanmark);
+        return;
+      }
+
+      if (currentWeight === existingWeight) {
+        const existingDate = parseDateString((existing.fanmark_licenses as any)?.license_start)?.getTime() ?? 0;
+        const currentDate = parseDateString((fanmark.fanmark_licenses as any)?.license_start)?.getTime() ?? 0;
+        if (currentDate > existingDate) {
+          map.set(key, fanmark);
+        }
+      }
+    });
+
+    return Array.from(map.values());
+  }, [fanmarks, gracePeriodDaysSetting]);
+
+  const activeFanmarks = dedupedFanmarks.filter(f => {
     const licenseData = f.fanmark_licenses as any;
     const timing = getLicenseTiming(licenseData);
     return timing.status === 'active' && !isReturned(f);
   }).length;
 
-  const statusWeight: Record<LicenseTimingResult['status'], number> = {
-    active: 0,
-    'grace-return': 2,
-    grace: 3,
-    expired: 4,
-  };
+  const filteredFanmarks = useMemo(() => {
+    const sorted = [...dedupedFanmarks].sort((a, b) => {
+      const aLicenseData = a.fanmark_licenses as any;
+      const bLicenseData = b.fanmark_licenses as any;
+      const aTiming = getLicenseTiming(aLicenseData);
+      const bTiming = getLicenseTiming(bLicenseData);
 
-  const filteredFanmarks = fanmarks.sort((a, b) => {
-    const aLicenseData = a.fanmark_licenses as any;
-    const bLicenseData = b.fanmark_licenses as any;
-    const aTiming = getLicenseTiming(aLicenseData);
-    const bTiming = getLicenseTiming(bLicenseData);
+      const aWeight = LICENSE_STATUS_WEIGHT[aTiming.status] ?? Number.MAX_SAFE_INTEGER;
+      const bWeight = LICENSE_STATUS_WEIGHT[bTiming.status] ?? Number.MAX_SAFE_INTEGER;
 
-    const aWeight = statusWeight[aTiming.status] ?? 9;
-    const bWeight = statusWeight[bTiming.status] ?? 9;
+      if (aWeight !== bWeight) {
+        return aWeight - bWeight;
+      }
 
-    if (aWeight !== bWeight) {
-      return aWeight - bWeight;
-    }
+      // Within the same status, sort by acquisition date (newest first)
+      const aAcquisitionDate = parseDateString(aLicenseData?.license_start);
+      const bAcquisitionDate = parseDateString(bLicenseData?.license_start);
+      const aAcquisition = aAcquisitionDate ? aAcquisitionDate.getTime() : 0;
+      const bAcquisition = bAcquisitionDate ? bAcquisitionDate.getTime() : 0;
+      return bAcquisition - aAcquisition;
+    });
 
-    // Within the same status, sort by acquisition date (newest first)
-    const aAcquisitionDate = parseDateString(aLicenseData?.license_start);
-    const bAcquisitionDate = parseDateString(bLicenseData?.license_start);
-    const aAcquisition = aAcquisitionDate ? aAcquisitionDate.getTime() : 0;
-    const bAcquisition = bAcquisitionDate ? bAcquisitionDate.getTime() : 0;
-    return bAcquisition - aAcquisition;
-  });
+    return sorted;
+  }, [dedupedFanmarks, gracePeriodDaysSetting]);
 
   const handleRequireAuth = (emoji: string) => {
     try {
@@ -686,7 +770,7 @@ export const FanmarkDashboard = () => {
                                 const canReturn = !isReturned(fanmark) && timing.status === 'active';
                                 const canExtend = (['active', 'grace', 'grace-return'].includes(timing.status)) && (!isReturned(fanmark) || isGraceReturn);
 
-                                const rowKey = `${fanmark.id}-${fanmark.current_license_id ?? licenseData?.license_end ?? idx}`;
+                                const rowKey = `${fanmark.emoji_key}-${fanmark.current_license_id ?? licenseData?.license_end ?? idx}`;
                                 const rowVisualState = isFanmarkInactive(fanmark)
                                   ? 'bg-gray-200 dark:bg-gray-700'
                                   : (timing.status === 'grace' || timing.status === 'grace-return')
@@ -700,15 +784,15 @@ export const FanmarkDashboard = () => {
                                         <div
                                           className={`flex items-center px-3.5 py-2.5 rounded-md shadow-sm transition-transform hover:scale-105 whitespace-nowrap cursor-pointer ${getTierOvalStyle(fanmark.tier_level || 1)}`}
                                           onClick={() => {
-                                            navigator.clipboard.writeText(fanmark.emoji_combination);
+                                            navigator.clipboard.writeText(fanmark.fanmark);
                                             toast({
                                               title: t('dashboard.emojiCopiedTitle'),
-                                              description: fanmark.emoji_combination,
+                                              description: fanmark.fanmark,
                                             });
                                           }}
                                           title={t('dashboard.clickToCopyEmoji')}
                                         >
-                                          <span className="text-2xl leading-none select-none" style={{ letterSpacing: '0.2em' }}>{fanmark.emoji_combination}</span>
+                                          <span className="text-2xl leading-none select-none" style={{ letterSpacing: '0.2em' }}>{fanmark.fanmark}</span>
                                         </div>
                                       </div>
                                     </td>
@@ -800,7 +884,7 @@ export const FanmarkDashboard = () => {
                                           </Tooltip>
                                           <DropdownMenuContent align="end" sideOffset={8} collisionPadding={16} className="w-48">
                                             <DropdownMenuItem
-                                              onSelect={() => navigateToFanmark(fanmark.emoji_combination, true)}
+                                              onSelect={() => navigateToFanmark(fanmark.fanmark, true)}
                                               className="gap-2"
                                             >
                                               <ExternalLink className="h-4 w-4 text-primary" />
@@ -817,7 +901,7 @@ export const FanmarkDashboard = () => {
                                             )}
                                             <DropdownMenuItem
                                               onSelect={() => {
-                                                const fullUrl = getFanmarkUrlForClipboard(fanmark.emoji_combination);
+                                                const fullUrl = getFanmarkUrlForClipboard(fanmark.fanmark);
                                                 navigator.clipboard.writeText(fullUrl);
                                                 toast({
                                                   title: t('dashboard.urlCopiedTitle'),
@@ -906,15 +990,15 @@ export const FanmarkDashboard = () => {
                                       <div
                                         className={`flex items-center px-3 py-2 rounded-md cursor-pointer hover:scale-105 transition-transform ${getTierOvalStyle(fanmark.tier_level || 1)}`}
                                         onClick={() => {
-                                          navigator.clipboard.writeText(fanmark.emoji_combination);
+                                          navigator.clipboard.writeText(fanmark.fanmark);
                                           toast({
                                             title: t('dashboard.emojiCopiedTitle'),
-                                            description: fanmark.emoji_combination,
+                                            description: fanmark.fanmark,
                                           });
                                         }}
                                         title={t('dashboard.clickToCopyEmoji')}
                                       >
-                                        <span className="text-3xl leading-none select-none" style={{ letterSpacing: '0.2em' }}>{fanmark.emoji_combination}</span>
+                                        <span className="text-3xl leading-none select-none" style={{ letterSpacing: '0.2em' }}>{fanmark.fanmark}</span>
                                       </div>
                                       <Tooltip>
                                         <TooltipTrigger asChild>
@@ -1009,7 +1093,7 @@ export const FanmarkDashboard = () => {
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="end" sideOffset={8} collisionPadding={16} className="w-48">
                                         <DropdownMenuItem
-                                          onSelect={() => navigateToFanmark(fanmark.emoji_combination, true)}
+                                          onSelect={() => navigateToFanmark(fanmark.fanmark, true)}
                                           className="gap-2"
                                         >
                                           <ExternalLink className="h-4 w-4 text-primary" />
@@ -1026,7 +1110,7 @@ export const FanmarkDashboard = () => {
                                         )}
                                        <DropdownMenuItem
                                          onSelect={() => {
-                                           const fullUrl = getFanmarkUrlForClipboard(fanmark.emoji_combination);
+                                           const fullUrl = getFanmarkUrlForClipboard(fanmark.fanmark);
                                            navigator.clipboard.writeText(fullUrl);
                                            toast({
                                              title: t('dashboard.urlCopiedTitle'),

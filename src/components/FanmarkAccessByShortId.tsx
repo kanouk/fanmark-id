@@ -9,12 +9,15 @@ import { FanmarkMessage } from './FanmarkMessage';
 import { PasswordProtection } from './PasswordProtection';
 import { RedirectLoading } from './RedirectLoading';
 import { MessageboardLoading } from './MessageboardLoading';
+import { resolveFanmarkDisplay } from '@/lib/emojiConversion';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
 
 interface FanmarkData {
   id: string;
-  emoji_combination: string;
+  user_input_fanmark: string;
+  emoji_ids?: string[];
+  fanmark?: string;
   fanmark_name: string;
   access_type: 'profile' | 'redirect' | 'text' | 'inactive';
   target_url?: string;
@@ -75,28 +78,36 @@ export const FanmarkAccessByShortId = () => {
         }
 
         const fanmarkData = data[0] as FanmarkData;
+        const emojiIds = Array.isArray(fanmarkData.emoji_ids)
+          ? (fanmarkData.emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
+          : [];
+        const resolvedFanmark: FanmarkData = {
+          ...fanmarkData,
+          emoji_ids: emojiIds,
+          fanmark: resolveFanmarkDisplay(fanmarkData.user_input_fanmark ?? '', emojiIds),
+        };
 
-        if (!fanmarkData.license_id) {
+        if (!resolvedFanmark.license_id) {
           console.warn('Loaded fanmark without license_id. Profile access requires active license linkage.');
         }
 
         // Show redirect loading and then redirect if it's a redirect type without password protection
-        if (fanmarkData.access_type === 'redirect' &&
-            fanmarkData.target_url &&
-            !fanmarkData.is_password_protected) {
-          console.log('Redirecting to:', fanmarkData.target_url);
-          setFanmark(fanmarkData); // Set fanmark for RedirectLoading
+        if (resolvedFanmark.access_type === 'redirect' &&
+            resolvedFanmark.target_url &&
+            !resolvedFanmark.is_password_protected) {
+          console.log('Redirecting to:', resolvedFanmark.target_url);
+          setFanmark(resolvedFanmark); // Set fanmark for RedirectLoading
           setIsRedirecting(true);
           setLoading(false); // Stop loading immediately
           setTimeout(() => {
-            window.location.href = fanmarkData.target_url!;
+            window.location.href = resolvedFanmark.target_url!;
           }, 2000); // Show redirect loading for 2 seconds
           return;
         }
 
         // Show messageboard loading for text type without password protection
-        if (fanmarkData.access_type === 'text' && !fanmarkData.is_password_protected) {
-          setFanmark(fanmarkData);
+        if (resolvedFanmark.access_type === 'text' && !resolvedFanmark.is_password_protected) {
+          setFanmark(resolvedFanmark);
           setIsShowingMessageboard(true);
           setLoading(false);
           setTimeout(() => {
@@ -105,7 +116,7 @@ export const FanmarkAccessByShortId = () => {
           return;
         }
 
-        setFanmark(fanmarkData);
+        setFanmark(resolvedFanmark);
         setLoading(false);
       } catch (err) {
         console.error('Error loading fanmark:', err);
@@ -170,7 +181,7 @@ export const FanmarkAccessByShortId = () => {
     return (
       <RedirectLoading
         targetUrl={fanmark.target_url}
-        fanmarkEmoji={fanmark.emoji_combination}
+        fanmark={fanmark.fanmark || fanmark.user_input_fanmark}
       />
     );
   }
@@ -179,7 +190,7 @@ export const FanmarkAccessByShortId = () => {
   if (isShowingMessageboard && fanmark.access_type === 'text') {
     return (
       <MessageboardLoading
-        fanmarkEmoji={fanmark.emoji_combination}
+        fanmark={fanmark.fanmark || fanmark.user_input_fanmark}
       />
     );
   }
@@ -209,7 +220,7 @@ export const FanmarkAccessByShortId = () => {
         <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex items-center justify-center">
           <Card className="w-96">
             <CardContent className="p-8 text-center space-y-4">
-              <div className="text-6xl mb-4">{fanmark.emoji_combination}</div>
+              <div className="text-6xl mb-4">{fanmark.fanmark || fanmark.user_input_fanmark}</div>
               <p className="text-lg font-medium text-foreground">
                 {t('common.getYourFanmark')}
               </p>

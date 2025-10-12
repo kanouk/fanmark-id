@@ -1,10 +1,13 @@
 import { supabase } from '@/integrations/supabase/client';
+import { resolveFanmarkDisplay } from '@/lib/emojiConversion';
 
 export type PlanType = 'free' | 'creator' | 'business' | 'enterprise' | 'admin';
 
 export interface ActiveFanmark {
   id: string;
-  emoji_combination: string;
+  user_input_fanmark: string;
+  emoji_ids: string[];
+  fanmark: string;
   fanmark_name: string | null;
   license_id: string;
   license_end: string;
@@ -29,7 +32,8 @@ interface LicenseQueryResult {
   license_end: string;
   fanmarks: {
     id: string;
-    emoji_combination: string;
+    user_input_fanmark: string;
+    emoji_ids: (string | null)[] | null;
   } | null;
   fanmark_basic_configs: {
     fanmark_name: string | null;
@@ -48,7 +52,8 @@ export async function fetchActiveFanmarks(userId: string): Promise<ActiveFanmark
       license_end,
       fanmarks (
         id,
-        emoji_combination
+        user_input_fanmark,
+        emoji_ids
       ),
       fanmark_basic_configs (
         fanmark_name,
@@ -65,14 +70,24 @@ export async function fetchActiveFanmarks(userId: string): Promise<ActiveFanmark
   console.log('[fetchActiveFanmarks] Found licenses:', licenses?.length || 0);
 
   return (
-    (licenses as LicenseQueryResult[] | null)?.map(license => ({
-      id: license.fanmark_id,
-      emoji_combination: license.fanmarks?.emoji_combination ?? '',
-      fanmark_name: license.fanmark_basic_configs?.fanmark_name ?? null,
-      license_id: license.id,
-      license_end: license.license_end,
-      access_type: license.fanmark_basic_configs?.access_type ?? null,
-    })) || []
+    (licenses as LicenseQueryResult[] | null)?.map(license => {
+      const userInput = license.fanmarks?.user_input_fanmark ?? '';
+      const emojiIds = Array.isArray(license.fanmarks?.emoji_ids)
+        ? (license.fanmarks?.emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
+        : [];
+      const displayFanmark = resolveFanmarkDisplay(userInput, emojiIds);
+
+      return {
+        id: license.fanmark_id,
+        user_input_fanmark: userInput,
+        emoji_ids: emojiIds,
+        fanmark: displayFanmark,
+        fanmark_name: (license.fanmark_basic_configs?.fanmark_name ?? displayFanmark ?? userInput) || null,
+        license_id: license.id,
+        license_end: license.license_end,
+        access_type: license.fanmark_basic_configs?.access_type ?? null,
+      };
+    }) || []
   );
 }
 
@@ -149,4 +164,3 @@ export function planDisplayOrder(planType: PlanType): number {
       return 5;
   }
 }
-

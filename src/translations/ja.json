@@ -201,6 +201,7 @@
     "save": "保存",
     "cancel": "閉じる",
     "continue": "続ける",
+    "goBack": "前のページに戻る",
     "submit": "送信",
     "back": "戻る",
     "saving": "保存中...",
@@ -767,8 +768,8 @@
     "backToEdit": "編集"
   },
   "fanmarkDetails": {
-    "notFound": "ファンマークが見つかりません",
-    "notFoundDescription": "お探しのファンマークは存在しないか、削除されています。",
+    "notFound": "ファンマが見つかりません",
+    "notFoundDescription": "お探しのファンマは存在しないか、削除されています。",
     "currentStatus": "現在の状況",
     "firstAcquisition": "初回取得",
     "licenseHistory": "取得履歴",
@@ -792,6 +793,8 @@
     "createdAt": "{{date}} 作成",
     "currentHolder": "現在の所有者",
     "licenseEnds": "終了予定日",
+    "loadFailedTitle": "ファンマの詳細を表示できません",
+    "loadFailedDescription": "ファンマの詳細を読み込めませんでした。時間をおいて再度お試しください。",
     "statusGrace": "失効処理中",
     "statusReturnProcessing": "返却処理中",
     "statusExpired": "期限切れ",

@@ -4,10 +4,10 @@ import { FiMessageSquare, FiArrowRight } from 'react-icons/fi';
 import { FanmarkEmojiBadge } from '@/components/FanmarkEmojiBadge';
 
 interface MessageboardLoadingProps {
-  fanmarkEmoji?: string;
+  fanmark?: string;
 }
 
-export const MessageboardLoading = ({ fanmarkEmoji }: MessageboardLoadingProps) => {
+export const MessageboardLoading = ({ fanmark }: MessageboardLoadingProps) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState(0);
 
@@ -54,12 +54,12 @@ export const MessageboardLoading = ({ fanmarkEmoji }: MessageboardLoadingProps) 
 
             {/* 中央のアイコンと絵文字 */}
             <div className="relative z-10 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4">
-              {fanmarkEmoji && (
+              {fanmark && (
                 <div
                   className="flex h-16 min-w-[4.5rem] items-center justify-center rounded-full bg-gradient-to-br from-primary/10 to-accent/10 px-5 animate-bounce justify-self-end"
                   style={{ animationDuration: '1.5s' }}
                 >
-                  <FanmarkEmojiBadge emoji={fanmarkEmoji} className="text-3xl leading-none" />
+                  <FanmarkEmojiBadge emoji={fanmark} className="text-3xl leading-none" />
                 </div>
               )}
 

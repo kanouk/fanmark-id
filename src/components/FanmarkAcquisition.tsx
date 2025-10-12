@@ -7,6 +7,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { navigateToFanmark } from '@/utils/emojiUrl';
+import { convertEmojiSequenceToIdPair } from '@/lib/emojiConversion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,7 +30,7 @@ interface FanmarkAcquisitionProps {
   prefilledEmoji?: string;
   fanmarkLimit?: number;
   currentCount?: number;
-  onObtain?: (fanmark: { id: string; emoji_combination?: string }) => void;
+  onObtain?: (fanmark: { id: string; user_input_fanmark?: string; emoji_ids?: string[]; normalized_emoji_ids?: string[] }) => void;
   onRequireAuth?: (emoji: string) => void;
 }
 
@@ -66,7 +67,7 @@ export const FanmarkAcquisition = ({
   const isTaken = useMemo(() => searchResult?.status === 'taken' || searchResult?.status === 'not_available', [searchResult?.status]);
 
   const getSearchAreaBackgroundClass = useMemo(() => {
-    if (!searchResult || !searchResult.emoji_combination || searchResult.error) {
+    if (!searchResult || !searchResult.user_input_fanmark || searchResult.error) {
       return 'bg-background/90';
     }
     if (searchResult.status === 'available') return 'bg-emerald-50/30';
@@ -78,7 +79,7 @@ export const FanmarkAcquisition = ({
     if (!searchResult || !isResultAcquirable) return;
 
     if (!user) {
-      onRequireAuth?.(searchResult.emoji_combination);
+      onRequireAuth?.(searchResult.user_input_fanmark);
       return;
     }
 
@@ -99,8 +100,27 @@ export const FanmarkAcquisition = ({
     setIsRegistering(true);
 
     try {
-      const response = await supabase.functions.invoke<{ success: boolean; fanmark?: { id: string; emoji_combination?: string }; error?: string }>('register-fanmark', {
-        body: { input_emoji_combination: searchResult.emoji_combination },
+      const compactEmoji = searchResult.user_input_fanmark.replace(/\s/g, '');
+      let emojiIds: string[] = [];
+      let normalizedEmojiIds: string[] = [];
+      try {
+        const pair = convertEmojiSequenceToIdPair(compactEmoji);
+        emojiIds = pair.emojiIds;
+        normalizedEmojiIds = pair.normalizedEmojiIds;
+      } catch (conversionError) {
+        const message = conversionError instanceof Error ? conversionError.message : t('dashboard.acquireFailedDescription');
+        toast({
+          title: t('dashboard.acquireFailedTitle'),
+          description: message,
+          variant: 'destructive',
+        });
+        setIsRegistering(false);
+        setIsConfirmOpen(false);
+        return;
+      }
+
+      const response = await supabase.functions.invoke<{ success: boolean; fanmark?: { id: string; user_input_fanmark?: string; emoji_ids?: string[]; normalized_emoji_ids?: string[] }; error?: string }>('register-fanmark', {
+        body: { user_input_fanmark: searchResult.user_input_fanmark, emoji_ids: emojiIds, normalized_emoji_ids: normalizedEmojiIds },
       });
 
       if (response.error || !response.data?.success || !response.data.fanmark) {
@@ -131,16 +151,16 @@ export const FanmarkAcquisition = ({
   }, [navigate, onObtain, searchResult, t, toast]);
 
   const handleVisitFanmark = useCallback(() => {
-    if (!searchResult?.emoji_combination) return;
+    if (!searchResult?.user_input_fanmark) return;
 
-    navigateToFanmark(searchResult.emoji_combination, true);
-  }, [searchResult?.emoji_combination]);
+    navigateToFanmark(searchResult.fanmark || searchResult.user_input_fanmark, true);
+  }, [searchResult?.fanmark, searchResult?.user_input_fanmark]);
 
   return (
     <div className="space-y-6">
       {/* ファンマ取得中のローディング画面 */}
       {isRegistering && (
-        <FanmarkAcquisitionLoading emoji={searchResult?.emoji_combination} />
+        <FanmarkAcquisitionLoading emoji={searchResult?.user_input_fanmark} />
       )}
 
       <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
@@ -183,7 +203,7 @@ export const FanmarkAcquisition = ({
               <Search className="h-6 w-6 text-primary" />
               {t('dashboard.searchFanma')}
             </span>
-            {searchResult && searchResult.emoji_combination && !searchResult.error && (
+            {searchResult && (searchResult.fanmark || searchResult.user_input_fanmark) && !searchResult.error && (
               <div className="flex-shrink-0">
                 <FanmarkStatusBadge
                   status={
@@ -215,7 +235,7 @@ export const FanmarkAcquisition = ({
             <div className="flex justify-center mt-1 sm:mt-6">
             <EmojiInputUtilities
               disabled={false}
-              hasValue={!!searchResult?.emoji_combination}
+              hasValue={!!(searchResult?.fanmark || searchResult?.user_input_fanmark)}
               onPaste={async () => {
                 if (!searchUtilities) return;
 
@@ -317,7 +337,7 @@ export const FanmarkAcquisition = ({
               )}
 
               {/* Show visit button for taken fanmarks */}
-              {isTaken && searchResult?.emoji_combination && (
+              {isTaken && (searchResult?.fanmark || searchResult?.user_input_fanmark) && (
                 <Button
                   size="lg"
                   variant="outline"

@@ -16,7 +16,7 @@ export default function EmojiProfileEdit() {
   const { user } = useAuth();
   const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [cachedFanmark, setCachedFanmark] = useState<{emoji_combination: string, display_name: string | null} | null>(null);
+  const [cachedFanmark, setCachedFanmark] = useState<{ user_input_fanmark: string; fanmark: string; emoji_ids: string[]; display_name: string | null } | null>(null);
   const [licenseId, setLicenseId] = useState<string | null>(null);
   const [licenseLoading, setLicenseLoading] = useState(true);
 
@@ -83,7 +83,9 @@ export default function EmojiProfileEdit() {
         // Check if data is less than 5 minutes old and matches current fanmarkId
         if (data.fanmarkId === fanmarkId && Date.now() - data.timestamp < 5 * 60 * 1000) {
           setCachedFanmark({
-            emoji_combination: data.emoji_combination,
+            user_input_fanmark: data.user_input_fanmark,
+            fanmark: data.fanmark || data.user_input_fanmark,
+            emoji_ids: Array.isArray(data.emoji_ids) ? data.emoji_ids : [],
             display_name: data.display_name
           });
         }
@@ -162,9 +164,9 @@ export default function EmojiProfileEdit() {
           <div className="text-center space-y-6">
             <div className="mx-auto flex items-center justify-center">
               {/* Display cached emoji combination, profile emoji, or fallback to user icon with background */}
-              {cachedFanmark?.emoji_combination ? (
+              {cachedFanmark?.fanmark ? (
                 <span className="text-6xl leading-none text-center">
-                  {cachedFanmark?.emoji_combination}
+                  {cachedFanmark?.fanmark}
                 </span>
               ) : (
                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 via-accent/20 to-primary/10 flex items-center justify-center shadow-lg">

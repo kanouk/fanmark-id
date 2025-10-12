@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface PasswordProtectionProps {
   fanmark: {
     id: string;
-    emoji_combination: string;
+    user_input_fanmark: string;
   };
   onSuccess: () => void;
 }

@@ -38,7 +38,7 @@ export default function FanmarkProfilePreview() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
-  const [cachedFanmark, setCachedFanmark] = useState<{emoji_combination: string, display_name: string | null} | null>(null);
+  const [cachedFanmark, setCachedFanmark] = useState<{ user_input_fanmark: string; fanmark: string; emoji_ids: string[]; display_name: string | null } | null>(null);
   const [cameFromEdit, setCameFromEdit] = useState(false);
   const [profile, setProfile] = useState<EmojiProfile | null>(null);
   const [licenseId, setLicenseId] = useState<string | null | undefined>(undefined);
@@ -53,7 +53,9 @@ export default function FanmarkProfilePreview() {
         // Check if data is less than 5 minutes old and matches current fanmarkId
         if (data.fanmarkId === fanmarkId && Date.now() - data.timestamp < 5 * 60 * 1000) {
           setCachedFanmark({
-            emoji_combination: data.emoji_combination,
+            user_input_fanmark: data.user_input_fanmark,
+            fanmark: data.fanmark || data.user_input_fanmark,
+            emoji_ids: Array.isArray(data.emoji_ids) ? data.emoji_ids : [],
             display_name: data.display_name
           });
         }
@@ -264,7 +266,7 @@ export default function FanmarkProfilePreview() {
               <div className="px-8 pt-16 pb-8">
                  <div className="text-center mb-8">
                    <h1 className="text-3xl font-bold tracking-tight text-foreground mb-4">
-                     {displayName} {cachedFanmark?.emoji_combination}
+                     {displayName} {cachedFanmark?.fanmark || cachedFanmark?.user_input_fanmark}
                    </h1>
                   {bio && (
                     <p className="text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed">

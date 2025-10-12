@@ -9,7 +9,9 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface Fanmark {
   id: string;
-  emoji_combination: string;
+  user_input_fanmark: string;
+  emoji_ids: string[];
+  fanmark: string;
   fanmark_name: string | null;
   license_id: string;
   license_end: string;
@@ -214,7 +216,7 @@ export const FanmarkSelectionModal = ({
                   {/* Top: Emoji and Selection Indicator */}
                   <div className="flex items-start justify-between mb-2">
                     <span className="text-2xl leading-none">
-                      {fanmark.emoji_combination}
+                      {fanmark.fanmark || fanmark.user_input_fanmark}
                     </span>
                     <div className="flex-shrink-0">
                       {selected ? (

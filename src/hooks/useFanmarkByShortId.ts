@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { resolveFanmarkDisplay } from '@/lib/emojiConversion';
 
 export interface FanmarkByShortId {
   id: string;
-  emoji_combination: string;
+  user_input_fanmark: string;
+  emoji_ids: string[];
+  fanmark: string;
   short_id: string;
   fanmark_name: string;
   access_type: string;
@@ -67,18 +70,24 @@ export const useFanmarkByShortId = (shortId: string | undefined): UseFanmarkBySh
               typeof value === 'boolean' ? value : null;
 
             const idValue = safeNullableString(row.id);
-            const emojiValue = safeNullableString(row.emoji_combination);
+            const emojiValue = safeNullableString(row.user_input_fanmark);
+            const emojiIds = Array.isArray(row.emoji_ids)
+              ? (row.emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
+              : [];
+            const displayFanmark = resolveFanmarkDisplay(emojiValue ?? '', emojiIds);
 
-            if (!idValue || !emojiValue) {
+            if (!idValue || (!emojiValue && emojiIds.length === 0 && !displayFanmark)) {
               setData(null);
               return;
             }
 
             const safeRecord: FanmarkByShortId = {
               id: idValue,
-              emoji_combination: emojiValue,
+              user_input_fanmark: emojiValue ?? '',
+              emoji_ids: emojiIds,
+              fanmark: displayFanmark,
               short_id: safeString(row.short_id, shortId),
-              fanmark_name: safeNullableString(row.fanmark_name) ?? emojiValue,
+              fanmark_name: (safeNullableString(row.fanmark_name) ?? displayFanmark ?? emojiValue) || '',
               access_type: safeString(row.access_type, 'inactive'),
               target_url: safeNullableString(row.target_url),
               text_content: safeNullableString(row.text_content),

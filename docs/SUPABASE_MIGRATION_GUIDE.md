@@ -74,7 +74,7 @@ DROP FUNCTION IF EXISTS public.get_fanmark_by_emoji(text);
 CREATE OR REPLACE FUNCTION public.get_fanmark_by_emoji(emoji_combo text)
 RETURNS TABLE(
   id uuid,
-  emoji_combination text,
+  user_input_fanmark text,
   fanmark_name text,
   access_type text,
   target_url text,
@@ -91,8 +91,8 @@ BEGIN
     RETURN QUERY
     SELECT
         f.id,
-        f.emoji_combination,
-        COALESCE(bc.fanmark_name, f.emoji_combination) as fanmark_name,
+        f.user_input_fanmark,
+        COALESCE(bc.fanmark_name, f.user_input_fanmark) as fanmark_name,
         COALESCE(bc.access_type, 'inactive') as access_type,
         rc.target_url,
         mc.content as text_content,
@@ -113,7 +113,7 @@ $$;
 CREATE OR REPLACE FUNCTION public.get_fanmark_by_short_id(shortid_param text)
 RETURNS TABLE(
   id uuid,
-  emoji_combination text,
+  user_input_fanmark text,
   fanmark_name text,
   access_type text,
   target_url text,
@@ -129,8 +129,8 @@ BEGIN
     RETURN QUERY
     SELECT
         f.id,
-        f.emoji_combination,
-        COALESCE(bc.fanmark_name, f.emoji_combination) as fanmark_name,
+        f.user_input_fanmark,
+        COALESCE(bc.fanmark_name, f.user_input_fanmark) as fanmark_name,
         COALESCE(bc.access_type, 'inactive') as access_type,
         rc.target_url,
         mc.content as text_content,
@@ -150,7 +150,7 @@ $$;
 ### **学んだ教訓**
 
 1. **DROP FUNCTION が必須**: 返り値の型を変更する場合
-2. **normalized_emoji vs emoji_combination**: データベース検索に使うカラムの確認が重要
+2. **normalized_emoji vs user_input_fanmark**: データベース検索に使うカラムの確認が重要
 3. **権限設定**: 必要に応じて GRANT EXECUTE を追加
 
 ## 🚨 **よくあるエラーと解決策**
