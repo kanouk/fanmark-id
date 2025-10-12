@@ -1000,7 +1000,7 @@ export const FanmarkDashboard = () => {
                             <CardContent className="p-5">
                                   <div className="space-y-3">
                                      <div className="flex items-start justify-between">
-                                    <div className="flex items-end gap-2">
+                                    <div className="flex items-end">
                                       <div
                                         className={`flex items-center px-3 py-2 rounded-md cursor-pointer hover:scale-105 transition-transform ${getTierOvalStyle(fanmark.tier_level || 1)}`}
                                         onClick={() => {
@@ -1012,21 +1012,13 @@ export const FanmarkDashboard = () => {
                                         }}
                                         title={t('dashboard.clickToCopyEmoji')}
                                       >
-                                        <span className="text-3xl leading-none select-none" style={{ letterSpacing: '0.2em' }}>{fanmark.fanmark}</span>
+                                        <span
+                                          className="text-3xl leading-none select-none whitespace-nowrap tracking-[0.1em]"
+                                          style={{ wordBreak: 'keep-all' }}
+                                        >
+                                          {fanmark.fanmark}
+                                        </span>
                                       </div>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <button
-                                            type="button"
-                                            onClick={() => navigate(`/f/${fanmark.short_id}`)}
-                                            className="rounded-md border border-border/50 bg-muted/60 px-3 py-1 text-[0.7rem] font-medium tracking-wide text-muted-foreground transition-colors hover:bg-muted/80"
-                                            aria-label={t('dashboard.viewDetails')}
-                                          >
-                                            {fanmark.short_id}
-                                          </button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>{t('dashboard.viewDetails')}</TooltipContent>
-                                      </Tooltip>
                                     </div>
                                     <div className="flex flex-col items-end gap-1">
                                       {getStatusBadge(timing)}
@@ -1034,9 +1026,27 @@ export const FanmarkDashboard = () => {
                                  </div>
 
                                  {/* Date Information */}
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm bg-muted/20 rounded-lg p-3">
+                               <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm bg-muted/20 rounded-lg p-3">
                                   <div>
-                                    <div className="text-xs text-muted-foreground font-medium mb-1">
+                                    <div className="text-xs text-muted-foreground font-semibold mb-1">
+                                      {t('dashboard.fanmarkId')}
+                                    </div>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button
+                                          type="button"
+                                          onClick={() => navigate(`/f/${fanmark.short_id}`)}
+                                          className="rounded-md border border-border/50 bg-muted/60 px-3 py-1 text-[0.7rem] font-medium tracking-wide text-muted-foreground transition-colors hover:bg-muted/80"
+                                          aria-label={t('dashboard.viewDetails')}
+                                        >
+                                          {fanmark.short_id}
+                                        </button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>{t('dashboard.viewDetails')}</TooltipContent>
+                                    </Tooltip>
+                                  </div>
+                                  <div>
+                                    <div className="text-xs text-muted-foreground font-semibold mb-1">
                                       {t('dashboard.accessType')}
                                     </div>
                                     <div className="text-foreground">
@@ -1046,13 +1056,13 @@ export const FanmarkDashboard = () => {
                                     </div>
                                   </div>
                                   <div>
-                                    <div className="text-xs text-muted-foreground font-medium mb-1">
+                                    <div className="text-xs text-muted-foreground font-semibold mb-1">
                                       {t('dashboard.acquisitionDate')}
                                     </div>
                                     <div className="text-foreground">{acquisitionDate}</div>
                                   </div>
                                    <div>
-                                     <div className="text-xs text-muted-foreground font-medium mb-1">
+                                     <div className="text-xs text-muted-foreground font-semibold mb-1">
                                        {t('dashboard.returnDate')}
                                      </div>
                                      <div className="text-foreground">
@@ -1060,7 +1070,7 @@ export const FanmarkDashboard = () => {
                                      </div>
                                    </div>
                                    <div>
-                                     <div className="text-xs text-muted-foreground font-medium mb-1">
+                                     <div className="text-xs text-muted-foreground font-semibold mb-1">
                                        {t('dashboard.remainingDays')}
                                      </div>
                                       <div className="flex items-start justify-between gap-2">
@@ -1102,7 +1112,7 @@ export const FanmarkDashboard = () => {
                                           aria-label={t('dashboard.actionsMenu')}
                                         >
                                           <MoreVertical className="h-5 w-5" />
-                                          <span className="text-sm">{t('dashboard.actionsMenu')}</span>
+                                          <span className="text-xs font-medium">{t('dashboard.actionsMenu')}</span>
                                         </Button>
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="end" sideOffset={8} collisionPadding={16} className="w-48">
