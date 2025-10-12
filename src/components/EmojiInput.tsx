@@ -52,6 +52,14 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
   const [showDirectInput, setShowDirectInput] = useState<boolean>(false);
   const [directInputText, setDirectInputText] = useState<string>('');
   const lastValidSegmentsRef = useRef<string[]>([]);
+  const isAnimatingInitial = useRef(false);
+
+  useEffect(() => {
+    const canonicalValue = normalizeInput(value);
+    if (value && canonicalValue && value !== canonicalValue) {
+      onChange(canonicalValue);
+    }
+  }, [value, onChange]);
 
   const segmentInput = useCallback((text: string) => {
     if (!text) return [] as string[];
@@ -639,6 +647,7 @@ interface EmojiInputUtilitiesProps {
   onPaste: () => void;
   onClear: () => void;
   onDirectInput?: (input: string) => void;
+  value?: string;
 }
 
 export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
@@ -647,6 +656,7 @@ export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
   onPaste,
   onClear,
   onDirectInput,
+  value,
 }) => {
   const { t } = useTranslation();
   const [showDirectInput, setShowDirectInput] = useState<boolean>(false);
@@ -654,7 +664,7 @@ export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
 
   const handleDirectInputClick = () => {
     if (disabled || !onDirectInput) return;
-    setDirectInputText('');
+    setDirectInputText(value ?? '');
     setShowDirectInput(true);
   };
 

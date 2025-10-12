@@ -49,7 +49,10 @@ export const FanmarkAcquisition = ({
   const [searchResult, setSearchResult] = useState<FanmarkSearchResult | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
-  const [searchUtilities, setSearchUtilities] = useState<{ setQuery: (query: string) => void; clearQuery: () => void } | null>(null);
+  const [searchUtilities, setSearchUtilities] = useState<
+    { setQuery: (query: string) => void; clearQuery: () => void; getQuery: () => string }
+    | null
+  >(null);
 
   const remainingCapacity = useMemo(() => {
     if (!user || fanmarkLimit === -1) {
@@ -316,6 +319,7 @@ export const FanmarkAcquisition = ({
                   });
                 }
               }}
+              value={searchUtilities?.getQuery?.() ?? ''}
             />
             </div>
           </div>

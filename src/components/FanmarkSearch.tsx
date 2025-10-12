@@ -15,7 +15,7 @@ interface FanmarkSearchProps {
   statusVariant?: 'authenticated' | 'public';
   showRecent?: boolean;
   initialQuery?: string;
-  onUtilitiesRef?: (utilities: { setQuery: (query: string) => void; clearQuery: () => void }) => void;
+  onUtilitiesRef?: (utilities: { setQuery: (query: string) => void; clearQuery: () => void; getQuery: () => string }) => void;
 }
 
 const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
@@ -54,9 +54,10 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
       onUtilitiesRef({
         setQuery: setSearchQuery,
         clearQuery: () => setSearchQuery(''),
+        getQuery: () => searchQuery,
       });
     }
-  }, [onUtilitiesRef, setSearchQuery]);
+  }, [onUtilitiesRef, setSearchQuery, searchQuery]);
 
   // Get normalization info for current search query
   const normalizationInfo = searchQuery.trim() && getNormalizationInfo ? getNormalizationInfo(searchQuery.trim()) : null;
