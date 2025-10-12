@@ -7,6 +7,7 @@ import { AdminDataReset } from "@/components/AdminDataReset";
 import { AdminPlanSettings } from "@/components/AdminPlanSettings";
 import { AdminUserManagement } from "@/components/AdminUserManagement";
 import { AdminEmojiMaster } from "@/components/AdminEmojiMaster";
+import { AdminTierExtensionPrices } from "@/components/AdminTierExtensionPrices";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { LogOut, ShieldCheck, Sparkles } from "lucide-react";
@@ -68,6 +69,12 @@ const AdminDashboard = () => {
                 className="flex-1 rounded-xl px-5 py-3 text-sm font-medium transition-all data-[state=active]:bg-card data-[state=active]:text-foreground sm:flex-none"
               >
                 プラン設定
+              </TabsTrigger>
+              <TabsTrigger
+                value="tier-extension-prices"
+                className="flex-1 rounded-xl px-5 py-3 text-sm font-medium transition-all data-[state=active]:bg-card data-[state=active]:text-foreground sm:flex-none"
+              >
+                延長料金
               </TabsTrigger>
               <TabsTrigger
                 value="expiration"
@@ -145,6 +152,22 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm">
                   <AdminPlanSettings />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="tier-extension-prices" className="space-y-8">
+              <Card className="border-border/60 shadow-sm">
+                <CardHeader className="space-y-3 p-6 pb-4">
+                  <CardTitle className="text-xl font-semibold text-foreground">
+                    Tier別延長料金設定
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    ファンマークのTierごとに、ライセンス延長期間（1/2/3/6ヶ月）の料金を設定します。変更は即座にユーザーの延長ダイアログに反映されます。
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-6 p-6 pt-0">
+                  <AdminTierExtensionPrices />
                 </CardContent>
               </Card>
             </TabsContent>

@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, Sparkles, ExternalLink, Plus } from 'lucide-react';
 import { FiInfo, FiAlertTriangle } from 'react-icons/fi';
 import FanmarkSearch from '@/components/FanmarkSearch';
@@ -45,6 +45,7 @@ export const FanmarkAcquisition = ({
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [searchResult, setSearchResult] = useState<FanmarkSearchResult | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -355,9 +356,15 @@ export const FanmarkAcquisition = ({
 
               {/* エラーメッセージ */}
               {searchResult?.status === 'available' && user && fanmarkLimit !== -1 && remainingCapacity <= 0 && (
-                <div className="text-center p-4 rounded-xl bg-destructive/10 border border-destructive/20">
-                  <div className="text-destructive font-medium">
+                <div className="text-center p-4 rounded-xl bg-amber-50 border border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/30">
+                  <div className="text-amber-800 font-medium dark:text-amber-100">
                     {t('dashboard.acquireLimitReachedDescription')}
+                  </div>
+                  <div
+                    className="mt-2 text-xs underline text-amber-800 cursor-pointer dark:text-amber-100"
+                    onClick={() => navigate('/plans', { state: { from: location.pathname } })}
+                  >
+                    {t('dashboard.acquireLimitIncreaseCta')}
                   </div>
                 </div>
               )}

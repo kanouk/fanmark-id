@@ -515,6 +515,7 @@
     "acquireFailedDescription": "Please try again in a moment.",
     "acquireLimitReachedTitle": "You've reached the limit",
     "acquireLimitReachedDescription": "Fanmark slots are full",
+    "acquireLimitIncreaseCta": "Increase slots",
     "visitFanmarkButton": "Visit this fanmark",
     "paymentRequiredMessage": "This fanmark requires payment.",
     "paymentRequiredTitle": "Payment required",
