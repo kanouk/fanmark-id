@@ -37,20 +37,19 @@ export async function getUserSettings(userId: string): Promise<UserSettings | nu
 }
 
 /**
- * Check if a username is available
+ * Check if a username is available using secure database function
  */
 export async function checkUsernameAvailability(username: string, currentUserId?: string): Promise<boolean> {
   if (!username) return false;
   
   try {
-    const { data, error } = await supabase
-      .from('user_settings')
-      .select('username')
-      .eq('username', username.toLowerCase())
-      .neq('user_id', currentUserId || '');
+    const { data, error } = await supabase.rpc('check_username_availability_secure', {
+      username_to_check: username,
+      current_user_id: currentUserId || null
+    });
 
     if (error) throw error;
-    return data.length === 0;
+    return data === true;
   } catch (error) {
     console.error('Error checking username:', error);
     return false;

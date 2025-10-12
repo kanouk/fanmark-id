@@ -80,7 +80,6 @@ export interface Fanmark {
   status: string;
   short_id: string;
   license_id: string;
-  is_public: boolean;
 }
 
 interface FanmarkSettingsProps {
@@ -144,7 +143,6 @@ export const FanmarkSettings = ({
       createProfile: false,
       isPasswordProtected: fanmark.is_password_protected || false,
       accessPassword: '',
-      is_public: fanmark.is_public,
     };
 
     let initialEditing = false;

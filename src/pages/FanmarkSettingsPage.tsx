@@ -91,7 +91,7 @@ const FanmarkSettingsPage = () => {
         status: fanmarkData.status,
         short_id: fanmarkData.short_id,
         license_id: fanmarkData.license_id,
-        is_public: fanmarkData.is_public ?? true,
+        
       });
     } catch (error) {
       console.error('Failed to load fanmark:', error);

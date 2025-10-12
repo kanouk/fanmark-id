@@ -294,7 +294,6 @@ export const FanmarkDashboard = () => {
             id,
             user_input_fanmark,
             emoji_ids,
-            emoji_combination,
             normalized_emoji,
             short_id,
             status,
@@ -336,7 +335,6 @@ export const FanmarkDashboard = () => {
             id: string;
             user_input_fanmark?: string | null;
             emoji_ids?: (string | null)[] | null;
-            emoji_combination?: string | null;
             normalized_emoji?: string | null;
             short_id: string;
             status: string;
@@ -351,19 +349,15 @@ export const FanmarkDashboard = () => {
           const rawEmojiIds = Array.isArray(fanmark.emoji_ids)
             ? (fanmark.emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
             : [];
-          const fallbackEmojiString =
-            typeof fanmark.emoji_combination === 'string' && fanmark.emoji_combination.length > 0
-              ? fanmark.emoji_combination
-              : '';
           const userInputValue =
             typeof fanmark.user_input_fanmark === 'string' && fanmark.user_input_fanmark.length > 0
               ? fanmark.user_input_fanmark
               : '';
           const resolvedDisplay = resolveFanmarkDisplay(userInputValue, rawEmojiIds);
-          const displayFanmark = resolvedDisplay || fallbackEmojiString || userInputValue;
+          const displayFanmark = resolvedDisplay || userInputValue;
           const emojiKey = rawEmojiIds.length > 0
             ? rawEmojiIds.join(':')
-            : resolvedDisplay || fallbackEmojiString || userInputValue || fanmark.id;
+            : resolvedDisplay || userInputValue || fanmark.id;
           const basicConfig = basicConfigMap.get(license.id);
 
           return {
@@ -374,7 +368,7 @@ export const FanmarkDashboard = () => {
             emoji_key: emojiKey,
             // Fill in required properties from Fanmark interface
             access_type: basicConfig?.access_type || 'inactive',
-            fanmark_name: basicConfig?.fanmark_name || displayFanmark || userInputValue || fallbackEmojiString || '',
+            fanmark_name: basicConfig?.fanmark_name || displayFanmark || userInputValue || '',
             license_id: license.id,
             tier_level: null, // Removed from fanmarks table
             current_license_id: license.id,
@@ -393,9 +387,9 @@ export const FanmarkDashboard = () => {
               license_end: license.license_end,
               grace_expires_at: license.grace_expires_at,
               status: license.status,
-              is_returned: license.is_returned,
-              excluded_at: license.excluded_at,
-              excluded_from_plan: license.excluded_from_plan,
+              is_returned: license.is_returned ?? false,
+              excluded_at: license.excluded_at ?? null,
+              excluded_from_plan: license.plan_excluded ? String(license.plan_excluded) : null,
             },
           } as Fanmark;
         })

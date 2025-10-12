@@ -81,14 +81,13 @@ export const useProfile = () => {
     if (!username) return false;
     
     try {
-      const { data, error } = await supabase
-        .from('user_settings')
-        .select('username')
-        .eq('username', username.toLowerCase())
-        .neq('user_id', user?.id || '');
+      const { data, error } = await supabase.rpc('check_username_availability_secure', {
+        username_to_check: username,
+        current_user_id: user?.id || null
+      });
 
       if (error) throw error;
-      return data.length === 0;
+      return data === true;
     } catch (error) {
       console.error('Error checking username:', error);
       return false;

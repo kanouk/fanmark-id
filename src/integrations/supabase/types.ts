@@ -47,6 +47,45 @@ export type Database = {
         }
         Relationships: []
       }
+      emoji_master: {
+        Row: {
+          category: string | null
+          codepoints: string[]
+          created_at: string
+          emoji: string
+          id: string
+          keywords: string[]
+          short_name: string
+          sort_order: number | null
+          subcategory: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          codepoints: string[]
+          created_at?: string
+          emoji: string
+          id?: string
+          keywords?: string[]
+          short_name: string
+          sort_order?: number | null
+          subcategory?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          codepoints?: string[]
+          created_at?: string
+          emoji?: string
+          id?: string
+          keywords?: string[]
+          short_name?: string
+          sort_order?: number | null
+          subcategory?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       enterprise_user_settings: {
         Row: {
           created_at: string
@@ -427,30 +466,36 @@ export type Database = {
       fanmarks: {
         Row: {
           created_at: string
-          emoji_combination: string
+          emoji_ids: string[]
           id: string
           normalized_emoji: string
+          normalized_emoji_ids: string[]
           short_id: string
           status: string
           updated_at: string
+          user_input_fanmark: string
         }
         Insert: {
           created_at?: string
-          emoji_combination: string
+          emoji_ids?: string[]
           id?: string
           normalized_emoji: string
+          normalized_emoji_ids?: string[]
           short_id: string
           status?: string
           updated_at?: string
+          user_input_fanmark: string
         }
         Update: {
           created_at?: string
-          emoji_combination?: string
+          emoji_ids?: string[]
           id?: string
           normalized_emoji?: string
+          normalized_emoji_ids?: string[]
           short_id?: string
           status?: string
           updated_at?: string
+          user_input_fanmark?: string
         }
         Relationships: []
       }
@@ -619,11 +664,15 @@ export type Database = {
     }
     Functions: {
       check_fanmark_availability: {
-        Args: { fanmark_uuid: string } | { input_emoji: string }
+        Args: { fanmark_uuid: string } | { input_emoji_ids: string[] }
         Returns: Json
       }
       check_fanmark_availability_secure: {
-        Args: { fanmark_emoji: string }
+        Args: { fanmark_uuid: string }
+        Returns: boolean
+      }
+      check_username_availability_secure: {
+        Args: { current_user_id?: string; username_to_check: string }
         Returns: boolean
       }
       count_fanmark_emoji_units: {
@@ -635,25 +684,25 @@ export type Database = {
         Returns: string
       }
       get_fanmark_by_emoji: {
-        Args: { emoji_combo: string }
+        Args: { input_emoji_ids: string[] }
         Returns: {
           access_type: string
-          emoji_combination: string
+          emoji_ids: string[]
           fanmark_name: string
           id: string
           is_password_protected: boolean
-          license_id: string
           short_id: string
           status: string
           target_url: string
           text_content: string
+          user_input_fanmark: string
         }[]
       }
       get_fanmark_by_short_id: {
         Args: { shortid_param: string }
         Returns: {
           access_type: string
-          emoji_combination: string
+          emoji_ids: string[]
           fanmark_name: string
           grace_expires_at: string
           id: string
@@ -666,20 +715,20 @@ export type Database = {
           status: string
           target_url: string
           text_content: string
+          user_input_fanmark: string
         }[]
       }
       get_fanmark_complete_data: {
-        Args: { emoji_combo_param?: string; fanmark_id_param?: string }
+        Args: { emoji_ids_param?: string[]; fanmark_id_param?: string }
         Returns: {
           access_type: string
           created_at: string
           current_owner_id: string
-          emoji_combination: string
+          emoji_ids: string[]
           fanmark_name: string
           has_active_license: boolean
           id: string
           is_password_protected: boolean
-          is_public: boolean
           license_end: string
           license_id: string
           normalized_emoji: string
@@ -688,20 +737,20 @@ export type Database = {
           target_url: string
           text_content: string
           updated_at: string
+          user_input_fanmark: string
         }[]
       }
       get_fanmark_details_by_short_id: {
         Args: { shortid_param: string }
         Returns: {
           current_grace_expires_at: string
-          current_is_returned: boolean
           current_license_end: string
           current_license_id: string
           current_license_start: string
           current_license_status: string
           current_owner_display_name: string
           current_owner_username: string
-          emoji_combination: string
+          emoji_ids: string[]
           fanmark_created_at: string
           fanmark_id: string
           first_acquired_date: string
@@ -712,6 +761,7 @@ export type Database = {
           license_history: Json
           normalized_emoji: string
           short_id: string
+          user_input_fanmark: string
         }[]
       }
       get_fanmark_ownership_status: {
@@ -775,6 +825,10 @@ export type Database = {
       is_super_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      normalize_emoji_ids: {
+        Args: { input_ids: string[] }
+        Returns: string[]
       }
       toggle_fanmark_favorite: {
         Args: { fanmark_uuid: string }

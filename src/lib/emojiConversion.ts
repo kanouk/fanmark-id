@@ -18,7 +18,7 @@ const normalizedCodepointsToId = new Map<string, string>();
 
 for (const entry of emojiCatalogEntries) {
   emojiIdToRecord.set(entry.id, entry);
-  const normalizedKey = toNormalizedCodepointKey(entry.codepoints);
+  const normalizedKey = toNormalizedCodepointKey([...entry.codepoints]);
   const hasSkinTone = entry.codepoints.some((cp) => SKIN_TONE_CODEPOINTS.has(cp));
   if (!normalizedCodepointsToId.has(normalizedKey) || !hasSkinTone) {
     normalizedCodepointsToId.set(normalizedKey, entry.id);
@@ -71,7 +71,7 @@ export const convertEmojiIdsToNormalizedIds = (ids: string[]): string[] => {
     if (!record) {
       throw new Error(`未知の絵文字IDです: ${id}`);
     }
-    const normalizedKey = toNormalizedCodepointKey(record.codepoints);
+    const normalizedKey = toNormalizedCodepointKey([...record.codepoints]);
     const normalizedId = normalizedCodepointsToId.get(normalizedKey);
     if (!normalizedId) {
       throw new Error(`対応する正規化済み絵文字IDが見つかりません: ${id}`);

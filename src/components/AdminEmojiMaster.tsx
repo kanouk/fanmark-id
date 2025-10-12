@@ -276,7 +276,7 @@ export const AdminEmojiMaster: React.FC = () => {
 
   const listQuery = useQuery({
     queryKey,
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
     queryFn: () => fetchEmojiMaster({ page, pageSize, search }),
   });
 
@@ -608,13 +608,13 @@ export const AdminEmojiMaster: React.FC = () => {
             <Button
               onClick={() => upsertMutation.mutate()}
               disabled={
-                upsertMutation.isLoading ||
+                upsertMutation.isPending ||
                 !formState.emoji ||
                 !formState.short_name ||
                 parseCodepoints(formState.codepoints).length === 0
               }
             >
-              {upsertMutation.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {upsertMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               保存
             </Button>
           </DialogFooter>
@@ -634,9 +634,9 @@ export const AdminEmojiMaster: React.FC = () => {
             <AlertDialogAction
               className="bg-destructive hover:bg-destructive/90"
               onClick={() => deleteMutation.mutate()}
-              disabled={deleteMutation.isLoading}
+              disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {deleteMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               削除する
             </AlertDialogAction>
           </AlertDialogFooter>
