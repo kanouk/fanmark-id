@@ -187,7 +187,10 @@ export const convertEmojiSequenceToIdPair = (emojiSequence: string): {
 };
 
 const sanitizeForCanonicalization = (input: string): string =>
-  input.replace(/\s/g, '').replace(/\uFE0E/g, '\uFE0F');
+  input
+    .replace(/\s/g, '')
+    .replace(/\uFE0E/g, '\uFE0F')
+    .replace(/\uFE0F{2,}/g, '\uFE0F');
 
 const MAX_WINDOW = 10;
 
