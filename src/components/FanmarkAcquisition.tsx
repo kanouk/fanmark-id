@@ -7,7 +7,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { navigateToFanmark } from '@/utils/emojiUrl';
-import { canonicalizeEmojiString, convertEmojiSequenceToIdPair, segmentEmojiSequence } from '@/lib/emojiConversion';
+import { canonicalizeEmojiString, convertEmojiSequenceToIdPair, segmentEmojiSequence, extractEmojiString } from '@/lib/emojiConversion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -57,7 +57,9 @@ export const FanmarkAcquisition = ({
   const [isRegistering, setIsRegistering] = useState(false);
   const normalizeQuery = useCallback((value: string | undefined) => {
     if (!value) return '';
-    const canonical = canonicalizeEmojiString(value);
+    const extracted = extractEmojiString(value);
+    if (!extracted) return '';
+    const canonical = canonicalizeEmojiString(extracted);
     return segmentEmojiSequence(canonical).slice(0, 5).join('');
   }, []);
 
@@ -190,18 +192,41 @@ export const FanmarkAcquisition = ({
     }
   }, [rememberSearch, prefilledEmoji, normalizeQuery]);
 
-  const handleQueryChange = useCallback((value: string) => {
-    const normalized = normalizeQuery(value);
-    setQuery(normalized);
-    if (!rememberSearch || !storageKey) return;
+  const handleQueryChange = useCallback(
+    (value: string) => {
+      const trimmed = value.trim();
 
-    if (!normalized.trim()) {
-      sessionStorage.removeItem(storageKey);
-      return;
-    }
+      if (!trimmed) {
+        setQuery('');
+        if (rememberSearch && storageKey) {
+          sessionStorage.removeItem(storageKey);
+        }
+        return;
+      }
 
-    sessionStorage.setItem(storageKey, normalized);
-  }, [rememberSearch, storageKey, normalizeQuery]);
+      const extracted = extractEmojiString(trimmed);
+      if (!extracted) {
+        toast({
+          title: t('common.nonEmojiRejectedTitle'),
+          description: t('common.nonEmojiRejectedBody'),
+          variant: 'warning',
+        });
+        return;
+      }
+
+      const normalized = normalizeQuery(extracted);
+      setQuery(normalized);
+      if (!rememberSearch || !storageKey) return;
+
+      if (!normalized.trim()) {
+        sessionStorage.removeItem(storageKey);
+        return;
+      }
+
+      sessionStorage.setItem(storageKey, normalized);
+    },
+    [rememberSearch, storageKey, normalizeQuery, toast, t],
+  );
 
   const clearQuery = useCallback(() => {
     setQuery('');
@@ -326,18 +351,17 @@ export const FanmarkAcquisition = ({
                     return;
                   }
 
-                  const canonicalQuery = canonicalizeEmojiString(clipboardText);
-                  const limitedCanonical = segmentEmojiSequence(canonicalQuery).slice(0, 5).join('');
-
-                  if (!limitedCanonical.trim()) {
+                  const extracted = extractEmojiString(clipboardText);
+                  if (!extracted) {
                     toast({
-                      title: t('common.noEmojisFound'),
-                      description: t('common.noEmojisFoundDesc'),
+                      title: t('common.nonEmojiRejectedTitle'),
+                      description: t('common.nonEmojiRejectedBody'),
+                      variant: 'warning',
                     });
                     return;
                   }
 
-                  handleQueryChange(limitedCanonical);
+                  handleQueryChange(extracted);
 
                   toast({
                     title: t('common.paste') + '完了',
@@ -355,17 +379,17 @@ export const FanmarkAcquisition = ({
               onDirectInput={(input: string) => {
                 if (!input.trim()) return;
 
-                const canonicalQuery = canonicalizeEmojiString(input);
-                const limitedCanonical = segmentEmojiSequence(canonicalQuery).slice(0, 5).join('');
-                if (!limitedCanonical.trim()) {
+                const extracted = extractEmojiString(input);
+                if (!extracted) {
                   toast({
-                    title: t('common.noEmojisFound'),
-                    description: t('common.noEmojisFoundDesc'),
+                    title: t('common.nonEmojiRejectedTitle'),
+                    description: t('common.nonEmojiRejectedBody'),
+                    variant: 'warning',
                   });
                   return;
                 }
 
-                handleQueryChange(limitedCanonical);
+                handleQueryChange(extracted);
 
                 toast({
                   title: t('common.directInput') + '完了',

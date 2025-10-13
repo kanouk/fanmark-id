@@ -271,3 +271,31 @@ export const resolveFanmarkDisplay = (
     return base;
   }
 };
+
+const EMOJI_REGEX =
+  /\p{Extended_Pictographic}(?:\p{Emoji_Modifier}|\uFE0F|\u200D(?:\p{Extended_Pictographic}|\p{Emoji_Modifier})*)*|\p{Regional_Indicator}{2}|\d\uFE0F\u20E3|[#*]\uFE0F\u20E3|\p{Emoji_Presentation}|\p{Emoji_Modifier}/gu;
+
+export const extractEmojiString = (input: string): string => {
+  if (!input) return '';
+
+  const matches = input.match(EMOJI_REGEX);
+  if (!matches) {
+    return '';
+  }
+
+  const extractedSegments: string[] = [];
+
+  for (const candidate of matches) {
+    try {
+      const canonical = canonicalizeEmojiString(candidate);
+      convertEmojiSequenceToIds(canonical);
+      extractedSegments.push(canonical);
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[extractEmojiString] discarded candidate', { candidate, error });
+      }
+    }
+  }
+
+  return extractedSegments.join('');
+};

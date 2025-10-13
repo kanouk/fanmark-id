@@ -12,6 +12,7 @@ import {
   convertEmojiSequenceToIdPair,
   convertEmojiIdsToSequence,
   canonicalizeEmojiString,
+  extractEmojiString,
 } from '@/lib/emojiConversion';
 
 const normalizeInput = (text: string) => {
@@ -296,7 +297,16 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
         return;
       }
 
-      const sanitized = normalizeInput(clipboardText);
+      const extracted = extractEmojiString(clipboardText);
+      if (!extracted) {
+        toast({
+          title: t('common.noEmojisFound'),
+          description: t('common.noEmojisFoundDesc'),
+        });
+        return;
+      }
+
+      const sanitized = normalizeInput(extracted);
       if (!sanitized) {
         toast({
           title: t('common.noEmojisFound'),
@@ -376,7 +386,16 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
       return;
     }
 
-    const sanitized = normalizeInput(directInputText);
+    const extracted = extractEmojiString(directInputText);
+    if (!extracted) {
+      toast({
+        title: t('common.noEmojisFound'),
+        description: t('common.noEmojisFoundDesc'),
+      });
+      return;
+    }
+
+    const sanitized = normalizeInput(extracted);
     if (!sanitized) {
       toast({
         title: t('common.noEmojisFound'),
