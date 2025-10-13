@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, Sparkles, ExternalLink, Plus } from 'lucide-react';
 import { FiInfo, FiAlertTriangle } from 'react-icons/fi';
@@ -26,12 +26,15 @@ import { EmojiInputUtilities } from '@/components/EmojiInput';
 import { FanmarkAcquisitionLoading } from '@/components/FanmarkAcquisitionLoading';
 import { supabase } from '@/integrations/supabase/client';
 
+const SCROLL_TARGET_KEY = 'fanmark-search:scroll-target';
+
 interface FanmarkAcquisitionProps {
   prefilledEmoji?: string;
   fanmarkLimit?: number;
   currentCount?: number;
   onObtain?: (fanmark: { id: string; user_input_fanmark?: string; emoji_ids?: string[]; normalized_emoji_ids?: string[] }) => void;
   onRequireAuth?: (emoji: string) => void;
+  rememberSearch?: boolean;
 }
 
 export const FanmarkAcquisition = ({
@@ -40,12 +43,14 @@ export const FanmarkAcquisition = ({
   currentCount = 0,
   onObtain,
   onRequireAuth,
+  rememberSearch = false,
 }: FanmarkAcquisitionProps) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   const [searchResult, setSearchResult] = useState<FanmarkSearchResult | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -54,7 +59,9 @@ export const FanmarkAcquisition = ({
     { setQuery: (query: string) => void; clearQuery: () => void; getQuery: () => string }
     | null
   >(null);
-
+  const storageKey = useMemo(() => (rememberSearch ? `fanmark-search:${location.pathname}` : null), [rememberSearch, location.pathname]);
+  const [persistedQuery, setPersistedQuery] = useState<string | undefined>(prefilledEmoji);
+  const hasScrolledRef = useRef(false);
   const remainingCapacity = useMemo(() => {
     if (!user || fanmarkLimit === -1) {
       return Infinity; // 非ログイン時/無制限
@@ -160,8 +167,72 @@ export const FanmarkAcquisition = ({
     navigateToFanmark(searchResult.fanmark || searchResult.user_input_fanmark, true);
   }, [searchResult?.fanmark, searchResult?.user_input_fanmark]);
 
+  useEffect(() => {
+    if (!rememberSearch || !storageKey) {
+      return;
+    }
+    if (typeof window === 'undefined') return;
+    const stored = sessionStorage.getItem(storageKey);
+    if (stored !== null) {
+      setPersistedQuery(stored);
+    }
+  }, [rememberSearch, storageKey]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    if (!storageKey) {
+      return;
+    }
+
+    if (persistedQuery && persistedQuery.trim()) {
+      sessionStorage.setItem(storageKey, persistedQuery);
+    } else {
+      sessionStorage.removeItem(storageKey);
+    }
+  }, [rememberSearch, storageKey, persistedQuery]);
+
+  useEffect(() => {
+    if (rememberSearch) return;
+    setPersistedQuery(prefilledEmoji);
+  }, [rememberSearch, prefilledEmoji]);
+
+  const handleQueryChange = useCallback((query: string) => {
+    const trimmed = query.trim();
+    if (trimmed) {
+      setPersistedQuery(trimmed);
+    } else {
+      setPersistedQuery(undefined);
+      if (storageKey && typeof window !== 'undefined') {
+        sessionStorage.removeItem(storageKey);
+      }
+    }
+  }, [storageKey]);
+
+  const clearPersistedQuery = useCallback(() => {
+    setPersistedQuery(undefined);
+    if (storageKey && typeof window !== 'undefined') {
+      sessionStorage.removeItem(storageKey);
+    }
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (!rememberSearch) return;
+    if (typeof window === 'undefined') return;
+    if (hasScrolledRef.current) return;
+
+    const targetPath = sessionStorage.getItem(SCROLL_TARGET_KEY);
+    if (targetPath && targetPath === location.pathname && containerRef.current) {
+      hasScrolledRef.current = true;
+      window.requestAnimationFrame(() => {
+        containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        sessionStorage.removeItem(SCROLL_TARGET_KEY);
+      });
+    }
+  }, [rememberSearch, location.pathname]);
+
   return (
-    <div className="space-y-6">
+    <div ref={containerRef} className="space-y-6">
       {/* ファンマ取得中のローディング画面 */}
       {isRegistering && (
         <FanmarkAcquisitionLoading emoji={searchResult?.user_input_fanmark} />
@@ -231,7 +302,8 @@ export const FanmarkAcquisition = ({
               statusVariant={user ? 'authenticated' : 'public'}
               showRecent={false}
               onResultChange={setSearchResult}
-              initialQuery={prefilledEmoji}
+            onQueryChange={handleQueryChange}
+            initialQuery={persistedQuery}
               onUtilitiesRef={setSearchUtilities}
             />
 
@@ -315,6 +387,7 @@ export const FanmarkAcquisition = ({
               onClear={() => {
                 if (searchUtilities) {
                   searchUtilities.clearQuery();
+                  clearPersistedQuery();
                   toast({
                     title: t('common.clear') + '完了',
                   });
@@ -362,7 +435,12 @@ export const FanmarkAcquisition = ({
                   </div>
                   <div
                     className="mt-2 text-xs underline text-amber-800 cursor-pointer dark:text-amber-100"
-                    onClick={() => navigate('/plans', { state: { from: location.pathname } })}
+                    onClick={() => {
+                      if (typeof window !== 'undefined') {
+                        sessionStorage.setItem(SCROLL_TARGET_KEY, location.pathname);
+                      }
+                      navigate('/plans', { state: { from: location.pathname } });
+                    }}
                   >
                     {t('dashboard.acquireLimitIncreaseCta')}
                   </div>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
@@ -34,7 +34,7 @@ const PlanSelection = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const locationState = (location.state as { from?: string } | null) ?? null;
-  const backPath = locationState?.from ?? '/profile';
+  const [backPath, setBackPath] = useState('/profile');
   const { t } = useTranslation();
   const { toast } = useToast();
   const { profile, loading, updateProfile } = useProfile();
@@ -73,6 +73,13 @@ const PlanSelection = () => {
       t('planSelection.enterprise.feature3'),
     ],
   }), [t]);
+
+  useEffect(() => {
+    const fromPath = locationState?.from;
+    if (fromPath && typeof fromPath === 'string') {
+      setBackPath(fromPath);
+    }
+  }, [locationState?.from]);
 
   const handlePlanChange = async (planType: PlanType) => {
     if (!profile || planType === profile.plan_type) {

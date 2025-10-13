@@ -33,6 +33,8 @@ const LICENSE_STATUS_WEIGHT: Record<LicenseTimingResult['status'], number> = {
   expired: 4,
 };
 
+const ACTIVE_TAB_STORAGE_KEY = 'fanmark-dashboard:active-tab';
+
 const formatCountdown = (target: Date | string | null) => {
   if (!target) return '00:00:00';
   const targetDate = target instanceof Date ? target : parseDateString(target);
@@ -115,7 +117,19 @@ export const FanmarkDashboard = () => {
 
   const [fanmarks, setFanmarks] = useState<Fanmark[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('my-fanmarks');
+  const [activeTab, setActiveTabState] = useState(() => {
+    if (typeof window === 'undefined') {
+      return 'my-fanmarks';
+    }
+    const stored = sessionStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
+    return stored === 'acquisition' || stored === 'my-fanmarks' ? stored : 'my-fanmarks';
+  });
+  const setActiveTab = useCallback((value: string) => {
+    setActiveTabState(value);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(ACTIVE_TAB_STORAGE_KEY, value);
+    }
+  }, []);
   const [prefilledEmoji, setPrefilledEmoji] = useState<string | undefined>();
   const [returningFanmarkId, setReturningFanmarkId] = useState<string | null>(null);
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
@@ -662,7 +676,7 @@ export const FanmarkDashboard = () => {
         </div>
 
         {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
           <TabsList className="grid w-full grid-cols-2 gap-2 rounded-full border border-primary/20 bg-background/70 p-2 backdrop-blur">
             <TabsTrigger 
               value="my-fanmarks"
@@ -729,11 +743,12 @@ export const FanmarkDashboard = () => {
                               {t('dashboard.createFanmarkDescription')}
                             </DialogDescription>
                           </DialogHeader>
-                           <FanmarkAcquisition
-                             prefilledEmoji={prefilledEmoji}
-                             fanmarkLimit={isUnlimited ? -1 : fanmarkLimit}
-                             currentCount={activeFanmarks}
-                             onObtain={() => {
+                <FanmarkAcquisition
+                  prefilledEmoji={prefilledEmoji}
+                  fanmarkLimit={isUnlimited ? -1 : fanmarkLimit}
+                  currentCount={activeFanmarks}
+                  rememberSearch
+                  onObtain={() => {
                                setPrefilledEmoji(undefined);
                                fetchFanmarks();
                                setActiveTab('my-fanmarks');
@@ -1210,6 +1225,7 @@ export const FanmarkDashboard = () => {
                    prefilledEmoji={prefilledEmoji}
                    fanmarkLimit={isUnlimited ? -1 : fanmarkLimit}
                    currentCount={activeFanmarks}
+                    rememberSearch
                    onObtain={() => {
                      setPrefilledEmoji(undefined);
                      fetchFanmarks();

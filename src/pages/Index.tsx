@@ -289,6 +289,7 @@ const Index = () => {
             fanmarkLimit={fanmarkLimit}
             currentCount={fanmarkCount}
             prefilledEmoji={prefilledEmoji}
+            rememberSearch
             onRequireAuth={handleRequireAuth}
             onObtain={() => setFanmarkCount((count) => count + 1)}
           />

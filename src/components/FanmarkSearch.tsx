@@ -12,6 +12,7 @@ interface FanmarkSearchProps {
   onSignupPrompt?: () => void;
   onSearchPerformed?: (searchQuery: string) => void;
   onResultChange?: (result: FanmarkSearchResult | null) => void;
+  onQueryChange?: (query: string) => void;
   statusVariant?: 'authenticated' | 'public';
   showRecent?: boolean;
   initialQuery?: string;
@@ -22,6 +23,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
   onSignupPrompt,
   onSearchPerformed,
   onResultChange,
+  onQueryChange,
   statusVariant = 'authenticated',
   showRecent = true,
   initialQuery,
@@ -40,6 +42,10 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
   useEffect(() => {
     onResultChange?.(result);
   }, [result, onResultChange]);
+
+  useEffect(() => {
+    onQueryChange?.(searchQuery);
+  }, [onQueryChange, searchQuery]);
 
   useEffect(() => {
     if (initialQuery === undefined) return;
@@ -87,7 +93,10 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
         <div>
           <EmojiInput
             value={searchQuery}
-            onChange={setSearchQuery}
+            onChange={(value) => {
+              setSearchQuery(value);
+              onQueryChange?.(value);
+            }}
             onSearchPerformed={onSearchPerformed}
             placeholder={t('search.searchPlaceholder')}
             className="text-center"
