@@ -160,35 +160,43 @@ export const FanmarkSettings = ({
       }
     }
 
-    try {
-      const cached = localStorage.getItem(draftStorageKey);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed && typeof parsed === 'object') {
-          const { timestamp, data, form, meta } = parsed as {
-            timestamp?: number;
-            data?: Partial<SettingsFormData>;
-            form?: Partial<SettingsFormData>;
-            meta?: { isEditingPassword?: boolean };
-          };
-          const draftPayload = form ?? data;
-          if (!timestamp || Date.now() - timestamp <= DRAFT_TTL) {
-            if (draftPayload) {
-              nextFormData = {
-                ...nextFormData,
-                ...draftPayload,
-              };
+    if (shouldHydrateFromRestore) {
+      try {
+        const cached = sessionStorage.getItem(draftStorageKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && typeof parsed === 'object') {
+            const { timestamp, data, form, meta } = parsed as {
+              timestamp?: number;
+              data?: Partial<SettingsFormData>;
+              form?: Partial<SettingsFormData>;
+              meta?: { isEditingPassword?: boolean };
+            };
+            const draftPayload = form ?? data;
+            if (!timestamp || Date.now() - timestamp <= DRAFT_TTL) {
+              if (draftPayload) {
+                nextFormData = {
+                  ...nextFormData,
+                  ...draftPayload,
+                };
+              }
+              if (meta && typeof meta.isEditingPassword === 'boolean') {
+                initialEditing = meta.isEditingPassword;
+              }
+            } else {
+              sessionStorage.removeItem(draftStorageKey);
             }
-            if (meta && typeof meta.isEditingPassword === 'boolean') {
-              initialEditing = meta.isEditingPassword;
-            }
-          } else {
-            localStorage.removeItem(draftStorageKey);
           }
         }
+      } catch (error) {
+        console.warn('Failed to load fanmark settings draft:', error);
       }
-    } catch (error) {
-      console.warn('Failed to load fanmark settings draft:', error);
+    } else {
+      try {
+        sessionStorage.removeItem(draftStorageKey);
+      } catch (error) {
+        console.warn('Failed to clear fanmark settings draft:', error);
+      }
     }
 
     if (!fanmark.is_password_protected && nextFormData.isPasswordProtected) {
@@ -210,7 +218,7 @@ export const FanmarkSettings = ({
     const subscription = watch((values) => {
       try {
         const { accessPassword, ...rest } = values;
-        localStorage.setItem(
+        sessionStorage.setItem(
           draftStorageKey,
           JSON.stringify({
             timestamp: Date.now(),
@@ -351,7 +359,7 @@ export const FanmarkSettings = ({
       }
 
       if (draftStorageKey) {
-        localStorage.removeItem(draftStorageKey);
+        sessionStorage.removeItem(draftStorageKey);
         setHydratedDraftKey(null);
       }
 
