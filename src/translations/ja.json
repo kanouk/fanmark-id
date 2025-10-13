@@ -216,6 +216,8 @@
     "clipboardNotSupported": "クリップボード機能がサポートされていません",
     "clipboardEmpty": "クリップボードが空です",
     "clipboardReadFailed": "クリップボードの読み取りに失敗しました",
+    "clipboardEmptyTitle": "貼り付けできません",
+    "clipboardEmptyBody": "クリップボードに内容がありませんでした。",
     "pasteFromClipboard": "クリップボードから貼り付け",
     "directInput": "直接入力",
     "paste": "貼り付け",
@@ -274,6 +276,8 @@
     "exportCompleteDesc": "プライバシー保護のため、メールアドレスをハッシュ化してエクスポートしました",
     "noEmojisFound": "絵文字が見つかりません",
     "noEmojisFoundDesc": "クリップボードに絵文字が見つかりませんでした",
+    "nonEmojiRejectedTitle": "絵文字が見つかりません",
+    "nonEmojiRejectedBody": "入力テキストから有効な絵文字を抽出できませんでした。",
     "userMenuAriaLabel": "ユーザーメニュー",
     "visitFanmarkAriaLabel": "ファンマに移動",
     "copyFanmarkAriaLabel": "ファンマをコピー"

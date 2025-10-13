@@ -344,9 +344,9 @@ export const FanmarkAcquisition = ({
                   const clipboardText = await navigator.clipboard.readText();
                   if (!clipboardText.trim()) {
                     toast({
-                      title: t('common.error'),
-                      description: t('common.clipboardEmpty'),
-                      variant: 'destructive',
+                      title: t('common.clipboardEmptyTitle'),
+                      description: t('common.clipboardEmptyBody'),
+                      variant: 'warning',
                     });
                     return;
                   }

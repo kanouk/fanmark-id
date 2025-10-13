@@ -216,6 +216,8 @@
     "clipboardNotSupported": "Clipboard functionality is not supported",
     "clipboardEmpty": "Clipboard is empty",
     "clipboardReadFailed": "Failed to read from clipboard",
+    "clipboardEmptyTitle": "Clipboard was empty",
+    "clipboardEmptyBody": "There was nothing to paste.",
     "pasteFromClipboard": "Paste from clipboard",
     "directInput": "Direct Input",
     "paste": "Paste",
@@ -274,6 +276,8 @@
     "exportCompleteDesc": "Waitlist data exported with hashed emails for privacy",
     "noEmojisFound": "No emojis found",
     "noEmojisFoundDesc": "No emojis were found in the clipboard",
+    "nonEmojiRejectedTitle": "No emojis detected",
+    "nonEmojiRejectedBody": "We couldn't find any valid emojis in your input.",
     "userMenuAriaLabel": "User menu",
     "visitFanmarkAriaLabel": "Visit fanmark",
     "copyFanmarkAriaLabel": "Copy fanmark"

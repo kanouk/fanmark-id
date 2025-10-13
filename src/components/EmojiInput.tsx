@@ -290,9 +290,9 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
 
       if (!clipboardText.trim()) {
         toast({
-          title: t('common.error'),
-          description: t('common.clipboardEmpty'),
-          variant: 'destructive',
+          title: t('common.clipboardEmptyTitle'),
+          description: t('common.clipboardEmptyBody'),
+          variant: 'warning',
         });
         return;
       }
@@ -300,8 +300,9 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
       const extracted = extractEmojiString(clipboardText);
       if (!extracted) {
         toast({
-          title: t('common.noEmojisFound'),
-          description: t('common.noEmojisFoundDesc'),
+          title: t('common.nonEmojiRejectedTitle'),
+          description: t('common.nonEmojiRejectedBody'),
+          variant: 'warning',
         });
         return;
       }
@@ -389,8 +390,9 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
     const extracted = extractEmojiString(directInputText);
     if (!extracted) {
       toast({
-        title: t('common.noEmojisFound'),
-        description: t('common.noEmojisFoundDesc'),
+        title: t('common.nonEmojiRejectedTitle'),
+        description: t('common.nonEmojiRejectedBody'),
+        variant: 'warning',
       });
       return;
     }
@@ -398,8 +400,9 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
     const sanitized = normalizeInput(extracted);
     if (!sanitized) {
       toast({
-        title: t('common.noEmojisFound'),
-        description: t('common.noEmojisFoundDesc'),
+        title: t('common.nonEmojiRejectedTitle'),
+        description: t('common.nonEmojiRejectedBody'),
+        variant: 'warning',
       });
       return;
     }
@@ -553,7 +556,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
                 <button
                   type="button"
                   onClick={() => handleRemove(index)}
-                  className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 hidden h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground transition hover:scale-105 group-hover:flex"
+                  className="absolute -top-1 -right-1 sm:-top-[0.3rem] sm:-right-[0.3rem] lg:-top-[0.35rem] lg:-right-[0.35rem] hidden h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground transition hover:scale-105 group-hover:flex"
                 >
                   <X className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                 </button>
