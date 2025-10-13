@@ -88,32 +88,30 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose, onPre
   const { t } = useTranslation();
   const { uploadAvatar, uploading } = useAvatarUpload();
   const { uploadCoverImage, uploading: coverUploading } = useCoverImageUpload();
-  const [coverImageUrl, setCoverImageUrl] = useState(profile?.theme_settings?.cover_image_url || '');
+  const initialCoverUrl = profile?.theme_settings?.cover_image_url;
+  const initialCoverDimensions = profile?.theme_settings?.cover_image_dimensions as { width: number; height: number } | undefined;
+  const initialCoverPosition = profile?.theme_settings?.cover_image_position;
+  const initialProfileUrl = profile?.theme_settings?.profile_image_url;
+
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(
+    typeof initialCoverUrl === 'string' && initialCoverUrl.length > 0 ? initialCoverUrl : null
+  );
   const [coverImageUploading, setCoverImageUploading] = useState(false);
   const [coverImageDimensions, setCoverImageDimensions] = useState<{ width: number; height: number } | null>(
-    (profile?.theme_settings?.cover_image_dimensions as { width: number; height: number } | undefined) || null
+    initialCoverDimensions || null
   );
   const [coverImagePosition, setCoverImagePosition] = useState<number>(
-    typeof profile?.theme_settings?.cover_image_position === 'number'
-      ? profile?.theme_settings?.cover_image_position
-      : 50
+    typeof initialCoverPosition === 'number' ? initialCoverPosition : 50
   );
-  const [profileImageUrl, setProfileImageUrl] = useState(profile?.theme_settings?.profile_image_url || '');
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(
+    typeof initialProfileUrl === 'string' && initialProfileUrl.length > 0 ? initialProfileUrl : null
+  );
   const [profileImageUploading, setProfileImageUploading] = useState(false);
   const [isDraggingCover, setIsDraggingCover] = useState(false);
   const [socialInputModes, setSocialInputModes] = useState<Record<string, 'handle' | 'url'>>(() => {
     const initialModes: Record<string, 'handle' | 'url'> = {};
     socialPlatforms.forEach((platform) => {
-      const existingValue = profile?.social_links?.[platform.key as keyof EmojiProfile['social_links']] as string | undefined;
-      if (platform.baseUrl) {
-        if (!existingValue) {
-          initialModes[platform.key] = 'handle';
-        } else {
-          initialModes[platform.key] = existingValue.startsWith(platform.baseUrl) ? 'handle' : 'url';
-        }
-      } else {
-        initialModes[platform.key] = 'url';
-      }
+      initialModes[platform.key] = platform.baseUrl ? 'handle' : 'url';
     });
     return initialModes;
   });
@@ -177,6 +175,34 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose, onPre
     });
   }, [profile]);
 
+  useEffect(() => {
+    if (!profile?.theme_settings) {
+      setCoverImageUrl(null);
+      setCoverImageDimensions(null);
+      setCoverImagePosition(50);
+      setProfileImageUrl(null);
+      return;
+    }
+
+    const themeSettings = profile.theme_settings;
+    setCoverImageUrl(
+      typeof themeSettings.cover_image_url === 'string' && themeSettings.cover_image_url.length > 0
+        ? themeSettings.cover_image_url
+        : null
+    );
+    setCoverImageDimensions(
+      (themeSettings.cover_image_dimensions as { width: number; height: number } | undefined) || null
+    );
+    setCoverImagePosition(
+      typeof themeSettings.cover_image_position === 'number' ? themeSettings.cover_image_position : 50
+    );
+    setProfileImageUrl(
+      typeof themeSettings.profile_image_url === 'string' && themeSettings.profile_image_url.length > 0
+        ? themeSettings.profile_image_url
+        : null
+    );
+  }, [profile?.theme_settings]);
+
   const themeColor = watch('theme_settings.theme_color');
 
   const handleCoverImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -191,14 +217,14 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose, onPre
       setValue('theme_settings.cover_image_url', result.url);
       setValue('theme_settings.cover_image_dimensions', { width: result.width, height: result.height });
       toast({
-        title: 'Cover image uploaded',
-        description: 'Your cover image has been updated successfully.',
+        title: t('coverImageUploaded'),
+        description: t('coverImageUploadedDesc'),
       });
     } catch (error) {
       console.error('Cover image upload error:', error);
       toast({
-        title: 'Upload failed',
-        description: 'Failed to upload cover image. Please try again.',
+        title: t('uploadFailed'),
+        description: t('coverUploadFailedDesc'),
         variant: 'destructive',
       });
     } finally {
@@ -216,14 +242,14 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose, onPre
       setProfileImageUrl(imageUrl);
       setValue('theme_settings.profile_image_url', imageUrl);
       toast({
-        title: 'Profile image uploaded',
-        description: 'Your profile image has been updated successfully.',
+        title: t('profileImageUploaded'),
+        description: t('profileImageUploadedDesc'),
       });
     } catch (error) {
       console.error('Profile image upload error:', error);
       toast({
-        title: 'Upload failed',
-        description: 'Failed to upload profile image. Please try again.',
+        title: t('uploadFailed'),
+        description: t('profileUploadFailedDesc'),
         variant: 'destructive',
       });
     } finally {
@@ -232,7 +258,7 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose, onPre
   };
 
   const removeCoverImage = () => {
-    setCoverImageUrl('');
+    setCoverImageUrl(null);
     setValue('theme_settings.cover_image_url', '');
     setCoverImageDimensions(null);
     setValue('theme_settings.cover_image_dimensions', undefined);
@@ -241,7 +267,7 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose, onPre
   };
 
   const removeProfileImage = () => {
-    setProfileImageUrl('');
+    setProfileImageUrl(null);
     setValue('theme_settings.profile_image_url', '');
   };
 
@@ -257,10 +283,10 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose, onPre
         social_links: filteredSocialLinks,
         theme_settings: {
           ...data.theme_settings,
-          cover_image_url: coverImageUrl,
+          cover_image_url: coverImageUrl ?? '',
           cover_image_dimensions: coverImageDimensions ?? undefined,
           cover_image_position: coverImagePosition,
-          profile_image_url: profileImageUrl,
+          profile_image_url: profileImageUrl ?? '',
         },
       });
     } catch (error) {
@@ -296,14 +322,14 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose, onPre
             <div className="relative">
               {/* Cover Image Area */}
           <div
-            className={`group relative w-full h-60 md:h-72 rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 via-accent/10 to-primary/5 border-2 border-dashed border-primary/20 transition-colors ${(coverImageUrl || profile?.theme_settings?.cover_image_url) ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer hover:border-primary/30'}`}
+            className={`group relative w-full h-60 md:h-72 rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 via-accent/10 to-primary/5 border-2 border-dashed border-primary/20 transition-colors ${coverImageUrl ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer hover:border-primary/30'}`}
             onClick={() => {
-              if (!coverImageUrl && !profile?.theme_settings?.cover_image_url) {
+              if (!coverImageUrl) {
                 document.getElementById('cover-image-upload')?.click();
               }
             }}
             onMouseDown={(event) => {
-              if (!(coverImageUrl || profile?.theme_settings?.cover_image_url)) {
+              if (!coverImageUrl) {
                 document.getElementById('cover-image-upload')?.click();
                 return;
               }
@@ -332,15 +358,15 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose, onPre
               window.addEventListener('mouseup', handleMouseUp);
             }}
           >
-                {(coverImageUrl || profile?.theme_settings?.cover_image_url) ? (
+                {coverImageUrl ? (
                   <>
                     <img
-                      src={coverImageUrl || profile?.theme_settings?.cover_image_url}
+                      src={coverImageUrl}
                       alt="Cover preview"
                   className="w-full h-full object-cover"
                   style={{ objectPosition: `50% ${coverImagePosition}%` }}
                     />
-                    {(coverImageUrl || profile?.theme_settings?.cover_image_url) && (
+                    {coverImageUrl && (
                     <div className="absolute bottom-3 left-4 right-4 flex items-center gap-3 rounded-full bg-background/80 px-4 py-2 text-xs font-medium text-muted-foreground shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                         <div className="flex items-center gap-2">
                           <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-semibold">
@@ -404,11 +430,11 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose, onPre
                 <div className="group relative w-24 h-24 rounded-full bg-background border-4 border-background shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
                      onClick={() => document.getElementById('profile-image-upload')?.click()}
                 >
-                  {(profileImageUrl || profile?.theme_settings?.profile_image_url) ? (
+                  {profileImageUrl ? (
                     <>
                       <div className="w-full h-full rounded-full overflow-hidden">
                         <img
-                          src={profileImageUrl || profile?.theme_settings?.profile_image_url}
+                          src={profileImageUrl}
                           alt="Profile preview"
                           className="w-full h-full object-cover"
                         />
