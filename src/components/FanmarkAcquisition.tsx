@@ -7,7 +7,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { navigateToFanmark } from '@/utils/emojiUrl';
-import { convertEmojiSequenceToIdPair } from '@/lib/emojiConversion';
+import { canonicalizeEmojiString, convertEmojiSequenceToIdPair, segmentEmojiSequence } from '@/lib/emojiConversion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -55,12 +55,15 @@ export const FanmarkAcquisition = ({
   const [searchResult, setSearchResult] = useState<FanmarkSearchResult | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
-  const [searchUtilities, setSearchUtilities] = useState<
-    { setQuery: (query: string) => void; clearQuery: () => void; getQuery: () => string }
-    | null
-  >(null);
+  const normalizeQuery = useCallback((value: string | undefined) => {
+    if (!value) return '';
+    const canonical = canonicalizeEmojiString(value);
+    return segmentEmojiSequence(canonical).slice(0, 5).join('');
+  }, []);
+
+  const [query, setQuery] = useState(() => normalizeQuery(prefilledEmoji));
   const storageKey = useMemo(() => (rememberSearch ? `fanmark-search:${location.pathname}` : null), [rememberSearch, location.pathname]);
-  const [persistedQuery, setPersistedQuery] = useState<string | undefined>(prefilledEmoji);
+  const hasLoadedInitialStorage = useRef(false);
   const hasScrolledRef = useRef(false);
   const remainingCapacity = useMemo(() => {
     if (!user || fanmarkLimit === -1) {
@@ -172,45 +175,36 @@ export const FanmarkAcquisition = ({
       return;
     }
     if (typeof window === 'undefined') return;
+    if (hasLoadedInitialStorage.current) return;
+
     const stored = sessionStorage.getItem(storageKey);
     if (stored !== null) {
-      setPersistedQuery(stored);
+      setQuery(normalizeQuery(stored));
+      hasLoadedInitialStorage.current = true;
     }
-  }, [rememberSearch, storageKey]);
+  }, [rememberSearch, storageKey, normalizeQuery]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (!rememberSearch) {
+      setQuery(normalizeQuery(prefilledEmoji));
+    }
+  }, [rememberSearch, prefilledEmoji, normalizeQuery]);
 
-    if (!storageKey) {
+  const handleQueryChange = useCallback((value: string) => {
+    const normalized = normalizeQuery(value);
+    setQuery(normalized);
+    if (!rememberSearch || !storageKey) return;
+
+    if (!normalized.trim()) {
+      sessionStorage.removeItem(storageKey);
       return;
     }
 
-    if (persistedQuery && persistedQuery.trim()) {
-      sessionStorage.setItem(storageKey, persistedQuery);
-    } else {
-      sessionStorage.removeItem(storageKey);
-    }
-  }, [rememberSearch, storageKey, persistedQuery]);
+    sessionStorage.setItem(storageKey, normalized);
+  }, [rememberSearch, storageKey, normalizeQuery]);
 
-  useEffect(() => {
-    if (rememberSearch) return;
-    setPersistedQuery(prefilledEmoji);
-  }, [rememberSearch, prefilledEmoji]);
-
-  const handleQueryChange = useCallback((query: string) => {
-    const trimmed = query.trim();
-    if (trimmed) {
-      setPersistedQuery(trimmed);
-    } else {
-      setPersistedQuery(undefined);
-      if (storageKey && typeof window !== 'undefined') {
-        sessionStorage.removeItem(storageKey);
-      }
-    }
-  }, [storageKey]);
-
-  const clearPersistedQuery = useCallback(() => {
-    setPersistedQuery(undefined);
+  const clearQuery = useCallback(() => {
+    setQuery('');
     if (storageKey && typeof window !== 'undefined') {
       sessionStorage.removeItem(storageKey);
     }
@@ -302,9 +296,8 @@ export const FanmarkAcquisition = ({
               statusVariant={user ? 'authenticated' : 'public'}
               showRecent={false}
               onResultChange={setSearchResult}
-            onQueryChange={handleQueryChange}
-            initialQuery={persistedQuery}
-              onUtilitiesRef={setSearchUtilities}
+              query={query}
+              onQueryChange={handleQueryChange}
             />
 
             {/* 便利ツール - レスポンシブ間隔 */}
@@ -313,8 +306,6 @@ export const FanmarkAcquisition = ({
               disabled={false}
               hasValue={!!(searchResult?.fanmark || searchResult?.user_input_fanmark)}
               onPaste={async () => {
-                if (!searchUtilities) return;
-
                 try {
                   if (!navigator.clipboard) {
                     toast({
@@ -335,10 +326,10 @@ export const FanmarkAcquisition = ({
                     return;
                   }
 
-                  const emojiRegex = /[\p{Emoji_Presentation}\p{Extended_Pictographic}][\p{Emoji_Modifier}\p{Variation_Selector}\p{Emoji_Modifier_Base}\p{Emoji_Component}]*|[\u{1F1E6}-\u{1F1FF}]{2}/gu;
-                  const emojis = clipboardText.match(emojiRegex) || [];
+                  const canonicalQuery = canonicalizeEmojiString(clipboardText);
+                  const limitedCanonical = segmentEmojiSequence(canonicalQuery).slice(0, 5).join('');
 
-                  if (emojis.length === 0) {
+                  if (!limitedCanonical.trim()) {
                     toast({
                       title: t('common.noEmojisFound'),
                       description: t('common.noEmojisFoundDesc'),
@@ -346,8 +337,7 @@ export const FanmarkAcquisition = ({
                     return;
                   }
 
-                  const limitedEmojis = emojis.slice(0, 5).join('');
-                  searchUtilities.setQuery(limitedEmojis);
+                  handleQueryChange(limitedCanonical);
 
                   toast({
                     title: t('common.paste') + '完了',
@@ -363,12 +353,11 @@ export const FanmarkAcquisition = ({
                 }
               }}
               onDirectInput={(input: string) => {
-                if (!searchUtilities || !input.trim()) return;
+                if (!input.trim()) return;
 
-                const emojiRegex = /[\p{Emoji_Presentation}\p{Extended_Pictographic}][\p{Emoji_Modifier}\p{Variation_Selector}\p{Emoji_Modifier_Base}\p{Emoji_Component}]*|[\u{1F1E6}-\u{1F1FF}]{2}/gu;
-                const emojis = input.match(emojiRegex) || [];
-
-                if (emojis.length === 0) {
+                const canonicalQuery = canonicalizeEmojiString(input);
+                const limitedCanonical = segmentEmojiSequence(canonicalQuery).slice(0, 5).join('');
+                if (!limitedCanonical.trim()) {
                   toast({
                     title: t('common.noEmojisFound'),
                     description: t('common.noEmojisFoundDesc'),
@@ -376,8 +365,7 @@ export const FanmarkAcquisition = ({
                   return;
                 }
 
-                const limitedEmojis = emojis.slice(0, 5).join('');
-                searchUtilities.setQuery(limitedEmojis);
+                handleQueryChange(limitedCanonical);
 
                 toast({
                   title: t('common.directInput') + '完了',
@@ -385,15 +373,12 @@ export const FanmarkAcquisition = ({
                 });
               }}
               onClear={() => {
-                if (searchUtilities) {
-                  searchUtilities.clearQuery();
-                  clearPersistedQuery();
-                  toast({
-                    title: t('common.clear') + '完了',
-                  });
-                }
+                clearQuery();
+                toast({
+                  title: t('common.clear') + '完了',
+                });
               }}
-              value={searchUtilities?.getQuery?.() ?? ''}
+              value={query}
             />
             </div>
           </div>

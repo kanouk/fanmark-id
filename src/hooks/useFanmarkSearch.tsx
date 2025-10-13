@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from './useTranslation';
 import {
   canonicalizeEmojiString,
   convertEmojiSequenceToIdPair,
   resolveFanmarkDisplay,
+  segmentEmojiSequence,
   stripSkinToneModifiers,
 } from '@/lib/emojiConversion';
 
@@ -99,12 +100,24 @@ const COMBINING_CHARACTERS = new Set([
   String.fromCodePoint(0x200d),
 ]);
 
-export function useFanmarkSearch() {
+const MAX_QUERY_LENGTH = 5;
+
+type UseFanmarkSearchOptions = {
+  searchQuery: string;
+  onSearchCompleted?: (query: string) => void;
+};
+
+export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkSearchOptions) {
   const { t } = useTranslation();
-  const [searchQuery, setSearchQuery] = useState('');
   const [result, setResult] = useState<FanmarkSearchResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [recentFanmarks, setRecentFanmarks] = useState<FanmarkSearchResult[]>([]);
+
+  const normalizedQuery = useMemo(() => {
+    const canonical = canonicalizeEmojiString(searchQuery);
+    const limited = segmentEmojiSequence(canonical).slice(0, MAX_QUERY_LENGTH).join('');
+    return limited.trim();
+  }, [searchQuery]);
 
   // Fetch recent fanmarks on mount
   useEffect(() => {
@@ -113,12 +126,12 @@ export function useFanmarkSearch() {
 
   // Search when query changes
   useEffect(() => {
-    if (searchQuery.trim()) {
-      searchFanmarks(searchQuery);
+    if (normalizedQuery) {
+      searchFanmarks(normalizedQuery);
     } else {
       setResult(null);
     }
-  }, [searchQuery]);
+  }, [normalizedQuery]);
 
   const fetchRecentFanmarks = async () => {
     try {
@@ -271,6 +284,8 @@ export function useFanmarkSearch() {
       if (!availability || typeof availability.available !== 'boolean') {
         throw new Error('Failed to determine fanmark availability');
       }
+
+      onSearchCompleted?.(normalizedQuery);
 
       // 未登録のファンマークは即座に available 扱い
       if (!availability.fanmark_id) {
@@ -473,8 +488,6 @@ export function useFanmarkSearch() {
   };
 
   return {
-    searchQuery,
-    setSearchQuery,
     result,
     loading,
     recentFanmarks,

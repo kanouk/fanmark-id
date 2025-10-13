@@ -18,9 +18,12 @@
    （辞書未収録の場合は最終的にバリデーションで「サポートされていません」を返す。）
 4. **UI 反映**: `EmojiInput` は canonical 化された文字列を `segmentEmojiSequence()` で再分割し、常に ZWJ や Variation Selector を含む複合絵文字を 1 セグメントで扱う。<br />
    直接入力／貼り付け／ドラッグ入れ替えのどの経路も同じ canonical 値を使用する。
-5. **バリデーション**: `useFanmarkSearch.validateEmojiInput()` でも canonical 化後の文字列を `convertEmojiSequenceToIdPair()` へ渡し、辞書ベースで ID を決定。<br />
+5. **検索クエリの正規化と保存**: `useFanmarkSearch` の `setSearchQuery` は `canonicalizeEmojiString()` と `segmentEmojiSequence()` を経由して 5 セグメント以内に切り詰めた値のみを保持する。<br />
+   `FanmarkSearch` の `initialQuery` も同じ手順で正規化し、入力と復元で値が揺れるのを防ぐ。検索が完了して結果が確定したタイミングでのみ、正規化済みクエリを sessionStorage に保存する。
+   `FanmarkAcquisition` をソース・オブ・トゥルースとし、`FanmarkSearch` は受け取ったクエリを表示するだけの制御コンポーネントに統一したため、storage と state の往復更新を抑止できる。
+6. **バリデーション**: `useFanmarkSearch.validateEmojiInput()` でも canonical 化後の文字列を `convertEmojiSequenceToIdPair()` へ渡し、辞書ベースで ID を決定。<br />
    1〜5 個の emoji 数チェックもここで実施する。
-6. **トースト**: 入力・貼り付け時のトースト文言は件数表示を廃止し、「絵文字を入力しました」「絵文字を貼り付けました」の固定文言に統一。<br />
+7. **トースト**: 入力・貼り付け時のトースト文言は件数表示を廃止し、「絵文字を入力しました」「絵文字を貼り付けました」の固定文言に統一。<br />
    開発環境 (`NODE_ENV=development`) では canonical セグメント数のログのみ出力して動作確認できる。
 
 ### 想定される入力例

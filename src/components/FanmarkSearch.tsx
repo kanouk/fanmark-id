@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EmojiInput } from "@/components/EmojiInput";
@@ -7,15 +7,16 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useFanmarkSearch, FanmarkSearchResult } from "@/hooks/useFanmarkSearch";
 import { FanmarkStatusBadge, FanmarkStatus } from "@/components/FanmarkStatusBadge";
 import { FiAlertTriangle, FiInfo } from 'react-icons/fi';
+import { canonicalizeEmojiString, segmentEmojiSequence } from '@/lib/emojiConversion';
 
 interface FanmarkSearchProps {
   onSignupPrompt?: () => void;
   onSearchPerformed?: (searchQuery: string) => void;
   onResultChange?: (result: FanmarkSearchResult | null) => void;
-  onQueryChange?: (query: string) => void;
+  onQueryChange: (query: string) => void;
   statusVariant?: 'authenticated' | 'public';
   showRecent?: boolean;
-  initialQuery?: string;
+  query: string;
   onUtilitiesRef?: (utilities: { setQuery: (query: string) => void; clearQuery: () => void; getQuery: () => string }) => void;
 }
 
@@ -26,47 +27,48 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
   onQueryChange,
   statusVariant = 'authenticated',
   showRecent = true,
-  initialQuery,
+  query,
   onUtilitiesRef,
 }) => {
   const { t } = useTranslation();
-  const { 
-    searchQuery, 
-    setSearchQuery, 
-    result, 
-    loading, 
-    recentFanmarks, 
-    getNormalizationInfo
-  } = useFanmarkSearch();
+
+  const normalizedInputQuery = useMemo(() => {
+    if (!query) return '';
+    const canonical = canonicalizeEmojiString(query);
+    return segmentEmojiSequence(canonical).slice(0, 5).join('');
+  }, [query]);
+
+  const {
+    result,
+    loading,
+    recentFanmarks,
+    getNormalizationInfo,
+  } = useFanmarkSearch({
+    searchQuery: normalizedInputQuery,
+    onSearchCompleted: (normalizedQuery) => {
+      if (normalizedQuery !== query) {
+        onQueryChange(normalizedQuery);
+      }
+    },
+  });
 
   useEffect(() => {
     onResultChange?.(result);
   }, [result, onResultChange]);
 
   useEffect(() => {
-    onQueryChange?.(searchQuery);
-  }, [onQueryChange, searchQuery]);
-
-  useEffect(() => {
-    if (initialQuery === undefined) return;
-    if (initialQuery !== searchQuery) {
-      setSearchQuery(initialQuery);
-    }
-  }, [initialQuery, searchQuery, setSearchQuery]);
-
-  // Expose utilities to parent component
-  useEffect(() => {
     if (onUtilitiesRef) {
       onUtilitiesRef({
-        setQuery: setSearchQuery,
-        clearQuery: () => setSearchQuery(''),
-        getQuery: () => searchQuery,
+        setQuery: onQueryChange,
+        clearQuery: () => onQueryChange(''),
+        getQuery: () => query,
       });
     }
-  }, [onUtilitiesRef, setSearchQuery, searchQuery]);
+  }, [onUtilitiesRef, onQueryChange, query]);
 
-  // Get normalization info for current search query
-  const normalizationInfo = searchQuery.trim() && getNormalizationInfo ? getNormalizationInfo(searchQuery.trim()) : null;
+  const normalizationInfo = normalizedInputQuery && getNormalizationInfo
+    ? getNormalizationInfo(normalizedInputQuery)
+    : null;
 
   const normalizeStatus = (status: FanmarkSearchResult['status']): FanmarkStatus => {
     if (status === 'available') {
@@ -79,8 +81,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
       return statusVariant === 'public' ? 'unavailable' : 'taken';
     }
     return 'unavailable'; // invalid はここに流れる
-  }; 
-
+  };
 
   const getStatusBadge = (result: FanmarkSearchResult) => (
           <FanmarkStatusBadge status={normalizeStatus(result.status)} />
@@ -92,10 +93,9 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
       <div className="relative overflow-visible">
         <div>
           <EmojiInput
-            value={searchQuery}
+            value={query}
             onChange={(value) => {
-              setSearchQuery(value);
-              onQueryChange?.(value);
+              onQueryChange(value);
             }}
             onSearchPerformed={onSearchPerformed}
             placeholder={t('search.searchPlaceholder')}
@@ -114,7 +114,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
 
 
       {/* Error Display for invalid inputs */}
-      {result && searchQuery.trim() && !loading && result.status === 'invalid' && result.error && (
+      {result && normalizedInputQuery && !loading && result.status === 'invalid' && result.error && (
         <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
           <div className="mb-1 flex items-center gap-2 font-medium">
             <FiAlertTriangle className="h-4 w-4" />
@@ -129,7 +129,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
       )}
 
       {/* Recently Acquired Fanmarks */}
-      {showRecent && !searchQuery && recentFanmarks.length > 0 && (
+      {showRecent && !normalizedInputQuery && recentFanmarks.length > 0 && (
         <div className="space-y-4">
           <h3 className="text-sm font-medium text-base-content/70">
             {t('search.recentlyAcquired')}
