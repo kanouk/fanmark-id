@@ -14,6 +14,7 @@ import {
   canonicalizeEmojiString,
   extractEmojiString,
 } from '@/lib/emojiConversion';
+import { useImeAwareSubmit } from '@/hooks/useImeAwareSubmit';
 
 const normalizeInput = (text: string) => {
   if (!text) return '';
@@ -52,6 +53,10 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
   const [showDirectInput, setShowDirectInput] = useState<boolean>(false);
   const [directInputText, setDirectInputText] = useState<string>('');
+  const directInputImeHandlers = useImeAwareSubmit({
+    onSubmit: () => handleDirectInputConfirm(),
+    isDisabled: disabled,
+  });
   const lastValidSegmentsRef = useRef<string[]>([]);
   const isAnimatingInitial = useRef(false);
 
@@ -354,12 +359,9 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
       }
 
       // Determine appropriate message
-      const title = '貼り付け完了';
-      const description = '絵文字を貼り付けました';
-
       toast({
-        title,
-        description,
+        title: t('common.pasteCompletedTitle'),
+        description: t('common.pasteCompleted'),
       });
 
       updateValue(limitedSegments);
@@ -445,13 +447,9 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
       console.log('[EmojiInput] handleDirectInputConfirm limited conversion', { limitedValue, limitedPair });
     }
 
-    // Determine appropriate message
-    const title = '入力完了';
-    const description = '絵文字を入力しました';
-
     toast({
-      title,
-      description,
+      title: t('common.inputCompletedTitle'),
+      description: t('common.inputCompleted'),
     });
 
     updateValue(limitedSegments);
@@ -630,12 +628,8 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
                 onChange={(e) => setDirectInputText(e.target.value)}
                 placeholder={t('common.directInputPlaceholder')}
                 className="text-base"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleDirectInputConfirm();
-                  }
-                }}
                 autoFocus
+                {...directInputImeHandlers}
               />
             </div>
             <div className="flex justify-end gap-3">
@@ -701,6 +695,11 @@ export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
     setDirectInputText('');
   };
 
+  const utilitiesImeHandlers = useImeAwareSubmit({
+    onSubmit: () => handleDirectInputConfirm(),
+    isDisabled: disabled,
+  });
+
   return (
     <>
         <div className="flex justify-center mt-5 sm:mt-6">
@@ -764,12 +763,8 @@ export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
                 onChange={(e) => setDirectInputText(e.target.value)}
                 placeholder={t('common.directInputPlaceholder')}
                 className="text-base"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleDirectInputConfirm();
-                  }
-                }}
                 autoFocus
+                {...utilitiesImeHandlers}
               />
             </div>
             <div className="flex justify-end gap-3">

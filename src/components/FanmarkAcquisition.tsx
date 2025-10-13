@@ -364,7 +364,7 @@ export const FanmarkAcquisition = ({
                   handleQueryChange(extracted);
 
                   toast({
-                    title: t('common.paste') + '完了',
+                    title: t('common.pasteCompletedTitle'),
                     description: t('common.pasteCompleted'),
                   });
 
@@ -392,14 +392,14 @@ export const FanmarkAcquisition = ({
                 handleQueryChange(extracted);
 
                 toast({
-                  title: t('common.directInput') + '完了',
+                  title: t('common.inputCompletedTitle'),
                   description: t('common.inputCompleted'),
                 });
               }}
               onClear={() => {
                 clearQuery();
                 toast({
-                  title: t('common.clear') + '完了',
+                  title: t('common.clearCompletedTitle'),
                 });
               }}
               value={query}
