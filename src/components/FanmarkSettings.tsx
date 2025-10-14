@@ -131,11 +131,6 @@ export const FanmarkSettings = ({
   useEffect(() => {
     if (!fanmark || !draftStorageKey) return;
 
-    const shouldHydrateFromRestore = Boolean(restoreEditingState);
-    if (!shouldHydrateFromRestore && hydratedDraftKey === draftStorageKey) {
-      return;
-    }
-
     let nextFormData: SettingsFormData = {
       accessType: fanmark.access_type,
       fanmarkName: fanmark.fanmark_name || t('fanmarkSettings.summary.defaultName'),
@@ -149,53 +144,41 @@ export const FanmarkSettings = ({
 
     let initialEditing = false;
 
+    try {
+      const cached = sessionStorage.getItem(draftStorageKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && typeof parsed === 'object') {
+          const { timestamp, data, form, meta } = parsed as {
+            timestamp?: number;
+            data?: Partial<SettingsFormData>;
+            form?: Partial<SettingsFormData>;
+            meta?: { isEditingPassword?: boolean };
+          };
+          if (!timestamp || Date.now() - timestamp <= DRAFT_TTL) {
+            nextFormData = {
+              ...nextFormData,
+              ...(form ?? data ?? {}),
+            };
+            if (meta && typeof meta.isEditingPassword === 'boolean') {
+              initialEditing = meta.isEditingPassword;
+            }
+          } else {
+            sessionStorage.removeItem(draftStorageKey);
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load fanmark settings draft:', error);
+    }
+
     if (restoreEditingState) {
       nextFormData = {
         ...nextFormData,
         ...restoreEditingState,
       };
-
       if (typeof restoreEditingState.isEditingPassword === 'boolean') {
         initialEditing = restoreEditingState.isEditingPassword;
-      }
-    }
-
-    if (shouldHydrateFromRestore) {
-      try {
-        const cached = sessionStorage.getItem(draftStorageKey);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (parsed && typeof parsed === 'object') {
-            const { timestamp, data, form, meta } = parsed as {
-              timestamp?: number;
-              data?: Partial<SettingsFormData>;
-              form?: Partial<SettingsFormData>;
-              meta?: { isEditingPassword?: boolean };
-            };
-            const draftPayload = form ?? data;
-            if (!timestamp || Date.now() - timestamp <= DRAFT_TTL) {
-              if (draftPayload) {
-                nextFormData = {
-                  ...nextFormData,
-                  ...draftPayload,
-                };
-              }
-              if (meta && typeof meta.isEditingPassword === 'boolean') {
-                initialEditing = meta.isEditingPassword;
-              }
-            } else {
-              sessionStorage.removeItem(draftStorageKey);
-            }
-          }
-        }
-      } catch (error) {
-        console.warn('Failed to load fanmark settings draft:', error);
-      }
-    } else {
-      try {
-        sessionStorage.removeItem(draftStorageKey);
-      } catch (error) {
-        console.warn('Failed to clear fanmark settings draft:', error);
       }
     }
 
@@ -217,12 +200,14 @@ export const FanmarkSettings = ({
     if (!draftStorageKey) return;
     const subscription = watch((values) => {
       try {
-        const { accessPassword, ...rest } = values;
         sessionStorage.setItem(
           draftStorageKey,
           JSON.stringify({
             timestamp: Date.now(),
-            form: rest,
+            form: {
+              ...values,
+              accessPassword: values.accessPassword ?? '',
+            },
             meta: { isEditingPassword },
           })
         );
@@ -241,6 +226,14 @@ export const FanmarkSettings = ({
   }, [isPasswordProtected]);
 
   const handleClose = () => {
+    if (draftStorageKey) {
+      try {
+        sessionStorage.removeItem(draftStorageKey);
+      } catch (error) {
+        console.warn('Failed to clear fanmark settings draft:', error);
+      }
+      setHydratedDraftKey(null);
+    }
     if (mode === 'dialog') {
       onOpenChange?.(false);
     } else {
