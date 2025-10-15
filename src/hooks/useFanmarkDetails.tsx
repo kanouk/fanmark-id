@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { resolveFanmarkDisplay } from '@/lib/emojiConversion';
 import { useAuth } from './useAuth';
+import { useInvalidateFavoriteFanmarks } from './useFavoriteFanmarks';
 
 export interface FanmarkDetails {
   fanmark_id: string;
@@ -41,6 +42,7 @@ export interface LicenseHistoryItem {
 
 export const useFanmarkDetails = (shortId: string | undefined) => {
   const { user } = useAuth();
+  const invalidateFavorites = useInvalidateFavoriteFanmarks();
   const [details, setDetails] = useState<FanmarkDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -101,16 +103,34 @@ export const useFanmarkDetails = (shortId: string | undefined) => {
 
   const toggleFavorite = async () => {
     if (!details || !user) return false;
+    const emojiIds = Array.isArray(details.emoji_ids) ? details.emoji_ids : [];
+    if (emojiIds.length === 0) {
+      console.warn('toggleFavorite skipped: missing emoji_ids');
+      return details.is_favorited;
+    }
 
     try {
-      const { data, error } = await supabase.rpc('toggle_fanmark_favorite', {
-        fanmark_uuid: details.fanmark_id
-      });
-
-      if (error) throw error;
-
-      setDetails(prev => prev ? { ...prev, is_favorited: data } : null);
-      return data;
+      if (details.is_favorited) {
+        const { data, error } = await supabase.rpc('remove_fanmark_favorite', {
+          input_emoji_ids: emojiIds,
+        });
+        if (error) throw error;
+        if (data) {
+          setDetails(prev => prev ? { ...prev, is_favorited: false } : null);
+          invalidateFavorites();
+        }
+        return false;
+      } else {
+        const { data, error } = await supabase.rpc('add_fanmark_favorite', {
+          input_emoji_ids: emojiIds,
+        });
+        if (error) throw error;
+        if (data) {
+          setDetails(prev => prev ? { ...prev, is_favorited: true } : null);
+          invalidateFavorites();
+        }
+        return data;
+      }
     } catch (err) {
       console.error('Error toggling favorite:', err);
       return details.is_favorited;

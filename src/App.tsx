@@ -24,6 +24,7 @@ import { FanmarkAccessByShortId } from "./components/FanmarkAccessByShortId";
 import FanmarkDetailsPage from "./pages/FanmarkDetailsPage";
 import PlanSelection from "./pages/PlanSelection";
 import FanmarkPublicQR from "./pages/FanmarkPublicQR";
+import Favorites from "./pages/Favorites";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const MainApp = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/favorites" element={<Favorites />} />
             <Route path="/plans" element={<PlanSelection />} />
             <Route path="/fanmarks/:fanmarkId/settings" element={<FanmarkSettingsPage />} />
             <Route path="/fanmarks/:fanmarkId/profile/edit" element={<EmojiProfileEdit />} />

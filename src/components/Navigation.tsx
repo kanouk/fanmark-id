@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { LogOut, User } from 'lucide-react';
+import { Heart, LogOut, User } from 'lucide-react';
 import { MdSpaceDashboard } from 'react-icons/md';
 
 export const Navigation = () => {
@@ -73,6 +73,16 @@ export const Navigation = () => {
                   {user.email}
                 </div>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    navigate('/favorites');
+                  }}
+                  className="cursor-pointer"
+                >
+                  <Heart className="mr-2 h-4 w-4" />
+                  {t('navigation.favorites')}
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={(event) => {
                     event.preventDefault();

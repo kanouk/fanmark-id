@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useTranslation } from '@/hooks/useTranslation';
-import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy, Undo2, QrCode, MoreVertical } from 'lucide-react';
+import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy, Undo2, QrCode, MoreVertical, Heart } from 'lucide-react';
 import { FiTarget, FiLayers, FiCompass, FiStar, FiCheckCircle, FiMoon, FiUser, FiLink, FiFileText, FiClock } from 'react-icons/fi';
 import { FanmarkAcquisition } from './FanmarkAcquisition';
 import { ExtendLicenseDialog, type ExtendLicenseTarget, type ExtendPlanOption } from './ExtendLicenseDialog';
@@ -21,6 +21,7 @@ import { ExtendLicenseDialog, type ExtendLicenseTarget, type ExtendPlanOption } 
 import { supabase } from '@/integrations/supabase/client';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { useFanmarkLimit } from '@/hooks/useFanmarkLimit';
+import { useFavoriteFanmarks } from '@/hooks/useFavoriteFanmarks';
 import { navigateToFanmark, getFanmarkUrlForClipboard } from '@/utils/emojiUrl';
 import { parseDateString } from '@/lib/utils';
 import { deriveLicenseTiming, type LicenseTimingResult } from '@/lib/licenseTiming';
@@ -114,6 +115,9 @@ export const FanmarkDashboard = () => {
   const location = useLocation();
   const { settings } = useSystemSettings();
   const { limit: fanmarkLimit, isUnlimited } = useFanmarkLimit();
+  const { count: favoriteCount, isLoading: favoritesLoading } = useFavoriteFanmarks({
+    enabled: Boolean(user),
+  });
 
   const [fanmarks, setFanmarks] = useState<Fanmark[]>([]);
   const [loading, setLoading] = useState(true);
@@ -667,6 +671,35 @@ export const FanmarkDashboard = () => {
                   className="text-xs text-muted-foreground hover:text-primary hover:underline"
                 >
                   {t('dashboard.stats.upgradePlan')}
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden rounded-3xl border border-primary/25 bg-background/85 shadow-[0_15px_40px_rgba(101,195,200,0.16)] backdrop-blur">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {t('dashboard.stats.favoriteFanmarks')}
+                  </p>
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-3xl font-bold text-primary">
+                      {favoritesLoading ? '—' : favoriteCount}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Heart className="h-6 w-6" />
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => navigate('/favorites', { state: { from: location.pathname } })}
+                  className="text-xs text-muted-foreground hover:text-primary hover:underline"
+                >
+                  {t('dashboard.stats.viewFavorites')}
                 </button>
               </div>
             </CardContent>

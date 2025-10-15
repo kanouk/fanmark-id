@@ -76,6 +76,7 @@
   "navigation": {
     "home": "ホーム",
     "dashboard": "ダッシュボード",
+    "favorites": "お気に入り",
     "profile": "ユーザー設定",
     "userSettings": "ユーザー設定",
     "logout": "ログアウト",
@@ -492,8 +493,10 @@
     "subtitle": "あなたのファンマを管理したり、新しいファンマを探すことができます",
     "stats": {
       "totalFanmarks": "取得済みファンマ",
-      "activeFanmarks": "取得済みファンマ",
+      "activeFanmarks": "稼働中のファンマ",
+      "favoriteFanmarks": "お気に入り",
       "upgradePlan": "もっとファンマを増やす",
+      "viewFavorites": "お気に入りを見る",
       "limitLabel": "上限"
     },
     "tabs": {
@@ -522,7 +525,8 @@
     "acquireLimitReachedTitle": "取得上限に達しています",
     "acquireLimitReachedDescription": "ファンマの枠がいっぱいです",
     "acquireLimitIncreaseCta": "枠をふやす",
-    "visitFanmarkButton": "このファンマへ移動する",
+    "visitFanmarkButton": "ファンマアクセス",
+    "openFanmarkPage": "ファンマページを開く",
     "paymentRequiredMessage": "このファンマは有料です。",
     "paymentRequiredTitle": "支払いが必要です",
     "paymentRequiredDescription": "このファンマの取得には支払いが必要です。",
@@ -630,6 +634,27 @@
       "planPrice": "¥{price}",
       "planUnavailable": "利用可能な延長プランがありません"
     }
+  },
+  "favorites": {
+    "title": "お気に入りのファンマ",
+    "subtitle": "お気に入り登録したファンマをすぐに呼び出せます。",
+    "loadError": "お気に入りの取得に失敗しました。もう一度お試しください。",
+    "emptyTitle": "まだお気に入りがありません",
+    "emptyDescription": "ファンマを探して、お気に入りに追加するとここに一覧が表示されます。",
+    "exploreFanmarks": "ファンマを探す",
+    "ownerLabel": "現在の保有者",
+    "ownerUnknown": "不明",
+    "ownerNotAssigned": "未割り当て",
+    "statusLabel": "ライセンス状況",
+    "statusUnknown": "ステータス未取得",
+    "statusUnclaimed": "未取得",
+    "statusClaimedExternal": "外部で取得済み",
+    "statusOwnedByUser": "あなたが保有",
+    "viewDetails": "詳細を見る",
+    "openFanmark": "ファンマを開く",
+    "unclaimedBadge": "未取得",
+    "untitledFanmark": "名前未設定のファンマ",
+    "notRegisteredShort": "未登録"
   },
   "registration": {
     "title": "ファンマを登録",

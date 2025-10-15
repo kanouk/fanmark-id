@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Search, Sparkles, ExternalLink, Plus } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Search, Sparkles, ExternalLink, Plus, Heart } from 'lucide-react';
 import { FiInfo, FiAlertTriangle } from 'react-icons/fi';
 import FanmarkSearch from '@/components/FanmarkSearch';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -25,6 +25,7 @@ import { FanmarkStatusBadge } from '@/components/FanmarkStatusBadge';
 import { EmojiInputUtilities } from '@/components/EmojiInput';
 import { FanmarkAcquisitionLoading } from '@/components/FanmarkAcquisitionLoading';
 import { supabase } from '@/integrations/supabase/client';
+import { useFavoriteFanmarks, useInvalidateFavoriteFanmarks } from '@/hooks/useFavoriteFanmarks';
 
 const SCROLL_TARGET_KEY = 'fanmark-search:scroll-target';
 
@@ -51,10 +52,16 @@ export const FanmarkAcquisition = ({
   const navigate = useNavigate();
   const location = useLocation();
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const { favorites, isLoading: favoritesLoading } = useFavoriteFanmarks({
+    enabled: Boolean(user),
+  });
+  const invalidateFavorites = useInvalidateFavoriteFanmarks();
 
   const [searchResult, setSearchResult] = useState<FanmarkSearchResult | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [favoriteOverride, setFavoriteOverride] = useState<boolean | null>(null);
+  const [favoriteProcessing, setFavoriteProcessing] = useState(false);
   const normalizeQuery = useCallback((value: string | undefined) => {
     if (!value) return '';
     const extracted = extractEmojiString(value);
@@ -81,6 +88,29 @@ export const FanmarkAcquisition = ({
   }, [searchResult?.owner?.user_id, user?.id]);
 
   const isTaken = useMemo(() => searchResult?.status === 'taken' || searchResult?.status === 'not_available', [searchResult?.status]);
+  const canNavigateToDetail = Boolean(searchResult?.short_id);
+  const displayedFanmark = searchResult?.fanmark || searchResult?.user_input_fanmark || '';
+  const favoriteSequenceKeys = useMemo(() => {
+    return new Set(
+      favorites.map((favorite) => favorite.normalizedEmojiIds.join(','))
+    );
+  }, [favorites]);
+  const currentNormalizedKey = useMemo(() => {
+    const normalized = Array.isArray(searchResult?.normalized_emoji_ids)
+      ? (searchResult?.normalized_emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
+      : [];
+    return normalized.join(',');
+  }, [searchResult?.normalized_emoji_ids]);
+  const isFavorited = useMemo(() => {
+    if (!currentNormalizedKey) return false;
+    return favoriteSequenceKeys.has(currentNormalizedKey);
+  }, [favoriteSequenceKeys, currentNormalizedKey]);
+  const effectiveIsFavorited = favoriteOverride ?? isFavorited;
+  const isFavoriteButtonDisabled = favoriteProcessing || (!!user && favoritesLoading);
+  useEffect(() => {
+    setFavoriteOverride(null);
+    setFavoriteProcessing(false);
+  }, [searchResult?.id]);
 
   const getSearchAreaBackgroundClass = useMemo(() => {
     if (!searchResult || !searchResult.user_input_fanmark || searchResult.error) {
@@ -171,6 +201,51 @@ export const FanmarkAcquisition = ({
 
     navigateToFanmark(searchResult.fanmark || searchResult.user_input_fanmark, true);
   }, [searchResult?.fanmark, searchResult?.user_input_fanmark]);
+
+  const handleToggleFavorite = useCallback(async () => {
+    if (!searchResult) return;
+    const emojiIds = Array.isArray(searchResult.emoji_ids)
+      ? (searchResult.emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
+      : [];
+    if (emojiIds.length === 0) return;
+
+    if (!user) {
+      onRequireAuth?.(searchResult.user_input_fanmark ?? displayedFanmark);
+      return;
+    }
+
+    setFavoriteProcessing(true);
+    try {
+      if (effectiveIsFavorited) {
+        const { data, error } = await supabase.rpc('remove_fanmark_favorite', {
+          input_emoji_ids: emojiIds,
+        });
+        if (error) throw error;
+        if (data) {
+          setFavoriteOverride(false);
+          invalidateFavorites();
+        }
+      } else {
+        const { data, error } = await supabase.rpc('add_fanmark_favorite', {
+          input_emoji_ids: emojiIds,
+        });
+        if (error) throw error;
+        if (data) {
+          setFavoriteOverride(true);
+          invalidateFavorites();
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      toast({
+        title: t('common.error'),
+        description: t('favorites.loadError'),
+        variant: 'destructive',
+      });
+    } finally {
+      setFavoriteProcessing(false);
+    }
+  }, [displayedFanmark, effectiveIsFavorited, invalidateFavorites, onRequireAuth, searchResult, t, toast, user]);
 
   useEffect(() => {
     if (!rememberSearch || !storageKey) {
@@ -423,17 +498,48 @@ export const FanmarkAcquisition = ({
                 </Button>
               )}
 
-              {/* Show visit button for taken fanmarks */}
-              {isTaken && (searchResult?.fanmark || searchResult?.user_input_fanmark) && (
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="rounded-full px-8 py-3 gap-3 text-base font-semibold border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all duration-300"
-                  onClick={handleVisitFanmark}
-                >
-                  <ExternalLink className="h-5 w-5" />
-                  {t('dashboard.visitFanmarkButton')}
-                </Button>
+              {/* Action buttons for taken or discovered fanmarks */}
+              {displayedFanmark && (
+                <div className="flex w-full flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap">
+                  {isTaken && (
+                    <>
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="rounded-full px-8 py-3 gap-3 text-base font-semibold border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all duration-300"
+                        onClick={handleVisitFanmark}
+                  >
+                    <ExternalLink className="h-5 w-5" />
+                    {t('dashboard.visitFanmarkButton')}
+                      </Button>
+                      {canNavigateToDetail && searchResult?.short_id && (
+                        <Button
+                          size="lg"
+                          variant="outline"
+                          className="rounded-full px-8 py-3 gap-3 text-base font-semibold border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all duration-300"
+                          asChild
+                    >
+                      <Link to={`/f/${searchResult.short_id}`} className="flex items-center gap-3">
+                        <Sparkles className="h-5 w-5" />
+                        {t('dashboard.openFanmarkPage')}
+                      </Link>
+                    </Button>
+                      )}
+                    </>
+                  )}
+                  <Button
+                    size="lg"
+                    variant={effectiveIsFavorited ? 'default' : 'outline'}
+                    className={`rounded-full px-8 py-3 gap-3 text-base font-semibold transition-all duration-300 ${
+                      effectiveIsFavorited ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'border-primary/20 hover:border-primary/40 hover:bg-primary/5'
+                    }`}
+                    onClick={handleToggleFavorite}
+                    disabled={isFavoriteButtonDisabled}
+                  >
+                    <Heart className={`h-5 w-5 ${effectiveIsFavorited ? 'fill-current' : ''}`} />
+                    {effectiveIsFavorited ? t('fanmarkDetails.unfavorite') : t('fanmarkDetails.favorite')}
+                  </Button>
+                </div>
               )}
 
               {/* エラーメッセージ */}

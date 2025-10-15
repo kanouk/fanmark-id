@@ -76,6 +76,7 @@
   "navigation": {
     "home": "Home",
     "dashboard": "Dashboard",
+    "favorites": "Favorites",
     "profile": "User Settings",
     "userSettings": "User Settings",
     "logout": "Logout",
@@ -494,7 +495,9 @@
     "stats": {
       "totalFanmarks": "Fanmarks obtained",
       "activeFanmarks": "Active fanmarks",
+      "favoriteFanmarks": "Favorite fanmarks",
       "upgradePlan": "Need more fanmarks?",
+      "viewFavorites": "View favorites",
       "limitLabel": "Limit"
     },
     "tabs": {
@@ -523,7 +526,8 @@
     "acquireLimitReachedTitle": "You've reached the limit",
     "acquireLimitReachedDescription": "Fanmark slots are full",
     "acquireLimitIncreaseCta": "Increase slots",
-    "visitFanmarkButton": "Visit this fanmark",
+    "visitFanmarkButton": "Fanmark access",
+    "openFanmarkPage": "Open fanmark page",
     "paymentRequiredMessage": "This fanmark requires payment.",
     "paymentRequiredTitle": "Payment required",
     "paymentRequiredDescription": "This fanmark requires payment to obtain.",
@@ -631,6 +635,27 @@
       "planPrice": "¥{price}",
       "planUnavailable": "No extension plans available"
     }
+  },
+  "favorites": {
+    "title": "Your Favorite Fanmarks",
+    "subtitle": "Quickly revisit the fanmarks you've marked as favorites.",
+    "loadError": "We couldn’t load your favorites. Please try again.",
+    "emptyTitle": "No favorites yet",
+    "emptyDescription": "Explore fanmarks and mark the ones you love to build your favorites list.",
+    "exploreFanmarks": "Explore fanmarks",
+    "ownerLabel": "Current owner",
+    "ownerUnknown": "Unknown owner",
+    "ownerNotAssigned": "Not assigned",
+    "statusLabel": "License status",
+    "statusUnknown": "Status unknown",
+    "statusUnclaimed": "Unclaimed",
+    "statusClaimedExternal": "Claimed externally",
+    "statusOwnedByUser": "Owned by you",
+    "viewDetails": "Open details",
+    "openFanmark": "Visit fanmark",
+    "unclaimedBadge": "Unclaimed",
+    "untitledFanmark": "Untitled fanmark",
+    "notRegisteredShort": "N/A"
   },
   "registration": {
     "title": "Obtain Your Fanmark",

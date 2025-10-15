@@ -193,31 +193,130 @@ export type Database = {
           },
         ]
       }
+      fanmark_discoveries: {
+        Row: {
+          availability_status: string
+          emoji_ids: string[]
+          favorite_count: number
+          fanmark_id: string | null
+          first_seen_at: string
+          id: string
+          last_seen_at: string
+          normalized_emoji_ids: string[]
+          search_count: number
+        }
+        Insert: {
+          availability_status?: string
+          emoji_ids: string[]
+          favorite_count?: number
+          fanmark_id?: string | null
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          normalized_emoji_ids: string[]
+          search_count?: number
+        }
+        Update: {
+          availability_status?: string
+          emoji_ids?: string[]
+          favorite_count?: number
+          fanmark_id?: string | null
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          normalized_emoji_ids?: string[]
+          search_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fanmark_discoveries_fanmark_id_fkey"
+            columns: ["fanmark_id"]
+            isOneToOne: false
+            referencedRelation: "fanmarks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fanmark_events: {
+        Row: {
+          created_at: string
+          discovery_id: string | null
+          event_type: string
+          id: number
+          normalized_emoji_ids: string[]
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          discovery_id?: string | null
+          event_type: string
+          id?: number
+          normalized_emoji_ids: string[]
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          discovery_id?: string | null
+          event_type?: string
+          id?: number
+          normalized_emoji_ids?: string[]
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fanmark_events_discovery_id_fkey"
+            columns: ["discovery_id"]
+            isOneToOne: false
+            referencedRelation: "fanmark_discoveries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fanmark_favorites: {
         Row: {
           created_at: string
-          fanmark_id: string
+          discovery_id: string
+          fanmark_id: string | null
           id: string
+          normalized_emoji_ids: string[]
           user_id: string
         }
         Insert: {
           created_at?: string
-          fanmark_id: string
+          discovery_id: string
+          fanmark_id?: string | null
           id?: string
+          normalized_emoji_ids: string[]
           user_id: string
         }
         Update: {
           created_at?: string
-          fanmark_id?: string
+          discovery_id?: string
+          fanmark_id?: string | null
           id?: string
+          normalized_emoji_ids?: string[]
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fanmark_favorites_discovery_id_fkey"
+            columns: ["discovery_id"]
+            isOneToOne: false
+            referencedRelation: "fanmark_discoveries"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fanmark_favorites_fanmark_id_fkey"
             columns: ["fanmark_id"]
             isOneToOne: false
             referencedRelation: "fanmarks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fanmark_favorites_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -862,9 +961,43 @@ export type Database = {
         Args: { input_ids: string[] }
         Returns: string[]
       }
-      toggle_fanmark_favorite: {
-        Args: { fanmark_uuid: string }
+      record_fanmark_search: {
+        Args: { input_emoji_ids: string[] }
+        Returns: string
+      }
+      add_fanmark_favorite: {
+        Args: { input_emoji_ids: string[] }
         Returns: boolean
+      }
+      remove_fanmark_favorite: {
+        Args: { input_emoji_ids: string[] }
+        Returns: boolean
+      }
+      get_favorite_fanmarks: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          access_type: string | null
+          availability_status: string
+          current_license_end: string | null
+          current_license_start: string | null
+          current_license_status: string | null
+          current_owner_display_name: string | null
+          current_owner_username: string | null
+          discovery_id: string
+          emoji_ids: string[] | null
+          fanmark_id: string | null
+          fanmark_name: string | null
+          favorite_count: number
+          favorite_id: string
+          favorited_at: string
+          is_password_protected: boolean
+          normalized_emoji_ids: string[]
+          search_count: number
+          sequence_key: string
+          short_id: string | null
+          target_url: string | null
+          text_content: string | null
+        }[]
       }
       upsert_fanmark_password_config: {
         Args: {

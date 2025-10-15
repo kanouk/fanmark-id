@@ -287,6 +287,12 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
 
       onSearchCompleted?.(normalizedQuery);
 
+      try {
+        await supabase.rpc('record_fanmark_search', { input_emoji_ids: emojiIds });
+      } catch (searchRecordError) {
+        console.warn('Failed to record fanmark search:', searchRecordError);
+      }
+
       // 未登録のファンマークは即座に available 扱い
       if (!availability.fanmark_id) {
         setResult({
