@@ -141,37 +141,44 @@ export default function FanmarkDetailsPage() {
       <Navigation />
       <main className="flex-1">
         <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
-          <section className="p-6 text-center sm:p-10">
-            <div className="flex flex-col items-center gap-6">
-            <div className="flex flex-wrap items-center justify-center gap-3 rounded-[2.75rem] border border-primary/20 bg-primary/10 px-8 py-6 text-5xl shadow-inner md:px-10 md:py-7 md:text-6xl">
-              {segmentEmojiSequence(details.fanmark).map((segment, index) => (
-                <span key={`${segment}-${index}`} className="inline-flex min-w-[2.4rem] justify-center">
-                  {segment}
-                </span>
-              ))}
-            </div>
-            <Badge className="rounded-full border border-border/50 bg-muted/60 px-3 py-1 text-[0.7rem] font-medium tracking-wide text-muted-foreground">
-              {details.short_id}
-            </Badge>
-            <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center">
-              {user && (
+          <section className="relative p-6 pb-6 pt-16 text-center sm:px-10 sm:pb-10 sm:pt-20">
+            {user && (
+              <div className="absolute right-6 top-2 sm:right-10 sm:top-4">
                 <Button
-                  variant={details.is_favorited ? 'default' : 'outline'}
+                  size="icon"
+                  variant="ghost"
                   onClick={toggleFavorite}
-                  className={`gap-2 sm:w-auto ${details.is_favorited ? 'bg-primary text-primary-foreground' : ''}`}
+                  className={`h-12 w-12 rounded-full border border-transparent transition-colors duration-200 ${
+                    details.is_favorited
+                      ? 'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary'
+                      : 'bg-background/80 text-muted-foreground hover:bg-primary/10 hover:text-primary'
+                  }`}
+                  aria-label={details.is_favorited ? t('fanmarkDetails.unfavorite') : t('fanmarkDetails.favorite')}
                 >
-                  <Heart className={`h-4 w-4 ${details.is_favorited ? 'fill-current' : ''}`} />
-                  {details.is_favorited ? t('fanmarkDetails.unfavorite') : t('fanmarkDetails.favorite')}
+                  <Heart className={`h-6 w-6 ${details.is_favorited ? 'fill-current' : ''}`} />
                 </Button>
-              )}
-              <Button variant="secondary" asChild className="gap-2 sm:w-auto">
-                <a href={`/${encodeEmojiForUrl(details.fanmark)}`} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4" />
-                  {t('fanmarkDetails.visitPage')}
-                </a>
-              </Button>
+              </div>
+            )}
+            <div className="flex flex-col items-center gap-6">
+              <div className="flex flex-wrap items-center justify-center gap-3 rounded-[2.75rem] border border-primary/20 bg-primary/10 px-8 py-6 text-5xl shadow-inner md:px-10 md:py-7 md:text-6xl">
+                {segmentEmojiSequence(details.fanmark).map((segment, index) => (
+                  <span key={`${segment}-${index}`} className="inline-flex min-w-[2.4rem] justify-center">
+                    {segment}
+                  </span>
+                ))}
+              </div>
+              <Badge className="rounded-full border border-border/50 bg-muted/60 px-3 py-1 text-[0.7rem] font-medium tracking-wide text-muted-foreground">
+                {details.short_id}
+              </Badge>
+              <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center">
+                <Button variant="secondary" asChild className="gap-2 sm:w-auto">
+                  <a href={`/${encodeEmojiForUrl(details.fanmark)}`} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4" />
+                    {t('fanmarkDetails.visitPage')}
+                  </a>
+                </Button>
+              </div>
             </div>
-          </div>
           </section>
           <section className="mt-10">
           <Card className="border border-primary/10 bg-muted/40 backdrop-blur rounded-3xl">

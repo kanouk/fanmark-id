@@ -246,6 +246,12 @@ export const FanmarkAcquisition = ({
       setFavoriteProcessing(false);
     }
   }, [displayedFanmark, effectiveIsFavorited, invalidateFavorites, onRequireAuth, searchResult, t, toast, user]);
+  const canShowFavoriteButton = Boolean(
+    searchResult &&
+    displayedFanmark &&
+    !searchResult.error &&
+    searchResult.status !== 'invalid',
+  );
 
   useEffect(() => {
     if (!rememberSearch || !storageKey) {
@@ -349,13 +355,13 @@ export const FanmarkAcquisition = ({
           </AlertDialogHeader>
           <AlertDialogFooter className="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <AlertDialogCancel
-              className="h-11 rounded-full border border-border bg-transparent px-6 text-sm font-semibold text-muted-foreground hover:bg-primary/10 hover:text-foreground"
+              className="h-10 rounded-full border border-border bg-transparent px-5 text-sm font-semibold text-muted-foreground hover:bg-primary/10 hover:text-foreground"
               disabled={isRegistering}
             >
               {t('common.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
-              className="h-11 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-lg hover:bg-primary/90"
+              className="h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-md hover:bg-primary/90"
               onClick={handleConfirmAcquire}
               disabled={isRegistering}
             >
@@ -372,8 +378,8 @@ export const FanmarkAcquisition = ({
               <Search className="h-6 w-6 text-primary" />
               {t('dashboard.searchFanma')}
             </span>
-            {searchResult && (searchResult.fanmark || searchResult.user_input_fanmark) && !searchResult.error && (
-              <div className="flex-shrink-0">
+            {(searchResult && (searchResult.fanmark || searchResult.user_input_fanmark) && !searchResult.error) && (
+              <div className="flex flex-shrink-0 items-center gap-2">
                 <FanmarkStatusBadge
                   status={
                     searchResult.status === 'available'
@@ -381,16 +387,30 @@ export const FanmarkAcquisition = ({
                       : (isOwnedByMe ? 'taken' : 'unavailable')
                   }
                 />
+                {canShowFavoriteButton && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className={`h-9 w-9 rounded-full border border-transparent transition-colors duration-200 ${
+                      effectiveIsFavorited
+                        ? 'bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary'
+                        : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
+                    }`}
+                    onClick={handleToggleFavorite}
+                    disabled={isFavoriteButtonDisabled}
+                    aria-label={effectiveIsFavorited ? t('fanmarkDetails.unfavorite') : t('fanmarkDetails.favorite')}
+                  >
+                    <Heart className={`h-4 w-4 ${effectiveIsFavorited ? 'fill-current' : ''}`} />
+                  </Button>
+                )}
               </div>
             )}
           </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            {t('dashboard.searchSubtitle')}
-          </p>
+          <div className="h-6" />
         </CardHeader>
         <CardContent className="px-6 pb-6">
           {/* ファンマ入力グループ - 入力と便利ツールが一体 */}
-          <div className="mt-6 mb-10">
+          <div className="mt-6 mb-10 space-y-6">
             <FanmarkSearch
               onSignupPrompt={() => onRequireAuth?.('')}
               statusVariant={user ? 'authenticated' : 'public'}
@@ -401,11 +421,11 @@ export const FanmarkAcquisition = ({
             />
 
             {/* 便利ツール - レスポンシブ間隔 */}
-            <div className="flex justify-center mt-1 sm:mt-6">
-            <EmojiInputUtilities
-              disabled={false}
-              hasValue={!!(searchResult?.fanmark || searchResult?.user_input_fanmark)}
-              onPaste={async () => {
+            <div className="flex justify-center">
+              <EmojiInputUtilities
+                disabled={false}
+                hasValue={!!(searchResult?.fanmark || searchResult?.user_input_fanmark)}
+                onPaste={async () => {
                 try {
                   if (!navigator.clipboard) {
                     toast({
@@ -451,7 +471,7 @@ export const FanmarkAcquisition = ({
                   });
                 }
               }}
-              onDirectInput={(input: string) => {
+                onDirectInput={(input: string) => {
                 if (!input.trim()) return;
 
                 const extracted = extractEmojiString(input);
@@ -471,29 +491,29 @@ export const FanmarkAcquisition = ({
                   description: t('common.inputCompleted'),
                 });
               }}
-              onClear={() => {
+                onClear={() => {
                 clearQuery();
                 toast({
                   title: t('common.clearCompletedTitle'),
                 });
               }}
-              value={query}
-            />
+                value={query}
+              />
             </div>
           </div>
 
           {/* アクションボタン - 入力グループから分離 */}
           {searchResult && (
-            <div className="flex flex-col gap-4 items-center">
+            <div className="flex flex-col gap-3 items-center">
               {/* Show acquisition button for available fanmarks */}
               {isResultAcquirable && (
                 <Button
-                  size="lg"
-                  className="rounded-full px-8 py-3 gap-3 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                  size="default"
+                  className="rounded-full gap-2 px-5 text-sm font-semibold shadow-md hover:shadow-lg transition-colors duration-200"
                   onClick={handleAcquireRequest}
                   disabled={!searchResult || (fanmarkLimit !== -1 && remainingCapacity <= 0)}
                 >
-                  <Plus className="h-5 w-5" />
+                  <Plus className="h-4 w-4" />
                   {user ? t('dashboard.acquireButton') : t('dashboard.acquireLoginButton')}
                 </Button>
               )}
@@ -504,41 +524,29 @@ export const FanmarkAcquisition = ({
                   {isTaken && (
                     <>
                       <Button
-                        size="lg"
+                        size="default"
                         variant="outline"
-                        className="rounded-full px-8 py-3 gap-3 text-base font-semibold border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all duration-300"
+                        className="rounded-full gap-2 px-5 text-sm font-semibold border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-colors duration-200"
                         onClick={handleVisitFanmark}
-                  >
-                    <ExternalLink className="h-5 w-5" />
-                    {t('dashboard.visitFanmarkButton')}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        {t('dashboard.visitFanmarkButton')}
                       </Button>
                       {canNavigateToDetail && searchResult?.short_id && (
                         <Button
-                          size="lg"
+                          size="default"
                           variant="outline"
-                          className="rounded-full px-8 py-3 gap-3 text-base font-semibold border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all duration-300"
+                          className="rounded-full gap-2 px-5 text-sm font-semibold border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-colors duration-200"
                           asChild
-                    >
-                      <Link to={`/f/${searchResult.short_id}`} className="flex items-center gap-3">
-                        <Sparkles className="h-5 w-5" />
-                        {t('dashboard.openFanmarkPage')}
-                      </Link>
-                    </Button>
+                        >
+                          <Link to={`/f/${searchResult.short_id}`} className="flex items-center gap-2">
+                            <Sparkles className="h-4 w-4" />
+                            {t('dashboard.openFanmarkPage')}
+                          </Link>
+                        </Button>
                       )}
                     </>
                   )}
-                  <Button
-                    size="lg"
-                    variant={effectiveIsFavorited ? 'default' : 'outline'}
-                    className={`rounded-full px-8 py-3 gap-3 text-base font-semibold transition-all duration-300 ${
-                      effectiveIsFavorited ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'border-primary/20 hover:border-primary/40 hover:bg-primary/5'
-                    }`}
-                    onClick={handleToggleFavorite}
-                    disabled={isFavoriteButtonDisabled}
-                  >
-                    <Heart className={`h-5 w-5 ${effectiveIsFavorited ? 'fill-current' : ''}`} />
-                    {effectiveIsFavorited ? t('fanmarkDetails.unfavorite') : t('fanmarkDetails.favorite')}
-                  </Button>
                 </div>
               )}
 

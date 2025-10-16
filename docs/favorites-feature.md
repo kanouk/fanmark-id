@@ -12,6 +12,9 @@
   - `record_fanmark_search(input_emoji_ids uuid[])`：検索時に discovery を UPSERT し `search_count` を加算。
   - `add_fanmark_favorite` / `remove_fanmark_favorite`：seq_key ベースでお気に入りの追加・削除と `favorite_count` メンテ。
   - `get_favorite_fanmarks`：discovery／fanmarks／ライセンス諸テーブルを結合して一覧表示用データを返却。
+- `get_fanmark_details_by_short_id` はお気に入り判定に `seq_key(normalized_emoji_ids)` を使用し、`fanmark_id` が未連携でも状態が正しく反映されるようにした。
+- `add_fanmark_favorite` は `fanmarks` から直接 `fanmark_id` を解決するフォールバックを追加し、discovery/favorites の整合を自動補完する。
+- `link_fanmark_discovery` を全 fanmark に対して再実行し、既存のお気に入りにも最新の `fanmark_id` を行き渡らせるバックフィルを含めた。
 - 取得時にはトリガ／RPC で `fanmark_discoveries.fanmark_id` と `availability_status` を更新し、候補→本登録の整合を取る。
 - RLS 方針
   - `fanmark_discoveries` は SELECT を全員許可（書き込みはセキュリティディファイナ RPC 経由）。

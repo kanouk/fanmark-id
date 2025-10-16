@@ -303,7 +303,7 @@ const Index = () => {
       >
         <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-primary/15 via-accent/10 to-transparent" aria-hidden />
         <div className="container relative mx-auto px-4">
-          <h2 className="text-center text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+          <h2 className="text-center text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             {t('sections.howUsed')} 🚀
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-center text-base text-muted-foreground sm:text-lg">
@@ -346,7 +346,7 @@ const Index = () => {
       <section className="relative overflow-hidden py-24">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-accent/20 via-primary/15 to-transparent" aria-hidden />
         <div className="container relative mx-auto px-4">
-          <h2 className="text-center text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+          <h2 className="text-center text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             {t('sections.howItWorks')} 🛠️
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-center text-base text-muted-foreground sm:text-lg">
@@ -379,7 +379,7 @@ const Index = () => {
       <section className="relative overflow-hidden bg-gradient-to-br from-primary via-accent to-primary py-24 text-primary-foreground">
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-3xl text-center">
-            <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               {t('sections.cta')} ✨
             </h2>
             <p className="mt-6 text-lg text-primary-foreground/90 sm:text-xl">
