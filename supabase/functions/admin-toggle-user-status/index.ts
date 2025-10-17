@@ -58,8 +58,8 @@ Deno.serve(async (req) => {
   const { userId, suspend, reason, bannedUntil } = payload;
 
   const updatePayload = suspend
-    ? { banned_until: computeBannedUntil(bannedUntil) }
-    : { banned_until: null };
+    ? { ban_duration: computeBannedUntil(bannedUntil) }
+    : { ban_duration: "none" };
 
   const { data, error } = await supabase.auth.admin.updateUserById(userId, updatePayload);
 
@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
     userId,
     {
       reason: reason ?? null,
-      bannedUntil: data?.user?.banned_until ?? null,
+      bannedUntil: data?.user?.ban_duration ?? null,
     },
   );
 
@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
       success: true,
       userId,
       suspend,
-      bannedUntil: data?.user?.banned_until ?? null,
+      bannedUntil: data?.user?.ban_duration ?? null,
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } },
   );

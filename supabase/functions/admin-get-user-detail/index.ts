@@ -69,9 +69,9 @@ interface UserDetailResponse {
 }
 
 function getStatus(user: User): "active" | "suspended" {
-  if (!user?.banned_until) return "active";
+  if (!user?.ban_duration) return "active";
   try {
-    const bannedUntil = new Date(user.banned_until);
+    const bannedUntil = new Date(user.ban_duration);
     return bannedUntil.getTime() > Date.now() ? "suspended" : "active";
   } catch (_err) {
     return "active";
@@ -189,9 +189,9 @@ Deno.serve(async (req) => {
       excludedAt: row.excluded_at ?? null,
       excludedFromPlan: row.excluded_from_plan ?? null,
       fanmarkId: row.fanmark_id,
-      emoji: row.fanmarks?.user_input_fanmark ?? "",
-      fanmarkName: row.fanmark_basic_configs?.fanmark_name ?? null,
-      accessType: row.fanmark_basic_configs?.access_type ?? null,
+      emoji: Array.isArray(row.fanmarks) ? row.fanmarks[0]?.user_input_fanmark ?? "" : row.fanmarks?.user_input_fanmark ?? "",
+      fanmarkName: Array.isArray(row.fanmark_basic_configs) ? row.fanmark_basic_configs[0]?.fanmark_name ?? null : row.fanmark_basic_configs?.fanmark_name ?? null,
+      accessType: Array.isArray(row.fanmark_basic_configs) ? row.fanmark_basic_configs[0]?.access_type ?? null : row.fanmark_basic_configs?.access_type ?? null,
     });
   }
 
@@ -224,7 +224,7 @@ Deno.serve(async (req) => {
       lastSignInAt: authUser.last_sign_in_at ?? null,
       phone: authUser.phone ?? null,
       status: getStatus(authUser),
-      bannedUntil: authUser.banned_until ?? null,
+      bannedUntil: authUser.ban_duration ?? null,
       factors: (authUser.factors ?? []).map((factor) => ({
         type: factor.factor_type,
         createdAt: factor.created_at ?? null,
