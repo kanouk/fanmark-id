@@ -360,7 +360,7 @@ export const FanmarkDashboard = () => {
       // Process fanmarks with their configs
       const fanmarksWithDefaults = licenses
         .map((license) => {
-          const fanmark = license.fanmarks as {
+          const fanmark = license.fanmarks as unknown as {
             id: string;
             user_input_fanmark?: string | null;
             emoji_ids?: (string | null)[] | null;

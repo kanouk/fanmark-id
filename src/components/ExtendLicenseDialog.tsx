@@ -60,7 +60,7 @@ export const ExtendLicenseDialog = ({
       setLoadingPlans(true);
       try {
         const { data, error } = await supabase
-          .from('fanmark_tier_extension_prices')
+          .from('fanmark_tier_extension_prices' as any)
           .select('months, price_yen')
           .eq('tier_level', target.tierLevel)
           .eq('is_active', true)
@@ -68,7 +68,8 @@ export const ExtendLicenseDialog = ({
 
         if (error) throw error;
 
-        const options = (data ?? []).map(item => ({ months: item.months, price: item.price_yen }));
+        const typedData = (data ?? []) as unknown as Array<{ months: number; price_yen: number }>;
+        const options = typedData.map(item => ({ months: item.months, price: item.price_yen }));
         setPlans(options);
 
         if (!selectedPlanRef.current) {

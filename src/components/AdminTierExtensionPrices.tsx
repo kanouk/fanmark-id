@@ -40,18 +40,19 @@ export const AdminTierExtensionPrices = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from("fanmark_tier_extension_prices")
+        .from("fanmark_tier_extension_prices" as any)
         .select("*")
         .order("tier_level", { ascending: true })
         .order("months", { ascending: true });
 
       if (error) throw error;
 
-      setPrices(data || []);
+      const typedData = (data || []) as unknown as ExtensionPrice[];
+      setPrices(typedData);
 
       // Initialize edited prices with current values
       const initial: Record<string, number> = {};
-      (data || []).forEach(price => {
+      typedData.forEach(price => {
         initial[price.id] = price.price_yen;
       });
       setEditedPrices(initial);
@@ -85,7 +86,7 @@ export const AdminTierExtensionPrices = () => {
     setUpdating(true);
     try {
       const { error } = await supabase
-        .from("fanmark_tier_extension_prices")
+        .from("fanmark_tier_extension_prices" as any)
         .update({ price_yen: newPrice })
         .eq("id", id);
 
@@ -113,7 +114,7 @@ export const AdminTierExtensionPrices = () => {
     setUpdating(true);
     try {
       const { error } = await supabase
-        .from("fanmark_tier_extension_prices")
+        .from("fanmark_tier_extension_prices" as any)
         .update({ is_active: !currentActive })
         .eq("id", id);
 

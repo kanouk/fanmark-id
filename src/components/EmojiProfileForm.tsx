@@ -52,6 +52,11 @@ const profileSchema = z.object({
   }).optional(),
   theme_settings: z.object({
     cover_image_url: z.string().optional(),
+    cover_image_dimensions: z.object({
+      width: z.number(),
+      height: z.number(),
+    }).optional(),
+    cover_image_position: z.number().optional(),
     profile_image_url: z.string().optional(),
     theme_color: z.string().optional(),
     button_style: z.string().optional(),
@@ -309,10 +314,10 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose, onPre
             <p className="text-sm text-muted-foreground leading-relaxed">
               カバー画像とプロフィール画像をアップロードして、完成イメージを確認してください
             </p>
-            {profile?.fanmark && (
+            {(profile as any)?.fanmark && (
               <div className="flex justify-center pt-2">
                 <span className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-2xl md:text-3xl font-semibold tracking-[0.6em]">
-                  {profile.fanmark.split('').join(' ')}
+                  {(profile as any).fanmark.split('').join(' ')}
                 </span>
               </div>
             )}
