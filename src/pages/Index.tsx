@@ -128,8 +128,10 @@ const Index = () => {
   };
 
   useEffect(() => {
-    let nextPrefill = (location.state as { prefillFanmark?: string } | null)?.prefillFanmark;
-    let shouldClearState = Boolean(nextPrefill);
+    const state = location.state as { prefillFanmark?: string; scrollToSearch?: boolean } | null;
+    let nextPrefill = state?.prefillFanmark;
+    const shouldScrollToSearch = Boolean(state?.scrollToSearch);
+    let shouldClearState = Boolean(nextPrefill || shouldScrollToSearch);
 
     if (!nextPrefill) {
       try {
@@ -145,6 +147,15 @@ const Index = () => {
 
     if (nextPrefill) {
       setPrefilledEmoji(nextPrefill);
+    }
+
+    if (shouldScrollToSearch) {
+      setTimeout(() => {
+        const searchSection = document.getElementById('search');
+        if (searchSection) {
+          searchSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 0);
     }
 
     if (shouldClearState) {

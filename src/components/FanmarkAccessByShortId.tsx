@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Home, AlertCircle } from 'lucide-react';
+import { Loader2, Home, AlertCircle, Sparkles } from 'lucide-react';
 import { FanmarkProfile } from './FanmarkProfile';
 import { FanmarkMessage } from './FanmarkMessage';
 import { PasswordProtection } from './PasswordProtection';
@@ -12,6 +12,8 @@ import { MessageboardLoading } from './MessageboardLoading';
 import { resolveFanmarkDisplay } from '@/lib/emojiConversion';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
+import { LanguageToggle } from '@/components/LanguageToggle';
+import { createFanmarkBadgeStyle } from '@/lib/fanmarkBadge';
 
 interface FanmarkData {
   id: string;
@@ -149,6 +151,17 @@ export const FanmarkAccessByShortId = () => {
     setIsPasswordVerified(true);
   };
 
+  const displayFanmark = useMemo(() => {
+    const raw = fanmark?.fanmark ?? fanmark?.user_input_fanmark ?? '';
+    const trimmed = raw.trim();
+    return trimmed.length > 0 ? trimmed : '✨';
+  }, [fanmark?.fanmark, fanmark?.user_input_fanmark]);
+
+  const badgeStyle = useMemo(
+    () => createFanmarkBadgeStyle(displayFanmark),
+    [displayFanmark]
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex items-center justify-center">
@@ -215,31 +228,63 @@ export const FanmarkAccessByShortId = () => {
         </div>
       );
 
-    case 'inactive':
+    case 'inactive': {
+      const handleGetFanmark = () => {
+        navigate('/', { state: { scrollToSearch: true } });
+      };
+
       return (
-        <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex items-center justify-center">
-          <Card className="w-96">
-            <CardContent className="p-8 text-center space-y-4">
-              <div className="text-6xl mb-4">{fanmark.fanmark || fanmark.user_input_fanmark}</div>
-              <p className="text-lg font-medium text-foreground">
-                {t('common.getYourFanmark')}
-              </p>
-              <div className="flex justify-center">
-                <button
-                  type="button"
-                  onClick={() => navigate('/')}
-                  className="group flex items-center gap-2 text-lg font-semibold text-foreground transition-transform hover:translate-y-[-1px]"
+        <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex flex-col">
+          <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
+            <div className="container mx-auto flex items-center justify-between px-4 py-4 md:px-6">
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                className="group flex items-center gap-2 text-lg font-semibold text-foreground transition-transform hover:-translate-y-0.5"
+              >
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
+                  ✨
+                </span>
+                <span className="text-gradient text-2xl">fanmark.id</span>
+              </button>
+              <LanguageToggle />
+            </div>
+          </header>
+
+          <main className="container mx-auto flex-1 px-4 py-10 md:py-16 flex items-center justify-center">
+            <Card className="w-full max-w-xl overflow-hidden border border-primary/20 bg-background/95 backdrop-blur shadow-[0_25px_60px_rgba(101,195,200,0.18)]">
+              <CardContent className="p-10 text-center space-y-8">
+                <div
+                  className="mx-auto flex items-center justify-center bg-gradient-to-br from-primary/15 via-accent/10 to-blue-100 text-primary shadow-[0_20px_45px_rgba(101,195,200,0.25)]"
+                  style={badgeStyle}
                 >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
-                    ✨
-                  </span>
-                  <span className="text-gradient text-2xl">fanmark.id</span>
-                </button>
+                  {displayFanmark}
+                </div>
+                <div className="space-y-3">
+                  <h1 className="text-2xl font-semibold text-foreground">
+                    {t('common.inactiveTitle')}
+                  </h1>
+                </div>
+                <Button onClick={handleGetFanmark} className="w-full" size="lg">
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  {t('common.getFanmarkCta')}
+                </Button>
+              </CardContent>
+            </Card>
+          </main>
+
+          <footer className="border-t border-border/40 bg-background/80 backdrop-blur">
+            <div className="container mx-auto flex flex-col items-center justify-center gap-3 px-4 py-10 text-center">
+              <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
+                <span className="text-3xl">✨</span>
+                <span className="text-gradient">fanmark.id</span>
               </div>
-            </CardContent>
-          </Card>
+              <p className="text-xs text-muted-foreground">{t('sections.footer')}</p>
+            </div>
+          </footer>
         </div>
       );
+    }
 
     default:
       return (
