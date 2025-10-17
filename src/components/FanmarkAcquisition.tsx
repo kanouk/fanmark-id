@@ -373,13 +373,13 @@ export const FanmarkAcquisition = ({
 
       <Card className={`rounded-3xl border border-primary/15 ${getSearchAreaBackgroundClass} shadow-[0_15px_35px_rgba(101,195,200,0.12)] backdrop-blur transition-colors duration-300`}>
         <CardHeader className="space-y-2 px-6 pt-6 pb-2">
-          <CardTitle className="flex items-center justify-between text-lg font-semibold">
+          <CardTitle className="flex flex-col items-start gap-3 text-lg font-semibold">
             <span className="flex items-center gap-2 text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               <Search className="h-6 w-6 text-primary" />
               {t('dashboard.searchFanma')}
             </span>
             {(searchResult && (searchResult.fanmark || searchResult.user_input_fanmark) && !searchResult.error) && (
-              <div className="flex flex-shrink-0 items-center gap-2">
+              <div className="flex items-center gap-2 self-start">
                 <FanmarkStatusBadge
                   status={
                     searchResult.status === 'available'
