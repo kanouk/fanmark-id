@@ -663,6 +663,291 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_events: {
+        Row: {
+          created_at: string
+          dedupe_key: string | null
+          error_reason: string | null
+          event_type: string
+          event_version: number
+          id: string
+          payload: Json
+          payload_schema: string | null
+          processed_at: string | null
+          retry_count: number
+          source: string
+          status: string
+          trigger_at: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dedupe_key?: string | null
+          error_reason?: string | null
+          event_type: string
+          event_version?: number
+          id?: string
+          payload?: Json
+          payload_schema?: string | null
+          processed_at?: string | null
+          retry_count?: number
+          source: string
+          status?: string
+          trigger_at?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dedupe_key?: string | null
+          error_reason?: string | null
+          event_type?: string
+          event_version?: number
+          id?: string
+          payload?: Json
+          payload_schema?: string | null
+          processed_at?: string | null
+          retry_count?: number
+          source?: string
+          status?: string
+          trigger_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      notification_preferences: {
+        Row: {
+          channel: string
+          created_at: string
+          enabled: boolean
+          event_type: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          enabled?: boolean
+          event_type?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          enabled?: boolean
+          event_type?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notification_rules: {
+        Row: {
+          cancel_condition: string | null
+          channel: string
+          cooldown_window_seconds: number | null
+          created_at: string
+          created_by: string | null
+          delay_seconds: number
+          enabled: boolean
+          event_type: string
+          id: string
+          max_per_user: number | null
+          priority: number
+          segment_filter: Json | null
+          template_id: string
+          template_version: number
+          updated_at: string
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          cancel_condition?: string | null
+          channel: string
+          cooldown_window_seconds?: number | null
+          created_at?: string
+          created_by?: string | null
+          delay_seconds?: number
+          enabled?: boolean
+          event_type: string
+          id?: string
+          max_per_user?: number | null
+          priority?: number
+          segment_filter?: Json | null
+          template_id: string
+          template_version?: number
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          cancel_condition?: string | null
+          channel?: string
+          cooldown_window_seconds?: number | null
+          created_at?: string
+          created_by?: string | null
+          delay_seconds?: number
+          enabled?: boolean
+          event_type?: string
+          id?: string
+          max_per_user?: number | null
+          priority?: number
+          segment_filter?: Json | null
+          template_id?: string
+          template_version?: number
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
+      notification_templates: {
+        Row: {
+          body: string
+          channel: string
+          created_at: string
+          id: string
+          is_active: boolean
+          language: string
+          payload_schema: Json | null
+          summary: string | null
+          template_id: string
+          title: string | null
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          body: string
+          channel: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          language?: string
+          payload_schema?: Json | null
+          summary?: string | null
+          template_id: string
+          title?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          body?: string
+          channel?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          language?: string
+          payload_schema?: Json | null
+          summary?: string | null
+          template_id?: string
+          title?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          channel: string
+          created_at: string
+          delivered_at: string | null
+          error_reason: string | null
+          event_id: string | null
+          expires_at: string | null
+          id: string
+          payload: Json
+          priority: number
+          read_at: string | null
+          read_via: string | null
+          retry_count: number
+          rule_id: string | null
+          status: string
+          template_id: string
+          template_version: number
+          triggered_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          delivered_at?: string | null
+          error_reason?: string | null
+          event_id?: string | null
+          expires_at?: string | null
+          id?: string
+          payload?: Json
+          priority?: number
+          read_at?: string | null
+          read_via?: string | null
+          retry_count?: number
+          rule_id?: string | null
+          status?: string
+          template_id: string
+          template_version?: number
+          triggered_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          delivered_at?: string | null
+          error_reason?: string | null
+          event_id?: string | null
+          expires_at?: string | null
+          id?: string
+          payload?: Json
+          priority?: number
+          read_at?: string | null
+          read_via?: string | null
+          retry_count?: number
+          rule_id?: string | null
+          status?: string
+          template_id?: string
+          template_version?: number
+          triggered_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "notification_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "notification_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications_history: {
+        Row: {
+          archived_at: string
+          id: string
+          original_data: Json
+        }
+        Insert: {
+          archived_at?: string
+          id: string
+          original_data: Json
+        }
+        Update: {
+          archived_at?: string
+          id?: string
+          original_data?: Json
+        }
+        Relationships: []
+      }
       reserved_emoji_patterns: {
         Row: {
           created_at: string
