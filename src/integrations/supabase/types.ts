@@ -846,20 +846,23 @@ export type Database = {
         Returns: {
           access_type: string
           created_at: string
-          current_owner_id: string
+          current_grace_expires_at: string | null
+          current_license_status: string | null
+          current_owner_id: string | null
           emoji_ids: string[]
-          fanmark_name: string
+          fanmark_name: string | null
           has_active_license: boolean
           id: string
+          is_blocked_for_registration: boolean
           is_password_protected: boolean
-          is_public: boolean | null
-          license_end: string
-          license_id: string
+          license_end: string | null
+          license_id: string | null
+          next_available_at: string | null
           normalized_emoji: string
           short_id: string
           status: string
-          target_url: string
-          text_content: string
+          target_url: string | null
+          text_content: string | null
           updated_at: string
           user_input_fanmark: string
         }[]

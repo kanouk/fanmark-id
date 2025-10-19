@@ -28,6 +28,9 @@ export interface FanmarkSearchResult {
     username: string;
     display_name: string;
   };
+  available_at?: string | null;
+  blocking_status?: string | null;
+  is_blocked_for_registration?: boolean;
 }
 
 type FanmarkStatusRaw = 'active' | 'inactive' | 'reserved' | 'archived' | 'pending';
@@ -80,6 +83,8 @@ interface CheckFanmarkAvailabilityResponse {
   tier_level?: number | null;
   price?: number | null;
   license_days?: number | null;
+  available_at?: string | null;
+  blocking_status?: string | null;
 }
 
 interface FanmarkCompleteDataRow {
@@ -91,6 +96,10 @@ interface FanmarkCompleteDataRow {
   status: string;
   has_active_license: boolean;
   current_owner_id: string | null;
+  current_license_status: string | null;
+  current_grace_expires_at: string | null;
+  is_blocked_for_registration: boolean;
+  next_available_at: string | null;
 }
 
 const SKIN_TONE_MODIFIER_REGEX = /\p{Emoji_Modifier}/u;
@@ -239,7 +248,7 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
     }
   };
 
-   const searchFanmarks = async (query: string) => {
+  const searchFanmarks = async (query: string) => {
     setLoading(true);
     try {
       // Get current user
@@ -328,6 +337,9 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
 
       const currentUserId = user?.id || null;
       const isOwnedByCurrentUser = !!(currentUserId && fanmarkData.current_owner_id === currentUserId);
+      const blockingStatus = fanmarkData.current_license_status ?? availability.blocking_status ?? null;
+      const nextAvailableAt = fanmarkData.next_available_at ?? availability.available_at ?? null;
+      const isBlockedForRegistration = fanmarkData.is_blocked_for_registration === true;
 
       // ステータスが active でないものは利用不可として扱う
       if (fanmarkData.status !== 'active') {
@@ -343,6 +355,28 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
           status: 'invalid',
           error: 'This emoji pattern is not allowed or not active.',
           emoji_count: validation.emojiCount,
+          available_at: nextAvailableAt,
+          blocking_status: blockingStatus,
+          is_blocked_for_registration: isBlockedForRegistration,
+        });
+        return;
+      }
+
+      if (isBlockedForRegistration) {
+        setResult({
+          id: fanmarkData.id,
+          user_input_fanmark: fanmarkData.user_input_fanmark,
+          fanmark: resolveFanmarkDisplay(fanmarkData.user_input_fanmark, fanmarkData.emoji_ids),
+          emoji_ids: fanmarkData.emoji_ids,
+          normalized_emoji_ids: normalizedEmojiIds,
+          normalized_emoji: fanmarkData.normalized_emoji,
+          short_id: fanmarkData.short_id,
+          tier_level: 1,
+          status: 'not_available',
+          emoji_count: validation.emojiCount,
+          available_at: nextAvailableAt,
+          blocking_status: blockingStatus,
+          is_blocked_for_registration: true,
         });
         return;
       }
@@ -359,6 +393,9 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
           tier_level: 1,
           status: 'available',
           emoji_count: validation.emojiCount,
+          available_at: nextAvailableAt,
+          blocking_status: blockingStatus,
+          is_blocked_for_registration: false,
         });
         return;
       }
@@ -380,6 +417,9 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
             username: '',
             display_name: '',
           },
+          available_at: nextAvailableAt,
+          blocking_status: blockingStatus,
+          is_blocked_for_registration: false,
         });
         return;
       }
@@ -396,6 +436,9 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
         status: 'not_available',
         emoji_count: validation.emojiCount,
         owner: undefined,
+        available_at: nextAvailableAt,
+        blocking_status: blockingStatus,
+        is_blocked_for_registration: false,
       });
     } catch (error) {
       console.error('Error searching fanmarks:', error);

@@ -46,7 +46,7 @@ export const FanmarkAcquisition = ({
   onRequireAuth,
   rememberSearch = false,
 }: FanmarkAcquisitionProps) => {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -120,6 +120,25 @@ export const FanmarkAcquisition = ({
     // not_available
     return isOwnedByMe ? 'bg-sky-50/30' : 'bg-rose-50/30';
   }, [searchResult, isOwnedByMe]);
+
+  const formattedGraceAvailableAt = useMemo(() => {
+    if (!searchResult?.available_at) return null;
+    const date = new Date(searchResult.available_at);
+    if (Number.isNaN(date.getTime())) return null;
+    try {
+      return new Intl.DateTimeFormat(language === 'ja' ? 'ja-JP' : 'en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(date);
+    } catch {
+      return null;
+    }
+  }, [language, searchResult?.available_at]);
+
+  const isGraceBlocked = searchResult?.blocking_status === 'grace';
 
   const handleAcquireRequest = () => {
     if (!searchResult || !isResultAcquirable) return;
@@ -516,6 +535,20 @@ export const FanmarkAcquisition = ({
                   <Plus className="h-4 w-4" />
                   {user ? t('dashboard.acquireButton') : t('dashboard.acquireLoginButton')}
                 </Button>
+              )}
+
+              {isGraceBlocked && (
+                <div className="w-full rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+                  <div className="flex items-center gap-2 font-semibold">
+                    <FiAlertTriangle className="h-4 w-4" />
+                    {t('dashboard.graceBlockedTitle')}
+                  </div>
+                  <div className="mt-1 text-xs leading-relaxed">
+                    {formattedGraceAvailableAt
+                      ? t('dashboard.graceBlockedDescriptionWithDate', { date: formattedGraceAvailableAt })
+                      : t('dashboard.graceBlockedDescription')}
+                  </div>
+                </div>
               )}
 
               {/* Action buttons for taken or discovered fanmarks */}

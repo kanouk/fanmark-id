@@ -104,6 +104,14 @@ if (existingLicense) {
 }
 ```
 
+### RPCの更新点（2025-12）
+- `check_fanmark_availability(input_emoji_ids uuid[])`
+  - グレース中のライセンスも占有扱いとし、レスポンスに `blocking_status`（`active` / `grace` など）と `available_at`（再取得可能になる目安時刻）を追加。
+- `get_fanmark_complete_data(...)`
+  - 常に最新のライセンスを参照し、`current_license_status` / `current_grace_expires_at` / `is_blocked_for_registration` / `next_available_at` を返却。
+
+これにより検索UIは、失効処理中のファンマを「取得不可」と表示しつつ、再取得可能になる予定時刻を利用者へ案内できる。
+
 ## Edge Functionの動作
 
 ### return-fanmark
