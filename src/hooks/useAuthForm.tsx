@@ -9,6 +9,11 @@ interface CheckEmailExistsResponse {
   exists: boolean;
 }
 
+interface SignUpOptions {
+  invitationCode?: string | null;
+  invitationRequired?: boolean;
+}
+
 export const useAuthForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -59,14 +64,25 @@ export const useAuthForm = () => {
     }
   };
 
-  const signUp = async () => {
+  const signUp = async (options?: SignUpOptions) => {
     if (formData.password !== formData.confirmPassword) {
       setError('パスワードが一致しません');
       return;
     }
 
+    const invitationRequired = Boolean(options?.invitationRequired);
+    const invitationCodeRaw = options?.invitationCode ?? null;
+    const normalizedInvitationCode = invitationCodeRaw ? invitationCodeRaw.trim().toUpperCase() : null;
+
+    if (invitationRequired && !normalizedInvitationCode) {
+      setError(t('invitation.codeRequired'));
+      return;
+    }
+
     setLoading(true);
     setError('');
+
+    let invitationCodeToUse: string | null = normalizedInvitationCode;
 
     try {
       const emailExists = await checkEmailExists(formData.email);
@@ -75,7 +91,30 @@ export const useAuthForm = () => {
         return;
       }
 
-      const { error } = await supabase.auth.signUp({
+      if (invitationRequired && invitationCodeToUse) {
+        const { data, error } = await supabase.rpc('validate_invitation_code', {
+          code_to_check: invitationCodeToUse
+        });
+
+        if (error) {
+          console.error('Error validating invitation code before signup:', error);
+          setError(t('invitation.errorValidating'));
+          return;
+        }
+
+        const result = data?.[0];
+        if (!result?.is_valid) {
+          setError(t('invitation.invalidCode'));
+          return;
+        }
+
+        if ((result.remaining_uses ?? 0) <= 0) {
+          setError(t('invitation.codeFullyUsed'));
+          return;
+        }
+      }
+
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
@@ -84,6 +123,30 @@ export const useAuthForm = () => {
       });
 
       if (error) throw error;
+
+      if (invitationCodeToUse) {
+        const { error: consumeError } = await supabase.rpc('use_invitation_code', {
+          code_to_use: invitationCodeToUse
+        });
+
+        if (consumeError) {
+          console.error('Error consuming invitation code:', consumeError);
+          toast({
+            title: t('common.error'),
+            description: t('invitation.errorValidating'),
+            variant: 'destructive',
+          });
+        } else if (signUpData?.user?.id) {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .update({ invited_by_code: invitationCodeToUse })
+            .eq('id', signUpData.user.id);
+
+          if (profileError) {
+            console.error('Error updating profile with invitation code:', profileError);
+          }
+        }
+      }
 
       setAwaitingConfirmation(true);
       toast({

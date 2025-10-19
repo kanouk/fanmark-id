@@ -81,5 +81,24 @@ export function useSystemSettings() {
     }
   };
 
-  return { settings, loading, refetch: fetchSettings };
+  const updateSetting = async <K extends keyof SystemSettings>(key: K, value: SystemSettings[K]) => {
+    try {
+      const stringValue = typeof value === 'boolean' ? (value ? 'true' : 'false') : String(value);
+      const { error } = await supabase
+        .from('system_settings')
+        .update({ setting_value: stringValue })
+        .eq('setting_key', key);
+
+      if (error) throw error;
+
+      setSettings(prev => ({ ...prev, [key]: value }));
+      await fetchSettings();
+      return true;
+    } catch (error) {
+      console.error(`Error updating system setting "${key}":`, error);
+      return false;
+    }
+  };
+
+  return { settings, loading, refetch: fetchSettings, updateSetting };
 }

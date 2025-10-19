@@ -15,10 +15,12 @@ interface ExtensionPrice {
   is_active: boolean;
 }
 
-interface PriceUpdate {
+interface FanmarkTier {
   id: string;
-  price_yen: number;
-  original_price: number;
+  tier_level: number;
+  initial_license_days: number;
+  is_active: boolean;
+  description: string | null;
 }
 
 const TIER_NAMES = {
@@ -33,34 +35,53 @@ export const AdminTierExtensionPrices = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [tierUpdatingId, setTierUpdatingId] = useState<string | null>(null);
   const [prices, setPrices] = useState<ExtensionPrice[]>([]);
+  const [tiers, setTiers] = useState<FanmarkTier[]>([]);
   const [editedPrices, setEditedPrices] = useState<Record<string, number>>({});
+  const [tierEdits, setTierEdits] = useState<Record<string, number>>({});
 
-  const fetchPrices = async () => {
+  const fetchAll = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("fanmark_tier_extension_prices" as any)
-        .select("*")
-        .order("tier_level", { ascending: true })
-        .order("months", { ascending: true });
+      const [
+        { data: priceData, error: priceError },
+        { data: tierData, error: tierError },
+      ] = await Promise.all([
+        supabase
+          .from("fanmark_tier_extension_prices" as any)
+          .select("*")
+          .order("tier_level", { ascending: true })
+          .order("months", { ascending: true }),
+        supabase
+          .from("fanmark_tiers" as any)
+          .select("id, tier_level, initial_license_days, is_active, description")
+          .order("tier_level", { ascending: true }),
+      ]);
 
-      if (error) throw error;
+      if (priceError) throw priceError;
+      if (tierError) throw tierError;
 
-      const typedData = (data || []) as unknown as ExtensionPrice[];
-      setPrices(typedData);
-
-      // Initialize edited prices with current values
-      const initial: Record<string, number> = {};
-      typedData.forEach(price => {
-        initial[price.id] = price.price_yen;
+      const typedPrices = (priceData || []) as unknown as ExtensionPrice[];
+      setPrices(typedPrices);
+      const initialPrices: Record<string, number> = {};
+      typedPrices.forEach(price => {
+        initialPrices[price.id] = price.price_yen;
       });
-      setEditedPrices(initial);
+      setEditedPrices(initialPrices);
+
+      const typedTiers = (tierData || []) as unknown as FanmarkTier[];
+      setTiers(typedTiers);
+      const initialTierDays: Record<string, number> = {};
+      typedTiers.forEach(tier => {
+        initialTierDays[tier.id] = tier.initial_license_days;
+      });
+      setTierEdits(initialTierDays);
     } catch (error) {
-      console.error("Error fetching extension prices:", error);
+      console.error("Error fetching tier settings:", error);
       toast({
         title: "エラー",
-        description: "料金データの取得に失敗しました",
+        description: "ティア設定の取得に失敗しました",
         variant: "destructive",
       });
     } finally {
@@ -69,7 +90,7 @@ export const AdminTierExtensionPrices = () => {
   };
 
   useEffect(() => {
-    fetchPrices();
+    fetchAll();
   }, []);
 
   const handlePriceChange = (id: string, value: string) => {
@@ -97,7 +118,11 @@ export const AdminTierExtensionPrices = () => {
         description: "料金を更新しました",
       });
 
-      await fetchPrices();
+      setPrices(prev =>
+        prev.map(price =>
+          price.id === id ? { ...price, price_yen: newPrice } : price
+        )
+      );
     } catch (error) {
       console.error("Error updating price:", error);
       toast({
@@ -125,9 +150,13 @@ export const AdminTierExtensionPrices = () => {
         description: `料金プランを${!currentActive ? "有効" : "無効"}にしました`,
       });
 
-      await fetchPrices();
+      setPrices(prev =>
+        prev.map(price =>
+          price.id === id ? { ...price, is_active: !currentActive } : price
+        )
+      );
     } catch (error) {
-      console.error("Error toggling active status:", error);
+      console.error("Error toggling extension price status:", error);
       toast({
         title: "エラー",
         description: "ステータスの更新に失敗しました",
@@ -135,6 +164,53 @@ export const AdminTierExtensionPrices = () => {
       });
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleTierDaysChange = (id: string, value: string) => {
+    const numValue = parseInt(value, 10);
+    if (!isNaN(numValue) && numValue >= 0) {
+      setTierEdits(prev => ({ ...prev, [id]: numValue }));
+    }
+  };
+
+  const handleUpdateTierDays = async (id: string) => {
+    const newDays = tierEdits[id];
+    if (newDays === undefined) return;
+
+    const targetTier = tiers.find(tier => tier.id === id);
+    if (!targetTier || targetTier.initial_license_days === newDays) {
+      return;
+    }
+
+    setTierUpdatingId(id);
+    try {
+      const { error } = await supabase
+        .from("fanmark_tiers" as any)
+        .update({ initial_license_days: newDays })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: "更新完了",
+        description: "初回付与日数を更新しました",
+      });
+
+      setTiers(prev =>
+        prev.map(tier =>
+          tier.id === id ? { ...tier, initial_license_days: newDays } : tier
+        )
+      );
+    } catch (error) {
+      console.error("Error updating tier initial days:", error);
+      toast({
+        title: "エラー",
+        description: "ティア設定の更新に失敗しました",
+        variant: "destructive",
+      });
+    } finally {
+      setTierUpdatingId(null);
     }
   };
 
@@ -146,7 +222,6 @@ export const AdminTierExtensionPrices = () => {
     );
   }
 
-  // Group prices by tier level
   const pricesByTier = prices.reduce((acc, price) => {
     if (!acc[price.tier_level]) {
       acc[price.tier_level] = [];
@@ -162,6 +237,69 @@ export const AdminTierExtensionPrices = () => {
           ファンマークのTierごとに、ライセンス延長期間（1/2/3/6ヶ月）の料金を設定できます。
           料金を変更すると、ユーザーの延長ダイアログに即座に反映されます。
         </p>
+      </div>
+
+      <div className="space-y-4 rounded-2xl border border-border/60 bg-card/70 p-6 shadow-sm">
+        <div className="space-y-1 border-b border-border/40 pb-3">
+          <h3 className="text-lg font-semibold text-foreground">Tier基本設定</h3>
+          <p className="text-xs text-muted-foreground">
+            無料取得後に付与される利用可能日数を調整できます。変更は新規取得時のライセンス期限に反映されます。
+          </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          {tiers.map(tier => {
+            const editedDays = tierEdits[tier.id];
+            const isDirty = editedDays !== tier.initial_license_days;
+            const isInvalid = editedDays === undefined || editedDays < 1;
+            const isUpdatingThisTier = tierUpdatingId === tier.id;
+
+            return (
+              <div
+                key={tier.id}
+                className="space-y-3 rounded-xl border border-border/60 bg-background p-4 shadow-sm"
+              >
+                <div className="space-y-1">
+                  <h4 className="text-sm font-semibold text-foreground">
+                    {TIER_NAMES[tier.tier_level as keyof typeof TIER_NAMES] ?? `Tier ${tier.tier_level}`}
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    {tier.description ?? "ティアの説明は設定されていません"}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium text-muted-foreground">初回付与日数</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={1}
+                      value={editedDays ?? tier.initial_license_days}
+                      onChange={(event) => handleTierDaysChange(tier.id, event.target.value)}
+                      disabled={Boolean(tierUpdatingId)}
+                      className="h-9 text-sm"
+                    />
+                    <span className="text-xs text-muted-foreground">日</span>
+                  </div>
+
+                  <Button
+                    onClick={() => handleUpdateTierDays(tier.id)}
+                    disabled={Boolean(tierUpdatingId) || isInvalid || !isDirty}
+                    size="sm"
+                    className="w-full gap-1.5"
+                  >
+                    {isUpdatingThisTier ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5" />
+                    )}
+                    更新
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <div className="space-y-6">
@@ -226,8 +364,8 @@ export const AdminTierExtensionPrices = () => {
                         <div className="flex items-center gap-2">
                           <Input
                             type="number"
-                            value={editedPrice || 0}
-                            onChange={(e) => handlePriceChange(priceData.id, e.target.value)}
+                            value={editedPrice ?? priceData.price_yen}
+                            onChange={(event) => handlePriceChange(priceData.id, event.target.value)}
                             min={0}
                             disabled={updating}
                             className="h-9 text-sm"
@@ -260,3 +398,4 @@ export const AdminTierExtensionPrices = () => {
     </div>
   );
 };
+

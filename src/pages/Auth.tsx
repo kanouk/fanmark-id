@@ -5,6 +5,7 @@ import { useAuthForm } from '@/hooks/useAuthForm';
 import { usePasswordValidation } from '@/hooks/usePasswordValidation';
 import { useTranslation } from '@/hooks/useTranslation';
 import { LanguageToggle } from '@/components/LanguageToggle';
+import { InvitationSystem } from '@/components/InvitationSystem';
 import { Button } from '@/components/ui/button';
 import { AuthLayout } from '@/components/AuthLayout';
 import { PasswordRequirement } from '@/components/PasswordRequirement';
@@ -13,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Heart, Users, Mail, Sparkle, ArrowLeft, Lock, Check, X } from 'lucide-react';
 import { AuthFormData, AuthState } from '@/types/auth';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { PasswordRequirement as PasswordRequirementType } from '@/lib/password-validation';
 
 const Auth = () => {
@@ -22,6 +24,10 @@ const Auth = () => {
   const { t } = useTranslation();
   const { formData, authState, updateFormData, signUp, signIn, resendConfirmation } = useAuthForm();
   const { requirements, isValid } = usePasswordValidation(formData.password);
+  const { settings, loading: settingsLoading } = useSystemSettings();
+  const invitationGateActive = !settingsLoading && settings.invitation_mode;
+  const [invitationValidated, setInvitationValidated] = useState(false);
+  const [validatedInvitationCode, setValidatedInvitationCode] = useState<string | null>(null);
 
   useEffect(() => {
     if (user && session) {
@@ -40,6 +46,13 @@ const Auth = () => {
       navigate(location.pathname, { replace: true });
     }
   }, [location, navigate]);
+
+  useEffect(() => {
+    if (!invitationGateActive) {
+      setInvitationValidated(false);
+      setValidatedInvitationCode(null);
+    }
+  }, [invitationGateActive]);
 
 
   if (authState.awaitingConfirmation) {
@@ -106,7 +119,7 @@ const Auth = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur">
+      <header className="border-b border-border/40 bg-background/80 backdrop-blur">
         <div className="container mx-auto flex items-center justify-between px-4 py-4 md:px-6">
           <button
             type="button"
@@ -163,29 +176,54 @@ const Auth = () => {
                 </TabsContent>
 
                 <TabsContent value="signup" className="rounded-2xl border border-primary/15 bg-background/95 p-6 shadow-[0_18px_40px_rgba(101,195,200,0.12)] md:p-8">
-                  <SignUpForm
-                    formData={formData}
-                    authState={authState}
-                    updateFormData={updateFormData}
-                    signUp={signUp}
-                    requirements={requirements}
-                    isValid={isValid}
-                    t={t}
-                  />
+                  <div className="space-y-6">
+                    {settingsLoading && (
+                      <div className="rounded-2xl border border-primary/15 bg-background/95 p-6 text-center">
+                        <div className="mx-auto h-3 w-24 animate-pulse rounded-full bg-primary/20" />
+                        <div className="mx-auto mt-3 h-3 w-32 animate-pulse rounded-full bg-primary/10" />
+                      </div>
+                    )}
+                    {invitationGateActive && !invitationValidated && (
+                      <InvitationSystem
+                        onValidCode={(code) => {
+                          setInvitationValidated(true);
+                          setValidatedInvitationCode(code);
+                        }}
+                        onReset={() => {
+                          setInvitationValidated(false);
+                          setValidatedInvitationCode(null);
+                        }}
+                      />
+                    )}
+                    {(!invitationGateActive || invitationValidated) && (
+                      <SignUpForm
+                        formData={formData}
+                        authState={authState}
+                        updateFormData={updateFormData}
+                        signUp={signUp}
+                        requirements={requirements}
+                        isValid={isValid}
+                        t={t}
+                        invitationRequired={invitationGateActive}
+                        invitationValidated={invitationValidated}
+                        validatedInvitationCode={validatedInvitationCode}
+                      />
+                    )}
+                  </div>
                 </TabsContent>
               </Tabs>
             </div>
           </div>
         </div>
       </div>
-      <footer className="border-t border-border/40 bg-background/80 backdrop-blur">
+      <div className="border-t border-border/40 bg-background/80 backdrop-blur">
         <div className="container mx-auto px-4 py-10 text-center space-y-3">
           <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
             <span className="text-3xl">✨</span> <span className="text-gradient">fanmark.id</span>
           </div>
           <p className="text-sm text-muted-foreground">{t('sections.footer')}</p>
         </div>
-      </footer>
+      </div>
     </div>
   );
 };
@@ -305,10 +343,13 @@ interface SignUpFormProps {
   formData: AuthFormData;
   authState: AuthState;
   updateFormData: (field: keyof AuthFormData, value: string) => void;
-  signUp: () => void;
+  signUp: (options?: { invitationCode?: string | null; invitationRequired?: boolean }) => void;
   requirements: PasswordRequirementType[];
   isValid: boolean;
   t: (key: string) => string;
+  invitationRequired?: boolean;
+  invitationValidated?: boolean;
+  validatedInvitationCode?: string | null;
 }
 
 const SignUpForm = ({
@@ -319,6 +360,9 @@ const SignUpForm = ({
   requirements,
   isValid,
   t,
+  invitationRequired = false,
+  invitationValidated = false,
+  validatedInvitationCode,
 }: SignUpFormProps) => {
   const [passwordPopoverOpen, setPasswordPopoverOpen] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
@@ -329,6 +373,8 @@ const SignUpForm = ({
   const confirmStatus = formData.confirmPassword
     ? formData.confirmPassword === formData.password && formData.confirmPassword.length > 0
     : null;
+  const invitationDisabled = invitationRequired && !invitationValidated;
+  const InvitationStatusIcon = invitationValidated ? Check : Sparkle;
 
   const handlePasswordFocus = () => {
     if (blurTimeoutRef.current) {
@@ -367,10 +413,25 @@ const SignUpForm = ({
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        signUp();
+        signUp({
+          invitationCode: invitationValidated ? validatedInvitationCode : undefined,
+          invitationRequired,
+        });
       }}
       className="space-y-6"
     >
+      {invitationRequired && (
+        <div
+          className={`flex items-center justify-center gap-2 rounded-2xl border px-3 py-2 text-sm ${
+            invitationValidated
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+              : 'border-primary/20 bg-primary/5 text-muted-foreground'
+          }`}
+        >
+          <InvitationStatusIcon className="h-4 w-4" />
+          {invitationValidated ? t('invitation.codeApplied') : t('invitation.codeRequired')}
+        </div>
+      )}
       <div className="space-y-2">
         <Label htmlFor="signup-email" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
           <Mail className="h-4 w-4" />
@@ -454,7 +515,7 @@ const SignUpForm = ({
 
     <Button
       type="submit"
-      disabled={authState.loading || !isValid}
+      disabled={authState.loading || !isValid || invitationDisabled}
       className="w-full gap-2 rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 hover:shadow-xl"
     >
       {authState.loading ? (

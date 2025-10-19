@@ -6,7 +6,7 @@ import { LanguageToggle } from "@/components/LanguageToggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, LogOut } from 'lucide-react';
+import { User, LogOut, Heart } from 'lucide-react';
 import { MdSpaceDashboard } from 'react-icons/md';
 import { useProfile } from '@/hooks/useProfile';
 import { FanmarkAcquisition } from '@/components/FanmarkAcquisition';
@@ -224,6 +224,16 @@ const Index = () => {
                     {user.email}
                   </div>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={(event) => {
+                      event.preventDefault();
+                      navigate('/favorites');
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <Heart className="mr-2 h-4 w-4" />
+                    {t('navigation.favorites')}
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onSelect={(event) => {
                       event.preventDefault();

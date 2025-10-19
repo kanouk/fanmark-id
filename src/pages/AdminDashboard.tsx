@@ -8,6 +8,7 @@ import { AdminPlanSettings } from "@/components/AdminPlanSettings";
 import { AdminUserManagement } from "@/components/AdminUserManagement";
 import { AdminEmojiMaster } from "@/components/AdminEmojiMaster";
 import { AdminTierExtensionPrices } from "@/components/AdminTierExtensionPrices";
+import { AdminInvitationManager } from "@/components/AdminInvitationManager";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { LogOut, ShieldCheck, Sparkles } from "lucide-react";
@@ -69,6 +70,12 @@ const AdminDashboard = () => {
                 className="flex-1 rounded-xl px-5 py-3 text-sm font-medium transition-all data-[state=active]:bg-card data-[state=active]:text-foreground sm:flex-none"
               >
                 プラン設定
+              </TabsTrigger>
+              <TabsTrigger
+                value="invitations"
+                className="flex-1 rounded-xl px-5 py-3 text-sm font-medium transition-all data-[state=active]:bg-card data-[state=active]:text-foreground sm:flex-none"
+              >
+                招待管理
               </TabsTrigger>
               <TabsTrigger
                 value="tier-extension-prices"
@@ -154,6 +161,10 @@ const AdminDashboard = () => {
                   <AdminPlanSettings />
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="invitations" className="space-y-8">
+              <AdminInvitationManager />
             </TabsContent>
 
             <TabsContent value="tier-extension-prices" className="space-y-8">
