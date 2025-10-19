@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
+// Export the Row type for use in other components
 export type InvitationCodeRow = Database['public']['Tables']['invitation_codes']['Row'];
 type InvitationCodeInsert = Database['public']['Tables']['invitation_codes']['Insert'];
 type InvitationCodeUpdate = Database['public']['Tables']['invitation_codes']['Update'];
@@ -48,7 +49,7 @@ export function useInvitationAdmin() {
         code: values.code?.trim().toUpperCase() ?? generateCode(),
         max_uses: values.maxUses,
         expires_at: values.expiresAt || null,
-        special_perks: values.specialPerks ?? null,
+        special_perks: (values.specialPerks as Database['public']['Tables']['invitation_codes']['Insert']['special_perks']) ?? null,
         is_active: true,
       };
 

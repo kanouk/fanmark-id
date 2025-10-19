@@ -137,13 +137,13 @@ export const useAuthForm = () => {
             variant: 'destructive',
           });
         } else if (signUpData?.user?.id) {
-          const { error: profileError } = await supabase
-            .from('profiles')
+          const { error: settingsError } = await supabase
+            .from('user_settings')
             .update({ invited_by_code: invitationCodeToUse })
-            .eq('id', signUpData.user.id);
+            .eq('user_id', signUpData.user.id);
 
-          if (profileError) {
-            console.error('Error updating profile with invitation code:', profileError);
+          if (settingsError) {
+            console.error('Error updating user settings with invitation code:', settingsError);
           }
         }
       }

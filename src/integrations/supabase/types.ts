@@ -197,8 +197,8 @@ export type Database = {
         Row: {
           availability_status: string
           emoji_ids: string[]
-          favorite_count: number
           fanmark_id: string | null
+          favorite_count: number
           first_seen_at: string
           id: string
           last_seen_at: string
@@ -208,8 +208,8 @@ export type Database = {
         Insert: {
           availability_status?: string
           emoji_ids: string[]
-          favorite_count?: number
           fanmark_id?: string | null
+          favorite_count?: number
           first_seen_at?: string
           id?: string
           last_seen_at?: string
@@ -219,8 +219,8 @@ export type Database = {
         Update: {
           availability_status?: string
           emoji_ids?: string[]
-          favorite_count?: number
           fanmark_id?: string | null
+          favorite_count?: number
           first_seen_at?: string
           id?: string
           last_seen_at?: string
@@ -310,13 +310,6 @@ export type Database = {
             columns: ["fanmark_id"]
             isOneToOne: false
             referencedRelation: "fanmarks"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fanmark_favorites_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -523,6 +516,36 @@ export type Database = {
           },
         ]
       }
+      fanmark_tier_extension_prices: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          months: number
+          price_yen: number
+          tier_level: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          months: number
+          price_yen: number
+          tier_level: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          months?: number
+          price_yen?: number
+          tier_level?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fanmark_tiers: {
         Row: {
           created_at: string
@@ -571,6 +594,7 @@ export type Database = {
           normalized_emoji_ids: string[]
           short_id: string
           status: string
+          tier_level: number
           updated_at: string
           user_input_fanmark: string
         }
@@ -582,6 +606,7 @@ export type Database = {
           normalized_emoji_ids?: string[]
           short_id: string
           status?: string
+          tier_level: number
           updated_at?: string
           user_input_fanmark: string
         }
@@ -593,6 +618,7 @@ export type Database = {
           normalized_emoji_ids?: string[]
           short_id?: string
           status?: string
+          tier_level?: number
           updated_at?: string
           user_input_fanmark?: string
         }
@@ -727,6 +753,7 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          invited_by_code: string | null
           plan_type: Database["public"]["Enums"]["user_plan"]
           preferred_language: Database["public"]["Enums"]["user_language"]
           updated_at: string
@@ -738,6 +765,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          invited_by_code?: string | null
           plan_type?: Database["public"]["Enums"]["user_plan"]
           preferred_language?: Database["public"]["Enums"]["user_language"]
           updated_at?: string
@@ -749,13 +777,22 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          invited_by_code?: string | null
           plan_type?: Database["public"]["Enums"]["user_plan"]
           preferred_language?: Database["public"]["Enums"]["user_language"]
           updated_at?: string
           user_id?: string
           username?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_settings_invited_by_code_fkey"
+            columns: ["invited_by_code"]
+            isOneToOne: false
+            referencedRelation: "invitation_codes"
+            referencedColumns: ["code"]
+          },
+        ]
       }
       waitlist: {
         Row: {
@@ -786,8 +823,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_fanmark_favorite: {
+        Args: { input_emoji_ids: string[] }
+        Returns: boolean
+      }
       check_fanmark_availability: {
-        Args: { fanmark_uuid: string } | { input_emoji_ids: string[] }
+        Args: { input_emoji_ids: string[] }
         Returns: Json
       }
       check_fanmark_availability_secure: {
@@ -846,23 +887,23 @@ export type Database = {
         Returns: {
           access_type: string
           created_at: string
-          current_grace_expires_at: string | null
-          current_license_status: string | null
-          current_owner_id: string | null
+          current_grace_expires_at: string
+          current_license_status: string
+          current_owner_id: string
           emoji_ids: string[]
-          fanmark_name: string | null
+          fanmark_name: string
           has_active_license: boolean
           id: string
           is_blocked_for_registration: boolean
           is_password_protected: boolean
-          license_end: string | null
-          license_id: string | null
-          next_available_at: string | null
+          license_end: string
+          license_id: string
+          next_available_at: string
           normalized_emoji: string
           short_id: string
           status: string
-          target_url: string | null
-          text_content: string | null
+          target_url: string
+          text_content: string
           updated_at: string
           user_input_fanmark: string
         }[]
@@ -896,6 +937,32 @@ export type Database = {
         Returns: {
           has_active_license: boolean
           is_taken: boolean
+        }[]
+      }
+      get_favorite_fanmarks: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          access_type: string
+          availability_status: string
+          current_license_end: string
+          current_license_start: string
+          current_license_status: string
+          current_owner_display_name: string
+          current_owner_username: string
+          discovery_id: string
+          emoji_ids: string[]
+          fanmark_id: string
+          fanmark_name: string
+          favorite_count: number
+          favorite_id: string
+          favorited_at: string
+          is_password_protected: boolean
+          normalized_emoji_ids: string[]
+          search_count: number
+          sequence_key: string
+          short_id: string
+          target_url: string
+          text_content: string
         }[]
       }
       get_public_emoji_profile: {
@@ -960,6 +1027,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      link_fanmark_discovery: {
+        Args: { new_fanmark_id: string; normalized_ids: string[] }
+        Returns: undefined
+      }
       normalize_emoji_ids: {
         Args: { input_ids: string[] }
         Returns: string[]
@@ -968,39 +1039,21 @@ export type Database = {
         Args: { input_emoji_ids: string[] }
         Returns: string
       }
-      add_fanmark_favorite: {
-        Args: { input_emoji_ids: string[] }
-        Returns: boolean
-      }
       remove_fanmark_favorite: {
         Args: { input_emoji_ids: string[] }
         Returns: boolean
       }
-      get_favorite_fanmarks: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          access_type: string | null
-          availability_status: string
-          current_license_end: string | null
-          current_license_start: string | null
-          current_license_status: string | null
-          current_owner_display_name: string | null
-          current_owner_username: string | null
-          discovery_id: string
-          emoji_ids: string[] | null
-          fanmark_id: string | null
-          fanmark_name: string | null
-          favorite_count: number
-          favorite_id: string
-          favorited_at: string
-          is_password_protected: boolean
-          normalized_emoji_ids: string[]
-          search_count: number
-          sequence_key: string
-          short_id: string | null
-          target_url: string | null
-          text_content: string | null
-        }[]
+      seq_key: {
+        Args: { normalized_ids: string[] }
+        Returns: string
+      }
+      toggle_fanmark_favorite: {
+        Args: { fanmark_uuid: string }
+        Returns: boolean
+      }
+      upsert_fanmark_discovery: {
+        Args: { increment_search?: boolean; input_emoji_ids: string[] }
+        Returns: string
       }
       upsert_fanmark_password_config: {
         Args: {

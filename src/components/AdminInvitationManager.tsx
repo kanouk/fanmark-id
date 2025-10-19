@@ -32,7 +32,7 @@ import { Separator } from '@/components/ui/separator';
 import { Loader2, Plus, RefreshCw, ToggleLeft, ToggleRight, Trash2, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
-import { useInvitationAdmin, InvitationCodeFormValues } from '@/hooks/useInvitationAdmin';
+import { useInvitationAdmin, InvitationCodeFormValues, InvitationCodeRow } from '@/hooks/useInvitationAdmin';
 import { SecureWaitlistAdmin } from '@/components/SecureWaitlistAdmin';
 import { useTranslation } from '@/hooks/useTranslation';
 
