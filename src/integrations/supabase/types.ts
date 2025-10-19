@@ -1112,6 +1112,10 @@ export type Database = {
         Args: { input_emoji_ids: string[] }
         Returns: boolean
       }
+      archive_old_notifications: {
+        Args: { days_old?: number }
+        Returns: number
+      }
       check_fanmark_availability: {
         Args: { input_emoji_ids: string[] }
         Returns: Json
@@ -1127,6 +1131,16 @@ export type Database = {
       count_fanmark_emoji_units: {
         Args: { input: string }
         Returns: number
+      }
+      create_notification_event: {
+        Args: {
+          dedupe_key_param?: string
+          event_type_param: string
+          payload_param: Json
+          source_param?: string
+          trigger_at_param?: string
+        }
+        Returns: string
       }
       generate_safe_display_name: {
         Args: { user_email: string; user_id: string }
@@ -1275,6 +1289,10 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_unread_notification_count: {
+        Args: { user_id_param?: string }
+        Returns: number
+      }
       get_waitlist_email_by_id: {
         Args: { waitlist_id: string }
         Returns: string
@@ -1316,6 +1334,10 @@ export type Database = {
         Args: { new_fanmark_id: string; normalized_ids: string[] }
         Returns: undefined
       }
+      mark_notification_read: {
+        Args: { notification_id_param: string; read_via_param?: string }
+        Returns: boolean
+      }
       normalize_emoji_ids: {
         Args: { input_ids: string[] }
         Returns: string[]
@@ -1327,6 +1349,15 @@ export type Database = {
       remove_fanmark_favorite: {
         Args: { input_emoji_ids: string[] }
         Returns: boolean
+      }
+      render_notification_template: {
+        Args: {
+          language_param?: string
+          payload_param: Json
+          template_id_param: string
+          template_version_param: number
+        }
+        Returns: Json
       }
       seq_key: {
         Args: { normalized_ids: string[] }
