@@ -126,6 +126,7 @@
 ### 📋 開発ワークフロー
 - **[開発ワークフロー詳細](docs/DEVELOPMENT_WORKFLOW.md)** - Lovable + Claude Code + Supabase を組み合わせた開発手順
 - **[Supabase Migration ガイド](docs/SUPABASE_MIGRATION_GUIDE.md)** - データベースマイグレーション作成・管理のベストプラクティス
+- **[Cron Jobs セットアップガイド](docs/CRON_SETUP.md)** - 定期実行ジョブの設定方法とトラブルシューティング
 
 ### 🔧 技術仕様
 - **フロントエンド**: React + TypeScript + Tailwind CSS
@@ -135,3 +136,14 @@
 
 ### 🚀 開発環境セットアップ
 詳細な環境構築手順は [開発ワークフローガイド](docs/DEVELOPMENT_WORKFLOW.md) を参照してください。
+
+### ⏰ Cron Jobs セットアップ
+このプロジェクトは定期実行ジョブを使用しています。初回デプロイ後に以下を実行してください：
+
+```bash
+# Supabase CLI でスケジュール設定
+supabase functions schedule check-expired-licenses "0 15 * * *"
+supabase functions schedule process-notification-events "* * * * *"
+```
+
+詳細は [Cron Jobs セットアップガイド](docs/CRON_SETUP.md) を参照してください。

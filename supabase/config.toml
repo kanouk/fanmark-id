@@ -8,3 +8,29 @@ verify_jwt = true
 
 [functions.process-notification-events]
 verify_jwt = false
+
+# ========================================
+# Cron Jobs Configuration (Supabase CLI v1.50+)
+# ========================================
+# 注意: これらの設定を有効化するには、以下のコマンドを実行してください：
+#
+# 1. Edge Functionをデプロイ:
+#    supabase functions deploy check-expired-licenses
+#    supabase functions deploy process-notification-events
+#
+# 2. Cronスケジュールを設定:
+#    supabase functions schedule check-expired-licenses "0 15 * * *"
+#    supabase functions schedule process-notification-events "* * * * *"
+#
+# 3. スケジュール確認:
+#    supabase functions list-schedules
+#
+# 4. 実行ログ確認:
+#    supabase functions logs check-expired-licenses --follow
+#    supabase functions logs process-notification-events --follow
+#
+# ========================================
+# 注意: [cron] セクションは参考例です
+# Supabase CLI のバージョンによっては直接サポートされていません
+# 代わりに上記のコマンドラインでスケジュール設定してください
+# ========================================
