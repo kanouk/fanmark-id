@@ -10,27 +10,30 @@ verify_jwt = true
 verify_jwt = false
 
 # ========================================
-# Cron Jobs Configuration (Supabase CLI v1.50+)
+# Cron Jobs Configuration
 # ========================================
-# 注意: これらの設定を有効化するには、以下のコマンドを実行してください：
+# Supabase Dashboard で pg_cron を使用してスケジュール設定してください
 #
-# 1. Edge Functionをデプロイ:
-#    supabase functions deploy check-expired-licenses
-#    supabase functions deploy process-notification-events
+# 設定手順:
+# 1. https://app.supabase.com/project/ppqgtbjykitqtiaisyji/database/cron-jobs
+# 2. "Create a new cron job" をクリック
+# 3. 以下のSQLを使用してジョブを作成
 #
-# 2. Cronスケジュールを設定:
-#    supabase functions schedule check-expired-licenses "0 15 * * *"
-#    supabase functions schedule process-notification-events "* * * * *"
+# ライセンス期限チェック（毎日 15:00 UTC = JST 0:00）:
+#   SELECT net.http_post(
+#     url := 'https://ppqgtbjykitqtiaisyji.supabase.co/functions/v1/check-expired-licenses',
+#     headers := '{"Content-Type": "application/json"}'::jsonb,
+#     body := '{"scheduled": true}'::jsonb
+#   );
+#   Schedule: 0 15 * * *
 #
-# 3. スケジュール確認:
-#    supabase functions list-schedules
+# 通知イベント処理（毎分）:
+#   SELECT net.http_post(
+#     url := 'https://ppqgtbjykitqtiaisyji.supabase.co/functions/v1/process-notification-events',
+#     headers := '{"Content-Type": "application/json"}'::jsonb,
+#     body := jsonb_build_object('timestamp', now()::text)
+#   );
+#   Schedule: * * * * *
 #
-# 4. 実行ログ確認:
-#    supabase functions logs check-expired-licenses --follow
-#    supabase functions logs process-notification-events --follow
-#
-# ========================================
-# 注意: [cron] セクションは参考例です
-# Supabase CLI のバージョンによっては直接サポートされていません
-# 代わりに上記のコマンドラインでスケジュール設定してください
+# 詳細は docs/CRON_SETUP.md を参照
 # ========================================

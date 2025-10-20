@@ -8,44 +8,11 @@
 
 ## セットアップ方法
 
-### 方法1: Supabase CLI（推奨）
+### Supabase Dashboard（推奨方法）
 
-#### 前提条件
-```bash
-# CLI バージョン確認
-supabase --version  # v1.50 以上推奨
-
-# プロジェクトへのログイン
-supabase login
-supabase link --project-ref ppqgtbjykitqtiaisyji
-```
-
-#### スケジュール設定
-```bash
-# ライセンス期限チェック（毎日 15:00 UTC = JST 0:00）
-supabase functions schedule check-expired-licenses "0 15 * * *"
-
-# 通知イベント処理（毎分）
-supabase functions schedule process-notification-events "* * * * *"
-```
-
-#### 確認
-```bash
-# スケジュール一覧
-supabase functions list-schedules
-
-# 実行ログ確認
-supabase functions logs check-expired-licenses --limit 50
-supabase functions logs process-notification-events --limit 50
-```
-
----
-
-### 方法2: Supabase Dashboard（代替手段）
-
-1. [Supabase Dashboard](https://app.supabase.com/project/ppqgtbjykitqtiaisyji) にアクセス
+1. [Supabase Dashboard](https://app.supabase.com/project/ppqgtbjykitqtiaisyji/database/cron-jobs) にアクセス
 2. **Database** > **Cron Jobs** へ移動
-3. **New Cron Job** をクリック
+3. **Create a new cron job** をクリック
 
 #### ジョブ1: check-expired-licenses-daily
 - **Name**: `check-expired-licenses-daily`
@@ -75,7 +42,10 @@ supabase functions logs process-notification-events --limit 50
   );
   ```
 
-**注意**: `verify_jwt = false` が設定されているため、Authorization ヘッダーは不要です。
+**注意**: 
+- `verify_jwt = false` が設定されているため、Authorization ヘッダーは不要です
+- Edge Functionは既にデプロイされている必要があります
+- プロジェクトURLは `https://ppqgtbjykitqtiaisyji.supabase.co` です
 
 ---
 
@@ -102,19 +72,18 @@ supabase functions logs process-notification-events --limit 50
 ## トラブルシューティング
 
 ### ジョブが実行されない
-1. **スケジュール確認**
-   ```bash
-   supabase functions list-schedules
-   ```
-
-2. **Edge Function の状態確認**
-   ```bash
-   supabase functions list
-   ```
-
-3. **pg_cron ジョブ確認（Dashboard経由）**
+1. **Cronジョブの確認（Dashboard経由）**
    ```sql
    SELECT * FROM cron.job ORDER BY jobid DESC;
+   ```
+
+2. **Edge Functionの状態確認**
+   - Dashboard → Edge Functions でデプロイ状態を確認
+   - 手動でテスト実行してエラーがないか確認
+
+3. **pg_cron拡張機能の確認**
+   ```sql
+   SELECT * FROM pg_extension WHERE extname = 'pg_cron';
    ```
 
 ### 二重実行を防ぐ
@@ -126,37 +95,14 @@ SELECT cron.unschedule('process-notification-events-every-minute');
 ```
 
 ### ログにエラーが出る
-```bash
-# 詳細ログを確認
-supabase functions logs <function-name> --limit 100
-
-# エラーフィルタリング
-supabase functions logs <function-name> | grep -i error
-```
-
----
-
-## 環境別設定
-
-### 開発環境
-```bash
-# ローカル実行（スケジュールなし）
-supabase functions serve
-```
-
-### ステージング環境
-```bash
-# ステージング用のスケジュール（より頻繁に実行）
-supabase functions schedule check-expired-licenses "0 * * * *"  # 毎時
-supabase functions schedule process-notification-events "*/5 * * * *"  # 5分ごと
-```
-
-### 本番環境
-```bash
-# 本番用のスケジュール（推奨設定）
-supabase functions schedule check-expired-licenses "0 15 * * *"  # 毎日 JST 0:00
-supabase functions schedule process-notification-events "* * * * *"  # 毎分
-```
+- Dashboard → Edge Functions → 該当Function → Logs でエラー内容を確認
+- または SQL Editor で実行履歴を確認：
+  ```sql
+  SELECT * FROM cron.job_run_details 
+  WHERE jobid = (SELECT jobid FROM cron.job WHERE jobname = 'ジョブ名')
+  ORDER BY start_time DESC 
+  LIMIT 10;
+  ```
 
 ---
 
