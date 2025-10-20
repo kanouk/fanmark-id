@@ -6,8 +6,10 @@ import { useToast } from '@/hooks/use-toast';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Heart, LogOut, User } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Heart, LogOut, User, Bell } from 'lucide-react';
 import { MdSpaceDashboard } from 'react-icons/md';
+import { useUnreadNotifications } from '@/hooks/useUnreadNotifications';
 
 export const Navigation = () => {
   const { user, signOut, signingOut } = useAuth();
@@ -15,6 +17,7 @@ export const Navigation = () => {
   const { t } = useTranslation();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { data: unreadCount = 0 } = useUnreadNotifications();
 
   const handleLogout = async () => {
     try {
@@ -82,6 +85,24 @@ export const Navigation = () => {
                 >
                   <Heart className="mr-2 h-4 w-4" />
                   {t('navigation.favorites')}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    navigate('/notifications');
+                  }}
+                  className="cursor-pointer relative"
+                >
+                  <Bell className="mr-2 h-4 w-4" />
+                  通知
+                  {unreadCount > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="ml-auto h-5 min-w-[20px] flex items-center justify-center px-1 text-xs"
+                    >
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </Badge>
+                  )}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={(event) => {
