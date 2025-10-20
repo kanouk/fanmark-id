@@ -5,3 +5,6 @@ verify_jwt = true
 
 [functions.return-fanmark]
 verify_jwt = true
+
+[functions.process-notification-events]
+verify_jwt = false

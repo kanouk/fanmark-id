@@ -71,6 +71,12 @@ Deno.serve(async (req) => {
 
     for (const event of events as NotificationEvent[]) {
       try {
+        // Mark as processing immediately
+        await supabase
+          .from("notification_events")
+          .update({ status: "processing", updated_at: new Date().toISOString() })
+          .eq("id", event.id);
+
         await processEvent(supabase, event);
         processedCount++;
       } catch (error) {
@@ -134,16 +140,21 @@ async function processEvent(supabase: any, event: NotificationEvent): Promise<vo
     return;
   }
 
-  console.log(`Found ${rules.length} matching rules`);
+  console.log(`Found ${rules.length} matching rules for event ${event.id}`);
 
+  let appliedCount = 0;
   for (const rule of rules as NotificationRule[]) {
     try {
       await applyRule(supabase, event, rule);
+      appliedCount++;
+      console.log(`Successfully applied rule ${rule.id} for event ${event.id}`);
     } catch (error) {
-      console.error(`Failed to apply rule ${rule.id}:`, error);
+      console.error(`Failed to apply rule ${rule.id} for event ${event.id}:`, error);
       // Continue with other rules even if one fails
     }
   }
+
+  console.log(`Applied ${appliedCount}/${rules.length} rules for event ${event.id}`);
 
   // Mark event as processed
   await supabase
@@ -224,10 +235,49 @@ async function applyRule(
     return;
   }
 
+  // Render template
+  let renderedContent: any;
+  try {
+    const language = (event.payload?.language as string) || 'ja';
+    const { data: rendered, error: renderError } = await supabase
+      .rpc('render_notification_template', {
+        template_id_param: rule.template_id,
+        template_version_param: rule.template_version,
+        payload_param: event.payload,
+        language_param: language
+      });
+
+    if (renderError) {
+      console.error(`Template rendering failed for rule ${rule.id}:`, renderError);
+      // Fallback: create minimal payload
+      renderedContent = {
+        title: event.event_type,
+        body: JSON.stringify(event.payload),
+        summary: null
+      };
+    } else {
+      renderedContent = rendered;
+    }
+  } catch (error) {
+    console.error(`Exception during template rendering for rule ${rule.id}:`, error);
+    // Fallback
+    renderedContent = {
+      title: event.event_type,
+      body: JSON.stringify(event.payload),
+      summary: null
+    };
+  }
+
   // Calculate trigger time with delay
   const triggeredAt = new Date(Date.now() + rule.delay_seconds * 1000);
+  const now = new Date().toISOString();
 
-  // Create notification
+  // Determine status: immediate in-app notifications are 'delivered', others are 'pending'
+  const isImmediate = rule.channel === 'in_app' && rule.delay_seconds === 0;
+  const notificationStatus = isImmediate ? 'delivered' : 'pending';
+  const deliveredAt = isImmediate ? now : null;
+
+  // Create notification with rendered content
   const { error: insertError } = await supabase
     .from("notifications")
     .insert({
@@ -238,17 +288,18 @@ async function applyRule(
       template_version: rule.template_version,
       channel: rule.channel,
       priority: rule.priority,
-      payload: event.payload,
-      status: "pending",
+      payload: renderedContent,
+      status: notificationStatus,
       triggered_at: triggeredAt.toISOString(),
+      delivered_at: deliveredAt,
     });
 
   if (insertError) {
-    console.error("Error creating notification:", insertError);
+    console.error(`Error creating notification for user ${userId}:`, insertError);
     throw insertError;
   }
 
-  console.log(`Created notification for user ${userId} with rule ${rule.id}`);
+  console.log(`Created notification for user ${userId} with status ${notificationStatus}`);
 }
 
 async function checkSegmentFilter(
