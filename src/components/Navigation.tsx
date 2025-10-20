@@ -55,6 +55,23 @@ export const Navigation = () => {
 
         <div className="flex items-center gap-2">
           <LanguageToggle />
+          {user && (
+            <button
+              onClick={() => navigate('/notifications')}
+              className="relative flex h-10 w-10 items-center justify-center rounded-full border border-primary/30 bg-primary/10 shadow-[0_4px_12px_hsl(var(--primary)_/_0.15)] transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              aria-label="通知"
+            >
+              <Bell className="h-5 w-5 text-primary" />
+              {unreadCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -right-1 -top-1 h-5 min-w-[20px] flex items-center justify-center px-1 text-xs"
+                >
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Badge>
+              )}
+            </button>
+          )}
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -85,24 +102,6 @@ export const Navigation = () => {
                 >
                   <Heart className="mr-2 h-4 w-4" />
                   {t('navigation.favorites')}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={(event) => {
-                    event.preventDefault();
-                    navigate('/notifications');
-                  }}
-                  className="cursor-pointer relative"
-                >
-                  <Bell className="mr-2 h-4 w-4" />
-                  通知
-                  {unreadCount > 0 && (
-                    <Badge 
-                      variant="destructive" 
-                      className="ml-auto h-5 min-w-[20px] flex items-center justify-center px-1 text-xs"
-                    >
-                      {unreadCount > 99 ? '99+' : unreadCount}
-                    </Badge>
-                  )}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={(event) => {
