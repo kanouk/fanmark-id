@@ -140,10 +140,8 @@
 ### ⏰ Cron Jobs セットアップ
 このプロジェクトは定期実行ジョブを使用しています。初回デプロイ後に以下を実行してください：
 
-```bash
-# Supabase CLI でスケジュール設定
-supabase functions schedule check-expired-licenses "0 15 * * *"
-supabase functions schedule process-notification-events "* * * * *"
-```
+1. [Supabase Dashboard の Cron Jobs 画面](https://app.supabase.com/project/ppqgtbjykitqtiaisyji/database/cron-jobs) にアクセス
+2. 「Create a new cron job」をクリック
+3. ジョブを作成（詳細な設定方法は下記ガイド参照）
 
 詳細は [Cron Jobs セットアップガイド](docs/CRON_SETUP.md) を参照してください。
