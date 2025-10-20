@@ -9,6 +9,7 @@ import { AdminUserManagement } from "@/components/AdminUserManagement";
 import { AdminEmojiMaster } from "@/components/AdminEmojiMaster";
 import { AdminTierExtensionPrices } from "@/components/AdminTierExtensionPrices";
 import { AdminInvitationManager } from "@/components/AdminInvitationManager";
+import AdminNotificationManager from "@/components/AdminNotificationManager";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { LogOut, ShieldCheck, Sparkles } from "lucide-react";
@@ -88,6 +89,12 @@ const AdminDashboard = () => {
                 className="flex-1 rounded-xl px-5 py-3 text-sm font-medium transition-all data-[state=active]:bg-card data-[state=active]:text-foreground sm:flex-none"
               >
                 失効処理
+              </TabsTrigger>
+              <TabsTrigger
+                value="notifications"
+                className="flex-1 rounded-xl px-5 py-3 text-sm font-medium transition-all data-[state=active]:bg-card data-[state=active]:text-foreground sm:flex-none"
+              >
+                通知管理
               </TabsTrigger>
               <TabsTrigger
                 value="data-reset"
@@ -197,6 +204,10 @@ const AdminDashboard = () => {
                   <AdminExpirationTest />
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="notifications" className="space-y-8">
+              <AdminNotificationManager />
             </TabsContent>
 
             <TabsContent value="data-reset" className="space-y-8">
