@@ -224,6 +224,24 @@ serve(async (req) => {
             console.warn(`  ⚠️ Audit log failed for ${license.id}: ${auditError.message}`);
           }
 
+          // Create notification event for grace period start
+          const { error: notificationError } = await supabase.rpc('create_notification_event', {
+            event_type_param: 'license_grace_started',
+            payload_param: {
+              user_id: license.user_id,
+              fanmark_id: license.fanmark_id,
+              fanmark_name: license.fanmarks?.user_input_fanmark,
+              license_end: license.license_end,
+              grace_expires_at: graceExpiresAt.toISOString()
+            },
+            source_param: 'cron_job',
+            dedupe_key_param: `grace_${license.id}_${licenseEndDate.getTime()}`
+          });
+
+          if (notificationError) {
+            console.warn(`  ⚠️ Notification event failed for ${license.id}: ${notificationError.message}`);
+          }
+
           processedCount++;
           graceSuccessCount++;
         console.log(`  ✓ ${license.fanmarks?.user_input_fanmark} -> grace`);
@@ -314,6 +332,24 @@ serve(async (req) => {
 
           if (auditError) {
             console.warn(`  ⚠️ Audit log failed for ${license.id}: ${auditError.message}`);
+          }
+
+          // Create notification event for license expiration
+          const { error: notificationError } = await supabase.rpc('create_notification_event', {
+            event_type_param: 'license_expired',
+            payload_param: {
+              user_id: license.user_id,
+              fanmark_id: license.fanmark_id,
+              fanmark_name: license.fanmarks?.user_input_fanmark,
+              expired_at: new Date().toISOString(),
+              license_end: license.license_end
+            },
+            source_param: 'cron_job',
+            dedupe_key_param: `expired_${license.id}_${new Date(license.license_end).getTime()}`
+          });
+
+          if (notificationError) {
+            console.warn(`  ⚠️ Notification event failed for ${license.id}: ${notificationError.message}`);
           }
 
           processedCount++;
