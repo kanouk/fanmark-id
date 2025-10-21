@@ -34,7 +34,64 @@ export interface ReturnResult {
   licenseId: string;
   fanmarkId: string;
   fanmark: string;
+  fanmarkShortId: string;
   graceExpiresAt: string;
+}
+
+async function notifyFavoritesAboutReturn(
+  ctx: ReturnContext,
+  fanmarkId: string,
+  fanmarkName: string,
+  fanmarkShortId: string,
+): Promise<void> {
+  const displayName =
+    typeof fanmarkName === 'string' && fanmarkName.trim().length > 0
+      ? fanmarkName
+      : 'お気に入りのファンマーク';
+
+  try {
+    const { data: favorites, error: favoritesError } = await ctx.supabase
+      .from('fanmark_favorites')
+      .select('user_id')
+      .eq('fanmark_id', fanmarkId)
+      .neq('user_id', ctx.userId);
+
+    if (favoritesError) {
+      console.error('Failed to fetch favorites for notification:', favoritesError);
+      return;
+    }
+
+    if (!favorites || favorites.length === 0) {
+      return;
+    }
+
+    for (const favorite of favorites) {
+      const targetUserId = favorite.user_id;
+      if (!targetUserId) continue;
+
+      const { error: eventError } = await ctx.supabase.rpc('create_notification_event', {
+        event_type_param: 'favorite_fanmark_available',
+        payload_param: {
+          user_id: targetUserId,
+          fanmark_id: fanmarkId,
+          fanmark_name: displayName,
+          fanmark_short_id: fanmarkShortId,
+          link: fanmarkShortId ? `/f/${fanmarkShortId}` : null,
+        },
+        source_param: 'edge_function',
+        dedupe_key_param: `favorite_available_${fanmarkId}_${targetUserId}`,
+      });
+
+      if (eventError) {
+        console.error(
+          `Failed to enqueue favorite_fanmark_available for ${targetUserId}:`,
+          eventError,
+        );
+      }
+    }
+  } catch (error) {
+    console.error('Unexpected error while notifying favorites:', error);
+  }
 }
 
 async function fetchGracePeriodDays(ctx: ReturnContext): Promise<number> {
@@ -110,7 +167,7 @@ async function fetchLicenseWithFanmark(
     .from('fanmark_licenses')
     .select(
       `id, fanmark_id, user_id, status, license_end,
-       fanmarks ( id, user_input_fanmark )`
+       fanmarks ( id, user_input_fanmark, short_id )`
     )
     .eq('id', licenseId)
     .maybeSingle();
@@ -127,7 +184,7 @@ async function fetchLicenseWithFanmark(
         user_id: string;
         status: string;
         license_end: string;
-        fanmarks: { id: string; user_input_fanmark: string } | null;
+        fanmarks: { id: string; user_input_fanmark: string; short_id: string | null } | null;
       })
     | null;
 }
@@ -158,12 +215,15 @@ export async function returnFanmarkByLicenseId(
   await transitionLicenseToGrace(ctx, license.id, nowIso, graceExpiresAtIso);
 
   const fanmark = license.fanmarks?.user_input_fanmark ?? '';
+  const fanmarkShortId = license.fanmarks?.short_id ?? '';
   await logReturnAction(ctx, license.fanmark_id, fanmark, graceExpiresAtIso, nowIso);
+  await notifyFavoritesAboutReturn(ctx, license.fanmark_id, fanmark, fanmarkShortId);
 
   return {
     licenseId: license.id,
     fanmarkId: license.fanmark_id,
     fanmark,
+    fanmarkShortId,
     graceExpiresAt: graceExpiresAtIso,
   };
 }

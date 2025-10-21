@@ -193,7 +193,7 @@ async function applyRule(
   // Check cooldown window
   if (rule.cooldown_window_seconds) {
     const cooldownStart = new Date(Date.now() - rule.cooldown_window_seconds * 1000).toISOString();
-    const { data: recentNotifications } = await supabase
+    let cooldownQuery = supabase
       .from("notifications")
       .select("id")
       .eq("user_id", userId)
@@ -201,22 +201,44 @@ async function applyRule(
       .gte("created_at", cooldownStart)
       .limit(1);
 
+    const fanmarkId = event.payload?.fanmark_id as string | undefined;
+    if (fanmarkId) {
+      cooldownQuery = cooldownQuery.eq("payload->>fanmark_id", fanmarkId);
+    }
+
+    const { data: recentNotifications } = await cooldownQuery;
+
     if (recentNotifications && recentNotifications.length > 0) {
-      console.log(`User ${userId} is in cooldown period for rule ${rule.id}`);
+      console.log(
+        `User ${userId} is in cooldown period for rule ${rule.id}${
+          fanmarkId ? ` (fanmark ${fanmarkId})` : ""
+        }`,
+      );
       return;
     }
   }
 
   // Check max_per_user
   if (rule.max_per_user) {
-    const { count } = await supabase
+    let maxQuery = supabase
       .from("notifications")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
       .eq("rule_id", rule.id);
 
+    const fanmarkIdForLimit = event.payload?.fanmark_id as string | undefined;
+    if (fanmarkIdForLimit) {
+      maxQuery = maxQuery.eq("payload->>fanmark_id", fanmarkIdForLimit);
+    }
+
+    const { count } = await maxQuery;
+
     if (count && count >= rule.max_per_user) {
-      console.log(`User ${userId} has reached max notifications for rule ${rule.id}`);
+      console.log(
+        `User ${userId} has reached max notifications for rule ${rule.id}${
+          fanmarkIdForLimit ? ` (fanmark ${fanmarkIdForLimit})` : ""
+        }`,
+      );
       return;
     }
   }
@@ -268,6 +290,15 @@ async function applyRule(
     };
   }
 
+  // Merge additional metadata for the final payload
+  const extendedPayload = {
+    ...renderedContent,
+    link: event.payload?.link ?? null,
+    fanmark_id: event.payload?.fanmark_id ?? null,
+    fanmark_short_id: event.payload?.fanmark_short_id ?? null,
+    metadata: event.payload ?? {},
+  };
+
   // Calculate trigger time with delay
   const triggeredAt = new Date(Date.now() + rule.delay_seconds * 1000);
   const now = new Date().toISOString();
@@ -288,7 +319,7 @@ async function applyRule(
       template_version: rule.template_version,
       channel: rule.channel,
       priority: rule.priority,
-      payload: renderedContent,
+      payload: extendedPayload,
       status: notificationStatus,
       triggered_at: triggeredAt.toISOString(),
       delivered_at: deliveredAt,

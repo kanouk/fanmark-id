@@ -2,26 +2,15 @@ import { useEffect, useState } from 'react';
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "@/hooks/useTranslation";
-import { LanguageToggle } from "@/components/LanguageToggle";
+import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, LogOut, Heart } from 'lucide-react';
-import { MdSpaceDashboard } from 'react-icons/md';
-import { useProfile } from '@/hooks/useProfile';
 import { FanmarkAcquisition } from '@/components/FanmarkAcquisition';
 import { supabase } from '@/integrations/supabase/client';
 import { useFanmarkLimit } from '@/hooks/useFanmarkLimit';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 const Index = () => {
-  const { user, signOut } = useAuth();
-  const { profile } = useProfile();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { t, tWithBreaks } = useTranslation();
@@ -54,14 +43,6 @@ const Index = () => {
       badgeClass: 'border-destructive/20 bg-destructive text-destructive-foreground shadow-[0_8px_18px_hsl(var(--destructive)_/_0.25)]',
     },
   ] as const;
-  const handleAuthAction = () => {
-    if (user) {
-      signOut();
-    } else {
-      navigate("/auth");
-    }
-  };
-
   const handleSignupPrompt = () => {
     navigate("/auth");
   };
@@ -185,95 +166,7 @@ const Index = () => {
   }, [prefilledEmoji]);
 
   return <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      {/* Navigation */}
-      <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto flex items-center justify-between px-4 py-4 md:px-6">
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="group flex items-center gap-2 text-lg font-semibold text-foreground transition-transform hover:translate-y-[-1px]"
-          >
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
-              ✨
-            </span>
-            <span className="text-gradient text-2xl">fanmark.id</span>
-          </button>
-
-          <nav className="hidden items-center gap-8 text-sm font-medium text-muted-foreground md:flex" />
-
-          <div className="flex items-center gap-2">
-            <LanguageToggle />
-            {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    className="flex h-10 w-10 items-center justify-center rounded-full border border-primary/30 bg-primary/10 shadow-[0_4px_12px_hsl(var(--primary)_/_0.15)] transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                    aria-label={t('navigation.userMenu')}
-                  >
-                    <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-primary/10">
-                      {profile?.avatar_url ? (
-                        <img src={profile.avatar_url} alt="Avatar" className="absolute inset-0 h-full w-full object-cover" />
-                      ) : (
-                        <User className="h-4 w-4 text-primary" />
-                      )}
-                    </div>
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                    {user.email}
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onSelect={(event) => {
-                      event.preventDefault();
-                      navigate('/favorites');
-                    }}
-                    className="cursor-pointer"
-                  >
-                    <Heart className="mr-2 h-4 w-4" />
-                    {t('navigation.favorites')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onSelect={(event) => {
-                      event.preventDefault();
-                      navigate('/dashboard');
-                    }}
-                    className="cursor-pointer"
-                  >
-                    <MdSpaceDashboard className="mr-2 h-4 w-4" />
-                    {t('navigation.dashboard')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onSelect={(event) => {
-                      event.preventDefault();
-                      navigate('/profile');
-                    }}
-                    className="cursor-pointer"
-                  >
-                    <User className="mr-2 h-4 w-4" />
-                    {t('navigation.profile')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onSelect={(event) => {
-                      event.preventDefault();
-                      handleAuthAction();
-                    }}
-                    className="cursor-pointer"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    {t('navigation.logout')}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Button variant="accent" size="sm" onClick={handleAuthAction}>
-                {t('hero.signInButton')}
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
+      <Navigation />
 
       {/* Hero Section */}
       <section

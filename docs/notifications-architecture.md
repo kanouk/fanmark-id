@@ -84,11 +84,14 @@
 1. **イベント発火**
    - ライセンス遷移バッチから `notification_events` に挿入。
    - お気に入りファンマ失効は `fanmark_favorites` と `fanmark_licenses` を結合して対象ユーザーを payload に含める。
+   - ファンマ返却 (`return-fanmark` / `bulk-return-fanmarks`) 実行時に、お気に入り登録していたユーザーへ `favorite_fanmark_available` イベントを即時発行。
    - 管理UIは `manual_announcement` イベントを登録。
 
 2. **イベント処理**
    - Supabase の Scheduled Function などで `notification_events` をポーリング（`FOR UPDATE SKIP LOCKED` を利用し多重並列に対応）。
    - `trigger_at <= now()` のレコードに対し payload のバリデーション→対応する `notification_rules` を適用→ユーザー対象の再評価（セグメント・ユーザー設定・最新状態）を行い `notifications` に展開。
+   - `favorite_fanmark_available` のクールダウン判定はユーザー単位ではなくファンマ単位で行い、異なるファンマの返却は即時通知できるようにする。
+   - `max_per_user` の判定も payload の `fanmark_id` を考慮し、同じファンマの通知は 1 回まで、異なるファンマは都度配信できるようにする。
    - 配信直前にイベント条件が解消されていないかチェックし、不要な通知は `status = skipped` として終了。
    - 重複チェック: `event_type` / `dedupe_key` に加え、`notification_rules` の cooldown 条件も満たす場合のみ通知生成。
    - どのルールも該当しない場合は `status = skipped` と `processed_at` を記録して監視対象とする。
@@ -97,6 +100,7 @@
    - アプリ内通知: `notifications` から `channel = in_app` を React Query 経由で取得し、既読機能付き UI を表示。
      - ナビゲーションバーにベルアイコンを配置し、`where read_at is null` の件数をバッジとして表示。ユーザーがタップすると通知リスト画面に遷移し、`notifications` を新着順で表示する。
      - 通知リストはタブないしフィルタで「すべて」「重要」を切り替えられるよう設計しておく（将来の `priority` フィールド利用を想定）。
+      - ナビゲーションのプレビューは Supabase Realtime で `notifications` テーブルを監視し、挿入／更新時に最新データへ再フェッチする。
     - メール / WebPush: 送信ワーカーが `pending` を取得し外部サービスへ連携。
    - 失敗時は `status = failed` と `error_reason` / `retry_count` / `last_error_at` を保存。再送は手動／自動で retry キューへ移動。
    - 配信完了後はテンプレートで利用した値を保持できるよう `notifications_history` などのアーカイブテーブルにスナップショットを保存。
@@ -114,6 +118,7 @@
 - 失効バッチ (`supabase/functions/check-expired-licenses`) でイベント挿入を追加する。
 - お気に入り連携は `docs/favorites-feature.md` に記載の API 群を活用し、payload に favorite ユーザー一覧を求める。
 - `docs/GRACE_PERIOD_SPECIFICATION.md` のとおり `available_at` / `blocking_status` が得られるため、通知テンプレートでも再利用できる。
+- `supabase/functions/_shared/return-helpers.ts` で返却処理完了時に `favorite_fanmark_available` イベントを生成し、ユーザー操作トリガーの通知を実現している。
 
 ## 匿名化・テンプレート管理
 - `notification_templates` テーブルでテンプレート本文・件名・サマリーなどを管理する。`template_id` と `template_version` の組み合わせで取得し、将来ローカライズ時に差し替え可能にする。

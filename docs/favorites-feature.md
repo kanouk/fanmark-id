@@ -16,6 +16,7 @@
 - `add_fanmark_favorite` は `fanmarks` から直接 `fanmark_id` を解決するフォールバックを追加し、discovery/favorites の整合を自動補完する。
 - `link_fanmark_discovery` を全 fanmark に対して再実行し、既存のお気に入りにも最新の `fanmark_id` を行き渡らせるバックフィルを含めた。
 - 取得時にはトリガ／RPC で `fanmark_discoveries.fanmark_id` と `availability_status` を更新し、候補→本登録の整合を取る。
+- 返却処理 (`return-fanmark` / `bulk-return-fanmarks`) 完了時に、お気に入り登録者へ `favorite_fanmark_available` 通知イベントを発行し再取得の機会を知らせる。
 - RLS 方針
   - `fanmark_discoveries` は SELECT を全員許可（書き込みはセキュリティディファイナ RPC 経由）。
   - `fanmark_favorites` はユーザー自身のみ SELECT/INSERT/DELETE。

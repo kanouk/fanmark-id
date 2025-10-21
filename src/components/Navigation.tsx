@@ -5,11 +5,15 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Heart, LogOut, User, Bell } from 'lucide-react';
 import { MdSpaceDashboard } from 'react-icons/md';
 import { useUnreadNotifications } from '@/hooks/useUnreadNotifications';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { formatDistanceToNow } from 'date-fns';
+import { ja } from 'date-fns/locale';
+import { useEffect } from 'react';
 
 export const Navigation = () => {
   const { user, signOut, signingOut } = useAuth();
@@ -17,7 +21,53 @@ export const Navigation = () => {
   const { t } = useTranslation();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: unreadCount = 0 } = useUnreadNotifications();
+  const { data: recentNotifications = [], isLoading: notificationsLoading } = useQuery({
+    queryKey: ['notifications-preview', user?.id],
+    enabled: !!user,
+    staleTime: 30_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('id, payload, triggered_at, read_at')
+        .eq('user_id', user!.id)
+        .order('triggered_at', { ascending: false })
+        .limit(5);
+
+      if (error) {
+        console.error('Error fetching notifications preview:', error);
+        return [];
+      }
+
+      return data ?? [];
+    },
+  });
+
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`notifications-preview-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['notifications-preview', user.id] });
+          queryClient.invalidateQueries({ queryKey: ['unread-notification-count', user.id] });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, queryClient]);
 
   const handleLogout = async () => {
     try {
@@ -56,21 +106,99 @@ export const Navigation = () => {
         <div className="flex items-center gap-2">
           <LanguageToggle />
           {user && (
-            <button
-              onClick={() => navigate('/notifications')}
-              className="relative flex h-10 w-10 items-center justify-center rounded-full border border-primary/30 bg-primary/10 shadow-[0_4px_12px_hsl(var(--primary)_/_0.15)] transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              aria-label="通知"
-            >
-              <Bell className="h-5 w-5 text-primary" />
-              {unreadCount > 0 && (
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -right-1 -top-1 h-5 min-w-[20px] flex items-center justify-center px-1 text-xs"
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="relative flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-transform hover:-translate-y-0.5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  aria-label="通知"
                 >
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </Badge>
-              )}
-            </button>
+                  <Bell className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-5 min-w-[1.5rem] items-center justify-center rounded-full bg-gradient-to-br from-primary via-primary to-primary/90 px-1 text-[11px] font-semibold text-primary-foreground shadow-lg">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-80 rounded-2xl border border-border/60 bg-card/95 p-0 shadow-2xl backdrop-blur-xl"
+              >
+                <div className="border-b border-border/70 px-4 py-3">
+                  <DropdownMenuLabel className="flex items-center justify-between px-0 text-sm font-semibold text-foreground">
+                    <span>通知</span>
+                    {unreadCount > 0 && (
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                        {unreadCount} 未読
+                      </span>
+                    )}
+                  </DropdownMenuLabel>
+                </div>
+                <div className="max-h-80 overflow-y-auto px-2 py-2">
+                  {notificationsLoading ? (
+                    <div className="rounded-xl bg-muted/40 px-4 py-6 text-center text-sm text-muted-foreground">
+                      読み込み中…
+                    </div>
+                  ) : recentNotifications.length === 0 ? (
+                    <div className="rounded-xl bg-muted/40 px-4 py-6 text-center text-sm text-muted-foreground">
+                      通知はありません
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {recentNotifications.map((notification: any) => (
+                        <button
+                          key={notification.id}
+                          type="button"
+                          onClick={() => {
+                            const directLink =
+                              notification.payload?.link ??
+                              (notification.payload?.fanmark_short_id
+                                ? `/f/${notification.payload.fanmark_short_id}`
+                                : null);
+                            if (directLink) {
+                              navigate(directLink);
+                            } else {
+                              navigate('/notifications');
+                            }
+                          }}
+                          className="group w-full rounded-xl border border-transparent bg-transparent px-3 py-2 text-left transition-all hover:border-primary/40 hover:bg-primary/5"
+                        >
+                          <p className="text-sm font-medium text-foreground group-hover:text-primary">
+                            {notification.payload?.title ?? '通知'}
+                          </p>
+                          {notification.payload?.body && (
+                            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                              {notification.payload.body}
+                            </p>
+                          )}
+                          <p className="mt-2 text-[11px] text-muted-foreground">
+                            {formatDistanceToNow(new Date(notification.triggered_at), {
+                              addSuffix: true,
+                              locale: ja,
+                            })}
+                            {!notification.read_at && (
+                              <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                                未読
+                              </span>
+                            )}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <DropdownMenuSeparator className="mx-4" />
+                <DropdownMenuItem
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    navigate('/notifications');
+                  }}
+                  className="cursor-pointer justify-center rounded-b-2xl px-4 py-3 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+                >
+                  すべての通知を見る
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
           {user ? (
             <DropdownMenu>

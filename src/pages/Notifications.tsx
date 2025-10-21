@@ -3,13 +3,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/integrations/supabase/client';
 import { Navigation } from '@/components/Navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { formatDistanceToNow } from 'date-fns';
-import { ja } from 'date-fns/locale';
-import { Bell, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { formatDistanceToNow } from 'date-fns';
+import { ja } from 'date-fns/locale';
+import { Bell, Check, Link2 } from 'lucide-react';
 
 interface Notification {
   id: string;
@@ -25,6 +27,7 @@ export default function Notifications() {
   const { t } = useTranslation();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!user) return;
@@ -82,80 +85,154 @@ export default function Notifications() {
       toast.error('既読にできませんでした');
     } else {
       toast.success('既読にしました');
+      setNotifications((prev) =>
+        prev.map((notification) =>
+          notification.id === notificationId
+            ? { ...notification, read_at: new Date().toISOString() }
+            : notification
+        )
+      );
+      queryClient.invalidateQueries({ queryKey: ['notifications-preview', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['unread-notification-count', user?.id] });
     }
   };
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
       <Navigation />
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="max-w-3xl mx-auto space-y-6">
-          <div className="flex items-center gap-3">
-            <Bell className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold">通知</h1>
+      <main className="flex-1">
+        <div className="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
+          <div className="space-y-3 text-center">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+              通知
+            </h1>
+            <p className="mx-auto max-w-2xl text-sm text-muted-foreground sm:text-base">
+              大切なお知らせや更新情報をここでまとめて確認できます。
+            </p>
+          </div>
+
+          <div className="mt-8 flex justify-center">
+            <Button
+              variant="outline"
+              className="rounded-full px-6 py-2 text-sm font-medium"
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.location.reload();
+                }
+              }}
+            >
+              最新の通知を確認
+            </Button>
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div className="mt-12 flex justify-center">
+              <div className="flex items-center gap-3 rounded-full bg-white/70 px-6 py-3 text-sm text-muted-foreground shadow-[0_12px_30px_rgba(101,195,200,0.15)]">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary/30 border-t-transparent" />
+                読み込み中です…
+              </div>
             </div>
           ) : notifications.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
-                通知はありません
+            <Card className="mt-12 rounded-3xl border border-primary/20 bg-background/80 shadow-[0_20px_45px_rgba(101,195,200,0.14)] backdrop-blur">
+              <CardContent className="space-y-4 px-6 py-12 text-center">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary text-3xl">
+                  ✨
+                </div>
+                <h2 className="text-2xl font-semibold text-foreground">
+                  現在表示できる通知はありません
+                </h2>
+                <p className="mx-auto max-w-md text-sm text-muted-foreground">
+                  新しいお知らせが届いたら、ここに表示されます。
+                </p>
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-4">
-              {notifications.map((notification) => (
-                <Card 
-                  key={notification.id}
-                  className={notification.read_at ? 'opacity-60' : 'border-primary/20'}
-                >
-                  <CardHeader>
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg">
-                          {notification.payload.title || '通知'}
-                        </CardTitle>
-                        <CardDescription className="mt-1">
-                          {formatDistanceToNow(new Date(notification.triggered_at), {
-                            addSuffix: true,
-                            locale: ja,
-                          })}
-                        </CardDescription>
+            <div className="mt-10 space-y-6">
+              {notifications.map((notification) => {
+                const isUnread = !notification.read_at;
+                const linkTarget: string | null =
+                  notification.payload?.link ??
+                  (notification.payload?.fanmark_short_id
+                    ? `/f/${notification.payload.fanmark_short_id}`
+                    : null);
+                const showChannelBadge =
+                  notification.channel && notification.channel !== 'in_app';
+
+                return (
+                  <Card
+                    key={notification.id}
+                    className={`rounded-3xl border bg-background/90 shadow-[0_20px_45px_rgba(101,195,200,0.14)] transition-all hover:-translate-y-1 ${
+                      isUnread ? 'border-primary/30' : 'border-border/80 opacity-80'
+                    }`}
+                  >
+                    <CardContent className="flex flex-col gap-4 px-6 py-6 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="flex flex-1 gap-4">
+                        <span className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-inner shadow-primary/10">
+                          <Bell className="h-5 w-5" />
+                        </span>
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h2 className="text-base font-semibold text-foreground">
+                              {notification.payload.title || '通知'}
+                            </h2>
+                            <span className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(notification.triggered_at), {
+                                addSuffix: true,
+                                locale: ja,
+                              })}
+                            </span>
+                          </div>
+                          <p className="text-sm leading-relaxed text-muted-foreground">
+                            {notification.payload.body}
+                          </p>
+                          {notification.payload.summary && (
+                            <p className="text-xs text-muted-foreground/80">
+                              {notification.payload.summary}
+                            </p>
+                          )}
+                          <div className="flex flex-wrap items-center gap-2">
+                            {showChannelBadge && (
+                              <Badge variant="outline" className="text-xs">
+                                {notification.channel}
+                              </Badge>
+                            )}
+                            {isUnread && (
+                              <Badge variant="default" className="text-xs">
+                                未読
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      {!notification.read_at && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => markAsRead(notification.id)}
-                        >
-                          <Check className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm">{notification.payload.body}</p>
-                    {notification.payload.summary && (
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {notification.payload.summary}
-                      </p>
-                    )}
-                    <div className="flex gap-2 mt-4">
-                      <Badge variant="outline" className="text-xs">
-                        {notification.channel}
-                      </Badge>
-                      {!notification.read_at && (
-                        <Badge variant="default" className="text-xs">
-                          未読
-                        </Badge>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      <div className="flex shrink-0 flex-col items-end gap-3 sm:min-w-[180px]">
+                        {linkTarget && (
+                          <Button
+                            asChild
+                            variant="outline"
+                            className="w-full justify-center gap-2 rounded-full border-primary/40 text-primary hover:bg-primary/10 sm:w-auto"
+                          >
+                            <Link to={linkTarget}>
+                              <Link2 className="h-4 w-4" />
+                              詳細を見る
+                            </Link>
+                          </Button>
+                        )}
+                        {isUnread && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="w-full justify-center text-muted-foreground hover:text-primary sm:w-auto"
+                            onClick={() => markAsRead(notification.id)}
+                          >
+                            <Check className="mr-2 h-4 w-4" />
+                            既読にする
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>
