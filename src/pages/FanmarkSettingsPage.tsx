@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/integrations/supabase/client';
 import { resolveFanmarkDisplay } from '@/lib/emojiConversion';
+import { showEmojiConfetti } from '@/lib/emojiConfetti';
 
 interface FanmarkRecord {
   id: string;
@@ -137,6 +138,20 @@ const FanmarkSettingsPage = () => {
 
     loadFanmark();
   }, [authLoading, fanmarkId, user, loadFanmark, navigate, toast, t]);
+
+  // 新規取得時の紙吹雪アニメーション
+  useEffect(() => {
+    // データ読み込み完了 && fanmark が存在 && 新規取得フラグがある場合
+    if (!loading && fanmark && location.state?.isNew) {
+      // 紙吹雪を発動
+      showEmojiConfetti(fanmark.user_input_fanmark);
+      
+      // history.state から isNew フラグを削除（ブラウザバック時の再発動を防止）
+      const newState = { ...location.state };
+      delete newState.isNew;
+      window.history.replaceState(newState, document.title);
+    }
+  }, [loading, fanmark, location.state]);
 
   const handleClose = () => {
     navigate('/dashboard');
