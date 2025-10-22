@@ -71,9 +71,14 @@ export const FanmarkAcquisition = ({
   }, []);
 
   const [query, setQuery] = useState(() => normalizeQuery(prefilledEmoji));
-  const storageKey = useMemo(() => (rememberSearch ? `fanmark-search:${location.pathname}` : null), [rememberSearch, location.pathname]);
+  const scopedUserKey = user?.id ?? 'guest';
+  const storageKey = useMemo(
+    () => (rememberSearch ? `fanmark-search:${scopedUserKey}:${location.pathname}` : null),
+    [rememberSearch, scopedUserKey, location.pathname],
+  );
   const hasLoadedInitialStorage = useRef(false);
   const hasScrolledRef = useRef(false);
+  const previousStorageKeyRef = useRef<string | null>(null);
   const remainingCapacity = useMemo(() => {
     if (!user || fanmarkLimit === -1) {
       return Infinity; // 非ログイン時/無制限
@@ -273,18 +278,44 @@ export const FanmarkAcquisition = ({
   );
 
   useEffect(() => {
-    if (!rememberSearch || !storageKey) {
+    if (!rememberSearch) {
+      if (typeof window !== 'undefined') {
+        const prevKey = previousStorageKeyRef.current;
+        if (prevKey) {
+          sessionStorage.removeItem(prevKey);
+        }
+      }
+      previousStorageKeyRef.current = null;
+      hasLoadedInitialStorage.current = false;
       return;
     }
+    if (!storageKey) return;
     if (typeof window === 'undefined') return;
+
+    const prevKey = previousStorageKeyRef.current;
+    if (prevKey && prevKey !== storageKey) {
+      sessionStorage.removeItem(prevKey);
+      hasLoadedInitialStorage.current = false;
+    }
+    previousStorageKeyRef.current = storageKey;
+  }, [rememberSearch, storageKey]);
+
+  useEffect(() => {
+    if (!rememberSearch) {
+      setQuery(normalizeQuery(prefilledEmoji));
+      return;
+    }
+    if (!storageKey || typeof window === 'undefined') return;
     if (hasLoadedInitialStorage.current) return;
 
     const stored = sessionStorage.getItem(storageKey);
-    if (stored !== null) {
+    if (stored) {
       setQuery(normalizeQuery(stored));
-      hasLoadedInitialStorage.current = true;
+    } else {
+      setQuery(normalizeQuery(prefilledEmoji));
     }
-  }, [rememberSearch, storageKey, normalizeQuery]);
+    hasLoadedInitialStorage.current = true;
+  }, [rememberSearch, storageKey, normalizeQuery, prefilledEmoji]);
 
   useEffect(() => {
     if (!rememberSearch) {

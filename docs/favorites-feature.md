@@ -41,6 +41,7 @@
   - お気に入りトグルは `useFavoriteFanmarks` のキャッシュを参照しつつ、`add_fanmark_favorite` / `remove_fanmark_favorite` RPC を呼び出して即時反映・キャッシュ無効化を行う。
   - 検索成功時には `record_fanmark_search` を呼び出し、`fanmark_discoveries.search_count` を蓄積。
   - 未ログイン時はお気に入りボタン押下でログイン導線 (`onRequireAuth`) を呼び出す。
+  - 検索欄の入力は `sessionStorage` にユーザーID＋パス単位で保存し、ログアウトやユーザー切替時には別ユーザーへ引き継がれないようにする。
 - ファンマ登録 (`supabase/functions/register-fanmark`)：
   - `fanmarks` への INSERT 後にトリガーで `fanmark_discoveries` / `fanmark_favorites` を自動リンクし、候補状態から取得済みへステータスを更新。
   - バックフィル処理により既存レコードも `fanmark_id` が補完される。
