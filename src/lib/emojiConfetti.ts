@@ -21,7 +21,7 @@ interface Particle {
   height?: number;
 }
 
-const GRAVITY = 0.5;
+const GRAVITY = 0.3;
 const DEFAULT_PARTICLE_COUNT = 36;
 const DEFAULT_DURATION = 2500;
 const PAPER_COLORS = [
@@ -84,8 +84,8 @@ export function showEmojiConfetti(
         particles.push({
           x: centerX + (Math.random() - 0.5) * canvas.width * 0.8,
           y: startY,
-          vx: (Math.random() - 0.5) * 16,
-          vy: -(Math.random() * 10 + 15),
+          vx: (Math.random() - 0.5) * 10,
+          vy: -(Math.random() * 8 + 10),
           rotation: Math.random() * Math.PI * 2,
           rotationSpeed: (Math.random() - 0.5) * 0.4,
           opacity: 1,
@@ -97,8 +97,8 @@ export function showEmojiConfetti(
         particles.push({
           x: centerX + (Math.random() - 0.5) * canvas.width * 0.8,
           y: startY,
-          vx: (Math.random() - 0.5) * 16,
-          vy: -(Math.random() * 10 + 15),
+          vx: (Math.random() - 0.5) * 10,
+          vy: -(Math.random() * 8 + 10),
           rotation: Math.random() * Math.PI * 2,
           rotationSpeed: (Math.random() - 0.5) * 0.4,
           opacity: 1,
