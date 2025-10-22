@@ -82,7 +82,7 @@ export function showEmojiConfetti(
       
       if (isEmoji) {
         particles.push({
-          x: centerX + (Math.random() - 0.5) * 100,
+          x: centerX + (Math.random() - 0.5) * canvas.width * 0.8,
           y: startY,
           vx: (Math.random() - 0.5) * 16,
           vy: -(Math.random() * 10 + 15),
@@ -95,7 +95,7 @@ export function showEmojiConfetti(
         });
       } else {
         particles.push({
-          x: centerX + (Math.random() - 0.5) * 100,
+          x: centerX + (Math.random() - 0.5) * canvas.width * 0.8,
           y: startY,
           vx: (Math.random() - 0.5) * 16,
           vy: -(Math.random() * 10 + 15),
