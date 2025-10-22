@@ -13,14 +13,27 @@ interface Particle {
   rotation: number;
   rotationSpeed: number;
   opacity: number;
-  emoji: string;
+  type: 'emoji' | 'paper';
+  emoji?: string;
+  color?: string;
   size: number;
+  width?: number;
+  height?: number;
 }
 
 const GRAVITY = 0.5;
 const DEFAULT_PARTICLE_COUNT = 36;
 const DEFAULT_DURATION = 2500;
-const CONFETTI_EMOJIS = ['🎊', '🎉', '🎈', '✨', '🎆', '🎇'];
+const PAPER_COLORS = [
+  '#FF6B6B', // 赤
+  '#4ECDC4', // 青緑
+  '#45B7D1', // 水色
+  '#FFA07A', // オレンジ
+  '#98D8C8', // ミント
+  '#F7DC6F', // 黄色
+  '#BB8FCE', // 紫
+  '#85C1E2', // 空色
+];
 
 export function showEmojiConfetti(
   emojiSequence: string,
@@ -39,9 +52,6 @@ export function showEmojiConfetti(
     if (emojiArray.length === 0) {
       return;
     }
-
-    // 取得した絵文字に紙吹雪系の絵文字を追加
-    const allEmojis = [...emojiArray, ...CONFETTI_EMOJIS];
 
     // Canvas を作成
     const canvas = document.createElement('canvas');
@@ -68,17 +78,37 @@ export function showEmojiConfetti(
     const startY = canvas.height * 0.9;
 
     for (let i = 0; i < particleCount; i++) {
-      particles.push({
-        x: centerX + (Math.random() - 0.5) * 100,
-        y: startY,
-        vx: (Math.random() - 0.5) * 16, // -8 ~ 8
-        vy: -(Math.random() * 10 + 15), // -15 ~ -25
-        rotation: Math.random() * Math.PI * 2,
-        rotationSpeed: (Math.random() - 0.5) * 0.4, // -0.2 ~ 0.2
-        opacity: 1,
-        emoji: allEmojis[Math.floor(Math.random() * allEmojis.length)],
-        size: Math.random() * 20 + 40, // 40-60px
-      });
+      const isEmoji = Math.random() < 0.4; // 40%がファンマーク絵文字、60%が紙吹雪
+      
+      if (isEmoji) {
+        particles.push({
+          x: centerX + (Math.random() - 0.5) * 100,
+          y: startY,
+          vx: (Math.random() - 0.5) * 16,
+          vy: -(Math.random() * 10 + 15),
+          rotation: Math.random() * Math.PI * 2,
+          rotationSpeed: (Math.random() - 0.5) * 0.4,
+          opacity: 1,
+          type: 'emoji',
+          emoji: emojiArray[Math.floor(Math.random() * emojiArray.length)],
+          size: Math.random() * 20 + 40, // 40-60px
+        });
+      } else {
+        particles.push({
+          x: centerX + (Math.random() - 0.5) * 100,
+          y: startY,
+          vx: (Math.random() - 0.5) * 16,
+          vy: -(Math.random() * 10 + 15),
+          rotation: Math.random() * Math.PI * 2,
+          rotationSpeed: (Math.random() - 0.5) * 0.4,
+          opacity: 1,
+          type: 'paper',
+          color: PAPER_COLORS[Math.floor(Math.random() * PAPER_COLORS.length)],
+          width: Math.random() * 4 + 8, // 8-12px
+          height: Math.random() * 5 + 15, // 15-20px
+          size: 0,
+        });
+      }
     }
 
     // アニメーション
@@ -116,10 +146,17 @@ export function showEmojiConfetti(
         ctx!.translate(particle.x, particle.y);
         ctx!.rotate(particle.rotation);
         ctx!.globalAlpha = particle.opacity;
-        ctx!.font = `${particle.size}px "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
-        ctx!.textAlign = 'center';
-        ctx!.textBaseline = 'middle';
-        ctx!.fillText(particle.emoji, 0, 0);
+        
+        if (particle.type === 'emoji') {
+          ctx!.font = `${particle.size}px "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
+          ctx!.textAlign = 'center';
+          ctx!.textBaseline = 'middle';
+          ctx!.fillText(particle.emoji!, 0, 0);
+        } else {
+          ctx!.fillStyle = particle.color!;
+          ctx!.fillRect(-particle.width! / 2, -particle.height! / 2, particle.width!, particle.height!);
+        }
+        
         ctx!.restore();
       });
 
