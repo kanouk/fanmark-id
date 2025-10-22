@@ -18,8 +18,9 @@ interface Particle {
 }
 
 const GRAVITY = 0.5;
-const DEFAULT_PARTICLE_COUNT = 18;
+const DEFAULT_PARTICLE_COUNT = 36;
 const DEFAULT_DURATION = 2500;
+const CONFETTI_EMOJIS = ['🎊', '🎉', '🎈', '✨', '🎆', '🎇'];
 
 export function showEmojiConfetti(
   emojiSequence: string,
@@ -38,6 +39,9 @@ export function showEmojiConfetti(
     if (emojiArray.length === 0) {
       return;
     }
+
+    // 取得した絵文字に紙吹雪系の絵文字を追加
+    const allEmojis = [...emojiArray, ...CONFETTI_EMOJIS];
 
     // Canvas を作成
     const canvas = document.createElement('canvas');
@@ -72,7 +76,7 @@ export function showEmojiConfetti(
         rotation: Math.random() * Math.PI * 2,
         rotationSpeed: (Math.random() - 0.5) * 0.4, // -0.2 ~ 0.2
         opacity: 1,
-        emoji: emojiArray[Math.floor(Math.random() * emojiArray.length)],
+        emoji: allEmojis[Math.floor(Math.random() * allEmojis.length)],
         size: Math.random() * 20 + 40, // 40-60px
       });
     }
