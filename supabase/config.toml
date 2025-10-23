@@ -9,6 +9,9 @@ verify_jwt = true
 [functions.process-notification-events]
 verify_jwt = false
 
+[functions.check-expired-licenses]
+verify_jwt = false
+
 # ========================================
 # Cron Jobs Configuration
 # ========================================
