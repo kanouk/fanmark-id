@@ -24,3 +24,7 @@ dist-ssr
 *.sw?
 # Supabase local temp files
 supabase/.temp/
+
+# npm local cache
+.npm-cache/
+/.npmrc
