@@ -642,12 +642,12 @@ export const FanmarkDashboard = () => {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <Card className="relative overflow-hidden rounded-3xl border border-primary/25 bg-background/85 shadow-[0_15px_40px_rgba(101,195,200,0.16)] backdrop-blur">
-            <CardContent className="p-6">
+            <CardContent className="flex h-full flex-col p-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
-                   <p className="text-sm font-medium text-muted-foreground">
-                     {t('dashboard.stats.activeFanmarks')}
-                   </p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {t('dashboard.stats.yourFanmarks')}
+                  </p>
                    <div className="flex items-baseline gap-3">
                      <span className="text-3xl font-bold text-primary">
                        {activeFanmarks}/{isUnlimited ? '∞' : fanmarkLimit}
@@ -658,13 +658,13 @@ export const FanmarkDashboard = () => {
                   <FiTarget className="h-6 w-6" />
                 </div>
               </div>
-              <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden mt-4">
+              <div className="mt-4 w-full overflow-hidden rounded-full bg-muted h-2.5">
                  <div 
                    className="bg-primary h-2.5 rounded-full transition-all duration-500"
                    style={{ width: `${isUnlimited ? 0 : Math.min((activeFanmarks / fanmarkLimit) * 100, 100)}%` }}
                  />
               </div>
-              <div className="mt-6 flex justify-end">
+              <div className="mt-auto flex justify-end pt-4">
                 <button
                   type="button"
                   onClick={() => navigate('/plans', { state: { from: location.pathname } })}
@@ -677,7 +677,7 @@ export const FanmarkDashboard = () => {
           </Card>
 
           <Card className="relative overflow-hidden rounded-3xl border border-primary/25 bg-background/85 shadow-[0_15px_40px_rgba(101,195,200,0.16)] backdrop-blur">
-            <CardContent className="p-6">
+            <CardContent className="flex h-full flex-col p-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground">
@@ -693,7 +693,7 @@ export const FanmarkDashboard = () => {
                   <Heart className="h-6 w-6" />
                 </div>
               </div>
-              <div className="mt-6 flex justify-end">
+              <div className="mt-auto flex justify-end pt-4">
                 <button
                   type="button"
                   onClick={() => navigate('/favorites', { state: { from: location.pathname } })}

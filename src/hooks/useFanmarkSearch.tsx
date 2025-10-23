@@ -337,6 +337,13 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
 
       const currentUserId = user?.id || null;
       const isOwnedByCurrentUser = !!(currentUserId && fanmarkData.current_owner_id === currentUserId);
+      const ownerInfo = fanmarkData.current_owner_id
+        ? {
+            user_id: fanmarkData.current_owner_id,
+            username: '',
+            display_name: '',
+          }
+        : undefined;
       const blockingStatus = fanmarkData.current_license_status ?? availability.blocking_status ?? null;
       const nextAvailableAt = fanmarkData.next_available_at ?? availability.available_at ?? null;
       const isBlockedForRegistration = fanmarkData.is_blocked_for_registration === true;
@@ -374,6 +381,7 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
           tier_level: 1,
           status: 'not_available',
           emoji_count: validation.emojiCount,
+          owner: ownerInfo,
           available_at: nextAvailableAt,
           blocking_status: blockingStatus,
           is_blocked_for_registration: true,
@@ -435,7 +443,7 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
         tier_level: 1,
         status: 'not_available',
         emoji_count: validation.emojiCount,
-        owner: undefined,
+        owner: ownerInfo,
         available_at: nextAvailableAt,
         blocking_status: blockingStatus,
         is_blocked_for_registration: false,
