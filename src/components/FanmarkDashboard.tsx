@@ -828,6 +828,7 @@ export const FanmarkDashboard = () => {
                                   (timing.status === 'active' && isCountdownActive) ||
                                   ((timing.status === 'grace' || timing.status === 'grace-return') && isGraceCountdownActive);
                                 const timeDisplayClass = `font-medium whitespace-nowrap ${isSmallCountdown ? 'text-xs' : 'text-sm'} ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`;
+                                const handleRowNavigation = () => navigate(`/fanmarks/${fanmark.id}/settings`);
                                 const isGraceReturn = timing.status === 'grace-return';
                                 const canReturn = !isReturned(fanmark) && timing.status === 'active';
                                 const canExtend = (['active', 'grace', 'grace-return'].includes(timing.status)) && (!isReturned(fanmark) || isGraceReturn);
@@ -840,12 +841,13 @@ export const FanmarkDashboard = () => {
                                     : 'hover:bg-primary/5 hover:shadow-sm';
 
                                 return (
-                                  <tr key={rowKey} className={`border-b border-primary/5 transition-all duration-200 ${rowVisualState}`}>
+                                  <tr key={rowKey} onClick={handleRowNavigation} className={`border-b border-primary/5 transition-all duration-200 ${rowVisualState}`}>
                                     <td className="px-4 py-3">
-                                      <div className="min-h-[2.25rem] flex items-end">
+                                      <div className="min-h-[2.25rem] flex items-end" onClick={(event) => event.stopPropagation()}>
                                         <div
                                           className={`flex items-center px-3.5 py-2.5 rounded-md shadow-sm transition-transform hover:scale-105 whitespace-nowrap cursor-pointer ${getTierOvalStyle(fanmark.tier_level || 1)}`}
-                                          onClick={() => {
+                                          onClick={(event) => {
+                                            event.stopPropagation();
                                             navigator.clipboard.writeText(fanmark.fanmark);
                                             toast({
                                               title: t('dashboard.emojiCopiedTitle'),
@@ -859,12 +861,15 @@ export const FanmarkDashboard = () => {
                                       </div>
                                     </td>
                                     <td className="px-4 py-3">
-                                      <div className="min-h-[2.25rem] flex items-center">
+                                      <div className="min-h-[2.25rem] flex items-center" onClick={(event) => event.stopPropagation()}>
                                         <Tooltip>
                                           <TooltipTrigger asChild>
                                             <button
                                               type="button"
-                                              onClick={() => navigate(`/f/${fanmark.short_id}`)}
+                                              onClick={(event) => {
+                                                event.stopPropagation();
+                                                navigate(`/f/${fanmark.short_id}`);
+                                              }}
                                             className="rounded-md border border-border/50 bg-muted/60 px-2.5 py-1 text-[0.7rem] font-medium tracking-wide text-muted-foreground transition-colors hover:bg-muted/80"
                                               aria-label={t('dashboard.viewDetails')}
                                             >

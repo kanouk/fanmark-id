@@ -333,12 +333,7 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose, onPre
                 document.getElementById('cover-image-upload')?.click();
               }
             }}
-            onMouseDown={(event) => {
-              if (!coverImageUrl) {
-                document.getElementById('cover-image-upload')?.click();
-                return;
-              }
-
+            onMouseDown={coverImageUrl ? (event) => {
               const container = event.currentTarget as HTMLDivElement;
               const containerHeight = container.clientHeight;
               const startY = event.clientY;
@@ -361,7 +356,7 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose, onPre
 
               window.addEventListener('mousemove', handleMouseMove);
               window.addEventListener('mouseup', handleMouseUp);
-            }}
+            } : undefined}
           >
                 {coverImageUrl ? (
                   <>
