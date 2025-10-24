@@ -741,7 +741,16 @@
     "openFanmark": "Visit fanmark",
     "unclaimedBadge": "Unclaimed",
     "untitledFanmark": "Untitled fanmark",
-    "notRegisteredShort": "N/A"
+    "notRegisteredShort": "N/A",
+    "statusAvailable": "Available",
+    "statusUnavailable": "Unavailable",
+    "statusReturnProcessing": "Return processing",
+    "acquireButton": "Acquire",
+    "link": "Link",
+    "favoritedAt": "Favorited on",
+    "accessType": "Access type",
+    "owner": "Owner",
+    "noName": "Untitled fanmark"
   },
   "registration": {
     "title": "Obtain Your Fanmark",

@@ -739,7 +739,16 @@
     "openFanmark": "ファンマを開く",
     "unclaimedBadge": "未取得",
     "untitledFanmark": "名前未設定のファンマ",
-    "notRegisteredShort": "未登録"
+    "notRegisteredShort": "未登録",
+    "statusAvailable": "取得可能",
+    "statusUnavailable": "取得不可",
+    "statusReturnProcessing": "失効処理中",
+    "acquireButton": "取得する",
+    "link": "リンク",
+    "favoritedAt": "お気に入り登録日",
+    "accessType": "アクセス種別",
+    "owner": "オーナー",
+    "noName": "名前未設定のファンマ"
   },
   "registration": {
     "title": "ファンマを登録",
