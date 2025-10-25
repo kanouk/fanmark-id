@@ -220,12 +220,17 @@ export const canonicalizeEmojiString = (input: string): string => {
         consumed = key.length;
         break;
       }
+    }
 
-      const remainingSlice = sanitized.slice(index);
-      if (key.startsWith(remainingSlice)) {
-        match = entry;
-        consumed = Math.min(remainingSlice.length, key.length);
-        break;
+    if (!match) {
+      for (const entry of candidates) {
+        const key = entry.key;
+        const remainingSlice = sanitized.slice(index);
+        if (key.startsWith(remainingSlice)) {
+          match = entry;
+          consumed = Math.min(remainingSlice.length, key.length);
+          break;
+        }
       }
     }
 

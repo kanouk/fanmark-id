@@ -119,6 +119,26 @@ const sampleRecords: EmojiMasterRecord[] = [
     codepoints: ["1F91D", "1F3FB"],
     sort_order: 10,
   },
+  {
+    id: "face-without-mouth",
+    emoji: "😶",
+    short_name: "face_without_mouth",
+    keywords: ["face", "without", "mouth"],
+    category: "Smileys & Emotion",
+    subcategory: "face-neutral-skeptical",
+    codepoints: ["1F636"],
+    sort_order: 11,
+  },
+  {
+    id: "face-in-clouds",
+    emoji: "😶‍🌫️",
+    short_name: "face_in_clouds",
+    keywords: ["face", "in", "clouds"],
+    category: "Smileys & Emotion",
+    subcategory: "emotion",
+    codepoints: ["1F636", "200D", "1F32B", "FE0F"],
+    sort_order: 12,
+  },
 ] satisfies EmojiMasterRecord[];
 
 const testEmojis = [
@@ -132,15 +152,19 @@ const testEmojis = [
   { label: "Pirate flag", emoji: "🏴‍☠️" },
   { label: "Heart on fire", emoji: "❤️‍🔥" },
   { label: "People holding hands", emoji: "🧑🏽‍🤝‍🧑🏻" },
+  { label: "Face without mouth", emoji: "😶" },
+  { label: "Face in clouds", emoji: "😶‍🌫️" },
 ];
 
 const canonicalizationCases = [
+  { label: "Simple face remains simple", input: "😶", expected: "😶" },
   { label: "Head shake missing VS", input: "🙂‍↔", expected: "🙂‍↔️" },
   { label: "Head shake truncated sequence", input: "🙂‍↔️🙂‍↔️🙂‍", expected: "🙂‍↔️🙂‍↔️🙂‍↔️" },
   { label: "Flag with text-style selector", input: "🏳️\uFE0E‍🌈", expected: "🏳️‍🌈" },
   { label: "Woman health worker text-style", input: "👩‍⚕\uFE0E", expected: "👩‍⚕️" },
   { label: "Singer with spaces", input: " 🧑‍🎤 ", expected: "🧑‍🎤" },
   { label: "Handshake separate components", input: "🤝🏻", expected: "🤝🏻" },
+  { label: "Face in clouds remains combined", input: "😶‍🌫️", expected: "😶‍🌫️" },
 ];
 
 const main = async () => {
