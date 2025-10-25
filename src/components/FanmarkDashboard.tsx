@@ -878,9 +878,9 @@ export const FanmarkDashboard = () => {
                                 return (
                                   <tr key={rowKey} onClick={handleRowNavigation} className={`border-b border-primary/5 transition-all duration-200 ${rowVisualState}`}>
                                     <td className="px-4 py-3">
-                                      <div className="min-h-[2.25rem] flex items-end" onClick={(event) => event.stopPropagation()}>
+                                      <div className="min-h-[2.25rem] flex items-end overflow-visible" onClick={(event) => event.stopPropagation()}>
                                         <div
-                                          className={`relative flex items-center px-3.5 py-2.5 rounded-md shadow-sm transition-transform hover:scale-105 whitespace-nowrap cursor-pointer ${getTierOvalStyle(fanmark.tier_level || 1)}`}
+                                          className={`relative flex items-center px-3.5 py-2.5 rounded-md shadow-sm transition-transform hover:scale-105 whitespace-nowrap cursor-pointer overflow-visible ${getTierOvalStyle(fanmark.tier_level || 1)}`}
                                           onClick={(event) => {
                                             event.stopPropagation();
                                             navigator.clipboard.writeText(fanmark.fanmark);
@@ -1099,10 +1099,10 @@ export const FanmarkDashboard = () => {
                          <Card key={cardKey} className={`rounded-3xl border border-primary/10 transition-colors ${cardVisualState}`}>
                             <CardContent className="p-5">
                                   <div className="space-y-3">
-                                     <div className="flex items-start justify-between">
-                                    <div className="flex items-end">
+                                   <div className="flex items-start justify-between">
+                                    <div className="flex items-end overflow-visible">
                                       <div
-                                        className={`relative flex items-center px-3 py-2 rounded-md cursor-pointer hover:scale-105 transition-transform ${getTierOvalStyle(fanmark.tier_level || 1)}`}
+                                        className={`relative flex items-center px-3 py-2 rounded-md cursor-pointer hover:scale-105 transition-transform overflow-visible ${getTierOvalStyle(fanmark.tier_level || 1)}`}
                                         onClick={() => {
                                           navigator.clipboard.writeText(fanmark.fanmark);
                                           toast({
