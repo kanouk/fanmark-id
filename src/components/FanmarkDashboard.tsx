@@ -513,17 +513,34 @@ export const FanmarkDashboard = () => {
     return Boolean(licenseData?.is_returned);
   };
 
-  const getTierOvalStyle = (tierLevel: number) => {
-    if (tierLevel === 1) {
-      return 'bg-gray-100 border border-gray-300';
-    } else if (tierLevel === 2) {
-      return 'bg-gradient-to-r from-blue-100 to-purple-100 border border-blue-300';
-    } else if (tierLevel === 3) {
-      return 'bg-gradient-to-r from-amber-100 via-orange-100 to-pink-100 border-2 border-amber-400 shadow-lg';
-    } else if (tierLevel === 4) {
-      return 'bg-gradient-to-r from-rose-100 via-red-100 to-amber-100 border-2 border-rose-400 shadow-lg';
+  const getTierOvalStyle = (tierLevel: number): string => {
+    switch (tierLevel) {
+      case 4: // S Tier - Gold/Platinum
+        return "bg-gradient-to-br from-amber-200 via-yellow-100 to-amber-300 border-[3px] border-amber-500 shadow-lg hover:shadow-xl transition-all duration-300 tier-s-shine";
+      case 3: // A Tier - Purple/Violet
+        return "bg-gradient-to-br from-purple-200 via-violet-200 to-purple-300 border-[2.5px] border-purple-500 shadow-md hover:shadow-lg transition-all duration-300 tier-a-glow";
+      case 2: // B Tier - Blue/Cyan
+        return "bg-gradient-to-br from-blue-100 via-cyan-100 to-blue-200 border-2 border-blue-400 shadow-sm hover:shadow-md transition-all duration-300";
+      case 1: // C Tier - Green/White
+        return "bg-gradient-to-br from-emerald-50 via-white to-emerald-100 border border-emerald-300 shadow-sm hover:shadow transition-all duration-300";
+      default:
+        return "bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200";
     }
-    return 'bg-gray-50 border border-gray-200';
+  };
+
+  const getTierBadgeStyle = (tierLevel: number): string => {
+    switch (tierLevel) {
+      case 4: // S Tier - Gold gradient
+        return "bg-gradient-to-br from-amber-500 to-yellow-600 text-white border border-amber-600";
+      case 3: // A Tier - Purple gradient
+        return "bg-gradient-to-br from-purple-500 to-violet-600 text-white border border-purple-600";
+      case 2: // B Tier - Blue gradient
+        return "bg-gradient-to-br from-blue-500 to-cyan-600 text-white border border-blue-600";
+      case 1: // C Tier - Green gradient
+        return "bg-gradient-to-br from-emerald-500 to-green-600 text-white border border-emerald-600";
+      default:
+        return "bg-foreground text-background";
+    }
   };
 
   const getTierLabel = (tierLevel: number | null | undefined) => {
@@ -874,7 +891,7 @@ export const FanmarkDashboard = () => {
                                           }}
                                           title={t('dashboard.clickToCopyEmoji')}
                                         >
-                                          <span className="absolute -top-2 -left-2 rounded-full bg-foreground px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-widest text-background shadow">
+                                          <span className={`absolute -top-2 -left-2 rounded-full px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-widest shadow ${getTierBadgeStyle(fanmark.tier_level)}`}>
                                             {getTierLabel(fanmark.tier_level)}
                                           </span>
                                           <span className="text-2xl leading-none select-none" style={{ letterSpacing: '0.2em' }}>{fanmark.fanmark}</span>
@@ -1095,7 +1112,7 @@ export const FanmarkDashboard = () => {
                                         }}
                                         title={t('dashboard.clickToCopyEmoji')}
                                       >
-                                        <span className="absolute -top-2 -left-2 rounded-full bg-foreground px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-widest text-background shadow">
+                                        <span className={`absolute -top-2 -left-2 rounded-full px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-widest shadow ${getTierBadgeStyle(fanmark.tier_level)}`}>
                                           {getTierLabel(fanmark.tier_level)}
                                         </span>
                                         <span
