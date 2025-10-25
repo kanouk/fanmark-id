@@ -82,7 +82,7 @@ const AdminDashboard = () => {
                 value="tier-extension-prices"
                 className="flex-1 rounded-xl px-5 py-3 text-sm font-medium transition-all data-[state=active]:bg-card data-[state=active]:text-foreground sm:flex-none"
               >
-                延長料金
+                ティア管理
               </TabsTrigger>
               <TabsTrigger
                 value="expiration"

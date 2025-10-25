@@ -109,6 +109,8 @@ if (existingLicense) {
 - `check_fanmark_availability(input_emoji_ids uuid[])`
   - グレース中のライセンスも占有扱いとし、レスポンスに `blocking_status`（`active` / `grace` など）と `available_at`（再取得可能になる目安時刻）を追加。
 - `get_fanmark_complete_data(...)`
+  - 無期限ライセンス (`license_end IS NULL`) も「アクティブ」として扱い、`has_active_license`/`is_blocked_for_registration` を `true` にする。
+  - `next_available_at` は無期限の場合 `NULL` のまま返る（猶予や期限切れのみ日時をセット）。
   - 常に最新のライセンスを参照し、`current_license_status` / `current_grace_expires_at` / `is_blocked_for_registration` / `next_available_at` を返却。
 
 これにより検索UIは、失効処理中のファンマを「取得不可」と表示しつつ、再取得可能になる予定時刻を利用者へ案内できる。

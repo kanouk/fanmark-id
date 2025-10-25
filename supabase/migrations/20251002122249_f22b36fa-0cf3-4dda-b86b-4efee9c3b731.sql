@@ -12,7 +12,7 @@ USING (
     WHERE fl.id = fanmark_basic_configs.license_id
       AND fl.user_id = auth.uid()
       AND fl.status = 'active'
-      AND fl.license_end > now()
+      AND (fl.license_end IS NULL OR fl.license_end > now())
   )
 );
 
@@ -28,7 +28,7 @@ USING (
     WHERE fl.id = fanmark_redirect_configs.license_id
       AND fl.user_id = auth.uid()
       AND fl.status = 'active'
-      AND fl.license_end > now()
+      AND (fl.license_end IS NULL OR fl.license_end > now())
   )
 );
 
@@ -44,6 +44,6 @@ USING (
     WHERE fl.id = fanmark_messageboard_configs.license_id
       AND fl.user_id = auth.uid()
       AND fl.status = 'active'
-      AND fl.license_end > now()
+      AND (fl.license_end IS NULL OR fl.license_end > now())
   )
 );

@@ -31,6 +31,7 @@
   - Tier3 の `emoji_count_min/max` を 2〜5 に拡張、Tier4 row を追加
 - `fanmark_licenses.license_end` は `NULL` 許容に変更。Tier1 では `NULL` を保持し、「占有中」として扱う。
 - `fanmark_tier_extension_prices` に Tier4 の料金を Tier3 から複製し、延長機能の既存挙動を維持。
+- `fanmark_basic_configs` / `fanmark_redirect_configs` / `fanmark_messageboard_configs` の RLS ポリシーを更新し、`license_end IS NULL` の無期限ライセンスでも所有者が設定更新できるようにする。
 
 ## 4. RPC / Edge Functions
 

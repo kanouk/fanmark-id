@@ -321,3 +321,120 @@ BEGIN
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER STABLE SET search_path = public;
+
+-- Keep fanmark detail helper aligned with perpetual license handling
+CREATE OR REPLACE FUNCTION public.get_fanmark_complete_data(
+  fanmark_id_param uuid DEFAULT NULL::uuid,
+  emoji_ids_param uuid[] DEFAULT NULL::uuid[]
+)
+RETURNS TABLE(
+  id uuid,
+  user_input_fanmark text,
+  emoji_ids uuid[],
+  normalized_emoji text,
+  short_id text,
+  access_type text,
+  status text,
+  created_at timestamp with time zone,
+  updated_at timestamp with time zone,
+  fanmark_name text,
+  target_url text,
+  text_content text,
+  is_password_protected boolean,
+  current_owner_id uuid,
+  license_end timestamp with time zone,
+  has_active_license boolean,
+  license_id uuid,
+  current_license_status text,
+  current_grace_expires_at timestamp with time zone,
+  is_blocked_for_registration boolean,
+  next_available_at timestamp with time zone
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO public
+AS $function$
+DECLARE
+  emoji_sequence text;
+  normalized_input text;
+  missing_count int;
+BEGIN
+  IF fanmark_id_param IS NULL AND (emoji_ids_param IS NULL OR array_length(emoji_ids_param, 1) = 0) THEN
+    RETURN;
+  END IF;
+
+  IF fanmark_id_param IS NULL THEN
+    WITH resolved AS (
+      SELECT em.emoji, ids.ord
+      FROM unnest(emoji_ids_param) WITH ORDINALITY AS ids(id, ord)
+      LEFT JOIN public.emoji_master em ON em.id = ids.id
+    )
+    SELECT
+      COUNT(*) FILTER (WHERE emoji IS NULL),
+      string_agg(emoji, '' ORDER BY ord)
+    INTO missing_count, emoji_sequence
+    FROM resolved;
+
+    IF missing_count > 0 OR emoji_sequence IS NULL OR emoji_sequence = '' THEN
+      RETURN;
+    END IF;
+
+    normalized_input := translate(
+      emoji_sequence,
+      chr(127995) || chr(127996) || chr(127997) || chr(127998) || chr(127999),
+      ''
+    );
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    f.id,
+    f.user_input_fanmark,
+    f.emoji_ids,
+    f.normalized_emoji,
+    f.short_id,
+    COALESCE(bc.access_type, 'inactive') AS access_type,
+    f.status,
+    f.created_at,
+    f.updated_at,
+    bc.fanmark_name,
+    rc.target_url,
+    mc.content AS text_content,
+    COALESCE(pc.is_enabled, false) AS is_password_protected,
+    latest.user_id AS current_owner_id,
+    latest.license_end,
+    CASE
+      WHEN latest.status = 'active' AND (latest.license_end IS NULL OR latest.license_end > now()) THEN true
+      ELSE false
+    END AS has_active_license,
+    latest.id AS license_id,
+    latest.status AS current_license_status,
+    latest.grace_expires_at AS current_grace_expires_at,
+    CASE
+      WHEN latest.status = 'active' AND (latest.license_end IS NULL OR latest.license_end > now()) THEN true
+      WHEN latest.status = 'grace' AND COALESCE(latest.grace_expires_at, latest.license_end) > now() THEN true
+      ELSE false
+    END AS is_blocked_for_registration,
+    CASE
+      WHEN latest.status = 'grace' AND COALESCE(latest.grace_expires_at, latest.license_end) > now() THEN COALESCE(latest.grace_expires_at, latest.license_end)
+      WHEN latest.status = 'active' AND (latest.license_end IS NULL OR latest.license_end > now()) THEN latest.license_end
+      ELSE NULL
+    END AS next_available_at
+  FROM fanmarks f
+  LEFT JOIN LATERAL (
+    SELECT fl.*
+    FROM fanmark_licenses fl
+    WHERE fl.fanmark_id = f.id
+    ORDER BY (fl.license_end IS NULL) DESC, fl.license_end DESC
+    LIMIT 1
+  ) AS latest ON true
+  LEFT JOIN fanmark_basic_configs bc ON latest.id = bc.license_id
+  LEFT JOIN fanmark_redirect_configs rc ON latest.id = rc.license_id
+  LEFT JOIN fanmark_messageboard_configs mc ON latest.id = mc.license_id
+  LEFT JOIN fanmark_password_configs pc ON latest.id = pc.license_id
+  WHERE
+    (fanmark_id_param IS NOT NULL AND f.id = fanmark_id_param)
+    OR
+    (fanmark_id_param IS NULL AND normalized_input IS NOT NULL AND f.normalized_emoji = normalized_input);
+END;
+$function$;
