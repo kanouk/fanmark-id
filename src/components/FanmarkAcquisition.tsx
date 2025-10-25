@@ -204,6 +204,10 @@ export const FanmarkAcquisition = ({
         description: t('dashboard.acquireSuccessDescription'),
       });
 
+      // Clear search input/result so the search box resets after acquisition
+      setSearchResult(null);
+      handleQueryChange('');
+
       onObtain?.(fanmark);
       navigate(`/fanmarks/${fanmark.id}/settings`, { state: { isNew: true } });
     } catch (error) {

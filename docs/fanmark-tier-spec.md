@@ -32,6 +32,7 @@
 - `fanmark_licenses.license_end` は `NULL` 許容に変更。Tier1 では `NULL` を保持し、「占有中」として扱う。
 - `fanmark_tier_extension_prices` に Tier4 の料金を Tier3 から複製し、延長機能の既存挙動を維持。
 - `fanmark_basic_configs` / `fanmark_redirect_configs` / `fanmark_messageboard_configs` の RLS ポリシーを更新し、`license_end IS NULL` の無期限ライセンスでも所有者が設定更新できるようにする。
+- ダッシュボードのファンマ検索 UI は取得完了後に検索入力をクリアし、無用な再取得エラーや混乱を避ける。
 
 ## 4. RPC / Edge Functions
 
@@ -99,6 +100,7 @@
   - `extend-fanmark-license` で `license_end is null` のライセンスに対し `400`（延長不可）が返ること。
 - **UI**
   - ダッシュボード／延長ダイアログで C/B/A/S のラベルと「無期限」表記が表示され、無期限ライセンスでは延長ボタンが無効化されること。
+  - ファンマ検索から登録した直後に検索欄が空になること（残らないこと）。
   - 管理画面の延長料金設定で Tier4 を編集できること。
 - **互換性**
   - 既存の Tier2/3 レコードが期待どおりに再分類される（例: Tier3(A) の `emoji_count_max`=5、Tier4(S) が追加されている）。
