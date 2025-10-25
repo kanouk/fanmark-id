@@ -144,7 +144,7 @@ p, span {
       transparent 65%
     );
     background-size: 300% 300%;
-    animation: shineSweep 3s linear infinite;
+    animation: shineSweep 6s ease-in-out infinite;
   }
   
   @keyframes shineSweep {
