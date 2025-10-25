@@ -19,6 +19,7 @@ export interface FanmarkSearchResult {
   short_id: string;
   tier_level?: number; // Deprecated - keeping for backward compatibility
   tier_display_name?: string | null;
+  license_days?: number | null;
   status: 'available' | 'taken' | 'not_available' | 'invalid';
   price_yen?: number;
   price_usd?: number;
@@ -98,6 +99,7 @@ interface FanmarkCompleteDataRow {
   emoji_ids?: string[];
   normalized_emoji: string;
   short_id: string;
+  tier_level?: number;
   status: string;
   has_active_license: boolean;
   current_owner_id: string | null;
