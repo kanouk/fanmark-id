@@ -67,7 +67,7 @@ interface Fanmark {
   user_id: string;
   fanmark_licenses?: {
     license_start: string;
-    license_end: string;
+    license_end: string | null;
     grace_expires_at?: string | null;
     status: string;
     is_returned?: boolean | null;
@@ -77,7 +77,7 @@ interface Fanmark {
   current_license?: {
     id: string;
     license_start: string;
-    license_end: string;
+    license_end: string | null;
     status: string;
     created_at: string;
   };
@@ -520,8 +520,25 @@ export const FanmarkDashboard = () => {
       return 'bg-gradient-to-r from-blue-100 to-purple-100 border border-blue-300';
     } else if (tierLevel === 3) {
       return 'bg-gradient-to-r from-amber-100 via-orange-100 to-pink-100 border-2 border-amber-400 shadow-lg';
+    } else if (tierLevel === 4) {
+      return 'bg-gradient-to-r from-rose-100 via-red-100 to-amber-100 border-2 border-rose-400 shadow-lg';
     }
     return 'bg-gray-50 border border-gray-200';
+  };
+
+  const getTierLabel = (tierLevel: number | null | undefined) => {
+    switch (tierLevel) {
+      case 1:
+        return 'C';
+      case 2:
+        return 'B';
+      case 3:
+        return 'A';
+      case 4:
+        return 'S';
+      default:
+        return '—';
+    }
   };
 
   const getAccessTypeBadge = (accessType: string) => {
@@ -830,8 +847,9 @@ export const FanmarkDashboard = () => {
                                 const timeDisplayClass = `font-medium whitespace-nowrap ${isSmallCountdown ? 'text-xs' : 'text-sm'} ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`;
                                 const handleRowNavigation = () => navigate(`/fanmarks/${fanmark.id}/settings`);
                                 const isGraceReturn = timing.status === 'grace-return';
+                                const hasPerpetualLicense = !licenseData?.license_end;
                                 const canReturn = !isReturned(fanmark) && timing.status === 'active';
-                                const canExtend = (['active', 'grace', 'grace-return'].includes(timing.status)) && (!isReturned(fanmark) || isGraceReturn);
+                                const canExtend = (['active', 'grace', 'grace-return'].includes(timing.status)) && (!isReturned(fanmark) || isGraceReturn) && !hasPerpetualLicense;
 
                                 const rowKey = `${fanmark.emoji_key}-${fanmark.current_license_id ?? licenseData?.license_end ?? idx}`;
                                 const rowVisualState = isFanmarkInactive(fanmark)
@@ -845,7 +863,7 @@ export const FanmarkDashboard = () => {
                                     <td className="px-4 py-3">
                                       <div className="min-h-[2.25rem] flex items-end" onClick={(event) => event.stopPropagation()}>
                                         <div
-                                          className={`flex items-center px-3.5 py-2.5 rounded-md shadow-sm transition-transform hover:scale-105 whitespace-nowrap cursor-pointer ${getTierOvalStyle(fanmark.tier_level || 1)}`}
+                                          className={`relative flex items-center px-3.5 py-2.5 rounded-md shadow-sm transition-transform hover:scale-105 whitespace-nowrap cursor-pointer ${getTierOvalStyle(fanmark.tier_level || 1)}`}
                                           onClick={(event) => {
                                             event.stopPropagation();
                                             navigator.clipboard.writeText(fanmark.fanmark);
@@ -856,6 +874,9 @@ export const FanmarkDashboard = () => {
                                           }}
                                           title={t('dashboard.clickToCopyEmoji')}
                                         >
+                                          <span className="absolute -top-2 -left-2 rounded-full bg-foreground px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-widest text-background shadow">
+                                            {getTierLabel(fanmark.tier_level)}
+                                          </span>
                                           <span className="text-2xl leading-none select-none" style={{ letterSpacing: '0.2em' }}>{fanmark.fanmark}</span>
                                         </div>
                                       </div>
@@ -897,7 +918,7 @@ export const FanmarkDashboard = () => {
                                         {expirationDateUTC ? (
                                           <span>{formatInTimeZone(expirationDateUTC, 'Asia/Tokyo', 'yyyy/MM/dd')}</span>
                                         ) : (
-                                          <span className="text-muted-foreground">-</span>
+                                          <span className="text-muted-foreground">{t('dashboard.perpetualLicense')}</span>
                                         )}
                                       </div>
                                     </td>
@@ -931,7 +952,7 @@ export const FanmarkDashboard = () => {
                                         {getStatusBadge(timing)}
                                       </div>
                                     </td>
-                                    <td className="px-4 py-3">
+                                    <td className="px-4 py-3" onClick={(event) => event.stopPropagation()}>
                                       <div className="flex items-center">
                                         <DropdownMenu>
                                           <Tooltip>
@@ -940,7 +961,9 @@ export const FanmarkDashboard = () => {
                                                 <Button
                                                   size="sm"
                                                   variant="ghost"
-                                                className="h-9 w-9 rounded-md border border-border/60 bg-background/50 text-foreground hover:bg-background transition-colors"
+                                                  type="button"
+                                                  onClick={(event) => event.stopPropagation()}
+                                                  className="h-9 w-9 rounded-md border border-border/60 bg-background/50 text-foreground hover:bg-background transition-colors"
                                                   aria-label={t('dashboard.actionsMenu')}
                                                 >
                                                   <MoreVertical className="h-5 w-5" />
@@ -951,7 +974,7 @@ export const FanmarkDashboard = () => {
                                           </Tooltip>
                                           <DropdownMenuContent align="end" sideOffset={8} collisionPadding={16} className="w-48">
                                             <DropdownMenuItem
-                                              onSelect={() => navigateToFanmark(fanmark.fanmark, true)}
+                                              onSelect={(event) => { event.preventDefault(); event.stopPropagation(); navigateToFanmark(fanmark.fanmark, true); }}
                                               className="gap-2"
                                             >
                                               <ExternalLink className="h-4 w-4 text-primary" />
@@ -959,7 +982,7 @@ export const FanmarkDashboard = () => {
                                             </DropdownMenuItem>
                                             {fanmark.short_id && (
                                               <DropdownMenuItem
-                                                onSelect={() => window.open(`/q/${fanmark.short_id}`, '_blank', 'noopener,noreferrer')}
+                                                onSelect={(event) => { event.preventDefault(); event.stopPropagation(); window.open(`/q/${fanmark.short_id}`, '_blank', 'noopener,noreferrer'); }}
                                                 className="gap-2"
                                               >
                                                 <QrCode className="h-4 w-4 text-primary" />
@@ -967,7 +990,9 @@ export const FanmarkDashboard = () => {
                                               </DropdownMenuItem>
                                             )}
                                             <DropdownMenuItem
-                                              onSelect={() => {
+                                              onSelect={(event) => {
+                                                event.preventDefault();
+                                                event.stopPropagation();
                                                 const fullUrl = getFanmarkUrlForClipboard(fanmark.fanmark);
                                                 navigator.clipboard.writeText(fullUrl);
                                                 toast({
@@ -981,7 +1006,9 @@ export const FanmarkDashboard = () => {
                                               <span>{t('dashboard.copyFanmarkLink')}</span>
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
-                                              onSelect={() => {
+                                              onSelect={(event) => {
+                                                event.preventDefault();
+                                                event.stopPropagation();
                                                 if (!canExtend) return;
                                                 openExtendDialog(fanmark, timing);
                                               }}
@@ -992,7 +1019,9 @@ export const FanmarkDashboard = () => {
                                               <span>{t('dashboard.extendMenuLabel')}</span>
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
-                                              onSelect={() => {
+                                              onSelect={(event) => {
+                                                event.preventDefault();
+                                                event.stopPropagation();
                                                 if (!canReturn) return;
                                                 openReturnDialog(fanmark);
                                               }}
@@ -1038,8 +1067,9 @@ export const FanmarkDashboard = () => {
                         const isCountdownActiveMobile = msRemainingMobile !== null && msRemainingMobile > 0 && msRemainingMobile <= 24 * 60 * 60 * 1000;
                         const mobileTimeDisplayClass = `font-medium whitespace-nowrap text-sm ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`;
                         const isGraceReturn = timing.status === 'grace-return';
+                        const hasPerpetualLicense = !licenseData?.license_end;
                         const canReturn = !isReturned(fanmark) && timing.status === 'active';
-                        const canExtend = (['active', 'grace', 'grace-return'].includes(timing.status)) && (!isReturned(fanmark) || isGraceReturn);
+                        const canExtend = (['active', 'grace', 'grace-return'].includes(timing.status)) && (!isReturned(fanmark) || isGraceReturn) && !hasPerpetualLicense;
 
                         const cardKey = `${fanmark.id}-${fanmark.current_license_id ?? licenseData?.license_end ?? idx}`;
                         const cardVisualState = isFanmarkInactive(fanmark)
@@ -1055,7 +1085,7 @@ export const FanmarkDashboard = () => {
                                      <div className="flex items-start justify-between">
                                     <div className="flex items-end">
                                       <div
-                                        className={`flex items-center px-3 py-2 rounded-md cursor-pointer hover:scale-105 transition-transform ${getTierOvalStyle(fanmark.tier_level || 1)}`}
+                                        className={`relative flex items-center px-3 py-2 rounded-md cursor-pointer hover:scale-105 transition-transform ${getTierOvalStyle(fanmark.tier_level || 1)}`}
                                         onClick={() => {
                                           navigator.clipboard.writeText(fanmark.fanmark);
                                           toast({
@@ -1065,6 +1095,9 @@ export const FanmarkDashboard = () => {
                                         }}
                                         title={t('dashboard.clickToCopyEmoji')}
                                       >
+                                        <span className="absolute -top-2 -left-2 rounded-full bg-foreground px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-widest text-background shadow">
+                                          {getTierLabel(fanmark.tier_level)}
+                                        </span>
                                         <span
                                           className="text-3xl leading-none select-none whitespace-nowrap tracking-[0.1em]"
                                           style={{ wordBreak: 'keep-all' }}
@@ -1119,7 +1152,9 @@ export const FanmarkDashboard = () => {
                                        {t('dashboard.returnDate')}
                                      </div>
                                      <div className="text-foreground">
-                                       {expirationDate ? formatInTimeZone(expirationDate, 'Asia/Tokyo', 'yyyy/MM/dd') : '-'}
+                                       {expirationDate
+                                         ? formatInTimeZone(expirationDate, 'Asia/Tokyo', 'yyyy/MM/dd')
+                                         : t('dashboard.perpetualLicense')}
                                      </div>
                                    </div>
                                    <div>
@@ -1145,6 +1180,10 @@ export const FanmarkDashboard = () => {
                                                 {t('dashboard.daysRemaining', { days: Math.max(daysRemaining ?? 0, 0) })}
                                               </span>
                                             </div>
+                                          ) : timing.status === 'active' && !expirationDate ? (
+                                            <span className="text-muted-foreground text-sm">
+                                              {t('dashboard.perpetualLicense')}
+                                            </span>
                                           ) : isReturned(fanmark) ? (
                                             <span className="text-muted-foreground text-sm">{t('dashboard.returned')}</span>
                                           ) : (
@@ -1170,7 +1209,7 @@ export const FanmarkDashboard = () => {
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="end" sideOffset={8} collisionPadding={16} className="w-48">
                                         <DropdownMenuItem
-                                          onSelect={() => navigateToFanmark(fanmark.fanmark, true)}
+                                          onSelect={(event) => { event.preventDefault(); event.stopPropagation(); navigateToFanmark(fanmark.fanmark, true); }}
                                           className="gap-2"
                                         >
                                           <ExternalLink className="h-4 w-4 text-primary" />
@@ -1178,7 +1217,7 @@ export const FanmarkDashboard = () => {
                                         </DropdownMenuItem>
                                         {fanmark.short_id && (
                                           <DropdownMenuItem
-                                            onSelect={() => window.open(`/q/${fanmark.short_id}`, '_blank', 'noopener,noreferrer')}
+                                            onSelect={(event) => { event.preventDefault(); event.stopPropagation(); window.open(`/q/${fanmark.short_id}`, '_blank', 'noopener,noreferrer'); }}
                                             className="gap-2"
                                           >
                                             <QrCode className="h-4 w-4 text-primary" />

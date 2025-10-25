@@ -29,6 +29,7 @@ ADD COLUMN grace_expires_at TIMESTAMP WITH TIME ZONE;
 
 ## ライセンス終了日の正規化
 - 新規発行時は、取得タイムスタンプにティア日数を加算した後、次のUTC深夜0時へ切り上げた値を`license_end`として保存します（すでに0時ちょうどの場合はそのまま）
+- Tier1(C) のように初期付与日数が存在しない場合は、`license_end` を `NULL` とし「無期限ライセンス」を表現します（延長処理は無効化される）。
 - ライセンスを延長する際も同じ丸め込みルールを適用し、保存前に次のUTC 0時へ切り上げます
 - 即時返却を行っても`license_end`は変更されず、「本来の失効予定日」として保持されます（返却直後はステータスがgraceに切り替わるだけ）
 - これにより、有効期限イベントは常に日付境界で始まりつつ、取得/返却タイミングはグレース関連のカラムで追跡できます
@@ -160,16 +161,27 @@ update({
 **変更後**: `active`と、将来の`grace_expires_at`を持つ`grace`の両方をチェック
 
 ```typescript
-const licenseEndRaw = addDays(new Date(), tierConfig.initial_license_days);
-const licenseEnd = roundUpToNextUtcMidnight(licenseEndRaw);
+if (tierConfig.initial_license_days == null) {
+  // Tier1 (C) は無期限ライセンス。license_end を NULL にして保持する。
+  insert({
+    fanmark_id,
+    user_id,
+    license_end: null,
+    status: 'active',
+    grace_expires_at: null
+  });
+} else {
+  const licenseEndRaw = addDays(new Date(), tierConfig.initial_license_days);
+  const licenseEnd = roundUpToNextUtcMidnight(licenseEndRaw);
 
-insert({
-  fanmark_id,
-  user_id,
-  license_end: licenseEnd.toISOString(),
-  status: 'active',
-  grace_expires_at: null  // 新規ライセンスでは明示的にnull
-});
+  insert({
+    fanmark_id,
+    user_id,
+    license_end: licenseEnd.toISOString(),
+    status: 'active',
+    grace_expires_at: null
+  });
+}
 ```
 
 ## フロントエンドの表示

@@ -25,6 +25,9 @@ interface RegisteredFanmark {
   emoji_ids?: string[];
   normalized_emoji_ids?: string[];
   fanmark_name: string;
+  tier_level?: number;
+  tier_display_name?: string | null;
+  initial_license_days?: number | null;
 }
 
 interface RegisterFanmarkResponse {
@@ -34,6 +37,9 @@ interface RegisterFanmarkResponse {
     user_input_fanmark: string;
     emoji_ids?: string[];
     normalized_emoji_ids?: string[];
+    tier_level?: number;
+    tier_display_name?: string | null;
+    initial_license_days?: number | null;
   };
   error?: string;
 }
@@ -55,6 +61,21 @@ export const FanmarkQuickRegistration = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [registeredFanmark, setRegisteredFanmark] = useState<RegisteredFanmark | null>(null);
   const { t } = useTranslation();
+
+  const resolveTierLabel = (level?: number) => {
+    switch (level) {
+      case 1:
+        return 'C';
+      case 2:
+        return 'B';
+      case 3:
+        return 'A';
+      case 4:
+        return 'S';
+      default:
+        return '-';
+    }
+  };
 
   const {
     register,
@@ -121,6 +142,9 @@ export const FanmarkQuickRegistration = ({
           emoji_ids: result.fanmark.emoji_ids,
           normalized_emoji_ids: result.fanmark.normalized_emoji_ids,
           fanmark_name: data.fanmarkName,
+          tier_level: result.fanmark.tier_level,
+          tier_display_name: result.fanmark.tier_display_name ?? null,
+          initial_license_days: result.fanmark.initial_license_days ?? null,
         });
         toast({
           title: t('registration.quickSecured'),
@@ -156,6 +180,14 @@ export const FanmarkQuickRegistration = ({
           </div>
           <div className="text-xl font-semibold">
             {registeredFanmark.fanmark_name}
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {t('registration.tierSummary', {
+              tier: registeredFanmark.tier_display_name ?? resolveTierLabel(registeredFanmark.tier_level),
+              days: registeredFanmark.initial_license_days == null
+                ? t('registration.perpetual')
+                : t('registration.daysWithUnit', { count: registeredFanmark.initial_license_days }),
+            })}
           </div>
           <div className="bg-blue-50 rounded-lg p-4 text-sm text-blue-800">
             {t('registration.quickSecuredInfo')}

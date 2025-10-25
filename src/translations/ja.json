@@ -35,8 +35,8 @@
     "noRecentFanmaYet": "まだ登録されたファンマがありません",
     "pricingGuide": {
       "singleEmoji": "💎 1個の絵文字: $99.9",
-      "doubleEmoji": "💳 2個の絵文字: $9.99",
-      "multipleEmoji": "✨ 3個以上: 無料"
+      "doubleEmoji": "💳 2〜3個の絵文字: $9.99",
+      "multipleEmoji": "✨ 4個以上: 無期限"
     },
     "pricingLabels": {
       "premiumEmoji": "プレミアム絵文字",
@@ -699,6 +699,7 @@
     "sortByAcquisition": "取得日順（新しい順）",
     "sortByExpiration": "残り日数順（少ない順）",
     "countdown": "あと {{time}}",
+    "perpetualLicense": "無期限",
     "extendDialog": {
       "title": "ファンマの有効期限を延長",
       "subtitle": "延長したい期間を選択してください。課金処理は別途行われます。",
@@ -717,7 +718,9 @@
       "buttonCancel": "キャンセル",
       "planLabel": "{months}ヶ月",
       "planPrice": "¥{price}",
-      "planUnavailable": "利用可能な延長プランがありません"
+      "planUnavailable": "利用可能な延長プランがありません",
+      "perpetualLabel": "無期限",
+      "perpetualMessage": "このファンマークは無期限のため延長は不要です。"
     }
   },
   "favorites": {
@@ -758,6 +761,9 @@
     "failed": "登録に失敗しました",
     "authRequired": "認証が必要です",
     "authDescription": "ファンマを登録するにはログインしてください",
+    "tierSummary": "Tier {tier} / 初期ライセンス: {days}",
+    "perpetual": "無期限",
+    "daysWithUnit": "{count}日",
     "registering": "登録中...",
     "registerButton": "ファンマを登録",
     "quickRegister": "とりあえず取得",

@@ -186,6 +186,13 @@ serve(async (req) => {
       });
     }
 
+    if (!licenseRecord.license_end) {
+      return new Response(JSON.stringify({ error: 'Perpetual licenses do not require extension' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const now = new Date();
     const licenseEnd = licenseRecord.license_end ? new Date(licenseRecord.license_end) : null;
     const baseDate = licenseEnd && !Number.isNaN(licenseEnd.getTime()) && licenseEnd > now

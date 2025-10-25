@@ -45,6 +45,7 @@ export const ExtendLicenseDialog = ({
   const [plans, setPlans] = useState<ExtendPlanOption[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(false);
   const selectedPlanRef = useRef<ExtendPlanOption | null | undefined>(selectedPlan);
+  const isPerpetual = target?.licenseEnd == null;
 
   useEffect(() => {
     selectedPlanRef.current = selectedPlan;
@@ -54,6 +55,13 @@ export const ExtendLicenseDialog = ({
     const fetchPlans = async () => {
       if (!open || !target?.tierLevel) {
         setPlans([]);
+        return;
+      }
+
+      if (target?.licenseEnd == null) {
+        setPlans([]);
+        onChangePlan(null);
+        setLoadingPlans(false);
         return;
       }
 
@@ -96,22 +104,24 @@ export const ExtendLicenseDialog = ({
   const activePlan = selectedPlan ?? initialPlan ?? null;
 
   useEffect(() => {
-    if (!selectedPlan && initialPlan) {
+    if (!selectedPlan && initialPlan && !isPerpetual) {
       onChangePlan(initialPlan);
     }
-  }, [selectedPlan, initialPlan, onChangePlan]);
+  }, [selectedPlan, initialPlan, onChangePlan, isPerpetual]);
   const formattedExpiration = useMemo(() => {
+    if (isPerpetual) return t('dashboard.extendDialog.perpetualLabel');
     if (!target?.licenseEnd) return null;
     const date = new Date(target.licenseEnd);
     return formatInTimeZone(date, 'Asia/Tokyo', 'yyyy/MM/dd');
-  }, [target?.licenseEnd]);
+  }, [target?.licenseEnd, t, isPerpetual]);
 
   const formattedExtendedExpiration = useMemo(() => {
+    if (isPerpetual) return t('dashboard.extendDialog.perpetualLabel');
     if (!target?.licenseEnd || !activePlan) return null;
     const base = new Date(target.licenseEnd);
     const extended = addMonths(base, activePlan.months);
     return formatInTimeZone(extended, 'Asia/Tokyo', 'yyyy/MM/dd');
-  }, [target?.licenseEnd, activePlan]);
+  }, [target?.licenseEnd, activePlan, t, isPerpetual]);
 
   const formattedGraceExpiration = useMemo(() => {
     if (!target?.graceExpiresAt) return null;
@@ -169,42 +179,48 @@ export const ExtendLicenseDialog = ({
           </div>
 
           <div>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              {plans.length === 0 && !loadingPlans && (
-                <div className="col-span-2 text-sm text-muted-foreground text-center">
-                  {t('dashboard.extendDialog.planUnavailable')}
-                </div>
-              )}
-              {plans.map(plan => (
-                <button
-                  key={plan.months}
-                  type="button"
-                  className={cn(
-                    'rounded-xl border px-4 py-3 text-left transition-colors hover:border-primary',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary',
-                    activePlan?.months === plan.months
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border/60 bg-background/80 text-foreground'
-                  )}
-                  onClick={() => onChangePlan(plan)}
-                  disabled={isProcessing}
-                >
-                  <div className="text-sm font-semibold">
-                    {t('dashboard.extendDialog.planLabel', { months: plan.months })}
+            {isPerpetual ? (
+              <div className="mt-3 rounded-xl border border-dashed border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground">
+                {t('dashboard.extendDialog.perpetualMessage')}
+              </div>
+            ) : (
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                {plans.length === 0 && !loadingPlans && (
+                  <div className="col-span-2 text-sm text-muted-foreground text-center">
+                    {t('dashboard.extendDialog.planUnavailable')}
                   </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {t('dashboard.extendDialog.planPrice', { price: plan.price.toLocaleString() })}
-                  </div>
-                </button>
-              ))}
-            </div>
+                )}
+                {plans.map(plan => (
+                  <button
+                    key={plan.months}
+                    type="button"
+                    className={cn(
+                      'rounded-xl border px-4 py-3 text-left transition-colors hover:border-primary',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary',
+                      activePlan?.months === plan.months
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border/60 bg-background/80 text-foreground'
+                    )}
+                    onClick={() => onChangePlan(plan)}
+                    disabled={isProcessing}
+                  >
+                    <div className="text-sm font-semibold">
+                      {t('dashboard.extendDialog.planLabel', { months: plan.months })}
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {t('dashboard.extendDialog.planPrice', { price: plan.price.toLocaleString() })}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isProcessing}>
               {t('dashboard.extendDialog.buttonCancel')}
             </Button>
-            <Button onClick={onSubmit} disabled={isProcessing || !selectedPlan}>
+            <Button onClick={onSubmit} disabled={isProcessing || !selectedPlan || isPerpetual}>
               {isProcessing ? t('dashboard.extendDisabled') : t('dashboard.extendDialog.buttonConfirm')}
             </Button>
           </div>

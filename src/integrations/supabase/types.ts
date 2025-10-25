@@ -324,7 +324,7 @@ export type Database = {
           id: string
           is_initial_license: boolean
           is_returned: boolean
-          license_end: string
+          license_end: string | null
           license_start: string
           plan_excluded: boolean | null
           status: string
@@ -340,7 +340,7 @@ export type Database = {
           id?: string
           is_initial_license?: boolean
           is_returned?: boolean
-          license_end: string
+          license_end?: string | null
           license_start?: string
           plan_excluded?: boolean | null
           status?: string
@@ -356,7 +356,7 @@ export type Database = {
           id?: string
           is_initial_license?: boolean
           is_returned?: boolean
-          license_end?: string
+          license_end?: string | null
           license_start?: string
           plan_excluded?: boolean | null
           status?: string
@@ -550,10 +550,11 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          display_name: string
           emoji_count_max: number
           emoji_count_min: number
           id: string
-          initial_license_days: number
+          initial_license_days: number | null
           is_active: boolean
           monthly_price_usd: number
           tier_level: number
@@ -562,10 +563,11 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
+          display_name: string
           emoji_count_max: number
           emoji_count_min: number
           id?: string
-          initial_license_days: number
+          initial_license_days?: number | null
           is_active?: boolean
           monthly_price_usd?: number
           tier_level: number
@@ -574,10 +576,11 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
+          display_name?: string
           emoji_count_max?: number
           emoji_count_min?: number
           id?: string
-          initial_license_days?: number
+          initial_license_days?: number | null
           is_active?: boolean
           monthly_price_usd?: number
           tier_level?: number

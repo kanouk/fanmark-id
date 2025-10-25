@@ -89,7 +89,7 @@
 - **主要テーブル**:
   - `fanmarks`: 絵文字組み合わせ、短縮ID、アクセスタイプ、ステータス、所有者IDなどを保持する。
   - `fanmark_licenses`: 利用期間とステータス、ティアを管理し、`fanmarks` と `fanmark_tiers` に外部キー連携する。
-  - `fanmark_tiers`: 絵文字数区分と初期ライセンス日数、価格を定義する。
+  - `fanmark_tiers`: 絵文字数区分と初期ライセンス日数、価格を定義する。Tier は C/B/A/S の4段階（4文字以上、3文字、2文字 or 連続2〜5文字、1文字）で、`display_name` 列にラベル（C/B/A/S）を保持し、Tier1(C)は無期限ライセンス（`initial_license_days` = NULL）を表す。
   - `emoji_profiles`: ファンマに紐づく公開プロフィールのバイオ、ソーシャルリンク、公開設定を保持する。
   - `profiles`: 利用者プロフィール（表示名、アバター、公開設定、招待特典など）を管理する。
   - `invitation_codes`: 招待コードの状態・使用回数・特典を記録する。

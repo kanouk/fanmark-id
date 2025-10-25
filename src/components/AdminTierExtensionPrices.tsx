@@ -18,16 +18,11 @@ interface ExtensionPrice {
 interface FanmarkTier {
   id: string;
   tier_level: number;
-  initial_license_days: number;
+  display_name: string;
+  initial_license_days: number | null;
   is_active: boolean;
   description: string | null;
 }
-
-const TIER_NAMES = {
-  1: "Tier 1（標準）",
-  2: "Tier 2（プレミアム）",
-  3: "Tier 3（レア）",
-};
 
 const MONTH_OPTIONS = [1, 2, 3, 6];
 
@@ -39,7 +34,7 @@ export const AdminTierExtensionPrices = () => {
   const [prices, setPrices] = useState<ExtensionPrice[]>([]);
   const [tiers, setTiers] = useState<FanmarkTier[]>([]);
   const [editedPrices, setEditedPrices] = useState<Record<string, number>>({});
-  const [tierEdits, setTierEdits] = useState<Record<string, number>>({});
+  const [tierEdits, setTierEdits] = useState<Record<string, number | null>>({});
 
   const fetchAll = async () => {
     setLoading(true);
@@ -55,7 +50,7 @@ export const AdminTierExtensionPrices = () => {
           .order("months", { ascending: true }),
         supabase
           .from("fanmark_tiers" as any)
-          .select("id, tier_level, initial_license_days, is_active, description")
+          .select("id, tier_level, display_name, initial_license_days, is_active, description")
           .order("tier_level", { ascending: true }),
       ]);
 
@@ -72,9 +67,9 @@ export const AdminTierExtensionPrices = () => {
 
       const typedTiers = (tierData || []) as unknown as FanmarkTier[];
       setTiers(typedTiers);
-      const initialTierDays: Record<string, number> = {};
+      const initialTierDays: Record<string, number | null> = {};
       typedTiers.forEach(tier => {
-        initialTierDays[tier.id] = tier.initial_license_days;
+        initialTierDays[tier.id] = tier.initial_license_days ?? null;
       });
       setTierEdits(initialTierDays);
     } catch (error) {
@@ -168,10 +163,27 @@ export const AdminTierExtensionPrices = () => {
   };
 
   const handleTierDaysChange = (id: string, value: string) => {
-    const numValue = parseInt(value, 10);
-    if (!isNaN(numValue) && numValue >= 0) {
-      setTierEdits(prev => ({ ...prev, [id]: numValue }));
+    const trimmed = value.trim();
+    if (trimmed === "") {
+      setTierEdits(prev => ({ ...prev, [id]: null }));
+      return;
     }
+
+    const numValue = Number(trimmed);
+    if (!Number.isNaN(numValue) && numValue >= 0) {
+      setTierEdits(prev => ({ ...prev, [id]: Math.floor(numValue) }));
+    }
+  };
+
+  const handleTogglePerpetual = (id: string, baseline: number | null) => {
+    setTierEdits(prev => {
+      const current = prev[id];
+      if (current === null) {
+        const fallback = baseline ?? 0;
+        return { ...prev, [id]: fallback };
+      }
+      return { ...prev, [id]: null };
+    });
   };
 
   const handleUpdateTierDays = async (id: string) => {
@@ -179,7 +191,9 @@ export const AdminTierExtensionPrices = () => {
     if (newDays === undefined) return;
 
     const targetTier = tiers.find(tier => tier.id === id);
-    if (!targetTier || targetTier.initial_license_days === newDays) {
+    const originalDays = targetTier?.initial_license_days ?? null;
+    const nextValue = newDays ?? null;
+    if (!targetTier || originalDays === nextValue) {
       return;
     }
 
@@ -187,7 +201,7 @@ export const AdminTierExtensionPrices = () => {
     try {
       const { error } = await supabase
         .from("fanmark_tiers" as any)
-        .update({ initial_license_days: newDays })
+        .update({ initial_license_days: nextValue })
         .eq("id", id);
 
       if (error) throw error;
@@ -199,7 +213,7 @@ export const AdminTierExtensionPrices = () => {
 
       setTiers(prev =>
         prev.map(tier =>
-          tier.id === id ? { ...tier, initial_license_days: newDays } : tier
+          tier.id === id ? { ...tier, initial_license_days: nextValue } : tier
         )
       );
     } catch (error) {
@@ -249,9 +263,13 @@ export const AdminTierExtensionPrices = () => {
 
         <div className="grid gap-4 md:grid-cols-3">
           {tiers.map(tier => {
+            const originalDays = tier.initial_license_days ?? null;
             const editedDays = tierEdits[tier.id];
-            const isDirty = editedDays !== tier.initial_license_days;
-            const isInvalid = editedDays === undefined || editedDays < 1;
+            const hasEditValue = editedDays !== undefined;
+            const currentDays = hasEditValue ? editedDays : originalDays;
+            const isPerpetual = currentDays === null;
+            const isDirty = hasEditValue ? editedDays !== originalDays : false;
+            const isInvalid = hasEditValue && editedDays !== null && editedDays < 0;
             const isUpdatingThisTier = tierUpdatingId === tier.id;
 
             return (
@@ -261,7 +279,7 @@ export const AdminTierExtensionPrices = () => {
               >
                 <div className="space-y-1">
                   <h4 className="text-sm font-semibold text-foreground">
-                    {TIER_NAMES[tier.tier_level as keyof typeof TIER_NAMES] ?? `Tier ${tier.tier_level}`}
+                    {tier.display_name ?? `Tier ${tier.tier_level}`}
                   </h4>
                   <p className="text-xs text-muted-foreground">
                     {tier.description ?? "ティアの説明は設定されていません"}
@@ -273,14 +291,24 @@ export const AdminTierExtensionPrices = () => {
                   <div className="flex items-center gap-2">
                     <Input
                       type="number"
-                      min={1}
-                      value={editedDays ?? tier.initial_license_days}
+                      min={0}
+                      value={currentDays === null ? "" : currentDays}
                       onChange={(event) => handleTierDaysChange(tier.id, event.target.value)}
-                      disabled={Boolean(tierUpdatingId)}
+                      disabled={Boolean(tierUpdatingId) || isPerpetual}
                       className="h-9 text-sm"
                     />
                     <span className="text-xs text-muted-foreground">日</span>
                   </div>
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      className="h-3.5 w-3.5 accent-primary"
+                      checked={isPerpetual}
+                      onChange={() => handleTogglePerpetual(tier.id, tier.initial_license_days ?? null)}
+                      disabled={Boolean(tierUpdatingId)}
+                    />
+                    無期限
+                  </label>
 
                   <Button
                     onClick={() => handleUpdateTierDays(tier.id)}
@@ -303,99 +331,109 @@ export const AdminTierExtensionPrices = () => {
       </div>
 
       <div className="space-y-6">
-        {[1, 2, 3].map(tierLevel => {
-          const tierPrices = pricesByTier[tierLevel] || [];
+        {tiers
+          .slice()
+          .sort((a, b) => a.tier_level - b.tier_level)
+          .map(tier => {
+            const tierPrices = pricesByTier[tier.tier_level] || [];
 
-          return (
-            <div
-              key={tierLevel}
-              className="space-y-4 rounded-2xl border border-border/60 bg-card/70 p-6 shadow-sm"
-            >
-              <div className="space-y-1 border-b border-border/40 pb-3">
-                <h3 className="text-lg font-semibold text-foreground">
-                  {TIER_NAMES[tierLevel as keyof typeof TIER_NAMES]}
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  {tierLevel === 1 && "標準的な絵文字のファンマーク"}
-                  {tierLevel === 2 && "やや希少な絵文字のファンマーク"}
-                  {tierLevel === 3 && "非常に希少な絵文字のファンマーク"}
-                </p>
-              </div>
+            return (
+              <div
+                key={tier.tier_level}
+                className="space-y-4 rounded-2xl border border-border/60 bg-card/70 p-6 shadow-sm"
+              >
+                <div className="space-y-1 border-b border-border/40 pb-3">
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {tier.display_name ?? `Tier ${tier.tier_level}`}
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    {tier.description ?? "ティアの説明は設定されていません"}
+                  </p>
+                </div>
 
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {MONTH_OPTIONS.map(months => {
-                  const priceData = tierPrices.find(p => p.months === months);
-                  if (!priceData) return null;
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {MONTH_OPTIONS.map(months => {
+                    const priceData = tierPrices.find(p => p.months === months);
 
-                  const editedPrice = editedPrices[priceData.id];
-                  const originalPrice = priceData.price_yen;
-                  const isDirty = editedPrice !== originalPrice;
-                  const isInvalid = editedPrice === undefined || editedPrice < 0;
-
-                  return (
-                    <div
-                      key={priceData.id}
-                      className={cn(
-                        "space-y-3 rounded-xl border p-4 transition-colors",
-                        priceData.is_active
-                          ? "border-border bg-background"
-                          : "border-border/40 bg-muted/30 opacity-60"
-                      )}
-                    >
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm font-semibold">
-                          {months}ヶ月延長
-                        </Label>
-                        <button
-                          onClick={() => handleToggleActive(priceData.id, priceData.is_active)}
-                          disabled={updating}
-                          className={cn(
-                            "rounded-full px-2 py-0.5 text-[0.65rem] font-medium transition-colors",
-                            priceData.is_active
-                              ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                          )}
+                    if (!priceData) {
+                      return (
+                        <div
+                          key={`${tier.tier_level}-${months}`}
+                          className="flex flex-col justify-center rounded-xl border border-dashed border-border/40 bg-muted/20 p-4 text-center text-xs text-muted-foreground"
                         >
-                          {priceData.is_active ? "有効" : "無効"}
-                        </button>
-                      </div>
+                          {months}ヶ月プランは未設定です
+                        </div>
+                      );
+                    }
 
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            value={editedPrice ?? priceData.price_yen}
-                            onChange={(event) => handlePriceChange(priceData.id, event.target.value)}
-                            min={0}
+                    const editedPrice = editedPrices[priceData.id];
+                    const originalPrice = priceData.price_yen;
+                    const isDirty = editedPrice !== originalPrice;
+                    const isInvalid = editedPrice === undefined || editedPrice < 0;
+
+                    return (
+                      <div
+                        key={priceData.id}
+                        className={cn(
+                          "space-y-3 rounded-xl border p-4 transition-colors",
+                          priceData.is_active
+                            ? "border-border bg-background"
+                            : "border-border/40 bg-muted/30 opacity-60"
+                        )}
+                      >
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-semibold">
+                            {months}ヶ月延長
+                          </Label>
+                          <button
+                            onClick={() => handleToggleActive(priceData.id, priceData.is_active)}
                             disabled={updating}
-                            className="h-9 text-sm"
-                          />
-                          <span className="text-xs text-muted-foreground">円</span>
+                            className={cn(
+                              "rounded-full px-2 py-0.5 text-[0.65rem] font-medium transition-colors",
+                              priceData.is_active
+                                ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            )}
+                          >
+                            {priceData.is_active ? "有効" : "無効"}
+                          </button>
                         </div>
 
-                        <Button
-                          onClick={() => handleUpdatePrice(priceData.id)}
-                          disabled={updating || isInvalid || !isDirty}
-                          size="sm"
-                          className="w-full gap-1.5"
-                        >
-                          {updating ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Save className="h-3.5 w-3.5" />
-                          )}
-                          更新
-                        </Button>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              value={editedPrice ?? priceData.price_yen}
+                              onChange={(event) => handlePriceChange(priceData.id, event.target.value)}
+                              min={0}
+                              disabled={updating}
+                              className="h-9 text-sm"
+                            />
+                            <span className="text-xs text-muted-foreground">円</span>
+                          </div>
+
+                          <Button
+                            onClick={() => handleUpdatePrice(priceData.id)}
+                            disabled={updating || isInvalid || !isDirty}
+                            size="sm"
+                            className="w-full gap-1.5"
+                          >
+                            {updating ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Save className="h-3.5 w-3.5" />
+                            )}
+                            料金を更新
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
       </div>
     </div>
   );
 };
-

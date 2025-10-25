@@ -18,6 +18,7 @@ export interface FanmarkSearchResult {
   normalized_emoji_ids?: string[];
   short_id: string;
   tier_level?: number; // Deprecated - keeping for backward compatibility
+  tier_display_name?: string | null;
   status: 'available' | 'taken' | 'not_available' | 'invalid';
   price_yen?: number;
   price_usd?: number;
@@ -44,6 +45,8 @@ interface FanmarkRow {
   normalized_emoji_ids?: string[];
   short_id: string;
   tier_level?: number; // Deprecated - no longer exists in fanmarks table
+  tier_display_name?: string | null;
+  initial_license_days?: number | null;
   status: FanmarkStatusRaw;
   user_id: string;
 }
@@ -73,6 +76,7 @@ interface ProfileRow {
 interface RegisterFanmarkResponse {
   success: boolean;
   fanmark?: FanmarkRow;
+  tier_level?: number;
   error?: string;
 }
 
@@ -81,6 +85,7 @@ interface CheckFanmarkAvailabilityResponse {
   fanmark_id?: string | null;
   reason?: string | null;
   tier_level?: number | null;
+  tier_display_name?: string | null;
   price?: number | null;
   license_days?: number | null;
   available_at?: string | null;
@@ -294,6 +299,9 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
         throw new Error('Failed to determine fanmark availability');
       }
 
+      const availabilityTierLevel = availability.tier_level ?? null;
+      const availabilityTierDisplayName = availability.tier_display_name ?? undefined;
+
       onSearchCompleted?.(normalizedQuery);
 
       try {
@@ -304,6 +312,7 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
 
       // 未登録のファンマークは即座に available 扱い
       if (!availability.fanmark_id) {
+        const derivedTierLevel = availabilityTierLevel ?? 1;
         setResult({
           id: '',
           user_input_fanmark: query,
@@ -312,9 +321,11 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
           normalized_emoji_ids: normalizedEmojiIds,
           normalized_emoji: normalizedQuery,
           short_id: '',
-          tier_level: 1,
+          tier_level: derivedTierLevel,
+          tier_display_name: availabilityTierDisplayName,
           status: 'available',
           emoji_count: validation.emojiCount,
+          license_days: availability.license_days ?? undefined,
         });
         return;
       }
@@ -358,7 +369,8 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
           normalized_emoji_ids: normalizedEmojiIds,
           normalized_emoji: fanmarkData.normalized_emoji,
           short_id: fanmarkData.short_id,
-          tier_level: 1,
+          tier_level: fanmarkData.tier_level ?? availabilityTierLevel ?? 1,
+          tier_display_name: availabilityTierDisplayName,
           status: 'invalid',
           error: 'This emoji pattern is not allowed or not active.',
           emoji_count: validation.emojiCount,
@@ -378,7 +390,8 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
           normalized_emoji_ids: normalizedEmojiIds,
           normalized_emoji: fanmarkData.normalized_emoji,
           short_id: fanmarkData.short_id,
-          tier_level: 1,
+          tier_level: fanmarkData.tier_level ?? availabilityTierLevel ?? 1,
+          tier_display_name: availabilityTierDisplayName,
           status: 'not_available',
           emoji_count: validation.emojiCount,
           owner: ownerInfo,
@@ -398,7 +411,8 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
           normalized_emoji_ids: normalizedEmojiIds,
           normalized_emoji: fanmarkData.normalized_emoji,
           short_id: fanmarkData.short_id,
-          tier_level: 1,
+          tier_level: fanmarkData.tier_level ?? availabilityTierLevel ?? 1,
+          tier_display_name: availabilityTierDisplayName,
           status: 'available',
           emoji_count: validation.emojiCount,
           available_at: nextAvailableAt,
@@ -417,7 +431,8 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
           normalized_emoji_ids: normalizedEmojiIds,
           normalized_emoji: fanmarkData.normalized_emoji,
           short_id: fanmarkData.short_id,
-          tier_level: 1,
+          tier_level: fanmarkData.tier_level ?? availabilityTierLevel ?? 1,
+          tier_display_name: availabilityTierDisplayName,
           status: 'taken',
           emoji_count: validation.emojiCount,
           owner: {
@@ -440,7 +455,8 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
         normalized_emoji_ids: normalizedEmojiIds,
         normalized_emoji: fanmarkData.normalized_emoji,
         short_id: fanmarkData.short_id,
-        tier_level: 1,
+        tier_level: fanmarkData.tier_level ?? availabilityTierLevel ?? 1,
+        tier_display_name: availabilityTierDisplayName,
         status: 'not_available',
         emoji_count: validation.emojiCount,
         owner: ownerInfo,

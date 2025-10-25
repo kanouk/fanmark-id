@@ -183,7 +183,7 @@ async function fetchLicenseWithFanmark(
         fanmark_id: string;
         user_id: string;
         status: string;
-        license_end: string;
+        license_end: string | null;
         fanmarks: { id: string; user_input_fanmark: string; short_id: string | null } | null;
       })
     | null;
@@ -232,13 +232,16 @@ export async function returnFanmarkByFanmarkId(
   ctx: ReturnContext,
   fanmarkId: string,
 ): Promise<ReturnResult> {
+  const nowIso = new Date().toISOString();
+
   const { data: license, error: licenseError } = await ctx.supabase
     .from('fanmark_licenses')
     .select('id')
     .eq('fanmark_id', fanmarkId)
     .eq('user_id', ctx.userId)
     .eq('status', 'active')
-    .gt('license_end', new Date().toISOString())
+    .or(`license_end.is.null,license_end.gt.${nowIso}`)
+    .order('license_end', { ascending: false, nullsFirst: false })
     .maybeSingle();
 
   if (licenseError) {

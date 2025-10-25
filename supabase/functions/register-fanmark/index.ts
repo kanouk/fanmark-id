@@ -49,6 +49,13 @@ interface FanmarkRow {
   tier_level: number | null;
 }
 
+interface ClassifiedTier {
+  tier_level: number;
+  display_name: string;
+  initial_license_days: number | null;
+  monthly_price_usd: number | null;
+}
+
 const SKIN_TONE_MODIFIER_REGEX = /\p{Emoji_Modifier}/u;
 const SKIN_TONE_MODIFIER_GLOBAL_REGEX = /\p{Emoji_Modifier}/gu;
 const EMOJI_CHARACTER_REGEX = /\p{Emoji}/u;
@@ -79,6 +86,46 @@ const isBaseEmoji = (char: string): boolean =>
 function normalizeEmoji(emoji: string): string {
   // Remove skin tone modifiers (U+1F3FB-U+1F3FF)
   return emoji.replace(SKIN_TONE_MODIFIER_GLOBAL_REGEX, '');
+}
+
+async function classifyFanmarkTier(
+  supabase: DatabaseClient,
+  normalizedEmojiIds: string[],
+): Promise<ClassifiedTier | null> {
+  if (!Array.isArray(normalizedEmojiIds) || normalizedEmojiIds.length === 0) {
+    return null;
+  }
+
+  const { data, error } = await supabase.rpc('classify_fanmark_tier', {
+    input_emoji_ids: normalizedEmojiIds,
+  } as { input_emoji_ids: string[] });
+
+  if (error) {
+    console.error('Failed to classify fanmark tier:', error);
+    throw new Error('Failed to classify fanmark tier');
+  }
+
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    return null;
+  }
+
+  const [record] = data as ClassifiedTier[];
+  if (!record || typeof record.tier_level !== 'number') {
+    return null;
+  }
+
+  return {
+    tier_level: record.tier_level,
+    display_name: record.display_name ?? '',
+    initial_license_days:
+      record.initial_license_days === null || record.initial_license_days === undefined
+        ? null
+        : record.initial_license_days,
+    monthly_price_usd:
+      record.monthly_price_usd === null || record.monthly_price_usd === undefined
+        ? null
+        : record.monthly_price_usd,
+  };
 }
 
 async function convertEmojiSequenceToIds(
@@ -135,26 +182,6 @@ async function getMaxEmojiCharacters(supabase: DatabaseClient): Promise<number> 
     .maybeSingle() as { data: { setting_value: string } | null };
   
   return data ? parseInt(data.setting_value, 10) : 5; // Default to 5
-}
-
-// Determine tier based on emoji count
-function determineTier(emojiCount: number): number {
-  if (emojiCount >= 3) return 1; // Tier1: 3-5 characters
-  if (emojiCount === 2) return 2; // Tier2: 2 characters  
-  if (emojiCount === 1) return 3; // Tier3: 1 character
-  return 1; // Default to Tier1
-}
-
-// Get tier configuration
-async function getTierConfig(supabase: DatabaseClient, tierLevel: number): Promise<{ initial_license_days: number; monthly_price_usd: number } | null> {
-  const { data } = await supabase
-    .from('fanmark_tiers')
-    .select('initial_license_days, monthly_price_usd')
-    .eq('tier_level', tierLevel)
-    .eq('is_active', true)
-    .single();
-    
-  return data;
 }
 
 // Validate emoji combination - strict emoji-only validation
@@ -399,18 +426,18 @@ serve(async (req) => {
     }
     console.log('Normalized emoji:', normalizedEmoji);
     
-    // Determine tier level based on emoji count
-    const tierLevel = determineTier(validation.emojiCount);
-    console.log('Determined tier level:', tierLevel);
-    
-    // Get tier configuration
-    const tierConfig = await getTierConfig(supabase, tierLevel);
-    if (!tierConfig) {
+    // Determine tier classification via Supabase helper
+    const classifiedTier = await classifyFanmarkTier(supabase, normalizedEmojiIds);
+    if (!classifiedTier) {
       return new Response(
-        JSON.stringify({ error: 'Tier configuration not found' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Unable to classify emoji combination' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const tierLevel = classifiedTier.tier_level;
+    const initialLicenseDays = classifiedTier.initial_license_days;
+    console.log('Determined tier level:', tierLevel, 'display:', classifiedTier.display_name);
     
     // Check pattern-based pricing using new availability rules system
     const pricingInfo = await checkPatternBasedPricing(supabase, normalizedEmoji, validation.emojiCount);
@@ -656,16 +683,20 @@ serve(async (req) => {
     // Create initial license for the fanmark
     // Round up to next UTC midnight for consistent batch processing
     const now = new Date();
-    const licenseEndRaw = new Date(now);
-    licenseEndRaw.setDate(licenseEndRaw.getDate() + tierConfig.initial_license_days);
-    const licenseEndDate = roundUpToNextUtcMidnight(licenseEndRaw);
+    let licenseEndIso: string | null = null;
+    if (initialLicenseDays !== null && initialLicenseDays !== undefined) {
+      const licenseEndRaw = new Date(now);
+      licenseEndRaw.setDate(licenseEndRaw.getDate() + initialLicenseDays);
+      const licenseEndDate = roundUpToNextUtcMidnight(licenseEndRaw);
+      licenseEndIso = licenseEndDate.toISOString();
+    }
 
     const { data: license, error: licenseError } = await supabase
       .from('fanmark_licenses')
       .insert({
         fanmark_id: fanmarkId,
         user_id: user.id,
-        license_end: licenseEndDate.toISOString(),
+        license_end: licenseEndIso,
         status: 'active',
         is_initial_license: true,
         grace_expires_at: null  // Explicitly set to null for new licenses
@@ -753,7 +784,10 @@ serve(async (req) => {
           short_id: fanmarkShortId,
           access_type: accessType,
           display_name: displayName,
-          create_profile: createProfile
+          create_profile: createProfile,
+          tier_level: tierLevel,
+          tier_display_name: classifiedTier.display_name,
+          initial_license_days: initialLicenseDays
         }
       });
 
@@ -767,7 +801,10 @@ serve(async (req) => {
           normalized_emoji_ids: fanmarkNormalizedEmojiIds,
           short_id: fanmarkShortId,
           canonical_url: `/a/${fanmarkShortId}`,
-          display_url: `/emoji/${encodeURIComponent(fanmarkUserInput)}`
+          display_url: `/emoji/${encodeURIComponent(fanmarkUserInput)}`,
+          tier_level: tierLevel,
+          tier_display_name: classifiedTier.display_name,
+          initial_license_days: initialLicenseDays
         }
       }),
       { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

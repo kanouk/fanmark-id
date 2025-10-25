@@ -35,8 +35,8 @@
     "noRecentFanmaYet": "No recent fanmarks registered yet",
     "pricingGuide": {
       "singleEmoji": "💎 1 emoji: $99.9",
-      "doubleEmoji": "💳 2 emojis: $9.99",
-      "multipleEmoji": "✨ 3+ emojis: Free"
+      "doubleEmoji": "💳 2-3 emojis: $9.99",
+      "multipleEmoji": "✨ 4+ emojis: Perpetual"
     },
     "pricingLabels": {
       "premiumEmoji": "Premium emoji",
@@ -701,6 +701,7 @@
     "sortByAcquisition": "Acquisition date (newest)",
     "sortByExpiration": "Days remaining (least)",
     "countdown": "in {{time}}",
+    "perpetualLicense": "Perpetual",
     "extendDialog": {
       "title": "Extend fanmark license",
       "subtitle": "Choose how long you want to extend. Billing will be handled separately.",
@@ -719,7 +720,9 @@
       "buttonCancel": "Cancel",
       "planLabel": "{months} month(s)",
       "planPrice": "¥{price}",
-      "planUnavailable": "No extension plans available"
+      "planUnavailable": "No extension plans available",
+      "perpetualLabel": "Perpetual",
+      "perpetualMessage": "This fanmark is perpetual, so no extension is required."
     }
   },
   "favorites": {
@@ -760,6 +763,9 @@
     "failed": "Registration failed",
     "authRequired": "Authentication required",
     "authDescription": "Please sign in to obtain a fanmark",
+    "tierSummary": "Tier {tier} / Initial license: {days}",
+    "perpetual": "Perpetual",
+    "daysWithUnit": "{count} days",
     "registering": "Registering...",
     "registerButton": "Obtain Fanmark",
     "quickRegister": "Obtain Quickly",
