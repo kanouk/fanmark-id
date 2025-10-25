@@ -129,31 +129,30 @@ p, span {
   /* S Tier - Holographic shine effect */
   .tier-s-shine {
     position: relative;
-    overflow: hidden;
   }
   
   .tier-s-shine::before {
     content: '';
     position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
     background: linear-gradient(
       45deg,
-      transparent 30%,
-      rgba(255, 255, 255, 0.3) 50%,
-      transparent 70%
+      transparent 35%,
+      rgba(255, 255, 255, 0.35) 50%,
+      transparent 65%
     );
-    animation: shine 3s infinite;
+    background-size: 300% 300%;
+    animation: shineSweep 3s linear infinite;
   }
   
-  @keyframes shine {
+  @keyframes shineSweep {
     0% {
-      transform: translateX(-100%) translateY(-100%) rotate(45deg);
+      background-position: 200% 200%;
     }
     100% {
-      transform: translateX(100%) translateY(100%) rotate(45deg);
+      background-position: -200% -200%;
     }
   }
   
