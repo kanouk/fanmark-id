@@ -17,6 +17,7 @@ import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy, Undo2, QrCode,
 import { FiTarget, FiLayers, FiCompass, FiStar, FiCheckCircle, FiMoon, FiUser, FiLink, FiFileText, FiClock } from 'react-icons/fi';
 import { FanmarkAcquisition } from './FanmarkAcquisition';
 import { ExtendLicenseDialog, type ExtendLicenseTarget, type ExtendPlanOption } from './ExtendLicenseDialog';
+import { FanmarkReturnLoading } from './FanmarkReturnLoading';
 // Using Undo2 for return/return action
 import { supabase } from '@/integrations/supabase/client';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
@@ -136,6 +137,7 @@ export const FanmarkDashboard = () => {
   }, []);
   const [prefilledEmoji, setPrefilledEmoji] = useState<string | undefined>();
   const [returningFanmarkId, setReturningFanmarkId] = useState<string | null>(null);
+  const [returningFanmarkEmoji, setReturningFanmarkEmoji] = useState<string | undefined>();
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const [returnTargetFanmark, setReturnTargetFanmark] = useState<Fanmark | null>(null);
   const [extendDialogOpen, setExtendDialogOpen] = useState(false);
@@ -161,8 +163,11 @@ export const FanmarkDashboard = () => {
     navigate(`/fanmarks/${fanmarkId}/settings`);
   };
 
-  const handleReturnFanmark = async (fanmarkId: string) => {
+  const handleReturnFanmark = async (fanmarkId: string, fanmarkEmoji?: string) => {
     setReturningFanmarkId(fanmarkId);
+    if (fanmarkEmoji) {
+      setReturningFanmarkEmoji(fanmarkEmoji);
+    }
 
     try {
       const { data, error } = await supabase.functions.invoke('return-fanmark', {
@@ -189,6 +194,7 @@ export const FanmarkDashboard = () => {
       });
     } finally {
       setReturningFanmarkId(null);
+      setReturningFanmarkEmoji(undefined);
     }
   };
 
@@ -199,7 +205,7 @@ export const FanmarkDashboard = () => {
 
   const handleConfirmReturn = async () => {
     if (!returnTargetFanmark) return;
-    await handleReturnFanmark(returnTargetFanmark.id);
+    await handleReturnFanmark(returnTargetFanmark.id, returnTargetFanmark.fanmark);
     setReturnDialogOpen(false);
     setReturnTargetFanmark(null);
   };
@@ -1333,6 +1339,10 @@ export const FanmarkDashboard = () => {
         </Tabs>
 
       </div>
+      {returningFanmarkId && (
+        <FanmarkReturnLoading fanmark={returningFanmarkEmoji || returnTargetFanmark?.fanmark} />
+      )}
+
       <ExtendLicenseDialog
         target={extendTarget}
         open={extendDialogOpen}

@@ -948,5 +948,12 @@
     "registering": "ファンマを登録中...",
     "finalizing": "最終処理中...",
     "pleaseWait": "しばらくお待ちください"
+  },
+  "returnProcess": {
+    "title": "ファンマ返却中...",
+    "initiating": "返却手続きを開始しています...",
+    "releasing": "ファンマを解放しています...",
+    "finalizing": "最終確認を行っています...",
+    "pleaseWait": "そのままお待ちください"
   }
 }

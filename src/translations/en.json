@@ -950,5 +950,12 @@
     "registering": "Registering fanmark...",
     "finalizing": "Finalizing...",
     "pleaseWait": "Please wait"
+  },
+  "returnProcess": {
+    "title": "Returning fanmark...",
+    "initiating": "Starting return...",
+    "releasing": "Releasing fanmark...",
+    "finalizing": "Finishing up...",
+    "pleaseWait": "Hang tight for a moment"
   }
 }
