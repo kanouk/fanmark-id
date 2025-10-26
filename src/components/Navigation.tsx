@@ -23,6 +23,7 @@ export const Navigation = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: unreadCount = 0 } = useUnreadNotifications();
+  const locale = ja;
   const { data: recentNotifications = [], isLoading: notificationsLoading } = useQuery({
     queryKey: ['notifications-preview', user?.id],
     enabled: !!user,
@@ -110,7 +111,7 @@ export const Navigation = () => {
               <DropdownMenuTrigger asChild>
                 <button
                   className="relative flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-transform hover:-translate-y-0.5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                  aria-label="通知"
+                  aria-label={t('notifications.ariaLabel')}
                 >
                   <Bell className="h-5 w-5" />
                   {unreadCount > 0 && (
@@ -126,10 +127,10 @@ export const Navigation = () => {
               >
                 <div className="border-b border-border/70 px-4 py-3">
                   <DropdownMenuLabel className="flex items-center justify-between px-0 text-sm font-semibold text-foreground">
-                    <span>通知</span>
+                    <span>{t('notifications.pageTitle')}</span>
                     {unreadCount > 0 && (
                       <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                        {unreadCount} 未読
+                        {t('notifications.unreadCountLabel', { count: unreadCount })}
                       </span>
                     )}
                   </DropdownMenuLabel>
@@ -137,11 +138,11 @@ export const Navigation = () => {
                 <div className="max-h-80 overflow-y-auto px-2 py-2">
                   {notificationsLoading ? (
                     <div className="rounded-xl bg-muted/40 px-4 py-6 text-center text-sm text-muted-foreground">
-                      読み込み中…
+                      {t('notifications.loading')}
                     </div>
                   ) : recentNotifications.length === 0 ? (
                     <div className="rounded-xl bg-muted/40 px-4 py-6 text-center text-sm text-muted-foreground">
-                      通知はありません
+                      {t('notifications.emptyTitle')}
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -164,7 +165,7 @@ export const Navigation = () => {
                           className="group w-full rounded-xl border border-transparent bg-transparent px-3 py-2 text-left transition-all hover:border-primary/40 hover:bg-primary/5"
                         >
                           <p className="text-sm font-medium text-foreground group-hover:text-primary">
-                            {notification.payload?.title ?? '通知'}
+                            {notification.payload?.title ?? t('notifications.fallbackTitle')}
                           </p>
                           {notification.payload?.body && (
                             <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
@@ -172,13 +173,13 @@ export const Navigation = () => {
                             </p>
                           )}
                           <p className="mt-2 text-[11px] text-muted-foreground">
-                            {formatDistanceToNow(new Date(notification.triggered_at), {
-                              addSuffix: true,
-                              locale: ja,
-                            })}
+                              {formatDistanceToNow(new Date(notification.triggered_at), {
+                                addSuffix: true,
+                                locale,
+                              })}
                             {!notification.read_at && (
                               <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
-                                未読
+                                {t('notifications.unreadBadge')}
                               </span>
                             )}
                           </p>
@@ -195,7 +196,7 @@ export const Navigation = () => {
                   }}
                   className="cursor-pointer justify-center rounded-b-2xl px-4 py-3 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
                 >
-                  すべての通知を見る
+                  {t('notifications.viewAll')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

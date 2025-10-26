@@ -957,5 +957,23 @@
     "releasing": "Releasing fanmark...",
     "finalizing": "Finishing up...",
     "pleaseWait": "Hang tight for a moment"
+  },
+  "notifications": {
+    "pageTitle": "Notifications",
+    "pageDescription": "All important updates and announcements appear here.",
+    "refreshButton": "Check latest notifications",
+    "loading": "Loading your updates…",
+    "emptyTitle": "No notifications to show right now",
+    "emptyDescription": "New alerts will appear here when they arrive.",
+    "viewDetails": "View details",
+    "markAsRead": "Mark as read",
+    "fallbackTitle": "Notification",
+    "unreadBadge": "Unread",
+    "unreadCountLabel": "{{count}} unread",
+    "viewAll": "See all notifications",
+    "ariaLabel": "Notifications menu",
+    "toastFetchError": "Couldn't load notifications",
+    "toastMarkReadError": "Failed to mark as read",
+    "toastMarkReadSuccess": "Marked as read"
   }
 }

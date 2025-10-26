@@ -25,6 +25,7 @@ interface Notification {
 export default function Notifications() {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const locale = ja;
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
@@ -43,7 +44,7 @@ export default function Notifications() {
 
       if (error) {
         console.error('Error fetching notifications:', error);
-        toast.error('通知の取得に失敗しました');
+        toast.error(t('notifications.toastFetchError'));
       } else {
         setNotifications(data || []);
       }
@@ -82,9 +83,9 @@ export default function Notifications() {
 
     if (error) {
       console.error('Error marking notification as read:', error);
-      toast.error('既読にできませんでした');
+      toast.error(t('notifications.toastMarkReadError'));
     } else {
-      toast.success('既読にしました');
+      toast.success(t('notifications.toastMarkReadSuccess'));
       setNotifications((prev) =>
         prev.map((notification) =>
           notification.id === notificationId
@@ -104,10 +105,10 @@ export default function Notifications() {
         <div className="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
           <div className="space-y-3 text-center">
             <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-              通知
+              {t('notifications.pageTitle')}
             </h1>
             <p className="mx-auto max-w-2xl text-sm text-muted-foreground sm:text-base">
-              大切なお知らせや更新情報をここでまとめて確認できます。
+              {t('notifications.pageDescription')}
             </p>
           </div>
 
@@ -121,7 +122,7 @@ export default function Notifications() {
                 }
               }}
             >
-              最新の通知を確認
+              {t('notifications.refreshButton')}
             </Button>
           </div>
 
@@ -129,7 +130,7 @@ export default function Notifications() {
             <div className="mt-12 flex justify-center">
               <div className="flex items-center gap-3 rounded-full bg-white/70 px-6 py-3 text-sm text-muted-foreground shadow-[0_12px_30px_rgba(101,195,200,0.15)]">
                 <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary/30 border-t-transparent" />
-                読み込み中です…
+                {t('notifications.loading')}
               </div>
             </div>
           ) : notifications.length === 0 ? (
@@ -139,10 +140,10 @@ export default function Notifications() {
                   ✨
                 </div>
                 <h2 className="text-2xl font-semibold text-foreground">
-                  現在表示できる通知はありません
+                  {t('notifications.emptyTitle')}
                 </h2>
                 <p className="mx-auto max-w-md text-sm text-muted-foreground">
-                  新しいお知らせが届いたら、ここに表示されます。
+                  {t('notifications.emptyDescription')}
                 </p>
               </CardContent>
             </Card>
@@ -173,12 +174,12 @@ export default function Notifications() {
                         <div className="space-y-2">
                           <div className="flex flex-wrap items-center gap-2">
                             <h2 className="text-base font-semibold text-foreground">
-                              {notification.payload.title || '通知'}
+                              {notification.payload.title || t('notifications.fallbackTitle')}
                             </h2>
                             <span className="text-xs text-muted-foreground">
                               {formatDistanceToNow(new Date(notification.triggered_at), {
                                 addSuffix: true,
-                                locale: ja,
+                                locale,
                               })}
                             </span>
                           </div>
@@ -198,7 +199,7 @@ export default function Notifications() {
                             )}
                             {isUnread && (
                               <Badge variant="default" className="text-xs">
-                                未読
+                                {t('notifications.unreadBadge')}
                               </Badge>
                             )}
                           </div>
@@ -213,7 +214,7 @@ export default function Notifications() {
                           >
                             <Link to={linkTarget}>
                               <Link2 className="h-4 w-4" />
-                              詳細を見る
+                              {t('notifications.viewDetails')}
                             </Link>
                           </Button>
                         )}
@@ -225,7 +226,7 @@ export default function Notifications() {
                             onClick={() => markAsRead(notification.id)}
                           >
                             <Check className="mr-2 h-4 w-4" />
-                            既読にする
+                            {t('notifications.markAsRead')}
                           </Button>
                         )}
                       </div>

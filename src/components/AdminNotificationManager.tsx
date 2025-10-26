@@ -157,7 +157,7 @@ const AdminNotificationManager = () => {
                   <SelectContent>
                     <SelectItem value="license_grace_started">ライセンス猶予期間開始</SelectItem>
                     <SelectItem value="license_expired">ライセンス期限切れ</SelectItem>
-                    <SelectItem value="favorite_fanmark_available">お気に入りファンマーク利用可能</SelectItem>
+                    <SelectItem value="favorite_fanmark_available">お気に入りファンマ返却通知</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

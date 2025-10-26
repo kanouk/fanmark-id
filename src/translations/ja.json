@@ -955,5 +955,23 @@
     "releasing": "ファンマを解放しています...",
     "finalizing": "最終確認を行っています...",
     "pleaseWait": "そのままお待ちください"
+  },
+  "notifications": {
+    "pageTitle": "通知",
+    "pageDescription": "大切なお知らせや更新情報をここでまとめて確認できます。",
+    "refreshButton": "最新の通知を確認",
+    "loading": "読み込み中です…",
+    "emptyTitle": "現在表示できる通知はありません",
+    "emptyDescription": "新しいお知らせが届いたら、ここに表示されます。",
+    "viewDetails": "詳細を見る",
+    "markAsRead": "既読にする",
+    "fallbackTitle": "通知",
+    "unreadBadge": "未読",
+    "unreadCountLabel": "{{count}} 未読",
+    "viewAll": "すべての通知を見る",
+    "ariaLabel": "通知メニュー",
+    "toastFetchError": "通知の取得に失敗しました",
+    "toastMarkReadError": "既読にできませんでした",
+    "toastMarkReadSuccess": "既読にしました"
   }
 }
