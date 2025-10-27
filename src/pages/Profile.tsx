@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -10,16 +10,58 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { User, Settings, Info, LogOut } from 'lucide-react';
+import { User, Settings, Info, LogOut, Globe } from 'lucide-react';
 import { MdOutlineMail, MdSpaceDashboard } from 'react-icons/md';
 import { RiCalendarCheckLine } from 'react-icons/ri';
 import { HiOutlineSparkles } from 'react-icons/hi2';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
+import { usePreferredLanguage } from '@/hooks/usePreferredLanguage';
+import { ACTIVE_LANGUAGES, UPCOMING_LANGUAGES, isActiveLanguage, FALLBACK_LANGUAGE, ActiveLanguageCode } from '@/lib/language';
 
 const Profile = () => {
   const { user, signOut, signingOut, loading: authLoading } = useAuth();
   const { profile, loading, updateProfile } = useProfile();
   const { t } = useTranslation();
+  const { toast } = useToast();
+  const { persistPreferredLanguage, isSaving: isSavingPreferredLanguage } = usePreferredLanguage();
   const navigate = useNavigate();
+  const [languagePreference, setLanguagePreference] = useState<ActiveLanguageCode>(
+    isActiveLanguage(profile?.preferred_language ?? null) ? (profile?.preferred_language as ActiveLanguageCode) : FALLBACK_LANGUAGE,
+  );
+
+  useEffect(() => {
+    setLanguagePreference(
+      isActiveLanguage(profile?.preferred_language ?? null)
+        ? (profile?.preferred_language as ActiveLanguageCode)
+        : FALLBACK_LANGUAGE,
+    );
+  }, [profile?.preferred_language]);
+
+  const handleLanguageSelect = async (value: string) => {
+    if (!isActiveLanguage(value) || value === languagePreference) return;
+
+    setLanguagePreference(value);
+    try {
+      await persistPreferredLanguage(value);
+      toast({
+        title: t('userSettings.languageUpdateSuccessTitle'),
+        description: t('userSettings.languageUpdateSuccessDescription'),
+      });
+    } catch (error) {
+      console.error('Failed to update language preference:', error);
+      setLanguagePreference(
+        isActiveLanguage(profile?.preferred_language ?? null)
+          ? (profile?.preferred_language as ActiveLanguageCode)
+          : FALLBACK_LANGUAGE,
+      );
+      toast({
+        title: t('userSettings.languageUpdateErrorTitle'),
+        description: t('userSettings.languageUpdateErrorDescription'),
+        variant: 'destructive',
+      });
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -251,6 +293,58 @@ const Profile = () => {
                              'Free'}
                           </Badge>
                         </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="rounded-3xl border border-primary/15 bg-background/90 shadow-[0_18px_40px_rgba(101,195,200,0.12)]">
+                  <CardHeader className="flex flex-col gap-2 px-6 pt-6 pb-4">
+                    <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+                      <Globe className="h-5 w-5 text-primary" />
+                      {t('userSettings.languageSectionTitle')}
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      {t('userSettings.languageSectionDescription')}
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-4 p-6">
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        {t('userSettings.languageFieldLabel')}
+                      </p>
+                      <Select
+                        value={languagePreference}
+                        onValueChange={handleLanguageSelect}
+                        disabled={isSavingPreferredLanguage}
+                      >
+                        <SelectTrigger className="rounded-2xl border border-primary/20 bg-background/80 text-left text-sm">
+                          <SelectValue placeholder={t('userSettings.languageFieldLabel')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ACTIVE_LANGUAGES.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        {t('userSettings.languageFieldHint')}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-dashed border-primary/20 bg-primary/5 p-4 text-xs text-muted-foreground">
+                      <p className="font-medium text-foreground">
+                        {t('userSettings.languageComingSoonLabel')}
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {UPCOMING_LANGUAGES.map((option) => (
+                          <span
+                            key={option.value}
+                            className="rounded-full border border-border/60 px-3 py-1 text-[11px] uppercase tracking-wide"
+                          >
+                            {option.label}
+                          </span>
+                        ))}
                       </div>
                     </div>
                   </CardContent>

@@ -8,6 +8,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { TranslationProvider } from "@/hooks/useTranslation";
 import { useSubdomain } from "@/hooks/useSubdomain";
 import AdminApp from "./components/AdminApp";
+import { LanguagePreferenceSync } from "@/components/LanguagePreferenceSync";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -34,6 +35,7 @@ const MainApp = () => (
   <QueryClientProvider client={queryClient}>
     <TranslationProvider>
       <AuthProvider>
+        <LanguagePreferenceSync />
         <TooltipProvider>
         <Toaster />
         <Sonner />

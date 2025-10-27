@@ -8,31 +8,17 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Globe, ChevronDown, Check } from 'lucide-react';
-
-const SUPPORTED_LANGUAGES = [
-  { value: 'ja' as const, label: '日本語' },
-  { value: 'en' as const, label: 'English' },
-];
-
-const UPCOMING_LANGUAGES = [
-  { value: 'ko', label: '한국어' },
-  { value: 'id', label: 'Bahasa Indonesia' },
-];
-
-type SupportedLanguageValue = typeof SUPPORTED_LANGUAGES[number]['value'];
-
-const isSupportedLanguage = (value: string): value is SupportedLanguageValue =>
-  SUPPORTED_LANGUAGES.some((option) => option.value === value);
+import { ACTIVE_LANGUAGES, UPCOMING_LANGUAGES, isActiveLanguage } from '@/lib/language';
 
 export function LanguageToggle() {
-  const { language, setLanguage } = useTranslation();
+  const { language, setLanguage, t } = useTranslation();
 
   const currentLanguage =
-    SUPPORTED_LANGUAGES.find((option) => option.value === language) ||
-    SUPPORTED_LANGUAGES[0];
+    ACTIVE_LANGUAGES.find((option) => option.value === language) ||
+    ACTIVE_LANGUAGES[0];
 
   const handleLanguageChange = (nextValue: string) => {
-    if (!isSupportedLanguage(nextValue) || nextValue === language) {
+    if (!isActiveLanguage(nextValue) || nextValue === language) {
       return;
     }
     setLanguage(nextValue);
@@ -52,7 +38,7 @@ export function LanguageToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[12rem]">
-        {SUPPORTED_LANGUAGES.map((option) => (
+        {ACTIVE_LANGUAGES.map((option) => (
           <DropdownMenuItem
             key={option.value}
             onSelect={(event) => {
@@ -67,8 +53,9 @@ export function LanguageToggle() {
         ))}
         <DropdownMenuSeparator />
         {UPCOMING_LANGUAGES.map((option) => (
-          <DropdownMenuItem key={option.value} disabled className="cursor-not-allowed rounded-lg px-3 py-2 text-sm font-medium opacity-60">
-            {option.label}
+          <DropdownMenuItem key={option.value} disabled className="flex flex-col items-start gap-0.5 rounded-lg px-3 py-2 text-sm font-medium opacity-60">
+            <span>{option.label}</span>
+            <span className="text-xs text-muted-foreground">{t('languageToggle.comingSoon')}</span>
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

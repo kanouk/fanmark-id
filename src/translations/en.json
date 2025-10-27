@@ -319,6 +319,15 @@
     "planTypeAdmin": "Admin",
     "planLimitInfo": "Up to {limit} active fanmarks",
     "planUnlimited": "Unlimited fanmarks",
+    "languageSectionTitle": "Language preference",
+    "languageSectionDescription": "Choose the default language for the fanmark.id UI and notifications.",
+    "languageFieldLabel": "Preferred language",
+    "languageFieldHint": "This preference is saved to your account and used across devices.",
+    "languageComingSoonLabel": "Languages arriving soon",
+    "languageUpdateSuccessTitle": "Language preference saved",
+    "languageUpdateSuccessDescription": "We’ll use this language across the product and notifications.",
+    "languageUpdateErrorTitle": "Couldn’t save language preference",
+    "languageUpdateErrorDescription": "Please check your connection and try again.",
     "changePlan": "Change Plan",
     "saveChanges": "Save Changes",
     "updateSuccess": "Settings Updated",
@@ -975,5 +984,10 @@
     "toastFetchError": "Couldn't load notifications",
     "toastMarkReadError": "Failed to mark as read",
     "toastMarkReadSuccess": "Marked as read"
+  },
+  "languageToggle": {
+    "errorTitle": "Unable to switch language",
+    "errorDescription": "We couldn’t save your preference. Please try again shortly.",
+    "comingSoon": "Coming soon"
   }
 }

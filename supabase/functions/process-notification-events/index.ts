@@ -1,6 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { corsHeaders } from "../_shared/return-helpers.ts";
 
+const DEFAULT_LANGUAGE = 'ja';
+const userLanguageCache = new Map<string, string>();
+
 interface NotificationEvent {
   id: string;
   event_type: string;
@@ -260,7 +263,11 @@ async function applyRule(
   // Render template
   let renderedContent: any;
   try {
-    const language = (event.payload?.language as string) || 'ja';
+    const language = await resolveUserLanguage(
+      supabase,
+      userId,
+      event.payload?.language as string | undefined
+    );
     const { data: rendered, error: renderError } = await supabase
       .rpc('render_notification_template', {
         template_id_param: rule.template_id,
@@ -331,6 +338,34 @@ async function applyRule(
   }
 
   console.log(`Created notification for user ${userId} with status ${notificationStatus}`);
+}
+
+async function resolveUserLanguage(
+  supabase: any,
+  userId: string,
+  payloadLanguage?: string
+): Promise<string> {
+  if (payloadLanguage && typeof payloadLanguage === 'string') {
+    return payloadLanguage;
+  }
+
+  if (userLanguageCache.has(userId)) {
+    return userLanguageCache.get(userId)!;
+  }
+
+  const { data, error } = await supabase
+    .from('user_settings')
+    .select('preferred_language')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) {
+    console.warn(`Failed to fetch preferred language for user ${userId}:`, error);
+  }
+
+  const resolved = data?.preferred_language || DEFAULT_LANGUAGE;
+  userLanguageCache.set(userId, resolved);
+  return resolved;
 }
 
 async function checkSegmentFilter(

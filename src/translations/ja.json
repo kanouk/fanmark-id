@@ -318,6 +318,15 @@
     "planTypeAdmin": "管理者",
     "planLimitInfo": "同時に {limit} 個まで保有できます",
     "planUnlimited": "無制限にファンマを保有できます",
+    "languageSectionTitle": "言語設定",
+    "languageSectionDescription": "fanmark.id の表示・通知に利用するデフォルト言語を選択できます。",
+    "languageFieldLabel": "優先言語",
+    "languageFieldHint": "ここで選択した言語が次回以降のデフォルト表示に使われます。",
+    "languageComingSoonLabel": "近日追加予定の言語",
+    "languageUpdateSuccessTitle": "言語設定を保存しました",
+    "languageUpdateSuccessDescription": "アプリ全体とお知らせに反映されます。",
+    "languageUpdateErrorTitle": "言語設定を保存できませんでした",
+    "languageUpdateErrorDescription": "通信状況をご確認のうえ、再度お試しください。",
     "changePlan": "プラン変更",
     "saveChanges": "変更を保存",
     "updateSuccess": "設定を更新しました",
@@ -973,5 +982,10 @@
     "toastFetchError": "通知の取得に失敗しました",
     "toastMarkReadError": "既読にできませんでした",
     "toastMarkReadSuccess": "既読にしました"
+  },
+  "languageToggle": {
+    "errorTitle": "言語を切り替えられません",
+    "errorDescription": "設定の保存に失敗しました。時間をおいて再度お試しください。",
+    "comingSoon": "近日対応"
   }
 }
