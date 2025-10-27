@@ -373,6 +373,133 @@ export type Database = {
           },
         ]
       }
+      fanmark_lottery_entries: {
+        Row: {
+          applied_at: string
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          created_at: string
+          entry_status: string
+          fanmark_id: string
+          id: string
+          license_id: string
+          lottery_executed_at: string | null
+          lottery_probability: number
+          updated_at: string
+          user_id: string
+          won_at: string | null
+        }
+        Insert: {
+          applied_at?: string
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          entry_status?: string
+          fanmark_id: string
+          id?: string
+          license_id: string
+          lottery_executed_at?: string | null
+          lottery_probability?: number
+          updated_at?: string
+          user_id: string
+          won_at?: string | null
+        }
+        Update: {
+          applied_at?: string
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          entry_status?: string
+          fanmark_id?: string
+          id?: string
+          license_id?: string
+          lottery_executed_at?: string | null
+          lottery_probability?: number
+          updated_at?: string
+          user_id?: string
+          won_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fanmark_lottery_entries_fanmark_id_fkey"
+            columns: ["fanmark_id"]
+            isOneToOne: false
+            referencedRelation: "fanmarks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fanmark_lottery_entries_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "fanmark_licenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fanmark_lottery_history: {
+        Row: {
+          created_at: string
+          executed_at: string
+          execution_method: string
+          fanmark_id: string
+          id: string
+          license_id: string
+          probability_distribution: Json
+          random_seed: string | null
+          total_entries: number
+          winner_entry_id: string | null
+          winner_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          executed_at?: string
+          execution_method?: string
+          fanmark_id: string
+          id?: string
+          license_id: string
+          probability_distribution?: Json
+          random_seed?: string | null
+          total_entries: number
+          winner_entry_id?: string | null
+          winner_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          executed_at?: string
+          execution_method?: string
+          fanmark_id?: string
+          id?: string
+          license_id?: string
+          probability_distribution?: Json
+          random_seed?: string | null
+          total_entries?: number
+          winner_entry_id?: string | null
+          winner_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fanmark_lottery_history_fanmark_id_fkey"
+            columns: ["fanmark_id"]
+            isOneToOne: false
+            referencedRelation: "fanmarks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fanmark_lottery_history_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "fanmark_licenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fanmark_lottery_history_winner_entry_id_fkey"
+            columns: ["winner_entry_id"]
+            isOneToOne: false
+            referencedRelation: "fanmark_lottery_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fanmark_messageboard_configs: {
         Row: {
           content: string | null

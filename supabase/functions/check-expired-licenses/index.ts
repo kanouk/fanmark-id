@@ -260,23 +260,258 @@ serve(async (req) => {
       
       for (const license of filteredGraceExpiredLicenses) {
         try {
-          // Mark license as fully expired and set excluded_at to current time
-          const { error: licenseUpdateError } = await supabase
-            .from('fanmark_licenses')
-            .update({ 
-              status: 'expired',
-              excluded_at: new Date().toISOString()
-            })
-            .eq('id', license.id);
+          // Check for pending lottery entries
+          const { data: pendingEntries, error: entriesError } = await supabase
+            .from('fanmark_lottery_entries')
+            .select('id, user_id, lottery_probability')
+            .eq('license_id', license.id)
+            .eq('entry_status', 'pending');
 
-          if (licenseUpdateError) {
-            const errMsg = licenseUpdateError.message || 'Unknown error';
-            console.error(`  ❌ Failed ${license.id}: ${errMsg}`);
-            errors.push({type: 'expired_update', id: license.id, error: errMsg});
+          if (entriesError) {
+            console.error(`  ❌ Failed to fetch lottery entries for ${license.id}:`, entriesError);
+            errors.push({type: 'lottery_fetch_error', id: license.id, error: entriesError.message});
             continue;
           }
 
-        console.log(`  ✓ ${license.fanmarks?.user_input_fanmark} marked as expired`);
+          const entryCount = pendingEntries?.length || 0;
+          console.log(`  ${license.fanmarks?.user_input_fanmark}: ${entryCount} lottery entries`);
+
+          if (entryCount === 0) {
+            // No lottery entries - proceed with normal expiration
+            const { error: licenseUpdateError } = await supabase
+              .from('fanmark_licenses')
+              .update({ 
+                status: 'expired',
+                excluded_at: new Date().toISOString()
+              })
+              .eq('id', license.id);
+
+            if (licenseUpdateError) {
+              const errMsg = licenseUpdateError.message || 'Unknown error';
+              console.error(`  ❌ Failed ${license.id}: ${errMsg}`);
+              errors.push({type: 'expired_update', id: license.id, error: errMsg});
+              continue;
+            }
+
+            console.log(`  ✓ ${license.fanmarks?.user_input_fanmark} marked as expired (no lottery)`);
+
+          } else if (entryCount === 1) {
+            // Single entry - automatic winner
+            const winner = pendingEntries[0];
+            console.log(`  → Single applicant, automatic winner: ${winner.user_id}`);
+
+            // Get tier info for license duration
+            const { data: fanmarkData } = await supabase
+              .from('fanmarks')
+              .select('tier_level')
+              .eq('id', license.fanmark_id)
+              .single();
+
+            const { data: tierData } = await supabase
+              .from('fanmark_tiers')
+              .select('initial_license_days')
+              .eq('tier_level', fanmarkData?.tier_level || 1)
+              .single();
+
+            const licenseDays = tierData?.initial_license_days || 30;
+            const newLicenseEnd = new Date();
+            newLicenseEnd.setDate(newLicenseEnd.getDate() + licenseDays);
+
+            // Create new license for winner
+            const { data: newLicense, error: newLicenseError } = await supabase
+              .from('fanmark_licenses')
+              .insert({
+                fanmark_id: license.fanmark_id,
+                user_id: winner.user_id,
+                license_start: new Date().toISOString(),
+                license_end: newLicenseEnd.toISOString(),
+                status: 'active',
+                is_initial_license: false,
+              })
+              .select()
+              .single();
+
+            if (newLicenseError) {
+              console.error(`  ❌ Failed to create new license:`, newLicenseError);
+              errors.push({type: 'new_license_error', id: license.id, error: newLicenseError.message});
+              continue;
+            }
+
+            // Update winner entry
+            await supabase
+              .from('fanmark_lottery_entries')
+              .update({ 
+                entry_status: 'won',
+                won_at: new Date().toISOString(),
+                lottery_executed_at: new Date().toISOString()
+              })
+              .eq('id', winner.id);
+
+            // Create lottery history
+            await supabase
+              .from('fanmark_lottery_history')
+              .insert({
+                fanmark_id: license.fanmark_id,
+                license_id: license.id,
+                total_entries: 1,
+                winner_user_id: winner.user_id,
+                winner_entry_id: winner.id,
+                probability_distribution: [{ user_id: winner.user_id, lottery_probability: winner.lottery_probability }],
+                execution_method: 'automatic',
+              });
+
+            // Send winner notification
+            await supabase.rpc('create_notification_event', {
+              event_type_param: 'lottery_won',
+              payload_param: {
+                user_id: winner.user_id,
+                fanmark_id: license.fanmark_id,
+                fanmark_name: license.fanmarks?.user_input_fanmark,
+                license_id: newLicense.id,
+                license_end: newLicenseEnd.toISOString(),
+              },
+              source_param: 'cron_job',
+            });
+
+            // Mark old license as expired
+            await supabase
+              .from('fanmark_licenses')
+              .update({ 
+                status: 'expired',
+                excluded_at: new Date().toISOString()
+              })
+              .eq('id', license.id);
+
+            console.log(`  ✓ ${license.fanmarks?.user_input_fanmark} awarded to ${winner.user_id}`);
+
+          } else {
+            // Multiple entries - run weighted random lottery
+            console.log(`  → Running weighted lottery for ${entryCount} applicants`);
+
+            // Calculate weighted random selection
+            const totalWeight = pendingEntries.reduce((sum, e) => sum + Number(e.lottery_probability), 0);
+            const random = Math.random() * totalWeight;
+            
+            let累積 = 0;
+            let winnerId = pendingEntries[pendingEntries.length - 1].user_id;
+            let winnerEntryId = pendingEntries[pendingEntries.length - 1].id;
+            
+            for (const entry of pendingEntries) {
+              累積 += Number(entry.lottery_probability);
+              if (random <= 累積) {
+                winnerId = entry.user_id;
+                winnerEntryId = entry.id;
+                break;
+              }
+            }
+
+            console.log(`  → Winner selected: ${winnerId} (random: ${random.toFixed(4)}, total: ${totalWeight})`);
+
+            // Get tier info
+            const { data: fanmarkData } = await supabase
+              .from('fanmarks')
+              .select('tier_level')
+              .eq('id', license.fanmark_id)
+              .single();
+
+            const { data: tierData } = await supabase
+              .from('fanmark_tiers')
+              .select('initial_license_days')
+              .eq('tier_level', fanmarkData?.tier_level || 1)
+              .single();
+
+            const licenseDays = tierData?.initial_license_days || 30;
+            const newLicenseEnd = new Date();
+            newLicenseEnd.setDate(newLicenseEnd.getDate() + licenseDays);
+
+            // Create new license for winner
+            const { data: newLicense, error: newLicenseError } = await supabase
+              .from('fanmark_licenses')
+              .insert({
+                fanmark_id: license.fanmark_id,
+                user_id: winnerId,
+                license_start: new Date().toISOString(),
+                license_end: newLicenseEnd.toISOString(),
+                status: 'active',
+                is_initial_license: false,
+              })
+              .select()
+              .single();
+
+            if (newLicenseError) {
+              console.error(`  ❌ Failed to create new license:`, newLicenseError);
+              errors.push({type: 'new_license_error', id: license.id, error: newLicenseError.message});
+              continue;
+            }
+
+            // Update winner entry
+            await supabase
+              .from('fanmark_lottery_entries')
+              .update({ 
+                entry_status: 'won',
+                won_at: new Date().toISOString(),
+                lottery_executed_at: new Date().toISOString()
+              })
+              .eq('id', winnerEntryId);
+
+            // Update loser entries
+            await supabase
+              .from('fanmark_lottery_entries')
+              .update({ 
+                entry_status: 'lost',
+                lottery_executed_at: new Date().toISOString()
+              })
+              .eq('license_id', license.id)
+              .eq('entry_status', 'pending')
+              .neq('id', winnerEntryId);
+
+            // Create lottery history
+            const probabilityDist = pendingEntries.map(e => ({
+              user_id: e.user_id,
+              lottery_probability: Number(e.lottery_probability),
+            }));
+
+            await supabase
+              .from('fanmark_lottery_history')
+              .insert({
+                fanmark_id: license.fanmark_id,
+                license_id: license.id,
+                total_entries: entryCount,
+                winner_user_id: winnerId,
+                winner_entry_id: winnerEntryId,
+                probability_distribution: probabilityDist,
+                random_seed: crypto.randomUUID(),
+                execution_method: 'automatic',
+              });
+
+            // Send notifications
+            for (const entry of pendingEntries) {
+              const isWinner = entry.user_id === winnerId;
+              await supabase.rpc('create_notification_event', {
+                event_type_param: isWinner ? 'lottery_won' : 'lottery_lost',
+                payload_param: {
+                  user_id: entry.user_id,
+                  fanmark_id: license.fanmark_id,
+                  fanmark_name: license.fanmarks?.user_input_fanmark,
+                  license_id: isWinner ? newLicense.id : undefined,
+                  license_end: isWinner ? newLicenseEnd.toISOString() : undefined,
+                  total_applicants: entryCount,
+                },
+                source_param: 'cron_job',
+              });
+            }
+
+            // Mark old license as expired
+            await supabase
+              .from('fanmark_licenses')
+              .update({ 
+                status: 'expired',
+                excluded_at: new Date().toISOString()
+              })
+              .eq('id', license.id);
+
+            console.log(`  ✓ ${license.fanmarks?.user_input_fanmark} lottery completed, winner: ${winnerId}`);
+          }
 
           // Delete all config data for expired licenses
           let configDeleteErrors = 0;

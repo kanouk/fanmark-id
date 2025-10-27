@@ -242,11 +242,80 @@ serve(async (req) => {
       console.warn('Failed to insert audit log for extension:', auditError);
     }
 
+    // Cancel all pending lottery entries for this license (if any)
+    const { data: pendingEntries, error: entriesError } = await supabase
+      .from('fanmark_lottery_entries')
+      .select('id, user_id')
+      .eq('license_id', licenseRecord.id)
+      .eq('entry_status', 'pending');
+
+    if (entriesError) {
+      console.warn('Failed to fetch pending lottery entries:', entriesError);
+    }
+
+    if (pendingEntries && pendingEntries.length > 0) {
+      console.log(`Cancelling ${pendingEntries.length} pending lottery entries due to license extension`);
+
+      // Cancel all pending entries
+      const { error: cancelError } = await supabase
+        .from('fanmark_lottery_entries')
+        .update({
+          entry_status: 'cancelled_by_extension',
+          cancelled_at: new Date().toISOString(),
+          cancellation_reason: 'license_extended',
+        })
+        .eq('license_id', licenseRecord.id)
+        .eq('entry_status', 'pending');
+
+      if (cancelError) {
+        console.error('Failed to cancel lottery entries:', cancelError);
+      } else {
+        console.log('✓ Lottery entries cancelled successfully');
+
+        // Send notifications to each applicant
+        for (const entry of pendingEntries) {
+          const { error: notificationError } = await supabase.rpc('create_notification_event', {
+            event_type_param: 'lottery_cancelled_by_extension',
+            payload_param: {
+              user_id: entry.user_id,
+              fanmark_id: licenseRecord.fanmark_id,
+              fanmark_name: licenseRecord.fanmarks?.user_input_fanmark,
+              extended_by_user_id: authData.user.id,
+            },
+            source_param: 'edge_function',
+          });
+
+          if (notificationError) {
+            console.warn(`Failed to create notification for user ${entry.user_id}:`, notificationError);
+          }
+        }
+      }
+
+      // Log the lottery cancellation
+      const { error: lotteryAuditError } = await supabase
+        .from('audit_logs')
+        .insert({
+          user_id: authData.user.id,
+          action: 'LICENSE_EXTENDED_LOTTERY_CANCELLED',
+          resource_type: 'fanmark_license',
+          resource_id: licenseRecord.id,
+          metadata: {
+            fanmark_id: licenseRecord.fanmark_id,
+            cancelled_entries_count: pendingEntries.length,
+          },
+        });
+
+      if (lotteryAuditError) {
+        console.warn('Failed to insert lottery cancellation audit log:', lotteryAuditError);
+      }
+    }
+
     return new Response(JSON.stringify({
       success: true,
       license: updated,
       price_yen: pricing.price_yen,
       tier_level: tierLevel,
+      cancelled_lottery_entries: pendingEntries?.length || 0,
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -12,6 +12,12 @@ verify_jwt = false
 [functions.check-expired-licenses]
 verify_jwt = false
 
+[functions.apply-fanmark-lottery]
+verify_jwt = true
+
+[functions.cancel-lottery-entry]
+verify_jwt = true
+
 # ========================================
 # Cron Jobs Configuration
 # ========================================
