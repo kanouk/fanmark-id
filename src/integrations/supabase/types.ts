@@ -1131,10 +1131,16 @@ export type Database = {
         Args: { current_user_id?: string; username_to_check: string }
         Returns: boolean
       }
-      count_fanmark_emoji_units: {
-        Args: { input: string }
-        Returns: number
+      classify_fanmark_tier: {
+        Args: { input_emoji_ids: string[] }
+        Returns: {
+          display_name: string
+          initial_license_days: number
+          monthly_price_usd: number
+          tier_level: number
+        }[]
       }
+      count_fanmark_emoji_units: { Args: { input: string }; Returns: number }
       create_notification_event: {
         Args: {
           dedupe_key_param?: string
@@ -1242,7 +1248,7 @@ export type Database = {
         }[]
       }
       get_favorite_fanmarks: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           access_type: string
           availability_status: string
@@ -1317,10 +1323,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_admin: { Args: never; Returns: boolean }
       is_fanmark_licensed: {
         Args: { fanmark_license_id: string }
         Returns: boolean
@@ -1329,10 +1332,7 @@ export type Database = {
         Args: { fanmark_uuid: string }
         Returns: boolean
       }
-      is_super_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_super_admin: { Args: never; Returns: boolean }
       link_fanmark_discovery: {
         Args: { new_fanmark_id: string; normalized_ids: string[] }
         Returns: undefined
@@ -1341,10 +1341,7 @@ export type Database = {
         Args: { notification_id_param: string; read_via_param?: string }
         Returns: boolean
       }
-      normalize_emoji_ids: {
-        Args: { input_ids: string[] }
-        Returns: string[]
-      }
+      normalize_emoji_ids: { Args: { input_ids: string[] }; Returns: string[] }
       record_fanmark_search: {
         Args: { input_emoji_ids: string[] }
         Returns: string
@@ -1362,10 +1359,7 @@ export type Database = {
         }
         Returns: Json
       }
-      seq_key: {
-        Args: { normalized_ids: string[] }
-        Returns: string
-      }
+      seq_key: { Args: { normalized_ids: string[] }; Returns: string }
       toggle_fanmark_favorite: {
         Args: { fanmark_uuid: string }
         Returns: boolean
@@ -1405,7 +1399,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
-      user_language: "en" | "ja"
+      user_language: "en" | "ja" | "ko" | "id"
       user_plan:
         | "free"
         | "creator"
@@ -1542,7 +1536,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
-      user_language: ["en", "ja"],
+      user_language: ["en", "ja", "ko", "id"],
       user_plan: ["free", "creator", "max", "business", "enterprise", "admin"],
       user_role: ["user", "admin"],
     },
