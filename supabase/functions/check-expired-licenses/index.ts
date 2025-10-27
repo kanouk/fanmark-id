@@ -298,7 +298,8 @@ serve(async (req) => {
           } else if (entryCount === 1) {
             // Single entry - automatic winner
             const winner = pendingEntries[0];
-            console.log(`  → Single applicant, automatic winner: ${winner.user_id}`);
+            const isCurrentOwner = winner.user_id === license.user_id;
+            console.log(`  → Single applicant, automatic winner: ${winner.user_id}${isCurrentOwner ? ' (current owner)' : ''}`);
 
             // Get tier info for license duration
             const { data: fanmarkData } = await supabase
@@ -317,7 +318,19 @@ serve(async (req) => {
             const newLicenseEnd = new Date();
             newLicenseEnd.setDate(newLicenseEnd.getDate() + licenseDays);
 
-            // Create new license for winner
+            // If current owner won, mark old license as expired first
+            if (isCurrentOwner) {
+              console.log(`  → Current owner won, expiring old license first`);
+              await supabase
+                .from('fanmark_licenses')
+                .update({ 
+                  status: 'expired',
+                  excluded_at: new Date().toISOString()
+                })
+                .eq('id', license.id);
+            }
+
+            // Create new paid license for winner (owner or non-owner)
             const { data: newLicense, error: newLicenseError } = await supabase
               .from('fanmark_licenses')
               .insert({
@@ -369,20 +382,23 @@ serve(async (req) => {
                 fanmark_name: license.fanmarks?.user_input_fanmark,
                 license_id: newLicense.id,
                 license_end: newLicenseEnd.toISOString(),
+                is_current_owner_win: isCurrentOwner,
               },
               source_param: 'cron_job',
             });
 
-            // Mark old license as expired
-            await supabase
-              .from('fanmark_licenses')
-              .update({ 
-                status: 'expired',
-                excluded_at: new Date().toISOString()
-              })
-              .eq('id', license.id);
+            // Mark old license as expired (if not owner, otherwise already done)
+            if (!isCurrentOwner) {
+              await supabase
+                .from('fanmark_licenses')
+                .update({ 
+                  status: 'expired',
+                  excluded_at: new Date().toISOString()
+                })
+                .eq('id', license.id);
+            }
 
-            console.log(`  ✓ ${license.fanmarks?.user_input_fanmark} awarded to ${winner.user_id}`);
+            console.log(`  ✓ ${license.fanmarks?.user_input_fanmark} awarded to ${winner.user_id}${isCurrentOwner ? ' (renewed)' : ''}`);
 
           } else {
             // Multiple entries - run weighted random lottery
@@ -405,7 +421,8 @@ serve(async (req) => {
               }
             }
 
-            console.log(`  → Winner selected: ${winnerId} (random: ${random.toFixed(4)}, total: ${totalWeight})`);
+            const isCurrentOwner = winnerId === license.user_id;
+            console.log(`  → Winner selected: ${winnerId}${isCurrentOwner ? ' (current owner)' : ''} (random: ${random.toFixed(4)}, total: ${totalWeight})`);
 
             // Get tier info
             const { data: fanmarkData } = await supabase
@@ -424,7 +441,19 @@ serve(async (req) => {
             const newLicenseEnd = new Date();
             newLicenseEnd.setDate(newLicenseEnd.getDate() + licenseDays);
 
-            // Create new license for winner
+            // If current owner won, mark old license as expired first
+            if (isCurrentOwner) {
+              console.log(`  → Current owner won, expiring old license first`);
+              await supabase
+                .from('fanmark_licenses')
+                .update({ 
+                  status: 'expired',
+                  excluded_at: new Date().toISOString()
+                })
+                .eq('id', license.id);
+            }
+
+            // Create new paid license for winner (owner or non-owner)
             const { data: newLicense, error: newLicenseError } = await supabase
               .from('fanmark_licenses')
               .insert({
@@ -496,21 +525,24 @@ serve(async (req) => {
                   license_id: isWinner ? newLicense.id : undefined,
                   license_end: isWinner ? newLicenseEnd.toISOString() : undefined,
                   total_applicants: entryCount,
+                  is_current_owner_win: isWinner && isCurrentOwner,
                 },
                 source_param: 'cron_job',
               });
             }
 
-            // Mark old license as expired
-            await supabase
-              .from('fanmark_licenses')
-              .update({ 
-                status: 'expired',
-                excluded_at: new Date().toISOString()
-              })
-              .eq('id', license.id);
+            // Mark old license as expired (if not owner, otherwise already done)
+            if (!isCurrentOwner) {
+              await supabase
+                .from('fanmark_licenses')
+                .update({ 
+                  status: 'expired',
+                  excluded_at: new Date().toISOString()
+                })
+                .eq('id', license.id);
+            }
 
-            console.log(`  ✓ ${license.fanmarks?.user_input_fanmark} lottery completed, winner: ${winnerId}`);
+            console.log(`  ✓ ${license.fanmarks?.user_input_fanmark} lottery completed, winner: ${winnerId}${isCurrentOwner ? ' (renewed)' : ''}`);
           }
 
           // Delete all config data for expired licenses

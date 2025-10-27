@@ -88,14 +88,6 @@ serve(async (req) => {
       });
     }
 
-    // Check if user is the current owner
-    if (license.user_id === authData.user.id) {
-      return new Response(JSON.stringify({ error: 'You cannot apply for your own fanmark' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
     // Check for duplicate entry
     const { data: existingEntry, error: checkError } = await supabase
       .from('fanmark_lottery_entries')

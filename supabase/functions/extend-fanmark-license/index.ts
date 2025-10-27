@@ -193,6 +193,32 @@ serve(async (req) => {
       });
     }
 
+    // Check if user has pending lottery application
+    const { data: lotteryEntry, error: lotteryCheckError } = await supabase
+      .from('fanmark_lottery_entries')
+      .select('id, entry_status')
+      .eq('license_id', licenseRecord.id)
+      .eq('user_id', authData.user.id)
+      .eq('entry_status', 'pending')
+      .maybeSingle();
+
+    if (lotteryCheckError) {
+      console.error('Failed to check lottery entry:', lotteryCheckError);
+      return new Response(JSON.stringify({ error: 'Failed to check lottery status' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (lotteryEntry) {
+      return new Response(JSON.stringify({ 
+        error: 'Cannot extend license while lottery application is pending. Please cancel your lottery application first.' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const now = new Date();
     const licenseEnd = licenseRecord.license_end ? new Date(licenseRecord.license_end) : null;
     const baseDate = licenseEnd && !Number.isNaN(licenseEnd.getTime()) && licenseEnd > now

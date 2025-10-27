@@ -140,11 +140,12 @@ graph TD
 **処理フロー**:
 1. ユーザー認証確認
 2. ファンマークのGrace状態検証
-3. 所有者でないことを確認
-4. 重複申込チェック
-5. エントリー作成（lottery_probability = 1.0）
-6. 通知イベント作成（`lottery_application_submitted`）
-7. 監査ログ記録
+3. 重複申込チェック
+4. エントリー作成（lottery_probability = 1.0）
+5. 通知イベント作成（`lottery_application_submitted`）
+6. 監査ログ記録
+
+**重要**: 現オーナーも申込可能（オプションA採用）
 
 ---
 
@@ -191,8 +192,13 @@ graph TD
 
 既存のライセンス延長機能に以下を追加：
 
-**追加処理**（延長成功後）:
-1. 該当ライセンスのpending抽選エントリーを取得
+**追加処理（延長実行前）**:
+1. 現オーナーがpending抽選申込を持っているかチェック
+2. 持っている場合はエラーを返す（延長を拒否）
+   - エラーメッセージ: "Cannot extend license while lottery application is pending. Please cancel your lottery application first."
+
+**追加処理（延長成功後）**:
+1. 該当ライセンスのpending抽選エントリーを取得（全ユーザー分）
 2. エントリーを`cancelled_by_extension`に更新
 3. 各申込者に`lottery_cancelled_by_extension`通知を送信
 4. 監査ログ記録（`LICENSE_EXTENDED_LOTTERY_CANCELLED`）

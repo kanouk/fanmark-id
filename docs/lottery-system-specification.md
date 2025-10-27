@@ -27,12 +27,15 @@ Grace期間中（返却処理中）のファンマークに対して、複数の
 #### 2.1.1 抽選申込
 - **条件**:
   - ファンマークがGrace期間中（`status='grace'` かつ `grace_expires_at > now()`）
-  - 申込ユーザーが現所有者でない
+  - ✅ **現オーナーも申込可能**（オプションA採用）
   - 同一ファンマークへの重複申込は不可
 - **処理**:
   - `fanmark_lottery_entries` テーブルに新規レコード作成
   - 初期抽選確率は `1.0`（均等）
   - 申込完了通知を送信
+- **注意事項**:
+  - 現オーナーが申込した場合、延長オプションは放棄される
+  - 抽選申込後は延長不可（排他制御）
 
 #### 2.1.2 抽選実行
 - **トリガー**: `grace_expires_at` が現在時刻を過ぎた時点（バッチ処理）
@@ -47,19 +50,29 @@ Grace期間中（返却処理中）のファンマークに対して、複数の
   累積確率で当選者を決定
   ```
 - **処理後**:
-  - 当選者に新規ライセンス発行（tier初期日数分）
+  - 当選者が現オーナーの場合:
+    - 元のGraceライセンスを終了（`status='expired'`, `excluded_at=now()`）
+    - 新規有料ライセンス発行（tier初期日数分）
+  - 当選者が他ユーザーの場合:
+    - 元オーナーのライセンスを終了
+    - 新規ライセンス発行（tier初期日数分）
   - 当選エントリーを `'won'` に更新
   - 落選エントリーを `'lost'` に更新
   - 抽選履歴を記録（`fanmark_lottery_history`）
   - 各ユーザーに結果通知
 
-#### 2.1.3 ライセンス延長による優先処理
-- **トリガー**: Grace期間中に元所有者が `extend-fanmark-license` を実行
-- **処理**:
+#### 2.1.3 ライセンス延長と抽選の排他制御
+- **トリガー**: 
+  - 抽選申込時: 延長オプションを放棄
+  - 延長実行時: 全pending抽選エントリーをキャンセル
+- **延長実行時の処理**:
   1. 該当ファンマークの全pending抽選エントリーを取得
   2. エントリーを `'cancelled_by_extension'` に更新
   3. 各申込者に延長によるキャンセル通知を送信
   4. ライセンスを `'active'` に戻す
+- **抽選申込中の延長ブロック**:
+  - 現オーナーがpending抽選申込を持っている場合、延長を拒否
+  - エラーメッセージ: "Cannot extend license while lottery application is pending. Please cancel your lottery application first."
 - **優先順位**: **延長が常に最優先**（抽選は実行されない）
 
 #### 2.1.4 申込キャンセル
@@ -178,7 +191,7 @@ CREATE POLICY "Users can view their own entries"
   ON fanmark_lottery_entries FOR SELECT
   USING (auth.uid() = user_id);
 
--- ユーザーはGrace期間中のライセンスに申込可能
+-- ユーザーはGrace期間中のライセンスに申込可能（現オーナーも申込可）
 CREATE POLICY "Users can create entries for grace licenses"
   ON fanmark_lottery_entries FOR INSERT
   WITH CHECK (
@@ -188,7 +201,6 @@ CREATE POLICY "Users can create entries for grace licenses"
       WHERE fl.id = license_id
         AND fl.status = 'grace'
         AND fl.grace_expires_at > now()
-        AND fl.user_id != auth.uid() -- 自分のファンマークには申込不可
     )
   );
 
