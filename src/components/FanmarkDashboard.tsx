@@ -861,13 +861,7 @@ export const FanmarkDashboard = () => {
                                 const msRemaining = timing.remainingMs;
                                 const daysRemaining = timing.remainingWholeDays;
                                 const isExpiringSoon = msRemaining !== null && msRemaining > 0 && msRemaining <= 3 * 24 * 60 * 60 * 1000;
-                                const isCountdownActive = msRemaining !== null && msRemaining > 0 && msRemaining <= 24 * 60 * 60 * 1000;
-                                const graceMsRemaining = timing.graceExpiresDate ? timing.graceExpiresDate.getTime() - Date.now() : null;
-                                const isGraceCountdownActive = graceMsRemaining !== null && graceMsRemaining > 0 && graceMsRemaining <= 24 * 60 * 60 * 1000;
-                                const isSmallCountdown =
-                                  (timing.status === 'active' && isCountdownActive) ||
-                                  ((timing.status === 'grace' || timing.status === 'grace-return') && isGraceCountdownActive);
-                                const timeDisplayClass = `font-medium whitespace-nowrap ${isSmallCountdown ? 'text-xs' : 'text-sm'} ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`;
+                                const timeDisplayClass = `font-medium whitespace-nowrap text-sm ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`;
                                 const handleRowNavigation = () => navigate(`/fanmarks/${fanmark.id}/settings`);
                                 const isGraceReturn = timing.status === 'grace-return';
                                 const hasPerpetualLicense = !licenseData?.license_end;

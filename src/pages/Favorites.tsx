@@ -142,7 +142,7 @@ const getAccessTypeLabel = (t: (key: string, ...args: any[]) => string, accessTy
                     return {
                       type: 'processing' as const,
                       className: 'border-amber-200 bg-amber-50 text-amber-600',
-                      label: t('favorites.statusReturnProcessing', { defaultValue: language === 'ja' ? '失効処理中' : 'Return processing' }),
+                      label: t('favorites.statusReturnProcessing', { defaultValue: language === 'ja' ? '返却処理中（まもなく取得のチャンス！）' : 'Being returned (opportunity coming soon)' }),
                     };
                   }
 

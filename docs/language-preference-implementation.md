@@ -61,3 +61,8 @@ Only proceed to the next phase once every checklist item in the current phase is
 
 ### Update (Navigation behavior)
 - The Navigation LanguageToggle now **only** changes the in-session language (and browser cache) so users can preview other languages freely. It no longer updates `preferred_language`; that persists only through the settings screen.
+
+### Update (2025-02-08 – Settings UI refresh)
+- The profile/settings page now mirrors a two-column layout (persistent sidebar + content cards) for clarity.
+- “Overview / Profile / Preferences” navigation text is localized via `userSettings.nav*` keys.
+- Design sticks to the existing pastel brand palette (light gradient background, glassmorphism cards) while adopting the new structural pattern.

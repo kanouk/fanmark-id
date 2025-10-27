@@ -303,13 +303,10 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
             <Label htmlFor="username" className="text-sm font-semibold text-muted-foreground">
               {t('userSettings.username')}
             </Label>
-            <Input
-              id="username"
-              value={formData.username}
-              onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-              placeholder={t('userSettings.usernamePlaceholder')}
-              className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none focus-visible:ring-2 focus-visible:ring-primary/40"
-            />
+            <div className="rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3">
+              <p className="text-sm font-medium text-foreground">{formData.username}</p>
+              <p className="text-xs text-muted-foreground">{t('userSettings.usernameHint')}</p>
+            </div>
           </div>
 
           <div className="space-y-2">
