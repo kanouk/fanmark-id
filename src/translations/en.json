@@ -52,6 +52,16 @@
       "beforeAfter": "Input: {original} → Search: {normalized}"
     }
   },
+  "lottery": {
+    "applyButton": "Apply to Lottery",
+    "cancelButton": "Cancel",
+    "appliedBadge": "Applied",
+    "entryCount": "{count} applicants",
+    "applySuccess": "Successfully applied to lottery",
+    "cancelSuccess": "Successfully cancelled lottery application",
+    "applyError": "Failed to apply to lottery",
+    "cancelError": "Failed to cancel lottery application"
+  },
   "invitation": {
     "title": "Invitation Required",
     "description": "Enter your special invitation code to join our community",

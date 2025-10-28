@@ -29,6 +29,9 @@ export interface FanmarkDetails {
   has_pending_lottery?: boolean;
   is_current_owner?: boolean;
   current_owner_id?: string;
+  lottery_entry_count?: number;
+  has_user_lottery_entry?: boolean;
+  user_lottery_entry_id?: string;
 }
 
 export interface LicenseHistoryItem {

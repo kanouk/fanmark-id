@@ -2,6 +2,7 @@ import { useParams, Navigate } from 'react-router-dom';
 import { useFanmarkDetails } from '@/hooks/useFanmarkDetails';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useLotteryEntry } from '@/hooks/useLotteryEntry';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,9 +18,10 @@ import { segmentEmojiSequence } from '@/lib/emojiConversion';
 
 export default function FanmarkDetailsPage() {
   const { shortId } = useParams<{ shortId: string }>();
-  const { details, loading, error, toggleFavorite } = useFanmarkDetails(shortId);
+  const { details, loading, error, toggleFavorite, refetch } = useFanmarkDetails(shortId);
   const { user } = useAuth();
   const { t, language } = useTranslation();
+  const { applyToLottery, cancelLotteryEntry, loading: lotteryLoading } = useLotteryEntry();
 
   if (!shortId) {
     return <Navigate to="/" replace />;
@@ -178,7 +180,60 @@ export default function FanmarkDetailsPage() {
                     {t('fanmarkDetails.visitPage')}
                   </a>
                 </Button>
+                
+                {/* Lottery UI */}
+                {user && details.current_license_status === 'grace' && (
+                  <>
+                    {!details.has_user_lottery_entry ? (
+                      <Button 
+                        variant="default" 
+                        className="gap-2 sm:w-auto"
+                        onClick={async () => {
+                          try {
+                            await applyToLottery(details.fanmark_id);
+                            await refetch();
+                          } catch (error) {
+                            console.error('Failed to apply to lottery:', error);
+                          }
+                        }}
+                        disabled={lotteryLoading}
+                      >
+                        {t('lottery.applyButton')}
+                      </Button>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-primary/10 text-primary border-primary/30">
+                          {t('lottery.appliedBadge')}
+                        </Badge>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={async () => {
+                            if (details.user_lottery_entry_id) {
+                              try {
+                                await cancelLotteryEntry(details.user_lottery_entry_id);
+                                await refetch();
+                              } catch (error) {
+                                console.error('Failed to cancel lottery entry:', error);
+                              }
+                            }
+                          }}
+                          disabled={lotteryLoading}
+                        >
+                          {t('lottery.cancelButton')}
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
+              
+              {/* Lottery entry count */}
+              {details.current_license_status === 'grace' && (details.lottery_entry_count ?? 0) > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  {t('lottery.entryCount', { count: details.lottery_entry_count })}
+                </p>
+              )}
             </div>
           </section>
 

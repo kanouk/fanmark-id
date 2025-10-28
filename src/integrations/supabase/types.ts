@@ -1328,11 +1328,13 @@ export type Database = {
           emoji_ids: string[]
           fanmark_name: string
           has_active_license: boolean
+          has_user_lottery_entry: boolean
           id: string
           is_blocked_for_registration: boolean
           is_password_protected: boolean
           license_end: string
           license_id: string
+          lottery_entry_count: number
           next_available_at: string
           normalized_emoji: string
           short_id: string
@@ -1341,6 +1343,7 @@ export type Database = {
           text_content: string
           updated_at: string
           user_input_fanmark: string
+          user_lottery_entry_id: string
         }[]
       }
       get_fanmark_details_by_short_id: {
@@ -1484,6 +1487,10 @@ export type Database = {
           template_id_param: string
           template_version_param: number
         }
+        Returns: Json
+      }
+      search_fanmarks_with_lottery: {
+        Args: { input_emoji_ids: string[] }
         Returns: Json
       }
       seq_key: { Args: { normalized_ids: string[] }; Returns: string }

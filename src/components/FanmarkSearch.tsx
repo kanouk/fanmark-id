@@ -2,9 +2,12 @@ import { useEffect, useMemo } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EmojiInput } from "@/components/EmojiInput";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from "@/hooks/useTranslation";
 import { useFanmarkSearch, FanmarkSearchResult } from "@/hooks/useFanmarkSearch";
+import { useLotteryEntry } from "@/hooks/useLotteryEntry";
 import { FanmarkStatusBadge, FanmarkStatus } from "@/components/FanmarkStatusBadge";
 import { FiAlertTriangle, FiInfo } from 'react-icons/fi';
 import { canonicalizeEmojiString, segmentEmojiSequence } from '@/lib/emojiConversion';
@@ -31,6 +34,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
   onUtilitiesRef,
 }) => {
   const { t } = useTranslation();
+  const { applyToLottery, cancelLotteryEntry, loading: lotteryLoading } = useLotteryEntry();
 
   const normalizedInputQuery = useMemo(() => {
     if (!query) return '';
@@ -141,6 +145,35 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
                   <div className="flex w-full flex-col gap-2">
                     <span className="text-3xl tracking-[0.15em] leading-none">{(fanmark.fanmark || fanmark.user_input_fanmark) || '❓'}</span>
                     {getStatusBadge(fanmark)}
+                    
+                    {/* Lottery info for grace/returning status */}
+                    {fanmark.blocking_status === 'grace' && (fanmark.lottery_entry_count ?? 0) > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {t('lottery.entryCount', { count: fanmark.lottery_entry_count })}
+                      </p>
+                    )}
+                    
+                    <div className="flex gap-2 mt-2">
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={`/f/${fanmark.short_id}`}>ファンマページを開く</a>
+                      </Button>
+                      
+                      {fanmark.blocking_status === 'grace' && !fanmark.has_user_lottery_entry && (
+                        <Button size="sm" onClick={async () => {
+                          if (fanmark.id) {
+                            await applyToLottery(fanmark.id);
+                          }
+                        }} disabled={lotteryLoading}>
+                          {t('lottery.applyButton')}
+                        </Button>
+                      )}
+                      
+                      {fanmark.has_user_lottery_entry && (
+                        <Badge className="bg-primary/10 text-primary border-primary/30">
+                          {t('lottery.appliedBadge')}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

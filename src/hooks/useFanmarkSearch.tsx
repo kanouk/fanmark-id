@@ -33,6 +33,9 @@ export interface FanmarkSearchResult {
   available_at?: string | null;
   blocking_status?: string | null;
   is_blocked_for_registration?: boolean;
+  lottery_entry_count?: number;
+  has_user_lottery_entry?: boolean;
+  user_lottery_entry_id?: string;
 }
 
 type FanmarkStatusRaw = 'active' | 'inactive' | 'reserved' | 'archived' | 'pending';
@@ -91,6 +94,9 @@ interface CheckFanmarkAvailabilityResponse {
   license_days?: number | null;
   available_at?: string | null;
   blocking_status?: string | null;
+  lottery_entry_count?: number;
+  has_user_lottery_entry?: boolean;
+  user_lottery_entry_id?: string;
 }
 
 interface FanmarkCompleteDataRow {
@@ -107,6 +113,9 @@ interface FanmarkCompleteDataRow {
   current_grace_expires_at: string | null;
   is_blocked_for_registration: boolean;
   next_available_at: string | null;
+  lottery_entry_count?: number;
+  has_user_lottery_entry?: boolean;
+  user_lottery_entry_id?: string;
 }
 
 const SKIN_TONE_MODIFIER_REGEX = /\p{Emoji_Modifier}/u;
@@ -400,6 +409,9 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
           available_at: nextAvailableAt,
           blocking_status: blockingStatus,
           is_blocked_for_registration: true,
+          lottery_entry_count: fanmarkData.lottery_entry_count ?? 0,
+          has_user_lottery_entry: fanmarkData.has_user_lottery_entry ?? false,
+          user_lottery_entry_id: fanmarkData.user_lottery_entry_id,
         });
         return;
       }
@@ -420,6 +432,9 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
           available_at: nextAvailableAt,
           blocking_status: blockingStatus,
           is_blocked_for_registration: false,
+          lottery_entry_count: fanmarkData.lottery_entry_count ?? 0,
+          has_user_lottery_entry: fanmarkData.has_user_lottery_entry ?? false,
+          user_lottery_entry_id: fanmarkData.user_lottery_entry_id,
         });
         return;
       }

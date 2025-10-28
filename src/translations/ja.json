@@ -52,6 +52,16 @@
       "beforeAfter": "入力: {original} → 検索: {normalized}"
     }
   },
+  "lottery": {
+    "applyButton": "抽選に申し込む",
+    "cancelButton": "キャンセル",
+    "appliedBadge": "申込済み",
+    "entryCount": "{count}人が抽選中",
+    "applySuccess": "抽選に申し込みました",
+    "cancelSuccess": "抽選をキャンセルしました",
+    "applyError": "抽選の申し込みに失敗しました",
+    "cancelError": "抽選のキャンセルに失敗しました"
+  },
   "invitation": {
     "title": "招待が必要です",
     "description": "特別な招待コードを入力してコミュニティに参加してください",
