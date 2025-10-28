@@ -977,7 +977,9 @@
     "notScheduled": "未スケジュール",
     "neverAcquiredShort": "未取得",
     "statusInactive": "非アクティブ",
-    "statusUnknown": "ステータス: {{status}}"
+    "statusUnknown": "ステータス: {{status}}",
+    "lotteryPendingTitle": "抽選申込中です",
+    "lotteryPendingDescription": "現在、このファンマの抽選に申し込んでいます。抽選申込中は延長ができません。延長したい場合は、先に抽選申込をキャンセルしてください。"
   },
   "acquisition": {
     "title": "ファンマ取得中...",

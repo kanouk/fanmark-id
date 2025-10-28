@@ -26,6 +26,9 @@ export interface FanmarkDetails {
   first_owner_display_name?: string;
   license_history: LicenseHistoryItem[];
   is_favorited: boolean;
+  has_pending_lottery?: boolean;
+  is_current_owner?: boolean;
+  current_owner_id?: string;
 }
 
 export interface LicenseHistoryItem {
@@ -73,11 +76,42 @@ export const useFanmarkDetails = (shortId: string | undefined) => {
           : [];
         const displayFanmark = resolveFanmarkDisplay(fanmarkData.user_input_fanmark ?? '', emojiIds);
 
+        // Check if current user is the owner and has pending lottery
+        let hasPendingLottery = false;
+        let isCurrentOwner = false;
+        
+        // Determine current owner by checking license history
+        // The RPC should include owner user ID, but if not we can check via license query
+        if (user && fanmarkData.current_license_id) {
+          // Query the license to get owner user_id
+          const { data: licenseData } = await supabase
+            .from('fanmark_licenses')
+            .select('user_id')
+            .eq('id', fanmarkData.current_license_id)
+            .maybeSingle();
+          
+          if (licenseData) {
+            isCurrentOwner = user.id === licenseData.user_id;
+            
+            // Only check lottery status if user is current owner and license is in grace period
+            if (isCurrentOwner && fanmarkData.current_license_status === 'grace') {
+              const { data: lotteryData } = await supabase
+                .from('fanmark_lottery_entries')
+                .select('id, entry_status')
+                .eq('user_id', user.id)
+                .eq('entry_status', 'pending')
+                .maybeSingle();
+              
+              hasPendingLottery = !!lotteryData;
+            }
+          }
+        }
+
         setDetails({
           ...fanmarkData,
           emoji_ids: emojiIds,
           fanmark: displayFanmark,
-          license_history: Array.isArray(fanmarkData.license_history) 
+          license_history: Array.isArray(fanmarkData.license_history)
             ? fanmarkData.license_history.map((item: any) => ({
                 license_start: item.license_start,
                 license_end: item.license_end,
@@ -89,7 +123,9 @@ export const useFanmarkDetails = (shortId: string | undefined) => {
                 status: item.status,
                 is_initial_license: item.is_initial_license
               }))
-            : []
+            : [],
+          has_pending_lottery: hasPendingLottery,
+          is_current_owner: isCurrentOwner,
         } as FanmarkDetails);
       }
     } catch (err) {

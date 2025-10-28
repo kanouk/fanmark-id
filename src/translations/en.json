@@ -979,7 +979,9 @@
     "notScheduled": "Not scheduled",
     "neverAcquiredShort": "Not acquired",
     "statusInactive": "Inactive",
-    "statusUnknown": "Status: {{status}}"
+    "statusUnknown": "Status: {{status}}",
+    "lotteryPendingTitle": "Lottery Application Pending",
+    "lotteryPendingDescription": "You currently have a pending lottery application for this fanmark. You cannot extend the license while a lottery application is active. Please cancel your lottery application first if you wish to extend."
   },
   "acquisition": {
     "title": "Acquiring fanmark...",

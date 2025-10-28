@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Navigation } from '@/components/Navigation';
-import { Heart, Calendar, User, Clock, ExternalLink, History, AlertTriangle } from 'lucide-react';
+import { Heart, Calendar, User, Clock, ExternalLink, History, AlertTriangle, Info } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ja, enUS } from 'date-fns/locale';
 import { formatInTimeZone } from 'date-fns-tz';
 import { parseDateString } from '@/lib/utils';
@@ -180,6 +181,22 @@ export default function FanmarkDetailsPage() {
               </div>
             </div>
           </section>
+
+          {/* Lottery Warning for Current Owner */}
+          {details.is_current_owner && details.current_license_status === 'grace' && details.has_pending_lottery && (
+            <section className="mt-6">
+              <Alert className="border-amber-500/30 bg-amber-500/5">
+                <Info className="h-5 w-5 text-amber-600" />
+                <AlertTitle className="text-amber-900 dark:text-amber-100">
+                  {t('fanmarkDetails.lotteryPendingTitle')}
+                </AlertTitle>
+                <AlertDescription className="text-amber-800 dark:text-amber-200">
+                  {t('fanmarkDetails.lotteryPendingDescription')}
+                </AlertDescription>
+              </Alert>
+            </section>
+          )}
+
           <section className="mt-10">
           <Card className="border border-primary/10 bg-muted/40 backdrop-blur rounded-3xl">
             <CardHeader className="px-6 pt-6 pb-2">
