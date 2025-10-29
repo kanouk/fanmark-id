@@ -26,6 +26,8 @@ import { EmojiInputUtilities } from '@/components/EmojiInput';
 import { FanmarkAcquisitionLoading } from '@/components/FanmarkAcquisitionLoading';
 import { supabase } from '@/integrations/supabase/client';
 import { useFavoriteFanmarks, useInvalidateFavoriteFanmarks } from '@/hooks/useFavoriteFanmarks';
+import { useLotteryEntry } from '@/hooks/useLotteryEntry';
+import { Badge } from '@/components/ui/badge';
 
 const SCROLL_TARGET_KEY = 'fanmark-search:scroll-target';
 
@@ -56,6 +58,7 @@ export const FanmarkAcquisition = ({
     enabled: Boolean(user),
   });
   const invalidateFavorites = useInvalidateFavoriteFanmarks();
+  const { applyToLottery, cancelLotteryEntry, loading: lotteryLoading } = useLotteryEntry();
 
   const [searchResult, setSearchResult] = useState<FanmarkSearchResult | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -573,17 +576,81 @@ export const FanmarkAcquisition = ({
               )}
 
               {isGraceBlocked && (
-                <div className="w-full rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
-                  <div className="flex items-center gap-2 font-semibold">
-                    <FiAlertTriangle className="h-4 w-4" />
-                    {t('dashboard.graceBlockedTitle')}
+                <>
+                  <div className="w-full rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+                    <div className="flex items-center gap-2 font-semibold">
+                      <FiAlertTriangle className="h-4 w-4" />
+                      {t('dashboard.graceBlockedTitle')}
+                    </div>
+                    <div className="mt-1 text-xs leading-relaxed">
+                      {formattedGraceAvailableAt
+                        ? t('dashboard.graceBlockedDescriptionWithDate', { date: formattedGraceAvailableAt })
+                        : t('dashboard.graceBlockedDescription')}
+                    </div>
                   </div>
-                  <div className="mt-1 text-xs leading-relaxed">
-                    {formattedGraceAvailableAt
-                      ? t('dashboard.graceBlockedDescriptionWithDate', { date: formattedGraceAvailableAt })
-                      : t('dashboard.graceBlockedDescription')}
-                  </div>
-                </div>
+
+                  {/* Lottery application UI for grace period */}
+                  {user && (
+                    <div className="flex flex-col items-center gap-3 w-full">
+                      {/* Lottery entry count */}
+                      {(searchResult?.lottery_entry_count ?? 0) > 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          {t('lottery.entryCount', { count: searchResult.lottery_entry_count })}
+                        </p>
+                      )}
+                      
+                      {/* Apply button or applied status */}
+                      {!searchResult?.has_user_lottery_entry ? (
+                        <Button
+                          size="default"
+                          className="rounded-full gap-2 px-5 text-sm font-semibold"
+                          onClick={async () => {
+                            if (searchResult?.id) {
+                              try {
+                                await applyToLottery(searchResult.id);
+                                // Trigger search refresh to update lottery status
+                                if (query) {
+                                  handleQueryChange(query);
+                                }
+                              } catch (error) {
+                                console.error('Failed to apply to lottery:', error);
+                              }
+                            }
+                          }}
+                          disabled={lotteryLoading}
+                        >
+                          {t('lottery.applyButton')}
+                        </Button>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-primary/10 text-primary border-primary/30">
+                            {t('lottery.appliedBadge')}
+                          </Badge>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              if (searchResult?.user_lottery_entry_id) {
+                                try {
+                                  await cancelLotteryEntry(searchResult.user_lottery_entry_id);
+                                  // Trigger search refresh
+                                  if (query) {
+                                    handleQueryChange(query);
+                                  }
+                                } catch (error) {
+                                  console.error('Failed to cancel lottery entry:', error);
+                                }
+                              }
+                            }}
+                            disabled={lotteryLoading}
+                          >
+                            {t('lottery.cancelButton')}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
 
               {/* Action buttons for taken or discovered fanmarks */}
