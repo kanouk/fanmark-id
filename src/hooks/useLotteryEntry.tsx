@@ -24,7 +24,21 @@ export function useLotteryEntry() {
       
       return data;
     } catch (err: any) {
-      const errorMessage = err.message || t('lottery.applyError');
+      console.error('[useLotteryEntry] Error applying to lottery:', err);
+      
+      // Extract error message from Edge Function response
+      let errorMessage = t('lottery.applyError');
+      
+      // Check if error contains the duplicate entry message
+      if (err?.message) {
+        const msg = err.message.toLowerCase();
+        if (msg.includes('already applied') || msg.includes('duplicate')) {
+          errorMessage = t('lottery.alreadyAppliedError');
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
       setError(errorMessage);
       toast({
         title: t('lottery.applyError'),

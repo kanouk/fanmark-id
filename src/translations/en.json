@@ -60,7 +60,9 @@
     "applySuccess": "Successfully applied to lottery",
     "cancelSuccess": "Successfully cancelled lottery application",
     "applyError": "Failed to apply to lottery",
-    "cancelError": "Failed to cancel lottery application"
+    "cancelError": "Failed to cancel lottery application",
+    "alreadyAppliedError": "You have already applied for this fanmark",
+    "duplicateEntryError": "Duplicate entry not allowed"
   },
   "invitation": {
     "title": "Invitation Required",

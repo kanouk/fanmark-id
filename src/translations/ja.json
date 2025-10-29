@@ -60,7 +60,9 @@
     "applySuccess": "抽選に申し込みました",
     "cancelSuccess": "抽選をキャンセルしました",
     "applyError": "抽選の申し込みに失敗しました",
-    "cancelError": "抽選のキャンセルに失敗しました"
+    "cancelError": "抽選のキャンセルに失敗しました",
+    "alreadyAppliedError": "既にこのファンマの抽選に申し込んでいます",
+    "duplicateEntryError": "重複した申し込みはできません"
   },
   "invitation": {
     "title": "招待が必要です",
