@@ -88,13 +88,14 @@ serve(async (req) => {
       });
     }
 
-    // Check for duplicate entry
+    // Check for duplicate pending entry only (cancelled entries can re-apply)
     const { data: existingEntry, error: checkError } = await supabase
       .from('fanmark_lottery_entries')
       .select('id, entry_status')
       .eq('fanmark_id', fanmark_id)
       .eq('user_id', authData.user.id)
       .eq('license_id', license.id)
+      .eq('entry_status', 'pending')
       .maybeSingle();
 
     if (checkError) {
