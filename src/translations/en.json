@@ -62,7 +62,12 @@
     "applyError": "Failed to apply to lottery",
     "cancelError": "Failed to cancel lottery application",
     "alreadyAppliedError": "You have already applied for this fanmark",
-    "duplicateEntryError": "Duplicate entry not allowed"
+    "duplicateEntryError": "Duplicate entry not allowed",
+    "applyingTitle": "Applying to Lottery",
+    "applyingMessage": "Submitting your lottery application...",
+    "cancellingTitle": "Cancelling Application",
+    "cancellingMessage": "Cancelling your lottery entry...",
+    "pleaseWait": "Please wait a moment"
   },
   "invitation": {
     "title": "Invitation Required",

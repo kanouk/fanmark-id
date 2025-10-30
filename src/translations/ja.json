@@ -62,7 +62,12 @@
     "applyError": "抽選の申し込みに失敗しました",
     "cancelError": "抽選のキャンセルに失敗しました",
     "alreadyAppliedError": "既にこのファンマの抽選に申し込んでいます",
-    "duplicateEntryError": "重複した申し込みはできません"
+    "duplicateEntryError": "重複した申し込みはできません",
+    "applyingTitle": "抽選申し込み中",
+    "applyingMessage": "抽選に申し込んでいます...",
+    "cancellingTitle": "キャンセル処理中",
+    "cancellingMessage": "抽選申し込みをキャンセルしています...",
+    "pleaseWait": "少々お待ちください"
   },
   "invitation": {
     "title": "招待が必要です",
