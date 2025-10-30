@@ -108,6 +108,68 @@ Grace期間中（返却処理中）のファンマークに対して、複数の
 - トランザクション保証（抽選・ライセンス発行・通知が原子的）
 - ロールバック機構（エラー時の自動復旧）
 
+#### 2.2.4 エラーハンドリングとUI状態同期
+
+**目的**: Edge Functionからエラーが返された場合でも、UI状態を確実に最新化し、ユーザーの混乱を防ぐ。
+
+**実装戦略**:
+- `try...catch...finally` 構造を使用
+- `finally` ブロックで UI 状態更新を保証（成功・失敗に関わらず実行）
+- データベース状態とUI状態の同期を常に保証
+
+**適用箇所**:
+1. **抽選申し込みボタン**: 
+   - `FanmarkDetailsPage.tsx`: `refetch()` を `finally` ブロックで実行
+   - `FanmarkAcquisition.tsx`: `handleQueryChange(query)` を `finally` ブロックで実行
+
+2. **抽選キャンセルボタン**: 
+   - 同様に `finally` ブロックで状態更新を保証
+
+**エラーシナリオと対応**:
+
+| エラー種類 | 原因 | ユーザーへの表示 | UI状態更新 |
+|-----------|------|----------------|-----------|
+| 重複申込 | 既に申込済み | エラートースト: "既にこのファンマの抽選に申し込んでいます" | ✅ `finally` で最新状態取得 → 「申込済」バッジ表示 |
+| Grace期間終了 | 期間終了後に申込 | エラートースト: "抽選の申し込みに失敗しました" | ✅ `finally` で最新状態取得 → ボタン/バッジ非表示 |
+| 既にキャンセル済み | 他タブでキャンセル済み | エラートースト: "抽選のキャンセルに失敗しました" | ✅ `finally` で最新状態取得 → 「申し込む」ボタン表示 |
+
+**技術的詳細**:
+```typescript
+// パターン1: FanmarkDetailsPage.tsx
+onClick={async () => {
+  try {
+    await applyToLottery(details.fanmark_id);
+  } catch (error) {
+    console.error('Failed to apply to lottery:', error);
+  } finally {
+    // エラーの有無に関わらず、常にデータを再取得してUI状態を最新化
+    await refetch();
+  }
+}}
+
+// パターン2: FanmarkAcquisition.tsx
+onClick={async () => {
+  if (searchResult?.id) {
+    try {
+      await applyToLottery(searchResult.id);
+    } catch (error) {
+      console.error('Failed to apply to lottery:', error);
+    } finally {
+      // エラーの有無に関わらず、常に検索を再実行してUI状態を最新化
+      if (query) {
+        handleQueryChange(query);
+      }
+    }
+  }
+}}
+```
+
+**ユーザーへの影響**:
+- **改善前**: エラー時にボタンが残り、何度もクリックしてしまう → 混乱
+- **改善後**: エラー時でも正しい状態が表示され、混乱がない → 明確
+
+**関連ドキュメント**: `docs/lottery-ui-error-handling.md` に詳細な技術仕様を記載
+
 ---
 
 ## 3. データベース設計

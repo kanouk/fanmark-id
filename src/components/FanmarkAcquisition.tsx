@@ -608,12 +608,13 @@ export const FanmarkAcquisition = ({
                             if (searchResult?.id) {
                               try {
                                 await applyToLottery(searchResult.id);
-                                // Trigger search refresh to update lottery status
+                              } catch (error) {
+                                console.error('Failed to apply to lottery:', error);
+                              } finally {
+                                // エラーの有無に関わらず、常に検索を再実行してUI状態を最新化
                                 if (query) {
                                   handleQueryChange(query);
                                 }
-                              } catch (error) {
-                                console.error('Failed to apply to lottery:', error);
                               }
                             }
                           }}
@@ -633,12 +634,13 @@ export const FanmarkAcquisition = ({
                               if (searchResult?.user_lottery_entry_id) {
                                 try {
                                   await cancelLotteryEntry(searchResult.user_lottery_entry_id);
-                                  // Trigger search refresh
+                                } catch (error) {
+                                  console.error('Failed to cancel lottery entry:', error);
+                                } finally {
+                                  // エラーの有無に関わらず、常に検索を再実行してUI状態を最新化
                                   if (query) {
                                     handleQueryChange(query);
                                   }
-                                } catch (error) {
-                                  console.error('Failed to cancel lottery entry:', error);
                                 }
                               }
                             }}
