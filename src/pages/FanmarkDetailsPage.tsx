@@ -191,9 +191,11 @@ export default function FanmarkDetailsPage() {
                         onClick={async () => {
                           try {
                             await applyToLottery(details.fanmark_id);
-                            await refetch();
                           } catch (error) {
                             console.error('Failed to apply to lottery:', error);
+                          } finally {
+                            // エラーの有無に関わらず、常にデータを再取得してUI状態を最新化
+                            await refetch();
                           }
                         }}
                         disabled={lotteryLoading}
@@ -212,9 +214,11 @@ export default function FanmarkDetailsPage() {
                             if (details.user_lottery_entry_id) {
                               try {
                                 await cancelLotteryEntry(details.user_lottery_entry_id);
-                                await refetch();
                               } catch (error) {
                                 console.error('Failed to cancel lottery entry:', error);
+                              } finally {
+                                // エラーの有無に関わらず、常にデータを再取得してUI状態を最新化
+                                await refetch();
                               }
                             }
                           }}
