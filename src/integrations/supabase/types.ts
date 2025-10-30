@@ -1350,11 +1350,13 @@ export type Database = {
         Args: { shortid_param: string }
         Returns: {
           current_grace_expires_at: string
+          current_is_returned: boolean
           current_license_end: string
           current_license_id: string
           current_license_start: string
           current_license_status: string
           current_owner_display_name: string
+          current_owner_id: string
           current_owner_username: string
           emoji_ids: string[]
           fanmark_created_at: string
@@ -1362,12 +1364,15 @@ export type Database = {
           first_acquired_date: string
           first_owner_display_name: string
           first_owner_username: string
+          has_user_lottery_entry: boolean
           is_currently_active: boolean
           is_favorited: boolean
           license_history: Json
+          lottery_entry_count: number
           normalized_emoji: string
           short_id: string
           user_input_fanmark: string
+          user_lottery_entry_id: string
         }[]
       }
       get_fanmark_ownership_status: {

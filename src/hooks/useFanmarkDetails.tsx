@@ -79,36 +79,13 @@ export const useFanmarkDetails = (shortId: string | undefined) => {
           : [];
         const displayFanmark = resolveFanmarkDisplay(fanmarkData.user_input_fanmark ?? '', emojiIds);
 
-        // Check if current user is the owner and has pending lottery
-        let hasPendingLottery = false;
-        let isCurrentOwner = false;
+        // Determine if current user is the owner
+        const isCurrentOwner = user ? user.id === fanmarkData.current_owner_id : false;
         
-        // Determine current owner by checking license history
-        // The RPC should include owner user ID, but if not we can check via license query
-        if (user && fanmarkData.current_license_id) {
-          // Query the license to get owner user_id
-          const { data: licenseData } = await supabase
-            .from('fanmark_licenses')
-            .select('user_id')
-            .eq('id', fanmarkData.current_license_id)
-            .maybeSingle();
-          
-          if (licenseData) {
-            isCurrentOwner = user.id === licenseData.user_id;
-            
-            // Only check lottery status if user is current owner and license is in grace period
-            if (isCurrentOwner && fanmarkData.current_license_status === 'grace') {
-              const { data: lotteryData } = await supabase
-                .from('fanmark_lottery_entries')
-                .select('id, entry_status')
-                .eq('user_id', user.id)
-                .eq('entry_status', 'pending')
-                .maybeSingle();
-              
-              hasPendingLottery = !!lotteryData;
-            }
-          }
-        }
+        // Check if current user has pending lottery (only relevant if user is owner and in grace period)
+        const hasPendingLottery = isCurrentOwner && 
+          fanmarkData.current_license_status === 'grace' && 
+          fanmarkData.has_user_lottery_entry === true;
 
         setDetails({
           ...fanmarkData,
