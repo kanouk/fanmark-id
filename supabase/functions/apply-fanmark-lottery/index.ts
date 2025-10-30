@@ -88,14 +88,13 @@ serve(async (req) => {
       });
     }
 
-    // Check for duplicate pending entry only (cancelled entries can re-apply)
+    // Check for existing entry (pending or cancelled)
     const { data: existingEntry, error: checkError } = await supabase
       .from('fanmark_lottery_entries')
       .select('id, entry_status')
       .eq('fanmark_id', fanmark_id)
       .eq('user_id', authData.user.id)
       .eq('license_id', license.id)
-      .eq('entry_status', 'pending')
       .maybeSingle();
 
     if (checkError) {
@@ -106,39 +105,59 @@ serve(async (req) => {
       });
     }
 
+    let entry;
+    
     if (existingEntry) {
       if (existingEntry.entry_status === 'pending') {
         return new Response(JSON.stringify({ error: 'You have already applied for this fanmark' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
-      } else {
-        return new Response(JSON.stringify({ error: `You have already applied for this fanmark (status: ${existingEntry.entry_status})` }), {
-          status: 400,
+      } else if (existingEntry.entry_status === 'cancelled') {
+        // Reuse cancelled entry by updating it to pending
+        console.log(`[apply-fanmark-lottery] Reusing cancelled entry ${existingEntry.id}`);
+        const { data: updatedEntry, error: updateError } = await supabase
+          .from('fanmark_lottery_entries')
+          .update({
+            entry_status: 'pending',
+            applied_at: new Date().toISOString(),
+            lottery_probability: 1.0,
+          })
+          .eq('id', existingEntry.id)
+          .select('id, lottery_probability, applied_at')
+          .single();
+
+        if (updateError) {
+          console.error('[apply-fanmark-lottery] Error updating entry:', updateError);
+          return new Response(JSON.stringify({ error: 'Failed to update lottery entry' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        entry = updatedEntry;
+      }
+    } else {
+      // Create new lottery entry
+      const { data: newEntry, error: entryError } = await supabase
+        .from('fanmark_lottery_entries')
+        .insert({
+          fanmark_id,
+          user_id: authData.user.id,
+          license_id: license.id,
+          lottery_probability: 1.0,
+          entry_status: 'pending',
+        })
+        .select('id, lottery_probability, applied_at')
+        .single();
+
+      if (entryError) {
+        console.error('[apply-fanmark-lottery] Error creating entry:', entryError);
+        return new Response(JSON.stringify({ error: 'Failed to create lottery entry' }), {
+          status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-    }
-
-    // Create lottery entry
-    const { data: entry, error: entryError } = await supabase
-      .from('fanmark_lottery_entries')
-      .insert({
-        fanmark_id,
-        user_id: authData.user.id,
-        license_id: license.id,
-        lottery_probability: 1.0,
-        entry_status: 'pending',
-      })
-      .select('id, lottery_probability, applied_at')
-      .single();
-
-    if (entryError) {
-      console.error('[apply-fanmark-lottery] Error creating entry:', entryError);
-      return new Response(JSON.stringify({ error: 'Failed to create lottery entry' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      entry = newEntry;
     }
 
     // Get total entry count for this fanmark
