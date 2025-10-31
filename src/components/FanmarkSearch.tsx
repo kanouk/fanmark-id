@@ -159,11 +159,19 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
                       </Button>
                       
                       {fanmark.blocking_status === 'grace' && !fanmark.has_user_lottery_entry && (
-                        <Button size="sm" onClick={async () => {
-                          if (fanmark.id) {
-                            await applyToLottery(fanmark.id);
-                          }
-                        }} disabled={lotteryLoading}>
+                        <Button
+                          size="sm"
+                          onClick={async () => {
+                            if (fanmark.id) {
+                              try {
+                                await applyToLottery(fanmark.id, { emoji: fanmark.fanmark ?? fanmark.user_input_fanmark });
+                              } catch (error) {
+                                console.error('Failed to apply to lottery from recent fanmarks:', error);
+                              }
+                            }
+                          }}
+                          disabled={lotteryLoading}
+                        >
                           {t('lottery.applyButton')}
                         </Button>
                       )}

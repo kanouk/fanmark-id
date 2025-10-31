@@ -34,13 +34,19 @@
 ```typescript
 onClick={async () => {
   try {
-    await applyToLottery(details.fanmark_id);
+    await applyToLottery(details.fanmark_id, {
+      emoji: details.normalized_emoji,
+      onSettled: async () => {
+        try {
+          await refetch();
+        } catch (error) {
+          console.error('Failed to refresh fanmark details after apply:', error);
+        }
+      },
+    });
   } catch (error) {
     console.error('Failed to apply to lottery:', error);
-    // エラーはuseLotteryEntry内でトースト表示される
-  } finally {
-    // エラーの有無に関わらず、常にデータを再取得してUI状態を最新化
-    await refetch();
+    // エラーは useLotteryEntry 内でトースト表示される
   }
 }}
 ```
@@ -50,14 +56,25 @@ onClick={async () => {
 onClick={async () => {
   if (searchResult?.id) {
     try {
-      await applyToLottery(searchResult.id);
+      await applyToLottery(searchResult.id, {
+        emoji: searchResult.fanmark ?? searchResult.user_input_fanmark,
+        optimisticUpdate: (status, payload) => {
+          if (status === 'applied') {
+            setSearchResult(prev => prev ? {
+              ...prev,
+              has_user_lottery_entry: true,
+              user_lottery_entry_id: payload?.entry_id ?? prev.user_lottery_entry_id,
+            } : prev);
+          }
+        },
+        onSettled: async () => {
+          if (query) {
+            handleQueryChange(query);
+          }
+        },
+      });
     } catch (error) {
       console.error('Failed to apply to lottery:', error);
-    } finally {
-      // エラーの有無に関わらず、常に検索を再実行してUI状態を最新化
-      if (query) {
-        handleQueryChange(query);
-      }
     }
   }
 }}
@@ -79,6 +96,17 @@ onClick={async () => {
 
 ---
 
+### 2.4 グローバルローディングオーバーレイ
+
+抽選申込／キャンセル中のローディング体験を統一するため、`LotteryActionOverlayProvider` をアプリ全体に追加し、`useLotteryEntry` から自動で表示・非表示を制御する。
+
+- Provider: `src/providers/LotteryActionOverlayProvider.tsx`
+- 利用方法: `useLotteryEntry` に `onSettled`（非同期処理完了までローディングを維持）や `optimisticUpdate`（ローカルUIの暫定更新）を渡す
+- 表示保証: 最低500msの表示を保証し、操作直後に瞬間的に消えないように制御しつつ、`onSettled` が解決するまでクローズしない
+- 既存コンポーネントはローカル状態や `LotteryActionLoading` の直接描画を行わず、フックの呼び出しのみで完結させる
+
+> ⚠️ Provider をラップしていないテスト環境で `useLotteryEntry` を実行するとエラーになるため、テストでは Provider のモックを追加すること。
+
 ## 3. 技術的実装詳細
 
 ### 3.1 影響を受けるコンポーネント
@@ -90,23 +118,40 @@ onClick={async () => {
 - キャンセルボタン（211-219行目）
 
 **変更内容**:
+- ローカルの `lotteryAction` 状態と `LotteryActionLoading` の直接描画を削除
+- `useLotteryEntry` へ `emoji` と `onSettled` を渡し、ローディングをグローバルで制御しつつ `refetch()` 完了までオーバーレイを維持
+
 ```typescript
-// Before
 try {
-  await applyToLottery(details.fanmark_id);
-  await refetch();  // ← これがエラー時に実行されない
+  await applyToLottery(details.fanmark_id, {
+    emoji: details.normalized_emoji,
+    onSettled: async () => {
+      try {
+        await refetch();
+      } catch (error) {
+        console.error('Failed to refresh fanmark details after apply:', error);
+      }
+    },
+  });
 } catch (error) {
   console.error('Failed to apply to lottery:', error);
 }
 
-// After
-try {
-  await applyToLottery(details.fanmark_id);
-} catch (error) {
-  console.error('Failed to apply to lottery:', error);
-} finally {
-  // エラーの有無に関わらず、常にデータを再取得してUI状態を最新化
-  await refetch();  // ← 必ず実行される
+if (details.user_lottery_entry_id) {
+  try {
+    await cancelLotteryEntry(details.user_lottery_entry_id, {
+      emoji: details.normalized_emoji,
+      onSettled: async () => {
+        try {
+          await refetch();
+        } catch (error) {
+          console.error('Failed to refresh fanmark details after cancel:', error);
+        }
+      },
+    });
+  } catch (error) {
+    console.error('Failed to cancel lottery entry:', error);
+  }
 }
 ```
 
@@ -126,26 +171,48 @@ try {
 
 **変更内容**:
 ```typescript
-// Before
 try {
-  await applyToLottery(searchResult.id);
-  if (query) {
-    handleQueryChange(query);  // ← これがエラー時に実行されない
-  }
+  await applyToLottery(searchResult.id, {
+    emoji: searchResult.fanmark ?? searchResult.user_input_fanmark,
+    optimisticUpdate: (status, payload) => {
+      if (status === 'applied') {
+        setSearchResult(prev => prev ? {
+          ...prev,
+          has_user_lottery_entry: true,
+          user_lottery_entry_id: payload?.entry_id ?? prev.user_lottery_entry_id,
+        } : prev);
+      }
+    },
+    onSettled: async () => {
+      if (query) {
+        handleQueryChange(query);
+      }
+    },
+  });
 } catch (error) {
   console.error('Failed to apply to lottery:', error);
 }
 
-// After
 try {
-  await applyToLottery(searchResult.id);
+  await cancelLotteryEntry(searchResult.user_lottery_entry_id, {
+    emoji: searchResult.fanmark ?? searchResult.user_input_fanmark,
+    optimisticUpdate: (status) => {
+      if (status === 'cancelled') {
+        setSearchResult(prev => prev ? {
+          ...prev,
+          has_user_lottery_entry: false,
+          user_lottery_entry_id: null,
+        } : prev);
+      }
+    },
+    onSettled: async () => {
+      if (query) {
+        handleQueryChange(query);
+      }
+    },
+  });
 } catch (error) {
-  console.error('Failed to apply to lottery:', error);
-} finally {
-  // エラーの有無に関わらず、常に検索を再実行してUI状態を最新化
-  if (query) {
-    handleQueryChange(query);  // ← 必ず実行される
-  }
+  console.error('Failed to cancel lottery entry:', error);
 }
 ```
 
@@ -333,6 +400,7 @@ catch (err: any) {
 2. 「抽選に申し込む」ボタンをクリック
 
 **期待結果**:
+- ✅ グローバルローディングオーバーレイが表示される（最小表示時間を満たす）
 - ✅ トースト表示: "抽選に申し込みました"
 - ✅ ボタンが消える
 - ✅ 「申込済」バッジが表示される
@@ -356,6 +424,7 @@ catch (err: any) {
 - ✅ 「申込済」バッジが表示される
 - ✅ 「キャンセル」ボタンが表示される
 - ✅ UI状態がデータベース状態と同期する
+- ✅ グローバルローディングオーバーレイが表示された後、自動的に閉じる
 
 ---
 
@@ -374,6 +443,7 @@ catch (err: any) {
 - ✅ `refetch()` により最新状態を取得
 - ✅ ボタンとバッジが消える（Grace期間終了のため）
 - ✅ 適切なメッセージが表示される
+- ✅ グローバルローディングオーバーレイが表示された後、自動的に閉じる
 
 ---
 
@@ -388,6 +458,7 @@ catch (err: any) {
 2. 「キャンセル」ボタンをクリック
 
 **期待結果**:
+- ✅ グローバルローディングオーバーレイが表示される（最小表示時間を満たす）
 - ✅ トースト表示: "抽選をキャンセルしました"
 - ✅ 「申込済」バッジが消える
 - ✅ 「キャンセル」ボタンが消える
@@ -412,6 +483,7 @@ catch (err: any) {
 - ✅ 「キャンセル」ボタンが消える
 - ✅ 「抽選に申し込む」ボタンが表示される
 - ✅ UI状態がデータベース状態と同期する
+- ✅ グローバルローディングオーバーレイが表示された後、自動的に閉じる
 
 ---
 
@@ -426,6 +498,7 @@ catch (err: any) {
 3. 「抽選に申し込む」ボタンをクリック
 
 **期待結果**:
+- ✅ グローバルローディングオーバーレイが表示される（最小表示時間を満たす）
 - ✅ トースト表示: "抽選に申し込みました"
 - ✅ 検索が自動的に再実行される（`handleQueryChange(query)`）
 - ✅ ボタンが「申込済」バッジに変わる
@@ -449,6 +522,7 @@ catch (err: any) {
 - ✅ ボタンが「申込済」バッジに変わる
 - ✅ 「キャンセル」ボタンが表示される
 - ✅ UI状態がデータベース状態と同期する
+- ✅ グローバルローディングオーバーレイが表示された後、自動的に閉じる
 
 ---
 

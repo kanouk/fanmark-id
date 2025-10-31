@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { useFanmarkDetails } from '@/hooks/useFanmarkDetails';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,7 +15,6 @@ import { parseDateString } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { encodeEmojiForUrl } from '@/utils/emojiUrl';
 import { segmentEmojiSequence } from '@/lib/emojiConversion';
-import LotteryActionLoading from '@/components/LotteryActionLoading';
 
 export default function FanmarkDetailsPage() {
   const { shortId } = useParams<{ shortId: string }>();
@@ -24,20 +22,9 @@ export default function FanmarkDetailsPage() {
   const { user } = useAuth();
   const { t, language } = useTranslation();
   const { applyToLottery, cancelLotteryEntry, loading: lotteryLoading } = useLotteryEntry();
-  const [lotteryAction, setLotteryAction] = useState<'applying' | 'cancelling' | null>(null);
 
   if (!shortId) {
     return <Navigate to="/" replace />;
-  }
-
-  // Show lottery action loading screen
-  if (lotteryAction) {
-    return (
-      <LotteryActionLoading 
-        action={lotteryAction}
-        emoji={details?.normalized_emoji}
-      />
-    );
   }
 
   if (loading) {
@@ -202,15 +189,19 @@ export default function FanmarkDetailsPage() {
                         variant="default" 
                         className="gap-2 sm:w-auto"
                         onClick={async () => {
-                          setLotteryAction('applying');
                           try {
-                            await applyToLottery(details.fanmark_id);
-                            await refetch();
+                            await applyToLottery(details.fanmark_id, {
+                              emoji: details.normalized_emoji,
+                              onSettled: async () => {
+                                try {
+                                  await refetch();
+                                } catch (error) {
+                                  console.error('Failed to refresh fanmark details after apply:', error);
+                                }
+                              },
+                            });
                           } catch (error) {
                             console.error('Failed to apply to lottery:', error);
-                            await refetch();
-                          } finally {
-                            setLotteryAction(null);
                           }
                         }}
                         disabled={lotteryLoading}
@@ -227,15 +218,19 @@ export default function FanmarkDetailsPage() {
                           size="sm"
                           onClick={async () => {
                             if (details.user_lottery_entry_id) {
-                              setLotteryAction('cancelling');
                               try {
-                                await cancelLotteryEntry(details.user_lottery_entry_id);
-                                await refetch();
+                                await cancelLotteryEntry(details.user_lottery_entry_id, {
+                                  emoji: details.normalized_emoji,
+                                  onSettled: async () => {
+                                    try {
+                                      await refetch();
+                                    } catch (error) {
+                                      console.error('Failed to refresh fanmark details after cancel:', error);
+                                    }
+                                  },
+                                });
                               } catch (error) {
                                 console.error('Failed to cancel lottery entry:', error);
-                                await refetch();
-                              } finally {
-                                setLotteryAction(null);
                               }
                             }
                           }}

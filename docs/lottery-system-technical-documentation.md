@@ -505,6 +505,12 @@ Total: 5.0
 | new_license_error | ライセンス作成失敗 | ❌ Failed to create new license | 手動で当選者にライセンス発行 |
 | expired_update | ライセンス更新失敗 | ❌ Failed to update license | 手動でステータス修正 |
 
+### 8.4 フロントエンドのローディング制御
+- `LotteryActionOverlayProvider` をアプリ全体に配置し、抽選申込/キャンセル中は共通のローディング画面を表示
+- `useLotteryEntry` フックがオーバーレイの表示・非表示を自動制御し、呼び出し元は `emoji` に加えて `onSettled`（非同期処理完了までローディング維持）や `optimisticUpdate`（UIの暫定更新）を渡せる
+- 最低表示時間（500ms）を設け、申し込み完了直後にオーバーレイが瞬間的に消失しないようにする。`onSettled` で渡された処理が完了するまではクローズしない設計
+- Provider をラップしていないテストでは専用のモックを使用し、`show`/`hide` の呼び出しが落ちないようにする
+
 ---
 
 ## 9. パフォーマンス最適化

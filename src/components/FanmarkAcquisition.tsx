@@ -605,17 +605,39 @@ export const FanmarkAcquisition = ({
                           size="default"
                           className="rounded-full gap-2 px-5 text-sm font-semibold"
                           onClick={async () => {
-                            if (searchResult?.id) {
-                              try {
-                                await applyToLottery(searchResult.id);
-                              } catch (error) {
-                                console.error('Failed to apply to lottery:', error);
-                              } finally {
-                                // エラーの有無に関わらず、常に検索を再実行してUI状態を最新化
-                                if (query) {
-                                  handleQueryChange(query);
-                                }
-                              }
+                            if (!searchResult?.id) {
+                              return;
+                            }
+                            try {
+                              await applyToLottery(searchResult.id, {
+                                emoji: searchResult.fanmark ?? searchResult.user_input_fanmark,
+                                optimisticUpdate: (status, payload) => {
+                                  if (status === 'applied') {
+                                    setSearchResult(prev => {
+                                      if (!prev) return prev;
+                                      return {
+                                        ...prev,
+                                        has_user_lottery_entry: true,
+                                        user_lottery_entry_id: payload?.entry_id ?? prev.user_lottery_entry_id,
+                                        lottery_entry_count: payload?.total_entries_count ?? (typeof prev.lottery_entry_count === 'number'
+                                          ? prev.lottery_entry_count + 1
+                                          : prev.lottery_entry_count),
+                                      };
+                                    });
+                                  }
+                                },
+                                onSettled: async () => {
+                                  try {
+                                    if (query) {
+                                      handleQueryChange(query);
+                                    }
+                                  } catch (error) {
+                                    console.error('Failed to refresh search results after apply:', error);
+                                  }
+                                },
+                              });
+                            } catch (error) {
+                              console.error('Failed to apply to lottery:', error);
                             }
                           }}
                           disabled={lotteryLoading}
@@ -631,17 +653,39 @@ export const FanmarkAcquisition = ({
                             variant="outline"
                             size="sm"
                             onClick={async () => {
-                              if (searchResult?.user_lottery_entry_id) {
-                                try {
-                                  await cancelLotteryEntry(searchResult.user_lottery_entry_id);
-                                } catch (error) {
-                                  console.error('Failed to cancel lottery entry:', error);
-                                } finally {
-                                  // エラーの有無に関わらず、常に検索を再実行してUI状態を最新化
-                                  if (query) {
-                                    handleQueryChange(query);
-                                  }
-                                }
+                              if (!searchResult?.user_lottery_entry_id) {
+                                return;
+                              }
+                              try {
+                                await cancelLotteryEntry(searchResult.user_lottery_entry_id, {
+                                  emoji: searchResult.fanmark ?? searchResult.user_input_fanmark,
+                                  optimisticUpdate: (status) => {
+                                    if (status === 'cancelled') {
+                                      setSearchResult(prev => {
+                                        if (!prev) return prev;
+                                        return {
+                                          ...prev,
+                                          has_user_lottery_entry: false,
+                                          user_lottery_entry_id: null,
+                                          lottery_entry_count: typeof prev.lottery_entry_count === 'number' && prev.lottery_entry_count > 0
+                                            ? prev.lottery_entry_count - 1
+                                            : prev.lottery_entry_count,
+                                        };
+                                      });
+                                    }
+                                  },
+                                  onSettled: async () => {
+                                    try {
+                                      if (query) {
+                                        handleQueryChange(query);
+                                      }
+                                    } catch (error) {
+                                      console.error('Failed to refresh search results after cancel:', error);
+                                    }
+                                  },
+                                });
+                              } catch (error) {
+                                console.error('Failed to cancel lottery entry:', error);
                               }
                             }}
                             disabled={lotteryLoading}

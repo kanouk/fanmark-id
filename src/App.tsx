@@ -28,6 +28,7 @@ import FanmarkPublicQR from "./pages/FanmarkPublicQR";
 import Favorites from "./pages/Favorites";
 import Notifications from "./pages/Notifications";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { LotteryActionOverlayProvider } from "@/providers/LotteryActionOverlayProvider";
 
 const queryClient = new QueryClient();
 
@@ -35,36 +36,38 @@ const MainApp = () => (
   <QueryClientProvider client={queryClient}>
     <TranslationProvider>
       <AuthProvider>
-        <LanguagePreferenceSync />
-        <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
-            <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-            <Route path="/plans" element={<PlanSelection />} />
-            <Route path="/fanmarks/:fanmarkId/settings" element={<FanmarkSettingsPage />} />
-            <Route path="/fanmarks/:fanmarkId/profile/edit" element={<EmojiProfileEdit />} />
-            <Route path="/fanmarks/:fanmarkId/profile/preview" element={<FanmarkProfilePreview />} />
-            <Route path="/fanmarks/:fanmarkId/messageboard/preview" element={<FanmarkMessageboardPreview />} />
-            <Route path="/q/:shortId" element={<FanmarkPublicQR />} />
-            {/* Short ID route for clean URLs */}
-            <Route path="/a/:shortId" element={<FanmarkAccessByShortId />} />
-            {/* Fanmark details route - must come before emojiPath */}
-            <Route path="/f/:shortId" element={<FanmarkDetailsPage />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="/:emojiPath" element={<FanmarkAccess />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-        </TooltipProvider>
+        <LotteryActionOverlayProvider>
+          <LanguagePreferenceSync />
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
+                <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+                <Route path="/plans" element={<PlanSelection />} />
+                <Route path="/fanmarks/:fanmarkId/settings" element={<FanmarkSettingsPage />} />
+                <Route path="/fanmarks/:fanmarkId/profile/edit" element={<EmojiProfileEdit />} />
+                <Route path="/fanmarks/:fanmarkId/profile/preview" element={<FanmarkProfilePreview />} />
+                <Route path="/fanmarks/:fanmarkId/messageboard/preview" element={<FanmarkMessageboardPreview />} />
+                <Route path="/q/:shortId" element={<FanmarkPublicQR />} />
+                {/* Short ID route for clean URLs */}
+                <Route path="/a/:shortId" element={<FanmarkAccessByShortId />} />
+                {/* Fanmark details route - must come before emojiPath */}
+                <Route path="/f/:shortId" element={<FanmarkDetailsPage />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="/:emojiPath" element={<FanmarkAccess />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </LotteryActionOverlayProvider>
       </AuthProvider>
     </TranslationProvider>
   </QueryClientProvider>
