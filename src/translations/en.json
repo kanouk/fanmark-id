@@ -110,6 +110,8 @@
     "password": "Password",
     "confirmPassword": "Confirm Password",
     "username": "Username",
+    "signInWithGoogle": "Sign in with Google",
+    "or": "or",
     "forgotPassword": "Forgot Password?",
     "resetPassword": "Reset Password",
     "newPassword": "New Password",

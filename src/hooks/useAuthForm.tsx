@@ -251,12 +251,34 @@ export const useAuthForm = () => {
     }
   };
 
+  const signInWithGoogle = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`
+        }
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : undefined;
+      setError(message || 'Googleログインに失敗しました');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     formData,
     authState,
     updateFormData,
     signUp,
     signIn,
+    signInWithGoogle,
     forgotPassword,
     resendConfirmation
   };

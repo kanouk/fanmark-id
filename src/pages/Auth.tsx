@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Heart, Users, Mail, Sparkle, ArrowLeft, Lock, Check, X } from 'lucide-react';
+import { FaGoogle } from 'react-icons/fa';
 import { AuthFormData, AuthState } from '@/types/auth';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { PasswordRequirement as PasswordRequirementType } from '@/lib/password-validation';
@@ -22,7 +23,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
-  const { formData, authState, updateFormData, signUp, signIn, resendConfirmation } = useAuthForm();
+  const { formData, authState, updateFormData, signUp, signIn, signInWithGoogle, resendConfirmation } = useAuthForm();
   const { requirements, isValid } = usePasswordValidation(formData.password);
   const { settings, loading: settingsLoading } = useSystemSettings();
   const invitationGateActive = !settingsLoading && settings.invitation_mode;
@@ -171,6 +172,7 @@ const Auth = () => {
                     authState={authState}
                     updateFormData={updateFormData}
                     signIn={signIn}
+                    signInWithGoogle={signInWithGoogle}
                     t={t}
                   />
                 </TabsContent>
@@ -201,6 +203,7 @@ const Auth = () => {
                         authState={authState}
                         updateFormData={updateFormData}
                         signUp={signUp}
+                        signInWithGoogle={signInWithGoogle}
                         requirements={requirements}
                         isValid={isValid}
                         t={t}
@@ -251,10 +254,11 @@ interface LoginFormProps {
   authState: AuthState;
   updateFormData: (field: keyof AuthFormData, value: string) => void;
   signIn: () => void;
+  signInWithGoogle: () => void;
   t: (key: string) => string;
 }
 
-const LoginForm = ({ formData, authState, updateFormData, signIn, t }: LoginFormProps) => {
+const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoogle, t }: LoginFormProps) => {
   const emailStatus = formData.email ? EMAIL_REGEX.test(formData.email) : null;
   const passwordStatus = formData.password ? formData.password.length > 0 : null;
 
@@ -266,6 +270,26 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, t }: LoginForm
       }}
       className="space-y-6"
     >
+      <Button
+        type="button"
+        onClick={signInWithGoogle}
+        disabled={authState.loading}
+        variant="outline"
+        className="w-full gap-2 rounded-full border-primary/20 bg-background/80 shadow-sm transition-all duration-300 hover:shadow-md"
+      >
+        <FaGoogle className="h-4 w-4" />
+        {t('auth.signInWithGoogle')}
+      </Button>
+
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t border-primary/15" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background/95 px-2 text-muted-foreground">{t('auth.or')}</span>
+        </div>
+      </div>
+
       <div className="space-y-2">
         <Label htmlFor="auth-email" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
           <Mail className="h-4 w-4" />
@@ -344,6 +368,7 @@ interface SignUpFormProps {
   authState: AuthState;
   updateFormData: (field: keyof AuthFormData, value: string) => void;
   signUp: (options?: { invitationCode?: string | null; invitationRequired?: boolean }) => void;
+  signInWithGoogle: () => void;
   requirements: PasswordRequirementType[];
   isValid: boolean;
   t: (key: string) => string;
@@ -357,6 +382,7 @@ const SignUpForm = ({
   authState,
   updateFormData,
   signUp,
+  signInWithGoogle,
   requirements,
   isValid,
   t,
@@ -420,6 +446,26 @@ const SignUpForm = ({
       }}
       className="space-y-6"
     >
+      <Button
+        type="button"
+        onClick={signInWithGoogle}
+        disabled={authState.loading || invitationDisabled}
+        variant="outline"
+        className="w-full gap-2 rounded-full border-primary/20 bg-background/80 shadow-sm transition-all duration-300 hover:shadow-md"
+      >
+        <FaGoogle className="h-4 w-4" />
+        {t('auth.signInWithGoogle')}
+      </Button>
+
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t border-primary/15" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background/95 px-2 text-muted-foreground">{t('auth.or')}</span>
+        </div>
+      </div>
+
       {invitationRequired && (
         <div
           className={`flex items-center justify-center gap-2 rounded-2xl border px-3 py-2 text-sm ${
