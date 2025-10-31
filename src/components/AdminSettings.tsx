@@ -52,13 +52,15 @@ export const AdminSettings = () => {
   const manualExpireGraceLicenses = async () => {
     setExpiring(true);
     try {
-      const { data, error } = await supabase.functions.invoke('manual-expire-grace-licenses');
+      const { data, error } = await supabase.functions.invoke('check-expired-licenses', {
+        body: { manual: true }
+      });
 
       if (error) throw error;
 
       toast({
         title: '実行完了',
-        description: `${data.successCount} 件のライセンスを失効しました`,
+        description: `${data.expiredCount || 0} 件のライセンスを失効しました`,
       });
 
       console.log('Manual expiration results:', data);
