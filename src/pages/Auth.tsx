@@ -378,7 +378,7 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoog
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="grid grid-cols-2 gap-2">
         {socialButtons.map(({ key, label, Icon, onClick, disabled }) => (
           <Button
             key={key}
@@ -631,7 +631,7 @@ const SignUpForm = ({
       </div>
     </div>
 
-    <div className="space-y-2">
+    <div className="grid grid-cols-2 gap-2">
       {socialButtons.map(({ key, label, Icon, onClick, disabled }) => (
         <Button
           key={key}
