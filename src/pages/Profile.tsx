@@ -198,14 +198,9 @@ const Profile = () => {
         <div className="h-1.5 rounded-full bg-primary/10">
           <div className="h-full w-2/3 rounded-full bg-primary" />
         </div>
-        <div className="flex flex-wrap gap-3">
-          <Button variant="default" className="rounded-full px-4">
-            {t('userSettings.managePlan')}
-          </Button>
-          <Button variant="outline" className="rounded-full px-4">
-            {t('userSettings.viewPlans')}
-          </Button>
-        </div>
+        <Button variant="default" className="rounded-full px-4" onClick={() => navigate('/plan')}>
+          {t('userSettings.changePlan')}
+        </Button>
         <p className="text-xs text-muted-foreground">{t('userSettings.planUpsellCopy')}</p>
       </CardContent>
     </Card>

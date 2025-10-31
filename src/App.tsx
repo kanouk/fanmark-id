@@ -52,6 +52,7 @@ const MainApp = () => (
                 <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
                 <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
                 <Route path="/plans" element={<PlanSelection />} />
+                <Route path="/plan" element={<PlanSelection />} />
                 <Route path="/fanmarks/:fanmarkId/settings" element={<FanmarkSettingsPage />} />
                 <Route path="/fanmarks/:fanmarkId/profile/edit" element={<EmojiProfileEdit />} />
                 <Route path="/fanmarks/:fanmarkId/profile/preview" element={<FanmarkProfilePreview />} />

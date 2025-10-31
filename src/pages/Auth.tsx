@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Heart, Users, Mail, Sparkle, ArrowLeft, Lock, Check, X } from 'lucide-react';
-import { FaGoogle } from 'react-icons/fa';
+import { FaGoogle, FaApple, FaDiscord, FaGithub } from 'react-icons/fa';
 import { AuthFormData, AuthState } from '@/types/auth';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { PasswordRequirement as PasswordRequirementType } from '@/lib/password-validation';
@@ -261,6 +261,36 @@ interface LoginFormProps {
 const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoogle, t }: LoginFormProps) => {
   const emailStatus = formData.email ? EMAIL_REGEX.test(formData.email) : null;
   const passwordStatus = formData.password ? formData.password.length > 0 : null;
+  const socialButtons = [
+    {
+      key: 'google',
+      label: t('auth.signInWithGoogle'),
+      Icon: FaGoogle,
+      onClick: signInWithGoogle,
+      disabled: authState.loading,
+    },
+    {
+      key: 'apple',
+      label: t('auth.signInWithApple'),
+      Icon: FaApple,
+      onClick: () => {},
+      disabled: authState.loading,
+    },
+    {
+      key: 'discord',
+      label: t('auth.signInWithDiscord'),
+      Icon: FaDiscord,
+      onClick: () => {},
+      disabled: authState.loading,
+    },
+    {
+      key: 'github',
+      label: t('auth.signInWithGithub'),
+      Icon: FaGithub,
+      onClick: () => {},
+      disabled: authState.loading,
+    },
+  ] as const;
 
   return (
     <form
@@ -270,26 +300,6 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoog
       }}
       className="space-y-6"
     >
-      <Button
-        type="button"
-        onClick={signInWithGoogle}
-        disabled={authState.loading}
-        variant="outline"
-        className="w-full gap-2 rounded-full border-primary/20 bg-background/80 shadow-sm transition-all duration-300 hover:shadow-md"
-      >
-        <FaGoogle className="h-4 w-4" />
-        {t('auth.signInWithGoogle')}
-      </Button>
-
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-primary/15" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background/95 px-2 text-muted-foreground">{t('auth.or')}</span>
-        </div>
-      </div>
-
       <div className="space-y-2">
         <Label htmlFor="auth-email" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
           <Mail className="h-4 w-4" />
@@ -358,6 +368,31 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoog
           {t('auth.forgotPassword')}
         </Link>
       </div>
+
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t border-primary/15" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background/95 px-2 text-muted-foreground">{t('auth.or')}</span>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {socialButtons.map(({ key, label, Icon, onClick, disabled }) => (
+          <Button
+            key={key}
+            type="button"
+            onClick={onClick}
+            disabled={disabled}
+            variant="outline"
+            className="w-full gap-2 rounded-full border-primary/20 bg-background/80 shadow-sm transition-all duration-300 hover:shadow-md"
+          >
+            <Icon className="h-4 w-4" />
+            {label}
+          </Button>
+        ))}
+      </div>
     </form>
   );
 };
@@ -401,6 +436,36 @@ const SignUpForm = ({
     : null;
   const invitationDisabled = invitationRequired && !invitationValidated;
   const InvitationStatusIcon = invitationValidated ? Check : Sparkle;
+  const socialButtons = [
+    {
+      key: 'google',
+      label: t('auth.signInWithGoogle'),
+      Icon: FaGoogle,
+      onClick: signInWithGoogle,
+      disabled: authState.loading || invitationDisabled,
+    },
+    {
+      key: 'apple',
+      label: t('auth.signInWithApple'),
+      Icon: FaApple,
+      onClick: () => {},
+      disabled: authState.loading || invitationDisabled,
+    },
+    {
+      key: 'discord',
+      label: t('auth.signInWithDiscord'),
+      Icon: FaDiscord,
+      onClick: () => {},
+      disabled: authState.loading || invitationDisabled,
+    },
+    {
+      key: 'github',
+      label: t('auth.signInWithGithub'),
+      Icon: FaGithub,
+      onClick: () => {},
+      disabled: authState.loading || invitationDisabled,
+    },
+  ] as const;
 
   const handlePasswordFocus = () => {
     if (blurTimeoutRef.current) {
@@ -446,26 +511,6 @@ const SignUpForm = ({
       }}
       className="space-y-6"
     >
-      <Button
-        type="button"
-        onClick={signInWithGoogle}
-        disabled={authState.loading || invitationDisabled}
-        variant="outline"
-        className="w-full gap-2 rounded-full border-primary/20 bg-background/80 shadow-sm transition-all duration-300 hover:shadow-md"
-      >
-        <FaGoogle className="h-4 w-4" />
-        {t('auth.signInWithGoogle')}
-      </Button>
-
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-primary/15" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background/95 px-2 text-muted-foreground">{t('auth.or')}</span>
-        </div>
-      </div>
-
       {invitationRequired && (
         <div
           className={`flex items-center justify-center gap-2 rounded-2xl border px-3 py-2 text-sm ${
@@ -576,6 +621,31 @@ const SignUpForm = ({
         </>
       )}
     </Button>
+
+    <div className="relative">
+      <div className="absolute inset-0 flex items-center">
+        <span className="w-full border-t border-primary/15" />
+      </div>
+      <div className="relative flex justify-center text-xs uppercase">
+        <span className="bg-background/95 px-2 text-muted-foreground">{t('auth.or')}</span>
+      </div>
+    </div>
+
+    <div className="space-y-2">
+      {socialButtons.map(({ key, label, Icon, onClick, disabled }) => (
+        <Button
+          key={key}
+          type="button"
+          onClick={onClick}
+          disabled={disabled}
+          variant="outline"
+          className="w-full gap-2 rounded-full border-primary/20 bg-background/80 shadow-sm transition-all duration-300 hover:shadow-md"
+        >
+          <Icon className="h-4 w-4" />
+          {label}
+        </Button>
+      ))}
+    </div>
   </form>
   );
 };

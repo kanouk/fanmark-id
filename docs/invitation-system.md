@@ -67,8 +67,9 @@
 - 検証後でもコードが失効した場合に備え「期限切れ・残数ゼロ」のメッセージを `InvitationSystem` に追加。
 
 ### 管理者向け補足
-- 招待管理タブでは RLS（`is_admin()`）により権限ユーザーのみ `invitation_codes` を操作可能。
-- ウェイティングリストの閲覧は `is_super_admin()` を満たす場合のみ詳細参照が許可され、権限がない場合は UI 上でガードされる。
+- 招待管理タブでは RLS（`is_admin()`）により権限ユーザーのみ `invitation_codes` を操作可能。Supabase 側では `user_roles` テーブルで `role='admin'` が付与されている必要がある。2025-02-15 のマイグレーションで `kanouk@gmail.com` に対し `user_roles` へ自動付与する SQL を追加済み。
+- 管理画面（`AdminApp`）ではメールアドレス判定を廃止し、ログイン後に `supabase.rpc('is_admin')` でロールを確認したうえでコンテンツ表示を切り替える。権限が無い場合は警告カードを表示して終了する。
+- ウェイティングリストの閲覧は `is_super_admin()` を満たす場合のみ詳細参照が許可され、権限がない場合は UI 上でガードされる。`is_super_admin()` は監査ログ挿入のため `audit_logs` テーブルへ書き込むため、新たに `Admins can write audit logs` ポリシーを追加している。
 - 特典 JSON (`special_perks`) はシステム側では未使用だがフォームから入力可能。利用しない場合は空欄のままで良い。
 - 既存 Edge Functions / RPC はサービスロールキーを必要とするため、キー管理とアクセスログの把握が必須。厳格化が必要になった場合はダッシュボード経由の操作を Edge Function に移管する。
 
