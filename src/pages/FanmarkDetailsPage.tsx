@@ -1,13 +1,13 @@
-import { useParams, Navigate } from 'react-router-dom';
+import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { useFanmarkDetails } from '@/hooks/useFanmarkDetails';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useLotteryEntry } from '@/hooks/useLotteryEntry';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { Navigation } from '@/components/Navigation';
-import { Heart, Calendar, User, Clock, ExternalLink, History, AlertTriangle, Info } from 'lucide-react';
+import { Heart, Calendar, User, Clock, ExternalLink, History, AlertTriangle, Info, Search } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ja, enUS } from 'date-fns/locale';
 import { formatInTimeZone } from 'date-fns-tz';
@@ -18,10 +18,10 @@ import { segmentEmojiSequence } from '@/lib/emojiConversion';
 
 export default function FanmarkDetailsPage() {
   const { shortId } = useParams<{ shortId: string }>();
-  const { details, loading, error, toggleFavorite, refetch } = useFanmarkDetails(shortId);
+  const { details, loading, error, toggleFavorite } = useFanmarkDetails(shortId);
   const { user } = useAuth();
   const { t, language } = useTranslation();
-  const { applyToLottery, cancelLotteryEntry, loading: lotteryLoading } = useLotteryEntry();
+  const navigate = useNavigate();
 
   if (!shortId) {
     return <Navigate to="/" replace />;
@@ -145,23 +145,6 @@ export default function FanmarkDetailsPage() {
       <main className="flex-1">
         <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
           <section className="relative p-6 pb-6 pt-16 text-center sm:px-10 sm:pb-10 sm:pt-20">
-            {user && (
-              <div className="absolute right-6 top-2 sm:right-10 sm:top-4">
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={toggleFavorite}
-                  className={`h-12 w-12 rounded-full border border-transparent transition-colors duration-200 ${
-                    details.is_favorited
-                      ? 'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary'
-                      : 'bg-background/80 text-muted-foreground hover:bg-primary/10 hover:text-primary'
-                  }`}
-                  aria-label={details.is_favorited ? t('fanmarkDetails.unfavorite') : t('fanmarkDetails.favorite')}
-                >
-                  <Heart className={`h-6 w-6 ${details.is_favorited ? 'fill-current' : ''}`} />
-                </Button>
-              </div>
-            )}
             <div className="flex flex-col items-center gap-6">
               <div className="flex flex-wrap items-center justify-center gap-3 rounded-[2.75rem] border border-primary/20 bg-primary/10 px-8 py-6 text-5xl shadow-inner md:px-10 md:py-7 md:text-6xl">
                 {segmentEmojiSequence(details.fanmark).map((segment, index) => (
@@ -173,114 +156,97 @@ export default function FanmarkDetailsPage() {
               <Badge className="rounded-full border border-border/50 bg-muted/60 px-3 py-1 text-[0.7rem] font-medium tracking-wide text-muted-foreground">
                 {details.short_id}
               </Badge>
-              <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center">
-                <Button variant="secondary" asChild className="gap-2 sm:w-auto">
-                  <a href={`/${encodeEmojiForUrl(details.fanmark)}`} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-4 w-4" />
-                    {t('fanmarkDetails.visitPage')}
-                  </a>
-                </Button>
-                
-                {/* Lottery UI */}
-                {user && details.current_license_status === 'grace' && (
-                  <>
-                    {!details.has_user_lottery_entry ? (
-                      <Button 
-                        variant="default" 
-                        className="gap-2 sm:w-auto"
-                        onClick={async () => {
-                          try {
-                            await applyToLottery(details.fanmark_id, {
-                              emoji: details.normalized_emoji,
-                              onSettled: async () => {
-                                try {
-                                  await refetch();
-                                } catch (error) {
-                                  console.error('Failed to refresh fanmark details after apply:', error);
-                                }
-                              },
-                            });
-                          } catch (error) {
-                            console.error('Failed to apply to lottery:', error);
+              <div className="flex w-full items-center justify-center gap-3 sm:gap-4">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        asChild
+                        className="h-12 w-12 rounded-full border border-primary/15 bg-background/80 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                      >
+                        <a
+                          href={`/${encodeEmojiForUrl(details.fanmark)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={t('fanmarkDetails.visitPage')}
+                        >
+                          <ExternalLink className="h-5 w-5" />
+                        </a>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      {t('fanmarkDetails.visitPage')}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-12 w-12 rounded-full border border-primary/15 bg-background/80 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                        aria-label={t('fanmarkDetails.searchFanmark')}
+                        onClick={() => {
+                          const target = details.fanmark;
+                          if (user) {
+                            navigate('/dashboard', { state: { prefillFanmark: target, scrollToSearch: true } });
+                          } else {
+                            navigate('/', { state: { prefillFanmark: target, scrollToSearch: true } });
                           }
                         }}
-                        disabled={lotteryLoading}
                       >
-                        {t('lottery.applyButton')}
+                        <Search className="h-5 w-5" />
                       </Button>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-primary/10 text-primary border-primary/30">
-                          {t('lottery.appliedBadge')}
-                        </Badge>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={async () => {
-                            if (details.user_lottery_entry_id) {
-                              try {
-                                await cancelLotteryEntry(details.user_lottery_entry_id, {
-                                  emoji: details.normalized_emoji,
-                                  onSettled: async () => {
-                                    try {
-                                      await refetch();
-                                    } catch (error) {
-                                      console.error('Failed to refresh fanmark details after cancel:', error);
-                                    }
-                                  },
-                                });
-                              } catch (error) {
-                                console.error('Failed to cancel lottery entry:', error);
-                              }
-                            }
-                          }}
-                          disabled={lotteryLoading}
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      {t('fanmarkDetails.searchFanmark')}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                {user && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={toggleFavorite}
+                          className={`h-12 w-12 rounded-full border border-primary/15 bg-background/80 transition-colors duration-200 ${
+                            details.is_favorited
+                              ? 'text-primary hover:bg-primary/15 hover:text-primary'
+                              : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
+                          }`}
+                          aria-label={details.is_favorited ? t('fanmarkDetails.unfavorite') : t('fanmarkDetails.favorite')}
                         >
-                          {t('lottery.cancelButton')}
+                          <Heart className={`h-5 w-5 ${details.is_favorited ? 'fill-current' : ''}`} />
                         </Button>
-                      </div>
-                    )}
-                  </>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        {details.is_favorited ? t('fanmarkDetails.unfavorite') : t('fanmarkDetails.favorite')}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
               </div>
-              
-              {/* Lottery entry count */}
-              {details.current_license_status === 'grace' && (details.lottery_entry_count ?? 0) > 0 && (
-                <p className="text-sm text-muted-foreground">
-                  {t('lottery.entryCount', { count: details.lottery_entry_count })}
-                </p>
-              )}
             </div>
           </section>
 
-          {/* Lottery Warning for Current Owner */}
-          {details.is_current_owner && details.current_license_status === 'grace' && details.has_pending_lottery && (
-            <section className="mt-6">
-              <Alert className="border-amber-500/30 bg-amber-500/5">
-                <Info className="h-5 w-5 text-amber-600" />
-                <AlertTitle className="text-amber-900 dark:text-amber-100">
-                  {t('fanmarkDetails.lotteryPendingTitle')}
-                </AlertTitle>
-                <AlertDescription className="text-amber-800 dark:text-amber-200">
-                  {t('fanmarkDetails.lotteryPendingDescription')}
-                </AlertDescription>
-              </Alert>
-            </section>
-          )}
-
           <section className="mt-10">
-          <Card className="border border-primary/10 bg-muted/40 backdrop-blur rounded-3xl">
-            <CardHeader className="px-6 pt-6 pb-2">
-              <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
-                <Calendar className="h-5 w-5" />
-                {t('fanmarkDetails.ownershipHistory')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="overflow-x-auto px-6 pb-6">
-              {details.license_history && details.license_history.length > 0 ? (
-                <table className="mt-3 min-w-full divide-y divide-border text-sm">
-                  <thead className="bg-muted/50 text-muted-foreground">
-                    <tr>
+            <Card className="border border-primary/10 bg-muted/40 backdrop-blur rounded-3xl">
+              <CardHeader className="px-6 pt-6 pb-2">
+                <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
+                  <Calendar className="h-5 w-5" />
+                  {t('fanmarkDetails.ownershipHistory')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 overflow-x-auto px-6 pb-6">
+                {details.license_history && details.license_history.length > 0 ? (
+                  <table className="mt-3 min-w-full divide-y divide-border text-sm">
+                    <thead className="bg-muted/50 text-muted-foreground">
+                      <tr>
                       <th className="px-4 py-3 text-left font-semibold">
                         {t('fanmarkDetails.started')}
                       </th>
@@ -305,10 +271,17 @@ export default function FanmarkDetailsPage() {
                           <td className="px-4 py-3 text-foreground">
                             {formatDateTime(item.license_end)}
                           </td>
-                          <td className="px-4 py-3">
-                            <Badge className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide ${statusMeta.className}`}>
-                              <span>{statusMeta.label}</span>
-                            </Badge>
+                          <td className="px-4 py-3 align-middle">
+                            <div className="flex flex-col items-center justify-center gap-1 text-center">
+                              <Badge className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide ${statusMeta.className}`}>
+                                <span>{statusMeta.label}</span>
+                              </Badge>
+                              {index === 0 && details.current_license_status === 'grace' && (details.lottery_entry_count ?? 0) > 0 && (
+                                <p className="text-xs text-muted-foreground">
+                                  {t('lottery.entryCount', { count: details.lottery_entry_count })}
+                                </p>
+                              )}
+                            </div>
                           </td>
                           <td className="px-4 py-3">
                             <span className="text-foreground">{holder}</span>

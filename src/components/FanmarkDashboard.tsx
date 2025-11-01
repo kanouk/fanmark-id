@@ -93,6 +93,7 @@ interface Profile {
 
 interface DashboardLocationState {
   prefillFanmark?: string;
+  scrollToSearch?: boolean;
 }
 
 interface ExtendLicenseResponse {
@@ -136,6 +137,7 @@ export const FanmarkDashboard = () => {
     }
   }, []);
   const [prefilledEmoji, setPrefilledEmoji] = useState<string | undefined>();
+  const [shouldScrollToSearch, setShouldScrollToSearch] = useState(false);
   const [returningFanmarkId, setReturningFanmarkId] = useState<string | null>(null);
   const [returningFanmarkEmoji, setReturningFanmarkEmoji] = useState<string | undefined>();
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
@@ -284,8 +286,10 @@ export const FanmarkDashboard = () => {
   };
 
   useEffect(() => {
-    const state = (location.state as DashboardLocationState | null)?.prefillFanmark;
-    let nextPrefill = state;
+    const locationState = location.state as DashboardLocationState | null;
+    let nextPrefill = locationState?.prefillFanmark;
+    const requestScroll = Boolean(locationState?.scrollToSearch);
+    let shouldClearState = Boolean(locationState);
 
     if (!nextPrefill) {
       try {
@@ -302,11 +306,26 @@ export const FanmarkDashboard = () => {
     if (nextPrefill) {
       setPrefilledEmoji(nextPrefill);
       setActiveTab('acquisition');
-      if (state) {
-        navigate(location.pathname, { replace: true });
-      }
+      shouldClearState = true;
     }
-  }, [location, navigate]);
+
+    if (requestScroll) {
+      setActiveTab('acquisition');
+      setShouldScrollToSearch(true);
+      shouldClearState = true;
+    }
+
+    if (shouldClearState) {
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location, navigate, setActiveTab]);
+
+  useEffect(() => {
+    if (!shouldScrollToSearch) return;
+
+    // ensure acquisition tab is active so the search section mounts
+    setActiveTab('acquisition');
+  }, [shouldScrollToSearch, setActiveTab]);
 
   const fetchFanmarks = useCallback(async () => {
     try {
@@ -821,13 +840,15 @@ export const FanmarkDashboard = () => {
                   fanmarkLimit={isUnlimited ? -1 : fanmarkLimit}
                   currentCount={activeFanmarks}
                   rememberSearch
+                  scrollToSearch={shouldScrollToSearch}
+                  onSearchScrolled={() => setShouldScrollToSearch(false)}
                   onObtain={() => {
-                               setPrefilledEmoji(undefined);
-                               fetchFanmarks();
-                               setActiveTab('my-fanmarks');
-                             }}
-                             onRequireAuth={handleRequireAuth}
-                           />
+                    setPrefilledEmoji(undefined);
+                    fetchFanmarks();
+                    setActiveTab('my-fanmarks');
+                  }}
+                  onRequireAuth={handleRequireAuth}
+                />
                         </DialogContent>
                       </Dialog>
                     </div>
@@ -1302,7 +1323,10 @@ export const FanmarkDashboard = () => {
           </TabsContent>
 
           <TabsContent value="acquisition" className="space-y-6">
-            <Card className="overflow-hidden rounded-3xl border border-primary/20 bg-background/90 shadow-[0_20px_45px_rgba(101,195,200,0.14)] backdrop-blur">
+            <Card
+              id="dashboard-fanmark-search"
+              className="overflow-hidden rounded-3xl border border-primary/20 bg-background/90 shadow-[0_20px_45px_rgba(101,195,200,0.14)] backdrop-blur"
+            >
               <CardContent className="space-y-6 p-6 sm:p-8">
                 <div className="space-y-3 text-center">
                   <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -1315,18 +1339,20 @@ export const FanmarkDashboard = () => {
                     {t('dashboard.getFanmaDescription')}
                   </p>
                 </div>
-                 <FanmarkAcquisition
-                   prefilledEmoji={prefilledEmoji}
-                   fanmarkLimit={isUnlimited ? -1 : fanmarkLimit}
-                   currentCount={activeFanmarks}
-                    rememberSearch
-                   onObtain={() => {
-                     setPrefilledEmoji(undefined);
-                     fetchFanmarks();
-                     setActiveTab('my-fanmarks');
-                   }}
-                   onRequireAuth={handleRequireAuth}
-                 />
+                <FanmarkAcquisition
+                  prefilledEmoji={prefilledEmoji}
+                  fanmarkLimit={isUnlimited ? -1 : fanmarkLimit}
+                  currentCount={activeFanmarks}
+                  rememberSearch
+                  scrollToSearch={shouldScrollToSearch}
+                  onSearchScrolled={() => setShouldScrollToSearch(false)}
+                  onObtain={() => {
+                    setPrefilledEmoji(undefined);
+                    fetchFanmarks();
+                    setActiveTab('my-fanmarks');
+                  }}
+                  onRequireAuth={handleRequireAuth}
+                />
               </CardContent>
             </Card>
           </TabsContent>

@@ -672,6 +672,10 @@
     "acquireLimitIncreaseCta": "枠をふやす",
     "visitFanmarkButton": "ファンマアクセス",
     "openFanmarkPage": "ファンマページを開く",
+    "tooltip": {
+      "applyLottery": "抽選に申し込む",
+      "cancelLottery": "抽選申込をキャンセル"
+    },
     "paymentRequiredMessage": "このファンマは有料です。",
     "paymentRequiredTitle": "支払いが必要です",
     "paymentRequiredDescription": "このファンマの取得には支払いが必要です。",
@@ -986,6 +990,7 @@
     "favorite": "お気に入りに追加",
     "unfavorite": "お気に入りから削除",
     "visitPage": "ファンマアクセス",
+    "searchFanmark": "このファンマを検索",
     "shortId": "ショートID",
     "createdAt": "{{date}} 作成",
     "currentHolder": "現在の所有者",

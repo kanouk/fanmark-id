@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, Sparkles, ExternalLink, Plus, Heart } from 'lucide-react';
+import { Search, Sparkles, ExternalLink, Plus, Heart, Ticket, TicketX } from 'lucide-react';
 import { FiInfo, FiAlertTriangle } from 'react-icons/fi';
 import FanmarkSearch from '@/components/FanmarkSearch';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -10,6 +10,7 @@ import { navigateToFanmark } from '@/utils/emojiUrl';
 import { canonicalizeEmojiString, convertEmojiSequenceToIdPair, segmentEmojiSequence, extractEmojiString } from '@/lib/emojiConversion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +39,8 @@ interface FanmarkAcquisitionProps {
   onObtain?: (fanmark: { id: string; user_input_fanmark?: string; emoji_ids?: string[]; normalized_emoji_ids?: string[] }) => void;
   onRequireAuth?: (emoji: string) => void;
   rememberSearch?: boolean;
+  scrollToSearch?: boolean;
+  onSearchScrolled?: () => void;
 }
 
 export const FanmarkAcquisition = ({
@@ -47,6 +50,8 @@ export const FanmarkAcquisition = ({
   onObtain,
   onRequireAuth,
   rememberSearch = false,
+  scrollToSearch = false,
+  onSearchScrolled,
 }: FanmarkAcquisitionProps) => {
   const { t, language } = useTranslation();
   const { user } = useAuth();
@@ -96,6 +101,7 @@ export const FanmarkAcquisition = ({
   }, [searchResult?.owner?.user_id, user?.id]);
 
   const isTaken = useMemo(() => searchResult?.status === 'taken' || searchResult?.status === 'not_available', [searchResult?.status]);
+  const canShowFanmarkAccess = useMemo(() => searchResult?.status === 'taken', [searchResult?.status]);
   const canNavigateToDetail = Boolean(searchResult?.short_id);
   const displayedFanmark = searchResult?.fanmark || searchResult?.user_input_fanmark || '';
   const favoriteSequenceKeys = useMemo(() => {
@@ -388,6 +394,19 @@ export const FanmarkAcquisition = ({
     }
   }, [rememberSearch, location.pathname]);
 
+  useEffect(() => {
+    if (!scrollToSearch) return;
+
+    const timer = window.setTimeout(() => {
+      if (containerRef.current) {
+        containerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      onSearchScrolled?.();
+    }, 50);
+
+    return () => window.clearTimeout(timer);
+  }, [scrollToSearch, onSearchScrolled]);
+
   return (
     <div ref={containerRef} className="space-y-6">
       {/* ファンマ取得中のローディング画面 */}
@@ -575,160 +594,152 @@ export const FanmarkAcquisition = ({
                 </Button>
               )}
 
-              {isGraceBlocked && (
-                <>
-                  <div className="w-full rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
-                    <div className="flex items-center gap-2 font-semibold">
-                      <FiAlertTriangle className="h-4 w-4" />
-                      {t('dashboard.graceBlockedTitle')}
-                    </div>
-                    <div className="mt-1 text-xs leading-relaxed">
-                      {formattedGraceAvailableAt
-                        ? t('dashboard.graceBlockedDescriptionWithDate', { date: formattedGraceAvailableAt })
-                        : t('dashboard.graceBlockedDescription')}
-                    </div>
-                  </div>
-
-                  {/* Lottery application UI for grace period */}
-                  {user && (
-                    <div className="flex flex-col items-center gap-3 w-full">
-                      {/* Lottery entry count */}
-                      {(searchResult?.lottery_entry_count ?? 0) > 0 && (
-                        <p className="text-sm text-muted-foreground">
-                          {t('lottery.entryCount', { count: searchResult.lottery_entry_count })}
-                        </p>
+              {(displayedFanmark || (isGraceBlocked && user)) && (
+                <TooltipProvider>
+                  <div className="flex w-full flex-col items-center gap-2">
+                    <div className="flex items-center justify-center gap-3">
+                      {canShowFanmarkAccess && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-10 w-10 rounded-full border border-primary/15 bg-background/80 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                              onClick={handleVisitFanmark}
+                              aria-label={t('dashboard.visitFanmarkButton')}
+                            >
+                              <ExternalLink className="h-5 w-5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top">
+                            {t('dashboard.visitFanmarkButton')}
+                          </TooltipContent>
+                        </Tooltip>
                       )}
-                      
-                      {/* Apply button or applied status */}
-                      {!searchResult?.has_user_lottery_entry ? (
-                        <Button
-                          size="default"
-                          className="rounded-full gap-2 px-5 text-sm font-semibold"
-                          onClick={async () => {
-                            if (!searchResult?.id) {
-                              return;
-                            }
-                            try {
-                              await applyToLottery(searchResult.id, {
-                                emoji: searchResult.fanmark ?? searchResult.user_input_fanmark,
-                                optimisticUpdate: (status, payload) => {
-                                  if (status === 'applied') {
-                                    setSearchResult(prev => {
-                                      if (!prev) return prev;
-                                      return {
-                                        ...prev,
-                                        has_user_lottery_entry: true,
-                                        user_lottery_entry_id: payload?.entry_id ?? prev.user_lottery_entry_id,
-                                        lottery_entry_count: payload?.total_entries_count ?? (typeof prev.lottery_entry_count === 'number'
-                                          ? prev.lottery_entry_count + 1
-                                          : prev.lottery_entry_count),
-                                      };
-                                    });
-                                  }
-                                },
-                                onSettled: async () => {
+
+                      {isTaken && canNavigateToDetail && searchResult?.short_id && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-10 w-10 rounded-full border border-primary/15 bg-background/80 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                              asChild
+                              aria-label={t('dashboard.openFanmarkPage')}
+                            >
+                              <Link to={`/f/${searchResult.short_id}`} className="flex items-center justify-center">
+                                <Sparkles className="h-5 w-5" />
+                              </Link>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top">
+                            {t('dashboard.openFanmarkPage')}
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+
+                      {isGraceBlocked && user && (
+                        <div className="relative">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className={`h-10 w-10 rounded-full border border-primary/15 bg-background/80 transition-colors duration-200 ${
+                                  searchResult?.has_user_lottery_entry
+                                    ? 'text-primary hover:bg-primary/15 hover:text-primary'
+                                    : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
+                                }`}
+                                disabled={lotteryLoading}
+                                aria-label={searchResult?.has_user_lottery_entry
+                                  ? t('dashboard.tooltip.cancelLottery')
+                                  : t('dashboard.tooltip.applyLottery')}
+                                onClick={async () => {
+                                  if (!searchResult?.id) return;
+
                                   try {
-                                    if (query) {
-                                      handleQueryChange(query);
-                                    }
-                                  } catch (error) {
-                                    console.error('Failed to refresh search results after apply:', error);
-                                  }
-                                },
-                              });
-                            } catch (error) {
-                              console.error('Failed to apply to lottery:', error);
-                            }
-                          }}
-                          disabled={lotteryLoading}
-                        >
-                          {t('lottery.applyButton')}
-                        </Button>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-primary/10 text-primary border-primary/30">
-                            {t('lottery.appliedBadge')}
-                          </Badge>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={async () => {
-                              if (!searchResult?.user_lottery_entry_id) {
-                                return;
-                              }
-                              try {
-                                await cancelLotteryEntry(searchResult.user_lottery_entry_id, {
-                                  emoji: searchResult.fanmark ?? searchResult.user_input_fanmark,
-                                  optimisticUpdate: (status) => {
-                                    if (status === 'cancelled') {
-                                      setSearchResult(prev => {
-                                        if (!prev) return prev;
-                                        return {
-                                          ...prev,
-                                          has_user_lottery_entry: false,
-                                          user_lottery_entry_id: null,
-                                          lottery_entry_count: typeof prev.lottery_entry_count === 'number' && prev.lottery_entry_count > 0
-                                            ? prev.lottery_entry_count - 1
-                                            : prev.lottery_entry_count,
-                                        };
+                                    if (searchResult.has_user_lottery_entry && searchResult.user_lottery_entry_id) {
+                                      await cancelLotteryEntry(searchResult.user_lottery_entry_id, {
+                                        emoji: searchResult.fanmark ?? searchResult.user_input_fanmark,
+                                        optimisticUpdate: (status) => {
+                                          if (status === 'cancelled') {
+                                            setSearchResult(prev => prev ? {
+                                              ...prev,
+                                              has_user_lottery_entry: false,
+                                              user_lottery_entry_id: null,
+                                              lottery_entry_count: typeof prev.lottery_entry_count === 'number' && prev.lottery_entry_count > 0
+                                                ? prev.lottery_entry_count - 1
+                                                : prev.lottery_entry_count,
+                                            } : prev);
+                                          }
+                                        },
+                                        onSettled: async () => {
+                                          try {
+                                            if (query) handleQueryChange(query);
+                                          } catch (error) {
+                                            console.error('Failed to refresh search results after cancel:', error);
+                                          }
+                                        },
+                                      });
+                                    } else {
+                                      await applyToLottery(searchResult.id, {
+                                        emoji: searchResult.fanmark ?? searchResult.user_input_fanmark,
+                                        optimisticUpdate: (status, payload) => {
+                                          if (status === 'applied') {
+                                            setSearchResult(prev => prev ? {
+                                              ...prev,
+                                              has_user_lottery_entry: true,
+                                              user_lottery_entry_id: payload?.entry_id ?? prev.user_lottery_entry_id,
+                                              lottery_entry_count: payload?.total_entries_count ?? (typeof prev.lottery_entry_count === 'number'
+                                                ? prev.lottery_entry_count + 1
+                                                : prev.lottery_entry_count),
+                                            } : prev);
+                                          }
+                                        },
+                                        onSettled: async () => {
+                                          try {
+                                            if (query) handleQueryChange(query);
+                                          } catch (error) {
+                                            console.error('Failed to refresh search results after apply:', error);
+                                          }
+                                        },
                                       });
                                     }
-                                  },
-                                  onSettled: async () => {
-                                    try {
-                                      if (query) {
-                                        handleQueryChange(query);
-                                      }
-                                    } catch (error) {
-                                      console.error('Failed to refresh search results after cancel:', error);
-                                    }
-                                  },
-                                });
-                              } catch (error) {
-                                console.error('Failed to cancel lottery entry:', error);
-                              }
-                            }}
-                            disabled={lotteryLoading}
-                          >
-                            {t('lottery.cancelButton')}
-                          </Button>
+                                  } catch (error) {
+                                    console.error('Failed to toggle lottery entry:', error);
+                                  }
+                                }}
+                              >
+                                {searchResult?.has_user_lottery_entry ? (
+                                  <TicketX className="h-5 w-5" />
+                                ) : (
+                                  <Ticket className="h-5 w-5" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              {searchResult?.has_user_lottery_entry
+                                ? t('dashboard.tooltip.cancelLottery')
+                                : t('dashboard.tooltip.applyLottery')}
+                            </TooltipContent>
+                          </Tooltip>
+
+                          {(searchResult?.lottery_entry_count ?? 0) > 0 && (
+                            <div className="absolute -top-6 left-1/2 -translate-x-1/2">
+                              <div className="relative rounded-2xl border border-primary/40 bg-primary/95 px-3 py-1 text-[10px] font-semibold text-primary-foreground shadow-[0_8px_18px_rgba(101,195,200,0.25)] backdrop-blur-sm whitespace-nowrap">
+                                {t('lottery.entryCount', { count: searchResult.lottery_entry_count })}
+                                <span
+                                  aria-hidden="true"
+                                  className="absolute left-1/2 top-full -mt-[5px] h-2.5 w-2.5 -translate-x-1/2 rotate-45 border border-transparent border-t-primary/40 border-l-primary/40 bg-primary/95"
+                                />
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
-                  )}
-                </>
-              )}
-
-              {/* Action buttons for taken or discovered fanmarks */}
-              {displayedFanmark && (
-                <div className="flex w-full flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap">
-                  {isTaken && (
-                    <>
-                      <Button
-                        size="default"
-                        variant="outline"
-                        className="rounded-full gap-2 px-5 text-sm font-semibold border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-colors duration-200"
-                        onClick={handleVisitFanmark}
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                        {t('dashboard.visitFanmarkButton')}
-                      </Button>
-                      {canNavigateToDetail && searchResult?.short_id && (
-                        <Button
-                          size="default"
-                          variant="outline"
-                          className="rounded-full gap-2 px-5 text-sm font-semibold border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-colors duration-200"
-                          asChild
-                        >
-                          <Link to={`/f/${searchResult.short_id}`} className="flex items-center gap-2">
-                            <Sparkles className="h-4 w-4" />
-                            {t('dashboard.openFanmarkPage')}
-                          </Link>
-                        </Button>
-                      )}
-                    </>
-                  )}
-                </div>
+                  </div>
+                </TooltipProvider>
               )}
 
               {/* エラーメッセージ */}

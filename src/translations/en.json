@@ -674,6 +674,10 @@
     "acquireLimitIncreaseCta": "Increase slots",
     "visitFanmarkButton": "Fanmark access",
     "openFanmarkPage": "Open fanmark page",
+    "tooltip": {
+      "applyLottery": "Enter lottery",
+      "cancelLottery": "Cancel lottery entry"
+    },
     "paymentRequiredMessage": "This fanmark requires payment.",
     "paymentRequiredTitle": "Payment required",
     "paymentRequiredDescription": "This fanmark requires payment to obtain.",
@@ -988,6 +992,7 @@
     "favorite": "Add to Favorites",
     "unfavorite": "Remove from Favorites",
     "visitPage": "Open Fanmark",
+    "searchFanmark": "Search this fanmark",
     "shortId": "Short ID",
     "createdAt": "Created {{date}}",
     "currentHolder": "Current holder",

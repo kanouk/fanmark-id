@@ -114,52 +114,13 @@ onClick={async () => {
 #### 3.1.1 `src/pages/FanmarkDetailsPage.tsx`
 
 **対象箇所**:
-- 抽選申し込みボタン（191-198行目）
-- キャンセルボタン（211-219行目）
+- 抽選申し込み/キャンセルボタンの撤去（2025-02 更新）
+- 抽選人数表示の配置見直し（所有履歴セクション内へ移動）
 
 **変更内容**:
-- ローカルの `lotteryAction` 状態と `LotteryActionLoading` の直接描画を削除
-- `useLotteryEntry` へ `emoji` と `onSettled` を渡し、ローディングをグローバルで制御しつつ `refetch()` 完了までオーバーレイを維持
-
-```typescript
-try {
-  await applyToLottery(details.fanmark_id, {
-    emoji: details.normalized_emoji,
-    onSettled: async () => {
-      try {
-        await refetch();
-      } catch (error) {
-        console.error('Failed to refresh fanmark details after apply:', error);
-      }
-    },
-  });
-} catch (error) {
-  console.error('Failed to apply to lottery:', error);
-}
-
-if (details.user_lottery_entry_id) {
-  try {
-    await cancelLotteryEntry(details.user_lottery_entry_id, {
-      emoji: details.normalized_emoji,
-      onSettled: async () => {
-        try {
-          await refetch();
-        } catch (error) {
-          console.error('Failed to refresh fanmark details after cancel:', error);
-        }
-      },
-    });
-  } catch (error) {
-    console.error('Failed to cancel lottery entry:', error);
-  }
-}
-```
-
-**`refetch()` の役割**:
-- `useFanmarkDetails` フックが提供する関数
-- Supabaseから最新のファンマーク詳細情報を再取得
-- `has_user_lottery_entry` や `user_lottery_entry_id` などの状態を更新
-- UI表示（ボタン/バッジ）が自動的に切り替わる
+- `/f/{short_id}` は閲覧専用ページとして扱い、抽選操作 UI を削除。申し込み導線はダッシュボード側に集約した。
+- 抽選申込者数は所有履歴カード内に小さく表示し、公開情報としてのスタイリングに揃えた。
+- ヘッダーのアクションはアイコン化し、「ファンマページを開く」「同じファンマを検索」の 2 つだけを提供。検索アイコンはログイン中はダッシュボード検索、未ログイン時はトップページへ遷移し、対象ファンマをプレフィルする。
 
 ---
 
