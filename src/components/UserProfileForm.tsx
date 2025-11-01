@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAvatarUpload } from '@/hooks/useAvatarUpload';
-import { Save, User, Upload, Trash2, Loader2 } from 'lucide-react';
+import { Save, User, Upload, Trash2, Loader2, Mail, Image as ImageIcon, UserRound, IdCard } from 'lucide-react';
 import { FanmarkSelectionModal } from './FanmarkSelectionModal';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -15,7 +15,6 @@ import {
   type ActiveFanmark,
 } from '@/lib/plan-utils';
 import { supabase } from '@/integrations/supabase/client';
-import { useLocation, useNavigate } from 'react-router-dom';
 
 interface UserSettings {
   display_name: string | null;
@@ -36,8 +35,6 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
   const { toast } = useToast();
   const { user } = useAuth();
   const { uploadAvatar, deleteAvatar, uploading } = useAvatarUpload();
-  const navigate = useNavigate();
-  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [showFanmarkSelection, setShowFanmarkSelection] = useState(false);
   const [pendingPlanChange, setPendingPlanChange] = useState<PlanType | null>(null);
@@ -50,30 +47,6 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
     avatar_url: profile?.avatar_url ?? '',
     plan_type: (profile?.plan_type ?? 'free') as PlanType,
   });
-
-  const getPlanLabel = (planType: PlanType) => {
-    switch (planType) {
-      case 'creator':
-        return t('userSettings.planTypeCreator');
-      case 'business':
-        return t('userSettings.planTypeBusiness');
-      case 'enterprise':
-        return t('userSettings.planTypeEnterprise');
-      case 'admin':
-        return t('userSettings.planTypeAdmin');
-      case 'free':
-      default:
-        return t('userSettings.planTypeFree');
-    }
-  };
-
-  const getPlanLimitCopy = (planType: PlanType) => {
-    const limit = getPlanLimit(planType);
-    if (limit === -1) {
-      return t('userSettings.planUnlimited');
-    }
-    return t('userSettings.planLimitInfo', { limit });
-  };
 
   useEffect(() => {
     setFormData(prev => ({
@@ -241,53 +214,56 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
       />
 
       <div className="grid gap-8 md:grid-cols-[auto,1fr]">
-        <div className="flex flex-col items-center gap-4 rounded-3xl border border-primary/15 bg-background/80 p-6 text-center">
-          <div className="relative h-24 w-24 overflow-hidden rounded-full border border-primary/20 bg-primary/10">
-            {formData.avatar_url ? (
-              <img src={formData.avatar_url} alt="Avatar" className="absolute inset-0 h-full w-full object-cover" />
-            ) : (
-              <User className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 text-primary" />
-            )}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+            <ImageIcon className="h-4 w-4" />
+            {t('userSettings.avatar')}
           </div>
-          <div className="space-y-2 text-sm text-muted-foreground">
-            <p className="font-medium text-foreground">{t('userSettings.avatar')}</p>
-            <p>{t('userSettings.avatarHint')}</p>
-          </div>
-          <div className="flex w-full flex-col gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full gap-2 rounded-full border-primary/20 bg-primary/5 text-primary hover:bg-primary/10"
-              disabled={uploading}
-            >
-              {uploading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+          <div className="flex flex-col items-center gap-4 rounded-3xl border border-primary/20 bg-white p-6 text-center shadow-[0_12px_30px_rgba(101,195,200,0.15)]">
+            <div className="relative h-24 w-24 overflow-hidden rounded-full border border-primary/20 bg-primary/10">
+              {formData.avatar_url ? (
+                <img src={formData.avatar_url} alt="Avatar" className="absolute inset-0 h-full w-full object-cover" />
               ) : (
-                <Upload className="h-4 w-4" />
+                <User className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 text-primary" />
               )}
-              {uploading ? t('userSettings.uploading') : t('userSettings.uploadAvatar')}
-            </Button>
-            {formData.avatar_url && (
+            </div>
+            <p className="text-sm text-muted-foreground">{t('userSettings.avatarHint')}</p>
+            <div className="flex w-full flex-col gap-2">
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                onClick={handleAvatarDelete}
-                className="w-full gap-2 rounded-full text-destructive hover:bg-destructive/10"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full gap-2 rounded-full border-primary/20 bg-primary/5 text-primary hover:bg-primary/10"
+                disabled={uploading}
               >
-                <Trash2 className="h-4 w-4" />
-                {t('userSettings.removeAvatar')}
+                {uploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4" />
+                )}
+                {uploading ? t('userSettings.uploading') : t('userSettings.uploadAvatar')}
               </Button>
-            )}
+              {formData.avatar_url && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleAvatarDelete}
+                  className="w-full gap-2 rounded-full text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {t('userSettings.removeAvatar')}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
         <div className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="display_name" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-              <User className="h-4 w-4" />
+              <UserRound className="h-4 w-4" />
               {t('userSettings.displayName')}
             </Label>
             <Input
@@ -295,37 +271,28 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
               value={formData.display_name}
               onChange={(e) => setFormData(prev => ({ ...prev, display_name: e.target.value }))}
               placeholder={t('userSettings.displayNamePlaceholder')}
-              className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="h-11 rounded-2xl border border-primary/15 bg-white text-base shadow-none focus-visible:ring-2 focus-visible:ring-primary/40"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="username" className="text-sm font-semibold text-muted-foreground">
+            <Label htmlFor="username" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+              <IdCard className="h-4 w-4" />
               {t('userSettings.username')}
             </Label>
-            <div className="rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3">
+            <div className="rounded-2xl border border-primary/15 bg-background/70 px-4 py-3">
               <p className="text-sm font-medium text-foreground">{formData.username}</p>
               <p className="text-xs text-muted-foreground">{t('userSettings.usernameHint')}</p>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="plan_type" className="text-sm font-semibold text-muted-foreground">
-              {t('userSettings.planType')}
+            <Label htmlFor="email" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+              <Mail className="h-4 w-4" />
+              {t('userSettings.email')}
             </Label>
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/15 bg-background/80 px-4 py-3">
-              <div>
-                <p className="text-sm font-medium text-foreground">{getPlanLabel(formData.plan_type)}</p>
-                <p className="text-xs text-muted-foreground">{getPlanLimitCopy(formData.plan_type)}</p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="rounded-full border-primary/20 bg-primary/5 text-primary hover:bg-primary/10"
-                onClick={() => navigate('/plans', { state: { from: location.pathname } })}
-              >
-                {t('userSettings.changePlan')}
-              </Button>
+            <div className="rounded-2xl border border-primary/15 bg-background/70 px-4 py-3">
+              <p className="text-sm font-medium text-foreground">{user?.email ?? '—'}</p>
             </div>
           </div>
 

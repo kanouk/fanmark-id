@@ -1,21 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useTranslation } from '@/hooks/useTranslation';
 import { UserProfileForm } from '@/components/UserProfileForm';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { User, LogOut, CreditCard, Globe, Palette, Link2, Info } from 'lucide-react';
-import { MdOutlineMail, MdSpaceDashboard } from 'react-icons/md';
+import { User, LogOut, CreditCard, Globe, Palette, Link2, Info, PencilLine, Languages } from 'lucide-react';
+import { MdSpaceDashboard } from 'react-icons/md';
 import { RiCalendarCheckLine } from 'react-icons/ri';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { usePreferredLanguage } from '@/hooks/usePreferredLanguage';
-import { ACTIVE_LANGUAGES, UPCOMING_LANGUAGES, isActiveLanguage, FALLBACK_LANGUAGE, ActiveLanguageCode } from '@/lib/language';
+import { ACTIVE_LANGUAGES, isActiveLanguage, FALLBACK_LANGUAGE, ActiveLanguageCode } from '@/lib/language';
+import { getPlanLimit, type PlanType } from '@/lib/plan-utils';
 
 type Section = 'account' | 'plan' | 'language' | 'display' | 'integrations';
 
@@ -33,6 +33,7 @@ const Profile = () => {
   const { toast } = useToast();
   const { persistPreferredLanguage, isSaving: isSavingPreferredLanguage } = usePreferredLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeSection, setActiveSection] = useState<Section>('account');
   const [languagePreference, setLanguagePreference] = useState<ActiveLanguageCode>(
     isActiveLanguage(profile?.preferred_language ?? null) ? (profile?.preferred_language as ActiveLanguageCode) : FALLBACK_LANGUAGE,
@@ -96,6 +97,10 @@ const Profile = () => {
     admin: t('userSettings.planTypeAdmin'),
   };
   const currentPlanLabel = planLabelMap[profile?.plan_type ?? 'free'];
+  const planType = (profile?.plan_type ?? 'free') as PlanType;
+  const planLimit = getPlanLimit(planType);
+  const planLimitCopy =
+    planLimit === -1 ? t('userSettings.planUnlimited') : t('userSettings.planLimitInfo', { limit: planLimit });
 
   const handleLogout = async () => {
     try {
@@ -139,89 +144,95 @@ const Profile = () => {
   }
 
   const accountSection = (
-    <div className="space-y-6">
-      <Card className="rounded-3xl border border-primary/15 bg-background/90 shadow-[0_20px_45px_rgba(101,195,200,0.15)]">
-        <CardHeader className="flex flex-col gap-2 px-6 pt-6 pb-2">
-          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-            <Info className="h-5 w-5 text-primary" />
-            {t('userSettings.accountInfo')}
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">{t('userSettings.accountInfoDescription')}</p>
-        </CardHeader>
-        <CardContent className="grid gap-4 px-6 pb-6 md:grid-cols-2">
-          <div className="space-y-1">
-            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              <MdOutlineMail className="h-4 w-4" />
-              {t('userSettings.email')}
-            </p>
-            <div className="rounded-2xl border border-primary/10 bg-background/70 px-4 py-3 text-sm">
-              {user?.email}
+    <Card className="rounded-3xl border border-primary/20 bg-white shadow-[0_20px_45px_rgba(101,195,200,0.2)]">
+      <CardHeader className="px-6 pt-6 pb-4 space-y-2">
+        <CardTitle className="flex items-center gap-2 text-xl font-semibold text-foreground">
+          <User className="h-5 w-5 text-primary" />
+          {t('userSettings.navAccount')}
+        </CardTitle>
+        <p className="ml-7 text-sm text-muted-foreground">{t('userSettings.accountSectionDescription')}</p>
+      </CardHeader>
+      <CardContent className="space-y-6 px-6 pb-6 pt-2">
+        <Card className="rounded-3xl border border-primary/20 bg-white shadow-[0_20px_45px_rgba(101,195,200,0.2)]">
+          <CardHeader className="flex flex-col gap-2 px-6 pt-6 pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+              <Info className="h-5 w-5 text-primary" />
+              {t('userSettings.accountInfo')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 px-6 pb-6">
+            <div className="space-y-1">
+              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <RiCalendarCheckLine className="h-4 w-4" />
+                {t('userSettings.memberSince')}
+              </p>
+              <div className="rounded-2xl border border-primary/10 bg-background/70 px-4 py-3 text-sm">
+                {profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : '—'}
+              </div>
             </div>
-          </div>
-          <div className="space-y-1">
-            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              <RiCalendarCheckLine className="h-4 w-4" />
-              {t('userSettings.memberSince')}
-            </p>
-            <div className="rounded-2xl border border-primary/10 bg-background/70 px-4 py-3 text-sm">
-              {profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : '—'}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      <Card className="rounded-3xl border border-primary/20 bg-white shadow-[0_20px_45px_rgba(101,195,200,0.2)]">
-        <CardHeader className="flex flex-col gap-2 px-6 pt-6 pb-2">
-          <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
-            <User className="h-5 w-5 text-primary" />
-            {t('userSettings.editSettings')}
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">{t('userSettings.editSettingsDescription')}</p>
-        </CardHeader>
-        <CardContent className="px-6 pb-6">
-          <UserProfileForm profile={profile} onUpdate={updateProfile} />
-        </CardContent>
-      </Card>
-    </div>
+        <Card className="rounded-3xl border border-primary/20 bg-white shadow-[0_20px_45px_rgba(101,195,200,0.2)]">
+          <CardHeader className="flex flex-col gap-2 px-6 pt-6 pb-2">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
+              <PencilLine className="h-5 w-5 text-primary" />
+              {t('userSettings.editSettings')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-6 pb-6">
+            <UserProfileForm profile={profile} onUpdate={updateProfile} />
+          </CardContent>
+        </Card>
+      </CardContent>
+    </Card>
   );
 
   const planSection = (
     <Card className="rounded-3xl border border-primary/20 bg-white shadow-[0_20px_45px_rgba(101,195,200,0.2)]">
-      <CardHeader className="px-6 pt-6 pb-4">
-        <CardTitle className="flex items-center justify-between text-xl font-semibold text-foreground">
-          <span>{t('userSettings.planOverviewTitle')}</span>
-          <Badge className="rounded-full border border-primary/30 bg-primary/10 text-xs text-primary">{currentPlanLabel}</Badge>
+      <CardHeader className="px-6 pt-6 pb-4 space-y-2">
+        <CardTitle className="flex items-center gap-2 text-xl font-semibold text-foreground">
+          <CreditCard className="h-5 w-5 text-primary" />
+          {t('userSettings.navPlan')}
         </CardTitle>
-        <p className="text-sm text-muted-foreground">{t('userSettings.planOverviewDescription')}</p>
+        <p className="ml-7 text-sm text-muted-foreground">{t('userSettings.planSectionDescription')}</p>
       </CardHeader>
-      <CardContent className="space-y-5 px-6 pb-6">
-        <div className="h-1.5 rounded-full bg-primary/10">
-          <div className="h-full w-2/3 rounded-full bg-primary" />
+      <CardContent className="space-y-4 px-6 pb-6 pt-2">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/15 bg-background/70 px-4 py-3">
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-foreground">{currentPlanLabel}</p>
+            <p className="text-xs text-muted-foreground">{planLimitCopy}</p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-full border-primary/20 bg-primary/5 text-primary hover:bg-primary/10"
+            onClick={() => navigate('/plans', { state: { from: location.pathname } })}
+          >
+            {t('userSettings.changePlan')}
+          </Button>
         </div>
-        <Button variant="default" className="rounded-full px-4" onClick={() => navigate('/plan')}>
-          {t('userSettings.changePlan')}
-        </Button>
-        <p className="text-xs text-muted-foreground">{t('userSettings.planUpsellCopy')}</p>
       </CardContent>
     </Card>
   );
 
   const languageSection = (
-    <Card className="rounded-3xl border border-primary/15 bg-background/95 shadow-[0_20px_45px_rgba(101,195,200,0.15)]">
-      <CardHeader className="flex flex-col gap-2 px-6 pt-6 pb-2">
+    <Card className="rounded-3xl border border-primary/20 bg-white shadow-[0_20px_45px_rgba(101,195,200,0.2)]">
+      <CardHeader className="px-6 pt-6 pb-4 space-y-2">
         <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
           <Globe className="h-5 w-5 text-primary" />
           {t('userSettings.languageSectionTitle')}
         </CardTitle>
-        <p className="text-sm text-muted-foreground">{t('userSettings.languageSectionDescription')}</p>
+        <p className="ml-7 text-sm text-muted-foreground">{t('userSettings.languageSectionDescriptionDetailed')}</p>
       </CardHeader>
-      <CardContent className="space-y-6 px-6 pb-6">
+      <CardContent className="space-y-6 px-6 pb-6 pt-2">
         <div className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <Languages className="h-3.5 w-3.5 text-primary" />
             {t('userSettings.languageFieldLabel')}
           </p>
           <Select value={languagePreference} onValueChange={handleLanguageSelect} disabled={isSavingPreferredLanguage}>
-            <SelectTrigger className="rounded-2xl border border-primary/20 bg-white text-left text-sm">
+            <SelectTrigger className="rounded-2xl border border-primary/20 bg-white text-left text-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1">
               <SelectValue placeholder={t('userSettings.languageFieldLabel')} />
             </SelectTrigger>
             <SelectContent>
@@ -234,30 +245,20 @@ const Profile = () => {
           </Select>
           <p className="text-xs text-muted-foreground">{t('userSettings.languageFieldHint')}</p>
         </div>
-        <div className="rounded-2xl border border-dashed border-primary/20 bg-primary/5 p-4 text-xs text-muted-foreground">
-          <p className="font-medium text-foreground">{t('userSettings.languageComingSoonLabel')}</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {UPCOMING_LANGUAGES.map((option) => (
-              <span key={option.value} className="rounded-full border border-border/60 px-3 py-1 text-[11px] uppercase tracking-wide">
-                {option.label}
-              </span>
-            ))}
-          </div>
-        </div>
       </CardContent>
     </Card>
   );
 
   const displaySection = (
     <Card className="rounded-3xl border border-primary/15 bg-background/95 shadow-[0_20px_45px_rgba(101,195,200,0.15)]">
-      <CardHeader className="flex flex-col gap-2 px-6 pt-6 pb-2">
+      <CardHeader className="px-6 pt-6 pb-4 space-y-2">
         <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
           <Palette className="h-5 w-5 text-primary" />
           {t('userSettings.displaySettingsTitle')}
         </CardTitle>
-        <p className="text-sm text-muted-foreground">{t('userSettings.displaySettingsDescription')}</p>
+        <p className="ml-7 text-sm text-muted-foreground">{t('userSettings.displaySectionDescriptionDetailed')}</p>
       </CardHeader>
-      <CardContent className="space-y-4 px-6 pb-6">
+      <CardContent className="space-y-4 px-6 pb-6 pt-2">
         <div className="rounded-2xl border border-dashed border-primary/20 bg-primary/5 px-4 py-6 text-center text-sm text-muted-foreground">
           <p className="text-base font-semibold text-primary">{t('userSettings.displayComingSoonTitle')}</p>
           <p className="mt-2">{t('userSettings.displayComingSoonDescription')}</p>
@@ -268,14 +269,14 @@ const Profile = () => {
 
   const integrationsSection = (
     <Card className="rounded-3xl border border-primary/15 bg-background/95 shadow-[0_20px_45px_rgba(101,195,200,0.15)]">
-      <CardHeader className="flex flex-col gap-2 px-6 pt-6 pb-2">
+      <CardHeader className="px-6 pt-6 pb-4 space-y-2">
         <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
           <Link2 className="h-5 w-5 text-primary" />
           {t('userSettings.integrationsTitle')}
         </CardTitle>
-        <p className="text-sm text-muted-foreground">{t('userSettings.integrationsDescription')}</p>
+        <p className="ml-7 text-sm text-muted-foreground">{t('userSettings.integrationsSectionDescriptionDetailed')}</p>
       </CardHeader>
-      <CardContent className="space-y-4 px-6 pb-6">
+      <CardContent className="space-y-4 px-6 pb-6 pt-2">
         <div className="rounded-2xl border border-dashed border-primary/20 bg-primary/5 px-4 py-6 text-center text-sm text-muted-foreground">
           <p className="text-base font-semibold text-primary">{t('userSettings.integrationsComingSoonTitle')}</p>
           <p className="mt-2">{t('userSettings.integrationsComingSoonDescription')}</p>
@@ -377,7 +378,7 @@ const Profile = () => {
             <aside className="rounded-3xl border border-primary/20 bg-white/80 shadow-[0_25px_50px_rgba(101,195,200,0.25)]">
               <div className="space-y-4 px-6 pb-6 pt-8">
                 <div className="flex items-center gap-4">
-                  <div className="relative h-14 w-14 overflow-hidden rounded-2xl border border-primary/20 bg-primary/10">
+                  <div className="relative h-14 w-14 overflow-hidden rounded-full border border-primary/20 bg-primary/10">
                     {profile?.avatar_url ? (
                       <img src={profile.avatar_url} alt="Avatar" className="absolute inset-0 h-full w-full object-cover" />
                     ) : (
