@@ -22,6 +22,8 @@ export const PasswordProtection = ({ fanmark, onSuccess }: PasswordProtectionPro
   const [password, setPassword] = useState('');
   const [isShaking, setIsShaking] = useState(false);
   const otpRef = useRef<HTMLInputElement>(null);
+  const slotClassName =
+    "h-14 w-14 sm:h-20 sm:w-20 text-2xl sm:text-3xl font-bold border-2 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 hover:border-primary/40 bg-gradient-to-br from-background to-background/90 rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 focus:scale-105 hover:scale-[1.02] first:rounded-l-xl sm:first:rounded-l-2xl last:rounded-r-xl sm:last:rounded-r-2xl first:border-l-2";
 
   useEffect(() => {
     if (password.length === 4) {
@@ -121,22 +123,10 @@ export const PasswordProtection = ({ fanmark, onSuccess }: PasswordProtectionPro
                         className="gap-3 sm:gap-6"
                       >
                         <InputOTPGroup className="gap-3 sm:gap-6 w-full justify-center">
-                          <InputOTPSlot
-                            index={0}
-                            className="h-14 w-14 sm:h-20 sm:w-20 text-2xl sm:text-3xl font-bold border-2 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 hover:border-primary/40 bg-gradient-to-br from-background to-background/90 rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 focus:scale-105 hover:scale-102"
-                          />
-                          <InputOTPSlot
-                            index={1}
-                            className="h-14 w-14 sm:h-20 sm:w-20 text-2xl sm:text-3xl font-bold border-2 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 hover:border-primary/40 bg-gradient-to-br from-background to-background/90 rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 focus:scale-105 hover:scale-102"
-                          />
-                          <InputOTPSlot
-                            index={2}
-                            className="h-14 w-14 sm:h-20 sm:w-20 text-2xl sm:text-3xl font-bold border-2 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 hover:border-primary/40 bg-gradient-to-br from-background to-background/90 rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 focus:scale-105 hover:scale-102"
-                          />
-                          <InputOTPSlot
-                            index={3}
-                            className="h-14 w-14 sm:h-20 sm:w-20 text-2xl sm:text-3xl font-bold border-2 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 hover:border-primary/40 bg-gradient-to-br from-background to-background/90 rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 focus:scale-105 hover:scale-102"
-                          />
+                          <InputOTPSlot index={0} className={slotClassName} />
+                          <InputOTPSlot index={1} className={slotClassName} />
+                          <InputOTPSlot index={2} className={slotClassName} />
+                          <InputOTPSlot index={3} className={slotClassName} />
                         </InputOTPGroup>
                       </InputOTP>
                     </div>

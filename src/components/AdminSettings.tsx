@@ -6,13 +6,12 @@ import { Button } from "@/components/ui/button";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Settings, AlertTriangle } from "lucide-react";
+import { Loader2, Settings } from "lucide-react";
 
 export const AdminSettings = () => {
   const { settings, loading, refetch } = useSystemSettings();
   const { toast } = useToast();
   const [updating, setUpdating] = useState(false);
-  const [expiring, setExpiring] = useState(false);
 
   // Grace period state
   const [gracePeriodDays, setGracePeriodDays] = useState(settings.grace_period_days);
@@ -46,33 +45,6 @@ export const AdminSettings = () => {
       });
     } finally {
       setUpdating(false);
-    }
-  };
-
-  const manualExpireGraceLicenses = async () => {
-    setExpiring(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('check-expired-licenses', {
-        body: { manual: true }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: '実行完了',
-        description: `${data.expiredCount || 0} 件のライセンスを失効しました`,
-      });
-
-      console.log('Manual expiration results:', data);
-    } catch (error) {
-      console.error('Error expiring grace licenses:', error);
-      toast({
-        title: 'エラー',
-        description: '期限切れライセンスの失効に失敗しました',
-        variant: 'destructive',
-      });
-    } finally {
-      setExpiring(false);
     }
   };
 
@@ -120,35 +92,6 @@ export const AdminSettings = () => {
               ライセンス期限切れ後に適用される自動返却タイミングを調整できます。
             </p>
           </div>
-        </div>
-      </Card>
-
-      <Card className="border-destructive/20 bg-destructive/5">
-        <div className="space-y-4 p-6">
-          <div className="space-y-2">
-            <h2 className="flex items-center gap-2 text-xl font-semibold text-destructive">
-              <AlertTriangle className="h-5 w-5" />
-              期限切れグレースライセンス手動失効
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              cron が正常に動作していない場合に、期限切れのグレース期間ライセンスを手動で失効させます。
-            </p>
-          </div>
-          <Button
-            onClick={manualExpireGraceLicenses}
-            disabled={expiring}
-            variant="destructive"
-            size="sm"
-          >
-            {expiring ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                処理中...
-              </>
-            ) : (
-              '期限切れライセンスを失効'
-            )}
-          </Button>
         </div>
       </Card>
 
