@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { Navigation } from '@/components/Navigation';
+import { BrandWordmark } from '@/components/BrandWordmark';
 import { Heart, Calendar, User, Clock, ExternalLink, History, AlertTriangle, Info, Search } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ja, enUS } from 'date-fns/locale';
@@ -304,7 +305,7 @@ export default function FanmarkDetailsPage() {
       <footer className="border-t border-border/40 bg-background/80 backdrop-blur">
         <div className="container mx-auto px-4 py-10 text-center space-y-3">
           <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
-            <span className="text-3xl">✨</span> <span className="text-gradient">fanmark.id</span>
+            <span className="text-3xl">✨</span> <BrandWordmark />
           </div>
           <p className="text-sm text-muted-foreground">{t('sections.footer')}</p>
         </div>

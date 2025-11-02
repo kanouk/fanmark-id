@@ -10,6 +10,7 @@ import { PasswordProtection } from './PasswordProtection';
 import { RedirectLoading } from './RedirectLoading';
 import { MessageboardLoading } from './MessageboardLoading';
 import { LanguageToggle } from '@/components/LanguageToggle';
+import { BrandWordmark } from '@/components/BrandWordmark';
 import { createFanmarkBadgeStyle } from '@/lib/fanmarkBadge';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
@@ -316,7 +317,7 @@ export const FanmarkAccess = () => {
                 <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
                   ✨
                 </span>
-                <span className="text-gradient text-2xl">fanmark.id</span>
+                <BrandWordmark className="text-2xl" />
               </button>
               <LanguageToggle />
             </div>
@@ -348,7 +349,7 @@ export const FanmarkAccess = () => {
             <div className="container mx-auto flex flex-col items-center justify-center gap-3 px-4 py-10 text-center">
               <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
                 <span className="text-3xl">✨</span>
-                <span className="text-gradient">fanmark.id</span>
+                <BrandWordmark />
               </div>
               <p className="text-xs text-muted-foreground">{t('sections.footer')}</p>
             </div>

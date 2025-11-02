@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
 import { getPublicEmojiProfile, type PublicEmojiProfile } from '@/hooks/useEmojiProfile';
 import { LanguageToggle } from '@/components/LanguageToggle';
+import { BrandWordmark } from '@/components/BrandWordmark';
 import {
   FiInstagram,
   FiGithub,
@@ -151,7 +152,7 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
               <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
                 ✨
               </span>
-              <span className="text-gradient text-2xl">fanmark.id</span>
+              <BrandWordmark className="text-2xl" />
             </button>
             <LanguageToggle />
           </div>
@@ -203,7 +204,7 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
               ✨
             </span>
-            <span className="text-gradient text-2xl">fanmark.id</span>
+            <BrandWordmark className="text-2xl" />
           </button>
 
           <LanguageToggle />
@@ -337,7 +338,7 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
       <footer className="border-t border-border/40 bg-background/80 backdrop-blur">
         <div className="container mx-auto px-4 py-10 text-center space-y-3">
           <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
-            <span className="text-3xl">✨</span> <span className="text-gradient">fanmark.id</span>
+            <span className="text-3xl">✨</span> <BrandWordmark />
           </div>
           <p className="text-sm text-muted-foreground">{t('sections.footer')}</p>
         </div>

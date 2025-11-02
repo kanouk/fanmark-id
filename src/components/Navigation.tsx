@@ -4,6 +4,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
 import { LanguageToggle } from '@/components/LanguageToggle';
+import { BrandWordmark } from '@/components/BrandWordmark';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Heart, LogOut, User, Bell } from 'lucide-react';
@@ -99,7 +100,7 @@ export const Navigation = () => {
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
             ✨
           </span>
-          <span className="text-gradient text-2xl">fanmark.id</span>
+          <BrandWordmark className="text-2xl" />
         </button>
 
         <nav className="hidden items-center gap-8 text-sm font-medium text-muted-foreground md:flex" />
