@@ -883,25 +883,42 @@ export const FanmarkDashboard = () => {
                                 const daysRemaining = timing.remainingWholeDays;
                                 const isExpiringSoon = msRemaining !== null && msRemaining > 0 && msRemaining <= 3 * 24 * 60 * 60 * 1000;
                                 const timeDisplayClass = `font-medium whitespace-nowrap text-sm ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`;
-                                const handleRowNavigation = () => navigate(`/fanmarks/${fanmark.id}/settings`);
+                                const canNavigateToSettings = timing.status === 'active' || timing.status === 'grace';
+                                const handleRowNavigation = () => {
+                                  if (!canNavigateToSettings || isReturned(fanmark)) return;
+                                  navigate(`/fanmarks/${fanmark.id}/settings`);
+                                };
                                 const isGraceReturn = timing.status === 'grace-return';
                                 const hasPerpetualLicense = !licenseData?.license_end;
                                 const canReturn = !isReturned(fanmark) && timing.status === 'active';
                                 const canExtend = (['active', 'grace', 'grace-return'].includes(timing.status)) && (!isReturned(fanmark) || isGraceReturn) && !hasPerpetualLicense;
 
                                 const rowKey = `${fanmark.emoji_key}-${fanmark.current_license_id ?? licenseData?.license_end ?? idx}`;
-                                const rowVisualState = isFanmarkInactive(fanmark)
-                                  ? 'bg-gray-200 dark:bg-gray-700'
+                                const isInactive = isFanmarkInactive(fanmark);
+                                const rowVisualState = isInactive
+                                  ? 'bg-gray-200/60 dark:bg-gray-700/60 text-muted-foreground/70'
                                   : (timing.status === 'grace' || timing.status === 'grace-return')
-                                    ? 'bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-950/50'
-                                    : 'hover:bg-primary/5 hover:shadow-sm';
+                                    ? `${canNavigateToSettings ? 'bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-950/50' : 'bg-amber-50/70 dark:bg-amber-950/20'}`
+                                    : `${canNavigateToSettings ? 'hover:bg-primary/5 hover:shadow-sm' : ''}`;
+                                const tierOvalStyle = isInactive
+                                  ? 'bg-none bg-gray-200 border border-gray-300 text-muted-foreground/70 hover:scale-100 saturate-0'
+                                  : getTierOvalStyle(fanmark.tier_level || 1);
+                                const tierBadgeStyle = isInactive
+                                  ? 'bg-gray-300 text-muted-foreground border border-gray-400'
+                                  : getTierBadgeStyle(fanmark.tier_level);
+                                const primaryTextClass = isInactive ? 'text-muted-foreground/70' : 'text-foreground';
+                                const countdownClass = isInactive ? 'font-medium whitespace-nowrap text-sm text-muted-foreground/70' : timeDisplayClass;
 
                                 return (
-                                  <tr key={rowKey} onClick={handleRowNavigation} className={`border-b border-primary/5 transition-all duration-200 ${rowVisualState}`}>
+                                  <tr
+                                    key={rowKey}
+                                    onClick={handleRowNavigation}
+                                    className={`relative border-b border-primary/5 transition-all duration-200 after:pointer-events-none after:absolute after:left-0 after:bottom-0 after:h-px after:w-full after:bg-primary/10 ${rowVisualState}`}
+                                  >
                                     <td className="relative overflow-visible px-4 py-3">
                                       <div className="min-h-[2.25rem] flex items-end overflow-visible" onClick={(event) => event.stopPropagation()}>
                                         <div
-                                          className={`relative flex items-center px-3.5 py-2.5 rounded-md shadow-sm transition-transform hover:scale-105 whitespace-nowrap cursor-pointer overflow-visible ${getTierOvalStyle(fanmark.tier_level || 1)}`}
+                                          className={`relative flex items-center px-3.5 py-2.5 rounded-md shadow-sm transition-transform ${isInactive ? '' : 'hover:scale-105'} whitespace-nowrap cursor-pointer overflow-visible ${tierOvalStyle}`}
                                           onClick={(event) => {
                                             event.stopPropagation();
                                             navigator.clipboard.writeText(fanmark.fanmark);
@@ -912,7 +929,7 @@ export const FanmarkDashboard = () => {
                                           }}
                                           title={t('dashboard.clickToCopyEmoji')}
                                         >
-                                          <span className={`absolute -top-2 -left-2 z-20 rounded-full px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-widest shadow ${getTierBadgeStyle(fanmark.tier_level)}`}>
+                                          <span className={`absolute -top-2 -left-2 z-20 rounded-full px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-widest shadow ${tierBadgeStyle}`}>
                                             {getTierLabel(fanmark.tier_level)}
                                           </span>
                                           <span className="text-2xl leading-none select-none" style={{ letterSpacing: '0.2em' }}>{fanmark.fanmark}</span>
@@ -946,13 +963,13 @@ export const FanmarkDashboard = () => {
                                     </td>
                                     <td className="px-4 py-3">
                                       <div className="min-h-[2.25rem] flex items-center">
-                                        <div className="text-sm text-foreground font-medium">
+                                        <div className={`text-sm font-medium ${primaryTextClass}`}>
                                           {acquisitionDate}
                                         </div>
                                       </div>
                                     </td>
                                     <td className="px-4 py-3">
-                                      <div className="min-h-[2.25rem] flex items-center text-sm text-foreground font-medium">
+                                      <div className={`min-h-[2.25rem] flex items-center text-sm font-medium ${primaryTextClass}`}>
                                         {expirationDateUTC ? (
                                           <span>{formatInTimeZone(expirationDateUTC, 'Asia/Tokyo', 'yyyy/MM/dd')}</span>
                                         ) : (
@@ -965,7 +982,7 @@ export const FanmarkDashboard = () => {
                                         {(timing.status === 'grace' || timing.status === 'grace-return') && timing.graceExpiresDate ? (
                                           <Tooltip>
                                             <TooltipTrigger asChild>
-                                              <span className={`${timeDisplayClass} text-destructive underline decoration-dotted underline-offset-4`}>
+                                              <span className={`${countdownClass} ${isInactive ? '' : 'text-destructive underline decoration-dotted underline-offset-4'}`}>
                                                 {t('dashboard.countdown', { time: formatCountdown(timing.graceExpiresDate) })}
                                               </span>
                                             </TooltipTrigger>
@@ -974,7 +991,7 @@ export const FanmarkDashboard = () => {
                                             </TooltipContent>
                                           </Tooltip>
                                         ) : timing.status === 'active' && expirationDateUTC ? (
-                                          <div className={timeDisplayClass}>
+                                          <div className={countdownClass}>
                                             {t('dashboard.daysRemaining', { days: Math.max(daysRemaining ?? 0, 0) })}
                                           </div>
                                         ) : isReturned(fanmark) ? (
@@ -987,7 +1004,7 @@ export const FanmarkDashboard = () => {
                                     </td>
                                     <td className="px-4 py-3">
                                       <div className="min-h-[2.25rem] flex items-center gap-1 min-w-fit">
-                                        {getStatusBadge(timing)}
+                                        <span className={isInactive ? 'opacity-60 saturate-50' : ''}>{getStatusBadge(timing)}</span>
                                       </div>
                                     </td>
                                     <td className="px-4 py-3" onClick={(event) => event.stopPropagation()}>
@@ -1110,11 +1127,22 @@ export const FanmarkDashboard = () => {
                         const canExtend = (['active', 'grace', 'grace-return'].includes(timing.status)) && (!isReturned(fanmark) || isGraceReturn) && !hasPerpetualLicense;
 
                         const cardKey = `${fanmark.id}-${fanmark.current_license_id ?? licenseData?.license_end ?? idx}`;
-                        const cardVisualState = isFanmarkInactive(fanmark)
-                          ? 'bg-gray-200 dark:bg-gray-700'
+                        const isInactiveCard = isFanmarkInactive(fanmark);
+                        const cardVisualState = isInactiveCard
+                          ? 'bg-gray-200/60 dark:bg-gray-700/60 text-muted-foreground/70'
                           : (timing.status === 'grace' || timing.status === 'grace-return')
                             ? 'bg-amber-50 dark:bg-amber-950/30 hover:border-amber-200'
                             : 'bg-background/80 hover:border-primary/20';
+                        const mobileTierOvalStyle = isInactiveCard
+                          ? 'bg-none bg-gray-200 border border-gray-300 text-muted-foreground/70 hover:scale-100 saturate-0'
+                          : getTierOvalStyle(fanmark.tier_level || 1);
+                        const mobileTierBadgeStyle = isInactiveCard
+                          ? 'bg-gray-300 text-muted-foreground border border-gray-400'
+                          : getTierBadgeStyle(fanmark.tier_level);
+                        const mobilePrimaryText = isInactiveCard ? 'text-muted-foreground/70' : 'text-foreground';
+                        const mobileCountdownClass = isInactiveCard
+                          ? 'font-medium whitespace-nowrap text-sm text-muted-foreground/70'
+                          : mobileTimeDisplayClass;
 
                          return (
                           <Card key={cardKey} className={`overflow-visible rounded-3xl border border-primary/10 transition-colors ${cardVisualState}`}>
@@ -1123,7 +1151,7 @@ export const FanmarkDashboard = () => {
                                    <div className="flex items-start justify-between">
                                     <div className="flex items-end overflow-visible">
                                       <div
-                                        className={`relative flex items-center px-3 py-2 rounded-md cursor-pointer hover:scale-105 transition-transform overflow-visible ${getTierOvalStyle(fanmark.tier_level || 1)}`}
+                                        className={`relative flex items-center px-3 py-2 rounded-md cursor-pointer transition-transform ${isInactiveCard ? '' : 'hover:scale-105'} overflow-visible ${mobileTierOvalStyle}`}
                                         onClick={() => {
                                           navigator.clipboard.writeText(fanmark.fanmark);
                                           toast({
@@ -1133,7 +1161,7 @@ export const FanmarkDashboard = () => {
                                         }}
                                         title={t('dashboard.clickToCopyEmoji')}
                                       >
-                                        <span className={`absolute -top-2 -left-2 z-20 rounded-full px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-widest shadow ${getTierBadgeStyle(fanmark.tier_level)}`}>
+                                        <span className={`absolute -top-2 -left-2 z-20 rounded-full px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-widest shadow ${mobileTierBadgeStyle}`}>
                                           {getTierLabel(fanmark.tier_level)}
                                         </span>
                                         <span
@@ -1145,7 +1173,7 @@ export const FanmarkDashboard = () => {
                                       </div>
                                     </div>
                                     <div className="flex flex-col items-end gap-1">
-                                      {getStatusBadge(timing)}
+                                      <span className={isInactiveCard ? 'opacity-60 saturate-50' : ''}>{getStatusBadge(timing)}</span>
                                     </div>
                                  </div>
 
@@ -1173,8 +1201,8 @@ export const FanmarkDashboard = () => {
                                     <div className="text-xs text-muted-foreground font-semibold mb-1">
                                       {t('dashboard.accessType')}
                                     </div>
-                                    <div className="text-foreground">
-                                      {!isFanmarkInactive(fanmark) && timing.status === 'active'
+                                    <div className={mobilePrimaryText}>
+                                      {!isInactiveCard && timing.status === 'active'
                                         ? getAccessTypeBadge(fanmark.access_type)
                                         : <span className="text-muted-foreground text-sm">{t('dashboard.accessTypes.inactive')}</span>}
                                     </div>
@@ -1183,13 +1211,13 @@ export const FanmarkDashboard = () => {
                                     <div className="text-xs text-muted-foreground font-semibold mb-1">
                                       {t('dashboard.acquisitionDate')}
                                     </div>
-                                    <div className="text-foreground">{acquisitionDate}</div>
+                                    <div className={mobilePrimaryText}>{acquisitionDate}</div>
                                   </div>
                                    <div>
                                      <div className="text-xs text-muted-foreground font-semibold mb-1">
                                        {t('dashboard.returnDate')}
                                      </div>
-                                     <div className="text-foreground">
+                                     <div className={mobilePrimaryText}>
                                        {expirationDate
                                          ? formatInTimeZone(expirationDate, 'Asia/Tokyo', 'yyyy/MM/dd')
                                          : t('dashboard.perpetualLicense')}
@@ -1204,7 +1232,7 @@ export const FanmarkDashboard = () => {
                                           {(timing.status === 'grace' || timing.status === 'grace-return') && timing.graceExpiresDate ? (
                                             <Tooltip>
                                               <TooltipTrigger asChild>
-                                                <span className={`${mobileTimeDisplayClass} text-destructive underline decoration-dotted underline-offset-4`}>
+                                                <span className={`${mobileCountdownClass} ${isInactiveCard ? '' : 'text-destructive underline decoration-dotted underline-offset-4'}`}>
                                                   {t('dashboard.countdown', { time: formatCountdown(timing.graceExpiresDate) })}
                                                 </span>
                                               </TooltipTrigger>
@@ -1214,7 +1242,7 @@ export const FanmarkDashboard = () => {
                                             </Tooltip>
                                           ) : timing.status === 'active' && expirationDate ? (
                                             <div>
-                                              <span className={mobileTimeDisplayClass}>
+                                              <span className={mobileCountdownClass}>
                                                 {t('dashboard.daysRemaining', { days: Math.max(daysRemaining ?? 0, 0) })}
                                               </span>
                                             </div>
