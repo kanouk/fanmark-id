@@ -166,38 +166,39 @@
   },
   "sections": {
     "howUsed": "How It's Being Used",
-    "howItWorks": "3 Simple Steps",
-    "step1": "Search Fanmarks",
-    "step1Description": "Find your favorite emoji combination",
-    "step2": "Create Account",
-    "step2Description": "Quick registration to get started",
-    "step3": "Create URL",
-    "step3Description": "Your unique short URL is ready!",
+    "howItWorks": "Easy 3 Steps",
+    "howItWorksDescription": "Launch your fanmark in just three easy steps!",
+    "step1": "Create Account",
+    "step1Description": "Sign up instantly with your email or social login",
+    "step2": "Claim Your Fanmark",
+    "step2Description": "Choose the emoji address you want and reserve it",
+    "step3": "Set Up Fanmark",
+    "step3Description": "Customize your page and share your new home!",
     "pricing": "Pricing Plans",
     "comparison": "Service Comparison",
     "cta": "Get Started Now",
     "ctaDescription": "Find your perfect fanmark and start your new address experience",
     "footer": "© 2025 fanmark.id All rights reserved.",
     "examples": {
-      "musician": {
-        "title": "Musician",
-        "description": "Music, live events & merchandise all in one page",
+      "influencer": {
+        "title": "Influencer",
+        "description": "Collect every social link and sponsor page in one spotlight",
         "badge": "Profile"
       },
       "shop": {
         "title": "Shop",
-        "description": "Menu, delivery & reservation links in one place",
-        "badge": "Link Hub"
+        "description": "A quick path to your storefront or booking site",
+        "badge": "Address Forward"
       },
-      "business": {
-        "title": "Business",
-        "description": "Portfolio, experience & contact info as a business card",
-        "badge": "Business Card"
+      "friends": {
+        "title": "Friends",
+        "description": "Keep close friends connected with a lightweight message hub",
+        "badge": "Message Board"
       },
-      "streamer": {
-        "title": "Streamer",
-        "description": "Direct jump to Twitch channel",
-        "badge": "One Click"
+      "gameStreamer": {
+        "title": "Game Streamer",
+        "description": "Drop viewers straight into your Twitch channel",
+        "badge": "Address Forward"
       }
     },
     "pricingDetails": {

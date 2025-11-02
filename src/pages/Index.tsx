@@ -20,8 +20,8 @@ const Index = () => {
   const [prefilledEmoji, setPrefilledEmoji] = useState<string | undefined>();
   const exampleCards = [
     {
-      key: 'musician',
-      emoji: '🎵🎤🎸',
+      key: 'influencer',
+      emoji: '👑🪽',
       gradient: 'from-primary/20 via-primary/10 to-accent/10',
       badgeClass: 'border-primary/20 bg-primary text-primary-foreground shadow-[0_8px_18px_hsl(var(--primary)_/_0.25)]',
     },
@@ -32,14 +32,14 @@ const Index = () => {
       badgeClass: 'border-accent/20 bg-accent text-accent-foreground shadow-[0_8px_18px_hsl(var(--accent)_/_0.25)]',
     },
     {
-      key: 'business',
-      emoji: '💼📊⚡',
+      key: 'friends',
+      emoji: '😉💞',
       gradient: 'from-secondary/20 via-primary/10 to-secondary/5',
       badgeClass: 'border-secondary/20 bg-secondary text-secondary-foreground shadow-[0_8px_18px_hsl(var(--secondary)_/_0.25)]',
     },
     {
-      key: 'streamer',
-      emoji: '🔥🎮✨',
+      key: 'gameStreamer',
+      emoji: '🎮🔥🔥',
       gradient: 'from-destructive/25 via-accent/10 to-primary/10',
       badgeClass: 'border-destructive/20 bg-destructive text-destructive-foreground shadow-[0_8px_18px_hsl(var(--destructive)_/_0.25)]',
     },
@@ -229,10 +229,10 @@ const Index = () => {
             {exampleCards.map(({ key, emoji, gradient, badgeClass }) => (
               <Card
                 key={key}
-                className={`group relative overflow-hidden border border-border/60 bg-background/95 shadow-[0_20px_45px_rgba(239,159,188,0.18)] transition-transform duration-300 hover:-translate-y-2 hover:shadow-[0_28px_60px_rgba(101,195,200,0.22)]`}
+                className={`group relative flex h-full flex-col overflow-hidden border border-border/60 bg-background/95 shadow-[0_20px_45px_rgba(239,159,188,0.18)] transition-transform duration-300 hover:-translate-y-2 hover:shadow-[0_28px_60px_rgba(101,195,200,0.22)]`}
               >
                 <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 transition-opacity duration-300 group-hover:opacity-100`} aria-hidden />
-                <CardHeader className="relative flex flex-col items-center gap-5 px-6 pt-10 pb-6 text-center">
+                <CardHeader className="relative flex flex-1 flex-col items-center gap-5 px-6 pt-10 pb-6 text-center">
                   <span className="text-4xl">
                     {emoji}
                   </span>
@@ -243,7 +243,7 @@ const Index = () => {
                     {t(`sections.examples.${key}.description`)}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="relative flex justify-center px-6 pb-10">
+                <CardContent className="relative mt-auto flex justify-center px-6 pb-10">
                   <Badge
                     variant="outline"
                     className={`rounded-full px-4 py-1 text-xs font-semibold uppercase tracking-wide ${badgeClass}`}
@@ -265,14 +265,14 @@ const Index = () => {
             {t('sections.howItWorks')} 🛠️
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-center text-base text-muted-foreground sm:text-lg">
-            {t('hero.description')}
+            {t('sections.howItWorksDescription')}
           </p>
 
           <div className="mt-16 grid gap-8 md:grid-cols-3">
             {[
-              { emoji: '🎯', title: t('sections.step1'), description: t('sections.step1Description'), animation: 'animate-bounce-soft', gradient: 'from-primary/10 to-transparent' },
-              { emoji: '📝', title: t('sections.step2'), description: t('sections.step2Description'), animation: 'animate-pulse-slow', gradient: 'from-accent/10 to-transparent' },
-              { emoji: '🚀', title: t('sections.step3'), description: t('sections.step3Description'), animation: 'animate-float', gradient: 'from-secondary/10 to-transparent' },
+              { emoji: '🪪', title: t('sections.step1'), description: t('sections.step1Description'), animation: 'animate-bounce-soft', gradient: 'from-primary/10 to-transparent' },
+              { emoji: '🎯', title: t('sections.step2'), description: t('sections.step2Description'), animation: 'animate-pulse-slow', gradient: 'from-accent/10 to-transparent' },
+              { emoji: '✨', title: t('sections.step3'), description: t('sections.step3Description'), animation: 'animate-float', gradient: 'from-secondary/10 to-transparent' },
             ].map(({ emoji, title, description, animation, gradient }, index) => (
               <Card key={title} className="relative overflow-hidden border border-border/60 bg-background/95 shadow-[0_18px_38px_rgba(101,195,200,0.18)]">
                 <div className={`pointer-events-none absolute inset-0 bg-gradient-to-b ${gradient} opacity-0 transition-opacity duration-300 hover:opacity-100`} aria-hidden />

@@ -19,7 +19,7 @@
     "recentlyAcquired": "最近取得されたファンマ",
     "noResults": "検索結果が見つかりません",
     "foundPerfect": "完璧なファンマを見つけた？サインアップして取得しよう！",
-    "joinThousands": "何千人ものクリエイターが使用中！",
+    "joinThousands": "たくさんのユーザーが参加中！",
     "searchPlaceholder": "好きなファンマを入れてみよう！",
     "emojiInputHint": "＋を押してファンマを選ぼう！",
     "validationError": "絵文字のみ入力してください（文字、数字、記号は使用できません）",
@@ -165,39 +165,40 @@
     "enterPassword": "4桁の数字を入力してください"
   },
   "sections": {
-    "howUsed": "こんな風に使われてます",
-    "howItWorks": "3ステップで完成",
-    "step1": "ファンマを検索",
-    "step1Description": "お気に入りのファンマを見つけよう",
-    "step2": "アカウント作成",
-    "step2Description": "簡単登録で、すぐに始められます",
-    "step3": "URLを作成",
-    "step3Description": "あなただけの短縮URLが完成！",
+    "howUsed": "使い方はいろいろ",
+    "howItWorks": "かんたん3ステップ",
+    "howItWorksDescription": "登録から公開まで、かんたん3ステップでスタート！",
+    "step1": "アカウント作成",
+    "step1Description": "メールアドレスやSNSアカウントですぐに登録",
+    "step2": "ファンマを取得",
+    "step2Description": "気になるファンマみつけてゲット",
+    "step3": "ファンマ設定",
+    "step3Description": "ファンマの設定をして公開！",
     "pricing": "料金プラン",
     "comparison": "他サービスとの比較",
     "cta": "今すぐ始めよう",
-    "ctaDescription": "あなただけのファンマを見つけて、新しいアドレス体験を始めましょう",
+    "ctaDescription": "あなただけのファンマを手に入れよう！",
     "footer": "© 2025 fanmark.id All rights reserved.",
     "examples": {
-      "musician": {
-        "title": "ミュージシャン",
-        "description": "楽曲・ライブ情報・グッズがまとめて見れるページ",
+      "influencer": {
+        "title": "インフルエンサー",
+        "description": "プロフィールページで各種SNSのリンクをひとまとめ",
         "badge": "プロフィール"
       },
       "shop": {
         "title": "お店",
-        "description": "メニュー・出前・予約のリンクをひとまとめ",
-        "badge": "リンク集"
+        "description": "お店のウェブサイトへの超わかりやすいリンクとして",
+        "badge": "アドレス転送"
       },
-      "business": {
-        "title": "ビジネス",
-        "description": "実績・経歴・連絡先がわかりやすい名刺代わり",
-        "badge": "名刺"
+      "friends": {
+        "title": "友達",
+        "description": "親しい友達とのちょっとしたコミュニケーションに",
+        "badge": "伝言板"
       },
-      "streamer": {
-        "title": "ストリーマー",
+      "gameStreamer": {
+        "title": "ゲーム配信者",
         "description": "Twitchチャンネルに直接ジャンプ",
-        "badge": "ワンクリック"
+        "badge": "アドレス転送"
       }
     },
     "pricingDetails": {
