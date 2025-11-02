@@ -531,6 +531,37 @@ serve(async (req) => {
               { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
           }
+          
+          // Grace period expired but DB status still 'grace'
+          // Check for pending lottery entries to prevent race condition
+          const { data: pendingEntries, error: entriesError } = await supabase
+            .from('fanmark_lottery_entries')
+            .select('id')
+            .eq('license_id', existingLicense.id)
+            .eq('entry_status', 'pending')
+            .maybeSingle();
+          
+          if (entriesError) {
+            console.error('Failed to check pending lottery entries:', entriesError);
+            return new Response(
+              JSON.stringify({ error: 'Failed to verify fanmark availability' }),
+              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+          
+          if (pendingEntries) {
+            // Pending lottery entries exist - reject direct registration
+            return new Response(
+              JSON.stringify({ 
+                error: 'Lottery pending. Please wait for the result.',
+                type: 'lottery_pending',
+                available_at: existingLicense.grace_expires_at
+              }),
+              { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+          
+          // No pending entries and grace expired - allow registration
         }
       }
     }

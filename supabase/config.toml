@@ -28,13 +28,13 @@ verify_jwt = true
 # 2. "Create a new cron job" をクリック
 # 3. 以下のSQLを使用してジョブを作成
 #
-# ライセンス期限チェック（毎日 15:00 UTC = JST 0:00）:
+# ライセンス期限チェック（毎日 00:00 UTC）:
 #   SELECT net.http_post(
 #     url := 'https://ppqgtbjykitqtiaisyji.supabase.co/functions/v1/check-expired-licenses',
 #     headers := '{"Content-Type": "application/json"}'::jsonb,
 #     body := '{"scheduled": true}'::jsonb
 #   );
-#   Schedule: 0 15 * * *
+#   Schedule: 0 0 * * *
 #
 # 通知イベント処理（毎分）:
 #   SELECT net.http_post(
