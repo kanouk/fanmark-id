@@ -228,4 +228,49 @@ p, span {
     @apply transform -translate-y-1;
     box-shadow: 0 8px 24px hsl(var(--primary) / 0.12);
   }
+  
+  /* Hero用アニメーショングラデーション */
+  .hero-gradient-animated {
+    background: linear-gradient(
+      135deg,
+      hsl(340, 82%, 75%) 0%,
+      hsl(300, 70%, 70%) 25%,
+      hsl(260, 75%, 72%) 50%,
+      hsl(200, 75%, 70%) 75%,
+      hsl(180, 70%, 65%) 100%
+    );
+    background-size: 200% 200%;
+    animation: gradient-shift 15s ease infinite;
+  }
+  
+  /* 装飾用ブロブ（浮遊する円） */
+  .hero-decorative-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    animation: float-blob 20s ease-in-out infinite;
+    pointer-events: none;
+  }
+  
+  /* グラデーションシフトアニメーション */
+  @keyframes gradient-shift {
+    0%, 100% { 
+      background-position: 0% 50%;
+    }
+    50% { 
+      background-position: 100% 50%;
+    }
+  }
+  
+  /* ブロブ浮遊アニメーション */
+  @keyframes float-blob {
+    0%, 100% { 
+      transform: translate(0, 0) scale(1);
+      opacity: 0.3;
+    }
+    50% { 
+      transform: translate(30px, -30px) scale(1.1);
+      opacity: 0.5;
+    }
+  }
 }

@@ -173,16 +173,15 @@ const Index = () => {
       {/* Hero Section */}
       <section
         id="home"
-        className="relative overflow-hidden"
-        style={{
-          backgroundImage: `url(${heroSkyBackground})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat'
-        }}
+        className="relative overflow-hidden hero-gradient-animated"
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/40 via-accent/35 to-secondary/30" />
-        <div className="container relative mx-auto px-4 py-20 sm:py-24">
+        {/* 装飾用のブロブ（浮遊する円） */}
+        <div className="hero-decorative-blob top-10 left-10 w-96 h-96 bg-pink-400/30" style={{animationDelay: '0s'}} />
+        <div className="hero-decorative-blob top-32 right-20 w-80 h-80 bg-purple-400/30" style={{animationDelay: '3s'}} />
+        <div className="hero-decorative-blob bottom-20 left-32 w-72 h-72 bg-blue-400/30" style={{animationDelay: '6s'}} />
+        
+        <div className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent" />
+        <div className="container relative mx-auto px-4 py-16 sm:py-20">
           <div className="mx-auto max-w-3xl text-center">
             <div className="mb-10 flex justify-center">
               <span className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm text-6xl shadow-[0_15px_40px_rgba(0,0,0,0.25)] animate-float">
