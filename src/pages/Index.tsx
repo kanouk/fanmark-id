@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { FanmarkAcquisition } from '@/components/FanmarkAcquisition';
 import { supabase } from '@/integrations/supabase/client';
 import { useFanmarkLimit } from '@/hooks/useFanmarkLimit';
+import heroSkyBackground from '@/assets/hero-sky-background.jpeg';
 const Index = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -172,9 +173,16 @@ const Index = () => {
       {/* Hero Section */}
       <section
         id="home"
-        className="relative overflow-hidden bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100"
+        className="relative overflow-hidden"
+        style={{
+          backgroundImage: `url(${heroSkyBackground})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
       >
-        <div className="container mx-auto px-4 py-20 sm:py-24">
+        <div className="absolute inset-0 bg-gradient-to-br from-pink-100/70 via-purple-100/60 to-blue-100/70" />
+        <div className="container relative mx-auto px-4 py-20 sm:py-24">
           <div className="mx-auto max-w-3xl text-center">
             <div className="mb-10 flex justify-center">
               <span className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-primary/20 text-6xl shadow-[0_15px_40px_hsl(var(--primary)_/_0.25)] animate-float">
