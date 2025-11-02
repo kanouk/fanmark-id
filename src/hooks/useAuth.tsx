@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { getPendingInvitationCode, clearPendingInvitationCode } from '@/lib/oauth-invitation-helpers';
+import { toast } from 'sonner';
 
 interface AuthContextType {
   user: User | null;
@@ -112,6 +113,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                   } else if (userSettings && !userSettings.invited_by_code) {
                     // New OAuth user without invitation code - must sign out
                     console.error('OAuth signup requires invitation code when invitation mode is active');
+                    
+                    // Show error message to user
+                    toast.error('招待コードが必要です。招待コードを入力してからOAuthログインをお試しください。');
                     
                     // Sign out the user
                     await supabase.auth.signOut();
