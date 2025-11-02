@@ -139,7 +139,10 @@
     "welcome": "fanmark.id へようこそ",
     "description": "あなただけのファンマを手に入れよう！",
     "pageTitle": "ファンマID に参加",
-    "pageDescription": "ログイン・新規ユーザ登録してあなただけのファンマを手に入れよう！"
+    "pageDescription": "ログイン・新規ユーザ登録してあなただけのファンマを手に入れよう！",
+    "oauthLoginNote": "初めての方はサインアップタブから招待コードを入力してください。既にアカウントをお持ちの方はこのままログインできます。",
+    "oauthError": "ソーシャルログインに失敗しました",
+    "oauthInvitationRequired": "新規登録には招待コードが必要です。サインアップタブから招待コードを入力してください。"
   },
   "password": {
     "requirements": {

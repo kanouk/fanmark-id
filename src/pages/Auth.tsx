@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAuthForm } from '@/hooks/useAuthForm';
 import { usePasswordValidation } from '@/hooks/usePasswordValidation';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useToast } from '@/hooks/use-toast';
 import { InvitationSystem } from '@/components/InvitationSystem';
 import { Button } from '@/components/ui/button';
 import { AuthLayout } from '@/components/AuthLayout';
@@ -24,6 +25,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
+  const { toast } = useToast();
   const { formData, authState, updateFormData, signUp, signIn, signInWithGoogle, signInWithGithub, resendConfirmation } = useAuthForm();
   const { requirements, isValid } = usePasswordValidation(formData.password);
   const { settings, loading: settingsLoading } = useSystemSettings();
@@ -36,6 +38,35 @@ const Auth = () => {
       navigate('/dashboard');
     }
   }, [user, session, navigate]);
+
+  // Check for OAuth errors in URL parameters
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const error = searchParams.get('error');
+    const errorDescription = searchParams.get('error_description');
+    
+    if (error) {
+      let errorMessage = t('auth.oauthError');
+      
+      if (errorDescription) {
+        // Check for invitation code requirement error
+        if (errorDescription.includes('Invitation code') || errorDescription.includes('invitation_code')) {
+          errorMessage = t('auth.oauthInvitationRequired');
+        } else {
+          errorMessage = errorDescription;
+        }
+      }
+      
+      toast({
+        title: t('common.error'),
+        description: errorMessage,
+        variant: 'destructive',
+      });
+      
+      // Clean up URL
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.search, location.pathname, navigate, toast, t]);
 
   useEffect(() => {
     const state = location.state as { prefillFanmark?: string } | null;
@@ -155,6 +186,7 @@ const Auth = () => {
                     signInWithGoogle={signInWithGoogle}
                     signInWithGithub={signInWithGithub}
                     t={t}
+                    invitationRequired={invitationGateActive}
                   />
                 </TabsContent>
 
@@ -232,9 +264,10 @@ interface LoginFormProps {
   signInWithGoogle: (invitationCode?: string | null) => void;
   signInWithGithub: (invitationCode?: string | null) => void;
   t: (key: string) => string;
+  invitationRequired?: boolean;
 }
 
-const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoogle, signInWithGithub, t }: LoginFormProps) => {
+const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoogle, signInWithGithub, t, invitationRequired = false }: LoginFormProps) => {
   const emailStatus = formData.email ? EMAIL_REGEX.test(formData.email) : null;
   const passwordStatus = formData.password ? formData.password.length > 0 : null;
   const socialButtons = [
@@ -353,6 +386,12 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoog
           <span className="bg-background/95 px-2 text-muted-foreground">{t('auth.or')}</span>
         </div>
       </div>
+
+      {invitationRequired && (
+        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm text-muted-foreground">
+          {t('auth.oauthLoginNote')}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-2">
         {socialButtons.map(({ key, label, Icon, onClick, disabled }) => (

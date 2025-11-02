@@ -86,6 +86,34 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 clearPendingInvitationCode();
               }
             }, 0);
+          } else {
+            // Check if user_settings exists (for OAuth without invitation code)
+            setTimeout(async () => {
+              try {
+                const { data: userSettings, error: checkError } = await supabase
+                  .from('user_settings')
+                  .select('id')
+                  .eq('user_id', session.user.id)
+                  .maybeSingle();
+                
+                if (checkError) {
+                  console.error('Error checking user settings after OAuth:', checkError);
+                } else if (!userSettings) {
+                  // No user_settings found - signup was blocked by database trigger
+                  console.error('OAuth signup blocked: Invitation code was required');
+                  
+                  // Sign out the partially created auth.users record
+                  await supabase.auth.signOut();
+                  
+                  // Clear local state
+                  setUser(null);
+                  setSession(null);
+                  setEmailConfirmed(false);
+                }
+              } catch (error) {
+                console.error('Error during post-OAuth validation:', error);
+              }
+            }, 0);
           }
         }
       }

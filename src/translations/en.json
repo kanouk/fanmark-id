@@ -139,7 +139,10 @@
     "welcome": "Welcome to Fanmark",
     "description": "Join our community and claim your unique emoji combinations!",
     "pageTitle": "Join Fanmark",
-    "pageDescription": "Sign in or create a new account to get your own fanmark!"
+    "pageDescription": "Sign in or create a new account to get your own fanmark!",
+    "oauthLoginNote": "New users must sign up with an invitation code from the Sign Up tab. Existing users can log in here.",
+    "oauthError": "Social login failed",
+    "oauthInvitationRequired": "An invitation code is required to sign up. Please enter your code from the Sign Up tab."
   },
   "password": {
     "requirements": {
