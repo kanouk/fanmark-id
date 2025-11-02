@@ -181,25 +181,27 @@ const Index = () => {
           backgroundRepeat: 'no-repeat'
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-pink-100/30 via-purple-100/25 to-blue-100/20" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/40 via-accent/35 to-secondary/30" />
         <div className="container relative mx-auto px-4 py-20 sm:py-24">
           <div className="mx-auto max-w-3xl text-center">
             <div className="mb-10 flex justify-center">
-              <span className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-primary/20 text-6xl shadow-[0_15px_40px_hsl(var(--primary)_/_0.25)] animate-float">
+              <span className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm text-6xl shadow-[0_15px_40px_rgba(0,0,0,0.25)] animate-float">
                 ✨
               </span>
             </div>
-            <h1 className="text-balance text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl drop-shadow-[0_4px_8px_rgba(0,0,0,0.3)]">
-              {tWithBreaks('hero.subtitle')}
-            </h1>
-            <p className="mt-6 text-lg leading-relaxed text-white/95 sm:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.25)]">
-              {tWithBreaks('hero.description')}
-            </p>
+            <div className="backdrop-blur-md bg-white/80 rounded-3xl p-8 sm:p-12 shadow-[0_20px_60px_rgba(0,0,0,0.15)]">
+              <h1 className="text-balance text-4xl font-bold tracking-tight bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent sm:text-5xl md:text-6xl">
+                {tWithBreaks('hero.subtitle')}
+              </h1>
+              <p className="mt-6 text-lg leading-relaxed text-foreground/90 sm:text-xl font-medium">
+                {tWithBreaks('hero.description')}
+              </p>
 
-            <div className="mt-10 flex flex-col items-center justify-center">
-              <Button size="lg" className="w-full sm:w-auto" onClick={handleScrollToSearch}>
-                {t('hero.tryButton')}
-              </Button>
+              <div className="mt-10 flex flex-col items-center justify-center">
+                <Button size="lg" className="w-full sm:w-auto text-lg px-8 py-6 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:shadow-[0_15px_40px_rgba(0,0,0,0.25)] transition-all" onClick={handleScrollToSearch}>
+                  {t('hero.tryButton')}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
