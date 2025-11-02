@@ -1,9 +1,15 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { getPendingInvitationCode, clearPendingInvitationCode } from '@/lib/oauth-invitation-helpers';
+import {
+  getPendingInvitationCode,
+  clearPendingInvitationCode,
+  getPendingLanguage,
+  clearPendingLanguage,
+} from '@/lib/oauth-invitation-helpers';
 import { toast } from 'sonner';
 import { useTranslation } from '@/hooks/useTranslation';
+import { normalizeLanguage } from '@/lib/language';
 
 interface AuthContextType {
   user: User | null;
@@ -33,7 +39,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [emailConfirmed, setEmailConfirmed] = useState(false);
-  const { t } = useTranslation();
+  const { t, setLanguage } = useTranslation();
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -126,10 +132,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                     setUser(null);
                     setSession(null);
                     setEmailConfirmed(false);
+
+                    const pendingLanguage = normalizeLanguage(getPendingLanguage());
+                    try {
+                      localStorage.setItem('fanmark-language', pendingLanguage);
+                    } catch (error) {
+                      console.warn('Failed to restore language after OAuth sign-out:', error);
+                    }
+                    setLanguage(pendingLanguage);
                   }
                 }
               } catch (error) {
                 console.error('Error during post-OAuth invitation validation:', error);
+              } finally {
+                clearPendingLanguage();
               }
             }, 0);
           }

@@ -4,7 +4,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthFormData, AuthState } from '@/types/auth';
-import { saveInvitationCodeForOAuth, clearPendingInvitationCode } from '@/lib/oauth-invitation-helpers';
+import {
+  saveInvitationCodeForOAuth,
+  clearPendingInvitationCode,
+  saveLanguageForOAuth,
+  clearPendingLanguage,
+} from '@/lib/oauth-invitation-helpers';
 
 interface CheckEmailExistsResponse {
   exists: boolean;
@@ -18,7 +23,7 @@ interface SignUpOptions {
 export const useAuthForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   
   const [formData, setFormData] = useState<AuthFormData>({
     email: '',
@@ -256,14 +261,15 @@ export const useAuthForm = () => {
     setLoading(true);
     setError('');
     
-    // Save invitation code to localStorage before OAuth redirect
+    // Save current language & invitation code before OAuth redirect
+    saveLanguageForOAuth(language);
     saveInvitationCodeForOAuth(invitationCode);
 
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`
+          redirectTo: `${window.location.origin}/auth`
         }
       });
 
@@ -273,6 +279,7 @@ export const useAuthForm = () => {
       setError(message || 'Googleログインに失敗しました');
       // Clear invitation code on error
       clearPendingInvitationCode();
+      clearPendingLanguage();
     } finally {
       setLoading(false);
     }
