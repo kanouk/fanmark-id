@@ -1,0 +1,48 @@
+import { ReactNode } from 'react';
+import { useTranslation } from '@/hooks/useTranslation';
+import { BrandWordmark } from '@/components/BrandWordmark';
+import { cn } from '@/lib/utils';
+
+type SiteFooterProps = {
+  className?: string;
+  containerClassName?: string;
+  descriptionKey?: string | null;
+  description?: ReactNode;
+  hideBrand?: boolean;
+  rightSlot?: ReactNode;
+  leftSlot?: ReactNode;
+};
+
+export const SiteFooter = ({
+  className,
+  containerClassName,
+  descriptionKey = 'layout.footer.description',
+  description,
+  hideBrand = false,
+  rightSlot,
+  leftSlot,
+}: SiteFooterProps) => {
+  const { t } = useTranslation();
+  const resolvedDescription = description ?? (descriptionKey ? t(descriptionKey) : null);
+
+  return (
+    <footer className={cn('border-t border-border/40 bg-background/80 backdrop-blur', className)}>
+      <div className={cn('container mx-auto px-4 py-10 text-center space-y-3', containerClassName)}>
+        <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
+          {!hideBrand && (
+            <>
+              <span className="text-3xl">✨</span>
+              <BrandWordmark />
+            </>
+          )}
+          {leftSlot}
+          {rightSlot}
+        </div>
+        {resolvedDescription && (
+          <p className="text-sm text-muted-foreground">{resolvedDescription}</p>
+        )}
+      </div>
+    </footer>
+  );
+};
+

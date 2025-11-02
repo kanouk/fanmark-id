@@ -138,7 +138,7 @@
     "homeButton": "ホームに戻る",
     "welcome": "fanmark.id へようこそ",
     "description": "あなただけのファンマを手に入れよう！",
-    "pageTitle": "fanmark.id に参加",
+    "pageTitle": "ファンマID に参加",
     "pageDescription": "ログイン・新規ユーザ登録してあなただけのファンマを手に入れよう！"
   },
   "password": {
@@ -214,6 +214,11 @@
         "title": "✨ fanmaなら",
         "benefits": "一度見たら忘れない\n口で言える\nシェアしたくなる！"
       }
+    }
+  },
+  "layout": {
+    "footer": {
+      "description": "© 2025 fanmark.id All rights reserved."
     }
   },
   "common": {
@@ -1041,7 +1046,11 @@
     "ariaLabel": "通知メニュー",
     "toastFetchError": "通知の取得に失敗しました",
     "toastMarkReadError": "既読にできませんでした",
-    "toastMarkReadSuccess": "既読にしました"
+    "toastMarkReadSuccess": "既読にしました",
+    "graceProcessingTitle": "ライセンス失効処理中",
+    "graceProcessingBodyWithDeadline": "ファンマーク「{{fanmark}}」のライセンスが失効処理中です。{{deadline}} までに更新してください。",
+    "graceProcessingBody": "ファンマーク「{{fanmark}}」のライセンスが失効処理中です。更新期限をご確認ください。",
+    "graceProcessingSummary": "ライセンス更新が必要です"
   },
   "languageToggle": {
     "errorTitle": "言語を切り替えられません",

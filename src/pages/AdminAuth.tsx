@@ -4,7 +4,8 @@ import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AuthLayout } from "@/components/AuthLayout";
 import { LanguageToggle } from "@/components/LanguageToggle";
-import { BrandWordmark } from '@/components/BrandWordmark';
+import { SimpleHeader } from '@/components/layout/SimpleHeader';
+import { SiteFooter } from '@/components/layout/SiteFooter';
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -16,25 +17,17 @@ const AdminAuth = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      <header className="border-b border-border/40 bg-background/80 backdrop-blur">
-        <div className="container mx-auto flex items-center justify-between px-4 py-4 md:px-6">
-          <Link
-            to="/"
-            className="group flex items-center gap-2 text-lg font-semibold text-foreground transition-transform hover:translate-y-[-1px]"
-          >
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
-              ✨
-            </span>
-            <BrandWordmark className="text-2xl" />
-          </Link>
+      <SimpleHeader
+        showLanguageToggle={false}
+        rightSlot={
           <div className="flex items-center gap-3">
             <LanguageToggle />
             <Button size="sm" className="rounded-full px-4" variant={user ? "outline" : "default"} asChild>
               <Link to={loginTarget}>{loginLabel}</Link>
             </Button>
           </div>
-        </div>
-      </header>
+        }
+      />
 
       <main className="flex flex-1 items-center justify-center px-4 py-12 md:py-20">
         <div className="w-full max-w-xl">
@@ -59,14 +52,7 @@ const AdminAuth = () => {
         </div>
       </main>
 
-      <footer className="border-t border-border/40 bg-background/80 backdrop-blur">
-        <div className="container mx-auto px-4 py-10 text-center space-y-3">
-          <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
-            <span className="text-3xl">✨</span> <BrandWordmark />
-          </div>
-          <p className="text-sm text-muted-foreground">{t('sections.footer')}</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 };

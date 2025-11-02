@@ -13,7 +13,8 @@ import { resolveFanmarkDisplay } from '@/lib/emojiConversion';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
 import { LanguageToggle } from '@/components/LanguageToggle';
-import { BrandWordmark } from '@/components/BrandWordmark';
+import { SimpleHeader } from '@/components/layout/SimpleHeader';
+import { SiteFooter } from '@/components/layout/SiteFooter';
 import { createFanmarkBadgeStyle } from '@/lib/fanmarkBadge';
 
 interface FanmarkData {
@@ -236,21 +237,11 @@ export const FanmarkAccessByShortId = () => {
 
       return (
         <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex flex-col">
-          <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
-            <div className="container mx-auto flex items-center justify-between px-4 py-4 md:px-6">
-              <button
-                type="button"
-                onClick={() => navigate('/')}
-                className="group flex items-center gap-2 text-lg font-semibold text-foreground transition-transform hover:-translate-y-0.5"
-              >
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
-                  ✨
-                </span>
-                <BrandWordmark className="text-2xl" />
-              </button>
-              <LanguageToggle />
-            </div>
-          </header>
+          <SimpleHeader
+            className="sticky top-0 z-50 border-border/40 bg-background/80 backdrop-blur-xl"
+            showLanguageToggle={false}
+            rightSlot={<LanguageToggle />}
+          />
 
           <main className="container mx-auto flex-1 px-4 py-10 md:py-16 flex items-center justify-center">
             <Card className="w-full max-w-xl overflow-hidden border border-primary/20 bg-background/95 backdrop-blur shadow-[0_25px_60px_rgba(101,195,200,0.18)]">
@@ -274,15 +265,7 @@ export const FanmarkAccessByShortId = () => {
             </Card>
           </main>
 
-          <footer className="border-t border-border/40 bg-background/80 backdrop-blur">
-            <div className="container mx-auto flex flex-col items-center justify-center gap-3 px-4 py-10 text-center">
-              <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
-                <span className="text-3xl">✨</span>
-                <BrandWordmark />
-              </div>
-              <p className="text-xs text-muted-foreground">{t('sections.footer')}</p>
-            </div>
-          </footer>
+          <SiteFooter className="border-border/40 bg-background/80 backdrop-blur" />
         </div>
       );
     }

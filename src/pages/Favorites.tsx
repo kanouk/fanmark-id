@@ -1,7 +1,7 @@
 import { Navigate, useNavigate } from 'react-router-dom';
 import { formatInTimeZone } from 'date-fns-tz';
 import { ja, enUS } from 'date-fns/locale';
-import { Navigation } from '@/components/Navigation';
+import { AppHeader } from '@/components/layout/AppHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -74,7 +74,7 @@ const getAccessTypeLabel = (t: (key: string, ...args: any[]) => string, accessTy
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      <Navigation />
+      <AppHeader />
       <main className="flex-1">
         <div className="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
           <div className="space-y-3 text-center">

@@ -4,7 +4,7 @@
 
 | `event_type` | 主な用途 | 暴露タイミング | 必須 `payload` キー | 備考 |
 | --- | --- | --- | --- | --- |
-| `license_grace_started` | ライセンス猶予期間の開始通知 | `check-expired-licenses` バッチがアクティブ→グレースに遷移させた直後 | `user_id`, `fanmark_id`, `fanmark_name`, `license_end`, `grace_expires_at` | テンプレート `ライセンス猶予期間開始` を使用。 |
+| `license_grace_started` | ライセンス失効処理中の通知 | `check-expired-licenses` バッチがアクティブ→グレースに遷移させた直後 | `user_id`, `fanmark_id`, `fanmark_name`, `license_end`, `grace_expires_at` | テンプレート `ライセンス失効処理中` を使用。 |
 | `license_expired` | ライセンス失効通知 | `check-expired-licenses` バッチがグレース→失効へ遷移させた直後 | `user_id`, `fanmark_id`, `fanmark_name`, `expired_at`, `license_end` | テンプレート `ライセンス失効` を使用。 |
 | `favorite_fanmark_available` | お気に入り登録済みファンマが返却中であることを知らせ、再取得準備を促す | 返却系 Edge Function (`return-fanmark` / `bulk-return-fanmarks`) が処理完了後にお気に入りユーザーへイベント登録 | `user_id`, `fanmark_id`, `fanmark_name`, `fanmark_short_id`, `link` | テンプレート `お気に入りファンマが返却されました` を使用。`link` は `/f/{short_id}` を想定。返却実行者は対象外。 |
 | `manual_announcement` | 管理者による任意通知 | 管理 UI から登録 | 任意（テンプレートが参照するキー） | 配信対象セグメントはルールの `segment_filter` で制御。 |

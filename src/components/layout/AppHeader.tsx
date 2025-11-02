@@ -1,22 +1,50 @@
+import { ReactNode, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
-import { LanguageToggle } from '@/components/LanguageToggle';
-import { BrandWordmark } from '@/components/BrandWordmark';
-import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Heart, LogOut, User, Bell } from 'lucide-react';
-import { MdSpaceDashboard } from 'react-icons/md';
 import { useUnreadNotifications } from '@/hooks/useUnreadNotifications';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { useEffect } from 'react';
+import { BrandWordmark } from '@/components/BrandWordmark';
+import { LanguageToggle } from '@/components/LanguageToggle';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Heart, LogOut, User, Bell } from 'lucide-react';
+import { MdSpaceDashboard } from 'react-icons/md';
+import { cn } from '@/lib/utils';
 
-export const Navigation = () => {
+type AppHeaderProps = {
+  className?: string;
+  containerClassName?: string;
+  showLanguageToggle?: boolean;
+  showNotifications?: boolean;
+  showUserMenu?: boolean;
+  showAuthButton?: boolean;
+  rightSlot?: ReactNode;
+  leftSlot?: ReactNode;
+};
+
+export const AppHeader = ({
+  className,
+  containerClassName,
+  showLanguageToggle = true,
+  showNotifications = true,
+  showUserMenu = true,
+  showAuthButton = true,
+  rightSlot,
+  leftSlot,
+}: AppHeaderProps) => {
   const { user, signOut, signingOut } = useAuth();
   const { profile } = useProfile();
   const { t } = useTranslation();
@@ -25,9 +53,10 @@ export const Navigation = () => {
   const queryClient = useQueryClient();
   const { data: unreadCount = 0 } = useUnreadNotifications();
   const locale = ja;
+
   const { data: recentNotifications = [], isLoading: notificationsLoading } = useQuery({
     queryKey: ['notifications-preview', user?.id],
-    enabled: !!user,
+    enabled: !!user && showNotifications,
     staleTime: 30_000,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -47,7 +76,7 @@ export const Navigation = () => {
   });
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !showNotifications) return;
 
     const channel = supabase
       .channel(`notifications-preview-${user.id}`)
@@ -69,7 +98,7 @@ export const Navigation = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, queryClient]);
+  }, [user, queryClient, showNotifications]);
 
   const handleLogout = async () => {
     try {
@@ -90,24 +119,28 @@ export const Navigation = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
-      <div className="container mx-auto flex items-center justify-between px-4 py-4 md:px-6">
-        <button
-          type="button"
-          onClick={() => navigate('/')}
-          className="group flex items-center gap-2 text-lg font-semibold text-foreground transition-transform hover:translate-y-[-1px]"
-        >
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
-            ✨
-          </span>
-          <BrandWordmark className="text-2xl" />
-        </button>
+    <header className={cn('sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl', className)}>
+      <div className={cn('container mx-auto flex items-center justify-between px-4 py-4 md:px-6', containerClassName)}>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="group flex items-center gap-2 text-lg font-semibold text-foreground transition-transform hover:translate-y-[-1px]"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
+              ✨
+            </span>
+            <BrandWordmark className="text-2xl" />
+          </button>
+          {leftSlot}
+        </div>
 
         <nav className="hidden items-center gap-8 text-sm font-medium text-muted-foreground md:flex" />
 
         <div className="flex items-center gap-2">
-          <LanguageToggle />
-          {user && (
+          {showLanguageToggle && <LanguageToggle />}
+
+          {showNotifications && user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -174,10 +207,10 @@ export const Navigation = () => {
                             </p>
                           )}
                           <p className="mt-2 text-[11px] text-muted-foreground">
-                              {formatDistanceToNow(new Date(notification.triggered_at), {
-                                addSuffix: true,
-                                locale,
-                              })}
+                            {formatDistanceToNow(new Date(notification.triggered_at), {
+                              addSuffix: true,
+                              locale,
+                            })}
                             {!notification.read_at && (
                               <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
                                 {t('notifications.unreadBadge')}
@@ -202,7 +235,8 @@ export const Navigation = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-          {user ? (
+
+          {showUserMenu && user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -219,9 +253,7 @@ export const Navigation = () => {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                  {user.email}
-                </div>
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">{user.email}</div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onSelect={(event) => {
@@ -266,7 +298,11 @@ export const Navigation = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : (
+          )}
+
+          {rightSlot}
+
+          {!user && showAuthButton && (
             <Button asChild variant="default" size="sm">
               <Link to="/auth">{t('auth.login')}</Link>
             </Button>
@@ -276,3 +312,4 @@ export const Navigation = () => {
     </header>
   );
 };
+

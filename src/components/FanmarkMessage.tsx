@@ -2,11 +2,10 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Copy, Share } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
 import { toast } from '@/hooks/use-toast';
-import { LanguageToggle } from '@/components/LanguageToggle';
-import { BrandWordmark } from '@/components/BrandWordmark';
+import { SimpleHeader } from '@/components/layout/SimpleHeader';
+import { SiteFooter } from '@/components/layout/SiteFooter';
 import { getFanmarkUrlForClipboard } from '@/utils/emojiUrl';
 
 interface FanmarkData {
@@ -25,7 +24,6 @@ interface FanmarkMessageProps {
 }
 
 export const FanmarkMessage = ({ fanmark }: FanmarkMessageProps) => {
-  const navigate = useNavigate();
   const { t } = useTranslation();
 
   const message = fanmark.text_content || 'メッセージがありません';
@@ -79,23 +77,7 @@ export const FanmarkMessage = ({ fanmark }: FanmarkMessageProps) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      {/* Header Navigation */}
-      <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto flex items-center justify-between px-4 py-4 md:px-6">
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="group flex items-center gap-2 text-lg font-semibold text-foreground transition-transform hover:translate-y-[-1px]"
-          >
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
-              ✨
-            </span>
-            <BrandWordmark className="text-2xl" />
-          </button>
-
-          <LanguageToggle />
-        </div>
-      </header>
+      <SimpleHeader className="sticky top-0 z-50 border-border/40 bg-background/80 backdrop-blur-xl" />
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto space-y-10">
@@ -131,15 +113,7 @@ export const FanmarkMessage = ({ fanmark }: FanmarkMessageProps) => {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="border-t border-border/40 bg-background/80 backdrop-blur mt-16">
-        <div className="container mx-auto px-4 py-10 text-center space-y-3">
-          <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
-            <span className="text-3xl">✨</span> <BrandWordmark />
-          </div>
-          <p className="text-sm text-muted-foreground">{t('sections.footer')}</p>
-        </div>
-      </footer>
+      <SiteFooter className="mt-16 border-border/40 bg-background/80 backdrop-blur" />
     </div>
   );
 };

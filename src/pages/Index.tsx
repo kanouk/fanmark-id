@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "@/hooks/useTranslation";
-import { Navigation } from "@/components/Navigation";
-import { BrandWordmark } from '@/components/BrandWordmark';
+import { AppHeader } from '@/components/layout/AppHeader';
+import { SiteFooter } from '@/components/layout/SiteFooter';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -167,7 +167,7 @@ const Index = () => {
   }, [prefilledEmoji]);
 
   return <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      <Navigation />
+      <AppHeader />
 
       {/* Hero Section */}
       <section
@@ -310,14 +310,7 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/40 bg-background/80 backdrop-blur">
-        <div className="container mx-auto px-4 py-10 text-center space-y-3">
-          <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
-            <span className="text-3xl">✨</span> <BrandWordmark />
-          </div>
-          <p className="text-sm text-muted-foreground">{t('sections.footer')}</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>;
 };
 export default Index;

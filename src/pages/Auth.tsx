@@ -4,8 +4,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAuthForm } from '@/hooks/useAuthForm';
 import { usePasswordValidation } from '@/hooks/usePasswordValidation';
 import { useTranslation } from '@/hooks/useTranslation';
-import { LanguageToggle } from '@/components/LanguageToggle';
-import { BrandWordmark } from '@/components/BrandWordmark';
 import { InvitationSystem } from '@/components/InvitationSystem';
 import { Button } from '@/components/ui/button';
 import { AuthLayout } from '@/components/AuthLayout';
@@ -18,6 +16,8 @@ import { FaGoogle, FaApple, FaDiscord, FaGithub } from 'react-icons/fa';
 import { AuthFormData, AuthState } from '@/types/auth';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { PasswordRequirement as PasswordRequirementType } from '@/lib/password-validation';
+import { SimpleHeader } from '@/components/layout/SimpleHeader';
+import { SiteFooter } from '@/components/layout/SiteFooter';
 
 const Auth = () => {
   const { user, session } = useAuth();
@@ -60,7 +60,7 @@ const Auth = () => {
   if (authState.awaitingConfirmation) {
     return (
       <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-        <div className="flex flex-1 items-center justify-center px-4 py-16">
+      <div className="flex flex-1 items-center justify-center px-4 py-16">
           <AuthLayout
             title={t('auth.awaitingConfirmation')}
             description={t('auth.checkEmail')}
@@ -107,42 +107,21 @@ const Auth = () => {
             </div>
           </AuthLayout>
         </div>
-        <footer className="border-t border-border/40 bg-background/80 backdrop-blur">
-          <div className="container mx-auto px-4 py-10 text-center space-y-3">
-            <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
-              <span className="text-3xl">✨</span> <BrandWordmark />
-            </div>
-            <p className="text-sm text-muted-foreground">{t('sections.footer')}</p>
-          </div>
-        </footer>
+      <SiteFooter />
       </div>
     );
   }
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      <header className="border-b border-border/40 bg-background/80 backdrop-blur">
-        <div className="container mx-auto flex items-center justify-between px-4 py-4 md:px-6">
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="group flex items-center gap-2 text-lg font-semibold text-foreground transition-transform hover:translate-y-[-1px]"
-          >
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
-              ✨
-            </span>
-            <BrandWordmark className="text-2xl" />
-          </button>
-          <LanguageToggle />
-        </div>
-      </header>
+    <SimpleHeader />
       <div className="flex flex-1 items-start justify-center px-4 py-14 md:py-20">
         <div className="w-full max-w-4xl space-y-10">
-          <div className="space-y-4 text-center md:text-left">
+          <div className="space-y-4 text-center">
             <h1 className="text-3xl font-bold text-foreground sm:text-4xl">
               {t('auth.pageTitle')}
             </h1>
-            <p className="mx-auto max-w-2xl text-sm text-muted-foreground md:mx-0 md:text-base">
+            <p className="mx-auto max-w-2xl text-sm text-muted-foreground md:text-base">
               {t('auth.pageDescription')}
             </p>
           </div>
@@ -219,15 +198,8 @@ const Auth = () => {
             </div>
           </div>
         </div>
-      </div>
-      <div className="border-t border-border/40 bg-background/80 backdrop-blur">
-        <div className="container mx-auto px-4 py-10 text-center space-y-3">
-          <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
-            <span className="text-3xl">✨</span> <BrandWordmark />
-          </div>
-          <p className="text-sm text-muted-foreground">{t('sections.footer')}</p>
-        </div>
-      </div>
+    </div>
+    <SiteFooter />
     </div>
   );
 };

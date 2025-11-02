@@ -1,13 +1,11 @@
 import { FanmarkDashboard } from '@/components/FanmarkDashboard';
-import { Navigation } from '@/components/Navigation';
-import { BrandWordmark } from '@/components/BrandWordmark';
+import { AppHeader } from '@/components/layout/AppHeader';
+import { SiteFooter } from '@/components/layout/SiteFooter';
 import { useAuth } from '@/hooks/useAuth';
-import { useTranslation } from '@/hooks/useTranslation';
 import { Navigate } from 'react-router-dom';
 
 export default function Dashboard() {
   const { user, loading } = useAuth();
-  const { t } = useTranslation();
 
   if (loading) {
     return (
@@ -23,18 +21,11 @@ export default function Dashboard() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      <Navigation />
+      <AppHeader />
       <main className="flex-1">
         <FanmarkDashboard />
       </main>
-      <footer className="border-t border-border/40 bg-background/80 backdrop-blur">
-        <div className="container mx-auto px-4 py-10 text-center space-y-3">
-          <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
-            <span className="text-3xl">✨</span> <BrandWordmark />
-          </div>
-          <p className="text-sm text-muted-foreground">{t('sections.footer')}</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

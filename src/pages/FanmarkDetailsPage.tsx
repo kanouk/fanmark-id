@@ -6,8 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
-import { Navigation } from '@/components/Navigation';
-import { BrandWordmark } from '@/components/BrandWordmark';
+import { AppHeader } from '@/components/layout/AppHeader';
+import { SiteFooter } from '@/components/layout/SiteFooter';
 import { Heart, Calendar, User, Clock, ExternalLink, History, AlertTriangle, Info, Search } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ja, enUS } from 'date-fns/locale';
@@ -142,7 +142,7 @@ export default function FanmarkDetailsPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-background via-background to-muted/40">
-      <Navigation />
+      <AppHeader />
       <main className="flex-1">
         <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
           <section className="relative p-6 pb-6 pt-16 text-center sm:px-10 sm:pb-10 sm:pt-20">
@@ -302,14 +302,7 @@ export default function FanmarkDetailsPage() {
           </section>
         </div>
       </main>
-      <footer className="border-t border-border/40 bg-background/80 backdrop-blur">
-        <div className="container mx-auto px-4 py-10 text-center space-y-3">
-          <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
-            <span className="text-3xl">✨</span> <BrandWordmark />
-          </div>
-          <p className="text-sm text-muted-foreground">{t('sections.footer')}</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

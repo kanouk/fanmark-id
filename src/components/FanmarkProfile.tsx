@@ -5,8 +5,8 @@ import { Loader2, ExternalLink, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
 import { getPublicEmojiProfile, type PublicEmojiProfile } from '@/hooks/useEmojiProfile';
-import { LanguageToggle } from '@/components/LanguageToggle';
-import { BrandWordmark } from '@/components/BrandWordmark';
+import { SimpleHeader } from '@/components/layout/SimpleHeader';
+import { SiteFooter } from '@/components/layout/SiteFooter';
 import {
   FiInstagram,
   FiGithub,
@@ -141,22 +141,7 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
   if (!emojiProfile) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex flex-col">
-        {/* Header Navigation */}
-        <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
-          <div className="container mx-auto flex items-center justify-between px-4 py-4 md:px-6">
-            <button
-              type="button"
-              onClick={() => navigate('/')}
-              className="group flex items-center gap-2 text-lg font-semibold text-foreground transition-transform hover:translate-y-[-1px]"
-            >
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
-                ✨
-              </span>
-              <BrandWordmark className="text-2xl" />
-            </button>
-            <LanguageToggle />
-          </div>
-        </header>
+        <SimpleHeader className="sticky top-0 z-50 border-border/40 bg-background/80 backdrop-blur-xl" />
 
         <div className="container mx-auto px-4 py-8 flex-1 flex items-center justify-center">
           <Card className="w-96">
@@ -177,6 +162,7 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
             </CardContent>
           </Card>
         </div>
+        <SiteFooter />
       </div>
     );
   }
@@ -193,23 +179,7 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex flex-col">
-      {/* Header Navigation */}
-      <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto flex items-center justify-between px-4 py-4 md:px-6">
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="group flex items-center gap-2 text-lg font-semibold text-foreground transition-transform hover:translate-y-[-1px]"
-          >
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
-              ✨
-            </span>
-            <BrandWordmark className="text-2xl" />
-          </button>
-
-          <LanguageToggle />
-        </div>
-      </header>
+      <SimpleHeader className="sticky top-0 z-50 border-border/40 bg-background/80 backdrop-blur-xl" />
 
       <div className="container mx-auto px-4 py-8 flex-1">
         <div className="max-w-4xl mx-auto space-y-10">
@@ -335,14 +305,7 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-border/40 bg-background/80 backdrop-blur">
-        <div className="container mx-auto px-4 py-10 text-center space-y-3">
-          <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
-            <span className="text-3xl">✨</span> <BrandWordmark />
-          </div>
-          <p className="text-sm text-muted-foreground">{t('sections.footer')}</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 };

@@ -1,14 +1,14 @@
 import { usePasswordReset } from "@/hooks/usePasswordReset";
 import { usePasswordValidation } from "@/hooks/usePasswordValidation";
 import { useTranslation } from "@/hooks/useTranslation";
-import { LanguageToggle } from "@/components/LanguageToggle";
-import { BrandWordmark } from '@/components/BrandWordmark';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthLayout } from "@/components/AuthLayout";
 import { PasswordRequirement } from "@/components/PasswordRequirement";
 import { Sparkles, Lock, ShieldCheck, Check, X } from "lucide-react";
+import { SimpleHeader } from '@/components/layout/SimpleHeader';
+import { SiteFooter } from '@/components/layout/SiteFooter';
 
 const InputStatusIcon = ({ status }: { status: boolean | null }) => {
   if (status === null) return null;
@@ -22,8 +22,6 @@ const InputStatusIcon = ({ status }: { status: boolean | null }) => {
     </span>
   );
 };
-import { useNavigate } from "react-router-dom";
-
 const ResetPassword = () => {
   const {
     password,
@@ -37,7 +35,6 @@ const ResetPassword = () => {
 
   const { requirements, isValid } = usePasswordValidation(password);
   const { t } = useTranslation();
-  const navigate = useNavigate();
 
   const passwordStatus = password ? isValid : null;
   const confirmStatus = confirmPassword
@@ -117,21 +114,7 @@ const ResetPassword = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur">
-        <div className="container mx-auto flex items-center justify-between px-4 py-4 md:px-6">
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="group flex items-center gap-2 text-lg font-semibold text-foreground transition-transform hover:translate-y-[-1px]"
-          >
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
-              ✨
-            </span>
-            <BrandWordmark className="text-2xl" />
-          </button>
-          <LanguageToggle />
-        </div>
-      </header>
+      <SimpleHeader className="sticky top-0 z-50 border-border/40 bg-background/80 backdrop-blur" />
 
       <div className="flex flex-1 items-center justify-center px-4 py-16">
         <div className="w-full max-w-3xl space-y-10">
@@ -163,14 +146,7 @@ const ResetPassword = () => {
         </div>
       </div>
 
-      <footer className="border-t border-border/40 bg-background/80 backdrop-blur">
-        <div className="container mx-auto px-4 py-10 text-center space-y-3">
-          <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
-            <span className="text-3xl">✨</span> <BrandWordmark />
-          </div>
-          <p className="text-sm text-muted-foreground">{t('sections.footer')}</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 };

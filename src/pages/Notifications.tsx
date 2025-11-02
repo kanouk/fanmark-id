@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/integrations/supabase/client';
-import { Navigation } from '@/components/Navigation';
+import { AppHeader } from '@/components/layout/AppHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,49 @@ export default function Notifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
+
+  const formatDeadline = useCallback((iso: string | undefined | null) => {
+    if (!iso) return null;
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) {
+      return null;
+    }
+
+    return new Intl.DateTimeFormat(undefined, {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).format(date);
+  }, []);
+
+  const formatNotificationContent = useCallback(
+    (notification: Notification) => {
+      const metadata = notification?.payload?.metadata ?? {};
+      const fanmark = metadata.fanmark_name || metadata.fanmark || '—';
+
+      if (metadata.grace_expires_at) {
+        const deadline = formatDeadline(metadata.grace_expires_at);
+
+        return {
+          title: t('notifications.graceProcessingTitle'),
+          body: deadline
+            ? t('notifications.graceProcessingBodyWithDeadline', { fanmark, deadline })
+            : t('notifications.graceProcessingBody', { fanmark }),
+          summary: t('notifications.graceProcessingSummary'),
+        };
+      }
+
+      return {
+        title: notification?.payload?.title ?? t('notifications.fallbackTitle'),
+        body: notification?.payload?.body ?? '',
+        summary: notification?.payload?.summary ?? null,
+      };
+    },
+    [formatDeadline, t],
+  );
 
   useEffect(() => {
     if (!user) return;
@@ -100,7 +143,7 @@ export default function Notifications() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      <Navigation />
+      <AppHeader />
       <main className="flex-1">
         <div className="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
           <div className="space-y-3 text-center">
@@ -150,6 +193,7 @@ export default function Notifications() {
           ) : (
             <div className="mt-10 space-y-6">
               {notifications.map((notification) => {
+                const { title, body, summary } = formatNotificationContent(notification);
                 const isUnread = !notification.read_at;
                 const linkTarget: string | null =
                   notification.payload?.link ??
@@ -174,7 +218,7 @@ export default function Notifications() {
                         <div className="space-y-2">
                           <div className="flex flex-wrap items-center gap-2">
                             <h2 className="text-base font-semibold text-foreground">
-                              {notification.payload.title || t('notifications.fallbackTitle')}
+                              {title || t('notifications.fallbackTitle')}
                             </h2>
                             <span className="text-xs text-muted-foreground">
                               {formatDistanceToNow(new Date(notification.triggered_at), {
@@ -183,12 +227,14 @@ export default function Notifications() {
                               })}
                             </span>
                           </div>
-                          <p className="text-sm leading-relaxed text-muted-foreground">
-                            {notification.payload.body}
-                          </p>
-                          {notification.payload.summary && (
+                          {body && (
+                            <p className="text-sm leading-relaxed text-muted-foreground">
+                              {body}
+                            </p>
+                          )}
+                          {summary && (
                             <p className="text-xs text-muted-foreground/80">
-                              {notification.payload.summary}
+                              {summary}
                             </p>
                           )}
                           <div className="flex flex-wrap items-center gap-2">

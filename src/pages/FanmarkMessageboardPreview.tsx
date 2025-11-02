@@ -6,7 +6,8 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAuth } from '@/hooks/useAuth';
 import { LanguageToggle } from '@/components/LanguageToggle';
-import { BrandWordmark } from '@/components/BrandWordmark';
+import { SimpleHeader } from '@/components/layout/SimpleHeader';
+import { SiteFooter } from '@/components/layout/SiteFooter';
 import { supabase } from '@/integrations/supabase/client';
 import { resolveFanmarkDisplay } from '@/lib/emojiConversion';
 
@@ -139,29 +140,18 @@ export default function FanmarkMessageboardPreview() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      {/* Header Navigation */}
-      <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto flex items-center justify-between px-4 py-4 md:px-6">
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="group flex items-center gap-2 text-lg font-semibold text-foreground transition-transform hover:translate-y-[-1px]"
-          >
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
-              ✨
-            </span>
-            <BrandWordmark className="text-2xl" />
-          </button>
-
+      <SimpleHeader
+        className="sticky top-0 z-50 border-border/40 bg-background/80 backdrop-blur-xl"
+        showLanguageToggle={false}
+        rightSlot={
           <div className="flex items-center gap-4">
             <Button
               variant="outline"
               onClick={() => {
-                // 編集状態を復元するために state を渡して戻る
                 navigate(`/fanmarks/${fanmarkId}/settings`, {
                   state: {
-                    restoreEditingState: locationState?.editingState
-                  }
+                    restoreEditingState: locationState?.editingState,
+                  },
                 });
               }}
               className="flex items-center gap-2 rounded-full"
@@ -171,8 +161,8 @@ export default function FanmarkMessageboardPreview() {
             </Button>
             <LanguageToggle />
           </div>
-        </div>
-      </header>
+        }
+      />
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto space-y-10">
@@ -208,15 +198,7 @@ export default function FanmarkMessageboardPreview() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="border-t border-border/40 bg-background/80 backdrop-blur mt-16">
-        <div className="container mx-auto px-4 py-10 text-center space-y-3">
-          <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
-            <span className="text-3xl">✨</span> <BrandWordmark />
-          </div>
-          <p className="text-sm text-muted-foreground">{t('sections.footer')}</p>
-        </div>
-      </footer>
+      <SiteFooter className="mt-16 border-border/40 bg-background/80 backdrop-blur" />
     </div>
   );
 }

@@ -5,7 +5,8 @@ import { useProfile } from '@/hooks/useProfile';
 import { useTranslation } from '@/hooks/useTranslation';
 import { UserProfileForm } from '@/components/UserProfileForm';
 import { LanguageToggle } from '@/components/LanguageToggle';
-import { BrandWordmark } from '@/components/BrandWordmark';
+import { AppHeader } from '@/components/layout/AppHeader';
+import { SiteFooter } from '@/components/layout/SiteFooter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -303,75 +304,71 @@ const Profile = () => {
     }
   };
 
+  const headerRight = (
+    <div className="flex items-center gap-3">
+      <LanguageToggle />
+      {user && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-primary/20 bg-white p-0 text-foreground shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-transform hover:-translate-y-0.5 hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              aria-label={t('navigation.userMenu')}
+            >
+              <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-primary/10">
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="Avatar" className="absolute inset-0 h-full w-full object-cover" />
+                ) : (
+                  <User className="h-4 w-4 text-primary" />
+                )}
+              </div>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <div className="px-2 py-1.5 text-xs text-muted-foreground">{user.email}</div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault();
+                navigate('/dashboard');
+              }}
+              className="cursor-pointer"
+            >
+              <MdSpaceDashboard className="mr-2 h-4 w-4" />
+              {t('navigation.dashboard')}
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled className="cursor-pointer">
+              <User className="mr-2 h-4 w-4" />
+              {t('navigation.profile')}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault();
+                handleLogout();
+              }}
+              className="cursor-pointer"
+              disabled={signingOut}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              {signingOut ? t('userSettings.saving') : t('navigation.logout')}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+    </div>
+  );
+
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      <header className="sticky top-0 z-50 border-b border-border/30 bg-white/80 backdrop-blur-xl">
-        <div className="container mx-auto flex items-center justify-between px-4 py-4 md:px-6">
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="group flex items-center gap-2 text-lg font-semibold text-foreground transition-transform hover:translate-y-[-1px]"
-          >
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
-              ✨
-            </span>
-            <BrandWordmark className="text-2xl" />
-          </button>
-
-          <div className="flex items-center gap-3">
-            <LanguageToggle />
-            {user && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="flex h-10 w-10 items-center justify-center rounded-full border border-primary/20 bg-white p-0 text-foreground shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-transform hover:-translate-y-0.5 hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                    aria-label={t('navigation.userMenu')}
-                  >
-                    <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-primary/10">
-                      {profile?.avatar_url ? (
-                        <img src={profile.avatar_url} alt="Avatar" className="absolute inset-0 h-full w-full object-cover" />
-                      ) : (
-                        <User className="h-4 w-4 text-primary" />
-                      )}
-                    </div>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-2 py-1.5 text-xs text-muted-foreground">{user.email}</div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onSelect={(event) => {
-                      event.preventDefault();
-                      navigate('/dashboard');
-                    }}
-                    className="cursor-pointer"
-                  >
-                    <MdSpaceDashboard className="mr-2 h-4 w-4" />
-                    {t('navigation.dashboard')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem disabled className="cursor-pointer">
-                    <User className="mr-2 h-4 w-4" />
-                    {t('navigation.profile')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onSelect={(event) => {
-                      event.preventDefault();
-                      handleLogout();
-                    }}
-                    className="cursor-pointer"
-                    disabled={signingOut}
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    {signingOut ? t('userSettings.saving') : t('navigation.logout')}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
-        </div>
-      </header>
+      <AppHeader
+        className="border-border/30 bg-white/80"
+        showNotifications={false}
+        showUserMenu={false}
+        showAuthButton={false}
+        showLanguageToggle={false}
+        rightSlot={headerRight}
+      />
 
       <main className="flex-1">
         <div className="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
@@ -434,14 +431,7 @@ const Profile = () => {
         </div>
       </main>
 
-      <footer className="border-t border-primary/20 bg-white/80 backdrop-blur">
-        <div className="container mx-auto space-y-3 px-4 py-10 text-center">
-          <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
-            <span className="text-3xl">✨</span> <BrandWordmark />
-          </div>
-          <p className="text-sm text-muted-foreground">{t('common.footer')}</p>
-        </div>
-      </footer>
+      <SiteFooter className="border-primary/20 bg-white/80 backdrop-blur" />
     </div>
   );
 };

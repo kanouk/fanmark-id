@@ -138,7 +138,7 @@
     "homeButton": "Back to Home",
     "welcome": "Welcome to Fanmark",
     "description": "Join our community and claim your unique emoji combinations!",
-    "pageTitle": "Join fanmark.id",
+    "pageTitle": "Join Fanmark",
     "pageDescription": "Sign in or create a new account to get your own fanmark!"
   },
   "password": {
@@ -214,6 +214,11 @@
         "title": "✨ With fanmark",
         "benefits": "Unforgettable\nEasy to say\nShareable!"
       }
+    }
+  },
+  "layout": {
+    "footer": {
+      "description": "© 2025 fanmark.id All rights reserved."
     }
   },
   "common": {
@@ -1043,7 +1048,11 @@
     "ariaLabel": "Notifications menu",
     "toastFetchError": "Couldn't load notifications",
     "toastMarkReadError": "Failed to mark as read",
-    "toastMarkReadSuccess": "Marked as read"
+    "toastMarkReadSuccess": "Marked as read",
+    "graceProcessingTitle": "License Processing",
+    "graceProcessingBodyWithDeadline": "Your fanmark \"{{fanmark}}\" license is now processing for expiration. Renew by {{deadline}}.",
+    "graceProcessingBody": "Your fanmark \"{{fanmark}}\" license is now processing for expiration. Please review the renewal deadline.",
+    "graceProcessingSummary": "License renewal required"
   },
   "languageToggle": {
     "errorTitle": "Unable to switch language",

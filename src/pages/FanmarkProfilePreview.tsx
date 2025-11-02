@@ -7,7 +7,8 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/integrations/supabase/client';
 import { getOwnerEmojiProfile, type EmojiProfile } from '@/hooks/useEmojiProfile';
 import { LanguageToggle } from '@/components/LanguageToggle';
-import { BrandWordmark } from '@/components/BrandWordmark';
+import { SimpleHeader } from '@/components/layout/SimpleHeader';
+import { SiteFooter } from '@/components/layout/SiteFooter';
 import {
   FiInstagram,
   FiGithub,
@@ -190,25 +191,15 @@ export default function FanmarkProfilePreview() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex flex-col">
-      {/* Header with Close and Edit buttons */}
-      <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto flex items-center justify-between px-4 py-4 md:px-6">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => navigate('/')}
-              className="group flex items-center gap-2 text-lg font-semibold text-foreground transition-transform hover:translate-y-[-1px]"
-            >
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
-                ✨
-              </span>
-              <BrandWordmark className="text-2xl" />
-            </button>
-            <div className="ml-4 px-3 py-1 bg-primary/10 text-primary text-sm font-medium rounded-full">
-              プレビュー
-            </div>
+      <SimpleHeader
+        className="sticky top-0 z-50 border-border/40 bg-background/80 backdrop-blur-xl"
+        showLanguageToggle={false}
+        leftSlot={
+          <div className="ml-4 px-3 py-1 bg-primary/10 text-primary text-sm font-medium rounded-full">
+            プレビュー
           </div>
-
+        }
+        rightSlot={
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -217,7 +208,7 @@ export default function FanmarkProfilePreview() {
               className="gap-2"
             >
               <Edit className="h-4 w-4" />
-{t('emojiProfile.backToEdit')}
+              {t('emojiProfile.backToEdit')}
             </Button>
             <LanguageToggle />
             <Button
@@ -230,8 +221,8 @@ export default function FanmarkProfilePreview() {
               <X className="h-4 w-4" />
             </Button>
           </div>
-        </div>
-      </header>
+        }
+      />
 
       <div className="container mx-auto px-4 py-8 flex-1">
         <div className="max-w-4xl mx-auto space-y-10">
@@ -349,15 +340,7 @@ export default function FanmarkProfilePreview() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="border-t border-border/40 bg-background/80 backdrop-blur">
-        <div className="container mx-auto px-4 py-10 text-center space-y-3">
-          <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
-            <span className="text-3xl">✨</span> <BrandWordmark />
-          </div>
-          <p className="text-sm text-muted-foreground">{t('sections.footer')}</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
