@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { getPendingInvitationCode, clearPendingInvitationCode } from '@/lib/oauth-invitation-helpers';
 
 interface AuthContextType {
   user: User | null;
@@ -41,6 +42,52 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setUser(user);
         setEmailConfirmed(confirmed);
         setLoading(false);
+        
+        // Handle pending invitation code for OAuth sign-ups
+        if (event === 'SIGNED_IN' && session?.user) {
+          const pendingInvitationCode = getPendingInvitationCode();
+          if (pendingInvitationCode) {
+            // Use setTimeout to defer Supabase calls and prevent deadlock
+            setTimeout(async () => {
+              try {
+                // Check if this is a new user (no user_settings yet or no invited_by_code)
+                const { data: existingSettings, error: checkError } = await supabase
+                  .from('user_settings')
+                  .select('id, invited_by_code')
+                  .eq('user_id', session.user.id)
+                  .maybeSingle();
+                
+                if (checkError) {
+                  console.error('Error checking user settings:', checkError);
+                } else if (existingSettings && !existingSettings.invited_by_code) {
+                  // New user without invitation code - consume it
+                  const { error: consumeError } = await supabase.rpc('use_invitation_code', {
+                    code_to_use: pendingInvitationCode
+                  });
+                  
+                  if (consumeError) {
+                    console.error('Error consuming invitation code:', consumeError);
+                  } else {
+                    // Update user_settings with invitation code
+                    const { error: updateError } = await supabase
+                      .from('user_settings')
+                      .update({ invited_by_code: pendingInvitationCode })
+                      .eq('user_id', session.user.id);
+                    
+                    if (updateError) {
+                      console.error('Error updating user settings with invitation code:', updateError);
+                    }
+                  }
+                }
+              } catch (error) {
+                console.error('Error processing pending invitation code:', error);
+              } finally {
+                // Always clear the pending code
+                clearPendingInvitationCode();
+              }
+            }, 0);
+          }
+        }
       }
     );
 

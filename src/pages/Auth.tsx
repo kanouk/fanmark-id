@@ -24,7 +24,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
-  const { formData, authState, updateFormData, signUp, signIn, signInWithGoogle, resendConfirmation } = useAuthForm();
+  const { formData, authState, updateFormData, signUp, signIn, signInWithGoogle, signInWithGithub, resendConfirmation } = useAuthForm();
   const { requirements, isValid } = usePasswordValidation(formData.password);
   const { settings, loading: settingsLoading } = useSystemSettings();
   const invitationGateActive = !settingsLoading && settings.invitation_mode;
@@ -153,6 +153,7 @@ const Auth = () => {
                     updateFormData={updateFormData}
                     signIn={signIn}
                     signInWithGoogle={signInWithGoogle}
+                    signInWithGithub={signInWithGithub}
                     t={t}
                   />
                 </TabsContent>
@@ -184,6 +185,7 @@ const Auth = () => {
                         updateFormData={updateFormData}
                         signUp={signUp}
                         signInWithGoogle={signInWithGoogle}
+                        signInWithGithub={signInWithGithub}
                         requirements={requirements}
                         isValid={isValid}
                         t={t}
@@ -227,11 +229,12 @@ interface LoginFormProps {
   authState: AuthState;
   updateFormData: (field: keyof AuthFormData, value: string) => void;
   signIn: () => void;
-  signInWithGoogle: () => void;
+  signInWithGoogle: (invitationCode?: string | null) => void;
+  signInWithGithub: (invitationCode?: string | null) => void;
   t: (key: string) => string;
 }
 
-const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoogle, t }: LoginFormProps) => {
+const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoogle, signInWithGithub, t }: LoginFormProps) => {
   const emailStatus = formData.email ? EMAIL_REGEX.test(formData.email) : null;
   const passwordStatus = formData.password ? formData.password.length > 0 : null;
   const socialButtons = [
@@ -239,7 +242,7 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoog
       key: 'google',
       label: t('auth.signInWithGoogle'),
       Icon: FaGoogle,
-      onClick: signInWithGoogle,
+      onClick: () => signInWithGoogle(null),
       disabled: authState.loading,
     },
     {
@@ -260,7 +263,7 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoog
       key: 'github',
       label: t('auth.signInWithGithub'),
       Icon: FaGithub,
-      onClick: () => {},
+      onClick: () => signInWithGithub(null),
       disabled: authState.loading,
     },
   ] as const;
@@ -376,7 +379,8 @@ interface SignUpFormProps {
   authState: AuthState;
   updateFormData: (field: keyof AuthFormData, value: string) => void;
   signUp: (options?: { invitationCode?: string | null; invitationRequired?: boolean }) => void;
-  signInWithGoogle: () => void;
+  signInWithGoogle: (invitationCode?: string | null) => void;
+  signInWithGithub: (invitationCode?: string | null) => void;
   requirements: PasswordRequirementType[];
   isValid: boolean;
   t: (key: string) => string;
@@ -391,6 +395,7 @@ const SignUpForm = ({
   updateFormData,
   signUp,
   signInWithGoogle,
+  signInWithGithub,
   requirements,
   isValid,
   t,
@@ -414,7 +419,7 @@ const SignUpForm = ({
       key: 'google',
       label: t('auth.signInWithGoogle'),
       Icon: FaGoogle,
-      onClick: signInWithGoogle,
+      onClick: () => signInWithGoogle(validatedInvitationCode),
       disabled: authState.loading || invitationDisabled,
     },
     {
@@ -435,7 +440,7 @@ const SignUpForm = ({
       key: 'github',
       label: t('auth.signInWithGithub'),
       Icon: FaGithub,
-      onClick: () => {},
+      onClick: () => signInWithGithub(validatedInvitationCode),
       disabled: authState.loading || invitationDisabled,
     },
   ] as const;

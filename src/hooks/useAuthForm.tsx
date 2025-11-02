@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthFormData, AuthState } from '@/types/auth';
+import { saveInvitationCodeForOAuth, clearPendingInvitationCode } from '@/lib/oauth-invitation-helpers';
 
 interface CheckEmailExistsResponse {
   exists: boolean;
@@ -251,9 +252,12 @@ export const useAuthForm = () => {
     }
   };
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (invitationCode?: string | null) => {
     setLoading(true);
     setError('');
+    
+    // Save invitation code to localStorage before OAuth redirect
+    saveInvitationCodeForOAuth(invitationCode);
 
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -267,6 +271,34 @@ export const useAuthForm = () => {
     } catch (error) {
       const message = error instanceof Error ? error.message : undefined;
       setError(message || 'Googleログインに失敗しました');
+      // Clear invitation code on error
+      clearPendingInvitationCode();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signInWithGithub = async (invitationCode?: string | null) => {
+    setLoading(true);
+    setError('');
+    
+    // Save invitation code to localStorage before OAuth redirect
+    saveInvitationCodeForOAuth(invitationCode);
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: `${window.location.origin}/`
+        }
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : undefined;
+      setError(message || 'GitHubログインに失敗しました');
+      // Clear invitation code on error
+      clearPendingInvitationCode();
     } finally {
       setLoading(false);
     }
@@ -279,6 +311,7 @@ export const useAuthForm = () => {
     signUp,
     signIn,
     signInWithGoogle,
+    signInWithGithub,
     forgotPassword,
     resendConfirmation
   };
