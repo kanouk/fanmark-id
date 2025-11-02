@@ -87,31 +87,43 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               }
             }, 0);
           } else {
-            // Check if user_settings exists (for OAuth without invitation code)
+            // Check if invitation mode is active and enforce it for new OAuth users
             setTimeout(async () => {
               try {
-                const { data: userSettings, error: checkError } = await supabase
-                  .from('user_settings')
-                  .select('id')
-                  .eq('user_id', session.user.id)
+                // Get system settings to check invitation mode
+                const { data: settingsData, error: settingsError } = await supabase
+                  .from('system_settings')
+                  .select('setting_value')
+                  .eq('setting_key', 'invitation_mode')
                   .maybeSingle();
                 
-                if (checkError) {
-                  console.error('Error checking user settings after OAuth:', checkError);
-                } else if (!userSettings) {
-                  // No user_settings found - signup was blocked by database trigger
-                  console.error('OAuth signup blocked: Invitation code was required');
+                const invitationModeActive = settingsData?.setting_value === 'true';
+                
+                if (invitationModeActive) {
+                  // Check if this is a new user (no invited_by_code in user_settings)
+                  const { data: userSettings, error: checkError } = await supabase
+                    .from('user_settings')
+                    .select('id, invited_by_code')
+                    .eq('user_id', session.user.id)
+                    .maybeSingle();
                   
-                  // Sign out the partially created auth.users record
-                  await supabase.auth.signOut();
-                  
-                  // Clear local state
-                  setUser(null);
-                  setSession(null);
-                  setEmailConfirmed(false);
+                  if (checkError) {
+                    console.error('Error checking user settings after OAuth:', checkError);
+                  } else if (userSettings && !userSettings.invited_by_code) {
+                    // New OAuth user without invitation code - must sign out
+                    console.error('OAuth signup requires invitation code when invitation mode is active');
+                    
+                    // Sign out the user
+                    await supabase.auth.signOut();
+                    
+                    // Clear local state
+                    setUser(null);
+                    setSession(null);
+                    setEmailConfirmed(false);
+                  }
                 }
               } catch (error) {
-                console.error('Error during post-OAuth validation:', error);
+                console.error('Error during post-OAuth invitation validation:', error);
               }
             }, 0);
           }
