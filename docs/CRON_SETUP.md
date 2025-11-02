@@ -3,7 +3,7 @@
 ## 概要
 このプロジェクトでは、以下の2つの定期実行ジョブを使用しています：
 
-1. **check-expired-licenses**: ライセンス期限切れ検知（毎日 JST 0:00）
+1. **check-expired-licenses**: ライセンス期限切れ検知（毎日 UTC 0:00）
 2. **process-notification-events**: 通知イベント処理（毎分）
 
 ## セットアップ方法
@@ -16,7 +16,7 @@
 
 #### ジョブ1: check-expired-licenses-daily
 - **Name**: `check-expired-licenses-daily`
-- **Schedule**: `0 15 * * *`
+- **Schedule**: `0 0 * * *`
 - **Command**:
   ```sql
   SELECT net.http_post(
