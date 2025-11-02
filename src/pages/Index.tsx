@@ -181,7 +181,7 @@ const Index = () => {
           backgroundRepeat: 'no-repeat'
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-pink-50/95 via-purple-50/90 to-blue-50/85" />
+        <div className="absolute inset-0 bg-gradient-to-br from-pink-100/30 via-purple-100/25 to-blue-100/20" />
         <div className="container relative mx-auto px-4 py-20 sm:py-24">
           <div className="mx-auto max-w-3xl text-center">
             <div className="mb-10 flex justify-center">
@@ -189,10 +189,10 @@ const Index = () => {
                 ✨
               </span>
             </div>
-            <h1 className="text-balance text-4xl font-bold tracking-tight text-transparent sm:text-5xl md:text-6xl bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text drop-shadow-[0_2px_4px_rgba(255,255,255,0.8)]">
+            <h1 className="text-balance text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl drop-shadow-[0_4px_8px_rgba(0,0,0,0.3)]">
               {tWithBreaks('hero.subtitle')}
             </h1>
-            <p className="mt-6 text-lg leading-relaxed text-foreground sm:text-xl drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)]">
+            <p className="mt-6 text-lg leading-relaxed text-white/95 sm:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.25)]">
               {tWithBreaks('hero.description')}
             </p>
 
