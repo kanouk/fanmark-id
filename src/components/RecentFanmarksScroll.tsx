@@ -52,12 +52,12 @@ export function RecentFanmarksScroll() {
   if (fanmarks.length === 0) return null;
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 bg-white/60 backdrop-blur-sm border-t border-white/40 overflow-hidden">
-      <div className="fanmark-scroll py-3">
+    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-primary/20 via-accent/15 to-secondary/20 backdrop-blur-md border-t border-primary/30 shadow-[0_-10px_30px_rgba(0,0,0,0.1)] overflow-hidden">
+      <div className="fanmark-scroll py-4">
         {fanmarks.map((fanmark, index) => (
           <div
             key={`${fanmark.id}-${index}`}
-            className="flex-shrink-0 mx-3 px-4 py-2 bg-white/80 rounded-full shadow-sm hover:shadow-md transition-shadow"
+            className="flex-shrink-0 mx-3 px-5 py-2.5 bg-background/90 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
           >
             <span className="text-2xl">{fanmark.emoji}</span>
           </div>
