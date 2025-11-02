@@ -1,5 +1,5 @@
 import { ReactNode, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -50,9 +50,14 @@ export const AppHeader = ({
   const { t } = useTranslation();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const { data: unreadCount = 0 } = useUnreadNotifications();
   const locale = ja;
+  const pathname = location.pathname;
+  const isOnDashboard = pathname.startsWith('/dashboard');
+  const isOnFavorites = pathname.startsWith('/favorites');
+  const isOnUserSettings = pathname.startsWith('/profile');
 
   const { data: recentNotifications = [], isLoading: notificationsLoading } = useQuery({
     queryKey: ['notifications-preview', user?.id],
@@ -258,19 +263,12 @@ export const AppHeader = ({
                 <DropdownMenuItem
                   onSelect={(event) => {
                     event.preventDefault();
-                    navigate('/favorites');
+                    if (!isOnDashboard) {
+                      navigate('/dashboard');
+                    }
                   }}
                   className="cursor-pointer"
-                >
-                  <Heart className="mr-2 h-4 w-4" />
-                  {t('navigation.favorites')}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={(event) => {
-                    event.preventDefault();
-                    navigate('/dashboard');
-                  }}
-                  className="cursor-pointer"
+                  disabled={isOnDashboard}
                 >
                   <MdSpaceDashboard className="mr-2 h-4 w-4" />
                   {t('navigation.dashboard')}
@@ -278,9 +276,25 @@ export const AppHeader = ({
                 <DropdownMenuItem
                   onSelect={(event) => {
                     event.preventDefault();
-                    navigate('/profile');
+                    if (!isOnFavorites) {
+                      navigate('/favorites');
+                    }
                   }}
                   className="cursor-pointer"
+                  disabled={isOnFavorites}
+                >
+                  <Heart className="mr-2 h-4 w-4" />
+                  {t('navigation.favorites')}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    if (!isOnUserSettings) {
+                      navigate('/profile');
+                    }
+                  }}
+                  className="cursor-pointer"
+                  disabled={isOnUserSettings}
                 >
                   <User className="mr-2 h-4 w-4" />
                   {t('navigation.profile')}
@@ -312,4 +326,3 @@ export const AppHeader = ({
     </header>
   );
 };
-

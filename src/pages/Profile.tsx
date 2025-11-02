@@ -10,7 +10,7 @@ import { SiteFooter } from '@/components/layout/SiteFooter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { User, LogOut, CreditCard, Globe, Palette, Link2, Info, PencilLine, Languages } from 'lucide-react';
+import { User, LogOut, CreditCard, Globe, Palette, Link2, Info, PencilLine, Languages, Heart } from 'lucide-react';
 import { MdSpaceDashboard } from 'react-icons/md';
 import { RiCalendarCheckLine } from 'react-icons/ri';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -36,6 +36,10 @@ const Profile = () => {
   const { persistPreferredLanguage, isSaving: isSavingPreferredLanguage } = usePreferredLanguage();
   const navigate = useNavigate();
   const location = useLocation();
+  const pathname = location.pathname;
+  const isOnDashboard = pathname.startsWith('/dashboard');
+  const isOnFavorites = pathname.startsWith('/favorites');
+  const isOnProfilePage = pathname.startsWith('/profile');
   const [activeSection, setActiveSection] = useState<Section>('account');
   const [languagePreference, setLanguagePreference] = useState<ActiveLanguageCode>(
     isActiveLanguage(profile?.preferred_language ?? null) ? (profile?.preferred_language as ActiveLanguageCode) : FALLBACK_LANGUAGE,
@@ -325,27 +329,52 @@ const Profile = () => {
               </div>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <div className="px-2 py-1.5 text-xs text-muted-foreground">{user.email}</div>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onSelect={(event) => {
-                event.preventDefault();
-                navigate('/dashboard');
-              }}
-              className="cursor-pointer"
-            >
-              <MdSpaceDashboard className="mr-2 h-4 w-4" />
-              {t('navigation.dashboard')}
-            </DropdownMenuItem>
-            <DropdownMenuItem disabled className="cursor-pointer">
-              <User className="mr-2 h-4 w-4" />
-              {t('navigation.profile')}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={(event) => {
-                event.preventDefault();
-                handleLogout();
+            <DropdownMenuContent align="end" className="w-56">
+              <div className="px-2 py-1.5 text-xs text-muted-foreground">{user.email}</div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault();
+                  if (!isOnDashboard) {
+                    navigate('/dashboard');
+                  }
+                }}
+                className={isOnDashboard ? 'opacity-60' : 'cursor-pointer'}
+                disabled={isOnDashboard}
+              >
+                <MdSpaceDashboard className="mr-2 h-4 w-4" />
+                {t('navigation.dashboard')}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault();
+                  if (!isOnFavorites) {
+                    navigate('/favorites');
+                  }
+                }}
+                className={isOnFavorites ? 'opacity-60' : 'cursor-pointer'}
+                disabled={isOnFavorites}
+              >
+                <Heart className="mr-2 h-4 w-4" />
+                {t('navigation.favorites')}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault();
+                  if (!isOnProfilePage) {
+                    navigate('/profile');
+                  }
+                }}
+                className={isOnProfilePage ? 'opacity-60' : 'cursor-pointer'}
+                disabled={isOnProfilePage}
+              >
+                <User className="mr-2 h-4 w-4" />
+                {t('navigation.profile')}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault();
+                  handleLogout();
               }}
               className="cursor-pointer"
               disabled={signingOut}
