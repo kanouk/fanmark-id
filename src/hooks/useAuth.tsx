@@ -3,6 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { getPendingInvitationCode, clearPendingInvitationCode } from '@/lib/oauth-invitation-helpers';
 import { toast } from 'sonner';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface AuthContextType {
   user: User | null;
@@ -32,6 +33,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [emailConfirmed, setEmailConfirmed] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -115,7 +117,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                     console.error('OAuth signup requires invitation code when invitation mode is active');
                     
                     // Show error message to user
-                    toast.error('招待コードが必要です。招待コードを入力してからOAuthログインをお試しください。');
+                    toast.error(t('auth.oauthInvitationRequired'));
                     
                     // Sign out the user
                     await supabase.auth.signOut();
