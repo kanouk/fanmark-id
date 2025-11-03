@@ -191,6 +191,13 @@ export type Database = {
             referencedRelation: "fanmark_licenses"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fanmark_basic_configs_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: true
+            referencedRelation: "recent_active_fanmarks"
+            referencedColumns: ["license_id"]
+          },
         ]
       }
       fanmark_discoveries: {
@@ -434,6 +441,13 @@ export type Database = {
             referencedRelation: "fanmark_licenses"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fanmark_lottery_entries_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "recent_active_fanmarks"
+            referencedColumns: ["license_id"]
+          },
         ]
       }
       fanmark_lottery_history: {
@@ -492,6 +506,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fanmark_lottery_history_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "recent_active_fanmarks"
+            referencedColumns: ["license_id"]
+          },
+          {
             foreignKeyName: "fanmark_lottery_history_winner_entry_id_fkey"
             columns: ["winner_entry_id"]
             isOneToOne: false
@@ -530,6 +551,13 @@ export type Database = {
             referencedRelation: "fanmark_licenses"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fanmark_messageboard_configs_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: true
+            referencedRelation: "recent_active_fanmarks"
+            referencedColumns: ["license_id"]
+          },
         ]
       }
       fanmark_password_configs: {
@@ -564,6 +592,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "fanmark_licenses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fanmark_password_configs_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: true
+            referencedRelation: "recent_active_fanmarks"
+            referencedColumns: ["license_id"]
           },
         ]
       }
@@ -609,6 +644,13 @@ export type Database = {
             referencedRelation: "fanmark_licenses"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fanmark_profiles_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: true
+            referencedRelation: "recent_active_fanmarks"
+            referencedColumns: ["license_id"]
+          },
         ]
       }
       fanmark_redirect_configs: {
@@ -640,6 +682,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "fanmark_licenses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fanmark_redirect_configs_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: true
+            referencedRelation: "recent_active_fanmarks"
+            referencedColumns: ["license_id"]
           },
         ]
       }
@@ -1169,9 +1218,9 @@ export type Database = {
           display_name: string | null
           id: string
           invited_by_code: string | null
-          requires_password_setup: boolean
           plan_type: Database["public"]["Enums"]["user_plan"]
           preferred_language: Database["public"]["Enums"]["user_language"]
+          requires_password_setup: boolean
           updated_at: string
           user_id: string
           username: string
@@ -1182,9 +1231,9 @@ export type Database = {
           display_name?: string | null
           id?: string
           invited_by_code?: string | null
-          requires_password_setup?: boolean
           plan_type?: Database["public"]["Enums"]["user_plan"]
           preferred_language?: Database["public"]["Enums"]["user_language"]
+          requires_password_setup?: boolean
           updated_at?: string
           user_id: string
           username: string
@@ -1195,9 +1244,9 @@ export type Database = {
           display_name?: string | null
           id?: string
           invited_by_code?: string | null
-          requires_password_setup?: boolean
           plan_type?: Database["public"]["Enums"]["user_plan"]
           preferred_language?: Database["public"]["Enums"]["user_language"]
+          requires_password_setup?: boolean
           updated_at?: string
           user_id?: string
           username?: string
@@ -1238,7 +1287,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      recent_active_fanmarks: {
+        Row: {
+          display_emoji: string | null
+          fanmark_id: string | null
+          fanmark_short_id: string | null
+          license_created_at: string | null
+          license_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_fanmark_licenses_fanmark_id"
+            columns: ["fanmark_id"]
+            isOneToOne: false
+            referencedRelation: "fanmarks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       add_fanmark_favorite: {
@@ -1474,6 +1540,16 @@ export type Database = {
       link_fanmark_discovery: {
         Args: { new_fanmark_id: string; normalized_ids: string[] }
         Returns: undefined
+      }
+      list_recent_fanmarks: {
+        Args: { p_limit?: number }
+        Returns: {
+          display_emoji: string
+          fanmark_id: string
+          fanmark_short_id: string
+          license_created_at: string
+          license_id: string
+        }[]
       }
       mark_notification_read: {
         Args: { notification_id_param: string; read_via_param?: string }
