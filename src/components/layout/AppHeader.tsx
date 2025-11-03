@@ -45,8 +45,8 @@ export const AppHeader = ({
   rightSlot,
   leftSlot,
 }: AppHeaderProps) => {
-  const { user, signOut, signingOut } = useAuth();
-  const { profile } = useProfile();
+  const { user, signOut, signingOut, loading: authLoading } = useAuth();
+  const { profile, loading: profileLoading } = useProfile();
   const { t } = useTranslation();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -241,7 +241,7 @@ export const AppHeader = ({
             </DropdownMenu>
           )}
 
-          {showUserMenu && user && (
+          {showUserMenu && !authLoading && user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -249,7 +249,7 @@ export const AppHeader = ({
                   aria-label={t('navigation.userMenu')}
                 >
                   <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-background">
-                    {profile?.avatar_url ? (
+                    {!profileLoading && profile?.avatar_url ? (
                       <img 
                         src={profile.avatar_url} 
                         alt="Avatar" 
@@ -260,7 +260,7 @@ export const AppHeader = ({
                         }}
                       />
                     ) : null}
-                    <User className={cn("h-4 w-4 text-primary", profile?.avatar_url && "hidden")} />
+                    <User className={cn("h-4 w-4 text-primary", !profileLoading && profile?.avatar_url && "hidden")} />
                   </div>
                 </button>
               </DropdownMenuTrigger>
@@ -323,7 +323,7 @@ export const AppHeader = ({
 
           {rightSlot}
 
-          {!user && showAuthButton && (
+          {!authLoading && !user && showAuthButton && (
             <Button asChild variant="default" size="sm">
               <Link to="/auth">{t('auth.login')}</Link>
             </Button>
