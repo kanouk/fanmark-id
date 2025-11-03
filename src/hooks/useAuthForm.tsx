@@ -112,17 +112,22 @@ export const useAuthForm = () => {
         }
       }
 
+      const signUpOptions = {
+        emailRedirectTo: `${window.location.origin}/`,
+        ...(normalizedInvitationCode
+          ? { data: { invitation_code: normalizedInvitationCode } }
+          : {})
+      };
+
       const { data: signUpData, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`
-        }
+        options: signUpOptions
       });
 
       if (error) throw error;
 
-      if (normalizedInvitationCode) {
+      if (normalizedInvitationCode && !invitationRequired) {
         const { error: consumeError } = await supabase.rpc('use_invitation_code', {
           code_to_use: normalizedInvitationCode
         });
