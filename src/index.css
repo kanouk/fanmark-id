@@ -234,13 +234,16 @@ p, span {
     background: linear-gradient(
       135deg,
       hsl(340, 82%, 75%) 0%,
-      hsl(300, 70%, 70%) 25%,
-      hsl(260, 75%, 72%) 50%,
-      hsl(200, 75%, 70%) 75%,
-      hsl(180, 70%, 65%) 100%
+      hsl(30, 85%, 70%) 14%,
+      hsl(45, 90%, 68%) 28%,
+      hsl(300, 70%, 70%) 42%,
+      hsl(260, 75%, 72%) 56%,
+      hsl(200, 75%, 70%) 70%,
+      hsl(180, 70%, 65%) 84%,
+      hsl(340, 82%, 75%) 100%
     );
-    background-size: 200% 200%;
-    animation: gradient-shift 15s ease infinite;
+    background-size: 300% 300%;
+    animation: gradient-shift 20s ease infinite;
   }
   
   /* 装飾用ブロブ（浮遊する円） */
