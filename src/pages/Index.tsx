@@ -183,12 +183,12 @@ const Index = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent" />
         <div className="container relative mx-auto px-4 py-16 sm:py-20 pb-32 sm:pb-36">
           <div className="mx-auto max-w-3xl text-center">
-            <div className="mb-8 flex justify-center">
-              <span className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm text-5xl shadow-[0_15px_40px_rgba(0,0,0,0.25)] animate-float">
-                ✨
-              </span>
-            </div>
             <div className="backdrop-blur-md bg-white/80 rounded-2xl p-6 sm:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.15)]">
+              <div className="mb-6 flex justify-center">
+                <span className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm text-5xl shadow-[0_15px_40px_rgba(0,0,0,0.25)] animate-float">
+                  ✨
+                </span>
+              </div>
               <h1 className="text-balance text-3xl font-bold tracking-tight bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent sm:text-4xl md:text-5xl">
                 {tWithBreaks('hero.subtitle')}
               </h1>
