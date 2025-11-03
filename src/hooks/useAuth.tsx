@@ -55,32 +55,34 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  const applySession = async (nextSession: Session | null) => {
+  const applySession = (nextSession: Session | null) => {
     setSession(nextSession);
     const nextUser = nextSession?.user ?? null;
     const confirmed = nextUser?.email_confirmed_at ? true : false;
     setUser(nextUser);
     setEmailConfirmed(confirmed);
+    setLoading(false);
 
     if (nextUser) {
-      await loadUserSettings(nextUser.id);
+      setTimeout(() => {
+        loadUserSettings(nextUser.id);
+      }, 0);
     } else {
       setRequiresPasswordSetup(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        await applySession(session);
+      (_event, session) => {
+        applySession(session);
       }
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      await applySession(session);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      applySession(session);
     });
 
     return () => subscription.unsubscribe();
