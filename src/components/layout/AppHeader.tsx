@@ -248,12 +248,19 @@ export const AppHeader = ({
                   className="flex h-10 w-10 items-center justify-center rounded-full border border-primary/30 bg-primary/10 shadow-[0_4px_12px_hsl(var(--primary)_/_0.15)] transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   aria-label={t('navigation.userMenu')}
                 >
-                  <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-primary/10">
+                  <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-background">
                     {profile?.avatar_url ? (
-                      <img src={profile.avatar_url} alt="Avatar" className="absolute inset-0 h-full w-full object-cover" />
-                    ) : (
-                      <User className="h-4 w-4 text-primary" />
-                    )}
+                      <img 
+                        src={profile.avatar_url} 
+                        alt="Avatar" 
+                        className="h-full w-full object-cover" 
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    <User className={cn("h-4 w-4 text-primary", profile?.avatar_url && "hidden")} />
                   </div>
                 </button>
               </DropdownMenuTrigger>

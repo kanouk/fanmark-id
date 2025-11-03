@@ -17,29 +17,19 @@ export function RecentFanmarksScroll() {
   const fetchRecentFanmarks = async () => {
     try {
       const { data, error } = await supabase
-        .from('fanmark_licenses')
-        .select(`
-          id,
-          created_at,
-          fanmark_id,
-          fanmarks (
-            user_input_fanmark
-          )
-        `)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
+        .from('recent_active_fanmarks' as any)
+        .select('*')
+        .order('license_created_at', { ascending: false })
         .limit(20);
 
       if (error) throw error;
 
       if (data) {
-        const formattedFanmarks = data
-          .filter(item => item.fanmarks)
-          .map(item => ({
-            id: item.id,
-            emoji: (item.fanmarks as any).user_input_fanmark || '❓',
-            created_at: item.created_at
-          }));
+        const formattedFanmarks = data.map((item: any) => ({
+          id: item.license_id || item.fanmark_id,
+          emoji: item.display_emoji || '❓',
+          created_at: item.license_created_at
+        }));
         
         // 2セット用意してシームレスにループさせる
         setFanmarks([...formattedFanmarks, ...formattedFanmarks]);
