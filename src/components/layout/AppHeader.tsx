@@ -145,7 +145,7 @@ export const AppHeader = ({
         <div className="flex items-center gap-2">
           {showLanguageToggle && <LanguageToggle />}
 
-          {showNotifications && user && (
+          {showNotifications && !authLoading && user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -241,7 +241,7 @@ export const AppHeader = ({
             </DropdownMenu>
           )}
 
-          {showUserMenu && user && (
+          {showUserMenu && !authLoading && user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -323,7 +323,7 @@ export const AppHeader = ({
 
           {rightSlot}
 
-          {!user && showAuthButton && (
+          {!authLoading && !user && showAuthButton && (
             <Button asChild variant="default" size="sm">
               <Link to="/auth">{t('auth.login')}</Link>
             </Button>
