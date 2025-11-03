@@ -9,8 +9,10 @@ import { AppHeader } from '@/components/layout/AppHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { User, LogOut, CreditCard, Globe, Palette, Link2, Info, PencilLine, Languages, Heart } from 'lucide-react';
+import { User, LogOut, CreditCard, Globe, Palette, Link2, Info, PencilLine, Languages, Heart, Lock, ShieldCheck, Check, X } from 'lucide-react';
 import { MdSpaceDashboard } from 'react-icons/md';
 import { RiCalendarCheckLine } from 'react-icons/ri';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -18,6 +20,9 @@ import { useToast } from '@/hooks/use-toast';
 import { usePreferredLanguage } from '@/hooks/usePreferredLanguage';
 import { ACTIVE_LANGUAGES, isActiveLanguage, FALLBACK_LANGUAGE, ActiveLanguageCode } from '@/lib/language';
 import { getPlanLimit, type PlanType } from '@/lib/plan-utils';
+import { usePasswordValidation } from '@/hooks/usePasswordValidation';
+import { PasswordRequirement } from '@/components/PasswordRequirement';
+import { supabase } from '@/integrations/supabase/client';
 
 type Section = 'account' | 'plan' | 'language' | 'display' | 'integrations';
 
@@ -28,8 +33,17 @@ interface SidebarItem {
   icon: typeof User;
 }
 
+const InputStatusIcon = ({ status }: { status: boolean | null }) => {
+  if (status === null) return null;
+  return (
+    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+      {status ? <Check className="h-4 w-4 text-emerald-500" /> : <X className="h-4 w-4 text-destructive" />}
+    </span>
+  );
+};
+
 const Profile = () => {
-  const { user, signOut, signingOut, loading: authLoading } = useAuth();
+  const { user, signOut, signingOut, loading: authLoading, setRequiresPasswordSetup } = useAuth();
   const { profile, loading, updateProfile } = useProfile();
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -44,6 +58,10 @@ const Profile = () => {
   const [languagePreference, setLanguagePreference] = useState<ActiveLanguageCode>(
     isActiveLanguage(profile?.preferred_language ?? null) ? (profile?.preferred_language as ActiveLanguageCode) : FALLBACK_LANGUAGE,
   );
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const { requirements: passwordRequirements, isValid: isPasswordValid } = usePasswordValidation(newPassword);
 
   useEffect(() => {
     setLanguagePreference(
@@ -58,6 +76,51 @@ const Profile = () => {
       navigate('/auth');
     }
   }, [user, authLoading, navigate]);
+
+  const handlePasswordUpdate = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (newPassword !== confirmNewPassword) {
+      toast({
+        title: t('common.error'),
+        description: t('auth.passwordMismatch'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+      if (updateError) throw updateError;
+
+      if (user?.id) {
+        const { error: flagError } = await supabase
+          .from('user_settings')
+          .update({ requires_password_setup: false })
+          .eq('user_id', user.id);
+
+        if (flagError) throw flagError;
+      }
+
+      setRequiresPasswordSetup(false);
+      setNewPassword('');
+      setConfirmNewPassword('');
+      toast({
+        title: t('common.passwordUpdated'),
+        description: t('common.passwordUpdatedDesc'),
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : undefined;
+      toast({
+        title: t('common.error'),
+        description: message || t('common.tryAgain'),
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUpdatingPassword(false);
+    }
+  };
 
   const sidebarNav: SidebarItem[] = useMemo(
     () => [
@@ -107,6 +170,11 @@ const Profile = () => {
   const planLimit = getPlanLimit(planType);
   const planLimitCopy =
     planLimit === -1 ? t('userSettings.planUnlimited') : t('userSettings.planLimitInfo', { limit: planLimit });
+
+  const passwordStatus = newPassword ? isPasswordValid : null;
+  const confirmPasswordStatus = confirmNewPassword
+    ? confirmNewPassword === newPassword && confirmNewPassword.length > 0
+    : null;
 
   const handleLogout = async () => {
     try {
@@ -188,6 +256,86 @@ const Profile = () => {
           </CardHeader>
           <CardContent className="px-6 pb-6">
             <UserProfileForm profile={profile} onUpdate={updateProfile} />
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-3xl border border-primary/20 bg-white shadow-[0_20px_45px_rgba(101,195,200,0.2)]">
+          <CardHeader className="flex flex-col gap-2 px-6 pt-6 pb-2">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
+              <Lock className="h-5 w-5 text-primary" />
+              {t('userSettings.passwordSectionTitle')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-6 pb-6">
+            <form onSubmit={handlePasswordUpdate} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="profile-new-password" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                  <Lock className="h-4 w-4" />
+                  {t('auth.newPassword')}
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="profile-new-password"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder={t('password.requirements.length')}
+                    autoComplete="new-password"
+                    className="h-11 rounded-2xl border border-primary/15 bg-background/80 pr-10 focus-visible:ring-2 focus-visible:ring-primary/40"
+                    required
+                    minLength={8}
+                  />
+                  <InputStatusIcon status={passwordStatus} />
+                </div>
+                {newPassword && (
+                  <div className="rounded-2xl border border-primary/10 bg-primary/5 px-4 py-3 text-xs text-muted-foreground">
+                    <h4 className="mb-2 font-semibold text-primary">{t('password.requirements.title')}</h4>
+                    <div className="space-y-1.5">
+                      {passwordRequirements.map((req, index) => (
+                        <PasswordRequirement key={index} met={req.met} text={req.text} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="profile-confirm-password" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                  <ShieldCheck className="h-4 w-4" />
+                  {t('auth.confirmNewPassword')}
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="profile-confirm-password"
+                    type="password"
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    autoComplete="new-password"
+                    className="h-11 rounded-2xl border border-primary/15 bg-background/80 pr-10 focus-visible:ring-2 focus-visible:ring-primary/40"
+                    required
+                  />
+                  <InputStatusIcon status={confirmPasswordStatus} />
+                </div>
+                {confirmNewPassword && confirmNewPassword !== newPassword && (
+                  <p className="text-xs text-destructive">{t('auth.passwordMismatch')}</p>
+                )}
+              </div>
+
+              <div className="flex justify-end">
+                <Button
+                  type="submit"
+                  disabled={
+                    isUpdatingPassword ||
+                    !isPasswordValid ||
+                    newPassword.length === 0 ||
+                    newPassword !== confirmNewPassword
+                  }
+                  className="rounded-full"
+                >
+                  {isUpdatingPassword ? t('common.loading') : t('userSettings.updatePasswordButton')}
+                </Button>
+              </div>
+            </form>
           </CardContent>
         </Card>
       </CardContent>

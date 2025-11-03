@@ -11,6 +11,7 @@ export interface UserSettings {
   preferred_language: 'ja' | 'en' | 'ko' | 'id';
   created_at: string;
   updated_at: string;
+  requires_password_setup: boolean;
 }
 
 /**

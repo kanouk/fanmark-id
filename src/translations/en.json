@@ -140,9 +140,11 @@
     "description": "Join our community and claim your unique emoji combinations!",
     "pageTitle": "Join Fanmark",
     "pageDescription": "Sign in or create a new account to get your own fanmark!",
-    "oauthLoginNote": "New users must sign up with an invitation code from the Sign Up tab. Existing users can log in here.",
     "oauthError": "Social login failed",
-    "oauthInvitationRequired": "An invitation code is required to sign up. Please enter your code from the Sign Up tab."
+    "oauthInvitationRequired": "An invitation code is required to sign up. Please enter your code from the Sign Up tab.",
+    "passwordSetupTitle": "Set Your Password",
+    "passwordSetupDescription": "Create a password so you can sign in with email even when social login is turned off.",
+    "savePassword": "Save Password"
   },
   "password": {
     "requirements": {
@@ -364,6 +366,7 @@
     "navIntegrationsDescription": "Connect external accounts",
     "planOverviewTitle": "Your plan",
     "accountSectionDescription": "Review essential account info and keep your profile details current.",
+    "passwordSectionTitle": "Password Management",
     "planSectionDescription": "Check your current fanmark plan and switch tiers when your needs change.",
     "languageSectionDescriptionDetailed": "Choose the language used across fanmark.id for the interface and notifications.",
     "displaySectionDescriptionDetailed": "Preview upcoming appearance options such as themes and dark mode.",
@@ -395,6 +398,7 @@
     "updateSuccess": "Settings Updated",
     "updateSuccessDescription": "Your user settings have been updated successfully",
     "updateError": "Failed to update settings",
+    "updatePasswordButton": "Update Password",
     "email": "Email",
     "memberSince": "Member Since",
     "saving": "Saving...",

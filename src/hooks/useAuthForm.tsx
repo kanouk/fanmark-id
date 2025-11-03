@@ -4,12 +4,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthFormData, AuthState } from '@/types/auth';
-import {
-  saveInvitationCodeForOAuth,
-  clearPendingInvitationCode,
-  saveLanguageForOAuth,
-  clearPendingLanguage,
-} from '@/lib/oauth-invitation-helpers';
 
 interface CheckEmailExistsResponse {
   exists: boolean;
@@ -23,7 +17,7 @@ interface SignUpOptions {
 export const useAuthForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   
   const [formData, setFormData] = useState<AuthFormData>({
     email: '',
@@ -88,8 +82,6 @@ export const useAuthForm = () => {
     setLoading(true);
     setError('');
 
-    let invitationCodeToUse: string | null = normalizedInvitationCode;
-
     try {
       const emailExists = await checkEmailExists(formData.email);
       if (emailExists) {
@@ -97,9 +89,9 @@ export const useAuthForm = () => {
         return;
       }
 
-      if (invitationRequired && invitationCodeToUse) {
+      if (invitationRequired && normalizedInvitationCode) {
         const { data, error } = await supabase.rpc('validate_invitation_code', {
-          code_to_check: invitationCodeToUse
+          code_to_check: normalizedInvitationCode
         });
 
         if (error) {
@@ -130,9 +122,9 @@ export const useAuthForm = () => {
 
       if (error) throw error;
 
-      if (invitationCodeToUse) {
+      if (normalizedInvitationCode) {
         const { error: consumeError } = await supabase.rpc('use_invitation_code', {
-          code_to_use: invitationCodeToUse
+          code_to_use: normalizedInvitationCode
         });
 
         if (consumeError) {
@@ -145,7 +137,7 @@ export const useAuthForm = () => {
         } else if (signUpData?.user?.id) {
           const { error: settingsError } = await supabase
             .from('user_settings')
-            .update({ invited_by_code: invitationCodeToUse })
+            .update({ invited_by_code: normalizedInvitationCode })
             .eq('user_id', signUpData.user.id);
 
           if (settingsError) {
@@ -257,13 +249,9 @@ export const useAuthForm = () => {
     }
   };
 
-  const signInWithGoogle = async (invitationCode?: string | null) => {
+  const signInWithGoogle = async () => {
     setLoading(true);
     setError('');
-    
-    // Save current language & invitation code before OAuth redirect
-    saveLanguageForOAuth(language);
-    saveInvitationCodeForOAuth(invitationCode);
 
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -277,20 +265,14 @@ export const useAuthForm = () => {
     } catch (error) {
       const message = error instanceof Error ? error.message : undefined;
       setError(message || 'Googleログインに失敗しました');
-      // Clear invitation code on error
-      clearPendingInvitationCode();
-      clearPendingLanguage();
     } finally {
       setLoading(false);
     }
   };
 
-  const signInWithGithub = async (invitationCode?: string | null) => {
+  const signInWithGithub = async () => {
     setLoading(true);
     setError('');
-    
-    // Save invitation code to localStorage before OAuth redirect
-    saveInvitationCodeForOAuth(invitationCode);
 
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -304,8 +286,6 @@ export const useAuthForm = () => {
     } catch (error) {
       const message = error instanceof Error ? error.message : undefined;
       setError(message || 'GitHubログインに失敗しました');
-      // Clear invitation code on error
-      clearPendingInvitationCode();
     } finally {
       setLoading(false);
     }

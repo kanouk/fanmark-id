@@ -140,9 +140,11 @@
     "description": "あなただけのファンマを手に入れよう！",
     "pageTitle": "ファンマID に参加",
     "pageDescription": "ログイン・新規ユーザ登録してあなただけのファンマを手に入れよう！",
-    "oauthLoginNote": "初めての方はサインアップタブから招待コードを入力してください。既にアカウントをお持ちの方はこのままログインできます。",
     "oauthError": "ソーシャルログインに失敗しました",
-    "oauthInvitationRequired": "新規登録には招待コードが必要です。サインアップタブから招待コードを入力してください。"
+    "oauthInvitationRequired": "新規登録には招待コードが必要です。サインアップタブから招待コードを入力してください。",
+    "passwordSetupTitle": "パスワードを設定",
+    "passwordSetupDescription": "SNSログインで作成したアカウントでもメールとパスワードでログインできるよう、パスワードを登録してください。",
+    "savePassword": "パスワードを保存"
   },
   "password": {
     "requirements": {
@@ -363,6 +365,7 @@
     "navIntegrationsDescription": "外部アカウントとの連携設定",
     "planOverviewTitle": "ご利用中のプラン",
     "accountSectionDescription": "アカウントの情報を確認したり、編集することができます",
+    "passwordSectionTitle": "パスワード管理",
     "planSectionDescription": "ご利用中のプランを確認したり、別のプランへ変更することができます",
     "languageSectionDescriptionDetailed": "サービスの画面表示や通知に使う言語を、ここでまとめて設定できます",
     "displaySectionDescriptionDetailed": "テーマやダークモードなど、今後追加される表示設定の予定をチェックできます",
@@ -394,6 +397,7 @@
     "updateSuccess": "設定を更新しました",
     "updateSuccessDescription": "ユーザー設定が正常に更新されました",
     "updateError": "設定の更新に失敗しました",
+    "updatePasswordButton": "パスワードを更新",
     "email": "メールアドレス",
     "memberSince": "登録日",
     "saving": "保存中...",

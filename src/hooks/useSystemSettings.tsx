@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface SystemSettings {
   invitation_mode: boolean;
+  social_login_enabled: boolean;
   max_fanmarks_per_user: number;
   creator_fanmarks_limit: number;
   max_fanmarks_limit: number;
@@ -18,6 +19,7 @@ interface SystemSettings {
 export function useSystemSettings() {
   const [settings, setSettings] = useState<SystemSettings>({
     invitation_mode: false,
+    social_login_enabled: true,
     max_fanmarks_per_user: 3,
     creator_fanmarks_limit: 10,
     max_fanmarks_limit: 50,
@@ -48,6 +50,8 @@ export function useSystemSettings() {
         const settingsMap = data.reduce((acc, { setting_key, setting_value }) => {
           if (setting_key === 'invitation_mode') {
             acc.invitation_mode = setting_value === 'true';
+          } else if (setting_key === 'social_login_enabled') {
+            acc.social_login_enabled = setting_value === 'true';
           } else if (setting_key === 'max_fanmarks_per_user') {
             acc.max_fanmarks_per_user = parseInt(setting_value, 10);
           } else if (setting_key === 'creator_fanmarks_limit') {

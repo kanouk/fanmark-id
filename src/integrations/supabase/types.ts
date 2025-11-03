@@ -1169,6 +1169,7 @@ export type Database = {
           display_name: string | null
           id: string
           invited_by_code: string | null
+          requires_password_setup: boolean
           plan_type: Database["public"]["Enums"]["user_plan"]
           preferred_language: Database["public"]["Enums"]["user_language"]
           updated_at: string
@@ -1181,6 +1182,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           invited_by_code?: string | null
+          requires_password_setup?: boolean
           plan_type?: Database["public"]["Enums"]["user_plan"]
           preferred_language?: Database["public"]["Enums"]["user_language"]
           updated_at?: string
@@ -1193,6 +1195,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           invited_by_code?: string | null
+          requires_password_setup?: boolean
           plan_type?: Database["public"]["Enums"]["user_plan"]
           preferred_language?: Database["public"]["Enums"]["user_language"]
           updated_at?: string

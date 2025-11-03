@@ -39,6 +39,12 @@
   - 招待コード未検証の状態で Submit させない。
   - `invitation_mode=false` の場合は従来通り制限なしでサインアップ可能。
 
+### 2025-06 アップデート
+- 新しいシステム設定 `social_login_enabled` を追加。既存の `invitation_mode` が `true` の場合、または `social_login_enabled` が `false` の場合は OAuth ログイン/サインアップを完全に抑止する（バックエンドの `handle_new_user` でも拒否）。
+- OAuth サインアップ時には `user_settings.requires_password_setup=true` を自動付与し、初回サインイン直後に `/password-setup` へ強制リダイレクトしてメール＋パスワードを設定させる。
+- プロフィール画面にパスワード変更フォームを追加し、任意のタイミングで `supabase.auth.updateUser({ password })` と `requires_password_setup=false` 更新を行えるようにした。
+- 既存の OAuth アカウント（パスワード未設定）の `user_settings.requires_password_setup` をマイグレーションで立ち上げ時に `true` へマークし、パスワード設定導線へ誘導する。
+
 ### サインアップ処理のフロー
 1. フロントエンドで `InvitationSystem` により `validate_invitation_code` RPC を呼び、`remaining_uses > 0` のコードだけを通過させる。
 2. `useAuthForm.signUp()` 内で、`invitation_mode` が ON の場合はサインアップ直前に同じ RPC を再確認し（競合対策）、妥当でなければエラーを返す。

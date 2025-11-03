@@ -30,6 +30,8 @@ const Auth = () => {
   const { requirements, isValid } = usePasswordValidation(formData.password);
   const { settings, loading: settingsLoading } = useSystemSettings();
   const invitationGateActive = !settingsLoading && settings.invitation_mode;
+  const socialLoginAvailable = !settingsLoading && settings.social_login_enabled;
+  const showSocialLogin = socialLoginAvailable && !invitationGateActive;
   const [invitationValidated, setInvitationValidated] = useState(false);
   const [validatedInvitationCode, setValidatedInvitationCode] = useState<string | null>(null);
 
@@ -186,7 +188,7 @@ const Auth = () => {
                     signInWithGoogle={signInWithGoogle}
                     signInWithGithub={signInWithGithub}
                     t={t}
-                    invitationRequired={invitationGateActive}
+                    socialEnabled={showSocialLogin}
                   />
                 </TabsContent>
 
@@ -211,20 +213,21 @@ const Auth = () => {
                       />
                     )}
                     {(!invitationGateActive || invitationValidated) && (
-                      <SignUpForm
-                        formData={formData}
-                        authState={authState}
-                        updateFormData={updateFormData}
-                        signUp={signUp}
-                        signInWithGoogle={signInWithGoogle}
-                        signInWithGithub={signInWithGithub}
-                        requirements={requirements}
-                        isValid={isValid}
-                        t={t}
-                        invitationRequired={invitationGateActive}
-                        invitationValidated={invitationValidated}
-                        validatedInvitationCode={validatedInvitationCode}
-                      />
+                    <SignUpForm
+                      formData={formData}
+                      authState={authState}
+                      updateFormData={updateFormData}
+                      signUp={signUp}
+                      signInWithGoogle={signInWithGoogle}
+                      signInWithGithub={signInWithGithub}
+                      requirements={requirements}
+                      isValid={isValid}
+                      t={t}
+                      invitationRequired={invitationGateActive}
+                      socialEnabled={showSocialLogin}
+                      invitationValidated={invitationValidated}
+                      validatedInvitationCode={validatedInvitationCode}
+                    />
                     )}
                   </div>
                 </TabsContent>
@@ -261,13 +264,13 @@ interface LoginFormProps {
   authState: AuthState;
   updateFormData: (field: keyof AuthFormData, value: string) => void;
   signIn: () => void;
-  signInWithGoogle: (invitationCode?: string | null) => void;
-  signInWithGithub: (invitationCode?: string | null) => void;
+  signInWithGoogle: () => void;
+  signInWithGithub: () => void;
   t: (key: string) => string;
-  invitationRequired?: boolean;
+  socialEnabled: boolean;
 }
 
-const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoogle, signInWithGithub, t, invitationRequired = false }: LoginFormProps) => {
+const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoogle, signInWithGithub, t, socialEnabled }: LoginFormProps) => {
   const emailStatus = formData.email ? EMAIL_REGEX.test(formData.email) : null;
   const passwordStatus = formData.password ? formData.password.length > 0 : null;
   const socialButtons = [
@@ -275,7 +278,7 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoog
       key: 'google',
       label: t('auth.signInWithGoogle'),
       Icon: FaGoogle,
-      onClick: () => signInWithGoogle(null),
+      onClick: () => signInWithGoogle(),
       disabled: authState.loading,
     },
     {
@@ -296,7 +299,7 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoog
       key: 'github',
       label: t('auth.signInWithGithub'),
       Icon: FaGithub,
-      onClick: () => signInWithGithub(null),
+      onClick: () => signInWithGithub(),
       disabled: authState.loading,
     },
   ] as const;
@@ -378,36 +381,34 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoog
         </Link>
       </div>
 
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-primary/15" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background/95 px-2 text-muted-foreground">{t('auth.or')}</span>
-        </div>
-      </div>
+      {socialEnabled && (
+        <>
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-primary/15" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background/95 px-2 text-muted-foreground">{t('auth.or')}</span>
+            </div>
+          </div>
 
-      {invitationRequired && (
-        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm text-muted-foreground">
-          {t('auth.oauthLoginNote')}
-        </div>
+          <div className="grid grid-cols-2 gap-2">
+            {socialButtons.map(({ key, label, Icon, onClick, disabled }) => (
+              <Button
+                key={key}
+                type="button"
+                onClick={onClick}
+                disabled={disabled}
+                variant="outline"
+                className="w-full gap-2 rounded-full border-primary/20 bg-background/80 shadow-sm transition-all duration-300 hover:shadow-md"
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </Button>
+            ))}
+          </div>
+        </>
       )}
-
-      <div className="grid grid-cols-2 gap-2">
-        {socialButtons.map(({ key, label, Icon, onClick, disabled }) => (
-          <Button
-            key={key}
-            type="button"
-            onClick={onClick}
-            disabled={disabled}
-            variant="outline"
-            className="w-full gap-2 rounded-full border-primary/20 bg-background/80 shadow-sm transition-all duration-300 hover:shadow-md"
-          >
-            <Icon className="h-4 w-4" />
-            {label}
-          </Button>
-        ))}
-      </div>
     </form>
   );
 };
@@ -418,12 +419,13 @@ interface SignUpFormProps {
   authState: AuthState;
   updateFormData: (field: keyof AuthFormData, value: string) => void;
   signUp: (options?: { invitationCode?: string | null; invitationRequired?: boolean }) => void;
-  signInWithGoogle: (invitationCode?: string | null) => void;
-  signInWithGithub: (invitationCode?: string | null) => void;
+  signInWithGoogle: () => void;
+  signInWithGithub: () => void;
   requirements: PasswordRequirementType[];
   isValid: boolean;
   t: (key: string) => string;
   invitationRequired?: boolean;
+  socialEnabled: boolean;
   invitationValidated?: boolean;
   validatedInvitationCode?: string | null;
 }
@@ -439,6 +441,7 @@ const SignUpForm = ({
   isValid,
   t,
   invitationRequired = false,
+  socialEnabled,
   invitationValidated = false,
   validatedInvitationCode,
 }: SignUpFormProps) => {
@@ -451,36 +454,35 @@ const SignUpForm = ({
   const confirmStatus = formData.confirmPassword
     ? formData.confirmPassword === formData.password && formData.confirmPassword.length > 0
     : null;
-  const invitationDisabled = invitationRequired && !invitationValidated;
   const InvitationStatusIcon = invitationValidated ? Check : Sparkle;
   const socialButtons = [
     {
       key: 'google',
       label: t('auth.signInWithGoogle'),
       Icon: FaGoogle,
-      onClick: () => signInWithGoogle(validatedInvitationCode),
-      disabled: authState.loading || invitationDisabled,
+      onClick: () => signInWithGoogle(),
+      disabled: authState.loading,
     },
     {
       key: 'apple',
       label: t('auth.signInWithApple'),
       Icon: FaApple,
       onClick: () => {},
-      disabled: authState.loading || invitationDisabled,
+      disabled: authState.loading,
     },
     {
       key: 'discord',
       label: t('auth.signInWithDiscord'),
       Icon: FaDiscord,
       onClick: () => {},
-      disabled: authState.loading || invitationDisabled,
+      disabled: authState.loading,
     },
     {
       key: 'github',
       label: t('auth.signInWithGithub'),
       Icon: FaGithub,
-      onClick: () => signInWithGithub(validatedInvitationCode),
-      disabled: authState.loading || invitationDisabled,
+      onClick: () => signInWithGithub(),
+      disabled: authState.loading,
     },
   ] as const;
 
@@ -623,7 +625,7 @@ const SignUpForm = ({
 
     <Button
       type="submit"
-      disabled={authState.loading || !isValid || invitationDisabled}
+      disabled={authState.loading || !isValid || (invitationRequired && !invitationValidated)}
       className="w-full gap-2 rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 hover:shadow-xl"
     >
       {authState.loading ? (
@@ -639,30 +641,34 @@ const SignUpForm = ({
       )}
     </Button>
 
-    <div className="relative">
-      <div className="absolute inset-0 flex items-center">
-        <span className="w-full border-t border-primary/15" />
-      </div>
-      <div className="relative flex justify-center text-xs uppercase">
-        <span className="bg-background/95 px-2 text-muted-foreground">{t('auth.or')}</span>
-      </div>
-    </div>
+    {socialEnabled && (
+      <>
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-primary/15" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background/95 px-2 text-muted-foreground">{t('auth.or')}</span>
+          </div>
+        </div>
 
-    <div className="grid grid-cols-2 gap-2">
-      {socialButtons.map(({ key, label, Icon, onClick, disabled }) => (
-        <Button
-          key={key}
-          type="button"
-          onClick={onClick}
-          disabled={disabled}
-          variant="outline"
-          className="w-full gap-2 rounded-full border-primary/20 bg-background/80 shadow-sm transition-all duration-300 hover:shadow-md"
-        >
-          <Icon className="h-4 w-4" />
-          {label}
-        </Button>
-      ))}
-    </div>
+        <div className="grid grid-cols-2 gap-2">
+          {socialButtons.map(({ key, label, Icon, onClick, disabled }) => (
+            <Button
+              key={key}
+              type="button"
+              onClick={onClick}
+              disabled={disabled}
+              variant="outline"
+              className="w-full gap-2 rounded-full border-primary/20 bg-background/80 shadow-sm transition-all duration-300 hover:shadow-md"
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+            </Button>
+          ))}
+        </div>
+      </>
+    )}
   </form>
   );
 };

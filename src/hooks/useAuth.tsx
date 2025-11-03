@@ -1,21 +1,14 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  getPendingInvitationCode,
-  clearPendingInvitationCode,
-  getPendingLanguage,
-  clearPendingLanguage,
-} from '@/lib/oauth-invitation-helpers';
-import { toast } from 'sonner';
-import { useTranslation } from '@/hooks/useTranslation';
-import { normalizeLanguage } from '@/lib/language';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
   emailConfirmed: boolean;
+  requiresPasswordSetup: boolean;
+  setRequiresPasswordSetup: (value: boolean) => void;
   signOut: () => Promise<void>;
   signingOut: boolean;
 }
@@ -39,128 +32,55 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [emailConfirmed, setEmailConfirmed] = useState(false);
-  const { t, setLanguage } = useTranslation();
+  const [requiresPasswordSetup, setRequiresPasswordSetup] = useState(false);
+
+  const loadUserSettings = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('requires_password_setup')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error loading user settings for auth context:', error);
+        setRequiresPasswordSetup(false);
+        return;
+      }
+
+      setRequiresPasswordSetup(Boolean(data?.requires_password_setup));
+    } catch (error) {
+      console.error('Unexpected error loading user settings:', error);
+      setRequiresPasswordSetup(false);
+    }
+  };
+
+  const applySession = async (nextSession: Session | null) => {
+    setSession(nextSession);
+    const nextUser = nextSession?.user ?? null;
+    const confirmed = nextUser?.email_confirmed_at ? true : false;
+    setUser(nextUser);
+    setEmailConfirmed(confirmed);
+
+    if (nextUser) {
+      await loadUserSettings(nextUser.id);
+    } else {
+      setRequiresPasswordSetup(false);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        const user = session?.user ?? null;
-        const confirmed = user?.email_confirmed_at ? true : false;
-        setUser(user);
-        setEmailConfirmed(confirmed);
-        setLoading(false);
-        
-        // Handle pending invitation code for OAuth sign-ups
-        if (event === 'SIGNED_IN' && session?.user) {
-          const pendingInvitationCode = getPendingInvitationCode();
-          if (pendingInvitationCode) {
-            // Use setTimeout to defer Supabase calls and prevent deadlock
-            setTimeout(async () => {
-              try {
-                // Check if this is a new user (no user_settings yet or no invited_by_code)
-                const { data: existingSettings, error: checkError } = await supabase
-                  .from('user_settings')
-                  .select('id, invited_by_code')
-                  .eq('user_id', session.user.id)
-                  .maybeSingle();
-                
-                if (checkError) {
-                  console.error('Error checking user settings:', checkError);
-                } else if (existingSettings && !existingSettings.invited_by_code) {
-                  // New user without invitation code - consume it
-                  const { error: consumeError } = await supabase.rpc('use_invitation_code', {
-                    code_to_use: pendingInvitationCode
-                  });
-                  
-                  if (consumeError) {
-                    console.error('Error consuming invitation code:', consumeError);
-                  } else {
-                    // Update user_settings with invitation code
-                    const { error: updateError } = await supabase
-                      .from('user_settings')
-                      .update({ invited_by_code: pendingInvitationCode })
-                      .eq('user_id', session.user.id);
-                    
-                    if (updateError) {
-                      console.error('Error updating user settings with invitation code:', updateError);
-                    }
-                  }
-                }
-              } catch (error) {
-                console.error('Error processing pending invitation code:', error);
-              } finally {
-                // Always clear the pending code
-                clearPendingInvitationCode();
-              }
-            }, 0);
-          } else {
-            // Check if invitation mode is active and enforce it for new OAuth users
-            setTimeout(async () => {
-              try {
-                // Get system settings to check invitation mode
-                const { data: settingsData, error: settingsError } = await supabase
-                  .from('system_settings')
-                  .select('setting_value')
-                  .eq('setting_key', 'invitation_mode')
-                  .maybeSingle();
-                
-                const invitationModeActive = settingsData?.setting_value === 'true';
-                
-                if (invitationModeActive) {
-                  // Check if this is a new user (no invited_by_code in user_settings)
-                  const { data: userSettings, error: checkError } = await supabase
-                    .from('user_settings')
-                    .select('id, invited_by_code')
-                    .eq('user_id', session.user.id)
-                    .maybeSingle();
-                  
-                  if (checkError) {
-                    console.error('Error checking user settings after OAuth:', checkError);
-                  } else if (userSettings && !userSettings.invited_by_code) {
-                    // New OAuth user without invitation code - must sign out
-                    console.error('OAuth signup requires invitation code when invitation mode is active');
-                    
-                    // Show error message to user
-                    toast.error(t('auth.oauthInvitationRequired'));
-                    
-                    // Sign out the user
-                    await supabase.auth.signOut();
-                    
-                    // Clear local state
-                    setUser(null);
-                    setSession(null);
-                    setEmailConfirmed(false);
-
-                    const pendingLanguage = normalizeLanguage(getPendingLanguage());
-                    try {
-                      localStorage.setItem('fanmark-language', pendingLanguage);
-                    } catch (error) {
-                      console.warn('Failed to restore language after OAuth sign-out:', error);
-                    }
-                    setLanguage(pendingLanguage);
-                  }
-                }
-              } catch (error) {
-                console.error('Error during post-OAuth invitation validation:', error);
-              } finally {
-                clearPendingLanguage();
-              }
-            }, 0);
-          }
-        }
+      async (_event, session) => {
+        await applySession(session);
       }
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      const user = session?.user ?? null;
-      const confirmed = user?.email_confirmed_at ? true : false;
-      setUser(user);
-      setEmailConfirmed(confirmed);
-      setLoading(false);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      await applySession(session);
     });
 
     return () => subscription.unsubscribe();
@@ -178,6 +98,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setUser(null);
       setSession(null);
       setEmailConfirmed(false);
+      setRequiresPasswordSetup(false);
       
       // Clear localStorage
       try {
@@ -205,6 +126,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     session,
     loading,
     emailConfirmed,
+    requiresPasswordSetup,
+    setRequiresPasswordSetup,
     signOut,
     signingOut,
   };

@@ -13,6 +13,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import PasswordSetup from "./pages/PasswordSetup";
 import Profile from "./pages/Profile";
 import Dashboard from "./pages/Dashboard";
 import FanmarkSettingsPage from "./pages/FanmarkSettingsPage";
@@ -29,6 +30,7 @@ import Favorites from "./pages/Favorites";
 import Notifications from "./pages/Notifications";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LotteryActionOverlayProvider } from "@/providers/LotteryActionOverlayProvider";
+import { PasswordSetupGate } from "@/components/PasswordSetupGate";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +44,7 @@ const MainApp = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              <PasswordSetupGate />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
@@ -49,6 +52,7 @@ const MainApp = () => (
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/password-setup" element={<ProtectedRoute><PasswordSetup /></ProtectedRoute>} />
                 <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
                 <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
                 <Route path="/plans" element={<PlanSelection />} />
