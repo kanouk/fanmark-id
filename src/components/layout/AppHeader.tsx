@@ -323,7 +323,7 @@ export const AppHeader = ({
 
           {rightSlot}
 
-          {!authLoading && !user && showAuthButton && (
+          {!user && showAuthButton && (
             <Button asChild variant="default" size="sm">
               <Link to="/auth">{t('auth.login')}</Link>
             </Button>
