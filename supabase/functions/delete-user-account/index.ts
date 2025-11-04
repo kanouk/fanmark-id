@@ -179,6 +179,148 @@ async function logAccountDeletion(supabase: any, userId: string, userEmail: stri
   }
 }
 
+async function cleanupUserData(supabase: any, userId: string): Promise<void> {
+  console.log("Starting comprehensive data cleanup for user:", userId);
+  const nowIso = new Date().toISOString();
+
+  try {
+    // 1. Set all fanmark_licenses.user_id to NULL (preserve license history)
+    console.log("Nullifying user_id in fanmark_licenses...");
+    const { error: licensesError } = await supabase
+      .from("fanmark_licenses")
+      .update({ user_id: null, updated_at: nowIso })
+      .eq("user_id", userId);
+    
+    if (licensesError) {
+      console.error("Failed to nullify fanmark_licenses.user_id:", licensesError);
+      throw new Error("Failed to cleanup fanmark_licenses");
+    }
+    console.log("✓ fanmark_licenses cleaned");
+
+    // 2. Delete fanmark_favorites
+    console.log("Deleting fanmark_favorites...");
+    const { error: favoritesError } = await supabase
+      .from("fanmark_favorites")
+      .delete()
+      .eq("user_id", userId);
+    
+    if (favoritesError) {
+      console.error("Failed to delete fanmark_favorites:", favoritesError);
+      throw new Error("Failed to cleanup fanmark_favorites");
+    }
+    console.log("✓ fanmark_favorites cleaned");
+
+    // 3. Delete fanmark_lottery_entries (already cancelled in previous step)
+    console.log("Deleting fanmark_lottery_entries...");
+    const { error: lotteryError } = await supabase
+      .from("fanmark_lottery_entries")
+      .delete()
+      .eq("user_id", userId);
+    
+    if (lotteryError) {
+      console.error("Failed to delete fanmark_lottery_entries:", lotteryError);
+      throw new Error("Failed to cleanup fanmark_lottery_entries");
+    }
+    console.log("✓ fanmark_lottery_entries cleaned");
+
+    // 4. Delete notifications
+    console.log("Deleting notifications...");
+    const { error: notificationsError } = await supabase
+      .from("notifications")
+      .delete()
+      .eq("user_id", userId);
+    
+    if (notificationsError) {
+      console.error("Failed to delete notifications:", notificationsError);
+      throw new Error("Failed to cleanup notifications");
+    }
+    console.log("✓ notifications cleaned");
+
+    // 5. Delete notification_preferences
+    console.log("Deleting notification_preferences...");
+    const { error: preferencesError } = await supabase
+      .from("notification_preferences")
+      .delete()
+      .eq("user_id", userId);
+    
+    if (preferencesError) {
+      console.error("Failed to delete notification_preferences:", preferencesError);
+      throw new Error("Failed to cleanup notification_preferences");
+    }
+    console.log("✓ notification_preferences cleaned");
+
+    // 6. Delete user_roles
+    console.log("Deleting user_roles...");
+    const { error: rolesError } = await supabase
+      .from("user_roles")
+      .delete()
+      .eq("user_id", userId);
+    
+    if (rolesError) {
+      console.error("Failed to delete user_roles:", rolesError);
+      throw new Error("Failed to cleanup user_roles");
+    }
+    console.log("✓ user_roles cleaned");
+
+    // 7. Nullify created_by in fanmark_availability_rules
+    console.log("Nullifying created_by in fanmark_availability_rules...");
+    const { error: rulesError } = await supabase
+      .from("fanmark_availability_rules")
+      .update({ created_by: null, updated_at: nowIso })
+      .eq("created_by", userId);
+    
+    if (rulesError) {
+      console.error("Failed to nullify fanmark_availability_rules.created_by:", rulesError);
+      throw new Error("Failed to cleanup fanmark_availability_rules");
+    }
+    console.log("✓ fanmark_availability_rules cleaned");
+
+    // 8. Nullify created_by in notification_rules
+    console.log("Nullifying created_by in notification_rules...");
+    const { error: notifRulesError } = await supabase
+      .from("notification_rules")
+      .update({ created_by: null, updated_at: nowIso })
+      .eq("created_by", userId);
+    
+    if (notifRulesError) {
+      console.error("Failed to nullify notification_rules.created_by:", notifRulesError);
+      throw new Error("Failed to cleanup notification_rules");
+    }
+    console.log("✓ notification_rules cleaned");
+
+    // 9. Nullify created_by in user_roles (for roles created by this user)
+    console.log("Nullifying created_by in user_roles...");
+    const { error: rolesCreatedError } = await supabase
+      .from("user_roles")
+      .update({ created_by: null })
+      .eq("created_by", userId);
+    
+    if (rolesCreatedError) {
+      console.error("Failed to nullify user_roles.created_by:", rolesCreatedError);
+      throw new Error("Failed to cleanup user_roles.created_by");
+    }
+    console.log("✓ user_roles.created_by cleaned");
+
+    // 10. Delete user_settings (last, as it's the primary user record)
+    console.log("Deleting user_settings...");
+    const { error: settingsError } = await supabase
+      .from("user_settings")
+      .delete()
+      .eq("user_id", userId);
+    
+    if (settingsError) {
+      console.error("Failed to delete user_settings:", settingsError);
+      throw new Error("Failed to cleanup user_settings");
+    }
+    console.log("✓ user_settings cleaned");
+
+    console.log("✓ All user data cleaned successfully");
+  } catch (error) {
+    console.error("Error during data cleanup:", error);
+    throw error;
+  }
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -223,17 +365,20 @@ Deno.serve(async (req) => {
     // Step 2: Cancel all pending lottery entries
     await cancelUserLotteryEntries(supabase, user.id);
 
-    // Step 3: Log account deletion
+    // Step 3: Log account deletion (before cleanup)
     await logAccountDeletion(supabase, user.id, user.email ?? null);
 
-    // Step 4: Delete user (CASCADE will handle related data)
+    // Step 4: Comprehensive data cleanup (explicit deletion/nullification)
+    await cleanupUserData(supabase, user.id);
+
+    // Step 5: Delete user from auth.users (should now succeed without FK/RLS issues)
     const { error: deleteError } = await supabase.auth.admin.deleteUser(user.id);
 
     if (deleteError) {
-      console.error("Failed to delete user:", deleteError);
+      console.error("Failed to delete user from auth:", deleteError);
       return new Response(
         JSON.stringify({ 
-          error: "Failed to delete account",
+          error: "Failed to delete account from authentication system",
           details: deleteError.message 
         }),
         {
