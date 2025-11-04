@@ -12,7 +12,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { User, LogOut, CreditCard, Globe, Palette, Link2, Info, PencilLine, Languages, Heart, Lock, ShieldCheck, Check, X } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { CardDescription } from '@/components/ui/card';
+import { User, LogOut, CreditCard, Globe, Palette, Link2, Info, PencilLine, Languages, Heart, Lock, ShieldCheck, Check, X, AlertTriangle } from 'lucide-react';
 import { MdSpaceDashboard } from 'react-icons/md';
 import { RiCalendarCheckLine } from 'react-icons/ri';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -61,6 +63,8 @@ const Profile = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const { requirements: passwordRequirements, isValid: isPasswordValid } = usePasswordValidation(newPassword);
 
   useEffect(() => {
@@ -182,6 +186,35 @@ const Profile = () => {
       navigate('/');
     } catch (error) {
       console.error('Logout failed:', error);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'DELETE') return;
+    
+    setIsDeletingAccount(true);
+    try {
+      const { error } = await supabase.functions.invoke('delete-user-account');
+      if (error) throw error;
+      
+      toast({
+        title: t('userSettings.deleteAccount.successTitle'),
+        description: t('userSettings.deleteAccount.successDescription'),
+      });
+      
+      // Auto logout and redirect
+      await signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Account deletion failed:', error);
+      toast({
+        title: t('userSettings.deleteAccount.errorTitle'),
+        description: t('userSettings.deleteAccount.errorDescription'),
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeletingAccount(false);
+      setDeleteConfirmText('');
     }
   };
 
@@ -336,6 +369,63 @@ const Profile = () => {
                 </Button>
               </div>
             </form>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-3xl border-2 border-destructive/30 bg-destructive/5">
+          <CardHeader className="flex flex-col gap-2 px-6 pt-6 pb-2">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              {t('userSettings.deleteAccount.title')}
+            </CardTitle>
+            <CardDescription className="text-muted-foreground">
+              {t('userSettings.deleteAccount.description')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="px-6 pb-6">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" className="rounded-full">
+                  {t('userSettings.deleteAccount.buttonLabel')}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    {t('userSettings.deleteAccount.confirmTitle')}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className="whitespace-pre-line">
+                    {t('userSettings.deleteAccount.confirmDescription')}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="delete-confirm">{t('userSettings.deleteAccount.confirmPrompt')}</Label>
+                    <Input
+                      id="delete-confirm"
+                      value={deleteConfirmText}
+                      onChange={(e) => setDeleteConfirmText(e.target.value)}
+                      placeholder={t('userSettings.deleteAccount.confirmPlaceholder')}
+                      className="rounded-2xl"
+                    />
+                  </div>
+                </div>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setDeleteConfirmText('')}>
+                    {t('userSettings.deleteAccount.cancelButton')}
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteAccount}
+                    disabled={deleteConfirmText !== 'DELETE' || isDeletingAccount}
+                    className="bg-destructive hover:bg-destructive/90"
+                  >
+                    {isDeletingAccount
+                      ? t('userSettings.deleteAccount.deleting')
+                      : t('userSettings.deleteAccount.deleteButton')}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </CardContent>
         </Card>
       </CardContent>
