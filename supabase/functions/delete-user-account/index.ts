@@ -122,7 +122,7 @@ async function returnUserFanmarks(supabase: any, userId: string): Promise<void> 
           fanmark_name: license.fanmarks?.user_input_fanmark,
           short_id: license.fanmarks?.short_id,
         },
-        source_param: "account_deletion",
+        source_param: "edge_function",
       });
 
       if (notifyError) {
