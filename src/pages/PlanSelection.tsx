@@ -12,7 +12,7 @@ import {
   type PlanType,
 } from '@/lib/plan-utils';
 import { supabase } from '@/integrations/supabase/client';
-import { Check, ArrowLeft, Loader2, Sparkle, Crown, Star } from 'lucide-react';
+import { Check, ArrowLeft, Loader2, Sparkle, Crown, Star, ExternalLink } from 'lucide-react';
 
 interface PlanCardCopy {
   type: PlanType;
@@ -38,6 +38,7 @@ const PlanSelection = () => {
   const { user } = useAuth();
 
   const [processingPlan, setProcessingPlan] = useState<PlanType | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
 
   const planCards = useMemo<PlanCardCopy[]>(() => CUSTOMER_PLANS.map((planType) => {
     return {
@@ -96,15 +97,24 @@ const PlanSelection = () => {
       
       // Upgrading to paid plan (free → creator/business)
       if (currentPlanType === 'free' && (planType === 'creator' || planType === 'business')) {
+        setRedirecting(true);
+        
         const { data, error } = await supabase.functions.invoke('create-checkout', {
           body: { plan_type: planType }
         });
         
-        if (error) throw error;
+        if (error) {
+          setRedirecting(false);
+          throw error;
+        }
         
         if (data?.url) {
-          window.location.href = data.url;
+          // Keep showing loading overlay while redirecting
+          setTimeout(() => {
+            window.location.href = data.url;
+          }, 500);
         } else {
+          setRedirecting(false);
           throw new Error('Checkout URL not received');
         }
         return;
@@ -112,17 +122,27 @@ const PlanSelection = () => {
       
       // Changing/downgrading from paid plan → use Customer Portal
       if (currentPlanType !== 'free' && planType !== currentPlanType) {
+        setRedirecting(true);
+        
         const { data, error } = await supabase.functions.invoke('customer-portal');
         
-        if (error) throw error;
+        if (error) {
+          setRedirecting(false);
+          throw error;
+        }
         
         if (data?.url) {
-          window.open(data.url, '_blank');
-          toast({
-            title: t('planSelection.redirectTitle'),
-            description: t('planSelection.redirectDescription'),
-          });
+          // Small delay for visual feedback
+          setTimeout(() => {
+            window.open(data.url, '_blank');
+            setRedirecting(false);
+            toast({
+              title: t('planSelection.redirectTitle'),
+              description: t('planSelection.redirectDescription'),
+            });
+          }, 500);
         } else {
+          setRedirecting(false);
           throw new Error('Customer portal URL not received');
         }
         return;
@@ -301,6 +321,34 @@ const PlanSelection = () => {
         </section>
       </div>
 
+      {/* Redirect Loading Overlay */}
+      {redirecting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-fade-in">
+          <div className="rounded-3xl border border-primary/20 bg-background/95 px-8 py-12 shadow-[0_25px_60px_rgba(101,195,200,0.3)] animate-scale-in">
+            <div className="flex flex-col items-center gap-6">
+              <div className="relative">
+                <Loader2 className="h-16 w-16 animate-spin text-primary" />
+                <div className="absolute inset-0 animate-pulse">
+                  <ExternalLink className="h-16 w-16 text-primary/20" />
+                </div>
+              </div>
+              <div className="text-center space-y-2">
+                <h3 className="text-xl font-semibold text-foreground">
+                  {t('planSelection.redirectTitle')}
+                </h3>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                  {t('planSelection.redirectDescription')}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" style={{ animationDelay: '0ms' }} />
+                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" style={{ animationDelay: '150ms' }} />
+                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" style={{ animationDelay: '300ms' }} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
