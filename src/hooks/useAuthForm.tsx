@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthFormData, AuthState } from '@/types/auth';
+import { isActiveLanguage, type ActiveLanguageCode } from '@/lib/language';
 
 interface CheckEmailExistsResponse {
   exists: boolean;
@@ -13,6 +14,11 @@ interface SignUpOptions {
   invitationCode?: string | null;
   invitationRequired?: boolean;
 }
+
+const detectBrowserLanguage = (): ActiveLanguageCode => {
+  const browserLang = navigator.language.toLowerCase().split('-')[0];
+  return isActiveLanguage(browserLang) ? browserLang : 'ja';
+};
 
 export const useAuthForm = () => {
   const navigate = useNavigate();
@@ -114,9 +120,10 @@ export const useAuthForm = () => {
 
       const signUpOptions = {
         emailRedirectTo: `${window.location.origin}/`,
-        ...(normalizedInvitationCode
-          ? { data: { invitation_code: normalizedInvitationCode } }
-          : {})
+        data: {
+          preferred_language: detectBrowserLanguage(),
+          ...(normalizedInvitationCode && { invitation_code: normalizedInvitationCode })
+        }
       };
 
       const { data: signUpData, error } = await supabase.auth.signUp({
