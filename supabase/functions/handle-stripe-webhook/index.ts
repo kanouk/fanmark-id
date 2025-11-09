@@ -85,6 +85,28 @@ serve(async (req) => {
 
         const productId = subscription.items.data[0]?.price.product as string;
 
+        // Determine plan_type from product_id
+        const { data: settingsData } = await supabaseClient
+          .from("system_settings")
+          .select("setting_key, setting_value")
+          .in("setting_key", ["creator_stripe_price_id", "business_stripe_price_id"]);
+
+        const priceId = subscription.items.data[0]?.price.id;
+        let planType = 'free';
+        
+        if (settingsData) {
+          const creatorPrice = settingsData.find(s => s.setting_key === "creator_stripe_price_id")?.setting_value;
+          const businessPrice = settingsData.find(s => s.setting_key === "business_stripe_price_id")?.setting_value;
+          
+          if (priceId === creatorPrice) {
+            planType = 'creator';
+          } else if (priceId === businessPrice) {
+            planType = 'business';
+          }
+        }
+
+        logStep("Determined plan type", { priceId, planType });
+
         // Upsert subscription data
         const { error: upsertError } = await supabaseClient
           .from("user_subscriptions")
@@ -107,13 +129,31 @@ serve(async (req) => {
           throw upsertError;
         }
 
-        logStep("Subscription updated in database", { userId: user.id, status: subscription.status });
+        // Update user's plan_type in profiles table
+        const { error: profileError } = await supabaseClient
+          .from("profiles")
+          .update({ plan_type: planType })
+          .eq("id", user.id);
+
+        if (profileError) {
+          logStep("Profile update failed", { error: profileError });
+          throw profileError;
+        }
+
+        logStep("Subscription and profile updated in database", { userId: user.id, status: subscription.status, planType });
         break;
       }
 
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
         logStep("Processing subscription deletion", { subscriptionId: subscription.id });
+
+        // Get user_id before deleting
+        const { data: subData } = await supabaseClient
+          .from("user_subscriptions")
+          .select("user_id")
+          .eq("stripe_subscription_id", subscription.id)
+          .single();
 
         const { error: deleteError } = await supabaseClient
           .from("user_subscriptions")
@@ -123,6 +163,21 @@ serve(async (req) => {
         if (deleteError) {
           logStep("Database delete failed", { error: deleteError });
           throw deleteError;
+        }
+
+        // Update user's plan_type to 'free' when subscription is deleted
+        if (subData?.user_id) {
+          const { error: profileError } = await supabaseClient
+            .from("profiles")
+            .update({ plan_type: 'free' })
+            .eq("id", subData.user_id);
+
+          if (profileError) {
+            logStep("Profile update failed", { error: profileError });
+            throw profileError;
+          }
+
+          logStep("Profile updated to free plan", { userId: subData.user_id });
         }
 
         logStep("Subscription deleted from database");

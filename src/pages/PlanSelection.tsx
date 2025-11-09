@@ -6,13 +6,10 @@ import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FanmarkSelectionModal } from '@/components/FanmarkSelectionModal';
 import {
   getPlanLimit,
-  evaluatePlanDowngrade,
   formatPlanPrice,
   type PlanType,
-  type ActiveFanmark,
 } from '@/lib/plan-utils';
 import { supabase } from '@/integrations/supabase/client';
 import { Check, ArrowLeft, Loader2, Sparkle, Crown, Star } from 'lucide-react';
@@ -41,9 +38,6 @@ const PlanSelection = () => {
   const { user } = useAuth();
 
   const [processingPlan, setProcessingPlan] = useState<PlanType | null>(null);
-  const [pendingPlan, setPendingPlan] = useState<PlanType | null>(null);
-  const [currentFanmarks, setCurrentFanmarks] = useState<ActiveFanmark[]>([]);
-  const [showSelectionModal, setShowSelectionModal] = useState(false);
 
   const planCards = useMemo<PlanCardCopy[]>(() => CUSTOMER_PLANS.map((planType) => {
     return {
@@ -98,83 +92,46 @@ const PlanSelection = () => {
     setProcessingPlan(planType);
 
     try {
-      const { requiresSelection, fanmarks } = await evaluatePlanDowngrade(
-        user.id,
-        profile.plan_type,
-        planType
-      );
-
-      if (requiresSelection) {
-        setPendingPlan(planType);
-        setCurrentFanmarks(fanmarks);
-        setShowSelectionModal(true);
+      const currentPlanType = profile.plan_type as PlanType;
+      
+      // Upgrading to paid plan (free → creator/business)
+      if (currentPlanType === 'free' && (planType === 'creator' || planType === 'business')) {
+        const { data, error } = await supabase.functions.invoke('create-checkout', {
+          body: { plan_type: planType }
+        });
+        
+        if (error) throw error;
+        
+        if (data?.url) {
+          window.location.href = data.url;
+        } else {
+          throw new Error('Checkout URL not received');
+        }
         return;
       }
-
-      await applyPlanChange(planType);
-    } catch (error) {
-      console.error('Error updating plan:', error);
-      toast({
-        title: t('planSelection.errorTitle'),
-        description: t('planSelection.errorDescription'),
-        variant: 'destructive',
-      });
-    } finally {
-      setProcessingPlan(null);
-    }
-  };
-
-  const applyPlanChange = async (newPlan: PlanType) => {
-    await updateProfile({ plan_type: newPlan });
-    toast({
-      title: t('planSelection.successTitle'),
-      description: t('planSelection.successDescription', { plan: t(`planSelection.${newPlan}.name`) }),
-    });
-  };
-
-  const handleFanmarkSelectionConfirm = async (selectedFanmarkIds: string[]) => {
-    if (!pendingPlan || !profile) return;
-
-    const previousPlan = profile.plan_type;
-    setProcessingPlan(pendingPlan);
-
-    try {
-      await updateProfile({ plan_type: pendingPlan });
-
-      const unselectedLicenseIds = currentFanmarks
-        .filter(fanmark => !selectedFanmarkIds.includes(fanmark.id))
-        .map(fanmark => fanmark.license_id);
-
-      if (unselectedLicenseIds.length > 0) {
-        const { error: bulkReturnError, data: bulkReturnData } = await supabase.functions.invoke<{
-          success: boolean;
-          failed?: Array<{ licenseId: string; error: string }>;
-        }>('bulk-return-fanmarks', {
-          body: { license_ids: unselectedLicenseIds },
-        });
-
-        if (bulkReturnError) {
-          throw bulkReturnError;
+      
+      // Changing/downgrading from paid plan → use Customer Portal
+      if (currentPlanType !== 'free' && planType !== currentPlanType) {
+        const { data, error } = await supabase.functions.invoke('customer-portal');
+        
+        if (error) throw error;
+        
+        if (data?.url) {
+          window.open(data.url, '_blank');
+          toast({
+            title: t('planSelection.redirectTitle'),
+            description: t('planSelection.redirectDescription'),
+          });
+        } else {
+          throw new Error('Customer portal URL not received');
         }
-
-        if (bulkReturnData?.failed && bulkReturnData.failed.length > 0) {
-          console.error('Failed to return some fanmarks:', bulkReturnData.failed);
-          throw new Error('Failed to return selected fanmarks');
-        }
+        return;
       }
-
-      toast({
-        title: t('planSelection.successTitle'),
-        description: t('planSelection.successDescription', { plan: t(`planSelection.${pendingPlan}.name`) }),
-      });
-      setShowSelectionModal(false);
-      setPendingPlan(null);
-      setCurrentFanmarks([]);
-    } catch (error) {
-      console.error('Error updating fanmark plan selection:', error);
+    } catch (error: any) {
+      console.error('Plan change error:', error);
       toast({
         title: t('planSelection.errorTitle'),
-        description: t('planSelection.errorDescription'),
+        description: error.message || t('planSelection.errorDescription'),
         variant: 'destructive',
       });
     } finally {
@@ -344,21 +301,6 @@ const PlanSelection = () => {
         </section>
       </div>
 
-      {showSelectionModal && pendingPlan && (
-        <FanmarkSelectionModal
-          isOpen={showSelectionModal}
-          onClose={() => {
-            setShowSelectionModal(false);
-            setPendingPlan(null);
-            setCurrentFanmarks([]);
-            setProcessingPlan(null);
-          }}
-          newPlanType={pendingPlan}
-          newPlanLimit={getPlanLimit(pendingPlan)}
-          currentFanmarks={currentFanmarks}
-          onConfirm={handleFanmarkSelectionConfirm}
-        />
-      )}
     </div>
   );
 };
