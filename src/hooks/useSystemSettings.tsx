@@ -14,6 +14,9 @@ interface SystemSettings {
   enterprise_pricing: number;
   max_emoji_characters: number;
   grace_period_days: number;
+  creator_stripe_price_id: string;
+  business_stripe_price_id: string;
+  stripe_mode: 'test' | 'live';
 }
 
 export function useSystemSettings() {
@@ -30,6 +33,9 @@ export function useSystemSettings() {
     enterprise_pricing: 50000,
     max_emoji_characters: 5,
     grace_period_days: 7,
+    creator_stripe_price_id: '',
+    business_stripe_price_id: '',
+    stripe_mode: 'test',
   });
   const [loading, setLoading] = useState(true);
 
@@ -72,6 +78,12 @@ export function useSystemSettings() {
             acc.max_emoji_characters = parseInt(setting_value, 10);
           } else if (setting_key === 'grace_period_days') {
             acc.grace_period_days = parseInt(setting_value, 10);
+          } else if (setting_key === 'creator_stripe_price_id') {
+            acc.creator_stripe_price_id = setting_value;
+          } else if (setting_key === 'business_stripe_price_id') {
+            acc.business_stripe_price_id = setting_value;
+          } else if (setting_key === 'stripe_mode') {
+            acc.stripe_mode = setting_value as 'test' | 'live';
           }
           return acc;
         }, {} as Partial<SystemSettings>);

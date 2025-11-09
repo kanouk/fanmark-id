@@ -36,6 +36,8 @@ export const AdminPlanSettings = () => {
   const [businessPricing, setBusinessPricing] = useState(settings.business_pricing);
   const [enterpriseLimit, setEnterpriseLimit] = useState(settings.enterprise_fanmarks_limit);
   const [enterprisePricing, setEnterprisePricing] = useState(settings.enterprise_pricing);
+  const [creatorPriceId, setCreatorPriceId] = useState(settings.creator_stripe_price_id);
+  const [businessPriceId, setBusinessPriceId] = useState(settings.business_stripe_price_id);
 
   useEffect(() => {
     setFreeLimit(settings.max_fanmarks_per_user);
@@ -45,9 +47,11 @@ export const AdminPlanSettings = () => {
     setBusinessPricing(settings.business_pricing);
     setEnterpriseLimit(settings.enterprise_fanmarks_limit);
     setEnterprisePricing(settings.enterprise_pricing);
+    setCreatorPriceId(settings.creator_stripe_price_id);
+    setBusinessPriceId(settings.business_stripe_price_id);
   }, [settings]);
 
-  const updateSystemSetting = async (key: string, value: number) => {
+  const updateSystemSetting = async (key: string, value: number | string) => {
     setUpdating(true);
     try {
       const { error } = await supabase
@@ -59,7 +63,7 @@ export const AdminPlanSettings = () => {
 
       toast({
         title: "設定更新完了",
-        description: `${key} を ${value} に更新しました`,
+        description: `${key} を更新しました`,
       });
 
       await refetch();
@@ -208,6 +212,10 @@ export const AdminPlanSettings = () => {
     );
   }
 
+  const validatePriceId = (priceId: string): boolean => {
+    return priceId.startsWith('price_') && priceId.length > 6;
+  };
+
   return (
     <div className="space-y-6">
       <div className="grid gap-6 md:grid-cols-2">
@@ -227,6 +235,76 @@ export const AdminPlanSettings = () => {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Stripe連携設定 */}
+      <div className="space-y-4 rounded-2xl border border-border/60 bg-card/70 p-6 shadow-sm">
+        <div className="space-y-1">
+          <h3 className="text-base font-semibold text-foreground">Stripe連携設定</h3>
+          <p className="text-xs text-muted-foreground">
+            決済に使用するStripe Price IDを管理します
+          </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* Creator Price ID */}
+          <div className="space-y-2">
+            <Label htmlFor="creator-price-id">Creator Plan Price ID</Label>
+            <div className="flex gap-2">
+              <Input
+                id="creator-price-id"
+                type="text"
+                value={creatorPriceId}
+                onChange={(e) => setCreatorPriceId(e.target.value)}
+                placeholder="price_xxx"
+                className={!validatePriceId(creatorPriceId) && creatorPriceId ? "border-destructive" : ""}
+              />
+              <Button
+                onClick={() => updateSystemSetting("creator_stripe_price_id", creatorPriceId)}
+                disabled={updating || !validatePriceId(creatorPriceId) || creatorPriceId === settings.creator_stripe_price_id}
+                size="sm"
+              >
+                更新
+              </Button>
+            </div>
+            {!validatePriceId(creatorPriceId) && creatorPriceId && (
+              <p className="text-xs text-destructive">price_で始まる有効なIDを入力してください</p>
+            )}
+          </div>
+
+          {/* Business Price ID */}
+          <div className="space-y-2">
+            <Label htmlFor="business-price-id">Business Plan Price ID</Label>
+            <div className="flex gap-2">
+              <Input
+                id="business-price-id"
+                type="text"
+                value={businessPriceId}
+                onChange={(e) => setBusinessPriceId(e.target.value)}
+                placeholder="price_xxx"
+                className={!validatePriceId(businessPriceId) && businessPriceId ? "border-destructive" : ""}
+              />
+              <Button
+                onClick={() => updateSystemSetting("business_stripe_price_id", businessPriceId)}
+                disabled={updating || !validatePriceId(businessPriceId) || businessPriceId === settings.business_stripe_price_id}
+                size="sm"
+              >
+                更新
+              </Button>
+            </div>
+            {!validatePriceId(businessPriceId) && businessPriceId && (
+              <p className="text-xs text-destructive">price_で始まる有効なIDを入力してください</p>
+            )}
+          </div>
+        </div>
+
+        {/* Stripe Mode Display */}
+        <div className="flex items-center gap-2 rounded-lg border border-border/40 bg-muted/30 p-3">
+          <span className="text-sm text-muted-foreground">現在のモード:</span>
+          <span className={`text-sm font-semibold ${settings.stripe_mode === 'live' ? 'text-green-600' : 'text-amber-600'}`}>
+            {settings.stripe_mode === 'live' ? '本番環境 (Live)' : 'テスト環境 (Test)'}
+          </span>
+        </div>
       </div>
     </div>
   );
