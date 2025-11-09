@@ -395,6 +395,8 @@
     "integrationsDescription": "Connect fanmark.id with services you already use.",
     "integrationsComingSoonTitle": "External connections coming soon",
     "integrationsComingSoonDescription": "Social logins and integrations are being prepared.",
+    "changePlan": "Change Plan",
+    "saveChanges": "Save Changes",
     "deleteAccount": {
       "title": "Delete Account",
       "description": "Permanently delete your account. This action cannot be undone.",
