@@ -384,8 +384,8 @@
     "languageFieldLabel": "Preferred language",
     "languageFieldHint": "This preference is saved to your account and used across devices.",
     "languageUpdateSuccessTitle": "Language preference saved",
-    "languageUpdateSuccessDescription": "We’ll use this language across the product and notifications.",
-    "languageUpdateErrorTitle": "Couldn’t save language preference",
+    "languageUpdateSuccessDescription": "We'll use this language across the product and notifications.",
+    "languageUpdateErrorTitle": "Couldn't save language preference",
     "languageUpdateErrorDescription": "Please check your connection and try again.",
     "displaySettingsTitle": "Display",
     "displaySettingsDescription": "Customize how fanmark.id looks and feels.",
@@ -395,8 +395,6 @@
     "integrationsDescription": "Connect fanmark.id with services you already use.",
     "integrationsComingSoonTitle": "External connections coming soon",
     "integrationsComingSoonDescription": "Social logins and integrations are being prepared.",
-    "changePlan": "Change Plan",
-    "saveChanges": "Save Changes",
     "deleteAccount": {
       "title": "Delete Account",
       "description": "Permanently delete your account. This action cannot be undone.",
@@ -432,11 +430,13 @@
     "currentPlanCta": "Current plan",
     "choosePlanCta": "Switch to {plan}",
     "successTitle": "Plan updated",
-    "successDescription": "You’re now on the {plan} plan.",
+    "successDescription": "You're now on the {plan} plan.",
     "errorTitle": "Could not update plan",
     "errorDescription": "Please try again in a moment.",
     "errorNoUser": "Please sign in again to change plans.",
-    "errorNoProfile": "We couldn’t load your profile information.",
+    "errorNoProfile": "We couldn't load your profile information.",
+    "redirectTitle": "Redirecting to Stripe...",
+    "redirectDescription": "Redirecting you to Stripe portal to manage your plan. Please wait.",
     "features": {
       "limit": "Own up to {limit} fanmarks simultaneously"
     },
@@ -465,7 +465,7 @@
       "feature2": "Dedicated success manager",
       "feature3": "Security & compliance reviews",
       "price": "Custom pricing",
-      "ctaDescription": "Let’s design the right plan together for your organization.",
+      "ctaDescription": "Let's design the right plan together for your organization.",
       "contactCta": "Contact us"
     }
   },
@@ -628,7 +628,7 @@
     "editProfile": "Edit Profile",
     "editProfileDescription": "Update your name, bio, and social links to make your fanmark hub shine.",
     "accountInfo": "Account Information",
-    "accountInfoDescription": "Here’s a snapshot of your fanmark.id account. Reach out if anything looks off.",
+    "accountInfoDescription": "Here's a snapshot of your fanmark.id account. Reach out if anything looks off.",
     "accountSettings": "Account Settings",
     "displayName": "Display Name",
     "displayNamePlaceholder": "Your display name",
@@ -686,7 +686,7 @@
     "addFanmark": "Add fanmark",
     "searchPlaceholder": "Search your fanmark...",
     "searchFanma": "Search fanmarks",
-    "searchSubtitle": "Try different emoji mixes and see what’s still available.",
+    "searchSubtitle": "Try different emoji mixes and see what's still available.",
     "remainingFanmarksLabel": "{remaining} slots left",
     "acquireButton": "Obtain this fanmark",
     "acquireLoginButton": "Sign in to obtain",
@@ -825,7 +825,7 @@
   "favorites": {
     "title": "Your Favorite Fanmarks",
     "subtitle": "Quickly revisit the fanmarks you've marked as favorites.",
-    "loadError": "We couldn’t load your favorites. Please try again.",
+    "loadError": "We couldn't load your favorites. Please try again.",
     "emptyTitle": "No favorites yet",
     "emptyDescription": "Explore fanmarks and mark the ones you love to build your favorites list.",
     "exploreFanmarks": "Explore fanmarks",
@@ -1082,7 +1082,7 @@
   },
   "languageToggle": {
     "errorTitle": "Unable to switch language",
-    "errorDescription": "We couldn’t save your preference. Please try again shortly.",
+    "errorDescription": "We couldn't save your preference. Please try again shortly.",
     "comingSoon": "Coming soon"
   }
 }
