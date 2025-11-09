@@ -18,6 +18,9 @@ verify_jwt = true
 [functions.cancel-lottery-entry]
 verify_jwt = true
 
+[functions.handle-stripe-webhook]
+verify_jwt = false
+
 # ========================================
 # Cron Jobs Configuration
 # ========================================

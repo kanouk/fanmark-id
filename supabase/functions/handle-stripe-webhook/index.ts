@@ -129,11 +129,11 @@ serve(async (req) => {
           throw upsertError;
         }
 
-        // Update user's plan_type in profiles table
+        // Update user's plan_type in user_settings table
         const { error: profileError } = await supabaseClient
-          .from("profiles")
+          .from("user_settings")
           .update({ plan_type: planType })
-          .eq("id", user.id);
+          .eq("user_id", user.id);
 
         if (profileError) {
           logStep("Profile update failed", { error: profileError });
@@ -168,9 +168,9 @@ serve(async (req) => {
         // Update user's plan_type to 'free' when subscription is deleted
         if (subData?.user_id) {
           const { error: profileError } = await supabaseClient
-            .from("profiles")
+            .from("user_settings")
             .update({ plan_type: 'free' })
-            .eq("id", subData.user_id);
+            .eq("user_id", subData.user_id);
 
           if (profileError) {
             logStep("Profile update failed", { error: profileError });
