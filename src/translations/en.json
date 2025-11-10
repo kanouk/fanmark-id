@@ -448,6 +448,8 @@
     "processingPayment": "Processing payment",
     "pleaseWait": "Updating plan information...",
     "checkoutSuccess": "Payment completed",
+    "checkoutCanceled": "Checkout canceled",
+    "checkoutCanceledDescription": "Your plan was not changed. Feel free to try again whenever you’re ready.",
     "refreshRequired": "If plan doesn't update, please refresh the page",
     "features": {
       "limit": "Own up to {limit} fanmarks simultaneously"

@@ -87,14 +87,23 @@ const PlanSelection = () => {
     }
   }, [locationState?.from]);
 
-  // Handle checkout success with auto-refresh
+  // Handle checkout success or cancellation with auto-refresh
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('checkout') === 'success') {
+    const checkoutStatus = params.get('checkout');
+
+    if (!checkoutStatus) {
+      return;
+    }
+
+    const clearQuery = () => {
+      window.history.replaceState({}, '', window.location.pathname);
+    };
+
+    if (checkoutStatus === 'success') {
       setCheckingSubscription(true);
       
-      // Clear the parameter
-      window.history.replaceState({}, '', window.location.pathname);
+      clearQuery();
       
       // Poll for subscription update
       const maxAttempts = 15; // 30 seconds max (15 attempts * 2 seconds)
@@ -127,6 +136,12 @@ const PlanSelection = () => {
       toast({
         title: t('planSelection.processingPayment'),
         description: t('planSelection.pleaseWait'),
+      });
+    } else if (checkoutStatus === 'canceled') {
+      clearQuery();
+      toast({
+        title: t('planSelection.checkoutCanceled'),
+        description: t('planSelection.checkoutCanceledDescription'),
       });
     }
   }, [location.search, refetchSubscription, refetchProfile, t, toast]);

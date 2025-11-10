@@ -447,6 +447,8 @@
     "processingPayment": "決済処理中",
     "pleaseWait": "プラン情報を更新しています...",
     "checkoutSuccess": "決済が完了しました",
+    "checkoutCanceled": "決済をキャンセルしました",
+    "checkoutCanceledDescription": "プランは変更されませんでした。必要であれば再度お試しください。",
     "refreshRequired": "プラン情報が更新されない場合は、ページを再読み込みしてください",
     "features": {
       "limit": "同時に {limit} 個のファンマを保有"

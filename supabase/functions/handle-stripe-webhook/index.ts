@@ -83,33 +83,50 @@ serve(async (req) => {
           throw new Error("User not found");
         }
 
-        const productId = subscription.items.data[0]?.price.product as string;
-        logStep("Product ID extracted", { productId });
+        const firstItem = subscription.items?.data?.[0];
+        const priceId = typeof firstItem?.price?.id === "string" ? firstItem.price.id : null;
+        const productId = typeof firstItem?.price?.product === "string" ? firstItem.price.product as string : null;
 
-        // Determine plan_type from product_id
-        const { data: settingsData } = await supabaseClient
-          .from("system_settings")
-          .select("setting_key, setting_value")
-          .in("setting_key", ["creator_stripe_product_id", "business_stripe_product_id"]);
-
-        let planType = 'free';
-        
-        if (settingsData) {
-          const creatorProduct = settingsData.find(s => s.setting_key === "creator_stripe_product_id")?.setting_value;
-          const businessProduct = settingsData.find(s => s.setting_key === "business_stripe_product_id")?.setting_value;
-          
-          if (productId === creatorProduct) {
-            planType = 'creator';
-          } else if (productId === businessProduct) {
-            planType = 'business';
-          }
+        if (!firstItem || !priceId || !productId) {
+          throw new Error("Subscription items missing price/product information");
         }
 
-        logStep("Plan type mapping", { productId, planType });
+        logStep("Price & product extracted", { priceId, productId });
+
+        const requiredKeys = ["creator_stripe_price_id", "business_stripe_price_id"];
+        const { data: settingsData, error: priceSettingsError } = await supabaseClient
+          .from("system_settings")
+          .select("setting_key, setting_value")
+          .in("setting_key", requiredKeys);
+
+        if (priceSettingsError) {
+          throw priceSettingsError;
+        }
+
+        const settingsEntries = (settingsData ?? []).map((row) => [row.setting_key, row.setting_value] as const);
+        const settingsMap = new Map(settingsEntries);
+        const creatorPriceId = settingsMap.get("creator_stripe_price_id");
+        const businessPriceId = settingsMap.get("business_stripe_price_id");
+
+        if (!creatorPriceId || !businessPriceId) {
+          throw new Error("Stripe Price IDs are not configured in system_settings");
+        }
+
+        let planType: "free" | "creator" | "business" = "free";
+        if (priceId === creatorPriceId) {
+          planType = "creator";
+        } else if (priceId === businessPriceId) {
+          planType = "business";
+        } else {
+          throw new Error(`Received Stripe price_id (${priceId}) that does not match configured plans`);
+        }
+
+        logStep("Plan type mapping", { priceId, planType });
 
         // Upsert subscription data
         logStep("Attempting upsert", { 
           user_id: user.id,
+          price_id: priceId,
           product_id: productId,
           status: subscription.status 
         });
@@ -121,6 +138,7 @@ serve(async (req) => {
             stripe_customer_id: subscription.customer as string,
             stripe_subscription_id: subscription.id,
             product_id: productId,
+            price_id: priceId,
             status: subscription.status,
             current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
             current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
