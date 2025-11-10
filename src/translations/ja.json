@@ -439,6 +439,11 @@
     "errorDescription": "少し時間をおいてもう一度お試しください。",
     "errorNoUser": "再度ログインしてからプランを変更してください。",
     "errorNoProfile": "プロフィール情報を読み込めませんでした。",
+    "redirectTitle": "決済画面に移動中...",
+    "redirectDescription": "Stripeの安全な決済画面にリダイレクトしています。",
+    "downgradeSuccess": "ファンマの選択を保存しました",
+    "fanmarksExcluded": "{count} 個のファンマがプランから除外されました",
+    "completeDowngradeInPortal": "Stripeカスタマーポータルでプラン変更を完了してください",
     "features": {
       "limit": "同時に {limit} 個のファンマを保有"
     },

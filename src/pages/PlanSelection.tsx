@@ -9,8 +9,11 @@ import { Badge } from '@/components/ui/badge';
 import {
   getPlanLimit,
   formatPlanPrice,
+  evaluatePlanDowngrade,
   type PlanType,
+  type ActiveFanmark,
 } from '@/lib/plan-utils';
+import { FanmarkSelectionModal } from '@/components/FanmarkSelectionModal';
 import { supabase } from '@/integrations/supabase/client';
 import { Check, ArrowLeft, Loader2, Sparkle, Crown, Star, ExternalLink } from 'lucide-react';
 
@@ -39,6 +42,10 @@ const PlanSelection = () => {
 
   const [processingPlan, setProcessingPlan] = useState<PlanType | null>(null);
   const [redirecting, setRedirecting] = useState(false);
+  const [showFanmarkSelection, setShowFanmarkSelection] = useState(false);
+  const [pendingPlanType, setPendingPlanType] = useState<PlanType | null>(null);
+  const [fanmarksForSelection, setFanmarksForSelection] = useState<ActiveFanmark[]>([]);
+  const [newPlanLimit, setNewPlanLimit] = useState<number>(0);
 
   const planCards = useMemo<PlanCardCopy[]>(() => CUSTOMER_PLANS.map((planType) => {
     return {
@@ -94,6 +101,19 @@ const PlanSelection = () => {
 
     try {
       const currentPlanType = profile.plan_type as PlanType;
+      
+      // Check if downgrade requires fanmark selection
+      const evaluation = await evaluatePlanDowngrade(user.id, currentPlanType, planType);
+      
+      if (evaluation.requiresSelection) {
+        // Show fanmark selection modal
+        setPendingPlanType(planType);
+        setFanmarksForSelection(evaluation.fanmarks);
+        setNewPlanLimit(evaluation.newPlanLimit);
+        setShowFanmarkSelection(true);
+        setProcessingPlan(null);
+        return;
+      }
       
       // Upgrading to paid plan (free → creator/business)
       if (currentPlanType === 'free' && (planType === 'creator' || planType === 'business')) {
@@ -156,6 +176,111 @@ const PlanSelection = () => {
       });
     } finally {
       setProcessingPlan(null);
+    }
+  };
+
+  const handleFanmarkSelectionConfirm = async (selectedFanmarkIds: string[]) => {
+    if (!user || !pendingPlanType) return;
+
+    try {
+      // Update plan_excluded status for fanmarks
+      const allFanmarkIds = fanmarksForSelection.map(fm => fm.id);
+      const excludedFanmarkIds = allFanmarkIds.filter(id => !selectedFanmarkIds.includes(id));
+
+      // Mark excluded fanmarks
+      if (excludedFanmarkIds.length > 0) {
+        const licensesToExclude = fanmarksForSelection
+          .filter(fm => excludedFanmarkIds.includes(fm.id))
+          .map(fm => fm.license_id);
+
+        const { error } = await supabase
+          .from('fanmark_licenses')
+          .update({
+            plan_excluded: true,
+            excluded_at: new Date().toISOString(),
+            excluded_from_plan: profile?.plan_type || 'unknown'
+          })
+          .in('id', licensesToExclude);
+
+        if (error) throw error;
+      }
+
+      // Reset excluded status for selected fanmarks (in case they were previously excluded)
+      if (selectedFanmarkIds.length > 0) {
+        const licensesToInclude = fanmarksForSelection
+          .filter(fm => selectedFanmarkIds.includes(fm.id))
+          .map(fm => fm.license_id);
+
+        const { error } = await supabase
+          .from('fanmark_licenses')
+          .update({
+            plan_excluded: false,
+            excluded_at: null,
+            excluded_from_plan: null
+          })
+          .in('id', licensesToInclude);
+
+        if (error) throw error;
+      }
+
+      // Close modal and proceed with plan change
+      setShowFanmarkSelection(false);
+      
+      // Open customer portal for downgrade
+      if (pendingPlanType === 'free') {
+        // If downgrading to free, just update locally and redirect to portal
+        setRedirecting(true);
+        
+        const { data, error } = await supabase.functions.invoke('customer-portal');
+        
+        if (error) {
+          setRedirecting(false);
+          throw error;
+        }
+        
+        if (data?.url) {
+          setTimeout(() => {
+            window.open(data.url, '_blank');
+            setRedirecting(false);
+            toast({
+              title: t('planSelection.downgradeSuccess'),
+              description: t('planSelection.fanmarksExcluded', { count: excludedFanmarkIds.length }),
+            });
+          }, 500);
+        }
+      } else {
+        // For paid downgrades, open customer portal
+        setRedirecting(true);
+        
+        const { data, error } = await supabase.functions.invoke('customer-portal');
+        
+        if (error) {
+          setRedirecting(false);
+          throw error;
+        }
+        
+        if (data?.url) {
+          setTimeout(() => {
+            window.open(data.url, '_blank');
+            setRedirecting(false);
+            toast({
+              title: t('planSelection.fanmarksExcluded', { count: excludedFanmarkIds.length }),
+              description: t('planSelection.completeDowngradeInPortal'),
+            });
+          }, 500);
+        }
+      }
+    } catch (error: any) {
+      console.error('Fanmark selection error:', error);
+      toast({
+        title: t('common.error'),
+        description: error.message || t('planSelection.errorDescription'),
+        variant: 'destructive',
+      });
+    } finally {
+      setPendingPlanType(null);
+      setFanmarksForSelection([]);
+      setNewPlanLimit(0);
     }
   };
 
@@ -320,6 +445,21 @@ const PlanSelection = () => {
           </div>
         </section>
       </div>
+
+      {/* Fanmark Selection Modal */}
+      <FanmarkSelectionModal
+        isOpen={showFanmarkSelection}
+        onClose={() => {
+          setShowFanmarkSelection(false);
+          setPendingPlanType(null);
+          setFanmarksForSelection([]);
+          setNewPlanLimit(0);
+        }}
+        newPlanType={pendingPlanType || 'free'}
+        newPlanLimit={newPlanLimit}
+        currentFanmarks={fanmarksForSelection}
+        onConfirm={handleFanmarkSelectionConfirm}
+      />
 
       {/* Redirect Loading Overlay */}
       {redirecting && (
