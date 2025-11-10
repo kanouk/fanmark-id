@@ -4,8 +4,10 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import {
   getPlanLimit,
   formatPlanPrice,
@@ -37,8 +39,9 @@ const PlanSelection = () => {
   const [backPath, setBackPath] = useState('/profile');
   const { t } = useTranslation();
   const { toast } = useToast();
-  const { profile, loading, updateProfile } = useProfile();
+  const { profile, loading, updateProfile, refetch: refetchProfile } = useProfile();
   const { user } = useAuth();
+  const { refetch: refetchSubscription } = useSubscription();
 
   const [processingPlan, setProcessingPlan] = useState<PlanType | null>(null);
   const [redirecting, setRedirecting] = useState(false);
@@ -46,6 +49,7 @@ const PlanSelection = () => {
   const [pendingPlanType, setPendingPlanType] = useState<PlanType | null>(null);
   const [fanmarksForSelection, setFanmarksForSelection] = useState<ActiveFanmark[]>([]);
   const [newPlanLimit, setNewPlanLimit] = useState<number>(0);
+  const [checkingSubscription, setCheckingSubscription] = useState(false);
 
   const planCards = useMemo<PlanCardCopy[]>(() => CUSTOMER_PLANS.map((planType) => {
     return {
@@ -82,6 +86,50 @@ const PlanSelection = () => {
       setBackPath(fromPath);
     }
   }, [locationState?.from]);
+
+  // Handle checkout success with auto-refresh
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('checkout') === 'success') {
+      setCheckingSubscription(true);
+      
+      // Clear the parameter
+      window.history.replaceState({}, '', window.location.pathname);
+      
+      // Poll for subscription update
+      const maxAttempts = 15; // 30 seconds max (15 attempts * 2 seconds)
+      let attempts = 0;
+      
+      const pollSubscription = async () => {
+        attempts++;
+        
+        await Promise.all([
+          refetchSubscription(),
+          refetchProfile()
+        ]);
+        
+        if (attempts >= maxAttempts) {
+          setCheckingSubscription(false);
+          toast({
+            title: t('planSelection.checkoutSuccess'),
+            description: t('planSelection.refreshRequired'),
+          });
+        } else {
+          setTimeout(pollSubscription, 2000);
+        }
+      };
+      
+      // Initial delay before first poll
+      setTimeout(() => {
+        pollSubscription();
+      }, 1000);
+      
+      toast({
+        title: t('planSelection.processingPayment'),
+        description: t('planSelection.pleaseWait'),
+      });
+    }
+  }, [location.search, refetchSubscription, refetchProfile, t, toast]);
 
   const handlePlanChange = async (planType: PlanType) => {
     if (!profile || planType === profile.plan_type) {
@@ -460,6 +508,25 @@ const PlanSelection = () => {
         currentFanmarks={fanmarksForSelection}
         onConfirm={handleFanmarkSelectionConfirm}
       />
+
+      {/* Subscription Check Loading Overlay */}
+      {checkingSubscription && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <Card className="w-[90%] max-w-md p-6">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div>
+                <h3 className="font-semibold text-lg mb-2">
+                  {t('planSelection.processingPayment')}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {t('planSelection.pleaseWait')}
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Redirect Loading Overlay */}
       {redirecting && (

@@ -445,6 +445,10 @@
     "downgradeSuccess": "Fanmark selection saved",
     "fanmarksExcluded": "{count} fanmark(s) have been excluded from your plan",
     "completeDowngradeInPortal": "Please complete the plan change in the Stripe Customer Portal",
+    "processingPayment": "Processing payment",
+    "pleaseWait": "Updating plan information...",
+    "checkoutSuccess": "Payment completed",
+    "refreshRequired": "If plan doesn't update, please refresh the page",
     "features": {
       "limit": "Own up to {limit} fanmarks simultaneously"
     },

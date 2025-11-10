@@ -84,30 +84,36 @@ serve(async (req) => {
         }
 
         const productId = subscription.items.data[0]?.price.product as string;
+        logStep("Product ID extracted", { productId });
 
         // Determine plan_type from product_id
         const { data: settingsData } = await supabaseClient
           .from("system_settings")
           .select("setting_key, setting_value")
-          .in("setting_key", ["creator_stripe_price_id", "business_stripe_price_id"]);
+          .in("setting_key", ["creator_stripe_product_id", "business_stripe_product_id"]);
 
-        const priceId = subscription.items.data[0]?.price.id;
         let planType = 'free';
         
         if (settingsData) {
-          const creatorPrice = settingsData.find(s => s.setting_key === "creator_stripe_price_id")?.setting_value;
-          const businessPrice = settingsData.find(s => s.setting_key === "business_stripe_price_id")?.setting_value;
+          const creatorProduct = settingsData.find(s => s.setting_key === "creator_stripe_product_id")?.setting_value;
+          const businessProduct = settingsData.find(s => s.setting_key === "business_stripe_product_id")?.setting_value;
           
-          if (priceId === creatorPrice) {
+          if (productId === creatorProduct) {
             planType = 'creator';
-          } else if (priceId === businessPrice) {
+          } else if (productId === businessProduct) {
             planType = 'business';
           }
         }
 
-        logStep("Determined plan type", { priceId, planType });
+        logStep("Plan type mapping", { productId, planType });
 
         // Upsert subscription data
+        logStep("Attempting upsert", { 
+          user_id: user.id,
+          product_id: productId,
+          status: subscription.status 
+        });
+
         const { error: upsertError } = await supabaseClient
           .from("user_subscriptions")
           .upsert({
@@ -115,7 +121,6 @@ serve(async (req) => {
             stripe_customer_id: subscription.customer as string,
             stripe_subscription_id: subscription.id,
             product_id: productId,
-            price_id: priceId,
             status: subscription.status,
             current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
             current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
