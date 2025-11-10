@@ -409,7 +409,7 @@
       "description": "アカウントを完全に削除します。この操作は取り消せません。",
       "buttonLabel": "アカウントを削除",
       "confirmTitle": "本当にアカウントを削除しますか？",
-      "confirmDescription": "この操作は取り消せません。以下のデータが削除されます：\n\n• 所有するファンマーク（返却されgrace状態になります）\n• お気に入り、通知設定\n• プロフィール情報\n\nライセンス履歴は保持されますが、ユーザー名は「削除されたユーザー」と表示されます。",
+      "confirmDescription": "この操作は取り消せません。以下のデータが削除されます：\n\n• アクティブなサブスクリプション（即座にキャンセル、残り期間は放棄）\n• 所有するファンマーク（返却されgrace状態になります）\n• お気に入り、通知設定\n• プロフィール情報\n\nライセンス履歴は保持されますが、ユーザー名は「削除されたユーザー」と表示されます。",
       "confirmPrompt": "続行するには「DELETE」と入力してください。",
       "confirmPlaceholder": "DELETE",
       "deleteButton": "削除を実行",
@@ -418,6 +418,9 @@
       "successTitle": "アカウントを削除しました",
       "successDescription": "ご利用ありがとうございました。",
       "errorTitle": "削除に失敗しました",
+      "subscriptionWarningTitle": "⚠️ アクティブなサブスクリプションがあります",
+      "subscriptionWarningDescription": "現在のサブスクリプションは即座にキャンセルされ、残りの期間（約 {daysLeft} 日間）は放棄されます。",
+      "subscriptionEndDate": "サブスク期限: {date}",
       "errorDescription": "アカウントの削除中にエラーが発生しました。しばらくしてから再度お試しください。"
     }
   },

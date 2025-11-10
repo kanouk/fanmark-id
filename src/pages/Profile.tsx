@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
+import { useSubscription } from '@/hooks/useSubscription';
 import { useTranslation } from '@/hooks/useTranslation';
 import { UserProfileForm } from '@/components/UserProfileForm';
 import { LanguageToggle } from '@/components/LanguageToggle';
@@ -47,6 +48,7 @@ const InputStatusIcon = ({ status }: { status: boolean | null }) => {
 const Profile = () => {
   const { user, signOut, signingOut, loading: authLoading, setRequiresPasswordSetup } = useAuth();
   const { profile, loading, updateProfile } = useProfile();
+  const { subscribed, subscription_end, loading: subLoading } = useSubscription();
   const { t } = useTranslation();
   const { toast } = useToast();
   const { persistPreferredLanguage, isSaving: isSavingPreferredLanguage } = usePreferredLanguage();
@@ -389,7 +391,7 @@ const Profile = () => {
                   {t('userSettings.deleteAccount.buttonLabel')}
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
+              <AlertDialogContent className="max-w-md">
                 <AlertDialogHeader>
                   <AlertDialogTitle>
                     {t('userSettings.deleteAccount.confirmTitle')}
@@ -398,6 +400,30 @@ const Profile = () => {
                     {t('userSettings.deleteAccount.confirmDescription')}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
+                
+                {subscribed && subscription_end && !subLoading && (
+                  <div className="rounded-2xl border-2 border-destructive/30 bg-destructive/10 p-4 space-y-2">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
+                      <div className="space-y-1 flex-1">
+                        <p className="font-semibold text-sm text-destructive">
+                          {t('userSettings.deleteAccount.subscriptionWarningTitle')}
+                        </p>
+                        <p className="text-xs text-destructive/90">
+                          {t('userSettings.deleteAccount.subscriptionWarningDescription', {
+                            daysLeft: Math.max(0, Math.ceil((new Date(subscription_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+                          })}
+                        </p>
+                        <div className="text-xs text-muted-foreground pt-1">
+                          {t('userSettings.deleteAccount.subscriptionEndDate', {
+                            date: new Date(subscription_end).toLocaleDateString()
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="delete-confirm">{t('userSettings.deleteAccount.confirmPrompt')}</Label>

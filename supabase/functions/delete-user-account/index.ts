@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import Stripe from "https://esm.sh/stripe@18.5.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -140,6 +141,93 @@ async function returnUserFanmarks(supabase: any, userId: string): Promise<void> 
 }
 
 
+async function cancelStripeSubscription(userEmail: string, userId: string, supabase: any): Promise<void> {
+  const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+  
+  if (!stripeKey) {
+    console.warn("STRIPE_SECRET_KEY not configured, skipping subscription cancellation");
+    return;
+  }
+
+  try {
+    console.log("Checking Stripe subscriptions for user:", userEmail);
+    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+    
+    // Search for Stripe customer by email
+    const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
+    
+    if (customers.data.length === 0) {
+      console.log("No Stripe customer found for email:", userEmail);
+      return;
+    }
+    
+    const customerId = customers.data[0].id;
+    console.log("Found Stripe customer:", customerId);
+    
+    // Get active subscriptions
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customerId,
+      status: "active",
+      limit: 100,
+    });
+    
+    if (subscriptions.data.length === 0) {
+      console.log("No active subscriptions found for customer:", customerId);
+      return;
+    }
+    
+    console.log(`Found ${subscriptions.data.length} active subscription(s), canceling...`);
+    
+    // Cancel all active subscriptions immediately
+    for (const subscription of subscriptions.data) {
+      try {
+        await stripe.subscriptions.cancel(subscription.id);
+        console.log("Successfully canceled subscription:", subscription.id);
+        
+        // Log the cancellation
+        await supabase.from("audit_logs").insert({
+          user_id: userId,
+          action: "STRIPE_SUBSCRIPTION_CANCELED_ON_ACCOUNT_DELETE",
+          resource_type: "stripe_subscription",
+          resource_id: subscription.id,
+          metadata: {
+            timestamp: new Date().toISOString(),
+            customer_id: customerId,
+            subscription_id: subscription.id,
+            product_id: subscription.items.data[0]?.price?.product || null,
+          },
+        });
+      } catch (subError) {
+        console.error(`Failed to cancel subscription ${subscription.id}:`, subError);
+        // Log the error but continue with account deletion
+        await supabase.from("audit_logs").insert({
+          user_id: userId,
+          action: "STRIPE_SUBSCRIPTION_CANCEL_FAILED",
+          resource_type: "stripe_subscription",
+          resource_id: subscription.id,
+          metadata: {
+            timestamp: new Date().toISOString(),
+            error: subError instanceof Error ? subError.message : String(subError),
+          },
+        });
+      }
+    }
+  } catch (error) {
+    console.error("Error during Stripe subscription cancellation:", error);
+    // Log the error but continue with account deletion
+    await supabase.from("audit_logs").insert({
+      user_id: userId,
+      action: "STRIPE_CANCELLATION_ERROR",
+      resource_type: "stripe",
+      resource_id: userId,
+      metadata: {
+        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? error.message : String(error),
+      },
+    });
+  }
+}
+
 async function logAccountDeletion(supabase: any, userId: string, userEmail: string | null): Promise<void> {
   try {
     await supabase.from("audit_logs").insert({
@@ -197,13 +285,18 @@ Deno.serve(async (req) => {
 
     console.log("Processing account deletion for user:", user.id);
 
-    // Step 1: Return all active fanmarks to grace state (business logic)
+    // Step 1: Cancel Stripe subscriptions (if any)
+    if (user.email) {
+      await cancelStripeSubscription(user.email, user.id, supabase);
+    }
+
+    // Step 2: Return all active fanmarks to grace state (business logic)
     await returnUserFanmarks(supabase, user.id);
 
-    // Step 2: Log account deletion for audit trail
+    // Step 3: Log account deletion for audit trail
     await logAccountDeletion(supabase, user.id, user.email ?? null);
 
-    // Step 3: Delete user from auth.users
+    // Step 4: Delete user from auth.users
     // Foreign key constraints with ON DELETE CASCADE/SET NULL will automatically:
     // - SET NULL: fanmark_licenses.user_id (preserves license history)
     // - CASCADE: user_settings, user_roles, fanmark_favorites, notifications, 

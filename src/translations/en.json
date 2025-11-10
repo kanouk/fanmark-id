@@ -402,7 +402,7 @@
       "description": "Permanently delete your account. This action cannot be undone.",
       "buttonLabel": "Delete Account",
       "confirmTitle": "Are you sure you want to delete your account?",
-      "confirmDescription": "This action cannot be undone. The following data will be deleted:\n\n• Your owned fanmarks (will be returned and enter grace period)\n• Favorites and notification settings\n• Profile information\n\nLicense history will be retained, but your username will be displayed as \"Deleted User\".",
+      "confirmDescription": "This action cannot be undone. The following data will be deleted:\n\n• Active subscription (canceled immediately, remaining period forfeited)\n• Your owned fanmarks (will be returned and enter grace period)\n• Favorites and notification settings\n• Profile information\n\nLicense history will be retained, but your username will be displayed as \"Deleted User\".",
       "confirmPrompt": "Type \"DELETE\" to continue.",
       "confirmPlaceholder": "DELETE",
       "deleteButton": "Delete Account",
@@ -411,7 +411,10 @@
       "successTitle": "Account Deleted",
       "successDescription": "Thank you for using our service.",
       "errorTitle": "Deletion Failed",
-      "errorDescription": "An error occurred while deleting your account. Please try again later."
+      "errorDescription": "An error occurred while deleting your account. Please try again later.",
+      "subscriptionWarningTitle": "⚠️ You have an active subscription",
+      "subscriptionWarningDescription": "Your current subscription will be canceled immediately, and the remaining period (approximately {daysLeft} days) will be forfeited.",
+      "subscriptionEndDate": "Subscription ends: {date}"
     },
     "updateSuccess": "Settings Updated",
     "updateSuccessDescription": "Your user settings have been updated successfully",
