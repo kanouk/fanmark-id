@@ -6,6 +6,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { TranslationProvider } from "@/hooks/useTranslation";
 import { AuthProvider } from "@/hooks/useAuth";
+import { LotteryActionOverlayProvider } from "@/providers/LotteryActionOverlayProvider";
 import { supabase } from "@/integrations/supabase/client";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminAuth from "@/pages/AdminAuth";
@@ -100,20 +101,22 @@ const AdminApp = () => (
   <QueryClientProvider client={queryClient}>
     <TranslationProvider>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={
-                <AdminRoute>
-                  <AdminDashboard />
-                </AdminRoute>
-              } />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+        <LotteryActionOverlayProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={
+                  <AdminRoute>
+                    <AdminDashboard />
+                  </AdminRoute>
+                } />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </LotteryActionOverlayProvider>
       </AuthProvider>
     </TranslationProvider>
   </QueryClientProvider>
