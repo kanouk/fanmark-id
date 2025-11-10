@@ -115,6 +115,7 @@ serve(async (req) => {
             stripe_customer_id: subscription.customer as string,
             stripe_subscription_id: subscription.id,
             product_id: productId,
+            price_id: priceId,
             status: subscription.status,
             current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
             current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
