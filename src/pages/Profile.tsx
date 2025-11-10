@@ -15,9 +15,10 @@ import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { CardDescription } from '@/components/ui/card';
-import { User, LogOut, CreditCard, Globe, Palette, Link2, Info, PencilLine, Languages, Heart, Lock, ShieldCheck, Check, X, AlertTriangle } from 'lucide-react';
+import { User, LogOut, CreditCard, Globe, Palette, Link2, Info, PencilLine, Languages, Heart, Lock, ShieldCheck, Check, X, AlertTriangle, Loader2 } from 'lucide-react';
 import { MdSpaceDashboard } from 'react-icons/md';
 import { RiCalendarCheckLine } from 'react-icons/ri';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { usePreferredLanguage } from '@/hooks/usePreferredLanguage';
@@ -48,7 +49,7 @@ const InputStatusIcon = ({ status }: { status: boolean | null }) => {
 const Profile = () => {
   const { user, signOut, signingOut, loading: authLoading, setRequiresPasswordSetup } = useAuth();
   const { profile, loading, updateProfile } = useProfile();
-  const { subscribed, subscription_end, loading: subLoading } = useSubscription();
+  const { subscribed, subscription_end, loading: subLoading, refetch: refetchSubscription } = useSubscription();
   const { t } = useTranslation();
   const { toast } = useToast();
   const { persistPreferredLanguage, isSaving: isSavingPreferredLanguage } = usePreferredLanguage();
@@ -467,21 +468,80 @@ const Profile = () => {
         </CardTitle>
         <p className="ml-7 text-sm text-muted-foreground">{t('userSettings.planSectionDescription')}</p>
       </CardHeader>
-      <CardContent className="space-y-4 px-6 pb-6 pt-2">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/15 bg-background/70 px-4 py-3">
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-foreground">{currentPlanLabel}</p>
-            <p className="text-xs text-muted-foreground">{planLimitCopy}</p>
+      <CardContent className="space-y-6 px-6 pb-6 pt-2">
+        {/* Current Plan Info */}
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/15 bg-background/70 px-4 py-3">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground">{currentPlanLabel}</p>
+              <p className="text-xs text-muted-foreground">{planLimitCopy}</p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-full border-primary/20 bg-primary/5 text-primary hover:bg-primary/10"
+              onClick={() => navigate('/plans', { state: { from: location.pathname } })}
+            >
+              {t('userSettings.changePlan')}
+            </Button>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            className="rounded-full border-primary/20 bg-primary/5 text-primary hover:bg-primary/10"
-            onClick={() => navigate('/plans', { state: { from: location.pathname } })}
-          >
-            {t('userSettings.changePlan')}
-          </Button>
         </div>
+
+        {/* Subscription Status */}
+        <Card className="rounded-2xl border border-primary/15 bg-primary/5">
+          <CardHeader className="px-5 pt-5 pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base font-semibold text-foreground">
+                サブスクリプション状態
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={refetchSubscription}
+                disabled={subLoading}
+                className="h-8 w-8 rounded-full p-0 hover:bg-primary/10"
+              >
+                {subLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                ) : (
+                  <RiCalendarCheckLine className="h-4 w-4 text-primary" />
+                )}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="px-5 pb-5">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between rounded-xl bg-background/80 px-3 py-2.5">
+                <span className="text-sm text-muted-foreground">ステータス</span>
+                <Badge 
+                  variant={subscribed ? "default" : "secondary"}
+                  className="rounded-full"
+                >
+                  {subscribed ? '有効' : '無効'}
+                </Badge>
+              </div>
+
+              {subscription_end && (
+                <div className="flex items-center justify-between rounded-xl bg-background/80 px-3 py-2.5">
+                  <span className="text-sm text-muted-foreground">次回更新日</span>
+                  <span className="text-sm font-medium text-foreground">
+                    {new Date(subscription_end).toLocaleDateString('ja-JP', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </span>
+                </div>
+              )}
+
+              {!subscribed && !subLoading && (
+                <p className="text-sm text-muted-foreground text-center py-2">
+                  現在、有効なサブスクリプションはありません
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </CardContent>
     </Card>
   );
