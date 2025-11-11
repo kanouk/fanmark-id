@@ -63,6 +63,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setEmailConfirmed(confirmed);
     setLoading(false);
 
+    try {
+      const localToken = typeof localStorage !== 'undefined'
+        ? localStorage.getItem('sb-ppqgtbjykitqtiaisyji-auth-token')
+        : null;
+      console.info('[useAuth] applySession', {
+        hasSession: !!nextSession,
+        userId: nextUser?.id ?? null,
+        tokenPresent: !!localToken,
+      });
+    } catch (storageError) {
+      console.warn('[useAuth] unable to read localStorage token snapshot', storageError);
+    }
+
     if (nextUser) {
       setTimeout(() => {
         loadUserSettings(nextUser.id);

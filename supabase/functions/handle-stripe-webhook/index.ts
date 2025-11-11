@@ -123,6 +123,24 @@ serve(async (req) => {
 
         logStep("Plan type mapping", { priceId, planType });
 
+        const toIsoString = (unixSeconds?: number | null) => {
+          if (typeof unixSeconds !== "number" || Number.isNaN(unixSeconds)) {
+            return null;
+          }
+          try {
+            return new Date(unixSeconds * 1000).toISOString();
+          } catch (dateError) {
+            console.warn("[STRIPE-WEBHOOK] Unable to convert timestamp", {
+              unixSeconds,
+              error: dateError instanceof Error ? dateError.message : dateError,
+            });
+            return null;
+          }
+        };
+
+        const periodStartIso = toIsoString(subscription.current_period_start);
+        const periodEndIso = toIsoString(subscription.current_period_end);
+
         // Upsert subscription data
         logStep("Attempting upsert", { 
           user_id: user.id,
@@ -140,8 +158,8 @@ serve(async (req) => {
             product_id: productId,
             price_id: priceId,
             status: subscription.status,
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+            current_period_start: periodStartIso,
+            current_period_end: periodEndIso,
             cancel_at_period_end: subscription.cancel_at_period_end,
             updated_at: new Date().toISOString(),
           }, {

@@ -40,6 +40,9 @@ export const useProfile = () => {
   const fetchProfile = async () => {
     try {
       setLoading(true);
+      console.info('[useProfile] fetching profile', {
+        userId: user?.id ?? null,
+      });
       const { data, error } = await supabase
         .from('user_settings')
         .select('*')
@@ -47,9 +50,16 @@ export const useProfile = () => {
         .single();
 
       if (error) throw error;
+      console.info('[useProfile] profile fetch success', {
+        userId: data.user_id,
+        planType: data.plan_type,
+      });
       setProfile(data as UserSettings);
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error('[useProfile] Error fetching profile:', {
+        message: error instanceof Error ? error.message : String(error),
+        userId: user?.id ?? null,
+      });
     } finally {
       setLoading(false);
     }

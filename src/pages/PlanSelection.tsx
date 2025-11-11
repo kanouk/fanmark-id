@@ -112,6 +112,12 @@ const PlanSelection = () => {
       const pollSubscription = async () => {
         attempts++;
         
+        if (!user) {
+          console.info('[PlanSelection] Skipping poll - user not ready');
+          setTimeout(pollSubscription, 2000);
+          return;
+        }
+
         await Promise.all([
           refetchSubscription(),
           refetchProfile()
@@ -144,7 +150,7 @@ const PlanSelection = () => {
         description: t('planSelection.checkoutCanceledDescription'),
       });
     }
-  }, [location.search, refetchSubscription, refetchProfile, t, toast]);
+  }, [location.search, refetchSubscription, refetchProfile, t, toast, user]);
 
   const handlePlanChange = async (planType: PlanType) => {
     if (!profile || planType === profile.plan_type) {
