@@ -429,7 +429,12 @@
     "subscriptionIntervalMonthPlural": "{count} months",
     "subscriptionIntervalYear": "{count} year",
     "subscriptionIntervalYearPlural": "{count} years",
-    "subscriptionCancellationNote": "Your subscription is scheduled to end on {date}."
+    "subscriptionCancellationNote": "Your subscription is scheduled to end on {date}.",
+    "subscriptionPeriodLabel": "Current billing period",
+    "subscriptionNextBillingLabel": "Next billing date",
+    "subscriptionEndsLabel": "Scheduled end date",
+    "subscriptionStatusLabel": "Status",
+    "subscriptionUnknown": "Unknown"
   },
   "planSelection": {
     "title": "Pick the plan that fits your flow",

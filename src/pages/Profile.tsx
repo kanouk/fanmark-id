@@ -26,6 +26,7 @@ import { ACTIVE_LANGUAGES, isActiveLanguage, FALLBACK_LANGUAGE, ActiveLanguageCo
 import { getPlanLimit, type PlanType } from '@/lib/plan-utils';
 import { usePasswordValidation } from '@/hooks/usePasswordValidation';
 import { PasswordRequirement } from '@/components/PasswordRequirement';
+import { formatStripeAmount } from '@/lib/currency';
 import { supabase } from '@/integrations/supabase/client';
 
 type Section = 'account' | 'plan' | 'language' | 'display' | 'integrations';
@@ -51,7 +52,8 @@ const Profile = () => {
   const { profile, loading, updateProfile } = useProfile();
   const {
     subscribed,
-    subscription_end,
+    subscription_start: subscriptionStart,
+    subscription_end: subscriptionEnd,
     amount: subscriptionAmount,
     currency: subscriptionCurrency,
     interval: subscriptionInterval,
@@ -412,7 +414,7 @@ const Profile = () => {
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 
-                {subscribed && subscription_end && !subLoading && (
+                {subscribed && subscriptionEnd && !subLoading && (
                   <div className="rounded-2xl border-2 border-destructive/30 bg-destructive/10 p-4 space-y-2">
                     <div className="flex items-start gap-2">
                       <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
@@ -422,12 +424,12 @@ const Profile = () => {
                         </p>
                         <p className="text-xs text-destructive/90">
                           {t('userSettings.deleteAccount.subscriptionWarningDescription', {
-                            daysLeft: Math.max(0, Math.ceil((new Date(subscription_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+                            daysLeft: Math.max(0, Math.ceil((new Date(subscriptionEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
                           })}
                         </p>
                         <div className="text-xs text-muted-foreground pt-1">
                           {t('userSettings.deleteAccount.subscriptionEndDate', {
-                            date: new Date(subscription_end).toLocaleDateString()
+                            date: new Date(subscriptionEnd).toLocaleDateString()
                           })}
                         </div>
                       </div>
@@ -482,15 +484,35 @@ const Profile = () => {
 
   const formattedAmount = () => {
     if (subscriptionAmount == null || !subscriptionCurrency) return null;
-    const formatter = new Intl.NumberFormat(profile?.preferred_language || 'ja-JP', {
-      style: 'currency',
-      currency: subscriptionCurrency?.toUpperCase(),
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    });
+    const locale =
+      profile?.preferred_language === 'en'
+        ? 'en-US'
+        : profile?.preferred_language === 'id'
+          ? 'id-ID'
+          : profile?.preferred_language === 'ko'
+            ? 'ko-KR'
+            : 'ja-JP';
     const intervalLabel = getIntervalLabel();
-    return `${formatter.format(subscriptionAmount / 100)}${intervalLabel ? ` / ${intervalLabel}` : ''}`;
+    return `${formatStripeAmount(subscriptionAmount, subscriptionCurrency, locale)}${
+      intervalLabel ? ` / ${intervalLabel}` : ''
+    }`;
   };
+
+  const formatDate = (dateString?: string | null) => {
+    if (!dateString) return null;
+    return new Date(dateString).toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  const subscriptionPeriod =
+    subscriptionStart || subscriptionEnd
+      ? `${formatDate(subscriptionStart) ?? t('userSettings.subscriptionUnknown')} 〜 ${
+          formatDate(subscriptionEnd) ?? t('userSettings.subscriptionUnknown')
+        }`
+      : null;
 
   const planSection = (
     <Card className="rounded-3xl border border-primary/20 bg-white shadow-[0_20px_45px_rgba(101,195,200,0.2)]">
@@ -545,7 +567,7 @@ const Profile = () => {
           <CardContent className="px-5 pb-5">
             <div className="space-y-3">
               <div className="flex items-center justify-between rounded-xl bg-background/80 px-3 py-2.5">
-                <span className="text-sm text-muted-foreground">ステータス</span>
+                <span className="text-sm text-muted-foreground">{t('userSettings.subscriptionStatusLabel')}</span>
                 <Badge 
                   variant={subscribed ? "default" : "secondary"}
                   className="rounded-full"
@@ -563,11 +585,15 @@ const Profile = () => {
                 </div>
               )}
 
-              {subscription_end && (
+              {subscriptionEnd && (
                 <div className="flex items-center justify-between rounded-xl bg-background/80 px-3 py-2.5">
-                  <span className="text-sm text-muted-foreground">次回更新日</span>
+                  <span className="text-sm text-muted-foreground">
+                    {subscriptionCancels
+                      ? t('userSettings.subscriptionEndsLabel')
+                      : t('userSettings.subscriptionNextBillingLabel')}
+                  </span>
                   <span className="text-sm font-medium text-foreground">
-                    {new Date(subscription_end).toLocaleDateString('ja-JP', {
+                    {new Date(subscriptionEnd).toLocaleDateString('ja-JP', {
                       year: 'numeric',
                       month: 'long',
                       day: 'numeric',
@@ -576,10 +602,19 @@ const Profile = () => {
                 </div>
               )}
 
-              {subscriptionCancels && subscription_end && (
+              {subscriptionPeriod && (
+                <div className="flex items-center justify-between rounded-xl bg-background/80 px-3 py-2.5">
+                  <span className="text-sm text-muted-foreground">{t('userSettings.subscriptionPeriodLabel')}</span>
+                  <span className="text-sm font-medium text-foreground text-right">
+                    {subscriptionPeriod}
+                  </span>
+                </div>
+              )}
+
+              {subscriptionCancels && subscriptionEnd && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-900">
                   {t('userSettings.subscriptionCancellationNote', {
-                    date: new Date(subscription_end).toLocaleDateString('ja-JP', {
+                    date: new Date(subscriptionEnd).toLocaleDateString('ja-JP', {
                       year: 'numeric',
                       month: 'long',
                       day: 'numeric',

@@ -5,6 +5,7 @@ import { useAuth } from './useAuth';
 export interface SubscriptionStatus {
   subscribed: boolean;
   product_id: string | null;
+  subscription_start: string | null;
   subscription_end: string | null;
   amount: number | null;
   currency: string | null;
@@ -20,6 +21,7 @@ export function useSubscription() {
   const [status, setStatus] = useState<SubscriptionStatus>({
     subscribed: false,
     product_id: null,
+    subscription_start: null,
     subscription_end: null,
     amount: null,
     currency: null,
@@ -35,6 +37,7 @@ export function useSubscription() {
       setStatus({
         subscribed: false,
         product_id: null,
+        subscription_start: null,
         subscription_end: null,
         amount: null,
         currency: null,
@@ -71,6 +74,7 @@ export function useSubscription() {
         setStatus({
           subscribed: !!data,
           product_id: data?.product_id || null,
+          subscription_start: data?.current_period_start || null,
           subscription_end: data?.current_period_end || null,
           amount: data?.amount ?? null,
           currency: data?.currency ?? null,
@@ -85,6 +89,7 @@ export function useSubscription() {
         setStatus(prev => ({
           ...prev,
           loading: false,
+          subscription_start: null,
           amount: null,
           currency: null,
           interval: null,
@@ -135,6 +140,7 @@ export function useSubscription() {
       setStatus({
         subscribed: !!data,
         product_id: data?.product_id || null,
+        subscription_start: data?.current_period_start || null,
         subscription_end: data?.current_period_end || null,
         amount: data?.amount ?? null,
         currency: data?.currency ?? null,

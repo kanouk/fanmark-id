@@ -27,6 +27,7 @@
   (`idle` / `waiting-session` / `polling`)
 - モーダル表示は `checkingSubscription` と同期させ、ステート終了時に必ず解除
 - タイムアウト時はトーストで再読込を案内しつつもUIをブロックしない
-- Webhook (`handle-stripe-webhook`) は `user_subscriptions` に `amount` / `currency` / `interval` / `interval_count` を保存する。フロント側ではこれらをそのまま表示することで「次回課金日」「課金額」「キャンセル予定日」を正確に案内できる。
+- Webhook (`handle-stripe-webhook`) は `user_subscriptions` に `amount` / `currency` / `interval` / `interval_count` を保存する。Stripeの `amount` はマイナー単位（JPYなら1円単位、USDなら1セント単位）で渡されるため、フロント側ではゼロ小数の通貨を識別し、必要に応じて100で割る/割らないロジックを実装する。
+- 同じく `current_period_start` / `current_period_end` を利用して「現在の請求期間」や「次回請求日」「終了予定日（cancel_at_period_end=true）」を表示する。UIから参照する際は `useSubscription` フックで提供している値を用いる。
 
 この設計により、Webhook伝搬の遅延や一時的なセッション切断があっても、ユーザーの操作を妨げずに安全に状態を同期できます。別の課金フローを追加する場合も、上記の状態遷移とタイムアウト方針を再利用してください。

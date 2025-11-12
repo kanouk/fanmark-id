@@ -410,6 +410,11 @@
     "subscriptionIntervalYear": "{count}年",
     "subscriptionIntervalYearPlural": "{count}年",
     "subscriptionCancellationNote": "このサブスクリプションは {date} に終了予定です。",
+    "subscriptionPeriodLabel": "現在のご利用期間",
+    "subscriptionNextBillingLabel": "次回請求日",
+    "subscriptionEndsLabel": "終了予定日",
+    "subscriptionStatusLabel": "ステータス",
+    "subscriptionUnknown": "未設定",
     "deleteAccount": {
       "title": "アカウント削除",
       "description": "アカウントを完全に削除します。この操作は取り消せません。",
