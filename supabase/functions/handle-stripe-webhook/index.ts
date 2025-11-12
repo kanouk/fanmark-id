@@ -140,6 +140,10 @@ serve(async (req) => {
 
         const periodStartIso = toIsoString(subscription.current_period_start);
         const periodEndIso = toIsoString(subscription.current_period_end);
+        const unitAmount = firstItem.price?.unit_amount ?? null;
+        const currency = firstItem.price?.currency ?? null;
+        const interval = firstItem.price?.recurring?.interval ?? null;
+        const intervalCount = firstItem.price?.recurring?.interval_count ?? null;
 
         // Upsert subscription data
         logStep("Attempting upsert", { 
@@ -161,6 +165,10 @@ serve(async (req) => {
             current_period_start: periodStartIso,
             current_period_end: periodEndIso,
             cancel_at_period_end: subscription.cancel_at_period_end,
+            amount: unitAmount,
+            currency,
+            interval,
+            interval_count: intervalCount,
             updated_at: new Date().toISOString(),
           }, {
             onConflict: "user_id,stripe_subscription_id"

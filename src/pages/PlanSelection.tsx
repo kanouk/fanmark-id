@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
@@ -50,6 +50,10 @@ const PlanSelection = () => {
   const [fanmarksForSelection, setFanmarksForSelection] = useState<ActiveFanmark[]>([]);
   const [newPlanLimit, setNewPlanLimit] = useState<number>(0);
   const [checkingSubscription, setCheckingSubscription] = useState(false);
+  const [pendingCheckout, setPendingCheckout] = useState(false);
+  const [pollState, setPollState] = useState<'idle' | 'waiting-session' | 'polling'>('idle');
+  const [pollAttempts, setPollAttempts] = useState(0);
+  const [initialPlanType, setInitialPlanType] = useState<PlanType | null>(null);
 
   const planCards = useMemo<PlanCardCopy[]>(() => CUSTOMER_PLANS.map((planType) => {
     return {
@@ -68,24 +72,27 @@ const PlanSelection = () => {
     };
   }), [t]);
 
-  const enterpriseCard = useMemo<PlanCardCopy>(() => ({
-    type: 'enterprise',
-    name: t('planSelection.enterprise.name'),
-    description: t('planSelection.enterprise.description'),
-    price: t('planSelection.enterprise.price'),
-    features: [
-      t('planSelection.enterprise.feature1'),
-      t('planSelection.enterprise.feature2'),
-      t('planSelection.enterprise.feature3'),
-    ],
-  }), [t]);
-
   useEffect(() => {
     const fromPath = locationState?.from;
     if (fromPath && typeof fromPath === 'string') {
       setBackPath(fromPath);
     }
   }, [locationState?.from]);
+
+  const finishCheckoutSync = useCallback((outcome: 'success' | 'timeout') => {
+    setPendingCheckout(false);
+    setPollState('idle');
+    setPollAttempts(0);
+    setInitialPlanType(null);
+    setCheckingSubscription(false);
+
+    if (outcome === 'timeout') {
+      toast({
+        title: t('planSelection.checkoutSuccess'),
+        description: t('planSelection.refreshRequired'),
+      });
+    }
+  }, [t, toast]);
 
   // Handle checkout success or cancellation with auto-refresh
   useEffect(() => {
@@ -102,43 +109,14 @@ const PlanSelection = () => {
 
     if (checkoutStatus === 'success') {
       setCheckingSubscription(true);
+      setPendingCheckout(true);
+      setInitialPlanType((profile?.plan_type || 'free') as PlanType);
+      setPollAttempts(0);
+      setPollState(user ? 'polling' : 'waiting-session');
       
       clearQuery();
       
       // Poll for subscription update
-      const maxAttempts = 15; // 30 seconds max (15 attempts * 2 seconds)
-      let attempts = 0;
-      
-      const pollSubscription = async () => {
-        attempts++;
-        
-        if (!user) {
-          console.info('[PlanSelection] Skipping poll - user not ready');
-          setTimeout(pollSubscription, 2000);
-          return;
-        }
-
-        await Promise.all([
-          refetchSubscription(),
-          refetchProfile()
-        ]);
-        
-        if (attempts >= maxAttempts) {
-          setCheckingSubscription(false);
-          toast({
-            title: t('planSelection.checkoutSuccess'),
-            description: t('planSelection.refreshRequired'),
-          });
-        } else {
-          setTimeout(pollSubscription, 2000);
-        }
-      };
-      
-      // Initial delay before first poll
-      setTimeout(() => {
-        pollSubscription();
-      }, 1000);
-      
       toast({
         title: t('planSelection.processingPayment'),
         description: t('planSelection.pleaseWait'),
@@ -150,7 +128,60 @@ const PlanSelection = () => {
         description: t('planSelection.checkoutCanceledDescription'),
       });
     }
-  }, [location.search, refetchSubscription, refetchProfile, t, toast, user]);
+  }, [location.search, refetchSubscription, refetchProfile, profile?.plan_type, t, toast, user]);
+
+  // Transition from waiting-session to polling when the Supabase session is ready
+  useEffect(() => {
+    if (!pendingCheckout) return;
+    if (pollState !== 'waiting-session') return;
+    if (!user) return;
+    setPollState('polling');
+  }, [pendingCheckout, pollState, user]);
+
+  // Poll for subscription/profile updates while in polling state
+  useEffect(() => {
+    if (!pendingCheckout) return;
+    if (pollState !== 'polling') return;
+    if (pollAttempts >= 15) return;
+
+    const delay = pollAttempts === 0 ? 1000 : 2000;
+    const timer = setTimeout(async () => {
+      setPollAttempts(prev => prev + 1);
+      try {
+        await Promise.all([refetchSubscription(), refetchProfile()]);
+      } catch (error) {
+        console.warn('[PlanSelection] Poll error', error);
+      }
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [pendingCheckout, pollState, pollAttempts, refetchProfile, refetchSubscription]);
+
+  // Timeout while waiting for Supabase session recovery
+  useEffect(() => {
+    if (!pendingCheckout) return;
+    if (pollState !== 'waiting-session') return;
+    const timer = setTimeout(() => finishCheckoutSync('timeout'), 15000);
+    return () => clearTimeout(timer);
+  }, [finishCheckoutSync, pendingCheckout, pollState]);
+
+  // Detect successful plan change based on profile updates
+  useEffect(() => {
+    if (!pendingCheckout) return;
+    if (!initialPlanType) return;
+    if (!profile?.plan_type) return;
+    if (profile.plan_type === initialPlanType) return;
+
+    finishCheckoutSync('success');
+  }, [finishCheckoutSync, initialPlanType, pendingCheckout, profile?.plan_type]);
+
+  // Handle timeout condition
+  useEffect(() => {
+    if (!pendingCheckout) return;
+    if (pollState !== 'polling') return;
+    if (pollAttempts < 15) return;
+    finishCheckoutSync('timeout');
+  }, [finishCheckoutSync, pendingCheckout, pollState, pollAttempts]);
 
   const handlePlanChange = async (planType: PlanType) => {
     if (!profile || planType === profile.plan_type) {
@@ -236,11 +267,11 @@ const PlanSelection = () => {
         }
         return;
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Plan change error:', error);
       toast({
         title: t('planSelection.errorTitle'),
-        description: error.message || t('planSelection.errorDescription'),
+        description: error instanceof Error ? error.message : t('planSelection.errorDescription'),
         variant: 'destructive',
       });
     } finally {
@@ -339,11 +370,11 @@ const PlanSelection = () => {
           }, 500);
         }
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Fanmark selection error:', error);
       toast({
         title: t('common.error'),
-        description: error.message || t('planSelection.errorDescription'),
+        description: error instanceof Error ? error.message : t('planSelection.errorDescription'),
         variant: 'destructive',
       });
     } finally {
@@ -477,42 +508,6 @@ const PlanSelection = () => {
           ))}
         </section>
 
-        <section className="mt-12">
-          <div className="rounded-3xl border border-primary/15 bg-background/95 p-8 shadow-[0_20px_45px_rgba(101,195,200,0.12)] backdrop-blur">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-              <div className="max-w-2xl space-y-4">
-                <div className="flex items-center gap-2 text-sm font-semibold text-primary">
-                  <ShieldIcon />
-                  <span>{enterpriseCard.name}</span>
-                </div>
-                <p className="text-sm text-muted-foreground md:text-base">
-                  {enterpriseCard.description}
-                </p>
-                <ul className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
-                  {enterpriseCard.features.map(feature => (
-                    <li key={feature} className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-primary" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="flex flex-col items-start gap-4 rounded-2xl border border-primary/10 bg-primary/5 p-6">
-                <span className="text-2xl font-semibold text-foreground">{enterpriseCard.price}</span>
-                <p className="text-sm text-muted-foreground">
-                  {t('planSelection.enterprise.ctaDescription')}
-                </p>
-                <Button
-                  variant="default"
-                  className="rounded-full"
-                  onClick={() => window.open('mailto:hello@fanmark.id?subject=Enterprise%20Plan%20Inquiry')}
-                >
-                  {t('planSelection.enterprise.contactCta')}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </section>
       </div>
 
       {/* Fanmark Selection Modal */}
@@ -580,17 +575,5 @@ const PlanSelection = () => {
     </div>
   );
 };
-
-const ShieldIcon = () => (
-  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-    <ShieldOutline />
-  </div>
-);
-
-const ShieldOutline = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-4 w-4">
-    <path d="M12 3l7 4v5c0 4.97-3.58 9.54-7 10-3.42-.46-7-5.03-7-10V7l7-4z" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
 
 export default PlanSelection;

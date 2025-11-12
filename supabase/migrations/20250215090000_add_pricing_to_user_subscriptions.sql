@@ -1,0 +1,5 @@
+ALTER TABLE public.user_subscriptions
+  ADD COLUMN IF NOT EXISTS amount INTEGER,
+  ADD COLUMN IF NOT EXISTS currency TEXT,
+  ADD COLUMN IF NOT EXISTS interval TEXT,
+  ADD COLUMN IF NOT EXISTS interval_count INTEGER;

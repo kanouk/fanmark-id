@@ -6,6 +6,11 @@ export interface SubscriptionStatus {
   subscribed: boolean;
   product_id: string | null;
   subscription_end: string | null;
+  amount: number | null;
+  currency: string | null;
+  interval: string | null;
+  interval_count: number | null;
+  cancel_at_period_end: boolean;
   loading: boolean;
   error: string | null;
 }
@@ -16,6 +21,11 @@ export function useSubscription() {
     subscribed: false,
     product_id: null,
     subscription_end: null,
+    amount: null,
+    currency: null,
+    interval: null,
+    interval_count: null,
+    cancel_at_period_end: false,
     loading: true,
     error: null,
   });
@@ -26,6 +36,11 @@ export function useSubscription() {
         subscribed: false,
         product_id: null,
         subscription_end: null,
+        amount: null,
+        currency: null,
+        interval: null,
+        interval_count: null,
+        cancel_at_period_end: false,
         loading: false,
         error: null,
       });
@@ -57,6 +72,11 @@ export function useSubscription() {
           subscribed: !!data,
           product_id: data?.product_id || null,
           subscription_end: data?.current_period_end || null,
+          amount: data?.amount ?? null,
+          currency: data?.currency ?? null,
+          interval: data?.interval ?? null,
+          interval_count: data?.interval_count ?? null,
+          cancel_at_period_end: data?.cancel_at_period_end ?? false,
           loading: false,
           error: null,
         });
@@ -65,6 +85,11 @@ export function useSubscription() {
         setStatus(prev => ({
           ...prev,
           loading: false,
+          amount: null,
+          currency: null,
+          interval: null,
+          interval_count: null,
+          cancel_at_period_end: false,
           error: err instanceof Error ? err.message : 'Unknown error occurred',
         }));
       }
@@ -111,6 +136,11 @@ export function useSubscription() {
         subscribed: !!data,
         product_id: data?.product_id || null,
         subscription_end: data?.current_period_end || null,
+        amount: data?.amount ?? null,
+        currency: data?.currency ?? null,
+        interval: data?.interval ?? null,
+        interval_count: data?.interval_count ?? null,
+        cancel_at_period_end: data?.cancel_at_period_end ?? false,
         loading: false,
         error: null,
       });

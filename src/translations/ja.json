@@ -404,6 +404,12 @@
     "memberSince": "登録日",
     "saving": "保存中...",
     "uploading": "アップロード中...",
+    "subscriptionAmountLabel": "ご請求額",
+    "subscriptionIntervalMonth": "{count}ヶ月",
+    "subscriptionIntervalMonthPlural": "{count}ヶ月",
+    "subscriptionIntervalYear": "{count}年",
+    "subscriptionIntervalYearPlural": "{count}年",
+    "subscriptionCancellationNote": "このサブスクリプションは {date} に終了予定です。",
     "deleteAccount": {
       "title": "アカウント削除",
       "description": "アカウントを完全に削除します。この操作は取り消せません。",

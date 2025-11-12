@@ -72,7 +72,7 @@ serve(async (req) => {
 
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: `${origin}/plan-selection`,
+      return_url: `${origin}/plans`,
     });
 
     logStep("Customer portal session created", { sessionId: portalSession.id, url: portalSession.url });

@@ -49,7 +49,17 @@ const InputStatusIcon = ({ status }: { status: boolean | null }) => {
 const Profile = () => {
   const { user, signOut, signingOut, loading: authLoading, setRequiresPasswordSetup } = useAuth();
   const { profile, loading, updateProfile } = useProfile();
-  const { subscribed, subscription_end, loading: subLoading, refetch: refetchSubscription } = useSubscription();
+  const {
+    subscribed,
+    subscription_end,
+    amount: subscriptionAmount,
+    currency: subscriptionCurrency,
+    interval: subscriptionInterval,
+    interval_count: subscriptionIntervalCount,
+    cancel_at_period_end: subscriptionCancels,
+    loading: subLoading,
+    refetch: refetchSubscription,
+  } = useSubscription();
   const { t } = useTranslation();
   const { toast } = useToast();
   const { persistPreferredLanguage, isSaving: isSavingPreferredLanguage } = usePreferredLanguage();
@@ -459,6 +469,29 @@ const Profile = () => {
     </Card>
   );
 
+  const getIntervalLabel = () => {
+    if (!subscriptionInterval) return null;
+    const count = subscriptionIntervalCount || 1;
+    if (subscriptionInterval === 'year') {
+      const key = count > 1 ? 'userSettings.subscriptionIntervalYearPlural' : 'userSettings.subscriptionIntervalYear';
+      return t(key, { count });
+    }
+    const key = count > 1 ? 'userSettings.subscriptionIntervalMonthPlural' : 'userSettings.subscriptionIntervalMonth';
+    return t(key, { count });
+  };
+
+  const formattedAmount = () => {
+    if (subscriptionAmount == null || !subscriptionCurrency) return null;
+    const formatter = new Intl.NumberFormat(profile?.preferred_language || 'ja-JP', {
+      style: 'currency',
+      currency: subscriptionCurrency?.toUpperCase(),
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    });
+    const intervalLabel = getIntervalLabel();
+    return `${formatter.format(subscriptionAmount / 100)}${intervalLabel ? ` / ${intervalLabel}` : ''}`;
+  };
+
   const planSection = (
     <Card className="rounded-3xl border border-primary/20 bg-white shadow-[0_20px_45px_rgba(101,195,200,0.2)]">
       <CardHeader className="px-6 pt-6 pb-4 space-y-2">
@@ -521,6 +554,15 @@ const Profile = () => {
                 </Badge>
               </div>
 
+              {formattedAmount() && (
+                <div className="flex items-center justify-between rounded-xl bg-background/80 px-3 py-2.5">
+                  <span className="text-sm text-muted-foreground">{t('userSettings.subscriptionAmountLabel')}</span>
+                  <span className="text-sm font-medium text-foreground">
+                    {formattedAmount()}
+                  </span>
+                </div>
+              )}
+
               {subscription_end && (
                 <div className="flex items-center justify-between rounded-xl bg-background/80 px-3 py-2.5">
                   <span className="text-sm text-muted-foreground">次回更新日</span>
@@ -531,6 +573,18 @@ const Profile = () => {
                       day: 'numeric',
                     })}
                   </span>
+                </div>
+              )}
+
+              {subscriptionCancels && subscription_end && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-900">
+                  {t('userSettings.subscriptionCancellationNote', {
+                    date: new Date(subscription_end).toLocaleDateString('ja-JP', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })
+                  })}
                 </div>
               )}
 

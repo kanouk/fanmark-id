@@ -74,6 +74,21 @@
    ```
    - 作成後、Price IDをコピー: `price_test_business_...`
 
+
+#### 2.1.4 Customer Portal設定（テストモード）
+
+Stripe Billing Portalを利用する前に、テストモード用のポータル設定を必ず作成してください。設定が存在しない状態で
+`stripe.billingPortal.sessions.create` を呼び出すと、以下のように`No configuration provided...`エラーになります。
+
+1. Stripe Dashboard → **設定 (Settings)** → **Customer portal** に移動
+2. 「**Portal設定を作成**」「Get started」などをクリックして、最低限のプラン／ブランド設定を保存
+3. これにより`Default configuration`（テストモード用）が作成され、Billing Portal API を呼び出せるようになります
+4. 「Products and prices」または「Subscription products」セクションで、顧客に切り替えを許可したいプラン（例: Creator / Business）のPriceを追加し、`Allow customers to switch plans` をONにする
+
+本番モードに切り替える際も、同じ手順で本番用のCustomer Portal設定を作成してください（テストと本番は別設定です）。
+
+> **制限事項:** 1つのサブスクリプションに複数商品（複数のPrice）や従量課金が含まれている場合、Stripe Customer Portalではプラン変更ができず「キャンセルのみ」になります。fanmark.idではプラン課金は「1契約1Price」の構成を維持し、ライセンス延長などの都度課金は別Checkoutで処理してください。
+
 ---
 
 ### 2.2 Supabase Secretsの設定（テストモード）
@@ -164,7 +179,8 @@ ON CONFLICT (setting_key) DO UPDATE
 2. プラン選択画面でCreator Planを選択
 3. Stripe Checkoutページにリダイレクト
 4. テストカード `4242 4242 4242 4242` で決済
-5. 決済完了後、自動的に `/plans?checkout=success` に戻り、ステータス更新のトーストが表示されることを確認
+5. 決済完了後、自動的に `/plans?checkout=success` に戻り、
+   [Checkout & Subscription Sync Flow](./subscription-sync-flow.md) に記載のステップでモーダルが閉じることを確認
 6. ダッシュボードでプランが「Creator」に変更されていることを確認
 7. Supabaseの`stripe_payment_intents`テーブルを確認:
    ```sql

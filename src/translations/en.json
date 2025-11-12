@@ -423,7 +423,13 @@
     "email": "Email",
     "memberSince": "Member Since",
     "saving": "Saving...",
-    "uploading": "Uploading..."
+    "uploading": "Uploading...",
+    "subscriptionAmountLabel": "Billing amount",
+    "subscriptionIntervalMonth": "{count} month",
+    "subscriptionIntervalMonthPlural": "{count} months",
+    "subscriptionIntervalYear": "{count} year",
+    "subscriptionIntervalYearPlural": "{count} years",
+    "subscriptionCancellationNote": "Your subscription is scheduled to end on {date}."
   },
   "planSelection": {
     "title": "Pick the plan that fits your flow",

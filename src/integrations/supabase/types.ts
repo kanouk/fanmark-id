@@ -1267,6 +1267,10 @@ export type Database = {
           created_at: string
           current_period_end: string | null
           current_period_start: string | null
+          amount: number | null
+          currency: string | null
+          interval: string | null
+          interval_count: number | null
           id: string
           price_id: string | null
           product_id: string
@@ -1281,6 +1285,10 @@ export type Database = {
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
+          amount?: number | null
+          currency?: string | null
+          interval?: string | null
+          interval_count?: number | null
           id?: string
           price_id?: string | null
           product_id: string
