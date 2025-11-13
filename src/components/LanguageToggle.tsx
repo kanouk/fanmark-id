@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,6 +13,7 @@ import { ACTIVE_LANGUAGES, UPCOMING_LANGUAGES, isActiveLanguage } from '@/lib/la
 
 export function LanguageToggle() {
   const { language, setLanguage, t } = useTranslation();
+  const [isOpen, setIsOpen] = useState(false);
 
   const currentLanguage =
     ACTIVE_LANGUAGES.find((option) => option.value === language) ||
@@ -22,10 +24,11 @@ export function LanguageToggle() {
       return;
     }
     setLanguage(nextValue);
+    setIsOpen(false);
   };
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
