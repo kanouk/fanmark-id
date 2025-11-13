@@ -1,8 +1,10 @@
 import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import jaTranslations from '@/translations/ja.json';
 import enTranslations from '@/translations/en.json';
+import koTranslations from '@/translations/ko.json';
+import idTranslations from '@/translations/id.json';
 
-type Language = 'ja' | 'en';
+type Language = 'ja' | 'en' | 'ko' | 'id';
 type Translations = typeof jaTranslations;
 type TranslationVars = Record<string, string | number>;
 
@@ -19,6 +21,8 @@ const TranslationContext = createContext<TranslationContextType | null>(null);
 const translations: Record<Language, Translations> = {
   ja: jaTranslations,
   en: enTranslations,
+  ko: koTranslations,
+  id: idTranslations,
 };
 
 export function TranslationProvider({ children }: { children: ReactNode }) {
