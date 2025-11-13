@@ -1118,7 +1118,11 @@
     "graceProcessingTitle": "라이선스 유예 처리 중",
     "graceProcessingBodyWithDeadline": "팬마크 \"{{fanmark}}\"의 라이선스가 유예 처리 중입니다. {{deadline}}까지 업데이트하세요.",
     "graceProcessingBody": "팬마크 \"{{fanmark}}\"의 라이선스가 유예 처리 중입니다. 업데이트 기한을 확인하세요.",
-    "graceProcessingSummary": "라이선스 업데이트 필요"
+    "graceProcessingSummary": "라이선스 업데이트 필요",
+    "markAllAsRead": "모두 읽음으로 표시",
+    "toastMarkAllReadSuccess": "모든 알림을 읽음으로 표시했습니다",
+    "toastMarkAllReadError": "모든 알림을 읽음으로 표시하지 못했습니다",
+    "toastNoUnreadNotifications": "미읽은 알림이 없습니다"
   },
   "languageToggle": {
     "errorTitle": "언어를 전환할 수 없습니다",

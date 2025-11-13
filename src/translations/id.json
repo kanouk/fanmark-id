@@ -1119,7 +1119,11 @@
     "graceProcessingTitle": "Pemrosesan Lisensi",
     "graceProcessingBodyWithDeadline": "Lisensi fanmark \"{{fanmark}}\" Anda sekarang sedang diproses untuk kedaluwarsa. Perbarui pada {{deadline}}.",
     "graceProcessingBody": "Lisensi fanmark \"{{fanmark}}\" Anda sekarang sedang diproses untuk kedaluwarsa. Silakan tinjau tenggat waktu pembaruan.",
-    "graceProcessingSummary": "Pembaruan lisensi diperlukan"
+    "graceProcessingSummary": "Pembaruan lisensi diperlukan",
+    "markAllAsRead": "Tandai semua sebagai dibaca",
+    "toastMarkAllReadSuccess": "Semua pemberitahuan ditandai sebagai dibaca",
+    "toastMarkAllReadError": "Gagal menandai semua pemberitahuan sebagai dibaca",
+    "toastNoUnreadNotifications": "Tidak ada pemberitahuan yang belum dibaca"
   },
   "languageToggle": {
     "errorTitle": "Tidak dapat mengalihkan bahasa",

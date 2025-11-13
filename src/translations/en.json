@@ -1119,7 +1119,11 @@
     "graceProcessingTitle": "License Processing",
     "graceProcessingBodyWithDeadline": "{{fanmark}} license is processing. Renew by {{deadline}}.",
     "graceProcessingBody": "Your license is processing expiration.",
-    "graceProcessingSummary": "License renewal required"
+    "graceProcessingSummary": "License renewal required",
+    "markAllAsRead": "Mark all as read",
+    "toastMarkAllReadSuccess": "All notifications marked as read",
+    "toastMarkAllReadError": "Failed to mark all as read",
+    "toastNoUnreadNotifications": "No unread notifications"
   },
   "languageToggle": {
     "errorTitle": "Unable to switch language",

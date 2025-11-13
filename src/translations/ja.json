@@ -1117,7 +1117,11 @@
     "graceProcessingTitle": "ライセンス失効処理中",
     "graceProcessingBodyWithDeadline": "ファンマーク「{{fanmark}}」のライセンスが失効処理中です。{{deadline}} までに更新してください。",
     "graceProcessingBody": "ファンマーク「{{fanmark}}」のライセンスが失効処理中です。更新期限をご確認ください。",
-    "graceProcessingSummary": "ライセンス更新が必要です"
+    "graceProcessingSummary": "ライセンス更新が必要です",
+    "markAllAsRead": "すべてを既読にする",
+    "toastMarkAllReadSuccess": "すべての通知を既読にしました",
+    "toastMarkAllReadError": "すべての通知を既読にできませんでした",
+    "toastNoUnreadNotifications": "未読の通知はありません"
   },
   "languageToggle": {
     "errorTitle": "言語を切り替えられません",

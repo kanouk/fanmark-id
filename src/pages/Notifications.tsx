@@ -141,6 +141,38 @@ export default function Notifications() {
     }
   };
 
+  const markAllAsRead = async () => {
+    if (!user) return;
+
+    const unreadNotifications = notifications.filter((n) => !n.read_at);
+    if (unreadNotifications.length === 0) {
+      toast.info(t('notifications.toastNoUnreadNotifications'));
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.rpc('mark_all_notifications_read', {
+      user_id_param: user.id,
+      read_via_param: 'app'
+    });
+
+    if (error) {
+      console.error('Error marking all notifications as read:', error);
+      toast.error(t('notifications.toastMarkAllReadError'));
+    } else {
+      toast.success(t('notifications.toastMarkAllReadSuccess'));
+      setNotifications((prev) =>
+        prev.map((notification) => ({
+          ...notification,
+          read_at: notification.read_at || new Date().toISOString()
+        }))
+      );
+      queryClient.invalidateQueries({ queryKey: ['notifications-preview', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['unread-notification-count', user?.id] });
+    }
+    setLoading(false);
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
       <AppHeader />
@@ -155,7 +187,7 @@ export default function Notifications() {
             </p>
           </div>
 
-          <div className="mt-8 flex justify-center">
+          <div className="mt-8 flex justify-center gap-3">
             <Button
               variant="outline"
               className="rounded-full px-6 py-2 text-sm font-medium"
@@ -167,6 +199,16 @@ export default function Notifications() {
             >
               {t('notifications.refreshButton')}
             </Button>
+            {notifications.some((n) => !n.read_at) && (
+              <Button
+                variant="outline"
+                className="rounded-full px-6 py-2 text-sm font-medium"
+                onClick={markAllAsRead}
+                disabled={loading}
+              >
+                {t('notifications.markAllAsRead')}
+              </Button>
+            )}
           </div>
 
           {loading ? (
