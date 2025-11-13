@@ -748,83 +748,80 @@ const Profile = () => {
   };
 
   const headerRight = (
-    <div className="flex items-center gap-3">
-      <LanguageToggle />
-      {user && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-primary/20 bg-white p-0 text-foreground shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-transform hover:-translate-y-0.5 hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              aria-label={t('navigation.userMenu')}
-            >
-              <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-primary/10">
-                {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="Avatar" className="absolute inset-0 h-full w-full object-cover" />
-                ) : (
-                  <User className="h-4 w-4 text-primary" />
-                )}
-              </div>
-            </Button>
-          </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <div className="px-2 py-1.5 text-xs text-muted-foreground">{user.email}</div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={(event) => {
-                  event.preventDefault();
-                  if (!isOnDashboard) {
-                    navigate('/dashboard');
-                  }
-                }}
-                className={isOnDashboard ? 'opacity-60' : 'cursor-pointer'}
-                disabled={isOnDashboard}
-              >
-                <MdSpaceDashboard className="mr-2 h-4 w-4" />
-                {t('navigation.dashboard')}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={(event) => {
-                  event.preventDefault();
-                  if (!isOnFavorites) {
-                    navigate('/favorites');
-                  }
-                }}
-                className={isOnFavorites ? 'opacity-60' : 'cursor-pointer'}
-                disabled={isOnFavorites}
-              >
-                <Heart className="mr-2 h-4 w-4" />
-                {t('navigation.favorites')}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={(event) => {
-                  event.preventDefault();
-                  if (!isOnProfilePage) {
-                    navigate('/profile');
-                  }
-                }}
-                className={isOnProfilePage ? 'opacity-60' : 'cursor-pointer'}
-                disabled={isOnProfilePage}
-              >
-                <User className="mr-2 h-4 w-4" />
-                {t('navigation.profile')}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={(event) => {
-                  event.preventDefault();
-                  handleLogout();
+    {user && (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-primary/20 bg-white p-0 text-foreground shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-transform hover:-translate-y-0.5 hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            aria-label={t('navigation.userMenu')}
+          >
+            <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-primary/10">
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt="Avatar" className="absolute inset-0 h-full w-full object-cover" />
+              ) : (
+                <User className="h-4 w-4 text-primary" />
+              )}
+            </div>
+          </Button>
+        </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <div className="px-2 py-1.5 text-xs text-muted-foreground">{user.email}</div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault();
+                if (!isOnDashboard) {
+                  navigate('/dashboard');
+                }
               }}
-              className="cursor-pointer"
-              disabled={signingOut}
+              className={isOnDashboard ? 'opacity-60' : 'cursor-pointer'}
+              disabled={isOnDashboard}
             >
-              <LogOut className="mr-2 h-4 w-4" />
-              {signingOut ? t('userSettings.saving') : t('navigation.logout')}
+              <MdSpaceDashboard className="mr-2 h-4 w-4" />
+              {t('navigation.dashboard')}
             </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
-    </div>
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault();
+                if (!isOnFavorites) {
+                  navigate('/favorites');
+                }
+              }}
+              className={isOnFavorites ? 'opacity-60' : 'cursor-pointer'}
+              disabled={isOnFavorites}
+            >
+              <Heart className="mr-2 h-4 w-4" />
+              {t('navigation.favorites')}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault();
+                if (!isOnProfilePage) {
+                  navigate('/profile');
+                }
+              }}
+              className={isOnProfilePage ? 'opacity-60' : 'cursor-pointer'}
+              disabled={isOnProfilePage}
+            >
+              <User className="mr-2 h-4 w-4" />
+              {t('navigation.profile')}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault();
+                handleLogout();
+            }}
+            className="cursor-pointer"
+            disabled={signingOut}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            {signingOut ? t('userSettings.saving') : t('navigation.logout')}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    )}
   );
 
   return (
@@ -834,7 +831,7 @@ const Profile = () => {
         showNotifications={true}
         showUserMenu={false}
         showAuthButton={false}
-        showLanguageToggle={false}
+        showLanguageToggle={true}
         rightSlot={headerRight}
       />
 
