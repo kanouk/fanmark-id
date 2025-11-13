@@ -831,7 +831,7 @@ const Profile = () => {
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
       <AppHeader
         className="border-border/30 bg-white/80"
-        showNotifications={false}
+        showNotifications={true}
         showUserMenu={false}
         showAuthButton={false}
         showLanguageToggle={false}
