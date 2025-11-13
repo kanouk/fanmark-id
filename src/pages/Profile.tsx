@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { CardDescription } from '@/components/ui/card';
-import { User, LogOut, CreditCard, Globe, Palette, Link2, Info, PencilLine, Languages, Heart, Lock, ShieldCheck, Check, X, AlertTriangle, Loader2 } from 'lucide-react';
+import { User, LogOut, CreditCard, Globe, Palette, Link2, Info, PencilLine, Languages, Heart, Lock, ShieldCheck, Check, X, AlertTriangle, Loader2, Bell } from 'lucide-react';
 import { MdSpaceDashboard } from 'react-icons/md';
 import { RiCalendarCheckLine } from 'react-icons/ri';
 import { Badge } from '@/components/ui/badge';
@@ -29,7 +29,7 @@ import { PasswordRequirement } from '@/components/PasswordRequirement';
 import { formatStripeAmount } from '@/lib/currency';
 import { supabase } from '@/integrations/supabase/client';
 
-type Section = 'account' | 'plan' | 'language' | 'display' | 'integrations';
+type Section = 'account' | 'plan' | 'language' | 'display' | 'integrations' | 'notifications';
 
 interface SidebarItem {
   id: Section;
@@ -154,6 +154,12 @@ const Profile = () => {
         label: t('userSettings.navPlan'),
         description: t('userSettings.navPlanDescription'),
         icon: CreditCard,
+      },
+      {
+        id: 'notifications',
+        label: t('userSettings.navNotifications'),
+        description: t('userSettings.navNotificationsDescription'),
+        icon: Bell,
       },
       {
         id: 'language',
@@ -704,12 +710,32 @@ const Profile = () => {
     </Card>
   );
 
+  const notificationsSection = (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Bell className="h-5 w-5" />
+          {t('userSettings.notificationsTitle')}
+        </CardTitle>
+        <p className="ml-7 text-sm text-muted-foreground">{t('userSettings.notificationsSectionDescription')}</p>
+      </CardHeader>
+      <CardContent className="space-y-4 px-6 pb-6 pt-2">
+        <div className="rounded-2xl border border-dashed border-primary/20 bg-primary/5 px-4 py-6 text-center text-sm text-muted-foreground">
+          <p className="text-base font-semibold text-primary">{t('userSettings.notificationsComingSoonTitle')}</p>
+          <p className="mt-2">{t('userSettings.notificationsComingSoonDescription')}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   const renderSection = () => {
     switch (activeSection) {
       case 'account':
         return accountSection;
       case 'plan':
         return planSection;
+      case 'notifications':
+        return notificationsSection;
       case 'language':
         return languageSection;
       case 'display':
