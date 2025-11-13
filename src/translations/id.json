@@ -434,7 +434,17 @@
     "subscriptionNextBillingLabel": "Tanggal penagihan berikutnya",
     "subscriptionEndsLabel": "Tanggal akhir terjadwal",
     "subscriptionStatusLabel": "Status",
-    "subscriptionUnknown": "Tidak diketahui"
+    "subscriptionUnknown": "Tidak diketahui",
+    "subscription": {
+      "title": "Status Langganan",
+      "description": "Informasi paket saat ini",
+      "loading": "Memuat...",
+      "active": "Aktif",
+      "inactive": "Tidak aktif",
+      "productId": "ID Produk",
+      "nextUpdate": "Tanggal pembaruan berikutnya",
+      "noActive": "Saat ini tidak ada langganan aktif"
+    }
   },
   "planSelection": {
     "title": "Pilih paket yang cocok untuk Anda",

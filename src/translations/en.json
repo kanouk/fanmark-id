@@ -434,7 +434,17 @@
     "subscriptionNextBillingLabel": "Next billing date",
     "subscriptionEndsLabel": "Scheduled end date",
     "subscriptionStatusLabel": "Status",
-    "subscriptionUnknown": "Unknown"
+    "subscriptionUnknown": "Unknown",
+    "subscription": {
+      "title": "Subscription Status",
+      "description": "Current plan information",
+      "loading": "Loading...",
+      "active": "Active",
+      "inactive": "Inactive",
+      "productId": "Product ID",
+      "nextUpdate": "Next update date",
+      "noActive": "No active subscription currently"
+    }
   },
   "planSelection": {
     "title": "Pick the plan that fits your flow",

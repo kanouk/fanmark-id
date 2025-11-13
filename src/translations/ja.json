@@ -415,6 +415,16 @@
     "subscriptionEndsLabel": "終了予定日",
     "subscriptionStatusLabel": "ステータス",
     "subscriptionUnknown": "未設定",
+    "subscription": {
+      "title": "サブスクリプション状態",
+      "description": "現在のプラン情報",
+      "loading": "読み込み中...",
+      "active": "有効",
+      "inactive": "無効",
+      "productId": "プロダクトID",
+      "nextUpdate": "次回更新日",
+      "noActive": "現在、有効なサブスクリプションはありません"
+    },
     "deleteAccount": {
       "title": "アカウント削除",
       "description": "アカウントを完全に削除します。この操作は取り消せません。",

@@ -1,4 +1,5 @@
 import { useSubscription } from '@/hooks/useSubscription';
+import { useTranslation } from '@/hooks/useTranslation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, RefreshCw } from 'lucide-react';
@@ -6,13 +7,14 @@ import { Badge } from '@/components/ui/badge';
 
 export const SubscriptionStatus = () => {
   const { subscribed, product_id, subscription_end, loading, error, refetch } = useSubscription();
+  const { t } = useTranslation();
 
   if (loading && !subscribed) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>サブスクリプション状態</CardTitle>
-          <CardDescription>読み込み中...</CardDescription>
+          <CardTitle>{t('subscription.title')}</CardTitle>
+          <CardDescription>{t('subscription.loading')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center p-4">
@@ -28,8 +30,8 @@ export const SubscriptionStatus = () => {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>サブスクリプション状態</CardTitle>
-            <CardDescription>現在のプラン情報</CardDescription>
+            <CardTitle>{t('subscription.title')}</CardTitle>
+            <CardDescription>{t('subscription.description')}</CardDescription>
           </div>
           <Button
             variant="outline"
@@ -54,24 +56,24 @@ export const SubscriptionStatus = () => {
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">ステータス</span>
+            <span className="text-sm text-muted-foreground">{t('subscriptionStatusLabel')}</span>
             <Badge variant={subscribed ? "default" : "secondary"}>
-              {subscribed ? '有効' : '無効'}
+              {subscribed ? t('subscription.active') : t('subscription.inactive')}
             </Badge>
           </div>
 
           {product_id && (
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">プロダクトID</span>
+              <span className="text-sm text-muted-foreground">{t('subscription.productId')}</span>
               <span className="text-sm font-mono">{product_id}</span>
             </div>
           )}
 
           {subscription_end && (
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">次回更新日</span>
+              <span className="text-sm text-muted-foreground">{t('subscription.nextUpdate')}</span>
               <span className="text-sm">
-                {new Date(subscription_end).toLocaleDateString('ja-JP', {
+                {new Date(subscription_end).toLocaleDateString(undefined, {
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric',
@@ -82,7 +84,7 @@ export const SubscriptionStatus = () => {
 
           {!subscribed && (
             <p className="text-sm text-muted-foreground">
-              現在、有効なサブスクリプションはありません
+              {t('subscription.noActive')}
             </p>
           )}
         </div>

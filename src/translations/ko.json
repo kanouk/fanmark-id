@@ -416,6 +416,16 @@
     "subscriptionEndsLabel": "종료 예정일",
     "subscriptionStatusLabel": "상태",
     "subscriptionUnknown": "미설정",
+    "subscription": {
+      "title": "구독 상태",
+      "description": "현재 플랜 정보",
+      "loading": "로드 중...",
+      "active": "활성",
+      "inactive": "비활성",
+      "productId": "상품 ID",
+      "nextUpdate": "다음 업데이트 날짜",
+      "noActive": "현재 활성 구독이 없습니다"
+    },
     "deleteAccount": {
       "title": "계정 삭제",
       "description": "계정을 완전히 삭제합니다. 이 작업은 취소할 수 없습니다.",
