@@ -51,7 +51,7 @@ export function LanguageToggle() {
             {language === option.value && <Check className="h-4 w-4 text-primary" />}
           </DropdownMenuItem>
         ))}
-        <DropdownMenuSeparator />
+        {UPCOMING_LANGUAGES.length > 0 && <DropdownMenuSeparator />}
         {UPCOMING_LANGUAGES.map((option) => (
           <DropdownMenuItem key={option.value} disabled className="flex flex-col items-start gap-0.5 rounded-lg px-3 py-2 text-sm font-medium opacity-60">
             <span>{option.label}</span>
