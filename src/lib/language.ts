@@ -5,10 +5,10 @@ export const ACTIVE_LANGUAGES = [
   { value: 'id', label: 'Bahasa Indonesia' },
 ] as const;
 
-export const UPCOMING_LANGUAGES = [] as const;
+export const UPCOMING_LANGUAGES: ReadonlyArray<{ value: string; label: string }> = [];
 
-export type ActiveLanguageCode = typeof ACTIVE_LANGUAGES[number]['value'];
-export type AnyLanguageCode = ActiveLanguageCode | typeof UPCOMING_LANGUAGES[number]['value'];
+export type ActiveLanguageCode = (typeof ACTIVE_LANGUAGES)[number]['value'];
+export type AnyLanguageCode = ActiveLanguageCode | string;
 
 export const FALLBACK_LANGUAGE: ActiveLanguageCode = 'ja';
 
