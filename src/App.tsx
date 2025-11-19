@@ -28,6 +28,7 @@ import PlanSelection from "./pages/PlanSelection";
 import FanmarkPublicQR from "./pages/FanmarkPublicQR";
 import Favorites from "./pages/Favorites";
 import Notifications from "./pages/Notifications";
+import PWAApp from "./pages/PWAApp";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LotteryActionOverlayProvider } from "@/providers/LotteryActionOverlayProvider";
 import { PasswordSetupGate } from "@/components/PasswordSetupGate";
@@ -57,6 +58,9 @@ const MainApp = () => (
                 <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
                 <Route path="/plans" element={<PlanSelection />} />
                 <Route path="/plan" element={<PlanSelection />} />
+                <Route path="/pwa" element={<PWAApp />} />
+                <Route path="/pwa/search" element={<PWAApp />} />
+                <Route path="/pwa/history" element={<PWAApp />} />
                 <Route path="/fanmarks/:fanmarkId/settings" element={<FanmarkSettingsPage />} />
                 <Route path="/fanmarks/:fanmarkId/profile/edit" element={<EmojiProfileEdit />} />
                 <Route path="/fanmarks/:fanmarkId/profile/preview" element={<FanmarkProfilePreview />} />
