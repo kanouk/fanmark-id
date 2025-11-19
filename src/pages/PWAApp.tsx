@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { Search, History } from "lucide-react";
+import { Search, History, ExternalLink } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import FanmarkSearch from "@/components/FanmarkSearch";
+import { FanmarkStatusBadge, FanmarkStatus } from "@/components/FanmarkStatusBadge";
 import { useFanmarkHistory } from "@/hooks/useFanmarkHistory";
 import { formatDistanceToNow } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -12,6 +13,7 @@ type TabType = "search" | "history";
 
 export default function PWAApp() {
   const [activeTab, setActiveTab] = useState<TabType>("search");
+  const [searchResult, setSearchResult] = useState<any>(null);
   const { history, addToHistory, clearHistory } = useFanmarkHistory();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -26,13 +28,21 @@ export default function PWAApp() {
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
+    setSearchResult(null);
     window.history.pushState({}, "", `/pwa/${tab}`);
   };
 
   const handleSearchResult = (result: any) => {
+    setSearchResult(result);
     if (result?.status === "taken" && result?.shortId && searchQuery) {
       addToHistory(searchQuery, result.shortId);
     }
+  };
+
+  const getDisplayStatus = (status: string): FanmarkStatus => {
+    if (status === 'available') return 'available';
+    if (status === 'taken') return 'taken';
+    return 'unavailable';
   };
 
   return (
@@ -62,6 +72,32 @@ export default function PWAApp() {
                   showRecent={false}
                 />
               </Card>
+
+              {searchResult && searchResult.shortId && (
+                <Card className="p-4 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="text-4xl">{searchResult.userInputFanmark || searchResult.normalizedEmoji}</div>
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground font-mono">
+                        {searchResult.shortId}
+                      </p>
+                      <FanmarkStatusBadge status={getDisplayStatus(searchResult.status)} />
+                    </div>
+                  </div>
+                  
+                  <a
+                    href={`/${searchResult.shortId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block"
+                  >
+                    <Button className="w-full" variant="default">
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      ファンマページを開く
+                    </Button>
+                  </a>
+                </Card>
+              )}
             </div>
           )}
 
