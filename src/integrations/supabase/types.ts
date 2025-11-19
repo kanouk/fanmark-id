@@ -1263,15 +1263,15 @@ export type Database = {
       }
       user_subscriptions: {
         Row: {
+          amount: number | null
           cancel_at_period_end: boolean | null
           created_at: string
+          currency: string | null
           current_period_end: string | null
           current_period_start: string | null
-          amount: number | null
-          currency: string | null
+          id: string
           interval: string | null
           interval_count: number | null
-          id: string
           price_id: string | null
           product_id: string
           status: string
@@ -1281,15 +1281,15 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          amount?: number | null
           cancel_at_period_end?: boolean | null
           created_at?: string
+          currency?: string | null
           current_period_end?: string | null
           current_period_start?: string | null
-          amount?: number | null
-          currency?: string | null
+          id?: string
           interval?: string | null
           interval_count?: number | null
-          id?: string
           price_id?: string | null
           product_id: string
           status: string
@@ -1299,11 +1299,15 @@ export type Database = {
           user_id: string
         }
         Update: {
+          amount?: number | null
           cancel_at_period_end?: boolean | null
           created_at?: string
+          currency?: string | null
           current_period_end?: string | null
           current_period_start?: string | null
           id?: string
+          interval?: string | null
+          interval_count?: number | null
           price_id?: string | null
           product_id?: string
           status?: string
@@ -1603,6 +1607,10 @@ export type Database = {
           license_created_at: string
           license_id: string
         }[]
+      }
+      mark_all_notifications_read: {
+        Args: { read_via_param?: string; user_id_param: string }
+        Returns: number
       }
       mark_notification_read: {
         Args: { notification_id_param: string; read_via_param?: string }
