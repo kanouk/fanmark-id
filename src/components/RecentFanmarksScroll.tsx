@@ -49,7 +49,7 @@ export function RecentFanmarksScroll() {
             key={`${fanmark.id}-${index}`}
             className="flex-shrink-0 mx-3 px-5 py-2.5 bg-background/90 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
           >
-            <span className="text-2xl">{fanmark.emoji}</span>
+            <span className="text-2xl leading-none select-none" style={{ letterSpacing: '0.15em' }}>{fanmark.emoji}</span>
           </div>
         ))}
       </div>

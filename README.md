@@ -145,3 +145,9 @@
 3. ジョブを作成（詳細な設定方法は下記ガイド参照）
 
 詳細は [Cron Jobs セットアップガイド](docs/CRON_SETUP.md) を参照してください。
+
+### 📱 PWA インストール体験
+- `/pwa` ルートはモバイル利用を想定した PWA 専用 UI。`src/components/PWAInstallPrompt.tsx` が `beforeinstallprompt` イベントをフックし、`localStorage` (`pwa_install_prompt_shown`) で再表示制御を行う。
+- Service Worker は `src/main.tsx` で `virtual:pwa-register` の `registerSW({ immediate: true })` を呼び出し登録する。ブラウザ環境チェック後に実行されるため SSR 影響はない。
+- `vite.config.ts` では `vite-plugin-pwa` を利用し `mode: "development"` で Service Worker をバンドルする。Node.js 22 環境では `@rollup/plugin-terser` が SW 生成時にクラッシュするため、本設定でミニファイを回避している。
+- 実装確認フロー: `npm run build` → `dist/sw.js` が生成されることを確認 → `npm run dev` で起動し `http://localhost:8080/pwa` を開く → Chrome DevTools > Application > Service Workers で登録状態と `beforeinstallprompt` イベント発火を確認。イベントが発火しない場合は HTTPS・マニフェスト・Service Worker の 3 条件を見直す。
