@@ -31,6 +31,7 @@ interface EmojiInputProps {
   className?: string;
   onSearchPerformed?: (query: string) => void;
   showUtilities?: boolean;
+  fixedSize?: boolean; // モバイル固定サイズモード
 }
 
 const DEFAULT_MAX_LENGTH = 5;
@@ -43,6 +44,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
   className = '',
   onSearchPerformed,
   showUtilities = true,
+  fixedSize = false,
 }) => {
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -471,9 +473,9 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
       {/* メイン入力エリア */}
       <div className="flex justify-center">
         <div
-          className="w-full max-w-[min(100%,40rem)] px-[clamp(0.75rem,6vw,2.5rem)]"
+          className={fixedSize ? "w-full max-w-[48rem] mx-auto px-4" : "w-full max-w-[min(100%,40rem)] px-[clamp(0.75rem,6vw,2.5rem)]"}
         >
-          <div className="grid grid-cols-5 gap-[clamp(0.45rem,2.5vw,1.2rem)] transition-all duration-300 ease-out">
+          <div className={fixedSize ? "grid grid-cols-5 gap-6 transition-all duration-300 ease-out" : "grid grid-cols-5 gap-[clamp(0.45rem,2.5vw,1.2rem)] transition-all duration-300 ease-out"}>
           {slots.map((_, index) => {
           const emoji = segments[index];
           const isActive = activeIndex === index;
@@ -489,7 +491,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
                 if (draggedIndex !== null) return;
                 handleOpenChange(index, true);
               }}
-              className={`flex aspect-square w-full min-w-[2.2rem] max-w-[5rem] items-center justify-center rounded-[clamp(1rem,4vw,1.7rem)] border-[clamp(1px,0.45vw,1.5px)] text-[clamp(1.6rem,5.5vw,2.8rem)] transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${emoji ? 'border-primary/60 bg-primary/5 shadow-md lg:shadow-lg' : 'border-dashed border-primary/30 text-muted-foreground hover:border-primary/60 hover:text-primary'} ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${isDragging ? 'ring-2 ring-primary/50 scale-105 shadow-lg z-10 opacity-80' : ''} ${isDragTarget && !isDragging ? 'border-primary/70 bg-primary/10 scale-105' : ''}`}
+              className={`flex aspect-square w-full ${fixedSize ? 'min-w-[4rem] max-w-[5rem] rounded-xl border-[1.5px] text-3xl' : 'min-w-[2.2rem] max-w-[5rem] rounded-[clamp(1rem,4vw,1.7rem)] border-[clamp(1px,0.45vw,1.5px)] text-[clamp(1.6rem,5.5vw,2.8rem)]'} items-center justify-center transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${emoji ? 'border-primary/60 bg-primary/5 shadow-md lg:shadow-lg' : 'border-dashed border-primary/30 text-muted-foreground hover:border-primary/60 hover:text-primary'} ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${isDragging ? 'ring-2 ring-primary/50 scale-105 shadow-lg z-10 opacity-80' : ''} ${isDragTarget && !isDragging ? 'border-primary/70 bg-primary/10 scale-105' : ''}`}
               style={{
                 zIndex: isDragging ? 10 : 1,
               }}
@@ -500,7 +502,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
               onDragLeave={() => handleDragLeave(index)}
               onDragEnd={handleDragEnd}
             >
-              {emoji ? emoji : <Plus className="h-[clamp(0.9rem,3.8vw,2rem)] w-[clamp(0.9rem,3.8vw,2rem)]" />}
+              {emoji ? emoji : <Plus className={fixedSize ? "h-6 w-6" : "h-[clamp(0.9rem,3.8vw,2rem)] w-[clamp(0.9rem,3.8vw,2rem)]"} />}
             </button>
           );
 
@@ -664,6 +666,7 @@ interface EmojiInputUtilitiesProps {
   onClear: () => void;
   onDirectInput?: (input: string) => void;
   value?: string;
+  fixedSize?: boolean; // モバイル固定サイズモード
 }
 
 export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
@@ -673,6 +676,7 @@ export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
   onClear,
   onDirectInput,
   value,
+  fixedSize = false,
 }) => {
   const { t } = useTranslation();
   const [showDirectInput, setShowDirectInput] = useState<boolean>(false);
@@ -702,8 +706,8 @@ export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
 
   return (
     <>
-        <div className="flex justify-center mt-5 sm:mt-6">
-          <div className="flex items-center gap-1 sm:gap-3 rounded-full bg-muted/30 px-3 sm:px-4 py-2 sm:py-2.5 border border-primary/20 max-w-fit shadow-sm">
+        <div className={`flex justify-center ${fixedSize ? 'mt-6' : 'mt-5 sm:mt-6'}`}>
+          <div className={`flex items-center ${fixedSize ? 'gap-2 px-3 py-2' : 'gap-1 sm:gap-3 px-3 sm:px-4 py-2 sm:py-2.5'} rounded-full bg-muted/30 border border-primary/20 max-w-fit shadow-sm`}>
           {onDirectInput && (
             <Button
               type="button"
@@ -712,9 +716,9 @@ export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
               disabled={disabled}
               onClick={handleDirectInputClick}
               aria-label={t('common.directInput')}
-              className="h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"
+              className={fixedSize ? "h-7 px-2 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1" : "h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"}
             >
-              <Keyboard className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <Keyboard className={fixedSize ? "h-3 w-3" : "h-3 w-3 sm:h-3.5 sm:w-3.5"} />
               <span className="text-xs">{t('common.directInput')}</span>
             </Button>
           )}
@@ -725,9 +729,9 @@ export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
             disabled={disabled}
             onClick={onPaste}
             aria-label={t('common.pasteFromClipboard')}
-            className="h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"
+            className={fixedSize ? "h-7 px-2 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1" : "h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"}
           >
-            <Clipboard className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+            <Clipboard className={fixedSize ? "h-3 w-3" : "h-3 w-3 sm:h-3.5 sm:w-3.5"} />
             <span className="text-xs">{t('common.paste')}</span>
           </Button>
           <Button
@@ -737,9 +741,9 @@ export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
             disabled={disabled || !hasValue}
             onClick={onClear}
             aria-label={t('common.clearAll')}
-            className="h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"
+            className={fixedSize ? "h-7 px-2 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1" : "h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"}
           >
-            <Eraser className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+            <Eraser className={fixedSize ? "h-3 w-3" : "h-3 w-3 sm:h-3.5 sm:w-3.5"} />
             <span className="text-xs">{t('common.clear')}</span>
           </Button>
         </div>

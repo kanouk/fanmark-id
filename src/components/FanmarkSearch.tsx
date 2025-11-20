@@ -21,6 +21,7 @@ interface FanmarkSearchProps {
   showRecent?: boolean;
   query: string;
   onUtilitiesRef?: (utilities: { setQuery: (query: string) => void; clearQuery: () => void; getQuery: () => string }) => void;
+  fixedSize?: boolean; // モバイル固定サイズモード
 }
 
 const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
@@ -32,6 +33,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
   showRecent = true,
   query,
   onUtilitiesRef,
+  fixedSize = false,
 }) => {
   const { t } = useTranslation();
   const { applyToLottery, cancelLotteryEntry, loading: lotteryLoading } = useLotteryEntry();
@@ -107,6 +109,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
             maxLength={5}
             disabled={loading}
             showUtilities={false}
+            fixedSize={fixedSize}
           />
           {loading && (
             <div className="absolute right-4 top-1/2 -translate-y-1/2 transform">

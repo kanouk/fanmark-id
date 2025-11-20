@@ -1,0 +1,33 @@
+# Fanmark Search Panel
+
+fanmark.id ではトップページ / ダッシュボード / PWA で同一の検索カード体験を提供するため、`FanmarkSearchPanel` コンポーネントを導入しました。  
+このコンポーネントは視覚的なカードレイアウト（余白、角丸、影、背景色）、タイトル行、バッジやステータスなどの補助要素をまとめて提供します。
+
+## Props
+
+| prop | 型 | 説明 |
+| --- | --- | --- |
+| `title` | `ReactNode` | カードの主タイトル。検索画面では `t('dashboard.searchFanma')` を渡します。 |
+| `icon` | `ReactNode` | タイトルの左に並べるアイコン。`<Search />` 等を渡します。 |
+| `label` | `ReactNode` (任意) | カード上部の小さなラベル。「SEARCH」等が不要になった場合は渡さないでください。 |
+| `badge` | `ReactNode` (任意) | タイトル右側に配置可能なバッジ。PWA では不要のため省略します。 |
+| `meta` | `ReactNode` (任意) | タイトル下部右寄せに表示する補助 UI（例: ステータスバッジ + お気に入りボタン）。 |
+| `className` | `string` | カード全体の追加クラス。背景色を状況に応じて切り替える際に利用します。 |
+| `contentClassName` | `string` | コンテンツ部の余白を個別に調整したい場合に使用します。 |
+
+## 利用方針
+
+1. 検索関連画面はすべて `FanmarkSearchPanel` を介して UI を構成します。  
+   これにより余白や角丸が統一され、サービス全体のトーンを維持できます。
+2. 内部には `FanmarkSearch` と `EmojiInputUtilities` を配置し、貼り付け / 直接入力 / クリアなどの操作を共通化します。
+3. 状態による背景色（例: 取得可能時の淡い緑）は `FanmarkAcquisition` 側で `className={getSearchAreaBackgroundClass}` を渡して制御してください。
+4. 新画面で同じ検索体験が必要な場合、本ドキュメントに追記しながら `FanmarkSearchPanel` を利用する形で実装してください。
+
+## 確認事項
+
+導入・変更時は以下をチェックしてください。
+
+- JSX が `FanmarkSearchPanel` で閉じているか（旧 `<Card>` の閉じタグが残っていないか）
+- 追加クラスにテンプレートリテラルを使う場合はバッククォートを適切に閉じているか
+- 検索結果ボタンやユーティリティが期待通りに表示されるか（トップ / ダッシュボード / PWA）
+- `npm run build` で型・構文エラーが発生しないか

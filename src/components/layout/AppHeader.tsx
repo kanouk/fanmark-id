@@ -126,19 +126,22 @@ export const AppHeader = ({
   return (
     <header className={cn('sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl', className)}>
       <div className={cn('container mx-auto flex items-center justify-between px-4 py-4 md:px-6', containerClassName)}>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="group flex items-center gap-2 text-lg font-semibold text-foreground transition-transform hover:translate-y-[-1px]"
-          >
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
-              ✨
-            </span>
-            <BrandWordmark className="text-2xl" />
-          </button>
-          {leftSlot}
-        </div>
+        {leftSlot ? (
+          leftSlot
+        ) : (
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="group flex items-center gap-2 text-lg font-semibold text-foreground transition-transform hover:translate-y-[-1px]"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all group-hover:scale-105">
+                ✨
+              </span>
+              <BrandWordmark className="text-2xl" />
+            </button>
+          </div>
+        )}
 
         <nav className="hidden items-center gap-8 text-sm font-medium text-muted-foreground md:flex" />
 
