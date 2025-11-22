@@ -29,6 +29,9 @@ import FanmarkPublicQR from "./pages/FanmarkPublicQR";
 import Favorites from "./pages/Favorites";
 import Notifications from "./pages/Notifications";
 import PWAApp from "./pages/PWAApp";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import ContactUs from "./pages/ContactUs";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LotteryActionOverlayProvider } from "@/providers/LotteryActionOverlayProvider";
 import { PasswordSetupGate } from "@/components/PasswordSetupGate";
@@ -70,6 +73,10 @@ const MainApp = () => (
                 <Route path="/a/:shortId" element={<FanmarkAccessByShortId />} />
                 {/* Fanmark details route - must come before emojiPath */}
                 <Route path="/f/:shortId" element={<FanmarkDetailsPage />} />
+                {/* Legal and support pages */}
+                <Route path="/contact" element={<ContactUs />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/terms" element={<TermsOfService />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="/:emojiPath" element={<FanmarkAccess />} />
                 <Route path="*" element={<NotFound />} />

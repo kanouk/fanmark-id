@@ -1129,5 +1129,155 @@
     "errorTitle": "Tidak dapat mengalihkan bahasa",
     "errorDescription": "Kami tidak dapat menyimpan preferensi Anda. Silakan coba lagi dalam beberapa saat.",
     "comingSoon": "Segera hadir"
+  },
+  "legalPages": {
+    "privacyPolicy": {
+      "title": "Kebijakan Privasi",
+      "lastUpdated": "Pembaruan terakhir: November 2024",
+      "introduction": "fanmark.id (\"kami\", \"kami\", \"milik kami\", atau \"Layanan\") berkomitmen untuk melindungi privasi Anda. Kebijakan Privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, mengungkapkan, dan melindungi informasi Anda saat Anda menggunakan situs web dan layanan kami.",
+      "sections": {
+        "informationWeCollect": {
+          "title": "1. Informasi yang Kami Kumpulkan",
+          "content": "Kami mengumpulkan informasi dengan beberapa cara:\n\n• Informasi Akun: Saat Anda membuat akun, kami mengumpulkan alamat email, kata sandi (di-hash), nama tampilan, dan gambar avatar Anda.\n\n• Data Fanmark: Informasi tentang kombinasi emoji (fanmark) yang Anda buat, termasuk nama tampilan, jenis akses, URL pengalihan, dan informasi profil terkait.\n\n• Data Penggunaan: Kami mengumpulkan informasi tentang cara Anda berinteraksi dengan Layanan kami, termasuk kueri pencarian, pola akses, dan tindakan yang diambil.\n\n• Data Komunikasi: Jika Anda menghubungi kami, kami dapat menyimpan pesan dan konten komunikasi Anda.\n\n• Data Teknis: Kami mengumpulkan alamat IP, jenis browser, sistem operasi, dan informasi perangkat melalui cookie dan teknologi serupa."
+        },
+        "howWeUseYourInformation": {
+          "title": "2. Cara Kami Menggunakan Informasi Anda",
+          "content": "Kami menggunakan informasi yang kami kumpulkan untuk:\n\n• Menyediakan, memelihara, dan meningkatkan Layanan kami\n• Membuat dan mengelola akun Anda\n• Memproses pendaftaran, perpanjangan, dan pengembalian fanmark\n• Mengirim email transaksi (konfirmasi, penyetelan ulang, pemberitahuan)\n• Memantau dan menganalisis penggunaan layanan dan tren\n• Mendeteksi, mencegah, dan mengatasi masalah penipuan dan keamanan\n• Mematuhi kewajiban hukum\n• Berkomunikasi dengan Anda tentang pembaruan dan perubahan layanan"
+        },
+        "dataSharing": {
+          "title": "3. Berbagi dan Pengungkapan Data",
+          "content": "Kami tidak menjual data pribadi Anda. Kami dapat berbagi informasi:\n\n• Dengan Penyedia Layanan: Vendor pihak ketiga yang membantu mengoperasikan Layanan kami (hosting, email, analitik)\n• Untuk Alasan Hukum: Ketika dipersyaratkan oleh hukum atau untuk melindungi hak kami\n• Data Fanmark Publik: Fanmark dan informasi profil terkait Anda dapat terlihat oleh publik berdasarkan pengaturan privasi Anda\n• Data Anonim: Kami dapat berbagi data teragregat dan anonim untuk analitik dan penelitian"
+        },
+        "dataRetention": {
+          "title": "4. Retensi Data",
+          "content": "Kami menyimpan data pribadi Anda selama akun Anda aktif dan untuk periode yang wajar setelahnya untuk mematuhi kewajiban hukum. Anda dapat meminta penghapusan akun Anda, yang akan menghapus sebagian besar data pribadi, meskipun beberapa informasi dapat disimpan untuk alasan hukum atau operasional."
+        },
+        "security": {
+          "title": "5. Keamanan",
+          "content": "Kami menerapkan langkah-langkah keamanan standar industri termasuk enkripsi, otentikasi aman, dan audit keamanan reguler. Namun, tidak ada metode transmisi melalui Internet yang sepenuhnya aman. Kami tidak dapat menjamin keamanan absolut."
+        },
+        "cookies": {
+          "title": "6. Cookie dan Teknologi Serupa",
+          "content": "Kami menggunakan cookie dan teknologi serupa untuk meningkatkan pengalaman Anda, mengingat preferensi, dan menganalisis pola penggunaan. Anda dapat mengontrol pengaturan cookie melalui browser Anda. Beberapa fitur mungkin tidak berfungsi dengan baik jika cookie dinonaktifkan."
+        },
+        "childrenPrivacy": {
+          "title": "7. Privasi Anak-Anak",
+          "content": "Layanan kami tidak ditujukan untuk individu di bawah 13 tahun. Kami tidak dengan sengaja mengumpulkan data pribadi dari anak-anak di bawah 13 tahun. Jika kami mengetahui bahwa kami telah mengumpulkan informasi tersebut, kami akan segera mengambil langkah untuk menghapusnya."
+        },
+        "yourRights": {
+          "title": "8. Hak Privasi Anda",
+          "content": "Tergantung pada lokasi Anda, Anda mungkin memiliki hak-hak berikut:\n\n• Akses: Meminta akses ke data pribadi Anda\n• Koreksi: Meminta koreksi data yang tidak akurat\n• Penghapusan: Meminta penghapusan data Anda\n• Portabilitas: Meminta salinan data Anda dalam format terstruktur\n• Opt-out: Berhenti berlangganan komunikasi pemasaran\n\nUntuk menggunakan hak-hak ini, silakan hubungi kami di privacy@fanmark.id"
+        },
+        "thirdPartyLinks": {
+          "title": "9. Tautan Pihak Ketiga",
+          "content": "Layanan kami mungkin berisi tautan ke situs web eksternal. Kami tidak bertanggung jawab atas praktik privasi situs pihak ketiga. Silakan tinjau kebijakan privasi mereka sebelum memberikan informasi pribadi."
+        },
+        "changesTopolicy": {
+          "title": "10. Perubahan Kebijakan Privasi Ini",
+          "content": "Kami dapat memperbarui Kebijakan Privasi ini dari waktu ke waktu. Kami akan memberi tahu Anda tentang perubahan material dengan memposting Kebijakan Privasi baru dan memperbarui tanggal \"Pembaruan terakhir\". Penggunaan Layanan kami yang berkelanjutan menunjukkan penerimaan Anda terhadap kebijakan yang diperbarui."
+        },
+        "contactUs": {
+          "title": "11. Hubungi Kami",
+          "content": "Jika Anda memiliki pertanyaan tentang Kebijakan Privasi ini atau praktik privasi kami, silakan hubungi kami di:\n\nEmail: privacy@fanmark.id"
+        }
+      }
+    },
+    "termsOfService": {
+      "title": "Syarat Layanan",
+      "lastUpdated": "Pembaruan terakhir: November 2024",
+      "introduction": "Syarat Layanan ini (\"Syarat\", \"Perjanjian\") membentuk kontrak yang mengikat secara hukum antara Anda (\"Pengguna\", \"Anda\", \"Milik Anda\") dan fanmark.id (\"Perusahaan\", \"kami\", \"kami\", \"milik kami\"). Dengan mengakses atau menggunakan fanmark.id, Anda setuju untuk terikat oleh Syarat ini.",
+      "sections": {
+        "useAgreement": {
+          "title": "1. Perjanjian Penggunaan",
+          "content": "Anda setuju untuk menggunakan fanmark.id hanya untuk tujuan yang sah dan dengan cara yang tidak melanggar hak orang lain atau membatasi penggunaan dan kenikmatan fanmark.id mereka. Perilaku yang dilarang meliputi:\n\n• Mengganggu atau menyebabkan kesusahan atau ketidaknyamanan bagi orang lain\n• Konten cabul atau tidak pantas\n• Mengganggu aliran dialog normal di dalam fanmark.id\n• Mendaftarkan fanmark untuk spam, phishing, atau tujuan berbahaya\n• Melanggar hak kekayaan intelektual\n• Akses tidak sah atau pengumpulan data"
+        },
+        "accountResponsibility": {
+          "title": "2. Akun dan Pendaftaran",
+          "content": "Anda bertanggung jawab untuk mempertahankan kerahasiaan kredensial akun dan kata sandi Anda. Anda setuju untuk menerima tanggung jawab atas semua aktivitas yang terjadi di akun Anda. Anda harus memberikan informasi yang akurat, lengkap, dan terkini selama pendaftaran. Anda setuju untuk memberi tahu kami segera tentang penggunaan tidak sah akun Anda.\n\nKode Undangan: Akses ke fanmark.id mungkin memerlukan kode undangan. Kode undangan tidak dapat dialihkan dan dapat dibatalkan kapan saja."
+        },
+        "fanmarkRights": {
+          "title": "3. Kepemilikan Fanmark dan Hak",
+          "content": "Setiap fanmark (kombinasi emoji) memiliki batasan kepemilikan:\n\n• Anda dapat memiliki beberapa fanmark hingga batas paket Anda\n• Fanmark diberikan berdasarkan lisensi untuk periode yang ditentukan\n• Anda mempertahankan hak atas konten yang Anda buat (profil, pesan, dll.)\n• Perusahaan mempertahankan semua hak atas platform, teknologi, dan infrastruktur\n• Anda tidak dapat mentransfer, menjual, atau memberikan lisensi ulang fanmark tanpa izin eksplisit\n• Fanmark yang tidak digunakan mungkin memasuki periode grace"
+        },
+        "fanmarkRetention": {
+          "title": "4. Syarat Lisensi Fanmark",
+          "content": "Lisensi fanmark tunduk pada:\n\n• Periode Lisensi: Durasi lisensi awal bervariasi menurut tier fanmark (1-5 emoji)\n• Lisensi Seumur Hidup: Fanmark dengan 4+ emoji menerima lisensi non-ekspirasi selamanya (dapat mengalami perubahan di masa mendatang)\n• Fanmark Berbayar: Fanmark premium (1-3 emoji) memerlukan pembaruan melalui sistem pembayaran kami\n• Perpanjangan Lisensi: Anda dapat memperpanjang lisensi sebelum kedaluwarsa\n• Periode Grace: Saat kedaluwarsa, periode grace memungkinkan pembaruan sebelum fanmark tersedia untuk orang lain\n• Pengembalian: Anda dapat secara sukarela mengembalikan fanmark kapan saja"
+        },
+        "paymentTerms": {
+          "title": "5. Pembayaran dan Penagihan",
+          "content": "Beberapa fanmark memerlukan pembayaran untuk lisensi:\n\n• Penetapan Harga: Harga ditampilkan sebelum pembelian dan dapat berubah dengan pemberitahuan\n• Pemrosesan Pembayaran: Pembayaran diproses melalui Stripe dan tunduk pada syaratnya\n• Penagihan: Anda memberi wewenang kepada kami untuk menagih metode pembayaran Anda untuk biaya pembaruan\n• Tanpa Pengembalian Dana: Biaya lisensi tidak dapat dikembalikan kecuali diwajibkan oleh hukum\n• Pembayaran Gagal: Kegagalan pembayaran dapat mengakibatkan penangguhan atau pembatalan lisensi\n• Pajak: Anda bertanggung jawab atas semua pajak yang berlaku"
+        },
+        "userContent": {
+          "title": "6. Konten Pengguna",
+          "content": "Anda memberikan kepada fanmark.id lisensi non-eksklusif tanpa royalti untuk menggunakan, mereproduksi, memodifikasi, dan menampilkan konten buatan pengguna Anda (profil, pesan, avatar, dll.) untuk menyediakan dan meningkatkan Layanan.\n\n• Anda mempertahankan kepemilikan konten Anda\n• Anda menjamin bahwa konten Anda tidak melanggar hak pihak ketiga\n• Anda sepenuhnya bertanggung jawab atas konten yang Anda buat\n• Kami dapat menghapus konten yang melanggar Syarat ini"
+        },
+        "intellectualProperty": {
+          "title": "7. Kekayaan Intelektual",
+          "content": "Layanan ini, termasuk semua kode, desain, fitur, dan fungsionalitas, dimiliki oleh fanmark.id. Semua hak kekayaan intelektual disediakan. Anda tidak dapat mereproduksi, mendistribusikan, atau mengirimkan Layanan atau kontennya tanpa izin."
+        },
+        "limitationOfLiability": {
+          "title": "8. Pembatasan Tanggung Jawab",
+          "content": "SEJAUH DIMUNGKINKAN OLEH HUKUM:\n\n• Layanan disediakan dengan \"apa adanya\" tanpa jaminan dari jenis apa pun\n• Kami tidak bertanggung jawab atas kerusakan tidak langsung, insidental, khusus, atau konsekuensial\n• Tanggung jawab total kami tidak akan melebihi jumlah yang Anda bayarkan dalam 12 bulan terakhir\n• Beberapa yurisdiksi tidak memungkinkan pembatasan tanggung jawab, yang mungkin tidak berlaku untuk Anda"
+        },
+        "disclaimers": {
+          "title": "9. Penafian",
+          "content": "• Kami tidak menjamin operasi Layanan yang tidak terputus atau bebas kesalahan\n• Kami tidak bertanggung jawab atas layanan, tautan, atau konten pihak ketiga\n• Kehilangan data atau gangguan layanan dapat terjadi; cadangkan data penting Anda\n• Kami tidak menjamin ketersediaan atau permanensi fanmark"
+        },
+        "indemnification": {
+          "title": "10. Penggantian Rugi",
+          "content": "Anda setuju untuk membela, mengganti rugi, dan mempertahankan fanmark.id dan petugas, direktur, karyawan, dan agennya bebas dari klaim, kerusakan, kerugian, atau biaya apa pun yang timbul dari:\n\n• Penggunaan Layanan Anda\n• Pelanggaran Syarat ini\n• Pelanggaran hak pihak ketiga Anda\n• Konten buatan pengguna Anda"
+        },
+        "suspensionTermination": {
+          "title": "11. Penangguhan dan Penghentian",
+          "content": "Kami dapat menangguhkan atau menghentikan akun Anda jika Anda:\n\n• Melanggar Syarat ini\n• Terlibat dalam kegiatan ilegal atau penipuan\n• Mengganggu pengguna lain\n• Membuat konten yang keberatan\n• Melanggar hak kekayaan intelektual\n• Gagal membayar biaya\n\nPenghentian dapat segera tanpa pemberitahuan untuk pelanggaran serius."
+        },
+        "governing": {
+          "title": "12. Hukum yang Berlaku",
+          "content": "Syarat ini diatur oleh hukum yurisdiksi tempat fanmark.id beroperasi, tanpa mempertimbangkan prinsip konflik hukum."
+        },
+        "disputeResolution": {
+          "title": "13. Penyelesaian Sengketa",
+          "content": "Setiap sengketa harus diselesaikan melalui:\n\n• Negosiasi Baik: Pertama, pihak akan mencoba menyelesaikan sengketa melalui diskusi\n• Mediasi: Jika negosiasi gagal, sengketa dapat diajukan ke mediasi\n• Arbitrase/Litigasi: Jika mediasi gagal, sengketa harus diselesaikan melalui arbitrase atau proses pengadilan sesuai dengan hukum yang berlaku"
+        },
+        "changes": {
+          "title": "14. Perubahan Syarat",
+          "content": "Kami dapat memodifikasi Syarat ini kapan saja. Perubahan material akan dikomunikasikan melalui email atau pemberitahuan menonjol pada Layanan. Penggunaan berkelanjutan setelah perubahan menunjukkan penerimaan Anda atas Syarat yang diperbarui."
+        },
+        "severability": {
+          "title": "15. Pemisahan",
+          "content": "Jika suatu ketentuan dalam Syarat ini ditemukan tidak sah, ketentuan tersebut akan dimodifikasi sejauh minimal yang diperlukan untuk membuatnya valid, atau dihapus jika perlu. Ketentuan yang tersisa akan terus berlaku."
+        },
+        "entireAgreement": {
+          "title": "16. Perjanjian Lengkap",
+          "content": "Syarat ini, bersama dengan Kebijakan Privasi kami, merupakan seluruh perjanjian antara Anda dan fanmark.id mengenai penggunaan Layanan."
+        },
+        "serviceTermination": {
+          "title": "17. Penghentian dan Pemutusan Layanan",
+          "content": "Penghentian Layanan: Kami dapat menghentikan atau melakukan modifikasi material pada Layanan kapan saja. Jika kami menghentikan Layanan, kami akan memberikan pemberitahuan tertulis minimal 180 hari sebelumnya kepada semua pengguna aktif.\n\nPemberitahuan dan Jaminan Lisensi: Saat mengeluarkan pemberitahuan penghentian Layanan, hal berikut berlaku:\n• Semua pemegang lisensi saat ini dijamin hak untuk memperpanjang/memperbarui lisensi mereka setidaknya satu kali lagi tanpa biaya tambahan (hingga periode perpanjangan maksimum yang diizinkan di bawah tingkat mereka, asalkan mereka meminta pembaruan sebelum tanggal kedaluwarsa asli)\n• Tidak ada perpanjangan lebih lanjut yang mungkin setelah tanggal kedaluwarsa lisensi akhir, yang harus jatuh sebelum atau pada tanggal penghentian Layanan\n• Pengguna dapat mengekspor semua data dan konten mereka hingga tanggal kedaluwarsa lisensi akhir\n\nData Pengguna: Setelah Layanan dihentikan, kami akan:\n• Memberikan kesempatan yang wajar (minimal 60 hari sejak kedaluwarsa lisensi) bagi Anda untuk mengambil atau mengekspor data Anda\n• Melakukan upaya yang wajar untuk memfasilitasi ekspor data dalam format standar yang dapat dibawa\n• Menyimpan data Anda sesuai dengan hukum yang berlaku dan Kebijakan Privasi kami\n\nMasalah Keuangan: Setelah Layanan dihentikan:\n• Kami akan memberikan pengembalian dana prorata untuk bagian yang belum habis dari lisensi berbayar apa pun yang diperbaharui setelah pemberitahuan penghentian Layanan dikeluarkan (jika diwajibkan oleh hukum di yurisdiksi Anda)\n• Pengguna tidak berhak atas ganti rugi atau kompensasi di luar pengembalian dana tersebut\n• Semua permintaan pengembalian dana harus dilakukan dalam waktu 12 bulan sejak penghentian Layanan\n\nTanpa Tanggung Jawab: Kami tidak bertanggung jawab atas kehilangan data, bisnis, keuntungan, atau peluang yang diakibatkan oleh penghentian Layanan, asalkan kami mengikuti prosedur pemberitahuan, jaminan perpanjangan lisensi, dan ekspor data yang diuraikan di atas. Dengan menerima Syarat ini, Anda mengakui bahwa ketergantungan berkelanjutan pada Layanan setelah periode pemberitahuan penghentian berakhir adalah risiko Anda sendiri."
+        },
+        "contactUs": {
+          "title": "18. Hubungi Kami",
+          "content": "Jika Anda memiliki pertanyaan tentang Syarat ini, silakan hubungi kami di:\n\nEmail: legal@fanmark.id"
+        }
+      }
+    },
+    "footerLinks": {
+      "privacyPolicy": "Kebijakan Privasi",
+      "termsOfService": "Syarat Layanan",
+      "contactUs": "Hubungi Kami"
+    }
+  },
+  "contactUs": {
+    "title": "Hubungi Kami",
+    "subtitle": "Hubungi kami untuk pertanyaan, umpan balik, atau dukungan",
+    "introduction": "Kami senang mendengar dari Anda! Jika memiliki pertanyaan tentang fanmark.id, ingin berbagi umpan balik, atau memerlukan dukungan, silakan hubungi kami menggunakan salah satu metode di bawah.",
+    "email": {
+      "title": "Email",
+      "description": "Untuk pertanyaan umum, masalah hukum, atau permintaan dukungan, kirimkan email kepada kami."
+    },
+    "twitter": {
+      "title": "Twitter/X",
+      "description": "Ikuti kami di Twitter/X untuk pembaruan, pengumuman, dan respons dukungan cepat."
+    }
   }
 }
