@@ -9,8 +9,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { formatDistanceToNow } from 'date-fns';
-import { ja } from 'date-fns/locale';
+import { format } from 'date-fns';
 import { Bell, Check, Link2 } from 'lucide-react';
 
 interface Notification {
@@ -25,7 +24,6 @@ interface Notification {
 export default function Notifications() {
   const { user } = useAuth();
   const { t } = useTranslation();
-  const locale = ja;
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
@@ -263,10 +261,7 @@ export default function Notifications() {
                               {title || t('notifications.fallbackTitle')}
                             </h2>
                             <span className="text-xs text-muted-foreground">
-                              {formatDistanceToNow(new Date(notification.triggered_at), {
-                                addSuffix: true,
-                                locale,
-                              })}
+                              {format(new Date(notification.triggered_at), 'yyyy/MM/dd HH:mm')}
                             </span>
                           </div>
                           {body && (
