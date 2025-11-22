@@ -303,6 +303,27 @@ export const useAuthForm = () => {
     }
   };
 
+  const signInWithDiscord = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'discord',
+        options: {
+          redirectTo: `${window.location.origin}/auth`
+        }
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : undefined;
+      setError(message || 'Discordログインに失敗しました');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     formData,
     authState,
@@ -311,6 +332,7 @@ export const useAuthForm = () => {
     signIn,
     signInWithGoogle,
     signInWithGithub,
+    signInWithDiscord,
     forgotPassword,
     resendConfirmation
   };
