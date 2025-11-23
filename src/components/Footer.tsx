@@ -41,6 +41,12 @@ export const Footer: React.FC = () => {
             >
               {t("legalPages.footerLinks.termsOfService")}
             </Link>
+            <Link
+              to="/commercial-transactions"
+              className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              {t("legalPages.footerLinks.commercialTransactions")}
+            </Link>
           </div>
         </div>
       </div>
