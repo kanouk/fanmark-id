@@ -32,6 +32,7 @@ import PWAApp from "./pages/PWAApp";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import ContactUs from "./pages/ContactUs";
+import CommercialTransactions from "./pages/CommercialTransactions";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LotteryActionOverlayProvider } from "@/providers/LotteryActionOverlayProvider";
 import { PasswordSetupGate } from "@/components/PasswordSetupGate";
@@ -79,6 +80,7 @@ const MainApp = () => (
                 <Route path="/contact" element={<ContactUs />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/terms" element={<TermsOfService />} />
+                <Route path="/commercial-transactions" element={<CommercialTransactions />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="/:emojiPath" element={<FanmarkAccess />} />
                 <Route path="*" element={<NotFound />} />

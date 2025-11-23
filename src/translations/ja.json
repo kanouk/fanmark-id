@@ -1262,7 +1262,47 @@
     "footerLinks": {
       "privacyPolicy": "プライバシーポリシー",
       "termsOfService": "利用規約",
-      "contactUs": "お問い合わせ"
+      "contactUs": "お問い合わせ",
+      "commercialTransactions": "特定商取引法に基づく表記"
+    },
+    "commercialTransactions": {
+      "title": "特定商取引法に基づく表記",
+      "lastUpdated": "最終更新：2025年11月",
+      "introduction": "特定商取引法に基づき、以下の通り表記いたします。",
+      "sections": {
+        "businessOperator": {
+          "title": "1. 事業者の名称",
+          "content": "Fanmark ID\n\n運営会社：[会社名]\n代表者：[代表者名]"
+        },
+        "servicePricing": {
+          "title": "2. 商品・サービスの価格",
+          "content": "・4個以上の絵文字組み合わせ：無料\n・2〜3個の絵文字組み合わせ：$9.99（税込）\n・1個の絵文字：$99.9（税込）\n\n※表示価格はすべて税込価格です。\n※為替レートにより日本円換算額は変動する場合があります。"
+        },
+        "paymentMethod": {
+          "title": "3. 代金の支払方法",
+          "content": "クレジットカード決済（Stripe経由）\n対応カード：Visa、Mastercard、American Express、JCB等"
+        },
+        "paymentTiming": {
+          "title": "4. 代金の支払時期",
+          "content": "サービスお申し込み時に決済が完了します。\nクレジットカードの引き落とし時期は、各カード会社の規約に準じます。"
+        },
+        "serviceProvision": {
+          "title": "5. サービスの提供時期",
+          "content": "決済完了後、即時ご利用いただけます。"
+        },
+        "cancellationPolicy": {
+          "title": "6. 返品・キャンセルに関する特約",
+          "content": "デジタルコンテンツという商品の性質上、原則として返品・キャンセルはお受けできません。\n\nただし、以下の場合は返金対応をさせていただきます：\n・サービスに重大な不具合がある場合\n・事業者側の責任による契約不履行の場合\n\n返金を希望される場合は、お問い合わせフォームまたはメールにてご連絡ください。"
+        },
+        "refundPolicy": {
+          "title": "7. 返金について",
+          "content": "返金が承認された場合、お支払いいただいた方法と同じ方法で返金いたします。\n返金処理には、承認後5〜10営業日程度かかる場合があります。"
+        },
+        "contactInformation": {
+          "title": "8. お問い合わせ先",
+          "content": "ご不明な点やお問い合わせは、以下までご連絡ください：\n\nメール：legal@fanmark.id\nお問い合わせフォーム：fanmark.id/contact\n\n※お問い合わせには、2〜3営業日以内に返信いたします。"
+        }
+      }
     }
   },
   "contactUs": {
