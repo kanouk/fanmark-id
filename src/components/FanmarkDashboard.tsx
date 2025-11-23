@@ -18,6 +18,7 @@ import { FiTarget, FiLayers, FiCompass, FiStar, FiCheckCircle, FiMoon, FiUser, F
 import { FanmarkAcquisition } from './FanmarkAcquisition';
 import { ExtendLicenseDialog, type ExtendLicenseTarget, type ExtendPlanOption } from './ExtendLicenseDialog';
 import { FanmarkReturnLoading } from './FanmarkReturnLoading';
+import { LicenseCountdown } from './LicenseCountdown';
 // Using Undo2 for return/return action
 import { supabase } from '@/integrations/supabase/client';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
@@ -991,8 +992,12 @@ export const FanmarkDashboard = () => {
                                             </TooltipContent>
                                           </Tooltip>
                                         ) : timing.status === 'active' && expirationDateUTC ? (
-                                          <div className={countdownClass}>
-                                            {t('dashboard.daysRemaining', { days: Math.max(daysRemaining ?? 0, 0) })}
+                                          <div className={`${countdownClass} min-w-[6rem]`}>
+                                            {msRemaining !== null && msRemaining > 0 && msRemaining < 24 * 60 * 60 * 1000 ? (
+                                              <LicenseCountdown expirationDate={expirationDateUTC} className={`${countdownClass} font-mono tabular-nums`} />
+                                            ) : (
+                                              t('dashboard.daysRemaining', { days: Math.max(daysRemaining ?? 0, 0) })
+                                            )}
                                           </div>
                                         ) : isReturned(fanmark) ? (
                                           <span className="text-muted-foreground text-sm">{t('dashboard.returned')}</span>
@@ -1242,9 +1247,13 @@ export const FanmarkDashboard = () => {
                                             </Tooltip>
                                           ) : timing.status === 'active' && expirationDate ? (
                                             <div>
-                                              <span className={mobileCountdownClass}>
-                                                {t('dashboard.daysRemaining', { days: Math.max(daysRemaining ?? 0, 0) })}
-                                              </span>
+                                              {msRemainingMobile !== null && msRemainingMobile > 0 && msRemainingMobile < 24 * 60 * 60 * 1000 ? (
+                                                <LicenseCountdown expirationDate={expirationDate} className={mobileCountdownClass} />
+                                              ) : (
+                                                <span className={mobileCountdownClass}>
+                                                  {t('dashboard.daysRemaining', { days: Math.max(daysRemaining ?? 0, 0) })}
+                                                </span>
+                                              )}
                                             </div>
                                           ) : timing.status === 'active' && !expirationDate ? (
                                             <span className="text-muted-foreground text-sm">

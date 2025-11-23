@@ -52,7 +52,7 @@ export function PWAInstallPrompt() {
   if (!showPrompt) return null;
 
   return (
-    <Card className="fixed bottom-20 left-4 right-4 max-w-md mx-auto p-4 shadow-xl z-50 animate-in slide-in-from-bottom-5">
+    <Card className="fixed bottom-20 left-4 right-4 max-w-md mx-auto p-4 shadow-xl z-50 animate-in slide-in-from-bottom-5 bg-background/95 backdrop-blur-sm border border-border/50">
       <button
         onClick={handleDismiss}
         className="absolute top-2 right-2 p-1 hover:bg-muted rounded-full transition-colors"
