@@ -146,15 +146,10 @@ const Index = () => {
     }
   }, [location, navigate]);
 
-  useEffect(() => {
-    if (!prefilledEmoji) return;
-
-    const timer = window.setTimeout(() => {
-      setPrefilledEmoji(undefined);
-    }, 100); // FanmarkAcquisition が確実に prefilledEmoji を受け取れるよう、わずかに遅延
-
-    return () => window.clearTimeout(timer);
-  }, [prefilledEmoji]);
+  // prefilledEmoji のクリアは不要
+  // - location.state は navigate(..., { replace: true }) で既にクリアされている
+  // - 次回アクセス時には自動的に undefined になる
+  // - FanmarkAcquisition は prefilledEmoji の変更を監視しているので、undefined も正しく処理される
 
   useEffect(() => {
     if (!prefilledEmoji) return;
