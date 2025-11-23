@@ -32,6 +32,7 @@ import PWAApp from "./pages/PWAApp";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import ContactUs from "./pages/ContactUs";
+import About from "./pages/About";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LotteryActionOverlayProvider } from "@/providers/LotteryActionOverlayProvider";
 import { PasswordSetupGate } from "@/components/PasswordSetupGate";
@@ -76,6 +77,7 @@ const MainApp = () => (
                 {/* Fanmark details route - must come before emojiPath */}
                 <Route path="/f/:shortId" element={<FanmarkDetailsPage />} />
                 {/* Legal and support pages */}
+                <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<ContactUs />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/terms" element={<TermsOfService />} />

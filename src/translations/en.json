@@ -1261,7 +1261,71 @@
         }
       }
     },
+    "about": {
+      "title": "About fanmark.id",
+      "subtitle": "Creating a New Form of Identity with Emoji",
+      "backToHome": "Back to Home",
+      "introduction": "fanmark.id is a next-generation ID and link service using emoji combinations (fanmarks). Get your own special, memorable, and easy-to-share address.",
+      "features": {
+        "memorable": {
+          "title": "Memorable",
+          "description": "No need to remember complex URLs or strings of numbers. Just choose emojis that represent you, and you'll have a unique, instantly recognizable ID."
+        },
+        "easyShare": {
+          "title": "Easy to Share",
+          "description": "Share emojis directly on social media and messaging apps. They're visually appealing and anyone can access your page right away."
+        },
+        "flexible": {
+          "title": "Flexible Usage",
+          "description": "Use it as a profile page, redirect to your favorite site, or display messages. Customize it freely to suit your needs."
+        },
+        "multilingual": {
+          "title": "Multilingual Support",
+          "description": "Available in Japanese, English, Korean, and Indonesian. Connect with people around the world."
+        }
+      },
+      "howItWorks": {
+        "title": "How It Works",
+        "step1": {
+          "title": "Search for Fanmarks",
+          "description": "Combine 1-5 emojis to search for your ideal fanmark. Check availability and pricing."
+        },
+        "step2": {
+          "title": "Claim Your Fanmark",
+          "description": "Found a fanmark you like? Create an account and claim it. As we're invite-only, you'll need an invitation code or to join the waitlist."
+        },
+        "step3": {
+          "title": "Customize Settings",
+          "description": "Set the display name and access type (profile, redirect, text) for your fanmark. Creating a profile page is easy."
+        },
+        "step4": {
+          "title": "Share and Enjoy",
+          "description": "Share your fanmark on social media or your website. Your unique, easily accessible link is ready to go."
+        }
+      },
+      "useCases": {
+        "title": "Use Cases",
+        "creators": {
+          "title": "Creators",
+          "description": "Share links to your work or portfolio with emojis that represent your brand."
+        },
+        "businesses": {
+          "title": "Shops & Businesses",
+          "description": "Create pathways to menus or booking pages with emojis that express your shop's personality."
+        },
+        "communities": {
+          "title": "Communities",
+          "description": "Link to event information or member recruitment pages with emojis that reflect your group's vibe."
+        }
+      },
+      "cta": {
+        "title": "Let's Get Started",
+        "description": "Find your special fanmark and experience a new world of identity.",
+        "button": "Find Your Fanmark"
+      }
+    },
     "footerLinks": {
+      "about": "About fanmark.id",
       "privacyPolicy": "Privacy Policy",
       "termsOfService": "Terms of Service",
       "contactUs": "Contact Us"
