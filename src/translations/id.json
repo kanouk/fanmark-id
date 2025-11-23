@@ -1261,7 +1261,71 @@
         }
       }
     },
+    "about": {
+      "title": "Tentang Fanmark",
+      "subtitle": "Menciptakan Bentuk Identitas Baru dengan Emoji",
+      "backToHome": "Kembali ke Beranda",
+      "introduction": "Fanmark adalah layanan ID dan tautan generasi baru menggunakan kombinasi emoji (fanmark). Dapatkan alamat khusus Anda yang mudah diingat dan dibagikan.",
+      "features": {
+        "memorable": {
+          "title": "Mudah Diingat",
+          "description": "Tidak perlu mengingat URL yang rumit atau deretan angka. Cukup pilih emoji yang mewakili Anda, dan Anda akan memiliki ID unik yang langsung dapat dikenali."
+        },
+        "easyShare": {
+          "title": "Mudah Dibagikan",
+          "description": "Bagikan emoji langsung di media sosial dan aplikasi pesan. Mereka menarik secara visual dan siapa pun dapat mengakses halaman Anda segera."
+        },
+        "flexible": {
+          "title": "Penggunaan Fleksibel",
+          "description": "Gunakan sebagai halaman profil, alihkan ke situs favorit Anda, atau tampilkan pesan. Sesuaikan secara bebas sesuai kebutuhan Anda."
+        },
+        "multilingual": {
+          "title": "Dukungan Multibahasa",
+          "description": "Tersedia dalam bahasa Jepang, Inggris, Korea, dan Indonesia. Terhubung dengan orang-orang di seluruh dunia."
+        }
+      },
+      "howItWorks": {
+        "title": "Cara Kerjanya",
+        "step1": {
+          "title": "Cari Fanmark",
+          "description": "Kombinasikan 1-5 emoji untuk mencari fanmark ideal Anda. Periksa ketersediaan dan harga."
+        },
+        "step2": {
+          "title": "Klaim Fanmark Anda",
+          "description": "Menemukan fanmark yang Anda suka? Buat akun dan klaimnya. Karena kami hanya menerima undangan, Anda memerlukan kode undangan atau bergabung dengan daftar tunggu."
+        },
+        "step3": {
+          "title": "Sesuaikan Pengaturan",
+          "description": "Atur nama tampilan dan jenis akses (profil, pengalihan, teks) untuk fanmark Anda. Membuat halaman profil sangat mudah."
+        },
+        "step4": {
+          "title": "Bagikan dan Nikmati",
+          "description": "Bagikan fanmark Anda di media sosial atau situs web Anda. Tautan unik dan mudah diakses Anda siap digunakan."
+        }
+      },
+      "useCases": {
+        "title": "Kasus Penggunaan",
+        "creators": {
+          "title": "Kreator",
+          "description": "Bagikan tautan ke karya atau portofolio Anda dengan emoji yang mewakili merek Anda."
+        },
+        "businesses": {
+          "title": "Toko & Bisnis",
+          "description": "Buat jalur ke menu atau halaman pemesanan dengan emoji yang mengekspresikan kepribadian toko Anda."
+        },
+        "communities": {
+          "title": "Komunitas",
+          "description": "Tautkan ke informasi acara atau halaman rekrutmen anggota dengan emoji yang mencerminkan suasana grup Anda."
+        }
+      },
+      "cta": {
+        "title": "Mari Mulai",
+        "description": "Temukan fanmark khusus Anda dan alami dunia identitas baru.",
+        "button": "Temukan Fanmark Anda"
+      }
+    },
     "footerLinks": {
+      "about": "Tentang Fanmark",
       "privacyPolicy": "Kebijakan Privasi",
       "termsOfService": "Syarat Layanan",
       "contactUs": "Hubungi Kami"

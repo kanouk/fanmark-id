@@ -18,6 +18,12 @@ export const Footer: React.FC = () => {
           {/* Links */}
           <div className="flex gap-6">
             <Link
+              to="/about"
+              className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              {t("legalPages.footerLinks.about")}
+            </Link>
+            <Link
               to="/contact"
               className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
             >
