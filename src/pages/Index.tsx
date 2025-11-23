@@ -151,7 +151,7 @@ const Index = () => {
 
     const timer = window.setTimeout(() => {
       setPrefilledEmoji(undefined);
-    }, 0);
+    }, 100); // FanmarkAcquisition が確実に prefilledEmoji を受け取れるよう、わずかに遅延
 
     return () => window.clearTimeout(timer);
   }, [prefilledEmoji]);
