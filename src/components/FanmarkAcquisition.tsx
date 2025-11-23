@@ -320,11 +320,18 @@ export const FanmarkAcquisition = ({
     if (!storageKey || typeof window === 'undefined') return;
     if (hasLoadedInitialStorage.current) return;
 
+    // 🎯 prefilledEmoji が明示的に渡されている場合は、sessionStorage より優先
+    // これにより、存在しないファンマへのアクセス後のリダイレクトで確実に検索フィールドに設定される
+    if (prefilledEmoji) {
+      setQuery(normalizeQuery(prefilledEmoji));
+      hasLoadedInitialStorage.current = true;
+      return;
+    }
+
+    // prefilledEmoji がない場合のみ sessionStorage から復元
     const stored = sessionStorage.getItem(storageKey);
     if (stored) {
       setQuery(normalizeQuery(stored));
-    } else {
-      setQuery(normalizeQuery(prefilledEmoji));
     }
     hasLoadedInitialStorage.current = true;
   }, [rememberSearch, storageKey, normalizeQuery, prefilledEmoji]);
