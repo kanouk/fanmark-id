@@ -1262,10 +1262,10 @@
       }
     },
     "about": {
-      "title": "Tentang fanmark.id",
+      "title": "Tentang Fanmark",
       "subtitle": "Menciptakan Bentuk Identitas Baru dengan Emoji",
       "backToHome": "Kembali ke Beranda",
-      "introduction": "fanmark.id adalah layanan ID dan tautan generasi baru menggunakan kombinasi emoji (fanmark). Dapatkan alamat khusus Anda yang mudah diingat dan dibagikan.",
+      "introduction": "Fanmark adalah layanan ID dan tautan generasi baru menggunakan kombinasi emoji (fanmark). Dapatkan alamat khusus Anda yang mudah diingat dan dibagikan.",
       "features": {
         "memorable": {
           "title": "Mudah Diingat",
@@ -1325,7 +1325,7 @@
       }
     },
     "footerLinks": {
-      "about": "Tentang fanmark.id",
+      "about": "Tentang Fanmark",
       "privacyPolicy": "Kebijakan Privasi",
       "termsOfService": "Syarat Layanan",
       "contactUs": "Hubungi Kami"

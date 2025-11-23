@@ -1261,10 +1261,10 @@
       }
     },
     "about": {
-      "title": "fanmark.id 소개",
+      "title": "Fanmark 소개",
       "subtitle": "이모지로 만드는 새로운 형태의 ID",
       "backToHome": "홈으로 돌아가기",
-      "introduction": "fanmark.id는 이모지 조합(팬마크)을 사용한 차세대 ID 및 링크 서비스입니다. 기억하기 쉽고 공유하기 쉬운 나만의 특별한 주소를 얻을 수 있습니다.",
+      "introduction": "Fanmark는 이모지 조합(팬마크)을 사용한 차세대 ID 및 링크 서비스입니다. 기억하기 쉽고 공유하기 쉬운 나만의 특별한 주소를 얻을 수 있습니다.",
       "features": {
         "memorable": {
           "title": "기억하기 쉬움",
@@ -1324,7 +1324,7 @@
       }
     },
     "footerLinks": {
-      "about": "fanmark.id 소개",
+      "about": "Fanmark 소개",
       "privacyPolicy": "개인정보 보호정책",
       "termsOfService": "서비스 약관",
       "contactUs": "문의하기"

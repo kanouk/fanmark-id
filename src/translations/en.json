@@ -1262,10 +1262,10 @@
       }
     },
     "about": {
-      "title": "About fanmark.id",
+      "title": "About Fanmark",
       "subtitle": "Creating a New Form of Identity with Emoji",
       "backToHome": "Back to Home",
-      "introduction": "fanmark.id is a next-generation ID and link service using emoji combinations (fanmarks). Get your own special, memorable, and easy-to-share address.",
+      "introduction": "Fanmark is a next-generation ID and link service using emoji combinations (fanmarks). Get your own special, memorable, and easy-to-share address.",
       "features": {
         "memorable": {
           "title": "Memorable",
@@ -1325,7 +1325,7 @@
       }
     },
     "footerLinks": {
-      "about": "About fanmark.id",
+      "about": "About Fanmark",
       "privacyPolicy": "Privacy Policy",
       "termsOfService": "Terms of Service",
       "contactUs": "Contact Us"
