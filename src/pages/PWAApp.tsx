@@ -6,7 +6,6 @@ import FanmarkSearch from "@/components/FanmarkSearch";
 import { useFanmarkHistory } from "@/hooks/useFanmarkHistory";
 import { formatDistanceToNow } from "date-fns";
 import { ja } from "date-fns/locale";
-import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { PWAHeader } from "@/components/layout/PWAHeader";
 import { useTranslation } from "@/hooks/useTranslation";
 import { FanmarkSearchPanel } from "@/components/FanmarkSearchPanel";
@@ -116,8 +115,6 @@ export default function PWAApp() {
 
   return (
     <div className="min-h-screen relative overflow-hidden flex flex-col font-sans text-foreground bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      <PWAInstallPrompt />
-
       {/* Background Decoration (from Index.tsx) */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="hero-decorative-blob -top-20 -left-20 w-96 h-96 bg-primary/20" style={{animationDelay: '0s'}} />
