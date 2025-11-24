@@ -1327,7 +1327,47 @@
       "about": "Fanmark 소개",
       "privacyPolicy": "개인정보 보호정책",
       "termsOfService": "서비스 약관",
-      "contactUs": "문의하기"
+      "contactUs": "문의하기",
+      "commercialTransactions": "전자상거래법 표기"
+    },
+    "commercialTransactions": {
+      "title": "전자상거래법에 따른 표기",
+      "lastUpdated": "마지막 업데이트: 2025년 11월",
+      "introduction": "전자상거래법에 따라 다음과 같이 표기합니다.",
+      "sections": {
+        "businessOperator": {
+          "title": "1. 사업자 명칭",
+          "content": "Fanmark ID\n\n운영 회사: [회사명]\n대표자: [대표자명]"
+        },
+        "servicePricing": {
+          "title": "2. 상품/서비스 가격",
+          "content": "・4개 이상 이모지 조합: 무료\n・2-3개 이모지 조합: $9.99 (세금 포함)\n・1개 이모지: $99.9 (세금 포함)\n\n※표시된 가격은 모두 세금 포함 가격입니다.\n※환율에 따라 원화 환산 금액이 변동될 수 있습니다."
+        },
+        "paymentMethod": {
+          "title": "3. 결제 방법",
+          "content": "신용카드 결제 (Stripe 경유)\n지원 카드: Visa, Mastercard, American Express, JCB 등"
+        },
+        "paymentTiming": {
+          "title": "4. 결제 시기",
+          "content": "서비스 신청 시 결제가 완료됩니다.\n신용카드 인출 시기는 각 카드사 약관에 따릅니다."
+        },
+        "serviceProvision": {
+          "title": "5. 서비스 제공 시기",
+          "content": "결제 완료 후 즉시 이용 가능합니다."
+        },
+        "cancellationPolicy": {
+          "title": "6. 반품/취소 정책",
+          "content": "디지털 콘텐츠 상품의 특성상 원칙적으로 반품 및 취소는 불가능합니다.\n\n다만, 다음의 경우 환불 처리를 진행합니다:\n・서비스에 중대한 결함이 있는 경우\n・사업자 책임으로 인한 계약 불이행의 경우\n\n환불을 원하시는 경우 문의 양식 또는 이메일로 연락 주세요."
+        },
+        "refundPolicy": {
+          "title": "7. 환불 정책",
+          "content": "환불이 승인된 경우, 결제하신 방법과 동일한 방법으로 환불됩니다.\n환불 처리는 승인 후 5-10영업일 정도 소요될 수 있습니다."
+        },
+        "contactInformation": {
+          "title": "8. 문의처",
+          "content": "궁금하신 점이나 문의 사항은 다음으로 연락 주세요:\n\n이메일: legal@fanmark.id\n문의 양식: fanmark.id/contact\n\n※문의에는 2-3영업일 이내에 답변드립니다."
+        }
+      }
     }
   },
   "contactUs": {

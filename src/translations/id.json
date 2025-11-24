@@ -1328,7 +1328,47 @@
       "about": "Tentang Fanmark",
       "privacyPolicy": "Kebijakan Privasi",
       "termsOfService": "Syarat Layanan",
-      "contactUs": "Hubungi Kami"
+      "contactUs": "Hubungi Kami",
+      "commercialTransactions": "Undang-Undang Transaksi Komersial"
+    },
+    "commercialTransactions": {
+      "title": "Pengungkapan Undang-Undang Transaksi Komersial",
+      "lastUpdated": "Terakhir diperbarui: November 2025",
+      "introduction": "Sesuai dengan Undang-Undang Transaksi Komersial, kami mengungkapkan informasi berikut.",
+      "sections": {
+        "businessOperator": {
+          "title": "1. Nama Operator Bisnis",
+          "content": "Fanmark ID\n\nPerusahaan Operasi: [Nama Perusahaan]\nPerwakilan: [Nama Perwakilan]"
+        },
+        "servicePricing": {
+          "title": "2. Harga Produk/Layanan",
+          "content": "・Kombinasi 4+ emoji: Gratis\n・Kombinasi 2-3 emoji: $9.99 (termasuk pajak)\n・1 emoji: $99.9 (termasuk pajak)\n\n※Semua harga yang ditampilkan sudah termasuk pajak.\n※Konversi Yen dapat bervariasi dengan nilai tukar."
+        },
+        "paymentMethod": {
+          "title": "3. Metode Pembayaran",
+          "content": "Pembayaran Kartu Kredit (melalui Stripe)\nKartu yang Didukung: Visa, Mastercard, American Express, JCB, dll."
+        },
+        "paymentTiming": {
+          "title": "4. Waktu Pembayaran",
+          "content": "Pembayaran selesai pada saat aplikasi layanan.\nWaktu penarikan kartu kredit mengikuti ketentuan perusahaan kartu masing-masing."
+        },
+        "serviceProvision": {
+          "title": "5. Waktu Penyediaan Layanan",
+          "content": "Layanan tersedia segera setelah pembayaran selesai."
+        },
+        "cancellationPolicy": {
+          "title": "6. Kebijakan Pengembalian/Pembatalan",
+          "content": "Karena sifat konten digital, pengembalian dan pembatalan umumnya tidak diterima.\n\nNamun, pengembalian dana akan diberikan dalam kasus berikut:\n・Layanan memiliki cacat kritis\n・Pelanggaran kontrak karena tanggung jawab operator\n\nUntuk permintaan pengembalian dana, silakan hubungi kami melalui formulir pertanyaan atau email."
+        },
+        "refundPolicy": {
+          "title": "7. Kebijakan Pengembalian Dana",
+          "content": "Jika pengembalian dana disetujui, akan diproses menggunakan metode pembayaran yang sama.\nPemrosesan pengembalian dana dapat memakan waktu 5-10 hari kerja setelah persetujuan."
+        },
+        "contactInformation": {
+          "title": "8. Informasi Kontak",
+          "content": "Untuk pertanyaan atau pertanyaan, silakan hubungi kami di:\n\nEmail: legal@fanmark.id\nFormulir Kontak: fanmark.id/contact\n\n※Kami akan merespons pertanyaan dalam 2-3 hari kerja."
+        }
+      }
     }
   },
   "contactUs": {
