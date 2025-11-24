@@ -11,6 +11,7 @@ import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Bell, Check, Link2 } from 'lucide-react';
+import { useNotificationFormatter } from '@/hooks/useNotificationFormatter';
 
 interface Notification {
   id: string;
@@ -24,52 +25,10 @@ interface Notification {
 export default function Notifications() {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const { formatNotificationContent } = useNotificationFormatter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
-
-  const formatDeadline = useCallback((iso: string | undefined | null) => {
-    if (!iso) return null;
-    const date = new Date(iso);
-    if (Number.isNaN(date.getTime())) {
-      return null;
-    }
-
-    return new Intl.DateTimeFormat(undefined, {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hourCycle: 'h23',
-    }).format(date);
-  }, []);
-
-  const formatNotificationContent = useCallback(
-    (notification: Notification) => {
-      const metadata = notification?.payload?.metadata ?? {};
-      const fanmark = metadata.fanmark_name || metadata.fanmark || '—';
-
-      if (metadata.grace_expires_at) {
-        const deadline = formatDeadline(metadata.grace_expires_at);
-
-        return {
-          title: t('notifications.graceProcessingTitle'),
-          body: deadline
-            ? t('notifications.graceProcessingBodyWithDeadline', { fanmark, deadline })
-            : t('notifications.graceProcessingBody', { fanmark }),
-          summary: t('notifications.graceProcessingSummary'),
-        };
-      }
-
-      return {
-        title: notification?.payload?.title ?? t('notifications.fallbackTitle'),
-        body: notification?.payload?.body ?? '',
-        summary: notification?.payload?.summary ?? null,
-      };
-    },
-    [formatDeadline, t],
-  );
 
   useEffect(() => {
     if (!user) return;
@@ -246,9 +205,8 @@ export default function Notifications() {
                 return (
                   <Card
                     key={notification.id}
-                    className={`rounded-3xl border bg-background/90 shadow-[0_20px_45px_rgba(101,195,200,0.14)] transition-all hover:-translate-y-1 ${
-                      isUnread ? 'border-primary/30' : 'border-border/80 opacity-80'
-                    }`}
+                    className={`rounded-3xl border bg-background/90 shadow-[0_20px_45px_rgba(101,195,200,0.14)] transition-all hover:-translate-y-1 ${isUnread ? 'border-primary/30' : 'border-border/80 opacity-80'
+                      }`}
                   >
                     <CardContent className="flex flex-col gap-4 px-6 py-6 sm:flex-row sm:items-start sm:justify-between">
                       <div className="flex flex-1 gap-4">

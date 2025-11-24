@@ -7,7 +7,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useUnreadNotifications } from '@/hooks/useUnreadNotifications';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
+import { useNotificationFormatter } from '@/hooks/useNotificationFormatter';
 import { ja } from 'date-fns/locale';
 import { BrandWordmark } from '@/components/BrandWordmark';
 import { LanguageToggle } from '@/components/LanguageToggle';
@@ -49,6 +50,7 @@ export const AppHeader = ({
   const { profile } = useProfile();
   const { t } = useTranslation();
   const { toast } = useToast();
+  const { formatNotificationContent } = useNotificationFormatter();
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -188,45 +190,45 @@ export const AppHeader = ({
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {recentNotifications.map((notification: any) => (
-                        <button
-                          key={notification.id}
-                          type="button"
-                          onClick={() => {
-                            const directLink =
-                              notification.payload?.link ??
-                              (notification.payload?.fanmark_short_id
-                                ? `/f/${notification.payload.fanmark_short_id}`
-                                : null);
-                            if (directLink) {
-                              navigate(directLink);
-                            } else {
-                              navigate('/notifications');
-                            }
-                          }}
-                          className="group w-full rounded-xl border border-transparent bg-transparent px-3 py-2 text-left transition-all hover:border-primary/40 hover:bg-primary/5"
-                        >
-                          <p className="text-sm font-medium text-foreground group-hover:text-primary">
-                            {notification.payload?.title ?? t('notifications.fallbackTitle')}
-                          </p>
-                          {notification.payload?.body && (
-                            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                              {notification.payload.body}
+                      {recentNotifications.map((notification: any) => {
+                        const { title, body } = formatNotificationContent(notification);
+                        return (
+                          <button
+                            key={notification.id}
+                            type="button"
+                            onClick={() => {
+                              const directLink =
+                                notification.payload?.link ??
+                                (notification.payload?.fanmark_short_id
+                                  ? `/f/${notification.payload.fanmark_short_id}`
+                                  : null);
+                              if (directLink) {
+                                navigate(directLink);
+                              } else {
+                                navigate('/notifications');
+                              }
+                            }}
+                            className="group w-full rounded-xl border border-transparent bg-transparent px-3 py-2 text-left transition-all hover:border-primary/40 hover:bg-primary/5"
+                          >
+                            <p className="text-sm font-medium text-foreground group-hover:text-primary">
+                              {title || t('notifications.fallbackTitle')}
                             </p>
-                          )}
-                          <p className="mt-2 text-[11px] text-muted-foreground">
-                            {formatDistanceToNow(new Date(notification.triggered_at), {
-                              addSuffix: true,
-                              locale,
-                            })}
-                            {!notification.read_at && (
-                              <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
-                                {t('notifications.unreadBadge')}
-                              </span>
+                            {body && (
+                              <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                                {body}
+                              </p>
                             )}
-                          </p>
-                        </button>
-                      ))}
+                            <p className="mt-2 text-[11px] text-muted-foreground">
+                              {format(new Date(notification.triggered_at), 'yyyy/MM/dd HH:mm', { locale })}
+                              {!notification.read_at && (
+                                <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                                  {t('notifications.unreadBadge')}
+                                </span>
+                              )}
+                            </p>
+                          </button>
+                        )
+                      })}
                     </div>
                   )}
                 </div>
@@ -253,10 +255,10 @@ export const AppHeader = ({
                 >
                   <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-background">
                     {profile?.avatar_url ? (
-                      <img 
-                        src={profile.avatar_url} 
-                        alt="Avatar" 
-                        className="h-full w-full object-cover" 
+                      <img
+                        src={profile.avatar_url}
+                        alt="Avatar"
+                        className="h-full w-full object-cover"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
                           e.currentTarget.nextElementSibling?.classList.remove('hidden');
