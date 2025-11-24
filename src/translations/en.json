@@ -1328,7 +1328,47 @@
       "about": "About Fanmark",
       "privacyPolicy": "Privacy Policy",
       "termsOfService": "Terms of Service",
-      "contactUs": "Contact Us"
+      "contactUs": "Contact Us",
+      "commercialTransactions": "Commercial Transactions Act"
+    },
+    "commercialTransactions": {
+      "title": "Commercial Transactions Act Disclosure",
+      "lastUpdated": "Last updated: November 2025",
+      "introduction": "In accordance with the Commercial Transactions Act, we disclose the following information.",
+      "sections": {
+        "businessOperator": {
+          "title": "1. Business Operator Name",
+          "content": "Fanmark ID\n\nOperating Company: [Company Name]\nRepresentative: [Representative Name]"
+        },
+        "servicePricing": {
+          "title": "2. Product/Service Pricing",
+          "content": "・4+ emoji combination: Free\n・2-3 emoji combination: $9.99 (tax included)\n・1 emoji: $99.9 (tax included)\n\n※All displayed prices include tax.\n※Yen conversion rates may vary with exchange rates."
+        },
+        "paymentMethod": {
+          "title": "3. Payment Methods",
+          "content": "Credit Card Payment (via Stripe)\nSupported Cards: Visa, Mastercard, American Express, JCB, etc."
+        },
+        "paymentTiming": {
+          "title": "4. Payment Timing",
+          "content": "Payment is completed at the time of service application.\nCredit card withdrawal timing follows each card company's terms."
+        },
+        "serviceProvision": {
+          "title": "5. Service Provision Timing",
+          "content": "Service is available immediately after payment completion."
+        },
+        "cancellationPolicy": {
+          "title": "6. Returns/Cancellation Policy",
+          "content": "Due to the nature of digital content, returns and cancellations are generally not accepted.\n\nHowever, refunds will be provided in the following cases:\n・Service has critical defects\n・Breach of contract due to operator's responsibility\n\nFor refund requests, please contact us via the inquiry form or email."
+        },
+        "refundPolicy": {
+          "title": "7. Refund Policy",
+          "content": "If a refund is approved, it will be processed using the same payment method.\nRefund processing may take 5-10 business days after approval."
+        },
+        "contactInformation": {
+          "title": "8. Contact Information",
+          "content": "For questions or inquiries, please contact us at:\n\nEmail: legal@fanmark.id\nContact Form: fanmark.id/contact\n\n※We will respond to inquiries within 2-3 business days."
+        }
+      }
     }
   },
   "contactUs": {
