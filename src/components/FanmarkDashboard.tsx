@@ -237,42 +237,21 @@ export const FanmarkDashboard = () => {
     setExtendProcessing(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke<ExtendLicenseResponse>('extend-fanmark-license', {
+      const { data, error } = await supabase.functions.invoke('create-extension-checkout', {
         body: {
           fanmark_id: extendTarget.fanmarkId,
           months: extendSelectedPlan.months,
         },
       });
 
-      if (error) {
-        throw new Error(error.message ?? 'extend-fanmark-license failed');
+      if (error || !data?.url) {
+        throw new Error(error?.message ?? 'Failed to create checkout session');
       }
 
-      const updatedLicense = data?.license;
-      const extendedUntil = updatedLicense?.license_end
-        ? formatInTimeZone(new Date(updatedLicense.license_end), 'Asia/Tokyo', 'yyyy/MM/dd')
-        : null;
-
-      const priceYen = data?.price_yen ?? extendSelectedPlan.price;
-
-      toast({
-        title: t('dashboard.extendDialog.successTitle'),
-        description: extendedUntil
-          ? t('dashboard.extendDialog.successDescriptionWithDate', {
-              months: extendSelectedPlan.months,
-              date: extendedUntil,
-            })
-          : t('dashboard.extendDialog.successDescription', {
-              months: extendSelectedPlan.months,
-            }),
-      });
-
-      await fetchFanmarks();
-      setExtendDialogOpen(false);
-      setExtendTarget(null);
-      setExtendSelectedPlan(null);
+      // Redirect to Stripe Checkout
+      window.location.href = data.url;
     } catch (extendError) {
-      console.error('Error extending fanmark license:', extendError);
+      console.error('Error creating checkout session:', extendError);
       const message = extendError instanceof Error ? extendError.message : null;
       toast({
         title: t('dashboard.extendDialog.errorTitle'),
@@ -281,7 +260,6 @@ export const FanmarkDashboard = () => {
           : t('dashboard.extendDialog.errorDescriptionFallback'),
         variant: 'destructive',
       });
-    } finally {
       setExtendProcessing(false);
     }
   };
@@ -291,6 +269,30 @@ export const FanmarkDashboard = () => {
     let nextPrefill = locationState?.prefillFanmark;
     const requestScroll = Boolean(locationState?.scrollToSearch);
     let shouldClearState = Boolean(locationState);
+
+    // Check for extension URL parameters
+    const searchParams = new URLSearchParams(location.search);
+    const extensionStatus = searchParams.get('extension');
+
+    if (extensionStatus === 'success') {
+      toast({
+        title: t('dashboard.extendDialog.successTitle'),
+        description: t('dashboard.extendDialog.paymentSuccessDescription'),
+      });
+      // Clear URL parameter and trigger refetch
+      navigate(location.pathname, { replace: true });
+      setLoading(true);
+      return;
+    } else if (extensionStatus === 'canceled') {
+      toast({
+        title: t('dashboard.extendDialog.canceledTitle'),
+        description: t('dashboard.extendDialog.canceledDescription'),
+        variant: 'destructive',
+      });
+      // Clear URL parameter
+      navigate(location.pathname, { replace: true });
+      return;
+    }
 
     if (!nextPrefill) {
       try {
@@ -319,7 +321,7 @@ export const FanmarkDashboard = () => {
     if (shouldClearState) {
       navigate(location.pathname, { replace: true });
     }
-  }, [location, navigate, setActiveTab]);
+  }, [location, navigate, setActiveTab, toast, t]);
 
   useEffect(() => {
     if (!shouldScrollToSearch) return;

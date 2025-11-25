@@ -55,8 +55,105 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Handle subscription events
+    // Handle subscription and checkout events
     switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        logStep("Processing checkout.session.completed", { sessionId: session.id });
+
+        // Check if this is a license extension payment
+        if (session.metadata?.type === "license_extension") {
+          const { fanmark_id, license_id, user_id, months } = session.metadata;
+          
+          if (!fanmark_id || !license_id || !user_id || !months) {
+            throw new Error("Missing metadata for license extension");
+          }
+
+          logStep("Processing license extension", { fanmark_id, license_id, months });
+
+          // Get current license
+          const { data: currentLicense, error: licenseError } = await supabaseClient
+            .from("fanmark_licenses")
+            .select("license_end, status, fanmark_id")
+            .eq("id", license_id)
+            .eq("user_id", user_id)
+            .single();
+
+          if (licenseError || !currentLicense) {
+            throw new Error("License not found or access denied");
+          }
+
+          // Calculate new license_end
+          const now = new Date();
+          const currentEnd = currentLicense.license_end ? new Date(currentLicense.license_end) : now;
+          const baseDate = currentEnd > now ? currentEnd : now;
+          const monthsToAdd = parseInt(months, 10);
+          const newEnd = new Date(baseDate);
+          newEnd.setMonth(newEnd.getMonth() + monthsToAdd);
+
+          // Update license
+          const { error: updateError } = await supabaseClient
+            .from("fanmark_licenses")
+            .update({
+              license_end: newEnd.toISOString(),
+              status: "active",
+              updated_at: now.toISOString(),
+            })
+            .eq("id", license_id);
+
+          if (updateError) {
+            throw updateError;
+          }
+
+          logStep("License extended successfully", { 
+            license_id, 
+            old_end: currentLicense.license_end,
+            new_end: newEnd.toISOString(),
+          });
+
+          // Cancel any pending lottery entries for this fanmark
+          const { data: lotteryEntries } = await supabaseClient
+            .from("fanmark_lottery_entries")
+            .select("id, user_id")
+            .eq("fanmark_id", fanmark_id)
+            .eq("entry_status", "pending");
+
+          if (lotteryEntries && lotteryEntries.length > 0) {
+            const { error: cancelError } = await supabaseClient
+              .from("fanmark_lottery_entries")
+              .update({
+                entry_status: "cancelled",
+                cancellation_reason: "license_extended",
+                cancelled_at: now.toISOString(),
+                updated_at: now.toISOString(),
+              })
+              .eq("fanmark_id", fanmark_id)
+              .eq("entry_status", "pending");
+
+            if (cancelError) {
+              logStep("Failed to cancel lottery entries", { error: cancelError });
+            } else {
+              logStep("Cancelled pending lottery entries", { count: lotteryEntries.length });
+            }
+          }
+
+          // Create audit log
+          await supabaseClient.from("audit_logs").insert({
+            user_id,
+            action: "LICENSE_EXTENDED",
+            resource_type: "fanmark_license",
+            resource_id: license_id,
+            metadata: {
+              fanmark_id,
+              months: monthsToAdd,
+              payment_session_id: session.id,
+              new_license_end: newEnd.toISOString(),
+            },
+          });
+        }
+        break;
+      }
+
       case "customer.subscription.created":
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
