@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState, useRef } from 'react';
 import { addMonths } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatInTimeZone } from 'date-fns-tz';
 import { supabase } from '@/integrations/supabase/client';
+import { CreditCard, Loader2, Info } from 'lucide-react';
 
 export interface ExtendPlanOption {
   months: number;
@@ -130,8 +132,8 @@ export const ExtendLicenseDialog = ({
   }, [target?.graceExpiresAt]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+    <Dialog open={open} onOpenChange={(open) => !isProcessing && onOpenChange(open)}>
+      <DialogContent className="max-w-md" onInteractOutside={(e) => isProcessing && e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>{t('dashboard.extendDialog.title')}</DialogTitle>
           <DialogDescription>{t('dashboard.extendDialog.subtitle')}</DialogDescription>
@@ -216,12 +218,38 @@ export const ExtendLicenseDialog = ({
             )}
           </div>
 
+          {!isPerpetual && activePlan && (
+            <Alert className="border-primary/20 bg-primary/5">
+              <Info className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-sm space-y-1">
+                <p>{t('dashboard.extendDialog.stripeRedirectNotice')}</p>
+                <p className="text-muted-foreground">{t('dashboard.extendDialog.paymentNotice')}</p>
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isProcessing}>
               {t('dashboard.extendDialog.buttonCancel')}
             </Button>
-            <Button onClick={onSubmit} disabled={isProcessing || !selectedPlan || isPerpetual}>
-              {isProcessing ? t('dashboard.extendDisabled') : t('dashboard.extendDialog.buttonConfirm')}
+            <Button 
+              onClick={onSubmit} 
+              disabled={isProcessing || !selectedPlan || isPerpetual || loadingPlans}
+              className="min-w-[140px]"
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {t('dashboard.extendDialog.processing')}
+                </>
+              ) : selectedPlan ? (
+                <>
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  {t('dashboard.extendDialog.buttonConfirmWithPrice', { price: selectedPlan.price.toLocaleString() })}
+                </>
+              ) : (
+                t('dashboard.extendDialog.buttonConfirm')
+              )}
             </Button>
           </div>
         </div>

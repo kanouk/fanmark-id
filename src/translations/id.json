@@ -863,8 +863,25 @@
       "planPrice": "¥{price}",
       "planUnavailable": "Tidak ada paket perpanjangan yang tersedia",
       "perpetualLabel": "Selamanya",
-      "perpetualMessage": "Fanmark ini selamanya, jadi perpanjangan tidak diperlukan."
-    }
+      "perpetualMessage": "Fanmark ini selamanya, jadi perpanjangan tidak diperlukan.",
+      "processing": "Memproses...",
+      "buttonConfirmWithPrice": "Perpanjang dengan ¥{price}",
+      "stripeRedirectNotice": "Anda akan diarahkan ke halaman checkout Stripe",
+      "paymentNotice": "Lisensi akan diperpanjang setelah pembayaran selesai"
+    },
+    "returnDialog": {
+      "title": "Kembalikan fanmark ini?",
+      "remainingDays": "{days} hari tersisa",
+      "pendingCheckoutWarning": "Pembayaran mungkin sedang berlangsung. Mengembalikan sebelum pembayaran selesai akan membatalkan perpanjangan.",
+      "irreversibleWarning": "Setelah dikembalikan, fanmark ini akan tersedia untuk orang lain. Akuisisi ulang mungkin memerlukan undian.",
+      "confirmCheckbox": "Saya memahami hal di atas",
+      "buttonCancel": "Batalkan",
+      "buttonConfirm": "Kembalikan"
+    },
+    "paymentSuccessTitle": "Perpanjangan Selesai",
+    "paymentSuccessDescription": "Periode lisensi Anda telah diperpanjang dengan berhasil",
+    "canceledTitle": "Pembayaran Dibatalkan",
+    "canceledDescription": "Perpanjangan lisensi dibatalkan. Silakan coba lagi."
   },
   "favorites": {
     "title": "Fanmark Favorit Anda",
