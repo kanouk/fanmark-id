@@ -861,8 +861,25 @@
       "planPrice": "¥{price}",
       "planUnavailable": "利用可能な延長プランがありません",
       "perpetualLabel": "無期限",
-      "perpetualMessage": "このファンマークは無期限のため延長は不要です。"
-    }
+      "perpetualMessage": "このファンマークは無期限のため延長は不要です。",
+      "processing": "処理中...",
+      "buttonConfirmWithPrice": "¥{price}で延長する",
+      "stripeRedirectNotice": "Stripe決済ページに移動します",
+      "paymentNotice": "決済完了後にライセンス期間が延長されます"
+    },
+    "returnDialog": {
+      "title": "このファンマを返却しますか？",
+      "remainingDays": "残り{days}日",
+      "pendingCheckoutWarning": "現在決済処理中の可能性があります。決済完了前に返却すると、延長が適用されません。",
+      "irreversibleWarning": "返却後、このファンマは他のユーザーが取得可能になります。再取得には抽選が必要になる場合があります。",
+      "confirmCheckbox": "上記の内容を理解しました",
+      "buttonCancel": "キャンセル",
+      "buttonConfirm": "返却する"
+    },
+    "paymentSuccessTitle": "延長が完了しました",
+    "paymentSuccessDescription": "ライセンス期間が正常に延長されました",
+    "canceledTitle": "決済がキャンセルされました",
+    "canceledDescription": "ライセンス延長がキャンセルされました。再度お試しください。"
   },
   "favorites": {
     "title": "お気に入りのファンマ",

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { formatInTimeZone } from 'date-fns-tz';
+import { usePendingCheckout } from '@/hooks/usePendingCheckout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +19,7 @@ import { FiTarget, FiLayers, FiCompass, FiStar, FiCheckCircle, FiMoon, FiUser, F
 import { FanmarkAcquisition } from './FanmarkAcquisition';
 import { ExtendLicenseDialog, type ExtendLicenseTarget, type ExtendPlanOption } from './ExtendLicenseDialog';
 import { FanmarkReturnLoading } from './FanmarkReturnLoading';
+import { ReturnFanmarkDialog } from './ReturnFanmarkDialog';
 import { LicenseCountdown } from './LicenseCountdown';
 // Using Undo2 for return/return action
 import { supabase } from '@/integrations/supabase/client';
@@ -116,11 +118,13 @@ export const FanmarkDashboard = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { settings } = useSystemSettings();
   const { limit: fanmarkLimit, isUnlimited } = useFanmarkLimit();
   const { count: favoriteCount, isLoading: favoritesLoading } = useFavoriteFanmarks({
     enabled: Boolean(user),
   });
+  const { getPendingCheckout, setPendingCheckout, clearPendingCheckout } = usePendingCheckout();
 
   const [fanmarks, setFanmarks] = useState<Fanmark[]>([]);
   const [loading, setLoading] = useState(true);
@@ -248,6 +252,9 @@ export const FanmarkDashboard = () => {
         throw new Error(error?.message ?? 'Failed to create checkout session');
       }
 
+      // Track pending checkout
+      setPendingCheckout(extendTarget.fanmarkId);
+
       // Redirect to Stripe Checkout
       window.location.href = data.url;
     } catch (extendError) {
@@ -271,23 +278,23 @@ export const FanmarkDashboard = () => {
     let shouldClearState = Boolean(locationState);
 
     // Check for extension URL parameters
-    const searchParams = new URLSearchParams(location.search);
     const extensionStatus = searchParams.get('extension');
 
     if (extensionStatus === 'success') {
+      clearPendingCheckout();
       toast({
-        title: t('dashboard.extendDialog.successTitle'),
-        description: t('dashboard.extendDialog.paymentSuccessDescription'),
+        title: t('dashboard.paymentSuccessTitle'),
+        description: t('dashboard.paymentSuccessDescription'),
       });
       // Clear URL parameter and trigger refetch
       navigate(location.pathname, { replace: true });
       setLoading(true);
       return;
     } else if (extensionStatus === 'canceled') {
+      clearPendingCheckout();
       toast({
-        title: t('dashboard.extendDialog.canceledTitle'),
-        description: t('dashboard.extendDialog.canceledDescription'),
-        variant: 'destructive',
+        title: t('dashboard.canceledTitle'),
+        description: t('dashboard.canceledDescription'),
       });
       // Clear URL parameter
       navigate(location.pathname, { replace: true });
@@ -1421,7 +1428,13 @@ export const FanmarkDashboard = () => {
         selectedPlan={extendSelectedPlan}
       />
 
-      <AlertDialog
+      <ReturnFanmarkDialog
+        fanmark={returnTargetFanmark ? {
+          emoji: returnTargetFanmark.fanmark,
+          shortId: returnTargetFanmark.short_id,
+          tierLevel: returnTargetFanmark.tier_level ?? undefined,
+          licenseEnd: returnTargetFanmark.fanmark_licenses?.license_end,
+        } : null}
         open={returnDialogOpen}
         onOpenChange={(open) => {
           if (!open) {
@@ -1432,26 +1445,14 @@ export const FanmarkDashboard = () => {
             setReturnDialogOpen(true);
           }
         }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('dashboard.returnConfirmTitle')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('dashboard.returnConfirmDescription')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={Boolean(returningFanmarkId)}>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmReturn}
-              className="bg-destructive hover:bg-destructive/90"
-              disabled={Boolean(returningFanmarkId)}
-            >
-              {returningFanmarkId === returnTargetFanmark?.id ? t('common.processing') : t('dashboard.returnConfirmAction')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        onConfirm={handleConfirmReturn}
+        isProcessing={Boolean(returningFanmarkId)}
+        hasPendingCheckout={
+          returnTargetFanmark
+            ? getPendingCheckout()?.fanmarkId === returnTargetFanmark.id
+            : false
+        }
+      />
     </section>
   );
 };

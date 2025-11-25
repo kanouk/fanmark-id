@@ -863,8 +863,25 @@
       "planPrice": "¥{price}",
       "planUnavailable": "No extension plans available",
       "perpetualLabel": "Perpetual",
-      "perpetualMessage": "This fanmark is perpetual, so no extension is required."
-    }
+      "perpetualMessage": "This fanmark is perpetual, so no extension is required.",
+      "processing": "Processing...",
+      "buttonConfirmWithPrice": "Extend for ¥{price}",
+      "stripeRedirectNotice": "You will be redirected to Stripe checkout",
+      "paymentNotice": "License will be extended after payment completion"
+    },
+    "returnDialog": {
+      "title": "Return this fanmark?",
+      "remainingDays": "{days} days remaining",
+      "pendingCheckoutWarning": "A payment may be in progress. Returning before payment completes will cancel the extension.",
+      "irreversibleWarning": "After return, this fanmark will be available for others. Reacquisition may require lottery.",
+      "confirmCheckbox": "I understand the above",
+      "buttonCancel": "Cancel",
+      "buttonConfirm": "Return"
+    },
+    "paymentSuccessTitle": "Extension Complete",
+    "paymentSuccessDescription": "Your license period has been extended successfully",
+    "canceledTitle": "Payment Canceled",
+    "canceledDescription": "License extension was canceled. Please try again."
   },
   "favorites": {
     "title": "Your Favorite Fanmarks",

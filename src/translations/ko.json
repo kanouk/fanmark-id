@@ -862,8 +862,25 @@
       "planPrice": "¥{price}",
       "planUnavailable": "이용 가능한 연장 플랜이 없습니다",
       "perpetualLabel": "무기한",
-      "perpetualMessage": "이 팬마크는 무기한이므로 연장이 불필요합니다."
-    }
+      "perpetualMessage": "이 팬마크는 무기한이므로 연장이 불필요합니다.",
+      "processing": "처리 중...",
+      "buttonConfirmWithPrice": "¥{price}로 연장",
+      "stripeRedirectNotice": "Stripe 결제 페이지로 이동합니다",
+      "paymentNotice": "결제 완료 후 라이선스 기간이 연장됩니다"
+    },
+    "returnDialog": {
+      "title": "이 팬마크를 반환하시겠습니까?",
+      "remainingDays": "{days}일 남음",
+      "pendingCheckoutWarning": "결제가 진행 중일 수 있습니다. 결제 완료 전에 반환하면 연장이 취소됩니다.",
+      "irreversibleWarning": "반환 후 이 팬마크는 다른 사용자가 획득할 수 있습니다. 재획득에는 추첨이 필요할 수 있습니다.",
+      "confirmCheckbox": "위 내용을 이해했습니다",
+      "buttonCancel": "취소",
+      "buttonConfirm": "반환"
+    },
+    "paymentSuccessTitle": "연장 완료",
+    "paymentSuccessDescription": "라이선스 기간이 성공적으로 연장되었습니다",
+    "canceledTitle": "결제 취소됨",
+    "canceledDescription": "라이선스 연장이 취소되었습니다. 다시 시도하세요."
   },
   "favorites": {
     "title": "즐겨찾기 팬마크",
