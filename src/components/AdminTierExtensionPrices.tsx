@@ -3,9 +3,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, Copy, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 
 interface ExtensionPrice {
   id: string;
@@ -13,6 +14,8 @@ interface ExtensionPrice {
   months: number;
   price_yen: number;
   is_active: boolean;
+  stripe_price_id_test: string | null;
+  stripe_price_id_live: string | null;
 }
 
 interface FanmarkTier {
@@ -28,6 +31,7 @@ const MONTH_OPTIONS = [1, 2, 3, 6];
 
 export const AdminTierExtensionPrices = () => {
   const { toast } = useToast();
+  const { settings } = useSystemSettings();
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [tierUpdatingId, setTierUpdatingId] = useState<string | null>(null);
@@ -35,6 +39,8 @@ export const AdminTierExtensionPrices = () => {
   const [tiers, setTiers] = useState<FanmarkTier[]>([]);
   const [editedPrices, setEditedPrices] = useState<Record<string, number>>({});
   const [tierEdits, setTierEdits] = useState<Record<string, number | null>>({});
+  const [editedStripePrices, setEditedStripePrices] = useState<Record<string, { test: string; live: string }>>({});
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -60,10 +66,16 @@ export const AdminTierExtensionPrices = () => {
       const typedPrices = (priceData || []) as unknown as ExtensionPrice[];
       setPrices(typedPrices);
       const initialPrices: Record<string, number> = {};
+      const initialStripePrices: Record<string, { test: string; live: string }> = {};
       typedPrices.forEach(price => {
         initialPrices[price.id] = price.price_yen;
+        initialStripePrices[price.id] = {
+          test: price.stripe_price_id_test || '',
+          live: price.stripe_price_id_live || '',
+        };
       });
       setEditedPrices(initialPrices);
+      setEditedStripePrices(initialStripePrices);
 
       const typedTiers = (tierData || []) as unknown as FanmarkTier[];
       setTiers(typedTiers);
@@ -186,6 +198,78 @@ export const AdminTierExtensionPrices = () => {
     });
   };
 
+  const handleStripePriceChange = (id: string, mode: 'test' | 'live', value: string) => {
+    setEditedStripePrices(prev => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        [mode]: value.trim(),
+      },
+    }));
+  };
+
+  const handleUpdateStripePrice = async (id: string) => {
+    const edited = editedStripePrices[id];
+    if (!edited) return;
+
+    setUpdating(true);
+    try {
+      const { error } = await supabase
+        .from("fanmark_tier_extension_prices" as any)
+        .update({
+          stripe_price_id_test: edited.test || null,
+          stripe_price_id_live: edited.live || null,
+        })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: "更新完了",
+        description: "Stripe Price IDを更新しました",
+      });
+
+      setPrices(prev =>
+        prev.map(price =>
+          price.id === id
+            ? {
+                ...price,
+                stripe_price_id_test: edited.test || null,
+                stripe_price_id_live: edited.live || null,
+              }
+            : price
+        )
+      );
+    } catch (error) {
+      console.error("Error updating Stripe Price IDs:", error);
+      toast({
+        title: "エラー",
+        description: "Stripe Price IDの更新に失敗しました",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const copyToClipboard = async (text: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+      toast({
+        title: "コピーしました",
+        description: "Price IDをクリップボードにコピーしました",
+      });
+    } catch (error) {
+      toast({
+        title: "エラー",
+        description: "コピーに失敗しました",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleUpdateTierDays = async (id: string) => {
     const newDays = tierEdits[id];
     if (newDays === undefined) return;
@@ -244,13 +328,27 @@ export const AdminTierExtensionPrices = () => {
     return acc;
   }, {} as Record<number, ExtensionPrice[]>);
 
+  const stripeMode = settings.stripe_mode || 'test';
+
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-primary/10 bg-primary/5 p-4">
-        <p className="text-sm text-muted-foreground">
-          ファンマークのTierごとに、ライセンス延長期間（1/2/3/6ヶ月）の料金を設定できます。
-          料金を変更すると、ユーザーの延長ダイアログに即座に反映されます。
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            ファンマークのTierごとに、ライセンス延長期間（1/2/3/6ヶ月）の料金とStripe Price IDを設定できます。
+          </p>
+          <div className="flex items-center gap-2 text-xs font-medium">
+            <span className="text-muted-foreground">現在のStripeモード:</span>
+            <span className={cn(
+              "rounded px-2 py-0.5",
+              stripeMode === 'live'
+                ? "bg-emerald-100 text-emerald-700"
+                : "bg-amber-100 text-amber-700"
+            )}>
+              {stripeMode === 'live' ? 'Live (本番)' : 'Test (テスト)'}
+            </span>
+          </div>
+        </div>
       </div>
 
       <div className="space-y-4 rounded-2xl border border-border/60 bg-card/70 p-6 shadow-sm">
@@ -371,6 +469,11 @@ export const AdminTierExtensionPrices = () => {
                     const isDirty = editedPrice !== originalPrice;
                     const isInvalid = editedPrice === undefined || editedPrice < 0;
 
+                    const editedStripe = editedStripePrices[priceData.id] || { test: '', live: '' };
+                    const originalTestId = priceData.stripe_price_id_test || '';
+                    const originalLiveId = priceData.stripe_price_id_live || '';
+                    const isStripeDirty = editedStripe.test !== originalTestId || editedStripe.live !== originalLiveId;
+
                     return (
                       <div
                         key={priceData.id}
@@ -424,6 +527,75 @@ export const AdminTierExtensionPrices = () => {
                               <Save className="h-3.5 w-3.5" />
                             )}
                             料金を更新
+                          </Button>
+                        </div>
+
+                        <div className="space-y-2 border-t border-border/40 pt-2">
+                          <Label className="text-xs font-medium text-muted-foreground">Stripe Price ID (Test)</Label>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="text"
+                              value={editedStripe.test}
+                              onChange={(e) => handleStripePriceChange(priceData.id, 'test', e.target.value)}
+                              placeholder="price_xxxxx"
+                              disabled={updating}
+                              className="h-8 text-xs font-mono"
+                            />
+                            {editedStripe.test && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0"
+                                onClick={() => copyToClipboard(editedStripe.test, `${priceData.id}-test`)}
+                              >
+                                {copiedId === `${priceData.id}-test` ? (
+                                  <Check className="h-3 w-3 text-emerald-600" />
+                                ) : (
+                                  <Copy className="h-3 w-3" />
+                                )}
+                              </Button>
+                            )}
+                          </div>
+
+                          <Label className="text-xs font-medium text-muted-foreground">Stripe Price ID (Live)</Label>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="text"
+                              value={editedStripe.live}
+                              onChange={(e) => handleStripePriceChange(priceData.id, 'live', e.target.value)}
+                              placeholder="price_yyyyy"
+                              disabled={updating}
+                              className="h-8 text-xs font-mono"
+                            />
+                            {editedStripe.live && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0"
+                                onClick={() => copyToClipboard(editedStripe.live, `${priceData.id}-live`)}
+                              >
+                                {copiedId === `${priceData.id}-live` ? (
+                                  <Check className="h-3 w-3 text-emerald-600" />
+                                ) : (
+                                  <Copy className="h-3 w-3" />
+                                )}
+                              </Button>
+                            )}
+                          </div>
+
+                          <Button
+                            onClick={() => handleUpdateStripePrice(priceData.id)}
+                            disabled={updating || !isStripeDirty}
+                            size="sm"
+                            variant="outline"
+                            className="w-full gap-1.5"
+                          >
+                            {updating ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Save className="h-3.5 w-3.5" />
+                            )}
+                            Price ID更新
                           </Button>
                         </div>
                       </div>
