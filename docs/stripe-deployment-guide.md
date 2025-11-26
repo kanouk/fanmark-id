@@ -666,7 +666,52 @@ await stripe.subscriptions.update(subscriptionId, {
 
 ---
 
-## 6. セキュリティベストプラクティス
+## 6. ライセンス延長システムの管理
+
+### 6.1 Stripe Price IDの統一管理
+
+ライセンス延長プランの Price ID は、`fanmark_tier_extension_prices` テーブルで一元管理されます。**テスト/本番の環境変数は不要**で、Admin画面から直接編集できます。
+
+#### 6.1.1 テストモードでの設定
+
+**Stripe Dashboardでの設定**:
+1. **テストモード**に切り替え
+2. **商品 → 商品カタログ** から延長プラン用のProductを作成:
+   ```
+   商品名: Fanmark License Extension (Tier 1, 3 Months)
+   料金モデル: 一回限り
+   価格: ¥3,000
+   ```
+3. 作成したPrice IDをコピー: `price_xxxxx`
+
+**Admin画面での設定**:
+1. **Admin Dashboard → Tier Extension Prices** に移動
+2. 対象のTier・期間の行で「Stripe Price ID」欄にテスト用Price IDを入力
+3. 「Price ID更新」ボタンをクリックして保存
+
+#### 6.1.2 本番環境への切り替え
+
+**本番Price IDの作成**:
+1. Stripe Dashboardで**本番モード**に切り替え
+2. テストモードと同じ条件でProductとPriceを作成
+3. 本番Price IDをコピー: `price_xxxxx`
+
+**Admin画面での切り替え**:
+1. **Admin Dashboard → Tier Extension Prices** に移動
+2. 対象の行の「Stripe Price ID」欄を**本番Price IDに上書き**
+3. 「Price ID更新」ボタンをクリック
+4. ✅ これで即座に本番モードに切り替わります
+
+#### 6.1.3 メリット
+
+- **環境変数不要**: `STRIPE_TEST_MODE` などの切り替え用環境変数は不要
+- **柔軟な管理**: Admin画面でリアルタイム更新可能
+- **シンプル**: データベースの単一カラムで完結
+- **監査可能**: Price ID変更履歴をログで追跡可能
+
+---
+
+## 7. セキュリティベストプラクティス
 
 ### 6.1 APIキーの管理
 
@@ -704,25 +749,28 @@ await stripe.subscriptions.update(subscriptionId, {
 
 ---
 
-## 8. チェックリスト
+## 9. チェックリスト
 
-### 8.1 本番移行前チェックリスト
+### 9.1 本番移行前チェックリスト
 
 - [ ] すべてのテストがパス
 - [ ] Stripeテストモードでの動作確認完了
 - [ ] 本番Stripe設定（Products, Prices, Webhook）完了
 - [ ] 本番Secretsの登録完了
+- [ ] **Admin UIでライセンス延長Price IDをテストIDに設定**
 - [ ] Edge Functionsのデプロイ完了
 - [ ] 初回テスト決済の実施
 - [ ] 監視・アラート設定完了
 - [ ] ドキュメント整備完了
 - [ ] チーム内での共有完了
 
-### 8.2 本番移行後チェックリスト
+### 9.2 本番移行後チェックリスト
 
 - [ ] 初回決済の成功確認
 - [ ] Webhook配信の成功確認
 - [ ] サブスクリプション作成の確認
+- [ ] **ライセンス延長決済の確認**
+- [ ] **Admin UIでライセンス延長Price IDを本番IDに更新**
 - [ ] プラン変更の反映確認
 - [ ] 通知送信の確認
 - [ ] ログの確認
@@ -730,13 +778,13 @@ await stripe.subscriptions.update(subscriptionId, {
 
 ---
 
-## 9. よくある質問（FAQ）
+## 10. よくある質問（FAQ）
 
 ### Q1: テストモードと本番モードを同時に動かせますか？
-**A**: いいえ。Edge Functionsは1つの環境変数セットを使用するため、テストモードか本番モードのどちらかになります。
+**A**: サブスクリプションプランは環境変数で管理されるため、テストか本番のどちらかになります。ライセンス延長はAdmin UIで個別管理できます。
 
 ### Q2: 本番移行後にバグが見つかった場合は？
-**A**: Secretsをテストモード値に戻すことで、即座にロールバック可能です。ただし、既に作成されたサブスクリプションは手動でキャンセルが必要です。
+**A**: Secretsをテストモード値に戻すことで、即座にロールバック可能です。ライセンス延長Price IDもAdmin UIで戻してください。既に作成されたサブスクリプションは手動でキャンセルが必要です。
 
 ### Q3: Stripeの手数料はいくらですか？
 **A**: 日本のクレジットカード決済: 3.6%。詳細はStripe公式サイトを参照してください。
@@ -747,17 +795,20 @@ await stripe.subscriptions.update(subscriptionId, {
 ### Q5: プラン変更時の日割り計算はどうなりますか？
 **A**: アップグレード時は日割り計算が適用され、差額が次回請求に加算されます。ダウングレード時は次回請求日から新プランが適用されます（日割りなし推奨）。
 
+### Q6: ライセンス延長のPrice IDはどこで管理しますか？
+**A**: Admin Dashboard → Tier Extension Prices でリアルタイム管理できます。環境変数は不要です。
+
 ---
 
-## 10. 連絡先とサポート
+## 11. 連絡先とサポート
 
-### 10.1 Stripeサポート
+### 11.1 Stripeサポート
 
 - **Stripe Dashboard**: https://dashboard.stripe.com/
 - **Stripeドキュメント**: https://stripe.com/docs
 - **Stripeサポート**: dashboard内の「サポート」から問い合わせ
 
-### 10.2 Supabaseサポート
+### 11.2 Supabaseサポート
 
 - **Supabase Dashboard**: https://app.supabase.com/
 - **Supabaseドキュメント**: https://supabase.com/docs
