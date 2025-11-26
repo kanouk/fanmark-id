@@ -26,7 +26,7 @@ const Auth = () => {
   const location = useLocation();
   const { t } = useTranslation();
   const { toast } = useToast();
-  const { formData, authState, updateFormData, signUp, signIn, signInWithGoogle, signInWithGithub, signInWithDiscord, resendConfirmation } = useAuthForm();
+  const { formData, authState, updateFormData, signUp, signIn, signInWithGoogle, signInWithGithub, signInWithDiscord, signInWithApple, resendConfirmation } = useAuthForm();
   const { requirements, isValid } = usePasswordValidation(formData.password);
   const { settings, loading: settingsLoading } = useSystemSettings();
   const invitationGateActive = !settingsLoading && settings.invitation_mode;
@@ -188,6 +188,7 @@ const Auth = () => {
                     signInWithGoogle={signInWithGoogle}
                     signInWithGithub={signInWithGithub}
                     signInWithDiscord={signInWithDiscord}
+                    signInWithApple={signInWithApple}
                     t={t}
                     socialEnabled={showSocialLogin}
                   />
@@ -222,6 +223,7 @@ const Auth = () => {
                       signInWithGoogle={signInWithGoogle}
                       signInWithGithub={signInWithGithub}
                       signInWithDiscord={signInWithDiscord}
+                      signInWithApple={signInWithApple}
                       requirements={requirements}
                       isValid={isValid}
                       t={t}
@@ -269,11 +271,12 @@ interface LoginFormProps {
   signInWithGoogle: () => void;
   signInWithGithub: () => void;
   signInWithDiscord: () => void;
+  signInWithApple: () => void;
   t: (key: string) => string;
   socialEnabled: boolean;
 }
 
-const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoogle, signInWithGithub, signInWithDiscord, t, socialEnabled }: LoginFormProps) => {
+const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoogle, signInWithGithub, signInWithDiscord, signInWithApple, t, socialEnabled }: LoginFormProps) => {
   const emailStatus = formData.email ? EMAIL_REGEX.test(formData.email) : null;
   const passwordStatus = formData.password ? formData.password.length > 0 : null;
   const socialButtons = [
@@ -288,7 +291,7 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoog
       key: 'apple',
       label: t('auth.signInWithApple'),
       Icon: FaApple,
-      onClick: () => {},
+      onClick: () => signInWithApple(),
       disabled: authState.loading,
     },
     {
@@ -425,6 +428,7 @@ interface SignUpFormProps {
   signInWithGoogle: () => void;
   signInWithGithub: () => void;
   signInWithDiscord: () => void;
+  signInWithApple: () => void;
   requirements: PasswordRequirementType[];
   isValid: boolean;
   t: (key: string) => string;
@@ -442,6 +446,7 @@ const SignUpForm = ({
   signInWithGoogle,
   signInWithGithub,
   signInWithDiscord,
+  signInWithApple,
   requirements,
   isValid,
   t,
@@ -472,7 +477,7 @@ const SignUpForm = ({
       key: 'apple',
       label: t('auth.signInWithApple'),
       Icon: FaApple,
-      onClick: () => {},
+      onClick: () => signInWithApple(),
       disabled: authState.loading,
     },
     {

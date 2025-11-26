@@ -324,6 +324,27 @@ export const useAuthForm = () => {
     }
   };
 
+  const signInWithApple = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: {
+          redirectTo: `${window.location.origin}/auth`
+        }
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : undefined;
+      setError(message || 'Appleログインに失敗しました');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     formData,
     authState,
@@ -333,6 +354,7 @@ export const useAuthForm = () => {
     signInWithGoogle,
     signInWithGithub,
     signInWithDiscord,
+    signInWithApple,
     forgotPassword,
     resendConfirmation
   };
