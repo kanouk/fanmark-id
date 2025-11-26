@@ -21,12 +21,11 @@ serve(async (req) => {
     logStep("Function started");
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    const isTestMode = Deno.env.get("STRIPE_TEST_MODE") === "true";
     
     if (!stripeKey) {
       throw new Error("STRIPE_SECRET_KEY is not set");
     }
-    logStep("Stripe key verified", { isTestMode });
+    logStep("Stripe key verified");
 
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -74,10 +73,9 @@ serve(async (req) => {
     logStep("License verified", { license_id: licenseData.id, tier_level: tierLevel });
 
     // Get price ID from database
-    const priceIdField = isTestMode ? "stripe_price_id_test" : "stripe_price_id_live";
     const { data: priceData, error: priceError } = await supabaseClient
       .from("fanmark_tier_extension_prices")
-      .select(`months, price_yen, ${priceIdField}`)
+      .select("months, price_yen, stripe_price_id")
       .eq("tier_level", tierLevel)
       .eq("months", months)
       .eq("is_active", true)
@@ -87,9 +85,9 @@ serve(async (req) => {
       throw new Error(`Extension plan not found for ${months} months`);
     }
 
-    const priceId = (priceData as any)[priceIdField];
+    const priceId = priceData.stripe_price_id;
     if (!priceId) {
-      throw new Error(`Price ID not configured for ${isTestMode ? "test" : "live"} mode`);
+      throw new Error("Price ID not configured");
     }
     logStep("Price ID retrieved", { priceId, months, price_yen: priceData.price_yen });
 
