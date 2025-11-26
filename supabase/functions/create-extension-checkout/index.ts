@@ -75,14 +75,16 @@ serve(async (req) => {
     // Get price ID from database
     const { data: priceData, error: priceError } = await supabaseClient
       .from("fanmark_tier_extension_prices")
-      .select("months, price_yen, stripe_price_id")
+      .select("id, tier_level, months, price_yen, stripe_price_id, is_active")
       .eq("tier_level", tierLevel)
       .eq("months", months)
       .eq("is_active", true)
-      .single();
+      .maybeSingle();
+
+    logStep("Price query result", { priceError: priceError?.message, priceData });
 
     if (priceError || !priceData) {
-      throw new Error(`Extension plan not found for ${months} months`);
+      throw new Error(`Extension plan not found for ${months} months (tier_level=${tierLevel})`);
     }
 
     const priceId = priceData.stripe_price_id;
