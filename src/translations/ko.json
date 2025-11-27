@@ -873,6 +873,7 @@
       "remainingDays": "{days}일 남음",
       "pendingCheckoutWarning": "결제가 진행 중일 수 있습니다. 결제 완료 전에 반환하면 연장이 취소됩니다.",
       "irreversibleWarning": "반환 후 이 팬마크는 다른 사용자가 획득할 수 있습니다. 재획득에는 추첨이 필요할 수 있습니다.",
+      "noRefundWarning": "구매한 라이선스 기간은 환불되지 않습니다.",
       "confirmCheckbox": "위 내용을 이해했습니다",
       "buttonCancel": "취소",
       "buttonConfirm": "반환"

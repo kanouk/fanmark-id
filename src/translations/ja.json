@@ -872,6 +872,7 @@
       "remainingDays": "残り{days}日",
       "pendingCheckoutWarning": "現在決済処理中の可能性があります。決済完了前に返却すると、延長が適用されません。",
       "irreversibleWarning": "返却後、このファンマは他のユーザーが取得可能になります。再取得には抽選が必要になる場合があります。",
+      "noRefundWarning": "購入済みのライセンス期間は返金されません。",
       "confirmCheckbox": "上記の内容を理解しました",
       "buttonCancel": "キャンセル",
       "buttonConfirm": "返却する"

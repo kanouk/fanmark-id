@@ -1,5 +1,4 @@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, Loader2 } from 'lucide-react';
@@ -37,11 +36,6 @@ export const ReturnFanmarkDialog = ({
     ? differenceInDays(new Date(fanmark.licenseEnd), new Date())
     : 0;
 
-  const getTierLabel = (tier?: number) => {
-    if (!tier) return 'Unknown';
-    return `Tier ${String.fromCharCode(64 + tier)}`;
-  };
-
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
       setUnderstood(false);
@@ -68,14 +62,11 @@ export const ReturnFanmarkDialog = ({
                 <span className="text-3xl">{fanmark.emoji}</span>
                 <div className="flex flex-col gap-1">
                   <span className="font-semibold text-foreground">{fanmark.shortId}</span>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Badge variant="outline" className="text-xs">
-                      {getTierLabel(fanmark.tierLevel)}
-                    </Badge>
-                    {remainingDays > 0 && (
-                      <span>• {t('dashboard.returnDialog.remainingDays', { days: remainingDays })}</span>
-                    )}
-                  </div>
+                  {remainingDays > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      {t('dashboard.returnDialog.remainingDays', { days: remainingDays })}
+                    </span>
+                  )}
                 </div>
               </div>
             )}
@@ -91,6 +82,9 @@ export const ReturnFanmarkDialog = ({
 
             <div className="space-y-2 text-sm text-muted-foreground">
               <p>{t('dashboard.returnDialog.irreversibleWarning')}</p>
+              <p className="text-destructive font-medium">
+                {t('dashboard.returnDialog.noRefundWarning')}
+              </p>
             </div>
 
             <div className="flex items-start gap-2 rounded-lg border border-border/60 bg-background p-3">

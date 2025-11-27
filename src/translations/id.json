@@ -874,6 +874,7 @@
       "remainingDays": "{days} hari tersisa",
       "pendingCheckoutWarning": "Pembayaran mungkin sedang berlangsung. Mengembalikan sebelum pembayaran selesai akan membatalkan perpanjangan.",
       "irreversibleWarning": "Setelah dikembalikan, fanmark ini akan tersedia untuk orang lain. Akuisisi ulang mungkin memerlukan undian.",
+      "noRefundWarning": "Periode lisensi yang dibeli tidak akan dikembalikan.",
       "confirmCheckbox": "Saya memahami hal di atas",
       "buttonCancel": "Batalkan",
       "buttonConfirm": "Kembalikan"
