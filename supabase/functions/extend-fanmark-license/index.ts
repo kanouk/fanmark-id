@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import {
   corsHeaders,
   createSupabaseClient,
+  roundUpToNextUtcMidnight,
 } from "../_shared/return-helpers.ts";
 
 interface LicenseWithFanmark {
@@ -225,7 +226,8 @@ serve(async (req) => {
       ? licenseEnd
       : now;
     const extendedDate = addMonths(baseDate, months);
-    const newLicenseEndIso = extendedDate.toISOString();
+    const roundedDate = roundUpToNextUtcMidnight(extendedDate);
+    const newLicenseEndIso = roundedDate.toISOString();
 
     const { data: updated, error: updateError } = await supabase
       .from('fanmark_licenses')

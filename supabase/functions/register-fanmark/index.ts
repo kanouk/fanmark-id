@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { roundUpToNextUtcMidnight } from "../_shared/return-helpers.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -317,22 +318,6 @@ function getFirstEmoji(emoji: string): string | null {
     }
   }
   return null;
-}
-
-// Round up to next UTC midnight (0:00:00.000)
-function roundUpToNextUtcMidnight(input: Date): Date {
-  const d = new Date(input);
-  if (
-    d.getUTCHours() === 0 &&
-    d.getUTCMinutes() === 0 &&
-    d.getUTCSeconds() === 0 &&
-    d.getUTCMilliseconds() === 0
-  ) {
-    return d; // Already at UTC midnight
-  }
-  d.setUTCHours(0, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() + 1);
-  return d;
 }
 
 const toPgUuidArrayLiteral = (ids: string[]): string =>

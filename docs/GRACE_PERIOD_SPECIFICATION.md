@@ -34,6 +34,37 @@ ADD COLUMN grace_expires_at TIMESTAMP WITH TIME ZONE;
 - 即時返却を行っても`license_end`は変更されず、「本来の失効予定日」として保持されます（返却直後はステータスがgraceに切り替わるだけ）
 - これにより、有効期限イベントは常に日付境界で始まりつつ、取得/返却タイミングはグレース関連のカラムで追跡できます
 
+## 日時丸め処理の共通関数
+
+### 関数の配置場所
+`supabase/functions/_shared/return-helpers.ts` 内の `roundUpToNextUtcMidnight()` 関数
+
+### 使用している Edge Functions
+以下の Edge Functions でこの共通関数をインポートして使用しています：
+- `return-fanmark/index.ts` - ファンマーク返却時のグレース期限計算
+- `bulk-return-fanmarks/index.ts` - 一括返却時のグレース期限計算
+- `delete-user-account/index.ts` - アカウント削除時のグレース期限計算
+- `register-fanmark/index.ts` - 新規登録時のライセンス期限計算
+- `check-expired-licenses/index.ts` - 期限切れチェック時のグレース期限計算
+- `extend-fanmark-license/index.ts` - ライセンス延長時の期限計算
+
+### 丸め処理の目的
+すべてのライセンス期限・猶予期限は UTC の次の0:00:00（= JST 9:00:00）に統一されます。
+これにより、バッチ処理のタイミングを予測可能にし、一貫性のある期限管理を実現します。
+
+**動作例**:
+- 入力: `2025-11-15 14:30:00 UTC`
+- 出力: `2025-11-16 00:00:00 UTC` (= `2025-11-16 09:00:00 JST`)
+
+### リファクタリング履歴（2025-11）
+従来、`roundUpToNextUtcMidnight()` 関数は複数のEdge Functionに重複定義されていました。
+2025年11月のリファクタリングにより、以下の改善を実施：
+
+1. **共通化**: `_shared/return-helpers.ts` に統一定義し、全てのEdge Functionからインポートする設計に変更
+2. **バグ修正**: `extend-fanmark-license/index.ts` で欠落していた丸め処理を追加し、ライセンス延長時の日時も一貫して UTC midnight に丸められるように修正
+3. **保守性向上**: 将来的な仕様変更が1箇所の修正で全体に反映される設計に改善し、技術的負債を解消
+
+
 ### 2. グレースステータス
 - **license_end**: 元の予定終了日（延長復元のために保持）
 - **grace_expires_at**: グレースピリオドが終了し、ファンマークが再取得可能になる日時
