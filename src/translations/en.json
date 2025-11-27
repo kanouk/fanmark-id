@@ -874,6 +874,7 @@
       "remainingDays": "{days} days remaining",
       "pendingCheckoutWarning": "A payment may be in progress. Returning before payment completes will cancel the extension.",
       "irreversibleWarning": "After return, this fanmark will be available for others. Reacquisition may require lottery.",
+      "noRefundWarning": "Purchased license period will not be refunded.",
       "confirmCheckbox": "I understand the above",
       "buttonCancel": "Cancel",
       "buttonConfirm": "Return"
