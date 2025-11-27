@@ -34,35 +34,91 @@ import {
   FiFileText,
   FiMoon,
   FiImage,
-  FiLock
+  FiLock,
+  FiGlobe,
+  FiPhone
 } from 'react-icons/fi';
+import type { IconType } from 'react-icons';
 import { Checkbox } from '@/components/ui/checkbox';
 
 type AccessType = 'profile' | 'redirect' | 'text' | 'inactive';
+type RedirectLinkType = 'url' | 'phone';
+
+const isValidHttpUrl = (value?: string) => {
+  if (!value) return false;
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+  } catch {
+    return false;
+  }
+};
+
+const sanitizePhoneInput = (value?: string) => {
+  if (!value) return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  const hasPlus = trimmed.startsWith('+');
+  const digitsOnly = trimmed.replace(/\D/g, '');
+  if (!digitsOnly) return '';
+  return hasPlus ? `+${digitsOnly}` : digitsOnly;
+};
 
 const settingsSchema = z.object({
   accessType: z.enum(['profile', 'redirect', 'text', 'inactive']),
   fanmarkName: z.string().min(1, 'Fanmark name is required'),
-  targetUrl: z.string().url().optional().or(z.literal('')),
+  targetUrl: z.string().trim().optional(),
   textContent: z.string().optional(),
   createProfile: z.boolean().default(false),
   isPasswordProtected: z.boolean().default(false),
   accessPassword: z.string().optional(),
   is_public: z.boolean().default(false),
-}).refine((data) => {
-  if (data.accessType === 'redirect' && !data.targetUrl) {
-    return false;
+  redirectLinkType: z.enum(['url', 'phone']).default('url'),
+  redirectPhoneNumber: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.accessType === 'redirect') {
+    if (data.redirectLinkType === 'url') {
+      if (!data.targetUrl) {
+        ctx.addIssue({
+          path: ['targetUrl'],
+          code: z.ZodIssueCode.custom,
+          message: 'Redirect URL is required',
+        });
+      } else if (!isValidHttpUrl(data.targetUrl)) {
+        ctx.addIssue({
+          path: ['targetUrl'],
+          code: z.ZodIssueCode.custom,
+          message: 'Enter a valid http(s) URL',
+        });
+      }
+    } else {
+      const sanitized = sanitizePhoneInput(data.redirectPhoneNumber);
+      if (!sanitized) {
+        ctx.addIssue({
+          path: ['redirectPhoneNumber'],
+          code: z.ZodIssueCode.custom,
+          message: 'Phone number is required',
+        });
+      } else {
+        const expectedTel = `tel:${sanitized}`;
+        if (!data.targetUrl || data.targetUrl !== expectedTel) {
+          ctx.addIssue({
+            path: ['redirectPhoneNumber'],
+            code: z.ZodIssueCode.custom,
+            message: 'Phone number could not be converted to tel: URI',
+          });
+        }
+      }
+    }
   }
-  // 伝言板のメッセージは空でも保存可能にする
-  // if (data.accessType === 'text' && !data.textContent) {
-  //   return false;
-  // }
+
   if (data.accessType !== 'inactive' && data.isPasswordProtected && data.accessPassword && !/^\d{4}$/.test(data.accessPassword)) {
-    return false;
+    ctx.addIssue({
+      path: ['accessPassword'],
+      code: z.ZodIssueCode.custom,
+      message: 'Password must be 4 digits',
+    });
   }
-  return true;
-}, {
-  message: 'Please fill in required fields for selected access type',
 });
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
@@ -115,12 +171,27 @@ export const FanmarkSettings = ({
     reset,
     control,
     setValue,
+    getValues,
     formState: { errors },
   } = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
+    defaultValues: {
+      accessType: 'inactive',
+      fanmarkName: '',
+      targetUrl: '',
+      textContent: '',
+      createProfile: false,
+      isPasswordProtected: false,
+      accessPassword: '',
+      is_public: false,
+      redirectLinkType: 'url',
+      redirectPhoneNumber: '',
+    },
   });
 
   const accessType = watch('accessType');
+  const watchedRedirectLinkType = watch('redirectLinkType');
+  const watchedRedirectPhoneNumber = watch('redirectPhoneNumber');
 
   const isPasswordProtected = watch('isPasswordProtected');
 
@@ -131,6 +202,10 @@ export const FanmarkSettings = ({
   useEffect(() => {
     if (!fanmark || !draftStorageKey) return;
 
+    const initialPhoneValueRaw = fanmark.access_type === 'redirect' && fanmark.target_url?.startsWith('tel:')
+      ? fanmark.target_url.replace(/^tel:/, '')
+      : '';
+    const initialPhoneValue = sanitizePhoneInput(initialPhoneValueRaw);
     let nextFormData: SettingsFormData = {
       accessType: fanmark.access_type,
       fanmarkName: fanmark.fanmark_name || t('fanmarkSettings.summary.defaultName'),
@@ -140,6 +215,8 @@ export const FanmarkSettings = ({
       isPasswordProtected: fanmark.is_password_protected || false,
       accessPassword: '',
       is_public: fanmark.is_public ?? false,
+      redirectLinkType: initialPhoneValue ? 'phone' : 'url',
+      redirectPhoneNumber: initialPhoneValue,
     };
 
     let initialEditing = false;
@@ -224,6 +301,24 @@ export const FanmarkSettings = ({
       setIsEditingPassword(false);
     }
   }, [isPasswordProtected]);
+
+  useEffect(() => {
+    if (accessType !== 'redirect' || watchedRedirectLinkType !== 'phone') return;
+    const sanitized = sanitizePhoneInput(watchedRedirectPhoneNumber);
+    const telValue = sanitized ? `tel:${sanitized}` : '';
+    const currentUrl = getValues('targetUrl') || '';
+    if (currentUrl !== telValue) {
+      setValue('targetUrl', telValue, { shouldDirty: true, shouldTouch: false, shouldValidate: false });
+    }
+  }, [accessType, watchedRedirectLinkType, watchedRedirectPhoneNumber, getValues, setValue]);
+
+  useEffect(() => {
+    if (accessType !== 'redirect' || watchedRedirectLinkType !== 'url') return;
+    const currentUrl = getValues('targetUrl') || '';
+    if (currentUrl.startsWith('tel:')) {
+      setValue('targetUrl', '', { shouldDirty: true, shouldTouch: false, shouldValidate: false });
+    }
+  }, [accessType, watchedRedirectLinkType, getValues, setValue]);
 
   const handleClose = () => {
     if (draftStorageKey) {
@@ -408,6 +503,26 @@ export const FanmarkSettings = ({
       value: 'inactive',
       labelKey: 'fanmarkSettings.accessTypeOptions.inactive',
       icon: FiMoon,
+    },
+  ];
+
+  const redirectLinkOptions: Array<{
+    value: RedirectLinkType;
+    labelKey: string;
+    descriptionKey: string;
+    icon: IconType;
+  }> = [
+    {
+      value: 'url',
+      labelKey: 'fanmarkSettings.fields.redirect.linkTypeOptions.url',
+      descriptionKey: 'fanmarkSettings.fields.redirect.linkTypeOptions.urlDesc',
+      icon: FiGlobe,
+    },
+    {
+      value: 'phone',
+      labelKey: 'fanmarkSettings.fields.redirect.linkTypeOptions.phone',
+      descriptionKey: 'fanmarkSettings.fields.redirect.linkTypeOptions.phoneDesc',
+      icon: FiPhone,
     },
   ];
 
@@ -607,23 +722,105 @@ export const FanmarkSettings = ({
           {(accessType === 'redirect' || accessType === 'text' || accessType === 'profile') && (
             <div className="space-y-4 rounded-xl border border-border/60 bg-background/70 p-4">
               {accessType === 'redirect' && (
-                <div className="space-y-2">
-                  <Label htmlFor="targetUrl" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                    <FiExternalLink className="h-3.5 w-3.5" />
-                    {t('fanmarkSettings.fields.redirect.label')}
-                  </Label>
-                  <Input
-                    id="targetUrl"
-                    {...register('targetUrl')}
-                    placeholder="https://example.com"
-                    type="url"
-                    className="h-11 rounded-lg border border-border focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
-                  />
-                  {errors.targetUrl && (
-                    <p className="flex items-center gap-2 text-sm text-destructive">
-                      <FiAlertCircle className="h-4 w-4" />
-                      {errors.targetUrl.message}
-                    </p>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                      <FiExternalLink className="h-3.5 w-3.5" />
+                      {t('fanmarkSettings.fields.redirect.linkTypeLabel')}
+                    </Label>
+                    <p className="text-xs text-muted-foreground">{t('fanmarkSettings.fields.redirect.linkTypeHelper')}</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {redirectLinkOptions.map((option) => {
+                        const Icon = option.icon;
+                        const isActive = watchedRedirectLinkType === option.value;
+                        return (
+                          <button
+                            type="button"
+                            key={option.value}
+                            onClick={() => setValue('redirectLinkType', option.value, { shouldDirty: true, shouldTouch: true })}
+                            className={cn(
+                              'flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors',
+                              isActive
+                                ? 'border-primary bg-primary/10 text-primary'
+                                : 'border-border/60 text-muted-foreground hover:border-primary/40 hover:text-primary'
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                'flex h-10 w-10 items-center justify-center rounded-lg border',
+                                isActive ? 'border-primary bg-primary/90 text-primary-foreground' : 'border-border/60 bg-background'
+                              )}
+                            >
+                              <Icon className="h-4 w-4" />
+                            </span>
+                            <div className="space-y-1">
+                              <p className="text-sm font-semibold">
+                                {t(option.labelKey)}
+                              </p>
+                              <p
+                                className={cn(
+                                  'text-xs',
+                                  isActive ? 'text-primary/80' : 'text-muted-foreground'
+                                )}
+                              >
+                                {t(option.descriptionKey)}
+                              </p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {watchedRedirectLinkType === 'url' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="targetUrl" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                        <FiGlobe className="h-3.5 w-3.5" />
+                        {t('fanmarkSettings.fields.redirect.urlLabel')}
+                      </Label>
+                      <Input
+                        id="targetUrl"
+                        {...register('targetUrl')}
+                        placeholder={t('fanmarkSettings.fields.redirect.urlPlaceholder')}
+                        type="url"
+                        className="h-11 rounded-lg border border-border focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {t('fanmarkSettings.fields.redirect.urlHelper')}
+                      </p>
+                      {errors.targetUrl && (
+                        <p className="flex items-center gap-2 text-sm text-destructive">
+                          <FiAlertCircle className="h-4 w-4" />
+                          {errors.targetUrl.message}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {watchedRedirectLinkType === 'phone' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="redirectPhoneNumber" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                        <FiPhone className="h-3.5 w-3.5" />
+                        {t('fanmarkSettings.fields.redirect.phoneLabel')}
+                      </Label>
+                      <Input
+                        id="redirectPhoneNumber"
+                        {...register('redirectPhoneNumber')}
+                        placeholder={t('fanmarkSettings.fields.redirect.phonePlaceholder')}
+                        type="tel"
+                        inputMode="tel"
+                        className="h-11 rounded-lg border border-border focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {t('fanmarkSettings.fields.redirect.phoneHelper')}
+                      </p>
+                      {errors.redirectPhoneNumber && (
+                        <p className="flex items-center gap-2 text-sm text-destructive">
+                          <FiAlertCircle className="h-4 w-4" />
+                          {errors.redirectPhoneNumber.message}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
               )}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -13,25 +13,101 @@ import { EmojiInput } from '@/components/EmojiInput';
 import { toast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { convertEmojiSequenceToIdPair } from '@/lib/emojiConversion';
+import { cn } from '@/lib/utils';
+
+type RedirectLinkType = 'url' | 'phone';
+
+const isValidHttpUrl = (value?: string) => {
+  if (!value) return false;
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+  } catch {
+    return false;
+  }
+};
+
+const sanitizePhoneInput = (value?: string) => {
+  if (!value) return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  const hasPlus = trimmed.startsWith('+');
+  const digitsOnly = trimmed.replace(/\D/g, '');
+  if (!digitsOnly) return '';
+  return hasPlus ? `+${digitsOnly}` : digitsOnly;
+};
+
+const redirectLinkOptions: Array<{
+  value: RedirectLinkType;
+  labelKey: string;
+  descriptionKey: string;
+}> = [
+  {
+    value: 'url',
+    labelKey: 'fanmarkSettings.fields.redirect.linkTypeOptions.url',
+    descriptionKey: 'fanmarkSettings.fields.redirect.linkTypeOptions.urlDesc',
+  },
+  {
+    value: 'phone',
+    labelKey: 'fanmarkSettings.fields.redirect.linkTypeOptions.phone',
+    descriptionKey: 'fanmarkSettings.fields.redirect.linkTypeOptions.phoneDesc',
+  },
+];
 
 const registrationSchema = z.object({
   emojiCombination: z.string().min(1, 'Emoji combination is required'),
   accessType: z.enum(['profile', 'redirect', 'text', 'inactive']),
   displayName: z.string().min(1, 'Display name is required'),
-  targetUrl: z.string().url().optional().or(z.literal('')),
+  targetUrl: z.string().trim().optional(),
   textContent: z.string().optional(),
   createProfile: z.boolean().default(false),
   isTransferable: z.boolean().default(true),
-}).refine((data) => {
-  if (data.accessType === 'redirect' && !data.targetUrl) {
-    return false;
+  redirectLinkType: z.enum(['url', 'phone']).default('url'),
+  redirectPhoneNumber: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.accessType === 'redirect') {
+    if (data.redirectLinkType === 'url') {
+      if (!data.targetUrl) {
+        ctx.addIssue({
+          path: ['targetUrl'],
+          code: z.ZodIssueCode.custom,
+          message: 'Redirect URL is required',
+        });
+      } else if (!isValidHttpUrl(data.targetUrl)) {
+        ctx.addIssue({
+          path: ['targetUrl'],
+          code: z.ZodIssueCode.custom,
+          message: 'Enter a valid http(s) URL',
+        });
+      }
+    } else {
+      const sanitized = sanitizePhoneInput(data.redirectPhoneNumber);
+      if (!sanitized) {
+        ctx.addIssue({
+          path: ['redirectPhoneNumber'],
+          code: z.ZodIssueCode.custom,
+          message: 'Phone number is required',
+        });
+      } else {
+        const expectedTel = `tel:${sanitized}`;
+        if (!data.targetUrl || data.targetUrl !== expectedTel) {
+          ctx.addIssue({
+            path: ['redirectPhoneNumber'],
+            code: z.ZodIssueCode.custom,
+            message: 'Phone number could not be converted to tel: URI',
+          });
+        }
+      }
+    }
   }
+
   if (data.accessType === 'text' && !data.textContent) {
-    return false;
+    ctx.addIssue({
+      path: ['textContent'],
+      code: z.ZodIssueCode.custom,
+      message: 'Text content is required for message boards',
+    });
   }
-  return true;
-}, {
-  message: 'Please fill in required fields for selected access type',
 });
 
 type RegistrationFormData = z.infer<typeof registrationSchema>;
@@ -55,6 +131,8 @@ export const FanmarkRegistrationForm = ({
     register,
     handleSubmit,
     watch,
+    setValue,
+    getValues,
     formState: { errors },
   } = useForm<RegistrationFormData>({
     resolver: zodResolver(registrationSchema),
@@ -66,11 +144,33 @@ export const FanmarkRegistrationForm = ({
       textContent: '',
       createProfile: false,
       isTransferable: true,
+      redirectLinkType: 'url',
+      redirectPhoneNumber: '',
     },
   });
 
   const accessType = watch('accessType');
+  const redirectLinkType = watch('redirectLinkType');
+  const redirectPhoneNumber = watch('redirectPhoneNumber');
   const createProfile = watch('createProfile');
+
+  useEffect(() => {
+    if (accessType !== 'redirect' || redirectLinkType !== 'phone') return;
+    const sanitized = sanitizePhoneInput(redirectPhoneNumber);
+    const telValue = sanitized ? `tel:${sanitized}` : '';
+    const currentUrl = getValues('targetUrl') || '';
+    if (currentUrl !== telValue) {
+      setValue('targetUrl', telValue, { shouldDirty: true, shouldTouch: false, shouldValidate: false });
+    }
+  }, [accessType, redirectLinkType, redirectPhoneNumber, getValues, setValue]);
+
+  useEffect(() => {
+    if (accessType !== 'redirect' || redirectLinkType !== 'url') return;
+    const currentUrl = getValues('targetUrl') || '';
+    if (currentUrl.startsWith('tel:')) {
+      setValue('targetUrl', '', { shouldDirty: true, shouldTouch: false, shouldValidate: false });
+    }
+  }, [accessType, redirectLinkType, getValues, setValue]);
 
   const onSubmit = async (data: RegistrationFormData) => {
     if (!user) {
@@ -220,20 +320,73 @@ export const FanmarkRegistrationForm = ({
             </div>
           </div>
 
-          {/* Target URL (for redirect) */}
+          {/* Redirect configuration */}
           {accessType === 'redirect' && (
-            <div className="space-y-2">
-              <Label htmlFor="targetUrl" className="text-lg">
-                🔗 {t('registration.targetUrl')}
-              </Label>
-              <Input
-                id="targetUrl"
-                {...register('targetUrl')}
-                placeholder={t('registration.placeholders.targetUrl')}
-                type="url"
-              />
-              {errors.targetUrl && (
-                <p className="text-sm text-destructive">{errors.targetUrl.message}</p>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-lg flex items-center gap-2">
+                  🔀 {t('fanmarkSettings.fields.redirect.linkTypeLabel')}
+                </Label>
+                <p className="text-sm text-muted-foreground">{t('fanmarkSettings.fields.redirect.linkTypeHelper')}</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {redirectLinkOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setValue('redirectLinkType', option.value, { shouldDirty: true, shouldTouch: true })}
+                      className={cn(
+                        'rounded-xl border-2 p-3 text-left transition-colors',
+                        redirectLinkType === option.value
+                          ? 'border-blue-500 bg-blue-50 text-blue-600'
+                          : 'border-dashed border-border text-muted-foreground hover:border-blue-300'
+                      )}
+                    >
+                      <div className="font-semibold">{t(option.labelKey)}</div>
+                      <div className="text-xs text-muted-foreground">{t(option.descriptionKey)}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {redirectLinkType === 'url' && (
+                <div className="space-y-2">
+                  <Label htmlFor="targetUrl" className="text-lg">
+                    🔗 {t('fanmarkSettings.fields.redirect.urlLabel')}
+                  </Label>
+                  <Input
+                    id="targetUrl"
+                    {...register('targetUrl')}
+                    placeholder={t('fanmarkSettings.fields.redirect.urlPlaceholder')}
+                    type="url"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    {t('fanmarkSettings.fields.redirect.urlHelper')}
+                  </p>
+                  {errors.targetUrl && (
+                    <p className="text-sm text-destructive">{errors.targetUrl.message}</p>
+                  )}
+                </div>
+              )}
+
+              {redirectLinkType === 'phone' && (
+                <div className="space-y-2">
+                  <Label htmlFor="redirectPhoneNumber" className="text-lg">
+                    📞 {t('fanmarkSettings.fields.redirect.phoneLabel')}
+                  </Label>
+                  <Input
+                    id="redirectPhoneNumber"
+                    {...register('redirectPhoneNumber')}
+                    placeholder={t('fanmarkSettings.fields.redirect.phonePlaceholder')}
+                    type="tel"
+                    inputMode="tel"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    {t('fanmarkSettings.fields.redirect.phoneHelper')}
+                  </p>
+                  {errors.redirectPhoneNumber && (
+                    <p className="text-sm text-destructive">{errors.redirectPhoneNumber.message}</p>
+                  )}
+                </div>
               )}
             </div>
           )}

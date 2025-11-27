@@ -981,7 +981,21 @@
         "placeholder": "Select an access type"
       },
       "redirect": {
-        "label": "Redirect URL"
+        "label": "Redirect URL",
+        "linkTypeLabel": "Link destination",
+        "linkTypeHelper": "Send fans to a website or start a phone call.",
+        "linkTypeOptions": {
+          "url": "Website",
+          "urlDesc": "Open any http(s) URL",
+          "phone": "Phone number",
+          "phoneDesc": "Launch the phone dialer"
+        },
+        "urlLabel": "Website URL",
+        "urlPlaceholder": "https://example.com",
+        "urlHelper": "Only http:// or https:// URLs are supported.",
+        "phoneLabel": "Phone number",
+        "phonePlaceholder": "07012345678 or +819012345678",
+        "phoneHelper": "Digits only. We add the tel: prefix automatically."
       },
       "text": {
         "label": "Message board",

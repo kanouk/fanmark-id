@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { normalizeEmojiPath, isEmojiOnly } from '@/utils/emojiUrl';
 import { convertEmojiSequenceToIdPair, resolveFanmarkDisplay } from '@/lib/emojiConversion';
 import NotFound from '@/pages/NotFound';
+import { useAuth } from '@/hooks/useAuth';
 
 interface FanmarkData {
   id: string;
@@ -38,6 +39,7 @@ interface FanmarkData {
 export const FanmarkAccess = () => {
   const { emojiPath } = useParams<{ emojiPath: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { t } = useTranslation();
   const { toast } = useToast();
   const [fanmark, setFanmark] = useState<FanmarkData | null>(null);
@@ -164,7 +166,13 @@ export const FanmarkAccess = () => {
           setIsRedirecting(true);
           setLoading(false); // Stop loading immediately
           setTimeout(() => {
-            window.location.href = resolvedFanmark.target_url!;
+            const targetUrl = resolvedFanmark.target_url!;
+            window.location.href = targetUrl;
+            if (targetUrl.startsWith('tel:')) {
+              setTimeout(() => {
+                navigate(user ? '/dashboard' : '/', { replace: true });
+              }, 1000);
+            }
           }, 2000); // Show redirect loading for 2 seconds
           return;
         }
@@ -204,7 +212,13 @@ export const FanmarkAccess = () => {
       if (fanmark.access_type === 'redirect' && fanmark.target_url) {
         setIsRedirecting(true);
         setTimeout(() => {
-          window.location.href = fanmark.target_url!;
+          const targetUrl = fanmark.target_url!;
+          window.location.href = targetUrl;
+          if (targetUrl.startsWith('tel:')) {
+            setTimeout(() => {
+              navigate(user ? '/dashboard' : '/', { replace: true });
+            }, 1000);
+          }
         }, 2000); // Show loading for 2 seconds
       } else if (fanmark.access_type === 'text') {
         setIsShowingMessageboard(true);

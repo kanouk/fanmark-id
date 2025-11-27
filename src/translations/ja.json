@@ -979,7 +979,21 @@
         "placeholder": "アクセスタイプを選択"
       },
       "redirect": {
-        "label": "転送先URL"
+        "label": "転送先URL",
+        "linkTypeLabel": "リンク種別",
+        "linkTypeHelper": "Webサイトに飛ばすか、電話発信を開始するかを選べます。",
+        "linkTypeOptions": {
+          "url": "ウェブサイト",
+          "urlDesc": "http/httpsの任意のURLへ移動",
+          "phone": "電話番号",
+          "phoneDesc": "端末の発信画面を開く"
+        },
+        "urlLabel": "ウェブサイトURL",
+        "urlPlaceholder": "https://example.com",
+        "urlHelper": "http:// または https:// から始まるURLに対応しています。",
+        "phoneLabel": "電話番号",
+        "phonePlaceholder": "07012345678 または +819012345678",
+        "phoneHelper": "数字だけ入力してください。自動で「tel:」リンクに変換します。"
       },
       "text": {
         "label": "伝言板",
