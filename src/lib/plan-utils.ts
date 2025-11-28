@@ -164,3 +164,7 @@ export function planDisplayOrder(planType: PlanType): number {
       return 5;
   }
 }
+
+export function isUpgrade(currentPlanType: PlanType, newPlanType: PlanType): boolean {
+  return planDisplayOrder(newPlanType) > planDisplayOrder(currentPlanType);
+}

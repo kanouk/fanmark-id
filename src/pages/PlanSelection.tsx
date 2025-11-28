@@ -202,20 +202,7 @@ const PlanSelection = () => {
     try {
       const currentPlanType = profile.plan_type as PlanType;
       
-      // Check if downgrade requires fanmark selection
-      const evaluation = await evaluatePlanDowngrade(user.id, currentPlanType, planType);
-      
-      if (evaluation.requiresSelection) {
-        // Show fanmark selection modal
-        setPendingPlanType(planType);
-        setFanmarksForSelection(evaluation.fanmarks);
-        setNewPlanLimit(evaluation.newPlanLimit);
-        setShowFanmarkSelection(true);
-        setProcessingPlan(null);
-        return;
-      }
-      
-      // Upgrading to paid plan (free → creator/business)
+      // Upgrading from free to paid plan
       if (currentPlanType === 'free' && (planType === 'creator' || planType === 'business')) {
         setRedirecting(true);
         
@@ -229,7 +216,6 @@ const PlanSelection = () => {
         }
         
         if (data?.url) {
-          // Keep showing loading overlay while redirecting
           setTimeout(() => {
             window.location.href = data.url;
           }, 500);
@@ -240,32 +226,82 @@ const PlanSelection = () => {
         return;
       }
       
-      // Changing/downgrading from paid plan → use Customer Portal
-      if (currentPlanType !== 'free' && planType !== currentPlanType) {
+      // Check if downgrade requires fanmark selection
+      const evaluation = await evaluatePlanDowngrade(user.id, currentPlanType, planType);
+      
+      if (evaluation.requiresSelection) {
+        // Show fanmark selection modal for downgrades
+        setPendingPlanType(planType);
+        setFanmarksForSelection(evaluation.fanmarks);
+        setNewPlanLimit(evaluation.newPlanLimit);
+        setShowFanmarkSelection(true);
+        setProcessingPlan(null);
+        return;
+      }
+      
+      // Determine if this is an upgrade or downgrade
+      const planOrder: Record<PlanType, number> = {
+        free: 0,
+        creator: 1,
+        business: 2,
+        enterprise: 3,
+        admin: 4,
+      };
+      
+      const isUpgrade = planOrder[planType] > planOrder[currentPlanType];
+      
+      if (isUpgrade) {
+        // UPGRADE: Use change-subscription with proration (no warning)
         setRedirecting(true);
         
-        const { data, error } = await supabase.functions.invoke('customer-portal');
+        const { data, error } = await supabase.functions.invoke('change-subscription', {
+          body: { 
+            current_plan_type: currentPlanType,
+            new_plan_type: planType 
+          }
+        });
         
         if (error) {
           setRedirecting(false);
           throw error;
         }
         
-        if (data?.url) {
-          // Small delay for visual feedback
-          setTimeout(() => {
-            window.open(data.url, '_blank');
-            setRedirecting(false);
-            toast({
-              title: t('planSelection.redirectTitle'),
-              description: t('planSelection.redirectDescription'),
-            });
-          }, 500);
-        } else {
+        // Refresh profile and subscription data
+        await Promise.all([refetchProfile(), refetchSubscription()]);
+        
+        setRedirecting(false);
+        toast({
+          title: t('planSelection.upgradeSuccess'),
+          description: t('planSelection.upgradeSuccessDescription', { 
+            plan: t(`planSelection.${planType}.name`) 
+          }),
+        });
+      } else {
+        // DOWNGRADE: Use change-subscription with immediate cancel (after confirmation)
+        setRedirecting(true);
+        
+        const { data, error } = await supabase.functions.invoke('change-subscription', {
+          body: { 
+            current_plan_type: currentPlanType,
+            new_plan_type: planType 
+          }
+        });
+        
+        if (error) {
           setRedirecting(false);
-          throw new Error('Customer portal URL not received');
+          throw error;
         }
-        return;
+        
+        // Refresh profile and subscription data
+        await Promise.all([refetchProfile(), refetchSubscription()]);
+        
+        setRedirecting(false);
+        toast({
+          title: t('planSelection.downgradeSuccess'),
+          description: t('planSelection.downgradeSuccessDescription', { 
+            plan: t(`planSelection.${planType}.name`) 
+          }),
+        });
       }
     } catch (error) {
       console.error('Plan change error:', error);
@@ -305,7 +341,7 @@ const PlanSelection = () => {
         if (error) throw error;
       }
 
-      // Reset excluded status for selected fanmarks (in case they were previously excluded)
+      // Reset excluded status for selected fanmarks
       if (selectedFanmarkIds.length > 0) {
         const licensesToInclude = fanmarksForSelection
           .filter(fm => selectedFanmarkIds.includes(fm.id))
@@ -323,53 +359,34 @@ const PlanSelection = () => {
         if (error) throw error;
       }
 
-      // Close modal and proceed with plan change
+      // Close modal and proceed with downgrade
       setShowFanmarkSelection(false);
+      setRedirecting(true);
+
+      const currentPlanType = profile?.plan_type as PlanType;
       
-      // Open customer portal for downgrade
-      if (pendingPlanType === 'free') {
-        // If downgrading to free, just update locally and redirect to portal
-        setRedirecting(true);
-        
-        const { data, error } = await supabase.functions.invoke('customer-portal');
-        
-        if (error) {
-          setRedirecting(false);
-          throw error;
+      const { data, error } = await supabase.functions.invoke('change-subscription', {
+        body: { 
+          current_plan_type: currentPlanType,
+          new_plan_type: pendingPlanType 
         }
-        
-        if (data?.url) {
-          setTimeout(() => {
-            window.open(data.url, '_blank');
-            setRedirecting(false);
-            toast({
-              title: t('planSelection.downgradeSuccess'),
-              description: t('planSelection.fanmarksExcluded', { count: excludedFanmarkIds.length }),
-            });
-          }, 500);
-        }
-      } else {
-        // For paid downgrades, open customer portal
-        setRedirecting(true);
-        
-        const { data, error } = await supabase.functions.invoke('customer-portal');
-        
-        if (error) {
-          setRedirecting(false);
-          throw error;
-        }
-        
-        if (data?.url) {
-          setTimeout(() => {
-            window.open(data.url, '_blank');
-            setRedirecting(false);
-            toast({
-              title: t('planSelection.fanmarksExcluded', { count: excludedFanmarkIds.length }),
-              description: t('planSelection.completeDowngradeInPortal'),
-            });
-          }, 500);
-        }
+      });
+      
+      if (error) {
+        setRedirecting(false);
+        throw error;
       }
+      
+      // Refresh profile and subscription data
+      await Promise.all([refetchProfile(), refetchSubscription()]);
+      
+      setRedirecting(false);
+      toast({
+        title: t('planSelection.downgradeSuccess'),
+        description: excludedFanmarkIds.length > 0 
+          ? t('planSelection.fanmarksExcluded', { count: excludedFanmarkIds.length })
+          : t('planSelection.downgradeSuccessDescription'),
+      });
     } catch (error) {
       console.error('Fanmark selection error:', error);
       toast({
