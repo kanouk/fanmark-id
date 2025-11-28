@@ -272,7 +272,7 @@
 ### アクセスタイプ
 - **inactive**: なにもしない
 - **profile**: プロフィール表示
-- **redirect**: アドレス転送
+- **redirect**: 転送
 - **text** / **messageboard**: 伝言板表示
 
 ### プランタイプ

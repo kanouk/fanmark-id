@@ -193,7 +193,7 @@
       "shop": {
         "title": "お店",
         "description": "お店のウェブサイトへの超わかりやすいリンクとして",
-        "badge": "アドレス転送"
+        "badge": "転送"
       },
       "friends": {
         "title": "友達",
@@ -203,7 +203,7 @@
       "gameStreamer": {
         "title": "ゲーム配信者",
         "description": "Twitchチャンネルに直接ジャンプ",
-        "badge": "アドレス転送"
+        "badge": "転送"
       }
     },
     "pricingDetails": {
@@ -652,7 +652,7 @@
   "accessTypes": {
     "inactive": "なにもしない",
     "profile": "プロフィール",
-    "redirect": "アドレス転送",
+    "redirect": "転送",
     "messageboard": "伝言板",
     "text": "伝言板"
   },
@@ -799,7 +799,7 @@
     "tip3": "他のユーザーの最近の登録を参考にしてみましょう",
     "accessTypes": {
       "profile": "プロフィール",
-      "redirect": "アドレス転送",
+      "redirect": "転送",
       "text": "伝言板",
       "inactive": "なにもしない"
     },
