@@ -93,8 +93,6 @@ export const FanmarkAcquisition = ({
     return Math.max(fanmarkLimit - currentCount, 0);
   }, [fanmarkLimit, currentCount, user]);
 
-  const isResultAcquirable = useMemo(() => searchResult?.status === 'available', [searchResult]);
-
   const isOwnedByMe = useMemo(() => {
     return !!(searchResult?.owner?.user_id && user?.id && searchResult.owner.user_id === user.id);
   }, [searchResult?.owner?.user_id, user?.id]);
@@ -153,8 +151,21 @@ export const FanmarkAcquisition = ({
 
   const isGraceBlocked = searchResult?.blocking_status === 'grace';
 
+  const canAcquireNow = useMemo(() => {
+    if (!searchResult || searchResult.status !== 'available') {
+      return false;
+    }
+    if (isOwnedByMe) {
+      return false;
+    }
+    if (fanmarkLimit !== -1 && remainingCapacity <= 0) {
+      return false;
+    }
+    return true;
+  }, [searchResult, isOwnedByMe, fanmarkLimit, remainingCapacity]);
+
   const handleAcquireRequest = () => {
-    if (!searchResult || !isResultAcquirable) return;
+    if (!searchResult || !canAcquireNow) return;
 
     if (!user) {
       onRequireAuth?.(searchResult.user_input_fanmark);
@@ -583,21 +594,46 @@ export const FanmarkAcquisition = ({
       </FanmarkSearchPanel>
 
       {/* アクションボタン - 入力グループから分離 */}
-      {searchResult && (
-        <div className="flex flex-col gap-3 items-center">
-          {isResultAcquirable && (
-            <Button
-              size="default"
-              className="rounded-full gap-2 px-5 text-sm	font-semibold shadow-md hover:shadow-lg transition-colors duration-200"
-              onClick={handleAcquireRequest}
-              disabled={!searchResult || (fanmarkLimit !== -1 && remainingCapacity <= 0)}
-            >
-              <Plus className="h-4 w-4" />
-              {user ? t('dashboard.acquireButton') : t('dashboard.acquireLoginButton')}
-            </Button>
-          )}
+      <div className="flex flex-col gap-4 items-center w-full">
+        <div className="flex w-full flex-row flex-wrap items-center justify-center gap-3">
+          <span
+            aria-hidden="true"
+            className="hidden sm:inline-flex h-10 w-10 rounded-full border border-transparent"
+          />
+          <Button
+            size="default"
+            className="rounded-full gap-2 px-6 text-sm font-semibold shadow-md hover:shadow-lg transition-colors duration-200"
+            onClick={handleAcquireRequest}
+            disabled={!canAcquireNow}
+          >
+            <Plus className="h-4 w-4" />
+            {user ? t('dashboard.acquireButton') : t('dashboard.acquireLoginButton')}
+          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 rounded-full border border-primary/15 bg-background/80 text-muted-foreground hover:bg-primary/10 hover:text-primary disabled:opacity-50"
+                  onClick={() => {
+                    if (!canNavigateToDetail || !searchResult?.short_id) return;
+                    navigate(`/f/${searchResult.short_id}`);
+                  }}
+                  disabled={!canNavigateToDetail}
+                  aria-label={t('dashboard.openFanmarkPage')}
+                >
+                  <Sparkles className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                {t('dashboard.openFanmarkPage')}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
 
-          {(displayedFanmark || (isGraceBlocked && user)) && (
+        {(displayedFanmark || (isGraceBlocked && user)) && (
             <TooltipProvider>
               <div className="flex w-full flex-col items-center gap-2">
                 <div className="flex items-center justify-center gap-3">
@@ -616,27 +652,6 @@ export const FanmarkAcquisition = ({
                       </TooltipTrigger>
                       <TooltipContent side="top">
                         {t('dashboard.visitFanmarkButton')}
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-
-                  {isTaken && canNavigateToDetail && searchResult?.short_id && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-10 w-10 rounded-full border border-primary/15 bg-background/80 text-muted-foreground hover:bg-primary/10 hover:text-primary"
-                          asChild
-                          aria-label={t('dashboard.openFanmarkPage')}
-                        >
-                          <Link to={`/f/${searchResult.short_id}`} className="flex items-center justify-center">
-                            <Sparkles className="h-5 w-5" />
-                          </Link>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">
-                        {t('dashboard.openFanmarkPage')}
                       </TooltipContent>
                     </Tooltip>
                   )}
@@ -778,7 +793,6 @@ export const FanmarkAcquisition = ({
             </div>
           )}
         </div>
-      )}
     </div>
   );
 };
