@@ -196,13 +196,13 @@
         "badge": "転送"
       },
       "friends": {
-        "title": "友達",
-        "description": "親しい友達とのちょっとしたコミュニケーションに",
+        "title": "同僚",
+        "description": "サッカー部の打ち上げの場所をファンマで伝える",
         "badge": "伝言板"
       },
       "gameStreamer": {
-        "title": "ゲーム配信者",
-        "description": "Twitchチャンネルに直接ジャンプ",
+        "title": "友達",
+        "description": "覚えられない電話番号もファンマなら簡単",
         "badge": "転送"
       }
     },

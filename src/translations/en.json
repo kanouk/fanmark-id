@@ -196,14 +196,14 @@
         "badge": "Address Forward"
       },
       "friends": {
-        "title": "Friends",
-        "description": "Keep close friends connected with a lightweight message hub",
+        "title": "⚽️🍻📍",
+        "description": "Share meetup spots with coworkers instantly via fanmarks.",
         "badge": "Message Board"
       },
       "gameStreamer": {
-        "title": "Game Streamer",
-        "description": "Drop viewers straight into your Twitch channel",
-        "badge": "Address Forward"
+        "title": "🍉📞",
+        "description": "Share phone calls with fanmarks—no need to memorize numbers.",
+        "badge": "Forward"
       }
     },
     "pricingDetails": {

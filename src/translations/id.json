@@ -196,14 +196,14 @@
         "badge": "Terusan Alamat"
       },
       "friends": {
-        "title": "Teman",
-        "description": "Jaga teman dekat tetap terhubung dengan pusat pesan ringan",
+        "title": "⚽️🍻📍",
+        "description": "Beri tahu rekan kerja lokasi hangout tanpa repot.",
         "badge": "Papan Pesan"
       },
       "gameStreamer": {
-        "title": "Pembuat Streaming Game",
-        "description": "Bawa penonton langsung ke saluran Twitch Anda",
-        "badge": "Terusan Alamat"
+        "title": "🍉📞",
+        "description": "Bagikan nomor telepon lewat fanmark—tak perlu menghafal lagi.",
+        "badge": "Terusan"
       }
     },
     "pricingDetails": {

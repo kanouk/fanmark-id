@@ -196,14 +196,14 @@
         "badge": "주소 전달"
       },
       "friends": {
-        "title": "친구",
-        "description": "친한 친구들과의 가벼운 소통",
+        "title": "⚽️🍻📍",
+        "description": "동료들과의 모임 장소도 팬마크로 간편하게 안내하세요.",
         "badge": "전언판"
       },
       "gameStreamer": {
-        "title": "게임 스트리머",
-        "description": "Twitch 채널로 직접 이동",
-        "badge": "주소 전달"
+        "title": "🍉📞",
+        "description": "전화번호를 기억할 필요 없이 팬마크로 바로 통화하세요.",
+        "badge": "전달"
       }
     },
     "pricingDetails": {
