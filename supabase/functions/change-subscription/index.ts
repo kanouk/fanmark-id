@@ -143,15 +143,20 @@ serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     } else {
-      // DOWNGRADE: Cancel current subscription immediately and create new one
-      logStep("Starting downgrade with immediate cancel");
-
-      // Cancel current subscription immediately (no period end wait)
-      await stripe.subscriptions.cancel(currentSubscription.id);
-      logStep("Current subscription canceled");
+      // DOWNGRADE: Update subscription at period end to avoid payment issues
+      logStep("Starting downgrade");
 
       if (new_plan_type === 'free') {
-        // Downgrade to free - just cancel, no new subscription
+        // Downgrade to free - cancel at period end
+        logStep("Downgrading to free - will cancel at period end");
+
+        await stripe.subscriptions.update(currentSubscription.id, {
+          cancel_at_period_end: true,
+        });
+
+        logStep("Subscription set to cancel at period end");
+
+        // Update user_settings - actual plan change will happen via webhook
         const { error: updateError } = await supabaseClient
           .from('user_settings')
           .update({ plan_type: 'free' })
@@ -164,24 +169,34 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             success: true, 
-            message: "Downgraded to free plan successfully"
+            message: "Will downgrade to free plan at period end"
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
         );
       }
 
-      // Create new subscription for the downgraded paid plan
+      // Downgrade to a different paid plan - update subscription at period end
       const newPriceId = priceIdMap[new_plan_type];
       if (!newPriceId) {
         throw new Error(`No Stripe price ID configured for plan: ${new_plan_type}`);
       }
 
-      const newSubscription = await stripe.subscriptions.create({
-        customer: customerId,
-        items: [{ price: newPriceId }],
-      });
+      logStep("Downgrading to paid plan - will change at period end", { newPriceId });
 
-      logStep("New subscription created", { subscriptionId: newSubscription.id });
+      const updatedSubscription = await stripe.subscriptions.update(
+        currentSubscription.id,
+        {
+          items: [
+            {
+              id: currentSubscription.items.data[0].id,
+              price: newPriceId,
+            },
+          ],
+          proration_behavior: "none",
+        }
+      );
+
+      logStep("Downgrade scheduled for period end", { subscriptionId: updatedSubscription.id });
 
       // Update user_settings with new plan type
       const { error: updateError } = await supabaseClient
@@ -196,8 +211,8 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: "Downgrade completed successfully",
-          subscription_id: newSubscription.id 
+          message: "Downgrade scheduled for period end",
+          subscription_id: updatedSubscription.id 
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
