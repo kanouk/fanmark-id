@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "@/hooks/useTranslation";
 import { AppHeader } from '@/components/layout/AppHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
+import { BrandIcon } from '@/components/BrandIcon';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -180,8 +181,8 @@ const Index = () => {
           <div className="mx-auto max-w-3xl text-center">
             <div className="backdrop-blur-md bg-white/80 rounded-2xl p-6 sm:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.15)]">
               <div className="mb-6 flex justify-center">
-                <span className="inline-flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm text-5xl sm:text-6xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] animate-float">
-                  ✨
+                <span className="inline-flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm shadow-[0_20px_50px_rgba(0,0,0,0.2)] animate-float">
+                  <BrandIcon size="xl" />
                 </span>
               </div>
               <h1 className="text-balance text-3xl font-bold tracking-tight bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent sm:text-4xl md:text-5xl">
@@ -279,7 +280,7 @@ const Index = () => {
             {[
               { emoji: '🪪', title: t('sections.step1'), description: t('sections.step1Description'), animation: 'animate-bounce-soft', gradient: 'from-primary/10 to-transparent' },
               { emoji: '🎯', title: t('sections.step2'), description: t('sections.step2Description'), animation: 'animate-pulse-slow', gradient: 'from-accent/10 to-transparent' },
-              { emoji: '✨', title: t('sections.step3'), description: t('sections.step3Description'), animation: 'animate-float', gradient: 'from-secondary/10 to-transparent' },
+              { emoji: '🎉', title: t('sections.step3'), description: t('sections.step3Description'), animation: 'animate-float', gradient: 'from-secondary/10 to-transparent' },
             ].map(({ emoji, title, description, animation, gradient }, index) => (
               <Card key={title} className="relative overflow-hidden border border-border/60 bg-background/95 shadow-[0_18px_38px_rgba(101,195,200,0.18)]">
                 <div className={`pointer-events-none absolute inset-0 bg-gradient-to-b ${gradient} opacity-0 transition-opacity duration-300 hover:opacity-100`} aria-hidden />
