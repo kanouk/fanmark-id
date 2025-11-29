@@ -278,14 +278,14 @@ const Index = () => {
 
           <div className="mt-16 grid gap-8 md:grid-cols-3">
             {[
-              { emoji: '🪪', title: t('sections.step1'), description: t('sections.step1Description'), animation: 'animate-bounce-soft', gradient: 'from-primary/10 to-transparent' },
-              { emoji: '🎯', title: t('sections.step2'), description: t('sections.step2Description'), animation: 'animate-pulse-slow', gradient: 'from-accent/10 to-transparent' },
-              { emoji: '🎉', title: t('sections.step3'), description: t('sections.step3Description'), animation: 'animate-float', gradient: 'from-secondary/10 to-transparent' },
-            ].map(({ emoji, title, description, animation, gradient }, index) => (
+              { emoji: '🪪', title: t('sections.step1'), description: t('sections.step1Description'), gradient: 'from-primary/10 to-transparent' },
+              { emoji: '🎯', title: t('sections.step2'), description: t('sections.step2Description'), gradient: 'from-accent/10 to-transparent' },
+              { emoji: '🎉', title: t('sections.step3'), description: t('sections.step3Description'), gradient: 'from-secondary/10 to-transparent' },
+            ].map(({ emoji, title, description, gradient }, index) => (
               <Card key={title} className="relative overflow-hidden border border-border/60 bg-background/95 shadow-[0_18px_38px_rgba(101,195,200,0.18)]">
                 <div className={`pointer-events-none absolute inset-0 bg-gradient-to-b ${gradient} opacity-0 transition-opacity duration-300 hover:opacity-100`} aria-hidden />
                 <CardHeader className="relative flex flex-col items-center gap-4 px-8 pt-12 pb-8 text-center">
-                  <span className={`text-5xl ${animation}`}>{emoji}</span>
+                  <span className="text-5xl">{emoji}</span>
                   <CardTitle className="text-xl font-semibold text-foreground">{index + 1}. {title}</CardTitle>
                   <CardDescription className="text-sm leading-relaxed text-muted-foreground">
                     {description}
