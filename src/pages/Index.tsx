@@ -181,7 +181,7 @@ const Index = () => {
           <div className="mx-auto max-w-3xl text-center">
             <div className="backdrop-blur-md bg-white/80 rounded-2xl p-6 sm:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.15)]">
               <div className="mb-6 flex justify-center">
-                <span className="inline-flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm shadow-[0_20px_50px_rgba(0,0,0,0.2)] animate-float">
+                <span className="inline-flex h-28 w-28 sm:h-32 sm:w-32 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm shadow-[0_20px_50px_rgba(0,0,0,0.2)] animate-float">
                   <BrandIcon size="xl" />
                 </span>
               </div>
