@@ -277,7 +277,7 @@ const PlanSelection = () => {
           }),
         });
       } else {
-        // DOWNGRADE: Use change-subscription with immediate cancel (after confirmation)
+        // DOWNGRADE: Use change-subscription with immediate cancel
         setRedirecting(true);
         
         const { data, error } = await supabase.functions.invoke('change-subscription', {
@@ -292,7 +292,15 @@ const PlanSelection = () => {
           throw error;
         }
         
-        // Refresh profile and subscription data
+        // Check if we need to redirect to Checkout (for paid plan downgrades)
+        if (data?.checkout_url) {
+          setTimeout(() => {
+            window.location.href = data.checkout_url;
+          }, 500);
+          return;
+        }
+        
+        // For free plan downgrades, just refresh and show success
         await Promise.all([refetchProfile(), refetchSubscription()]);
         
         setRedirecting(false);
@@ -377,7 +385,15 @@ const PlanSelection = () => {
         throw error;
       }
       
-      // Refresh profile and subscription data
+      // Check if we need to redirect to Checkout (for paid plan downgrades)
+      if (data?.checkout_url) {
+        setTimeout(() => {
+          window.location.href = data.checkout_url;
+        }, 500);
+        return;
+      }
+      
+      // For free plan downgrades, just refresh and show success
       await Promise.all([refetchProfile(), refetchSubscription()]);
       
       setRedirecting(false);
