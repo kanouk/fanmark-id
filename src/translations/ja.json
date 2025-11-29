@@ -421,6 +421,10 @@
     "subscriptionEndsLabel": "終了予定日",
     "subscriptionStatusLabel": "ステータス",
     "subscriptionUnknown": "未設定",
+    "paymentManagement": "お支払い管理",
+    "paymentManagementDescription": "お支払い方法の変更や請求履歴の確認ができます。",
+    "managePaymentMethod": "支払い方法を管理",
+    "portalError": "支払い管理ページを開けませんでした",
     "subscription": {
       "title": "サブスクリプション状態",
       "description": "現在のプラン情報",
