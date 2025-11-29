@@ -1,4 +1,5 @@
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { BrandIcon } from "@/components/BrandIcon";
 
 export function PWAHeader() {
   return (
@@ -12,9 +13,9 @@ export function PWAHeader() {
           <button
             type="button"
             onClick={() => window.location.href = '/'}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-2xl transition-all hover:scale-105"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 transition-all hover:scale-105"
           >
-            ✨
+            <BrandIcon size="sm" />
           </button>
         </div>
         
