@@ -45,12 +45,6 @@ export default function PWAApp() {
     }
   }, []);
 
-  const handleTabChange = (tab: TabType) => {
-    setActiveTab(tab);
-    setSearchResult(null);
-    window.history.pushState({}, "", `/pwa/${tab}`);
-  };
-
   const handleSearchResult = (result: any) => {
     setSearchResult(result);
     if (result?.status === "taken" && result?.shortId && searchQuery) {
@@ -246,48 +240,6 @@ export default function PWAApp() {
 
       </main>
 
-      {/* Bottom Navigation - App Style */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 pointer-events-none">
-        <nav className="bg-white border-t border-border/30 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] rounded-t-2xl flex items-center pointer-events-auto">
-          <button
-            onClick={() => handleTabChange("search")}
-            className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-all duration-200 ${
-              activeTab === "search"
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground"
-            }`}
-          >
-            <Search className={`w-5 h-5 transition-colors duration-200 ${
-              activeTab === "search" ? "text-primary" : "text-muted-foreground"
-            }`} />
-            <span className={`text-[10px] font-medium transition-colors ${
-              activeTab === "search" ? "text-primary" : "text-muted-foreground"
-            }`}>
-              検索
-            </span>
-          </button>
-
-          <div className="w-px h-8 bg-border/20" />
-
-          <button
-            onClick={() => handleTabChange("history")}
-            className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-all duration-200 ${
-              activeTab === "history"
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground"
-            }`}
-          >
-            <History className={`w-5 h-5 transition-colors duration-200 ${
-              activeTab === "history" ? "text-primary" : "text-muted-foreground"
-            }`} />
-            <span className={`text-[10px] font-medium transition-colors ${
-              activeTab === "history" ? "text-primary" : "text-muted-foreground"
-            }`}>
-              履歴
-            </span>
-          </button>
-        </nav>
-      </div>
     </div>
   );
 }
