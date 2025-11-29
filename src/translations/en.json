@@ -441,6 +441,10 @@
     "subscriptionEndsLabel": "Scheduled end date",
     "subscriptionStatusLabel": "Status",
     "subscriptionUnknown": "Unknown",
+    "paymentManagement": "Payment Management",
+    "paymentManagementDescription": "Update your payment method or view billing history.",
+    "managePaymentMethod": "Manage Payment Method",
+    "portalError": "Failed to open payment management page",
     "subscription": {
       "title": "Subscription Status",
       "description": "Current plan information",

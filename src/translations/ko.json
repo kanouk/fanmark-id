@@ -422,6 +422,10 @@
     "subscriptionEndsLabel": "종료 예정일",
     "subscriptionStatusLabel": "상태",
     "subscriptionUnknown": "미설정",
+    "paymentManagement": "결제 관리",
+    "paymentManagementDescription": "결제 수단을 변경하거나 청구 내역을 확인할 수 있습니다.",
+    "managePaymentMethod": "결제 수단 관리",
+    "portalError": "결제 관리 페이지를 열 수 없습니다",
     "subscription": {
       "title": "구독 상태",
       "description": "현재 플랜 정보",

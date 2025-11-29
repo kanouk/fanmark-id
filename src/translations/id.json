@@ -441,6 +441,10 @@
     "subscriptionEndsLabel": "Tanggal akhir terjadwal",
     "subscriptionStatusLabel": "Status",
     "subscriptionUnknown": "Tidak diketahui",
+    "paymentManagement": "Manajemen Pembayaran",
+    "paymentManagementDescription": "Perbarui metode pembayaran atau lihat riwayat tagihan.",
+    "managePaymentMethod": "Kelola Metode Pembayaran",
+    "portalError": "Gagal membuka halaman manajemen pembayaran",
     "subscription": {
       "title": "Status Langganan",
       "description": "Informasi paket saat ini",

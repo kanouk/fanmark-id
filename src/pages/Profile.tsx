@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { CardDescription } from '@/components/ui/card';
-import { User, LogOut, CreditCard, Globe, Palette, Link2, Info, PencilLine, Languages, Heart, Lock, ShieldCheck, Check, X, AlertTriangle, Loader2, Bell } from 'lucide-react';
+import { User, LogOut, CreditCard, Globe, Palette, Link2, Info, PencilLine, Languages, Heart, Lock, ShieldCheck, Check, X, AlertTriangle, Loader2, Bell, ExternalLink } from 'lucide-react';
 import { MdSpaceDashboard } from 'react-icons/md';
 import { RiCalendarCheckLine } from 'react-icons/ri';
 import { Badge } from '@/components/ui/badge';
@@ -80,6 +80,7 @@ const Profile = () => {
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
   const { requirements: passwordRequirements, isValid: isPasswordValid } = usePasswordValidation(newPassword);
 
   useEffect(() => {
@@ -260,6 +261,26 @@ const Profile = () => {
         description: t('userSettings.languageUpdateErrorDescription'),
         variant: 'destructive',
       });
+    }
+  };
+
+  const handleOpenCustomerPortal = async () => {
+    setPortalLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('customer-portal');
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (error) {
+      console.error('Failed to open customer portal:', error);
+      toast({
+        title: t('common.error'),
+        description: t('userSettings.portalError'),
+        variant: 'destructive',
+      });
+    } finally {
+      setPortalLoading(false);
     }
   };
 
@@ -637,6 +658,35 @@ const Profile = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Payment Management - Only show when subscription is active */}
+        {subscribed && (
+          <Card className="rounded-2xl border border-primary/15 bg-primary/5">
+            <CardHeader className="px-5 pt-5 pb-3">
+              <CardTitle className="text-base font-semibold text-foreground">
+                {t('userSettings.paymentManagement')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-5 pb-5">
+              <p className="text-sm text-muted-foreground mb-4">
+                {t('userSettings.paymentManagementDescription')}
+              </p>
+              <Button
+                variant="outline"
+                className="rounded-full border-primary/20"
+                onClick={handleOpenCustomerPortal}
+                disabled={portalLoading}
+              >
+                {portalLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                )}
+                {t('userSettings.managePaymentMethod')}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </CardContent>
     </Card>
   );
