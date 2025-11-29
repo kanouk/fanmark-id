@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { BrandWordmark } from '@/components/BrandWordmark';
+import { BrandIcon } from '@/components/BrandIcon';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 
@@ -32,7 +33,7 @@ export const SiteFooter = ({
         <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
           {!hideBrand && (
             <>
-              <span className="text-3xl">✨</span>
+              <BrandIcon size="md" />
               <BrandWordmark />
             </>
           )}
