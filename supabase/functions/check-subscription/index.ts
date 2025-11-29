@@ -87,10 +87,45 @@ serve(async (req) => {
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+      const subscriptionStart = new Date(subscription.current_period_start * 1000).toISOString();
       logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd });
       
       productId = subscription.items.data[0].price.product as string;
       logStep("Determined product ID", { productId });
+
+      // Sync subscription data to database for reliability
+      try {
+        const { error: upsertError } = await supabaseClient
+          .from('user_subscriptions')
+          .upsert({
+            user_id: user.id,
+            stripe_customer_id: customerId,
+            stripe_subscription_id: subscription.id,
+            product_id: productId,
+            price_id: subscription.items.data[0].price.id,
+            status: subscription.status,
+            current_period_start: subscriptionStart,
+            current_period_end: subscriptionEnd,
+            cancel_at_period_end: subscription.cancel_at_period_end || false,
+            amount: subscription.items.data[0].price.unit_amount || null,
+            currency: subscription.items.data[0].price.currency || null,
+            interval: subscription.items.data[0].price.recurring?.interval || null,
+            interval_count: subscription.items.data[0].price.recurring?.interval_count || null,
+            updated_at: new Date().toISOString(),
+          }, {
+            onConflict: 'user_id,stripe_subscription_id'
+          });
+
+        if (upsertError) {
+          logStep("ERROR: Failed to sync subscription to database", { error: upsertError.message });
+        } else {
+          logStep("Successfully synced subscription to database");
+        }
+      } catch (syncError) {
+        logStep("ERROR: Exception during database sync", { 
+          error: syncError instanceof Error ? syncError.message : String(syncError) 
+        });
+      }
     } else {
       logStep("No active subscription found");
     }
