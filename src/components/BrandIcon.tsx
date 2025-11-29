@@ -1,4 +1,4 @@
-import sparklingImage from '@/assets/sparkling.png';
+import sparklesImage from '@/assets/sparkles.png';
 import { cn } from '@/lib/utils';
 
 interface BrandIconProps {
@@ -16,7 +16,7 @@ const sizeClasses = {
 export const BrandIcon = ({ size = 'md', className }: BrandIconProps) => {
   return (
     <img
-      src={sparklingImage}
+      src={sparklesImage}
       alt="Fanmark"
       className={cn(sizeClasses[size], 'object-contain', className)}
     />
