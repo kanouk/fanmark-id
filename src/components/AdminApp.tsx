@@ -12,6 +12,7 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import AdminAuth from "@/pages/AdminAuth";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2, ShieldAlert } from "lucide-react";
+import { ScrollToTop } from "@/components/ScrollToTop";
 
 const queryClient = new QueryClient();
 
@@ -106,6 +107,7 @@ const AdminApp = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              <ScrollToTop />
               <Routes>
                 <Route path="/" element={
                   <AdminRoute>

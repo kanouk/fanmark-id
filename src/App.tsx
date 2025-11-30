@@ -37,6 +37,7 @@ import About from "./pages/About";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LotteryActionOverlayProvider } from "@/providers/LotteryActionOverlayProvider";
 import { PasswordSetupGate } from "@/components/PasswordSetupGate";
+import { ScrollToTop } from "@/components/ScrollToTop";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const MainApp = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              <ScrollToTop />
               <PasswordSetupGate />
               <Routes>
                 <Route path="/" element={<Index />} />
