@@ -655,7 +655,14 @@
       "loadingFailed": "팬마크 목록 로드 실패",
       "errorTitle": "오류가 발생했습니다",
       "errorDescription": "잠시 후 다시 시도하세요."
-    }
+    },
+    "downgradeWarningTitle": "다운그레이드 확인",
+    "subscriptionEndDate": "현재 요금제는 {date}까지 유효합니다",
+    "loseRemainingPeriod": "다운그레이드하면 남은 구독 기간이 소멸됩니다",
+    "fanmarkLimitChange": "팬마크 상한이 {from}개에서 {to}개로 변경됩니다",
+    "considerWaiting": "남은 기간이 아깝다면 기간 종료 후 다운그레이드를 권장합니다",
+    "confirmDowngrade": "그래도 다운그레이드",
+    "cancelDowngrade": "취소"
   },
   "accessTypes": {
     "inactive": "아무것도 안 함",

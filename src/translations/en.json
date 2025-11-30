@@ -656,7 +656,14 @@
       "loadingFailed": "Failed to load fanmarks",
       "errorTitle": "An error occurred",
       "errorDescription": "Please try again later."
-    }
+    },
+    "downgradeWarningTitle": "Confirm Downgrade",
+    "subscriptionEndDate": "Your current plan is valid until {date}",
+    "loseRemainingPeriod": "Downgrading will forfeit your remaining subscription period",
+    "fanmarkLimitChange": "Fanmark limit will change from {from} to {to}",
+    "considerWaiting": "If you want to maximize your subscription value, consider waiting until your current period ends before downgrading",
+    "confirmDowngrade": "Downgrade Anyway",
+    "cancelDowngrade": "Cancel"
   },
   "accessTypes": {
     "inactive": "Inactive",
