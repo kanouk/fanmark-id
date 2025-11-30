@@ -656,7 +656,14 @@
       "loadingFailed": "Gagal memuat fanmark",
       "errorTitle": "Terjadi kesalahan",
       "errorDescription": "Silakan coba lagi nanti."
-    }
+    },
+    "downgradeWarningTitle": "Konfirmasi Downgrade",
+    "subscriptionEndDate": "Paket saat ini berlaku hingga {date}",
+    "loseRemainingPeriod": "Downgrade akan menghilangkan sisa periode langganan Anda",
+    "fanmarkLimitChange": "Batas fanmark akan berubah dari {from} menjadi {to}",
+    "considerWaiting": "Jika Anda ingin memaksimalkan nilai langganan, pertimbangkan untuk menunggu hingga periode saat ini berakhir sebelum downgrade",
+    "confirmDowngrade": "Downgrade Tetap",
+    "cancelDowngrade": "Batal"
   },
   "accessTypes": {
     "inactive": "Tidak aktif",

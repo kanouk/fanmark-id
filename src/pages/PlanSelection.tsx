@@ -16,6 +16,7 @@ import {
   type ActiveFanmark,
 } from '@/lib/plan-utils';
 import { FanmarkSelectionModal } from '@/components/FanmarkSelectionModal';
+import { DowngradeWarningDialog } from '@/components/DowngradeWarningDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { Check, ArrowLeft, Loader2, Sparkle, Crown, Star, ExternalLink } from 'lucide-react';
 
@@ -41,7 +42,7 @@ const PlanSelection = () => {
   const { toast } = useToast();
   const { profile, loading, updateProfile, refetch: refetchProfile } = useProfile();
   const { user } = useAuth();
-  const { refetch: refetchSubscription } = useSubscription();
+  const { subscription_end, refetch: refetchSubscription } = useSubscription();
 
   const [processingPlan, setProcessingPlan] = useState<PlanType | null>(null);
   const [redirecting, setRedirecting] = useState(false);
@@ -54,6 +55,13 @@ const PlanSelection = () => {
   const [pollState, setPollState] = useState<'idle' | 'waiting-session' | 'polling'>('idle');
   const [pollAttempts, setPollAttempts] = useState(0);
   const [initialPlanType, setInitialPlanType] = useState<PlanType | null>(null);
+  const [showDowngradeWarning, setShowDowngradeWarning] = useState(false);
+  const [downgradeInfo, setDowngradeInfo] = useState<{
+    currentPlan: PlanType;
+    newPlan: PlanType;
+    currentLimit: number;
+    newLimit: number;
+  } | null>(null);
 
   const planCards = useMemo<PlanCardCopy[]>(() => CUSTOMER_PLANS.map((planType) => {
     return {
@@ -277,39 +285,18 @@ const PlanSelection = () => {
           }),
         });
       } else {
-        // DOWNGRADE: Use change-subscription with immediate cancel
-        setRedirecting(true);
+        // DOWNGRADE: Show warning dialog first
+        const currentLimit = getPlanLimit(currentPlanType);
+        const newLimit = getPlanLimit(planType);
         
-        const { data, error } = await supabase.functions.invoke('change-subscription', {
-          body: { 
-            current_plan_type: currentPlanType,
-            new_plan_type: planType 
-          }
+        setDowngradeInfo({
+          currentPlan: currentPlanType,
+          newPlan: planType,
+          currentLimit,
+          newLimit,
         });
-        
-        if (error) {
-          setRedirecting(false);
-          throw error;
-        }
-        
-        // Check if we need to redirect to Checkout (for paid plan downgrades)
-        if (data?.checkout_url) {
-          setTimeout(() => {
-            window.location.href = data.checkout_url;
-          }, 500);
-          return;
-        }
-        
-        // For free plan downgrades, just refresh and show success
-        await Promise.all([refetchProfile(), refetchSubscription()]);
-        
-        setRedirecting(false);
-        toast({
-          title: t('planSelection.downgradeSuccess'),
-          description: t('planSelection.downgradeSuccessDescription', { 
-            plan: t(`planSelection.${planType}.name`) 
-          }),
-        });
+        setShowDowngradeWarning(true);
+        setProcessingPlan(null);
       }
     } catch (error) {
       console.error('Plan change error:', error);
@@ -320,6 +307,55 @@ const PlanSelection = () => {
       });
     } finally {
       setProcessingPlan(null);
+    }
+  };
+
+  const handleDowngradeConfirm = async () => {
+    if (!user || !downgradeInfo) return;
+
+    setShowDowngradeWarning(false);
+    setRedirecting(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('change-subscription', {
+        body: { 
+          current_plan_type: downgradeInfo.currentPlan,
+          new_plan_type: downgradeInfo.newPlan 
+        }
+      });
+      
+      if (error) {
+        setRedirecting(false);
+        throw error;
+      }
+      
+      // Check if we need to redirect to Checkout (for paid plan downgrades)
+      if (data?.checkout_url) {
+        setTimeout(() => {
+          window.location.href = data.checkout_url;
+        }, 500);
+        return;
+      }
+      
+      // For free plan downgrades, just refresh and show success
+      await Promise.all([refetchProfile(), refetchSubscription()]);
+      
+      setRedirecting(false);
+      toast({
+        title: t('planSelection.downgradeSuccess'),
+        description: t('planSelection.downgradeSuccessDescription', { 
+          plan: t(`planSelection.${downgradeInfo.newPlan}.name`) 
+        }),
+      });
+    } catch (error) {
+      console.error('Downgrade confirmation error:', error);
+      toast({
+        title: t('planSelection.errorTitle'),
+        description: error instanceof Error ? error.message : t('planSelection.errorDescription'),
+        variant: 'destructive',
+      });
+    } finally {
+      setDowngradeInfo(null);
     }
   };
 
@@ -556,6 +592,19 @@ const PlanSelection = () => {
         newPlanLimit={newPlanLimit}
         currentFanmarks={fanmarksForSelection}
         onConfirm={handleFanmarkSelectionConfirm}
+      />
+
+      {/* Downgrade Warning Dialog */}
+      <DowngradeWarningDialog
+        open={showDowngradeWarning}
+        onOpenChange={setShowDowngradeWarning}
+        currentPlan={downgradeInfo?.currentPlan || 'free'}
+        newPlan={downgradeInfo?.newPlan || 'free'}
+        subscriptionEnd={subscription_end}
+        currentLimit={downgradeInfo?.currentLimit || 0}
+        newLimit={downgradeInfo?.newLimit || 0}
+        onConfirm={handleDowngradeConfirm}
+        isProcessing={redirecting}
       />
 
       {/* Subscription Check Loading Overlay */}

@@ -654,7 +654,14 @@
       "loadingFailed": "ファンマ一覧の読み込みに失敗しました",
       "errorTitle": "エラーが発生しました",
       "errorDescription": "しばらく時間をおいて再度お試しください。"
-    }
+    },
+    "downgradeWarningTitle": "ダウングレードの確認",
+    "subscriptionEndDate": "現在のプランは{date}まで有効です",
+    "loseRemainingPeriod": "ダウングレードすると、この残り期間は失われます",
+    "fanmarkLimitChange": "ファンマーク上限が{from}個から{to}個に変更されます",
+    "considerWaiting": "残り期間がもったいないと思う方は、期間終了後のダウングレードをおすすめします",
+    "confirmDowngrade": "それでもダウングレードする",
+    "cancelDowngrade": "キャンセル"
   },
   "accessTypes": {
     "inactive": "なにもしない",
