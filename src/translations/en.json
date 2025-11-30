@@ -440,6 +440,7 @@
     "subscriptionNextBillingLabel": "Next billing date",
     "subscriptionEndsLabel": "Scheduled end date",
     "subscriptionStatusLabel": "Status",
+    "subscriptionActive": "Active",
     "subscriptionUnknown": "Unknown",
     "paymentManagement": "Payment Management",
     "paymentManagementDescription": "Update your payment method or view billing history.",
