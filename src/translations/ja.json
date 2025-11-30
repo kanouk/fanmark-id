@@ -420,6 +420,7 @@
     "subscriptionNextBillingLabel": "次回請求日",
     "subscriptionEndsLabel": "終了予定日",
     "subscriptionStatusLabel": "ステータス",
+    "subscriptionActive": "有効",
     "subscriptionUnknown": "未設定",
     "paymentManagement": "お支払い管理",
     "paymentManagementDescription": "お支払い方法の変更や請求履歴の確認ができます。",

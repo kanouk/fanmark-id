@@ -421,6 +421,7 @@
     "subscriptionNextBillingLabel": "다음 청구일",
     "subscriptionEndsLabel": "종료 예정일",
     "subscriptionStatusLabel": "상태",
+    "subscriptionActive": "유효",
     "subscriptionUnknown": "미설정",
     "paymentManagement": "결제 관리",
     "paymentManagementDescription": "결제 수단을 변경하거나 청구 내역을 확인할 수 있습니다.",

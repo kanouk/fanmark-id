@@ -440,6 +440,7 @@
     "subscriptionNextBillingLabel": "Tanggal penagihan berikutnya",
     "subscriptionEndsLabel": "Tanggal akhir terjadwal",
     "subscriptionStatusLabel": "Status",
+    "subscriptionActive": "Aktif",
     "subscriptionUnknown": "Tidak diketahui",
     "paymentManagement": "Manajemen Pembayaran",
     "paymentManagementDescription": "Perbarui metode pembayaran atau lihat riwayat tagihan.",

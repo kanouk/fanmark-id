@@ -572,35 +572,21 @@ const Profile = () => {
         {/* Subscription Status */}
         <Card className="rounded-2xl border border-primary/15 bg-primary/5">
           <CardHeader className="px-5 pt-5 pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold text-foreground">
-                サブスクリプション状態
-              </CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={refetchSubscription}
-                disabled={subLoading}
-                className="h-8 w-8 rounded-full p-0 hover:bg-primary/10"
-              >
-                {subLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                ) : (
-                  <RiCalendarCheckLine className="h-4 w-4 text-primary" />
-                )}
-              </Button>
-            </div>
+            <CardTitle className="text-base font-semibold text-foreground">
+              {t('userSettings.subscriptionTitle')}
+            </CardTitle>
           </CardHeader>
           <CardContent className="px-5 pb-5">
             <div className="space-y-3">
               <div className="flex items-center justify-between rounded-xl bg-background/80 px-3 py-2.5">
                 <span className="text-sm text-muted-foreground">{t('userSettings.subscriptionStatusLabel')}</span>
-                <Badge 
-                  variant={subscribed ? "default" : "secondary"}
-                  className="rounded-full"
-                >
-                  {subscribed ? '有効' : '無効'}
-                </Badge>
+                {subscribed ? (
+                  <Badge variant="default" className="rounded-full">
+                    {t('userSettings.subscriptionActive')}
+                  </Badge>
+                ) : (
+                  <span className="text-sm text-muted-foreground">-</span>
+                )}
               </div>
 
               {formattedAmount() && (
