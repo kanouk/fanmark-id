@@ -95,31 +95,62 @@ serve(async (req) => {
 
       // Sync subscription data to database for reliability
       try {
-        const { error: upsertError } = await supabaseClient
+        // Check if record exists
+        const { data: existingRecord, error: selectError } = await supabaseClient
           .from('user_subscriptions')
-          .upsert({
-            user_id: user.id,
-            stripe_customer_id: customerId,
-            stripe_subscription_id: subscription.id,
-            product_id: productId,
-            price_id: subscription.items.data[0].price.id,
-            status: subscription.status,
-            current_period_start: subscriptionStart,
-            current_period_end: subscriptionEnd,
-            cancel_at_period_end: subscription.cancel_at_period_end || false,
-            amount: subscription.items.data[0].price.unit_amount || null,
-            currency: subscription.items.data[0].price.currency || null,
-            interval: subscription.items.data[0].price.recurring?.interval || null,
-            interval_count: subscription.items.data[0].price.recurring?.interval_count || null,
-            updated_at: new Date().toISOString(),
-          }, {
-            onConflict: 'user_id,stripe_subscription_id'
-          });
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('stripe_subscription_id', subscription.id)
+          .maybeSingle();
 
-        if (upsertError) {
-          logStep("ERROR: Failed to sync subscription to database", { error: upsertError.message });
+        if (selectError) {
+          logStep("ERROR: Failed to check existing record", { error: selectError.message });
+        }
+
+        const subscriptionData = {
+          product_id: productId,
+          price_id: subscription.items.data[0].price.id,
+          status: subscription.status,
+          current_period_start: subscriptionStart,
+          current_period_end: subscriptionEnd,
+          cancel_at_period_end: subscription.cancel_at_period_end || false,
+          amount: subscription.items.data[0].price.unit_amount || null,
+          currency: subscription.items.data[0].price.currency || null,
+          interval: subscription.items.data[0].price.recurring?.interval || null,
+          interval_count: subscription.items.data[0].price.recurring?.interval_count || null,
+          updated_at: new Date().toISOString(),
+        };
+
+        if (existingRecord) {
+          // Update existing record
+          logStep("Updating existing subscription record", { recordId: existingRecord.id });
+          const { error: updateError } = await supabaseClient
+            .from('user_subscriptions')
+            .update(subscriptionData)
+            .eq('id', existingRecord.id);
+
+          if (updateError) {
+            logStep("ERROR: Failed to update subscription", { error: updateError.message });
+          } else {
+            logStep("Successfully updated subscription in database");
+          }
         } else {
-          logStep("Successfully synced subscription to database");
+          // Insert new record
+          logStep("Inserting new subscription record");
+          const { error: insertError } = await supabaseClient
+            .from('user_subscriptions')
+            .insert({
+              user_id: user.id,
+              stripe_customer_id: customerId,
+              stripe_subscription_id: subscription.id,
+              ...subscriptionData
+            });
+
+          if (insertError) {
+            logStep("ERROR: Failed to insert subscription", { error: insertError.message });
+          } else {
+            logStep("Successfully inserted subscription in database");
+          }
         }
       } catch (syncError) {
         logStep("ERROR: Exception during database sync", { 
