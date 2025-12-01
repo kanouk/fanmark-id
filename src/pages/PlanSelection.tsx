@@ -517,64 +517,78 @@ const PlanSelection = () => {
         </header>
 
         <section className="mt-12 grid gap-6 md:grid-cols-3">
-          {planCards.map(card => (
-            <div
-              key={card.type}
-              className={`relative flex h-full flex-col gap-6 rounded-3xl border border-primary/10 bg-background/95 p-6 shadow-[0_20px_45px_rgba(101,195,200,0.12)] backdrop-blur transition-transform hover:-translate-y-1 hover:shadow-[0_25px_55px_rgba(101,195,200,0.16)] ${
-                card.highlight ? 'border-primary/40 bg-primary/5' : ''
-              }`}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-2 text-left">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-primary">
-                    {getPlanIcon(card.type)}
-                    <span>{card.name}</span>
+          {planCards.map(card => {
+            const isCurrent = isCurrentPlan(card.type);
+            return (
+              <div
+                key={card.type}
+                className={`relative flex h-full flex-col gap-6 rounded-3xl border-2 bg-background/95 p-6 shadow-[0_20px_45px_rgba(101,195,200,0.12)] backdrop-blur transition-all hover:-translate-y-1 hover:shadow-[0_25px_55px_rgba(101,195,200,0.16)] ${
+                  isCurrent 
+                    ? 'border-green-500 bg-green-50/50 dark:bg-green-950/20' 
+                    : card.highlight 
+                      ? 'border-primary/40 bg-primary/5' 
+                      : 'border-primary/10'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-2 text-left">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                      {getPlanIcon(card.type)}
+                      <span>{card.name}</span>
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-bold text-foreground">{card.price}</span>
+                      {card.monthlySuffix && (
+                        <span className="text-xs text-muted-foreground">{card.monthlySuffix}</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold text-foreground">{card.price}</span>
-                    {card.monthlySuffix && (
-                      <span className="text-xs text-muted-foreground">{card.monthlySuffix}</span>
+                  <div className="flex flex-col gap-2">
+                    {isCurrent && (
+                      <Badge className="rounded-full bg-green-500 px-3 py-1 text-white">
+                        {t('planSelection.currentPlanLabel', { plan: '' }).replace(/\s*-\s*$/, '')}
+                      </Badge>
+                    )}
+                    {card.badge && !isCurrent && (
+                      <Badge className="rounded-full bg-primary px-3 py-1 text-primary-foreground">
+                        {card.badge}
+                      </Badge>
                     )}
                   </div>
                 </div>
-                {card.badge && (
-                  <Badge className="rounded-full bg-primary px-3 py-1 text-primary-foreground">
-                    {card.badge}
-                  </Badge>
-                )}
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {card.description}
+                </p>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  {card.features.map(feature => (
+                    <li key={feature} className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-primary" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-auto pt-2">
+                  <Button
+                    className="w-full rounded-full"
+                    variant={isCurrent ? 'outline' : 'default'}
+                    disabled={processingPlan !== null || isCurrent}
+                    onClick={() => handlePlanChange(card.type)}
+                  >
+                    {processingPlan === card.type ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {t('common.loading')}
+                      </>
+                    ) : isCurrent ? (
+                      t('planSelection.currentPlanCta')
+                    ) : (
+                      t('planSelection.choosePlanCta', { plan: card.name })
+                    )}
+                  </Button>
+                </div>
               </div>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                {card.description}
-              </p>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                {card.features.map(feature => (
-                  <li key={feature} className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-primary" />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-auto pt-2">
-                <Button
-                  className="w-full rounded-full"
-                  variant={isCurrentPlan(card.type) ? 'outline' : 'default'}
-                  disabled={processingPlan !== null || isCurrentPlan(card.type)}
-                  onClick={() => handlePlanChange(card.type)}
-                >
-                  {processingPlan === card.type ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {t('common.loading')}
-                    </>
-                  ) : isCurrentPlan(card.type) ? (
-                    t('planSelection.currentPlanCta')
-                  ) : (
-                    t('planSelection.choosePlanCta', { plan: card.name })
-                  )}
-                </Button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </section>
 
       </div>
