@@ -349,6 +349,7 @@
     "avatarRemoveDescription": "Your avatar has been removed",
     "avatarRemoveError": "Failed to remove avatar",
     "planType": "Plan Type",
+    "subscriptionTitle": "Subscription",
     "planTypeFree": "Free",
     "planTypeCreator": "Creator",
     "planTypeBusiness": "Business",

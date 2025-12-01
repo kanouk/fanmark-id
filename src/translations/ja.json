@@ -348,6 +348,7 @@
     "avatarRemoveDescription": "プロフィール画像が削除されました",
     "avatarRemoveError": "画像の削除に失敗しました",
     "planType": "プランタイプ",
+    "subscriptionTitle": "サブスクリプション",
     "planTypeFree": "フリー",
     "planTypeCreator": "クリエーター",
     "planTypeBusiness": "ビジネス",
