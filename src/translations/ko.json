@@ -349,6 +349,7 @@
     "avatarRemoveDescription": "프로필 이미지가 삭제되었습니다",
     "avatarRemoveError": "이미지 삭제 실패",
     "planType": "요금제 유형",
+    "subscriptionTitle": "구독",
     "planTypeFree": "프리",
     "planTypeCreator": "크리에이터",
     "planTypeBusiness": "비즈니스",
