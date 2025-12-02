@@ -3,6 +3,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, RefreshCw } from 'lucide-react';
+import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 
 export const SubscriptionStatus = () => {
@@ -73,11 +74,7 @@ export const SubscriptionStatus = () => {
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">{t('subscription.nextUpdate')}</span>
               <span className="text-sm">
-                {new Date(subscription_end).toLocaleDateString(undefined, {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
+                {format(new Date(subscription_end), 'yyyy/MM/dd')}
               </span>
             </div>
           )}
