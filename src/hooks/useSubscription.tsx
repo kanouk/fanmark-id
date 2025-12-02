@@ -54,6 +54,23 @@ export function useSubscription() {
       try {
         setStatus(prev => ({ ...prev, loading: true, error: null }));
 
+        // Step 1: Call check-subscription Edge Function to sync with Stripe
+        const { data: session } = await supabase.auth.getSession();
+        if (session?.session) {
+          console.log('[useSubscription] Calling check-subscription to sync with Stripe...');
+          const { error: syncError } = await supabase.functions.invoke('check-subscription', {
+            headers: {
+              Authorization: `Bearer ${session.session.access_token}`
+            }
+          });
+          if (syncError) {
+            console.warn('[useSubscription] Subscription sync warning:', syncError);
+          } else {
+            console.log('[useSubscription] Stripe sync completed');
+          }
+        }
+
+        // Step 2: Fetch from database after sync
         const { data, error } = await supabase
           .from('user_subscriptions')
           .select('*')
@@ -62,7 +79,7 @@ export function useSubscription() {
           .maybeSingle();
 
         if (error) {
-          console.error('Error fetching subscription:', error);
+          console.error('[useSubscription] Error fetching subscription:', error);
           setStatus(prev => ({
             ...prev,
             loading: false,
@@ -70,6 +87,8 @@ export function useSubscription() {
           }));
           return;
         }
+
+        console.log('[useSubscription] Subscription data from DB:', data);
 
         setStatus({
           subscribed: !!data,
@@ -85,7 +104,7 @@ export function useSubscription() {
           error: null,
         });
       } catch (err) {
-        console.error('Unexpected error fetching subscription:', err);
+        console.error('[useSubscription] Unexpected error:', err);
         setStatus(prev => ({
           ...prev,
           loading: false,
