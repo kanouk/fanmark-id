@@ -86,11 +86,29 @@ serve(async (req) => {
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
-      subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-      const subscriptionStart = new Date(subscription.current_period_start * 1000).toISOString();
-      logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd });
+      const item = subscription.items.data[0];
       
-      productId = subscription.items.data[0].price.product as string;
+      // Get period dates from subscription or fallback to item
+      const periodEnd = subscription.current_period_end ?? (item as any)?.current_period_end;
+      const periodStart = subscription.current_period_start ?? (item as any)?.current_period_start;
+      
+      logStep("Period data sources", { 
+        subscriptionPeriodEnd: subscription.current_period_end,
+        itemPeriodEnd: (item as any)?.current_period_end,
+        resolvedPeriodEnd: periodEnd,
+        resolvedPeriodStart: periodStart
+      });
+      
+      if (periodEnd) {
+        subscriptionEnd = new Date(periodEnd * 1000).toISOString();
+      }
+      const subscriptionStart = periodStart 
+        ? new Date(periodStart * 1000).toISOString() 
+        : null;
+      
+      logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd, startDate: subscriptionStart });
+      
+      productId = item.price.product as string;
       logStep("Determined product ID", { productId });
 
       // Sync subscription data to database for reliability
@@ -107,19 +125,23 @@ serve(async (req) => {
           logStep("ERROR: Failed to check existing record", { error: selectError.message });
         }
 
-        const subscriptionData = {
+        const subscriptionData: Record<string, any> = {
           product_id: productId,
-          price_id: subscription.items.data[0].price.id,
+          price_id: item.price.id,
           status: subscription.status,
-          current_period_start: subscriptionStart,
           current_period_end: subscriptionEnd,
           cancel_at_period_end: subscription.cancel_at_period_end || false,
-          amount: subscription.items.data[0].price.unit_amount || null,
-          currency: subscription.items.data[0].price.currency || null,
-          interval: subscription.items.data[0].price.recurring?.interval || null,
-          interval_count: subscription.items.data[0].price.recurring?.interval_count || null,
+          amount: item.price.unit_amount || null,
+          currency: item.price.currency || null,
+          interval: item.price.recurring?.interval || null,
+          interval_count: item.price.recurring?.interval_count || null,
           updated_at: new Date().toISOString(),
         };
+        
+        // Only set current_period_start if we have a valid value
+        if (subscriptionStart) {
+          subscriptionData.current_period_start = subscriptionStart;
+        }
 
         if (existingRecord) {
           // Update existing record
