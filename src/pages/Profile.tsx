@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { format } from 'date-fns';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -527,11 +528,7 @@ const Profile = () => {
 
   const formatDate = (dateString?: string | null) => {
     if (!dateString) return null;
-    return new Date(dateString).toLocaleDateString('ja-JP', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    return format(new Date(dateString), 'yyyy/MM/dd');
   };
 
   const subscriptionPeriod =
@@ -606,11 +603,7 @@ const Profile = () => {
                       : t('userSettings.subscriptionNextBillingLabel')}
                   </span>
                   <span className="text-sm font-medium text-foreground">
-                    {new Date(subscriptionEnd).toLocaleDateString('ja-JP', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
+                    {format(new Date(subscriptionEnd), 'yyyy/MM/dd')}
                   </span>
                 </div>
               )}
@@ -627,18 +620,14 @@ const Profile = () => {
               {subscriptionCancels && subscriptionEnd && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-900">
                   {t('userSettings.subscriptionCancellationNote', {
-                    date: new Date(subscriptionEnd).toLocaleDateString('ja-JP', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })
+                    date: format(new Date(subscriptionEnd), 'yyyy/MM/dd')
                   })}
                 </div>
               )}
 
               {!subscribed && !subLoading && (
                 <p className="text-sm text-muted-foreground text-center py-2">
-                  現在、有効なサブスクリプションはありません
+                  {t('subscription.noActive')}
                 </p>
               )}
             </div>
