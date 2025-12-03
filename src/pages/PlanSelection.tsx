@@ -520,41 +520,41 @@ const PlanSelection = () => {
           {planCards.map(card => {
             const isCurrent = isCurrentPlan(card.type);
             return (
-              <div
-                key={card.type}
-                className={`relative flex h-full flex-col gap-6 rounded-3xl border-2 bg-background/95 p-6 shadow-[0_20px_45px_rgba(101,195,200,0.12)] backdrop-blur transition-all hover:-translate-y-1 hover:shadow-[0_25px_55px_rgba(101,195,200,0.16)] ${
-                  isCurrent 
-                    ? 'border-green-500 bg-green-50/50 dark:bg-green-950/20' 
-                    : 'border-primary/10'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-2 text-left">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-primary">
-                      {getPlanIcon(card.type)}
-                      <span>{card.name}</span>
-                    </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-bold text-foreground">{card.price}</span>
-                      {card.monthlySuffix && (
-                        <span className="text-xs text-muted-foreground">{card.monthlySuffix}</span>
-                      )}
-                    </div>
+              <div key={card.type} className={`relative ${card.badge ? 'pt-4' : ''}`}>
+                {card.badge && (
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 z-10">
+                    <Badge className="rounded-full bg-amber-500 px-3 py-1 text-white shadow-md">
+                      <Flame className="h-3 w-3 mr-1" />
+                      {card.badge}
+                    </Badge>
                   </div>
-                  <div className="flex flex-col gap-2">
+                )}
+                <div
+                  className={`relative flex h-full flex-col gap-6 rounded-3xl border-2 bg-background/95 p-6 shadow-[0_20px_45px_rgba(101,195,200,0.12)] backdrop-blur transition-all hover:-translate-y-1 hover:shadow-[0_25px_55px_rgba(101,195,200,0.16)] ${
+                    isCurrent 
+                      ? 'border-green-500 bg-green-50/50 dark:bg-green-950/20' 
+                      : 'border-primary/10'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-2 text-left">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                        {getPlanIcon(card.type)}
+                        <span>{card.name}</span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-bold text-foreground">{card.price}</span>
+                        {card.monthlySuffix && (
+                          <span className="text-xs text-muted-foreground">{card.monthlySuffix}</span>
+                        )}
+                      </div>
+                    </div>
                     {isCurrent && (
                       <Badge className="rounded-full bg-green-500 px-3 py-1 text-white">
                         {t('planSelection.currentPlanLabel', { plan: '' }).replace(/\s*-\s*$/, '')}
                       </Badge>
                     )}
-                    {card.badge && (
-                      <Badge className="rounded-full bg-amber-500 px-3 py-1 text-white">
-                        <Flame className="h-3 w-3 mr-1" />
-                        {card.badge}
-                      </Badge>
-                    )}
                   </div>
-                </div>
                 <p className="text-sm leading-relaxed text-muted-foreground">
                   {card.description}
                 </p>
@@ -586,6 +586,7 @@ const PlanSelection = () => {
                   </Button>
                 </div>
               </div>
+            </div>
             );
           })}
         </section>
