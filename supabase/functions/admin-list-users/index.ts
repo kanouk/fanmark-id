@@ -49,9 +49,10 @@ function normalizeSearch(value?: string): string | null {
 }
 
 function userStatus(user: User): "active" | "suspended" {
-  if (!user?.ban_duration) return "active";
+  const banDuration = (user as any)?.ban_duration;
+  if (!banDuration) return "active";
   try {
-    const bannedUntil = new Date(user.ban_duration);
+    const bannedUntil = new Date(banDuration);
     return bannedUntil.getTime() > Date.now() ? "suspended" : "active";
   } catch (_err) {
     return "active";
@@ -258,7 +259,7 @@ Deno.serve(async (req) => {
       createdAt: authUser.created_at ?? null,
       lastSignInAt: authUser.last_sign_in_at ?? null,
       status,
-      bannedUntil: authUser.ban_duration ?? null,
+      bannedUntil: (authUser as any).ban_duration ?? null,
       displayName: row.display_name,
       username: row.username,
       planType: row.plan_type,

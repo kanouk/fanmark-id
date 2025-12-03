@@ -393,13 +393,13 @@ serve(async (req) => {
             const totalWeight = pendingEntries.reduce((sum, e) => sum + Number(e.lottery_probability), 0);
             const random = Math.random() * totalWeight;
             
-            let累積 = 0;
+            let cumulative = 0;
             let winnerId = pendingEntries[pendingEntries.length - 1].user_id;
             let winnerEntryId = pendingEntries[pendingEntries.length - 1].id;
             
             for (const entry of pendingEntries) {
-              累積 += Number(entry.lottery_probability);
-              if (random <= 累積) {
+              cumulative += Number(entry.lottery_probability);
+              if (random <= cumulative) {
                 winnerId = entry.user_id;
                 winnerEntryId = entry.id;
                 break;
