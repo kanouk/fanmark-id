@@ -18,7 +18,7 @@ import {
 import { FanmarkSelectionModal } from '@/components/FanmarkSelectionModal';
 import { DowngradeWarningDialog } from '@/components/DowngradeWarningDialog';
 import { supabase } from '@/integrations/supabase/client';
-import { Check, ArrowLeft, Loader2, Sparkle, Crown, Star, ExternalLink } from 'lucide-react';
+import { Check, ArrowLeft, Loader2, Sparkle, Crown, Star, ExternalLink, Flame } from 'lucide-react';
 
 interface PlanCardCopy {
   type: PlanType;
@@ -525,9 +525,7 @@ const PlanSelection = () => {
                 className={`relative flex h-full flex-col gap-6 rounded-3xl border-2 bg-background/95 p-6 shadow-[0_20px_45px_rgba(101,195,200,0.12)] backdrop-blur transition-all hover:-translate-y-1 hover:shadow-[0_25px_55px_rgba(101,195,200,0.16)] ${
                   isCurrent 
                     ? 'border-green-500 bg-green-50/50 dark:bg-green-950/20' 
-                    : card.highlight 
-                      ? 'border-primary/40 bg-primary/5' 
-                      : 'border-primary/10'
+                    : 'border-primary/10'
                 }`}
               >
                 <div className="flex items-start justify-between gap-4">
@@ -549,8 +547,9 @@ const PlanSelection = () => {
                         {t('planSelection.currentPlanLabel', { plan: '' }).replace(/\s*-\s*$/, '')}
                       </Badge>
                     )}
-                    {card.badge && !isCurrent && (
-                      <Badge className="rounded-full bg-primary px-3 py-1 text-primary-foreground">
+                    {card.badge && (
+                      <Badge className="rounded-full bg-amber-500 px-3 py-1 text-white">
+                        <Flame className="h-3 w-3 mr-1" />
                         {card.badge}
                       </Badge>
                     )}
