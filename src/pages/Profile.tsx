@@ -627,7 +627,7 @@ const Profile = () => {
 
               {!subscribed && !subLoading && (
                 <p className="text-sm text-muted-foreground text-center py-2">
-                  {t('subscription.noActive')}
+                  {t('userSettings.subscription.noActive')}
                 </p>
               )}
             </div>
