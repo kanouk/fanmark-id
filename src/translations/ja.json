@@ -463,6 +463,7 @@
     "perMonth": "/ 月",
     "popularBadge": "人気",
     "currentPlanLabel": "現在のプラン: {plan}",
+    "currentPlanBadge": "現在のプラン",
     "backToSettings": "設定に戻る",
     "currentPlanCta": "現在のプラン",
     "choosePlanCta": "{plan} に変更",

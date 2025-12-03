@@ -8,6 +8,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import {
   getPlanLimit,
   formatPlanPrice,
@@ -69,7 +70,7 @@ const PlanSelection = () => {
       name: t(`planSelection.${planType}.name`),
       description: t(`planSelection.${planType}.description`),
       highlight: planType === 'creator',
-      badge: planType === 'creator' ? t('planSelection.popularBadge') : undefined,
+      badge: undefined,
       price: formatPlanPrice(planType),
       monthlySuffix: planType === 'free' ? undefined : t('planSelection.perMonth'),
       features: [
@@ -488,6 +489,9 @@ const PlanSelection = () => {
     );
   }
 
+  const headerCurrentBadgeClass = 'inline-flex items-center gap-2 rounded-full border border-primary/25 bg-gradient-to-r from-primary/10 via-white to-primary/10 px-4 py-1.5 text-primary shadow-sm';
+  const currentCardBadgeClass = 'inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-emerald-100 px-3 py-1 text-emerald-700 shadow-sm';
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 pb-24">
       <div className="mx-auto max-w-6xl px-4 pt-10">
@@ -505,7 +509,7 @@ const PlanSelection = () => {
         </div>
 
         <header className="space-y-4 text-center">
-          <Badge className="mx-auto w-fit rounded-full bg-primary/10 px-4 py-1 text-primary">
+          <Badge className={`mx-auto w-fit ${headerCurrentBadgeClass}`}>
             {t('planSelection.currentPlanLabel', { plan: t(`planSelection.${profile.plan_type}.name`) })}
           </Badge>
           <h1 className="text-3xl font-semibold text-foreground md:text-4xl">
@@ -520,12 +524,14 @@ const PlanSelection = () => {
           {planCards.map(card => {
             const isCurrent = isCurrentPlan(card.type);
             return (
-              <div key={card.type} className={`relative ${card.badge ? 'pt-4' : ''}`}>
-                {card.badge && (
-                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 z-10">
-                    <Badge className="rounded-full bg-amber-500 px-3 py-1 text-white shadow-md">
-                      <Flame className="h-3 w-3 mr-1" />
-                      {card.badge}
+              <div key={card.type} className="relative">
+                {isCurrent && (
+                  <div className="absolute right-4 top-4 z-10 flex flex-col items-end gap-2">
+                    <Badge className={currentCardBadgeClass}>
+                      <Check className="h-4 w-4" aria-hidden="true" />
+                      <span className="text-xs font-semibold tracking-wide uppercase">
+                        {t('planSelection.currentPlanBadge')}
+                      </span>
                     </Badge>
                   </div>
                 )}
@@ -537,7 +543,7 @@ const PlanSelection = () => {
                   }`}
                 >
                   <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-2 text-left">
+                <div className="space-y-2 text-left pt-2">
                       <div className="flex items-center gap-2 text-sm font-semibold text-primary">
                         {getPlanIcon(card.type)}
                         <span>{card.name}</span>
@@ -549,11 +555,6 @@ const PlanSelection = () => {
                         )}
                       </div>
                     </div>
-                    {isCurrent && (
-                      <Badge className="rounded-full bg-green-500 px-3 py-1 text-white">
-                        {t('planSelection.currentPlanLabel', { plan: '' }).replace(/\s*-\s*$/, '')}
-                      </Badge>
-                    )}
                   </div>
                 <p className="text-sm leading-relaxed text-muted-foreground">
                   {card.description}
@@ -568,7 +569,11 @@ const PlanSelection = () => {
                 </ul>
                 <div className="mt-auto pt-2">
                   <Button
-                    className="w-full rounded-full"
+                    className={cn(
+                      'w-full rounded-full',
+                      isCurrent &&
+                        'border border-emerald-200 bg-emerald-50 text-emerald-700 shadow-[0_8px_20px_rgba(16,185,129,0.16)] hover:bg-emerald-50 disabled:opacity-100 disabled:cursor-default'
+                    )}
                     variant={isCurrent ? 'outline' : 'default'}
                     disabled={processingPlan !== null || isCurrent}
                     onClick={() => handlePlanChange(card.type)}

@@ -464,6 +464,7 @@
     "perMonth": "/ 월",
     "popularBadge": "인기",
     "currentPlanLabel": "현재 요금제: {plan}",
+    "currentPlanBadge": "현재 요금제",
     "backToSettings": "설정으로 돌아가기",
     "currentPlanCta": "현재 요금제",
     "choosePlanCta": "{plan}으로 변경",

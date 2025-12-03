@@ -464,6 +464,7 @@
     "perMonth": "/ month",
     "popularBadge": "Most popular",
     "currentPlanLabel": "Current plan: {plan}",
+    "currentPlanBadge": "Current plan",
     "backToSettings": "Back to settings",
     "currentPlanCta": "Current plan",
     "choosePlanCta": "Switch to {plan}",

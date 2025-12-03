@@ -464,6 +464,7 @@
     "perMonth": "/ bulan",
     "popularBadge": "Paling populer",
     "currentPlanLabel": "Paket saat ini: {plan}",
+    "currentPlanBadge": "Paket saat ini",
     "backToSettings": "Kembali ke pengaturan",
     "currentPlanCta": "Paket saat ini",
     "choosePlanCta": "Alih ke {plan}",
