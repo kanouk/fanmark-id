@@ -73,63 +73,63 @@ Deno.serve(async (req) => {
     };
 
     // Delete config tables first (they reference licenses)
-    const { count: basicConfigCount } = await supabaseClient
+    const { data: basicConfigData } = await supabaseClient
       .from('fanmark_basic_configs')
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000')
-      .select('*', { count: 'exact', head: true });
-    deletedCounts.fanmark_basic_configs = basicConfigCount || 0;
+      .select();
+    deletedCounts.fanmark_basic_configs = basicConfigData?.length || 0;
 
-    const { count: redirectConfigCount } = await supabaseClient
+    const { data: redirectConfigData } = await supabaseClient
       .from('fanmark_redirect_configs')
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000')
-      .select('*', { count: 'exact', head: true });
-    deletedCounts.fanmark_redirect_configs = redirectConfigCount || 0;
+      .select();
+    deletedCounts.fanmark_redirect_configs = redirectConfigData?.length || 0;
 
-    const { count: messageboardConfigCount } = await supabaseClient
+    const { data: messageboardConfigData } = await supabaseClient
       .from('fanmark_messageboard_configs')
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000')
-      .select('*', { count: 'exact', head: true });
-    deletedCounts.fanmark_messageboard_configs = messageboardConfigCount || 0;
+      .select();
+    deletedCounts.fanmark_messageboard_configs = messageboardConfigData?.length || 0;
 
-    const { count: passwordConfigCount } = await supabaseClient
+    const { data: passwordConfigData } = await supabaseClient
       .from('fanmark_password_configs')
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000')
-      .select('*', { count: 'exact', head: true });
-    deletedCounts.fanmark_password_configs = passwordConfigCount || 0;
+      .select();
+    deletedCounts.fanmark_password_configs = passwordConfigData?.length || 0;
 
-    const { count: profilesCount } = await supabaseClient
+    const { data: profilesData } = await supabaseClient
       .from('fanmark_profiles')
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000')
-      .select('*', { count: 'exact', head: true });
-    deletedCounts.fanmark_profiles = profilesCount || 0;
+      .select();
+    deletedCounts.fanmark_profiles = profilesData?.length || 0;
 
-    const { count: favoritesCount } = await supabaseClient
+    const { data: favoritesData } = await supabaseClient
       .from('fanmark_favorites')
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000')
-      .select('*', { count: 'exact', head: true });
-    deletedCounts.fanmark_favorites = favoritesCount || 0;
+      .select();
+    deletedCounts.fanmark_favorites = favoritesData?.length || 0;
 
     // Delete licenses (they reference fanmarks)
-    const { count: licensesCount } = await supabaseClient
+    const { data: licensesData } = await supabaseClient
       .from('fanmark_licenses')
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000')
-      .select('*', { count: 'exact', head: true });
-    deletedCounts.fanmark_licenses = licensesCount || 0;
+      .select();
+    deletedCounts.fanmark_licenses = licensesData?.length || 0;
 
     // Finally delete fanmarks
-    const { count: fanmarksCount } = await supabaseClient
+    const { data: fanmarksData } = await supabaseClient
       .from('fanmarks')
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000')
-      .select('*', { count: 'exact', head: true });
-    deletedCounts.fanmarks = fanmarksCount || 0;
+      .select();
+    deletedCounts.fanmarks = fanmarksData?.length || 0;
 
     const totalDeleted = Object.values(deletedCounts).reduce((a, b) => a + b, 0);
 
@@ -159,7 +159,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error in reset-fanmark-data:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

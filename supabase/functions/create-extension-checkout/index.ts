@@ -54,12 +54,13 @@ serve(async (req) => {
     }
     logStep("Request validated", { fanmark_id, months });
 
-    // Verify license ownership
+    // Verify license ownership (must be active or grace status)
     const { data: licenseData, error: licenseError } = await supabaseClient
       .from("fanmark_licenses")
       .select("id, fanmark_id, status, license_end, fanmarks(tier_level)")
       .eq("fanmark_id", fanmark_id)
       .eq("user_id", user.id)
+      .in("status", ["active", "grace"])
       .single();
 
     if (licenseError || !licenseData) {

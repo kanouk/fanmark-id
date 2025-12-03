@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
     },
   });
 
-  if (linkError || !linkData?.action_link) {
+  if (linkError || !linkData?.properties?.action_link) {
     console.error("Failed to generate password reset link:", linkError);
     return new Response(
       JSON.stringify({ error: "Failed to generate password reset link" }),
@@ -88,8 +88,8 @@ Deno.serve(async (req) => {
     JSON.stringify({
       success: true,
       email,
-      actionLink: linkData.action_link,
-      hashedToken: linkData.hashed_token ?? null,
+      actionLink: linkData.properties.action_link,
+      hashedToken: linkData.properties.hashed_token ?? null,
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } },
   );

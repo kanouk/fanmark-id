@@ -172,13 +172,26 @@ serve(async (req) => {
       console.warn('[apply-fanmark-lottery] Error counting entries:', countError);
     }
 
+    // Check entry exists
+    if (!entry) {
+      console.error('[apply-fanmark-lottery] Entry is undefined after insert/update');
+      return new Response(JSON.stringify({ error: 'Failed to create lottery entry' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Get fanmark name from array
+    const fanmarkInfo = Array.isArray(license.fanmarks) ? license.fanmarks[0] : license.fanmarks;
+    const fanmarkName = fanmarkInfo?.user_input_fanmark ?? '';
+
     // Create notification event
     const { error: notificationError } = await supabase.rpc('create_notification_event', {
       event_type_param: 'lottery_application_submitted',
       payload_param: {
         user_id: authData.user.id,
         fanmark_id,
-        fanmark_name: license.fanmarks.user_input_fanmark,
+        fanmark_name: fanmarkName,
         entry_id: entry.id,
         grace_expires_at: license.grace_expires_at,
       },

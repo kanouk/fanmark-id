@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
     userId,
     {
       reason: reason ?? null,
-      bannedUntil: data?.user?.ban_duration ?? null,
+      bannedUntil: (data?.user as any)?.ban_duration ?? null,
     },
   );
 
@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
       success: true,
       userId,
       suspend,
-      bannedUntil: data?.user?.ban_duration ?? null,
+      bannedUntil: (data?.user as any)?.ban_duration ?? null,
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } },
   );

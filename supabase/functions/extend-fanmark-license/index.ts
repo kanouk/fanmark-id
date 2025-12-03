@@ -5,6 +5,14 @@ import {
   roundUpToNextUtcMidnight,
 } from "../_shared/return-helpers.ts";
 
+interface FanmarkInfo {
+  id: string;
+  user_input_fanmark: string;
+  short_id: string;
+  status: string;
+  tier_level: number | null;
+}
+
 interface LicenseWithFanmark {
   id: string;
   fanmark_id: string;
@@ -15,13 +23,7 @@ interface LicenseWithFanmark {
   is_returned: boolean | null;
   excluded_at: string | null;
   excluded_from_plan: string | null;
-  fanmarks: {
-    id: string;
-    user_input_fanmark: string;
-    short_id: string;
-    status: string;
-    tier_level: number | null;
-  } | null;
+  fanmarks: FanmarkInfo[] | null;
 }
 
 interface ExtendRequestBody {
@@ -122,7 +124,7 @@ serve(async (req) => {
       .eq('fanmark_id', fanmarkId)
       .eq('user_id', authData.user.id)
       .in('status', ['active', 'grace'])
-      .order('license_end', { ascending: false, nullsLast: true })
+      .order('license_end', { ascending: false })
       .limit(1)
       .maybeSingle();
 
@@ -141,16 +143,17 @@ serve(async (req) => {
       });
     }
 
-    const licenseRecord: LicenseWithFanmark = license as LicenseWithFanmark;
+    const licenseRecord: LicenseWithFanmark = license as unknown as LicenseWithFanmark;
+    const fanmarkData = licenseRecord.fanmarks?.[0] ?? null;
 
-    if (licenseRecord.fanmarks?.status !== 'active') {
+    if (fanmarkData?.status !== 'active') {
       return new Response(JSON.stringify({ error: 'Fanmark is not active' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const tierLevel = licenseRecord.fanmarks?.tier_level ?? null;
+    const tierLevel = fanmarkData?.tier_level ?? null;
     if (!tierLevel) {
       return new Response(JSON.stringify({ error: 'Tier information not found for this fanmark' }), {
         status: 400,
@@ -307,7 +310,7 @@ serve(async (req) => {
             payload_param: {
               user_id: entry.user_id,
               fanmark_id: licenseRecord.fanmark_id,
-              fanmark_name: licenseRecord.fanmarks?.user_input_fanmark,
+              fanmark_name: fanmarkData?.user_input_fanmark,
               extended_by_user_id: authData.user.id,
             },
             source_param: 'edge_function',

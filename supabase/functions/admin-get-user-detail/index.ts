@@ -69,9 +69,10 @@ interface UserDetailResponse {
 }
 
 function getStatus(user: User): "active" | "suspended" {
-  if (!user?.ban_duration) return "active";
+  const banDuration = (user as any)?.ban_duration;
+  if (!banDuration) return "active";
   try {
-    const bannedUntil = new Date(user.ban_duration);
+    const bannedUntil = new Date(banDuration);
     return bannedUntil.getTime() > Date.now() ? "suspended" : "active";
   } catch (_err) {
     return "active";
@@ -180,6 +181,9 @@ Deno.serve(async (req) => {
     else if (row.status === "grace") summary.grace += 1;
     else if (row.status === "expired") summary.expired += 1;
 
+    const fanmarksData = row.fanmarks as any;
+    const basicConfigsData = row.fanmark_basic_configs as any;
+    
     recentFanmarks.push({
       licenseId: row.id,
       status: row.status,
@@ -189,9 +193,9 @@ Deno.serve(async (req) => {
       excludedAt: row.excluded_at ?? null,
       excludedFromPlan: row.excluded_from_plan ?? null,
       fanmarkId: row.fanmark_id,
-      emoji: Array.isArray(row.fanmarks) ? row.fanmarks[0]?.user_input_fanmark ?? "" : row.fanmarks?.user_input_fanmark ?? "",
-      fanmarkName: Array.isArray(row.fanmark_basic_configs) ? row.fanmark_basic_configs[0]?.fanmark_name ?? null : row.fanmark_basic_configs?.fanmark_name ?? null,
-      accessType: Array.isArray(row.fanmark_basic_configs) ? row.fanmark_basic_configs[0]?.access_type ?? null : row.fanmark_basic_configs?.access_type ?? null,
+      emoji: Array.isArray(fanmarksData) ? fanmarksData[0]?.user_input_fanmark ?? "" : fanmarksData?.user_input_fanmark ?? "",
+      fanmarkName: Array.isArray(basicConfigsData) ? basicConfigsData[0]?.fanmark_name ?? null : basicConfigsData?.fanmark_name ?? null,
+      accessType: Array.isArray(basicConfigsData) ? basicConfigsData[0]?.access_type ?? null : basicConfigsData?.access_type ?? null,
     });
   }
 
@@ -224,7 +228,7 @@ Deno.serve(async (req) => {
       lastSignInAt: authUser.last_sign_in_at ?? null,
       phone: authUser.phone ?? null,
       status: getStatus(authUser),
-      bannedUntil: authUser.ban_duration ?? null,
+      bannedUntil: (authUser as any).ban_duration ?? null,
       factors: (authUser.factors ?? []).map((factor) => ({
         type: factor.factor_type,
         createdAt: factor.created_at ?? null,
