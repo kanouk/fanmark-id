@@ -219,10 +219,12 @@ export const ExtendLicenseDialog = ({
           </div>
 
           {!isPerpetual && activePlan && (
-            <Alert className="border-primary/20 bg-primary/5">
-              <Info className="h-4 w-4 text-primary" />
-              <AlertDescription className="text-sm space-y-1">
-                <p>{t('dashboard.extendDialog.stripeRedirectNotice')}</p>
+            <Alert className="mt-2 flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 shadow-sm">
+              <span className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                <Info className="h-4 w-4 text-primary" aria-hidden="true" />
+              </span>
+              <AlertDescription className="text-sm leading-relaxed space-y-1">
+                <p className="font-medium text-foreground">{t('dashboard.extendDialog.stripeRedirectNotice')}</p>
                 <p className="text-muted-foreground">{t('dashboard.extendDialog.paymentNotice')}</p>
               </AlertDescription>
             </Alert>

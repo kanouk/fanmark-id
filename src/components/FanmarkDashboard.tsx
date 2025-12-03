@@ -40,19 +40,6 @@ const LICENSE_STATUS_WEIGHT: Record<LicenseTimingResult['status'], number> = {
 
 const ACTIVE_TAB_STORAGE_KEY = 'fanmark-dashboard:active-tab';
 
-const formatCountdown = (target: Date | string | null) => {
-  if (!target) return '00:00:00';
-  const targetDate = target instanceof Date ? target : parseDateString(target);
-  if (!targetDate) return '00:00:00';
-  const diffMs = targetDate.getTime() - Date.now();
-  if (diffMs <= 0) return '00:00:00';
-  const totalSeconds = Math.floor(diffMs / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-};
-
 interface Fanmark {
   id: string;
   user_input_fanmark: string;
@@ -893,7 +880,7 @@ export const FanmarkDashboard = () => {
                                 const daysRemaining = timing.remainingWholeDays;
                                 const isExpiringSoon = msRemaining !== null && msRemaining > 0 && msRemaining <= 3 * 24 * 60 * 60 * 1000;
                                 const timeDisplayClass = `font-medium whitespace-nowrap text-sm ${isExpiringSoon ? 'text-destructive' : 'text-foreground'}`;
-                                const canNavigateToSettings = timing.status === 'active' || timing.status === 'grace';
+                                const canNavigateToSettings = timing.status === 'active';
                                 const handleRowNavigation = () => {
                                   if (!canNavigateToSettings || isReturned(fanmark)) return;
                                   navigate(`/fanmarks/${fanmark.id}/settings`);
@@ -918,6 +905,9 @@ export const FanmarkDashboard = () => {
                                   : getTierBadgeStyle(fanmark.tier_level);
                                 const primaryTextClass = isInactive ? 'text-muted-foreground/70' : 'text-foreground';
                                 const countdownClass = isInactive ? 'font-medium whitespace-nowrap text-sm text-muted-foreground/70' : timeDisplayClass;
+                                const graceCountdownClass = isInactive
+                                  ? 'font-medium whitespace-nowrap text-sm text-muted-foreground/70'
+                                  : 'font-medium whitespace-nowrap text-sm text-destructive font-mono tabular-nums';
 
                                 return (
                                   <tr
@@ -992,9 +982,10 @@ export const FanmarkDashboard = () => {
                                         {(timing.status === 'grace' || timing.status === 'grace-return') && timing.graceExpiresDate ? (
                                           <Tooltip>
                                             <TooltipTrigger asChild>
-                                              <span className={`${countdownClass} ${isInactive ? '' : 'text-destructive underline decoration-dotted underline-offset-4'}`}>
-                                                {t('dashboard.countdown', { time: formatCountdown(timing.graceExpiresDate) })}
-                                              </span>
+                                              <LicenseCountdown
+                                                expirationDate={timing.graceExpiresDate}
+                                                className={graceCountdownClass}
+                                              />
                                             </TooltipTrigger>
                                             <TooltipContent className="rounded-2xl border border-rose-200 bg-rose-100 px-4 py-2 text-[0.7rem] font-medium text-rose-900 shadow-lg">
                                               {t('dashboard.extendHint')}
@@ -1157,6 +1148,9 @@ export const FanmarkDashboard = () => {
                         const mobileCountdownClass = isInactiveCard
                           ? 'font-medium whitespace-nowrap text-sm text-muted-foreground/70'
                           : mobileTimeDisplayClass;
+                        const mobileGraceCountdownClass = isInactiveCard
+                          ? 'font-medium whitespace-nowrap text-sm text-muted-foreground/70'
+                          : 'font-medium whitespace-nowrap text-sm text-destructive font-mono tabular-nums';
 
                          return (
                           <Card key={cardKey} className={`overflow-visible rounded-3xl border border-primary/10 transition-colors ${cardVisualState}`}>
@@ -1246,9 +1240,10 @@ export const FanmarkDashboard = () => {
                                           {(timing.status === 'grace' || timing.status === 'grace-return') && timing.graceExpiresDate ? (
                                             <Tooltip>
                                               <TooltipTrigger asChild>
-                                                <span className={`${mobileCountdownClass} ${isInactiveCard ? '' : 'text-destructive underline decoration-dotted underline-offset-4'}`}>
-                                                  {t('dashboard.countdown', { time: formatCountdown(timing.graceExpiresDate) })}
-                                                </span>
+                                                <LicenseCountdown
+                                                  expirationDate={timing.graceExpiresDate}
+                                                  className={mobileGraceCountdownClass}
+                                                />
                                               </TooltipTrigger>
                                               <TooltipContent className="rounded-2xl border border-rose-200 bg-rose-100 px-4 py-2 text-[0.7rem] font-medium text-rose-900 shadow-lg">
                                                 {t('dashboard.extendHint')}
