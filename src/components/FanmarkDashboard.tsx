@@ -15,7 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy, Undo2, QrCode, MoreVertical, Heart } from 'lucide-react';
-import { FiTarget, FiLayers, FiCompass, FiStar, FiCheckCircle, FiMoon, FiUser, FiLink, FiFileText, FiClock } from 'react-icons/fi';
+import { FiTarget, FiLayers, FiCompass, FiStar, FiCheckCircle, FiMoon, FiUser, FiLink, FiFileText, FiClock, FiInbox } from 'react-icons/fi';
 import { FanmarkAcquisition } from './FanmarkAcquisition';
 import { ExtendLicenseDialog, type ExtendLicenseTarget, type ExtendPlanOption } from './ExtendLicenseDialog';
 import { FanmarkReturnLoading } from './FanmarkReturnLoading';
@@ -804,51 +804,42 @@ export const FanmarkDashboard = () => {
 
               <CardContent className="space-y-12 px-6 pb-6">
                 {filteredFanmarks.length === 0 ? (
-                  <div className="py-14 text-center">
-                    <div className="space-y-6">
-                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
-                        <FiLayers className="h-8 w-8" />
-                      </div>
-                      <h3 className="text-xl font-semibold text-foreground">
-                        {t('dashboard.noFanmarksYet')}
-                      </h3>
-                      <p className="mx-auto max-w-md text-muted-foreground">
-                        {t('dashboard.getStarted')}
-                      </p>
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            size="lg"
-                            className="mt-6 gap-2 rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105"
-                          >
-                            <FiStar className="h-5 w-5" />
-                            {t('dashboard.createFirstFanma')}
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                          <DialogHeader>
-                            <DialogTitle>{t('dashboard.createFirstFanma')}</DialogTitle>
-                            <DialogDescription>
-                              {t('dashboard.createFanmarkDescription')}
-                            </DialogDescription>
-                          </DialogHeader>
-                <FanmarkAcquisition
-                  prefilledEmoji={prefilledEmoji}
-                  fanmarkLimit={isUnlimited ? -1 : fanmarkLimit}
-                  currentCount={activeFanmarks}
-                  rememberSearch
-                  scrollToSearch={shouldScrollToSearch}
-                  onSearchScrolled={() => setShouldScrollToSearch(false)}
-                  onObtain={() => {
-                    setPrefilledEmoji(undefined);
-                    fetchFanmarks();
-                    setActiveTab('my-fanmarks');
-                  }}
-                  onRequireAuth={handleRequireAuth}
-                />
-                        </DialogContent>
-                      </Dialog>
-                    </div>
+                  <div className="py-14 px-4 text-center space-y-5">
+                    <p className="text-base font-medium text-muted-foreground">
+                      {t('dashboard.noFanmarksYet')}
+                    </p>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          size="default"
+                          className="gap-2 rounded-full bg-primary text-primary-foreground shadow-md hover:shadow-lg transition-all duration-200 px-5"
+                        >
+                          {t('dashboard.createFirstFanma')}
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle>{t('dashboard.createFirstFanma')}</DialogTitle>
+                          <DialogDescription>
+                            {t('dashboard.createFanmarkDescription')}
+                          </DialogDescription>
+                        </DialogHeader>
+                        <FanmarkAcquisition
+                          prefilledEmoji={prefilledEmoji}
+                          fanmarkLimit={isUnlimited ? -1 : fanmarkLimit}
+                          currentCount={activeFanmarks}
+                          rememberSearch
+                          scrollToSearch={shouldScrollToSearch}
+                          onSearchScrolled={() => setShouldScrollToSearch(false)}
+                          onObtain={() => {
+                            setPrefilledEmoji(undefined);
+                            fetchFanmarks();
+                            setActiveTab('my-fanmarks');
+                          }}
+                          onRequireAuth={handleRequireAuth}
+                        />
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 ) : (
                   <div className="space-y-6">

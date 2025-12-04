@@ -274,6 +274,7 @@
     "fanmarkNotFound": "fanmark not found",
     "fanmarkNotFoundDescription": "This fanmark does not exist or is not available.",
     "fanmarkNotAcquiredDescription": "This fanmark has not been claimed yet.",
+    "acquireThisFanmark": "Claim this fanmark",
     "inactiveTitle": "This fanmark is getting ready",
     "inactiveSubtitle": "Activate it from your dashboard to bring the fanmark experience to life.",
     "invalidAccessType": "Invalid Access Type",

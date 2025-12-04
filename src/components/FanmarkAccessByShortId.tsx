@@ -16,6 +16,7 @@ import { AppHeader } from '@/components/layout/AppHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { createFanmarkBadgeStyle } from '@/lib/fanmarkBadge';
 import { useAuth } from '@/hooks/useAuth';
+import { FiCompass } from 'react-icons/fi';
 
 interface FanmarkData {
   id: string;
@@ -181,6 +182,7 @@ export const FanmarkAccessByShortId = () => {
     () => segmentEmojiSequence(displayFanmark),
     [displayFanmark]
   );
+  const isUnclaimed = useMemo(() => !fanmark?.license_id, [fanmark?.license_id]);
   const compactBadgeStyle = useMemo(() => {
     const count = Math.max(segmentedFanmark.length, 1);
     const emojiWidthRem = 2.1; // 絵文字実寸よりやや大きめに見積もる
@@ -223,6 +225,75 @@ export const FanmarkAccessByShortId = () => {
         fanmark={fanmark}
         onSuccess={handlePasswordSuccess}
       />
+    );
+  }
+
+  // Unclaimed / ownerless fanmark
+  if (isUnclaimed) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/40 flex flex-col">
+        <AppHeader
+          className="sticky top-0 z-50 border-border/40 bg-background/80 backdrop-blur-xl"
+          showNotifications={false}
+          showLanguageToggle
+        />
+
+        <main className="container mx-auto flex-1 px-4 py-10 md:py-16 flex items-center justify-center">
+          <Card className="w-full max-w-xl overflow-hidden rounded-3xl border border-primary/20 bg-background/95 backdrop-blur shadow-[0_25px_60px_rgba(101,195,200,0.18)]">
+            <CardContent className="p-10 text-center space-y-8">
+              <div
+                className="mx-auto inline-flex items-center justify-center bg-gradient-to-br from-primary/15 via-accent/10 to-blue-100 text-primary shadow-[0_20px_45px_rgba(101,195,200,0.25)]"
+                style={compactBadgeStyle}
+              >
+                <div className="flex items-center justify-center gap-1.5 leading-none">
+                  {segmentedFanmark.map((segment, index) => (
+                    <span key={`${segment}-${index}`} className="inline-flex min-w-[1.15rem] justify-center">
+                      {segment}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <h1 className="text-xl font-semibold text-foreground">
+                  {t('common.fanmarkNotAcquiredDescription')}
+                </h1>
+              </div>
+              <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+                <Button
+                  onClick={() => {
+                    try {
+                      localStorage.setItem('fanmark.prefill', displayFanmark);
+                    } catch (error) {
+                      console.warn('Failed to persist fanmark prefill:', error);
+                    }
+                    navigate('/', { state: { prefillFanmark: displayFanmark, scrollToSearch: true } });
+                  }}
+                  className="px-5 min-w-[10rem]"
+                  size="default"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  {t('common.acquireThisFanmark')}
+                </Button>
+                {fanmark.short_id && (
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 rounded-full border border-primary/15 bg-background/80 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                    aria-label={t('common.viewFanmarkDetails')}
+                  >
+                    <Link to={`/f/${fanmark.short_id}`}>
+                      <Sparkles className="h-5 w-5" />
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+
+        <SiteFooter className="border-border/40 bg-background/80 backdrop-blur" />
+      </div>
     );
   }
 

@@ -6,10 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ExternalLink, Sparkles } from 'lucide-react';
 import { useFavoriteFanmarks } from '@/hooks/useFavoriteFanmarks';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
 import { segmentEmojiSequence } from '@/lib/emojiConversion';
+import { FiHeart } from 'react-icons/fi';
 
 const ACCESS_TYPE_LABEL_KEY: Record<string, string> = {
   profile: 'dashboard.accessTypes.profile',
@@ -103,20 +105,23 @@ const getAccessTypeLabel = (t: (key: string, ...args: any[]) => string, accessTy
             </div>
           ) : favorites.length === 0 ? (
             <div className="mt-12">
-              <Card className="rounded-3xl border border-primary/20 bg-background/80 shadow-[0_20px_45px_rgba(101,195,200,0.14)] backdrop-blur">
-                <CardContent className="space-y-4 px-6 py-12 text-center">
-                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary text-3xl">
-                    ✨
+              <Card className="rounded-3xl border border-primary/15 bg-background/90 shadow-[0_20px_45px_rgba(101,195,200,0.14)] backdrop-blur">
+                <CardContent className="px-6 py-12 text-center space-y-6">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <FiHeart className="h-6 w-6" />
                   </div>
-                  <h2 className="text-2xl font-semibold text-foreground">
+                  <div className="space-y-2">
+                    <h2 className="text-xl font-semibold text-foreground">
+                      {t('favorites.title')}
+                    </h2>
+                  </div>
+                  <p className="text-sm font-medium text-muted-foreground">
                     {t('favorites.emptyTitle')}
-                  </h2>
-                  <p className="mx-auto max-w-md text-sm text-muted-foreground">
-                    {t('favorites.emptyDescription')}
                   </p>
                   <Button
                     onClick={() => (window.location.href = '/')}
-                    className="mt-4 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl"
+                    className="mx-auto rounded-full bg-primary text-primary-foreground shadow-md hover:shadow-lg px-5"
+                    size="default"
                   >
                     {t('favorites.exploreFanmarks')}
                   </Button>
@@ -154,13 +159,24 @@ const getAccessTypeLabel = (t: (key: string, ...args: any[]) => string, accessTy
                 })();
 
                 const emojiSegments = segmentEmojiSequence(favorite.fanmark);
-                const ownerLabel = favorite.fanmarkId
-                  ? favorite.currentOwnerDisplayName ||
-                    (favorite.currentOwnerUsername ? `@${favorite.currentOwnerUsername}` : t('favorites.ownerUnknown'))
-                  : t('favorites.ownerNotAssigned');
+                const currentStatus = favorite.currentLicenseStatus?.toLowerCase?.() ?? null;
+                const availability = favorite.availabilityStatus?.toLowerCase?.() ?? null;
                 const isRegistered = Boolean(favorite.fanmarkId);
+                const isReturnedOrUnclaimed =
+                  !isRegistered ||
+                  statusInfo.type === 'available' ||
+                  availability === 'unclaimed' ||
+                  currentStatus === 'expired' ||
+                  currentStatus === 'returned';
+
+                const ownerLabel = isReturnedOrUnclaimed
+                  ? t('favorites.ownerNotAssigned')
+                  : favorite.currentOwnerDisplayName ||
+                    (favorite.currentOwnerUsername ? `@${favorite.currentOwnerUsername}` : t('favorites.ownerUnknown'));
+
                 const accessLabel = getAccessTypeLabel(t, favorite.accessType, isRegistered);
                 const isAcquirable = statusInfo.type === 'available';
+                const detailDisabled = !favorite.shortId || !favorite.fanmarkId;
 
                 return (
                   <Card
@@ -193,32 +209,48 @@ const getAccessTypeLabel = (t: (key: string, ...args: any[]) => string, accessTy
                         </div>
                       </div>
 
-                      {favorite.targetUrl && (
-                        <div className="rounded-2xl border border-primary/10 bg-primary/5 px-4 py-3 text-xs text-muted-foreground break-all">
-                          <span className="font-medium text-foreground block text-sm">
-                            {t('favorites.link')}
-                          </span>
-                          <span>{favorite.targetUrl}</span>
-                        </div>
-                      )}
-
-                      {isAcquirable && (
-                        <div className="flex justify-end pt-2">
-                          <Button
-                            className="rounded-full px-5"
-                            onClick={() => {
-                              try {
-                                localStorage.setItem('fanmark.prefill', favorite.fanmark);
-                              } catch (error) {
-                                console.warn('Failed to persist fanmark prefill:', error);
-                              }
-                              navigate('/', { state: { prefillFanmark: favorite.fanmark, scrollToSearch: true } });
-                            }}
-                          >
-                            {t('favorites.acquireButton')}
-                          </Button>
-                        </div>
-                      )}
+                      <div className="flex items-center justify-end gap-2 pt-2">
+                        <Button
+                          className="rounded-full px-5"
+                          disabled={!isAcquirable}
+                          onClick={() => {
+                            try {
+                              localStorage.setItem('fanmark.prefill', favorite.fanmark);
+                            } catch (error) {
+                              console.warn('Failed to persist fanmark prefill:', error);
+                            }
+                            navigate('/', { state: { prefillFanmark: favorite.fanmark, scrollToSearch: true } });
+                          }}
+                        >
+                          {t('favorites.acquireButton')}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-10 w-10 rounded-full border border-primary/15 bg-background/80 text-muted-foreground hover:bg-primary/10 hover:text-primary disabled:opacity-50"
+                          onClick={() => {
+                            if (detailDisabled || !favorite.shortId) return;
+                            navigate(`/f/${favorite.shortId}`);
+                          }}
+                          disabled={detailDisabled}
+                          aria-label={t('favorites.viewDetails')}
+                        >
+                          <Sparkles className="h-5 w-5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-10 w-10 rounded-full border border-primary/15 bg-background/80 text-muted-foreground hover:bg-primary/10 hover:text-primary disabled:opacity-50"
+                          onClick={() => {
+                            if (!favorite.shortId) return;
+                            navigate(`/a/${favorite.shortId}`);
+                          }}
+                          disabled={!favorite.shortId}
+                          aria-label={t('dashboard.visitFanmarkButton')}
+                        >
+                          <ExternalLink className="h-5 w-5" />
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 );

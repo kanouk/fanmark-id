@@ -274,6 +274,7 @@
     "fanmarkNotFound": "fanmark tidak ditemukan",
     "fanmarkNotFoundDescription": "Fanmark ini tidak ada atau tidak tersedia.",
     "fanmarkNotAcquiredDescription": "Fanmark ini belum diklaim.",
+    "acquireThisFanmark": "Klaim fanmark ini",
     "inactiveTitle": "Fanmark ini sedang disiapkan",
     "inactiveSubtitle": "Aktifkan dari dasbor Anda untuk membawa pengalaman fanmark menjadi hidup.",
     "invalidAccessType": "Tipe Akses Tidak Valid",
