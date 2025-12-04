@@ -650,11 +650,15 @@ const PlanSelection = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-fade-in">
           <div className="rounded-3xl border border-primary/20 bg-background/95 px-8 py-12 shadow-[0_25px_60px_rgba(101,195,200,0.3)] animate-scale-in">
             <div className="flex flex-col items-center gap-6">
-              <div className="relative">
-                <Loader2 className="h-16 w-16 animate-spin text-primary" />
-                <div className="absolute inset-0 animate-pulse">
-                  <ExternalLink className="h-16 w-16 text-primary/20" />
-                </div>
+              <div className="relative h-20 w-20 flex items-center justify-center">
+                {/* 外側の光るリング */}
+                <div className="absolute inset-0 rounded-full border-2 border-primary/20 animate-pulse" />
+                <div
+                  className="absolute inset-1 rounded-full border-2 border-transparent border-t-primary border-r-primary animate-spin"
+                  style={{ animationDuration: '1s' }}
+                />
+                {/* 中央のアイコン */}
+                <ExternalLink className="h-8 w-8 text-primary" />
               </div>
               <div className="text-center space-y-2">
                 <h3 className="text-xl font-semibold text-foreground">
