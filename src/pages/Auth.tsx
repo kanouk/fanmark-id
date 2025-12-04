@@ -12,7 +12,7 @@ import { PasswordRequirement } from '@/components/PasswordRequirement';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Heart, Users, Mail, Sparkle, ArrowLeft, Lock, Check, X } from 'lucide-react';
+import { Heart, Users, Mail, Sparkle, ArrowLeft, Lock, Check, X, CheckCircle2, XCircle } from 'lucide-react';
 import { FaGoogle, FaApple, FaDiscord, FaGithub } from 'react-icons/fa';
 import { AuthFormData, AuthState } from '@/types/auth';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
@@ -254,9 +254,9 @@ const InputStatusIcon = ({ status, className }: { status: boolean | null; classN
   return (
     <span className={classes}>
       {status ? (
-        <Check className="h-4 w-4 text-emerald-500" />
+        <CheckCircle2 className="h-5 w-5 text-emerald-500" />
       ) : (
-        <X className="h-4 w-4 text-destructive" />
+        <XCircle className="h-5 w-5 text-destructive" />
       )}
     </span>
   );
@@ -592,12 +592,12 @@ const SignUpForm = ({
           <InputStatusIcon status={passwordStatus} className="right-3" />
           {passwordPopoverOpen && !isValid && (
             <div className="pointer-events-none absolute left-0 top-[calc(100%+0.75rem)] z-10">
-              <div className="relative min-w-[14rem] max-w-[16rem] rounded-2xl border border-primary/20 bg-background/95 p-4 shadow-xl backdrop-blur">
-                <div className="absolute left-8 -top-2 h-4 w-4 rotate-45 border-l border-t border-primary/20 bg-background/95" />
-                <h4 className="mb-2 text-sm font-semibold text-primary">
+              <div className="relative min-w-[14rem] max-w-[16rem] rounded-2xl border border-border/60 bg-background/95 p-4 shadow-xl backdrop-blur">
+                <div className="absolute left-8 -top-2 h-4 w-4 rotate-45 border-l border-t border-border/60 bg-background/95" />
+                <h4 className="mb-2 text-sm font-semibold text-foreground">
                   {t('password.requirements.title')}
                 </h4>
-                <div className="space-y-1.5 text-xs text-muted-foreground">
+                <div className="space-y-1.5 text-xs">
                   {requirements.map((req, index) => (
                     <PasswordRequirement key={index} met={req.met} text={req.text} />
                   ))}
