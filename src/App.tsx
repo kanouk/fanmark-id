@@ -9,6 +9,7 @@ import { TranslationProvider } from "@/hooks/useTranslation";
 import { useSubdomain } from "@/hooks/useSubdomain";
 import AdminApp from "./components/AdminApp";
 import { LanguagePreferenceSync } from "@/components/LanguagePreferenceSync";
+import { DocumentTitleSync } from "@/components/DocumentTitleSync";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -47,6 +48,7 @@ const MainApp = () => (
       <AuthProvider>
         <LotteryActionOverlayProvider>
           <LanguagePreferenceSync />
+          <DocumentTitleSync />
           <TooltipProvider>
             <Toaster />
             <Sonner />

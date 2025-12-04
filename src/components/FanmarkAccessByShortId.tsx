@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,11 +9,10 @@ import { FanmarkMessage } from './FanmarkMessage';
 import { PasswordProtection } from './PasswordProtection';
 import { RedirectLoading } from './RedirectLoading';
 import { MessageboardLoading } from './MessageboardLoading';
-import { resolveFanmarkDisplay } from '@/lib/emojiConversion';
+import { resolveFanmarkDisplay, segmentEmojiSequence } from '@/lib/emojiConversion';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
-import { LanguageToggle } from '@/components/LanguageToggle';
-import { SimpleHeader } from '@/components/layout/SimpleHeader';
+import { AppHeader } from '@/components/layout/AppHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { createFanmarkBadgeStyle } from '@/lib/fanmarkBadge';
 import { useAuth } from '@/hooks/useAuth';
@@ -30,6 +29,7 @@ interface FanmarkData {
   status: string;
   is_password_protected?: boolean;
   license_id?: string;
+  short_id?: string;
 }
 
 export const FanmarkAccessByShortId = () => {
@@ -177,6 +177,27 @@ export const FanmarkAccessByShortId = () => {
     () => createFanmarkBadgeStyle(displayFanmark),
     [displayFanmark]
   );
+  const segmentedFanmark = useMemo(
+    () => segmentEmojiSequence(displayFanmark),
+    [displayFanmark]
+  );
+  const compactBadgeStyle = useMemo(() => {
+    const count = Math.max(segmentedFanmark.length, 1);
+    const emojiWidthRem = 2.1; // 絵文字実寸よりやや大きめに見積もる
+    const gapRem = 0.4;
+    const sidePaddingRem = 0.8; // 左右0.8remずつで背景をわずかに拡張
+    const totalWidthRem = count * emojiWidthRem + Math.max(count - 1, 0) * gapRem + sidePaddingRem * 2;
+
+    return {
+      height: badgeStyle.height,
+      fontSize: badgeStyle.fontSize,
+      lineHeight: badgeStyle.lineHeight,
+      borderRadius: '18px',
+      width: `${totalWidthRem}rem`,
+      minWidth: 'max-content',
+      padding: `${badgeStyle.padding?.split(' ')[0] ?? 0} ${sidePaddingRem}rem`,
+    } as React.CSSProperties;
+  }, [badgeStyle.fontSize, badgeStyle.height, badgeStyle.lineHeight, badgeStyle.padding, segmentedFanmark.length]);
 
   if (loading) {
     return (
@@ -250,31 +271,52 @@ export const FanmarkAccessByShortId = () => {
       };
 
       return (
-        <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex flex-col">
-          <SimpleHeader
+        <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/40 flex flex-col">
+          <AppHeader
             className="sticky top-0 z-50 border-border/40 bg-background/80 backdrop-blur-xl"
-            showLanguageToggle={false}
-            rightSlot={<LanguageToggle />}
+            showNotifications={false}
+            showLanguageToggle
           />
 
           <main className="container mx-auto flex-1 px-4 py-10 md:py-16 flex items-center justify-center">
-            <Card className="w-full max-w-xl overflow-hidden border border-primary/20 bg-background/95 backdrop-blur shadow-[0_25px_60px_rgba(101,195,200,0.18)]">
-              <CardContent className="p-10 text-center space-y-8">
+            <Card className="w-full max-w-lg overflow-hidden rounded-3xl border border-primary/20 bg-background/95 backdrop-blur shadow-[0_25px_60px_rgba(101,195,200,0.18)]">
+              <CardContent className="p-8 text-center space-y-6">
                 <div
-                  className="mx-auto flex items-center justify-center bg-gradient-to-br from-primary/15 via-accent/10 to-blue-100 text-primary shadow-[0_20px_45px_rgba(101,195,200,0.25)]"
-                  style={badgeStyle}
+                  className="mx-auto inline-flex items-center justify-center bg-gradient-to-br from-primary/15 via-accent/10 to-blue-100 text-primary shadow-[0_20px_45px_rgba(101,195,200,0.25)]"
+                  style={compactBadgeStyle}
                 >
-                  {displayFanmark}
+                  <div className="flex items-center justify-center gap-1.5 leading-none">
+                    {segmentedFanmark.map((segment, index) => (
+                      <span key={`${segment}-${index}`} className="inline-flex min-w-[1.15rem] justify-center">
+                        {segment}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-                <div className="space-y-3">
-                  <h1 className="text-2xl font-semibold text-foreground">
+                <div className="space-y-2">
+                  <h1 className="text-xl font-semibold text-foreground">
                     {t('common.inactiveTitle')}
                   </h1>
                 </div>
-                <Button onClick={handleGetFanmark} className="w-full" size="lg">
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  {t('common.getFanmarkCta')}
-                </Button>
+                <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+                  <Button onClick={handleGetFanmark} className="px-5 min-w-[10rem]" size="default">
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    {t('common.getFanmarkCta')}
+                  </Button>
+                  {fanmark.short_id && (
+                    <Button
+                      asChild
+                      variant="ghost"
+                      size="icon"
+                      className="h-10 w-10 rounded-full border border-primary/15 bg-background/80 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                      aria-label={t('common.viewFanmarkDetails')}
+                    >
+                      <Link to={`/f/${fanmark.short_id}`}>
+                        <Sparkles className="h-5 w-5" />
+                      </Link>
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </main>
