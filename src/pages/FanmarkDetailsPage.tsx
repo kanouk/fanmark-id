@@ -245,19 +245,19 @@ export default function FanmarkDetailsPage() {
               </CardHeader>
               <CardContent className="space-y-3 overflow-x-auto px-6 pb-6">
                 {details.license_history && details.license_history.length > 0 ? (
-                  <table className="mt-3 min-w-full divide-y divide-border text-sm">
+                  <table className="mt-3 w-full divide-y divide-border text-sm table-fixed">
                     <thead className="bg-muted/50 text-muted-foreground">
                       <tr>
-                      <th className="px-4 py-3 text-left font-semibold">
+                      <th className="w-[28%] px-4 py-3 text-left font-semibold">
                         {t('fanmarkDetails.started')}
                       </th>
-                      <th className="px-4 py-3 text-left font-semibold">
+                      <th className="w-[28%] px-4 py-3 text-left font-semibold">
                         {t('fanmarkDetails.expires')}
                       </th>
-                      <th className="px-4 py-3 text-left font-semibold">
+                      <th className="w-[18%] px-4 py-3 text-center font-semibold">
                         {t('fanmarkDetails.statusColumn')}
                       </th>
-                      <th className="px-4 py-3 text-left font-semibold">
+                      <th className="w-[26%] px-4 py-3 text-left font-semibold">
                         {t('fanmarkDetails.owner')}
                       </th>
                     </tr>
@@ -272,7 +272,7 @@ export default function FanmarkDetailsPage() {
                           <td className="px-4 py-3 text-foreground">
                             {formatDateTime(item.license_end)}
                           </td>
-                          <td className="px-4 py-3 align-middle">
+                          <td className="px-4 py-3 align-middle text-center">
                             <div className="flex flex-col items-center justify-center gap-1 text-center">
                               <Badge className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide ${statusMeta.className}`}>
                                 <span>{statusMeta.label}</span>
