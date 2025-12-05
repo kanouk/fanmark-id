@@ -196,12 +196,12 @@
         "badge": "주소 전달"
       },
       "friends": {
-        "title": "⚽️🍻📍",
+        "title": "동료",
         "description": "동료들과의 모임 장소도 팬마크로 간편하게 안내하세요.",
         "badge": "전언판"
       },
       "gameStreamer": {
-        "title": "🍉📞",
+        "title": "친구",
         "description": "전화번호를 기억할 필요 없이 팬마크로 바로 통화하세요.",
         "badge": "전달"
       }
