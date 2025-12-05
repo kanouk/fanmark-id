@@ -197,7 +197,7 @@ export const FanmarkAccessByShortId = () => {
       borderRadius: '18px',
       width: `${totalWidthRem}rem`,
       minWidth: 'max-content',
-      padding: `${badgeStyle.padding?.split(' ')[0] ?? 0} ${sidePaddingRem}rem`,
+      padding: `${typeof badgeStyle.padding === 'string' ? badgeStyle.padding.split(' ')[0] : (badgeStyle.padding ?? 0)} ${sidePaddingRem}rem`,
     } as React.CSSProperties;
   }, [badgeStyle.fontSize, badgeStyle.height, badgeStyle.lineHeight, badgeStyle.padding, segmentedFanmark.length]);
 
