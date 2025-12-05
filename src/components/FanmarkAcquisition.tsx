@@ -748,7 +748,7 @@ export const FanmarkAcquisition = ({
           </div>
         </TooltipProvider>
 
-        {displayedFanmark && canShowFanmarkAccess && (
+        {(displayedFanmark || (isGraceBlocked && user)) && canShowFanmarkAccess && (
           <TooltipProvider>
             <div className="flex w-full flex-col items-center gap-2">
               <div className="flex items-center justify-center gap-3">
