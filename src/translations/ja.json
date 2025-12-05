@@ -682,6 +682,10 @@
     "extensionNotPossible": "延長不可"
   },
   "profile": {
+    "privateProfile": "プライベートプロフィール",
+    "privateDescription": "このプロフィールは非公開に設定されています。",
+    "cannotDisplay": "プロフィールを表示できません",
+    "noActiveLicense": "アクティブなライセンスが見つからないため、プロフィール情報にアクセスできません。",
     "welcome": "プロフィールへようこそ！",
     "pageTitle": "プロフィール設定",
     "pageSubtitle": "fanmark.idでの活動をもっと魅力的にするために、プロフィールを整えましょう",

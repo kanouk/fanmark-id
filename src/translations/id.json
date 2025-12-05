@@ -684,6 +684,10 @@
     "extensionNotPossible": "Perpanjangan tidak mungkin"
   },
   "profile": {
+    "privateProfile": "Profil Privat",
+    "privateDescription": "Profil ini diatur ke privat.",
+    "cannotDisplay": "Profil Tidak Tersedia",
+    "noActiveLicense": "Tidak dapat mengakses informasi profil karena tidak ditemukan lisensi aktif.",
     "welcome": "Selamat datang di profil Anda!",
     "pageTitle": "Pengaturan Profil",
     "pageSubtitle": "Jaga kehadiran fanmark Anda tetap segar dengan memperbarui detail pribadi dan tautan Anda.",

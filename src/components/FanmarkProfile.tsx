@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, ExternalLink, User } from 'lucide-react';
+import { Loader2, ExternalLink, User, Home, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
 import { getPublicEmojiProfile, type PublicEmojiProfile } from '@/hooks/useEmojiProfile';
 import { SimpleHeader } from '@/components/layout/SimpleHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
+import { segmentEmojiSequence } from '@/lib/emojiConversion';
+import { createFanmarkBadgeStyle } from '@/lib/fanmarkBadge';
 import {
   FiInstagram,
   FiGithub,
@@ -123,6 +125,24 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
     loadProfile();
   }, [fanmark.id, fanmark.access_type, fanmark.license_id]);
 
+  // All hooks must be called before any early returns
+  const licenseMissing = fanmark.access_type === 'profile' && !fanmark.license_id;
+
+  const displayFanmark = useMemo(() => {
+    const raw = fanmark?.fanmark ?? fanmark?.user_input_fanmark ?? '';
+    const trimmed = raw.trim();
+    return trimmed.length > 0 ? trimmed : '✨';
+  }, [fanmark?.fanmark, fanmark?.user_input_fanmark]);
+
+  const badgeStyle = useMemo(
+    () => createFanmarkBadgeStyle(displayFanmark),
+    [displayFanmark]
+  );
+
+  const segmentedFanmark = useMemo(
+    () => segmentEmojiSequence(displayFanmark),
+    [displayFanmark]
+  );
 
   if (loading) {
     return (
@@ -135,34 +155,63 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
     );
   }
 
-  const licenseMissing = fanmark.access_type === 'profile' && !fanmark.license_id;
-
   // If profile is null after loading, show appropriate fallback
   if (!emojiProfile) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex flex-col">
+      <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/40 flex flex-col">
         <SimpleHeader className="sticky top-0 z-50 border-border/40 bg-background/80 backdrop-blur-xl" />
 
-        <div className="container mx-auto px-4 py-8 flex-1 flex items-center justify-center">
-          <Card className="w-96">
-            <CardContent className="p-8 text-center space-y-4">
-              <div className="text-6xl mb-4">{fanmark.fanmark || fanmark.user_input_fanmark}</div>
-              <h1 className="text-xl font-semibold text-foreground">
-                {licenseMissing ? 'プロフィールを表示できません' : 'プライベートプロフィール'}
-              </h1>
-              <p className="text-muted-foreground">
-                {licenseMissing
-                  ? 'アクティブなライセンスが見つからないため、プロフィール情報にアクセスできません。'
-                  : 'このプロフィールは非公開に設定されています。'}
-              </p>
-              <Button onClick={() => navigate('/')} className="w-full mt-4">
-                <span className="mr-2">🏠</span>
-                ホームに戻る
+        <main className="container mx-auto flex-1 px-4 py-10 md:py-16 flex items-center justify-center">
+          <Card className="w-full max-w-lg overflow-hidden rounded-3xl border border-primary/20 bg-background/95 backdrop-blur shadow-[0_25px_60px_rgba(101,195,200,0.18)]">
+            <CardContent className="p-8 md:p-10 text-center space-y-6">
+              {/* ファンマバッジ */}
+              <div
+                className="mx-auto inline-flex items-center justify-center bg-gradient-to-br from-primary/15 via-accent/10 to-blue-100 text-primary shadow-[0_20px_45px_rgba(101,195,200,0.25)]"
+                style={{
+                  fontSize: badgeStyle.fontSize,
+                  lineHeight: badgeStyle.lineHeight,
+                  height: badgeStyle.height,
+                  borderRadius: '24px',
+                  padding: '0 1.5rem',
+                }}
+              >
+                <div className="flex items-center justify-center gap-2 leading-none">
+                  {segmentedFanmark.map((segment, index) => (
+                    <span key={`${segment}-${index}`} className="inline-flex min-w-[2rem] justify-center">
+                      {segment}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* アイコンとタイトル */}
+              <div className="space-y-3">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted/60 text-muted-foreground">
+                  <Lock className="h-6 w-6" />
+                </div>
+                <h1 className="text-xl font-semibold text-foreground">
+                  {licenseMissing ? t('profile.cannotDisplay') : t('profile.privateProfile')}
+                </h1>
+                <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
+                  {licenseMissing
+                    ? t('profile.noActiveLicense')
+                    : t('profile.privateDescription')}
+                </p>
+              </div>
+
+              {/* ボタン */}
+              <Button
+                onClick={() => navigate('/')}
+                className="rounded-full px-6 gap-2 shadow-md hover:shadow-lg transition-all"
+              >
+                <Home className="h-4 w-4" />
+                {t('common.goToHome')}
               </Button>
             </CardContent>
           </Card>
-        </div>
-        <SiteFooter />
+        </main>
+
+        <SiteFooter className="border-border/40 bg-background/80 backdrop-blur" />
       </div>
     );
   }

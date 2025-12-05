@@ -684,6 +684,10 @@
     "extensionNotPossible": "Extension not possible"
   },
   "profile": {
+    "privateProfile": "Private Profile",
+    "privateDescription": "This profile is set to private.",
+    "cannotDisplay": "Profile Unavailable",
+    "noActiveLicense": "Unable to access profile information because no active license was found.",
     "welcome": "Welcome to your profile!",
     "pageTitle": "Profile Settings",
     "pageSubtitle": "Update your details and make your fanmark shine.",

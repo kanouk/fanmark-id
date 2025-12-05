@@ -683,6 +683,10 @@
     "extensionNotPossible": "연장 불가"
   },
   "profile": {
+    "privateProfile": "비공개 프로필",
+    "privateDescription": "이 프로필은 비공개로 설정되어 있습니다.",
+    "cannotDisplay": "프로필을 표시할 수 없습니다",
+    "noActiveLicense": "활성화된 라이선스를 찾을 수 없어 프로필 정보에 접근할 수 없습니다.",
     "welcome": "프로필에 환영합니다!",
     "pageTitle": "프로필 설정",
     "pageSubtitle": "당신의 세부 정보를 업데이트하고 팬마크를 빛내보세요.",
