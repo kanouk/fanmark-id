@@ -208,31 +208,19 @@ export default function Notifications() {
                     className={`rounded-3xl border bg-background/90 shadow-[0_20px_45px_rgba(101,195,200,0.14)] transition-all hover:-translate-y-1 ${isUnread ? 'border-primary/30' : 'border-border/80 opacity-80'
                       }`}
                   >
-                    <CardContent className="flex flex-col gap-4 px-6 py-6 sm:flex-row sm:items-start sm:justify-between">
+                    <CardContent className="flex flex-col gap-4 px-6 py-5 sm:flex-row sm:items-start sm:justify-between">
                       <div className="flex flex-1 gap-4">
-                        <span className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-inner shadow-primary/10">
+                        <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-inner shadow-primary/10">
                           <Bell className="h-5 w-5" />
                         </span>
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
+                          <p className="text-sm leading-relaxed text-foreground">
+                            {body || title || t('notifications.fallbackTitle')}
+                          </p>
                           <div className="flex flex-wrap items-center gap-2">
-                            <h2 className="text-base font-semibold text-foreground">
-                              {title || t('notifications.fallbackTitle')}
-                            </h2>
                             <span className="text-xs text-muted-foreground">
                               {format(new Date(notification.triggered_at), 'yyyy/MM/dd HH:mm')}
                             </span>
-                          </div>
-                          {body && (
-                            <p className="text-sm leading-relaxed text-muted-foreground">
-                              {body}
-                            </p>
-                          )}
-                          {summary && (
-                            <p className="text-xs text-muted-foreground/80">
-                              {summary}
-                            </p>
-                          )}
-                          <div className="flex flex-wrap items-center gap-2">
                             {showChannelBadge && (
                               <Badge variant="outline" className="text-xs">
                                 {notification.channel}
