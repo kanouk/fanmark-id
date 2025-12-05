@@ -449,8 +449,17 @@ const Profile = () => {
                   <AlertDialogTitle>
                     {t('userSettings.deleteAccount.confirmTitle')}
                   </AlertDialogTitle>
-                  <AlertDialogDescription className="whitespace-pre-line">
-                    {t('userSettings.deleteAccount.confirmDescription')}
+                  <AlertDialogDescription asChild>
+                    <div className="space-y-3 text-sm text-muted-foreground">
+                      <p>{t('userSettings.deleteAccount.confirmDescriptionIntro')}</p>
+                      <div className="rounded-xl border-2 border-destructive/40 bg-destructive/10 px-3 py-2">
+                        <p className="font-semibold text-destructive">
+                          ⚠️ {t('userSettings.deleteAccount.confirmDescriptionSubscription')}
+                        </p>
+                      </div>
+                      <p className="whitespace-pre-line">{t('userSettings.deleteAccount.confirmDescriptionItems')}</p>
+                      <p className="text-xs">{t('userSettings.deleteAccount.confirmDescriptionFooter')}</p>
+                    </div>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 
