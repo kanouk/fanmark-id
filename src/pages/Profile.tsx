@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { CardDescription } from '@/components/ui/card';
-import { User, LogOut, CreditCard, Globe, Palette, Link2, Info, PencilLine, Languages, Heart, Lock, ShieldCheck, Check, X, AlertTriangle, Loader2, Bell, ExternalLink } from 'lucide-react';
+import { User, LogOut, CreditCard, Globe, Palette, Link2, Info, PencilLine, Languages, Heart, Lock, ShieldCheck, Check, X, AlertTriangle, Loader2, Bell, ExternalLink, ArrowRight, Trash2, Save } from 'lucide-react';
 import { MdSpaceDashboard } from 'react-icons/md';
 import { RiCalendarCheckLine } from 'react-icons/ri';
 import { Badge } from '@/components/ui/badge';
@@ -30,7 +30,9 @@ import { PasswordRequirement } from '@/components/PasswordRequirement';
 import { formatStripeAmount } from '@/lib/currency';
 import { supabase } from '@/integrations/supabase/client';
 
-type Section = 'account' | 'plan' | 'language' | 'display' | 'integrations' | 'notifications';
+type Section = 'account' | 'plan' | 'language';
+// TODO: Re-enable when features are implemented
+// type Section = 'account' | 'plan' | 'language' | 'display' | 'integrations' | 'notifications';
 
 interface SidebarItem {
   id: Section;
@@ -157,30 +159,33 @@ const Profile = () => {
         description: t('userSettings.navPlanDescription'),
         icon: CreditCard,
       },
-      {
-        id: 'notifications',
-        label: t('userSettings.navNotifications'),
-        description: t('userSettings.navNotificationsDescription'),
-        icon: Bell,
-      },
+      // TODO: Re-enable when notifications feature is implemented
+      // {
+      //   id: 'notifications',
+      //   label: t('userSettings.navNotifications'),
+      //   description: t('userSettings.navNotificationsDescription'),
+      //   icon: Bell,
+      // },
       {
         id: 'language',
         label: t('userSettings.navLanguage'),
         description: t('userSettings.navLanguageDescription'),
         icon: Globe,
       },
-      {
-        id: 'display',
-        label: t('userSettings.navDisplay'),
-        description: t('userSettings.navDisplayDescription'),
-        icon: Palette,
-      },
-      {
-        id: 'integrations',
-        label: t('userSettings.navIntegrations'),
-        description: t('userSettings.navIntegrationsDescription'),
-        icon: Link2,
-      },
+      // TODO: Re-enable when display settings feature is implemented
+      // {
+      //   id: 'display',
+      //   label: t('userSettings.navDisplay'),
+      //   description: t('userSettings.navDisplayDescription'),
+      //   icon: Palette,
+      // },
+      // TODO: Re-enable when integrations feature is implemented
+      // {
+      //   id: 'integrations',
+      //   label: t('userSettings.navIntegrations'),
+      //   description: t('userSettings.navIntegrationsDescription'),
+      //   icon: Link2,
+      // },
     ],
     [t],
   );
@@ -406,8 +411,13 @@ const Profile = () => {
                     newPassword.length === 0 ||
                     newPassword !== confirmNewPassword
                   }
-                  className="rounded-full"
+                  className="gap-2 rounded-full"
                 >
+                  {isUpdatingPassword ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
                   {isUpdatingPassword ? t('common.loading') : t('userSettings.updatePasswordButton')}
                 </Button>
               </div>
@@ -426,12 +436,14 @@ const Profile = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="px-6 pb-6">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="rounded-full">
-                  {t('userSettings.deleteAccount.buttonLabel')}
-                </Button>
-              </AlertDialogTrigger>
+            <div className="flex justify-end">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" className="gap-2 rounded-full">
+                    <Trash2 className="h-4 w-4" />
+                    {t('userSettings.deleteAccount.buttonLabel')}
+                  </Button>
+                </AlertDialogTrigger>
               <AlertDialogContent className="max-w-md">
                 <AlertDialogHeader>
                   <AlertDialogTitle>
@@ -492,7 +504,8 @@ const Profile = () => {
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
-            </AlertDialog>
+              </AlertDialog>
+            </div>
           </CardContent>
         </Card>
       </CardContent>
@@ -558,9 +571,10 @@ const Profile = () => {
             <Button
               type="button"
               variant="outline"
-              className="rounded-full border-primary/20 bg-primary/5 text-primary hover:bg-primary/10"
+              className="gap-2 rounded-full border-primary/20 bg-primary/5 text-primary hover:bg-primary/10"
               onClick={() => navigate('/plans', { state: { from: location.pathname } })}
             >
+              <ArrowRight className="h-4 w-4" />
               {t('userSettings.changePlan')}
             </Button>
           </div>
@@ -646,19 +660,21 @@ const Profile = () => {
               <p className="text-sm text-muted-foreground mb-4">
                 {t('userSettings.paymentManagementDescription')}
               </p>
-              <Button
-                variant="outline"
-                className="rounded-full border-primary/20"
-                onClick={handleOpenCustomerPortal}
-                disabled={portalLoading}
-              >
-                {portalLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                )}
-                {t('userSettings.managePaymentMethod')}
-              </Button>
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  className="gap-2 rounded-full border-primary/20 bg-primary/5 text-primary hover:bg-primary/10"
+                  onClick={handleOpenCustomerPortal}
+                  disabled={portalLoading}
+                >
+                  {portalLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ExternalLink className="h-4 w-4" />
+                  )}
+                  {t('userSettings.managePaymentMethod')}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -699,59 +715,62 @@ const Profile = () => {
     </Card>
   );
 
-  const displaySection = (
-    <Card className="rounded-3xl border border-primary/15 bg-background/95 shadow-[0_20px_45px_rgba(101,195,200,0.15)]">
-      <CardHeader className="px-6 pt-6 pb-4 space-y-2">
-        <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
-          <Palette className="h-5 w-5 text-primary" />
-          {t('userSettings.displaySettingsTitle')}
-        </CardTitle>
-        <p className="ml-7 text-sm text-muted-foreground">{t('userSettings.displaySectionDescriptionDetailed')}</p>
-      </CardHeader>
-      <CardContent className="space-y-4 px-6 pb-6 pt-2">
-        <div className="rounded-2xl border border-dashed border-primary/20 bg-primary/5 px-4 py-6 text-center text-sm text-muted-foreground">
-          <p className="text-base font-semibold text-primary">{t('userSettings.displayComingSoonTitle')}</p>
-          <p className="mt-2">{t('userSettings.displayComingSoonDescription')}</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
+  // TODO: Re-enable when display settings feature is implemented
+  // const displaySection = (
+  //   <Card className="rounded-3xl border border-primary/15 bg-background/95 shadow-[0_20px_45px_rgba(101,195,200,0.15)]">
+  //     <CardHeader className="px-6 pt-6 pb-4 space-y-2">
+  //       <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
+  //         <Palette className="h-5 w-5 text-primary" />
+  //         {t('userSettings.displaySettingsTitle')}
+  //       </CardTitle>
+  //       <p className="ml-7 text-sm text-muted-foreground">{t('userSettings.displaySectionDescriptionDetailed')}</p>
+  //     </CardHeader>
+  //     <CardContent className="space-y-4 px-6 pb-6 pt-2">
+  //       <div className="rounded-2xl border border-dashed border-primary/20 bg-primary/5 px-4 py-6 text-center text-sm text-muted-foreground">
+  //         <p className="text-base font-semibold text-primary">{t('userSettings.displayComingSoonTitle')}</p>
+  //         <p className="mt-2">{t('userSettings.displayComingSoonDescription')}</p>
+  //       </div>
+  //     </CardContent>
+  //   </Card>
+  // );
 
-  const integrationsSection = (
-    <Card className="rounded-3xl border border-primary/15 bg-background/95 shadow-[0_20px_45px_rgba(101,195,200,0.15)]">
-      <CardHeader className="px-6 pt-6 pb-4 space-y-2">
-        <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
-          <Link2 className="h-5 w-5 text-primary" />
-          {t('userSettings.integrationsTitle')}
-        </CardTitle>
-        <p className="ml-7 text-sm text-muted-foreground">{t('userSettings.integrationsSectionDescriptionDetailed')}</p>
-      </CardHeader>
-      <CardContent className="space-y-4 px-6 pb-6 pt-2">
-        <div className="rounded-2xl border border-dashed border-primary/20 bg-primary/5 px-4 py-6 text-center text-sm text-muted-foreground">
-          <p className="text-base font-semibold text-primary">{t('userSettings.integrationsComingSoonTitle')}</p>
-          <p className="mt-2">{t('userSettings.integrationsComingSoonDescription')}</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
+  // TODO: Re-enable when integrations feature is implemented
+  // const integrationsSection = (
+  //   <Card className="rounded-3xl border border-primary/15 bg-background/95 shadow-[0_20px_45px_rgba(101,195,200,0.15)]">
+  //     <CardHeader className="px-6 pt-6 pb-4 space-y-2">
+  //       <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
+  //         <Link2 className="h-5 w-5 text-primary" />
+  //         {t('userSettings.integrationsTitle')}
+  //       </CardTitle>
+  //       <p className="ml-7 text-sm text-muted-foreground">{t('userSettings.integrationsSectionDescriptionDetailed')}</p>
+  //     </CardHeader>
+  //     <CardContent className="space-y-4 px-6 pb-6 pt-2">
+  //       <div className="rounded-2xl border border-dashed border-primary/20 bg-primary/5 px-4 py-6 text-center text-sm text-muted-foreground">
+  //         <p className="text-base font-semibold text-primary">{t('userSettings.integrationsComingSoonTitle')}</p>
+  //         <p className="mt-2">{t('userSettings.integrationsComingSoonDescription')}</p>
+  //       </div>
+  //     </CardContent>
+  //   </Card>
+  // );
 
-  const notificationsSection = (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Bell className="h-5 w-5" />
-          {t('userSettings.notificationsTitle')}
-        </CardTitle>
-        <p className="ml-7 text-sm text-muted-foreground">{t('userSettings.notificationsSectionDescription')}</p>
-      </CardHeader>
-      <CardContent className="space-y-4 px-6 pb-6 pt-2">
-        <div className="rounded-2xl border border-dashed border-primary/20 bg-primary/5 px-4 py-6 text-center text-sm text-muted-foreground">
-          <p className="text-base font-semibold text-primary">{t('userSettings.notificationsComingSoonTitle')}</p>
-          <p className="mt-2">{t('userSettings.notificationsComingSoonDescription')}</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
+  // TODO: Re-enable when notifications feature is implemented
+  // const notificationsSection = (
+  //   <Card>
+  //     <CardHeader>
+  //       <CardTitle className="flex items-center gap-2">
+  //         <Bell className="h-5 w-5" />
+  //         {t('userSettings.notificationsTitle')}
+  //       </CardTitle>
+  //       <p className="ml-7 text-sm text-muted-foreground">{t('userSettings.notificationsSectionDescription')}</p>
+  //     </CardHeader>
+  //     <CardContent className="space-y-4 px-6 pb-6 pt-2">
+  //       <div className="rounded-2xl border border-dashed border-primary/20 bg-primary/5 px-4 py-6 text-center text-sm text-muted-foreground">
+  //         <p className="text-base font-semibold text-primary">{t('userSettings.notificationsComingSoonTitle')}</p>
+  //         <p className="mt-2">{t('userSettings.notificationsComingSoonDescription')}</p>
+  //       </div>
+  //     </CardContent>
+  //   </Card>
+  // );
 
   const renderSection = () => {
     switch (activeSection) {
@@ -759,14 +778,15 @@ const Profile = () => {
         return accountSection;
       case 'plan':
         return planSection;
-      case 'notifications':
-        return notificationsSection;
+      // TODO: Re-enable when features are implemented
+      // case 'notifications':
+      //   return notificationsSection;
       case 'language':
         return languageSection;
-      case 'display':
-        return displaySection;
-      case 'integrations':
-        return integrationsSection;
+      // case 'display':
+      //   return displaySection;
+      // case 'integrations':
+      //   return integrationsSection;
       default:
         return accountSection;
     }

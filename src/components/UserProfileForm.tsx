@@ -299,11 +299,11 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
         </div>
       </div>
 
-      <div className="pt-4">
+      <div className="flex justify-end pt-4">
         <Button
           type="submit"
           disabled={loading}
-          className="w-full gap-2 rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 hover:shadow-xl"
+          className="gap-2 rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 hover:shadow-xl"
         >
           {loading ? (
             <>
