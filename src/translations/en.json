@@ -1443,5 +1443,25 @@
       "title": "Twitter/X",
       "description": "Follow us on Twitter/X for updates, announcements, and quick support responses."
     }
+  },
+  "errorPages": {
+    "notFound": {
+      "title": "The page you're looking for doesn't exist.",
+      "goHome": "Go Home",
+      "searchFanmark": "Search Fanmark",
+      "hint": "Don't worry if you're lost, your fanmark will guide you ✨"
+    },
+    "serverError": {
+      "title": "Server Error",
+      "description": "We're sorry, something went wrong on our end. Please try again later.",
+      "tryAgain": "Try Again",
+      "goHome": "Go Home"
+    },
+    "unauthorized": {
+      "title": "Unauthorized",
+      "description": "You don't have permission to view this page. Please log in or access with the correct account.",
+      "login": "Log In",
+      "goHome": "Go Home"
+    }
   }
 }

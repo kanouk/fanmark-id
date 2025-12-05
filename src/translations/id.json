@@ -1443,5 +1443,25 @@
       "title": "Twitter/X",
       "description": "Ikuti kami di Twitter/X untuk pembaruan, pengumuman, dan respons dukungan cepat."
     }
+  },
+  "errorPages": {
+    "notFound": {
+      "title": "Halaman yang Anda cari tidak ada.",
+      "goHome": "Kembali ke Beranda",
+      "searchFanmark": "Cari Fanmark",
+      "hint": "Jangan khawatir jika tersesat, fanmark Anda akan memandu Anda ✨"
+    },
+    "serverError": {
+      "title": "Kesalahan Server",
+      "description": "Maaf, terjadi kesalahan di pihak kami. Silakan coba lagi nanti.",
+      "tryAgain": "Coba Lagi",
+      "goHome": "Kembali ke Beranda"
+    },
+    "unauthorized": {
+      "title": "Tidak Diizinkan",
+      "description": "Anda tidak memiliki izin untuk melihat halaman ini. Silakan masuk atau akses dengan akun yang benar.",
+      "login": "Masuk",
+      "goHome": "Kembali ke Beranda"
+    }
   }
 }

@@ -996,7 +996,7 @@
     "fields": {
       "displayName": {
         "label": "ファンマ名",
-        "helper": "ファンマにわかりやすい名前をつけてください。他のユーザーからは見えません。",
+        "helper": "ファンマにわかりやすい名前をつけることができます。他のユーザーからは見えません。",
         "placeholder": "ファンマ名を入力してください"
       },
       "accessType": {
@@ -1007,19 +1007,19 @@
       "redirect": {
         "label": "転送先URL",
         "linkTypeLabel": "リンク種別",
-        "linkTypeHelper": "Webサイトに飛ばすか、電話発信を開始するかを選べます。",
+        "linkTypeHelper": "Webサイトに転送するか、電話発信を開始するかを選べます。",
         "linkTypeOptions": {
           "url": "ウェブサイト",
-          "urlDesc": "http/httpsの任意のURLへ移動",
+          "urlDesc": "任意のURLへ移動",
           "phone": "電話番号",
           "phoneDesc": "端末の発信画面を開く"
         },
         "urlLabel": "ウェブサイトURL",
         "urlPlaceholder": "https://example.com",
-        "urlHelper": "http:// または https:// から始まるURLに対応しています。",
+        "urlHelper": "http:// または https:// から始まるURLを入力してください。",
         "phoneLabel": "電話番号",
         "phonePlaceholder": "07012345678 または +819012345678",
-        "phoneHelper": "数字だけ入力してください。自動で「tel:」リンクに変換します。"
+        "phoneHelper": "数字だけ入力してください。ハイフンは不要です。"
       },
       "text": {
         "label": "伝言板",
@@ -1440,6 +1440,26 @@
     "twitter": {
       "title": "Twitter/X",
       "description": "Twitterで最新情報、お知らせ、素早いサポートをお受けいただけます。"
+    }
+  },
+  "errorPages": {
+    "notFound": {
+      "title": "お探しのページは存在しません",
+      "goHome": "ホームに戻る",
+      "searchFanmark": "ファンマを探す",
+      "hint": "迷子になっても大丈夫、ファンマがあなたを導きます ✨"
+    },
+    "serverError": {
+      "title": "サーバーエラー",
+      "description": "申し訳ありません。サーバーでエラーが発生しました。しばらくしてから再度お試しください。",
+      "tryAgain": "再試行",
+      "goHome": "ホームに戻る"
+    },
+    "unauthorized": {
+      "title": "アクセス権限がありません",
+      "description": "このページを閲覧する権限がありません。ログインするか、正しいアカウントでアクセスしてください。",
+      "login": "ログイン",
+      "goHome": "ホームに戻る"
     }
   }
 }
