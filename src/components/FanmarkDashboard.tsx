@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useTranslation } from '@/hooks/useTranslation';
-import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy, Undo2, QrCode, MoreVertical, Heart } from 'lucide-react';
+import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy, Undo2, QrCode, MoreVertical, Heart, BarChart3 } from 'lucide-react';
 import { FiTarget, FiLayers, FiCompass, FiStar, FiCheckCircle, FiMoon, FiUser, FiLink, FiFileText, FiClock, FiInbox } from 'react-icons/fi';
 import { FanmarkAcquisition } from './FanmarkAcquisition';
 import { ExtendLicenseDialog, type ExtendLicenseTarget, type ExtendPlanOption } from './ExtendLicenseDialog';
@@ -112,6 +112,11 @@ export const FanmarkDashboard = () => {
     enabled: Boolean(user),
   });
   const { getPendingCheckout, setPendingCheckout, clearPendingCheckout } = usePendingCheckout();
+  
+  const canAccessAnalytics = useMemo(() => {
+    const planType = profile?.plan_type;
+    return planType === 'business' || planType === 'enterprise' || planType === 'admin';
+  }, [profile?.plan_type]);
 
   const [fanmarks, setFanmarks] = useState<Fanmark[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1083,6 +1088,15 @@ export const FanmarkDashboard = () => {
                                               <span>{t('dashboard.actionsReturn')}</span>
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
+                                            {canAccessAnalytics && (
+                                              <DropdownMenuItem
+                                                onSelect={(event) => { event.preventDefault(); event.stopPropagation(); navigate(`/analytics?fanmark=${fanmark.short_id}`); }}
+                                                className="gap-2"
+                                              >
+                                                <BarChart3 className="h-4 w-4 text-primary" />
+                                                <span>{t('dashboard.viewStats')}</span>
+                                              </DropdownMenuItem>
+                                            )}
                                             <DropdownMenuItem
                                               onSelect={() => handleOpenSettings(fanmark.id)}
                                               className="gap-2"
@@ -1331,6 +1345,15 @@ export const FanmarkDashboard = () => {
                                           <span>{t('dashboard.actionsReturn')}</span>
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
+                                        {canAccessAnalytics && (
+                                          <DropdownMenuItem
+                                            onSelect={() => navigate(`/analytics?fanmark=${fanmark.short_id}`)}
+                                            className="gap-2"
+                                          >
+                                            <BarChart3 className="h-4 w-4 text-primary" />
+                                            <span>{t('dashboard.viewStats')}</span>
+                                          </DropdownMenuItem>
+                                        )}
                                         <DropdownMenuItem
                                           onSelect={() => handleOpenSettings(fanmark.id)}
                                           className="gap-2"
