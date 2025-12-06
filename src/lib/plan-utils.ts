@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { resolveFanmarkDisplay } from '@/lib/emojiConversion';
 
-export type PlanType = 'free' | 'creator' | 'business' | 'enterprise' | 'admin';
+export type PlanType = 'free' | 'creator' | 'max' | 'business' | 'enterprise' | 'admin';
 
 export interface ActiveFanmark {
   id: string;
@@ -17,6 +17,7 @@ export interface ActiveFanmark {
 const PLAN_LIMITS: Record<PlanType, number> = {
   free: 3,
   creator: 10,
+  max: 500,
   business: 50,
   enterprise: 100,
   admin: -1,
@@ -154,14 +155,16 @@ export function planDisplayOrder(planType: PlanType): number {
       return 0;
     case 'creator':
       return 1;
-    case 'business':
+    case 'max':
       return 2;
-    case 'enterprise':
+    case 'business':
       return 3;
-    case 'admin':
+    case 'enterprise':
       return 4;
-    default:
+    case 'admin':
       return 5;
+    default:
+      return 6;
   }
 }
 

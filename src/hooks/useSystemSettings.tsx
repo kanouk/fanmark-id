@@ -10,11 +10,13 @@ interface SystemSettings {
   business_fanmarks_limit: number;
   enterprise_fanmarks_limit: number;
   premium_pricing: number;
+  max_pricing: number;
   business_pricing: number;
   enterprise_pricing: number;
   max_emoji_characters: number;
   grace_period_days: number;
   creator_stripe_price_id: string;
+  max_stripe_price_id: string;
   business_stripe_price_id: string;
   stripe_mode: 'test' | 'live';
 }
@@ -25,15 +27,17 @@ export function useSystemSettings() {
     social_login_enabled: true,
     max_fanmarks_per_user: 3,
     creator_fanmarks_limit: 10,
-    max_fanmarks_limit: 50,
+    max_fanmarks_limit: 500,
     business_fanmarks_limit: 50,
     enterprise_fanmarks_limit: 100,
     premium_pricing: 1000,
+    max_pricing: 10000,
     business_pricing: 10000,
     enterprise_pricing: 50000,
     max_emoji_characters: 5,
     grace_period_days: 7,
     creator_stripe_price_id: '',
+    max_stripe_price_id: '',
     business_stripe_price_id: '',
     stripe_mode: 'test',
   });
@@ -70,6 +74,8 @@ export function useSystemSettings() {
             acc.enterprise_fanmarks_limit = parseInt(setting_value, 10);
           } else if (setting_key === 'premium_pricing') {
             acc.premium_pricing = parseInt(setting_value, 10);
+          } else if (setting_key === 'max_pricing') {
+            acc.max_pricing = parseInt(setting_value, 10);
           } else if (setting_key === 'business_pricing') {
             acc.business_pricing = parseInt(setting_value, 10);
           } else if (setting_key === 'enterprise_pricing') {
@@ -80,6 +86,8 @@ export function useSystemSettings() {
             acc.grace_period_days = parseInt(setting_value, 10);
           } else if (setting_key === 'creator_stripe_price_id') {
             acc.creator_stripe_price_id = setting_value;
+          } else if (setting_key === 'max_stripe_price_id') {
+            acc.max_stripe_price_id = setting_value;
           } else if (setting_key === 'business_stripe_price_id') {
             acc.business_stripe_price_id = setting_value;
           } else if (setting_key === 'stripe_mode') {
