@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -22,7 +22,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Heart, LogOut, User, Bell } from 'lucide-react';
+import { Heart, LogOut, User, Bell, BarChart3 } from 'lucide-react';
 import { MdSpaceDashboard } from 'react-icons/md';
 import { cn } from '@/lib/utils';
 
@@ -61,6 +61,12 @@ export const AppHeader = ({
   const isOnDashboard = pathname.startsWith('/dashboard');
   const isOnFavorites = pathname.startsWith('/favorites');
   const isOnUserSettings = pathname.startsWith('/profile');
+  const isOnAnalytics = pathname.startsWith('/analytics');
+  
+  const canAccessAnalytics = useMemo(() => {
+    const planType = profile?.plan_type;
+    return planType === 'business' || planType === 'enterprise' || planType === 'admin';
+  }, [profile?.plan_type]);
 
   const { data: recentNotifications = [], isLoading: notificationsLoading } = useQuery({
     queryKey: ['notifications-preview', user?.id],
@@ -312,6 +318,21 @@ export const AppHeader = ({
                   <User className="mr-2 h-4 w-4" />
                   {t('navigation.profile')}
                 </DropdownMenuItem>
+                {canAccessAnalytics && (
+                  <DropdownMenuItem
+                    onSelect={(event) => {
+                      event.preventDefault();
+                      if (!isOnAnalytics) {
+                        navigate('/analytics');
+                      }
+                    }}
+                    className="cursor-pointer"
+                    disabled={isOnAnalytics}
+                  >
+                    <BarChart3 className="mr-2 h-4 w-4" />
+                    {t('navigation.analytics')}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   onSelect={(event) => {
                     event.preventDefault();

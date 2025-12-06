@@ -35,6 +35,7 @@ import TermsOfService from "./pages/TermsOfService";
 import ContactUs from "./pages/ContactUs";
 import CommercialTransactions from "./pages/CommercialTransactions";
 import About from "./pages/About";
+import Analytics from "./pages/Analytics";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LotteryActionOverlayProvider } from "@/providers/LotteryActionOverlayProvider";
 import { PasswordSetupGate } from "@/components/PasswordSetupGate";
@@ -65,6 +66,7 @@ const MainApp = () => (
                 <Route path="/password-setup" element={<ProtectedRoute><PasswordSetup /></ProtectedRoute>} />
                 <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
                 <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+                <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
                 <Route path="/plans" element={<PlanSelection />} />
                 <Route path="/plan" element={<PlanSelection />} />
                 <Route path="/pwa" element={<PWAApp />} />
