@@ -3,9 +3,10 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
  RETURNS trigger
  LANGUAGE plpgsql
  SECURITY DEFINER
- SET search_path TO 'public'
+SET search_path TO 'public'
 AS $function$
 DECLARE
+  generated_username text;
   invitation_mode_enabled text;
   social_login_enabled text;
   invitation_code text;
@@ -70,6 +71,9 @@ BEGIN
     END IF;
   END IF;
 
+  -- Generate a username once so we can reuse it as the safe default display name
+  generated_username := COALESCE(NEW.raw_user_meta_data ->> 'username', 'user_' || substring(NEW.id::text, 1, 8));
+
   INSERT INTO public.user_settings (
     user_id,
     username,
@@ -80,11 +84,8 @@ BEGIN
     requires_password_setup
   ) VALUES (
     NEW.id,
-    COALESCE(NEW.raw_user_meta_data ->> 'username', 'user_' || substring(NEW.id::text, 1, 8)),
-    COALESCE(
-      NEW.raw_user_meta_data ->> 'display_name',
-      public.generate_safe_display_name(NEW.email, NEW.id)
-    ),
+    generated_username,
+    COALESCE(NEW.raw_user_meta_data ->> 'display_name', generated_username),
     'free',
     COALESCE(NEW.raw_user_meta_data ->> 'preferred_language', 'ja')::user_language,
     CASE WHEN NOT is_oauth_user THEN NEW.raw_user_meta_data ->> 'invitation_code' ELSE NULL END,

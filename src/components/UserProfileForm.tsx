@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAvatarUpload } from '@/hooks/useAvatarUpload';
-import { Save, User, Upload, Trash2, Loader2, Mail, Image as ImageIcon, UserRound, IdCard } from 'lucide-react';
+import { Save, User, Upload, Trash2, Loader2, Mail, Image as ImageIcon, UserRound, IdCard, AlertTriangle } from 'lucide-react';
 import { FanmarkSelectionModal } from './FanmarkSelectionModal';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -162,6 +162,19 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const MAX_AVATAR_SIZE = 1 * 1024 * 1024; // 1MB
+    if (file.size > MAX_AVATAR_SIZE) {
+      toast({
+        title: t('common.error'),
+        description: t('userSettings.avatarSizeLimit'),
+        variant: 'destructive',
+      });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+
     try {
       const avatarUrl = await uploadAvatar(file);
       setFormData(prev => ({ ...prev, avatar_url: avatarUrl }));
@@ -273,6 +286,10 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
               placeholder={t('userSettings.displayNamePlaceholder')}
               className="h-11 rounded-2xl border border-primary/15 bg-white text-base shadow-none focus-visible:ring-2 focus-visible:ring-primary/40"
             />
+            <p className="flex items-start gap-2 text-xs text-muted-foreground">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 text-amber-500" />
+              <span>{t('userSettings.displayNameNotice')}</span>
+            </p>
           </div>
 
           <div className="space-y-2">

@@ -7,9 +7,13 @@ export const useAvatarUpload = () => {
   const { user } = useAuth();
   const { t } = useTranslation();
   const [uploading, setUploading] = useState(false);
+  const MAX_AVATAR_SIZE = 1 * 1024 * 1024; // 1MB
 
   const uploadAvatar = async (file: File): Promise<string> => {
     if (!user) throw new Error(t('common.userNotAuthenticated'));
+    if (file.size > MAX_AVATAR_SIZE) {
+      throw new Error(t('userSettings.avatarSizeLimit'));
+    }
     
     setUploading(true);
     try {
