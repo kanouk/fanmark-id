@@ -38,6 +38,41 @@ export interface ReturnResult {
   graceExpiresAt: string;
 }
 
+async function notifyOwnerAboutReturn(
+  ctx: ReturnContext,
+  fanmarkId: string,
+  fanmarkName: string,
+  fanmarkShortId: string,
+  graceExpiresAt: string,
+): Promise<void> {
+  const displayName =
+    typeof fanmarkName === 'string' && fanmarkName.trim().length > 0
+      ? fanmarkName
+      : 'ファンマーク';
+
+  try {
+    const { error: eventError } = await ctx.supabase.rpc('create_notification_event', {
+      event_type_param: 'fanmark_returned_owner',
+      payload_param: {
+        user_id: ctx.userId,
+        fanmark_id: fanmarkId,
+        fanmark_name: displayName,
+        fanmark_short_id: fanmarkShortId,
+        grace_expires_at: graceExpiresAt,
+        link: fanmarkShortId ? `/f/${fanmarkShortId}` : null,
+      },
+      source_param: 'edge_function',
+      dedupe_key_param: `fanmark_returned_owner_${fanmarkId}_${ctx.userId}`,
+    });
+
+    if (eventError) {
+      console.error('Failed to enqueue fanmark_returned_owner notification:', eventError);
+    }
+  } catch (error) {
+    console.error('Unexpected error while notifying owner about return:', error);
+  }
+}
+
 async function notifyFavoritesAboutReturn(
   ctx: ReturnContext,
   fanmarkId: string,
@@ -217,6 +252,7 @@ export async function returnFanmarkByLicenseId(
   const fanmark = license.fanmarks?.user_input_fanmark ?? '';
   const fanmarkShortId = license.fanmarks?.short_id ?? '';
   await logReturnAction(ctx, license.fanmark_id, fanmark, graceExpiresAtIso, nowIso);
+  await notifyOwnerAboutReturn(ctx, license.fanmark_id, fanmark, fanmarkShortId, graceExpiresAtIso);
   await notifyFavoritesAboutReturn(ctx, license.fanmark_id, fanmark, fanmarkShortId);
 
   return {
