@@ -1471,6 +1471,7 @@
   },
   "analytics": {
     "pageTitle": "분석",
+    "pageSubtitle": "팬마크 접속 현황을 분석하고 시각화합니다",
     "businessRequired": "비즈니스 플랜 이상에서 사용 가능",
     "upgradePrompt": "분석 기능으로 다음을 확인할 수 있습니다:",
     "feature1": "시간별 접속 추이",

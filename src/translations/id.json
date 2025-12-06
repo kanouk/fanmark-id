@@ -1472,6 +1472,7 @@
   },
   "analytics": {
     "pageTitle": "Analitik",
+    "pageSubtitle": "Analisis dan visualisasi akses ke fanmark Anda",
     "businessRequired": "Tersedia untuk paket Business ke atas",
     "upgradePrompt": "Dengan Analitik, Anda dapat menganalisis:",
     "feature1": "Tren akses dari waktu ke waktu",

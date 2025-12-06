@@ -192,43 +192,48 @@ const Analytics = () => {
   // Upgrade prompt for non-business users
   if (!authLoading && user && !canAccessAnalytics) {
     return (
-      <div className="flex min-h-screen flex-col bg-gradient-to-br from-background via-muted/20 to-background">
-        <AppHeader />
-        <main className="flex-1 container mx-auto px-4 py-8">
-          <h1 className="text-3xl font-bold text-foreground mb-8 flex items-center gap-3">
-            <BarChart3 className="h-8 w-8 text-primary" />
-            {t('analytics.pageTitle')}
-          </h1>
+      <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
+        <AppHeader className="border-border/30 bg-white/80" />
+        <main className="flex-1 container mx-auto px-4 py-12 sm:px-6 lg:px-8">
+          {/* Page Header */}
+          <div className="space-y-3 text-center mb-8">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+              {t('analytics.pageTitle')}
+            </h1>
+            <p className="mx-auto max-w-2xl text-sm sm:text-base text-muted-foreground">
+              {t('analytics.pageSubtitle')}
+            </p>
+          </div>
 
           <div className="relative">
             {/* Blurred preview */}
             <div className="opacity-30 blur-sm pointer-events-none">
-              <div className="grid gap-6 md:grid-cols-2 mb-8">
-                <Card className="rounded-2xl">
+              <div className="grid gap-6 md:grid-cols-2 mb-6">
+                <Card className="rounded-3xl border border-primary/20 bg-white shadow-[0_20px_45px_rgba(101,195,200,0.15)]">
                   <CardContent className="p-6">
-                    <div className="h-24 bg-muted/50 rounded-xl" />
+                    <div className="h-24 bg-primary/5 rounded-2xl" />
                   </CardContent>
                 </Card>
-                <Card className="rounded-2xl">
+                <Card className="rounded-3xl border border-primary/20 bg-white shadow-[0_20px_45px_rgba(101,195,200,0.15)]">
                   <CardContent className="p-6">
-                    <div className="h-24 bg-muted/50 rounded-xl" />
+                    <div className="h-24 bg-primary/5 rounded-2xl" />
                   </CardContent>
                 </Card>
               </div>
-              <Card className="rounded-2xl mb-8">
+              <Card className="rounded-3xl border border-primary/20 bg-white shadow-[0_20px_45px_rgba(101,195,200,0.15)] mb-6">
                 <CardContent className="p-6">
-                  <div className="h-64 bg-muted/50 rounded-xl" />
+                  <div className="h-64 bg-primary/5 rounded-2xl" />
                 </CardContent>
               </Card>
               <div className="grid gap-6 md:grid-cols-2">
-                <Card className="rounded-2xl">
+                <Card className="rounded-3xl border border-primary/20 bg-white shadow-[0_20px_45px_rgba(101,195,200,0.15)]">
                   <CardContent className="p-6">
-                    <div className="h-48 bg-muted/50 rounded-xl" />
+                    <div className="h-48 bg-primary/5 rounded-2xl" />
                   </CardContent>
                 </Card>
-                <Card className="rounded-2xl">
+                <Card className="rounded-3xl border border-primary/20 bg-white shadow-[0_20px_45px_rgba(101,195,200,0.15)]">
                   <CardContent className="p-6">
-                    <div className="h-48 bg-muted/50 rounded-xl" />
+                    <div className="h-48 bg-primary/5 rounded-2xl" />
                   </CardContent>
                 </Card>
               </div>
@@ -236,41 +241,40 @@ const Analytics = () => {
 
             {/* Upgrade overlay */}
             <div className="absolute inset-0 flex items-center justify-center">
-              <Card className="max-w-md w-full rounded-3xl border-primary/20 bg-card/95 shadow-2xl backdrop-blur">
+              <Card className="max-w-md w-full rounded-3xl border border-primary/20 bg-white/95 shadow-[0_28px_70px_rgba(101,195,200,0.25)] backdrop-blur-md">
                 <CardContent className="p-8 text-center space-y-6">
-                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 shadow-lg">
                     <Lock className="h-8 w-8 text-primary" />
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-foreground mb-2">
                       {t('analytics.businessRequired')}
                     </h2>
-                    <p className="text-muted-foreground mb-4">
+                    <p className="text-sm text-muted-foreground mb-4">
                       {t('analytics.upgradePrompt')}
                     </p>
-                    <ul className="text-left text-sm text-muted-foreground space-y-2 mb-6">
-                      <li className="flex items-center gap-2">
-                        <span className="text-primary">✓</span>
+                    <ul className="text-left text-sm text-muted-foreground space-y-2.5 mb-6">
+                      <li className="flex items-center gap-2.5">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-xs text-primary">✓</span>
                         {t('analytics.feature1')}
                       </li>
-                      <li className="flex items-center gap-2">
-                        <span className="text-primary">✓</span>
+                      <li className="flex items-center gap-2.5">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-xs text-primary">✓</span>
                         {t('analytics.feature2')}
                       </li>
-                      <li className="flex items-center gap-2">
-                        <span className="text-primary">✓</span>
+                      <li className="flex items-center gap-2.5">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-xs text-primary">✓</span>
                         {t('analytics.feature3')}
                       </li>
-                      <li className="flex items-center gap-2">
-                        <span className="text-primary">✓</span>
+                      <li className="flex items-center gap-2.5">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-xs text-primary">✓</span>
                         {t('analytics.feature4')}
                       </li>
                     </ul>
                   </div>
                   <Button
                     onClick={() => navigate('/plans')}
-                    className="w-full rounded-xl"
-                    size="lg"
+                    className="rounded-full px-8 shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
                   >
                     {t('analytics.upgradeCta')}
                   </Button>
@@ -279,7 +283,7 @@ const Analytics = () => {
             </div>
           </div>
         </main>
-        <SiteFooter />
+        <SiteFooter className="border-primary/20 bg-white/80 backdrop-blur" />
       </div>
     );
   }
@@ -287,21 +291,26 @@ const Analytics = () => {
   const isLoading = authLoading || fanmarksLoading || analyticsLoading;
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-background via-muted/20 to-background">
-      <AppHeader />
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-foreground mb-8 flex items-center gap-3">
-          <BarChart3 className="h-8 w-8 text-primary" />
-          {t('analytics.pageTitle')}
-        </h1>
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
+      <AppHeader className="border-border/30 bg-white/80" />
+      <main className="flex-1 container mx-auto px-4 py-12 sm:px-6 lg:px-8">
+        {/* Page Header */}
+        <div className="space-y-3 text-center mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+            {t('analytics.pageTitle')}
+          </h1>
+          <p className="mx-auto max-w-2xl text-sm sm:text-base text-muted-foreground">
+            {t('analytics.pageSubtitle')}
+          </p>
+        </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap gap-4 mb-8">
+        <div className="flex flex-wrap gap-3 mb-6">
           <Select
             value={selectedFanmarkId || 'all'}
             onValueChange={(value) => setSelectedFanmarkId(value === 'all' ? null : value)}
           >
-            <SelectTrigger className="w-[200px] rounded-xl">
+            <SelectTrigger className="w-[200px] rounded-2xl border-primary/20 bg-white">
               <SelectValue placeholder={t('analytics.selectFanmark')} />
             </SelectTrigger>
             <SelectContent>
@@ -321,7 +330,10 @@ const Analytics = () => {
                 variant={period === p ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setPeriod(p)}
-                className="rounded-xl"
+                className={cn(
+                  "rounded-full px-4",
+                  period !== p && "border-primary/20 bg-white text-muted-foreground hover:bg-primary/5"
+                )}
               >
                 {t(`analytics.period${p === '7d' ? '7days' : p === '30d' ? '30days' : '90days'}`)}
               </Button>
@@ -330,8 +342,8 @@ const Analytics = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-6 md:grid-cols-2 mb-8">
-          <Card className="rounded-2xl border-primary/10 bg-card/80 shadow-lg">
+        <div className="grid gap-6 md:grid-cols-2 mb-6">
+          <Card className="rounded-3xl border border-primary/20 bg-white shadow-[0_20px_45px_rgba(101,195,200,0.15)]">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -339,19 +351,19 @@ const Analytics = () => {
                   {isLoading ? (
                     <Skeleton className="h-10 w-24" />
                   ) : (
-                    <p className="text-4xl font-bold text-foreground">
+                    <p className="text-3xl font-bold text-foreground">
                       {aggregatedStats.totalAccess.toLocaleString()}
                     </p>
                   )}
                 </div>
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                  <TrendingUp className="h-7 w-7 text-primary" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+                  <TrendingUp className="h-6 w-6 text-primary" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="rounded-2xl border-primary/10 bg-card/80 shadow-lg">
+          <Card className="rounded-3xl border border-primary/20 bg-white shadow-[0_20px_45px_rgba(101,195,200,0.15)]">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -359,13 +371,13 @@ const Analytics = () => {
                   {isLoading ? (
                     <Skeleton className="h-10 w-24" />
                   ) : (
-                    <p className="text-4xl font-bold text-foreground">
+                    <p className="text-3xl font-bold text-foreground">
                       {aggregatedStats.uniqueVisitors.toLocaleString()}
                     </p>
                   )}
                 </div>
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-accent/10">
-                  <Users className="h-7 w-7 text-accent" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10">
+                  <Users className="h-6 w-6 text-accent" />
                 </div>
               </div>
             </CardContent>
@@ -373,15 +385,18 @@ const Analytics = () => {
         </div>
 
         {/* Daily Trend Chart */}
-        <Card className="rounded-2xl border-primary/10 bg-card/80 shadow-lg mb-8">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">{t('analytics.dailyTrend')}</CardTitle>
+        <Card className="rounded-3xl border border-primary/20 bg-white shadow-[0_20px_45px_rgba(101,195,200,0.15)] mb-6">
+          <CardHeader className="px-6 pt-6 pb-4">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              {t('analytics.dailyTrend')}
+            </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-6 pb-6">
             {isLoading ? (
-              <Skeleton className="h-64 w-full" />
+              <Skeleton className="h-64 w-full rounded-2xl" />
             ) : aggregatedStats.dailyStats.length === 0 ? (
-              <div className="h-64 flex items-center justify-center text-muted-foreground">
+              <div className="h-64 flex items-center justify-center text-muted-foreground rounded-2xl bg-primary/5">
                 {t('analytics.noData')}
               </div>
             ) : (
@@ -393,14 +408,15 @@ const Analytics = () => {
                       <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-primary/10" />
                   <XAxis dataKey="date" className="text-xs" />
                   <YAxis className="text-xs" />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '0.75rem',
+                      backgroundColor: 'white',
+                      border: '1px solid hsl(var(--primary) / 0.2)',
+                      borderRadius: '1rem',
+                      boxShadow: '0 10px 30px rgba(101,195,200,0.15)',
                     }}
                   />
                   <Area
@@ -420,15 +436,15 @@ const Analytics = () => {
         {/* Breakdown Charts */}
         <div className="grid gap-6 md:grid-cols-2">
           {/* Referrer Breakdown */}
-          <Card className="rounded-2xl border-primary/10 bg-card/80 shadow-lg">
-            <CardHeader>
+          <Card className="rounded-3xl border border-primary/20 bg-white shadow-[0_20px_45px_rgba(101,195,200,0.15)]">
+            <CardHeader className="px-6 pt-6 pb-4">
               <CardTitle className="text-lg font-semibold">{t('analytics.referrerBreakdown')}</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-6 pb-6">
               {isLoading ? (
-                <Skeleton className="h-48 w-full" />
+                <Skeleton className="h-48 w-full rounded-2xl" />
               ) : aggregatedStats.referrerBreakdown.length === 0 ? (
-                <div className="h-48 flex items-center justify-center text-muted-foreground">
+                <div className="h-48 flex items-center justify-center text-muted-foreground rounded-2xl bg-primary/5">
                   {t('analytics.noData')}
                 </div>
               ) : (
@@ -462,15 +478,15 @@ const Analytics = () => {
           </Card>
 
           {/* Device Breakdown */}
-          <Card className="rounded-2xl border-primary/10 bg-card/80 shadow-lg">
-            <CardHeader>
+          <Card className="rounded-3xl border border-primary/20 bg-white shadow-[0_20px_45px_rgba(101,195,200,0.15)]">
+            <CardHeader className="px-6 pt-6 pb-4">
               <CardTitle className="text-lg font-semibold">{t('analytics.deviceBreakdown')}</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-6 pb-6">
               {isLoading ? (
-                <Skeleton className="h-48 w-full" />
+                <Skeleton className="h-48 w-full rounded-2xl" />
               ) : aggregatedStats.deviceBreakdown.length === 0 ? (
-                <div className="h-48 flex items-center justify-center text-muted-foreground">
+                <div className="h-48 flex items-center justify-center text-muted-foreground rounded-2xl bg-primary/5">
                   {t('analytics.noData')}
                 </div>
               ) : (
@@ -504,7 +520,7 @@ const Analytics = () => {
           </Card>
         </div>
       </main>
-      <SiteFooter />
+      <SiteFooter className="border-primary/20 bg-white/80 backdrop-blur" />
     </div>
   );
 };

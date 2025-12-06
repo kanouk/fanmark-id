@@ -1470,6 +1470,7 @@
   },
   "analytics": {
     "pageTitle": "アナリティクス",
+    "pageSubtitle": "ファンマークへのアクセス状況を分析・可視化",
     "businessRequired": "ビジネスプラン以上で利用可能",
     "upgradePrompt": "アナリティクス機能では以下の分析が可能です：",
     "feature1": "アクセス数の推移",

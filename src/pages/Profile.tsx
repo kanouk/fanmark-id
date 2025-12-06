@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { CardDescription } from '@/components/ui/card';
-import { User, LogOut, CreditCard, Globe, Palette, Link2, Info, PencilLine, Languages, Heart, Lock, ShieldCheck, Check, X, AlertTriangle, Loader2, Bell, ExternalLink, ArrowRight, Trash2, Save } from 'lucide-react';
+import { User, LogOut, CreditCard, Globe, Palette, Link2, Info, PencilLine, Languages, Heart, Lock, ShieldCheck, Check, X, AlertTriangle, Loader2, Bell, ExternalLink, ArrowRight, Trash2, Save, BarChart3, Crown } from 'lucide-react';
 import { MdSpaceDashboard } from 'react-icons/md';
 import { RiCalendarCheckLine } from 'react-icons/ri';
 import { Badge } from '@/components/ui/badge';
@@ -73,6 +73,7 @@ const Profile = () => {
   const pathname = location.pathname;
   const isOnDashboard = pathname.startsWith('/dashboard');
   const isOnFavorites = pathname.startsWith('/favorites');
+  const isOnAnalytics = pathname.startsWith('/analytics');
   const isOnProfilePage = pathname.startsWith('/profile');
   const [activeSection, setActiveSection] = useState<Section>('account');
   const [languagePreference, setLanguagePreference] = useState<ActiveLanguageCode>(
@@ -851,6 +852,20 @@ const Profile = () => {
         <DropdownMenuItem
           onSelect={(event) => {
             event.preventDefault();
+            if (!isOnAnalytics) {
+              navigate('/analytics');
+            }
+          }}
+          className={isOnAnalytics ? 'opacity-60' : 'cursor-pointer'}
+          disabled={isOnAnalytics}
+        >
+          <BarChart3 className="mr-2 h-4 w-4" />
+          {t('navigation.analytics')}
+          <Crown className="ml-1 h-3 w-3 text-amber-500" />
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onSelect={(event) => {
+            event.preventDefault();
             if (!isOnProfilePage) {
               navigate('/profile');
             }
@@ -923,6 +938,16 @@ const Profile = () => {
 
       <main className="flex-1">
         <div className="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
+          {/* Page Header */}
+          <div className="space-y-3 text-center mb-8">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+              {t('userSettings.pageTitle')}
+            </h1>
+            <p className="mx-auto max-w-2xl text-sm sm:text-base text-muted-foreground">
+              {t('userSettings.pageSubtitle')}
+            </p>
+          </div>
+
           <div className="grid gap-8 lg:grid-cols-[280px,1fr]">
             <aside className="rounded-3xl border border-primary/20 bg-white/80 shadow-[0_25px_50px_rgba(101,195,200,0.25)]">
               <div className="space-y-4 px-6 pb-6 pt-8">

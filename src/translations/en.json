@@ -1472,6 +1472,7 @@
   },
   "analytics": {
     "pageTitle": "Analytics",
+    "pageSubtitle": "Analyze and visualize access to your fanmarks",
     "businessRequired": "Available for Business plan and above",
     "upgradePrompt": "With Analytics, you can analyze:",
     "feature1": "Access trends over time",

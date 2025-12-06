@@ -22,7 +22,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Heart, LogOut, User, Bell, BarChart3 } from 'lucide-react';
+import { Heart, LogOut, User, Bell, BarChart3, Crown } from 'lucide-react';
 import { MdSpaceDashboard } from 'react-icons/md';
 import { cn } from '@/lib/utils';
 
@@ -308,19 +308,6 @@ export const AppHeader = ({
                 <DropdownMenuItem
                   onSelect={(event) => {
                     event.preventDefault();
-                    if (!isOnUserSettings) {
-                      navigate('/profile');
-                    }
-                  }}
-                  className="cursor-pointer"
-                  disabled={isOnUserSettings}
-                >
-                  <User className="mr-2 h-4 w-4" />
-                  {t('navigation.profile')}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={(event) => {
-                    event.preventDefault();
                     if (!isOnAnalytics) {
                       navigate('/analytics');
                     }
@@ -330,6 +317,20 @@ export const AppHeader = ({
                 >
                   <BarChart3 className="mr-2 h-4 w-4" />
                   {t('navigation.analytics')}
+                  <Crown className="ml-1 h-3 w-3 text-amber-500" />
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    if (!isOnUserSettings) {
+                      navigate('/profile');
+                    }
+                  }}
+                  className="cursor-pointer"
+                  disabled={isOnUserSettings}
+                >
+                  <User className="mr-2 h-4 w-4" />
+                  {t('navigation.profile')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={(event) => {
