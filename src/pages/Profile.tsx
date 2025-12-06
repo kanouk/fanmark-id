@@ -876,6 +876,40 @@ const Profile = () => {
     </DropdownMenu>
   ) : null;
 
+  // Full-screen overlay while deleting account
+  if (isDeletingAccount) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
+        <div className="flex flex-col items-center gap-6 text-center">
+          {/* Animated loader */}
+          <div className="relative">
+            <div className="h-20 w-20 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-3xl animate-pulse">👋</span>
+            </div>
+          </div>
+          
+          {/* Message */}
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold text-foreground">
+              {t('userSettings.deleteAccount.deleting')}
+            </h2>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              {t('userSettings.deleteAccount.deletingDescription')}
+            </p>
+          </div>
+          
+          {/* Progress dots */}
+          <div className="flex gap-1.5">
+            <span className="h-2 w-2 animate-bounce rounded-full bg-primary" style={{ animationDelay: '0ms' }} />
+            <span className="h-2 w-2 animate-bounce rounded-full bg-primary" style={{ animationDelay: '150ms' }} />
+            <span className="h-2 w-2 animate-bounce rounded-full bg-primary" style={{ animationDelay: '300ms' }} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
       <AppHeader
