@@ -61,7 +61,7 @@ const Analytics = () => {
 
   const canAccessAnalytics = useMemo(() => {
     const planType = profile?.plan_type;
-    return planType === 'business' || planType === 'enterprise' || planType === 'admin';
+    return planType === 'creator' || planType === 'business' || planType === 'enterprise' || planType === 'admin';
   }, [profile?.plan_type]);
 
   // Fetch user's fanmarks
