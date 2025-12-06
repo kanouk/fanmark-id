@@ -119,6 +119,158 @@ export type Database = {
         }
         Relationships: []
       }
+      fanmark_access_daily_stats: {
+        Row: {
+          access_count: number | null
+          created_at: string | null
+          device_desktop: number | null
+          device_mobile: number | null
+          device_tablet: number | null
+          fanmark_id: string
+          id: string
+          license_id: string | null
+          referrer_direct: number | null
+          referrer_other: number | null
+          referrer_search: number | null
+          referrer_social: number | null
+          stat_date: string
+          unique_visitors: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          access_count?: number | null
+          created_at?: string | null
+          device_desktop?: number | null
+          device_mobile?: number | null
+          device_tablet?: number | null
+          fanmark_id: string
+          id?: string
+          license_id?: string | null
+          referrer_direct?: number | null
+          referrer_other?: number | null
+          referrer_search?: number | null
+          referrer_social?: number | null
+          stat_date: string
+          unique_visitors?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          access_count?: number | null
+          created_at?: string | null
+          device_desktop?: number | null
+          device_mobile?: number | null
+          device_tablet?: number | null
+          fanmark_id?: string
+          id?: string
+          license_id?: string | null
+          referrer_direct?: number | null
+          referrer_other?: number | null
+          referrer_search?: number | null
+          referrer_social?: number | null
+          stat_date?: string
+          unique_visitors?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fanmark_access_daily_stats_fanmark_id_fkey"
+            columns: ["fanmark_id"]
+            isOneToOne: false
+            referencedRelation: "fanmarks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fanmark_access_daily_stats_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "fanmark_licenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fanmark_access_daily_stats_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "recent_active_fanmarks"
+            referencedColumns: ["license_id"]
+          },
+        ]
+      }
+      fanmark_access_logs: {
+        Row: {
+          accessed_at: string
+          browser: string | null
+          device_type: string | null
+          fanmark_id: string
+          id: string
+          license_id: string | null
+          os: string | null
+          referrer: string | null
+          referrer_category: string | null
+          referrer_domain: string | null
+          user_agent: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          visitor_hash: string | null
+        }
+        Insert: {
+          accessed_at?: string
+          browser?: string | null
+          device_type?: string | null
+          fanmark_id: string
+          id?: string
+          license_id?: string | null
+          os?: string | null
+          referrer?: string | null
+          referrer_category?: string | null
+          referrer_domain?: string | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          visitor_hash?: string | null
+        }
+        Update: {
+          accessed_at?: string
+          browser?: string | null
+          device_type?: string | null
+          fanmark_id?: string
+          id?: string
+          license_id?: string | null
+          os?: string | null
+          referrer?: string | null
+          referrer_category?: string | null
+          referrer_domain?: string | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          visitor_hash?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fanmark_access_logs_fanmark_id_fkey"
+            columns: ["fanmark_id"]
+            isOneToOne: false
+            referencedRelation: "fanmarks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fanmark_access_logs_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "fanmark_licenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fanmark_access_logs_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "recent_active_fanmarks"
+            referencedColumns: ["license_id"]
+          },
+        ]
+      }
       fanmark_availability_rules: {
         Row: {
           created_at: string

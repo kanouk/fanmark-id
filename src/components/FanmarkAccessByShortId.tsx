@@ -98,6 +98,27 @@ export const FanmarkAccessByShortId = () => {
           console.warn('Loaded fanmark without license_id. Profile access requires active license linkage.');
         }
 
+        // Record access analytics (fire-and-forget, non-blocking)
+        const recordAccess = async () => {
+          try {
+            const searchParams = new URLSearchParams(window.location.search);
+            await supabase.functions.invoke('record-fanmark-access', {
+              body: {
+                fanmark_id: fanmarkData.id,
+                short_id: shortId,
+                referrer: document.referrer || null,
+                user_agent: navigator.userAgent,
+                utm_source: searchParams.get('utm_source'),
+                utm_medium: searchParams.get('utm_medium'),
+                utm_campaign: searchParams.get('utm_campaign'),
+              },
+            });
+          } catch (error) {
+            console.warn('Failed to record fanmark access:', error);
+          }
+        };
+        recordAccess();
+
         // Show redirect loading and then redirect if it's a redirect type without password protection
         if (resolvedFanmark.access_type === 'redirect' &&
             resolvedFanmark.target_url &&
