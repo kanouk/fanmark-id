@@ -12,6 +12,7 @@ import { FanmarkAcquisition } from '@/components/FanmarkAcquisition';
 import { supabase } from '@/integrations/supabase/client';
 import { useFanmarkLimit } from '@/hooks/useFanmarkLimit';
 import { RecentFanmarksScroll } from '@/components/RecentFanmarksScroll';
+import { Sparkles } from 'lucide-react';
 const Index = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -299,19 +300,33 @@ const Index = () => {
 
 
       {/* CTA */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary via-accent to-primary py-24 text-primary-foreground">
-        <div className="container mx-auto px-4">
-          <div className="mx-auto max-w-3xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              {t('sections.cta')} ✨
-            </h2>
-            <p className="mt-6 text-lg text-primary-foreground/90 sm:text-xl">
-              {t('sections.ctaDescription')}
-            </p>
-            <div className="mt-10 flex flex-col items-center justify-center">
-              <Button size="lg" variant="secondary" className="px-8 shadow-[0_20px_40px_rgba(0,0,0,0.18)]" onClick={handleSignupPrompt}>
-                {t('hero.tryButton')}
-              </Button>
+      <section className="relative overflow-hidden bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 py-16">
+        {/* Decorative background elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
+          <div className="absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
+        </div>
+        
+        <div className="container relative mx-auto px-4">
+          <div className="mx-auto max-w-xl">
+            <div className="rounded-3xl border border-primary/20 bg-white/80 px-8 py-10 shadow-[0_25px_60px_rgba(101,195,200,0.2)] backdrop-blur-sm sm:px-10">
+              <div className="text-center">
+                <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+                  {t('sections.cta')}
+                </h2>
+                <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
+                  {t('sections.ctaDescription')}
+                </p>
+                <div className="mt-6">
+                  <Button 
+                    className="gap-2 rounded-full px-6 shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5" 
+                    onClick={handleSignupPrompt}
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    {t('hero.tryButton')}
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
