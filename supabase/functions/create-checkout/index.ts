@@ -56,14 +56,19 @@ serve(async (req) => {
     logStep("User authenticated", { userId: user.id, email: user.email });
 
     const { plan_type } = await req.json();
-    if (!plan_type || !['creator', 'business'].includes(plan_type)) {
+    if (!plan_type || !['creator', 'max', 'business'].includes(plan_type)) {
       logStep("ERROR: Invalid plan type", { plan_type });
-      throw new Error("Invalid plan type. Must be 'creator' or 'business'");
+      throw new Error("Invalid plan type. Must be 'creator', 'max', or 'business'");
     }
     logStep("Plan type validated", { plan_type });
 
     // Fetch price_id from system_settings
-    const settingKey = plan_type === 'creator' ? 'creator_stripe_price_id' : 'business_stripe_price_id';
+    const settingKeyMap: Record<string, string> = {
+      creator: 'creator_stripe_price_id',
+      max: 'max_stripe_price_id',
+      business: 'business_stripe_price_id',
+    };
+    const settingKey = settingKeyMap[plan_type];
     const { data: settingData, error: settingError } = await supabaseClient
       .from('system_settings')
       .select('setting_value')

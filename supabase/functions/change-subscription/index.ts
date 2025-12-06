@@ -50,7 +50,7 @@ serve(async (req) => {
     const { data: settingsData, error: settingsError } = await supabaseClient
       .from('system_settings')
       .select('setting_key, setting_value')
-      .in('setting_key', ['creator_stripe_price_id', 'business_stripe_price_id']);
+      .in('setting_key', ['creator_stripe_price_id', 'max_stripe_price_id', 'business_stripe_price_id']);
 
     if (settingsError) throw settingsError;
 
@@ -58,6 +58,8 @@ serve(async (req) => {
     settingsData?.forEach(({ setting_key, setting_value }) => {
       if (setting_key === 'creator_stripe_price_id') {
         priceIdMap['creator'] = setting_value;
+      } else if (setting_key === 'max_stripe_price_id') {
+        priceIdMap['max'] = setting_value;
       } else if (setting_key === 'business_stripe_price_id') {
         priceIdMap['business'] = setting_value;
       }
@@ -93,8 +95,9 @@ serve(async (req) => {
     const planOrder: Record<string, number> = {
       free: 0,
       creator: 1,
-      business: 2,
-      enterprise: 3,
+      max: 2,
+      business: 3,
+      enterprise: 4,
     };
 
     const isUpgrade = planOrder[new_plan_type] > planOrder[current_plan_type];
