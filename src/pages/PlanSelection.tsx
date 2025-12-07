@@ -366,44 +366,28 @@ const PlanSelection = () => {
     if (!user || !pendingPlanType) return;
 
     try {
-      // Update plan_excluded status for fanmarks
-      const allFanmarkIds = fanmarksForSelection.map(fm => fm.id);
-      const excludedFanmarkIds = allFanmarkIds.filter(id => !selectedFanmarkIds.includes(id));
+      // Get license IDs for unselected fanmarks (to be returned)
+      const unselectedLicenseIds = fanmarksForSelection
+        .filter(fm => !selectedFanmarkIds.includes(fm.id))
+        .map(fm => fm.license_id);
 
-      // Mark excluded fanmarks
-      if (excludedFanmarkIds.length > 0) {
-        const licensesToExclude = fanmarksForSelection
-          .filter(fm => excludedFanmarkIds.includes(fm.id))
-          .map(fm => fm.license_id);
+      // Return unselected fanmarks using bulk-return-fanmarks
+      if (unselectedLicenseIds.length > 0) {
+        const { error: bulkReturnError, data: bulkReturnData } = await supabase.functions.invoke<{
+          success: boolean;
+          failed?: Array<{ licenseId: string; error: string }>;
+        }>('bulk-return-fanmarks', {
+          body: { license_ids: unselectedLicenseIds },
+        });
 
-        const { error } = await supabase
-          .from('fanmark_licenses')
-          .update({
-            plan_excluded: true,
-            excluded_at: new Date().toISOString(),
-            excluded_from_plan: profile?.plan_type || 'unknown'
-          })
-          .in('id', licensesToExclude);
+        if (bulkReturnError) {
+          throw bulkReturnError;
+        }
 
-        if (error) throw error;
-      }
-
-      // Reset excluded status for selected fanmarks
-      if (selectedFanmarkIds.length > 0) {
-        const licensesToInclude = fanmarksForSelection
-          .filter(fm => selectedFanmarkIds.includes(fm.id))
-          .map(fm => fm.license_id);
-
-        const { error } = await supabase
-          .from('fanmark_licenses')
-          .update({
-            plan_excluded: false,
-            excluded_at: null,
-            excluded_from_plan: null
-          })
-          .in('id', licensesToInclude);
-
-        if (error) throw error;
+        if (bulkReturnData?.failed && bulkReturnData.failed.length > 0) {
+          console.error('Failed to return some fanmarks:', bulkReturnData.failed);
+          throw new Error('Failed to return selected fanmarks');
+        }
       }
 
       // Close modal and proceed with downgrade
@@ -438,8 +422,8 @@ const PlanSelection = () => {
       setRedirecting(false);
       toast({
         title: t('planSelection.downgradeSuccess'),
-        description: excludedFanmarkIds.length > 0 
-          ? t('planSelection.fanmarksExcluded', { count: excludedFanmarkIds.length })
+        description: unselectedLicenseIds.length > 0 
+          ? t('planSelection.fanmarksExcluded', { count: unselectedLicenseIds.length })
           : t('planSelection.downgradeSuccessDescription'),
       });
     } catch (error) {
