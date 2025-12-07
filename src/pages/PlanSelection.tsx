@@ -19,7 +19,7 @@ import {
 import { FanmarkSelectionModal } from '@/components/FanmarkSelectionModal';
 import { DowngradeWarningDialog } from '@/components/DowngradeWarningDialog';
 import { supabase } from '@/integrations/supabase/client';
-import { Check, ArrowLeft, Loader2, Sparkle, Crown, Star, ExternalLink, Flame } from 'lucide-react';
+import { Check, ArrowLeft, Loader2, Sparkle, Crown, Star, ExternalLink, Flame, ShieldCheck, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface PlanCardCopy {
   type: PlanType;
@@ -74,9 +74,10 @@ const PlanSelection = () => {
       price: formatPlanPrice(planType),
       monthlySuffix: planType === 'free' ? undefined : t('planSelection.perMonth'),
       features: [
-        t('planSelection.features.limit', { limit: getPlanLimit(planType) }),
         t(`planSelection.${planType}.feature1`),
         t(`planSelection.${planType}.feature2`),
+        // feature3 is only for creator and business plans
+        ...(planType !== 'free' ? [t(`planSelection.${planType}.feature3`)] : []),
       ],
     };
   }), [t]);
@@ -489,7 +490,6 @@ const PlanSelection = () => {
     );
   }
 
-  const headerCurrentBadgeClass = 'inline-flex items-center gap-2 rounded-full border border-primary/25 bg-gradient-to-r from-primary/10 via-white to-primary/10 px-4 py-1.5 text-primary shadow-sm';
   const currentCardBadgeClass = 'inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-emerald-100 px-3 py-1 text-emerald-700 shadow-sm';
 
   return (
@@ -508,14 +508,11 @@ const PlanSelection = () => {
           </Button>
         </div>
 
-        <header className="space-y-4 text-center">
-          <Badge className={`mx-auto w-fit ${headerCurrentBadgeClass}`}>
-            {t('planSelection.currentPlanLabel', { plan: t(`planSelection.${profile.plan_type}.name`) })}
-          </Badge>
-          <h1 className="text-3xl font-semibold text-foreground md:text-4xl">
+        <header className="space-y-3 text-center">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
             {t('planSelection.title')}
           </h1>
-          <p className="mx-auto max-w-2xl text-sm text-muted-foreground md:text-base">
+          <p className="mx-auto max-w-2xl text-sm sm:text-base text-muted-foreground">
             {t('planSelection.subtitle')}
           </p>
         </header>
@@ -544,9 +541,9 @@ const PlanSelection = () => {
                 >
                   <div className="flex items-start justify-between gap-4">
                 <div className="space-y-2 text-left pt-2">
-                      <div className="flex items-center gap-2 text-sm font-semibold text-primary">
-                        {getPlanIcon(card.type)}
-                        <span>{card.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-primary">{getPlanIcon(card.type)}</span>
+                        <span className="text-lg font-bold text-foreground">{card.name}</span>
                       </div>
                       <div className="flex items-baseline gap-2">
                         <span className="text-3xl font-bold text-foreground">{card.price}</span>
@@ -594,6 +591,60 @@ const PlanSelection = () => {
             </div>
             );
           })}
+        </section>
+
+        {/* Payment Info Section */}
+        <section className="mt-16 space-y-6">
+          {/* Security Card */}
+          <Card className="rounded-2xl border border-primary/10 bg-background/80 p-6 shadow-lg backdrop-blur">
+            <div className="flex items-start gap-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100">
+                <ShieldCheck className="h-5 w-5 text-emerald-600" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-medium text-foreground">
+                  {t('planSelection.paymentInfo.securityTitle')}
+                </h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {t('planSelection.paymentInfo.securityDescription')}
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Billing Info Card */}
+          <Card className="rounded-2xl border border-primary/10 bg-background/80 p-6 shadow-lg backdrop-blur">
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Upgrade Info */}
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100">
+                  <TrendingUp className="h-5 w-5 text-blue-600" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-sm font-medium text-foreground">
+                    {t('planSelection.paymentInfo.billingTitle')}
+                  </h3>
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    {t('planSelection.paymentInfo.billingDescription')}
+                  </p>
+                </div>
+              </div>
+              {/* Downgrade Info */}
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100">
+                  <TrendingDown className="h-5 w-5 text-amber-600" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-sm font-medium text-foreground">
+                    {t('planSelection.paymentInfo.downgradeTitle')}
+                  </h3>
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    {t('planSelection.paymentInfo.downgradeDescription')}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Card>
         </section>
 
       </div>

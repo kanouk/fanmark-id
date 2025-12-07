@@ -7,9 +7,13 @@ export const useCoverImageUpload = () => {
   const { user } = useAuth();
   const { t } = useTranslation();
   const [uploading, setUploading] = useState(false);
+  const MAX_COVER_IMAGE_SIZE = 2 * 1024 * 1024; // 2MB
 
   const uploadCoverImage = async (file: File): Promise<{ url: string; width: number; height: number }> => {
     if (!user) throw new Error(t('common.userNotAuthenticated'));
+    if (file.size > MAX_COVER_IMAGE_SIZE) {
+      throw new Error(t('common.coverImageSizeLimit'));
+    }
     
     setUploading(true);
     try {

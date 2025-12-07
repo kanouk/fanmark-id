@@ -159,6 +159,7 @@
   },
   "messageBoard": {
     "title": "伝言板",
+    "previewTitle": "伝言板のプレビュー",
     "messageFromOwner": "ファンマオーナーからメッセージが届いています",
     "passwordProtection": "パスワード保護",
     "passwordProtectedMessage": "この伝言板はパスワードで保護されています",
@@ -241,12 +242,22 @@
     "goBack": "前のページに戻る",
     "submit": "送信",
     "back": "戻る",
+    "share": "シェア",
+    "copyUrl": "URLをコピー",
     "saving": "保存中...",
     "processing": "処理中...",
     "clearAll": "すべてクリア",
     "enabled": "有効",
     "disabled": "無効",
     "userNotAuthenticated": "ユーザーが認証されていません",
+    "uploadFailed": "アップロードに失敗しました",
+    "coverImageUploaded": "カバー画像をアップロードしました",
+    "coverImageUploadedDesc": "カバー画像が正常に更新されました。",
+    "coverUploadFailedDesc": "カバー画像のアップロードに失敗しました。もう一度お試しください。",
+    "coverImageSizeLimit": "カバー画像は2MB以下にしてください。",
+    "profileImageUploaded": "プロフィール画像をアップロードしました",
+    "profileImageUploadedDesc": "プロフィール画像が正常に更新されました。",
+    "profileUploadFailedDesc": "プロフィール画像のアップロードに失敗しました。もう一度お試しください。",
     "openEmojiPicker": "絵文字ピッカーを開く",
     "aiRecommendationComingSoon": "AIでおすすめ（近日対応）",
     "aiRecommendationDescription": "近日対応予定: AIが自然文や画像からファンマを提案します",
@@ -311,6 +322,7 @@
     "coverImageUploadedDesc": "カバー画像が正常に更新されました。",
     "uploadFailed": "アップロードに失敗しました",
     "coverUploadFailedDesc": "カバー画像のアップロードに失敗しました。もう一度お試しください。",
+    "coverImageSizeLimit": "カバー画像は2MB以下にしてください。",
     "profileImageUploaded": "プロフィール画像をアップロードしました",
     "profileImageUploadedDesc": "プロフィール画像が正常に更新されました。",
     "profileUploadFailedDesc": "プロフィール画像のアップロードに失敗しました。もう一度お試しください。",
@@ -469,8 +481,8 @@
     }
   },
   "planSelection": {
-    "title": "あなたにぴったりのプランを選択",
-    "subtitle": "必要になったらいつでもアップグレード。落ち着いた体験のまま、シンプルに。",
+    "title": "プラン選択",
+    "subtitle": "あなたにぴったりのプランを選択してください",
     "perMonth": "/ 月",
     "popularBadge": "人気",
     "currentPlanLabel": "現在のプラン: {plan}",
@@ -503,21 +515,23 @@
     },
     "free": {
       "name": "フリー",
-      "description": "まずは気軽にファンマを体験したい方へ。",
-      "feature1": "基本的なダッシュボード機能",
-      "feature2": "コミュニティアップデートへのアクセス"
+      "description": "まずは気軽にファンマを体験したい方",
+      "feature1": "同時に 3 個のファンマを保有",
+      "feature2": "さまざまなファンマアクセス機能"
     },
     "creator": {
       "name": "クリエーター",
-      "description": "もっと多くのファンマを運用したい方に。",
-      "feature1": "優先サポートと先行機能アクセス",
-      "feature2": "カスタマイズ機能の拡張"
+      "description": "もっと多くのファンマを運用したい方",
+      "feature1": "同時に 10 個のファンマを保有",
+      "feature2": "さまざまなファンマアクセス機能",
+      "feature3": "アナリティクス機能"
     },
     "business": {
       "name": "ビジネス",
-      "description": "複数のファンマをチームで運用する方へ。",
-      "feature1": "アナリティクスのスナップショット",
-      "feature2": "チーム向けコラボレーション機能"
+      "description": "ファンマをビジネスで運用したい方",
+      "feature1": "同時に 50 個のファンマを保有",
+      "feature2": "さまざまなファンマアクセス機能",
+      "feature3": "アナリティクス機能"
     },
     "enterprise": {
       "name": "エンタープライズ",
@@ -528,6 +542,14 @@
       "price": "料金はご相談",
       "ctaDescription": "まずはお気軽にお問い合わせください。",
       "contactCta": "お問い合わせ"
+    },
+    "paymentInfo": {
+      "securityTitle": "安心・安全な決済",
+      "securityDescription": "決済処理はStripeを利用しています。お客様のカード情報は当サービスには一切保存されず、世界最高水準のセキュリティで保護されています。",
+      "billingTitle": "アップグレード時",
+      "billingDescription": "新しいプランは即日適用されます。現在のプランの残り期間分は日割りで計算され、新プランの初回料金から差し引かれます。",
+      "downgradeTitle": "ダウングレード時",
+      "downgradeDescription": "ダウングレードを選択された場合、現在のプランの残り期間は即時終了となり、新しいプランがすぐに適用されます。残り期間分の返金はございませんので、変更のタイミングにご注意ください。"
     }
   },
   "admin": {
@@ -693,6 +715,10 @@
     "privateDescription": "このプロフィールは非公開に設定されています。",
     "cannotDisplay": "プロフィールを表示できません",
     "noActiveLicense": "アクティブなライセンスが見つからないため、プロフィール情報にアクセスできません。",
+    "preparingProfile": "プロフィールを準備中です",
+    "preparingProfileDesc": "まもなく素敵なプロフィールが公開されます。しばらくお待ちください。",
+    "defaultTitle": "{fanmark} のプロフィール",
+    "noSocialLinks": "まだ設定されていません",
     "welcome": "プロフィールへようこそ！",
     "pageTitle": "プロフィール設定",
     "pageSubtitle": "fanmark.idでの活動をもっと魅力的にするために、プロフィールを整えましょう",
@@ -861,7 +887,7 @@
     "returnSuccessDescription": "ファンマの返却が完了しました。",
     "returnError": "返却に失敗しました",
     "returnErrorDescription": "しばらく時間を置いてから再度お試しください。",
-    "emojiCopiedTitle": "絵文字をコピーしました",
+    "emojiCopiedTitle": "ファンマをコピーしました",
     "urlCopiedTitle": "コピーしました",
     "visitFanmarkTooltip": "ファンマに移動",
     "qrTooltip": "QRコードページを開く",
@@ -1084,9 +1110,9 @@
     }
   },
   "emojiProfile": {
-    "editProfileTitle": "プロフィールページを編集",
+    "editProfileTitle": "プロフィールの編集",
     "editProfileDescription": "ファンマのプロフィールページを作成",
-    "profilePreview": "プロフィールプレビュー",
+    "profilePreview": "プロフィールのプレビュー",
     "profilePreviewTitle": "あなたのプロフィール",
     "defaultProfileTitle": "マイプロフィール",
     "coverImage": "カバー画像",
@@ -1099,6 +1125,7 @@
     "bioPlaceholder": "あなたのストーリーを短く教えてください...",
     "themeColor": "テーマカラー",
     "socialLinks": "ソーシャルリンク",
+    "socialLinksDescription": "あなたのSNSやサイトへのリンクをまとめて表示",
     "publicProfile": "公開プロフィール",
     "publicProfileDescription": "他のユーザーがあなたのプロフィールを見ることを許可",
     "updateSuccess": "プロフィールを更新しました",

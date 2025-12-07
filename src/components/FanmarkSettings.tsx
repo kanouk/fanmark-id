@@ -20,7 +20,8 @@ import { toast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Eye, Edit } from 'lucide-react';
+import { Loader2, Eye, Edit, ArrowLeft } from 'lucide-react';
+import { LanguageToggle } from '@/components/LanguageToggle';
 import { cn } from '@/lib/utils';
 import { 
   FiType, 
@@ -415,34 +416,38 @@ export const FanmarkSettings = ({
         }
       }
 
-      // Create fanmark profile if requested
-      if (data.createProfile && data.accessType === 'profile') {
-        const { error: profileError } = await supabase
-          .from('fanmark_profiles')
-          .upsert({
-            license_id: fanmark.license_id,
-            bio: `Profile for ${fanmark.fanmark || fanmark.user_input_fanmark}`,
-            is_public: data.is_public,
-          }, {
-            onConflict: 'license_id'
-          });
-
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
-          // Don't fail the whole operation if profile creation fails
-        }
-      }
-
-      // Update existing profile's public setting if profile type is selected
+      // Handle profile for profile access type
       if (data.accessType === 'profile') {
-        const { error: profileUpdateError } = await supabase
+        // Check if profile already exists
+        const { data: existingProfile } = await supabase
           .from('fanmark_profiles')
-          .update({ is_public: data.is_public })
-          .eq('license_id', fanmark.license_id);
+          .select('id')
+          .eq('license_id', fanmark.license_id)
+          .maybeSingle();
 
-        if (profileUpdateError) {
-          console.error('Profile update error:', profileUpdateError);
-          // Don't fail the whole operation if profile update fails
+        if (existingProfile) {
+          // Profile exists - only update is_public setting (don't overwrite bio, social_links, etc.)
+          const { error: profileUpdateError } = await supabase
+            .from('fanmark_profiles')
+            .update({ is_public: data.is_public })
+            .eq('license_id', fanmark.license_id);
+
+          if (profileUpdateError) {
+            console.error('Profile update error:', profileUpdateError);
+          }
+        } else {
+          // Profile doesn't exist - create new one with empty bio
+          const { error: profileError } = await supabase
+            .from('fanmark_profiles')
+            .insert({
+              license_id: fanmark.license_id,
+              bio: '',
+              is_public: data.is_public,
+            });
+
+          if (profileError) {
+            console.error('Profile creation error:', profileError);
+          }
         }
       }
 
@@ -551,7 +556,7 @@ export const FanmarkSettings = ({
   );
 
   const formContent = (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 pt-4">
+    <form id="fanmark-settings-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 pt-4">
       {summaryCard}
 
       {/* Fanmark Name */}
@@ -948,49 +953,98 @@ export const FanmarkSettings = ({
       </Card>
 
 
-      {/* Action Buttons */}
-      <div className="flex flex-col-reverse gap-3 pt-6 border-t border-border/20 sm:flex-row sm:justify-end">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleClose}
-          disabled={isSubmitting}
-          className="h-12 w-full rounded-full border border-border bg-transparent px-6 text-base font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/30 sm:w-auto"
-        >
-          {t('common.cancel')}
-        </Button>
-        <Button
-          type="submit"
-          disabled={isSubmitting}
-          className="h-12 w-full rounded-full bg-primary px-6 text-base font-semibold text-primary-foreground shadow-[0_12px_30px_rgba(101,195,200,0.18)] transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 disabled:opacity-60 sm:w-48"
-        >
-          {isSubmitting ? (
-            <div className="flex items-center justify-center gap-2">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              {t('common.saving')}
-            </div>
-          ) : (
-            <div className="flex items-center justify-center gap-2">
-              <FiSave className="h-5 w-5" />
-              {t('fanmarkSettings.actions.save')}
-            </div>
-          )}
-        </Button>
-      </div>
+      {/* Action Buttons - Dialog mode only */}
+      {mode === 'dialog' && (
+        <div className="flex flex-col-reverse gap-3 pt-6 border-t border-border/20 sm:flex-row sm:justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleClose}
+            disabled={isSubmitting}
+            className="h-12 w-full rounded-full border border-border bg-transparent px-6 text-base font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/30 sm:w-auto"
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="h-12 w-full rounded-full bg-primary px-6 text-base font-semibold text-primary-foreground shadow-[0_12px_30px_rgba(101,195,200,0.18)] transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 disabled:opacity-60 sm:w-48"
+          >
+            {isSubmitting ? (
+              <div className="flex items-center justify-center gap-2">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                {t('common.saving')}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-2">
+                <FiSave className="h-5 w-5" />
+                {t('fanmarkSettings.actions.save')}
+              </div>
+            )}
+          </Button>
+        </div>
+      )}
+
+      {/* Spacer for page mode fixed bottom nav */}
+      {mode === 'page' && <div className="h-24" />}
     </form>
   );
 
   if (mode === 'page') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-        <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10 sm:px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-              <FiSettings className="h-7 w-7" />
+        {/* Top Navigation */}
+        <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border/40">
+          <div className="container mx-auto px-4 py-4 flex items-center">
+            <div className="w-24 flex items-center">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={handleClose}
+                className="h-10 w-10 rounded-full border border-primary/20 bg-background/90 text-foreground hover:bg-primary/10"
+                aria-label={t('common.back')}
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
             </div>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">{t('fanmarkSettings.title')}</h1>
+            <h1 className="flex-1 text-xl font-bold tracking-tight text-foreground text-center flex items-center justify-center gap-2">
+              <FiSettings className="h-5 w-5" />
+              {t('fanmarkSettings.title')}
+            </h1>
+            <div className="w-24 flex items-center justify-end">
+              <LanguageToggle />
+            </div>
           </div>
+        </div>
+
+        {/* Content */}
+        <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
           {formContent}
+        </div>
+
+        {/* Bottom Navigation Bar */}
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border/40 p-6">
+          <div className="flex justify-center">
+            <Button
+              type="submit"
+              form="fanmark-settings-form"
+              disabled={isSubmitting}
+              className="h-10 px-6 rounded-2xl bg-primary text-sm font-semibold text-primary-foreground shadow-[0_12px_30px_rgba(101,195,200,0.18)] transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 disabled:opacity-60"
+            >
+              {isSubmitting ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  {t('common.saving')}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2">
+                  <FiSave className="h-5 w-5" />
+                  {t('fanmarkSettings.actions.save')}
+                </div>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     );

@@ -17,7 +17,8 @@ import {
   FiInstagram, 
   FiGithub, 
   FiYoutube,
-  FiGlobe
+  FiGlobe,
+  FiFacebook
 } from 'react-icons/fi';
 import { 
   SiTiktok, 
@@ -48,6 +49,7 @@ const profileSchema = z.object({
     discord: z.string().url('Invalid URL').optional().or(z.literal('')),
     snapchat: z.string().url('Invalid URL').optional().or(z.literal('')),
     twitch: z.string().url('Invalid URL').optional().or(z.literal('')),
+    facebook: z.string().url('Invalid URL').optional().or(z.literal('')),
     website: z.string().url('Invalid URL').optional().or(z.literal('')),
   }).optional(),
   theme_settings: z.object({
@@ -86,6 +88,7 @@ const socialPlatforms = [
   { key: 'discord', label: 'Discord', icon: SiDiscord, placeholder: 'https://discord.gg/invite', baseUrl: 'https://discord.gg/', handlePlaceholder: 'invite-code' },
   { key: 'snapchat', label: 'Snapchat', icon: SiSnapchat, placeholder: 'https://snapchat.com/add/username', baseUrl: 'https://snapchat.com/add/', handlePlaceholder: 'username' },
   { key: 'twitch', label: 'Twitch', icon: SiTwitch, placeholder: 'https://twitch.tv/username', baseUrl: 'https://twitch.tv/', handlePlaceholder: 'username' },
+  { key: 'facebook', label: 'Facebook', icon: FiFacebook, placeholder: 'https://facebook.com/username', baseUrl: 'https://facebook.com/', handlePlaceholder: 'username' },
   { key: 'website', label: 'Website', icon: FiGlobe, placeholder: 'https://yourwebsite.com' },
 ];
 
@@ -146,6 +149,7 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose, onPre
         discord: profile?.social_links?.discord || '',
         snapchat: profile?.social_links?.snapchat || '',
         twitch: profile?.social_links?.twitch || '',
+        facebook: profile?.social_links?.facebook || '',
         website: profile?.social_links?.website || '',
       },
       theme_settings: {
@@ -222,14 +226,14 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose, onPre
       setValue('theme_settings.cover_image_url', result.url);
       setValue('theme_settings.cover_image_dimensions', { width: result.width, height: result.height });
       toast({
-        title: t('coverImageUploaded'),
-        description: t('coverImageUploadedDesc'),
+        title: t('common.coverImageUploaded'),
+        description: t('common.coverImageUploadedDesc'),
       });
     } catch (error) {
       console.error('Cover image upload error:', error);
       toast({
-        title: t('uploadFailed'),
-        description: t('coverUploadFailedDesc'),
+        title: t('common.uploadFailed'),
+        description: error instanceof Error ? error.message : t('common.coverUploadFailedDesc'),
         variant: 'destructive',
       });
     } finally {
@@ -247,14 +251,14 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose, onPre
       setProfileImageUrl(imageUrl);
       setValue('theme_settings.profile_image_url', imageUrl);
       toast({
-        title: t('profileImageUploaded'),
-        description: t('profileImageUploadedDesc'),
+        title: t('common.profileImageUploaded'),
+        description: t('common.profileImageUploadedDesc'),
       });
     } catch (error) {
       console.error('Profile image upload error:', error);
       toast({
-        title: t('uploadFailed'),
-        description: t('profileUploadFailedDesc'),
+        title: t('common.uploadFailed'),
+        description: error instanceof Error ? error.message : t('common.profileUploadFailedDesc'),
         variant: 'destructive',
       });
     } finally {
@@ -669,41 +673,41 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose, onPre
           </CardContent>
         </Card>
 
-        {/* Privacy Settings */}
-      </form>
+        {/* Spacer for fixed bottom bar */}
+        <div className="h-24" />
 
-      {/* Action Button */}
-      <div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border/40 p-8 mt-12">
-        <div className="flex justify-center gap-4">
-          {onPreview && (
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isSubmitting}
-              className="px-8 h-12 text-base rounded-2xl border-primary/20 hover:border-primary/40 hover:bg-primary/5"
-              onClick={onPreview}
-            >
-              <Eye className="h-5 w-5 mr-2" />
-              {t('emojiProfile.preview')}
-            </Button>
-          )}
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="px-10 h-12 text-base rounded-2xl bg-primary hover:bg-primary/90 btn-pop"
-            onClick={handleSubmit(onSubmit)}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin mr-3" />
-                保存中...
-              </>
-            ) : (
-              '保存する'
+        {/* Action Button */}
+        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border/40 p-6 z-50">
+          <div className="flex justify-center gap-4">
+            {onPreview && (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isSubmitting}
+                className="px-6 h-10 text-sm rounded-2xl border-primary/20 hover:border-primary/40 hover:bg-primary/5"
+                onClick={onPreview}
+              >
+                <Eye className="h-5 w-5 mr-2" />
+                {t('emojiProfile.preview')}
+              </Button>
             )}
-          </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-6 h-10 text-sm rounded-2xl bg-primary hover:bg-primary/90 btn-pop"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin mr-3" />
+                  保存中...
+                </>
+              ) : (
+                '保存する'
+              )}
+            </Button>
+          </div>
         </div>
-      </div>
+      </form>
     </div>
   );
 };

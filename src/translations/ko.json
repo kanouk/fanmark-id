@@ -159,6 +159,7 @@
   },
   "messageBoard": {
     "title": "전언판",
+    "previewTitle": "전언판 미리보기",
     "messageFromOwner": "팬마크 소유자로부터 메시지가 도착했습니다",
     "passwordProtection": "비밀번호 보호",
     "passwordProtectedMessage": "이 전언판은 비밀번호로 보호됩니다",
@@ -242,12 +243,22 @@
     "goBack": "돌아가기",
     "submit": "제출",
     "back": "뒤로",
+    "share": "공유",
+    "copyUrl": "URL 복사",
     "saving": "저장 중...",
     "processing": "처리 중...",
     "clearAll": "모두 지우기",
     "enabled": "활성",
     "disabled": "비활성",
     "userNotAuthenticated": "사용자가 인증되지 않음",
+    "uploadFailed": "업로드에 실패했습니다",
+    "coverImageUploaded": "커버 이미지를 업로드했습니다",
+    "coverImageUploadedDesc": "커버 이미지가 성공적으로 업데이트되었습니다.",
+    "coverUploadFailedDesc": "커버 이미지 업로드 실패. 다시 시도하세요.",
+    "coverImageSizeLimit": "커버 이미지는 2MB 이하만 업로드할 수 있습니다.",
+    "profileImageUploaded": "프로필 이미지를 업로드했습니다",
+    "profileImageUploadedDesc": "프로필 이미지가 성공적으로 업데이트되었습니다.",
+    "profileUploadFailedDesc": "프로필 이미지 업로드에 실패했습니다. 다시 시도하세요.",
     "openEmojiPicker": "이모지 선택기 열기",
     "aiRecommendationComingSoon": "AI 추천 (곧 지원)",
     "aiRecommendationDescription": "곧 지원: AI가 자연어나 이미지에서 팬마크를 제안합니다",
@@ -312,6 +323,7 @@
     "coverImageUploadedDesc": "커버 이미지가 성공적으로 업데이트되었습니다.",
     "uploadFailed": "업로드 실패",
     "coverUploadFailedDesc": "커버 이미지 업로드 실패. 다시 시도하세요.",
+    "coverImageSizeLimit": "커버 이미지는 2MB 이하만 업로드할 수 있습니다.",
     "profileImageUploaded": "프로필 이미지를 업로드했습니다",
     "profileImageUploadedDesc": "프로필 이미지가 성공적으로 업데이트되었습니다.",
     "profileUploadFailedDesc": "프로필 이미지 업로드 실패. 다시 시도하세요.",
@@ -470,8 +482,8 @@
     }
   },
   "planSelection": {
-    "title": "당신에게 딱 맞는 요금제를 선택",
-    "subtitle": "필요하면 언제든 업그레이드. 차분한 경험 그대로 간단하게.",
+    "title": "플랜 선택",
+    "subtitle": "당신에게 딱 맞는 플랜을 선택하세요",
     "perMonth": "/ 월",
     "popularBadge": "인기",
     "currentPlanLabel": "현재 요금제: {plan}",
@@ -504,21 +516,23 @@
     },
     "free": {
       "name": "프리",
-      "description": "먼저 가볍게 팬마크를 체험하고 싶은 분께.",
-      "feature1": "기본 대시보드 기능",
-      "feature2": "커뮤니티 업데이트 접근"
+      "description": "먼저 가볍게 팬마크를 체험하고 싶은 분",
+      "feature1": "동시에 3개의 팬마크 보유",
+      "feature2": "다양한 팬마크 접근 기능"
     },
     "creator": {
       "name": "크리에이터",
-      "description": "더 많은 팬마크를 운영하고 싶은 분께.",
-      "feature1": "우선 지원과 선행 기능 접근",
-      "feature2": "커스터마이징 기능 확대"
+      "description": "더 많은 팬마크를 운영하고 싶은 분",
+      "feature1": "동시에 10개의 팬마크 보유",
+      "feature2": "다양한 팬마크 접근 기능",
+      "feature3": "분석 기능"
     },
     "business": {
       "name": "비즈니스",
-      "description": "여러 팬마크를 팀에서 운영하는 분께.",
-      "feature1": "분석 스냅샷",
-      "feature2": "팀 협업 기능"
+      "description": "팬마크를 비즈니스로 운영하고 싶은 분",
+      "feature1": "동시에 50개의 팬마크 보유",
+      "feature2": "다양한 팬마크 접근 기능",
+      "feature3": "분석 기능"
     },
     "enterprise": {
       "name": "엔터프라이즈",
@@ -529,6 +543,14 @@
       "price": "요금제는 상담",
       "ctaDescription": "먼저 편하게 문의해주세요.",
       "contactCta": "문의하기"
+    },
+    "paymentInfo": {
+      "securityTitle": "안전한 결제",
+      "securityDescription": "결제는 Stripe에서 처리됩니다. 카드 정보는 당사 서버에 저장되지 않으며 세계 최고 수준의 보안으로 보호됩니다.",
+      "billingTitle": "업그레이드 시",
+      "billingDescription": "새로운 플랜은 즉시 적용됩니다. 현재 플랜의 남은 기간은 일할 계산되어 새 플랜의 첫 결제 금액에서 차감됩니다.",
+      "downgradeTitle": "다운그레이드 시",
+      "downgradeDescription": "다운그레이드를 선택하시면 현재 플랜이 즉시 종료되고 새로운 플랜이 바로 적용됩니다. 남은 기간에 대한 환불은 없으니 변경 시점을 신중히 선택해 주세요."
     }
   },
   "admin": {
@@ -694,6 +716,10 @@
     "privateDescription": "이 프로필은 비공개로 설정되어 있습니다.",
     "cannotDisplay": "프로필을 표시할 수 없습니다",
     "noActiveLicense": "활성화된 라이선스를 찾을 수 없어 프로필 정보에 접근할 수 없습니다.",
+    "preparingProfile": "프로필 준비 중",
+    "preparingProfileDesc": "곧 멋진 프로필이 공개됩니다. 잠시만 기다려 주세요.",
+    "defaultTitle": "{fanmark}의 프로필",
+    "noSocialLinks": "아직 설정되지 않았습니다",
     "welcome": "프로필에 환영합니다!",
     "pageTitle": "프로필 설정",
     "pageSubtitle": "당신의 세부 정보를 업데이트하고 팬마크를 빛내보세요.",
@@ -862,7 +888,7 @@
     "returnSuccessDescription": "팬마크 반환이 완료되었습니다.",
     "returnError": "반환 실패",
     "returnErrorDescription": "잠시 후 다시 시도하세요.",
-    "emojiCopiedTitle": "이모지를 복사했습니다",
+    "emojiCopiedTitle": "팬마크를 복사했습니다",
     "urlCopiedTitle": "복사했습니다",
     "visitFanmarkTooltip": "팬마크 방문",
     "qrTooltip": "QR 코드 페이지 열기",
@@ -1085,7 +1111,7 @@
     }
   },
   "emojiProfile": {
-    "editProfileTitle": "프로필 페이지 편집",
+    "editProfileTitle": "프로필 편집",
     "editProfileDescription": "팬마크의 프로필 페이지 만들기",
     "profilePreview": "프로필 미리보기",
     "profilePreviewTitle": "당신의 프로필",
@@ -1100,6 +1126,7 @@
     "bioPlaceholder": "당신의 이야기를 짧게 말해주세요...",
     "themeColor": "테마 색상",
     "socialLinks": "소셜 링크",
+    "socialLinksDescription": "SNS나 웹사이트 링크를 한 곳에 모아 보여주세요",
     "publicProfile": "공개 프로필",
     "publicProfileDescription": "다른 사용자가 프로필을 볼 수 있게 허용",
     "updateSuccess": "프로필을 업데이트했습니다",

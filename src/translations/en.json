@@ -159,6 +159,7 @@
   },
   "messageBoard": {
     "title": "Message Board",
+    "previewTitle": "Message Board Preview",
     "messageFromOwner": "You have received a message from the fanmark owner",
     "passwordProtection": "Password Protection",
     "passwordProtectedMessage": "This message board is password protected",
@@ -242,12 +243,22 @@
     "goBack": "Go back",
     "submit": "Submit",
     "back": "Back",
+    "share": "Share",
+    "copyUrl": "Copy URL",
     "saving": "Saving...",
     "processing": "Processing...",
     "clearAll": "Clear All",
     "enabled": "Enabled",
     "disabled": "Disabled",
     "userNotAuthenticated": "User not authenticated",
+    "uploadFailed": "Upload failed",
+    "coverImageUploaded": "Cover image uploaded",
+    "coverImageUploadedDesc": "Your cover image has been updated successfully.",
+    "coverUploadFailedDesc": "Failed to upload cover image. Please try again.",
+    "coverImageSizeLimit": "Cover image must be 2MB or less.",
+    "profileImageUploaded": "Profile image uploaded",
+    "profileImageUploadedDesc": "Your profile image has been updated successfully.",
+    "profileUploadFailedDesc": "Failed to upload profile image. Please try again.",
     "openEmojiPicker": "Open emoji picker",
     "aiRecommendationComingSoon": "AI recommendations (coming soon)",
     "aiRecommendationDescription": "Coming soon: AI will suggest fanmarks from natural text or images",
@@ -312,6 +323,7 @@
     "coverImageUploadedDesc": "Your cover image has been updated successfully.",
     "uploadFailed": "Upload failed",
     "coverUploadFailedDesc": "Failed to upload cover image. Please try again.",
+    "coverImageSizeLimit": "Cover image must be 2MB or less.",
     "profileImageUploaded": "Profile image uploaded",
     "profileImageUploadedDesc": "Your profile image has been updated successfully.",
     "profileUploadFailedDesc": "Failed to upload profile image. Please try again.",
@@ -470,8 +482,8 @@
     }
   },
   "planSelection": {
-    "title": "Pick the plan that fits your flow",
-    "subtitle": "Upgrade anytime – simple and elegant.",
+    "title": "Plan Selection",
+    "subtitle": "Choose the plan that's right for you",
     "perMonth": "/ month",
     "popularBadge": "Most popular",
     "currentPlanLabel": "Current plan: {plan}",
@@ -504,21 +516,23 @@
     },
     "free": {
       "name": "Free",
-      "description": "A gentle starting point for discovering fanmarks at your own pace.",
-      "feature1": "Core dashboard and fanmark publishing",
-      "feature2": "Community updates and tips"
+      "description": "For those who want to casually experience Fanmark",
+      "feature1": "Own up to 3 fanmarks at once",
+      "feature2": "Various fanmark access features"
     },
     "creator": {
       "name": "Creator",
-      "description": "Designed for growing creators ready to share more fanmarks.",
-      "feature1": "Priority support & early feature access",
-      "feature2": "Enhanced customization options"
+      "description": "For those who want to manage more fanmarks",
+      "feature1": "Own up to 10 fanmarks at once",
+      "feature2": "Various fanmark access features",
+      "feature3": "Analytics features"
     },
     "business": {
       "name": "Business",
-      "description": "Scalable management tools for teams handling multiple fanmarks.",
-      "feature1": "Advanced analytics snapshots",
-      "feature2": "Team-ready collaboration tools"
+      "description": "For those who want to use Fanmark for business",
+      "feature1": "Own up to 50 fanmarks at once",
+      "feature2": "Various fanmark access features",
+      "feature3": "Analytics features"
     },
     "enterprise": {
       "name": "Enterprise",
@@ -529,6 +543,14 @@
       "price": "Custom pricing",
       "ctaDescription": "Let's design the right plan together for your organization.",
       "contactCta": "Contact us"
+    },
+    "paymentInfo": {
+      "securityTitle": "Secure Payment",
+      "securityDescription": "Payments are processed by Stripe. Your card information is never stored on our servers and is protected with world-class security.",
+      "billingTitle": "When Upgrading",
+      "billingDescription": "Your new plan takes effect immediately. The remaining days of your current plan will be prorated and credited toward your first payment for the new plan.",
+      "downgradeTitle": "When Downgrading",
+      "downgradeDescription": "If you choose to downgrade, your current plan will end immediately and the new plan will take effect right away. Please note that there are no refunds for the remaining period, so we recommend timing your change accordingly."
     }
   },
   "admin": {
@@ -695,6 +717,10 @@
     "privateDescription": "This profile is set to private.",
     "cannotDisplay": "Profile Unavailable",
     "noActiveLicense": "Unable to access profile information because no active license was found.",
+    "preparingProfile": "Setting up profile",
+    "preparingProfileDesc": "An amazing profile is coming soon. Please check back later.",
+    "defaultTitle": "{fanmark}'s Profile",
+    "noSocialLinks": "Not set yet",
     "welcome": "Welcome to your profile!",
     "pageTitle": "Profile Settings",
     "pageSubtitle": "Update your details and make your fanmark shine.",
@@ -863,7 +889,7 @@
     "returnDate": "Return Date",
     "remainingDays": "Days Left",
     "returned": "Returned",
-    "emojiCopiedTitle": "Emoji copied",
+    "emojiCopiedTitle": "Fanmark copied",
     "urlCopiedTitle": "Copied",
     "visitFanmarkTooltip": "Visit fanmark",
     "qrTooltip": "Open QR code page",
@@ -1086,12 +1112,12 @@
     }
   },
   "emojiProfile": {
-    "editProfileTitle": "Edit Profile Page",
+    "editProfileTitle": "Edit Profile",
     "editProfileDescription": "Create your Linktree-style profile page",
     "profileImage": "Profile Image",
     "profileImageHint": "Upload your profile picture",
     "uploadProfile": "Upload Profile Image",
-    "profilePreview": "Profile Preview",
+    "profilePreview": "Preview Profile",
     "profilePreviewTitle": "Your Profile",
     "defaultProfileTitle": "My Profile",
     "coverImage": "Cover Image",
@@ -1101,6 +1127,7 @@
     "bioPlaceholder": "Tell your story in a few words...",
     "themeColor": "Theme Color",
     "socialLinks": "Social Links",
+    "socialLinksDescription": "Share where people can find you online",
     "publicProfile": "Public Profile",
     "publicProfileDescription": "Make your profile visible to others",
     "updateSuccess": "Profile Updated",

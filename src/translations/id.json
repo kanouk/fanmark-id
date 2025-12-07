@@ -159,6 +159,7 @@
   },
   "messageBoard": {
     "title": "Papan Pesan",
+    "previewTitle": "Pratinjau Papan Pesan",
     "messageFromOwner": "Anda telah menerima pesan dari pemilik fanmark",
     "passwordProtection": "Perlindungan Kata Sandi",
     "passwordProtectedMessage": "Papan pesan ini dilindungi kata sandi",
@@ -242,12 +243,22 @@
     "goBack": "Kembali",
     "submit": "Kirim",
     "back": "Kembali",
+    "share": "Bagikan",
+    "copyUrl": "Salin URL",
     "saving": "Menyimpan...",
     "processing": "Memproses...",
     "clearAll": "Hapus Semua",
     "enabled": "Diaktifkan",
     "disabled": "Dinonaktifkan",
     "userNotAuthenticated": "Pengguna tidak terotentikasi",
+    "uploadFailed": "Gagal mengunggah",
+    "coverImageUploaded": "Gambar sampul diunggah",
+    "coverImageUploadedDesc": "Gambar sampul Anda telah diperbarui dengan berhasil.",
+    "coverUploadFailedDesc": "Gagal mengunggah gambar sampul. Silakan coba lagi.",
+    "coverImageSizeLimit": "Gambar sampul harus 2MB atau lebih kecil.",
+    "profileImageUploaded": "Gambar profil diunggah",
+    "profileImageUploadedDesc": "Gambar profil Anda telah diperbarui dengan berhasil.",
+    "profileUploadFailedDesc": "Gagal mengunggah gambar profil. Silakan coba lagi.",
     "openEmojiPicker": "Buka pemilih emoji",
     "aiRecommendationComingSoon": "Rekomendasi AI (segera hadir)",
     "aiRecommendationDescription": "Segera hadir: AI akan menyarankan fanmark dari teks alami atau gambar",
@@ -470,8 +481,8 @@
     }
   },
   "planSelection": {
-    "title": "Pilih paket yang cocok untuk Anda",
-    "subtitle": "Upgrade kapan saja – buat semuanya tetap elegan dan sederhana.",
+    "title": "Pilihan Paket",
+    "subtitle": "Pilih paket yang tepat untuk Anda",
     "perMonth": "/ bulan",
     "popularBadge": "Paling populer",
     "currentPlanLabel": "Paket saat ini: {plan}",
@@ -504,21 +515,23 @@
     },
     "free": {
       "name": "Gratis",
-      "description": "Titik awal yang lembut untuk menemukan fanmark dengan kecepatan Anda sendiri.",
-      "feature1": "Dasbor inti dan publikasi fanmark",
-      "feature2": "Akses ke pembaruan dan tips komunitas"
+      "description": "Untuk yang ingin mencoba Fanmark dengan santai",
+      "feature1": "Miliki hingga 3 fanmark sekaligus",
+      "feature2": "Berbagai fitur akses fanmark"
     },
     "creator": {
       "name": "Kreator",
-      "description": "Dirancang untuk kreator yang berkembang siap berbagi lebih banyak fanmark.",
-      "feature1": "Dukungan prioritas & akses fitur awal",
-      "feature2": "Opsi penyesuaian yang ditingkatkan"
+      "description": "Untuk yang ingin mengelola lebih banyak fanmark",
+      "feature1": "Miliki hingga 10 fanmark sekaligus",
+      "feature2": "Berbagai fitur akses fanmark",
+      "feature3": "Fitur analitik"
     },
     "business": {
       "name": "Bisnis",
-      "description": "Alat manajemen yang dapat diskalakan untuk tim yang menangani banyak fanmark.",
-      "feature1": "Tangkapan analitik lanjutan",
-      "feature2": "Alat kolaborasi siap tim"
+      "description": "Untuk yang ingin menggunakan Fanmark untuk bisnis",
+      "feature1": "Miliki hingga 50 fanmark sekaligus",
+      "feature2": "Berbagai fitur akses fanmark",
+      "feature3": "Fitur analitik"
     },
     "enterprise": {
       "name": "Perusahaan",
@@ -529,6 +542,14 @@
       "price": "Harga khusus",
       "ctaDescription": "Mari kita rancang paket yang tepat bersama untuk organisasi Anda.",
       "contactCta": "Hubungi kami"
+    },
+    "paymentInfo": {
+      "securityTitle": "Pembayaran Aman",
+      "securityDescription": "Pembayaran diproses oleh Stripe. Informasi kartu Anda tidak pernah disimpan di server kami dan dilindungi dengan keamanan kelas dunia.",
+      "billingTitle": "Saat Upgrade",
+      "billingDescription": "Paket baru Anda akan langsung berlaku. Sisa hari dari paket saat ini akan dihitung secara prorata dan dikreditkan ke pembayaran pertama paket baru Anda.",
+      "downgradeTitle": "Saat Downgrade",
+      "downgradeDescription": "Jika Anda memilih untuk downgrade, paket Anda saat ini akan segera berakhir dan paket baru akan langsung berlaku. Harap diperhatikan bahwa tidak ada pengembalian dana untuk sisa periode, jadi kami sarankan untuk memilih waktu perubahan dengan bijak."
     }
   },
   "admin": {
@@ -695,6 +716,10 @@
     "privateDescription": "Profil ini diatur ke privat.",
     "cannotDisplay": "Profil Tidak Tersedia",
     "noActiveLicense": "Tidak dapat mengakses informasi profil karena tidak ditemukan lisensi aktif.",
+    "preparingProfile": "Menyiapkan profil",
+    "preparingProfileDesc": "Profil yang luar biasa akan segera hadir. Silakan cek kembali nanti.",
+    "defaultTitle": "Profil {fanmark}",
+    "noSocialLinks": "Belum diatur",
     "welcome": "Selamat datang di profil Anda!",
     "pageTitle": "Pengaturan Profil",
     "pageSubtitle": "Jaga kehadiran fanmark Anda tetap segar dengan memperbarui detail pribadi dan tautan Anda.",
@@ -863,7 +888,7 @@
     "returnDate": "Tanggal Pengembalian",
     "remainingDays": "Hari Tersisa",
     "returned": "Dikembalikan",
-    "emojiCopiedTitle": "Emoji disalin",
+    "emojiCopiedTitle": "Fanmark disalin",
     "urlCopiedTitle": "Disalin",
     "visitFanmarkTooltip": "Kunjungi fanmark",
     "qrTooltip": "Buka halaman kode QR",
@@ -1086,7 +1111,7 @@
     }
   },
   "emojiProfile": {
-    "editProfileTitle": "Edit Halaman Profil",
+    "editProfileTitle": "Edit Profil",
     "editProfileDescription": "Buat halaman profil gaya Linktree Anda",
     "profileImage": "Gambar Profil",
     "profileImageHint": "Unggah gambar profil yang akan ditampilkan dalam format melingkar",
@@ -1101,6 +1126,7 @@
     "bioPlaceholder": "Ceritakan cerita Anda dalam beberapa kata...",
     "themeColor": "Warna Tema",
     "socialLinks": "Tautan Sosial",
+    "socialLinksDescription": "Kumpulkan tautan media sosial dan situs Anda di satu tempat",
     "publicProfile": "Profil Publik",
     "publicProfileDescription": "Buat profil Anda terlihat oleh orang lain",
     "updateSuccess": "Profil Diperbarui",

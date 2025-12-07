@@ -6,8 +6,9 @@ import { useEmojiProfile } from '@/hooks/useEmojiProfile';
 import { EmojiProfileForm } from '@/components/EmojiProfileForm';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, X, User, Eye } from 'lucide-react';
+import { Loader2, ArrowLeft, PenLine } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { LanguageToggle } from '@/components/LanguageToggle';
 
 export default function EmojiProfileEdit() {
   const { fanmarkId } = useParams<{ fanmarkId: string }>();
@@ -16,7 +17,6 @@ export default function EmojiProfileEdit() {
   const { user } = useAuth();
   const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [cachedFanmark, setCachedFanmark] = useState<{ user_input_fanmark: string; fanmark: string; emoji_ids: string[]; display_name: string | null } | null>(null);
   const [licenseId, setLicenseId] = useState<string | null>(null);
   const [licenseLoading, setLicenseLoading] = useState(true);
 
@@ -72,28 +72,8 @@ export default function EmojiProfileEdit() {
         state: { from: location },
         replace: true 
       });
-      return;
     }
-
-    // Load cached fanmark data from localStorage
-    try {
-      const cached = localStorage.getItem('fanmark_settings_cache');
-      if (cached) {
-        const data = JSON.parse(cached);
-        // Check if data is less than 5 minutes old and matches current fanmarkId
-        if (data.fanmarkId === fanmarkId && Date.now() - data.timestamp < 5 * 60 * 1000) {
-          setCachedFanmark({
-            user_input_fanmark: data.user_input_fanmark,
-            fanmark: data.fanmark || data.user_input_fanmark,
-            emoji_ids: Array.isArray(data.emoji_ids) ? data.emoji_ids : [],
-            display_name: data.display_name
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error loading cached fanmark data:', error);
-    }
-  }, [user, navigate, location, fanmarkId]);
+  }, [user, navigate, location]);
 
   const handleSave = async (data: any) => {
     setIsSubmitting(true);
@@ -143,47 +123,33 @@ export default function EmojiProfileEdit() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      {/* Close Button */}
+      {/* Top Navigation */}
       <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border/40">
-        <div className="container mx-auto px-4 py-4 flex justify-end">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleClose}
-            className="rounded-full h-10 w-10 p-0 hover:bg-primary/10"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+        <div className="container mx-auto px-4 py-4 flex items-center">
+          <div className="w-24 flex items-center">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={handleClose}
+              className="h-10 w-10 rounded-full border border-primary/20 bg-background/90 text-foreground hover:bg-primary/10"
+              aria-label={t('common.back')}
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </div>
+          <h1 className="flex-1 text-xl font-bold tracking-tight text-foreground text-center flex items-center justify-center gap-2">
+            <PenLine className="h-5 w-5" />
+            {t('emojiProfile.editProfileTitle')}
+          </h1>
+          <div className="w-24 flex items-center justify-end">
+            <LanguageToggle />
+          </div>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto space-y-10">
-          {/* Header */}
-          <div className="text-center space-y-6">
-            <div className="mx-auto flex items-center justify-center">
-              {/* Display cached emoji combination, profile emoji, or fallback to user icon with background */}
-              {cachedFanmark?.fanmark ? (
-                <span className="text-6xl leading-none text-center">
-                  {cachedFanmark?.fanmark}
-                </span>
-              ) : (
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 via-accent/20 to-primary/10 flex items-center justify-center shadow-lg">
-                  <User className="h-10 w-10 text-primary" />
-                </div>
-              )}
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight text-foreground mb-4 text-gradient">
-                {t('emojiProfile.editProfileTitle')}
-              </h1>
-              <p className="text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-                {t('emojiProfile.editProfileDescription')}
-              </p>
-            </div>
-          </div>
-
           {/* Form */}
           <EmojiProfileForm
             profile={profile}

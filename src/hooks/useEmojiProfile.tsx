@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from './useTranslation';
@@ -98,7 +98,7 @@ export const useEmojiProfile = (licenseId: string | null) => {
     }
   };
 
-  const updateProfile = async (updates: Partial<Omit<EmojiProfile, 'id' | 'license_id' | 'created_at' | 'updated_at'>>) => {
+  const updateProfile = useCallback(async (updates: Partial<Omit<EmojiProfile, 'id' | 'license_id' | 'created_at' | 'updated_at'>>) => {
     if (!user || !licenseId) throw new Error(t('common.userNotAuthenticated'));
 
     try {
@@ -131,7 +131,7 @@ export const useEmojiProfile = (licenseId: string | null) => {
       console.error('Error updating emoji profile:', error);
       throw error;
     }
-  };
+  }, [user, licenseId, t]);
 
   useEffect(() => {
     fetchProfile();
