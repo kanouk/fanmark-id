@@ -14,7 +14,7 @@ interface Fanmark {
   fanmark: string;
   fanmark_name: string | null;
   license_id: string;
-  license_end: string;
+  license_end: string | null;
   access_type: string | null;
 }
 
@@ -198,8 +198,10 @@ export const FanmarkSelectionModal = ({
             {currentFanmarks.map((fanmark) => {
               const selected = isSelected(fanmark.id);
               const canSelect = selected || selectedFanmarks.size < newPlanLimit;
-              const remainingDays = Math.max(0, Math.ceil(
-                (new Date(fanmark.license_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+              // For perpetual licenses (license_end is null), show as perpetual
+              const isPerpetual = fanmark.license_end === null;
+              const remainingDays = isPerpetual ? null : Math.max(0, Math.ceil(
+                (new Date(fanmark.license_end!).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
               ));
 
               return (
@@ -236,7 +238,12 @@ export const FanmarkSelectionModal = ({
                   <div className="space-y-1 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      <span>{t('planDowngrade.remainingDays', { days: remainingDays })}</span>
+                      <span>
+                        {isPerpetual 
+                          ? t('dashboard.perpetualLicense')
+                          : t('planDowngrade.remainingDays', { days: remainingDays })
+                        }
+                      </span>
                     </div>
                     <div className="flex items-center gap-1">
                       {getAccessTypeIcon(fanmark.access_type)}
