@@ -166,6 +166,20 @@ update({
 });
 ```
 
+### bulk-return-fanmarks
+プランダウングレード時の一括返却に使用。内部で `returnFanmarkByLicenseId` を繰り返し呼び出すため、個別返却と完全に同じ処理が実行される。
+
+```typescript
+// 各ライセンスに対して returnFanmarkByLicenseId を実行
+for (const licenseId of licenseIds) {
+  await returnFanmarkByLicenseId(ctx, licenseId);
+}
+```
+
+**使用箇所**:
+- `src/pages/PlanSelection.tsx` - ダウングレード時のファンマーク選択確定後
+- `src/components/UserProfileForm.tsx` - プラン変更時のファンマーク選択確定後
+
 ### check-expired-licenses
 **変更前**: `license_end + grace_period_ms`を使用してグレース期限を計算
 **変更後**: 直接比較のために`grace_expires_at`を使用
