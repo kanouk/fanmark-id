@@ -98,8 +98,8 @@ export const FanmarkSelectionModal = ({
 
   if (showConfirmation) {
     return (
-      <Dialog open={isOpen} onOpenChange={() => false}>
-        <DialogContent className="max-w-md [&>button]:hidden">
+      <Dialog open={isOpen} onOpenChange={(open) => !open && setShowConfirmation(false)}>
+        <DialogContent className="max-w-md">
           <DialogHeader className="space-y-3">
             <DialogTitle className="text-lg font-semibold">
               {t('planDowngrade.confirmationTitle')}
@@ -144,8 +144,8 @@ export const FanmarkSelectionModal = ({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={() => false}>
-      <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col [&>button]:hidden">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
         <DialogHeader className="space-y-3 pb-4 border-b flex-shrink-0">
           <DialogTitle className="text-lg font-semibold">
             {t('planDowngrade.modalTitle')}
@@ -256,9 +256,9 @@ export const FanmarkSelectionModal = ({
           </div>
         </div>
 
-        {/* Action Button */}
+        {/* Action Buttons */}
         <div className="pt-3 border-t flex-shrink-0">
-          <div className="text-center">
+          <div className="flex flex-col gap-2">
             {isSelectionComplete ? (
               <Button
                 onClick={handleShowConfirmation}
@@ -268,10 +268,18 @@ export const FanmarkSelectionModal = ({
                 {t('planDowngrade.proceedButton')}
               </Button>
             ) : (
-              <div className="text-xs text-muted-foreground py-2">
+              <div className="text-xs text-muted-foreground py-2 text-center">
                 {t('planDowngrade.selectRemaining', { remaining: newPlanLimit - selectedFanmarks.size })}
               </div>
             )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="w-full"
+            >
+              {t('common.cancel')}
+            </Button>
           </div>
         </div>
       </DialogContent>
