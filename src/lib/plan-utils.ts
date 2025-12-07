@@ -62,7 +62,7 @@ export async function fetchActiveFanmarks(userId: string): Promise<ActiveFanmark
       )
     `)
     .eq('user_id', userId)
-    .in('status', ['active', 'grace'])
+    .eq('status', 'active')
     .gt('license_end', nowIso)
     .order('license_end', { ascending: true });
 
