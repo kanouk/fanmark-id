@@ -122,6 +122,10 @@ export type Database = {
       fanmark_access_daily_stats: {
         Row: {
           access_count: number | null
+          access_type_inactive: number | null
+          access_type_profile: number | null
+          access_type_redirect: number | null
+          access_type_text: number | null
           created_at: string | null
           device_desktop: number | null
           device_mobile: number | null
@@ -139,6 +143,10 @@ export type Database = {
         }
         Insert: {
           access_count?: number | null
+          access_type_inactive?: number | null
+          access_type_profile?: number | null
+          access_type_redirect?: number | null
+          access_type_text?: number | null
           created_at?: string | null
           device_desktop?: number | null
           device_mobile?: number | null
@@ -156,6 +164,10 @@ export type Database = {
         }
         Update: {
           access_count?: number | null
+          access_type_inactive?: number | null
+          access_type_profile?: number | null
+          access_type_redirect?: number | null
+          access_type_text?: number | null
           created_at?: string | null
           device_desktop?: number | null
           device_mobile?: number | null
@@ -197,6 +209,7 @@ export type Database = {
       }
       fanmark_access_logs: {
         Row: {
+          access_type: string | null
           accessed_at: string
           browser: string | null
           device_type: string | null
@@ -214,6 +227,7 @@ export type Database = {
           visitor_hash: string | null
         }
         Insert: {
+          access_type?: string | null
           accessed_at?: string
           browser?: string | null
           device_type?: string | null
@@ -231,6 +245,7 @@ export type Database = {
           visitor_hash?: string | null
         }
         Update: {
+          access_type?: string | null
           accessed_at?: string
           browser?: string | null
           device_type?: string | null
