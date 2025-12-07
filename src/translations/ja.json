@@ -1511,7 +1511,7 @@
   "analytics": {
     "pageTitle": "アナリティクス",
     "pageSubtitle": "ファンマへのアクセス状況を分析できます",
-    "businessRequired": "ビジネスプラン以上で利用可能",
+    "creatorRequired": "クリエータープラン以上で利用可能",
     "upgradePrompt": "アナリティクス機能では以下の分析が可能です：",
     "feature1": "アクセス数の推移",
     "feature2": "流入元（検索・SNS・直接）の分析",

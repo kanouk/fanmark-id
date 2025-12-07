@@ -1513,7 +1513,7 @@
   "analytics": {
     "pageTitle": "Analytics",
     "pageSubtitle": "Analyze access to your fanmarks",
-    "businessRequired": "Available for Business plan and above",
+    "creatorRequired": "Available for Creator plan and above",
     "upgradePrompt": "With Analytics, you can analyze:",
     "feature1": "Access trends over time",
     "feature2": "Traffic sources (Search, Social, Direct)",

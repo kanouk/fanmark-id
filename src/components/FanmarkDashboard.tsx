@@ -115,7 +115,7 @@ export const FanmarkDashboard = () => {
   
   const canAccessAnalytics = useMemo(() => {
     const planType = profile?.plan_type;
-    return planType === 'business' || planType === 'enterprise' || planType === 'admin';
+    return planType === 'creator' || planType === 'business' || planType === 'enterprise' || planType === 'admin';
   }, [profile?.plan_type]);
 
   const [fanmarks, setFanmarks] = useState<Fanmark[]>([]);
@@ -480,10 +480,10 @@ export const FanmarkDashboard = () => {
     fetchFanmarks();
   }, [fetchFanmarks, user]);
 
-  // Fetch total access count for all fanmarks
+  // Fetch total access count for all fanmarks (available for all plans)
   useEffect(() => {
     const fetchTotalAccessCount = async () => {
-      if (!user || !canAccessAnalytics) {
+      if (!user) {
         setAccessCountLoading(false);
         return;
       }
@@ -522,7 +522,7 @@ export const FanmarkDashboard = () => {
     };
 
     fetchTotalAccessCount();
-  }, [user, canAccessAnalytics]);
+  }, [user]);
 
   const gracePeriodDaysSetting = settings?.grace_period_days ?? null;
 
@@ -794,13 +794,11 @@ export const FanmarkDashboard = () => {
                   </p>
                   <div className="flex items-baseline gap-3">
                     <span className="text-3xl font-bold text-primary">
-                      {!canAccessAnalytics ? '—' : accessCountLoading ? '—' : (totalAccessCount ?? 0).toLocaleString()}
+                      {accessCountLoading ? '—' : (totalAccessCount ?? 0).toLocaleString()}
                     </span>
-                    {canAccessAnalytics && (
-                      <span className="text-xs text-muted-foreground">
-                        {t('dashboard.stats.last30days')}
-                      </span>
-                    )}
+                    <span className="text-xs text-muted-foreground">
+                      {t('dashboard.stats.last30days')}
+                    </span>
                   </div>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">

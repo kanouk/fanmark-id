@@ -303,9 +303,9 @@ const Analytics = () => {
     return (
       <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
         <AppHeader className="border-border/30 bg-white/80" />
-        <main className="flex-1 container mx-auto px-4 py-12 sm:px-6 lg:px-8">
+        <main className="flex-1 container mx-auto px-4 py-8 sm:px-6 lg:px-8">
           {/* Page Header */}
-          <div className="space-y-3 text-center mb-8">
+          <div className="space-y-3 text-center mb-4">
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
               {t('analytics.pageTitle')}
             </h1>
@@ -314,50 +314,15 @@ const Analytics = () => {
             </p>
           </div>
 
-          <div className="relative">
-            {/* Blurred preview */}
-            <div className="opacity-30 blur-sm pointer-events-none">
-              <div className="grid gap-6 md:grid-cols-2 mb-6">
-                <Card className="rounded-3xl border border-primary/20 bg-white shadow-[0_20px_45px_rgba(101,195,200,0.15)]">
-                  <CardContent className="p-6">
-                    <div className="h-24 bg-primary/5 rounded-2xl" />
-                  </CardContent>
-                </Card>
-                <Card className="rounded-3xl border border-primary/20 bg-white shadow-[0_20px_45px_rgba(101,195,200,0.15)]">
-                  <CardContent className="p-6">
-                    <div className="h-24 bg-primary/5 rounded-2xl" />
-                  </CardContent>
-                </Card>
-              </div>
-              <Card className="rounded-3xl border border-primary/20 bg-white shadow-[0_20px_45px_rgba(101,195,200,0.15)] mb-6">
-                <CardContent className="p-6">
-                  <div className="h-64 bg-primary/5 rounded-2xl" />
-                </CardContent>
-              </Card>
-              <div className="grid gap-6 md:grid-cols-2">
-                <Card className="rounded-3xl border border-primary/20 bg-white shadow-[0_20px_45px_rgba(101,195,200,0.15)]">
-                  <CardContent className="p-6">
-                    <div className="h-48 bg-primary/5 rounded-2xl" />
-                  </CardContent>
-                </Card>
-                <Card className="rounded-3xl border border-primary/20 bg-white shadow-[0_20px_45px_rgba(101,195,200,0.15)]">
-                  <CardContent className="p-6">
-                    <div className="h-48 bg-primary/5 rounded-2xl" />
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-
-            {/* Upgrade overlay */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Card className="max-w-md w-full rounded-3xl border border-primary/20 bg-white/95 shadow-[0_28px_70px_rgba(101,195,200,0.25)] backdrop-blur-md">
+          <div className="flex justify-center">
+            <Card className="max-w-md w-full rounded-3xl border border-primary/20 bg-white/95 shadow-[0_28px_70px_rgba(101,195,200,0.25)]">
                 <CardContent className="p-8 text-center space-y-6">
                   <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 shadow-lg">
                     <Lock className="h-8 w-8 text-primary" />
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-foreground mb-2">
-                      {t('analytics.businessRequired')}
+                      {t('analytics.creatorRequired')}
                     </h2>
                     <p className="text-sm text-muted-foreground mb-4">
                       {t('analytics.upgradePrompt')}
@@ -388,8 +353,7 @@ const Analytics = () => {
                     {t('analytics.upgradeCta')}
                   </Button>
                 </CardContent>
-              </Card>
-            </div>
+            </Card>
           </div>
         </main>
         <SiteFooter className="border-primary/20 bg-white/80 backdrop-blur" />

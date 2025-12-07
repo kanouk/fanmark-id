@@ -1512,7 +1512,7 @@
   "analytics": {
     "pageTitle": "Analitik",
     "pageSubtitle": "Analisis akses ke fanmark Anda",
-    "businessRequired": "Tersedia untuk paket Business ke atas",
+    "creatorRequired": "Tersedia untuk paket Creator ke atas",
     "upgradePrompt": "Dengan Analitik, Anda dapat menganalisis:",
     "feature1": "Tren akses dari waktu ke waktu",
     "feature2": "Sumber traffic (Pencarian, Sosial, Langsung)",
