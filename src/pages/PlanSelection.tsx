@@ -253,9 +253,10 @@ const PlanSelection = () => {
       const planOrder: Record<PlanType, number> = {
         free: 0,
         creator: 1,
-        business: 2,
-        enterprise: 3,
-        admin: 4,
+        max: 2,
+        business: 3,
+        enterprise: 4,
+        admin: 5,
       };
       
       const isUpgrade = planOrder[planType] > planOrder[currentPlanType];
