@@ -344,7 +344,7 @@
   },
   "userSettings": {
     "pageTitle": "Pengaturan Pengguna",
-    "pageSubtitle": "Kelola pengaturan akun dan preferensi Anda",
+    "pageSubtitle": "Kelola informasi akun dan preferensi Anda",
     "editSettings": "Edit Profil",
     "editSettingsDescription": "Perbarui detail profil Anda",
     "accountInfo": "Informasi Akun",
@@ -769,9 +769,12 @@
       "totalFanmarks": "Fanmark yang diperoleh",
       "activeFanmarks": "Fanmark aktif",
       "yourFanmarks": "Fanmark Anda",
-      "favoriteFanmarks": "Fanmark favorit",
+      "favoriteFanmarks": "Favorit",
+      "accessCount": "Jumlah akses",
+      "last30days": "30 hari terakhir",
       "upgradePlan": "Butuh lebih banyak fanmark?",
       "viewFavorites": "Lihat favorit",
+      "viewAnalytics": "Lihat analitik",
       "limitLabel": "Batas"
     },
     "tabs": {
@@ -944,7 +947,7 @@
   },
   "favorites": {
     "title": "Fanmark Favorit Anda",
-    "subtitle": "Dengan cepat kunjungi kembali fanmark yang telah Anda tandai sebagai favorit.",
+    "subtitle": "Akses fanmark favorit Anda",
     "loadError": "Kami tidak dapat memuat favorit Anda. Silakan coba lagi.",
     "emptyTitle": "Belum ada favorit",
     "emptyDescription": "Jelajahi fanmark dan tandai yang Anda sukai untuk membangun daftar favorit Anda.",
@@ -1111,7 +1114,11 @@
     "validation": {
       "accessTypeRequired": "Silakan pilih jenis akses.",
       "urlRequired": "Silakan masukkan URL pengalihan.",
-      "phoneRequired": "Silakan masukkan nomor telepon."
+      "phoneRequired": "Silakan masukkan nomor telepon.",
+      "fanmarkNameRequired": "Silakan masukkan nama fanmark.",
+      "invalidUrl": "Silakan masukkan URL http(s) yang valid.",
+      "invalidPhoneNumber": "Silakan masukkan nomor telepon yang valid.",
+      "passwordMustBe4Digits": "Kata sandi harus 4 digit."
     }
   },
   "emojiProfile": {

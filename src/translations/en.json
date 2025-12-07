@@ -345,7 +345,7 @@
   },
   "userSettings": {
     "pageTitle": "User Settings",
-    "pageSubtitle": "Manage your account settings and preferences",
+    "pageSubtitle": "Manage your account and preferences",
     "editSettings": "Edit Profile",
     "editSettingsDescription": "Update your profile details",
     "accountInfo": "Account Information",
@@ -770,9 +770,12 @@
       "totalFanmarks": "Fanmarks obtained",
       "activeFanmarks": "Active fanmarks",
       "yourFanmarks": "Your fanmarks",
-      "favoriteFanmarks": "Favorite fanmarks",
+      "favoriteFanmarks": "Favorites",
+      "accessCount": "Access count",
+      "last30days": "Last 30 days",
       "upgradePlan": "Need more fanmarks?",
       "viewFavorites": "View favorites",
+      "viewAnalytics": "View analytics",
       "limitLabel": "Limit"
     },
     "tabs": {
@@ -945,7 +948,7 @@
   },
   "favorites": {
     "title": "Your Favorite Fanmarks",
-    "subtitle": "Quickly revisit the fanmarks you've marked as favorites.",
+    "subtitle": "Access your favorited fanmarks",
     "loadError": "We couldn't load your favorites. Please try again.",
     "emptyTitle": "No favorites yet",
     "emptyDescription": "Explore fanmarks and mark the ones you love to build your favorites list.",
@@ -1112,7 +1115,11 @@
     "validation": {
       "accessTypeRequired": "Please choose an access type.",
       "urlRequired": "Please enter a redirect URL.",
-      "phoneRequired": "Please enter a phone number."
+      "phoneRequired": "Please enter a phone number.",
+      "fanmarkNameRequired": "Please enter a fanmark name.",
+      "invalidUrl": "Please enter a valid http(s) URL.",
+      "invalidPhoneNumber": "Please enter a valid phone number.",
+      "passwordMustBe4Digits": "Password must be 4 digits."
     }
   },
   "emojiProfile": {

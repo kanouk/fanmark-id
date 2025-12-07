@@ -344,7 +344,7 @@
   },
   "userSettings": {
     "pageTitle": "ユーザー設定",
-    "pageSubtitle": "アカウント設定と環境設定を管理",
+    "pageSubtitle": "アカウント情報と環境情報を設定できます",
     "editSettings": "プロフィールを編集",
     "editSettingsDescription": "プロフィール情報を更新",
     "accountInfo": "アカウント情報",
@@ -769,8 +769,11 @@
       "activeFanmarks": "稼働中のファンマ",
       "yourFanmarks": "あなたのファンマ",
       "favoriteFanmarks": "お気に入り",
+      "accessCount": "アクセス数",
+      "last30days": "過去30日間",
       "upgradePlan": "もっとファンマを増やす",
       "viewFavorites": "お気に入りを見る",
+      "viewAnalytics": "アナリティクスを見る",
       "limitLabel": "上限"
     },
     "tabs": {
@@ -943,7 +946,7 @@
   },
   "favorites": {
     "title": "お気に入りのファンマ",
-    "subtitle": "お気に入り登録したファンマをすぐに呼び出せます。",
+    "subtitle": "お気に入り登録したファンマにアクセスできます",
     "loadError": "お気に入りの取得に失敗しました。もう一度お試しください。",
     "emptyTitle": "まだお気に入りがありません",
     "emptyDescription": "ファンマを探して、お気に入りに追加するとここに一覧が表示されます。",
@@ -1110,7 +1113,11 @@
     "validation": {
       "accessTypeRequired": "アクセスタイプを選択してください",
       "urlRequired": "転送先URLを入力してください",
-      "phoneRequired": "電話番号を入力してください"
+      "phoneRequired": "電話番号を入力してください",
+      "fanmarkNameRequired": "ファンマ名を入力してください",
+      "invalidUrl": "有効なhttp(s) URLを入力してください",
+      "invalidPhoneNumber": "有効な電話番号を入力してください",
+      "passwordMustBe4Digits": "パスワードは4桁の数字で入力してください"
     }
   },
   "emojiProfile": {

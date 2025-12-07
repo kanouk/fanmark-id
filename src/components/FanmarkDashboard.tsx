@@ -144,6 +144,8 @@ export const FanmarkDashboard = () => {
   const [extendSelectedPlan, setExtendSelectedPlan] = useState<ExtendPlanOption | null>(null);
   const [extendPlans, setExtendPlans] = useState<ExtendPlanOption[]>([]);
   const [extendProcessing, setExtendProcessing] = useState(false);
+  const [totalAccessCount, setTotalAccessCount] = useState<number | null>(null);
+  const [accessCountLoading, setAccessCountLoading] = useState(true);
 
   const handleOpenSettings = (fanmarkId: string) => {
     // Find and cache fanmark data for profile edit page
@@ -478,6 +480,50 @@ export const FanmarkDashboard = () => {
     fetchFanmarks();
   }, [fetchFanmarks, user]);
 
+  // Fetch total access count for all fanmarks
+  useEffect(() => {
+    const fetchTotalAccessCount = async () => {
+      if (!user || !canAccessAnalytics) {
+        setAccessCountLoading(false);
+        return;
+      }
+
+      try {
+        setAccessCountLoading(true);
+        
+        // Get date range for last 30 days
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 30);
+        
+        const formatDate = (date: Date) => {
+          return date.toISOString().split('T')[0];
+        };
+        
+        const { data, error } = await supabase
+          .from('fanmark_access_daily_stats')
+          .select('access_count')
+          .gte('stat_date', formatDate(startDate))
+          .lte('stat_date', formatDate(endDate));
+
+        if (error) throw error;
+
+        const total = (data || []).reduce(
+          (sum: number, row: { access_count: number }) => sum + (row.access_count || 0),
+          0
+        );
+        setTotalAccessCount(total);
+      } catch (err) {
+        console.error('Failed to fetch access count:', err);
+        setTotalAccessCount(0);
+      } finally {
+        setAccessCountLoading(false);
+      }
+    };
+
+    fetchTotalAccessCount();
+  }, [user, canAccessAnalytics]);
+
   const gracePeriodDaysSetting = settings?.grace_period_days ?? null;
 
   const getLicenseTiming = (licenseData: Fanmark['fanmark_licenses']) => {
@@ -701,7 +747,8 @@ export const FanmarkDashboard = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+          {/* Your Fanmarks */}
           <Card className="relative overflow-hidden rounded-3xl border border-primary/25 bg-background/85 shadow-[0_15px_40px_rgba(101,195,200,0.16)] backdrop-blur">
             <CardContent className="flex h-full flex-col p-6">
               <div className="flex items-center justify-between">
@@ -737,6 +784,42 @@ export const FanmarkDashboard = () => {
             </CardContent>
           </Card>
 
+          {/* Access Count */}
+          <Card className="relative overflow-hidden rounded-3xl border border-primary/25 bg-background/85 shadow-[0_15px_40px_rgba(101,195,200,0.16)] backdrop-blur">
+            <CardContent className="flex h-full flex-col p-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {t('dashboard.stats.accessCount')}
+                  </p>
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-3xl font-bold text-primary">
+                      {!canAccessAnalytics ? '—' : accessCountLoading ? '—' : (totalAccessCount ?? 0).toLocaleString()}
+                    </span>
+                    {canAccessAnalytics && (
+                      <span className="text-xs text-muted-foreground">
+                        {t('dashboard.stats.last30days')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <BarChart3 className="h-6 w-6" />
+                </div>
+              </div>
+              <div className="mt-auto flex justify-end pt-4">
+                <button
+                  type="button"
+                  onClick={() => navigate('/analytics', { state: { from: location.pathname } })}
+                  className="text-xs text-muted-foreground hover:text-primary hover:underline"
+                >
+                  {t('dashboard.stats.viewAnalytics')}
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Favorites */}
           <Card className="relative overflow-hidden rounded-3xl border border-primary/25 bg-background/85 shadow-[0_15px_40px_rgba(101,195,200,0.16)] backdrop-blur">
             <CardContent className="flex h-full flex-col p-6">
               <div className="flex items-center justify-between">
@@ -765,8 +848,6 @@ export const FanmarkDashboard = () => {
               </div>
             </CardContent>
           </Card>
-
-          {/* Additional stats cards... */}
         </div>
 
         {/* Main Content */}

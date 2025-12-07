@@ -59,7 +59,7 @@ const sanitizePhoneInput = (value?: string) => {
 
 const settingsSchema = z.object({
   accessType: z.enum(['profile', 'redirect', 'text', 'inactive']),
-  fanmarkName: z.string().min(1, 'Fanmark name is required'),
+  fanmarkName: z.string().min(1, 'validation.fanmarkNameRequired'),
   targetUrl: z.string().trim().optional(),
   textContent: z.string().optional(),
   createProfile: z.boolean().default(false),
@@ -81,7 +81,7 @@ const settingsSchema = z.object({
         ctx.addIssue({
           path: ['targetUrl'],
           code: z.ZodIssueCode.custom,
-          message: 'Enter a valid http(s) URL',
+          message: 'validation.invalidUrl',
         });
       }
     } else {
@@ -98,7 +98,7 @@ const settingsSchema = z.object({
           ctx.addIssue({
             path: ['redirectPhoneNumber'],
             code: z.ZodIssueCode.custom,
-            message: 'Phone number could not be converted to tel: URI',
+            message: 'validation.invalidPhoneNumber',
           });
         }
       }
@@ -109,7 +109,7 @@ const settingsSchema = z.object({
     ctx.addIssue({
       path: ['accessPassword'],
       code: z.ZodIssueCode.custom,
-      message: 'Password must be 4 digits',
+      message: 'validation.passwordMustBe4Digits',
     });
   }
 });
@@ -570,7 +570,7 @@ export const FanmarkSettings = ({
           {errors.fanmarkName && (
             <p className="flex items-center gap-2 text-sm text-destructive">
               <FiAlertCircle className="h-4 w-4" />
-              {errors.fanmarkName.message}
+              {t(`fanmarkSettings.${errors.fanmarkName.message}`)}
             </p>
           )}
         </CardContent>
@@ -944,7 +944,7 @@ export const FanmarkSettings = ({
                     
                     {errors.accessPassword && (
                       <p className="text-xs text-destructive">
-                        {t('fanmarkSettings.fields.passwordProtection.passwordHelper')}
+                        {t(`fanmarkSettings.${errors.accessPassword.message}`)}
                       </p>
                     )}
                   </div>

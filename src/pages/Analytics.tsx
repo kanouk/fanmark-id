@@ -217,7 +217,7 @@ const Analytics = () => {
         const fanmarkInfo = fanmarks.find((f) => f.id === fanmarkId);
         const emoji = fanmarkInfo?.user_input_fanmark || '';
         const fanmarkName = fanmarkInfo?.fanmark_name || '';
-        const displayName = fanmarkName ? `${emoji}（${fanmarkName}）` : emoji;
+        const displayName = fanmarkName ? `${emoji} (${fanmarkName})` : emoji;
         return {
           fanmarkId,
           emoji,
@@ -410,7 +410,7 @@ const Analytics = () => {
               <SelectItem value="all">{t('analytics.allFanmarks')}</SelectItem>
               {fanmarks.map((fanmark) => (
                 <SelectItem key={fanmark.id} value={fanmark.id}>
-                  {fanmark.user_input_fanmark} ({fanmark.short_id})
+                  {fanmark.user_input_fanmark}{fanmark.fanmark_name ? ` (${fanmark.fanmark_name})` : ''}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -577,7 +577,7 @@ const Analytics = () => {
                           <div className="flex items-center gap-1.5 min-w-0">
                             <span className="text-base shrink-0">{item.emoji}</span>
                             {item.fanmarkName && (
-                              <span className="text-sm text-muted-foreground truncate">（{item.fanmarkName}）</span>
+                              <span className="text-sm text-muted-foreground truncate">({item.fanmarkName})</span>
                             )}
                           </div>
                         </div>
