@@ -89,7 +89,7 @@ const Analytics = () => {
           )
         `)
         .eq('user_id', user!.id)
-        .in('status', ['active', 'grace']);
+        .eq('status', 'active');
 
       if (licensesError) throw licensesError;
 
