@@ -145,8 +145,8 @@ export const FanmarkSelectionModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={() => false}>
-      <DialogContent className="max-w-3xl max-h-[70vh] overflow-hidden [&>button]:hidden">
-        <DialogHeader className="space-y-3 pb-4 border-b">
+      <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col [&>button]:hidden">
+        <DialogHeader className="space-y-3 pb-4 border-b flex-shrink-0">
           <DialogTitle className="text-lg font-semibold">
             {t('planDowngrade.modalTitle')}
           </DialogTitle>
@@ -169,9 +169,9 @@ export const FanmarkSelectionModal = ({
           </div>
         </DialogHeader>
 
-        <div className="space-y-3">
+        <div className="flex-1 min-h-0 flex flex-col space-y-3 overflow-hidden">
           {/* Selection Counter */}
-          <div className="bg-muted/30 border rounded-lg p-3">
+          <div className="bg-muted/30 border rounded-lg p-3 flex-shrink-0">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-medium text-foreground">
@@ -193,7 +193,8 @@ export const FanmarkSelectionModal = ({
           </div>
 
           {/* Fanmark Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-80 overflow-y-auto">
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pb-1">
             {currentFanmarks.map((fanmark) => {
               const selected = isSelected(fanmark.id);
               const canSelect = selected || selectedFanmarks.size < newPlanLimit;
@@ -251,25 +252,26 @@ export const FanmarkSelectionModal = ({
                 </div>
               );
             })}
-          </div>
-
-          {/* Action Button */}
-          <div className="pt-3 border-t">
-            <div className="text-center">
-              {isSelectionComplete ? (
-                <Button
-                  onClick={handleShowConfirmation}
-                  className="w-full bg-primary hover:bg-primary/90"
-                >
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  {t('planDowngrade.proceedButton')}
-                </Button>
-              ) : (
-                <div className="text-xs text-muted-foreground py-2">
-                  {t('planDowngrade.selectRemaining', { remaining: newPlanLimit - selectedFanmarks.size })}
-                </div>
-              )}
             </div>
+          </div>
+        </div>
+
+        {/* Action Button */}
+        <div className="pt-3 border-t flex-shrink-0">
+          <div className="text-center">
+            {isSelectionComplete ? (
+              <Button
+                onClick={handleShowConfirmation}
+                className="w-full bg-primary hover:bg-primary/90"
+              >
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                {t('planDowngrade.proceedButton')}
+              </Button>
+            ) : (
+              <div className="text-xs text-muted-foreground py-2">
+                {t('planDowngrade.selectRemaining', { remaining: newPlanLimit - selectedFanmarks.size })}
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>
