@@ -10,7 +10,7 @@ export interface ActiveFanmark {
   fanmark: string;
   fanmark_name: string | null;
   license_id: string;
-  license_end: string;
+  license_end: string | null;
   access_type: string | null;
 }
 
@@ -30,7 +30,7 @@ export function getPlanLimit(planType: PlanType): number {
 interface LicenseQueryResult {
   id: string;
   fanmark_id: string;
-  license_end: string;
+  license_end: string | null;
   fanmarks: {
     id: string;
     user_input_fanmark: string;
@@ -45,6 +45,9 @@ interface LicenseQueryResult {
 export async function fetchActiveFanmarks(userId: string): Promise<ActiveFanmark[]> {
   const nowIso = new Date().toISOString();
 
+  // Fetch active licenses where:
+  // - status is 'active' (not grace or expired)
+  // - license_end is NULL (perpetual) OR license_end > now (not expired)
   const { data: licenses, error } = await supabase
     .from('fanmark_licenses')
     .select(`
@@ -62,9 +65,9 @@ export async function fetchActiveFanmarks(userId: string): Promise<ActiveFanmark
       )
     `)
     .eq('user_id', userId)
-    .in('status', ['active', 'grace'])
-    .gt('license_end', nowIso)
-    .order('license_end', { ascending: true });
+    .eq('status', 'active')
+    .or(`license_end.is.null,license_end.gt.${nowIso}`)
+    .order('license_end', { ascending: true, nullsFirst: false });
 
   if (error) throw error;
 
@@ -120,7 +123,10 @@ export async function evaluatePlanDowngrade(
   }
 
   const fanmarks = await fetchActiveFanmarks(userId);
+  // Filter fanmarks: include perpetual licenses (null) and those not yet expired
   const filteredFanmarks = fanmarks.filter(fm => {
+    // Perpetual licenses (license_end is null) are always valid
+    if (fm.license_end === null) return true;
     const licenseEndTime = new Date(fm.license_end).getTime();
     const nowTime = Date.now();
     return licenseEndTime > nowTime;
