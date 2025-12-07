@@ -111,12 +111,12 @@ export default function FanmarkProfilePreview() {
         }
 
         // Set fanmark data from RPC response if not cached
-        if (record.fanmark || record.user_input_fanmark) {
+        if (record.user_input_fanmark) {
           setCachedFanmark(prev => prev || {
             user_input_fanmark: record.user_input_fanmark || '',
-            fanmark: record.fanmark || record.user_input_fanmark || '',
+            fanmark: record.user_input_fanmark || '',
             emoji_ids: [],
-            display_name: record.display_name || null,
+            display_name: record.fanmark_name || null,
             short_id: record.short_id
           });
         }
