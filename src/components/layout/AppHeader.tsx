@@ -138,33 +138,33 @@ export const AppHeader = ({
         {leftSlot ? (
           leftSlot
         ) : (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               type="button"
               onClick={() => navigate('/')}
-              className="group flex items-center gap-2 text-lg font-semibold text-foreground transition-transform hover:translate-y-[-1px]"
+              className="group flex items-center gap-1.5 sm:gap-2 text-lg font-semibold text-foreground transition-transform hover:translate-y-[-1px]"
             >
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 transition-all group-hover:scale-105">
+              <span className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-primary/15 transition-all group-hover:scale-105">
                 <BrandIcon size="sm" />
               </span>
-              <BrandWordmark className="text-2xl" />
+              <BrandWordmark className="text-xl sm:text-2xl" />
             </button>
           </div>
         )}
 
         <nav className="hidden items-center gap-8 text-sm font-medium text-muted-foreground md:flex" />
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           {showLanguageToggle && <LanguageToggle />}
 
           {showNotifications && !authLoading && user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className="relative flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-transform hover:-translate-y-0.5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  className="relative flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full text-muted-foreground transition-transform hover:-translate-y-0.5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   aria-label={t('notifications.ariaLabel')}
                 >
-                  <Bell className="h-5 w-5" />
+                  <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
                   {unreadCount > 0 && (
                     <span className="absolute -right-1 -top-1 flex h-5 min-w-[1.5rem] items-center justify-center rounded-full bg-gradient-to-br from-primary via-primary to-primary/90 px-1 text-[11px] font-semibold text-primary-foreground shadow-lg">
                       {unreadCount > 99 ? '99+' : unreadCount}
@@ -257,10 +257,10 @@ export const AppHeader = ({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-primary/30 bg-primary/10 shadow-[0_4px_12px_hsl(var(--primary)_/_0.15)] transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full border border-primary/30 bg-primary/10 shadow-[0_4px_12px_hsl(var(--primary)_/_0.15)] transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   aria-label={t('navigation.userMenu')}
                 >
-                  <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-background">
+                  <div className="relative flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center overflow-hidden rounded-full bg-background">
                     {profile?.avatar_url ? (
                       <img
                         src={profile.avatar_url}

@@ -566,7 +566,7 @@ export const FanmarkDashboard = () => {
     }
 
     return (
-      <Badge className={`${className} inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide whitespace-nowrap`}>
+      <Badge className={`${className} inline-flex items-center gap-1 sm:gap-1.5 rounded-full border px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold tracking-wide whitespace-nowrap`}>
         {icon}
         <span>{label}</span>
       </Badge>
@@ -850,19 +850,19 @@ export const FanmarkDashboard = () => {
 
         {/* Main Content */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="grid w-full grid-cols-2 gap-2 rounded-full border border-primary/20 bg-background/70 p-2 backdrop-blur">
+          <TabsList className="grid w-full grid-cols-2 gap-1.5 sm:gap-2 rounded-full border border-primary/20 bg-background/70 p-1.5 sm:p-2 backdrop-blur">
             <TabsTrigger 
               value="my-fanmarks"
-              className="gap-2 rounded-full py-3 px-4 text-base font-medium transition-all duration-200 data-[state=active]:bg-primary/15 data-[state=active]:text-foreground data-[state=active]:shadow-lg"
+              className="gap-1.5 sm:gap-2 rounded-full py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium transition-all duration-200 data-[state=active]:bg-primary/15 data-[state=active]:text-foreground data-[state=active]:shadow-lg whitespace-nowrap"
             >
-              <FiLayers className="h-5 w-5" />
+              <FiLayers className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
               {t('dashboard.tabs.myFanmarks')}
             </TabsTrigger>
             <TabsTrigger 
               value="acquisition"
-              className="gap-2 rounded-full py-3 px-4 text-base font-medium transition-all duration-200 data-[state=active]:bg-primary/15 data-[state=active]:text-foreground data-[state=active]:shadow-lg"
+              className="gap-1.5 sm:gap-2 rounded-full py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium transition-all duration-200 data-[state=active]:bg-primary/15 data-[state=active]:text-foreground data-[state=active]:shadow-lg whitespace-nowrap"
             >
-              <FiCompass className="h-5 w-5" />
+              <FiCompass className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
               {t('dashboard.tabs.getFanma')}
             </TabsTrigger>
           </TabsList>
@@ -1240,32 +1240,34 @@ export const FanmarkDashboard = () => {
                           <Card key={cardKey} className={`overflow-visible rounded-3xl border border-primary/10 transition-colors ${cardVisualState}`}>
                             <CardContent className="overflow-visible p-5">
                                   <div className="space-y-3">
-                                   <div className="flex items-start justify-between">
-                                    <div className="flex items-end overflow-visible">
-                                      <div
-                                        className={`relative flex items-center px-3 py-2 rounded-md cursor-pointer transition-transform ${isInactiveCard ? '' : 'hover:scale-105'} overflow-visible ${mobileTierOvalStyle}`}
-                                        onClick={() => {
-                                          navigator.clipboard.writeText(fanmark.fanmark);
-                                          toast({
-                                            title: t('dashboard.emojiCopiedTitle'),
-                                            description: fanmark.fanmark,
-                                          });
-                                        }}
-                                        title={t('dashboard.clickToCopyEmoji')}
-                                      >
-                                        <span className={`absolute -top-2 -left-2 z-20 rounded-full px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-widest shadow ${mobileTierBadgeStyle}`}>
-                                          {getTierLabel(fanmark.tier_level)}
-                                        </span>
-                                        <span
-                                          className="text-3xl leading-none select-none whitespace-nowrap tracking-[0.1em]"
-                                          style={{ wordBreak: 'keep-all' }}
+                                   <div className="flex flex-col gap-3">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <div className="flex items-end overflow-visible">
+                                        <div
+                                          className={`relative flex items-center px-3 py-2 rounded-md cursor-pointer transition-transform ${isInactiveCard ? '' : 'hover:scale-105'} overflow-visible ${mobileTierOvalStyle}`}
+                                          onClick={() => {
+                                            navigator.clipboard.writeText(fanmark.fanmark);
+                                            toast({
+                                              title: t('dashboard.emojiCopiedTitle'),
+                                              description: fanmark.fanmark,
+                                            });
+                                          }}
+                                          title={t('dashboard.clickToCopyEmoji')}
                                         >
-                                          {fanmark.fanmark}
-                                        </span>
+                                          <span className={`absolute -top-2 -left-2 z-20 rounded-full px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-widest shadow ${mobileTierBadgeStyle}`}>
+                                            {getTierLabel(fanmark.tier_level)}
+                                          </span>
+                                          <span
+                                            className="text-2xl sm:text-3xl leading-none select-none whitespace-nowrap tracking-[0.1em]"
+                                            style={{ wordBreak: 'keep-all' }}
+                                          >
+                                            {fanmark.fanmark}
+                                          </span>
+                                        </div>
                                       </div>
-                                    </div>
-                                    <div className="flex flex-col items-end gap-1">
-                                      <span className={isInactiveCard ? 'opacity-60 saturate-50' : ''}>{getStatusBadge(timing)}</span>
+                                      <div className="flex-shrink-0">
+                                        <span className={isInactiveCard ? 'opacity-60 saturate-50' : ''}>{getStatusBadge(timing)}</span>
+                                      </div>
                                     </div>
                                  </div>
 

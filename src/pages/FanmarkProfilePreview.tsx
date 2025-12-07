@@ -234,8 +234,8 @@ export default function FanmarkProfilePreview() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </div>
-          <h1 className="flex-1 text-xl font-bold tracking-tight text-foreground text-center flex items-center justify-center gap-2">
-            <Eye className="h-5 w-5" />
+          <h1 className="flex-1 text-sm sm:text-base md:text-xl font-bold tracking-tight text-foreground text-center flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap">
+            <Eye className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
             {t('emojiProfile.profilePreview')}
           </h1>
           <div className="w-24 flex items-center justify-end">
@@ -304,7 +304,7 @@ export default function FanmarkProfilePreview() {
               <div className="px-6 md:px-8 pt-20 pb-8">
                 <div className="text-center space-y-4">
                   {/* Display Name */}
-                  <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+                  <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-foreground">
                     {displayName || t('profile.defaultTitle', { fanmark: fanmarkValue })}
                   </h1>
                   

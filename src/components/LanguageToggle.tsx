@@ -33,10 +33,10 @@ export function LanguageToggle() {
         <Button
           variant="outline"
           size="sm"
-          className="flex items-center gap-2 rounded-full border-border/60 bg-background/80 px-3 py-2 text-sm font-medium shadow-sm transition-transform hover:-translate-y-px hover:border-primary/40 hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="flex items-center gap-1.5 sm:gap-2 rounded-full border-border/60 bg-background/80 px-2 sm:px-3 py-2 text-sm font-medium shadow-sm transition-transform hover:-translate-y-px hover:border-primary/40 hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           <Globe className="h-4 w-4" />
-          <span>{currentLanguage.label}</span>
+          <span className="hidden sm:inline">{currentLanguage.label}</span>
           <ChevronDown className="h-3 w-3 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>

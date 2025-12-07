@@ -473,9 +473,9 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
       {/* メイン入力エリア */}
       <div className="flex justify-center">
         <div
-          className={fixedSize ? "w-full max-w-[48rem] mx-auto px-4" : "w-full max-w-[min(100%,40rem)] px-[clamp(0.75rem,6vw,2.5rem)]"}
+          className={fixedSize ? "w-full max-w-[48rem] mx-auto px-4" : "w-full max-w-[min(100%,48rem)] px-[clamp(0.75rem,4vw,2rem)]"}
         >
-          <div className={fixedSize ? "grid grid-cols-5 gap-6 transition-all duration-300 ease-out" : "grid grid-cols-5 gap-[clamp(0.45rem,2.5vw,1.2rem)] transition-all duration-300 ease-out"}>
+          <div className={fixedSize ? "grid grid-cols-5 gap-6 transition-all duration-300 ease-out" : "grid grid-cols-5 gap-[clamp(1.2rem,5vw,2.5rem)] transition-all duration-300 ease-out"}>
           {slots.map((_, index) => {
           const emoji = segments[index];
           const isActive = activeIndex === index;
@@ -491,7 +491,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
                 if (draggedIndex !== null) return;
                 handleOpenChange(index, true);
               }}
-              className={`flex aspect-square w-full ${fixedSize ? 'min-w-[4rem] max-w-[5rem] rounded-xl border-[1.5px] text-3xl' : 'min-w-[2.2rem] max-w-[5rem] rounded-[clamp(1rem,4vw,1.7rem)] border-[clamp(1px,0.45vw,1.5px)] text-[clamp(1.6rem,5.5vw,2.8rem)]'} items-center justify-center transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${emoji ? 'border-primary/60 bg-primary/5 shadow-md lg:shadow-lg' : 'border-dashed border-primary/30 text-muted-foreground hover:border-primary/60 hover:text-primary'} ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${isDragging ? 'ring-2 ring-primary/50 scale-105 shadow-lg z-10 opacity-80' : ''} ${isDragTarget && !isDragging ? 'border-primary/70 bg-primary/10 scale-105' : ''}`}
+              className={`flex aspect-square w-full ${fixedSize ? 'min-w-[4rem] max-w-[5rem] rounded-xl border-[1.5px] text-3xl' : 'min-w-[2.8rem] max-w-[6rem] rounded-[clamp(1rem,4vw,1.7rem)] border-[clamp(1px,0.45vw,1.5px)] text-[clamp(1.8rem,6vw,3.2rem)]'} items-center justify-center transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${emoji ? 'border-primary/60 bg-primary/5 shadow-md lg:shadow-lg' : 'border-dashed border-primary/30 text-muted-foreground hover:border-primary/60 hover:text-primary'} ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${isDragging ? 'ring-2 ring-primary/50 scale-105 shadow-lg z-10 opacity-80' : ''} ${isDragTarget && !isDragging ? 'border-primary/70 bg-primary/10 scale-105' : ''}`}
               style={{
                 zIndex: isDragging ? 10 : 1,
               }}

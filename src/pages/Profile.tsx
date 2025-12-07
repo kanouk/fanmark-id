@@ -940,7 +940,7 @@ const Profile = () => {
         <div className="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
           {/* Page Header */}
           <div className="space-y-3 text-center mb-8">
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-foreground">
               {t('userSettings.pageTitle')}
             </h1>
             <p className="mx-auto max-w-2xl text-sm sm:text-base text-muted-foreground">

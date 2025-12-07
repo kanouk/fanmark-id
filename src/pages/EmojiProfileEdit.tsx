@@ -138,8 +138,8 @@ export default function EmojiProfileEdit() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </div>
-          <h1 className="flex-1 text-xl font-bold tracking-tight text-foreground text-center flex items-center justify-center gap-2">
-            <PenLine className="h-5 w-5" />
+          <h1 className="flex-1 text-sm sm:text-base md:text-xl font-bold tracking-tight text-foreground text-center flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap">
+            <PenLine className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
             {t('emojiProfile.editProfileTitle')}
           </h1>
           <div className="w-24 flex items-center justify-end">
