@@ -1030,7 +1030,7 @@
     "fields": {
       "displayName": {
         "label": "ファンマ名",
-        "helper": "ファンマにわかりやすい名前をつけることができます。他のユーザーからは見えません。",
+        "helper": "ファンマにわかりやすい名前をつけることができます。他のユーザーからは見えません。\nアナリティクス機能の表示などに利用されます。",
         "placeholder": "ファンマ名を入力してください"
       },
       "accessType": {
@@ -1503,13 +1503,13 @@
   },
   "analytics": {
     "pageTitle": "アナリティクス",
-    "pageSubtitle": "ファンマークへのアクセス状況を分析・可視化",
+    "pageSubtitle": "ファンマへのアクセス状況を分析できます",
     "businessRequired": "ビジネスプラン以上で利用可能",
     "upgradePrompt": "アナリティクス機能では以下の分析が可能です：",
     "feature1": "アクセス数の推移",
     "feature2": "流入元（検索・SNS・直接）の分析",
     "feature3": "デバイス別の統計",
-    "feature4": "ファンマーク別の詳細分析",
+    "feature4": "ファンマ別の詳細分析",
     "upgradeCta": "プランをアップグレード",
     "totalAccess": "総アクセス数",
     "uniqueVisitors": "ユニーク訪問者",
@@ -1528,7 +1528,14 @@
     "deviceTablet": "タブレット",
     "deviceDesktop": "デスクトップ",
     "noData": "データがありません",
-    "selectFanmark": "ファンマークを選択",
-    "allFanmarks": "すべてのファンマーク"
+    "selectFanmark": "ファンマを選択",
+    "allFanmarks": "すべてのファンマ",
+    "accessTypeBreakdown": "アクセスタイプ別",
+    "accessTypeProfile": "プロフィール",
+    "accessTypeRedirect": "転送",
+    "accessTypeText": "伝言板",
+    "accessTypeInactive": "なにもしない",
+    "noAccessTypeData": "アクセスタイプのデータがありません",
+    "fanmarkRanking": "ファンマ別アクセスランキング"
   }
 }

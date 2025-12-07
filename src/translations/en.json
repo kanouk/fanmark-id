@@ -1031,9 +1031,9 @@
     },
     "fields": {
       "displayName": {
-        "label": "Display name",
-        "helper": "This name is shown to fans.",
-        "placeholder": "Enter a display name"
+        "label": "Fanmark Name",
+        "helper": "Give your fanmark a recognizable name. Not visible to other users.\nUsed for display in Analytics features.",
+        "placeholder": "Enter a fanmark name"
       },
       "accessType": {
         "label": "Fanmark Access",
@@ -1505,7 +1505,7 @@
   },
   "analytics": {
     "pageTitle": "Analytics",
-    "pageSubtitle": "Analyze and visualize access to your fanmarks",
+    "pageSubtitle": "Analyze access to your fanmarks",
     "businessRequired": "Available for Business plan and above",
     "upgradePrompt": "With Analytics, you can analyze:",
     "feature1": "Access trends over time",
@@ -1531,6 +1531,13 @@
     "deviceDesktop": "Desktop",
     "noData": "No data available",
     "selectFanmark": "Select Fanmark",
-    "allFanmarks": "All Fanmarks"
+    "allFanmarks": "All Fanmarks",
+    "accessTypeBreakdown": "Access Type Breakdown",
+    "accessTypeProfile": "Profile",
+    "accessTypeRedirect": "Redirect",
+    "accessTypeText": "Message Board",
+    "accessTypeInactive": "Inactive",
+    "noAccessTypeData": "No access type data available",
+    "fanmarkRanking": "Fanmark Access Ranking"
   }
 }

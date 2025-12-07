@@ -14,6 +14,7 @@ interface AccessRequestBody {
   utm_source?: string | null;
   utm_medium?: string | null;
   utm_campaign?: string | null;
+  access_type?: string | null;
 }
 
 // User-Agent解析
@@ -134,7 +135,7 @@ serve(async (req) => {
     );
 
     const body: AccessRequestBody = await req.json();
-    const { fanmark_id, short_id, referrer, user_agent, utm_source, utm_medium, utm_campaign } = body;
+    const { fanmark_id, short_id, referrer, user_agent, utm_source, utm_medium, utm_campaign, access_type } = body;
 
     // バリデーション
     if (!fanmark_id || !short_id) {
@@ -200,6 +201,7 @@ serve(async (req) => {
         utm_medium: utm_medium || null,
         utm_campaign: utm_campaign || null,
         visitor_hash: visitorHash,
+        access_type: access_type || null,
       });
 
     if (insertError) {
@@ -263,6 +265,17 @@ serve(async (req) => {
         updateData.referrer_other = (existingStats.referrer_other || 0) + 1;
       }
 
+      // アクセスタイプカウント
+      if (access_type === 'profile') {
+        updateData.access_type_profile = (existingStats.access_type_profile || 0) + 1;
+      } else if (access_type === 'redirect') {
+        updateData.access_type_redirect = (existingStats.access_type_redirect || 0) + 1;
+      } else if (access_type === 'text') {
+        updateData.access_type_text = (existingStats.access_type_text || 0) + 1;
+      } else if (access_type === 'inactive') {
+        updateData.access_type_inactive = (existingStats.access_type_inactive || 0) + 1;
+      }
+
       const { error: updateError } = await supabase
         .from('fanmark_access_daily_stats')
         .update(updateData)
@@ -286,6 +299,10 @@ serve(async (req) => {
         referrer_search: referrer_category === 'search' ? 1 : 0,
         referrer_social: referrer_category === 'social' ? 1 : 0,
         referrer_other: referrer_category === 'other' ? 1 : 0,
+        access_type_profile: access_type === 'profile' ? 1 : 0,
+        access_type_redirect: access_type === 'redirect' ? 1 : 0,
+        access_type_text: access_type === 'text' ? 1 : 0,
+        access_type_inactive: access_type === 'inactive' ? 1 : 0,
       };
 
       const { error: statsInsertError } = await supabase

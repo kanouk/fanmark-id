@@ -1031,7 +1031,7 @@
     "fields": {
       "displayName": {
         "label": "팬마크명",
-        "helper": "팬마크에 알기 쉬운 이름을 붙이세요. 다른 사용자에게는 보이지 않습니다.",
+        "helper": "팬마크에 알기 쉬운 이름을 붙이세요. 다른 사용자에게는 보이지 않습니다.\n분석 기능 표시 등에 사용됩니다.",
         "placeholder": "팬마크명을 입력하세요"
       },
       "accessType": {
@@ -1504,7 +1504,7 @@
   },
   "analytics": {
     "pageTitle": "분석",
-    "pageSubtitle": "팬마크 접속 현황을 분석하고 시각화합니다",
+    "pageSubtitle": "팬마크 접속 현황을 분석할 수 있습니다",
     "businessRequired": "비즈니스 플랜 이상에서 사용 가능",
     "upgradePrompt": "분석 기능으로 다음을 확인할 수 있습니다:",
     "feature1": "시간별 접속 추이",
@@ -1530,6 +1530,13 @@
     "deviceDesktop": "데스크톱",
     "noData": "데이터가 없습니다",
     "selectFanmark": "팬마크 선택",
-    "allFanmarks": "모든 팬마크"
+    "allFanmarks": "모든 팬마크",
+    "accessTypeBreakdown": "접근 유형별",
+    "accessTypeProfile": "프로필",
+    "accessTypeRedirect": "전달",
+    "accessTypeText": "전언판",
+    "accessTypeInactive": "비활성",
+    "noAccessTypeData": "접근 유형 데이터가 없습니다",
+    "fanmarkRanking": "팬마크별 접근 랭킹"
   }
 }

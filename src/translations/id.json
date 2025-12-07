@@ -1030,9 +1030,9 @@
     },
     "fields": {
       "displayName": {
-        "label": "Nama tampilan",
-        "helper": "Nama ini ditampilkan kepada penggemar.",
-        "placeholder": "Masukkan nama tampilan"
+        "label": "Nama Fanmark",
+        "helper": "Beri nama yang mudah dikenali untuk fanmark Anda. Tidak terlihat oleh pengguna lain.\nDigunakan untuk tampilan di fitur Analytics.",
+        "placeholder": "Masukkan nama fanmark"
       },
       "accessType": {
         "label": "Akses Fanmark",
@@ -1504,7 +1504,7 @@
   },
   "analytics": {
     "pageTitle": "Analitik",
-    "pageSubtitle": "Analisis dan visualisasi akses ke fanmark Anda",
+    "pageSubtitle": "Analisis akses ke fanmark Anda",
     "businessRequired": "Tersedia untuk paket Business ke atas",
     "upgradePrompt": "Dengan Analitik, Anda dapat menganalisis:",
     "feature1": "Tren akses dari waktu ke waktu",
@@ -1530,6 +1530,13 @@
     "deviceDesktop": "Desktop",
     "noData": "Tidak ada data",
     "selectFanmark": "Pilih Fanmark",
-    "allFanmarks": "Semua Fanmark"
+    "allFanmarks": "Semua Fanmark",
+    "accessTypeBreakdown": "Berdasarkan Jenis Akses",
+    "accessTypeProfile": "Profil",
+    "accessTypeRedirect": "Pengalihan",
+    "accessTypeText": "Papan Pesan",
+    "accessTypeInactive": "Tidak Aktif",
+    "noAccessTypeData": "Tidak ada data jenis akses",
+    "fanmarkRanking": "Peringkat Akses Fanmark"
   }
 }

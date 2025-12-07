@@ -560,7 +560,7 @@ export const FanmarkSettings = ({
             </div>
             {t('fanmarkSettings.fields.displayName.label')}
           </Label>
-          <p className="text-xs text-muted-foreground">{t('fanmarkSettings.fields.displayName.helper')}</p>
+          <p className="text-xs text-muted-foreground whitespace-pre-line">{t('fanmarkSettings.fields.displayName.helper')}</p>
           <Input
             id="fanmarkName"
             {...register('fanmarkName')}
