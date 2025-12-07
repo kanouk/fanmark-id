@@ -8,19 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Eye, Edit, ArrowLeft } from 'lucide-react';
+import { Loader2, Eye, Edit, ArrowLeft, Sparkles } from 'lucide-react';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { cn } from '@/lib/utils';
 import { 
@@ -83,7 +75,7 @@ const settingsSchema = z.object({
         ctx.addIssue({
           path: ['targetUrl'],
           code: z.ZodIssueCode.custom,
-          message: 'Redirect URL is required',
+          message: 'validation.urlRequired',
         });
       } else if (!isValidHttpUrl(data.targetUrl)) {
         ctx.addIssue({
@@ -98,7 +90,7 @@ const settingsSchema = z.object({
         ctx.addIssue({
           path: ['redirectPhoneNumber'],
           code: z.ZodIssueCode.custom,
-          message: 'Phone number is required',
+          message: 'validation.phoneRequired',
         });
       } else {
         const expectedTel = `tel:${sanitized}`;
@@ -587,42 +579,54 @@ export const FanmarkSettings = ({
       {/* Access Type & Related Settings */}
       <Card className="overflow-hidden rounded-2xl border border-border/50 bg-card/80 shadow-sm shadow-primary/5 backdrop-blur">
         <CardContent className="p-6 space-y-6">
-          <div className="space-y-3">
-            <Label className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/15 text-primary">
-                <FiSettings className="h-4 w-4" />
-              </div>
-              {t('fanmarkSettings.fields.accessType.label')}
+          {/* Card Title */}
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/15 text-primary">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <span className="text-sm font-semibold text-foreground">{t('fanmarkSettings.fields.accessType.label')}</span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {t('fanmarkSettings.fields.accessType.description', { fanmark: fanmark?.fanmark || fanmark?.user_input_fanmark || '' })}
+          </p>
+
+          {/* 1. Access Type Selection */}
+          <div className="space-y-3 rounded-xl border border-border/60 bg-background/70 p-4">
+            <Label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-3">
+              <FiRepeat className="h-3.5 w-3.5" />
+              {t('fanmarkSettings.fields.accessType.sectionTitle')}
             </Label>
-            <p className="text-xs text-muted-foreground">{t('fanmarkSettings.fields.accessType.helper')}</p>
-            <Controller
-              name="accessType"
-              control={control}
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange} defaultValue={field.value}>
-                  <SelectTrigger ref={field.ref} className="h-12 rounded-xl border border-border bg-background/80 px-5 text-left text-sm font-medium shadow-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1">
-                    <SelectValue placeholder={t('fanmarkSettings.fields.accessType.placeholder')} />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl border border-border/60 bg-card/95 shadow-2xl shadow-primary/10">
-                    <SelectGroup>
-                      {accessTypes.map((option) => {
-                        const Icon = option.icon;
-                        return (
-                          <SelectItem key={option.value} value={option.value} className="py-3 pl-9 pr-4">
-                            <div className="flex items-center gap-3">
-                              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/15 text-primary">
-                                <Icon className="h-4 w-4" />
-                              </div>
-                              <span className="text-sm font-semibold text-foreground">{t(option.labelKey)}</span>
-                            </div>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-2">
+              {accessTypes.map((option) => {
+                const Icon = option.icon;
+                const isActive = accessType === option.value;
+                return (
+                  <button
+                    type="button"
+                    key={option.value}
+                    onClick={() => setValue('accessType', option.value as AccessType, { shouldDirty: true, shouldTouch: true })}
+                    className={cn(
+                      'flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors',
+                      isActive
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border/60 text-muted-foreground hover:border-primary/40 hover:text-primary'
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'flex h-10 w-10 items-center justify-center rounded-lg border',
+                        isActive ? 'border-primary bg-primary/90 text-primary-foreground' : 'border-border/60 bg-background'
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="text-sm font-semibold">
+                      {t(option.labelKey)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
             {errors.accessType && (
               <p className="flex items-center gap-2 text-sm text-destructive">
                 <FiAlertCircle className="h-4 w-4" />
@@ -631,14 +635,240 @@ export const FanmarkSettings = ({
             )}
           </div>
 
-          {/* Password Protection - Common setting for all access types except inactive */}
+          {/* 2. Access Type Specific Settings */}
+          {(accessType === 'redirect' || accessType === 'text' || accessType === 'profile') && (
+            <div className="space-y-4 rounded-xl border border-border/60 bg-background/70 p-4">
+              {accessType === 'redirect' && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-3">
+                      <FiExternalLink className="h-3.5 w-3.5" />
+                      {t('fanmarkSettings.fields.redirect.linkTypeLabel')}
+                    </Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {redirectLinkOptions.map((option) => {
+                        const Icon = option.icon;
+                        const isActive = watchedRedirectLinkType === option.value;
+                        return (
+                          <button
+                            type="button"
+                            key={option.value}
+                            onClick={() => setValue('redirectLinkType', option.value, { shouldDirty: true, shouldTouch: true })}
+                            className={cn(
+                              'flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors',
+                              isActive
+                                ? 'border-primary bg-primary/10 text-primary'
+                                : 'border-border/60 text-muted-foreground hover:border-primary/40 hover:text-primary'
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                'flex h-10 w-10 items-center justify-center rounded-lg border',
+                                isActive ? 'border-primary bg-primary/90 text-primary-foreground' : 'border-border/60 bg-background'
+                              )}
+                            >
+                              <Icon className="h-4 w-4" />
+                            </span>
+                            <div className="space-y-1">
+                              <p className="text-sm font-semibold">
+                                {t(option.labelKey)}
+                              </p>
+                              <p
+                                className={cn(
+                                  'text-xs',
+                                  isActive ? 'text-primary/80' : 'text-muted-foreground'
+                                )}
+                              >
+                                {t(option.descriptionKey)}
+                              </p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {watchedRedirectLinkType === 'url' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="targetUrl" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                        <FiGlobe className="h-3.5 w-3.5" />
+                        {t('fanmarkSettings.fields.redirect.urlLabel')}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {t('fanmarkSettings.fields.redirect.urlHelper')}
+                      </p>
+                      <Input
+                        id="targetUrl"
+                        {...register('targetUrl')}
+                        placeholder={t('fanmarkSettings.fields.redirect.urlPlaceholder')}
+                        type="url"
+                        className="h-11 rounded-lg border border-border focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+                      />
+                      {errors.targetUrl && (
+                        <p className="flex items-center gap-2 text-sm text-destructive">
+                          <FiAlertCircle className="h-4 w-4" />
+                          {t(`fanmarkSettings.${errors.targetUrl.message}`)}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {watchedRedirectLinkType === 'phone' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="redirectPhoneNumber" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                        <FiPhone className="h-3.5 w-3.5" />
+                        {t('fanmarkSettings.fields.redirect.phoneLabel')}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {t('fanmarkSettings.fields.redirect.phoneHelper')}
+                      </p>
+                      <Input
+                        id="redirectPhoneNumber"
+                        {...register('redirectPhoneNumber')}
+                        placeholder={t('fanmarkSettings.fields.redirect.phonePlaceholder')}
+                        type="tel"
+                        inputMode="tel"
+                        className="h-11 rounded-lg border border-border focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+                      />
+                      {errors.redirectPhoneNumber && (
+                        <p className="flex items-center gap-2 text-sm text-destructive">
+                          <FiAlertCircle className="h-4 w-4" />
+                          {t(`fanmarkSettings.${errors.redirectPhoneNumber.message}`)}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {accessType === 'text' && (
+                <div className="space-y-3">
+                  <Label htmlFor="textContent" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                    <FiEdit3 className="h-3.5 w-3.5" />
+                    {t('fanmarkSettings.fields.text.label')}
+                  </Label>
+                  <Textarea
+                    id="textContent"
+                    {...register('textContent')}
+                    placeholder={t('fanmarkSettings.fields.text.placeholder')}
+                    rows={4}
+                    className="rounded-lg border border-border focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+                  />
+                  {errors.textContent && (
+                    <p className="flex items-center gap-2 text-sm text-destructive">
+                      <FiAlertCircle className="h-4 w-4" />
+                      {errors.textContent.message}
+                    </p>
+                  )}
+                  <div className="pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (fanmark?.id) {
+                          // 現在の入力状態をプレビューに渡す
+                          navigate(`/fanmarks/${fanmark.id}/messageboard/preview`, {
+                            state: {
+                              previewContent: watchedTextContent || '',
+                              editingState: {
+                                accessType: watchedAccessType,
+                                fanmarkName: watchedFanmarkName,
+                                textContent: watchedTextContent,
+                                isPasswordProtected: watch('isPasswordProtected'),
+                                accessPassword: watch('accessPassword'),
+                                is_public: watch('is_public')
+                              }
+                            }
+                          });
+                        }
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full border-border/60 text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/40 transition-colors"
+                    >
+                      <Eye className="h-4 w-4" />
+                      プレビュー
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {accessType === 'profile' && (
+                <div className="space-y-3">
+                  <Label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                    <FiImage className="h-3.5 w-3.5" />
+                    {t('fanmarkSettings.fields.profile.label')}
+                  </Label>
+                  <div className="space-y-3 pl-6">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (fanmark?.id) {
+                            navigate(`/fanmarks/${fanmark.id}/profile/edit`);
+                          }
+                        }}
+                        className="inline-flex items-center gap-2 rounded-full border-border/60 text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/40 transition-colors"
+                      >
+                        <Edit className="h-4 w-4" />
+                        {t('fanmarkSettings.actions.editProfile')}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (fanmark?.id) {
+                            navigate(`/fanmarks/${fanmark.id}/profile/preview`, {
+                              state: { from: 'settings' }
+                            });
+                          }
+                        }}
+                        className="inline-flex items-center gap-2 rounded-full border-border/60 text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/40 transition-colors"
+                      >
+                        <Eye className="h-4 w-4" />
+                        {t('emojiProfile.preview')}
+                      </Button>
+                    </div>
+
+                    {/* Profile Privacy Settings */}
+                    <div className="flex items-start space-x-4 p-4 rounded-xl bg-primary/5 border border-primary/10">
+                      <Controller
+                        name="is_public"
+                        control={control}
+                        render={({ field }) => (
+                          <Checkbox
+                            id="is_public"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            className="mt-1"
+                          />
+                        )}
+                      />
+                      <div className="space-y-2">
+                        <Label htmlFor="is_public" className="text-sm font-medium cursor-pointer">
+                          プロフィールを公開する
+                        </Label>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          公開すると、他のユーザーがあなたのプロフィールを閲覧できるようになります
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 3. Password Protection - Common setting for all access types except inactive */}
           {accessType !== 'inactive' && (
             <div className="space-y-3 rounded-xl border border-border/60 bg-background/70 p-4">
-              <Label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+              <Label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-3">
                 <FiLock className="h-3.5 w-3.5" />
                 {t('fanmarkSettings.fields.passwordProtection.label')}
               </Label>
-              <div className="space-y-3 pl-6">
+              <div className="space-y-3">
                 <div className="flex items-center space-x-2">
                   <Controller
                     name="isPasswordProtected"
@@ -720,233 +950,6 @@ export const FanmarkSettings = ({
                   </div>
                 )}
               </div>
-            </div>
-          )}
-
-          {/* Access Type Specific Settings */}
-          {(accessType === 'redirect' || accessType === 'text' || accessType === 'profile') && (
-            <div className="space-y-4 rounded-xl border border-border/60 bg-background/70 p-4">
-              {accessType === 'redirect' && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                      <FiExternalLink className="h-3.5 w-3.5" />
-                      {t('fanmarkSettings.fields.redirect.linkTypeLabel')}
-                    </Label>
-                    <p className="text-xs text-muted-foreground">{t('fanmarkSettings.fields.redirect.linkTypeHelper')}</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {redirectLinkOptions.map((option) => {
-                        const Icon = option.icon;
-                        const isActive = watchedRedirectLinkType === option.value;
-                        return (
-                          <button
-                            type="button"
-                            key={option.value}
-                            onClick={() => setValue('redirectLinkType', option.value, { shouldDirty: true, shouldTouch: true })}
-                            className={cn(
-                              'flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors',
-                              isActive
-                                ? 'border-primary bg-primary/10 text-primary'
-                                : 'border-border/60 text-muted-foreground hover:border-primary/40 hover:text-primary'
-                            )}
-                          >
-                            <span
-                              className={cn(
-                                'flex h-10 w-10 items-center justify-center rounded-lg border',
-                                isActive ? 'border-primary bg-primary/90 text-primary-foreground' : 'border-border/60 bg-background'
-                              )}
-                            >
-                              <Icon className="h-4 w-4" />
-                            </span>
-                            <div className="space-y-1">
-                              <p className="text-sm font-semibold">
-                                {t(option.labelKey)}
-                              </p>
-                              <p
-                                className={cn(
-                                  'text-xs',
-                                  isActive ? 'text-primary/80' : 'text-muted-foreground'
-                                )}
-                              >
-                                {t(option.descriptionKey)}
-                              </p>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {watchedRedirectLinkType === 'url' && (
-                    <div className="space-y-2">
-                      <Label htmlFor="targetUrl" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                        <FiGlobe className="h-3.5 w-3.5" />
-                        {t('fanmarkSettings.fields.redirect.urlLabel')}
-                      </Label>
-                      <Input
-                        id="targetUrl"
-                        {...register('targetUrl')}
-                        placeholder={t('fanmarkSettings.fields.redirect.urlPlaceholder')}
-                        type="url"
-                        className="h-11 rounded-lg border border-border focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        {t('fanmarkSettings.fields.redirect.urlHelper')}
-                      </p>
-                      {errors.targetUrl && (
-                        <p className="flex items-center gap-2 text-sm text-destructive">
-                          <FiAlertCircle className="h-4 w-4" />
-                          {errors.targetUrl.message}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {watchedRedirectLinkType === 'phone' && (
-                    <div className="space-y-2">
-                      <Label htmlFor="redirectPhoneNumber" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                        <FiPhone className="h-3.5 w-3.5" />
-                        {t('fanmarkSettings.fields.redirect.phoneLabel')}
-                      </Label>
-                      <Input
-                        id="redirectPhoneNumber"
-                        {...register('redirectPhoneNumber')}
-                        placeholder={t('fanmarkSettings.fields.redirect.phonePlaceholder')}
-                        type="tel"
-                        inputMode="tel"
-                        className="h-11 rounded-lg border border-border focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        {t('fanmarkSettings.fields.redirect.phoneHelper')}
-                      </p>
-                      {errors.redirectPhoneNumber && (
-                        <p className="flex items-center gap-2 text-sm text-destructive">
-                          <FiAlertCircle className="h-4 w-4" />
-                          {errors.redirectPhoneNumber.message}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {accessType === 'text' && (
-                <div className="space-y-3">
-                  <Label htmlFor="textContent" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                    <FiEdit3 className="h-3.5 w-3.5" />
-                    {t('fanmarkSettings.fields.text.label')}
-                  </Label>
-                  <Textarea
-                    id="textContent"
-                    {...register('textContent')}
-                    placeholder={t('fanmarkSettings.fields.text.placeholder')}
-                    rows={4}
-                    className="rounded-lg border border-border focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
-                  />
-                  {errors.textContent && (
-                    <p className="flex items-center gap-2 text-sm text-destructive">
-                      <FiAlertCircle className="h-4 w-4" />
-                      {errors.textContent.message}
-                    </p>
-                  )}
-                  <div className="pt-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        if (fanmark?.id) {
-                          // 現在の入力状態をプレビューに渡す
-                          navigate(`/fanmarks/${fanmark.id}/messageboard/preview`, {
-                            state: {
-                              previewContent: watchedTextContent || '',
-                              editingState: {
-                                accessType: watchedAccessType,
-                                fanmarkName: watchedFanmarkName,
-                                textContent: watchedTextContent,
-                                isPasswordProtected: watch('isPasswordProtected'),
-                                accessPassword: watch('accessPassword'),
-                                is_public: watch('is_public')
-                              }
-                            }
-                          });
-                        }
-                      }}
-                      className="inline-flex items-center gap-2 rounded-full border-border/60 text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/40 transition-colors"
-                    >
-                      <Eye className="h-4 w-4" />
-                      プレビュー
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {accessType === 'profile' && (
-                <div className="space-y-3 rounded-xl border border-border/60 bg-background/70 p-4">
-                  <Label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                    <FiImage className="h-3.5 w-3.5" />
-                    {t('fanmarkSettings.fields.profile.label')}
-                  </Label>
-                  <div className="space-y-3 pl-6">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          if (fanmark?.id) {
-                            navigate(`/fanmarks/${fanmark.id}/profile/edit`);
-                          }
-                        }}
-                        className="inline-flex items-center gap-2 rounded-full border-border/60 text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/40 transition-colors"
-                      >
-                        <Edit className="h-4 w-4" />
-                        {t('fanmarkSettings.actions.editProfile')}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          if (fanmark?.id) {
-                            navigate(`/fanmarks/${fanmark.id}/profile/preview`, {
-                              state: { from: 'settings' }
-                            });
-                          }
-                        }}
-                        className="inline-flex items-center gap-2 rounded-full border-border/60 text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/40 transition-colors"
-                      >
-                        <Eye className="h-4 w-4" />
-                        {t('emojiProfile.preview')}
-                      </Button>
-                    </div>
-
-                    {/* Profile Privacy Settings */}
-                    <div className="flex items-start space-x-4 p-4 rounded-xl bg-primary/5 border border-primary/10">
-                      <Controller
-                        name="is_public"
-                        control={control}
-                        render={({ field }) => (
-                          <Checkbox
-                            id="is_public"
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            className="mt-1"
-                          />
-                        )}
-                      />
-                      <div className="space-y-2">
-                        <Label htmlFor="is_public" className="text-sm font-medium cursor-pointer">
-                          プロフィールを公開する
-                        </Label>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          公開すると、他のユーザーがあなたのプロフィールを閲覧できるようになります
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </CardContent>

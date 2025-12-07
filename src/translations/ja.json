@@ -876,7 +876,7 @@
     "actionsCopyLink": "リンクをコピー",
     "copyFanmarkLink": "リンクをコピー",
     "actionsSettings": "ファンマ設定",
-    "viewStats": "統計を見る",
+    "viewStats": "アナリティクス",
     "actionsMenu": "その他の操作",
     "actionsQRCode": "QRコードを表示",
     "returnConfirmTitle": "このファンマを返却しますか？",
@@ -1034,7 +1034,9 @@
         "placeholder": "ファンマ名を入力してください"
       },
       "accessType": {
-        "label": "アクセスタイプ",
+        "label": "ファンマアクセス",
+        "description": "ファンマにアクセスされたとき（https://fanmark.id/{{fanmark}}）の挙動を設定できます。",
+        "sectionTitle": "アクセスタイプ",
         "helper": "ファンマ訪問時の動作を選択してください。",
         "placeholder": "アクセスタイプを選択"
       },
@@ -1044,9 +1046,9 @@
         "linkTypeHelper": "Webサイトに転送するか、電話発信を開始するかを選べます。",
         "linkTypeOptions": {
           "url": "ウェブサイト",
-          "urlDesc": "任意のURLへ移動",
+          "urlDesc": "好きなURLへ転送する",
           "phone": "電話番号",
-          "phoneDesc": "端末の発信画面を開く"
+          "phoneDesc": "デバイスの電話発信画面を開く"
         },
         "urlLabel": "ウェブサイトURL",
         "urlPlaceholder": "https://example.com",
@@ -1078,9 +1080,9 @@
       }
     },
     "accessTypeOptions": {
-      "profile": "プロフィールを表示",
-      "redirect": "指定のアドレスへ転送する",
-      "text": "伝言板を表示する",
+      "profile": "プロフィール",
+      "redirect": "転送",
+      "text": "伝言板",
       "inactive": "なにもしない"
     },
     "actions": {
@@ -1106,7 +1108,9 @@
       "errorDescription": "保存中に問題が発生しました"
     },
     "validation": {
-      "accessTypeRequired": "アクセスタイプを選択してください"
+      "accessTypeRequired": "アクセスタイプを選択してください",
+      "urlRequired": "転送先URLを入力してください",
+      "phoneRequired": "電話番号を入力してください"
     }
   },
   "emojiProfile": {

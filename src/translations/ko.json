@@ -877,7 +877,7 @@
     "actionsCopyLink": "링크 복사",
     "copyFanmarkLink": "팬마크 링크 복사",
     "actionsSettings": "팬마크 설정",
-    "viewStats": "통계 보기",
+    "viewStats": "애널리틱스",
     "actionsMenu": "기타 작업",
     "actionsQRCode": "QR 코드 표시",
     "returnConfirmTitle": "이 팬마크를 반환하시겠습니까?",
@@ -1035,7 +1035,9 @@
         "placeholder": "팬마크명을 입력하세요"
       },
       "accessType": {
-        "label": "접근 유형",
+        "label": "팬마크 액세스",
+        "description": "팬마크에 접근할 때(https://fanmark.id/{{fanmark}})의 동작을 설정합니다.",
+        "sectionTitle": "접근 유형",
         "helper": "팬마크 방문 시의 동작을 선택하세요.",
         "placeholder": "접근 유형을 선택"
       },
@@ -1079,10 +1081,10 @@
       }
     },
     "accessTypeOptions": {
-      "profile": "프로필 표시",
-      "redirect": "지정 주소로 전달",
-      "text": "전언판 표시",
-      "inactive": "아무것도 안 함"
+      "profile": "프로필",
+      "redirect": "전달",
+      "text": "전언판",
+      "inactive": "비활성"
     },
     "actions": {
       "editProfile": "편집",
@@ -1107,7 +1109,9 @@
       "errorDescription": "저장 중에 문제가 발생했습니다"
     },
     "validation": {
-      "accessTypeRequired": "접근 유형을 선택하세요"
+      "accessTypeRequired": "접근 유형을 선택하세요",
+      "urlRequired": "전달 URL을 입력하세요.",
+      "phoneRequired": "전화번호를 입력하세요."
     }
   },
   "emojiProfile": {

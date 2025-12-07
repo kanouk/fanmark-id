@@ -79,9 +79,9 @@ const FanmarkSettingsPage = () => {
         ? (fanmarkData.emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
         : [];
 
-      // Fetch is_public from fanmark_profiles table directly if access_type is 'profile'
+      // Fetch is_public from fanmark_profiles table (regardless of access_type to preserve setting)
       let isPublic = false;
-      if (fanmarkData.access_type === 'profile' && fanmarkData.license_id) {
+      if (fanmarkData.license_id) {
         const { data: profileData, error: profileError } = await supabase
           .from('fanmark_profiles')
           .select('is_public')

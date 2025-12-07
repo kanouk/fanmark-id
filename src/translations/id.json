@@ -873,7 +873,7 @@
     "actionsCopyLink": "Salin URL",
     "copyFanmarkLink": "Salin tautan fanmark",
     "actionsSettings": "Buka pengaturan",
-    "viewStats": "Lihat Statistik",
+    "viewStats": "Analitik",
     "actionsMenu": "Tindakan lainnya",
     "actionsQRCode": "Tampilkan kode QR",
     "actionsReturn": "Kembalikan fanmark",
@@ -1035,7 +1035,9 @@
         "placeholder": "Masukkan nama tampilan"
       },
       "accessType": {
-        "label": "Jenis akses",
+        "label": "Akses Fanmark",
+        "description": "Atur apa yang terjadi saat seseorang mengakses fanmark Anda (https://fanmark.id/{{fanmark}}).",
+        "sectionTitle": "Jenis Akses",
         "helper": "Pilih apa yang terjadi saat seseorang membuka fanmark ini.",
         "placeholder": "Pilih jenis akses"
       },
@@ -1080,9 +1082,9 @@
     },
     "accessTypeOptions": {
       "profile": "Profil",
-      "redirect": "Pengalihan URL",
-      "text": "Papan pesan",
-      "inactive": "Tidak aktif"
+      "redirect": "Pengalihan",
+      "text": "Papan Pesan",
+      "inactive": "Tidak Aktif"
     },
     "actions": {
       "editProfile": "Edit",
@@ -1107,7 +1109,9 @@
       "errorDescription": "Kami tidak dapat menyimpan perubahan Anda."
     },
     "validation": {
-      "accessTypeRequired": "Silakan pilih jenis akses."
+      "accessTypeRequired": "Silakan pilih jenis akses.",
+      "urlRequired": "Silakan masukkan URL pengalihan.",
+      "phoneRequired": "Silakan masukkan nomor telepon."
     }
   },
   "emojiProfile": {

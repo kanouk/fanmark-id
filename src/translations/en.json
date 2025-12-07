@@ -874,7 +874,7 @@
     "actionsCopyLink": "Copy URL",
     "copyFanmarkLink": "Copy fanmark link",
     "actionsSettings": "Open settings",
-    "viewStats": "View Stats",
+    "viewStats": "Analytics",
     "actionsMenu": "More actions",
     "actionsQRCode": "Show QR code",
     "actionsReturn": "Return fanmark",
@@ -1036,7 +1036,9 @@
         "placeholder": "Enter a display name"
       },
       "accessType": {
-        "label": "Access type",
+        "label": "Fanmark Access",
+        "description": "Configure what happens when someone visits your fanmark (https://fanmark.id/{{fanmark}}).",
+        "sectionTitle": "Access Type",
         "helper": "Choose what happens when someone opens this fanmark.",
         "placeholder": "Select an access type"
       },
@@ -1081,8 +1083,8 @@
     },
     "accessTypeOptions": {
       "profile": "Profile",
-      "redirect": "URL redirect",
-      "text": "Message board",
+      "redirect": "Redirect",
+      "text": "Message Board",
       "inactive": "Inactive"
     },
     "actions": {
@@ -1108,7 +1110,9 @@
       "errorDescription": "We couldn't save your changes."
     },
     "validation": {
-      "accessTypeRequired": "Please choose an access type."
+      "accessTypeRequired": "Please choose an access type.",
+      "urlRequired": "Please enter a redirect URL.",
+      "phoneRequired": "Please enter a phone number."
     }
   },
   "emojiProfile": {
