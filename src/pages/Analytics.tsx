@@ -162,7 +162,23 @@ const Analytics = () => {
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data || []) as DailyStats[];
+      return (data || []).map(row => ({
+        fanmark_id: row.fanmark_id,
+        stat_date: row.stat_date,
+        access_count: row.access_count ?? 0,
+        unique_visitors: row.unique_visitors ?? 0,
+        referrer_direct: row.referrer_direct ?? 0,
+        referrer_search: row.referrer_search ?? 0,
+        referrer_social: row.referrer_social ?? 0,
+        referrer_other: row.referrer_other ?? 0,
+        device_mobile: row.device_mobile ?? 0,
+        device_tablet: row.device_tablet ?? 0,
+        device_desktop: row.device_desktop ?? 0,
+        access_type_profile: row.access_type_profile ?? 0,
+        access_type_redirect: row.access_type_redirect ?? 0,
+        access_type_text: row.access_type_text ?? 0,
+        access_type_inactive: row.access_type_inactive ?? 0,
+      })) as DailyStats[];
     },
   });
 
