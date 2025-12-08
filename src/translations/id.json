@@ -229,6 +229,13 @@
       "description": "© 2025 fanmark.id All rights reserved."
     }
   },
+  "footer": {
+    "service": "Layanan",
+    "support": "Dukungan",
+    "legal": "Legal",
+    "madeWith": "Made with",
+    "inJapan": "in Japan"
+  },
   "common": {
     "loading": "Memuat...",
     "error": "Terjadi kesalahan",
@@ -1238,7 +1245,7 @@
   "legalPages": {
     "privacyPolicy": {
       "title": "Kebijakan Privasi",
-      "lastUpdated": "Pembaruan terakhir: November 2024",
+      "lastUpdated": "Pembaruan terakhir: Desember 2025",
       "introduction": "fanmark.id (\"kami\", \"kami\", \"milik kami\", atau \"Layanan\") berkomitmen untuk melindungi privasi Anda. Kebijakan Privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, mengungkapkan, dan melindungi informasi Anda saat Anda menggunakan situs web dan layanan kami.",
       "sections": {
         "informationWeCollect": {
@@ -1289,20 +1296,20 @@
     },
     "termsOfService": {
       "title": "Syarat Layanan",
-      "lastUpdated": "Pembaruan terakhir: November 2024",
-      "introduction": "Syarat Layanan ini (\"Syarat\", \"Perjanjian\") membentuk kontrak yang mengikat secara hukum antara Anda (\"Pengguna\", \"Anda\", \"Milik Anda\") dan fanmark.id (\"Perusahaan\", \"kami\", \"kami\", \"milik kami\"). Dengan mengakses atau menggunakan fanmark.id, Anda setuju untuk terikat oleh Syarat ini.",
+      "lastUpdated": "Pembaruan terakhir: Desember 2025",
+      "introduction": "Syarat Layanan ini (\"Syarat\", \"Perjanjian\") membentuk kontrak yang mengikat secara hukum antara Anda (\"Pengguna\", \"Anda\", \"Milik Anda\") dan operator Fanmark (\"Layanan\", \"Operator\", \"kami\"). Dengan mengakses atau menggunakan Layanan, Anda setuju untuk terikat oleh Syarat ini.",
       "sections": {
         "useAgreement": {
           "title": "1. Perjanjian Penggunaan",
-          "content": "Anda setuju untuk menggunakan fanmark.id hanya untuk tujuan yang sah dan dengan cara yang tidak melanggar hak orang lain atau membatasi penggunaan dan kenikmatan fanmark.id mereka. Perilaku yang dilarang meliputi:\n\n• Mengganggu atau menyebabkan kesusahan atau ketidaknyamanan bagi orang lain\n• Konten cabul atau tidak pantas\n• Mengganggu aliran dialog normal di dalam fanmark.id\n• Mendaftarkan fanmark untuk spam, phishing, atau tujuan berbahaya\n• Melanggar hak kekayaan intelektual\n• Akses tidak sah atau pengumpulan data"
+          "content": "Anda setuju untuk menggunakan Layanan hanya untuk tujuan yang sah dan dengan cara yang tidak melanggar hak orang lain atau membatasi penggunaan dan kenikmatan Layanan mereka. Perilaku yang dilarang meliputi:\n\n• Mengganggu atau menyebabkan kesusahan atau ketidaknyamanan bagi orang lain\n• Konten cabul atau tidak pantas\n• Mengganggu aliran dialog normal di dalam Layanan\n• Mendaftarkan fanmark untuk spam, phishing, atau tujuan berbahaya\n• Melanggar hak kekayaan intelektual\n• Akses tidak sah atau pengumpulan data"
         },
         "accountResponsibility": {
           "title": "2. Akun dan Pendaftaran",
-          "content": "Anda bertanggung jawab untuk mempertahankan kerahasiaan kredensial akun dan kata sandi Anda. Anda setuju untuk menerima tanggung jawab atas semua aktivitas yang terjadi di akun Anda. Anda harus memberikan informasi yang akurat, lengkap, dan terkini selama pendaftaran. Anda setuju untuk memberi tahu kami segera tentang penggunaan tidak sah akun Anda.\n\nKode Undangan: Akses ke fanmark.id mungkin memerlukan kode undangan. Kode undangan tidak dapat dialihkan dan dapat dibatalkan kapan saja."
+          "content": "Anda bertanggung jawab untuk mempertahankan kerahasiaan kredensial akun dan kata sandi Anda. Anda setuju untuk menerima tanggung jawab atas semua aktivitas yang terjadi di akun Anda. Anda harus memberikan informasi yang akurat, lengkap, dan terkini selama pendaftaran. Anda setuju untuk memberi tahu kami segera tentang penggunaan tidak sah akun Anda.\n\nKode Undangan: Akses ke Layanan mungkin memerlukan kode undangan. Kode undangan tidak dapat dialihkan dan dapat dibatalkan kapan saja."
         },
         "fanmarkRights": {
           "title": "3. Kepemilikan Fanmark dan Hak",
-          "content": "Setiap fanmark (kombinasi emoji) memiliki batasan kepemilikan:\n\n• Anda dapat memiliki beberapa fanmark hingga batas paket Anda\n• Fanmark diberikan berdasarkan lisensi untuk periode yang ditentukan\n• Anda mempertahankan hak atas konten yang Anda buat (profil, pesan, dll.)\n• Perusahaan mempertahankan semua hak atas platform, teknologi, dan infrastruktur\n• Anda tidak dapat mentransfer, menjual, atau memberikan lisensi ulang fanmark tanpa izin eksplisit\n• Fanmark yang tidak digunakan mungkin memasuki periode grace"
+          "content": "Setiap fanmark (kombinasi emoji) memiliki batasan kepemilikan:\n\n• Anda dapat memiliki beberapa fanmark hingga batas paket Anda\n• Fanmark diberikan berdasarkan lisensi untuk periode yang ditentukan\n• Anda mempertahankan hak atas konten yang Anda buat (profil, pesan, dll.)\n• Operator mempertahankan semua hak atas platform, teknologi, dan infrastruktur\n• Anda tidak dapat mentransfer, menjual, atau memberikan lisensi ulang fanmark tanpa izin eksplisit\n• Fanmark yang tidak digunakan mungkin memasuki periode grace"
         },
         "fanmarkRetention": {
           "title": "4. Syarat Lisensi Fanmark",
@@ -1310,19 +1317,19 @@
         },
         "paymentTerms": {
           "title": "5. Pembayaran dan Penagihan",
-          "content": "Beberapa fanmark memerlukan pembayaran untuk lisensi:\n\n• Penetapan Harga: Harga ditampilkan sebelum pembelian dan dapat berubah dengan pemberitahuan\n• Pemrosesan Pembayaran: Pembayaran diproses melalui Stripe dan tunduk pada syaratnya\n• Penagihan: Anda memberi wewenang kepada kami untuk menagih metode pembayaran Anda untuk biaya pembaruan\n• Tanpa Pengembalian Dana: Biaya lisensi tidak dapat dikembalikan kecuali diwajibkan oleh hukum\n• Pembayaran Gagal: Kegagalan pembayaran dapat mengakibatkan penangguhan atau pembatalan lisensi\n• Pajak: Anda bertanggung jawab atas semua pajak yang berlaku"
+          "content": "Beberapa fanmark memerlukan pembayaran untuk lisensi:\n\n• Penetapan Harga: Harga ditampilkan sebelum pembelian dan dapat berubah dengan pemberitahuan\n• Pemrosesan Pembayaran: Pembayaran diproses melalui Stripe dan tunduk pada syaratnya\n• Penagihan: Anda memberi wewenang kepada Operator untuk menagih metode pembayaran Anda untuk biaya pembaruan\n• Tanpa Pengembalian Dana: Biaya lisensi tidak dapat dikembalikan kecuali diwajibkan oleh hukum\n• Pembayaran Gagal: Kegagalan pembayaran dapat mengakibatkan penangguhan atau pembatalan lisensi\n• Pajak: Anda bertanggung jawab atas semua pajak yang berlaku"
         },
         "userContent": {
           "title": "6. Konten Pengguna",
-          "content": "Anda memberikan kepada fanmark.id lisensi non-eksklusif tanpa royalti untuk menggunakan, mereproduksi, memodifikasi, dan menampilkan konten buatan pengguna Anda (profil, pesan, avatar, dll.) untuk menyediakan dan meningkatkan Layanan.\n\n• Anda mempertahankan kepemilikan konten Anda\n• Anda menjamin bahwa konten Anda tidak melanggar hak pihak ketiga\n• Anda sepenuhnya bertanggung jawab atas konten yang Anda buat\n• Kami dapat menghapus konten yang melanggar Syarat ini"
+          "content": "Anda memberikan kepada Operator lisensi non-eksklusif tanpa royalti untuk menggunakan, mereproduksi, memodifikasi, dan menampilkan konten buatan pengguna Anda (profil, pesan, avatar, dll.) untuk menyediakan dan meningkatkan Layanan.\n\n• Anda mempertahankan kepemilikan konten Anda\n• Anda menjamin bahwa konten Anda tidak melanggar hak pihak ketiga\n• Anda sepenuhnya bertanggung jawab atas konten yang Anda buat\n• Kami dapat menghapus konten yang melanggar Syarat ini"
         },
         "intellectualProperty": {
           "title": "7. Kekayaan Intelektual",
-          "content": "Layanan ini, termasuk semua kode, desain, fitur, dan fungsionalitas, dimiliki oleh fanmark.id. Semua hak kekayaan intelektual disediakan. Anda tidak dapat mereproduksi, mendistribusikan, atau mengirimkan Layanan atau kontennya tanpa izin."
+          "content": "Layanan ini, termasuk semua kode, desain, fitur, dan fungsionalitas, dimiliki oleh Operator. Semua hak kekayaan intelektual disediakan. Anda tidak dapat mereproduksi, mendistribusikan, atau mengirimkan Layanan atau kontennya tanpa izin."
         },
         "limitationOfLiability": {
           "title": "8. Pembatasan Tanggung Jawab",
-          "content": "SEJAUH DIMUNGKINKAN OLEH HUKUM:\n\n• Layanan disediakan dengan \"apa adanya\" tanpa jaminan dari jenis apa pun\n• Kami tidak bertanggung jawab atas kerusakan tidak langsung, insidental, khusus, atau konsekuensial\n• Tanggung jawab total kami tidak akan melebihi jumlah yang Anda bayarkan dalam 12 bulan terakhir\n• Beberapa yurisdiksi tidak memungkinkan pembatasan tanggung jawab, yang mungkin tidak berlaku untuk Anda"
+          "content": "SEJAUH DIMUNGKINKAN OLEH HUKUM:\n\n• Layanan disediakan dengan \"apa adanya\" tanpa jaminan dari jenis apa pun\n• Operator tidak bertanggung jawab atas kerusakan tidak langsung, insidental, khusus, atau konsekuensial\n• Tanggung jawab total Operator tidak akan melebihi jumlah yang Anda bayarkan dalam 12 bulan terakhir\n• Beberapa yurisdiksi tidak memungkinkan pembatasan tanggung jawab, yang mungkin tidak berlaku untuk Anda"
         },
         "disclaimers": {
           "title": "9. Penafian",
@@ -1330,15 +1337,15 @@
         },
         "indemnification": {
           "title": "10. Penggantian Rugi",
-          "content": "Anda setuju untuk membela, mengganti rugi, dan mempertahankan fanmark.id dan petugas, direktur, karyawan, dan agennya bebas dari klaim, kerusakan, kerugian, atau biaya apa pun yang timbul dari:\n\n• Penggunaan Layanan Anda\n• Pelanggaran Syarat ini\n• Pelanggaran hak pihak ketiga Anda\n• Konten buatan pengguna Anda"
+          "content": "Anda setuju untuk membela, mengganti rugi, dan mempertahankan Operator dan afiliasinya bebas dari klaim, kerusakan, kerugian, atau biaya apa pun yang timbul dari:\n\n• Penggunaan Layanan Anda\n• Pelanggaran Syarat ini\n• Pelanggaran hak pihak ketiga Anda\n• Konten buatan pengguna Anda"
         },
         "suspensionTermination": {
           "title": "11. Penangguhan dan Penghentian",
-          "content": "Kami dapat menangguhkan atau menghentikan akun Anda jika Anda:\n\n• Melanggar Syarat ini\n• Terlibat dalam kegiatan ilegal atau penipuan\n• Mengganggu pengguna lain\n• Membuat konten yang keberatan\n• Melanggar hak kekayaan intelektual\n• Gagal membayar biaya\n\nPenghentian dapat segera tanpa pemberitahuan untuk pelanggaran serius."
+          "content": "Operator dapat menangguhkan atau menghentikan akun Anda jika Anda:\n\n• Melanggar Syarat ini\n• Terlibat dalam kegiatan ilegal atau penipuan\n• Mengganggu pengguna lain\n• Membuat konten yang keberatan\n• Melanggar hak kekayaan intelektual\n• Gagal membayar biaya\n\nPenghentian dapat segera tanpa pemberitahuan untuk pelanggaran serius."
         },
         "governing": {
           "title": "12. Hukum yang Berlaku",
-          "content": "Syarat ini diatur oleh hukum yurisdiksi tempat fanmark.id beroperasi, tanpa mempertimbangkan prinsip konflik hukum."
+          "content": "Syarat ini diatur oleh hukum yurisdiksi tempat Operator beroperasi, tanpa mempertimbangkan prinsip konflik hukum."
         },
         "disputeResolution": {
           "title": "13. Penyelesaian Sengketa",
@@ -1346,7 +1353,7 @@
         },
         "changes": {
           "title": "14. Perubahan Syarat",
-          "content": "Kami dapat memodifikasi Syarat ini kapan saja. Perubahan material akan dikomunikasikan melalui email atau pemberitahuan menonjol pada Layanan. Penggunaan berkelanjutan setelah perubahan menunjukkan penerimaan Anda atas Syarat yang diperbarui."
+          "content": "Operator dapat memodifikasi Syarat ini kapan saja. Perubahan material akan dikomunikasikan melalui email atau pemberitahuan menonjol pada Layanan. Penggunaan berkelanjutan setelah perubahan menunjukkan penerimaan Anda atas Syarat yang diperbarui."
         },
         "severability": {
           "title": "15. Pemisahan",
@@ -1354,11 +1361,11 @@
         },
         "entireAgreement": {
           "title": "16. Perjanjian Lengkap",
-          "content": "Syarat ini, bersama dengan Kebijakan Privasi kami, merupakan seluruh perjanjian antara Anda dan fanmark.id mengenai penggunaan Layanan."
+          "content": "Syarat ini, bersama dengan Kebijakan Privasi kami, merupakan seluruh perjanjian antara Anda dan Operator mengenai penggunaan Layanan."
         },
         "serviceTermination": {
           "title": "17. Penghentian dan Pemutusan Layanan",
-          "content": "Penghentian Layanan: Kami dapat menghentikan atau melakukan modifikasi material pada Layanan kapan saja. Jika kami menghentikan Layanan, kami akan memberikan pemberitahuan tertulis minimal 180 hari sebelumnya kepada semua pengguna aktif.\n\nPemberitahuan dan Jaminan Lisensi: Saat mengeluarkan pemberitahuan penghentian Layanan, hal berikut berlaku:\n• Semua pemegang lisensi saat ini dijamin hak untuk memperpanjang/memperbarui lisensi mereka setidaknya satu kali lagi tanpa biaya tambahan (hingga periode perpanjangan maksimum yang diizinkan di bawah tingkat mereka, asalkan mereka meminta pembaruan sebelum tanggal kedaluwarsa asli)\n• Tidak ada perpanjangan lebih lanjut yang mungkin setelah tanggal kedaluwarsa lisensi akhir, yang harus jatuh sebelum atau pada tanggal penghentian Layanan\n• Pengguna dapat mengekspor semua data dan konten mereka hingga tanggal kedaluwarsa lisensi akhir\n\nData Pengguna: Setelah Layanan dihentikan, kami akan:\n• Memberikan kesempatan yang wajar (minimal 60 hari sejak kedaluwarsa lisensi) bagi Anda untuk mengambil atau mengekspor data Anda\n• Melakukan upaya yang wajar untuk memfasilitasi ekspor data dalam format standar yang dapat dibawa\n• Menyimpan data Anda sesuai dengan hukum yang berlaku dan Kebijakan Privasi kami\n\nMasalah Keuangan: Setelah Layanan dihentikan:\n• Kami akan memberikan pengembalian dana prorata untuk bagian yang belum habis dari lisensi berbayar apa pun yang diperbaharui setelah pemberitahuan penghentian Layanan dikeluarkan (jika diwajibkan oleh hukum di yurisdiksi Anda)\n• Pengguna tidak berhak atas ganti rugi atau kompensasi di luar pengembalian dana tersebut\n• Semua permintaan pengembalian dana harus dilakukan dalam waktu 12 bulan sejak penghentian Layanan\n\nTanpa Tanggung Jawab: Kami tidak bertanggung jawab atas kehilangan data, bisnis, keuntungan, atau peluang yang diakibatkan oleh penghentian Layanan, asalkan kami mengikuti prosedur pemberitahuan, jaminan perpanjangan lisensi, dan ekspor data yang diuraikan di atas. Dengan menerima Syarat ini, Anda mengakui bahwa ketergantungan berkelanjutan pada Layanan setelah periode pemberitahuan penghentian berakhir adalah risiko Anda sendiri."
+          "content": "Penghentian Layanan: Operator dapat menghentikan atau melakukan modifikasi material pada Layanan kapan saja. Jika Layanan dihentikan, Operator akan memberikan pemberitahuan tertulis minimal 180 hari sebelumnya kepada semua pengguna aktif.\n\nPemberitahuan dan Jaminan Lisensi: Saat mengeluarkan pemberitahuan penghentian Layanan, hal berikut berlaku:\n• Semua pemegang lisensi saat ini dijamin hak untuk memperpanjang/memperbarui lisensi mereka setidaknya satu kali lagi tanpa biaya tambahan (hingga periode perpanjangan maksimum yang diizinkan di bawah tingkat mereka, asalkan mereka meminta pembaruan sebelum tanggal kedaluwarsa asli)\n• Tidak ada perpanjangan lebih lanjut yang mungkin setelah tanggal kedaluwarsa lisensi akhir, yang harus jatuh sebelum atau pada tanggal penghentian Layanan\n• Pengguna dapat mengekspor semua data dan konten mereka hingga tanggal kedaluwarsa lisensi akhir\n\nData Pengguna: Setelah Layanan dihentikan, Operator akan:\n• Memberikan kesempatan yang wajar (minimal 60 hari sejak kedaluwarsa lisensi) bagi Anda untuk mengambil atau mengekspor data Anda\n• Melakukan upaya yang wajar untuk memfasilitasi ekspor data dalam format standar yang dapat dibawa\n• Menyimpan data Anda sesuai dengan hukum yang berlaku dan Kebijakan Privasi\n\nMasalah Keuangan: Setelah Layanan dihentikan:\n• Pengembalian dana prorata untuk bagian yang belum habis dari lisensi berbayar apa pun yang diperbaharui setelah pemberitahuan penghentian Layanan dikeluarkan akan diberikan (jika diwajibkan oleh hukum di yurisdiksi Anda)\n• Pengguna tidak berhak atas ganti rugi atau kompensasi di luar pengembalian dana tersebut\n• Semua permintaan pengembalian dana harus dilakukan dalam waktu 12 bulan sejak penghentian Layanan\n\nTanpa Tanggung Jawab: Operator tidak bertanggung jawab atas kehilangan data, bisnis, keuntungan, atau peluang yang diakibatkan oleh penghentian Layanan, asalkan prosedur pemberitahuan, jaminan perpanjangan lisensi, dan ekspor data yang diuraikan di atas diikuti. Dengan menerima Syarat ini, Anda mengakui bahwa ketergantungan berkelanjutan pada Layanan setelah periode pemberitahuan penghentian berakhir adalah risiko Anda sendiri."
         },
         "contactUs": {
           "title": "18. Hubungi Kami",
@@ -1438,40 +1445,52 @@
     },
     "commercialTransactions": {
       "title": "Pengungkapan Undang-Undang Transaksi Komersial",
-      "lastUpdated": "Terakhir diperbarui: November 2025",
-      "introduction": "Sesuai dengan Undang-Undang Transaksi Komersial, kami mengungkapkan informasi berikut.",
+      "lastUpdated": "Pembaruan terakhir: Desember 2025",
+      "introduction": "Sesuai dengan Undang-Undang Transaksi Komersial, informasi berikut disediakan.",
       "sections": {
-        "businessOperator": {
-          "title": "1. Nama Operator Bisnis",
-          "content": "Fanmark ID\n\nPerusahaan Operasi: [Nama Perusahaan]\nPerwakilan: [Nama Perwakilan]"
+        "seller": {
+          "title": "Penjual",
+          "content": "Kenichiro Kano (Nama usaha: KOAN Design)"
         },
-        "servicePricing": {
-          "title": "2. Harga Produk/Layanan",
-          "content": "・Kombinasi 4+ emoji: Gratis\n・Kombinasi 2-3 emoji: $9.99 (termasuk pajak)\n・1 emoji: $99.9 (termasuk pajak)\n\n※Semua harga yang ditampilkan sudah termasuk pajak.\n※Konversi Yen dapat bervariasi dengan nilai tukar."
+        "administrator": {
+          "title": "Penanggung jawab operasional",
+          "content": "Kenichiro Kano"
+        },
+        "location": {
+          "title": "Alamat",
+          "content": "Aoyama Marutake Bldg 6F\n3-1-36 Minamiaoyama, Minato-ku, Tokyo 107-0062, Jepang"
+        },
+        "phone": {
+          "title": "Nomor telepon",
+          "content": "070-8482-1646\n*Jam layanan: hari kerja 10:00–18:00 (JST)"
+        },
+        "email": {
+          "title": "Email",
+          "content": "legal@fanmark.id"
+        },
+        "pricing": {
+          "title": "Harga jual",
+          "content": "Tercantum pada setiap halaman produk\n*Harga sudah termasuk pajak."
+        },
+        "additionalFees": {
+          "title": "Biaya lain",
+          "content": "Tidak ada (biaya koneksi internet dan telekomunikasi lainnya menjadi tanggungan pelanggan)."
         },
         "paymentMethod": {
-          "title": "3. Metode Pembayaran",
-          "content": "Pembayaran Kartu Kredit (melalui Stripe)\nKartu yang Didukung: Visa, Mastercard, American Express, JCB, dll."
+          "title": "Metode pembayaran",
+          "content": "Kartu kredit (Stripe)"
         },
         "paymentTiming": {
-          "title": "4. Waktu Pembayaran",
-          "content": "Pembayaran selesai pada saat aplikasi layanan.\nWaktu penarikan kartu kredit mengikuti ketentuan perusahaan kartu masing-masing."
+          "title": "Waktu pembayaran",
+          "content": "Didebit sesuai tanggal penagihan dan ketentuan kartu kredit Anda."
         },
-        "serviceProvision": {
-          "title": "5. Waktu Penyediaan Layanan",
-          "content": "Layanan tersedia segera setelah pembayaran selesai."
+        "deliveryTiming": {
+          "title": "Waktu penyerahan",
+          "content": "Dapat digunakan segera setelah pembayaran selesai."
         },
         "cancellationPolicy": {
-          "title": "6. Kebijakan Pengembalian/Pembatalan",
-          "content": "Karena sifat konten digital, pengembalian dan pembatalan umumnya tidak diterima.\n\nNamun, pengembalian dana akan diberikan dalam kasus berikut:\n・Layanan memiliki cacat kritis\n・Pelanggaran kontrak karena tanggung jawab operator\n\nUntuk permintaan pengembalian dana, silakan hubungi kami melalui formulir pertanyaan atau email."
-        },
-        "refundPolicy": {
-          "title": "7. Kebijakan Pengembalian Dana",
-          "content": "Jika pengembalian dana disetujui, akan diproses menggunakan metode pembayaran yang sama.\nPemrosesan pengembalian dana dapat memakan waktu 5-10 hari kerja setelah persetujuan."
-        },
-        "contactInformation": {
-          "title": "8. Informasi Kontak",
-          "content": "Untuk pertanyaan atau pertanyaan, silakan hubungi kami di:\n\nEmail: legal@fanmark.id\nFormulir Kontak: fanmark.id/contact\n\n※Kami akan merespons pertanyaan dalam 2-3 hari kerja."
+          "title": "Kebijakan pembatalan/pengembalian",
+          "content": "Karena produk berupa konten digital, pada prinsipnya pembatalan atau pengembalian setelah pembayaran tidak dapat diterima. Pengecualian berlaku jika produk cacat."
         }
       }
     }

@@ -1,120 +1,62 @@
 import React from "react";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { AppHeader } from "@/components/layout/AppHeader";
+import { SiteFooter } from "@/components/layout/SiteFooter";
+import { Card, CardContent } from "@/components/ui/card";
 
 export const CommercialTransactions: React.FC = () => {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
+  const { t, tWithBreaks } = useTranslation();
+
+  const sections = [
+    { id: "seller", title: t("legalPages.commercialTransactions.sections.seller.title"), content: tWithBreaks("legalPages.commercialTransactions.sections.seller.content") },
+    { id: "administrator", title: t("legalPages.commercialTransactions.sections.administrator.title"), content: tWithBreaks("legalPages.commercialTransactions.sections.administrator.content") },
+    { id: "location", title: t("legalPages.commercialTransactions.sections.location.title"), content: tWithBreaks("legalPages.commercialTransactions.sections.location.content") },
+    { id: "phone", title: t("legalPages.commercialTransactions.sections.phone.title"), content: tWithBreaks("legalPages.commercialTransactions.sections.phone.content") },
+    { id: "email", title: t("legalPages.commercialTransactions.sections.email.title"), content: tWithBreaks("legalPages.commercialTransactions.sections.email.content") },
+    { id: "pricing", title: t("legalPages.commercialTransactions.sections.pricing.title"), content: tWithBreaks("legalPages.commercialTransactions.sections.pricing.content") },
+    { id: "additionalFees", title: t("legalPages.commercialTransactions.sections.additionalFees.title"), content: tWithBreaks("legalPages.commercialTransactions.sections.additionalFees.content") },
+    { id: "paymentMethod", title: t("legalPages.commercialTransactions.sections.paymentMethod.title"), content: tWithBreaks("legalPages.commercialTransactions.sections.paymentMethod.content") },
+    { id: "paymentTiming", title: t("legalPages.commercialTransactions.sections.paymentTiming.title"), content: tWithBreaks("legalPages.commercialTransactions.sections.paymentTiming.content") },
+    { id: "deliveryTiming", title: t("legalPages.commercialTransactions.sections.deliveryTiming.title"), content: tWithBreaks("legalPages.commercialTransactions.sections.deliveryTiming.content") },
+    { id: "cancellationPolicy", title: t("legalPages.commercialTransactions.sections.cancellationPolicy.title"), content: tWithBreaks("legalPages.commercialTransactions.sections.cancellationPolicy.content") },
+  ];
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <button
-            onClick={() => navigate("/")}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm">ホームに戻る</span>
-          </button>
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
-            {t("legalPages.commercialTransactions.title")}
-          </h1>
-          <p className="text-gray-600">{t("legalPages.commercialTransactions.lastUpdated")}</p>
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
+      <AppHeader className="border-border/30 bg-white/80" />
+      
+      <main className="flex-1">
+        <div className="container mx-auto max-w-3xl px-4 py-12 sm:px-6">
+          {/* Page Header */}
+          <div className="space-y-2 text-center mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+              {t("legalPages.commercialTransactions.title")}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {t("legalPages.commercialTransactions.lastUpdated")}
+            </p>
+          </div>
+
+          <Card className="rounded-3xl border border-primary/20 bg-white/90 shadow-[0_20px_45px_rgba(101,195,200,0.15)]">
+            <CardContent className="p-6 sm:p-8">
+              <div className="space-y-5">
+                {sections.map((section) => (
+                  <div key={section.id} id={section.id} className="border-b border-border/30 pb-5 last:border-b-0 last:pb-0">
+                    <dt className="text-sm font-semibold text-foreground mb-1">
+                      {section.title}
+                    </dt>
+                    <dd className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {section.content}
+                    </dd>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </div>
+      </main>
 
-      {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Introduction */}
-        <p className="text-gray-700 mb-8 leading-relaxed whitespace-pre-wrap">
-          {t("legalPages.commercialTransactions.introduction")}
-        </p>
-
-        {/* Sections */}
-        <div className="space-y-10">
-          <section className="scroll-mt-20" id="businessOperator">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.commercialTransactions.sections.businessOperator.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.commercialTransactions.sections.businessOperator.content")}
-            </p>
-          </section>
-
-          <section className="scroll-mt-20" id="servicePricing">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.commercialTransactions.sections.servicePricing.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.commercialTransactions.sections.servicePricing.content")}
-            </p>
-          </section>
-
-          <section className="scroll-mt-20" id="paymentMethod">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.commercialTransactions.sections.paymentMethod.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.commercialTransactions.sections.paymentMethod.content")}
-            </p>
-          </section>
-
-          <section className="scroll-mt-20" id="paymentTiming">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.commercialTransactions.sections.paymentTiming.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.commercialTransactions.sections.paymentTiming.content")}
-            </p>
-          </section>
-
-          <section className="scroll-mt-20" id="serviceProvision">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.commercialTransactions.sections.serviceProvision.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.commercialTransactions.sections.serviceProvision.content")}
-            </p>
-          </section>
-
-          <section className="scroll-mt-20" id="cancellationPolicy">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.commercialTransactions.sections.cancellationPolicy.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.commercialTransactions.sections.cancellationPolicy.content")}
-            </p>
-          </section>
-
-          <section className="scroll-mt-20" id="refundPolicy">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.commercialTransactions.sections.refundPolicy.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.commercialTransactions.sections.refundPolicy.content")}
-            </p>
-          </section>
-
-          <section className="scroll-mt-20" id="contactInformation">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.commercialTransactions.sections.contactInformation.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.commercialTransactions.sections.contactInformation.content")}
-            </p>
-          </section>
-        </div>
-
-        {/* Last Updated */}
-        <div className="mt-12 pt-8 border-t border-gray-200">
-          <p className="text-sm text-gray-600">
-            {t("legalPages.commercialTransactions.lastUpdated")}
-          </p>
-        </div>
-      </div>
+      <SiteFooter className="border-primary/20 bg-white/80 backdrop-blur" />
     </div>
   );
 };

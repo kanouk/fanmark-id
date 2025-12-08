@@ -631,7 +631,7 @@ export const FanmarkDashboard = () => {
     }
   };
 
-  const getAccessTypeBadge = (accessType: string) => {
+  const getAccessTypeBadge = (accessType: string, fanmarkEmoji?: string) => {
     let IconComponent = FiMoon;
     let label = t('dashboard.accessTypes.inactive');
 
@@ -646,10 +646,25 @@ export const FanmarkDashboard = () => {
       label = t('dashboard.accessTypes.text');
     }
 
+    const handleClick = fanmarkEmoji ? (e: React.MouseEvent) => {
+      e.stopPropagation();
+      navigateToFanmark(fanmarkEmoji, true);
+    } : undefined;
+
     return (
       <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-foreground">
         <IconComponent className="h-3 w-3 text-foreground" aria-hidden="true" />
         <span>{label}</span>
+        {fanmarkEmoji && accessType !== 'inactive' && (
+          <button
+            type="button"
+            onClick={handleClick}
+            className="ml-0.5 p-0.5 rounded hover:bg-primary/10 hover:text-primary transition-colors"
+            aria-label={t('dashboard.visitFanmarkTooltip')}
+          >
+            <ExternalLink className="h-3 w-3" />
+          </button>
+        )}
       </span>
     );
   };
@@ -1033,7 +1048,7 @@ export const FanmarkDashboard = () => {
                                     </td>
                                     <td className="px-4 py-3">
                                       <div className="min-h-[2.25rem] flex items-center min-w-fit">
-                                        {!isFanmarkInactive(fanmark) && timing.status === 'active' && getAccessTypeBadge(fanmark.access_type)}
+                                        {!isFanmarkInactive(fanmark) && timing.status === 'active' && getAccessTypeBadge(fanmark.access_type, fanmark.fanmark)}
                                       </div>
                                     </td>
                                     <td className="px-4 py-3">
@@ -1297,7 +1312,7 @@ export const FanmarkDashboard = () => {
                                     </div>
                                     <div className={mobilePrimaryText}>
                                       {!isInactiveCard && timing.status === 'active'
-                                        ? getAccessTypeBadge(fanmark.access_type)
+                                        ? getAccessTypeBadge(fanmark.access_type, fanmark.fanmark)
                                         : <span className="text-muted-foreground text-sm">{t('dashboard.accessTypes.inactive')}</span>}
                                     </div>
                                   </div>

@@ -2,11 +2,12 @@ import sparklesImage from '@/assets/sparkles.png';
 import { cn } from '@/lib/utils';
 
 interface BrandIconProps {
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
 }
 
 const sizeClasses = {
+  xs: 'h-5 w-5',
   sm: 'h-8 w-8',
   md: 'h-10 w-10',
   lg: 'h-16 w-16',

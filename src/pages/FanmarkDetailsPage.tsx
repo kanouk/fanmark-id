@@ -135,9 +135,7 @@ export default function FanmarkDetailsPage() {
     if (!dateString) return '—';
     const parsed = parseDateString(dateString);
     if (!parsed) return '—';
-    return formatInTimeZone(parsed, 'Asia/Tokyo', 'PPP p', {
-      locale: language === 'ja' ? ja : enUS,
-    });
+    return formatInTimeZone(parsed, 'Asia/Tokyo', 'yyyy/MM/dd HH:mm');
   };
 
   return (
@@ -243,21 +241,21 @@ export default function FanmarkDetailsPage() {
                   {t('fanmarkDetails.ownershipHistory')}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 overflow-x-auto px-6 pb-6">
+              <CardContent className="space-y-3 px-4 sm:px-6 pb-6">
                 {details.license_history && details.license_history.length > 0 ? (
-                  <table className="mt-3 w-full divide-y divide-border text-sm table-fixed">
+                  <table className="mt-3 w-full divide-y divide-border text-xs sm:text-sm">
                     <thead className="bg-muted/50 text-muted-foreground">
                       <tr>
-                      <th className="w-[28%] px-4 py-3 text-left font-semibold">
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold">
                         {t('fanmarkDetails.started')}
                       </th>
-                      <th className="w-[28%] px-4 py-3 text-left font-semibold">
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold">
                         {t('fanmarkDetails.expires')}
                       </th>
-                      <th className="w-[18%] px-4 py-3 text-center font-semibold">
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-center font-semibold whitespace-nowrap">
                         {t('fanmarkDetails.statusColumn')}
                       </th>
-                      <th className="w-[26%] px-4 py-3 text-left font-semibold">
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold">
                         {t('fanmarkDetails.owner')}
                       </th>
                     </tr>
@@ -268,23 +266,23 @@ export default function FanmarkDetailsPage() {
                       const statusMeta = licenseStatusMeta(item.status, item.is_returned);
                       return (
                         <tr key={`${item.license_start}-${index}`} className="bg-background">
-                          <td className="px-4 py-3 text-foreground">{formatDateTime(item.license_start)}</td>
-                          <td className="px-4 py-3 text-foreground">
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 text-foreground">{formatDateTime(item.license_start)}</td>
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 text-foreground">
                             {formatDateTime(item.license_end)}
                           </td>
-                          <td className="px-4 py-3 align-middle text-center">
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 align-middle text-center">
                             <div className="flex flex-col items-center justify-center gap-1 text-center">
-                              <Badge className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide ${statusMeta.className}`}>
+                              <Badge className={`inline-flex items-center gap-1 sm:gap-1.5 rounded-full border px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold tracking-wide whitespace-nowrap ${statusMeta.className}`}>
                                 <span>{statusMeta.label}</span>
                               </Badge>
                               {index === 0 && details.current_license_status === 'grace' && (details.lottery_entry_count ?? 0) > 0 && (
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap">
                                   {t('lottery.entryCount', { count: details.lottery_entry_count })}
                                 </p>
                               )}
                             </div>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-2 sm:px-4 py-2 sm:py-3">
                             <span className="text-foreground">{holder}</span>
                           </td>
                         </tr>

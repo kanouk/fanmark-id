@@ -1,210 +1,75 @@
 import React from "react";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { AppHeader } from "@/components/layout/AppHeader";
+import { SiteFooter } from "@/components/layout/SiteFooter";
+import { Card, CardContent } from "@/components/ui/card";
 
 export const TermsOfService: React.FC = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+
+  const sections = [
+    { id: "useAgreement", key: "useAgreement" },
+    { id: "accountResponsibility", key: "accountResponsibility" },
+    { id: "fanmarkRights", key: "fanmarkRights" },
+    { id: "fanmarkRetention", key: "fanmarkRetention" },
+    { id: "paymentTerms", key: "paymentTerms" },
+    { id: "userContent", key: "userContent" },
+    { id: "intellectualProperty", key: "intellectualProperty" },
+    { id: "limitationOfLiability", key: "limitationOfLiability" },
+    { id: "disclaimers", key: "disclaimers" },
+    { id: "indemnification", key: "indemnification" },
+    { id: "suspensionTermination", key: "suspensionTermination" },
+    { id: "governing", key: "governing" },
+    { id: "disputeResolution", key: "disputeResolution" },
+    { id: "changes", key: "changes" },
+    { id: "severability", key: "severability" },
+    { id: "entireAgreement", key: "entireAgreement" },
+    { id: "serviceTermination", key: "serviceTermination" },
+    { id: "contactUs", key: "contactUs" },
+  ];
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <button
-            onClick={() => navigate("/")}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm">Back to Home</span>
-          </button>
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
-            {t("legalPages.termsOfService.title")}
-          </h1>
-          <p className="text-gray-600">{t("legalPages.termsOfService.lastUpdated")}</p>
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
+      <AppHeader className="border-border/30 bg-white/80" />
+      
+      <main className="flex-1">
+        <div className="container mx-auto max-w-3xl px-4 py-12 sm:px-6">
+          {/* Page Header */}
+          <div className="space-y-2 text-center mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+              {t("legalPages.termsOfService.title")}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {t("legalPages.termsOfService.lastUpdated")}
+            </p>
+          </div>
+
+          <Card className="rounded-3xl border border-primary/20 bg-white/90 shadow-[0_20px_45px_rgba(101,195,200,0.15)]">
+            <CardContent className="p-6 sm:p-8">
+              {/* Introduction */}
+              <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap mb-8">
+                {t("legalPages.termsOfService.introduction")}
+              </p>
+
+              {/* Sections */}
+              <div className="space-y-6">
+                {sections.map((section) => (
+                  <section key={section.id} id={section.id} className="border-b border-border/30 pb-6 last:border-b-0 last:pb-0">
+                    <h2 className="text-base font-semibold text-foreground mb-2">
+                      {t(`legalPages.termsOfService.sections.${section.key}.title`)}
+                    </h2>
+                    <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {t(`legalPages.termsOfService.sections.${section.key}.content`)}
+                    </p>
+                  </section>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </div>
+      </main>
 
-      {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Introduction */}
-        <p className="text-gray-700 mb-8 leading-relaxed whitespace-pre-wrap">
-          {t("legalPages.termsOfService.introduction")}
-        </p>
-
-        {/* Sections */}
-        <div className="space-y-10">
-          <section className="scroll-mt-20" id="useAgreement">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.termsOfService.sections.useAgreement.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.termsOfService.sections.useAgreement.content")}
-            </p>
-          </section>
-
-          <section className="scroll-mt-20" id="accountResponsibility">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.termsOfService.sections.accountResponsibility.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.termsOfService.sections.accountResponsibility.content")}
-            </p>
-          </section>
-
-          <section className="scroll-mt-20" id="fanmarkRights">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.termsOfService.sections.fanmarkRights.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.termsOfService.sections.fanmarkRights.content")}
-            </p>
-          </section>
-
-          <section className="scroll-mt-20" id="fanmarkRetention">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.termsOfService.sections.fanmarkRetention.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.termsOfService.sections.fanmarkRetention.content")}
-            </p>
-          </section>
-
-          <section className="scroll-mt-20" id="paymentTerms">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.termsOfService.sections.paymentTerms.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.termsOfService.sections.paymentTerms.content")}
-            </p>
-          </section>
-
-          <section className="scroll-mt-20" id="userContent">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.termsOfService.sections.userContent.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.termsOfService.sections.userContent.content")}
-            </p>
-          </section>
-
-          <section className="scroll-mt-20" id="intellectualProperty">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.termsOfService.sections.intellectualProperty.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.termsOfService.sections.intellectualProperty.content")}
-            </p>
-          </section>
-
-          <section className="scroll-mt-20" id="limitationOfLiability">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.termsOfService.sections.limitationOfLiability.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.termsOfService.sections.limitationOfLiability.content")}
-            </p>
-          </section>
-
-          <section className="scroll-mt-20" id="disclaimers">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.termsOfService.sections.disclaimers.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.termsOfService.sections.disclaimers.content")}
-            </p>
-          </section>
-
-          <section className="scroll-mt-20" id="indemnification">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.termsOfService.sections.indemnification.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.termsOfService.sections.indemnification.content")}
-            </p>
-          </section>
-
-          <section className="scroll-mt-20" id="suspensionTermination">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.termsOfService.sections.suspensionTermination.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.termsOfService.sections.suspensionTermination.content")}
-            </p>
-          </section>
-
-          <section className="scroll-mt-20" id="governing">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.termsOfService.sections.governing.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.termsOfService.sections.governing.content")}
-            </p>
-          </section>
-
-          <section className="scroll-mt-20" id="disputeResolution">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.termsOfService.sections.disputeResolution.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.termsOfService.sections.disputeResolution.content")}
-            </p>
-          </section>
-
-          <section className="scroll-mt-20" id="changes">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.termsOfService.sections.changes.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.termsOfService.sections.changes.content")}
-            </p>
-          </section>
-
-          <section className="scroll-mt-20" id="severability">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.termsOfService.sections.severability.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.termsOfService.sections.severability.content")}
-            </p>
-          </section>
-
-          <section className="scroll-mt-20" id="entireAgreement">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.termsOfService.sections.entireAgreement.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.termsOfService.sections.entireAgreement.content")}
-            </p>
-          </section>
-
-          <section className="scroll-mt-20" id="serviceTermination">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.termsOfService.sections.serviceTermination.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.termsOfService.sections.serviceTermination.content")}
-            </p>
-          </section>
-
-          <section className="scroll-mt-20" id="contactUs">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {t("legalPages.termsOfService.sections.contactUs.title")}
-            </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {t("legalPages.termsOfService.sections.contactUs.content")}
-            </p>
-          </section>
-        </div>
-
-        {/* Last Updated */}
-        <div className="mt-12 pt-8 border-t border-gray-200">
-          <p className="text-sm text-gray-600">
-            {t("legalPages.termsOfService.lastUpdated")}
-          </p>
-        </div>
-      </div>
+      <SiteFooter className="border-primary/20 bg-white/80 backdrop-blur" />
     </div>
   );
 };

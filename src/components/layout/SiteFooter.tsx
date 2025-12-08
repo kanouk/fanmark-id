@@ -8,8 +8,6 @@ import { Link } from 'react-router-dom';
 type SiteFooterProps = {
   className?: string;
   containerClassName?: string;
-  descriptionKey?: string | null;
-  description?: ReactNode;
   hideBrand?: boolean;
   rightSlot?: ReactNode;
   leftSlot?: ReactNode;
@@ -18,57 +16,61 @@ type SiteFooterProps = {
 export const SiteFooter = ({
   className,
   containerClassName,
-  descriptionKey = 'layout.footer.description',
-  description,
   hideBrand = false,
   rightSlot,
   leftSlot,
 }: SiteFooterProps) => {
   const { t } = useTranslation();
-  const resolvedDescription = description ?? (descriptionKey ? t(descriptionKey) : null);
 
   return (
-    <footer className={cn('border-t border-border/40 bg-background/80 backdrop-blur', className)}>
-      <div className={cn('container mx-auto px-4 py-10 text-center space-y-4', containerClassName)}>
-        <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
-          {!hideBrand && (
-            <>
-              <BrandIcon size="md" />
-              <BrandWordmark />
-            </>
-          )}
-          {leftSlot}
+    <footer className={cn('border-t border-primary/10 bg-background/60 backdrop-blur-sm', className)}>
+      <div className={cn('container mx-auto px-4 py-5', containerClassName)}>
+        {/* Main row */}
+        <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:justify-between sm:text-left">
+          {/* Brand */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {!hideBrand && (
+              <Link to="/" className="group flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-foreground whitespace-nowrap">
+                <BrandIcon size="xs" />
+                <BrandWordmark className="text-sm" />
+              </Link>
+            )}
+            {leftSlot}
+          </div>
+
+          {/* Links */}
+          <nav className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-[11px] text-muted-foreground sm:gap-x-4">
+            <Link to="/about" className="transition-colors hover:text-primary whitespace-nowrap">
+              {t('legalPages.footerLinks.about')}
+            </Link>
+            <span className="text-border/50">·</span>
+            <Link to="/contact" className="transition-colors hover:text-primary whitespace-nowrap">
+              {t('legalPages.footerLinks.contactUs')}
+            </Link>
+            <span className="text-border/50">·</span>
+            <Link to="/privacy" className="transition-colors hover:text-primary whitespace-nowrap">
+              {t('legalPages.footerLinks.privacyPolicy')}
+            </Link>
+            <span className="text-border/50">·</span>
+            <Link to="/terms" className="transition-colors hover:text-primary whitespace-nowrap">
+              {t('legalPages.footerLinks.termsOfService')}
+            </Link>
+            <span className="text-border/50">·</span>
+            <Link to="/commercial-transactions" className="transition-colors hover:text-primary whitespace-nowrap">
+              {t('legalPages.footerLinks.commercialTransactions')}
+            </Link>
+          </nav>
+
           {rightSlot}
         </div>
-        {resolvedDescription && (
-          <p className="text-sm text-muted-foreground">{resolvedDescription}</p>
-        )}
 
-        {/* Links */}
-        <div className="flex items-center justify-center gap-4 pt-2">
-          <Link
-            to="/contact"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {t("legalPages.footerLinks.contactUs")}
-          </Link>
-          <span className="text-muted-foreground/30">•</span>
-          <Link
-            to="/privacy"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {t("legalPages.footerLinks.privacyPolicy")}
-          </Link>
-          <span className="text-muted-foreground/30">•</span>
-          <Link
-            to="/terms"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {t("legalPages.footerLinks.termsOfService")}
-          </Link>
+        {/* Copyright */}
+        <div className="mt-3 text-center">
+          <p className="text-[10px] text-muted-foreground/60">
+            © {new Date().getFullYear()} fanmark.id All rights reserved.
+          </p>
         </div>
       </div>
     </footer>
   );
 };
-

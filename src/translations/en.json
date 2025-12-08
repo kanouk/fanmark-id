@@ -229,6 +229,13 @@
       "description": "© 2025 fanmark.id All rights reserved."
     }
   },
+  "footer": {
+    "service": "Service",
+    "support": "Support",
+    "legal": "Legal",
+    "madeWith": "Made with",
+    "inJapan": "in Japan"
+  },
   "common": {
     "loading": "Loading...",
     "error": "An error occurred",
@@ -1239,7 +1246,7 @@
   "legalPages": {
     "privacyPolicy": {
       "title": "Privacy Policy",
-      "lastUpdated": "Last updated: November 2024",
+      "lastUpdated": "Last updated: December 2025",
       "introduction": "fanmark.id (\"we\", \"us\", \"our\", or \"Service\") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our website and services.",
       "sections": {
         "informationWeCollect": {
@@ -1290,20 +1297,20 @@
     },
     "termsOfService": {
       "title": "Terms of Service",
-      "lastUpdated": "Last updated: November 2024",
-      "introduction": "These Terms of Service (\"Terms\", \"Agreement\") form a legally binding contract between you (\"User\", \"you\", \"your\") and fanmark.id (\"Company\", \"we\", \"us\", \"our\"). By accessing or using fanmark.id, you agree to be bound by these Terms.",
+      "lastUpdated": "Last updated: December 2025",
+      "introduction": "These Terms of Service (\"Terms\", \"Agreement\") form a legally binding contract between you (\"User\", \"you\", \"your\") and the operator of Fanmark (\"Service\", \"Operator\", \"we\", \"us\", \"our\"). By accessing or using the Service, you agree to be bound by these Terms.",
       "sections": {
         "useAgreement": {
           "title": "1. Use Agreement",
-          "content": "You agree to use fanmark.id only for lawful purposes and in a way that does not infringe upon the rights of others or restrict their use and enjoyment of fanmark.id. Prohibited behavior includes:\n\n• Harassing or causing distress or inconvenience to any person\n• Obscene or offensive content\n• Disrupting the normal flow of dialogue within fanmark.id\n• Registering fanmarks for spam, phishing, or malicious purposes\n• Violating intellectual property rights\n• Unauthorized access or data collection"
+          "content": "You agree to use the Service only for lawful purposes and in a way that does not infringe upon the rights of others or restrict their use and enjoyment of the Service. Prohibited behavior includes:\n\n• Harassing or causing distress or inconvenience to any person\n• Obscene or offensive content\n• Disrupting the normal flow of dialogue within the Service\n• Registering fanmarks for spam, phishing, or malicious purposes\n• Violating intellectual property rights\n• Unauthorized access or data collection"
         },
         "accountResponsibility": {
           "title": "2. Account and Registration",
-          "content": "You are responsible for maintaining the confidentiality of your account credentials and password. You agree to accept responsibility for all activities that occur under your account. You must provide accurate, complete, and current information during registration. You agree to notify us immediately of any unauthorized use of your account.\n\nInvitation Code: Access to fanmark.id may require an invitation code. Invitation codes are non-transferable and can be revoked at any time."
+          "content": "You are responsible for maintaining the confidentiality of your account credentials and password. You agree to accept responsibility for all activities that occur under your account. You must provide accurate, complete, and current information during registration. You agree to notify us immediately of any unauthorized use of your account.\n\nInvitation Code: Access to the Service may require an invitation code. Invitation codes are non-transferable and can be revoked at any time."
         },
         "fanmarkRights": {
           "title": "3. Fanmark Ownership and Rights",
-          "content": "Each fanmark (emoji combination) has ownership limitations:\n\n• You may own multiple fanmarks up to your plan limit\n• Fanmarks are granted on a license basis for specified periods\n• You retain rights to content you create (profiles, messages, etc.)\n• The Company retains all rights to the fanmark platform, technology, and infrastructure\n• You may not transfer, sell, or sublicense fanmarks without explicit permission\n• Unused fanmarks may enter a grace period before becoming available to others"
+          "content": "Each fanmark (emoji combination) has ownership limitations:\n\n• You may own multiple fanmarks up to your plan limit\n• Fanmarks are granted on a license basis for specified periods\n• You retain rights to content you create (profiles, messages, etc.)\n• The Operator retains all rights to the fanmark platform, technology, and infrastructure\n• You may not transfer, sell, or sublicense fanmarks without explicit permission\n• Unused fanmarks may enter a grace period before becoming available to others"
         },
         "fanmarkRetention": {
           "title": "4. Fanmark License Terms",
@@ -1311,19 +1318,19 @@
         },
         "paymentTerms": {
           "title": "5. Payment and Billing",
-          "content": "Some fanmarks require payment for licensing:\n\n• Pricing: Prices are displayed before purchase and may change with notice\n• Payment Processing: Payments are processed through Stripe and subject to their terms\n• Billing: You authorize us to charge your payment method for renewal fees\n• No Refunds: License fees are non-refundable except as required by law\n• Failed Payments: Failure to pay may result in suspension or revocation of licenses\n• Tax: You are responsible for any applicable taxes"
+          "content": "Some fanmarks require payment for licensing:\n\n• Pricing: Prices are displayed before purchase and may change with notice\n• Payment Processing: Payments are processed through Stripe and subject to their terms\n• Billing: You authorize the Operator to charge your payment method for renewal fees\n• No Refunds: License fees are non-refundable except as required by law\n• Failed Payments: Failure to pay may result in suspension or revocation of licenses\n• Tax: You are responsible for any applicable taxes"
         },
         "userContent": {
           "title": "6. User Content",
-          "content": "You grant fanmark.id a non-exclusive, royalty-free license to use, reproduce, modify, and display your user-generated content (profiles, messages, avatars, etc.) for providing and improving the Service.\n\n• You retain ownership of your content\n• You warrant that your content does not infringe on third-party rights\n• You are solely responsible for the content you create\n• We may remove content that violates these Terms"
+          "content": "You grant the Operator a non-exclusive, royalty-free license to use, reproduce, modify, and display your user-generated content (profiles, messages, avatars, etc.) for providing and improving the Service.\n\n• You retain ownership of your content\n• You warrant that your content does not infringe on third-party rights\n• You are solely responsible for the content you create\n• We may remove content that violates these Terms"
         },
         "intellectualProperty": {
           "title": "7. Intellectual Property",
-          "content": "The Service, including all code, design, features, and functionality, is owned by fanmark.id. All intellectual property rights are reserved. You may not reproduce, distribute, or transmit the Service or its content without permission."
+          "content": "The Service, including all code, design, features, and functionality, is owned by the Operator. All intellectual property rights are reserved. You may not reproduce, distribute, or transmit the Service or its content without permission."
         },
         "limitationOfLiability": {
           "title": "8. Limitation of Liability",
-          "content": "TO THE FULLEST EXTENT PERMITTED BY LAW:\n\n• The Service is provided on an \"as-is\" basis without warranties of any kind\n• We are not liable for indirect, incidental, special, or consequential damages\n• Our total liability shall not exceed the amount you paid in the past 12 months\n• Some jurisdictions do not allow liability limitations, which may not apply to you"
+          "content": "TO THE FULLEST EXTENT PERMITTED BY LAW:\n\n• The Service is provided on an \"as-is\" basis without warranties of any kind\n• The Operator is not liable for indirect, incidental, special, or consequential damages\n• The Operator's total liability shall not exceed the amount you paid in the past 12 months\n• Some jurisdictions do not allow liability limitations, which may not apply to you"
         },
         "disclaimers": {
           "title": "9. Disclaimers",
@@ -1331,15 +1338,15 @@
         },
         "indemnification": {
           "title": "10. Indemnification",
-          "content": "You agree to defend, indemnify, and hold harmless fanmark.id and its officers, directors, employees, and agents from any claims, damages, losses, or expenses arising from:\n\n• Your use of the Service\n• Your violation of these Terms\n• Your violation of third-party rights\n• Your user-generated content"
+          "content": "You agree to defend, indemnify, and hold harmless the Operator and its affiliates from any claims, damages, losses, or expenses arising from:\n\n• Your use of the Service\n• Your violation of these Terms\n• Your violation of third-party rights\n• Your user-generated content"
         },
         "suspensionTermination": {
           "title": "11. Suspension and Termination",
-          "content": "We may suspend or terminate your account if you:\n\n• Violate these Terms\n• Engage in illegal or fraudulent activity\n• Harass other users\n• Create objectionable content\n• Violate intellectual property rights\n• Fail to pay fees\n\nTermination may be immediate without notice for serious violations."
+          "content": "The Operator may suspend or terminate your account if you:\n\n• Violate these Terms\n• Engage in illegal or fraudulent activity\n• Harass other users\n• Create objectionable content\n• Violate intellectual property rights\n• Fail to pay fees\n\nTermination may be immediate without notice for serious violations."
         },
         "governing": {
           "title": "12. Governing Law",
-          "content": "These Terms are governed by the laws of the jurisdiction where fanmark.id operates, without regard to conflict of law principles."
+          "content": "These Terms are governed by the laws of the jurisdiction where the Operator operates, without regard to conflict of law principles."
         },
         "disputeResolution": {
           "title": "13. Dispute Resolution",
@@ -1347,7 +1354,7 @@
         },
         "changes": {
           "title": "14. Changes to Terms",
-          "content": "We may modify these Terms at any time. Material changes will be communicated through email or prominent notification on the Service. Continued use after changes indicates acceptance of the updated Terms."
+          "content": "The Operator may modify these Terms at any time. Material changes will be communicated through email or prominent notification on the Service. Continued use after changes indicates acceptance of the updated Terms."
         },
         "severability": {
           "title": "15. Severability",
@@ -1355,11 +1362,11 @@
         },
         "entireAgreement": {
           "title": "16. Entire Agreement",
-          "content": "These Terms, along with our Privacy Policy, constitute the entire agreement between you and fanmark.id regarding your use of the Service."
+          "content": "These Terms, along with our Privacy Policy, constitute the entire agreement between you and the Operator regarding your use of the Service."
         },
         "serviceTermination": {
           "title": "17. Service Termination and Discontinuation",
-          "content": "Service Discontinuation: We may discontinue or materially modify the Service at any time. We will provide at least 180 days' prior written notice to all active users if we discontinue the Service.\n\nNotice and License Guarantee: Upon issuing discontinuation notice:\n• All current license holders will be guaranteed the right to extend/renew their licenses at least once more (up to the maximum extension period permitted under their tier) without additional charge, provided they request renewal before the original expiration date\n• No further extensions will be possible after the final license expiration date, which must fall before or on the Service discontinuation date\n• Users will have until the final license expiration date to export all data and content\n\nUser Data: Upon Service termination, we will:\n• Provide a reasonable opportunity (at least 60 days from license expiration) for you to retrieve or export your data and content\n• Make reasonable efforts to facilitate data export in a standard, portable format\n• Retain your data according to applicable laws and our Privacy Policy\n\nFinancial Matters: Upon Service termination:\n• We will refund prorated license fees for any paid licenses that were renewed after discontinuation notice was issued (if legally required in your jurisdiction)\n• Users will not be entitled to damages or compensation beyond such refunds\n• All refund requests must be made within 12 months of Service termination\n\nNo Liability: We are not liable for any loss of data, business, profits, or opportunities resulting from Service discontinuation, provided we follow the notice, extension guarantee, and data export procedures outlined above. By accepting these Terms, you acknowledge that continued reliance on the Service after the discontinuation notice period ends is at your own risk."
+          "content": "Service Discontinuation: The Operator may discontinue or materially modify the Service at any time. The Operator will provide at least 180 days' prior written notice to all active users if the Service is discontinued.\n\nNotice and License Guarantee: Upon issuing discontinuation notice:\n• All current license holders will be guaranteed the right to extend/renew their licenses at least once more (up to the maximum extension period permitted under their tier) without additional charge, provided they request renewal before the original expiration date\n• No further extensions will be possible after the final license expiration date, which must fall before or on the Service discontinuation date\n• Users will have until the final license expiration date to export all data and content\n\nUser Data: Upon Service termination, the Operator will:\n• Provide a reasonable opportunity (at least 60 days from license expiration) for you to retrieve or export your data and content\n• Make reasonable efforts to facilitate data export in a standard, portable format\n• Retain your data according to applicable laws and our Privacy Policy\n\nFinancial Matters: Upon Service termination:\n• Prorated license fees for any paid licenses that were renewed after discontinuation notice was issued will be refunded (if legally required in your jurisdiction)\n• Users will not be entitled to damages or compensation beyond such refunds\n• All refund requests must be made within 12 months of Service termination\n\nNo Liability: The Operator is not liable for any loss of data, business, profits, or opportunities resulting from Service discontinuation, provided the notice, extension guarantee, and data export procedures outlined above are followed. By accepting these Terms, you acknowledge that continued reliance on the Service after the discontinuation notice period ends is at your own risk."
         },
         "contactUs": {
           "title": "18. Contact Us",
@@ -1439,40 +1446,52 @@
     },
     "commercialTransactions": {
       "title": "Commercial Transactions Act Disclosure",
-      "lastUpdated": "Last updated: November 2025",
-      "introduction": "In accordance with the Commercial Transactions Act, we disclose the following information.",
+      "lastUpdated": "Last updated: December 2025",
+      "introduction": "In accordance with the Act on Specified Commercial Transactions, we disclose the following.",
       "sections": {
-        "businessOperator": {
-          "title": "1. Business Operator Name",
-          "content": "Fanmark ID\n\nOperating Company: [Company Name]\nRepresentative: [Representative Name]"
+        "seller": {
+          "title": "Seller",
+          "content": "Kenichiro Kano (Trade name: KOAN Design)"
         },
-        "servicePricing": {
-          "title": "2. Product/Service Pricing",
-          "content": "・4+ emoji combination: Free\n・2-3 emoji combination: $9.99 (tax included)\n・1 emoji: $99.9 (tax included)\n\n※All displayed prices include tax.\n※Yen conversion rates may vary with exchange rates."
+        "administrator": {
+          "title": "Responsible Manager",
+          "content": "Kenichiro Kano"
+        },
+        "location": {
+          "title": "Business Address",
+          "content": "Aoyama Marutake Bldg 6F\n3-1-36 Minamiaoyama, Minato-ku, Tokyo 107-0062, Japan"
+        },
+        "phone": {
+          "title": "Phone",
+          "content": "070-8482-1646\nHours: Weekdays 10:00–18:00 (JST)"
+        },
+        "email": {
+          "title": "Email",
+          "content": "legal@fanmark.id"
+        },
+        "pricing": {
+          "title": "Pricing",
+          "content": "Shown on each product page\n*All displayed prices include tax."
+        },
+        "additionalFees": {
+          "title": "Additional Fees",
+          "content": "None. (Internet connection fees and other telecom charges are the customer's responsibility.)"
         },
         "paymentMethod": {
-          "title": "3. Payment Methods",
-          "content": "Credit Card Payment (via Stripe)\nSupported Cards: Visa, Mastercard, American Express, JCB, etc."
+          "title": "Payment Method",
+          "content": "Credit card (Stripe)"
         },
         "paymentTiming": {
-          "title": "4. Payment Timing",
-          "content": "Payment is completed at the time of service application.\nCredit card withdrawal timing follows each card company's terms."
+          "title": "Payment Timing",
+          "content": "Charged according to your credit card company's billing cycle."
         },
-        "serviceProvision": {
-          "title": "5. Service Provision Timing",
-          "content": "Service is available immediately after payment completion."
+        "deliveryTiming": {
+          "title": "Delivery Timing",
+          "content": "Available immediately after payment is completed."
         },
         "cancellationPolicy": {
-          "title": "6. Returns/Cancellation Policy",
-          "content": "Due to the nature of digital content, returns and cancellations are generally not accepted.\n\nHowever, refunds will be provided in the following cases:\n・Service has critical defects\n・Breach of contract due to operator's responsibility\n\nFor refund requests, please contact us via the inquiry form or email."
-        },
-        "refundPolicy": {
-          "title": "7. Refund Policy",
-          "content": "If a refund is approved, it will be processed using the same payment method.\nRefund processing may take 5-10 business days after approval."
-        },
-        "contactInformation": {
-          "title": "8. Contact Information",
-          "content": "For questions or inquiries, please contact us at:\n\nEmail: legal@fanmark.id\nContact Form: fanmark.id/contact\n\n※We will respond to inquiries within 2-3 business days."
+          "title": "Cancellations/Returns",
+          "content": "Because the product is digital content, we generally cannot accept cancellations or returns after payment. Exceptions may be made if the product is defective."
         }
       }
     }
