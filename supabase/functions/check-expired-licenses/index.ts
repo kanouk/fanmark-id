@@ -239,13 +239,113 @@ serve(async (req) => {
       }
     }
 
+    // Helper function to format date as yyyy/MM/dd HH:mm
+    const formatDate = (date: Date): string => {
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      return `${date.getUTCFullYear()}/${pad(date.getUTCMonth() + 1)}/${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
+    };
+
     // Process licenses whose grace period has expired
     if (filteredGraceExpiredLicenses.length > 0) {
       console.log(`\n--- Processing ${filteredGraceExpiredLicenses.length} licenses: grace -> expired ---`);
       
       for (const license of filteredGraceExpiredLicenses) {
         try {
-          // Check for pending lottery entries
+          // STEP 1: Always expire the old license FIRST (before any lottery processing)
+          // This ensures data integrity - no overlapping active/grace licenses
+          console.log(`  ${license.fanmarks?.user_input_fanmark}: Expiring old license first`);
+          
+          const { error: licenseUpdateError } = await supabase
+            .from('fanmark_licenses')
+            .update({ 
+              status: 'expired',
+              excluded_at: new Date().toISOString()
+            })
+            .eq('id', license.id);
+
+          if (licenseUpdateError) {
+            const errMsg = licenseUpdateError.message || 'Unknown error';
+            console.error(`  ❌ Failed to expire license ${license.id}: ${errMsg}`);
+            errors.push({type: 'expired_update', id: license.id, error: errMsg});
+            continue;
+          }
+
+          // STEP 2: Delete all config data for the expired license
+          let configDeleteErrors = 0;
+          
+          const { error: basicConfigDeleteError } = await supabase
+            .from('fanmark_basic_configs')
+            .delete()
+            .eq('license_id', license.id);
+
+          const { error: redirectConfigDeleteError } = await supabase
+            .from('fanmark_redirect_configs')
+            .delete()
+            .eq('license_id', license.id);
+
+          const { error: messageConfigDeleteError } = await supabase
+            .from('fanmark_messageboard_configs')
+            .delete()
+            .eq('license_id', license.id);
+
+          const { error: passwordConfigDeleteError } = await supabase
+            .from('fanmark_password_configs')
+            .delete()
+            .eq('license_id', license.id);
+
+          if (basicConfigDeleteError || redirectConfigDeleteError || messageConfigDeleteError || passwordConfigDeleteError) {
+            configDeleteErrors++;
+            console.warn(`  ⚠️ Config deletion errors for ${license.id}:`, {
+              basic: basicConfigDeleteError?.message,
+              redirect: redirectConfigDeleteError?.message,
+              message: messageConfigDeleteError?.message,
+              password: passwordConfigDeleteError?.message
+            });
+          } else {
+            console.log(`  ✓ Configs deleted`);
+          }
+
+          // STEP 3: Log the expiration event
+          const { error: auditError } = await supabase
+            .from('audit_logs')
+            .insert({
+              user_id: license.user_id,
+              action: 'license_expired',
+              resource_type: 'fanmark_license',
+              resource_id: license.id,
+              metadata: {
+                fanmark_id: license.fanmark_id,
+                expired_at: new Date().toISOString(),
+                license_end: license.license_end,
+                config_deletion_errors: configDeleteErrors
+              }
+            });
+
+          if (auditError) {
+            console.warn(`  ⚠️ Audit log failed for ${license.id}: ${auditError.message}`);
+          }
+
+          // STEP 4: Send license_expired notification (BEFORE lottery notifications)
+          const { error: expiredNotificationError } = await supabase.rpc('create_notification_event', {
+            event_type_param: 'license_expired',
+            payload_param: {
+              user_id: license.user_id,
+              fanmark_id: license.fanmark_id,
+              fanmark_name: license.fanmarks?.user_input_fanmark,
+              expired_at: new Date().toISOString(),
+              license_end: license.license_end
+            },
+            source_param: 'cron_job',
+            dedupe_key_param: `expired_${license.id}_${new Date(license.license_end).getTime()}`
+          });
+
+          if (expiredNotificationError) {
+            console.warn(`  ⚠️ Expired notification event failed for ${license.id}: ${expiredNotificationError.message}`);
+          }
+
+          console.log(`  ✓ ${license.fanmarks?.user_input_fanmark} marked as expired`);
+
+          // STEP 5: Check for pending lottery entries
           const { data: pendingEntries, error: entriesError } = await supabase
             .from('fanmark_lottery_entries')
             .select('id, user_id, lottery_probability')
@@ -255,6 +355,8 @@ serve(async (req) => {
           if (entriesError) {
             console.error(`  ❌ Failed to fetch lottery entries for ${license.id}:`, entriesError);
             errors.push({type: 'lottery_fetch_error', id: license.id, error: entriesError.message});
+            processedCount++;
+            expiredSuccessCount++;
             continue;
           }
 
@@ -262,23 +364,8 @@ serve(async (req) => {
           console.log(`  ${license.fanmarks?.user_input_fanmark}: ${entryCount} lottery entries`);
 
           if (entryCount === 0) {
-            // No lottery entries - proceed with normal expiration
-            const { error: licenseUpdateError } = await supabase
-              .from('fanmark_licenses')
-              .update({ 
-                status: 'expired',
-                excluded_at: new Date().toISOString()
-              })
-              .eq('id', license.id);
-
-            if (licenseUpdateError) {
-              const errMsg = licenseUpdateError.message || 'Unknown error';
-              console.error(`  ❌ Failed ${license.id}: ${errMsg}`);
-              errors.push({type: 'expired_update', id: license.id, error: errMsg});
-              continue;
-            }
-
-            console.log(`  ✓ ${license.fanmarks?.user_input_fanmark} marked as expired (no lottery)`);
+            // No lottery entries - expiration already done
+            console.log(`  ✓ No lottery entries, expiration complete`);
 
           } else if (entryCount === 1) {
             // Single entry - automatic winner
@@ -303,19 +390,7 @@ serve(async (req) => {
             const newLicenseEnd = new Date();
             newLicenseEnd.setDate(newLicenseEnd.getDate() + licenseDays);
 
-            // If current owner won, mark old license as expired first
-            if (isCurrentOwner) {
-              console.log(`  → Current owner won, expiring old license first`);
-              await supabase
-                .from('fanmark_licenses')
-                .update({ 
-                  status: 'expired',
-                  excluded_at: new Date().toISOString()
-                })
-                .eq('id', license.id);
-            }
-
-            // Create new paid license for winner (owner or non-owner)
+            // Create new license for winner (old license already expired)
             const { data: newLicense, error: newLicenseError } = await supabase
               .from('fanmark_licenses')
               .insert({
@@ -332,6 +407,8 @@ serve(async (req) => {
             if (newLicenseError) {
               console.error(`  ❌ Failed to create new license:`, newLicenseError);
               errors.push({type: 'new_license_error', id: license.id, error: newLicenseError.message});
+              processedCount++;
+              expiredSuccessCount++;
               continue;
             }
 
@@ -358,7 +435,7 @@ serve(async (req) => {
                 execution_method: 'automatic',
               });
 
-            // Send winner notification
+            // Send winner notification (AFTER license_expired notification)
             await supabase.rpc('create_notification_event', {
               event_type_param: 'lottery_won',
               payload_param: {
@@ -367,21 +444,11 @@ serve(async (req) => {
                 fanmark_name: license.fanmarks?.user_input_fanmark,
                 license_id: newLicense.id,
                 license_end: newLicenseEnd.toISOString(),
+                license_end_formatted: formatDate(newLicenseEnd),
                 is_current_owner_win: isCurrentOwner,
               },
               source_param: 'cron_job',
             });
-
-            // Mark old license as expired (if not owner, otherwise already done)
-            if (!isCurrentOwner) {
-              await supabase
-                .from('fanmark_licenses')
-                .update({ 
-                  status: 'expired',
-                  excluded_at: new Date().toISOString()
-                })
-                .eq('id', license.id);
-            }
 
             console.log(`  ✓ ${license.fanmarks?.user_input_fanmark} awarded to ${winner.user_id}${isCurrentOwner ? ' (renewed)' : ''}`);
 
@@ -426,19 +493,7 @@ serve(async (req) => {
             const newLicenseEnd = new Date();
             newLicenseEnd.setDate(newLicenseEnd.getDate() + licenseDays);
 
-            // If current owner won, mark old license as expired first
-            if (isCurrentOwner) {
-              console.log(`  → Current owner won, expiring old license first`);
-              await supabase
-                .from('fanmark_licenses')
-                .update({ 
-                  status: 'expired',
-                  excluded_at: new Date().toISOString()
-                })
-                .eq('id', license.id);
-            }
-
-            // Create new paid license for winner (owner or non-owner)
+            // Create new license for winner (old license already expired)
             const { data: newLicense, error: newLicenseError } = await supabase
               .from('fanmark_licenses')
               .insert({
@@ -455,6 +510,8 @@ serve(async (req) => {
             if (newLicenseError) {
               console.error(`  ❌ Failed to create new license:`, newLicenseError);
               errors.push({type: 'new_license_error', id: license.id, error: newLicenseError.message});
+              processedCount++;
+              expiredSuccessCount++;
               continue;
             }
 
@@ -498,7 +555,7 @@ serve(async (req) => {
                 execution_method: 'automatic',
               });
 
-            // Send notifications
+            // Send notifications (AFTER license_expired notification)
             for (const entry of pendingEntries) {
               const isWinner = entry.user_id === winnerId;
               await supabase.rpc('create_notification_event', {
@@ -509,6 +566,7 @@ serve(async (req) => {
                   fanmark_name: license.fanmarks?.user_input_fanmark,
                   license_id: isWinner ? newLicense.id : undefined,
                   license_end: isWinner ? newLicenseEnd.toISOString() : undefined,
+                  license_end_formatted: isWinner ? formatDate(newLicenseEnd) : undefined,
                   total_applicants: entryCount,
                   is_current_owner_win: isWinner && isCurrentOwner,
                 },
@@ -516,92 +574,7 @@ serve(async (req) => {
               });
             }
 
-            // Mark old license as expired (if not owner, otherwise already done)
-            if (!isCurrentOwner) {
-              await supabase
-                .from('fanmark_licenses')
-                .update({ 
-                  status: 'expired',
-                  excluded_at: new Date().toISOString()
-                })
-                .eq('id', license.id);
-            }
-
             console.log(`  ✓ ${license.fanmarks?.user_input_fanmark} lottery completed, winner: ${winnerId}${isCurrentOwner ? ' (renewed)' : ''}`);
-          }
-
-          // Delete all config data for expired licenses
-          let configDeleteErrors = 0;
-          
-          const { error: basicConfigDeleteError } = await supabase
-            .from('fanmark_basic_configs')
-            .delete()
-            .eq('license_id', license.id);
-
-          const { error: redirectConfigDeleteError } = await supabase
-            .from('fanmark_redirect_configs')
-            .delete()
-            .eq('license_id', license.id);
-
-          const { error: messageConfigDeleteError } = await supabase
-            .from('fanmark_messageboard_configs')
-            .delete()
-            .eq('license_id', license.id);
-
-          const { error: passwordConfigDeleteError } = await supabase
-            .from('fanmark_password_configs')
-            .delete()
-            .eq('license_id', license.id);
-
-          // Note: Keep fanmark record but configs are now deleted
-          if (basicConfigDeleteError || redirectConfigDeleteError || messageConfigDeleteError || passwordConfigDeleteError) {
-            configDeleteErrors++;
-            console.warn(`  ⚠️ Config deletion errors for ${license.id}:`, {
-              basic: basicConfigDeleteError?.message,
-              redirect: redirectConfigDeleteError?.message,
-              message: messageConfigDeleteError?.message,
-              password: passwordConfigDeleteError?.message
-            });
-          } else {
-            console.log(`  ✓ Configs deleted`);
-          }
-
-          // Log the full expiration event
-          const { error: auditError } = await supabase
-            .from('audit_logs')
-            .insert({
-              user_id: license.user_id,
-              action: 'license_expired',
-              resource_type: 'fanmark_license',
-              resource_id: license.id,
-              metadata: {
-                fanmark_id: license.fanmark_id,
-                expired_at: new Date().toISOString(),
-                license_end: license.license_end,
-                config_deletion_errors: configDeleteErrors
-              }
-            });
-
-          if (auditError) {
-            console.warn(`  ⚠️ Audit log failed for ${license.id}: ${auditError.message}`);
-          }
-
-          // Create notification event for license expiration
-          const { error: notificationError } = await supabase.rpc('create_notification_event', {
-            event_type_param: 'license_expired',
-            payload_param: {
-              user_id: license.user_id,
-              fanmark_id: license.fanmark_id,
-              fanmark_name: license.fanmarks?.user_input_fanmark,
-              expired_at: new Date().toISOString(),
-              license_end: license.license_end
-            },
-            source_param: 'cron_job',
-            dedupe_key_param: `expired_${license.id}_${new Date(license.license_end).getTime()}`
-          });
-
-          if (notificationError) {
-            console.warn(`  ⚠️ Notification event failed for ${license.id}: ${notificationError.message}`);
           }
 
           processedCount++;
