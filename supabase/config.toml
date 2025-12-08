@@ -24,6 +24,12 @@ verify_jwt = true
 [functions.handle-stripe-webhook]
 verify_jwt = false
 
+[functions.fanmark-ogp]
+verify_jwt = false
+
+[functions.generate-ogp-image]
+verify_jwt = false
+
 # ========================================
 # Cron Jobs Configuration
 # ========================================
