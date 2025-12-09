@@ -23,6 +23,7 @@ interface TransferRequest {
   license_id: string;
   requester_user_id: string;
   requester_username: string | null;
+  requester_display_name: string | null;
   status: string;
   applied_at: string;
   fanmark?: {
@@ -79,6 +80,7 @@ export const useTransferCode = () => {
           license_id,
           requester_user_id,
           requester_username,
+          requester_display_name,
           status,
           applied_at,
           fanmarks (
@@ -111,6 +113,7 @@ export const useTransferCode = () => {
           license_id,
           requester_user_id,
           requester_username,
+          requester_display_name,
           status,
           applied_at,
           fanmarks (
