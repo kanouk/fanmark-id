@@ -1564,5 +1564,99 @@
     "accessTypeInactive": "비활성",
     "noAccessTypeData": "접근 유형 데이터가 없습니다",
     "fanmarkRanking": "팬마크별 접근 랭킹"
+  },
+  "transfer": {
+    "sectionTitle": "팬마크 이전",
+    "sectionNotice": "운영자는 사용자 간의 거래나 금전 교환에 관여하지 않습니다. 이전은 본인의 책임 하에 진행해 주세요.",
+    "inputCodeButton": "이전 코드 입력",
+    "issuedCodesTitle": "발급된 이전 코드",
+    "pendingRequestsTitle": "승인 대기 중인 요청",
+    "myRequestsTitle": "내 이전 요청",
+    "noIssuedCodes": "발급된 이전 코드가 없습니다",
+    "noPendingRequests": "승인 대기 중인 요청이 없습니다",
+    "noMyRequests": "대기 중인 이전 요청이 없습니다",
+    "codeLabel": "코드",
+    "expiresAt": "만료",
+    "statusWaiting": "신청 대기 중",
+    "statusPendingApproval": "승인 대기 중",
+    "cancelCode": "취소",
+    "approveRequest": "승인",
+    "rejectRequest": "거부",
+    "toUser": "{username}님에게",
+    "fromUser": "{username}님으로부터",
+    "appliedAt": "신청일",
+    "badgeTransferring": "이전 중",
+    "badgePendingApproval": "대기 중",
+    "issueDialog": {
+      "title": "이전 코드 발급",
+      "disclaimer": "중요: 이전 안내",
+      "disclaimerItem1": "승인 후에는 이전을 취소할 수 없습니다",
+      "disclaimerItem2": "운영자는 금전 또는 기타 대가를 수반하는 거래에 관여하지 않으며 책임을 지지 않습니다",
+      "disclaimerItem3": "운영자는 이전과 관련된 사용자 간의 분쟁(미결제, 사기 등)에 대해 책임을 지지 않습니다",
+      "disclaimerItem4": "이전 후 수령인에게는 티어에 따른 새로운 라이선스 기간이 부여됩니다",
+      "agreeCheckbox": "위 내용을 이해하고 동의합니다",
+      "cancelButton": "취소",
+      "issueButton": "코드 발급",
+      "issuing": "발급 중..."
+    },
+    "inputDialog": {
+      "title": "이전 코드 입력",
+      "codePlaceholder": "XXXX-XXXX-XXXX",
+      "disclaimer": "중요: 이전 안내",
+      "disclaimerItem1": "신청 후에는 발급자가 응답할 때까지 취소할 수 없습니다",
+      "disclaimerItem2": "운영자는 금전 또는 기타 대가를 수반하는 거래에 관여하지 않으며 책임을 지지 않습니다",
+      "disclaimerItem3": "운영자는 이전과 관련된 사용자 간의 분쟁(미결제, 사기 등)에 대해 책임을 지지 않습니다",
+      "disclaimerItem4": "이전 후에는 티어 기반 초기 라이선스 기간이 부여됩니다(남은 기간은 이전되지 않음)",
+      "agreeCheckbox": "위 내용을 이해하고 동의합니다",
+      "cancelButton": "취소",
+      "applyButton": "신청",
+      "applying": "신청 중..."
+    },
+    "approvalDialog": {
+      "title": "이전 요청 승인",
+      "description": "{fanmark}을(를) {username}님에게 이전하시겠습니까? 이 작업은 취소할 수 없습니다.",
+      "cancelButton": "취소",
+      "approveButton": "승인",
+      "approving": "승인 중..."
+    },
+    "rejectDialog": {
+      "title": "이전 요청 거부",
+      "description": "{username}님의 이전 요청을 거부하시겠습니까?",
+      "cancelButton": "취소",
+      "rejectButton": "거부",
+      "rejecting": "거부 중..."
+    },
+    "cancelDialog": {
+      "title": "이전 코드 취소",
+      "description": "이 이전 코드를 취소하시겠습니까?",
+      "cancelButton": "돌아가기",
+      "confirmButton": "코드 취소",
+      "cancelling": "취소 중..."
+    },
+    "success": {
+      "codeIssued": "이전 코드가 발급되었습니다",
+      "codeIssuedDesc": "코드: {code}",
+      "requestApplied": "이전 요청이 제출되었습니다",
+      "requestAppliedDesc": "승인을 기다려 주세요",
+      "requestApproved": "이전이 승인되었습니다",
+      "requestApprovedDesc": "팬마크가 이전되었습니다",
+      "requestRejected": "이전 요청이 거부되었습니다",
+      "codeCancelled": "이전 코드가 취소되었습니다"
+    },
+    "error": {
+      "issueFailed": "이전 코드 발급에 실패했습니다",
+      "applyFailed": "이전 신청에 실패했습니다",
+      "approveFailed": "이전 승인에 실패했습니다",
+      "rejectFailed": "이전 요청 거부에 실패했습니다",
+      "cancelFailed": "이전 코드 취소에 실패했습니다",
+      "invalidCode": "유효하지 않은 이전 코드입니다",
+      "codeExpired": "이전 코드가 만료되었습니다",
+      "selfTransfer": "본인에게 이전할 수 없습니다",
+      "limitExceeded": "팬마크 한도에 도달했습니다",
+      "insufficientLicense": "48시간 미만 남은 경우 이전 코드를 발급할 수 없습니다",
+      "pendingRequest": "승인 대기 중인 요청이 있는 동안에는 새 코드를 발급할 수 없습니다",
+      "transferInProgress": "이전 중에는 이 작업이 허용되지 않습니다",
+      "disclaimerRequired": "안내 동의가 필요합니다"
+    }
   }
 }

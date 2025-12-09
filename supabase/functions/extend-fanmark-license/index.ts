@@ -223,6 +223,20 @@ serve(async (req) => {
       });
     }
 
+    // Check for active transfer
+    const { data: hasTransfer } = await supabase.rpc('has_active_transfer', {
+      license_uuid: licenseRecord.id
+    });
+
+    if (hasTransfer) {
+      return new Response(JSON.stringify({ 
+        error: 'transfer_in_progress' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const now = new Date();
     const licenseEnd = licenseRecord.license_end ? new Date(licenseRecord.license_end) : null;
     const baseDate = licenseEnd && !Number.isNaN(licenseEnd.getTime()) && licenseEnd > now

@@ -588,6 +588,83 @@ serve(async (req) => {
       }
     }
 
+    // Process expired transfer codes
+    console.log('\n--- Processing expired transfer codes ---');
+    
+    // Expire transfer codes where license has transitioned to grace or expired
+    const { data: expiredCodes, error: expiredCodesError } = await supabase
+      .from('fanmark_transfer_codes')
+      .select('id, license_id, issuer_user_id, fanmark_id')
+      .eq('status', 'active')
+      .lt('expires_at', now.toISOString());
+
+    if (expiredCodesError) {
+      console.error('Failed to fetch expired transfer codes:', expiredCodesError);
+    } else if (expiredCodes && expiredCodes.length > 0) {
+      console.log(`Found ${expiredCodes.length} expired transfer codes`);
+      
+      for (const code of expiredCodes) {
+        // Update code status to expired
+        await supabase
+          .from('fanmark_transfer_codes')
+          .update({ status: 'expired', updated_at: new Date().toISOString() })
+          .eq('id', code.id);
+          
+        // Cancel any pending requests for this code
+        await supabase
+          .from('fanmark_transfer_requests')
+          .update({ 
+            status: 'cancelled', 
+            rejection_reason: 'code_expired',
+            resolved_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('transfer_code_id', code.id)
+          .eq('status', 'pending');
+          
+        console.log(`  ✓ Expired transfer code for license ${code.license_id}`);
+      }
+    } else {
+      console.log('No expired transfer codes found');
+    }
+
+    // Also expire codes where the license is no longer active
+    const { data: invalidLicenseCodes, error: invalidCodesError } = await supabase
+      .from('fanmark_transfer_codes')
+      .select(`
+        id, 
+        license_id,
+        fanmark_licenses!inner(status)
+      `)
+      .in('status', ['active', 'applied'])
+      .neq('fanmark_licenses.status', 'active');
+
+    if (invalidCodesError) {
+      console.error('Failed to fetch invalid license transfer codes:', invalidCodesError);
+    } else if (invalidLicenseCodes && invalidLicenseCodes.length > 0) {
+      console.log(`Found ${invalidLicenseCodes.length} transfer codes with non-active licenses`);
+      
+      for (const code of invalidLicenseCodes) {
+        await supabase
+          .from('fanmark_transfer_codes')
+          .update({ status: 'expired', updated_at: new Date().toISOString() })
+          .eq('id', code.id);
+          
+        await supabase
+          .from('fanmark_transfer_requests')
+          .update({ 
+            status: 'cancelled', 
+            rejection_reason: 'license_expired',
+            resolved_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('transfer_code_id', code.id)
+          .eq('status', 'pending');
+          
+        console.log(`  ✓ Expired transfer code due to license status change`);
+      }
+    }
+
     const elapsed = Date.now() - startTime;
     
     console.log('\n=== PROCESSING COMPLETE ===');
