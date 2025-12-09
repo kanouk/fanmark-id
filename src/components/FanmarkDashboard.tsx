@@ -1116,8 +1116,18 @@ export const FanmarkDashboard = () => {
                                       </div>
                                     </td>
                                     <td className="px-4 py-3">
-                                      <div className="min-h-[2.25rem] flex items-center gap-1 min-w-fit">
+                                      <div className="min-h-[2.25rem] flex items-center gap-1 min-w-fit flex-wrap">
                                         <span className={isInactive ? 'opacity-60 saturate-50' : ''}>{getStatusBadge(timing)}</span>
+                                        {getTransferStatus(fanmark.id) === 'active' && (
+                                          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30 text-[0.65rem]">
+                                            {t('transfer.badgeTransferring')}
+                                          </Badge>
+                                        )}
+                                        {getTransferStatus(fanmark.id) === 'applied' && (
+                                          <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30 text-[0.65rem]">
+                                            {t('transfer.badgePendingApproval')}
+                                          </Badge>
+                                        )}
                                       </div>
                                     </td>
                                     <td className="px-4 py-3" onClick={(event) => event.stopPropagation()}>
@@ -1311,8 +1321,18 @@ export const FanmarkDashboard = () => {
                                           </span>
                                         </div>
                                       </div>
-                                      <div className="flex-shrink-0">
+                                      <div className="flex-shrink-0 flex flex-wrap gap-1">
                                         <span className={isInactiveCard ? 'opacity-60 saturate-50' : ''}>{getStatusBadge(timing)}</span>
+                                        {getTransferStatus(fanmark.id) === 'active' && (
+                                          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30 text-[0.6rem]">
+                                            {t('transfer.badgeTransferring')}
+                                          </Badge>
+                                        )}
+                                        {getTransferStatus(fanmark.id) === 'applied' && (
+                                          <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30 text-[0.6rem]">
+                                            {t('transfer.badgePendingApproval')}
+                                          </Badge>
+                                        )}
                                       </div>
                                     </div>
                                  </div>
