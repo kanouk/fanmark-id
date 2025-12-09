@@ -1565,5 +1565,99 @@
     "accessTypeInactive": "Inactive",
     "noAccessTypeData": "No access type data available",
     "fanmarkRanking": "Fanmark Access Ranking"
+  },
+  "transfer": {
+    "sectionTitle": "Fanmark Transfer",
+    "sectionNotice": "The operator does not intervene in any transactions or monetary exchanges between users. Please transfer at your own responsibility.",
+    "inputCodeButton": "Enter Transfer Code",
+    "issuedCodesTitle": "Issued Transfer Codes",
+    "pendingRequestsTitle": "Pending Approval Requests",
+    "myRequestsTitle": "Your Transfer Requests",
+    "noIssuedCodes": "No transfer codes issued",
+    "noPendingRequests": "No pending approval requests",
+    "noMyRequests": "No pending transfer requests",
+    "codeLabel": "Code",
+    "expiresAt": "Expires",
+    "statusWaiting": "Waiting for application",
+    "statusPendingApproval": "Pending approval",
+    "cancelCode": "Cancel",
+    "approveRequest": "Approve",
+    "rejectRequest": "Reject",
+    "toUser": "To {username}",
+    "fromUser": "From {username}",
+    "appliedAt": "Applied at",
+    "badgeTransferring": "Transferring",
+    "badgePendingApproval": "Pending",
+    "issueDialog": {
+      "title": "Issue Transfer Code",
+      "disclaimer": "Important: Transfer Notice",
+      "disclaimerItem1": "Transfer cannot be undone after approval",
+      "disclaimerItem2": "The operator is not involved in and takes no responsibility for transactions involving monetary or other consideration",
+      "disclaimerItem3": "The operator takes no responsibility for any disputes between users related to transfers (non-payment, fraud, etc.)",
+      "disclaimerItem4": "After transfer, the recipient will receive a new license period based on the tier",
+      "agreeCheckbox": "I understand and agree to the above",
+      "cancelButton": "Cancel",
+      "issueButton": "Issue Code",
+      "issuing": "Issuing..."
+    },
+    "inputDialog": {
+      "title": "Enter Transfer Code",
+      "codePlaceholder": "XXXX-XXXX-XXXX",
+      "disclaimer": "Important: Transfer Notice",
+      "disclaimerItem1": "Once applied, you cannot cancel until the issuer responds",
+      "disclaimerItem2": "The operator is not involved in and takes no responsibility for transactions involving monetary or other consideration",
+      "disclaimerItem3": "The operator takes no responsibility for any disputes between users related to transfers (non-payment, fraud, etc.)",
+      "disclaimerItem4": "After transfer, you will receive a tier-based initial license period (remaining period is not transferred)",
+      "agreeCheckbox": "I understand and agree to the above",
+      "cancelButton": "Cancel",
+      "applyButton": "Apply",
+      "applying": "Applying..."
+    },
+    "approvalDialog": {
+      "title": "Approve Transfer Request",
+      "description": "Transfer {fanmark} to {username}? This action cannot be undone.",
+      "cancelButton": "Cancel",
+      "approveButton": "Approve",
+      "approving": "Approving..."
+    },
+    "rejectDialog": {
+      "title": "Reject Transfer Request",
+      "description": "Reject the transfer request from {username}?",
+      "cancelButton": "Cancel",
+      "rejectButton": "Reject",
+      "rejecting": "Rejecting..."
+    },
+    "cancelDialog": {
+      "title": "Cancel Transfer Code",
+      "description": "Cancel this transfer code?",
+      "cancelButton": "Go Back",
+      "confirmButton": "Cancel Code",
+      "cancelling": "Cancelling..."
+    },
+    "success": {
+      "codeIssued": "Transfer code issued",
+      "codeIssuedDesc": "Code: {code}",
+      "requestApplied": "Transfer request submitted",
+      "requestAppliedDesc": "Please wait for approval",
+      "requestApproved": "Transfer approved",
+      "requestApprovedDesc": "Fanmark has been transferred",
+      "requestRejected": "Transfer request rejected",
+      "codeCancelled": "Transfer code cancelled"
+    },
+    "error": {
+      "issueFailed": "Failed to issue transfer code",
+      "applyFailed": "Failed to apply for transfer",
+      "approveFailed": "Failed to approve transfer",
+      "rejectFailed": "Failed to reject transfer request",
+      "cancelFailed": "Failed to cancel transfer code",
+      "invalidCode": "Invalid transfer code",
+      "codeExpired": "Transfer code has expired",
+      "selfTransfer": "Cannot transfer to yourself",
+      "limitExceeded": "Fanmark limit has been reached",
+      "insufficientLicense": "Cannot issue transfer code with less than 48 hours remaining",
+      "pendingRequest": "Cannot issue new code while a request is pending approval",
+      "transferInProgress": "This operation is not allowed during transfer",
+      "disclaimerRequired": "Agreement to the notice is required"
+    }
   }
 }

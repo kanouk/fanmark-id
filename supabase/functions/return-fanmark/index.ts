@@ -44,6 +44,35 @@ serve(async (req) => {
     }
 
     const { fanmark_id }: ReturnRequestBody = await req.json();
+    
+    if (!fanmark_id) {
+      return new Response(JSON.stringify({ error: 'fanmark_id is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Check for active transfer on this fanmark's license
+    const { data: license } = await supabase
+      .from('fanmark_licenses')
+      .select('id')
+      .eq('fanmark_id', fanmark_id)
+      .eq('user_id', authData.user.id)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (license) {
+      const { data: hasTransfer } = await supabase.rpc('has_active_transfer', {
+        license_uuid: license.id
+      });
+
+      if (hasTransfer) {
+        return new Response(JSON.stringify({ error: 'transfer_in_progress' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
     if (!fanmark_id) {
       return new Response(JSON.stringify({ error: 'fanmark_id is required' }), {
         status: 400,

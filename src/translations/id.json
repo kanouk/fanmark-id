@@ -1564,5 +1564,99 @@
     "accessTypeInactive": "Tidak Aktif",
     "noAccessTypeData": "Tidak ada data jenis akses",
     "fanmarkRanking": "Peringkat Akses Fanmark"
+  },
+  "transfer": {
+    "sectionTitle": "Transfer Fanmark",
+    "sectionNotice": "Operator tidak terlibat dalam transaksi atau pertukaran uang antar pengguna. Silakan transfer dengan tanggung jawab Anda sendiri.",
+    "inputCodeButton": "Masukkan Kode Transfer",
+    "issuedCodesTitle": "Kode Transfer yang Diterbitkan",
+    "pendingRequestsTitle": "Permintaan Persetujuan Tertunda",
+    "myRequestsTitle": "Permintaan Transfer Anda",
+    "noIssuedCodes": "Tidak ada kode transfer yang diterbitkan",
+    "noPendingRequests": "Tidak ada permintaan persetujuan tertunda",
+    "noMyRequests": "Tidak ada permintaan transfer tertunda",
+    "codeLabel": "Kode",
+    "expiresAt": "Kedaluwarsa",
+    "statusWaiting": "Menunggu aplikasi",
+    "statusPendingApproval": "Menunggu persetujuan",
+    "cancelCode": "Batalkan",
+    "approveRequest": "Setujui",
+    "rejectRequest": "Tolak",
+    "toUser": "Ke {username}",
+    "fromUser": "Dari {username}",
+    "appliedAt": "Diajukan pada",
+    "badgeTransferring": "Mentransfer",
+    "badgePendingApproval": "Tertunda",
+    "issueDialog": {
+      "title": "Terbitkan Kode Transfer",
+      "disclaimer": "Penting: Pemberitahuan Transfer",
+      "disclaimerItem1": "Transfer tidak dapat dibatalkan setelah disetujui",
+      "disclaimerItem2": "Operator tidak terlibat dan tidak bertanggung jawab atas transaksi yang melibatkan pertimbangan moneter atau lainnya",
+      "disclaimerItem3": "Operator tidak bertanggung jawab atas perselisihan antar pengguna terkait transfer (non-pembayaran, penipuan, dll.)",
+      "disclaimerItem4": "Setelah transfer, penerima akan menerima periode lisensi baru berdasarkan tier",
+      "agreeCheckbox": "Saya memahami dan menyetujui hal di atas",
+      "cancelButton": "Batalkan",
+      "issueButton": "Terbitkan Kode",
+      "issuing": "Menerbitkan..."
+    },
+    "inputDialog": {
+      "title": "Masukkan Kode Transfer",
+      "codePlaceholder": "XXXX-XXXX-XXXX",
+      "disclaimer": "Penting: Pemberitahuan Transfer",
+      "disclaimerItem1": "Setelah diajukan, Anda tidak dapat membatalkan sampai penerbit merespons",
+      "disclaimerItem2": "Operator tidak terlibat dan tidak bertanggung jawab atas transaksi yang melibatkan pertimbangan moneter atau lainnya",
+      "disclaimerItem3": "Operator tidak bertanggung jawab atas perselisihan antar pengguna terkait transfer (non-pembayaran, penipuan, dll.)",
+      "disclaimerItem4": "Setelah transfer, Anda akan menerima periode lisensi awal berdasarkan tier (periode sisa tidak ditransfer)",
+      "agreeCheckbox": "Saya memahami dan menyetujui hal di atas",
+      "cancelButton": "Batalkan",
+      "applyButton": "Ajukan",
+      "applying": "Mengajukan..."
+    },
+    "approvalDialog": {
+      "title": "Setujui Permintaan Transfer",
+      "description": "Transfer {fanmark} ke {username}? Tindakan ini tidak dapat dibatalkan.",
+      "cancelButton": "Batalkan",
+      "approveButton": "Setujui",
+      "approving": "Menyetujui..."
+    },
+    "rejectDialog": {
+      "title": "Tolak Permintaan Transfer",
+      "description": "Tolak permintaan transfer dari {username}?",
+      "cancelButton": "Batalkan",
+      "rejectButton": "Tolak",
+      "rejecting": "Menolak..."
+    },
+    "cancelDialog": {
+      "title": "Batalkan Kode Transfer",
+      "description": "Batalkan kode transfer ini?",
+      "cancelButton": "Kembali",
+      "confirmButton": "Batalkan Kode",
+      "cancelling": "Membatalkan..."
+    },
+    "success": {
+      "codeIssued": "Kode transfer diterbitkan",
+      "codeIssuedDesc": "Kode: {code}",
+      "requestApplied": "Permintaan transfer diajukan",
+      "requestAppliedDesc": "Silakan tunggu persetujuan",
+      "requestApproved": "Transfer disetujui",
+      "requestApprovedDesc": "Fanmark telah ditransfer",
+      "requestRejected": "Permintaan transfer ditolak",
+      "codeCancelled": "Kode transfer dibatalkan"
+    },
+    "error": {
+      "issueFailed": "Gagal menerbitkan kode transfer",
+      "applyFailed": "Gagal mengajukan transfer",
+      "approveFailed": "Gagal menyetujui transfer",
+      "rejectFailed": "Gagal menolak permintaan transfer",
+      "cancelFailed": "Gagal membatalkan kode transfer",
+      "invalidCode": "Kode transfer tidak valid",
+      "codeExpired": "Kode transfer telah kedaluwarsa",
+      "selfTransfer": "Tidak dapat mentransfer ke diri sendiri",
+      "limitExceeded": "Batas fanmark telah tercapai",
+      "insufficientLicense": "Tidak dapat menerbitkan kode transfer dengan sisa kurang dari 48 jam",
+      "pendingRequest": "Tidak dapat menerbitkan kode baru saat permintaan tertunda persetujuan",
+      "transferInProgress": "Operasi ini tidak diizinkan selama transfer",
+      "disclaimerRequired": "Persetujuan terhadap pemberitahuan diperlukan"
+    }
   }
 }
