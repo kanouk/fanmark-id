@@ -1654,6 +1654,7 @@
       "codeExpired": "Kode transfer telah kedaluwarsa",
       "selfTransfer": "Tidak dapat mentransfer ke diri sendiri",
       "limitExceeded": "Batas fanmark telah tercapai",
+      "limitExceededDetail": "Anda saat ini memiliki {{current}} fanmark dan telah mencapai batas paket ({{limit}}). Untuk menerima transfer ini, silakan kembalikan fanmark yang tidak terpakai atau upgrade paket Anda.",
       "insufficientLicense": "Tidak dapat menerbitkan kode transfer dengan sisa kurang dari 48 jam",
       "pendingRequest": "Tidak dapat menerbitkan kode baru saat permintaan tertunda persetujuan",
       "transferInProgress": "Operasi ini tidak diizinkan selama transfer",

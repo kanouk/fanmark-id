@@ -42,20 +42,33 @@ export const TransferCodeInputDialog = ({
       handleClose();
     } catch (error: any) {
       const message = error?.message || '';
-      let errorKey = 'transfer.error.applyFailed';
+      let errorTitle = 'transfer.error.applyFailed';
+      let errorDescription = '';
       
       if (message.includes('invalid') || message.includes('not found')) {
-        errorKey = 'transfer.error.invalidCode';
+        errorTitle = 'transfer.error.invalidCode';
       } else if (message.includes('expired')) {
-        errorKey = 'transfer.error.codeExpired';
+        errorTitle = 'transfer.error.codeExpired';
       } else if (message.includes('self')) {
-        errorKey = 'transfer.error.selfTransfer';
+        errorTitle = 'transfer.error.selfTransfer';
+      } else if (message.includes('fanmark_limit_exceeded')) {
+        errorTitle = 'transfer.error.limitExceeded';
+        // Parse detailed info from Edge Function response
+        const currentMatch = message.match(/current[:\s]+(\d+)/i);
+        const limitMatch = message.match(/limit[:\s]+(\d+)/i);
+        if (currentMatch && limitMatch) {
+          errorDescription = t('transfer.error.limitExceededDetail', {
+            current: currentMatch[1],
+            limit: limitMatch[1]
+          });
+        }
       } else if (message.includes('limit')) {
-        errorKey = 'transfer.error.limitExceeded';
+        errorTitle = 'transfer.error.limitExceeded';
       }
 
       toast({
-        title: t(errorKey),
+        title: t(errorTitle),
+        description: errorDescription || undefined,
         variant: 'destructive'
       });
     } finally {

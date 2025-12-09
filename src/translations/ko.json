@@ -1654,6 +1654,7 @@
       "codeExpired": "이전 코드가 만료되었습니다",
       "selfTransfer": "본인에게 이전할 수 없습니다",
       "limitExceeded": "팬마크 한도에 도달했습니다",
+      "limitExceededDetail": "현재 {{current}}개를 소유하고 있으며 플랜 한도({{limit}}개)에 도달했습니다. 이전을 받으려면 불필요한 팬마크를 반환하거나 플랜을 업그레이드하세요.",
       "insufficientLicense": "48시간 미만 남은 경우 이전 코드를 발급할 수 없습니다",
       "pendingRequest": "승인 대기 중인 요청이 있는 동안에는 새 코드를 발급할 수 없습니다",
       "transferInProgress": "이전 중에는 이 작업이 허용되지 않습니다",

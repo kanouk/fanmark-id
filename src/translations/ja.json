@@ -1653,6 +1653,7 @@
       "codeExpired": "移管コードの有効期限が切れています",
       "selfTransfer": "自分自身への移管はできません",
       "limitExceeded": "ファンマ所持数が上限に達しています",
+      "limitExceededDetail": "現在{{current}}個所持しており、プランの上限（{{limit}}個）に達しています。移管を受け入れるには、不要なファンマを返却するか、プランをアップグレードしてください。",
       "insufficientLicense": "ライセンス残期間が48時間未満のため、移管コードを発行できません",
       "pendingRequest": "承認待ちの申請があるため、新しいコードを発行できません",
       "transferInProgress": "移管処理中のため、この操作はできません",

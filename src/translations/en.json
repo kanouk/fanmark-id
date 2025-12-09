@@ -1655,6 +1655,7 @@
       "codeExpired": "Transfer code has expired",
       "selfTransfer": "Cannot transfer to yourself",
       "limitExceeded": "Fanmark limit has been reached",
+      "limitExceededDetail": "You currently own {{current}} fanmarks and have reached your plan limit of {{limit}}. To accept this transfer, please return unused fanmarks or upgrade your plan.",
       "insufficientLicense": "Cannot issue transfer code with less than 48 hours remaining",
       "pendingRequest": "Cannot issue new code while a request is pending approval",
       "transferInProgress": "This operation is not allowed during transfer",
