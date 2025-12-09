@@ -221,7 +221,7 @@ export const FanmarkTransferSection = () => {
                         <span className="text-lg">{request.fanmark?.user_input_fanmark}</span>
                         <span className="text-sm text-muted-foreground">→</span>
                         <span className="text-sm font-medium">
-                          @{request.requester?.username || 'unknown'}
+                          @{request.requester_username || 'unknown'}
                         </span>
                       </div>
                       <div className="text-xs text-muted-foreground">

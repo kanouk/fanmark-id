@@ -22,12 +22,9 @@ interface TransferRequest {
   fanmark_id: string;
   license_id: string;
   requester_user_id: string;
+  requester_username: string | null;
   status: string;
   applied_at: string;
-  requester?: {
-    username: string;
-    display_name: string | null;
-  };
   fanmark?: {
     user_input_fanmark: string;
     short_id: string;
@@ -81,6 +78,7 @@ export const useTransferCode = () => {
           fanmark_id,
           license_id,
           requester_user_id,
+          requester_username,
           status,
           applied_at,
           fanmarks (
@@ -100,26 +98,6 @@ export const useTransferCode = () => {
             fanmark: r.fanmarks as TransferRequest['fanmark']
           }));
 
-        // Fetch requester usernames
-        const requesterIds = pendingForMe.map(r => r.requester_user_id);
-        if (requesterIds.length > 0) {
-          const { data: userSettings } = await supabase
-            .from('user_settings')
-            .select('user_id, username, display_name')
-            .in('user_id', requesterIds);
-
-          const userMap = new Map(userSettings?.map(u => [u.user_id, u]) || []);
-          pendingForMe.forEach(r => {
-            const userData = userMap.get(r.requester_user_id);
-            if (userData) {
-              r.requester = {
-                username: userData.username,
-                display_name: userData.display_name
-              };
-            }
-          });
-        }
-
         setPendingRequests(pendingForMe);
       }
 
@@ -132,6 +110,7 @@ export const useTransferCode = () => {
           fanmark_id,
           license_id,
           requester_user_id,
+          requester_username,
           status,
           applied_at,
           fanmarks (

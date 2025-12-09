@@ -130,19 +130,22 @@ serve(async (req) => {
       });
     }
 
-    // Check fanmark limit for requester
-    const { data: userSettings, error: settingsError } = await supabase
+    // Get requester display name first (needed for both limit check and insert)
+    const { data: requesterSettings, error: requesterError } = await supabase
       .from('user_settings')
-      .select('plan_type')
+      .select('display_name, username, plan_type')
       .eq('user_id', requesterId)
       .maybeSingle();
 
-    if (settingsError) {
-      console.error('User settings fetch error:', settingsError);
+    if (requesterError) {
+      console.error('Requester settings fetch error:', requesterError);
     }
 
-    // Get plan limit - use correct setting key names matching system_settings table
-    const planType = userSettings?.plan_type || 'free';
+    const requesterUsername = requesterSettings?.username || 'unknown';
+    const requesterName = requesterSettings?.display_name || requesterUsername;
+
+    // Check fanmark limit for requester
+    const planType = requesterSettings?.plan_type || 'free';
     const settingKeyMap: Record<string, string> = {
       free: 'max_fanmarks_per_user',
       creator: 'creator_fanmarks_limit',
@@ -219,7 +222,7 @@ serve(async (req) => {
       });
     }
 
-    // Create transfer request
+    // Create transfer request with requester_username
     const { data: request, error: requestError } = await supabase
       .from('fanmark_transfer_requests')
       .insert({
@@ -227,6 +230,7 @@ serve(async (req) => {
         license_id: codeData.license_id,
         fanmark_id: codeData.fanmark_id,
         requester_user_id: requesterId,
+        requester_username: requesterUsername,
         status: 'pending',
         disclaimer_agreed_at: now.toISOString(),
         applied_at: now.toISOString(),
@@ -264,15 +268,6 @@ serve(async (req) => {
 
     // Send notification to issuer
     const fanmark = (codeData.fanmarks as any)?.[0] || codeData.fanmarks;
-    
-    // Get requester display name
-    const { data: requesterSettings } = await supabase
-      .from('user_settings')
-      .select('display_name, username')
-      .eq('user_id', requesterId)
-      .maybeSingle();
-
-    const requesterName = requesterSettings?.display_name || requesterSettings?.username || 'ユーザー';
 
     await supabase.rpc('create_notification_event', {
       event_type_param: 'transfer_requested',
