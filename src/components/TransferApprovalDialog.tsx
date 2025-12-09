@@ -9,10 +9,8 @@ interface TransferRequest {
     user_input_fanmark: string;
     short_id: string;
   };
-  requester?: {
-    username: string;
-    display_name: string | null;
-  };
+  requester_username: string | null;
+  requester_display_name: string | null;
 }
 
 interface TransferApprovalDialogProps {
@@ -33,7 +31,7 @@ export const TransferApprovalDialog = ({
   const { t } = useTranslation();
 
   const fanmarkDisplay = request.fanmark?.user_input_fanmark || '---';
-  const username = request.requester?.username || 'unknown';
+  const displayName = request.requester_display_name || request.requester_username || 'unknown';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -46,7 +44,7 @@ export const TransferApprovalDialog = ({
           <DialogDescription className="pt-4">
             {t('transfer.approvalDialog.description')
               .replace('{fanmark}', fanmarkDisplay)
-              .replace('{username}', username)}
+              .replace('{username}', displayName)}
           </DialogDescription>
         </DialogHeader>
 
@@ -54,7 +52,7 @@ export const TransferApprovalDialog = ({
           <div className="flex items-center justify-center gap-4 p-6 rounded-lg bg-muted/50">
             <span className="text-4xl">{fanmarkDisplay}</span>
             <span className="text-2xl text-muted-foreground">→</span>
-            <span className="text-lg font-medium">@{username}</span>
+            <span className="text-lg font-medium">{displayName}</span>
           </div>
         </div>
 

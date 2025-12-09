@@ -1007,6 +1007,7 @@ export type Database = {
           id: string
           license_id: string
           rejection_reason: string | null
+          requester_display_name: string | null
           requester_user_id: string
           requester_username: string | null
           resolved_at: string | null
@@ -1022,6 +1023,7 @@ export type Database = {
           id?: string
           license_id: string
           rejection_reason?: string | null
+          requester_display_name?: string | null
           requester_user_id: string
           requester_username?: string | null
           resolved_at?: string | null
@@ -1037,6 +1039,7 @@ export type Database = {
           id?: string
           license_id?: string
           rejection_reason?: string | null
+          requester_display_name?: string | null
           requester_user_id?: string
           requester_username?: string | null
           resolved_at?: string | null

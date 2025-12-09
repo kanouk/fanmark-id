@@ -222,7 +222,7 @@ serve(async (req) => {
       });
     }
 
-    // Create transfer request with requester_username
+    // Create transfer request with requester_username and display_name
     const { data: request, error: requestError } = await supabase
       .from('fanmark_transfer_requests')
       .insert({
@@ -231,6 +231,7 @@ serve(async (req) => {
         fanmark_id: codeData.fanmark_id,
         requester_user_id: requesterId,
         requester_username: requesterUsername,
+        requester_display_name: requesterSettings?.display_name || null,
         status: 'pending',
         disclaimer_agreed_at: now.toISOString(),
         applied_at: now.toISOString(),
