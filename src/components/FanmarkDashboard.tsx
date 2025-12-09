@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useTranslation } from '@/hooks/useTranslation';
-import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy, Undo2, QrCode, MoreVertical, Heart, BarChart3 } from 'lucide-react';
+import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy, Undo2, QrCode, MoreVertical, Heart, BarChart3, ArrowRightLeft } from 'lucide-react';
 import { FiTarget, FiLayers, FiCompass, FiStar, FiCheckCircle, FiMoon, FiUser, FiLink, FiFileText, FiClock, FiInbox } from 'react-icons/fi';
 import { FanmarkAcquisition } from './FanmarkAcquisition';
 import { ExtendLicenseDialog, type ExtendLicenseTarget, type ExtendPlanOption } from './ExtendLicenseDialog';
@@ -30,6 +30,9 @@ import { navigateToFanmark, getFanmarkUrlForClipboard } from '@/utils/emojiUrl';
 import { parseDateString } from '@/lib/utils';
 import { deriveLicenseTiming, type LicenseTimingResult } from '@/lib/licenseTiming';
 import { resolveFanmarkDisplay } from '@/lib/emojiConversion';
+import { useTransferCode } from '@/hooks/useTransferCode';
+import { FanmarkTransferSection } from '@/components/FanmarkTransferSection';
+import { TransferCodeIssueDialog } from '@/components/TransferCodeIssueDialog';
 
 const LICENSE_STATUS_WEIGHT: Record<LicenseTimingResult['status'], number> = {
   active: 0,
@@ -146,6 +149,21 @@ export const FanmarkDashboard = () => {
   const [extendProcessing, setExtendProcessing] = useState(false);
   const [totalAccessCount, setTotalAccessCount] = useState<number | null>(null);
   const [accessCountLoading, setAccessCountLoading] = useState(true);
+  
+  // Transfer system
+  const { hasActiveTransfer, getTransferStatus, refetch: refetchTransfer } = useTransferCode();
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  const [transferTargetFanmark, setTransferTargetFanmark] = useState<{ fanmarkId: string; licenseId: string; emoji: string } | null>(null);
+
+  const openTransferDialog = (fanmark: Fanmark) => {
+    if (!fanmark.current_license_id) return;
+    setTransferTargetFanmark({
+      fanmarkId: fanmark.id,
+      licenseId: fanmark.current_license_id,
+      emoji: fanmark.fanmark,
+    });
+    setTransferDialogOpen(true);
+  };
 
   const handleOpenSettings = (fanmarkId: string) => {
     // Find and cache fanmark data for profile edit page
@@ -1181,6 +1199,19 @@ export const FanmarkDashboard = () => {
                                               <Undo2 className="h-4 w-4 text-primary" />
                                               <span>{t('dashboard.actionsReturn')}</span>
                                             </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                              onSelect={(event) => {
+                                                event.preventDefault();
+                                                event.stopPropagation();
+                                                if (!canReturn || hasActiveTransfer(fanmark.id)) return;
+                                                openTransferDialog(fanmark);
+                                              }}
+                                              className="gap-2"
+                                              disabled={!canReturn || hasActiveTransfer(fanmark.id)}
+                                            >
+                                              <ArrowRightLeft className="h-4 w-4 text-primary" />
+                                              <span>{t('transfer.issueCode')}</span>
+                                            </DropdownMenuItem>
                                             <DropdownMenuSeparator />
                                             {canAccessAnalytics && (
                                               <DropdownMenuItem
@@ -1440,6 +1471,17 @@ export const FanmarkDashboard = () => {
                                           <Undo2 className="h-4 w-4 text-primary" />
                                           <span>{t('dashboard.actionsReturn')}</span>
                                         </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onSelect={() => {
+                                            if (!canReturn || hasActiveTransfer(fanmark.id)) return;
+                                            openTransferDialog(fanmark);
+                                          }}
+                                          className="gap-2"
+                                          disabled={!canReturn || hasActiveTransfer(fanmark.id)}
+                                        >
+                                          <ArrowRightLeft className="h-4 w-4 text-primary" />
+                                          <span>{t('transfer.issueCode')}</span>
+                                        </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         {canAccessAnalytics && (
                                           <DropdownMenuItem
@@ -1471,6 +1513,9 @@ export const FanmarkDashboard = () => {
                 )}
               </CardContent>
             </Card>
+
+            {/* Transfer Section */}
+            <FanmarkTransferSection />
           </TabsContent>
 
           <TabsContent value="acquisition" className="space-y-6">
@@ -1557,6 +1602,18 @@ export const FanmarkDashboard = () => {
             ? getPendingCheckout()?.fanmarkId === returnTargetFanmark.id
             : false
         }
+      />
+
+      <TransferCodeIssueDialog
+        open={transferDialogOpen}
+        onOpenChange={setTransferDialogOpen}
+        fanmarkId={transferTargetFanmark?.fanmarkId ?? null}
+        licenseId={transferTargetFanmark?.licenseId ?? null}
+        fanmarkEmoji={transferTargetFanmark?.emoji ?? ''}
+        onSuccess={() => {
+          refetchTransfer();
+          fetchFanmarks();
+        }}
       />
     </section>
   );
