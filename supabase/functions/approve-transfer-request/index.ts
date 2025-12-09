@@ -6,14 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Tier-based license duration in days
-const TIER_LICENSE_DAYS: Record<number, number | null> = {
-  4: null,  // Tier C (4-5 emojis) - unlimited
-  3: 30,    // Tier B (3 emojis) - 30 days
-  2: 14,    // Tier A (2 emojis) - 14 days
-  1: 7,     // Tier S (1 emoji) - 7 days
-};
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -164,14 +156,30 @@ serve(async (req) => {
     const fanmark = (oldLicense.fanmarks as any)?.[0] || oldLicense.fanmarks;
     const tierLevel = fanmark?.tier_level || 1;
 
-    // Calculate new license end based on tier
-    const licenseDays = TIER_LICENSE_DAYS[tierLevel];
+    // Fetch license duration from fanmark_tiers table
+    const { data: tierData, error: tierError } = await supabase
+      .from('fanmark_tiers')
+      .select('initial_license_days')
+      .eq('tier_level', tierLevel)
+      .maybeSingle();
+
+    if (tierError) {
+      console.error('Failed to fetch tier data:', tierError);
+      return new Response(JSON.stringify({ error: 'Failed to determine license duration' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const licenseDays = tierData?.initial_license_days;
     let newLicenseEnd: string | null = null;
-    if (licenseDays !== null) {
+    if (licenseDays !== null && licenseDays !== undefined) {
       const endDate = new Date(now);
       endDate.setDate(endDate.getDate() + licenseDays);
       newLicenseEnd = endDate.toISOString();
     }
+
+    console.log('License duration:', { tierLevel, licenseDays, newLicenseEnd });
 
     // === BEGIN TRANSFER TRANSACTION ===
 
@@ -194,7 +202,7 @@ serve(async (req) => {
       });
     }
 
-    // 2. Create new license for recipient
+    // 2. Create new license for recipient (no config copy - new acquisition state)
     const { data: newLicense, error: newLicenseError } = await supabase
       .from('fanmark_licenses')
       .insert({
@@ -223,77 +231,14 @@ serve(async (req) => {
       });
     }
 
-    // 3. Copy configuration data (except password)
-    
-    // Copy basic config
-    const { data: basicConfig } = await supabase
-      .from('fanmark_basic_configs')
-      .select('fanmark_name, access_type')
-      .eq('license_id', oldLicense.id)
-      .maybeSingle();
-
-    if (basicConfig) {
-      await supabase.from('fanmark_basic_configs').insert({
-        license_id: newLicense.id,
-        fanmark_name: basicConfig.fanmark_name,
-        access_type: basicConfig.access_type,
-      });
-    }
-
-    // Copy redirect config
-    const { data: redirectConfig } = await supabase
-      .from('fanmark_redirect_configs')
-      .select('target_url')
-      .eq('license_id', oldLicense.id)
-      .maybeSingle();
-
-    if (redirectConfig) {
-      await supabase.from('fanmark_redirect_configs').insert({
-        license_id: newLicense.id,
-        target_url: redirectConfig.target_url,
-      });
-    }
-
-    // Copy messageboard config
-    const { data: messageConfig } = await supabase
-      .from('fanmark_messageboard_configs')
-      .select('content')
-      .eq('license_id', oldLicense.id)
-      .maybeSingle();
-
-    if (messageConfig) {
-      await supabase.from('fanmark_messageboard_configs').insert({
-        license_id: newLicense.id,
-        content: messageConfig.content,
-      });
-    }
-
-    // Copy profile (except is_public defaults to true)
-    const { data: profile } = await supabase
-      .from('fanmark_profiles')
-      .select('display_name, bio, social_links, theme_settings')
-      .eq('license_id', oldLicense.id)
-      .maybeSingle();
-
-    if (profile) {
-      await supabase.from('fanmark_profiles').insert({
-        license_id: newLicense.id,
-        display_name: profile.display_name,
-        bio: profile.bio,
-        social_links: profile.social_links,
-        theme_settings: profile.theme_settings,
-        is_public: true,
-      });
-    }
-
-    // 4. Delete old config data
+    // 3. Delete old config data (no copy - recipient starts fresh)
     await supabase.from('fanmark_basic_configs').delete().eq('license_id', oldLicense.id);
     await supabase.from('fanmark_redirect_configs').delete().eq('license_id', oldLicense.id);
     await supabase.from('fanmark_messageboard_configs').delete().eq('license_id', oldLicense.id);
     await supabase.from('fanmark_password_configs').delete().eq('license_id', oldLicense.id);
     await supabase.from('fanmark_profiles').delete().eq('license_id', oldLicense.id);
 
-    // 5. Update transfer code and request status
+    // 4. Update transfer code and request status
     await supabase
       .from('fanmark_transfer_codes')
       .update({ status: 'completed', updated_at: now.toISOString() })
@@ -304,7 +249,7 @@ serve(async (req) => {
       .update({ status: 'approved', resolved_at: now.toISOString() })
       .eq('id', request_id);
 
-    // 6. Cancel any pending lottery entries
+    // 5. Cancel any pending lottery entries
     await supabase
       .from('fanmark_lottery_entries')
       .update({
