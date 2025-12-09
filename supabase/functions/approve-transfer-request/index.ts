@@ -6,6 +6,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Round up to next UTC midnight for consistent license expiration
+function roundUpToNextUtcMidnight(input: Date): Date {
+  const d = new Date(input);
+  d.setUTCHours(0, 0, 0, 0);
+  if (d.getTime() < input.getTime()) {
+    d.setUTCDate(d.getUTCDate() + 1);
+  }
+  return d;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -176,7 +186,8 @@ serve(async (req) => {
     if (licenseDays !== null && licenseDays !== undefined) {
       const endDate = new Date(now);
       endDate.setDate(endDate.getDate() + licenseDays);
-      newLicenseEnd = endDate.toISOString();
+      const roundedDate = roundUpToNextUtcMidnight(endDate);
+      newLicenseEnd = roundedDate.toISOString();
     }
 
     console.log('License duration:', { tierLevel, licenseDays, newLicenseEnd });
