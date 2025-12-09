@@ -1565,6 +1565,7 @@
     "fanmarkRanking": "ファンマ別アクセスランキング"
   },
   "transfer": {
+    "issueCode": "移管コード発行",
     "sectionTitle": "ファンマの移管",
     "sectionNotice": "ユーザー間の取引や金銭のやりとりについて、運営者は一切関与いたしません。移管はご自身の責任において行ってください。",
     "inputCodeButton": "移管コードを入力",

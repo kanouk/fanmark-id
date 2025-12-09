@@ -1567,6 +1567,7 @@
     "fanmarkRanking": "Fanmark Access Ranking"
   },
   "transfer": {
+    "issueCode": "Issue Transfer Code",
     "sectionTitle": "Fanmark Transfer",
     "sectionNotice": "The operator does not intervene in any transactions or monetary exchanges between users. Please transfer at your own responsibility.",
     "inputCodeButton": "Enter Transfer Code",

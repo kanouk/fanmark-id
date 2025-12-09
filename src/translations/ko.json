@@ -1566,6 +1566,7 @@
     "fanmarkRanking": "팬마크별 접근 랭킹"
   },
   "transfer": {
+    "issueCode": "이전 코드 발급",
     "sectionTitle": "팬마크 이전",
     "sectionNotice": "운영자는 사용자 간의 거래나 금전 교환에 관여하지 않습니다. 이전은 본인의 책임 하에 진행해 주세요.",
     "inputCodeButton": "이전 코드 입력",

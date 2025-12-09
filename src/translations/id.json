@@ -1566,6 +1566,7 @@
     "fanmarkRanking": "Peringkat Akses Fanmark"
   },
   "transfer": {
+    "issueCode": "Terbitkan Kode Transfer",
     "sectionTitle": "Transfer Fanmark",
     "sectionNotice": "Operator tidak terlibat dalam transaksi atau pertukaran uang antar pengguna. Silakan transfer dengan tanggung jawab Anda sendiri.",
     "inputCodeButton": "Masukkan Kode Transfer",
