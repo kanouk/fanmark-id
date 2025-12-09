@@ -141,17 +141,39 @@ serve(async (req) => {
       console.error('User settings fetch error:', settingsError);
     }
 
-    // Get plan limit
+    // Get plan limit - use correct setting key names matching system_settings table
     const planType = userSettings?.plan_type || 'free';
+    const settingKeyMap: Record<string, string> = {
+      free: 'max_fanmarks_per_user',
+      creator: 'creator_fanmarks_limit',
+      business: 'business_fanmarks_limit',
+      enterprise: 'enterprise_fanmarks_limit',
+      admin: 'max_fanmarks_limit',
+      max: 'max_fanmarks_limit',
+    };
+    const settingKey = settingKeyMap[planType] || 'max_fanmarks_per_user';
+
     const { data: planSetting, error: planError } = await supabase
       .from('system_settings')
       .select('setting_value')
-      .eq('setting_key', `fanmark_limit_${planType}`)
+      .eq('setting_key', settingKey)
       .maybeSingle();
+
+    // Default limits matching database configuration
+    const defaultLimits: Record<string, number> = {
+      free: 3,
+      creator: 10,
+      business: 50,
+      enterprise: 100,
+      admin: 500,
+      max: 500,
+    };
 
     const fanmarkLimit = planSetting?.setting_value 
       ? parseInt(planSetting.setting_value, 10) 
-      : (planType === 'free' ? 1 : 5);
+      : (defaultLimits[planType] || 3);
+
+    console.log('Fanmark limit check:', { planType, settingKey, settingValue: planSetting?.setting_value, fanmarkLimit });
 
     // Count current fanmarks
     const { count: currentCount, error: countError } = await supabase
