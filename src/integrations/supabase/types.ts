@@ -498,6 +498,7 @@ export type Database = {
           id: string
           is_initial_license: boolean
           is_returned: boolean
+          is_transferred: boolean
           license_end: string | null
           license_start: string
           plan_excluded: boolean | null
@@ -514,6 +515,7 @@ export type Database = {
           id?: string
           is_initial_license?: boolean
           is_returned?: boolean
+          is_transferred?: boolean
           license_end?: string | null
           license_start?: string
           plan_excluded?: boolean | null
@@ -530,6 +532,7 @@ export type Database = {
           id?: string
           is_initial_license?: boolean
           is_returned?: boolean
+          is_transferred?: boolean
           license_end?: string | null
           license_start?: string
           plan_excluded?: boolean | null
@@ -933,6 +936,141 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      fanmark_transfer_codes: {
+        Row: {
+          created_at: string
+          disclaimer_agreed_at: string
+          expires_at: string
+          fanmark_id: string
+          id: string
+          issuer_user_id: string
+          license_id: string
+          status: string
+          transfer_code: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          disclaimer_agreed_at?: string
+          expires_at: string
+          fanmark_id: string
+          id?: string
+          issuer_user_id: string
+          license_id: string
+          status?: string
+          transfer_code: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          disclaimer_agreed_at?: string
+          expires_at?: string
+          fanmark_id?: string
+          id?: string
+          issuer_user_id?: string
+          license_id?: string
+          status?: string
+          transfer_code?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fanmark_transfer_codes_fanmark_id_fkey"
+            columns: ["fanmark_id"]
+            isOneToOne: false
+            referencedRelation: "fanmarks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fanmark_transfer_codes_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "fanmark_licenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fanmark_transfer_codes_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "recent_active_fanmarks"
+            referencedColumns: ["license_id"]
+          },
+        ]
+      }
+      fanmark_transfer_requests: {
+        Row: {
+          applied_at: string
+          created_at: string
+          disclaimer_agreed_at: string
+          fanmark_id: string
+          id: string
+          license_id: string
+          rejection_reason: string | null
+          requester_user_id: string
+          resolved_at: string | null
+          status: string
+          transfer_code_id: string
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string
+          created_at?: string
+          disclaimer_agreed_at?: string
+          fanmark_id: string
+          id?: string
+          license_id: string
+          rejection_reason?: string | null
+          requester_user_id: string
+          resolved_at?: string | null
+          status?: string
+          transfer_code_id: string
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string
+          created_at?: string
+          disclaimer_agreed_at?: string
+          fanmark_id?: string
+          id?: string
+          license_id?: string
+          rejection_reason?: string | null
+          requester_user_id?: string
+          resolved_at?: string | null
+          status?: string
+          transfer_code_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fanmark_transfer_requests_fanmark_id_fkey"
+            columns: ["fanmark_id"]
+            isOneToOne: false
+            referencedRelation: "fanmarks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fanmark_transfer_requests_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "fanmark_licenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fanmark_transfer_requests_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "recent_active_fanmarks"
+            referencedColumns: ["license_id"]
+          },
+          {
+            foreignKeyName: "fanmark_transfer_requests_transfer_code_id_fkey"
+            columns: ["transfer_code_id"]
+            isOneToOne: false
+            referencedRelation: "fanmark_transfer_codes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fanmarks: {
         Row: {
@@ -1578,6 +1716,7 @@ export type Database = {
         Args: { user_email: string; user_id: string }
         Returns: string
       }
+      generate_transfer_code_string: { Args: never; Returns: string }
       get_fanmark_by_emoji: {
         Args: { input_emoji_ids: string[] }
         Returns: {
@@ -1747,6 +1886,7 @@ export type Database = {
           status: string
         }[]
       }
+      has_active_transfer: { Args: { license_uuid: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

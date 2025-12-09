@@ -30,6 +30,21 @@ verify_jwt = false
 [functions.generate-ogp-image]
 verify_jwt = false
 
+[functions.generate-transfer-code]
+verify_jwt = true
+
+[functions.apply-transfer-code]
+verify_jwt = true
+
+[functions.approve-transfer-request]
+verify_jwt = true
+
+[functions.reject-transfer-request]
+verify_jwt = true
+
+[functions.cancel-transfer-code]
+verify_jwt = true
+
 # ========================================
 # Cron Jobs Configuration
 # ========================================
