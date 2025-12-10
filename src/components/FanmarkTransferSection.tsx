@@ -153,14 +153,6 @@ export const FanmarkTransferSection = ({
           </div>
         </CardHeader>
         <CardContent className="px-6 pb-6 space-y-6">
-          {/* Notice */}
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
-            <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-amber-800 dark:text-amber-200">
-              {t('transfer.sectionNotice')}
-            </p>
-          </div>
-
           {/* Issued Codes */}
           {issuedCodes.length > 0 && (
             <div className="space-y-3">
