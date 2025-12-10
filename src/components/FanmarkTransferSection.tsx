@@ -5,28 +5,40 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useTransferCode } from '@/hooks/useTransferCode';
+import { TransferCode, TransferRequest } from '@/hooks/useTransferCode';
 import { Copy, AlertTriangle, ArrowRightLeft, Clock, X, Check } from 'lucide-react';
 import { TransferCodeInputDialog } from './TransferCodeInputDialog';
 import { TransferApprovalDialog } from './TransferApprovalDialog';
 
-export const FanmarkTransferSection = () => {
+interface FanmarkTransferSectionProps {
+  issuedCodes: TransferCode[];
+  pendingRequests: TransferRequest[];
+  myRequests: TransferRequest[];
+  loading: boolean;
+  cancelCode: (id: string) => Promise<any>;
+  approveRequest: (id: string) => Promise<any>;
+  rejectRequest: (id: string) => Promise<any>;
+  applyTransferCode: (code: string) => Promise<any>;
+  onDataChange?: () => void;
+}
+
+export const FanmarkTransferSection = ({
+  issuedCodes,
+  pendingRequests,
+  myRequests,
+  loading,
+  cancelCode,
+  approveRequest,
+  rejectRequest,
+  applyTransferCode,
+  onDataChange
+}: FanmarkTransferSectionProps) => {
   const { t } = useTranslation();
   const { toast } = useToast();
-  const {
-    issuedCodes,
-    pendingRequests,
-    myRequests,
-    loading,
-    cancelCode,
-    approveRequest,
-    rejectRequest,
-    refetch
-  } = useTransferCode();
 
   const [inputDialogOpen, setInputDialogOpen] = useState(false);
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState<typeof pendingRequests[0] | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<TransferRequest | null>(null);
   const [cancellingCodeId, setCancellingCodeId] = useState<string | null>(null);
   const [processingRequestId, setProcessingRequestId] = useState<string | null>(null);
 
@@ -49,6 +61,7 @@ export const FanmarkTransferSection = () => {
       toast({
         title: t('transfer.success.codeCancelled')
       });
+      onDataChange?.();
     } catch (error) {
       toast({
         title: t('transfer.error.cancelFailed'),
@@ -69,6 +82,7 @@ export const FanmarkTransferSection = () => {
       });
       setApprovalDialogOpen(false);
       setSelectedRequest(null);
+      onDataChange?.();
     } catch (error) {
       toast({
         title: t('transfer.error.approveFailed'),
@@ -86,6 +100,7 @@ export const FanmarkTransferSection = () => {
       toast({
         title: t('transfer.success.requestRejected')
       });
+      onDataChange?.();
     } catch (error) {
       toast({
         title: t('transfer.error.rejectFailed'),
@@ -298,8 +313,9 @@ export const FanmarkTransferSection = () => {
       <TransferCodeInputDialog
         open={inputDialogOpen}
         onOpenChange={setInputDialogOpen}
+        applyTransferCode={applyTransferCode}
         onSuccess={() => {
-          refetch();
+          onDataChange?.();
           setInputDialogOpen(false);
         }}
       />

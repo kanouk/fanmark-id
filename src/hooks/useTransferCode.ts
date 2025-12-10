@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
-interface TransferCode {
+export interface TransferCode {
   id: string;
   license_id: string;
   fanmark_id: string;
@@ -16,7 +16,7 @@ interface TransferCode {
   };
 }
 
-interface TransferRequest {
+export interface TransferRequest {
   id: string;
   transfer_code_id: string;
   fanmark_id: string;
