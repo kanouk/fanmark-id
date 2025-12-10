@@ -6,23 +6,23 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useTransferCode } from '@/hooks/useTransferCode';
 import { AlertTriangle } from 'lucide-react';
 
 interface TransferCodeInputDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  applyTransferCode: (code: string) => Promise<any>;
   onSuccess: () => void;
 }
 
 export const TransferCodeInputDialog = ({
   open,
   onOpenChange,
+  applyTransferCode,
   onSuccess
 }: TransferCodeInputDialogProps) => {
   const { t } = useTranslation();
   const { toast } = useToast();
-  const { applyTransferCode } = useTransferCode();
 
   const [code, setCode] = useState('');
   const [agreed, setAgreed] = useState(false);

@@ -150,8 +150,9 @@ export const FanmarkDashboard = () => {
   const [totalAccessCount, setTotalAccessCount] = useState<number | null>(null);
   const [accessCountLoading, setAccessCountLoading] = useState(true);
   
-  // Transfer system
-  const { hasActiveTransfer, getTransferStatus, refetch: refetchTransfer } = useTransferCode();
+  // Transfer system - single source of truth
+  const transferCodeData = useTransferCode();
+  const { hasActiveTransfer, getTransferStatus, refetch: refetchTransfer } = transferCodeData;
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
   const [transferTargetFanmark, setTransferTargetFanmark] = useState<{ fanmarkId: string; licenseId: string; emoji: string } | null>(null);
 
@@ -1535,7 +1536,20 @@ export const FanmarkDashboard = () => {
             </Card>
 
             {/* Transfer Section */}
-            <FanmarkTransferSection />
+            <FanmarkTransferSection
+              issuedCodes={transferCodeData.issuedCodes}
+              pendingRequests={transferCodeData.pendingRequests}
+              myRequests={transferCodeData.myRequests}
+              loading={transferCodeData.loading}
+              cancelCode={transferCodeData.cancelCode}
+              approveRequest={transferCodeData.approveRequest}
+              rejectRequest={transferCodeData.rejectRequest}
+              applyTransferCode={transferCodeData.applyTransferCode}
+              onDataChange={() => {
+                refetchTransfer();
+                fetchFanmarks();
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="acquisition" className="space-y-6">
