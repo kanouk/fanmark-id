@@ -506,7 +506,12 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
       }
 
       const response = await supabase.functions.invoke<RegisterFanmarkResponse>('register-fanmark', {
-        body: { user_input_fanmark: emoji, emoji_ids: emojiIds, normalized_emoji_ids: normalizedEmojiIds }
+        body: { 
+          user_input_fanmark: emoji, 
+          emoji_ids: emojiIds, 
+          normalized_emoji_ids: normalizedEmojiIds,
+          defaultFanmarkName: t('fanmarkSettings.summary.defaultName'),
+        }
       });
 
       if (response.error) {

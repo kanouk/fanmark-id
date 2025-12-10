@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { TransferCode, TransferRequest } from '@/hooks/useTransferCode';
-import { Copy, AlertTriangle, ArrowRightLeft, Clock, X, Check } from 'lucide-react';
+import { Copy, AlertTriangle, ArrowRightLeft, Clock, X, Check, Handshake } from 'lucide-react';
 import { TransferCodeInputDialog } from './TransferCodeInputDialog';
 import { TransferApprovalDialog } from './TransferApprovalDialog';
 
@@ -16,7 +16,7 @@ interface FanmarkTransferSectionProps {
   myRequests: TransferRequest[];
   loading: boolean;
   cancelCode: (id: string) => Promise<any>;
-  approveRequest: (id: string) => Promise<any>;
+  approveRequest: (id: string, transferredFanmarkName?: string) => Promise<any>;
   rejectRequest: (id: string) => Promise<any>;
   applyTransferCode: (code: string) => Promise<any>;
   onDataChange?: () => void;
@@ -75,7 +75,7 @@ export const FanmarkTransferSection = ({
   const handleApproveRequest = async (requestId: string) => {
     setProcessingRequestId(requestId);
     try {
-      await approveRequest(requestId);
+      await approveRequest(requestId, t('fanmarkSettings.summary.transferredName'));
       toast({
         title: t('transfer.success.requestApproved'),
         description: t('transfer.success.requestApprovedDesc')
@@ -148,6 +148,7 @@ export const FanmarkTransferSection = ({
               size="sm"
               onClick={() => setInputDialogOpen(true)}
             >
+              <Handshake className="h-4 w-4 mr-1" />
               {t('transfer.inputCodeButton')}
             </Button>
           </div>

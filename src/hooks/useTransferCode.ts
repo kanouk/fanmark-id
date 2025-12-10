@@ -173,9 +173,9 @@ export const useTransferCode = () => {
     return data;
   };
 
-  const approveRequest = async (requestId: string) => {
+  const approveRequest = async (requestId: string, transferredFanmarkName?: string) => {
     const { data, error } = await supabase.functions.invoke('approve-transfer-request', {
-      body: { request_id: requestId }
+      body: { request_id: requestId, transferredFanmarkName }
     });
 
     if (error) throw error;

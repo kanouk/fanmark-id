@@ -14,6 +14,7 @@ interface RegisterFanmarkRequest {
   normalized_emoji_ids?: string[];
   accessType?: string;
   displayName?: string;
+  defaultFanmarkName?: string; // Localized default name from frontend
   targetUrl?: string;
   textContent?: string;
   createProfile?: boolean;
@@ -363,6 +364,7 @@ serve(async (req) => {
       normalized_emoji_ids: inputNormalizedEmojiIds,
       accessType = 'inactive',
       displayName,
+      defaultFanmarkName,
       targetUrl,
       textContent,
       createProfile = false,
@@ -732,7 +734,7 @@ serve(async (req) => {
         .upsert(
           { 
             license_id: license.id, 
-            fanmark_name: displayName || null,
+            fanmark_name: displayName || defaultFanmarkName || null,
             access_type: accessType
           },
           { onConflict: 'license_id' as any }

@@ -209,6 +209,7 @@ export const FanmarkRegistrationForm = ({
           normalized_emoji_ids: normalizedEmojiIds,
           accessType: data.accessType,
           displayName: data.displayName,
+          defaultFanmarkName: t('fanmarkSettings.summary.defaultName'),
           targetUrl: data.targetUrl || null,
           textContent: data.textContent || null,
           createProfile: data.createProfile,

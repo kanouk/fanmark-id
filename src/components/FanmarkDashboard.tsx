@@ -1017,6 +1017,7 @@ export const FanmarkDashboard = () => {
                                 const graceCountdownClass = isInactive
                                   ? 'font-medium whitespace-nowrap text-sm text-muted-foreground/70'
                                   : 'font-medium whitespace-nowrap text-sm text-destructive font-mono tabular-nums';
+                                const transferStatus = getTransferStatus(fanmark.id);
 
                                 return (
                                   <tr
@@ -1025,7 +1026,7 @@ export const FanmarkDashboard = () => {
                                     className={`relative border-b border-primary/5 transition-all duration-200 after:pointer-events-none after:absolute after:left-0 after:bottom-0 after:h-px after:w-full after:bg-primary/10 ${rowVisualState}`}
                                   >
                                     <td className="relative overflow-visible px-4 py-3">
-                                      <div className="min-h-[2.25rem] flex items-end overflow-visible" onClick={(event) => event.stopPropagation()}>
+                                      <div className="min-h-[2.25rem] flex items-end overflow-visible relative" onClick={(event) => event.stopPropagation()}>
                                         <div
                                           className={`relative flex items-center px-3.5 py-2.5 rounded-md shadow-sm transition-transform ${isInactive ? '' : 'hover:scale-105'} whitespace-nowrap cursor-pointer overflow-visible ${tierOvalStyle}`}
                                           onClick={(event) => {
@@ -1117,15 +1118,23 @@ export const FanmarkDashboard = () => {
                                       </div>
                                     </td>
                                     <td className="px-4 py-3">
-                                      <div className="min-h-[2.25rem] flex items-center gap-1 min-w-fit flex-wrap">
+                                      <div className="min-h-[2.25rem] flex items-center gap-1 sm:gap-1.5 min-w-fit flex-nowrap whitespace-nowrap">
                                         <span className={isInactive ? 'opacity-60 saturate-50' : ''}>{getStatusBadge(timing)}</span>
-                                        {getTransferStatus(fanmark.id) === 'active' && (
-                                          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30 text-[0.65rem]">
+                                        {transferStatus === 'active' && (
+                                          <Badge
+                                            variant="outline"
+                                            className="inline-flex items-center gap-1.5 rounded-full border-sky-500/35 bg-sky-500/10 px-2 py-0.5 text-[0.68rem] font-semibold text-sky-800 shadow-[0_4px_12px_rgba(56,189,248,0.18)] whitespace-nowrap"
+                                          >
+                                            <ArrowRightLeft className="h-3.5 w-3.5" />
                                             {t('transfer.badgeTransferring')}
                                           </Badge>
                                         )}
-                                        {getTransferStatus(fanmark.id) === 'applied' && (
-                                          <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30 text-[0.65rem]">
+                                        {transferStatus === 'applied' && (
+                                          <Badge
+                                            variant="outline"
+                                            className="inline-flex items-center gap-1.5 rounded-full border-amber-400/45 bg-amber-50/90 px-2 py-0.5 text-[0.68rem] font-semibold text-amber-800 shadow-[0_4px_12px_rgba(251,191,36,0.16)] whitespace-nowrap"
+                                          >
+                                            <FiClock className="h-3.5 w-3.5" />
                                             {t('transfer.badgePendingApproval')}
                                           </Badge>
                                         )}
@@ -1271,6 +1280,7 @@ export const FanmarkDashboard = () => {
                         const hasPerpetualLicense = !licenseData?.license_end;
                         const canReturn = !isReturned(fanmark) && timing.status === 'active';
                         const canExtend = (['active', 'grace', 'grace-return'].includes(timing.status)) && (!isReturned(fanmark) || isGraceReturn) && !hasPerpetualLicense;
+                        const mobileTransferStatus = getTransferStatus(fanmark.id);
 
                         const cardKey = `${fanmark.id}-${fanmark.current_license_id ?? licenseData?.license_end ?? idx}`;
                         const isInactiveCard = isFanmarkInactive(fanmark);
@@ -1322,15 +1332,23 @@ export const FanmarkDashboard = () => {
                                           </span>
                                         </div>
                                       </div>
-                                      <div className="flex-shrink-0 flex flex-wrap gap-1">
+                                      <div className="flex-shrink-0 flex flex-nowrap items-center gap-1 whitespace-nowrap">
                                         <span className={isInactiveCard ? 'opacity-60 saturate-50' : ''}>{getStatusBadge(timing)}</span>
-                                        {getTransferStatus(fanmark.id) === 'active' && (
-                                          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30 text-[0.6rem]">
+                                        {mobileTransferStatus === 'active' && (
+                                          <Badge
+                                            variant="outline"
+                                            className="inline-flex items-center gap-1.5 rounded-full border-sky-500/35 bg-sky-500/10 px-2 py-0.5 text-[0.68rem] font-semibold text-sky-800 shadow-[0_4px_12px_rgba(56,189,248,0.18)] whitespace-nowrap"
+                                          >
+                                            <ArrowRightLeft className="h-3.5 w-3.5" />
                                             {t('transfer.badgeTransferring')}
                                           </Badge>
                                         )}
-                                        {getTransferStatus(fanmark.id) === 'applied' && (
-                                          <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30 text-[0.6rem]">
+                                        {mobileTransferStatus === 'applied' && (
+                                          <Badge
+                                            variant="outline"
+                                            className="inline-flex items-center gap-1.5 rounded-full border-amber-400/45 bg-amber-50/90 px-2 py-0.5 text-[0.68rem] font-semibold text-amber-800 shadow-[0_4px_12px_rgba(251,191,36,0.16)] whitespace-nowrap"
+                                          >
+                                            <FiClock className="h-3.5 w-3.5" />
                                             {t('transfer.badgePendingApproval')}
                                           </Badge>
                                         )}

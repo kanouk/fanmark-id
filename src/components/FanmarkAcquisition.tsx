@@ -209,7 +209,12 @@ export const FanmarkAcquisition = ({
       }
 
       const response = await supabase.functions.invoke<{ success: boolean; fanmark?: { id: string; user_input_fanmark?: string; emoji_ids?: string[]; normalized_emoji_ids?: string[] }; error?: string }>('register-fanmark', {
-        body: { user_input_fanmark: searchResult.user_input_fanmark, emoji_ids: emojiIds, normalized_emoji_ids: normalizedEmojiIds },
+        body: { 
+          user_input_fanmark: searchResult.user_input_fanmark, 
+          emoji_ids: emojiIds, 
+          normalized_emoji_ids: normalizedEmojiIds,
+          defaultFanmarkName: t('fanmarkSettings.summary.defaultName'),
+        },
       });
 
       if (response.error || !response.data?.success || !response.data.fanmark) {

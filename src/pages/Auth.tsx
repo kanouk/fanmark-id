@@ -465,6 +465,8 @@ const SignUpForm = ({
     ? formData.confirmPassword === formData.password && formData.confirmPassword.length > 0
     : null;
   const InvitationStatusIcon = invitationValidated ? Check : Sparkle;
+  const termsLabel = t('legalPages.footerLinks.termsOfService');
+  const privacyLabel = t('legalPages.footerLinks.privacyPolicy');
   const socialButtons = [
     {
       key: 'google',
@@ -632,6 +634,18 @@ const SignUpForm = ({
         {authState.error}
       </div>
     )}
+
+    <p className="text-center text-xs leading-relaxed text-muted-foreground">
+      {t('auth.termsNoticePrefix')}
+      <Link to="/terms" className="text-primary underline-offset-2 hover:underline">
+        {termsLabel}
+      </Link>
+      {t('auth.termsNoticeAnd')}
+      <Link to="/privacy" className="text-primary underline-offset-2 hover:underline">
+        {privacyLabel}
+      </Link>
+      {t('auth.termsNoticeSuffix')}
+    </p>
 
     <Button
       type="submit"

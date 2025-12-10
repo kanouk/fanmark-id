@@ -135,6 +135,9 @@
     "forgotPasswordDescription": "Enter your email address and we'll send you a link to reset your password.",
     "loginDescription": "Sign in to your account",
     "signUpDescription": "Create a new account",
+    "termsNoticePrefix": "Please review the ",
+    "termsNoticeAnd": " and ",
+    "termsNoticeSuffix": " before signing up.",
     "passwordMismatch": "Passwords do not match",
     "homeButton": "Back to Home",
     "welcome": "Welcome to Fanmark",
@@ -1037,7 +1040,8 @@
   "fanmarkSettings": {
     "title": "Fanmark settings",
     "summary": {
-      "defaultName": "New Fanmark"
+      "defaultName": "New Fanmark",
+      "transferredName": "Transferred Fanmark"
     },
     "fields": {
       "displayName": {
@@ -1568,16 +1572,16 @@
   },
   "transfer": {
     "issueCode": "Issue Transfer Code",
-    "sectionTitle": "Fanmark Transfer",
+    "sectionTitle": "Fanmarks in Trade",
     "sectionNotice": "The operator does not intervene in any transactions or monetary exchanges between users. Please transfer at your own responsibility.",
-    "inputCodeButton": "Enter Transfer Code",
+    "inputCodeButton": "Receive Fanmark",
     "issuedCodesTitle": "Issued Transfer Codes",
     "pendingRequestsTitle": "Pending Approval Requests",
     "myRequestsTitle": "Your Transfer Requests",
-    "noIssuedCodes": "No transfer codes issued",
+    "noIssuedCodes": "No fanmarks currently being traded",
     "noPendingRequests": "No pending approval requests",
     "noMyRequests": "No pending transfer requests",
-    "codeLabel": "Code",
+    "codeLabel": "Transfer Code",
     "expiresAt": "Expires",
     "statusWaiting": "Waiting for application",
     "statusPendingApproval": "Pending approval",
@@ -1587,7 +1591,7 @@
     "toUser": "To {username}",
     "fromUser": "From {username}",
     "appliedAt": "Applied at",
-    "badgeTransferring": "Transferring",
+    "badgeTransferring": "Trading",
     "badgePendingApproval": "Pending",
     "issueDialog": {
       "title": "Issue Transfer Code",
@@ -1603,9 +1607,9 @@
     },
     "inputDialog": {
       "title": "Enter Transfer Code",
+      "description": "Enter the transfer code you received from the fanmark owner.",
       "codePlaceholder": "XXXX-XXXX-XXXX",
       "disclaimer": "Important: Transfer Notice",
-      "disclaimerItem1": "Once applied, you cannot cancel until the issuer responds",
       "disclaimerItem2": "The operator is not involved in and takes no responsibility for transactions involving monetary or other consideration",
       "disclaimerItem3": "The operator takes no responsibility for any disputes between users related to transfers (non-payment, fraud, etc.)",
       "disclaimerItem4": "After transfer, you will receive a tier-based initial license period (remaining period is not transferred)",

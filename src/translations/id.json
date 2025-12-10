@@ -135,6 +135,9 @@
     "forgotPasswordDescription": "Masukkan alamat email Anda dan kami akan mengirimkan Anda tautan untuk mengatur ulang kata sandi Anda.",
     "loginDescription": "Masuk ke akun Anda",
     "signUpDescription": "Buat akun baru",
+    "termsNoticePrefix": "Sebelum mendaftar, harap tinjau ",
+    "termsNoticeAnd": " dan ",
+    "termsNoticeSuffix": " terlebih dahulu.",
     "passwordMismatch": "Kata sandi tidak cocok",
     "homeButton": "Kembali ke Beranda",
     "welcome": "Selamat datang di Fanmark",
@@ -1036,7 +1039,8 @@
   "fanmarkSettings": {
     "title": "Pengaturan fanmark",
     "summary": {
-      "defaultName": "Fanmark Baru"
+      "defaultName": "Fanmark Baru",
+      "transferredName": "Fanmark Ditransfer"
     },
     "fields": {
       "displayName": {
@@ -1567,16 +1571,16 @@
   },
   "transfer": {
     "issueCode": "Terbitkan Kode Transfer",
-    "sectionTitle": "Transfer Fanmark",
+    "sectionTitle": "Fanmark Sedang Diperdagangkan",
     "sectionNotice": "Operator tidak terlibat dalam transaksi atau pertukaran uang antar pengguna. Silakan transfer dengan tanggung jawab Anda sendiri.",
-    "inputCodeButton": "Masukkan Kode Transfer",
+    "inputCodeButton": "Terima Fanmark",
     "issuedCodesTitle": "Kode Transfer yang Diterbitkan",
     "pendingRequestsTitle": "Permintaan Persetujuan Tertunda",
     "myRequestsTitle": "Permintaan Transfer Anda",
-    "noIssuedCodes": "Tidak ada kode transfer yang diterbitkan",
+    "noIssuedCodes": "Tidak ada fanmark yang sedang diperdagangkan",
     "noPendingRequests": "Tidak ada permintaan persetujuan tertunda",
     "noMyRequests": "Tidak ada permintaan transfer tertunda",
-    "codeLabel": "Kode",
+    "codeLabel": "Kode Transfer",
     "expiresAt": "Kedaluwarsa",
     "statusWaiting": "Menunggu aplikasi",
     "statusPendingApproval": "Menunggu persetujuan",
@@ -1586,7 +1590,7 @@
     "toUser": "Ke {username}",
     "fromUser": "Dari {username}",
     "appliedAt": "Diajukan pada",
-    "badgeTransferring": "Mentransfer",
+    "badgeTransferring": "Sedang diperdagangkan",
     "badgePendingApproval": "Tertunda",
     "issueDialog": {
       "title": "Terbitkan Kode Transfer",
@@ -1602,9 +1606,9 @@
     },
     "inputDialog": {
       "title": "Masukkan Kode Transfer",
+      "description": "Masukkan kode transfer yang Anda terima dari pemilik fanmark.",
       "codePlaceholder": "XXXX-XXXX-XXXX",
       "disclaimer": "Penting: Pemberitahuan Transfer",
-      "disclaimerItem1": "Setelah diajukan, Anda tidak dapat membatalkan sampai penerbit merespons",
       "disclaimerItem2": "Operator tidak terlibat dan tidak bertanggung jawab atas transaksi yang melibatkan pertimbangan moneter atau lainnya",
       "disclaimerItem3": "Operator tidak bertanggung jawab atas perselisihan antar pengguna terkait transfer (non-pembayaran, penipuan, dll.)",
       "disclaimerItem4": "Setelah transfer, Anda akan menerima periode lisensi awal berdasarkan tier (periode sisa tidak ditransfer)",

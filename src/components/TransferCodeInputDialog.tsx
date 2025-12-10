@@ -97,8 +97,8 @@ export const TransferCodeInputDialog = ({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{t('transfer.inputDialog.title')}</DialogTitle>
-          <DialogDescription className="sr-only">
-            {t('transfer.inputDialog.title')}
+          <DialogDescription className="text-sm text-muted-foreground">
+            {t('transfer.inputDialog.description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -121,7 +121,6 @@ export const TransferCodeInputDialog = ({
               <span className="font-medium text-sm">{t('transfer.inputDialog.disclaimer')}</span>
             </div>
             <ul className="text-xs text-amber-700 dark:text-amber-300 space-y-1.5 list-disc pl-5">
-              <li>{t('transfer.inputDialog.disclaimerItem1')}</li>
               <li>{t('transfer.inputDialog.disclaimerItem2')}</li>
               <li>{t('transfer.inputDialog.disclaimerItem3')}</li>
               <li>{t('transfer.inputDialog.disclaimerItem4')}</li>

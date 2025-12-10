@@ -53,7 +53,7 @@ serve(async (req) => {
 
     const approverId = authData.user.id;
     const body = await req.json();
-    const { request_id } = body;
+    const { request_id, transferredFanmarkName } = body;
 
     console.log('Approve transfer request:', { request_id, approverId });
 
@@ -248,6 +248,13 @@ serve(async (req) => {
     await supabase.from('fanmark_messageboard_configs').delete().eq('license_id', oldLicense.id);
     await supabase.from('fanmark_password_configs').delete().eq('license_id', oldLicense.id);
     await supabase.from('fanmark_profiles').delete().eq('license_id', oldLicense.id);
+
+    // 3.5. Create initial config for new license with default transferred name
+    await supabase.from('fanmark_basic_configs').insert({
+      license_id: newLicense.id,
+      fanmark_name: transferredFanmarkName || null,
+      access_type: 'inactive',
+    });
 
     // 4. Update transfer code and request status
     await supabase

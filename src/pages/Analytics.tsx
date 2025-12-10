@@ -144,10 +144,13 @@ const Analytics = () => {
     return { startDate, endDate, days };
   }, [period]);
 
-  // Fetch analytics data
+  // Get active fanmark IDs for filtering analytics data
+  const activeFanmarkIds = useMemo(() => fanmarks.map(f => f.id), [fanmarks]);
+
+  // Fetch analytics data (only for user's active fanmarks)
   const { data: analyticsData, isLoading: analyticsLoading } = useQuery({
-    queryKey: ['fanmark-analytics', selectedFanmarkId, period, user?.id],
-    enabled: !!user && canAccessAnalytics,
+    queryKey: ['fanmark-analytics', selectedFanmarkId, period, user?.id, activeFanmarkIds],
+    enabled: !!user && canAccessAnalytics && activeFanmarkIds.length > 0,
     queryFn: async () => {
       let query = supabase
         .from('fanmark_access_daily_stats')
@@ -158,6 +161,9 @@ const Analytics = () => {
 
       if (selectedFanmarkId) {
         query = query.eq('fanmark_id', selectedFanmarkId);
+      } else {
+        // Filter by user's active fanmark IDs
+        query = query.in('fanmark_id', activeFanmarkIds);
       }
 
       const { data, error } = await query;
@@ -228,18 +234,19 @@ const Analytics = () => {
       }
     });
 
-    const fanmarkRanking = Array.from(fanmarkAccessMap.entries())
-      .map(([fanmarkId, accessCount]) => {
-        const fanmarkInfo = fanmarks.find((f) => f.id === fanmarkId);
-        const emoji = fanmarkInfo?.user_input_fanmark || '';
-        const fanmarkName = fanmarkInfo?.fanmark_name || '';
+    // Left join: all owned fanmarks with access data (0 if no access)
+    const fanmarkRanking = fanmarks
+      .map((fanmark) => {
+        const accessCount = fanmarkAccessMap.get(fanmark.id) || 0;
+        const emoji = fanmark.user_input_fanmark || '';
+        const fanmarkName = fanmark.fanmark_name || '';
         const displayName = fanmarkName ? `${emoji} (${fanmarkName})` : emoji;
         return {
-          fanmarkId,
+          fanmarkId: fanmark.id,
           emoji,
           fanmarkName,
           name: displayName, // For chart tooltip
-          shortId: fanmarkInfo?.short_id || '',
+          shortId: fanmark.short_id || '',
           value: accessCount,
           percentage: totalAccess > 0 ? Math.round((accessCount / totalAccess) * 100) : 0,
         };

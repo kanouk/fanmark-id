@@ -135,6 +135,9 @@
     "forgotPasswordDescription": "メールアドレスを入力してください。パスワードリセットのリンクをお送りします。",
     "loginDescription": "アカウントにログインしてください",
     "signUpDescription": "新しいアカウントを作成してください",
+    "termsNoticePrefix": "ご利用前に",
+    "termsNoticeAnd": "と",
+    "termsNoticeSuffix": "をご確認ください。",
     "passwordMismatch": "パスワードが一致しません",
     "homeButton": "ホームに戻る",
     "welcome": "fanmark.id へようこそ",
@@ -1035,7 +1038,8 @@
   "fanmarkSettings": {
     "title": "ファンマ設定",
     "summary": {
-      "defaultName": "新しいファンマ"
+      "defaultName": "新しいファンマ",
+      "transferredName": "移管されたファンマ"
     },
     "fields": {
       "displayName": {
@@ -1566,16 +1570,16 @@
   },
   "transfer": {
     "issueCode": "移管コード発行",
-    "sectionTitle": "ファンマの移管",
+    "sectionTitle": "取引中のファンマ",
     "sectionNotice": "ユーザー間の取引や金銭のやりとりについて、運営者は一切関与いたしません。移管はご自身の責任において行ってください。",
-    "inputCodeButton": "移管コードを入力",
+    "inputCodeButton": "ファンマを受け取る",
     "issuedCodesTitle": "発行中の移管コード",
     "pendingRequestsTitle": "承認待ちの移管申請",
     "myRequestsTitle": "あなたの移管申請",
-    "noIssuedCodes": "発行中の移管コードはありません",
+    "noIssuedCodes": "取引中のファンマはありません",
     "noPendingRequests": "承認待ちの申請はありません",
     "noMyRequests": "申請中の移管はありません",
-    "codeLabel": "コード",
+    "codeLabel": "移管コード",
     "expiresAt": "有効期限",
     "statusWaiting": "申請待ち",
     "statusPendingApproval": "承認待ち",
@@ -1585,7 +1589,7 @@
     "toUser": "{username} さんへ",
     "fromUser": "{username} さんから",
     "appliedAt": "申請日時",
-    "badgeTransferring": "移管中",
+    "badgeTransferring": "取引中",
     "badgePendingApproval": "承認待ち",
     "issueDialog": {
       "title": "移管コードの発行",
@@ -1601,9 +1605,9 @@
     },
     "inputDialog": {
       "title": "移管コードの入力",
+      "description": "ファンマの所有者から受け取った移管コードを入力してください。",
       "codePlaceholder": "XXXX-XXXX-XXXX",
       "disclaimer": "【重要】ファンマ移管に関する注意事項",
-      "disclaimerItem1": "申請後、承認されるまでキャンセルはできません",
       "disclaimerItem2": "金銭その他の対価を伴う取引について、運営者は一切関与せず、責任を負いません",
       "disclaimerItem3": "移管に関連するユーザー間のトラブル（支払いの不履行、詐欺等）について、運営者は一切の責任を負いません",
       "disclaimerItem4": "移管完了後、Tier別の初回ライセンス期間が付与されます（残期間の引き継ぎはありません）",

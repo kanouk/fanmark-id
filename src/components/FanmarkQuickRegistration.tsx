@@ -126,6 +126,7 @@ export const FanmarkQuickRegistration = ({
           normalized_emoji_ids: normalizedEmojiIds,
           accessType: 'inactive',
           displayName: data.fanmarkName,
+          defaultFanmarkName: t('fanmarkSettings.summary.defaultName'),
           targetUrl: null,
           textContent: null,
           createProfile: false,

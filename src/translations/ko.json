@@ -135,6 +135,9 @@
     "forgotPasswordDescription": "이메일을 입력하면 비밀번호 재설정 링크를 보내드립니다.",
     "loginDescription": "계정에 로그인하세요",
     "signUpDescription": "새 계정을 만드세요",
+    "termsNoticePrefix": "가입 전에 ",
+    "termsNoticeAnd": " 및 ",
+    "termsNoticeSuffix": "을 확인해주세요.",
     "passwordMismatch": "비밀번호가 일치하지 않습니다",
     "homeButton": "홈으로 돌아가기",
     "welcome": "fanmark.id에 환영합니다",
@@ -1036,7 +1039,8 @@
   "fanmarkSettings": {
     "title": "팬마크 설정",
     "summary": {
-      "defaultName": "새 팬마크"
+      "defaultName": "새 팬마크",
+      "transferredName": "이전된 팬마크"
     },
     "fields": {
       "displayName": {
@@ -1567,16 +1571,16 @@
   },
   "transfer": {
     "issueCode": "이전 코드 발급",
-    "sectionTitle": "팬마크 이전",
+    "sectionTitle": "거래 중인 팬마크",
     "sectionNotice": "운영자는 사용자 간의 거래나 금전 교환에 관여하지 않습니다. 이전은 본인의 책임 하에 진행해 주세요.",
-    "inputCodeButton": "이전 코드 입력",
+    "inputCodeButton": "팬마크 받기",
     "issuedCodesTitle": "발급된 이전 코드",
     "pendingRequestsTitle": "승인 대기 중인 요청",
     "myRequestsTitle": "내 이전 요청",
-    "noIssuedCodes": "발급된 이전 코드가 없습니다",
+    "noIssuedCodes": "거래 중인 팬마크가 없습니다",
     "noPendingRequests": "승인 대기 중인 요청이 없습니다",
     "noMyRequests": "대기 중인 이전 요청이 없습니다",
-    "codeLabel": "코드",
+    "codeLabel": "이전 코드",
     "expiresAt": "만료",
     "statusWaiting": "신청 대기 중",
     "statusPendingApproval": "승인 대기 중",
@@ -1586,7 +1590,7 @@
     "toUser": "{username}님에게",
     "fromUser": "{username}님으로부터",
     "appliedAt": "신청일",
-    "badgeTransferring": "이전 중",
+    "badgeTransferring": "거래 중",
     "badgePendingApproval": "대기 중",
     "issueDialog": {
       "title": "이전 코드 발급",
@@ -1602,9 +1606,9 @@
     },
     "inputDialog": {
       "title": "이전 코드 입력",
+      "description": "팬마크 소유자로부터 받은 이전 코드를 입력하세요.",
       "codePlaceholder": "XXXX-XXXX-XXXX",
       "disclaimer": "중요: 이전 안내",
-      "disclaimerItem1": "신청 후에는 발급자가 응답할 때까지 취소할 수 없습니다",
       "disclaimerItem2": "운영자는 금전 또는 기타 대가를 수반하는 거래에 관여하지 않으며 책임을 지지 않습니다",
       "disclaimerItem3": "운영자는 이전과 관련된 사용자 간의 분쟁(미결제, 사기 등)에 대해 책임을 지지 않습니다",
       "disclaimerItem4": "이전 후에는 티어 기반 초기 라이선스 기간이 부여됩니다(남은 기간은 이전되지 않음)",
