@@ -2,10 +2,9 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Loader2, AlertTriangle, Clock, CheckCircle2 } from 'lucide-react';
 import { FiUser, FiExternalLink, FiFileText, FiMoon, FiCheck } from 'react-icons/fi';
-import { supabase } from '@/integrations/supabase/client';
+import { deriveLicenseTiming } from '@/lib/licenseTiming';
 
 interface Fanmark {
   id: string;
@@ -200,9 +199,12 @@ export const FanmarkSelectionModal = ({
               const canSelect = selected || selectedFanmarks.size < newPlanLimit;
               // For perpetual licenses (license_end is null), show as perpetual
               const isPerpetual = fanmark.license_end === null;
-              const remainingDays = isPerpetual ? null : Math.max(0, Math.ceil(
-                (new Date(fanmark.license_end!).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-              ));
+              const timing = isPerpetual
+                ? null
+                : deriveLicenseTiming({ licenseEnd: fanmark.license_end ?? undefined });
+              const remainingDays = isPerpetual
+                ? null
+                : Math.max(0, timing?.remainingWholeDays ?? 0);
 
               return (
                 <div

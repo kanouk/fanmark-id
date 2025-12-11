@@ -34,6 +34,7 @@
 - Supabase Secrets（Lovable/Supabase CLI 経由）を更新: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_CREATOR`, `STRIPE_PRICE_ID_BUSINESS`, `FRONTEND_URL`。
 - Customer Portal はモードごとに設定し、プラン切替を許可。延長 Price ID は `fanmark_tier_extension_prices` を Admin UI から管理（環境変数不要）。
 - Checkout 後は `subscription-sync-flow` のポーリングでプラン同期。問題があれば `stripe_payment_intents` / `stripe_webhook_events` / `user_settings.plan_type` を照合。
+- `checkout.session.completed` で `metadata.type=license_extension` の場合、延長後は必ず status=active, grace_expires_at=null, is_returned=false、除外解除、UTC 0:00 に丸めた `license_end` へ更新し、フロントの延長パス（extend-fanmark-license）と同じ状態遷移に揃える。
 
 ## 通知・お気に入り・抽選の実装ガイド
 - 通知: まず `notification_events` にイベントを登録（`create_notification_event` RPC）。`notification_rules` でチャネル・遅延・クールダウンを定義し、`process-notification-events` が `notifications` を生成。フロントは React Query で in-app 未読を購読し、既読更新 RPC を提供。

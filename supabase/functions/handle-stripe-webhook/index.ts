@@ -12,6 +12,31 @@ const logStep = (step: string, details?: any) => {
   console.log(`[STRIPE-WEBHOOK] ${step}${detailsStr}`);
 };
 
+const roundUpToNextUtcMidnight = (input: Date) => {
+  const copy = new Date(input);
+  const isMidnight =
+    copy.getUTCHours() === 0 &&
+    copy.getUTCMinutes() === 0 &&
+    copy.getUTCSeconds() === 0 &&
+    copy.getUTCMilliseconds() === 0;
+
+  if (isMidnight) return copy;
+
+  copy.setUTCHours(0, 0, 0, 0);
+  copy.setUTCDate(copy.getUTCDate() + 1);
+  return copy;
+};
+
+const addMonths = (base: Date, months: number) => {
+  const result = new Date(base.getTime());
+  const originalDate = result.getDate();
+  result.setMonth(result.getMonth() + months);
+  if (result.getDate() !== originalDate) {
+    result.setDate(0);
+  }
+  return result;
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -74,7 +99,7 @@ serve(async (req) => {
           // Get current license
           const { data: currentLicense, error: licenseError } = await supabaseClient
             .from("fanmark_licenses")
-            .select("license_end, status, fanmark_id")
+            .select("license_end, status, fanmark_id, grace_expires_at, is_returned, excluded_at, excluded_from_plan")
             .eq("id", license_id)
             .eq("user_id", user_id)
             .single();
@@ -83,20 +108,27 @@ serve(async (req) => {
             throw new Error("License not found or access denied");
           }
 
-          // Calculate new license_end
+          // Calculate new license_end (month-safe and round to next UTC midnight)
           const now = new Date();
-          const currentEnd = currentLicense.license_end ? new Date(currentLicense.license_end) : now;
-          const baseDate = currentEnd > now ? currentEnd : now;
           const monthsToAdd = parseInt(months, 10);
-          const newEnd = new Date(baseDate);
-          newEnd.setMonth(newEnd.getMonth() + monthsToAdd);
+          if (!Number.isFinite(monthsToAdd) || monthsToAdd <= 0) {
+            throw new Error(`Invalid months value in metadata: ${months}`);
+          }
+          const currentEnd = currentLicense.license_end ? new Date(currentLicense.license_end) : null;
+          const baseDate = currentEnd && !Number.isNaN(currentEnd.getTime()) && currentEnd > now ? currentEnd : now;
+          const extended = addMonths(baseDate, monthsToAdd);
+          const roundedEnd = roundUpToNextUtcMidnight(extended);
 
           // Update license (reset is_returned and grace_expires_at in case extending from grace status)
           const { error: updateError } = await supabaseClient
             .from("fanmark_licenses")
             .update({
-              license_end: newEnd.toISOString(),
               status: "active",
+              license_end: roundedEnd.toISOString(),
+              grace_expires_at: null,
+              is_returned: false,
+              excluded_at: null,
+              excluded_from_plan: null,
               updated_at: now.toISOString(),
               is_returned: false,
               grace_expires_at: null,
@@ -111,7 +143,10 @@ serve(async (req) => {
           logStep("License extended successfully", { 
             license_id, 
             old_end: currentLicense.license_end,
-            new_end: newEnd.toISOString(),
+            new_end: roundedEnd.toISOString(),
+            grace_cleared: true,
+            is_returned_before: currentLicense.is_returned,
+            grace_expires_at_before: currentLicense.grace_expires_at,
           });
 
           // Cancel any pending lottery entries for this fanmark
@@ -150,7 +185,8 @@ serve(async (req) => {
               fanmark_id,
               months: monthsToAdd,
               payment_session_id: session.id,
-              new_license_end: newEnd.toISOString(),
+              new_license_end: roundedEnd.toISOString(),
+              grace_cleared: true,
             },
           });
         }
