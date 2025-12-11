@@ -459,8 +459,9 @@ serve(async (req) => {
               .single();
 
             const licenseDays = tierData?.initial_license_days || 30;
-            const newLicenseEnd = new Date();
-            newLicenseEnd.setDate(newLicenseEnd.getDate() + licenseDays);
+            const newLicenseEndRaw = new Date();
+            newLicenseEndRaw.setDate(newLicenseEndRaw.getDate() + licenseDays);
+            const newLicenseEnd = roundUpToNextUtcMidnight(newLicenseEndRaw);
 
             // Create new license for winner (old license already expired)
             const { data: newLicense, error: newLicenseError } = await supabase
@@ -676,8 +677,9 @@ serve(async (req) => {
               .single();
 
             const licenseDays = tierData?.initial_license_days || 30;
-            const newLicenseEnd = new Date();
-            newLicenseEnd.setDate(newLicenseEnd.getDate() + licenseDays);
+            const newLicenseEndRaw = new Date();
+            newLicenseEndRaw.setDate(newLicenseEndRaw.getDate() + licenseDays);
+            const newLicenseEnd = roundUpToNextUtcMidnight(newLicenseEndRaw);
 
             // Create new license for winner (old license already expired)
             const { data: newLicense, error: newLicenseError } = await supabase
