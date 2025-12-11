@@ -220,15 +220,15 @@ serve(async (req) => {
     }
 
     // Get total entry count for this fanmark
-    const { count: totalEntries, error: countError } = await supabase
+    const { count: totalEntries, error: totalCountError } = await supabase
       .from('fanmark_lottery_entries')
       .select('*', { count: 'exact', head: true })
       .eq('fanmark_id', fanmark_id)
       .eq('license_id', license.id)
       .eq('entry_status', 'pending');
 
-    if (countError) {
-      console.warn('[apply-fanmark-lottery] Error counting entries:', countError);
+    if (totalCountError) {
+      console.warn('[apply-fanmark-lottery] Error counting entries:', totalCountError);
     }
 
     // Check entry exists
