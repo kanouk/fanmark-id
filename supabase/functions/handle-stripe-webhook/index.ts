@@ -129,11 +129,8 @@ serve(async (req) => {
               is_returned: false,
               excluded_at: null,
               excluded_from_plan: null,
-              updated_at: now.toISOString(),
-              is_returned: false,
-              grace_expires_at: null,
-              excluded_at: null,
-            })
+        updated_at: now.toISOString(),
+      })
             .eq("id", license_id);
 
           if (updateError) {
