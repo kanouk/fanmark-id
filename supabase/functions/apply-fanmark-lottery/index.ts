@@ -53,6 +53,65 @@ serve(async (req) => {
 
     console.log(`[apply-fanmark-lottery] User ${authData.user.id} applying for fanmark ${fanmark_id}`);
 
+    // Check user's fanmark limit before allowing application
+    const { data: userSettings, error: userSettingsError } = await supabase
+      .from('user_settings')
+      .select('plan_type')
+      .eq('user_id', authData.user.id)
+      .single();
+
+    if (userSettingsError) {
+      console.error('[apply-fanmark-lottery] Error fetching user settings:', userSettingsError);
+      return new Response(JSON.stringify({ error: 'Failed to fetch user settings' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Get plan's fanmark limit from system_settings
+    const planType = userSettings?.plan_type || 'free';
+    const limitKey = `${planType}_fanmark_limit`;
+    const { data: limitSetting } = await supabase
+      .from('system_settings')
+      .select('setting_value')
+      .eq('setting_key', limitKey)
+      .single();
+
+    const fanmarkLimit = limitSetting?.setting_value ? parseInt(limitSetting.setting_value, 10) : 3;
+
+    // Count user's active fanmarks (not returned, active status, not expired)
+    const { count: activeFanmarkCount, error: countError } = await supabase
+      .from('fanmark_licenses')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', authData.user.id)
+      .eq('status', 'active')
+      .eq('is_returned', false)
+      .gt('license_end', new Date().toISOString());
+
+    if (countError) {
+      console.error('[apply-fanmark-lottery] Error counting fanmarks:', countError);
+      return new Response(JSON.stringify({ error: 'Failed to count active fanmarks' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const currentCount = activeFanmarkCount || 0;
+    console.log(`[apply-fanmark-lottery] User has ${currentCount}/${fanmarkLimit} fanmarks`);
+
+    if (currentCount >= fanmarkLimit) {
+      console.log(`[apply-fanmark-lottery] User at fanmark limit, rejecting application`);
+      return new Response(JSON.stringify({ 
+        error: 'fanmark_limit_reached',
+        message: 'You have reached your fanmark limit. Please upgrade your plan or return a fanmark before applying.',
+        current_count: currentCount,
+        limit: fanmarkLimit,
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Get the fanmark's grace period license
     const { data: license, error: licenseError } = await supabase
       .from('fanmark_licenses')

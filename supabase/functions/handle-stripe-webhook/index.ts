@@ -91,13 +91,16 @@ serve(async (req) => {
           const newEnd = new Date(baseDate);
           newEnd.setMonth(newEnd.getMonth() + monthsToAdd);
 
-          // Update license
+          // Update license (reset is_returned and grace_expires_at in case extending from grace status)
           const { error: updateError } = await supabaseClient
             .from("fanmark_licenses")
             .update({
               license_end: newEnd.toISOString(),
               status: "active",
               updated_at: now.toISOString(),
+              is_returned: false,
+              grace_expires_at: null,
+              excluded_at: null,
             })
             .eq("id", license_id);
 

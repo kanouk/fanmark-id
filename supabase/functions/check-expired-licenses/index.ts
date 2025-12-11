@@ -368,10 +368,82 @@ serve(async (req) => {
             console.log(`  ✓ No lottery entries, expiration complete`);
 
           } else if (entryCount === 1) {
-            // Single entry - automatic winner
+            // Single entry - automatic winner (with fanmark limit check)
             const winner = pendingEntries[0];
             const isCurrentOwner = winner.user_id === license.user_id;
-            console.log(`  → Single applicant, automatic winner: ${winner.user_id}${isCurrentOwner ? ' (current owner)' : ''}`);
+            console.log(`  → Single applicant: ${winner.user_id}${isCurrentOwner ? ' (current owner)' : ''}`);
+
+            // Check winner's fanmark limit
+            const { data: winnerSettings } = await supabase
+              .from('user_settings')
+              .select('plan_type')
+              .eq('user_id', winner.user_id)
+              .single();
+
+            const winnerPlanType = winnerSettings?.plan_type || 'free';
+            const winnerLimitKey = `${winnerPlanType}_fanmark_limit`;
+            const { data: winnerLimitSetting } = await supabase
+              .from('system_settings')
+              .select('setting_value')
+              .eq('setting_key', winnerLimitKey)
+              .single();
+
+            const winnerFanmarkLimit = winnerLimitSetting?.setting_value ? parseInt(winnerLimitSetting.setting_value, 10) : 3;
+
+            const { count: winnerActiveFanmarks } = await supabase
+              .from('fanmark_licenses')
+              .select('*', { count: 'exact', head: true })
+              .eq('user_id', winner.user_id)
+              .eq('status', 'active')
+              .eq('is_returned', false)
+              .gt('license_end', new Date().toISOString());
+
+            const winnerCurrentCount = winnerActiveFanmarks || 0;
+            console.log(`  → Winner has ${winnerCurrentCount}/${winnerFanmarkLimit} fanmarks`);
+
+            if (winnerCurrentCount >= winnerFanmarkLimit) {
+              // Winner at limit - invalidate entry, fanmark returns to pool
+              console.log(`  ⚠️ Winner ${winner.user_id} at fanmark limit (${winnerCurrentCount}/${winnerFanmarkLimit}), entry invalidated`);
+              
+              await supabase
+                .from('fanmark_lottery_entries')
+                .update({ 
+                  entry_status: 'limit_exceeded',
+                  lottery_executed_at: new Date().toISOString()
+                })
+                .eq('id', winner.id);
+
+              // Create lottery history (no winner)
+              await supabase
+                .from('fanmark_lottery_history')
+                .insert({
+                  fanmark_id: license.fanmark_id,
+                  license_id: license.id,
+                  total_entries: 1,
+                  winner_user_id: null,
+                  winner_entry_id: null,
+                  probability_distribution: [{ user_id: winner.user_id, lottery_probability: winner.lottery_probability, rejected_reason: 'limit_exceeded' }],
+                  execution_method: 'automatic',
+                });
+
+              // Send limit exceeded notification
+              await supabase.rpc('create_notification_event', {
+                event_type_param: 'lottery_limit_exceeded',
+                payload_param: {
+                  user_id: winner.user_id,
+                  fanmark_id: license.fanmark_id,
+                  fanmark_name: license.fanmarks?.user_input_fanmark,
+                  current_count: winnerCurrentCount,
+                  limit: winnerFanmarkLimit,
+                },
+                source_param: 'cron_job',
+              });
+
+              console.log(`  ✓ ${license.fanmarks?.user_input_fanmark} returned to pool (winner at limit)`);
+              processedCount++;
+              expiredSuccessCount++;
+              continue;
+            }
 
             // Get tier info for license duration
             const { data: fanmarkData } = await supabase
@@ -411,6 +483,8 @@ serve(async (req) => {
               expiredSuccessCount++;
               continue;
             }
+
+            console.log(`  ✓ Automatic winner: ${winner.user_id}`);
 
             // Update winner entry
             await supabase
@@ -453,28 +527,140 @@ serve(async (req) => {
             console.log(`  ✓ ${license.fanmarks?.user_input_fanmark} awarded to ${winner.user_id}${isCurrentOwner ? ' (renewed)' : ''}`);
 
           } else {
-            // Multiple entries - run weighted random lottery
+            // Multiple entries - run weighted random lottery with fanmark limit check
             console.log(`  → Running weighted lottery for ${entryCount} applicants`);
 
-            // Calculate weighted random selection
-            const totalWeight = pendingEntries.reduce((sum, e) => sum + Number(e.lottery_probability), 0);
-            const random = Math.random() * totalWeight;
-            
-            let cumulative = 0;
-            let winnerId = pendingEntries[pendingEntries.length - 1].user_id;
-            let winnerEntryId = pendingEntries[pendingEntries.length - 1].id;
-            
-            for (const entry of pendingEntries) {
-              cumulative += Number(entry.lottery_probability);
-              if (random <= cumulative) {
-                winnerId = entry.user_id;
-                winnerEntryId = entry.id;
-                break;
+            // Helper to check fanmark limit for a user
+            const checkUserFanmarkLimit = async (userId: string): Promise<{ atLimit: boolean; currentCount: number; limit: number }> => {
+              const { data: userSettings } = await supabase
+                .from('user_settings')
+                .select('plan_type')
+                .eq('user_id', userId)
+                .single();
+
+              const planType = userSettings?.plan_type || 'free';
+              const limitKey = `${planType}_fanmark_limit`;
+              const { data: limitSetting } = await supabase
+                .from('system_settings')
+                .select('setting_value')
+                .eq('setting_key', limitKey)
+                .single();
+
+              const fanmarkLimit = limitSetting?.setting_value ? parseInt(limitSetting.setting_value, 10) : 3;
+
+              const { count: activeFanmarks } = await supabase
+                .from('fanmark_licenses')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', userId)
+                .eq('status', 'active')
+                .eq('is_returned', false)
+                .gt('license_end', new Date().toISOString());
+
+              const currentCount = activeFanmarks || 0;
+              return { atLimit: currentCount >= fanmarkLimit, currentCount, limit: fanmarkLimit };
+            };
+
+            // Find a valid winner (with fanmark limit check)
+            let validWinnerFound = false;
+            let winnerId: string | null = null;
+            let winnerEntryId: string | null = null;
+            const processedEntryIds = new Set<string>();
+            const limitExceededEntries: Array<{ id: string; user_id: string; currentCount: number; limit: number }> = [];
+            let remainingEntries = [...pendingEntries];
+
+            while (!validWinnerFound && remainingEntries.length > 0) {
+              // Calculate weighted random selection from remaining entries
+              const totalWeight = remainingEntries.reduce((sum, e) => sum + Number(e.lottery_probability), 0);
+              const random = Math.random() * totalWeight;
+              
+              let cumulative = 0;
+              let selectedEntry = remainingEntries[remainingEntries.length - 1];
+              
+              for (const entry of remainingEntries) {
+                cumulative += Number(entry.lottery_probability);
+                if (random <= cumulative) {
+                  selectedEntry = entry;
+                  break;
+                }
+              }
+
+              processedEntryIds.add(selectedEntry.id);
+
+              // Check fanmark limit
+              const limitCheck = await checkUserFanmarkLimit(selectedEntry.user_id);
+              console.log(`  → Checking candidate ${selectedEntry.user_id}: ${limitCheck.currentCount}/${limitCheck.limit} fanmarks`);
+
+              if (limitCheck.atLimit) {
+                console.log(`  ⚠️ Candidate ${selectedEntry.user_id} at fanmark limit, trying next`);
+                limitExceededEntries.push({ 
+                  id: selectedEntry.id, 
+                  user_id: selectedEntry.user_id,
+                  currentCount: limitCheck.currentCount,
+                  limit: limitCheck.limit
+                });
+                remainingEntries = remainingEntries.filter(e => e.id !== selectedEntry.id);
+              } else {
+                validWinnerFound = true;
+                winnerId = selectedEntry.user_id;
+                winnerEntryId = selectedEntry.id;
               }
             }
 
+            // Mark all limit exceeded entries
+            for (const exceeded of limitExceededEntries) {
+              await supabase
+                .from('fanmark_lottery_entries')
+                .update({ 
+                  entry_status: 'limit_exceeded',
+                  lottery_executed_at: new Date().toISOString()
+                })
+                .eq('id', exceeded.id);
+
+              // Send limit exceeded notification
+              await supabase.rpc('create_notification_event', {
+                event_type_param: 'lottery_limit_exceeded',
+                payload_param: {
+                  user_id: exceeded.user_id,
+                  fanmark_id: license.fanmark_id,
+                  fanmark_name: license.fanmarks?.user_input_fanmark,
+                  current_count: exceeded.currentCount,
+                  limit: exceeded.limit,
+                },
+                source_param: 'cron_job',
+              });
+            }
+
+            if (!validWinnerFound) {
+              // All candidates at fanmark limit - fanmark returns to pool
+              console.log(`  ⚠️ All ${entryCount} candidates at fanmark limit, fanmark returns to pool`);
+
+              // Create lottery history (no winner)
+              const probabilityDist = pendingEntries.map(e => ({
+                user_id: e.user_id,
+                lottery_probability: Number(e.lottery_probability),
+                rejected_reason: 'limit_exceeded',
+              }));
+
+              await supabase
+                .from('fanmark_lottery_history')
+                .insert({
+                  fanmark_id: license.fanmark_id,
+                  license_id: license.id,
+                  total_entries: entryCount,
+                  winner_user_id: null,
+                  winner_entry_id: null,
+                  probability_distribution: probabilityDist,
+                  execution_method: 'automatic',
+                });
+
+              console.log(`  ✓ ${license.fanmarks?.user_input_fanmark} returned to pool (all at limit)`);
+              processedCount++;
+              expiredSuccessCount++;
+              continue;
+            }
+
             const isCurrentOwner = winnerId === license.user_id;
-            console.log(`  → Winner selected: ${winnerId}${isCurrentOwner ? ' (current owner)' : ''} (random: ${random.toFixed(4)}, total: ${totalWeight})`);
+            console.log(`  → Winner selected: ${winnerId}${isCurrentOwner ? ' (current owner)' : ''}`);
 
             // Get tier info
             const { data: fanmarkData } = await supabase
@@ -556,7 +742,11 @@ serve(async (req) => {
               });
 
             // Send notifications (AFTER license_expired notification)
+            // Skip limit_exceeded entries - they already received their notification
+            const limitExceededIds = new Set(limitExceededEntries.map(e => e.id));
             for (const entry of pendingEntries) {
+              if (limitExceededIds.has(entry.id)) continue; // Already notified
+              
               const isWinner = entry.user_id === winnerId;
               await supabase.rpc('create_notification_event', {
                 event_type_param: isWinner ? 'lottery_won' : 'lottery_lost',
