@@ -262,7 +262,7 @@ const PlanSelection = () => {
       const isUpgrade = planOrder[planType] > planOrder[currentPlanType];
       
       if (isUpgrade) {
-        // UPGRADE: Use change-subscription with proration (no warning)
+        // UPGRADE: Use change-subscription - redirects to Stripe Checkout
         setRedirecting(true);
         
         const { data, error } = await supabase.functions.invoke('change-subscription', {
@@ -277,7 +277,15 @@ const PlanSelection = () => {
           throw error;
         }
         
-        // Refresh profile and subscription data
+        // Redirect to Stripe Checkout if checkout_url is returned
+        if (data?.checkout_url) {
+          setTimeout(() => {
+            window.location.href = data.checkout_url;
+          }, 500);
+          return;
+        }
+        
+        // Fallback: If no checkout_url (shouldn't happen for upgrades)
         await Promise.all([refetchProfile(), refetchSubscription()]);
         
         setRedirecting(false);
