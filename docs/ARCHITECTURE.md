@@ -110,7 +110,7 @@
 | テーブル | 警告タイプ例 | 理由 |
 |----------|-------------|------|
 | `fanmarks` | `PUBLIC_DATA_EXPOSURE`, `broad_access` | ドメインWHOISモデル。所有権情報は公開情報 |
-| `fanmark_licenses` | `user_exposure`, `public_access` | `user_id`はUUIDのみ。PIIは`user_settings`で保護 |
+| `fanmark_licenses` | `PUBLIC_USER_DATA`, `user_exposure`, `public_access` | `user_id`はUUIDのみ。PIIは`user_settings`で保護 |
 | `fanmark_discoveries` | `public_exposure` | 匿名の集計データのみ。個人情報なし |
 | `system_settings` | `public_exposure` | `is_public=true`の設定のみ公開。機能フラグ等 |
 
