@@ -21,9 +21,9 @@ interface Particle {
   height?: number;
 }
 
-const GRAVITY = 0.3;
+const GRAVITY = 0.25;
 const DEFAULT_PARTICLE_COUNT = 36;
-const DEFAULT_DURATION = 2500;
+const DEFAULT_DURATION = 3500;
 const PAPER_COLORS = [
   '#FF6B6B', // 赤
   '#4ECDC4', // 青緑
@@ -84,8 +84,8 @@ export function showEmojiConfetti(
         particles.push({
           x: centerX + (Math.random() - 0.5) * canvas.width * 0.8,
           y: startY,
-          vx: (Math.random() - 0.5) * 10,
-          vy: -(Math.random() * 8 + 10),
+          vx: (Math.random() - 0.5) * 12,
+          vy: -(Math.random() * 10 + 18),
           rotation: Math.random() * Math.PI * 2,
           rotationSpeed: (Math.random() - 0.5) * 0.4,
           opacity: 1,
@@ -97,8 +97,8 @@ export function showEmojiConfetti(
         particles.push({
           x: centerX + (Math.random() - 0.5) * canvas.width * 0.8,
           y: startY,
-          vx: (Math.random() - 0.5) * 10,
-          vy: -(Math.random() * 8 + 10),
+          vx: (Math.random() - 0.5) * 12,
+          vy: -(Math.random() * 10 + 18),
           rotation: Math.random() * Math.PI * 2,
           rotationSpeed: (Math.random() - 0.5) * 0.4,
           opacity: 1,
@@ -129,8 +129,17 @@ export function showEmojiConfetti(
 
       // 各パーティクルを更新して描画
       particles.forEach((particle) => {
-        // 物理演算
-        particle.vy += GRAVITY;
+        // 物理演算（頂点付近でスローモーション効果）
+        const isNearPeak = Math.abs(particle.vy) < 3;
+        const effectiveGravity = isNearPeak ? GRAVITY * 0.3 : GRAVITY;
+        particle.vy += effectiveGravity;
+        
+        // 落下時は空気抵抗を適用してふわっと落下
+        if (particle.vy > 0) {
+          particle.vy *= 0.985;
+          particle.vx *= 0.99;
+        }
+        
         particle.x += particle.vx;
         particle.y += particle.vy;
         particle.rotation += particle.rotationSpeed;
