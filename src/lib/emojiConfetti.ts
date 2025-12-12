@@ -85,7 +85,7 @@ export function showEmojiConfetti(
           x: centerX + (Math.random() - 0.5) * canvas.width * 0.8,
           y: startY,
           vx: (Math.random() - 0.5) * 12,
-          vy: -(Math.random() * 10 + 18),
+          vy: -(Math.random() * 6 + 10),
           rotation: Math.random() * Math.PI * 2,
           rotationSpeed: (Math.random() - 0.5) * 0.4,
           opacity: 1,
@@ -98,7 +98,7 @@ export function showEmojiConfetti(
           x: centerX + (Math.random() - 0.5) * canvas.width * 0.8,
           y: startY,
           vx: (Math.random() - 0.5) * 12,
-          vy: -(Math.random() * 10 + 18),
+          vy: -(Math.random() * 6 + 10),
           rotation: Math.random() * Math.PI * 2,
           rotationSpeed: (Math.random() - 0.5) * 0.4,
           opacity: 1,
@@ -143,12 +143,6 @@ export function showEmojiConfetti(
         particle.x += particle.vx;
         particle.y += particle.vy;
         particle.rotation += particle.rotationSpeed;
-
-        // 画面上端で跳ね返り
-        if (particle.y < 0) {
-          particle.y = 0;
-          particle.vy = Math.abs(particle.vy) * 0.6; // 60%のエネルギーで跳ね返り
-        }
 
         // フェードアウト
         if (now > fadeStartTime) {
