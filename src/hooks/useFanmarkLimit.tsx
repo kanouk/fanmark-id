@@ -31,7 +31,7 @@ export function useFanmarkLimit() {
   } else {
     // Plan-based limits from database settings
     const planLimits = {
-      free: settings.max_fanmarks_per_user, // 3 fanmarks
+      free: settings.free_fanmarks_limit, // 3 fanmarks
       creator: settings.creator_fanmarks_limit, // 10 fanmarks  
       business: settings.business_fanmarks_limit, // 50 fanmarks
       enterprise: settings.enterprise_fanmarks_limit, // 100 fanmarks

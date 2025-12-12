@@ -29,7 +29,7 @@ export const AdminPlanSettings = () => {
   const { toast } = useToast();
   const [updating, setUpdating] = useState(false);
 
-  const [freeLimit, setFreeLimit] = useState(settings.max_fanmarks_per_user);
+  const [freeLimit, setFreeLimit] = useState(settings.free_fanmarks_limit);
   const [creatorLimit, setCreatorLimit] = useState(settings.creator_fanmarks_limit);
   const [creatorPricing, setCreatorPricing] = useState(settings.premium_pricing);
   const [businessLimit, setBusinessLimit] = useState(settings.business_fanmarks_limit);
@@ -40,7 +40,7 @@ export const AdminPlanSettings = () => {
   const [businessPriceId, setBusinessPriceId] = useState(settings.business_stripe_price_id);
 
   useEffect(() => {
-    setFreeLimit(settings.max_fanmarks_per_user);
+    setFreeLimit(settings.free_fanmarks_limit);
     setCreatorLimit(settings.creator_fanmarks_limit);
     setCreatorPricing(settings.premium_pricing);
     setBusinessLimit(settings.business_fanmarks_limit);
@@ -89,9 +89,9 @@ export const AdminPlanSettings = () => {
           id: "free-limit",
           label: "上限ファンマーク数",
           value: freeLimit,
-          original: settings.max_fanmarks_per_user,
+          original: settings.free_fanmarks_limit,
           min: 1,
-          settingKey: "max_fanmarks_per_user",
+          settingKey: "free_fanmarks_limit",
           setValue: setFreeLimit,
         },
       ],
