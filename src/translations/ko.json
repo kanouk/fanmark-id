@@ -509,6 +509,8 @@
     "errorNoProfile": "프로필 정보를 로드할 수 없습니다.",
     "redirectTitle": "결제 화면으로 이동 중...",
     "redirectDescription": "Stripe의 안전한 결제 화면으로 리디렉션하고 있습니다.",
+    "processingPlanTitle": "플랜을 업데이트하고 있습니다...",
+    "processingPlanDescription": "플랜 변경을 적용하는 중입니다. 잠시만 기다려 주세요.",
     "downgradeSuccess": "팬마크 선택을 저장했습니다",
     "fanmarksExcluded": "{count}개의 팬마크가 요금제에서 제외되었습니다",
     "completeDowngradeInPortal": "Stripe 고객 포털에서 요금제 변경을 완료하세요",

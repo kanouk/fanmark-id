@@ -509,6 +509,8 @@
     "errorNoProfile": "We couldn't load your profile information.",
     "redirectTitle": "Redirecting to Stripe...",
     "redirectDescription": "Redirecting you to Stripe portal to manage your plan. Please wait.",
+    "processingPlanTitle": "Updating your plan...",
+    "processingPlanDescription": "Applying your plan change. This will only take a moment.",
     "downgradeSuccess": "Fanmark selection saved",
     "fanmarksExcluded": "{count} fanmark(s) have been excluded from your plan",
     "completeDowngradeInPortal": "Please complete the plan change in the Stripe Customer Portal",

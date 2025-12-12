@@ -46,7 +46,7 @@ const PlanSelection = () => {
   const { subscription_end, refetch: refetchSubscription } = useSubscription();
 
   const [processingPlan, setProcessingPlan] = useState<PlanType | null>(null);
-  const [redirecting, setRedirecting] = useState(false);
+  const [planProcessingMode, setPlanProcessingMode] = useState<'stripe' | 'processing' | null>(null);
   const [showFanmarkSelection, setShowFanmarkSelection] = useState(false);
   const [pendingPlanType, setPendingPlanType] = useState<PlanType | null>(null);
   const [fanmarksForSelection, setFanmarksForSelection] = useState<ActiveFanmark[]>([]);
@@ -214,14 +214,14 @@ const PlanSelection = () => {
       
       // Upgrading from free to paid plan
       if (currentPlanType === 'free' && (planType === 'creator' || planType === 'business')) {
-        setRedirecting(true);
+        setPlanProcessingMode('stripe');
         
         const { data, error } = await supabase.functions.invoke('create-checkout', {
           body: { plan_type: planType }
         });
         
         if (error) {
-          setRedirecting(false);
+          setPlanProcessingMode(null);
           throw error;
         }
         
@@ -230,7 +230,7 @@ const PlanSelection = () => {
             window.location.href = data.url;
           }, 500);
         } else {
-          setRedirecting(false);
+          setPlanProcessingMode(null);
           throw new Error('Checkout URL not received');
         }
         return;
@@ -262,8 +262,8 @@ const PlanSelection = () => {
       const isUpgrade = planOrder[planType] > planOrder[currentPlanType];
       
       if (isUpgrade) {
-        // UPGRADE: Use change-subscription - redirects to Stripe Checkout
-        setRedirecting(true);
+        // UPGRADE: Use change-subscription with proration (no warning)
+        setPlanProcessingMode('processing');
         
         const { data, error } = await supabase.functions.invoke('change-subscription', {
           body: { 
@@ -273,7 +273,7 @@ const PlanSelection = () => {
         });
         
         if (error) {
-          setRedirecting(false);
+          setPlanProcessingMode(null);
           throw error;
         }
         
@@ -288,7 +288,7 @@ const PlanSelection = () => {
         // Fallback: If no checkout_url (shouldn't happen for upgrades)
         await Promise.all([refetchProfile(), refetchSubscription()]);
         
-        setRedirecting(false);
+        setPlanProcessingMode(null);
         toast({
           title: t('planSelection.upgradeSuccess'),
           description: t('planSelection.upgradeSuccessDescription', { 
@@ -311,6 +311,7 @@ const PlanSelection = () => {
       }
     } catch (error) {
       console.error('Plan change error:', error);
+      setPlanProcessingMode(null);
       toast({
         title: t('planSelection.errorTitle'),
         description: error instanceof Error ? error.message : t('planSelection.errorDescription'),
@@ -325,7 +326,7 @@ const PlanSelection = () => {
     if (!user || !downgradeInfo) return;
 
     setShowDowngradeWarning(false);
-    setRedirecting(true);
+    setPlanProcessingMode('processing');
 
     try {
       const { data, error } = await supabase.functions.invoke('change-subscription', {
@@ -336,12 +337,13 @@ const PlanSelection = () => {
       });
       
       if (error) {
-        setRedirecting(false);
+        setPlanProcessingMode(null);
         throw error;
       }
       
       // Check if we need to redirect to Checkout (for paid plan downgrades)
       if (data?.checkout_url) {
+        setPlanProcessingMode('stripe');
         setTimeout(() => {
           window.location.href = data.checkout_url;
         }, 500);
@@ -351,7 +353,7 @@ const PlanSelection = () => {
       // For free plan downgrades, just refresh and show success
       await Promise.all([refetchProfile(), refetchSubscription()]);
       
-      setRedirecting(false);
+      setPlanProcessingMode(null);
       toast({
         title: t('planSelection.downgradeSuccess'),
         description: t('planSelection.downgradeSuccessDescription', { 
@@ -360,6 +362,7 @@ const PlanSelection = () => {
       });
     } catch (error) {
       console.error('Downgrade confirmation error:', error);
+      setPlanProcessingMode(null);
       toast({
         title: t('planSelection.errorTitle'),
         description: error instanceof Error ? error.message : t('planSelection.errorDescription'),
@@ -400,7 +403,7 @@ const PlanSelection = () => {
 
       // Close modal and proceed with downgrade
       setShowFanmarkSelection(false);
-      setRedirecting(true);
+      setPlanProcessingMode('processing');
 
       const currentPlanType = profile?.plan_type as PlanType;
       
@@ -412,12 +415,13 @@ const PlanSelection = () => {
       });
       
       if (error) {
-        setRedirecting(false);
+        setPlanProcessingMode(null);
         throw error;
       }
       
       // Check if we need to redirect to Checkout (for paid plan downgrades)
       if (data?.checkout_url) {
+        setPlanProcessingMode('stripe');
         setTimeout(() => {
           window.location.href = data.checkout_url;
         }, 500);
@@ -427,7 +431,7 @@ const PlanSelection = () => {
       // For free plan downgrades, just refresh and show success
       await Promise.all([refetchProfile(), refetchSubscription()]);
       
-      setRedirecting(false);
+      setPlanProcessingMode(null);
       toast({
         title: t('planSelection.downgradeSuccess'),
         description: t('planSelection.downgradeSuccessDescription', {
@@ -436,6 +440,7 @@ const PlanSelection = () => {
       });
     } catch (error) {
       console.error('Fanmark selection error:', error);
+      setPlanProcessingMode(null);
       toast({
         title: t('common.error'),
         description: error instanceof Error ? error.message : t('planSelection.errorDescription'),
@@ -667,7 +672,7 @@ const PlanSelection = () => {
         currentLimit={downgradeInfo?.currentLimit || 0}
         newLimit={downgradeInfo?.newLimit || 0}
         onConfirm={handleDowngradeConfirm}
-        isProcessing={redirecting}
+        isProcessing={planProcessingMode !== null}
       />
 
       {/* Subscription Check Loading Overlay */}
@@ -689,8 +694,8 @@ const PlanSelection = () => {
         </div>
       )}
 
-      {/* Redirect Loading Overlay */}
-      {redirecting && (
+      {/* Plan Change/Redirect Loading Overlay */}
+      {planProcessingMode && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-fade-in">
           <div className="rounded-3xl border border-primary/20 bg-background/95 px-8 py-12 shadow-[0_25px_60px_rgba(101,195,200,0.3)] animate-scale-in">
             <div className="flex flex-col items-center gap-6">
@@ -702,14 +707,22 @@ const PlanSelection = () => {
                   style={{ animationDuration: '1s' }}
                 />
                 {/* 中央のアイコン */}
-                <ExternalLink className="h-8 w-8 text-primary" />
+                {planProcessingMode === 'stripe' ? (
+                  <ExternalLink className="h-8 w-8 text-primary" />
+                ) : (
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                )}
               </div>
               <div className="text-center space-y-2">
                 <h3 className="text-xl font-semibold text-foreground">
-                  {t('planSelection.redirectTitle')}
+                  {planProcessingMode === 'stripe'
+                    ? t('planSelection.redirectTitle')
+                    : t('planSelection.processingPlanTitle')}
                 </h3>
                 <p className="text-sm text-muted-foreground max-w-sm">
-                  {t('planSelection.redirectDescription')}
+                  {planProcessingMode === 'stripe'
+                    ? t('planSelection.redirectDescription')
+                    : t('planSelection.processingPlanDescription')}
                 </p>
               </div>
               <div className="flex gap-2">

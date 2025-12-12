@@ -508,6 +508,8 @@
     "errorNoProfile": "Kami tidak dapat memuat informasi profil Anda.",
     "redirectTitle": "Mengarahkan ulang ke Stripe...",
     "redirectDescription": "Mengarahkan ulang Anda ke portal Stripe untuk mengelola paket Anda. Silakan tunggu.",
+    "processingPlanTitle": "Memperbarui paket Anda...",
+    "processingPlanDescription": "Sedang menerapkan perubahan paket. Mohon tunggu sebentar.",
     "downgradeSuccess": "Pilihan fanmark disimpan",
     "fanmarksExcluded": "{count} fanmark telah dikecualikan dari paket Anda",
     "completeDowngradeInPortal": "Silakan selesaikan perubahan paket di Portal Pelanggan Stripe",
