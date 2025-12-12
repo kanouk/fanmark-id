@@ -70,46 +70,62 @@ serve(async (req) => {
 
     // Get plan's fanmark limit from system_settings
     const planType = userSettings?.plan_type || 'free';
-    const limitKey = `${planType}_fanmark_limit`;
-    const { data: limitSetting } = await supabase
-      .from('system_settings')
-      .select('setting_value')
-      .eq('setting_key', limitKey)
-      .single();
+    
+    // Map plan type to correct setting key
+    const limitKeyMap: Record<string, string> = {
+      free: 'max_fanmarks_per_user',
+      creator: 'creator_fanmarks_limit',
+      business: 'business_fanmarks_limit',
+      enterprise: 'enterprise_fanmarks_limit',
+      max: 'max_fanmarks_limit',
+      admin: 'admin', // special case - unlimited
+    };
+    
+    // Admin has unlimited fanmarks
+    if (planType === 'admin') {
+      console.log(`[apply-fanmark-lottery] Admin user - no limit check`);
+    } else {
+      const limitKey = limitKeyMap[planType] || 'max_fanmarks_per_user';
+      const { data: limitSetting } = await supabase
+        .from('system_settings')
+        .select('setting_value')
+        .eq('setting_key', limitKey)
+        .single();
 
-    const fanmarkLimit = limitSetting?.setting_value ? parseInt(limitSetting.setting_value, 10) : 3;
+      const fanmarkLimit = limitSetting?.setting_value ? parseInt(limitSetting.setting_value, 10) : 3;
 
-    // Count user's active fanmarks (not returned, active status, not expired)
-    const { count: activeFanmarkCount, error: countError } = await supabase
-      .from('fanmark_licenses')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', authData.user.id)
-      .eq('status', 'active')
-      .eq('is_returned', false)
-      .gt('license_end', new Date().toISOString());
+      // Count user's active fanmarks (not returned, active status, not expired)
+      const { count: activeFanmarkCount, error: countError } = await supabase
+        .from('fanmark_licenses')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', authData.user.id)
+        .eq('status', 'active')
+        .eq('is_returned', false)
+        .gt('license_end', new Date().toISOString());
 
-    if (countError) {
-      console.error('[apply-fanmark-lottery] Error counting fanmarks:', countError);
-      return new Response(JSON.stringify({ error: 'Failed to count active fanmarks' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+      if (countError) {
+        console.error('[apply-fanmark-lottery] Error counting fanmarks:', countError);
+        return new Response(JSON.stringify({ error: 'Failed to count active fanmarks' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
 
-    const currentCount = activeFanmarkCount || 0;
-    console.log(`[apply-fanmark-lottery] User has ${currentCount}/${fanmarkLimit} fanmarks`);
+      const currentCount = activeFanmarkCount || 0;
+      console.log(`[apply-fanmark-lottery] User has ${currentCount}/${fanmarkLimit} fanmarks`);
 
-    if (currentCount >= fanmarkLimit) {
-      console.log(`[apply-fanmark-lottery] User at fanmark limit, rejecting application`);
-      return new Response(JSON.stringify({ 
-        error: 'fanmark_limit_reached',
-        message: 'You have reached your fanmark limit. Please upgrade your plan or return a fanmark before applying.',
-        current_count: currentCount,
-        limit: fanmarkLimit,
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      if (currentCount >= fanmarkLimit) {
+        console.log(`[apply-fanmark-lottery] User at fanmark limit, rejecting application`);
+        return new Response(JSON.stringify({ 
+          error: 'fanmark_limit_reached',
+          message: 'You have reached your fanmark limit. Please upgrade your plan or return a fanmark before applying.',
+          current_count: currentCount,
+          limit: fanmarkLimit,
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     // Get the fanmark's grace period license
