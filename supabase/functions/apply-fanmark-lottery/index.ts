@@ -73,7 +73,7 @@ serve(async (req) => {
     
     // Map plan type to correct setting key
     const limitKeyMap: Record<string, string> = {
-      free: 'max_fanmarks_per_user',
+      free: 'free_fanmarks_limit',
       creator: 'creator_fanmarks_limit',
       business: 'business_fanmarks_limit',
       enterprise: 'enterprise_fanmarks_limit',
@@ -85,7 +85,7 @@ serve(async (req) => {
     if (planType === 'admin') {
       console.log(`[apply-fanmark-lottery] Admin user - no limit check`);
     } else {
-      const limitKey = limitKeyMap[planType] || 'max_fanmarks_per_user';
+      const limitKey = limitKeyMap[planType] || 'free_fanmarks_limit';
       const { data: limitSetting } = await supabase
         .from('system_settings')
         .select('setting_value')

@@ -147,14 +147,14 @@ serve(async (req) => {
     // Check fanmark limit for requester
     const planType = requesterSettings?.plan_type || 'free';
     const settingKeyMap: Record<string, string> = {
-      free: 'max_fanmarks_per_user',
+      free: 'free_fanmarks_limit',
       creator: 'creator_fanmarks_limit',
       business: 'business_fanmarks_limit',
       enterprise: 'enterprise_fanmarks_limit',
       admin: 'max_fanmarks_limit',
       max: 'max_fanmarks_limit',
     };
-    const settingKey = settingKeyMap[planType] || 'max_fanmarks_per_user';
+    const settingKey = settingKeyMap[planType] || 'free_fanmarks_limit';
 
     const { data: planSetting, error: planError } = await supabase
       .from('system_settings')
