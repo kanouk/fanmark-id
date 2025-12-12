@@ -59,3 +59,30 @@
 - 監査: 主要 Edge Functions は `audit_logs` に記録。移管・抽選・延長・返却・Stripe Webhook はメタデータを保存。
 - RLS: `fanmark_lottery_entries`, `fanmark_favorites`, `fanmark_discoveries`, `invitation_codes`, `fanmark_transfer_*` などは認可ポリシーで保護。管理系は `is_admin()` / `is_super_admin()` を使用。
 - レート/重複防止: `notification_events.dedupe_key`、抽選のユニーク制約、招待コードの残数チェックで制御。
+
+## RLS 設計方針（テーブル別）
+
+### 設計思想
+ファンマークは「絵文字ドメイン」として設計されており、ドメインレジストラ（WHOIS）と同様の考え方で「誰が所有しているか」は公開情報として扱います。
+
+### 公開アクセス可能なテーブル
+以下のテーブルは意図的に公開アクセスを許可しています。
+
+| テーブル | 公開範囲 | 理由 |
+|---|---|---|
+| `fanmarks` | `status = 'active'` のファンマークすべて | ファンマーク自体の存在は公開情報 |
+| `fanmark_licenses` | `status = 'active'` のライセンス | ・`recent_active_fanmarks` View で最近取得されたファンマークを表示<br>・ファンマーク詳細画面 `/f/{short_id}` での所有者履歴表示<br>・`user_id` は UUID であり、`user_settings` なしでは個人情報に紐付け不可 |
+| `fanmark_discoveries` | すべて | 集計データ（検索数、お気に入り数）のみ。個人の行動追跡不可 |
+
+### プライバシー保護の設計
+- **`user_settings`**: `auth.uid() = user_id` のみ参照可能。PII（ユーザー名、表示名、メール連携）を保護
+- **`user_subscriptions`**: 自分のみ参照可能。課金情報を保護
+- **`fanmark_licenses.user_id`**: UUID のみが公開され、`user_settings` へのアクセスなしでは個人特定不可
+
+### セキュリティスキャナーの警告について
+セキュリティスキャナーが `fanmark_licenses` の公開アクセスを警告する場合がありますが、これは意図的な設計です。
+- `user_id` は UUID であり、それ単体では個人を特定できない
+- 個人情報を含む `user_settings` テーブルは適切な RLS で保護されている
+- ドメイン WHOIS と同様、所有者情報の公開は本サービスの仕様である
+
+上記の理由により、プライバシーリスクは許容範囲内と判断しています。
