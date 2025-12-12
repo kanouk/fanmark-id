@@ -78,7 +78,7 @@ export function showEmojiConfetti(
     const startY = canvas.height * 0.9;
 
     for (let i = 0; i < particleCount; i++) {
-      const isEmoji = Math.random() < 0.4; // 40%がファンマーク絵文字、60%が紙吹雪
+      const isEmoji = Math.random() < 0.5; // 50%がファンマーク絵文字、50%が紙吹雪
       
       if (isEmoji) {
         particles.push({
@@ -143,6 +143,12 @@ export function showEmojiConfetti(
         particle.x += particle.vx;
         particle.y += particle.vy;
         particle.rotation += particle.rotationSpeed;
+
+        // 画面上端で跳ね返り
+        if (particle.y < 0) {
+          particle.y = 0;
+          particle.vy = Math.abs(particle.vy) * 0.6; // 60%のエネルギーで跳ね返り
+        }
 
         // フェードアウト
         if (now > fadeStartTime) {
