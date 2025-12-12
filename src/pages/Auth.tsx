@@ -279,6 +279,8 @@ interface LoginFormProps {
 const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoogle, signInWithGithub, signInWithDiscord, signInWithApple, t, socialEnabled }: LoginFormProps) => {
   const emailStatus = formData.email ? EMAIL_REGEX.test(formData.email) : null;
   const passwordStatus = formData.password ? formData.password.length > 0 : null;
+  const termsLabel = t('legalPages.footerLinks.termsOfService');
+  const privacyLabel = t('legalPages.footerLinks.privacyPolicy');
   const socialButtons = [
     {
       key: 'google',
@@ -362,6 +364,18 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoog
           {authState.error}
         </div>
       )}
+
+      <p className="text-center text-xs leading-relaxed text-muted-foreground">
+        {t('auth.termsNoticePrefix')}
+        <Link to="/terms" className="text-primary underline-offset-2 hover:underline">
+          {termsLabel}
+        </Link>
+        {t('auth.termsNoticeAnd')}
+        <Link to="/privacy" className="text-primary underline-offset-2 hover:underline">
+          {privacyLabel}
+        </Link>
+        {t('auth.termsNoticeSuffix')}
+      </p>
 
       <Button
         type="submit"

@@ -136,7 +136,10 @@ export default function Notifications() {
       <main className="flex-1">
         <div className="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
           <div className="space-y-3 text-center">
-            <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl flex items-center justify-center gap-3">
+              <span className="flex items-center justify-center text-foreground">
+                <Bell className="h-7 w-7" />
+              </span>
               {t('notifications.pageTitle')}
             </h1>
             <p className="mx-auto max-w-2xl text-sm text-muted-foreground sm:text-base">

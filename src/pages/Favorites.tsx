@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ExternalLink, Sparkles } from 'lucide-react';
+import { ExternalLink, Heart, Sparkles } from 'lucide-react';
 import { useFavoriteFanmarks } from '@/hooks/useFavoriteFanmarks';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -80,7 +80,10 @@ const getAccessTypeLabel = (t: (key: string, ...args: any[]) => string, accessTy
       <main className="flex-1">
         <div className="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
           <div className="space-y-3 text-center">
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground flex items-center justify-center gap-3">
+              <span className="flex items-center justify-center text-foreground">
+                <Heart className="h-7 w-7" />
+              </span>
               {t('favorites.title')}
             </h1>
             <p className="mx-auto max-w-2xl text-sm sm:text-base text-muted-foreground">

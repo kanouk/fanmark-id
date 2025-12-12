@@ -588,9 +588,6 @@ export const FanmarkAcquisition = ({
               }}
                 onClear={() => {
                 clearQuery();
-                toast({
-                  title: t('common.clearCompletedTitle'),
-                });
               }}
                 value={query}
               />

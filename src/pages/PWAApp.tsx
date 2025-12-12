@@ -97,9 +97,6 @@ export default function PWAApp() {
 
   const handleClearQuery = () => {
     setSearchQuery("");
-    toast({
-      title: t("common.clearCompletedTitle"),
-    });
   };
 
   const handleDirectInput = (value: string) => {

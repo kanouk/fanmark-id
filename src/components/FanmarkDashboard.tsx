@@ -16,6 +16,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy, Undo2, QrCode, MoreVertical, Heart, BarChart3, ArrowRightLeft } from 'lucide-react';
 import { FiTarget, FiLayers, FiCompass, FiStar, FiCheckCircle, FiMoon, FiUser, FiLink, FiFileText, FiClock, FiInbox } from 'react-icons/fi';
+import { MdSpaceDashboard } from 'react-icons/md';
 import { FanmarkAcquisition } from './FanmarkAcquisition';
 import { ExtendLicenseDialog, type ExtendLicenseTarget, type ExtendPlanOption } from './ExtendLicenseDialog';
 import { FanmarkReturnLoading } from './FanmarkReturnLoading';
@@ -772,7 +773,10 @@ export const FanmarkDashboard = () => {
     <section className="w-full bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
       <div className="container mx-auto px-4 py-12 space-y-10">
         <div className="space-y-3 text-center">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground flex items-center justify-center gap-3">
+            <span className="flex items-center justify-center text-foreground">
+              <MdSpaceDashboard className="h-7 w-7" />
+            </span>
             {t('dashboard.title')}
           </h1>
           <p className="mx-auto max-w-2xl text-sm sm:text-base text-muted-foreground">
