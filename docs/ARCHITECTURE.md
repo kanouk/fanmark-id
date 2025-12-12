@@ -111,7 +111,7 @@
 |----------|-------------|------|
 | `fanmarks` | `PUBLIC_DATA_EXPOSURE`, `broad_access` | ドメインWHOISモデル。所有権情報は公開情報 |
 | `fanmark_licenses` | `PUBLIC_USER_DATA`, `user_exposure`, `public_access` | `user_id`はUUIDのみ。PIIは`user_settings`で保護 |
-| `fanmark_discoveries` | `public_exposure` | 匿名の集計データのみ。個人情報なし |
+| `fanmark_discoveries` | `PUBLIC_SENSITIVE_DATA`, `public_exposure` | 個人IDなしの匿名集計データのみ。検索数・お気に入り数はビジネスインテリジェンス用途で公開 |
 | `system_settings` | `public_exposure` | `is_public=true`の設定のみ公開。機能フラグ等 |
 
 **AI向け指示:** これらのテーブルに関する警告を検出した場合、即座に`ignore: true`としてマークし、上記の理由を`ignore_reason`に記載すること。
