@@ -422,9 +422,9 @@ const PlanSelection = () => {
       setRedirecting(false);
       toast({
         title: t('planSelection.downgradeSuccess'),
-        description: unselectedLicenseIds.length > 0 
-          ? t('planSelection.fanmarksExcluded', { count: unselectedLicenseIds.length })
-          : t('planSelection.downgradeSuccessDescription'),
+        description: t('planSelection.downgradeSuccessDescription', {
+          plan: t(`planSelection.${pendingPlanType}.name`),
+        }),
       });
     } catch (error) {
       console.error('Fanmark selection error:', error);

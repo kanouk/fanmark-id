@@ -76,7 +76,6 @@ export const FanmarkSelectionModal = ({
   };
 
   const handleFinalConfirm = async () => {
-    setShowConfirmation(false);
     await handleConfirm();
   };
 
@@ -97,7 +96,15 @@ export const FanmarkSelectionModal = ({
 
   if (showConfirmation) {
     return (
-      <Dialog open={isOpen} onOpenChange={(open) => !open && setShowConfirmation(false)}>
+      <Dialog
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowConfirmation(false);
+            onClose();
+          }
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader className="space-y-3">
             <DialogTitle className="text-lg font-semibold">
