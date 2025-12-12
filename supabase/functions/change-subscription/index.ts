@@ -104,44 +104,42 @@ serve(async (req) => {
     logStep("Plan change type", { isUpgrade });
 
     if (isUpgrade) {
-      // UPGRADE: Use subscriptions.update with proration
+      // UPGRADE: Cancel current subscription at period end and create new checkout
       const newPriceId = priceIdMap[new_plan_type];
       if (!newPriceId) {
         throw new Error(`No Stripe price ID configured for plan: ${new_plan_type}`);
       }
 
-      logStep("Starting upgrade with proration", { newPriceId });
+      logStep("Starting upgrade - creating checkout session", { newPriceId });
 
-      const updatedSubscription = await stripe.subscriptions.update(
-        currentSubscription.id,
-        {
-          items: [
-            {
-              id: currentSubscription.items.data[0].id,
-              price: newPriceId,
-            },
-          ],
-          proration_behavior: "always_invoice",
-        }
-      );
+      // Set current subscription to cancel at period end
+      await stripe.subscriptions.update(currentSubscription.id, {
+        cancel_at_period_end: true,
+      });
+      logStep("Current subscription set to cancel at period end");
 
-      logStep("Upgrade completed", { subscriptionId: updatedSubscription.id });
+      // Create Checkout session for the new plan
+      const origin = req.headers.get("origin") || "http://localhost:3000";
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        line_items: [
+          {
+            price: newPriceId,
+            quantity: 1,
+          },
+        ],
+        mode: "subscription",
+        success_url: `${origin}/plans?checkout=success&upgrade=true`,
+        cancel_url: `${origin}/plans?checkout=canceled`,
+      });
 
-      // Update user_settings with new plan type
-      const { error: updateError } = await supabaseClient
-        .from('user_settings')
-        .update({ plan_type: new_plan_type })
-        .eq('user_id', user.id);
-
-      if (updateError) {
-        logStep("Warning: Failed to update user_settings", { error: updateError.message });
-      }
+      logStep("Checkout session created for upgrade", { sessionId: session.id, url: session.url });
 
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: "Upgrade completed successfully",
-          subscription_id: updatedSubscription.id 
+          message: "Checkout session created for upgrade",
+          checkout_url: session.url
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
