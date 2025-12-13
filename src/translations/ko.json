@@ -1668,8 +1668,10 @@
       "appliedInfo": "이 팬마크 이전을 신청했습니다. 소유자 승인 대기 중입니다. 신청 일시: {date}",
       "waitForApproval": "소유자의 승인 대기 중입니다.",
       "applyReceived": "{user} 님이 팬마크 이전 신청을 완료했습니다.",
+      "applyReceivedOwner": "{user} 님이 이전을 신청했습니다. 내용을 확인하고 승인 또는 거부를 선택하세요.",
       "applyReceivedAdditional": "추가로 {count}건의 신청이 있습니다.",
       "complete": "승인되면 이전이 완료되고 팬마크 목록에 반영됩니다.",
+      "receiverIssueInfo": "팬마크 오너가 이전 코드를 발급했습니다.",
       "approvalDeadline": "{date} 까지 승인 또는 거부해 주세요."
     },
     "stepStatus": {

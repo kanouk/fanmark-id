@@ -1668,8 +1668,10 @@
       "appliedInfo": "Anda telah mengajukan fanmark ini. Menunggu persetujuan pemilik. Diajukan pada {date}.",
       "waitForApproval": "Menunggu persetujuan pemilik.",
       "applyReceived": "{user} telah menyelesaikan pengajuan transfer fanmark.",
+      "applyReceivedOwner": "{user} telah mengajukan transfer. Silakan tinjau dan pilih setujui atau tolak.",
       "applyReceivedAdditional": "Ada {count} pengajuan lain.",
       "complete": "Setelah disetujui, transfer selesai dan akan muncul di daftar fanmark.",
+      "receiverIssueInfo": "Pemilik fanmark telah menerbitkan kode transfer.",
       "approvalDeadline": "Harap setujui atau tolak sebelum {date}."
     },
     "stepStatus": {

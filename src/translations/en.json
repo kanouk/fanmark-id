@@ -1613,8 +1613,10 @@
       "appliedInfo": "You have applied for this fanmark. Awaiting owner approval. Applied at {date}.",
       "waitForApproval": "Waiting for the owner to approve your request.",
       "applyReceived": "{user} submitted a transfer request.",
+      "applyReceivedOwner": "{user} submitted a transfer request. Please review and approve or reject.",
       "applyReceivedAdditional": "Plus {count} more request(s).",
       "complete": "Transfer completes after approval and will appear in your fanmarks.",
+      "receiverIssueInfo": "The fanmark owner has issued a transfer code.",
       "approvalDeadline": "Please approve or reject by {date}."
     },
     "stepStatus": {

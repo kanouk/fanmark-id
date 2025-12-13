@@ -1608,11 +1608,13 @@
       "issueShare": "このコードを受取側に共有し、申請を待ちます。",
       "waitForRequest": "受取側がコードを入力するのを待っています。",
       "reviewRequests": "届いた申請を確認し、承認または拒否を選択してください。",
-      "appliedInfo": "このファンマを申請済みです。オーナーの承認待ちです。申請日時: {date}",
-      "waitForApproval": "オーナーの承認をお待ちください。",
+      "appliedInfo": "{date} に移管申請済みです。ファンマオーナーの承認待ちです。",
+      "waitForApproval": "ファンマオーナーの承認をお待ちください。",
       "applyReceived": "{user} さんがファンマの移管申請を完了しました。",
+      "applyReceivedOwner": "{user} さんから移管申請が届きました。内容を確認して承認/拒否を選んでください。",
       "applyReceivedAdditional": "ほか {count} 件の申請があります。",
       "complete": "承認されると移管が完了し、ファンマ一覧に反映されます。",
+      "receiverIssueInfo": "ファンマオーナーが移管コードを発行しました。",
       "approvalDeadline": "{date} までに承認または拒否してください。"
     },
     "stepStatus": {

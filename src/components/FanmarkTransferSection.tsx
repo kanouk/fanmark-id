@@ -389,6 +389,13 @@ export const FanmarkTransferSection = ({
                         const renderStepActions = () => {
                           switch (step.id) {
                             case 'issue':
+                              if (entry.myRequest) {
+                                return (
+                                  <div className="text-xs text-muted-foreground leading-relaxed">
+                                    {t('transfer.stepDetail.receiverIssueInfo')}
+                                  </div>
+                                );
+                              }
                               return entry.issuedCode ? (
                                 <div className="space-y-3">
                                   <div className="flex items-center justify-between gap-3 text-sm">
@@ -422,8 +429,8 @@ export const FanmarkTransferSection = ({
                                 const primary = names[0];
                                 const extraCount = names.length - 1;
                                 return (
-                                  <div className="text-xs text-muted-foreground">
-                                    {t('transfer.stepDetail.applyReceived', { user: primary })}
+                                  <div className="text-xs text-muted-foreground leading-relaxed">
+                                    {t('transfer.stepDetail.applyReceivedOwner', { user: primary })}
                                     {extraCount > 0 && (
                                       <span className="block text-muted-foreground">
                                         {t('transfer.stepDetail.applyReceivedAdditional', { count: extraCount })}
