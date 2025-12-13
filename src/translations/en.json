@@ -110,6 +110,8 @@
     "email": "Email",
     "password": "Password",
     "confirmPassword": "Confirm Password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
     "username": "Username",
     "signInWithGoogle": "Sign in with Google",
     "signInWithApple": "Sign in with Apple",

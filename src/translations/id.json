@@ -109,6 +109,8 @@
     "logout": "Keluar",
     "email": "Email",
     "password": "Kata Sandi",
+    "showPassword": "Tampilkan kata sandi",
+    "hidePassword": "Sembunyikan kata sandi",
     "confirmPassword": "Konfirmasi Kata Sandi",
     "username": "Nama Pengguna",
     "signInWithGoogle": "Masuk dengan Google",

@@ -109,6 +109,8 @@
     "logout": "ログアウト",
     "email": "メールアドレス",
     "password": "パスワード",
+    "showPassword": "パスワードを表示",
+    "hidePassword": "パスワードを非表示",
     "confirmPassword": "パスワード確認",
     "username": "ユーザー名",
     "signInWithGoogle": "Googleでログイン",

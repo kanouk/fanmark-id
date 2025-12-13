@@ -12,7 +12,7 @@ import { PasswordRequirement } from '@/components/PasswordRequirement';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Heart, Users, Mail, Sparkle, ArrowLeft, Lock, Check, X, CheckCircle2, XCircle } from 'lucide-react';
+import { Heart, Users, Mail, Sparkle, ArrowLeft, Lock, Check, X, CheckCircle2, XCircle, Eye, EyeOff } from 'lucide-react';
 import { FaGoogle, FaApple, FaDiscord, FaGithub } from 'react-icons/fa';
 import { AuthFormData, AuthState } from '@/types/auth';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
@@ -277,6 +277,7 @@ interface LoginFormProps {
 }
 
 const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoogle, signInWithGithub, signInWithDiscord, signInWithApple, t, socialEnabled }: LoginFormProps) => {
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
   const emailStatus = formData.email ? EMAIL_REGEX.test(formData.email) : null;
   const passwordStatus = formData.password ? formData.password.length > 0 : null;
   const termsLabel = t('legalPages.footerLinks.termsOfService');
@@ -348,14 +349,22 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoog
         <div className="relative">
           <Input
             id="auth-password"
-            type="password"
+            type={showLoginPassword ? 'text' : 'password'}
             value={formData.password}
             onChange={(e) => updateFormData('password', e.target.value)}
             required
             autoComplete="current-password"
-            className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-10 focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-20 focus-visible:ring-2 focus-visible:ring-primary/40"
           />
-          <InputStatusIcon status={passwordStatus} />
+          <InputStatusIcon status={passwordStatus} className="right-12" />
+          <button
+            type="button"
+            onClick={() => setShowLoginPassword((prev) => !prev)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
+            aria-label={showLoginPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+          >
+            {showLoginPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          </button>
         </div>
       </div>
 
@@ -472,6 +481,8 @@ const SignUpForm = ({
   const [passwordPopoverOpen, setPasswordPopoverOpen] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
   const blurTimeoutRef = useRef<number | null>(null);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showSignupConfirm, setShowSignupConfirm] = useState(false);
 
   const emailStatus = formData.email ? EMAIL_REGEX.test(formData.email) : null;
   const passwordStatus = formData.password ? (isValid ? true : false) : null;
@@ -596,16 +607,24 @@ const SignUpForm = ({
         <div className="relative">
           <Input
             id="signup-password"
-            type="password"
+            type={showSignupPassword ? 'text' : 'password'}
             value={formData.password}
             onChange={(e) => updateFormData('password', e.target.value)}
             onFocus={handlePasswordFocus}
             onBlur={handlePasswordBlur}
             required
             autoComplete="new-password"
-            className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-16 focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-20 focus-visible:ring-2 focus-visible:ring-primary/40"
           />
-          <InputStatusIcon status={passwordStatus} className="right-3" />
+          <InputStatusIcon status={passwordStatus} className="right-12" />
+          <button
+            type="button"
+            onClick={() => setShowSignupPassword((prev) => !prev)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
+            aria-label={showSignupPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+          >
+            {showSignupPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          </button>
           {passwordPopoverOpen && !isValid && (
             <div className="pointer-events-none absolute left-0 top-[calc(100%+0.75rem)] z-10">
               <div className="relative min-w-[14rem] max-w-[16rem] rounded-2xl border border-border/60 bg-background/95 p-4 shadow-xl backdrop-blur">
@@ -632,14 +651,22 @@ const SignUpForm = ({
         <div className="relative">
           <Input
             id="signup-confirm"
-            type="password"
+            type={showSignupConfirm ? 'text' : 'password'}
             value={formData.confirmPassword || ''}
             onChange={(e) => updateFormData('confirmPassword', e.target.value)}
             required
             autoComplete="new-password"
-            className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-10 focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-20 focus-visible:ring-2 focus-visible:ring-primary/40"
           />
-          <InputStatusIcon status={confirmStatus} />
+          <InputStatusIcon status={confirmStatus} className="right-12" />
+          <button
+            type="button"
+            onClick={() => setShowSignupConfirm((prev) => !prev)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
+            aria-label={showSignupConfirm ? t('auth.hidePassword') : t('auth.showPassword')}
+          >
+            {showSignupConfirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          </button>
         </div>
       </div>
 

@@ -109,6 +109,8 @@
     "logout": "로그아웃",
     "email": "이메일",
     "password": "비밀번호",
+    "showPassword": "비밀번호 표시",
+    "hidePassword": "비밀번호 숨기기",
     "confirmPassword": "비밀번호 확인",
     "username": "사용자명",
     "signInWithGoogle": "Google로 로그인",

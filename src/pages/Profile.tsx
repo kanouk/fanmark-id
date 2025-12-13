@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { CardDescription } from '@/components/ui/card';
-import { User, LogOut, CreditCard, Globe, Palette, Link2, Info, PencilLine, Languages, Heart, Lock, ShieldCheck, Check, X, AlertTriangle, Loader2, Bell, ExternalLink, ArrowRight, Trash2, Save, BarChart3, Crown } from 'lucide-react';
+import { User, LogOut, CreditCard, Globe, Palette, Link2, Info, PencilLine, Languages, Heart, Lock, ShieldCheck, Check, X, AlertTriangle, Loader2, Bell, ExternalLink, ArrowRight, Trash2, Save, BarChart3, Crown, Eye, EyeOff } from 'lucide-react';
 import { MdSpaceDashboard } from 'react-icons/md';
 import { RiCalendarCheckLine } from 'react-icons/ri';
 import { Badge } from '@/components/ui/badge';
@@ -41,10 +41,12 @@ interface SidebarItem {
   icon: typeof User;
 }
 
-const InputStatusIcon = ({ status }: { status: boolean | null }) => {
+const InputStatusIcon = ({ status, className }: { status: boolean | null; className?: string }) => {
   if (status === null) return null;
+  const base = 'pointer-events-none absolute top-1/2 -translate-y-1/2';
+  const classes = className ? `${base} ${className}` : `${base} right-3`;
   return (
-    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+    <span className={classes}>
       {status ? <Check className="h-4 w-4 text-emerald-500" /> : <X className="h-4 w-4 text-destructive" />}
     </span>
   );
@@ -81,6 +83,8 @@ const Profile = () => {
   );
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
@@ -358,16 +362,24 @@ const Profile = () => {
                 <div className="relative">
                   <Input
                     id="profile-new-password"
-                    type="password"
+                    type={showNewPassword ? 'text' : 'password'}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder={t('password.requirements.length')}
                     autoComplete="new-password"
-                    className="h-11 rounded-2xl border border-primary/15 bg-background/80 pr-10 focus-visible:ring-2 focus-visible:ring-primary/40"
+                    className="h-11 rounded-2xl border border-primary/15 bg-background/80 pr-20 focus-visible:ring-2 focus-visible:ring-primary/40"
                     required
                     minLength={8}
                   />
-                  <InputStatusIcon status={passwordStatus} />
+                  <InputStatusIcon status={passwordStatus} className="right-12" />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
+                    aria-label={showNewPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                  >
+                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
                 {newPassword && (
                   <div className="rounded-2xl border border-primary/10 bg-primary/5 px-4 py-3 text-xs text-muted-foreground">
@@ -389,14 +401,22 @@ const Profile = () => {
                 <div className="relative">
                   <Input
                     id="profile-confirm-password"
-                    type="password"
+                    type={showConfirmNewPassword ? 'text' : 'password'}
                     value={confirmNewPassword}
                     onChange={(e) => setConfirmNewPassword(e.target.value)}
                     autoComplete="new-password"
-                    className="h-11 rounded-2xl border border-primary/15 bg-background/80 pr-10 focus-visible:ring-2 focus-visible:ring-primary/40"
+                    className="h-11 rounded-2xl border border-primary/15 bg-background/80 pr-20 focus-visible:ring-2 focus-visible:ring-primary/40"
                     required
                   />
-                  <InputStatusIcon status={confirmPasswordStatus} />
+                  <InputStatusIcon status={confirmPasswordStatus} className="right-12" />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmNewPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
+                    aria-label={showConfirmNewPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                  >
+                    {showConfirmNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
                 {confirmNewPassword && confirmNewPassword !== newPassword && (
                   <p className="text-xs text-destructive">{t('auth.passwordMismatch')}</p>
