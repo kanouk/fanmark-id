@@ -1586,6 +1586,17 @@
     "expiresAt": "만료",
     "statusWaiting": "신청 대기 중",
     "statusPendingApproval": "승인 대기 중",
+    "roleIssuer": "당신은 이전자",
+    "roleReceiver": "당신은 수령자",
+    "flowTitle": "이전 진행 흐름",
+    "flow": {
+      "issueCode": "이전 코드 발급",
+      "waitRequest": "신청 대기",
+      "reviewRequests": "신청 승인/거부",
+      "applyCode": "이전 신청",
+      "waitApproval": "승인 대기",
+      "transferComplete": "이전 완료"
+    },
     "cancelCode": "취소",
     "approveRequest": "승인",
     "rejectRequest": "거부",
@@ -1649,6 +1660,22 @@
       "requestApprovedDesc": "팬마크가 이전되었습니다",
       "requestRejected": "이전 요청이 거부되었습니다",
       "codeCancelled": "이전 코드가 취소되었습니다"
+    },
+    "stepDetail": {
+      "issueShare": "이 코드를 수령자에게 공유하고 신청을 기다리세요.",
+      "waitForRequest": "수령자가 코드를 입력할 때까지 기다리는 중입니다.",
+      "reviewRequests": "도착한 신청을 확인하고 승인 또는 거부를 선택하세요.",
+      "appliedInfo": "이 팬마크 이전을 신청했습니다. 소유자 승인 대기 중입니다. 신청 일시: {date}",
+      "waitForApproval": "소유자의 승인 대기 중입니다.",
+      "applyReceived": "{user} 님이 팬마크 이전 신청을 완료했습니다.",
+      "applyReceivedAdditional": "추가로 {count}건의 신청이 있습니다.",
+      "complete": "승인되면 이전이 완료되고 팬마크 목록에 반영됩니다.",
+      "approvalDeadline": "{date} 까지 승인 또는 거부해 주세요."
+    },
+    "stepStatus": {
+      "current": "진행 중",
+      "done": "완료",
+      "upcoming": "다음"
     },
     "error": {
       "issueFailed": "이전 코드 발급에 실패했습니다",

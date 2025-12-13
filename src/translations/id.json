@@ -1586,6 +1586,17 @@
     "expiresAt": "Kedaluwarsa",
     "statusWaiting": "Menunggu aplikasi",
     "statusPendingApproval": "Menunggu persetujuan",
+    "roleIssuer": "Anda pengirim",
+    "roleReceiver": "Anda penerima",
+    "flowTitle": "Alur transfer",
+    "flow": {
+      "issueCode": "Terbitkan kode transfer",
+      "waitRequest": "Tunggu permintaan",
+      "reviewRequests": "Setujui/Tolak",
+      "applyCode": "Ajukan transfer",
+      "waitApproval": "Tunggu persetujuan",
+      "transferComplete": "Transfer selesai"
+    },
     "cancelCode": "Batalkan",
     "approveRequest": "Setujui",
     "rejectRequest": "Tolak",
@@ -1643,12 +1654,28 @@
     "success": {
       "codeIssued": "Kode transfer diterbitkan",
       "codeIssuedDesc": "Kode: {code}",
-      "requestApplied": "Permintaan transfer diajukan",
-      "requestAppliedDesc": "Silakan tunggu persetujuan",
-      "requestApproved": "Transfer disetujui",
-      "requestApprovedDesc": "Fanmark telah ditransfer",
-      "requestRejected": "Permintaan transfer ditolak",
+    "requestApplied": "Permintaan transfer diajukan",
+    "requestAppliedDesc": "Silakan tunggu persetujuan",
+    "requestApproved": "Transfer disetujui",
+    "requestApprovedDesc": "Fanmark telah ditransfer",
+    "requestRejected": "Permintaan transfer ditolak",
       "codeCancelled": "Kode transfer dibatalkan"
+    },
+    "stepDetail": {
+      "issueShare": "Bagikan kode ini ke penerima lalu tunggu pengajuan.",
+      "waitForRequest": "Menunggu penerima memasukkan kode.",
+      "reviewRequests": "Tinjau permintaan yang masuk, lalu pilih setujui atau tolak.",
+      "appliedInfo": "Anda telah mengajukan fanmark ini. Menunggu persetujuan pemilik. Diajukan pada {date}.",
+      "waitForApproval": "Menunggu persetujuan pemilik.",
+      "applyReceived": "{user} telah menyelesaikan pengajuan transfer fanmark.",
+      "applyReceivedAdditional": "Ada {count} pengajuan lain.",
+      "complete": "Setelah disetujui, transfer selesai dan akan muncul di daftar fanmark.",
+      "approvalDeadline": "Harap setujui atau tolak sebelum {date}."
+    },
+    "stepStatus": {
+      "current": "Sedang diproses",
+      "done": "Selesai",
+      "upcoming": "Selanjutnya"
     },
     "error": {
       "issueFailed": "Gagal menerbitkan kode transfer",
