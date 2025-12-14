@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 const MIN_REMAINING_HOURS = 48;
-const TIER_C_EXPIRATION_DAYS = 30;
+const TRANSFER_CODE_EXPIRATION_HOURS = 48;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -152,13 +152,16 @@ serve(async (req) => {
     }
 
     // Calculate expiration
+    const maxExpiresAt = new Date(now);
+    maxExpiresAt.setHours(maxExpiresAt.getHours() + TRANSFER_CODE_EXPIRATION_HOURS);
+
     let expiresAt: Date;
     if (license.license_end) {
-      expiresAt = new Date(license.license_end);
+      const licenseEnd = new Date(license.license_end);
+      expiresAt = new Date(Math.min(licenseEnd.getTime(), maxExpiresAt.getTime()));
     } else {
-      // Tier C (unlimited) - 30 days from now
-      expiresAt = new Date(now);
-      expiresAt.setDate(expiresAt.getDate() + TIER_C_EXPIRATION_DAYS);
+      // Tier C (unlimited) - cap at transfer window only
+      expiresAt = maxExpiresAt;
     }
 
     // Generate transfer code

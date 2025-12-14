@@ -54,7 +54,7 @@
 ## QA/テスト観点
 - Tier 判定: 1〜5個の絵文字（連続/非連続）で S/A/B/C を網羅。無期限ライセンスは延長不可で表示を「無期限」扱い。
 - 返却/猶予: `grace_expires_at` に基づく再取得不可/カウントダウン表示を確認。`available_at` を UI に出す。
-- 移管: コード発行条件（残48h+、申請中ブロック、AuthCode有効期限72h/上限30日）、承認後の新ライセンス発行・設定コピー、Transfer Lock 30日を検証。
+- 移管: コード発行条件（残48h+、申請中ブロック、AuthCode有効期限48h固定/`license_end`までの短い方）、承認後の新ライセンス発行・設定コピー、Transfer Lock 30日を検証。
 - 抽選: 延長との排他、0/1/複数件パス、当落通知、履歴保存。
 - Stripe: Checkout → Webhook → `user_settings.plan_type` 反映、Customer Portal でプラン変更、延長決済の Price ID 設定。
 - お気に入り/通知: 返却時の `favorite_fanmark_available` 通知、未読バッジ、キャッシュ同期。
