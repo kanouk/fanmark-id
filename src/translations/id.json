@@ -1202,7 +1202,9 @@
     "statusInactive": "Tidak aktif",
     "statusUnknown": "Status: {{status}}",
     "lotteryPendingTitle": "Aplikasi Undian Tertunda",
-    "lotteryPendingDescription": "Anda saat ini memiliki aplikasi undian yang tertunda untuk fanmark ini. Anda tidak dapat memperpanjang lisensi saat aplikasi undian aktif. Silakan batalkan aplikasi undian Anda terlebih dahulu jika Anda ingin memperpanjang."
+    "lotteryPendingDescription": "Anda saat ini memiliki aplikasi undian yang tertunda untuk fanmark ini. Anda tidak dapat memperpanjang lisensi saat aplikasi undian aktif. Silakan batalkan aplikasi undian Anda terlebih dahulu jika Anda ingin memperpanjang.",
+    "reportViolation": "Jika Anda menemukan fanmark yang melanggar ketentuan layanan,",
+    "contactUs": "hubungi kami"
   },
   "acquisition": {
     "title": "Memperoleh fanmark...",

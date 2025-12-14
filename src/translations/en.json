@@ -1203,7 +1203,9 @@
     "statusInactive": "Inactive",
     "statusUnknown": "Status: {{status}}",
     "lotteryPendingTitle": "Lottery Application Pending",
-    "lotteryPendingDescription": "Lottery application pending. Cancel to extend license."
+    "lotteryPendingDescription": "Lottery application pending. Cancel to extend license.",
+    "reportViolation": "If you find a fanmark that violates the terms of service,",
+    "contactUs": "contact us"
   },
   "acquisition": {
     "title": "Acquiring fanmark...",
