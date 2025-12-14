@@ -367,19 +367,20 @@ const Profile = () => {
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder={t('password.requirements.length')}
                     autoComplete="new-password"
-                    className="h-11 rounded-2xl border border-primary/15 bg-background/80 pr-24 focus-visible:ring-2 focus-visible:ring-primary/40"
+                    className="h-11 rounded-2xl border border-primary/15 bg-background/80 pr-16 focus-visible:ring-2 focus-visible:ring-primary/40"
                     required
                     minLength={8}
                   />
-                  <InputStatusIcon status={passwordStatus} className="right-14" />
                   <button
                     type="button"
                     onClick={() => setShowNewPassword((prev) => !prev)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
+                    className="absolute right-10 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
                     aria-label={showNewPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                    style={{ display: newPassword ? 'inline-flex' : 'none' }}
                   >
                     {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
+                  <InputStatusIcon status={passwordStatus} />
                 </div>
                 {newPassword && (
                   <div className="rounded-2xl border border-primary/10 bg-primary/5 px-4 py-3 text-xs text-muted-foreground">
@@ -405,18 +406,19 @@ const Profile = () => {
                     value={confirmNewPassword}
                     onChange={(e) => setConfirmNewPassword(e.target.value)}
                     autoComplete="new-password"
-                    className="h-11 rounded-2xl border border-primary/15 bg-background/80 pr-24 focus-visible:ring-2 focus-visible:ring-primary/40"
+                    className="h-11 rounded-2xl border border-primary/15 bg-background/80 pr-16 focus-visible:ring-2 focus-visible:ring-primary/40"
                     required
                   />
-                  <InputStatusIcon status={confirmPasswordStatus} className="right-14" />
                   <button
                     type="button"
                     onClick={() => setShowConfirmNewPassword((prev) => !prev)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
+                    className="absolute right-10 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
                     aria-label={showConfirmNewPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                    style={{ display: confirmNewPassword ? 'inline-flex' : 'none' }}
                   >
                     {showConfirmNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
+                  <InputStatusIcon status={confirmPasswordStatus} />
                 </div>
                 {confirmNewPassword && confirmNewPassword !== newPassword && (
                   <p className="text-xs text-destructive">{t('auth.passwordMismatch')}</p>

@@ -16,7 +16,7 @@ import { Heart, Users, Mail, Sparkle, ArrowLeft, Lock, Check, X, CheckCircle2, X
 import { FaGoogle, FaApple, FaDiscord, FaGithub } from 'react-icons/fa';
 import { AuthFormData, AuthState } from '@/types/auth';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
-import { PasswordRequirement as PasswordRequirementType } from '@/lib/password-validation';
+import { PasswordRequirement as PasswordRequirementType, isPasswordValid } from '@/lib/password-validation';
 import { SimpleHeader } from '@/components/layout/SimpleHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 
@@ -279,7 +279,8 @@ interface LoginFormProps {
 const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoogle, signInWithGithub, signInWithDiscord, signInWithApple, t, socialEnabled }: LoginFormProps) => {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const emailStatus = formData.email ? EMAIL_REGEX.test(formData.email) : null;
-  const passwordStatus = formData.password ? formData.password.length > 0 : null;
+  // ログイン時は最低8文字を満たしたときだけOK表示、それ以外は未入力扱いで非表示
+  const passwordStatus = formData.password ? isPasswordValid(formData.password) : null;
   const termsLabel = t('legalPages.footerLinks.termsOfService');
   const privacyLabel = t('legalPages.footerLinks.privacyPolicy');
   const socialButtons = [
@@ -354,17 +355,18 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoog
             onChange={(e) => updateFormData('password', e.target.value)}
             required
             autoComplete="current-password"
-            className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-24 focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-16 focus-visible:ring-2 focus-visible:ring-primary/40"
           />
-          <InputStatusIcon status={passwordStatus} className="right-14" />
           <button
             type="button"
             onClick={() => setShowLoginPassword((prev) => !prev)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
+            className="absolute right-10 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
             aria-label={showLoginPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+            style={{ display: formData.password ? 'inline-flex' : 'none' }}
           >
             {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
+          <InputStatusIcon status={passwordStatus} />
         </div>
       </div>
 
@@ -614,17 +616,18 @@ const SignUpForm = ({
             onBlur={handlePasswordBlur}
             required
             autoComplete="new-password"
-            className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-24 focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-16 focus-visible:ring-2 focus-visible:ring-primary/40"
           />
-          <InputStatusIcon status={passwordStatus} className="right-14" />
           <button
             type="button"
             onClick={() => setShowSignupPassword((prev) => !prev)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
+            className="absolute right-10 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
             aria-label={showSignupPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+            style={{ display: formData.password ? 'inline-flex' : 'none' }}
           >
             {showSignupPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
+          <InputStatusIcon status={passwordStatus} />
           {passwordPopoverOpen && !isValid && (
             <div className="pointer-events-none absolute left-0 top-[calc(100%+0.75rem)] z-10">
               <div className="relative min-w-[14rem] max-w-[16rem] rounded-2xl border border-border/60 bg-background/95 p-4 shadow-xl backdrop-blur">
@@ -656,17 +659,18 @@ const SignUpForm = ({
             onChange={(e) => updateFormData('confirmPassword', e.target.value)}
             required
             autoComplete="new-password"
-            className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-24 focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-16 focus-visible:ring-2 focus-visible:ring-primary/40"
           />
-          <InputStatusIcon status={confirmStatus} className="right-14" />
           <button
             type="button"
             onClick={() => setShowSignupConfirm((prev) => !prev)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
+            className="absolute right-10 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
             aria-label={showSignupConfirm ? t('auth.hidePassword') : t('auth.showPassword')}
+            style={{ display: formData.confirmPassword ? 'inline-flex' : 'none' }}
           >
             {showSignupConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
+          <InputStatusIcon status={confirmStatus} />
         </div>
       </div>
 
