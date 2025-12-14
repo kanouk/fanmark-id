@@ -254,9 +254,9 @@ const InputStatusIcon = ({ status, className }: { status: boolean | null; classN
   return (
     <span className={classes}>
       {status ? (
-        <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
       ) : (
-        <XCircle className="h-5 w-5 text-destructive" />
+        <XCircle className="h-4 w-4 text-destructive" />
       )}
     </span>
   );
@@ -354,16 +354,16 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoog
             onChange={(e) => updateFormData('password', e.target.value)}
             required
             autoComplete="current-password"
-            className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-20 focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-24 focus-visible:ring-2 focus-visible:ring-primary/40"
           />
-          <InputStatusIcon status={passwordStatus} className="right-12" />
+          <InputStatusIcon status={passwordStatus} className="right-14" />
           <button
             type="button"
             onClick={() => setShowLoginPassword((prev) => !prev)}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
             aria-label={showLoginPassword ? t('auth.hidePassword') : t('auth.showPassword')}
           >
-            {showLoginPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
       </div>
@@ -614,16 +614,16 @@ const SignUpForm = ({
             onBlur={handlePasswordBlur}
             required
             autoComplete="new-password"
-            className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-20 focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-24 focus-visible:ring-2 focus-visible:ring-primary/40"
           />
-          <InputStatusIcon status={passwordStatus} className="right-12" />
+          <InputStatusIcon status={passwordStatus} className="right-14" />
           <button
             type="button"
             onClick={() => setShowSignupPassword((prev) => !prev)}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
             aria-label={showSignupPassword ? t('auth.hidePassword') : t('auth.showPassword')}
           >
-            {showSignupPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            {showSignupPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
           {passwordPopoverOpen && !isValid && (
             <div className="pointer-events-none absolute left-0 top-[calc(100%+0.75rem)] z-10">
@@ -656,16 +656,16 @@ const SignUpForm = ({
             onChange={(e) => updateFormData('confirmPassword', e.target.value)}
             required
             autoComplete="new-password"
-            className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-20 focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="h-11 rounded-2xl border border-primary/15 bg-background/80 text-base shadow-none pr-24 focus-visible:ring-2 focus-visible:ring-primary/40"
           />
-          <InputStatusIcon status={confirmStatus} className="right-12" />
+          <InputStatusIcon status={confirmStatus} className="right-14" />
           <button
             type="button"
             onClick={() => setShowSignupConfirm((prev) => !prev)}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
             aria-label={showSignupConfirm ? t('auth.hidePassword') : t('auth.showPassword')}
           >
-            {showSignupConfirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            {showSignupConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
       </div>
