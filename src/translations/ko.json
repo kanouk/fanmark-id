@@ -1202,7 +1202,9 @@
     "statusInactive": "비활성",
     "statusUnknown": "상태: {{status}}",
     "lotteryPendingTitle": "추첨 신청 대기 중",
-    "lotteryPendingDescription": "현재 이 팬마크의 추첨에 신청하고 있습니다. 추첨 신청 중에는 연장이 불가능합니다. 연장하려면 우선 추첨 신청을 취소하세요."
+    "lotteryPendingDescription": "현재 이 팬마크의 추첨에 신청하고 있습니다. 추첨 신청 중에는 연장이 불가능합니다. 연장하려면 우선 추첨 신청을 취소하세요.",
+    "reportViolation": "이용약관을 위반한 팬마크를 발견한 경우",
+    "contactUs": "문의하기"
   },
   "acquisition": {
     "title": "팬마크 획득 중...",
