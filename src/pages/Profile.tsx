@@ -367,11 +367,11 @@ const Profile = () => {
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder={t('password.requirements.length')}
                     autoComplete="new-password"
-                    className="h-11 rounded-2xl border border-primary/15 bg-background/80 pr-20 focus-visible:ring-2 focus-visible:ring-primary/40"
+                    className="h-11 rounded-2xl border border-primary/15 bg-background/80 pr-24 focus-visible:ring-2 focus-visible:ring-primary/40"
                     required
                     minLength={8}
                   />
-                  <InputStatusIcon status={passwordStatus} className="right-12" />
+                  <InputStatusIcon status={passwordStatus} className="right-14" />
                   <button
                     type="button"
                     onClick={() => setShowNewPassword((prev) => !prev)}
@@ -405,10 +405,10 @@ const Profile = () => {
                     value={confirmNewPassword}
                     onChange={(e) => setConfirmNewPassword(e.target.value)}
                     autoComplete="new-password"
-                    className="h-11 rounded-2xl border border-primary/15 bg-background/80 pr-20 focus-visible:ring-2 focus-visible:ring-primary/40"
+                    className="h-11 rounded-2xl border border-primary/15 bg-background/80 pr-24 focus-visible:ring-2 focus-visible:ring-primary/40"
                     required
                   />
-                  <InputStatusIcon status={confirmPasswordStatus} className="right-12" />
+                  <InputStatusIcon status={confirmPasswordStatus} className="right-14" />
                   <button
                     type="button"
                     onClick={() => setShowConfirmNewPassword((prev) => !prev)}
