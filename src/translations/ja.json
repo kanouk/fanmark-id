@@ -1201,7 +1201,9 @@
     "statusInactive": "非アクティブ",
     "statusUnknown": "ステータス: {{status}}",
     "lotteryPendingTitle": "抽選申込中です",
-    "lotteryPendingDescription": "現在、このファンマの抽選に申し込んでいます。抽選申込中は延長ができません。延長したい場合は、先に抽選申込をキャンセルしてください。"
+    "lotteryPendingDescription": "現在、このファンマの抽選に申し込んでいます。抽選申込中は延長ができません。延長したい場合は、先に抽選申込をキャンセルしてください。",
+    "reportViolation": "利用規約に違反しているファンマを見つけた場合は",
+    "contactUs": "お問い合わせ"
   },
   "acquisition": {
     "title": "ファンマ取得中...",

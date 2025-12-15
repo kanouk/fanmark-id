@@ -295,6 +295,16 @@ export default function FanmarkDetailsPage() {
                   {t('fanmarkDetails.noHistory')}
                 </p>
               )}
+
+              <p className="mt-6 text-center text-xs text-muted-foreground">
+                {t('fanmarkDetails.reportViolation')}{' '}
+                <a
+                  href="/contact"
+                  className="underline hover:text-foreground transition-colors"
+                >
+                  {t('fanmarkDetails.contactUs')}
+                </a>
+              </p>
             </CardContent>
           </Card>
           </section>
