@@ -1643,6 +1643,7 @@
       "disclaimerItem2": "The operator is not involved in and takes no responsibility for transactions involving monetary or other consideration",
       "disclaimerItem3": "The operator takes no responsibility for any disputes between users related to transfers (non-payment, fraud, etc.)",
       "disclaimerItem4": "After transfer, the recipient will receive a new license period based on the tier",
+      "disclaimerItem5": "Any paid license/extension time you purchased will not carry over and will be forfeited upon transfer (non-refundable)",
       "agreeCheckbox": "I understand and agree to the above",
       "cancelButton": "Cancel",
       "issueButton": "Issue Code",

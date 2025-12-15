@@ -1624,6 +1624,7 @@
       "disclaimerItem2": "Operator tidak terlibat dan tidak bertanggung jawab atas transaksi yang melibatkan pertimbangan moneter atau lainnya",
       "disclaimerItem3": "Operator tidak bertanggung jawab atas perselisihan antar pengguna terkait transfer (non-pembayaran, penipuan, dll.)",
       "disclaimerItem4": "Setelah transfer, penerima akan menerima periode lisensi baru berdasarkan tier",
+      "disclaimerItem5": "Periode lisensi/perpanjangan berbayar yang sudah dibeli tidak akan dibawa saat transfer dan akan hangus (tanpa pengembalian dana)",
       "agreeCheckbox": "Saya memahami dan menyetujui hal di atas",
       "cancelButton": "Batalkan",
       "issueButton": "Terbitkan Kode",

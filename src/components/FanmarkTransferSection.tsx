@@ -454,10 +454,12 @@ export const FanmarkTransferSection = ({
                               }
                               if (entry.requestsForMyCode.length > 0) {
                                 const first = entry.requestsForMyCode[0];
+                                const deadline =
+                                  entry.issuedCode?.expires_at || first.applied_at;
                                 return (
                                   <div className="text-xs text-muted-foreground leading-relaxed">
                                     {t('transfer.stepDetail.approvalDeadline', {
-                                      date: formatDate(first.applied_at)
+                                      date: formatDate(deadline)
                                     })}
                                   </div>
                                 );

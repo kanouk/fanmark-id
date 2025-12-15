@@ -129,6 +129,7 @@ export const TransferCodeIssueDialog = ({
                 <li>{t('transfer.issueDialog.disclaimerItem2')}</li>
                 <li>{t('transfer.issueDialog.disclaimerItem3')}</li>
                 <li>{t('transfer.issueDialog.disclaimerItem4')}</li>
+                <li>{t('transfer.issueDialog.disclaimerItem5')}</li>
               </ul>
             </div>
 
