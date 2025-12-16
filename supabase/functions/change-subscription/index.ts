@@ -148,27 +148,22 @@ serve(async (req) => {
       logStep("Starting downgrade");
 
       if (new_plan_type === 'free') {
-        // Downgrade to free - cancel immediately
-        logStep("Downgrading to free - cancelling subscription immediately");
+        // Downgrade to free - cancel subscription and let webhook handle DB updates
+        logStep("Downgrading to free - cancelling subscription");
 
         await stripe.subscriptions.cancel(currentSubscription.id);
 
-        logStep("Subscription cancelled");
+        logStep("Stripe subscription cancelled - webhook will update user_settings and user_subscriptions");
 
-        // Update user_settings
-        const { error: updateError } = await supabaseClient
-          .from('user_settings')
-          .update({ plan_type: 'free' })
-          .eq('user_id', user.id);
-
-        if (updateError) {
-          logStep("Warning: Failed to update user_settings", { error: updateError.message });
-        }
+        // NOTE: user_settings.plan_type update is handled by handle-stripe-webhook
+        // when it receives the customer.subscription.deleted event from Stripe.
+        // This ensures DB state is only updated after Stripe confirms the cancellation.
 
         return new Response(
           JSON.stringify({ 
             success: true, 
-            message: "Downgraded to free plan successfully"
+            message: "Subscription cancellation initiated. Plan will update shortly.",
+            pending: true
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
         );
