@@ -78,15 +78,15 @@
 | From → To | 処理 | Stripe 操作 | ファンマ選択 |
 |-----------|------|-------------|-------------|
 | Free → Creator/Max/Business | `create-checkout` | 新 Checkout Session 作成 | 不要 |
-| Creator → Max/Business | `change-subscription` | 現サブスク `cancel_at_period_end=true` → 新 Checkout | 不要 |
-| Max → Business | `change-subscription` | 現サブスク `cancel_at_period_end=true` → 新 Checkout | 不要 |
+| Creator → Max/Business | `change-subscription` | 既存サブスクの price 更新（proration あり） | 不要 |
+| Max → Business | `change-subscription` | 既存サブスクの price 更新（proration あり） | 不要 |
 
 **ダウングレード（下位プランへ）:**
 
 | From → To | 処理 | ファンマ選択 | Stripe 操作 |
 |-----------|------|-------------|-------------|
-| Business → Max/Creator | `change-subscription` | 上限超過時のみ必須 | 現サブスク即時キャンセル → 新 Checkout |
-| Max → Creator | `change-subscription` | 上限超過時のみ必須 | 現サブスク即時キャンセル → 新 Checkout |
+| Business → Max/Creator | `change-subscription` | 上限超過時のみ必須 | 既存サブスクの price 更新（即時適用、proration なし） |
+| Max → Creator | `change-subscription` | 上限超過時のみ必須 | 既存サブスクの price 更新（即時適用、proration なし） |
 | Creator/Max/Business → Free | `change-subscription` | 上限超過時のみ必須 | `stripe.subscriptions.cancel()` 即時キャンセル |
 
 ---
@@ -157,9 +157,8 @@
 |----------|-------------|--------|
 | 1 | `/plans` で上位プランカードをクリック | ボタンに「{プラン名} を選ぶ」表示 |
 | 2 | ボタンをクリック | ローディングスピナー |
-| 3 | Stripe Checkout へ遷移 | 新規タブで決済画面 |
-| 4 | 決済成功 | `/plans?checkout=success` へ戻る |
-| 5 | ポーリング → 完了 | 「{プラン名} プランへのアップグレードが完了しました」 |
+| 3 | サブスクリプション更新 | 画面内で処理中表示 |
+| 4 | 反映完了 | 「{プラン名} プランへのアップグレードが完了しました」 |
 
 **表示される情報:**
 - 現在のプランには「現在のプラン」バッジ
@@ -174,14 +173,11 @@
    a. JWT から user を取得
    b. 現在のサブスクリプションを Stripe から取得
    c. プラン順序を比較 → アップグレード判定
-   d. Stripe: 現サブスクに `cancel_at_period_end: true` を設定
-   e. `system_settings` から新プランの `stripe_price_id` を取得
-   f. Stripe: `checkout.sessions.create({ mode: 'subscription', ... })`
-   g. レスポンス: `{ success: true, checkoutUrl: session.url }`
-4. フロントエンド: `window.open(checkoutUrl, '_blank')`
-5. ユーザー: Stripe で決済
-6. Stripe: `customer.subscription.created` Webhook（新サブスク）
-7. `handle-stripe-webhook`: DB 更新
+   d. `system_settings` から新プランの `stripe_price_id` を取得
+   e. Stripe: `subscriptions.update({ price, proration_behavior: 'create_prorations', billing_cycle_anchor: 'now' })`
+   f. レスポンス: `{ success: true, updated: true }`
+4. Stripe: `customer.subscription.updated` Webhook 送信
+5. `handle-stripe-webhook`: DB 更新
 ```
 
 **日割り計算:**
@@ -203,7 +199,7 @@
 | 3 | 警告内容を確認 | 残期間喪失、新上限、注意事項を表示 |
 | 4 | 「ダウングレードする」をクリック | ローディング表示 |
 | 5a | Free へ: API 処理完了 | 成功トースト、UI 更新 |
-| 5b | 有料プランへ: Stripe Checkout | 決済画面へ遷移 |
+| 5b | 有料プランへ: サブスク更新 | 画面内で処理中表示 |
 
 **警告ダイアログ内容:**
 - 「{現プラン} から {新プラン} へダウングレードします」
@@ -227,7 +223,7 @@
 5. Stripe: `customer.subscription.deleted` Webhook 送信
 6. Edge Function `handle-stripe-webhook`:
    a. `user_subscriptions` から該当レコードを削除
-   b. `user_settings.plan_type = 'free'` に更新
+   b. 同一customerのactiveが無い場合のみ `user_settings.plan_type = 'free'` に更新
 7. フロントエンド: ポーリングで plan_type 変化を検知
 ```
 
@@ -237,11 +233,10 @@
 1. UI: 下位有料プラン選択 → DowngradeWarningDialog
 2. フロントエンド: `change-subscription` 呼び出し
 3. Edge Function:
-   a. Stripe: 現サブスク即時キャンセル
-   b. Stripe: 新プランの Checkout Session 作成
-   c. レスポンス: `{ success: true, checkoutUrl }`
-4. フロントエンド: Stripe Checkout へ遷移
-5. 以降は新規契約と同じフロー
+   a. Stripe: 既存サブスクの price 更新（`proration_behavior: 'none'`, `billing_cycle_anchor: 'now'`）
+   b. レスポンス: `{ success: true, updated: true }`
+4. Stripe: `customer.subscription.updated` Webhook
+5. UI 更新完了
 ```
 
 #### 4.2 ファンマ選択が必要な場合（上限超過）

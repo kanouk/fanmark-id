@@ -36,6 +36,8 @@
 - Checkout 後は `subscription-sync-flow` のポーリングでプラン同期。問題があれば `stripe_payment_intents` / `stripe_webhook_events` / `user_settings.plan_type` を照合。
 - Stripe Customer は初回決済時に作成・取得し、`user_settings.stripe_customer_id` に保存。Webhook は `stripe_customer_id` でユーザー特定する。
 - `customer.subscription.deleted` は同一customerにactiveサブスクが存在しない場合のみ `plan_type='free'` に更新。
+- プラン変更（有料→有料）は `subscriptions.update` で price を更新し、アップグレードは `proration_behavior='create_prorations'`、ダウングレードは `proration_behavior='none'` とする。
+- `check-subscription` は Stripe の price_id を参照して `user_settings.plan_type` を同期する。
 - `checkout.session.completed` で `metadata.type=license_extension` の場合、延長後は必ず status=active, grace_expires_at=null, is_returned=false、除外解除、UTC 0:00 に丸めた `license_end` へ更新し、フロントの延長パス（extend-fanmark-license）と同じ状態遷移に揃える。
 
 ## 通知・お気に入り・抽選の実装ガイド

@@ -31,10 +31,9 @@
 
 ## S4: アップグレード (Creator -> Business)
 - 初期状態: Creatorユーザー。`/plans` を開いている。
-- 行動: Businessプランの「選ぶ」 -> Stripe Checkoutで支払い完了。
+- 行動: Businessプランの「選ぶ」。
 - 期待値:
-  - `/plans?checkout=success` で戻る。
-  - 「処理中」オーバーレイが表示される。
+  - 画面内で処理中表示が出る。
   - しばらくしてBusinessが「現在のプラン」になる。
   - 成功トーストが表示される。
   - Stripe側の請求が重複せず、日割り調整が反映される。

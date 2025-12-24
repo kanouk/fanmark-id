@@ -106,14 +106,18 @@ serve(async (req) => {
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
       status: "active",
-      limit: 1,
+      limit: 10,
     });
 
     if (subscriptions.data.length === 0) {
       throw new Error("No active subscription found");
     }
 
-    const currentSubscription = subscriptions.data[0];
+    const currentPlanPriceId = priceIdMap[current_plan_type];
+    const currentSubscription =
+      subscriptions.data.find(sub => sub.items?.data?.[0]?.price?.id === currentPlanPriceId) ??
+      subscriptions.data[0];
+
     logStep("Found active subscription", { subscriptionId: currentSubscription.id });
 
     // Determine if this is an upgrade or downgrade
@@ -129,109 +133,102 @@ serve(async (req) => {
     logStep("Plan change type", { isUpgrade });
 
     if (isUpgrade) {
-      // UPGRADE: Cancel current subscription at period end and create new checkout
+      // UPGRADE: Update subscription price with proration
       const newPriceId = priceIdMap[new_plan_type];
       if (!newPriceId) {
         throw new Error(`No Stripe price ID configured for plan: ${new_plan_type}`);
       }
 
-      logStep("Starting upgrade - creating checkout session", { newPriceId });
+      const currentItem = currentSubscription.items?.data?.[0];
+      if (!currentItem) {
+        throw new Error("No subscription items found");
+      }
 
-      // Set current subscription to cancel at period end
+      logStep("Starting upgrade - updating subscription", { newPriceId });
+
       await stripe.subscriptions.update(currentSubscription.id, {
-        cancel_at_period_end: true,
-      });
-      logStep("Current subscription set to cancel at period end");
-
-      // Create Checkout session for the new plan
-      const origin = req.headers.get("origin") || "http://localhost:3000";
-      const session = await stripe.checkout.sessions.create({
-        customer: customerId,
-        line_items: [
+        cancel_at_period_end: false,
+        items: [
           {
+            id: currentItem.id,
             price: newPriceId,
-            quantity: 1,
           },
         ],
-        mode: "subscription",
-        success_url: `${origin}/plans?checkout=success&upgrade=true`,
-        cancel_url: `${origin}/plans?checkout=canceled`,
+        proration_behavior: "create_prorations",
+        billing_cycle_anchor: "now",
       });
 
-      logStep("Checkout session created for upgrade", { sessionId: session.id, url: session.url });
+      logStep("Subscription updated for upgrade", { subscriptionId: currentSubscription.id });
 
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: "Checkout session created for upgrade",
-          checkout_url: session.url
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-      );
-    } else {
-      // DOWNGRADE: Cancel current subscription immediately and create new checkout
-      logStep("Starting downgrade");
-
-      if (new_plan_type === 'free') {
-        // Downgrade to free - cancel subscription and let webhook handle DB updates
-        logStep("Downgrading to free - cancelling subscription");
-
-        await stripe.subscriptions.cancel(currentSubscription.id);
-
-        logStep("Stripe subscription cancelled - webhook will update user_settings and user_subscriptions");
-
-        // NOTE: user_settings.plan_type update is handled by handle-stripe-webhook
-        // when it receives the customer.subscription.deleted event from Stripe.
-        // This ensures DB state is only updated after Stripe confirms the cancellation.
-
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            message: "Subscription cancellation initiated. Plan will update shortly.",
-            pending: true
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-        );
-      }
-
-      // Downgrade to a different paid plan - cancel current and create checkout
-      const newPriceId = priceIdMap[new_plan_type];
-      if (!newPriceId) {
-        throw new Error(`No Stripe price ID configured for plan: ${new_plan_type}`);
-      }
-
-      logStep("Downgrading to paid plan - cancelling current subscription", { newPriceId });
-
-      // Cancel current subscription immediately
-      await stripe.subscriptions.cancel(currentSubscription.id);
-      logStep("Current subscription cancelled");
-
-      // Create Checkout session for the new plan
-      const origin = req.headers.get("origin") || "http://localhost:3000";
-      const session = await stripe.checkout.sessions.create({
-        customer: customerId,
-        line_items: [
-          {
-            price: newPriceId,
-            quantity: 1,
-          },
-        ],
-        mode: "subscription",
-        success_url: `${origin}/plans?checkout=success&downgrade=true`,
-        cancel_url: `${origin}/plans?checkout=canceled`,
-      });
-
-      logStep("Checkout session created for downgrade", { sessionId: session.id, url: session.url });
-
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: "Checkout session created for downgrade",
-          checkout_url: session.url
+          message: "Subscription updated for upgrade",
+          updated: true
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
+
+    // DOWNGRADE
+    logStep("Starting downgrade");
+
+    if (new_plan_type === 'free') {
+      // Downgrade to free - cancel subscription and let webhook handle DB updates
+      logStep("Downgrading to free - cancelling subscription");
+
+      await stripe.subscriptions.cancel(currentSubscription.id);
+
+      logStep("Stripe subscription cancelled - webhook will update user_settings and user_subscriptions");
+
+      // NOTE: user_settings.plan_type update is handled by handle-stripe-webhook
+      // when it receives the customer.subscription.deleted event from Stripe.
+      // This ensures DB state is only updated after Stripe confirms the cancellation.
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: "Subscription cancellation initiated. Plan will update shortly.",
+          pending: true
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    const newPriceId = priceIdMap[new_plan_type];
+    if (!newPriceId) {
+      throw new Error(`No Stripe price ID configured for plan: ${new_plan_type}`);
+    }
+
+    const currentItem = currentSubscription.items?.data?.[0];
+    if (!currentItem) {
+      throw new Error("No subscription items found");
+    }
+
+    logStep("Downgrading to paid plan - updating subscription", { newPriceId });
+
+    await stripe.subscriptions.update(currentSubscription.id, {
+      cancel_at_period_end: false,
+      items: [
+        {
+          id: currentItem.id,
+          price: newPriceId,
+        },
+      ],
+      proration_behavior: "none",
+      billing_cycle_anchor: "now",
+    });
+
+    logStep("Subscription updated for downgrade", { subscriptionId: currentSubscription.id });
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: "Subscription updated for downgrade",
+        updated: true
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+    );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR in change-subscription", { message: errorMessage });

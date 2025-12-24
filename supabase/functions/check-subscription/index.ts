@@ -205,8 +205,77 @@ serve(async (req) => {
           error: syncError instanceof Error ? syncError.message : String(syncError) 
         });
       }
+
+      // Update plan_type based on Stripe price ID
+      try {
+        const { data: settingsData, error: priceSettingsError } = await supabaseClient
+          .from("system_settings")
+          .select("setting_key, setting_value")
+          .in("setting_key", ["creator_stripe_price_id", "max_stripe_price_id", "business_stripe_price_id"]);
+
+        if (priceSettingsError) {
+          logStep("ERROR: Failed to load pricing settings", { error: priceSettingsError.message });
+        } else {
+          const settingsEntries = (settingsData ?? []).map((row) => [row.setting_key, row.setting_value] as const);
+          const settingsMap = new Map(settingsEntries);
+          const creatorPriceId = settingsMap.get("creator_stripe_price_id");
+          const maxPriceId = settingsMap.get("max_stripe_price_id");
+          const businessPriceId = settingsMap.get("business_stripe_price_id");
+
+          let planType: "creator" | "max" | "business" | null = null;
+          if (item.price.id === creatorPriceId) {
+            planType = "creator";
+          } else if (item.price.id === maxPriceId) {
+            planType = "max";
+          } else if (item.price.id === businessPriceId) {
+            planType = "business";
+          }
+
+          if (planType) {
+            const { error: planUpdateError } = await supabaseClient
+              .from("user_settings")
+              .update({ plan_type: planType })
+              .eq("user_id", user.id);
+
+            if (planUpdateError) {
+              logStep("ERROR: Failed to update plan_type", { error: planUpdateError.message });
+            }
+          } else {
+            logStep("WARNING: Price ID not mapped to plan type", { priceId: item.price.id });
+          }
+        }
+      } catch (planSyncError) {
+        logStep("ERROR: Exception during plan_type sync", { 
+          error: planSyncError instanceof Error ? planSyncError.message : String(planSyncError) 
+        });
+      }
     } else {
       logStep("No active subscription found");
+
+      try {
+        const { data: settingsRow, error: settingsError } = await supabaseClient
+          .from("user_settings")
+          .select("plan_type")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (settingsError) {
+          logStep("ERROR: Failed to read current plan_type", { error: settingsError.message });
+        } else if (settingsRow?.plan_type && ["creator", "max", "business"].includes(settingsRow.plan_type)) {
+          const { error: planUpdateError } = await supabaseClient
+            .from("user_settings")
+            .update({ plan_type: "free" })
+            .eq("user_id", user.id);
+
+          if (planUpdateError) {
+            logStep("ERROR: Failed to update plan_type to free", { error: planUpdateError.message });
+          }
+        }
+      } catch (planSyncError) {
+        logStep("ERROR: Exception during plan_type free sync", { 
+          error: planSyncError instanceof Error ? planSyncError.message : String(planSyncError) 
+        });
+      }
     }
 
     return new Response(JSON.stringify({
