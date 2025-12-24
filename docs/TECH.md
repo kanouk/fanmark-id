@@ -35,6 +35,7 @@
 - Customer Portal はモードごとに設定し、プラン切替を許可。延長 Price ID は `fanmark_tier_extension_prices` を Admin UI から管理（環境変数不要）。
 - Checkout 後は `subscription-sync-flow` のポーリングでプラン同期。問題があれば `stripe_payment_intents` / `stripe_webhook_events` / `user_settings.plan_type` を照合。
 - Stripe Customer は初回決済時に作成・取得し、`user_settings.stripe_customer_id` に保存。Webhook は `stripe_customer_id` でユーザー特定する。
+- `customer.subscription.deleted` は同一customerにactiveサブスクが存在しない場合のみ `plan_type='free'` に更新。
 - `checkout.session.completed` で `metadata.type=license_extension` の場合、延長後は必ず status=active, grace_expires_at=null, is_returned=false、除外解除、UTC 0:00 に丸めた `license_end` へ更新し、フロントの延長パス（extend-fanmark-license）と同じ状態遷移に揃える。
 
 ## 通知・お気に入り・抽選の実装ガイド

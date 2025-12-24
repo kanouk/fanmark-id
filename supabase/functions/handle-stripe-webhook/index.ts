@@ -403,19 +403,48 @@ serve(async (req) => {
           throw deleteError;
         }
 
-        // Update user's plan_type to 'free' when subscription is deleted
-        if (subData?.user_id) {
+        const stripeCustomerId = subscription.customer as string;
+        let targetUserId = subData?.user_id ?? null;
+
+        if (!targetUserId && stripeCustomerId) {
+          const { data: settingsRow, error: settingsLookupError } = await supabaseClient
+            .from("user_settings")
+            .select("user_id")
+            .eq("stripe_customer_id", stripeCustomerId)
+            .maybeSingle();
+
+          if (settingsLookupError) {
+            logStep("WARNING: Failed to lookup user by stripe_customer_id", { error: settingsLookupError.message });
+          } else if (settingsRow?.user_id) {
+            targetUserId = settingsRow.user_id;
+          }
+        }
+
+        const activeSubscriptions = stripeCustomerId
+          ? await stripe.subscriptions.list({
+              customer: stripeCustomerId,
+              status: "active",
+              limit: 1,
+            })
+          : { data: [] as Stripe.Subscription[] };
+
+        const hasActiveSubscription = activeSubscriptions.data.length > 0;
+
+        // Update user's plan_type to 'free' only if no active subscriptions remain
+        if (targetUserId && !hasActiveSubscription) {
           const { error: profileError } = await supabaseClient
             .from("user_settings")
             .update({ plan_type: 'free' })
-            .eq("user_id", subData.user_id);
+            .eq("user_id", targetUserId);
 
           if (profileError) {
             logStep("Profile update failed", { error: profileError });
             throw profileError;
           }
 
-          logStep("Profile updated to free plan", { userId: subData.user_id });
+          logStep("Profile updated to free plan", { userId: targetUserId });
+        } else if (hasActiveSubscription) {
+          logStep("Active subscription remains; skipping free plan update", { stripeCustomerId });
         }
 
         logStep("Subscription deleted from database");

@@ -503,7 +503,7 @@ function addMonths(base: Date, months: number): Date {
 |----------|----------|---------|
 | `customer.subscription.created` | 新規サブスク作成 | user_subscriptions upsert, user_settings.plan_type 更新 |
 | `customer.subscription.updated` | サブスク更新 | user_subscriptions upsert, user_settings.plan_type 更新（必要時） |
-| `customer.subscription.deleted` | サブスクキャンセル完了 | user_subscriptions 削除, user_settings.plan_type = 'free' |
+| `customer.subscription.deleted` | サブスクキャンセル完了 | user_subscriptions 削除, 同一customerにactiveが無い場合のみ user_settings.plan_type = 'free' |
 | `checkout.session.completed` (type=license_extension) | ライセンス延長決済完了 | fanmark_licenses 更新, 抽選キャンセル, audit_log |
 
 **priceId → planType 判定ロジック:**
