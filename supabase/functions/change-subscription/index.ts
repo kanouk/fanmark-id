@@ -69,13 +69,38 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    // Find Stripe customer
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    if (customers.data.length === 0) {
-      throw new Error("No Stripe customer found for this user");
+    let customerId: string | undefined;
+
+    const { data: settingsRow, error: settingsLookupError } = await supabaseClient
+      .from("user_settings")
+      .select("stripe_customer_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (settingsLookupError) {
+      logStep("WARNING: Failed to read stripe_customer_id", { error: settingsLookupError.message });
     }
-    const customerId = customers.data[0].id;
-    logStep("Found Stripe customer", { customerId });
+
+    if (settingsRow?.stripe_customer_id) {
+      customerId = settingsRow.stripe_customer_id;
+      logStep("Using stored Stripe customer ID", { customerId });
+    } else {
+      const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+      if (customers.data.length === 0) {
+        throw new Error("No Stripe customer found for this user");
+      }
+      customerId = customers.data[0].id;
+      logStep("Found Stripe customer by email", { customerId });
+
+      const { error: settingsUpdateError } = await supabaseClient
+        .from("user_settings")
+        .update({ stripe_customer_id: customerId })
+        .eq("user_id", user.id);
+
+      if (settingsUpdateError) {
+        logStep("WARNING: Failed to store stripe_customer_id", { error: settingsUpdateError.message });
+      }
+    }
 
     // Get current active subscription
     const subscriptions = await stripe.subscriptions.list({

@@ -1535,6 +1535,7 @@ export type Database = {
           plan_type: Database["public"]["Enums"]["user_plan"]
           preferred_language: Database["public"]["Enums"]["user_language"]
           requires_password_setup: boolean
+          stripe_customer_id: string | null
           updated_at: string
           user_id: string
           username: string
@@ -1548,6 +1549,7 @@ export type Database = {
           plan_type?: Database["public"]["Enums"]["user_plan"]
           preferred_language?: Database["public"]["Enums"]["user_language"]
           requires_password_setup?: boolean
+          stripe_customer_id?: string | null
           updated_at?: string
           user_id: string
           username: string
@@ -1561,6 +1563,7 @@ export type Database = {
           plan_type?: Database["public"]["Enums"]["user_plan"]
           preferred_language?: Database["public"]["Enums"]["user_language"]
           requires_password_setup?: boolean
+          stripe_customer_id?: string | null
           updated_at?: string
           user_id?: string
           username?: string

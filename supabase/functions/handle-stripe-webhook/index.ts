@@ -195,25 +195,77 @@ serve(async (req) => {
         const subscription = event.data.object as Stripe.Subscription;
         logStep(`Processing ${event.type}`, { subscriptionId: subscription.id });
 
-        // Get customer email to find user_id
-        const customer = await stripe.customers.retrieve(subscription.customer as string);
-        if (customer.deleted) {
-          throw new Error("Customer has been deleted");
+        const stripeCustomerId = subscription.customer as string;
+        let userId: string | null = null;
+
+        const { data: settingsRow, error: settingsLookupError } = await supabaseClient
+          .from("user_settings")
+          .select("user_id, stripe_customer_id")
+          .eq("stripe_customer_id", stripeCustomerId)
+          .maybeSingle();
+
+        if (settingsLookupError) {
+          logStep("WARNING: Failed to lookup user by stripe_customer_id", { error: settingsLookupError.message });
         }
 
-        const customerEmail = customer.email;
-        if (!customerEmail) {
-          throw new Error("Customer has no email");
+        if (settingsRow?.user_id) {
+          userId = settingsRow.user_id;
+          logStep("Matched user by stripe_customer_id", { userId, stripeCustomerId });
+        } else {
+          const customer = await stripe.customers.retrieve(stripeCustomerId);
+          if (customer.deleted) {
+            throw new Error("Customer has been deleted");
+          }
+
+          const customerEmail = customer.email;
+          if (!customerEmail) {
+            throw new Error("Customer has no email");
+          }
+
+          const perPage = 200;
+          let page = 1;
+          let matchedUserId: string | null = null;
+
+          while (!matchedUserId) {
+            const { data: userData, error: userError } = await supabaseClient.auth.admin.listUsers({
+              page,
+              perPage,
+            });
+
+            if (userError) throw userError;
+
+            const foundUser = userData.users.find(u => u.email === customerEmail);
+            if (foundUser) {
+              matchedUserId = foundUser.id;
+              break;
+            }
+
+            if (userData.users.length < perPage) {
+              break;
+            }
+
+            page += 1;
+          }
+
+          if (!matchedUserId) {
+            logStep("User not found for email", { email: customerEmail });
+            throw new Error("User not found");
+          }
+
+          userId = matchedUserId;
+
+          const { error: settingsUpdateError } = await supabaseClient
+            .from("user_settings")
+            .update({ stripe_customer_id: stripeCustomerId })
+            .eq("user_id", userId);
+
+          if (settingsUpdateError) {
+            logStep("WARNING: Failed to store stripe_customer_id", { error: settingsUpdateError.message });
+          }
         }
 
-        // Find user by email
-        const { data: userData, error: userError } = await supabaseClient.auth.admin.listUsers();
-        if (userError) throw userError;
-
-        const user = userData.users.find(u => u.email === customerEmail);
-        if (!user) {
-          logStep("User not found for email", { email: customerEmail });
-          throw new Error("User not found");
+        if (!userId) {
+          throw new Error("User not resolved for Stripe customer");
         }
 
         const firstItem = subscription.items?.data?.[0];
@@ -226,7 +278,7 @@ serve(async (req) => {
 
         logStep("Price & product extracted", { priceId, productId });
 
-        const requiredKeys = ["creator_stripe_price_id", "business_stripe_price_id"];
+        const requiredKeys = ["creator_stripe_price_id", "max_stripe_price_id", "business_stripe_price_id"];
         const { data: settingsData, error: priceSettingsError } = await supabaseClient
           .from("system_settings")
           .select("setting_key, setting_value")
@@ -239,15 +291,18 @@ serve(async (req) => {
         const settingsEntries = (settingsData ?? []).map((row) => [row.setting_key, row.setting_value] as const);
         const settingsMap = new Map(settingsEntries);
         const creatorPriceId = settingsMap.get("creator_stripe_price_id");
+        const maxPriceId = settingsMap.get("max_stripe_price_id");
         const businessPriceId = settingsMap.get("business_stripe_price_id");
 
-        if (!creatorPriceId || !businessPriceId) {
+        if (!creatorPriceId || !maxPriceId || !businessPriceId) {
           throw new Error("Stripe Price IDs are not configured in system_settings");
         }
 
-        let planType: "free" | "creator" | "business" = "free";
+        let planType: "free" | "creator" | "max" | "business" = "free";
         if (priceId === creatorPriceId) {
           planType = "creator";
+        } else if (priceId === maxPriceId) {
+          planType = "max";
         } else if (priceId === businessPriceId) {
           planType = "business";
         } else {
@@ -280,7 +335,7 @@ serve(async (req) => {
 
         // Upsert subscription data
         logStep("Attempting upsert", { 
-          user_id: user.id,
+          user_id: userId,
           price_id: priceId,
           product_id: productId,
           status: subscription.status 
@@ -289,7 +344,7 @@ serve(async (req) => {
         const { error: upsertError } = await supabaseClient
           .from("user_subscriptions")
           .upsert({
-            user_id: user.id,
+            user_id: userId,
             stripe_customer_id: subscription.customer as string,
             stripe_subscription_id: subscription.id,
             product_id: productId,
@@ -316,14 +371,14 @@ serve(async (req) => {
         const { error: profileError } = await supabaseClient
           .from("user_settings")
           .update({ plan_type: planType })
-          .eq("user_id", user.id);
+          .eq("user_id", userId);
 
         if (profileError) {
           logStep("Profile update failed", { error: profileError });
           throw profileError;
         }
 
-        logStep("Subscription and profile updated in database", { userId: user.id, status: subscription.status, planType });
+        logStep("Subscription and profile updated in database", { userId, status: subscription.status, planType });
         break;
       }
 

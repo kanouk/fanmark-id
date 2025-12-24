@@ -88,15 +88,45 @@ serve(async (req) => {
     logStep("Price ID retrieved", { priceId });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+
     let customerId: string | undefined;
-    
-    if (customers.data.length > 0) {
-      customerId = customers.data[0].id;
-      logStep("Existing customer found", { customerId });
+
+    const { data: settingsRow, error: settingsLookupError } = await supabaseClient
+      .from("user_settings")
+      .select("stripe_customer_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (settingsLookupError) {
+      logStep("WARNING: Failed to read stripe_customer_id", { error: settingsLookupError.message });
+    }
+
+    if (settingsRow?.stripe_customer_id) {
+      customerId = settingsRow.stripe_customer_id;
+      logStep("Using stored Stripe customer ID", { customerId });
     } else {
-      logStep("No existing customer found, will create during checkout");
+      const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+
+      if (customers.data.length > 0) {
+        customerId = customers.data[0].id;
+        logStep("Existing customer found by email", { customerId });
+      } else {
+        const createdCustomer = await stripe.customers.create({
+          email: user.email,
+          metadata: { user_id: user.id },
+        });
+        customerId = createdCustomer.id;
+        logStep("Created new Stripe customer", { customerId });
+      }
+
+      const { error: settingsUpdateError } = await supabaseClient
+        .from("user_settings")
+        .update({ stripe_customer_id: customerId })
+        .eq("user_id", user.id);
+
+      if (settingsUpdateError) {
+        logStep("WARNING: Failed to store stripe_customer_id", { error: settingsUpdateError.message });
+      }
     }
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
@@ -112,6 +142,7 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
+      client_reference_id: user.id,
       success_url: `${origin}/plans?checkout=success`,
       cancel_url: `${origin}/plans?checkout=canceled`,
     });

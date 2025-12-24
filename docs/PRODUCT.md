@@ -127,9 +127,10 @@
 3. Edge Function `create-checkout`:
    a. JWT から user を取得
    b. `system_settings` から `{plan_type}_stripe_price_id` を取得
-   c. Stripe: 既存 customer を検索（email ベース）
-   d. Stripe: `checkout.sessions.create({ mode: 'subscription', ... })`
-   e. レスポンス: `{ url: session.url }`
+   c. `user_settings.stripe_customer_id` を参照（なければ Stripe で email 検索 → 作成）
+   d. `stripe_customer_id` を `user_settings` に保存
+   e. Stripe: `checkout.sessions.create({ mode: 'subscription', customer, ... })`
+   f. レスポンス: `{ url: session.url }`
 4. フロントエンド: `window.open(url, '_blank')` で Stripe Checkout へ
 5. ユーザー: Stripe で決済完了
 6. Stripe: `customer.subscription.created` Webhook 送信
@@ -513,6 +514,10 @@ const priceIdToPlanType = {
   [businessPriceId]: 'business'
 };
 ```
+
+**Webhookのユーザー特定:**
+- `subscription.customer` / `checkout.session.customer` の `stripe_customer_id` を `user_settings` から逆引き
+- 見つからない場合のみ email をフォールバックし、見つかったら `stripe_customer_id` を保存
 
 ---
 
