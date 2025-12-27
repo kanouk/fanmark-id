@@ -71,7 +71,7 @@ serve(async (req) => {
 
     let customerId: string | undefined;
 
-    const { data: settingsRow, error: settingsLookupError } = await supabaseClient
+    const { data: stripeSettingsRow, error: settingsLookupError } = await supabaseClient
       .from("user_settings")
       .select("stripe_customer_id")
       .eq("user_id", user.id)
@@ -81,8 +81,8 @@ serve(async (req) => {
       logStep("WARNING: Failed to read stripe_customer_id", { error: settingsLookupError.message });
     }
 
-    if (settingsRow?.stripe_customer_id) {
-      customerId = settingsRow.stripe_customer_id;
+    if (stripeSettingsRow?.stripe_customer_id) {
+      customerId = stripeSettingsRow.stripe_customer_id;
       logStep("Using stored Stripe customer ID", { customerId });
     } else {
       const customers = await stripe.customers.list({ email: user.email, limit: 1 });
@@ -107,7 +107,7 @@ serve(async (req) => {
       Object.entries(priceIdMap).map(([planType, priceId]) => [priceId, planType])
     );
 
-    const { data: settingsRow, error: settingsPlanError } = await supabaseClient
+    const { data: planSettingsRow, error: settingsPlanError } = await supabaseClient
       .from("user_settings")
       .select("plan_type")
       .eq("user_id", user.id)
@@ -128,21 +128,27 @@ serve(async (req) => {
       throw new Error("No active subscription found");
     }
 
-    const subscriptionsWithPlan = subscriptions.data.map(sub => {
+    interface SubscriptionEntry {
+      sub: Stripe.Subscription;
+      priceId: string | null;
+      planType: string | null;
+    }
+
+    const subscriptionsWithPlan: SubscriptionEntry[] = subscriptions.data.map((sub: Stripe.Subscription) => {
       const priceId = sub.items?.data?.[0]?.price?.id ?? null;
       const planType = priceId ? priceIdToPlanType.get(priceId) ?? null : null;
       return { sub, priceId, planType };
     });
 
     const requestedCurrentPlanType = priceIdMap[current_plan_type] ? current_plan_type : null;
-    const storedPlanType = settingsRow?.plan_type ?? null;
+    const storedPlanType = planSettingsRow?.plan_type ?? null;
 
     const matchingSubscription =
       (requestedCurrentPlanType
-        ? subscriptionsWithPlan.find(entry => entry.planType === requestedCurrentPlanType)
+        ? subscriptionsWithPlan.find((entry: SubscriptionEntry) => entry.planType === requestedCurrentPlanType)
         : null) ??
       (storedPlanType
-        ? subscriptionsWithPlan.find(entry => entry.planType === storedPlanType)
+        ? subscriptionsWithPlan.find((entry: SubscriptionEntry) => entry.planType === storedPlanType)
         : null) ??
       (subscriptionsWithPlan.length === 1 ? subscriptionsWithPlan[0] : null);
 
