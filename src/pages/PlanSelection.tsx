@@ -277,6 +277,14 @@ const PlanSelection = () => {
           throw error;
         }
         
+        if (data?.portal_url) {
+          setPlanProcessingMode('stripe');
+          setTimeout(() => {
+            window.location.href = data.portal_url;
+          }, 500);
+          return;
+        }
+
         // Redirect to Stripe Checkout if checkout_url is returned
         if (data?.checkout_url) {
           setTimeout(() => {
@@ -341,6 +349,14 @@ const PlanSelection = () => {
         throw error;
       }
       
+      if (data?.portal_url) {
+        setPlanProcessingMode('stripe');
+        setTimeout(() => {
+          window.location.href = data.portal_url;
+        }, 500);
+        return;
+      }
+
       // Check if we need to redirect to Checkout (for paid plan downgrades)
       if (data?.checkout_url) {
         setPlanProcessingMode('stripe');
@@ -419,6 +435,14 @@ const PlanSelection = () => {
         throw error;
       }
       
+      if (data?.portal_url) {
+        setPlanProcessingMode('stripe');
+        setTimeout(() => {
+          window.location.href = data.portal_url;
+        }, 500);
+        return;
+      }
+
       // Check if we need to redirect to Checkout (for paid plan downgrades)
       if (data?.checkout_url) {
         setPlanProcessingMode('stripe');

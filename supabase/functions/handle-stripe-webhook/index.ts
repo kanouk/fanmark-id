@@ -367,18 +367,24 @@ serve(async (req) => {
           throw upsertError;
         }
 
-        // Update user's plan_type in user_settings table
-        const { error: profileError } = await supabaseClient
-          .from("user_settings")
-          .update({ plan_type: planType })
-          .eq("user_id", userId);
+        if (subscription.status === "active") {
+          const { error: profileError } = await supabaseClient
+            .from("user_settings")
+            .update({ plan_type: planType })
+            .eq("user_id", userId);
 
-        if (profileError) {
-          logStep("Profile update failed", { error: profileError });
-          throw profileError;
+          if (profileError) {
+            logStep("Profile update failed", { error: profileError });
+            throw profileError;
+          }
+
+          logStep("Subscription and profile updated in database", { userId, status: subscription.status, planType });
+        } else {
+          logStep("Skipping plan_type update for non-active subscription", {
+            userId,
+            status: subscription.status,
+          });
         }
-
-        logStep("Subscription and profile updated in database", { userId, status: subscription.status, planType });
         break;
       }
 

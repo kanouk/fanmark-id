@@ -102,6 +102,21 @@ serve(async (req) => {
       }
     }
 
+    // Resolve current plan using Stripe price IDs instead of trusting client input.
+    const priceIdToPlanType = new Map<string, string>(
+      Object.entries(priceIdMap).map(([planType, priceId]) => [priceId, planType])
+    );
+
+    const { data: settingsRow, error: settingsPlanError } = await supabaseClient
+      .from("user_settings")
+      .select("plan_type")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (settingsPlanError) {
+      logStep("WARNING: Failed to read user_settings.plan_type", { error: settingsPlanError.message });
+    }
+
     // Get current active subscription
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
@@ -113,12 +128,35 @@ serve(async (req) => {
       throw new Error("No active subscription found");
     }
 
-    const currentPlanPriceId = priceIdMap[current_plan_type];
-    const currentSubscription =
-      subscriptions.data.find(sub => sub.items?.data?.[0]?.price?.id === currentPlanPriceId) ??
-      subscriptions.data[0];
+    const subscriptionsWithPlan = subscriptions.data.map(sub => {
+      const priceId = sub.items?.data?.[0]?.price?.id ?? null;
+      const planType = priceId ? priceIdToPlanType.get(priceId) ?? null : null;
+      return { sub, priceId, planType };
+    });
 
-    logStep("Found active subscription", { subscriptionId: currentSubscription.id });
+    const requestedCurrentPlanType = priceIdMap[current_plan_type] ? current_plan_type : null;
+    const storedPlanType = settingsRow?.plan_type ?? null;
+
+    const matchingSubscription =
+      (requestedCurrentPlanType
+        ? subscriptionsWithPlan.find(entry => entry.planType === requestedCurrentPlanType)
+        : null) ??
+      (storedPlanType
+        ? subscriptionsWithPlan.find(entry => entry.planType === storedPlanType)
+        : null) ??
+      (subscriptionsWithPlan.length === 1 ? subscriptionsWithPlan[0] : null);
+
+    if (!matchingSubscription?.sub) {
+      throw new Error("Unable to determine active subscription for plan change");
+    }
+
+    const currentSubscription = matchingSubscription.sub;
+    const currentPlanType = matchingSubscription.planType ?? "free";
+
+    logStep("Found active subscription", {
+      subscriptionId: currentSubscription.id,
+      derivedPlanType: currentPlanType,
+    });
 
     // Determine if this is an upgrade or downgrade
     const planOrder: Record<string, number> = {
@@ -129,7 +167,7 @@ serve(async (req) => {
       enterprise: 4,
     };
 
-    const isUpgrade = planOrder[new_plan_type] > planOrder[current_plan_type];
+    const isUpgrade = planOrder[new_plan_type] > planOrder[currentPlanType];
     logStep("Plan change type", { isUpgrade });
 
     if (isUpgrade) {
@@ -146,7 +184,7 @@ serve(async (req) => {
 
       logStep("Starting upgrade - updating subscription", { newPriceId });
 
-      await stripe.subscriptions.update(currentSubscription.id, {
+      const updatedSubscription = await stripe.subscriptions.update(currentSubscription.id, {
         cancel_at_period_end: false,
         items: [
           {
@@ -156,7 +194,36 @@ serve(async (req) => {
         ],
         proration_behavior: "create_prorations",
         billing_cycle_anchor: "now",
+        payment_behavior: "default_incomplete",
+        expand: ["latest_invoice.payment_intent"],
       });
+
+      const paymentIntent = (updatedSubscription.latest_invoice as Stripe.Invoice | null)
+        ?.payment_intent as Stripe.PaymentIntent | null;
+
+      if (updatedSubscription.status !== "active" || paymentIntent?.status === "requires_action") {
+        const origin = req.headers.get("origin") || "http://localhost:3000";
+        const portalSession = await stripe.billingPortal.sessions.create({
+          customer: customerId,
+          return_url: `${origin}/plans`,
+        });
+
+        logStep("Upgrade requires action; redirecting to portal", {
+          subscriptionId: currentSubscription.id,
+          status: updatedSubscription.status,
+          paymentIntentStatus: paymentIntent?.status,
+        });
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: "Subscription update requires action",
+            pending: true,
+            portal_url: portalSession.url
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        );
+      }
 
       logStep("Subscription updated for upgrade", { subscriptionId: currentSubscription.id });
 
@@ -207,7 +274,7 @@ serve(async (req) => {
 
     logStep("Downgrading to paid plan - updating subscription", { newPriceId });
 
-    await stripe.subscriptions.update(currentSubscription.id, {
+    const updatedSubscription = await stripe.subscriptions.update(currentSubscription.id, {
       cancel_at_period_end: false,
       items: [
         {
@@ -217,7 +284,36 @@ serve(async (req) => {
       ],
       proration_behavior: "none",
       billing_cycle_anchor: "now",
+      payment_behavior: "default_incomplete",
+      expand: ["latest_invoice.payment_intent"],
     });
+
+    const paymentIntent = (updatedSubscription.latest_invoice as Stripe.Invoice | null)
+      ?.payment_intent as Stripe.PaymentIntent | null;
+
+    if (updatedSubscription.status !== "active" || paymentIntent?.status === "requires_action") {
+      const origin = req.headers.get("origin") || "http://localhost:3000";
+      const portalSession = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: `${origin}/plans`,
+      });
+
+      logStep("Downgrade requires action; redirecting to portal", {
+        subscriptionId: currentSubscription.id,
+        status: updatedSubscription.status,
+        paymentIntentStatus: paymentIntent?.status,
+      });
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: "Subscription update requires action",
+          pending: true,
+          portal_url: portalSession.url
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
 
     logStep("Subscription updated for downgrade", { subscriptionId: currentSubscription.id });
 

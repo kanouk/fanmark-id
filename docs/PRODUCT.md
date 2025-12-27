@@ -174,8 +174,9 @@
    b. 現在のサブスクリプションを Stripe から取得
    c. プラン順序を比較 → アップグレード判定
    d. `system_settings` から新プランの `stripe_price_id` を取得
-   e. Stripe: `subscriptions.update({ price, proration_behavior: 'create_prorations', billing_cycle_anchor: 'now' })`
-   f. レスポンス: `{ success: true, updated: true }`
+   e. Stripe: `subscriptions.update({ price, proration_behavior: 'create_prorations', billing_cycle_anchor: 'now', payment_behavior: 'default_incomplete' })`
+   f. 必要に応じて Customer Portal へ遷移
+   g. レスポンス: `{ success: true, updated: true }`
 4. Stripe: `customer.subscription.updated` Webhook 送信
 5. `handle-stripe-webhook`: DB 更新
 ```
@@ -233,8 +234,9 @@
 1. UI: 下位有料プラン選択 → DowngradeWarningDialog
 2. フロントエンド: `change-subscription` 呼び出し
 3. Edge Function:
-   a. Stripe: 既存サブスクの price 更新（`proration_behavior: 'none'`, `billing_cycle_anchor: 'now'`）
-   b. レスポンス: `{ success: true, updated: true }`
+   a. Stripe: 既存サブスクの price 更新（`proration_behavior: 'none'`, `billing_cycle_anchor: 'now'`, `payment_behavior: 'default_incomplete'`）
+   b. 必要に応じて Customer Portal へ遷移
+   c. レスポンス: `{ success: true, updated: true }`
 4. Stripe: `customer.subscription.updated` Webhook
 5. UI 更新完了
 ```
@@ -496,8 +498,8 @@ function addMonths(base: Date, months: number): Date {
 
 | イベント | 処理内容 | DB 更新 |
 |----------|----------|---------|
-| `customer.subscription.created` | 新規サブスク作成 | user_subscriptions upsert, user_settings.plan_type 更新 |
-| `customer.subscription.updated` | サブスク更新 | user_subscriptions upsert, user_settings.plan_type 更新（必要時） |
+| `customer.subscription.created` | 新規サブスク作成 | user_subscriptions upsert, status=active の場合のみ user_settings.plan_type 更新 |
+| `customer.subscription.updated` | サブスク更新 | user_subscriptions upsert, status=active の場合のみ user_settings.plan_type 更新（必要時） |
 | `customer.subscription.deleted` | サブスクキャンセル完了 | user_subscriptions 削除, 同一customerにactiveが無い場合のみ user_settings.plan_type = 'free' |
 | `checkout.session.completed` (type=license_extension) | ライセンス延長決済完了 | fanmark_licenses 更新, 抽選キャンセル, audit_log |
 
