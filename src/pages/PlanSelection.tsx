@@ -56,6 +56,10 @@ const PlanSelection = () => {
   const [pollState, setPollState] = useState<'idle' | 'waiting-session' | 'polling'>('idle');
   const [pollAttempts, setPollAttempts] = useState(0);
   const [initialPlanType, setInitialPlanType] = useState<PlanType | null>(null);
+  const [pendingPlanSync, setPendingPlanSync] = useState<{
+    expectedPlan: PlanType;
+  } | null>(null);
+  const [planSyncAttempts, setPlanSyncAttempts] = useState(0);
   const [showDowngradeWarning, setShowDowngradeWarning] = useState(false);
   const [downgradeInfo, setDowngradeInfo] = useState<{
     currentPlan: PlanType;
@@ -103,6 +107,34 @@ const PlanSelection = () => {
       });
     }
   }, [t, toast]);
+
+  const finishPlanSync = useCallback((outcome: 'success' | 'timeout', expectedPlan?: PlanType) => {
+    setPendingPlanSync(null);
+    setPlanSyncAttempts(0);
+    setPlanProcessingMode(null);
+
+    if (outcome === 'timeout') {
+      toast({
+        title: t('planSelection.checkoutSuccess'),
+        description: t('planSelection.refreshRequired'),
+      });
+      return;
+    }
+
+    if (expectedPlan) {
+      toast({
+        title: t('planSelection.downgradeSuccess'),
+        description: t('planSelection.downgradeSuccessDescription', {
+          plan: t(`planSelection.${expectedPlan}.name`),
+        }),
+      });
+    }
+  }, [t, toast]);
+
+  const startPlanSync = useCallback((expectedPlan: PlanType) => {
+    setPendingPlanSync({ expectedPlan });
+    setPlanSyncAttempts(0);
+  }, []);
 
   // Handle checkout success or cancellation with auto-refresh
   useEffect(() => {
@@ -166,6 +198,35 @@ const PlanSelection = () => {
 
     return () => clearTimeout(timer);
   }, [pendingCheckout, pollState, pollAttempts, refetchProfile, refetchSubscription]);
+
+  // Poll for plan_type updates after a downgrade to avoid stale UI.
+  useEffect(() => {
+    if (!pendingPlanSync) return;
+    if (planSyncAttempts >= 15) {
+      finishPlanSync('timeout');
+      return;
+    }
+
+    const delay = planSyncAttempts === 0 ? 1000 : 2000;
+    const timer = setTimeout(async () => {
+      setPlanSyncAttempts(prev => prev + 1);
+      try {
+        await Promise.all([refetchProfile(), refetchSubscription()]);
+      } catch (error) {
+        console.warn('[PlanSelection] Plan sync poll error', error);
+      }
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [finishPlanSync, pendingPlanSync, planSyncAttempts, refetchProfile, refetchSubscription]);
+
+  // Detect plan sync completion for downgrades.
+  useEffect(() => {
+    if (!pendingPlanSync) return;
+    if (!profile?.plan_type) return;
+    if (profile.plan_type !== pendingPlanSync.expectedPlan) return;
+    finishPlanSync('success', pendingPlanSync.expectedPlan);
+  }, [finishPlanSync, pendingPlanSync, profile?.plan_type]);
 
   // Timeout while waiting for Supabase session recovery
   useEffect(() => {
@@ -366,16 +427,8 @@ const PlanSelection = () => {
         return;
       }
       
-      // For free plan downgrades, just refresh and show success
-      await Promise.all([refetchProfile(), refetchSubscription()]);
-      
-      setPlanProcessingMode(null);
-      toast({
-        title: t('planSelection.downgradeSuccess'),
-        description: t('planSelection.downgradeSuccessDescription', { 
-          plan: t(`planSelection.${downgradeInfo.newPlan}.name`) 
-        }),
-      });
+      // For downgrades, wait for plan_type to sync before unlocking the UI.
+      startPlanSync(downgradeInfo.newPlan);
     } catch (error) {
       console.error('Downgrade confirmation error:', error);
       setPlanProcessingMode(null);
@@ -452,16 +505,8 @@ const PlanSelection = () => {
         return;
       }
       
-      // For free plan downgrades, just refresh and show success
-      await Promise.all([refetchProfile(), refetchSubscription()]);
-      
-      setPlanProcessingMode(null);
-      toast({
-        title: t('planSelection.downgradeSuccess'),
-        description: t('planSelection.downgradeSuccessDescription', {
-          plan: t(`planSelection.${pendingPlanType}.name`),
-        }),
-      });
+      // For downgrades, wait for plan_type to sync before unlocking the UI.
+      startPlanSync(pendingPlanType);
     } catch (error) {
       console.error('Fanmark selection error:', error);
       setPlanProcessingMode(null);
