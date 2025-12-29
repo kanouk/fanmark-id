@@ -942,7 +942,14 @@
       "processing": "処理中...",
       "buttonConfirmWithPrice": "¥{price}で延長する",
       "stripeRedirectNotice": "Stripe決済ページに移動します",
-      "paymentNotice": "決済完了後にライセンス期間が延長されます"
+      "paymentNotice": "決済完了後にライセンス期間が延長されます",
+      "couponTitle": "クーポンで延長",
+      "couponPlaceholder": "クーポンコードを入力",
+      "couponApply": "適用",
+      "couponSuccessTitle": "クーポンを適用しました",
+      "couponSuccessDescription": "{months}ヶ月分の延長を適用しました",
+      "couponErrorTitle": "クーポンの適用に失敗しました",
+      "couponErrorDescription": "クーポンコードを確認してください"
     },
     "returnDialog": {
       "title": "このファンマを返却しますか？",

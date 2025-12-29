@@ -235,6 +235,7 @@ export const FanmarkDashboard = () => {
     const licenseData = fanmark.fanmark_licenses;
     setExtendTarget({
       fanmarkId: fanmark.id,
+      licenseId: fanmark.current_license_id ?? null,
       emoji: fanmark.fanmark,
       shortId: fanmark.short_id,
       licenseEnd: licenseData?.license_end ?? null,
@@ -1632,6 +1633,10 @@ export const FanmarkDashboard = () => {
         onSubmit={handleExtendSubmit}
         isProcessing={extendProcessing}
         selectedPlan={extendSelectedPlan}
+        onCouponApplied={() => {
+          // Refetch fanmarks to reflect the updated license
+          fetchFanmarks();
+        }}
       />
 
       <ReturnFanmarkDialog

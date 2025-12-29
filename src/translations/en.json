@@ -944,7 +944,14 @@
       "processing": "Processing...",
       "buttonConfirmWithPrice": "Extend for ¥{price}",
       "stripeRedirectNotice": "You will be redirected to Stripe checkout",
-      "paymentNotice": "License will be extended after payment completion"
+      "paymentNotice": "License will be extended after payment completion",
+      "couponTitle": "Extend with Coupon",
+      "couponPlaceholder": "Enter coupon code",
+      "couponApply": "Apply",
+      "couponSuccessTitle": "Coupon applied",
+      "couponSuccessDescription": "Extended by {months} month(s)",
+      "couponErrorTitle": "Failed to apply coupon",
+      "couponErrorDescription": "Please check your coupon code"
     },
     "returnDialog": {
       "title": "Return this fanmark?",
