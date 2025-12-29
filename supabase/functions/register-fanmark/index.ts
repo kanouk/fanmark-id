@@ -2,6 +2,17 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { roundUpToNextUtcMidnight } from "../_shared/return-helpers.ts";
+import {
+  validateString,
+  validateUrl,
+  validateEnum,
+  validateBoolean,
+  validateUuidArray,
+  logSafeError,
+  createGenericErrorResponse,
+  createValidationErrorResponse,
+  type ValidationError,
+} from "../_shared/validation.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -103,7 +114,7 @@ async function classifyFanmarkTier(
   } as { input_emoji_ids: string[] });
 
   if (error) {
-    console.error('Failed to classify fanmark tier:', error);
+    logSafeError('classify_fanmark_tier', error);
     throw new Error('Failed to classify fanmark tier');
   }
 
@@ -146,7 +157,7 @@ async function convertEmojiSequenceToIds(
     .in('emoji', normalizedSegments);
 
   if (error) {
-    console.error('Failed to resolve emoji IDs:', error);
+    logSafeError('resolve_emoji_ids', error);
     throw new Error('Failed to resolve emoji IDs');
   }
 
@@ -357,7 +368,38 @@ serve(async (req) => {
     }
 
     const body: RegisterFanmarkRequest = await req.json();
-    console.log('Received request body:', body);
+    
+    // Validate all inputs using shared validation utilities
+    const validationErrors: ValidationError[] = [];
+    
+    const fanmarkResult = validateString(body.user_input_fanmark, 'user_input_fanmark', { minLength: 1, maxLength: 50 });
+    if (!fanmarkResult.success) validationErrors.push(...(fanmarkResult.errors || []));
+    
+    const displayNameResult = validateString(body.displayName, 'displayName', { maxLength: 100, optional: true });
+    if (!displayNameResult.success) validationErrors.push(...(displayNameResult.errors || []));
+    
+    const defaultFanmarkNameResult = validateString(body.defaultFanmarkName, 'defaultFanmarkName', { maxLength: 100, optional: true });
+    if (!defaultFanmarkNameResult.success) validationErrors.push(...(defaultFanmarkNameResult.errors || []));
+    
+    const targetUrlResult = validateUrl(body.targetUrl, 'targetUrl', { maxLength: 2000, optional: true });
+    if (!targetUrlResult.success) validationErrors.push(...(targetUrlResult.errors || []));
+    
+    const textContentResult = validateString(body.textContent, 'textContent', { maxLength: 5000, optional: true });
+    if (!textContentResult.success) validationErrors.push(...(textContentResult.errors || []));
+    
+    const accessTypeResult = validateEnum(body.accessType, 'accessType', ['inactive', 'redirect', 'text', 'profile'] as const, { optional: true });
+    if (!accessTypeResult.success) validationErrors.push(...(accessTypeResult.errors || []));
+    
+    const createProfileResult = validateBoolean(body.createProfile, 'createProfile', { optional: true, defaultValue: false });
+    if (!createProfileResult.success) validationErrors.push(...(createProfileResult.errors || []));
+    
+    const emojiIdsResult = validateUuidArray(body.emoji_ids, 'emoji_ids', { minLength: 1, maxLength: 5, optional: true });
+    if (!emojiIdsResult.success && body.emoji_ids !== undefined) validationErrors.push(...(emojiIdsResult.errors || []));
+    
+    if (validationErrors.length > 0) {
+      return createValidationErrorResponse(corsHeaders, validationErrors);
+    }
+    
     const {
       user_input_fanmark,
       emoji_ids: inputEmojiIds,
@@ -378,13 +420,11 @@ serve(async (req) => {
       );
     }
 
-    // Validate fanmark string
-    console.log('Validating user input fanmark:', user_input_fanmark);
-    const validation = await validateEmojiCombination(supabase, user_input_fanmark);
-    if (!validation.valid) {
-      console.error('Validation failed:', validation.error);
+    // Validate fanmark string (emoji-specific validation)
+    const emojiValidation = await validateEmojiCombination(supabase, user_input_fanmark);
+    if (!emojiValidation.valid) {
       return new Response(
-        JSON.stringify({ error: validation.error }),
+        JSON.stringify({ error: emojiValidation.error }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -452,7 +492,7 @@ serve(async (req) => {
         .maybeSingle() as { data: FanmarkRow | null; error: any };
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Failed to lookup fanmark by normalized_emoji_ids:', error);
+        logSafeError('lookup_fanmark_by_normalized_ids', error);
       }
       if (data) {
         existingFanmark = data;
@@ -467,7 +507,7 @@ serve(async (req) => {
         .maybeSingle() as { data: FanmarkRow | null; error: any };
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Failed legacy fanmark lookup by normalized_emoji:', error);
+        logSafeError('lookup_fanmark_by_normalized_emoji', error);
       }
       if (data) {
         existingFanmark = data;
@@ -829,11 +869,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error registering fanmark:', error);
-    const message = error instanceof Error ? error.message : 'Internal server error';
-    return new Response(
-      JSON.stringify({ error: message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    logSafeError('register_fanmark', error);
+    return createGenericErrorResponse(corsHeaders, 500);
   }
 });

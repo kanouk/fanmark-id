@@ -4,6 +4,13 @@ import {
   createSupabaseClient,
   roundUpToNextUtcMidnight,
 } from "../_shared/return-helpers.ts";
+import {
+  validateUuid,
+  validatePositiveInt,
+  logSafeError,
+  createGenericErrorResponse,
+  createValidationErrorResponse,
+} from "../_shared/validation.ts";
 
 interface FanmarkInfo {
   id: string;
@@ -77,22 +84,19 @@ serve(async (req) => {
     }
 
     const body = (await req.json()) as ExtendRequestBody | null;
-    const fanmarkId = body?.fanmark_id;
-    const months = body?.months;
-
-    if (!fanmarkId || typeof fanmarkId !== 'string') {
-      return new Response(JSON.stringify({ error: 'fanmark_id is required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    
+    // Validate inputs using shared validation
+    const fanmarkIdResult = validateUuid(body?.fanmark_id, 'fanmark_id');
+    if (!fanmarkIdResult.success) {
+      return createValidationErrorResponse(corsHeaders, fanmarkIdResult.errors || []);
     }
-
-    if (typeof months !== 'number' || !Number.isInteger(months) || months <= 0) {
-      return new Response(JSON.stringify({ error: 'months must be a positive integer' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    const fanmarkId = fanmarkIdResult.data!;
+    
+    const monthsResult = validatePositiveInt(body?.months, 'months', { min: 1, max: 12 });
+    if (!monthsResult.success) {
+      return createValidationErrorResponse(corsHeaders, monthsResult.errors || []);
     }
+    const months = monthsResult.data!;
 
     if (!ALLOWED_MONTHS.has(months)) {
       return new Response(JSON.stringify({ error: 'Unsupported plan length' }), {
@@ -129,11 +133,8 @@ serve(async (req) => {
       .maybeSingle();
 
     if (licenseError) {
-      console.error('Failed to fetch license for extension:', licenseError);
-      return new Response(JSON.stringify({ error: 'Failed to fetch license information' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      logSafeError('fetch_license_for_extension', licenseError);
+      return createGenericErrorResponse(corsHeaders, 500);
     }
 
     if (!license) {
@@ -169,11 +170,8 @@ serve(async (req) => {
       .maybeSingle();
 
     if (pricingError) {
-      console.error('Failed to fetch tier pricing:', pricingError);
-      return new Response(JSON.stringify({ error: 'Failed to fetch pricing information' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      logSafeError('fetch_tier_pricing', pricingError);
+      return createGenericErrorResponse(corsHeaders, 500);
     }
 
     if (!pricing || pricing.is_active === false) {
@@ -340,11 +338,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Unexpected error in extend-fanmark-license:', error);
-    const message = error instanceof Error ? error.message : 'Internal error';
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    logSafeError('extend_fanmark_license', error);
+    return createGenericErrorResponse(corsHeaders, 500);
   }
 });
