@@ -3,6 +3,7 @@ import jaTranslations from '@/translations/ja.json';
 import enTranslations from '@/translations/en.json';
 import koTranslations from '@/translations/ko.json';
 import idTranslations from '@/translations/id.json';
+import { normalizeLanguage } from '@/lib/language';
 
 type Language = 'ja' | 'en' | 'ko' | 'id';
 type Translations = typeof jaTranslations;
@@ -29,7 +30,7 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<Language>(() => {
     try {
       const saved = localStorage.getItem('fanmark-language');
-      return (saved as Language) || 'ja';
+      return normalizeLanguage(saved) as Language;
     } catch (error) {
       console.warn('Failed to load language from localStorage:', error);
       return 'ja';

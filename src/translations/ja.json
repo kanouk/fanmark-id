@@ -248,6 +248,7 @@
     "deletedUser": "退会したユーザー",
     "unknownUser": "不明なユーザー",
     "tryAgain": "再試行",
+    "reload": "再読み込み",
     "close": "閉じる",
     "save": "保存",
     "cancel": "閉じる",

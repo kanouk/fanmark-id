@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,13 +32,21 @@ import { Loader2, Plus, RefreshCw, ToggleLeft, ToggleRight, Trash2, Eye } from '
 import { useToast } from '@/hooks/use-toast';
 import { useExtensionCouponAdmin, ExtensionCouponRow, ExtensionCouponUsageRow, CreateCouponValues } from '@/hooks/useExtensionCouponAdmin';
 import { useTranslation } from '@/hooks/useTranslation';
+import { supabase } from '@/integrations/supabase/client';
 
-const TIER_OPTIONS = [
-  { level: 1, label: 'Tier 1 (1絵文字)' },
-  { level: 2, label: 'Tier 2 (2絵文字)' },
-  { level: 3, label: 'Tier 3 (3絵文字)' },
-  { level: 4, label: 'Tier 4 (4絵文字)' },
-  { level: 5, label: 'Tier 5 (5絵文字以上)' },
+interface TierOption {
+  tier_level: number;
+  display_name: string;
+  emoji_count_min: number | null;
+  emoji_count_max: number | null;
+  is_active?: boolean;
+}
+
+const DEFAULT_TIER_OPTIONS: TierOption[] = [
+  { tier_level: 1, display_name: 'C', emoji_count_min: 4, emoji_count_max: 5 },
+  { tier_level: 2, display_name: 'B', emoji_count_min: 3, emoji_count_max: 3 },
+  { tier_level: 3, display_name: 'A', emoji_count_min: 2, emoji_count_max: 5 },
+  { tier_level: 4, display_name: 'S', emoji_count_min: 1, emoji_count_max: 1 },
 ];
 
 const MONTHS_OPTIONS = [
@@ -53,12 +61,50 @@ export const AdminExtensionCoupons = () => {
   const { toast } = useToast();
   const { coupons, loading, error, refresh, createCoupon, toggleActive, deleteCoupon, fetchUsages } = useExtensionCouponAdmin();
   
+  const [tierOptions, setTierOptions] = useState<TierOption[]>([]);
+  const [tiersLoading, setTiersLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [usageDialogOpen, setUsageDialogOpen] = useState(false);
   const [selectedCouponForUsage, setSelectedCouponForUsage] = useState<ExtensionCouponRow | null>(null);
   const [usages, setUsages] = useState<ExtensionCouponUsageRow[]>([]);
   const [loadingUsages, setLoadingUsages] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchTiers = async () => {
+      setTiersLoading(true);
+      try {
+        const { data, error: tierError } = await supabase
+          .from('fanmark_tiers')
+          .select('tier_level, display_name, emoji_count_min, emoji_count_max, is_active')
+          .order('tier_level', { ascending: true });
+
+        if (tierError) throw tierError;
+
+        const activeTiers = (data || []).filter((tier) => tier.is_active !== false);
+        if (isMounted) {
+          setTierOptions(activeTiers.length > 0 ? activeTiers : DEFAULT_TIER_OPTIONS);
+        }
+      } catch (err) {
+        console.error('Failed to fetch fanmark tiers:', err);
+        if (isMounted) {
+          setTierOptions(DEFAULT_TIER_OPTIONS);
+        }
+      } finally {
+        if (isMounted) {
+          setTiersLoading(false);
+        }
+      }
+    };
+
+    fetchTiers();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const sortedCoupons = useMemo(
     () =>
@@ -68,6 +114,19 @@ export const AdminExtensionCoupons = () => {
       }),
     [coupons]
   );
+
+  const tierLabelMap = useMemo(() => {
+    const resolved = tierOptions.length > 0 ? tierOptions : DEFAULT_TIER_OPTIONS;
+    return new Map(resolved.map((tier) => [tier.tier_level, tier.display_name]));
+  }, [tierOptions]);
+
+  const tierOptionLabels = useMemo(() => {
+    const resolved = tierOptions.length > 0 ? tierOptions : DEFAULT_TIER_OPTIONS;
+    return resolved.map((tier) => ({
+      level: tier.tier_level,
+      label: formatTierOptionLabel(tier),
+    }));
+  }, [tierOptions]);
 
   const handleCreate = async (values: CreateCouponValues) => {
     setSubmitting(true);
@@ -112,7 +171,9 @@ export const AdminExtensionCoupons = () => {
 
   const formatTierLevels = (tiers: number[] | null) => {
     if (!tiers || tiers.length === 0) return '全ティア';
-    return tiers.map(t => `T${t}`).join(', ');
+    return tiers
+      .map((tier) => tierLabelMap.get(tier) || `T${tier}`)
+      .join(', ');
   };
 
   return (
@@ -137,6 +198,8 @@ export const AdminExtensionCoupons = () => {
               </DialogTrigger>
               <CreateCouponDialog
                 loading={submitting}
+                tierOptions={tierOptionLabels}
+                tiersLoading={tiersLoading}
                 onSubmit={handleCreate}
                 onClose={() => setCreateOpen(false)}
               />
@@ -284,11 +347,13 @@ export const AdminExtensionCoupons = () => {
 
 interface CreateCouponDialogProps {
   loading: boolean;
+  tierOptions: { level: number; label: string }[];
+  tiersLoading: boolean;
   onSubmit: (values: CreateCouponValues) => Promise<void>;
   onClose: () => void;
 }
 
-const CreateCouponDialog = ({ loading, onSubmit, onClose }: CreateCouponDialogProps) => {
+const CreateCouponDialog = ({ loading, tierOptions, tiersLoading, onSubmit, onClose }: CreateCouponDialogProps) => {
   const { t } = useTranslation();
   const [code, setCode] = useState('');
   const [months, setMonths] = useState<number>(1);
@@ -356,12 +421,16 @@ const CreateCouponDialog = ({ loading, onSubmit, onClose }: CreateCouponDialogPr
         <div className="space-y-2">
           <Label>対象ティア（未選択で全ティア）</Label>
           <div className="flex flex-wrap gap-4">
-            {TIER_OPTIONS.map((tier) => (
+            {(tierOptions.length > 0 ? tierOptions : DEFAULT_TIER_OPTIONS.map((tier) => ({
+              level: tier.tier_level,
+              label: formatTierOptionLabel(tier),
+            }))).map((tier) => (
               <div key={tier.level} className="flex items-center space-x-2">
                 <Checkbox
                   id={`tier-${tier.level}`}
                   checked={selectedTiers.includes(tier.level)}
                   onCheckedChange={(checked) => handleTierChange(tier.level, !!checked)}
+                  disabled={tiersLoading}
                 />
                 <label htmlFor={`tier-${tier.level}`} className="text-sm">{tier.label}</label>
               </div>
@@ -417,4 +486,28 @@ function toLocalInputValue(isoString: string) {
   } catch {
     return '';
   }
+}
+
+function formatTierOptionLabel(tier: TierOption) {
+  if (tier.display_name === 'A') {
+    return 'Tier A (連続絵文字 2-5)';
+  }
+  const range = formatEmojiRange(tier.emoji_count_min, tier.emoji_count_max);
+  return range ? `Tier ${tier.display_name} (${range})` : `Tier ${tier.display_name}`;
+}
+
+function formatEmojiRange(min: number | null, max: number | null) {
+  if (min !== null && max !== null && min === max) {
+    return `${min}絵文字`;
+  }
+  if (min !== null && max !== null) {
+    return `${min}-${max}絵文字`;
+  }
+  if (min !== null) {
+    return `${min}絵文字以上`;
+  }
+  if (max !== null) {
+    return `${max}絵文字以下`;
+  }
+  return '';
 }

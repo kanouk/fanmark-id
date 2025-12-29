@@ -42,7 +42,7 @@ interface CouponInfo {
 }
 
 interface ApplyCouponRequestBody {
-  fanmark_id?: string;
+  license_id?: string;
   coupon_code?: string;
 }
 
@@ -93,12 +93,12 @@ serve(async (req) => {
 
     const body = (await req.json()) as ApplyCouponRequestBody | null;
     
-    // Validate fanmark_id
-    const fanmarkIdResult = validateUuid(body?.fanmark_id, 'fanmark_id');
-    if (!fanmarkIdResult.success) {
-      return createValidationErrorResponse(corsHeaders, fanmarkIdResult.errors || []);
+    // Validate license_id (license is the true target of extension)
+    const licenseIdResult = validateUuid(body?.license_id, 'license_id');
+    if (!licenseIdResult.success) {
+      return createValidationErrorResponse(corsHeaders, licenseIdResult.errors || []);
     }
-    const fanmarkId = fanmarkIdResult.data!;
+    const licenseId = licenseIdResult.data!;
     
     // Validate coupon_code
     const couponCode = body?.coupon_code?.trim().toUpperCase();
@@ -155,7 +155,7 @@ serve(async (req) => {
       });
     }
 
-    // Fetch the license
+    // Fetch the license by ID for the authenticated user
     const { data: license, error: licenseError } = await supabase
       .from('fanmark_licenses')
       .select(`
@@ -174,11 +174,9 @@ serve(async (req) => {
           tier_level
         )
       `)
-      .eq('fanmark_id', fanmarkId)
+      .eq('id', licenseId)
       .eq('user_id', authData.user.id)
       .in('status', ['active', 'grace'])
-      .order('license_end', { ascending: false })
-      .limit(1)
       .maybeSingle();
 
     if (licenseError) {
@@ -227,7 +225,7 @@ serve(async (req) => {
       .select('id')
       .eq('coupon_id', couponInfo.id)
       .eq('user_id', authData.user.id)
-      .eq('fanmark_id', fanmarkId)
+      .eq('fanmark_id', licenseRecord.fanmark_id)
       .maybeSingle();
 
     if (usageCheckError) {
@@ -290,7 +288,7 @@ serve(async (req) => {
       .insert({
         coupon_id: couponInfo.id,
         user_id: authData.user.id,
-        fanmark_id: fanmarkId,
+        fanmark_id: licenseRecord.fanmark_id,
         license_id: licenseRecord.id,
       });
 
