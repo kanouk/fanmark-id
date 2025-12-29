@@ -467,7 +467,7 @@ serve(async (req) => {
     console.log('Determined tier level:', tierLevel, 'display:', classifiedTier.display_name);
     
     // Check pattern-based pricing using new availability rules system
-    const pricingInfo = await checkPatternBasedPricing(supabase, normalizedEmoji, validation.emojiCount);
+    const pricingInfo = await checkPatternBasedPricing(supabase, normalizedEmoji, emojiValidation.emojiCount);
     
     // If not available or requires payment
     if (!pricingInfo.isAvailable) {
