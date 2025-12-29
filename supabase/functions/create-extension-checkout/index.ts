@@ -47,18 +47,18 @@ serve(async (req) => {
     logStep("User authenticated", { userId: user.id });
 
     const body = await req.json();
-    const { fanmark_id, months } = body;
+    const { license_id, months } = body as { license_id?: string; months?: number };
 
-    if (!fanmark_id || typeof months !== "number") {
-      throw new Error("Invalid request: fanmark_id and months are required");
+    if (!license_id || typeof months !== "number") {
+      throw new Error("Invalid request: license_id and months are required");
     }
-    logStep("Request validated", { fanmark_id, months });
+    logStep("Request validated", { license_id, months });
 
     // Verify license ownership (must be active or grace status)
     const { data: licenseData, error: licenseError } = await supabaseClient
       .from("fanmark_licenses")
       .select("id, fanmark_id, status, license_end, fanmarks(tier_level)")
-      .eq("fanmark_id", fanmark_id)
+      .eq("id", license_id)
       .eq("user_id", user.id)
       .in("status", ["active", "grace"])
       .single();
@@ -110,7 +110,7 @@ serve(async (req) => {
       cancel_url: `${origin}/dashboard?extension=canceled`,
       metadata: {
         type: "license_extension",
-        fanmark_id: fanmark_id,
+        fanmark_id: licenseData.fanmark_id,
         license_id: licenseData.id,
         user_id: user.id,
         tier_level: String(tierLevel),

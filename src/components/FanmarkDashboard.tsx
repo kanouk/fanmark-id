@@ -258,7 +258,7 @@ export const FanmarkDashboard = () => {
     try {
       const { data, error } = await supabase.functions.invoke('create-extension-checkout', {
         body: {
-          fanmark_id: extendTarget.fanmarkId,
+          license_id: extendTarget.licenseId,
           months: extendSelectedPlan.months,
         },
       });
