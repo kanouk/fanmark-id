@@ -194,13 +194,6 @@ serve(async (req) => {
     const licenseRecord = license as unknown as LicenseWithFanmark;
     const fanmarkData = licenseRecord.fanmarks?.[0] ?? null;
 
-    if (fanmarkData?.status !== 'active') {
-      return new Response(JSON.stringify({ error: 'fanmark_not_active' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
     const tierLevel = fanmarkData?.tier_level ?? null;
     if (!tierLevel) {
       return new Response(JSON.stringify({ error: 'tier_not_found' }), {
