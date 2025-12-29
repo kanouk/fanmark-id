@@ -943,7 +943,14 @@
       "processing": "처리 중...",
       "buttonConfirmWithPrice": "¥{price}로 연장",
       "stripeRedirectNotice": "Stripe 결제 페이지로 이동합니다",
-      "paymentNotice": "결제 완료 후 라이선스 기간이 연장됩니다"
+      "paymentNotice": "결제 완료 후 라이선스 기간이 연장됩니다",
+      "couponTitle": "쿠폰으로 연장",
+      "couponPlaceholder": "쿠폰 코드 입력",
+      "couponApply": "적용",
+      "couponSuccessTitle": "쿠폰이 적용되었습니다",
+      "couponSuccessDescription": "{months}개월분의 연장이 적용되었습니다",
+      "couponErrorTitle": "쿠폰 적용 실패",
+      "couponErrorDescription": "쿠폰 코드를 확인해주세요"
     },
     "returnDialog": {
       "title": "이 팬마크를 반환하시겠습니까?",

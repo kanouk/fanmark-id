@@ -3,11 +3,13 @@ import { addMonths } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatInTimeZone } from 'date-fns-tz';
 import { supabase } from '@/integrations/supabase/client';
-import { CreditCard, Loader2, Info } from 'lucide-react';
+import { CreditCard, Loader2, Info, Ticket } from 'lucide-react';
+import { toast } from 'sonner';
 
 export interface ExtendPlanOption {
   months: number;
@@ -16,6 +18,7 @@ export interface ExtendPlanOption {
 
 export interface ExtendLicenseTarget {
   fanmarkId: string;
+  licenseId?: string | null;
   emoji: string;
   shortId: string;
   licenseEnd?: string | null;
@@ -32,6 +35,7 @@ interface ExtendLicenseDialogProps {
   onSubmit: () => void;
   isProcessing: boolean;
   selectedPlan?: ExtendPlanOption | null;
+  onCouponApplied?: () => void;
 }
 
 export const ExtendLicenseDialog = ({
@@ -42,12 +46,18 @@ export const ExtendLicenseDialog = ({
   onSubmit,
   isProcessing,
   selectedPlan,
+  onCouponApplied,
 }: ExtendLicenseDialogProps) => {
   const { t } = useTranslation();
   const [plans, setPlans] = useState<ExtendPlanOption[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(false);
   const selectedPlanRef = useRef<ExtendPlanOption | null | undefined>(selectedPlan);
   const isPerpetual = target?.licenseEnd == null;
+  const licenseId = target?.licenseId ?? null;
+
+  // Coupon state
+  const [couponCode, setCouponCode] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
 
   useEffect(() => {
     selectedPlanRef.current = selectedPlan;
@@ -130,6 +140,45 @@ export const ExtendLicenseDialog = ({
     const date = new Date(target.graceExpiresAt);
     return formatInTimeZone(date, 'Asia/Tokyo', 'yyyy/MM/dd');
   }, [target?.graceExpiresAt]);
+
+  // Reset coupon code when dialog opens/closes
+  useEffect(() => {
+    if (!open) {
+      setCouponCode('');
+    }
+  }, [open]);
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim() || !licenseId) return;
+
+    setCouponLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('apply-extension-coupon', {
+        body: {
+          coupon_code: couponCode.trim().toUpperCase(),
+          license_id: licenseId,
+        },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      toast.success(t('dashboard.extendDialog.couponSuccessTitle'), {
+        description: t('dashboard.extendDialog.couponSuccessDescription', { months: data.months }),
+      });
+
+      setCouponCode('');
+      onOpenChange(false);
+      onCouponApplied?.();
+    } catch (err: any) {
+      console.error('Coupon application failed:', err);
+      toast.error(t('dashboard.extendDialog.couponErrorTitle'), {
+        description: err.message || t('dashboard.extendDialog.couponErrorDescription'),
+      });
+    } finally {
+      setCouponLoading(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={(open) => !isProcessing && onOpenChange(open)}>
@@ -230,7 +279,41 @@ export const ExtendLicenseDialog = ({
             </Alert>
           )}
 
-          <div className="flex justify-end gap-2">
+          {/* Coupon Section */}
+          {!isPerpetual && licenseId && (
+            <div className="border-t border-border/40 pt-4 mt-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Ticket className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-foreground">
+                  {t('dashboard.extendDialog.couponTitle')}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  placeholder={t('dashboard.extendDialog.couponPlaceholder')}
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  disabled={couponLoading || isProcessing}
+                  className="flex-1 uppercase"
+                  maxLength={20}
+                />
+                <Button
+                  variant="outline"
+                  onClick={handleApplyCoupon}
+                  disabled={!couponCode.trim() || couponLoading || isProcessing}
+                  className="min-w-[80px]"
+                >
+                  {couponLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    t('dashboard.extendDialog.couponApply')
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isProcessing}>
               {t('dashboard.extendDialog.buttonCancel')}
             </Button>

@@ -943,7 +943,14 @@
       "processing": "Memproses...",
       "buttonConfirmWithPrice": "Perpanjang dengan ¥{price}",
       "stripeRedirectNotice": "Anda akan diarahkan ke halaman checkout Stripe",
-      "paymentNotice": "Lisensi akan diperpanjang setelah pembayaran selesai"
+      "paymentNotice": "Lisensi akan diperpanjang setelah pembayaran selesai",
+      "couponTitle": "Perpanjang dengan Kupon",
+      "couponPlaceholder": "Masukkan kode kupon",
+      "couponApply": "Terapkan",
+      "couponSuccessTitle": "Kupon diterapkan",
+      "couponSuccessDescription": "Diperpanjang oleh {months} bulan",
+      "couponErrorTitle": "Gagal menerapkan kupon",
+      "couponErrorDescription": "Silakan periksa kode kupon Anda"
     },
     "returnDialog": {
       "title": "Kembalikan fanmark ini?",
