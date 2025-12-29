@@ -112,7 +112,7 @@
 | `fanmarks` | `PUBLIC_DATA_EXPOSURE`, `PUBLIC_BUSINESS_DATA`, `broad_access` | ドメインWHOISモデル。所有権情報は公開情報 |
 | `fanmark_licenses` | `PUBLIC_USER_DATA`, `user_exposure`, `public_access`, `fanmark_licenses_user_exposure` | `user_id`はUUIDのみ。PIIは`user_settings`で保護。ドメインWHOISモデルに基づき所有権情報は意図的公開 |
 | `fanmark_discoveries` | `PUBLIC_SENSITIVE_DATA`, `public_exposure`, `fanmark_discoveries_public_access`, `MISSING_RLS_PROTECTION` | 個人IDなしの匿名集計データのみ（search_count, favorite_count）。ユーザー行動追跡不可。トレンド/人気表示機能で使用 |
-| `system_settings` | `public_exposure` | `is_public=true`の設定のみ公開。機能フラグ等 |
+| `system_settings` | `public_exposure`, `system_settings_stripe_exposure` | `is_public=true`の設定のみ公開（価格ID/機能フラグ等）。秘密情報は保持しない |
 | `emoji_master` | `MISSING_RLS_PROTECTION`, `unrestricted_access` | Unicode標準に基づく公開絵文字カタログ。機密情報なし |
 | `reserved_emoji_patterns` | `PUBLIC_PRICING_DATA`, `pricing_exposure` | 価格情報は意図的に公開。ユーザーへの透明性とプラン選択UIで必要 |
 | `user_roles` | `insufficient_protection`, `enumeration`, `user_exposure` | `auth.uid() = user_id`で自分のみ参照可。admin判定は`has_role()` SECURITY DEFINER関数経由。UUID列挙攻撃は推測困難で実質不可能 |
