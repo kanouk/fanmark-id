@@ -53,7 +53,41 @@ serve(async (req) => {
 
     console.log(`[apply-fanmark-lottery] User ${authData.user.id} applying for fanmark ${fanmark_id}`);
 
-    // Check user's fanmark limit before allowing application
+    // Get the fanmark's grace period license
+    const { data: license, error: licenseError } = await supabase
+      .from('fanmark_licenses')
+      .select(`
+        id,
+        fanmark_id,
+        user_id,
+        status,
+        grace_expires_at,
+        fanmarks!inner(
+          id,
+          user_input_fanmark,
+          short_id
+        )
+      `)
+      .eq('fanmark_id', fanmark_id)
+      .eq('status', 'grace')
+      .gt('grace_expires_at', new Date().toISOString())
+      .maybeSingle();
+
+    if (licenseError) {
+      console.error('[apply-fanmark-lottery] Error fetching license:', licenseError);
+      return new Response(JSON.stringify({ error: 'Failed to fetch license information' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!license) {
+      return new Response(JSON.stringify({ error: 'Fanmark is not in grace period or not available for lottery' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const { data: userSettings, error: userSettingsError } = await supabase
       .from('user_settings')
       .select('plan_type')
@@ -126,41 +160,6 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-    }
-
-    // Get the fanmark's grace period license
-    const { data: license, error: licenseError } = await supabase
-      .from('fanmark_licenses')
-      .select(`
-        id,
-        fanmark_id,
-        user_id,
-        status,
-        grace_expires_at,
-        fanmarks!inner(
-          id,
-          user_input_fanmark,
-          short_id
-        )
-      `)
-      .eq('fanmark_id', fanmark_id)
-      .eq('status', 'grace')
-      .gt('grace_expires_at', new Date().toISOString())
-      .maybeSingle();
-
-    if (licenseError) {
-      console.error('[apply-fanmark-lottery] Error fetching license:', licenseError);
-      return new Response(JSON.stringify({ error: 'Failed to fetch license information' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    if (!license) {
-      return new Response(JSON.stringify({ error: 'Fanmark is not in grace period or not available for lottery' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
     }
 
     // Check for existing entry (pending or cancelled)

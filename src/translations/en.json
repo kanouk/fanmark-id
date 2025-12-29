@@ -61,6 +61,7 @@
     "cancelSuccess": "Successfully cancelled lottery application",
     "applyError": "Failed to apply to lottery",
     "cancelError": "Failed to cancel lottery application",
+    "limitReached": "You have reached your fanmark limit and cannot apply",
     "alreadyAppliedError": "You have already applied for this fanmark",
     "duplicateEntryError": "Duplicate entry not allowed",
     "applyingTitle": "Applying to Lottery",

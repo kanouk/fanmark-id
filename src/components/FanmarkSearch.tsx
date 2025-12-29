@@ -76,21 +76,24 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
     ? getNormalizationInfo(normalizedInputQuery)
     : null;
 
-  const normalizeStatus = (status: FanmarkSearchResult['status']): FanmarkStatus => {
-    if (status === 'available') {
+  const normalizeStatus = (result: FanmarkSearchResult): FanmarkStatus => {
+    if (result.status === 'available') {
       return 'available';
     }
-    if (status === 'taken') {
+    if (result.status === 'taken') {
       return 'taken';
     }
-    if (status === 'not_available') {
+    if (result.status === 'not_available') {
+      if (result.blocking_status === 'grace') {
+        return 'unavailable';
+      }
       return statusVariant === 'public' ? 'unavailable' : 'taken';
     }
     return 'unavailable'; // invalid はここに流れる
   };
 
   const getStatusBadge = (result: FanmarkSearchResult) => (
-          <FanmarkStatusBadge status={normalizeStatus(result.status)} />
+          <FanmarkStatusBadge status={normalizeStatus(result)} />
   );
 
   return (

@@ -61,6 +61,7 @@
     "cancelSuccess": "추첨을 취소했습니다",
     "applyError": "추첨 신청 실패",
     "cancelError": "추첨 취소 실패",
+    "limitReached": "보유 한도가 가득 차 추첨에 신청할 수 없습니다",
     "alreadyAppliedError": "이미 이 팬마크 추첨에 신청했습니다",
     "duplicateEntryError": "중복 신청은 불가능합니다",
     "applyingTitle": "추첨 신청 중",

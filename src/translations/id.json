@@ -61,6 +61,7 @@
     "cancelSuccess": "Berhasil batal ikuti undian",
     "applyError": "Gagal ikuti undian",
     "cancelError": "Gagal batalkan ikuti undian",
+    "limitReached": "Anda telah mencapai batas fanmark dan tidak dapat mendaftar",
     "alreadyAppliedError": "Anda sudah ikuti undian fanmark ini",
     "duplicateEntryError": "Entri duplikat tidak diizinkan",
     "applyingTitle": "Ikuti Undian",

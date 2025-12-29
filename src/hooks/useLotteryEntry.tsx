@@ -21,7 +21,7 @@ export function useLotteryEntry() {
   const extractErrorInfo = async (
     error: unknown,
     fallback: string,
-  ): Promise<{ message: string; rawBody?: string }> => {
+  ): Promise<{ message: string; code?: string; rawBody?: string }> => {
     let rawBody: string | undefined;
 
     if (error && typeof error === 'object') {
@@ -33,10 +33,10 @@ export function useLotteryEntry() {
           try {
             const parsed = JSON.parse(context);
             if (parsed && typeof parsed.error === 'string' && parsed.error.trim()) {
-              return { message: parsed.error, rawBody: context };
+              return { message: parsed.error, code: parsed.error, rawBody: context };
             }
             if (parsed && typeof parsed.message === 'string' && parsed.message.trim()) {
-              return { message: parsed.message, rawBody: context };
+              return { message: parsed.message, code: typeof parsed.error === 'string' ? parsed.error : undefined, rawBody: context };
             }
           } catch {
             if (context.trim()) {
@@ -45,10 +45,10 @@ export function useLotteryEntry() {
           }
         } else if (typeof context === 'object') {
           if (typeof context.error === 'string' && context.error.trim()) {
-            return { message: context.error, rawBody: JSON.stringify(context) };
+            return { message: context.error, code: context.error, rawBody: JSON.stringify(context) };
           }
           if (typeof context.message === 'string' && context.message.trim()) {
-            return { message: context.message, rawBody: JSON.stringify(context) };
+            return { message: context.message, code: typeof context.error === 'string' ? context.error : undefined, rawBody: JSON.stringify(context) };
           }
 
           const response: Response | undefined = context.response;
@@ -62,10 +62,10 @@ export function useLotteryEntry() {
                   const json = JSON.parse(rawBody);
                   if (json) {
                     if (typeof json.error === 'string' && json.error.trim()) {
-                      return { message: json.error, rawBody };
+                      return { message: json.error, code: json.error, rawBody };
                     }
                     if (typeof json.message === 'string' && json.message.trim()) {
-                      return { message: json.message, rawBody };
+                      return { message: json.message, code: typeof json.error === 'string' ? json.error : undefined, rawBody };
                     }
                   }
                 } catch {
@@ -109,12 +109,15 @@ export function useLotteryEntry() {
       
       return data;
     } catch (err: any) {
-      const { message: errorMessage, rawBody } = await extractErrorInfo(err, t('lottery.applyError'));
+      const { message: errorMessage, code, rawBody } = await extractErrorInfo(err, t('lottery.applyError'));
+      const friendlyMessage = code === 'fanmark_limit_reached'
+        ? t('lottery.limitReached')
+        : errorMessage;
       console.error('[useLotteryEntry] Error applying to lottery:', err, err?.context, rawBody ? { rawBody } : undefined);
-      setError(errorMessage);
+      setError(friendlyMessage);
       toast({
         title: t('lottery.applyError'),
-        description: errorMessage,
+        description: friendlyMessage,
         variant: 'destructive',
       });
       throw err;
@@ -154,12 +157,15 @@ export function useLotteryEntry() {
       
       return data;
     } catch (err: any) {
-      const { message: errorMessage, rawBody } = await extractErrorInfo(err, t('lottery.cancelError'));
+      const { message: errorMessage, code, rawBody } = await extractErrorInfo(err, t('lottery.cancelError'));
+      const friendlyMessage = code === 'fanmark_limit_reached'
+        ? t('lottery.limitReached')
+        : errorMessage;
       console.error('[useLotteryEntry] Error cancelling lottery entry:', err, err?.context, rawBody ? { rawBody } : undefined);
-      setError(errorMessage);
+      setError(friendlyMessage);
       toast({
         title: t('lottery.cancelError'),
-        description: errorMessage,
+        description: friendlyMessage,
         variant: 'destructive',
       });
       throw err;
