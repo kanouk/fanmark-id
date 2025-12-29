@@ -6,6 +6,12 @@ import {
   type ReturnContext,
   type ReturnResult,
 } from "../_shared/return-helpers.ts";
+import {
+  validateUuidArray,
+  logSafeError,
+  createGenericErrorResponse,
+  createValidationErrorResponse,
+} from "../_shared/validation.ts";
 
 interface BulkReturnRequestBody {
   license_ids: string[];
@@ -50,14 +56,13 @@ serve(async (req) => {
     }
 
     const body: BulkReturnRequestBody = await req.json();
-    const licenseIds = Array.isArray(body.license_ids) ? body.license_ids : [];
-
-    if (licenseIds.length === 0) {
-      return new Response(JSON.stringify({ error: 'license_ids must be a non-empty array' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    
+    // Validate license_ids using shared validation
+    const licenseIdsResult = validateUuidArray(body.license_ids, 'license_ids', { minLength: 1, maxLength: 50 });
+    if (!licenseIdsResult.success) {
+      return createValidationErrorResponse(corsHeaders, licenseIdsResult.errors || []);
     }
+    const licenseIds = licenseIdsResult.data!;
 
     const ctx: ReturnContext = {
       supabase,
@@ -89,12 +94,8 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Unexpected error in bulk-return-fanmarks:', error);
-    const message = error instanceof Error ? error.message : 'Internal error';
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    logSafeError('bulk_return_fanmarks', error);
+    return createGenericErrorResponse(corsHeaders, 500);
   }
 });
 
