@@ -124,4 +124,7 @@ const AdminApp = () => (
   </QueryClientProvider>
 );
 
+// Named export for use in MainApp's /admin route
+export { AdminRoute };
+
 export default AdminApp;
