@@ -646,6 +646,21 @@
       "waitlistRevealDone": "Diungkapkan",
       "waitlistSecurityLogTitle": "Aktivitas keamanan terbaru",
       "waitlistSecurityLogEmpty": "Tidak ada log keamanan yang ditemukan"
+    },
+    "extensionCoupon": {
+      "title": "Manajemen Kupon Perpanjangan",
+      "description": "Terbitkan dan kelola kupon untuk perpanjangan lisensi, termasuk batas tier dan jumlah penggunaan.",
+      "createButton": "Buat Kupon",
+      "createSuccess": "Kupon perpanjangan diterbitkan",
+      "createError": "Gagal menerbitkan kupon perpanjangan",
+      "toggleSuccess": "Status diperbarui",
+      "toggleError": "Gagal memperbarui status",
+      "deleteSuccess": "Kupon dihapus",
+      "deleteError": "Gagal menghapus kupon",
+      "dialog": {
+        "createTitle": "Buat Kupon Perpanjangan",
+        "createDescription": "Terbitkan kupon yang dapat digunakan untuk perpanjangan lisensi."
+      }
     }
   },
   "qr": {

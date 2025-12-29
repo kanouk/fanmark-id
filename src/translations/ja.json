@@ -646,6 +646,21 @@
       "waitlistRevealDone": "表示済み",
       "waitlistSecurityLogTitle": "最近のセキュリティアクティビティ",
       "waitlistSecurityLogEmpty": "セキュリティログはありません"
+    },
+    "extensionCoupon": {
+      "title": "延長クーポン管理",
+      "description": "ライセンス延長用のクーポンを発行・管理します。対象ティアや使用回数の制限が可能です。",
+      "createButton": "新しいクーポンを作成",
+      "createSuccess": "延長クーポンを発行しました",
+      "createError": "延長クーポンの発行に失敗しました",
+      "toggleSuccess": "ステータスを更新しました",
+      "toggleError": "ステータスの更新に失敗しました",
+      "deleteSuccess": "クーポンを削除しました",
+      "deleteError": "クーポンの削除に失敗しました",
+      "dialog": {
+        "createTitle": "延長クーポンを作成",
+        "createDescription": "ライセンス延長に使えるクーポンを発行します。"
+      }
     }
   },
   "qr": {

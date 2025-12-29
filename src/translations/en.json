@@ -647,6 +647,21 @@
       "waitlistRevealDone": "Revealed",
       "waitlistSecurityLogTitle": "Recent security activity",
       "waitlistSecurityLogEmpty": "No security logs found"
+    },
+    "extensionCoupon": {
+      "title": "Extension Coupon Management",
+      "description": "Issue and manage coupons for license extensions, including tier scope and usage limits.",
+      "createButton": "Create Coupon",
+      "createSuccess": "Extension coupon issued",
+      "createError": "Failed to issue extension coupon",
+      "toggleSuccess": "Status updated",
+      "toggleError": "Failed to update status",
+      "deleteSuccess": "Coupon deleted",
+      "deleteError": "Failed to delete coupon",
+      "dialog": {
+        "createTitle": "Create Extension Coupon",
+        "createDescription": "Generate a coupon that can be used for license extensions."
+      }
     }
   },
   "qr": {
