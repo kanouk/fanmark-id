@@ -45,7 +45,7 @@
 ## 通知・お気に入り・抽選の実装ガイド
 - 通知: まず `notification_events` にイベントを登録（`create_notification_event` RPC）。`notification_rules` でチャネル・遅延・クールダウンを定義し、`process-notification-events` が `notifications` を生成。フロントは React Query で in-app 未読を購読し、既読更新 RPC を提供。
 - お気に入り: `fanmark_discoveries` で未取得も含めたカタログを保持し、`fanmark_favorites` と `fanmark_events` で使用履歴を管理。UI トグル後はキャッシュを無効化して一覧と統計カードを同期。
-- 抽選: Grace 中のみ申込可。延長実行時は pending エントリーを `cancelled_by_extension` に更新し通知。バッチで抽選→ライセンス発行→通知→履歴保存までをトランザクションで処理。
+- 抽選: Grace 中のみ申込可。延長は申込中でも可能で、延長実行時は pending エントリーを `cancelled_by_extension` に更新し通知。バッチで抽選→ライセンス発行→通知→履歴保存までをトランザクションで処理。
 
 ## MCP / 外部連携
 - MCP サーバー方針: Edge Function `mcp-server`（計画）で `get_fanmark_profile`, `get_fanmark_redirect`, `get_fanmark_message`, `search_fanmark` ツールを公開。公開プロフィールのみ返却し、パスワード・非公開は抑止。`emojiConversion.ts` と既存 RPC を再利用。
@@ -62,6 +62,7 @@
 - 返却/猶予: `grace_expires_at` に基づく再取得不可/カウントダウン表示を確認。`available_at` を UI に出す。
 - 移管: コード発行条件（残48h+、申請中ブロック、AuthCode有効期限48h固定/`license_end`までの短い方）、承認後の新ライセンス発行・設定コピー、Transfer Lock 30日を検証。
 - 抽選: 延長との排他、0/1/複数件パス、当落通知、履歴保存。
+- 抽選エラー: `apply-fanmark-lottery` の `fanmark_limit_reached` を UI で翻訳して表示する。
 - Stripe: Checkout → Webhook → `user_settings.plan_type` 反映、Customer Portal でプラン変更、延長決済の Price ID 設定。
 - お気に入り/通知: 返却時の `favorite_fanmark_available` 通知、未読バッジ、キャッシュ同期。
 - UI改修の原則: 本来不要なロジック（バリデーション・データ処理）を変更しない。仕様変更が必要な場合は必ず仕様を確認し、ユーザーの合意を取ってから行う。Auth では特に、ログインパスワードは8文字以上でチェック表示、目アイコンは入力が1文字以上のときだけ表示し、メール欄とアイコン位置を揃える。

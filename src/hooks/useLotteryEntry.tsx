@@ -29,6 +29,30 @@ export function useLotteryEntry() {
       const context = supabaseError.context;
 
       if (context) {
+        if (context instanceof Response) {
+          try {
+            const clone = context.clone ? context.clone() : context;
+            rawBody = await clone.text();
+            if (rawBody.trim()) {
+              try {
+                const json = JSON.parse(rawBody);
+                if (json) {
+                  if (typeof json.error === 'string' && json.error.trim()) {
+                    return { message: json.error, code: json.error, rawBody };
+                  }
+                  if (typeof json.message === 'string' && json.message.trim()) {
+                    return { message: json.message, code: typeof json.error === 'string' ? json.error : undefined, rawBody };
+                  }
+                }
+              } catch {
+                return { message: rawBody, rawBody };
+              }
+            }
+          } catch (parseError) {
+            console.warn('[useLotteryEntry] Failed to parse error response:', parseError);
+          }
+        }
+
         if (typeof context === 'string') {
           try {
             const parsed = JSON.parse(context);

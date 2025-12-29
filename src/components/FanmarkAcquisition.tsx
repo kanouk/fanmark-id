@@ -480,7 +480,9 @@ export const FanmarkAcquisition = ({
                 status={
                   searchResult.status === 'available'
                     ? 'available'
-                    : (isOwnedByMe ? 'taken' : 'unavailable')
+                    : searchResult.blocking_status === 'grace'
+                      ? 'unavailable'
+                      : (isOwnedByMe ? 'taken' : 'unavailable')
                 }
               />
               {canShowFavoriteButton && (
