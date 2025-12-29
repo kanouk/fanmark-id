@@ -109,7 +109,7 @@
 
 | テーブル | 警告タイプ例 | 理由 |
 |----------|-------------|------|
-| `fanmarks` | `PUBLIC_DATA_EXPOSURE`, `PUBLIC_BUSINESS_DATA`, `broad_access` | ドメインWHOISモデル。所有権情報は公開情報 |
+| `fanmarks` | `PUBLIC_DATA_EXPOSURE`, `PUBLIC_BUSINESS_DATA`, `broad_access`, `fanmarks_metadata_exposure`, `MISSING_RLS_PROTECTION` | ドメインWHOISモデル。所有権情報は公開情報 |
 | `fanmark_licenses` | `PUBLIC_USER_DATA`, `user_exposure`, `public_access`, `fanmark_licenses_user_exposure` | `user_id`はUUIDのみ。PIIは`user_settings`で保護。ドメインWHOISモデルに基づき所有権情報は意図的公開 |
 | `fanmark_discoveries` | `PUBLIC_SENSITIVE_DATA`, `public_exposure`, `fanmark_discoveries_public_access`, `MISSING_RLS_PROTECTION` | 個人IDなしの匿名集計データのみ（search_count, favorite_count）。ユーザー行動追跡不可。トレンド/人気表示機能で使用 |
 | `system_settings` | `public_exposure`, `system_settings_stripe_exposure` | `is_public=true`の設定のみ公開（価格ID/機能フラグ等）。秘密情報は保持しない |
