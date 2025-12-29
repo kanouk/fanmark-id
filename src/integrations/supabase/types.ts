@@ -119,6 +119,104 @@ export type Database = {
         }
         Relationships: []
       }
+      extension_coupon_usages: {
+        Row: {
+          coupon_id: string
+          fanmark_id: string
+          id: string
+          license_id: string
+          used_at: string
+          user_id: string
+        }
+        Insert: {
+          coupon_id: string
+          fanmark_id: string
+          id?: string
+          license_id: string
+          used_at?: string
+          user_id: string
+        }
+        Update: {
+          coupon_id?: string
+          fanmark_id?: string
+          id?: string
+          license_id?: string
+          used_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "extension_coupon_usages_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "extension_coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extension_coupon_usages_fanmark_id_fkey"
+            columns: ["fanmark_id"]
+            isOneToOne: false
+            referencedRelation: "fanmarks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extension_coupon_usages_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "fanmark_licenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extension_coupon_usages_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "recent_active_fanmarks"
+            referencedColumns: ["license_id"]
+          },
+        ]
+      }
+      extension_coupons: {
+        Row: {
+          allowed_tier_levels: number[] | null
+          code: string
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number
+          months: number
+          updated_at: string
+          used_count: number
+        }
+        Insert: {
+          allowed_tier_levels?: number[] | null
+          code: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number
+          months: number
+          updated_at?: string
+          used_count?: number
+        }
+        Update: {
+          allowed_tier_levels?: number[] | null
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number
+          months?: number
+          updated_at?: string
+          used_count?: number
+        }
+        Relationships: []
+      }
       fanmark_access_daily_stats: {
         Row: {
           access_count: number | null

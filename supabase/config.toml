@@ -45,6 +45,9 @@ verify_jwt = true
 [functions.cancel-transfer-code]
 verify_jwt = true
 
+[functions.apply-extension-coupon]
+verify_jwt = true
+
 # ========================================
 # Cron Jobs Configuration
 # ========================================

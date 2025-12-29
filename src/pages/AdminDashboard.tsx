@@ -9,6 +9,7 @@ import { AdminUserManagement } from "@/components/AdminUserManagement";
 import { AdminEmojiMaster } from "@/components/AdminEmojiMaster";
 import { AdminTierExtensionPrices } from "@/components/AdminTierExtensionPrices";
 import { AdminInvitationManager } from "@/components/AdminInvitationManager";
+import { AdminExtensionCoupons } from "@/components/AdminExtensionCoupons";
 import AdminNotificationManager from "@/components/AdminNotificationManager";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -83,6 +84,12 @@ const AdminDashboard = () => {
                 className="flex-1 rounded-xl px-5 py-3 text-sm font-medium transition-all data-[state=active]:bg-card data-[state=active]:text-foreground sm:flex-none"
               >
                 ティア管理
+              </TabsTrigger>
+              <TabsTrigger
+                value="extension-coupons"
+                className="flex-1 rounded-xl px-5 py-3 text-sm font-medium transition-all data-[state=active]:bg-card data-[state=active]:text-foreground sm:flex-none"
+              >
+                延長クーポン
               </TabsTrigger>
               <TabsTrigger
                 value="expiration"
@@ -186,6 +193,22 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent className="space-y-6 p-6 pt-0">
                   <AdminTierExtensionPrices />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="extension-coupons" className="space-y-8">
+              <Card className="border-border/60 shadow-sm">
+                <CardHeader className="space-y-3 p-6 pb-4">
+                  <CardTitle className="text-xl font-semibold text-foreground">
+                    延長クーポン管理
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    ライセンス延長用のクーポンを発行・管理します。クーポンは課金と並行して使用でき、対象ティアや使用回数を制限できます。
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-6 p-6 pt-0">
+                  <AdminExtensionCoupons />
                 </CardContent>
               </Card>
             </TabsContent>
