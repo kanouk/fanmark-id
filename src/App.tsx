@@ -7,7 +7,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { TranslationProvider } from "@/hooks/useTranslation";
 import { useSubdomain } from "@/hooks/useSubdomain";
-import AdminApp from "./components/AdminApp";
+import AdminApp, { AdminRoute } from "./components/AdminApp";
+import AdminDashboard from "./pages/AdminDashboard";
 import { LanguagePreferenceSync } from "@/components/LanguagePreferenceSync";
 import { DocumentTitleSync } from "@/components/DocumentTitleSync";
 import Index from "./pages/Index";
@@ -87,6 +88,8 @@ const MainApp = () => (
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/terms" element={<TermsOfService />} />
                 <Route path="/commercial-transactions" element={<CommercialTransactions />} />
+                {/* Admin route - accessible via /admin path on main domain */}
+                <Route path="/admin/*" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="/:emojiPath" element={<FanmarkAccess />} />
                 <Route path="*" element={<NotFound />} />
