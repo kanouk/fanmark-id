@@ -192,24 +192,25 @@ serve(async (req) => {
     }
 
     const licenseRecord = license as unknown as LicenseWithFanmark;
-    const fanmarkData = licenseRecord.fanmarks?.[0] ?? null;
+    // Supabase returns a single object for many-to-one relation; fall back to array access for safety.
+    const fanmarkData =
+      (licenseRecord as any)?.fanmarks && !Array.isArray((licenseRecord as any).fanmarks)
+        ? ((licenseRecord as any).fanmarks as FanmarkInfo)
+        : (licenseRecord.fanmarks?.[0] ?? null);
 
     const tierLevel = fanmarkData?.tier_level ?? null;
-    if (!tierLevel) {
-      return new Response(JSON.stringify({ error: 'tier_not_found' }), {
+
+    // Validate tier restriction
+    if (
+      tierLevel !== null &&
+      couponInfo.allowed_tier_levels &&
+      couponInfo.allowed_tier_levels.length > 0 &&
+      !couponInfo.allowed_tier_levels.includes(tierLevel)
+    ) {
+      return new Response(JSON.stringify({ error: 'tier_not_allowed' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
-    }
-
-    // Validate tier restriction
-    if (couponInfo.allowed_tier_levels && couponInfo.allowed_tier_levels.length > 0) {
-      if (!couponInfo.allowed_tier_levels.includes(tierLevel)) {
-        return new Response(JSON.stringify({ error: 'tier_not_allowed' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
     }
 
     // Check if user already used this coupon on this fanmark
