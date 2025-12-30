@@ -24,23 +24,27 @@ export const useNotificationFormatter = () => {
     const formatNotificationContent = useCallback(
         (notification: any) => {
             const metadata = notification?.payload?.metadata ?? {};
-            const fanmark = metadata.fanmark_name || metadata.fanmark || '—';
-
+            
+            // データベースの body を取得
+            let body = notification?.payload?.body ?? '';
+            
+            // プレースホルダーをフォーマット済み日時で置換
             if (metadata.grace_expires_at) {
                 const deadline = formatDeadline(metadata.grace_expires_at);
-
-                return {
-                    title: t('notifications.graceProcessingTitle'),
-                    body: deadline
-                        ? t('notifications.graceProcessingBodyWithDeadline', { fanmark, deadline })
-                        : t('notifications.graceProcessingBody', { fanmark }),
-                    summary: t('notifications.graceProcessingSummary'),
-                };
+                if (deadline) {
+                    body = body.replace(/\{\{grace_expires_at\}\}/g, deadline);
+                }
+            }
+            if (metadata.license_end) {
+                const licenseEnd = formatDeadline(metadata.license_end);
+                if (licenseEnd) {
+                    body = body.replace(/\{\{license_end\}\}/g, licenseEnd);
+                }
             }
 
             return {
                 title: notification?.payload?.title ?? t('notifications.fallbackTitle'),
-                body: notification?.payload?.body ?? '',
+                body: body,
                 summary: notification?.payload?.summary ?? null,
             };
         },
