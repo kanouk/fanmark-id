@@ -48,15 +48,31 @@ export const TransferCodeIssueDialog = ({
     } catch (error: any) {
       const message = error?.message || '';
       let errorKey = 'transfer.error.issueFailed';
+      let errorDescription: string | undefined;
       
       if (message.includes('48') || message.includes('insufficient')) {
         errorKey = 'transfer.error.insufficientLicense';
       } else if (message.includes('pending') || message.includes('applied')) {
         errorKey = 'transfer.error.pendingRequest';
+      } else if (message.includes('transfer_locked') || message.includes('locked')) {
+        errorKey = 'transfer.error.transferLocked';
+        const lockedUntil = error?.lockedUntil as string | undefined;
+        if (lockedUntil) {
+          const date = new Date(lockedUntil);
+          if (!Number.isNaN(date.getTime())) {
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            errorDescription = t('transfer.error.transferLockedDetail', {
+              date: `${yyyy}/${mm}/${dd}`,
+            });
+          }
+        }
       }
 
       toast({
         title: t(errorKey),
+        description: errorDescription,
         variant: 'destructive'
       });
     } finally {

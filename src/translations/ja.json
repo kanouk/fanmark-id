@@ -1740,6 +1740,8 @@
       "insufficientLicense": "ライセンス残期間が48時間未満のため、移管コードを発行できません",
       "pendingRequest": "承認待ちの申請があるため、新しいコードを発行できません",
       "transferInProgress": "移管処理中のため、この操作はできません",
+      "transferLocked": "移管コードの発行は一時停止中です",
+      "transferLockedDetail": "移管直後のため、{{date}} まで移管コードを発行できません",
       "disclaimerRequired": "注意事項への同意が必要です"
     }
   }

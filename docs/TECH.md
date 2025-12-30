@@ -46,6 +46,7 @@
 - 通知: まず `notification_events` にイベントを登録（`create_notification_event` RPC）。`notification_rules` でチャネル・遅延・クールダウンを定義し、`process-notification-events` が `notifications` を生成。フロントは React Query で in-app 未読を購読し、既読更新 RPC を提供。
 - お気に入り: `fanmark_discoveries` で未取得も含めたカタログを保持し、`fanmark_favorites` と `fanmark_events` で使用履歴を管理。UI トグル後はキャッシュを無効化して一覧と統計カードを同期。
 - 抽選: Grace 中のみ申込可。延長は申込中でも可能で、延長実行時は pending エントリーを `cancelled_by_extension` に更新し通知。バッチで抽選→ライセンス発行→通知→履歴保存までをトランザクションで処理。
+- 移管ロック: 移管完了時に `fanmark_licenses.transfer_locked_until` を30日後で更新し、`generate-transfer-code` で発行をブロック。
 
 ## MCP / 外部連携
 - MCP サーバー方針: Edge Function `mcp-server`（計画）で `get_fanmark_profile`, `get_fanmark_redirect`, `get_fanmark_message`, `search_fanmark` ツールを公開。公開プロフィールのみ返却し、パスワード・非公開は抑止。`emojiConversion.ts` と既存 RPC を再利用。

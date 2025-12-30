@@ -1741,6 +1741,8 @@
       "insufficientLicense": "Tidak dapat menerbitkan kode transfer dengan sisa kurang dari 48 jam",
       "pendingRequest": "Tidak dapat menerbitkan kode baru saat permintaan tertunda persetujuan",
       "transferInProgress": "Operasi ini tidak diizinkan selama transfer",
+      "transferLocked": "Penerbitan kode transfer sementara dikunci",
+      "transferLockedDetail": "Anda tidak dapat menerbitkan kode transfer hingga {{date}}",
       "disclaimerRequired": "Persetujuan terhadap pemberitahuan diperlukan"
     }
   }

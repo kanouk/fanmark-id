@@ -151,7 +151,61 @@ export const useTransferCode = () => {
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      let errorMessage = (error as Error)?.message || 'Unknown error';
+      let lockedUntil: string | null = null;
+      const anyError = error as { context?: unknown };
+      const context = anyError?.context;
+      const parsePayload = (payload: unknown) => {
+        if (!payload) return;
+        if (typeof payload === 'string') {
+          try {
+            const parsed = JSON.parse(payload);
+            if (parsed?.error) {
+              errorMessage = parsed.error;
+            }
+            if (parsed?.locked_until) {
+              lockedUntil = parsed.locked_until;
+            }
+          } catch {
+            if (payload.trim()) {
+              errorMessage = payload;
+            }
+          }
+          return;
+        }
+        if (typeof payload === 'object') {
+          const maybeError = (payload as { error?: string }).error;
+          if (maybeError) {
+            errorMessage = maybeError;
+          }
+          const maybeLockedUntil = (payload as { locked_until?: string }).locked_until;
+          if (maybeLockedUntil) {
+            lockedUntil = maybeLockedUntil;
+          }
+        }
+      };
+
+      if (context instanceof Response) {
+        try {
+          const clone = context.clone ? context.clone() : context;
+          const rawBody = await clone.text();
+          if (rawBody.trim()) {
+            parsePayload(rawBody);
+          }
+        } catch (parseError) {
+          console.warn('[useTransferCode] Failed to parse error response:', parseError);
+        }
+      } else {
+        parsePayload(context);
+      }
+
+      const err = new Error(errorMessage);
+      if (lockedUntil) {
+        (err as Error & { lockedUntil?: string }).lockedUntil = lockedUntil;
+      }
+      throw err;
+    }
     if (data?.error) throw new Error(data.error);
 
     await fetchTransferData();

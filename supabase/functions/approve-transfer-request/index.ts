@@ -213,6 +213,9 @@ serve(async (req) => {
       });
     }
 
+    const transferLockedUntil = new Date(now);
+    transferLockedUntil.setDate(transferLockedUntil.getDate() + 30);
+
     // 2. Create new license for recipient (no config copy - new acquisition state)
     const { data: newLicense, error: newLicenseError } = await supabase
       .from('fanmark_licenses')
@@ -224,6 +227,7 @@ serve(async (req) => {
         status: 'active',
         is_initial_license: false,
         is_transferred: true,
+        transfer_locked_until: transferLockedUntil.toISOString(),
       })
       .select()
       .single();

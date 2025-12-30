@@ -1742,6 +1742,8 @@
       "insufficientLicense": "Cannot issue transfer code with less than 48 hours remaining",
       "pendingRequest": "Cannot issue new code while a request is pending approval",
       "transferInProgress": "This operation is not allowed during transfer",
+      "transferLocked": "Transfer code issuance is temporarily locked",
+      "transferLockedDetail": "You cannot issue a transfer code until {{date}}",
       "disclaimerRequired": "Agreement to the notice is required"
     }
   }

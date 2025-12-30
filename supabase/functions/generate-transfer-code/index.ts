@@ -74,6 +74,7 @@ serve(async (req) => {
         user_id,
         status,
         license_end,
+        transfer_locked_until,
         fanmarks!inner (
           id,
           user_input_fanmark,
@@ -103,6 +104,19 @@ serve(async (req) => {
 
     const fanmark = (license.fanmarks as any)?.[0] || license.fanmarks;
     const now = new Date();
+
+    if (license.transfer_locked_until) {
+      const lockedUntil = new Date(license.transfer_locked_until);
+      if (!Number.isNaN(lockedUntil.getTime()) && lockedUntil > now) {
+        return new Response(JSON.stringify({
+          error: 'transfer_locked',
+          locked_until: license.transfer_locked_until,
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
 
     // Check remaining license period (at least 48 hours)
     // For Tier C (unlimited), license_end is null

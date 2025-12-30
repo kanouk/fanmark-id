@@ -1741,6 +1741,8 @@
       "insufficientLicense": "48시간 미만 남은 경우 이전 코드를 발급할 수 없습니다",
       "pendingRequest": "승인 대기 중인 요청이 있는 동안에는 새 코드를 발급할 수 없습니다",
       "transferInProgress": "이전 중에는 이 작업이 허용되지 않습니다",
+      "transferLocked": "이전 코드 발급이 일시적으로 잠겼습니다",
+      "transferLockedDetail": "{{date}}까지 이전 코드를 발급할 수 없습니다",
       "disclaimerRequired": "안내 동의가 필요합니다"
     }
   }
