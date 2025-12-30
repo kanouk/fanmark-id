@@ -680,7 +680,7 @@
   "planDowngrade": {
     "modalTitle": "Pilihan Fanma untuk Perubahan Paket",
     "newPlanLimit": "Paket baru memungkinkan hingga {limit} fanma",
-    "noExtensionWarning": "Fanma yang tidak dipilih tidak akan dapat diperpanjang",
+    "noExtensionWarning": "Fanma yang tidak dipilih akan dikembalikan segera",
     "finalSelectionWarning": "Pilihan ini hanya dapat dibuat sekarang dan tidak dapat diubah nanti",
     "selectionCount": "{selected}/{limit} dipilih",
     "selectFanmarks": "Silakan pilih fanmark untuk dipertahankan",
@@ -973,7 +973,11 @@
       "longTermWarningTitle": "Tentang lisensi lebih dari 6 bulan",
       "longTermWarningDescriptionBefore": "Periode melebihi 6 bulan mungkin tidak dijamin. Harap tinjau ",
       "longTermWarningDescriptionLink": "Ketentuan Layanan",
-      "longTermWarningDescriptionAfter": " kami sebelum memperpanjang."
+      "longTermWarningDescriptionAfter": " kami sebelum memperpanjang.",
+      "tabPayment": "Pembayaran Kartu",
+      "tabCoupon": "Kupon",
+      "couponDescription": "Masukkan kode kupon Anda untuk memperpanjang lisensi",
+      "couponApplyButton": "Terapkan Kupon"
     },
     "returnDialog": {
       "title": "Kembalikan fanmark ini?",

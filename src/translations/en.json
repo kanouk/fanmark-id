@@ -681,7 +681,7 @@
   "planDowngrade": {
     "modalTitle": "Fanma Selection for Plan Change",
     "newPlanLimit": "New plan allows up to {limit} fanmas",
-    "noExtensionWarning": "Unselected fanmas will not be extendable",
+    "noExtensionWarning": "Unselected fanmas will be returned immediately",
     "finalSelectionWarning": "This selection can only be made now and cannot be changed later",
     "selectionCount": "{selected}/{limit} selected",
     "selectFanmarks": "Please select fanmarks to keep",
@@ -974,7 +974,11 @@
       "longTermWarningTitle": "About licenses over 6 months",
       "longTermWarningDescriptionBefore": "Periods beyond 6 months may not be guaranteed. Please review our ",
       "longTermWarningDescriptionLink": "Terms of Service",
-      "longTermWarningDescriptionAfter": " before extending."
+      "longTermWarningDescriptionAfter": " before extending.",
+      "tabPayment": "Card Payment",
+      "tabCoupon": "Coupon",
+      "couponDescription": "Enter your coupon code to extend the license",
+      "couponApplyButton": "Apply Coupon"
     },
     "returnDialog": {
       "title": "Return this fanmark?",

@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatInTimeZone } from 'date-fns-tz';
@@ -312,61 +313,82 @@ export const ExtendLicenseDialog = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(open) => !isProcessing && onOpenChange(open)}>
-      <DialogContent className="max-w-md" onInteractOutside={(e) => isProcessing && e.preventDefault()}>
+    <Dialog open={open} onOpenChange={(open) => !isProcessing && !couponLoading && onOpenChange(open)}>
+      <DialogContent className="max-w-md" onInteractOutside={(e) => (isProcessing || couponLoading) && e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>{t('dashboard.extendDialog.title')}</DialogTitle>
-          <DialogDescription>{t('dashboard.extendDialog.subtitle')}</DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
-          <div className="rounded-lg border border-border/40 bg-muted/30 p-4 text-sm space-y-4">
-            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-              <div className="space-y-1 text-center">
-                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {t('dashboard.extendDialog.currentExpiration')}
-                </span>
-                <div className="rounded-lg border border-border/60 bg-background px-3 py-2 text-base font-semibold text-foreground shadow-sm text-center">
-                  {formattedExpiration ?? '—'}
-                </div>
-              </div>
-              <div className="flex flex-col items-center justify-center gap-2 text-primary">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                  <span className="text-lg">→</span>
-                </div>
-              </div>
-              <div className="space-y-1 text-center">
-                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {t('dashboard.extendDialog.extendedExpiration')}
-                </span>
-                <div
-                  className={cn(
-                    'rounded-lg border px-3 py-2 text-base font-semibold shadow-sm transition-colors',
-                    formattedExtendedExpiration
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
-                      : 'border-dashed border-border/60 bg-background text-muted-foreground'
-                  )}
-                >
-                  <span className="block text-center">
-                    {formattedExtendedExpiration ?? t('dashboard.extendDialog.extendedExpirationPlaceholder', { months: activePlan?.months ?? initialPlan?.months ?? 1 })}
-                  </span>
-                </div>
-              </div>
-            </div>
-            {formattedGraceExpiration && (
-              <div className="flex flex-col gap-1 border-t border-border/40 pt-3">
-                <span className="font-medium text-foreground">{t('dashboard.extendDialog.graceExpiration')}</span>
-                <span className="text-muted-foreground">{formattedGraceExpiration}</span>
-              </div>
-            )}
-          </div>
 
-          <div>
-            {isPerpetual ? (
-              <div className="mt-3 rounded-xl border border-dashed border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground">
-                {t('dashboard.extendDialog.perpetualMessage')}
+        {isPerpetual ? (
+          <div className="rounded-xl border border-dashed border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground">
+            {t('dashboard.extendDialog.perpetualMessage')}
+          </div>
+        ) : (
+          <Tabs defaultValue="payment" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 h-12 p-1 bg-muted/50 rounded-xl">
+              <TabsTrigger
+                value="payment"
+                disabled={isProcessing || couponLoading}
+                className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm h-full"
+              >
+                <CreditCard className="h-4 w-4" />
+                {t('dashboard.extendDialog.tabPayment')}
+              </TabsTrigger>
+              <TabsTrigger
+                value="coupon"
+                disabled={isProcessing || couponLoading}
+                className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm h-full"
+              >
+                <Ticket className="h-4 w-4" />
+                {t('dashboard.extendDialog.tabCoupon')}
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Payment Tab */}
+            <TabsContent value="payment" className="space-y-4">
+              {/* Expiration info - only for payment tab */}
+              <div className="rounded-lg border border-border/40 bg-muted/30 p-4 text-sm space-y-4">
+                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+                  <div className="space-y-1 text-center">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {t('dashboard.extendDialog.currentExpiration')}
+                    </span>
+                    <div className="rounded-lg border border-border/60 bg-background px-3 py-2 text-base font-semibold text-foreground shadow-sm text-center">
+                      {formattedExpiration ?? '—'}
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center justify-center gap-2 text-primary">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                      <span className="text-lg">→</span>
+                    </div>
+                  </div>
+                  <div className="space-y-1 text-center">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {t('dashboard.extendDialog.extendedExpiration')}
+                    </span>
+                    <div
+                      className={cn(
+                        'rounded-lg border px-3 py-2 text-base font-semibold shadow-sm transition-colors',
+                        formattedExtendedExpiration
+                          ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
+                          : 'border-dashed border-border/60 bg-background text-muted-foreground'
+                      )}
+                    >
+                      <span className="block text-center">
+                        {formattedExtendedExpiration ?? t('dashboard.extendDialog.extendedExpirationPlaceholder', { months: activePlan?.months ?? initialPlan?.months ?? 1 })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                {formattedGraceExpiration && (
+                  <div className="flex flex-col gap-1 border-t border-border/40 pt-3">
+                    <span className="font-medium text-foreground">{t('dashboard.extendDialog.graceExpiration')}</span>
+                    <span className="text-muted-foreground">{formattedGraceExpiration}</span>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="mt-3 grid grid-cols-2 gap-3">
+
+              <div className="grid grid-cols-2 gap-3">
                 {plans.length === 0 && !loadingPlans && (
                   <div className="col-span-2 text-sm text-muted-foreground text-center">
                     {t('dashboard.extendDialog.planUnavailable')}
@@ -395,106 +417,109 @@ export const ExtendLicenseDialog = ({
                   </button>
                 ))}
               </div>
-            )}
-          </div>
 
-          {!isPerpetual && activePlan && (
-            <>
-              <Alert className="mt-2 flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 shadow-sm">
-                <span className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-                  <Info className="h-4 w-4 text-primary" aria-hidden="true" />
-                </span>
-                <AlertDescription className="text-sm leading-relaxed space-y-1">
-                  <p className="font-medium text-foreground">{t('dashboard.extendDialog.stripeRedirectNotice')}</p>
-                  <p className="text-muted-foreground">{t('dashboard.extendDialog.paymentNotice')}</p>
-                </AlertDescription>
-              </Alert>
-
-              {willExceedSixMonths && (
-                <Alert className="mt-2 flex items-start gap-3 rounded-xl border border-amber-200/60 bg-amber-50/50 px-4 py-3 shadow-sm">
-                  <span className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-amber-100/80">
-                    <AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden="true" />
-                  </span>
-                  <div className="flex-1 space-y-1">
-                    <AlertTitle className="text-sm font-semibold text-amber-900">
-                      {t('dashboard.extendDialog.longTermWarningTitle')}
-                    </AlertTitle>
-                    <AlertDescription className="text-xs leading-relaxed text-amber-800/90">
-                      {t('dashboard.extendDialog.longTermWarningDescriptionBefore')}
-                      <Link
-                        to="/terms"
-                        className="font-medium text-amber-900 underline decoration-amber-300 underline-offset-2 hover:decoration-amber-500 transition-colors"
-                        onClick={() => onOpenChange(false)}
-                      >
-                        {t('dashboard.extendDialog.longTermWarningDescriptionLink')}
-                      </Link>
-                      {t('dashboard.extendDialog.longTermWarningDescriptionAfter')}
+              {activePlan && (
+                <>
+                  <Alert className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 shadow-sm">
+                    <span className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                      <Info className="h-4 w-4 text-primary" aria-hidden="true" />
+                    </span>
+                    <AlertDescription className="text-sm leading-relaxed space-y-1">
+                      <p className="font-medium text-foreground">{t('dashboard.extendDialog.stripeRedirectNotice')}</p>
+                      <p className="text-muted-foreground">{t('dashboard.extendDialog.paymentNotice')}</p>
                     </AlertDescription>
-                  </div>
-                </Alert>
-              )}
-            </>
-          )}
+                  </Alert>
 
-          {/* Coupon Section */}
-          {!isPerpetual && licenseId && (
-            <div className="border-t border-border/40 pt-4 mt-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Ticket className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-foreground">
-                  {t('dashboard.extendDialog.couponTitle')}
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <Input
-                  placeholder={t('dashboard.extendDialog.couponPlaceholder')}
-                  value={couponCode}
-                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                  disabled={couponLoading || isProcessing}
-                  className="flex-1 uppercase"
-                  maxLength={20}
-                />
+                  {willExceedSixMonths && (
+                    <Alert className="flex items-start gap-3 rounded-xl border border-amber-200/60 bg-amber-50/50 px-4 py-3 shadow-sm">
+                      <span className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-amber-100/80">
+                        <AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden="true" />
+                      </span>
+                      <div className="flex-1 space-y-1">
+                        <AlertTitle className="text-sm font-semibold text-amber-900">
+                          {t('dashboard.extendDialog.longTermWarningTitle')}
+                        </AlertTitle>
+                        <AlertDescription className="text-xs leading-relaxed text-amber-800/90">
+                          {t('dashboard.extendDialog.longTermWarningDescriptionBefore')}
+                          <Link
+                            to="/terms"
+                            className="font-medium text-amber-900 underline decoration-amber-300 underline-offset-2 hover:decoration-amber-500 transition-colors"
+                            onClick={() => onOpenChange(false)}
+                          >
+                            {t('dashboard.extendDialog.longTermWarningDescriptionLink')}
+                          </Link>
+                          {t('dashboard.extendDialog.longTermWarningDescriptionAfter')}
+                        </AlertDescription>
+                      </div>
+                    </Alert>
+                  )}
+                </>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isProcessing}>
+                  {t('dashboard.extendDialog.buttonCancel')}
+                </Button>
                 <Button
-                  variant="outline"
-                  onClick={handleApplyCoupon}
-                  disabled={!couponCode.trim() || couponLoading || isProcessing}
-                  className="min-w-[80px]"
+                  onClick={onSubmit}
+                  disabled={isProcessing || !selectedPlan || loadingPlans}
+                  className="min-w-[140px]"
                 >
-                  {couponLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      {t('dashboard.extendDialog.processing')}
+                    </>
+                  ) : selectedPlan ? (
+                    <>
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      {t('dashboard.extendDialog.buttonConfirmWithPrice', { price: selectedPlan.price.toLocaleString() })}
+                    </>
                   ) : (
-                    t('dashboard.extendDialog.couponApply')
+                    t('dashboard.extendDialog.buttonConfirm')
                   )}
                 </Button>
               </div>
-            </div>
-          )}
+            </TabsContent>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isProcessing}>
-              {t('dashboard.extendDialog.buttonCancel')}
-            </Button>
-            <Button 
-              onClick={onSubmit} 
-              disabled={isProcessing || !selectedPlan || isPerpetual || loadingPlans}
-              className="min-w-[140px]"
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {t('dashboard.extendDialog.processing')}
-                </>
-              ) : selectedPlan ? (
-                <>
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  {t('dashboard.extendDialog.buttonConfirmWithPrice', { price: selectedPlan.price.toLocaleString() })}
-                </>
-              ) : (
-                t('dashboard.extendDialog.buttonConfirm')
-              )}
-            </Button>
-          </div>
-        </div>
+            {/* Coupon Tab */}
+            <TabsContent value="coupon" className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {t('dashboard.extendDialog.couponDescription')}
+              </p>
+              <Input
+                placeholder={t('dashboard.extendDialog.couponPlaceholder')}
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                disabled={couponLoading}
+                className="uppercase"
+                maxLength={20}
+              />
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => onOpenChange(false)} disabled={couponLoading}>
+                  {t('dashboard.extendDialog.buttonCancel')}
+                </Button>
+                <Button
+                  onClick={handleApplyCoupon}
+                  disabled={!couponCode.trim() || couponLoading}
+                  className="min-w-[140px]"
+                >
+                  {couponLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      {t('dashboard.extendDialog.processing')}
+                    </>
+                  ) : (
+                    <>
+                      <Ticket className="h-4 w-4 mr-2" />
+                      {t('dashboard.extendDialog.couponApplyButton')}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </TabsContent>
+          </Tabs>
+        )}
       </DialogContent>
     </Dialog>
   );

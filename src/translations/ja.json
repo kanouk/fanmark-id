@@ -680,7 +680,7 @@
   "planDowngrade": {
     "modalTitle": "プラン変更に伴うファンマ選択",
     "newPlanLimit": "新プランでは{limit}個まで保持可能です",
-    "noExtensionWarning": "選択されなかったファンマは期限延長ができなくなります",
+    "noExtensionWarning": "選択されなかったファンマは即時返却されます",
     "finalSelectionWarning": "この選択は今回のみ可能で、後から変更はできません",
     "selectionCount": "{selected}/{limit}個選択中",
     "selectFanmarks": "保持するファンマを選択してください",
@@ -972,7 +972,11 @@
       "longTermWarningTitle": "6ヶ月超のライセンスについて",
       "longTermWarningDescriptionBefore": "6ヶ月を超える期間は保証されない場合があります。あらかじめ",
       "longTermWarningDescriptionLink": "利用規約",
-      "longTermWarningDescriptionAfter": "をご確認の上、延長してください。"
+      "longTermWarningDescriptionAfter": "をご確認の上、延長してください。",
+      "tabPayment": "カード払い",
+      "tabCoupon": "クーポン",
+      "couponDescription": "クーポンコードをお持ちの方はこちらから適用できます",
+      "couponApplyButton": "クーポンで延長"
     },
     "returnDialog": {
       "title": "このファンマを返却しますか？",
