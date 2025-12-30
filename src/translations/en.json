@@ -867,7 +867,7 @@
     "statusInactive": "Inactive",
     "statusExpired": "Expired",
     "statusGrace": "Expiring",
-    "statusReturnProcessing": "Being returned (opportunity coming soon)",
+    "statusReturnProcessing": "Being returned",
     "statusUnknown": "Unknown",
     "actions": "Actions",
     "view": "View",

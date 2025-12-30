@@ -1016,7 +1016,7 @@
     "notRegisteredShort": "미등록",
     "statusAvailable": "가능",
     "statusUnavailable": "불가능",
-    "statusReturnProcessing": "반환 처리 중 (기회 곧 도착!)",
+    "statusReturnProcessing": "반환 처리 중",
     "acquireButton": "획득",
     "link": "링크",
     "favoritedAt": "즐겨찾기 등록일",

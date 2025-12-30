@@ -1015,7 +1015,7 @@
     "notRegisteredShort": "未登録",
     "statusAvailable": "取得可能",
     "statusUnavailable": "取得不可",
-    "statusReturnProcessing": "返却処理中（まもなく取得のチャンス！）",
+    "statusReturnProcessing": "返却処理中",
     "acquireButton": "取得する",
     "link": "リンク",
     "favoritedAt": "お気に入り登録日",
