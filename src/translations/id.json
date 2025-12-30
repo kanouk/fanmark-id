@@ -968,7 +968,11 @@
       "couponErrorTitle": "Gagal menerapkan kupon",
       "couponErrorDescription": "Silakan periksa kode kupon Anda",
       "couponErrorExpired": "Kupon ini sudah kedaluwarsa",
-      "couponErrorUsageExceeded": "Kupon ini telah mencapai batas penggunaan"
+      "couponErrorUsageExceeded": "Kupon ini telah mencapai batas penggunaan",
+      "longTermWarningTitle": "Tentang lisensi lebih dari 6 bulan",
+      "longTermWarningDescriptionBefore": "Periode melebihi 6 bulan mungkin tidak dijamin. Harap tinjau ",
+      "longTermWarningDescriptionLink": "Ketentuan Layanan",
+      "longTermWarningDescriptionAfter": " kami sebelum memperpanjang."
     },
     "returnDialog": {
       "title": "Kembalikan fanmark ini?",
@@ -1379,29 +1383,29 @@
           "title": "11. Penangguhan dan Penghentian",
           "content": "Operator dapat menangguhkan atau menghentikan akun Anda jika Anda:\n\n• Melanggar Syarat ini\n• Terlibat dalam kegiatan ilegal atau penipuan\n• Mengganggu pengguna lain\n• Membuat konten yang keberatan\n• Melanggar hak kekayaan intelektual\n• Gagal membayar biaya\n\nPenghentian dapat segera tanpa pemberitahuan untuk pelanggaran serius."
         },
+        "serviceTermination": {
+          "title": "12. Penghentian dan Pemutusan Layanan",
+          "content": "Pemberitahuan Penghentian Layanan: Operator dapat menghentikan atau melakukan modifikasi material pada Layanan kapan saja. Jika Layanan dihentikan, Operator akan memberikan pemberitahuan minimal 6 bulan sebelumnya kepada semua pengguna aktif.\n\nPeriode Jaminan Layanan: Setelah keputusan penghentian layanan, Layanan akan terus beroperasi selama minimal 6 bulan hingga tanggal penghentian. Lisensi yang ada akan tetap berlaku selama periode ini.\n\nPerpanjangan Lisensi:\n• Perpanjangan lisensi maksimal 6 bulan per perpanjangan\n• Beberapa kali perpanjangan dapat menghasilkan periode lisensi melebihi 6 bulan\n• Jika periode lisensi melebihi 6 bulan, periode melebihi 6 bulan mungkin tidak dijamin jika terjadi penghentian layanan\n• Perpanjangan lisensi baru dapat dihentikan setelah penghentian layanan diumumkan\n\nTanpa Pengembalian Dana:\n• Biaya perpanjangan lisensi yang telah dibeli tidak dapat dikembalikan dengan alasan apa pun\n• Tidak ada pengembalian dana untuk periode lisensi yang telah dibeli jika terjadi penghentian layanan\n• Tidak ada pengembalian dana untuk periode yang melampaui tanggal penghentian layanan\n\nData Pengguna: Setelah Layanan dihentikan, Operator akan:\n• Memberikan kesempatan yang wajar (minimal 60 hari sejak tanggal penghentian layanan) untuk mengambil atau mengekspor data Anda\n• Melakukan upaya yang wajar untuk memfasilitasi ekspor data dalam format standar yang dapat dibawa\n• Menyimpan data Anda sesuai dengan hukum yang berlaku dan Kebijakan Privasi\n\nPembatasan Tanggung Jawab: Dengan syarat prosedur pemberitahuan dan ekspor data yang diuraikan di atas diikuti, Operator tidak bertanggung jawab atas kehilangan data, bisnis, keuntungan, atau peluang yang diakibatkan oleh penghentian Layanan. Dengan menerima Syarat ini, Anda mengakui dan menerima risiko yang terkait dengan periode lisensi yang melampaui tanggal penghentian layanan."
+        },
         "governing": {
-          "title": "12. Hukum yang Berlaku",
+          "title": "13. Hukum yang Berlaku",
           "content": "Syarat ini diatur oleh hukum yurisdiksi tempat Operator beroperasi, tanpa mempertimbangkan prinsip konflik hukum."
         },
         "disputeResolution": {
-          "title": "13. Penyelesaian Sengketa",
+          "title": "14. Penyelesaian Sengketa",
           "content": "Setiap sengketa harus diselesaikan melalui:\n\n• Negosiasi Baik: Pertama, pihak akan mencoba menyelesaikan sengketa melalui diskusi\n• Mediasi: Jika negosiasi gagal, sengketa dapat diajukan ke mediasi\n• Arbitrase/Litigasi: Jika mediasi gagal, sengketa harus diselesaikan melalui arbitrase atau proses pengadilan sesuai dengan hukum yang berlaku"
         },
         "changes": {
-          "title": "14. Perubahan Syarat",
+          "title": "15. Perubahan Syarat",
           "content": "Operator dapat memodifikasi Syarat ini kapan saja. Perubahan material akan dikomunikasikan melalui email atau pemberitahuan menonjol pada Layanan. Penggunaan berkelanjutan setelah perubahan menunjukkan penerimaan Anda atas Syarat yang diperbarui."
         },
         "severability": {
-          "title": "15. Pemisahan",
+          "title": "16. Pemisahan",
           "content": "Jika suatu ketentuan dalam Syarat ini ditemukan tidak sah, ketentuan tersebut akan dimodifikasi sejauh minimal yang diperlukan untuk membuatnya valid, atau dihapus jika perlu. Ketentuan yang tersisa akan terus berlaku."
         },
         "entireAgreement": {
-          "title": "16. Perjanjian Lengkap",
+          "title": "17. Perjanjian Lengkap",
           "content": "Syarat ini, bersama dengan Kebijakan Privasi kami, merupakan seluruh perjanjian antara Anda dan Operator mengenai penggunaan Layanan."
-        },
-        "serviceTermination": {
-          "title": "17. Penghentian dan Pemutusan Layanan",
-          "content": "Penghentian Layanan: Operator dapat menghentikan atau melakukan modifikasi material pada Layanan kapan saja. Jika Layanan dihentikan, Operator akan memberikan pemberitahuan tertulis minimal 180 hari sebelumnya kepada semua pengguna aktif.\n\nPemberitahuan dan Jaminan Lisensi: Saat mengeluarkan pemberitahuan penghentian Layanan, hal berikut berlaku:\n• Semua pemegang lisensi saat ini dijamin hak untuk memperpanjang/memperbarui lisensi mereka setidaknya satu kali lagi tanpa biaya tambahan (hingga periode perpanjangan maksimum yang diizinkan di bawah tingkat mereka, asalkan mereka meminta pembaruan sebelum tanggal kedaluwarsa asli)\n• Tidak ada perpanjangan lebih lanjut yang mungkin setelah tanggal kedaluwarsa lisensi akhir, yang harus jatuh sebelum atau pada tanggal penghentian Layanan\n• Pengguna dapat mengekspor semua data dan konten mereka hingga tanggal kedaluwarsa lisensi akhir\n\nData Pengguna: Setelah Layanan dihentikan, Operator akan:\n• Memberikan kesempatan yang wajar (minimal 60 hari sejak kedaluwarsa lisensi) bagi Anda untuk mengambil atau mengekspor data Anda\n• Melakukan upaya yang wajar untuk memfasilitasi ekspor data dalam format standar yang dapat dibawa\n• Menyimpan data Anda sesuai dengan hukum yang berlaku dan Kebijakan Privasi\n\nMasalah Keuangan: Setelah Layanan dihentikan:\n• Pengembalian dana prorata untuk bagian yang belum habis dari lisensi berbayar apa pun yang diperbaharui setelah pemberitahuan penghentian Layanan dikeluarkan akan diberikan (jika diwajibkan oleh hukum di yurisdiksi Anda)\n• Pengguna tidak berhak atas ganti rugi atau kompensasi di luar pengembalian dana tersebut\n• Semua permintaan pengembalian dana harus dilakukan dalam waktu 12 bulan sejak penghentian Layanan\n\nTanpa Tanggung Jawab: Operator tidak bertanggung jawab atas kehilangan data, bisnis, keuntungan, atau peluang yang diakibatkan oleh penghentian Layanan, asalkan prosedur pemberitahuan, jaminan perpanjangan lisensi, dan ekspor data yang diuraikan di atas diikuti. Dengan menerima Syarat ini, Anda mengakui bahwa ketergantungan berkelanjutan pada Layanan setelah periode pemberitahuan penghentian berakhir adalah risiko Anda sendiri."
         },
         "contactUs": {
           "title": "18. Hubungi Kami",
@@ -1734,5 +1738,8 @@
       "transferInProgress": "Operasi ini tidak diizinkan selama transfer",
       "disclaimerRequired": "Persetujuan terhadap pemberitahuan diperlukan"
     }
+  },
+  "common": {
+    "viewTerms": "Lihat Ketentuan Layanan"
   }
 }

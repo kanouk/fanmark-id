@@ -587,3 +587,81 @@ const priceIdToPlanType = {
 | `handle-stripe-webhook` | Webhook 処理 | Stripe Event | 200 OK |
 | `bulk-return-fanmarks` | 一括返却 | fanmark_ids[] | { success, results[] } |
 | `customer-portal` | Portal セッション | - | { url } |
+
+---
+
+### 14. サービス終了時の保証とライセンス延長制限
+
+#### 14.1 サービス終了時の保証期間
+
+- **通知期間**: サービス終了決定時、最低6ヶ月前にユーザーへ通知
+- **保証期間**: 通知後も6ヶ月間はサービスを継続
+- **超過期間**: 6ヶ月を超えるライセンス期間については保証対象外
+
+#### 14.2 ライセンス延長の制限
+
+| 項目 | 内容 |
+|------|------|
+| 最大延長期間 | 1回の延長で最大6ヶ月 |
+| 累積期間 | 複数回の延長により6ヶ月超の保有は可能 |
+| 超過期間の扱い | サービス終了時、6ヶ月超の期間は保証されない |
+| 返金 | いかなる理由でも返金なし |
+
+#### 14.3 ユーザーへの警告表示
+
+**表示条件**:
+- 延長後のライセンス期間が現在日時から6ヶ月超となる場合
+- ライセンス延長ダイアログ ([ExtendLicenseDialog.tsx](src/components/ExtendLicenseDialog.tsx:412-433)) に警告を表示
+
+**警告内容**:
+```
+タイトル: 6ヶ月超のライセンスについて
+本文: 6ヶ月を超える期間は保証されない場合があります。
+      あらかじめ【利用規約】をご確認の上、延長してください。
+      （【利用規約】部分がリンクとして /terms へ遷移）
+```
+
+**デザイン**:
+- 控えめなアンバー色の背景 (`bg-amber-50/50`)
+- 警告アイコン (`AlertTriangle`)
+- 小さめのフォントサイズで目立ちすぎないように配慮
+
+#### 14.4 利用規約への明記
+
+利用規約 ([TermsOfService.tsx](src/pages/TermsOfService.tsx:22)) の第12条「サービス終了および中止」に以下を明記:
+
+1. **通知義務**: 6ヶ月前の事前通知
+2. **ライセンス延長上限**: 1回最大6ヶ月
+3. **超過期間の非保証**: 6ヶ月超の期間は保証対象外
+4. **返金なし**: 購入済み延長料金の返金は行わない
+5. **データエクスポート**: 終了日から60日間の猶予
+
+#### 14.5 実装の要点
+
+**技術的制限は設けない**:
+- ユーザーは技術的には6ヶ月超の延長が可能
+- システムは累積期間での制限を行わない
+- 利用規約と警告表示のみで対応
+
+**判定ロジック**:
+```typescript
+const now = new Date();
+const currentEnd = new Date(target.licenseEnd);
+const baseDate = currentEnd > now ? currentEnd : now;
+const extendedEnd = addMonths(baseDate, activePlan.months);
+const sixMonthsFromNow = addMonths(now, 6);
+
+// 延長後の日付が「現在から6ヶ月後」を超えるかを日付で直接比較
+const showWarning = extendedEnd > sixMonthsFromNow;
+```
+
+**判定例**:
+- 残り2日 + 6ヶ月延長 → 警告表示（6ヶ月2日になるため）
+- 残り0日（grace中） + 6ヶ月延長 → 警告なし（ちょうど6ヶ月）
+- 残り3ヶ月 + 6ヶ月延長 → 警告表示（9ヶ月になるため）
+
+**翻訳キー**:
+- `dashboard.extendDialog.longTermWarningTitle`
+- `dashboard.extendDialog.longTermWarningDescriptionBefore`（リンク前のテキスト）
+- `dashboard.extendDialog.longTermWarningDescriptionLink`（リンクテキスト）
+- `dashboard.extendDialog.longTermWarningDescriptionAfter`（リンク後のテキスト）

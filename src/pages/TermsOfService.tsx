@@ -19,12 +19,12 @@ export const TermsOfService: React.FC = () => {
     { id: "disclaimers", key: "disclaimers" },
     { id: "indemnification", key: "indemnification" },
     { id: "suspensionTermination", key: "suspensionTermination" },
+    { id: "serviceTermination", key: "serviceTermination" },
     { id: "governing", key: "governing" },
     { id: "disputeResolution", key: "disputeResolution" },
     { id: "changes", key: "changes" },
     { id: "severability", key: "severability" },
     { id: "entireAgreement", key: "entireAgreement" },
-    { id: "serviceTermination", key: "serviceTermination" },
     { id: "contactUs", key: "contactUs" },
   ];
 

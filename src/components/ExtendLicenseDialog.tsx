@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
-import { addMonths } from 'date-fns';
+import { addMonths, differenceInMonths } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatInTimeZone } from 'date-fns-tz';
 import { supabase } from '@/integrations/supabase/client';
-import { CreditCard, Loader2, Info, Ticket } from 'lucide-react';
+import { CreditCard, Loader2, Info, Ticket, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 
 export interface ExtendPlanOption {
   months: number;
@@ -140,6 +141,20 @@ export const ExtendLicenseDialog = ({
     const date = new Date(target.graceExpiresAt);
     return formatInTimeZone(date, 'Asia/Tokyo', 'yyyy/MM/dd');
   }, [target?.graceExpiresAt]);
+
+  // Calculate if extension will exceed 6 months from now
+  const willExceedSixMonths = useMemo(() => {
+    if (isPerpetual || !target?.licenseEnd || !activePlan) return false;
+
+    const now = new Date();
+    const currentEnd = new Date(target.licenseEnd);
+    const baseDate = currentEnd > now ? currentEnd : now;
+    const extendedEnd = addMonths(baseDate, activePlan.months);
+    const sixMonthsFromNow = addMonths(now, 6);
+
+    // Compare dates directly to account for partial months
+    return extendedEnd > sixMonthsFromNow;
+  }, [target?.licenseEnd, activePlan, isPerpetual]);
 
   const getCouponErrorDescription = async (err: unknown): Promise<string> => {
     const fallback = t('dashboard.extendDialog.couponErrorDescription');
@@ -384,15 +399,41 @@ export const ExtendLicenseDialog = ({
           </div>
 
           {!isPerpetual && activePlan && (
-            <Alert className="mt-2 flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 shadow-sm">
-              <span className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-                <Info className="h-4 w-4 text-primary" aria-hidden="true" />
-              </span>
-              <AlertDescription className="text-sm leading-relaxed space-y-1">
-                <p className="font-medium text-foreground">{t('dashboard.extendDialog.stripeRedirectNotice')}</p>
-                <p className="text-muted-foreground">{t('dashboard.extendDialog.paymentNotice')}</p>
-              </AlertDescription>
-            </Alert>
+            <>
+              <Alert className="mt-2 flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 shadow-sm">
+                <span className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                  <Info className="h-4 w-4 text-primary" aria-hidden="true" />
+                </span>
+                <AlertDescription className="text-sm leading-relaxed space-y-1">
+                  <p className="font-medium text-foreground">{t('dashboard.extendDialog.stripeRedirectNotice')}</p>
+                  <p className="text-muted-foreground">{t('dashboard.extendDialog.paymentNotice')}</p>
+                </AlertDescription>
+              </Alert>
+
+              {willExceedSixMonths && (
+                <Alert className="mt-2 flex items-start gap-3 rounded-xl border border-amber-200/60 bg-amber-50/50 px-4 py-3 shadow-sm">
+                  <span className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-amber-100/80">
+                    <AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden="true" />
+                  </span>
+                  <div className="flex-1 space-y-1">
+                    <AlertTitle className="text-sm font-semibold text-amber-900">
+                      {t('dashboard.extendDialog.longTermWarningTitle')}
+                    </AlertTitle>
+                    <AlertDescription className="text-xs leading-relaxed text-amber-800/90">
+                      {t('dashboard.extendDialog.longTermWarningDescriptionBefore')}
+                      <Link
+                        to="/terms"
+                        className="font-medium text-amber-900 underline decoration-amber-300 underline-offset-2 hover:decoration-amber-500 transition-colors"
+                        onClick={() => onOpenChange(false)}
+                      >
+                        {t('dashboard.extendDialog.longTermWarningDescriptionLink')}
+                      </Link>
+                      {t('dashboard.extendDialog.longTermWarningDescriptionAfter')}
+                    </AlertDescription>
+                  </div>
+                </Alert>
+              )}
+            </>
           )}
 
           {/* Coupon Section */}

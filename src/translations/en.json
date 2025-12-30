@@ -969,7 +969,11 @@
       "couponErrorTitle": "Failed to apply coupon",
       "couponErrorDescription": "Please check your coupon code",
       "couponErrorExpired": "This coupon has expired",
-      "couponErrorUsageExceeded": "This coupon has reached its usage limit"
+      "couponErrorUsageExceeded": "This coupon has reached its usage limit",
+      "longTermWarningTitle": "About licenses over 6 months",
+      "longTermWarningDescriptionBefore": "Periods beyond 6 months may not be guaranteed. Please review our ",
+      "longTermWarningDescriptionLink": "Terms of Service",
+      "longTermWarningDescriptionAfter": " before extending."
     },
     "returnDialog": {
       "title": "Return this fanmark?",
@@ -1380,29 +1384,29 @@
           "title": "11. Suspension and Termination",
           "content": "The Operator may suspend or terminate your account if you:\n\n• Violate these Terms\n• Engage in illegal or fraudulent activity\n• Harass other users\n• Create objectionable content\n• Violate intellectual property rights\n• Fail to pay fees\n\nTermination may be immediate without notice for serious violations."
         },
+        "serviceTermination": {
+          "title": "12. Service Termination and Discontinuation",
+          "content": "Service Termination Notice: The Operator may discontinue or materially modify the Service at any time. The Operator will provide at least 6 months' prior notice to all active users if the Service is terminated.\n\nService Guarantee Period: After a service termination decision, the Service will continue to operate for at least 6 months until the termination date. Existing licenses will remain valid during this period.\n\nLicense Extensions:\n• License extensions have a maximum of 6 months per extension\n• Multiple extensions may result in a license period exceeding 6 months\n• If a license period exceeds 6 months, periods beyond 6 months may not be guaranteed in the event of service termination\n• New license extensions may be suspended after service termination is announced\n\nNo Refunds:\n• Purchased license extension fees are non-refundable for any reason\n• No refunds will be provided for purchased license periods in the event of service termination\n• No refunds will be provided for periods extending beyond the service termination date\n\nUser Data: Upon Service termination, the Operator will:\n• Provide a reasonable opportunity (at least 60 days from the service termination date) to retrieve or export your data\n• Make reasonable efforts to facilitate data export in a standard, portable format\n• Retain your data according to applicable laws and our Privacy Policy\n\nLimitation of Liability: Provided the notice and data export procedures outlined above are followed, the Operator is not liable for any loss of data, business, profits, or opportunities resulting from Service termination. By accepting these Terms, you acknowledge and accept the risks associated with license periods extending beyond the service termination date."
+        },
         "governing": {
-          "title": "12. Governing Law",
+          "title": "13. Governing Law",
           "content": "These Terms are governed by the laws of the jurisdiction where the Operator operates, without regard to conflict of law principles."
         },
         "disputeResolution": {
-          "title": "13. Dispute Resolution",
+          "title": "14. Dispute Resolution",
           "content": "Any disputes shall be resolved through:\n\n• Good Faith Negotiation: First, parties will attempt to resolve disputes through discussion\n• Mediation: If negotiation fails, disputes may be submitted to mediation\n• Arbitration/Litigation: If mediation fails, disputes shall be resolved through arbitration or court proceedings as applicable by law"
         },
         "changes": {
-          "title": "14. Changes to Terms",
+          "title": "15. Changes to Terms",
           "content": "The Operator may modify these Terms at any time. Material changes will be communicated through email or prominent notification on the Service. Continued use after changes indicates acceptance of the updated Terms."
         },
         "severability": {
-          "title": "15. Severability",
+          "title": "16. Severability",
           "content": "If any provision of these Terms is found invalid, that provision will be modified to the minimum extent necessary to make it valid, or removed if necessary. The remaining provisions will continue in effect."
         },
         "entireAgreement": {
-          "title": "16. Entire Agreement",
+          "title": "17. Entire Agreement",
           "content": "These Terms, along with our Privacy Policy, constitute the entire agreement between you and the Operator regarding your use of the Service."
-        },
-        "serviceTermination": {
-          "title": "17. Service Termination and Discontinuation",
-          "content": "Service Discontinuation: The Operator may discontinue or materially modify the Service at any time. The Operator will provide at least 180 days' prior written notice to all active users if the Service is discontinued.\n\nNotice and License Guarantee: Upon issuing discontinuation notice:\n• All current license holders will be guaranteed the right to extend/renew their licenses at least once more (up to the maximum extension period permitted under their tier) without additional charge, provided they request renewal before the original expiration date\n• No further extensions will be possible after the final license expiration date, which must fall before or on the Service discontinuation date\n• Users will have until the final license expiration date to export all data and content\n\nUser Data: Upon Service termination, the Operator will:\n• Provide a reasonable opportunity (at least 60 days from license expiration) for you to retrieve or export your data and content\n• Make reasonable efforts to facilitate data export in a standard, portable format\n• Retain your data according to applicable laws and our Privacy Policy\n\nFinancial Matters: Upon Service termination:\n• Prorated license fees for any paid licenses that were renewed after discontinuation notice was issued will be refunded (if legally required in your jurisdiction)\n• Users will not be entitled to damages or compensation beyond such refunds\n• All refund requests must be made within 12 months of Service termination\n\nNo Liability: The Operator is not liable for any loss of data, business, profits, or opportunities resulting from Service discontinuation, provided the notice, extension guarantee, and data export procedures outlined above are followed. By accepting these Terms, you acknowledge that continued reliance on the Service after the discontinuation notice period ends is at your own risk."
         },
         "contactUs": {
           "title": "18. Contact Us",
@@ -1735,5 +1739,8 @@
       "transferInProgress": "This operation is not allowed during transfer",
       "disclaimerRequired": "Agreement to the notice is required"
     }
+  },
+  "common": {
+    "viewTerms": "View Terms of Service"
   }
 }
