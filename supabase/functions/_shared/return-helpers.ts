@@ -78,6 +78,7 @@ async function notifyFavoritesAboutReturn(
   fanmarkId: string,
   fanmarkName: string,
   fanmarkShortId: string,
+  graceExpiresAt: string,
 ): Promise<void> {
   const displayName =
     typeof fanmarkName === 'string' && fanmarkName.trim().length > 0
@@ -111,6 +112,7 @@ async function notifyFavoritesAboutReturn(
           fanmark_id: fanmarkId,
           fanmark_name: displayName,
           fanmark_short_id: fanmarkShortId,
+          grace_expires_at: graceExpiresAt,
           link: fanmarkShortId ? `/f/${fanmarkShortId}` : null,
         },
         source_param: 'edge_function',
@@ -253,7 +255,7 @@ export async function returnFanmarkByLicenseId(
   const fanmarkShortId = license.fanmarks?.short_id ?? '';
   await logReturnAction(ctx, license.fanmark_id, fanmark, graceExpiresAtIso, nowIso);
   await notifyOwnerAboutReturn(ctx, license.fanmark_id, fanmark, fanmarkShortId, graceExpiresAtIso);
-  await notifyFavoritesAboutReturn(ctx, license.fanmark_id, fanmark, fanmarkShortId);
+  await notifyFavoritesAboutReturn(ctx, license.fanmark_id, fanmark, fanmarkShortId, graceExpiresAtIso);
 
   return {
     licenseId: license.id,
