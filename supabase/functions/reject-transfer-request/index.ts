@@ -66,6 +66,14 @@ serve(async (req) => {
         fanmark_id,
         requester_user_id,
         status,
+        fanmark_licenses!inner (
+          id,
+          fanmarks!inner (
+            id,
+            user_input_fanmark,
+            short_id
+          )
+        ),
         fanmark_transfer_codes!inner (
           id,
           issuer_user_id,
@@ -147,12 +155,9 @@ serve(async (req) => {
       },
     });
 
-    // Get fanmark info for notification
-    const { data: fanmark } = await supabase
-      .from('fanmarks')
-      .select('user_input_fanmark, short_id')
-      .eq('id', request.fanmark_id)
-      .maybeSingle();
+    // Get fanmark info for notification (aligned with approval flow)
+    const license = (request.fanmark_licenses as any)?.[0] || request.fanmark_licenses;
+    const fanmark = (license?.fanmarks as any)?.[0] || license?.fanmarks;
 
     // Send notification to requester
     await supabase.rpc('create_notification_event', {
