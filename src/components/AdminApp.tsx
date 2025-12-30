@@ -98,31 +98,38 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-const AdminApp = () => (
-  <QueryClientProvider client={queryClient}>
-    <TranslationProvider>
-      <AuthProvider>
-        <LotteryActionOverlayProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <ScrollToTop />
-              <Routes>
-                <Route path="/" element={
-                  <AdminRoute>
-                    <AdminDashboard />
-                  </AdminRoute>
-                } />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
-        </LotteryActionOverlayProvider>
-      </AuthProvider>
-    </TranslationProvider>
-  </QueryClientProvider>
-);
+const AdminApp = () => {
+  // デバッグ用ログ
+  if (typeof window !== 'undefined') {
+    console.log('[AdminApp] Rendering admin app', { pathname: window.location.pathname });
+  }
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TranslationProvider>
+        <AuthProvider>
+          <LotteryActionOverlayProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <ScrollToTop />
+                <Routes>
+                  <Route path="/" element={
+                    <AdminRoute>
+                      <AdminDashboard />
+                    </AdminRoute>
+                  } />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </BrowserRouter>
+            </TooltipProvider>
+          </LotteryActionOverlayProvider>
+        </AuthProvider>
+      </TranslationProvider>
+    </QueryClientProvider>
+  );
+};
 
 // Named export for use in MainApp's /admin route
 export { AdminRoute };

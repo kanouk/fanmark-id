@@ -965,7 +965,9 @@
       "couponSuccessTitle": "クーポンを適用しました",
       "couponSuccessDescription": "{months}ヶ月分の延長を適用しました",
       "couponErrorTitle": "クーポンの適用に失敗しました",
-      "couponErrorDescription": "クーポンコードを確認してください"
+      "couponErrorDescription": "クーポンコードを確認してください",
+      "couponErrorExpired": "このクーポンは期限切れです",
+      "couponErrorUsageExceeded": "このクーポンは利用回数の上限に達しています"
     },
     "returnDialog": {
       "title": "このファンマを返却しますか？",

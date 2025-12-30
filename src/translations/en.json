@@ -967,7 +967,9 @@
       "couponSuccessTitle": "Coupon applied",
       "couponSuccessDescription": "Extended by {months} month(s)",
       "couponErrorTitle": "Failed to apply coupon",
-      "couponErrorDescription": "Please check your coupon code"
+      "couponErrorDescription": "Please check your coupon code",
+      "couponErrorExpired": "This coupon has expired",
+      "couponErrorUsageExceeded": "This coupon has reached its usage limit"
     },
     "returnDialog": {
       "title": "Return this fanmark?",

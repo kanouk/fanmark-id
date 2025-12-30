@@ -141,6 +141,116 @@ export const ExtendLicenseDialog = ({
     return formatInTimeZone(date, 'Asia/Tokyo', 'yyyy/MM/dd');
   }, [target?.graceExpiresAt]);
 
+  const getCouponErrorDescription = async (err: unknown): Promise<string> => {
+    const fallback = t('dashboard.extendDialog.couponErrorDescription');
+    const knownCodes = new Set(['coupon_expired', 'coupon_usage_exceeded', 'coupon_not_found', 'tier_not_allowed', 'coupon_already_used_on_fanmark', 'perpetual_license', 'transfer_in_progress']);
+
+    const parseErrorCode = (value: unknown): string | null => {
+      if (!value) return null;
+      if (typeof value === 'string') {
+        if (knownCodes.has(value.trim())) return value.trim();
+        try {
+          const parsed = JSON.parse(value) as { error?: string };
+          if (parsed?.error && knownCodes.has(parsed.error)) return parsed.error;
+        } catch {
+          const match = value.match(/\"error\"\s*:\s*\"([^\"]+)\"/);
+          if (match?.[1] && knownCodes.has(match[1])) return match[1];
+        }
+        return null;
+      }
+      if (typeof value === 'object') {
+        const maybeError = (value as { error?: string }).error;
+        if (maybeError && knownCodes.has(maybeError)) return maybeError;
+      }
+      return null;
+    };
+
+    // Check error.message first
+    const errorCodeFromMessage =
+      err instanceof Error ? parseErrorCode(err.message) : null;
+
+    // Check error object structure (for supabase.functions.invoke errors)
+    if (err && typeof err === 'object') {
+      const anyErr = err as any;
+      
+      // Direct error property
+      const direct = parseErrorCode(anyErr?.error);
+      if (direct) {
+        const errorCode = direct;
+        if (errorCode === 'coupon_expired') {
+          return t('dashboard.extendDialog.couponErrorExpired');
+        }
+        if (errorCode === 'coupon_usage_exceeded') {
+          return t('dashboard.extendDialog.couponErrorUsageExceeded');
+        }
+        return fallback;
+      }
+
+      // Check context.response (Response object)
+      const context = anyErr?.context;
+      if (context) {
+        if (context instanceof Response) {
+          try {
+            const clone = context.clone ? context.clone() : context;
+            const rawBody = await clone.text();
+            if (rawBody.trim()) {
+              try {
+                const json = JSON.parse(rawBody);
+                if (json?.error && knownCodes.has(json.error)) {
+                  const errorCode = json.error;
+                  if (errorCode === 'coupon_expired') {
+                    return t('dashboard.extendDialog.couponErrorExpired');
+                  }
+                  if (errorCode === 'coupon_usage_exceeded') {
+                    return t('dashboard.extendDialog.couponErrorUsageExceeded');
+                  }
+                  return fallback;
+                }
+              } catch {
+                // Not JSON, continue
+              }
+            }
+          } catch (parseError) {
+            console.warn('[ExtendLicenseDialog] Failed to parse error response:', parseError);
+          }
+        }
+
+        // Check context.response (object with response property)
+        if (typeof context === 'object' && context.response) {
+          const response: Response | undefined = context.response;
+          if (response) {
+            try {
+              const clone = response.clone ? response.clone() : response;
+              const rawBody = await clone.text();
+              if (rawBody.trim()) {
+                try {
+                  const json = JSON.parse(rawBody);
+                  if (json?.error && knownCodes.has(json.error)) {
+                    const errorCode = json.error;
+                    if (errorCode === 'coupon_expired') {
+                      return t('dashboard.extendDialog.couponErrorExpired');
+                    }
+                    if (errorCode === 'coupon_usage_exceeded') {
+                      return t('dashboard.extendDialog.couponErrorUsageExceeded');
+                    }
+                    return fallback;
+                  }
+                } catch {
+                  // Not JSON, continue
+                }
+              }
+            } catch (parseError) {
+              console.warn('[ExtendLicenseDialog] Failed to parse error response:', parseError);
+            }
+          }
+        }
+      }
+    }
+
+    // Fallback to error message or generic message
+    return err instanceof Error && err.message ? err.message : fallback;
+  };
+
   // Reset coupon code when dialog opens/closes
   useEffect(() => {
     if (!open) {
@@ -161,7 +271,12 @@ export const ExtendLicenseDialog = ({
       });
 
       if (error) throw error;
-      if (data.error) throw new Error(data.error);
+      if (data?.error) {
+        // Create error object with error code for proper parsing
+        const errorObj = new Error(data.error);
+        (errorObj as any).error = data.error;
+        throw errorObj;
+      }
 
       toast.success(t('dashboard.extendDialog.couponSuccessTitle'), {
         description: t('dashboard.extendDialog.couponSuccessDescription', { months: data.months }),
@@ -172,8 +287,9 @@ export const ExtendLicenseDialog = ({
       onCouponApplied?.();
     } catch (err: any) {
       console.error('Coupon application failed:', err);
+      const errorDescription = await getCouponErrorDescription(err);
       toast.error(t('dashboard.extendDialog.couponErrorTitle'), {
-        description: err.message || t('dashboard.extendDialog.couponErrorDescription'),
+        description: errorDescription,
       });
     } finally {
       setCouponLoading(false);

@@ -966,7 +966,9 @@
       "couponSuccessTitle": "Kupon diterapkan",
       "couponSuccessDescription": "Diperpanjang oleh {months} bulan",
       "couponErrorTitle": "Gagal menerapkan kupon",
-      "couponErrorDescription": "Silakan periksa kode kupon Anda"
+      "couponErrorDescription": "Silakan periksa kode kupon Anda",
+      "couponErrorExpired": "Kupon ini sudah kedaluwarsa",
+      "couponErrorUsageExceeded": "Kupon ini telah mencapai batas penggunaan"
     },
     "returnDialog": {
       "title": "Kembalikan fanmark ini?",

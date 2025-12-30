@@ -103,7 +103,12 @@ const MainApp = () => (
 );
 
 const App = () => {
-  const { isAdmin } = useSubdomain();
+  const { isAdmin, subdomain } = useSubdomain();
+  
+  // デバッグ用ログ（本番環境では削除可能）
+  if (typeof window !== 'undefined') {
+    console.log('[App] Subdomain detection:', { subdomain, isAdmin, hostname: window.location.hostname });
+  }
   
   // 管理画面サブドメインの場合は管理画面アプリを表示
   if (isAdmin) {
