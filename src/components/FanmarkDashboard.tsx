@@ -150,7 +150,7 @@ export const FanmarkDashboard = () => {
   const [extendProcessing, setExtendProcessing] = useState(false);
   const [totalAccessCount, setTotalAccessCount] = useState<number | null>(null);
   const [accessCountLoading, setAccessCountLoading] = useState(true);
-  
+
   // Transfer system - single source of truth
   const transferCodeData = useTransferCode();
   const { hasActiveTransfer, getTransferStatus, refetch: refetchTransfer } = transferCodeData;
@@ -501,6 +501,8 @@ export const FanmarkDashboard = () => {
     fetchFanmarks();
   }, [fetchFanmarks, user]);
 
+  const gracePeriodDaysSetting = settings?.grace_period_days ?? null;
+
   // Fetch total access count for all fanmarks (available for all plans)
   useEffect(() => {
     const fetchTotalAccessCount = async () => {
@@ -511,19 +513,41 @@ export const FanmarkDashboard = () => {
 
       try {
         setAccessCountLoading(true);
-        
+
+        // Filter to only active fanmarks (exclude grace/expired status)
+        const activeFanmarkIds = fanmarks
+          .filter((fanmark) => {
+            const timing = deriveLicenseTiming({
+              licenseEnd: fanmark.fanmark_licenses?.license_end ?? null,
+              graceExpiresAt: fanmark.fanmark_licenses?.grace_expires_at ?? null,
+              status: fanmark.fanmark_licenses?.status ?? null,
+              gracePeriodDays: gracePeriodDaysSetting,
+              isReturned: fanmark.fanmark_licenses?.is_returned ?? null,
+            });
+            return timing.status === 'active';
+          })
+          .map((fanmark) => fanmark.id);
+
+        // If no active fanmarks, set count to 0
+        if (activeFanmarkIds.length === 0) {
+          setTotalAccessCount(0);
+          setAccessCountLoading(false);
+          return;
+        }
+
         // Get date range for last 30 days
         const endDate = new Date();
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - 30);
-        
+
         const formatDate = (date: Date) => {
           return date.toISOString().split('T')[0];
         };
-        
+
         const { data, error } = await supabase
           .from('fanmark_access_daily_stats')
           .select('access_count')
+          .in('fanmark_id', activeFanmarkIds)
           .gte('stat_date', formatDate(startDate))
           .lte('stat_date', formatDate(endDate));
 
@@ -543,9 +567,7 @@ export const FanmarkDashboard = () => {
     };
 
     fetchTotalAccessCount();
-  }, [user]);
-
-  const gracePeriodDaysSetting = settings?.grace_period_days ?? null;
+  }, [user, fanmarks, gracePeriodDaysSetting]);
 
   const getLicenseTiming = (licenseData: Fanmark['fanmark_licenses']) => {
     return deriveLicenseTiming({
