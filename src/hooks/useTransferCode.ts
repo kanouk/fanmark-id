@@ -166,8 +166,82 @@ export const useTransferCode = () => {
       }
     });
 
-    if (error) throw error;
-    if (data?.error) throw new Error(data.error);
+    // Handle errors - check both error object and data.error
+    // When Edge Function returns non-2xx, error is set but data may contain the response body
+    const errorData = data?.error ? data : null;
+
+    if (error || errorData) {
+      const errorInfo = errorData || {};
+      let errorMessage = errorInfo.error || (error as Error)?.message || 'Unknown error';
+      let errorCode = errorInfo.error || '';
+      let current = errorInfo.current;
+      let limit = errorInfo.limit;
+
+      const parseErrorPayload = (payload: unknown) => {
+        if (!payload) return;
+        if (typeof payload === 'string') {
+          try {
+            const parsed = JSON.parse(payload);
+            if (parsed && typeof parsed.error === 'string') {
+              errorCode = parsed.error;
+              errorMessage = parsed.error;
+              current = parsed.current ?? current;
+              limit = parsed.limit ?? limit;
+            }
+          } catch {
+            if (payload.trim()) {
+              errorMessage = payload;
+            }
+          }
+          return;
+        }
+        if (typeof payload === 'object') {
+          const maybeError = (payload as { error?: string }).error;
+          if (typeof maybeError === 'string') {
+            errorCode = maybeError;
+            errorMessage = maybeError;
+          }
+          const maybeCurrent = (payload as { current?: number }).current;
+          const maybeLimit = (payload as { limit?: number }).limit;
+          if (maybeCurrent !== undefined) current = maybeCurrent;
+          if (maybeLimit !== undefined) limit = maybeLimit;
+        }
+      };
+
+      if (error && typeof error === 'object') {
+        const anyError = error as { context?: unknown };
+        const context = anyError.context;
+        if (context instanceof Response) {
+          try {
+            const clone = context.clone ? context.clone() : context;
+            const rawBody = await clone.text();
+            parseErrorPayload(rawBody);
+          } catch (parseError) {
+            console.warn('[useTransferCode] Failed to parse error response:', parseError);
+          }
+        } else if (context && typeof context === 'object' && 'response' in context) {
+          const response = (context as { response?: Response }).response;
+          if (response) {
+            try {
+              const clone = response.clone ? response.clone() : response;
+              const rawBody = await clone.text();
+              parseErrorPayload(rawBody);
+            } catch (parseError) {
+              console.warn('[useTransferCode] Failed to parse error response:', parseError);
+            }
+          }
+        } else {
+          parseErrorPayload(context);
+        }
+      }
+
+      // Include additional data (current, limit) in error message for limit exceeded errors
+      const finalCode = errorCode || errorMessage;
+      if (finalCode === 'fanmark_limit_exceeded' && current !== undefined && limit !== undefined) {
+        throw new Error(`fanmark_limit_exceeded: current: ${current}, limit: ${limit}`);
+      }
+      throw new Error(finalCode || errorMessage);
+    }
 
     await fetchTransferData();
     return data;
