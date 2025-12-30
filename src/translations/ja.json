@@ -354,7 +354,8 @@
     "nonEmojiRejectedBody": "入力テキストから有効な絵文字を抽出できませんでした。",
     "userMenuAriaLabel": "ユーザーメニュー",
     "visitFanmarkAriaLabel": "ファンマに移動",
-    "copyFanmarkAriaLabel": "ファンマをコピー"
+    "copyFanmarkAriaLabel": "ファンマをコピー",
+    "viewTerms": "利用規約を確認"
   },
   "userSettings": {
     "pageTitle": "ユーザー設定",
@@ -1737,8 +1738,5 @@
       "transferInProgress": "移管処理中のため、この操作はできません",
       "disclaimerRequired": "注意事項への同意が必要です"
     }
-  },
-  "common": {
-    "viewTerms": "利用規約を確認"
   }
 }

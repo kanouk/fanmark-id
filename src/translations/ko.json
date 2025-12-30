@@ -355,7 +355,8 @@
     "nonEmojiRejectedBody": "입력 텍스트에서 유효한 이모지를 추출할 수 없습니다.",
     "userMenuAriaLabel": "사용자 메뉴",
     "visitFanmarkAriaLabel": "팬마크 방문",
-    "copyFanmarkAriaLabel": "팬마크 복사"
+    "copyFanmarkAriaLabel": "팬마크 복사",
+    "viewTerms": "이용약관 보기"
   },
   "userSettings": {
     "pageTitle": "사용자 설정",
@@ -1738,8 +1739,5 @@
       "transferInProgress": "이전 중에는 이 작업이 허용되지 않습니다",
       "disclaimerRequired": "안내 동의가 필요합니다"
     }
-  },
-  "common": {
-    "viewTerms": "이용약관 보기"
   }
 }

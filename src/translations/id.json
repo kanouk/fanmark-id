@@ -354,7 +354,8 @@
     "nonEmojiRejectedBody": "Kami tidak dapat menemukan emoji valid di input Anda.",
     "userMenuAriaLabel": "Menu pengguna",
     "visitFanmarkAriaLabel": "Kunjungi fanmark",
-    "copyFanmarkAriaLabel": "Salin fanmark"
+    "copyFanmarkAriaLabel": "Salin fanmark",
+    "viewTerms": "Lihat Ketentuan Layanan"
   },
   "userSettings": {
     "pageTitle": "Pengaturan Pengguna",
@@ -1738,8 +1739,5 @@
       "transferInProgress": "Operasi ini tidak diizinkan selama transfer",
       "disclaimerRequired": "Persetujuan terhadap pemberitahuan diperlukan"
     }
-  },
-  "common": {
-    "viewTerms": "Lihat Ketentuan Layanan"
   }
 }

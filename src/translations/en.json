@@ -355,7 +355,8 @@
     "nonEmojiRejectedBody": "We couldn't find any valid emojis in your input.",
     "userMenuAriaLabel": "User menu",
     "visitFanmarkAriaLabel": "Visit fanmark",
-    "copyFanmarkAriaLabel": "Copy fanmark"
+    "copyFanmarkAriaLabel": "Copy fanmark",
+    "viewTerms": "View Terms of Service"
   },
   "userSettings": {
     "pageTitle": "User Settings",
@@ -1739,8 +1740,5 @@
       "transferInProgress": "This operation is not allowed during transfer",
       "disclaimerRequired": "Agreement to the notice is required"
     }
-  },
-  "common": {
-    "viewTerms": "View Terms of Service"
   }
 }
