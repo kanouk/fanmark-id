@@ -10,14 +10,38 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Loader2, Send, RefreshCw } from "lucide-react";
+import { Loader2, Send, RefreshCw, Pencil } from "lucide-react";
+
+interface NotificationTemplate {
+  id: string;
+  template_id: string;
+  language: string;
+  channel: string;
+  version: number;
+  title: string | null;
+  body: string;
+  summary: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
 const AdminNotificationManager = () => {
   const queryClient = useQueryClient();
   const [userId, setUserId] = useState("");
   const [eventType, setEventType] = useState("");
   const [payload, setPayload] = useState("{}");
+  
+  // Template editing state
+  const [editingTemplate, setEditingTemplate] = useState<NotificationTemplate | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editBody, setEditBody] = useState("");
+  const [editSummary, setEditSummary] = useState("");
+  const [editIsActive, setEditIsActive] = useState(true);
+  const [templateLanguageFilter, setTemplateLanguageFilter] = useState<string>("all");
 
   // 手動通知送信
   const sendNotificationMutation = useMutation({
@@ -94,6 +118,21 @@ const AdminNotificationManager = () => {
     },
   });
 
+  // テンプレート取得
+  const { data: templates, isLoading: templatesLoading, refetch: refetchTemplates } = useQuery({
+    queryKey: ['notification-templates'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('notification_templates')
+        .select('*')
+        .order('template_id')
+        .order('language');
+      
+      if (error) throw error;
+      return data as NotificationTemplate[];
+    },
+  });
+
   // ルール有効/無効切り替え
   const toggleRuleMutation = useMutation({
     mutationFn: async ({ ruleId, enabled }: { ruleId: string; enabled: boolean }) => {
@@ -113,6 +152,42 @@ const AdminNotificationManager = () => {
     },
   });
 
+  // テンプレート更新
+  const updateTemplateMutation = useMutation({
+    mutationFn: async () => {
+      if (!editingTemplate) throw new Error("テンプレートが選択されていません");
+      
+      const { error } = await supabase
+        .from('notification_templates')
+        .update({
+          title: editTitle || null,
+          body: editBody,
+          summary: editSummary || null,
+          is_active: editIsActive,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', editingTemplate.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("テンプレートを更新しました");
+      queryClient.invalidateQueries({ queryKey: ['notification-templates'] });
+      setEditingTemplate(null);
+    },
+    onError: (error: Error) => {
+      toast.error(`エラー: ${error.message}`);
+    },
+  });
+
+  const openEditDialog = (template: NotificationTemplate) => {
+    setEditingTemplate(template);
+    setEditTitle(template.title || "");
+    setEditBody(template.body);
+    setEditSummary(template.summary || "");
+    setEditIsActive(template.is_active);
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       pending: "secondary",
@@ -124,6 +199,24 @@ const AdminNotificationManager = () => {
     return <Badge variant={variants[status] || "outline"}>{status}</Badge>;
   };
 
+  const getLanguageLabel = (lang: string) => {
+    const labels: Record<string, string> = { ja: "日本語", en: "English", ko: "한국어", id: "Indonesia" };
+    return labels[lang] || lang;
+  };
+
+  const filteredTemplates = templates?.filter(t => 
+    templateLanguageFilter === "all" || t.language === templateLanguageFilter
+  );
+
+  // Group templates by template_id for display
+  const groupedTemplates = filteredTemplates?.reduce((acc, template) => {
+    if (!acc[template.template_id]) {
+      acc[template.template_id] = [];
+    }
+    acc[template.template_id].push(template);
+    return acc;
+  }, {} as Record<string, NotificationTemplate[]>);
+
   return (
     <div className="space-y-6">
       <Card>
@@ -134,11 +227,12 @@ const AdminNotificationManager = () => {
       </Card>
 
       <Tabs defaultValue="send" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="send">手動送信</TabsTrigger>
           <TabsTrigger value="events">イベントログ</TabsTrigger>
           <TabsTrigger value="notifications">配信済み通知</TabsTrigger>
           <TabsTrigger value="rules">ルール一覧</TabsTrigger>
+          <TabsTrigger value="templates">テンプレート</TabsTrigger>
         </TabsList>
 
         <TabsContent value="send">
@@ -364,7 +458,170 @@ const AdminNotificationManager = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="templates">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>通知テンプレート</CardTitle>
+                  <CardDescription>
+                    通知メッセージのテンプレートを管理します。プレースホルダ: {`{{fanmark_name}}, {{license_end}}, {{grace_expires_at}}`} 等
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Select value={templateLanguageFilter} onValueChange={setTemplateLanguageFilter}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">すべて</SelectItem>
+                      <SelectItem value="ja">日本語</SelectItem>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="ko">한국어</SelectItem>
+                      <SelectItem value="id">Indonesia</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" size="sm" onClick={() => refetchTemplates()}>
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {templatesLoading ? (
+                <div className="flex justify-center p-8">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>テンプレートID</TableHead>
+                        <TableHead>言語</TableHead>
+                        <TableHead>Ch</TableHead>
+                        <TableHead>Ver</TableHead>
+                        <TableHead>タイトル</TableHead>
+                        <TableHead className="max-w-[300px]">本文</TableHead>
+                        <TableHead>有効</TableHead>
+                        <TableHead>操作</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredTemplates?.map((template) => (
+                        <TableRow key={template.id}>
+                          <TableCell className="font-mono text-xs">
+                            {template.template_id.substring(0, 8)}...
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{getLanguageLabel(template.language)}</Badge>
+                          </TableCell>
+                          <TableCell>{template.channel}</TableCell>
+                          <TableCell>{template.version}</TableCell>
+                          <TableCell className="max-w-[150px] truncate">
+                            {template.title || '-'}
+                          </TableCell>
+                          <TableCell className="max-w-[300px] truncate text-sm text-muted-foreground">
+                            {template.body.substring(0, 50)}{template.body.length > 50 ? '...' : ''}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={template.is_active ? "default" : "secondary"}>
+                              {template.is_active ? '有効' : '無効'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openEditDialog(template)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      {/* Template Edit Dialog */}
+      <Dialog open={!!editingTemplate} onOpenChange={(open) => !open && setEditingTemplate(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>テンプレート編集</DialogTitle>
+            <DialogDescription>
+              テンプレートID: {editingTemplate?.template_id.substring(0, 8)}... | 
+              言語: {editingTemplate && getLanguageLabel(editingTemplate.language)} | 
+              Ver: {editingTemplate?.version}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">タイトル</Label>
+              <Input
+                id="edit-title"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="通知タイトル"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-body">本文</Label>
+              <Textarea
+                id="edit-body"
+                value={editBody}
+                onChange={(e) => setEditBody(e.target.value)}
+                placeholder="通知本文"
+                rows={4}
+              />
+              <p className="text-xs text-muted-foreground">
+                使用可能なプレースホルダ: {`{{fanmark_name}}, {{fanmark_short_id}}, {{license_end}}, {{grace_expires_at}}, {{reason}}`}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-summary">サマリー（オプション）</Label>
+              <Textarea
+                id="edit-summary"
+                value={editSummary}
+                onChange={(e) => setEditSummary(e.target.value)}
+                placeholder="短い要約（任意）"
+                rows={2}
+              />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="edit-active"
+                checked={editIsActive}
+                onCheckedChange={setEditIsActive}
+              />
+              <Label htmlFor="edit-active">有効</Label>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingTemplate(null)}>
+              キャンセル
+            </Button>
+            <Button 
+              onClick={() => updateTemplateMutation.mutate()}
+              disabled={updateTemplateMutation.isPending || !editBody}
+            >
+              {updateTemplateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              保存
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

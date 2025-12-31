@@ -601,6 +601,7 @@ export type Database = {
           license_start: string
           plan_excluded: boolean | null
           status: string
+          transfer_locked_until: string | null
           updated_at: string
           user_id: string | null
         }
@@ -618,6 +619,7 @@ export type Database = {
           license_start?: string
           plan_excluded?: boolean | null
           status?: string
+          transfer_locked_until?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -635,6 +637,7 @@ export type Database = {
           license_start?: string
           plan_excluded?: boolean | null
           status?: string
+          transfer_locked_until?: string | null
           updated_at?: string
           user_id?: string | null
         }
