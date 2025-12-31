@@ -1421,64 +1421,87 @@
     },
     "about": {
       "title": "About Fanmark",
-      "subtitle": "Creating a New Form of Identity with Emoji",
+      "subtitle": "Your Unique Link with Emoji",
       "backToHome": "Back to Home",
-      "introduction": "Fanmark is a next-generation ID and link service using emoji combinations (fanmarks). Get your own special, memorable, and easy-to-share address.",
+      "introduction": "Fanmark is a service where you can claim and hold emoji combinations as your unique ID.\n\nEach fanmark gets a dedicated link like fanmark.id/🍎🍊, which you can configure as a profile page, redirect, or message board.",
       "features": {
-        "memorable": {
-          "title": "Memorable",
-          "description": "No need to remember complex URLs or strings of numbers. Just choose emojis that represent you, and you'll have a unique, instantly recognizable ID."
+        "uniqueId": {
+          "title": "Emoji as Your ID",
+          "description": "Combine 1-5 emojis to create your unique ID. Shorter combinations are rarer, while longer ones are easier to claim."
         },
-        "easyShare": {
-          "title": "Easy to Share",
-          "description": "Share emojis directly on social media and messaging apps. They're visually appealing and anyone can access your page right away."
+        "threeWays": {
+          "title": "Three Ways to Use",
+          "description": "Choose from redirect (forward to any URL or phone number), profile page, or message board."
         },
-        "flexible": {
-          "title": "Flexible Usage",
-          "description": "Use it as a profile page, redirect to your favorite site, or display messages. Customize it freely to suit your needs."
+        "tierSystem": {
+          "title": "Tier-Based Licensing",
+          "description": "The number of emojis determines your tier and initial license period. 4+ emojis are perpetual; 1-3 require paid renewal."
         },
-        "multilingual": {
-          "title": "Multilingual Support",
-          "description": "Available in Japanese, English, Korean, and Indonesian. Connect with people around the world."
+        "transfer": {
+          "title": "Transfer & Lottery",
+          "description": "Generate transfer codes to give your fanmark to others. You can also enter a lottery for returned fanmarks."
         }
       },
       "howItWorks": {
         "title": "How It Works",
         "step1": {
           "title": "Search for Fanmarks",
-          "description": "Combine 1-5 emojis to search for your ideal fanmark. Check availability and pricing."
+          "description": "Enter 1-5 emojis to check availability and tier (license period)."
         },
         "step2": {
-          "title": "Claim Your Fanmark",
-          "description": "Found a fanmark you like? Create an account and claim it. As we're invite-only, you'll need an invitation code or to join the waitlist."
+          "title": "Sign Up & Claim",
+          "description": "Create an account with an invitation code and claim your fanmark. You can hold multiple fanmarks up to your plan limit."
         },
         "step3": {
-          "title": "Customize Settings",
-          "description": "Set the display name and access type (profile, redirect, text) for your fanmark. Creating a profile page is easy."
+          "title": "Set Access Type",
+          "description": "Choose redirect, profile, or message board. You can also add password protection."
         },
         "step4": {
-          "title": "Share and Enjoy",
-          "description": "Share your fanmark on social media or your website. Your unique, easily accessible link is ready to go."
+          "title": "Share Your Link",
+          "description": "Access your fanmark at fanmark.id/🍎🍊. Share via social media or QR code."
         }
+      },
+      "accessTypes": {
+        "title": "Access Types",
+        "redirect": {
+          "title": "Redirect",
+          "description": "Instantly forward to any external URL or phone number."
+        },
+        "profile": {
+          "title": "Profile",
+          "description": "Create a page with your bio and social links."
+        },
+        "messageboard": {
+          "title": "Message Board",
+          "description": "Display a text message with copy functionality."
+        }
+      },
+      "tiers": {
+        "title": "Tiers & Pricing",
+        "description": "Fewer emojis means higher rarity, so shorter fanmarks have limited license periods requiring renewal.",
+        "tierS": "1 emoji: 7 days (paid renewal)",
+        "tierA": "2 emojis or sequences: 14 days (paid renewal)",
+        "tierB": "3 emojis: 30 days (paid renewal)",
+        "tierC": "4-5 emojis: Perpetual"
       },
       "useCases": {
         "title": "Use Cases",
         "creators": {
           "title": "Creators",
-          "description": "Share links to your work or portfolio with emojis that represent your brand."
+          "description": "Consolidate links to your portfolio and social media with emojis that represent your work."
         },
         "businesses": {
           "title": "Shops & Businesses",
-          "description": "Create pathways to menus or booking pages with emojis that express your shop's personality."
+          "description": "Create pathways to booking pages or menus with emojis that match your brand."
         },
         "communities": {
           "title": "Communities",
-          "description": "Link to event information or member recruitment pages with emojis that reflect your group's vibe."
+          "description": "Link to event announcements or member recruitment with emojis that represent your team."
         }
       },
       "cta": {
         "title": "Let's Get Started",
-        "description": "Find your special fanmark and experience a new world of identity.",
+        "description": "Find the perfect emoji for you and experience Fanmark.",
         "button": "Find Your Fanmark"
       }
     },
@@ -1543,15 +1566,17 @@
   },
   "contactUs": {
     "title": "Contact Us",
-    "subtitle": "Get in touch with us for questions, feedback, or support",
-    "introduction": "We'd love to hear from you! Whether you have questions about fanmark.id, feedback to share, or need support, please reach out using one of the methods below.",
-    "email": {
-      "title": "Email",
-      "description": "For general inquiries, legal matters, or support requests, send us an email."
+    "subtitle": "We'd love to hear from you",
+    "introduction": "For questions, feedback, or bug reports about Fanmark, please reach out to us on X.",
+    "x": {
+      "title": "Contact via X",
+      "description": "For service questions, feature requests, and bug reports, feel free to send us a DM or mention.",
+      "note": "We typically respond within a few days"
     },
-    "twitter": {
-      "title": "Twitter/X",
-      "description": "Follow us on Twitter/X for updates, announcements, and quick support responses."
+    "email": {
+      "title": "Legal Inquiries",
+      "description": "Please use email only for legal matters, privacy concerns, or official correspondence.",
+      "note": "We may not respond to general inquiries via email"
     }
   },
   "errorPages": {

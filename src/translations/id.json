@@ -1420,64 +1420,87 @@
     },
     "about": {
       "title": "Tentang Fanmark",
-      "subtitle": "Menciptakan Bentuk Identitas Baru dengan Emoji",
+      "subtitle": "Tautan Unik Anda dengan Emoji",
       "backToHome": "Kembali ke Beranda",
-      "introduction": "Fanmark adalah layanan ID dan tautan generasi baru menggunakan kombinasi emoji (fanmark). Dapatkan alamat khusus Anda yang mudah diingat dan dibagikan.",
+      "introduction": "Fanmark adalah layanan di mana Anda dapat mengklaim dan menyimpan kombinasi emoji sebagai ID unik Anda.\n\nSetiap fanmark mendapatkan tautan khusus seperti fanmark.id/🍎🍊, yang dapat Anda konfigurasi sebagai halaman profil, pengalihan, atau papan pesan.",
       "features": {
-        "memorable": {
-          "title": "Mudah Diingat",
-          "description": "Tidak perlu mengingat URL yang rumit atau deretan angka. Cukup pilih emoji yang mewakili Anda, dan Anda akan memiliki ID unik yang langsung dapat dikenali."
+        "uniqueId": {
+          "title": "Emoji Sebagai ID Anda",
+          "description": "Kombinasikan 1-5 emoji untuk membuat ID unik Anda. Kombinasi pendek lebih langka, sedangkan yang panjang lebih mudah diklaim."
         },
-        "easyShare": {
-          "title": "Mudah Dibagikan",
-          "description": "Bagikan emoji langsung di media sosial dan aplikasi pesan. Mereka menarik secara visual dan siapa pun dapat mengakses halaman Anda segera."
+        "threeWays": {
+          "title": "Tiga Cara Penggunaan",
+          "description": "Pilih dari pengalihan (teruskan ke URL atau nomor telepon apa pun), halaman profil, atau papan pesan."
         },
-        "flexible": {
-          "title": "Penggunaan Fleksibel",
-          "description": "Gunakan sebagai halaman profil, alihkan ke situs favorit Anda, atau tampilkan pesan. Sesuaikan secara bebas sesuai kebutuhan Anda."
+        "tierSystem": {
+          "title": "Lisensi Berbasis Tier",
+          "description": "Jumlah emoji menentukan tier dan periode lisensi awal Anda. 4+ emoji bersifat permanen; 1-3 memerlukan perpanjangan berbayar."
         },
-        "multilingual": {
-          "title": "Dukungan Multibahasa",
-          "description": "Tersedia dalam bahasa Jepang, Inggris, Korea, dan Indonesia. Terhubung dengan orang-orang di seluruh dunia."
+        "transfer": {
+          "title": "Transfer & Undian",
+          "description": "Buat kode transfer untuk memberikan fanmark Anda kepada orang lain. Anda juga dapat mengikuti undian untuk fanmark yang dikembalikan."
         }
       },
       "howItWorks": {
         "title": "Cara Kerjanya",
         "step1": {
           "title": "Cari Fanmark",
-          "description": "Kombinasikan 1-5 emoji untuk mencari fanmark ideal Anda. Periksa ketersediaan dan harga."
+          "description": "Masukkan 1-5 emoji untuk memeriksa ketersediaan dan tier (periode lisensi)."
         },
         "step2": {
-          "title": "Klaim Fanmark Anda",
-          "description": "Menemukan fanmark yang Anda suka? Buat akun dan klaimnya. Karena kami hanya menerima undangan, Anda memerlukan kode undangan atau bergabung dengan daftar tunggu."
+          "title": "Daftar & Klaim",
+          "description": "Buat akun dengan kode undangan dan klaim fanmark Anda. Anda dapat menyimpan beberapa fanmark hingga batas paket Anda."
         },
         "step3": {
-          "title": "Sesuaikan Pengaturan",
-          "description": "Atur nama tampilan dan jenis akses (profil, pengalihan, teks) untuk fanmark Anda. Membuat halaman profil sangat mudah."
+          "title": "Atur Jenis Akses",
+          "description": "Pilih pengalihan, profil, atau papan pesan. Anda juga dapat menambahkan perlindungan kata sandi."
         },
         "step4": {
-          "title": "Bagikan dan Nikmati",
-          "description": "Bagikan fanmark Anda di media sosial atau situs web Anda. Tautan unik dan mudah diakses Anda siap digunakan."
+          "title": "Bagikan Tautan Anda",
+          "description": "Akses fanmark Anda di fanmark.id/🍎🍊. Bagikan melalui media sosial atau kode QR."
         }
+      },
+      "accessTypes": {
+        "title": "Jenis Akses",
+        "redirect": {
+          "title": "Pengalihan",
+          "description": "Langsung teruskan ke URL eksternal atau nomor telepon."
+        },
+        "profile": {
+          "title": "Profil",
+          "description": "Buat halaman dengan bio dan tautan sosial Anda."
+        },
+        "messageboard": {
+          "title": "Papan Pesan",
+          "description": "Tampilkan pesan teks dengan fungsi salin."
+        }
+      },
+      "tiers": {
+        "title": "Tier & Harga",
+        "description": "Lebih sedikit emoji berarti kelangkaan lebih tinggi, jadi fanmark pendek memiliki periode lisensi terbatas yang memerlukan perpanjangan.",
+        "tierS": "1 emoji: 7 hari (perpanjangan berbayar)",
+        "tierA": "2 emoji atau sekuens: 14 hari (perpanjangan berbayar)",
+        "tierB": "3 emoji: 30 hari (perpanjangan berbayar)",
+        "tierC": "4-5 emoji: Permanen"
       },
       "useCases": {
         "title": "Kasus Penggunaan",
         "creators": {
           "title": "Kreator",
-          "description": "Bagikan tautan ke karya atau portofolio Anda dengan emoji yang mewakili merek Anda."
+          "description": "Konsolidasikan tautan ke portofolio dan media sosial Anda dengan emoji yang mewakili karya Anda."
         },
         "businesses": {
           "title": "Toko & Bisnis",
-          "description": "Buat jalur ke menu atau halaman pemesanan dengan emoji yang mengekspresikan kepribadian toko Anda."
+          "description": "Buat jalur ke halaman pemesanan atau menu dengan emoji yang cocok dengan merek Anda."
         },
         "communities": {
           "title": "Komunitas",
-          "description": "Tautkan ke informasi acara atau halaman rekrutmen anggota dengan emoji yang mencerminkan suasana grup Anda."
+          "description": "Tautkan ke pengumuman acara atau rekrutmen anggota dengan emoji yang mewakili tim Anda."
         }
       },
       "cta": {
         "title": "Mari Mulai",
-        "description": "Temukan fanmark khusus Anda dan alami dunia identitas baru.",
+        "description": "Temukan emoji yang sempurna untuk Anda dan alami Fanmark.",
         "button": "Temukan Fanmark Anda"
       }
     },
@@ -1542,15 +1565,17 @@
   },
   "contactUs": {
     "title": "Hubungi Kami",
-    "subtitle": "Hubungi kami untuk pertanyaan, umpan balik, atau dukungan",
-    "introduction": "Kami senang mendengar dari Anda! Jika memiliki pertanyaan tentang fanmark.id, ingin berbagi umpan balik, atau memerlukan dukungan, silakan hubungi kami menggunakan salah satu metode di bawah.",
-    "email": {
-      "title": "Email",
-      "description": "Untuk pertanyaan umum, masalah hukum, atau permintaan dukungan, kirimkan email kepada kami."
+    "subtitle": "Kami senang mendengar dari Anda",
+    "introduction": "Untuk pertanyaan, umpan balik, atau laporan bug tentang Fanmark, silakan hubungi kami di X.",
+    "x": {
+      "title": "Hubungi via X",
+      "description": "Untuk pertanyaan layanan, permintaan fitur, dan laporan bug, silakan kirim DM atau mention.",
+      "note": "Kami biasanya merespons dalam beberapa hari"
     },
-    "twitter": {
-      "title": "Twitter/X",
-      "description": "Ikuti kami di Twitter/X untuk pembaruan, pengumuman, dan respons dukungan cepat."
+    "email": {
+      "title": "Pertanyaan Hukum",
+      "description": "Silakan gunakan email hanya untuk masalah hukum, privasi, atau korespondensi resmi.",
+      "note": "Kami mungkin tidak merespons pertanyaan umum via email"
     }
   },
   "errorPages": {
