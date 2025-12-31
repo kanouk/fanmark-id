@@ -4,6 +4,7 @@ import { Search, Sparkles, ExternalLink, Plus, Heart, Ticket, TicketX } from 'lu
 import { FiInfo, FiAlertTriangle } from 'react-icons/fi';
 import FanmarkSearch from '@/components/FanmarkSearch';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { navigateToFanmark } from '@/utils/emojiUrl';
@@ -53,6 +54,7 @@ export const FanmarkAcquisition = ({
   onSearchScrolled,
 }: FanmarkAcquisitionProps) => {
   const { t, language } = useTranslation();
+  const isMobile = useIsMobile();
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -613,7 +615,11 @@ export const FanmarkAcquisition = ({
                 disabled={!canAcquireNow}
               >
                 <Plus className="h-4 w-4" />
-                {user ? t('dashboard.acquireButton') : t('dashboard.acquireLoginButton')}
+                {user
+                  ? isMobile && isGraceBlocked
+                    ? t('dashboard.acquireButtonShort')
+                    : t('dashboard.acquireButton')
+                  : t('dashboard.acquireLoginButton')}
               </Button>
               {/* 右側のボタングループ - 取得ボタンの右隣に絶対配置 */}
               <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 flex items-center gap-2">

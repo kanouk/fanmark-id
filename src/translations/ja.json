@@ -821,6 +821,7 @@
     "searchSubtitle": "＋を押してファンマを選び、空き状況をチェック",
     "remainingFanmarksLabel": "残り {remaining} 枠",
     "acquireButton": "このファンマを取得する",
+    "acquireButtonShort": "取得する",
     "acquireLoginButton": "ログインして取得する",
     "acquireConfirmTitle": "このファンマを取得しますか？",
     "acquireConfirmDescription": "このファンマを取得すると、あと {remaining} 枠になります。",
