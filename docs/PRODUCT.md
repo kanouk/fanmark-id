@@ -35,6 +35,12 @@
 - お気に入り: `fanmark_discoveries` / `fanmark_favorites` で未取得ファンマも管理。トグルは RPC `add/remove_fanmark_favorite`。返却完了時にお気に入り登録者へ `favorite_fanmark_available` 通知イベントを生成。
 - 通知基盤: `notification_events` → `notification_rules` → `notifications`。イベント例: grace開始/失効、抽選当落、移管関連、手動告知。`process-notification-events` Scheduled Function が展開・配信し、in-app/メール等に対応。
 
+## 表示と正規化（ファンマ）
+- 内部の同一性判定・検索は正規化済み（肌色除去）を使用し、表示はユーザーが意図した表記を保持する。
+- 表示値は `display_fanmark` を基準とし、取得ユーザーの表記を尊重する。
+- `/f/:shortId`（whois）は正規化後のプレーン表記を表示する。
+- お気に入りは「登録時に表示されていた表記」を固定で保持し、通知もお気に入り側の表示を用いる。
+
 ## 招待・認証
 - 招待制: `system_settings.invitation_mode` が ON の場合、サインアップ前に `validate_invitation_code` 成功が必須。`use_invitation_code` で消費し、残数と期限を検証。待機リストは `waitlist` テーブルで管理し、管理UIから招待コード配布。
 - 認証: Supabase Auth。`social_login_enabled=false` または招待モード中は OAuth を抑止し、OAuth でも初回パスワード設定を強制。パスワード要件表示、メール確認・再送、リセット対応。
@@ -47,7 +53,7 @@
 - `inactive`: 何もしない。ドラフト復元やパスワード保護の有無も翻訳キーで制御。
 
 ## データモデル概要
-- 主要テーブル: `fanmarks`, `fanmark_licenses` (status/日付/Tier), `fanmark_tiers`, `emoji_profiles`, `fanmark_basic/redirect/messageboard/password_configs`, `fanmark_discoveries`, `fanmark_favorites`, `fanmark_lottery_entries/history`, `fanmark_transfer_codes/requests`, `invitation_codes`, `waitlist`, `system_settings`, `notification_events/rules/notifications`, `audit_logs`.
+- 主要テーブル: `fanmarks`, `fanmark_licenses` (status/日付/Tier/`display_fanmark`), `fanmark_tiers`, `emoji_profiles`, `fanmark_basic/redirect/messageboard/password_configs`, `fanmark_discoveries`, `fanmark_favorites` (`display_fanmark`), `fanmark_lottery_entries/history`, `fanmark_transfer_codes/requests`, `invitation_codes`, `waitlist`, `system_settings`, `notification_events/rules/notifications`, `audit_logs`.
 - RPC/Functions (抜粋): `check_fanmark_availability`, `get_fanmark_by_emoji`, `register-fanmark`, `return-fanmark`, `bulk-return-fanmarks`, `extend-fanmark-license`, `check-expired-licenses`, `generate/apply/approve/reject/cancel-transfer-code`, `apply/cancel-lottery-entry`, `process-notification-events`.
 
 ## UXポイント

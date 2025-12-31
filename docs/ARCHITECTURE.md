@@ -44,6 +44,7 @@
 - 公開アクセス: `FanmarkAccess`/`FanmarkAccessByShortId` が RPC から最小データを取得し、アクセスタイプごとに UI 分岐。パスワード保護は `fanmark_password_configs` 経由。
 - 通知: `notification_events` → `notification_rules` → `notifications`。`process-notification-events` Edge Function がスケジュール実行し、in-app/メール等をチャネル別に生成。`notification_templates` で本文管理、`notifications_history` にアーカイブ。
 - OGP: `fanmark-ogp` / `generate-ogp-image` で OGP 動的生成。
+- 表示と正規化: 検索・同一性判定は正規化済みIDを使い、表示は `display_fanmark` を優先する。whois は正規化後のプレーン表記を表示し、お気に入りと通知は登録時の表示を固定保持する。
 
 ## ディレクトリ・依存のヒント
 - フロント: React + React Router + React Query + Tailwind + shadcn/ui。`components/ui` に集約したスタイルを利用。テーマ切替は `next-themes`（client）で実装。
