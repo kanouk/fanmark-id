@@ -1789,7 +1789,7 @@ export type Database = {
     }
     Functions: {
       add_fanmark_favorite: {
-        Args: { input_emoji_ids: string[]; input_display_fanmark: string }
+        Args: { input_display_fanmark: string; input_emoji_ids: string[] }
         Returns: boolean
       }
       archive_old_notifications: {
