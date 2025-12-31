@@ -131,6 +131,7 @@ serve(async (req) => {
         fanmarks!inner (
           id,
           user_input_fanmark,
+          normalized_emoji,
           short_id,
           tier_level
         )
@@ -165,6 +166,7 @@ serve(async (req) => {
 
     const fanmark = (oldLicense.fanmarks as any)?.[0] || oldLicense.fanmarks;
     const tierLevel = fanmark?.tier_level || 1;
+    const normalizedDisplayFanmark = fanmark?.normalized_emoji ?? null;
 
     // Fetch license duration from fanmark_tiers table
     const { data: tierData, error: tierError } = await supabase
@@ -224,6 +226,7 @@ serve(async (req) => {
         user_id: request.requester_user_id,
         license_start: now.toISOString(),
         license_end: newLicenseEnd,
+        display_fanmark: normalizedDisplayFanmark,
         status: 'active',
         is_initial_license: false,
         is_transferred: true,
@@ -296,7 +299,7 @@ serve(async (req) => {
         from_user_id: approverId,
         to_user_id: request.requester_user_id,
         fanmark_id: oldLicense.fanmark_id,
-        fanmark_name: fanmark?.user_input_fanmark,
+        fanmark_name: normalizedDisplayFanmark,
         tier_level: tierLevel,
         new_license_end: newLicenseEnd,
         request_id: request_id,
@@ -309,7 +312,7 @@ serve(async (req) => {
       payload_param: {
         user_id: request.requester_user_id,
         fanmark_id: oldLicense.fanmark_id,
-        fanmark_name: fanmark?.user_input_fanmark,
+        fanmark_name: normalizedDisplayFanmark,
         fanmark_short_id: fanmark?.short_id,
         license_id: newLicense.id,
         license_end: newLicenseEnd,
@@ -328,7 +331,7 @@ serve(async (req) => {
       success: true,
       new_license_id: newLicense.id,
       new_license_end: newLicenseEnd,
-      fanmark_name: fanmark?.user_input_fanmark,
+      fanmark_name: normalizedDisplayFanmark,
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -50,12 +50,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
     recentFanmarks,
     getNormalizationInfo,
   } = useFanmarkSearch({
-    searchQuery: normalizedInputQuery,
-    onSearchCompleted: (normalizedQuery) => {
-      if (normalizedQuery !== query) {
-        onQueryChange(normalizedQuery);
-      }
-    },
+    searchQuery: query,
   });
 
   useEffect(() => {
@@ -149,7 +144,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
               <Card key={`recent-${fanmark.id}-${index}`} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-3">
                   <div className="flex w-full flex-col gap-2">
-                    <span className="text-3xl tracking-[0.15em] leading-none">{(fanmark.fanmark || fanmark.user_input_fanmark) || '❓'}</span>
+                    <span className="text-3xl tracking-[0.15em] leading-none">{fanmark.fanmark || '❓'}</span>
                     {getStatusBadge(fanmark)}
                     
                     {/* Lottery info for grace/returning status */}
@@ -170,7 +165,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
                           onClick={async () => {
                             if (fanmark.id) {
                               try {
-                                await applyToLottery(fanmark.id, { emoji: fanmark.fanmark ?? fanmark.user_input_fanmark });
+                                await applyToLottery(fanmark.id, { emoji: fanmark.fanmark });
                               } catch (error) {
                                 console.error('Failed to apply to lottery from recent fanmarks:', error);
                               }

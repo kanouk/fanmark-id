@@ -8,12 +8,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/integrations/supabase/client';
-import { resolveFanmarkDisplay } from '@/lib/emojiConversion';
 import { showEmojiConfetti } from '@/lib/emojiConfetti';
 
 interface FanmarkRecord {
   id: string;
   user_input_fanmark: string;
+  display_fanmark?: string;
   emoji_ids: string[];
   fanmark_name: string | null;
   access_type: 'profile' | 'redirect' | 'text' | 'inactive';
@@ -97,7 +97,7 @@ const FanmarkSettingsPage = () => {
         id: fanmarkData.id,
         user_input_fanmark: fanmarkData.user_input_fanmark,
         emoji_ids: emojiIds,
-        fanmark: resolveFanmarkDisplay(fanmarkData.user_input_fanmark, emojiIds),
+        fanmark: fanmarkData.display_fanmark,
         fanmark_name: fanmarkData.fanmark_name?.trim() || null,
         access_type: fanmarkData.access_type as 'profile' | 'redirect' | 'text' | 'inactive',
         target_url: fanmarkData.target_url ?? undefined,
@@ -144,7 +144,7 @@ const FanmarkSettingsPage = () => {
     // データ読み込み完了 && fanmark が存在 && 新規取得フラグがある場合
     if (!loading && fanmark && location.state?.isNew) {
       // 紙吹雪を発動
-      showEmojiConfetti(fanmark.user_input_fanmark);
+      showEmojiConfetti(fanmark.fanmark);
       
       // history.state から isNew フラグを削除（ブラウザバック時の再発動を防止）
       const newState = { ...location.state };

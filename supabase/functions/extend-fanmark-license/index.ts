@@ -30,6 +30,7 @@ interface LicenseWithFanmark {
   is_returned: boolean | null;
   excluded_at: string | null;
   excluded_from_plan: string | null;
+  display_fanmark: string | null;
   fanmarks: FanmarkInfo[] | null;
 }
 
@@ -117,6 +118,7 @@ serve(async (req) => {
         is_returned,
         excluded_at,
         excluded_from_plan,
+        display_fanmark,
         fanmarks!inner (
           id,
           user_input_fanmark,
@@ -146,6 +148,7 @@ serve(async (req) => {
 
     const licenseRecord: LicenseWithFanmark = license as unknown as LicenseWithFanmark;
     const fanmarkData = licenseRecord.fanmarks?.[0] ?? null;
+    const displayFanmark = licenseRecord.display_fanmark ?? '';
 
     if (fanmarkData?.status !== 'active') {
       return new Response(JSON.stringify({ error: 'Fanmark is not active' }), {
@@ -296,7 +299,7 @@ serve(async (req) => {
             payload_param: {
               user_id: entry.user_id,
               fanmark_id: licenseRecord.fanmark_id,
-              fanmark_name: fanmarkData?.user_input_fanmark,
+              fanmark_name: displayFanmark,
               extended_by_user_id: authData.user.id,
             },
             source_param: 'edge_function',

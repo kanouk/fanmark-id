@@ -90,10 +90,13 @@ function getGraphemes(text: string): string[] {
   return Array.from(text);
 }
 
-const isBaseEmoji = (char: string): boolean =>
-  EMOJI_CHARACTER_REGEX.test(char) &&
-  !SKIN_TONE_MODIFIER_REGEX.test(char) &&
-  !COMBINING_CHARACTERS.has(char);
+const isBaseEmoji = (segment: string): boolean => {
+  if (!segment) return false;
+  const withoutModifiers = segment.replace(SKIN_TONE_MODIFIER_GLOBAL_REGEX, '');
+  if (!withoutModifiers) return false;
+  if (COMBINING_CHARACTERS.has(withoutModifiers)) return false;
+  return EMOJI_CHARACTER_REGEX.test(withoutModifiers);
+};
 
 // Normalize emoji by removing skin tone modifiers
 function normalizeEmoji(emoji: string): string {
@@ -755,6 +758,7 @@ serve(async (req) => {
         fanmark_id: fanmarkId,
         user_id: user.id,
         license_end: licenseEndIso,
+        display_fanmark: user_input_fanmark,
         status: 'active',
         is_initial_license: true,
         grace_expires_at: null  // Explicitly set to null for new licenses
@@ -855,6 +859,7 @@ serve(async (req) => {
         fanmark: {
           id: fanmarkId,
           user_input_fanmark: fanmarkUserInput,
+          display_fanmark: user_input_fanmark,
           emoji_ids: fanmarkEmojiIds,
           normalized_emoji_ids: fanmarkNormalizedEmojiIds,
           short_id: fanmarkShortId,

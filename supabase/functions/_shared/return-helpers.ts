@@ -88,7 +88,7 @@ async function notifyFavoritesAboutReturn(
   try {
     const { data: favorites, error: favoritesError } = await ctx.supabase
       .from('fanmark_favorites')
-      .select('user_id')
+      .select('user_id, display_fanmark')
       .eq('fanmark_id', fanmarkId)
       .neq('user_id', ctx.userId);
 
@@ -104,13 +104,14 @@ async function notifyFavoritesAboutReturn(
     for (const favorite of favorites) {
       const targetUserId = favorite.user_id;
       if (!targetUserId) continue;
+      const favoriteDisplay = favorite.display_fanmark ?? '';
 
       const { error: eventError } = await ctx.supabase.rpc('create_notification_event', {
         event_type_param: 'favorite_fanmark_available',
         payload_param: {
           user_id: targetUserId,
           fanmark_id: fanmarkId,
-          fanmark_name: displayName,
+          fanmark_name: favoriteDisplay,
           fanmark_short_id: fanmarkShortId,
           grace_expires_at: graceExpiresAt,
           link: fanmarkShortId ? `/f/${fanmarkShortId}` : null,
@@ -204,6 +205,7 @@ async function fetchLicenseWithFanmark(
     .from('fanmark_licenses')
     .select(
       `id, fanmark_id, user_id, status, license_end,
+       display_fanmark,
        fanmarks ( id, user_input_fanmark, short_id )`
     )
     .eq('id', licenseId)
@@ -221,6 +223,7 @@ async function fetchLicenseWithFanmark(
         user_id: string;
         status: string;
         license_end: string | null;
+        display_fanmark: string | null;
         fanmarks: { id: string; user_input_fanmark: string; short_id: string | null } | null;
       })
     | null;
@@ -251,7 +254,7 @@ export async function returnFanmarkByLicenseId(
 
   await transitionLicenseToGrace(ctx, license.id, nowIso, graceExpiresAtIso);
 
-  const fanmark = license.fanmarks?.user_input_fanmark ?? '';
+  const fanmark = license.display_fanmark ?? '';
   const fanmarkShortId = license.fanmarks?.short_id ?? '';
   await logReturnAction(ctx, license.fanmark_id, fanmark, graceExpiresAtIso, nowIso);
   await notifyOwnerAboutReturn(ctx, license.fanmark_id, fanmark, fanmarkShortId, graceExpiresAtIso);

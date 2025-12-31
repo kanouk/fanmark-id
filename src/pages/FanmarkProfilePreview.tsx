@@ -111,10 +111,10 @@ export default function FanmarkProfilePreview() {
         }
 
         // Set fanmark data from RPC response if not cached
-        if (record.user_input_fanmark) {
+        if (record.display_fanmark) {
           setCachedFanmark(prev => prev || {
             user_input_fanmark: record.user_input_fanmark || '',
-            fanmark: record.user_input_fanmark || '',
+            fanmark: record.display_fanmark || '',
             emoji_ids: [],
             display_name: record.fanmark_name || null,
             short_id: record.short_id

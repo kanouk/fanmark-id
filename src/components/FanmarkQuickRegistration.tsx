@@ -22,6 +22,7 @@ type QuickRegistrationFormData = z.infer<typeof quickRegistrationSchema>;
 interface RegisteredFanmark {
   id: string;
   user_input_fanmark: string;
+  display_fanmark: string;
   emoji_ids?: string[];
   normalized_emoji_ids?: string[];
   fanmark_name: string;
@@ -35,6 +36,7 @@ interface RegisterFanmarkResponse {
   fanmark?: {
     id: string;
     user_input_fanmark: string;
+    display_fanmark?: string;
     emoji_ids?: string[];
     normalized_emoji_ids?: string[];
     tier_level?: number;
@@ -140,6 +142,7 @@ export const FanmarkQuickRegistration = ({
         setRegisteredFanmark({
           id: result.fanmark.id,
           user_input_fanmark: result.fanmark.user_input_fanmark,
+          display_fanmark: result.fanmark.display_fanmark ?? result.fanmark.user_input_fanmark,
           emoji_ids: result.fanmark.emoji_ids,
           normalized_emoji_ids: result.fanmark.normalized_emoji_ids,
           fanmark_name: data.fanmarkName,
@@ -177,7 +180,7 @@ export const FanmarkQuickRegistration = ({
         </CardHeader>
         <CardContent className="text-center space-y-6">
           <div className="text-6xl mb-4">
-            {registeredFanmark.user_input_fanmark}
+            {registeredFanmark.display_fanmark}
           </div>
           <div className="text-xl font-semibold">
             {registeredFanmark.fanmark_name}

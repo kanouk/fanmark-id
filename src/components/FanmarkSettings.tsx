@@ -538,7 +538,7 @@ export const FanmarkSettings = ({
   const summaryCard = (
     <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-muted/10 px-5 py-3">
       <div className="flex items-center gap-3">
-        <span className="text-2xl">{fanmark.fanmark || fanmark.user_input_fanmark}</span>
+        <span className="text-2xl">{fanmark.fanmark}</span>
         <div className="flex flex-col">
           <span className="text-sm font-semibold text-foreground">{displayLabel}</span>
           <span className="text-xs text-muted-foreground">{fanmark.short_id}</span>
@@ -587,7 +587,7 @@ export const FanmarkSettings = ({
             <span className="text-sm font-semibold text-foreground">{t('fanmarkSettings.fields.accessType.label')}</span>
           </div>
           <p className="text-xs text-muted-foreground">
-            {t('fanmarkSettings.fields.accessType.description', { fanmark: fanmark?.fanmark || fanmark?.user_input_fanmark || '' })}
+            {t('fanmarkSettings.fields.accessType.description', { fanmark: fanmark?.fanmark || '' })}
           </p>
 
           {/* 1. Access Type Selection */}

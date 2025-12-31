@@ -100,7 +100,7 @@ export const FanmarkAcquisition = ({
   const isTaken = useMemo(() => searchResult?.status === 'taken' || searchResult?.status === 'not_available', [searchResult?.status]);
   const canShowFanmarkAccess = useMemo(() => searchResult?.status === 'taken', [searchResult?.status]);
   const canNavigateToDetail = Boolean(searchResult?.short_id);
-  const displayedFanmark = searchResult?.fanmark || searchResult?.user_input_fanmark || '';
+  const displayedFanmark = searchResult?.display_fanmark || searchResult?.fanmark || '';
   const favoriteSequenceKeys = useMemo(() => {
     return new Set(
       favorites.map((favorite) => favorite.normalizedEmojiIds.join(','))
@@ -124,7 +124,7 @@ export const FanmarkAcquisition = ({
   }, [searchResult?.id]);
 
   const getSearchAreaBackgroundClass = useMemo(() => {
-    if (!searchResult || !searchResult.user_input_fanmark || searchResult.error) {
+    if (!searchResult || !searchResult.fanmark || searchResult.error) {
       return 'bg-background/90';
     }
     if (searchResult.status === 'available') return 'bg-emerald-50/30';
@@ -168,7 +168,7 @@ export const FanmarkAcquisition = ({
     if (!searchResult || !canAcquireNow) return;
 
     if (!user) {
-      onRequireAuth?.(searchResult.user_input_fanmark);
+      onRequireAuth?.(searchResult.fanmark);
       return;
     }
 
@@ -189,7 +189,8 @@ export const FanmarkAcquisition = ({
     setIsRegistering(true);
 
     try {
-      const compactEmoji = searchResult.user_input_fanmark.replace(/\s/g, '');
+      const sourceEmoji = searchResult.display_fanmark || searchResult.user_input_fanmark || searchResult.fanmark || '';
+      const compactEmoji = sourceEmoji.replace(/\s/g, '');
       let emojiIds: string[] = [];
       let normalizedEmojiIds: string[] = [];
       try {
@@ -210,7 +211,7 @@ export const FanmarkAcquisition = ({
 
       const response = await supabase.functions.invoke<{ success: boolean; fanmark?: { id: string; user_input_fanmark?: string; emoji_ids?: string[]; normalized_emoji_ids?: string[] }; error?: string }>('register-fanmark', {
         body: { 
-          user_input_fanmark: searchResult.user_input_fanmark, 
+          user_input_fanmark: sourceEmoji, 
           emoji_ids: emojiIds, 
           normalized_emoji_ids: normalizedEmojiIds,
           defaultFanmarkName: t('fanmarkSettings.summary.defaultName'),
@@ -249,10 +250,10 @@ export const FanmarkAcquisition = ({
   }, [navigate, onObtain, searchResult, t, toast]);
 
   const handleVisitFanmark = useCallback(() => {
-    if (!searchResult?.user_input_fanmark) return;
+    if (!searchResult?.fanmark) return;
 
-    navigateToFanmark(searchResult.fanmark || searchResult.user_input_fanmark, true);
-  }, [searchResult?.fanmark, searchResult?.user_input_fanmark]);
+    navigateToFanmark(searchResult.fanmark ?? '', true);
+  }, [searchResult?.fanmark]);
 
   const handleToggleFavorite = useCallback(async () => {
     if (!searchResult) return;
@@ -262,7 +263,7 @@ export const FanmarkAcquisition = ({
     if (emojiIds.length === 0) return;
 
     if (!user) {
-      onRequireAuth?.(searchResult.user_input_fanmark ?? displayedFanmark);
+      onRequireAuth?.(displayedFanmark);
       return;
     }
 
@@ -280,6 +281,8 @@ export const FanmarkAcquisition = ({
       } else {
         const { data, error } = await supabase.rpc('add_fanmark_favorite', {
           input_emoji_ids: emojiIds,
+          input_display_fanmark:
+            searchResult.display_fanmark || searchResult.user_input_fanmark || displayedFanmark,
         });
         if (error) throw error;
         if (data) {
@@ -433,7 +436,7 @@ export const FanmarkAcquisition = ({
     <div ref={containerRef} className="space-y-6">
       {/* ファンマ取得中のローディング画面 */}
       {isRegistering && (
-        <FanmarkAcquisitionLoading emoji={searchResult?.user_input_fanmark} />
+        <FanmarkAcquisitionLoading emoji={searchResult?.fanmark} />
       )}
 
       <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
@@ -474,7 +477,7 @@ export const FanmarkAcquisition = ({
         icon={<Search className="h-6 w-6 text-primary" />}
         title={t('dashboard.searchFanma')}
         meta={
-          searchResult && (searchResult.fanmark || searchResult.user_input_fanmark) && !searchResult.error ? (
+          searchResult && searchResult.fanmark && !searchResult.error ? (
             <div className="flex w-full items-center justify-end gap-2">
               <FanmarkStatusBadge
                 status={
@@ -521,7 +524,7 @@ export const FanmarkAcquisition = ({
           <div className="flex justify-center">
             <EmojiInputUtilities
               disabled={false}
-              hasValue={!!(searchResult?.fanmark || searchResult?.user_input_fanmark)}
+              hasValue={!!searchResult?.fanmark}
               onPaste={async () => {
                 try {
                   if (!navigator.clipboard) {
@@ -658,7 +661,7 @@ export const FanmarkAcquisition = ({
                         try {
                           if (searchResult.has_user_lottery_entry && searchResult.user_lottery_entry_id) {
                             await cancelLotteryEntry(searchResult.user_lottery_entry_id, {
-                              emoji: searchResult.fanmark ?? searchResult.user_input_fanmark,
+                              emoji: searchResult.fanmark,
                               optimisticUpdate: (status) => {
                                 if (status === 'cancelled') {
                                   setSearchResult((prev) =>
@@ -687,7 +690,7 @@ export const FanmarkAcquisition = ({
                             });
                           } else {
                             await applyToLottery(searchResult.id, {
-                              emoji: searchResult.fanmark ?? searchResult.user_input_fanmark,
+                              emoji: searchResult.fanmark,
                               optimisticUpdate: (status, payload) => {
                                 if (status === 'applied') {
                                   setSearchResult((prev) =>

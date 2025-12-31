@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { resolveFanmarkDisplay } from '@/lib/emojiConversion';
 import { useAuth } from './useAuth';
 import { useInvalidateFavoriteFanmarks } from './useFavoriteFanmarks';
 
 export interface FanmarkDetails {
   fanmark_id: string;
   user_input_fanmark: string;
+  display_fanmark: string;
   emoji_ids: string[];
   fanmark: string;
   normalized_emoji: string;
@@ -77,7 +77,8 @@ export const useFanmarkDetails = (shortId: string | undefined) => {
         const emojiIds = Array.isArray(fanmarkData.emoji_ids)
           ? (fanmarkData.emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
           : [];
-        const displayFanmark = resolveFanmarkDisplay(fanmarkData.user_input_fanmark ?? '', emojiIds);
+        const displayFanmark = fanmarkData.display_fanmark ?? '';
+        const normalizedDisplay = fanmarkData.normalized_emoji ?? '';
 
         // Determine if current user is the owner
         const isCurrentOwner = user ? user.id === fanmarkData.current_owner_id : false;
@@ -90,7 +91,8 @@ export const useFanmarkDetails = (shortId: string | undefined) => {
         setDetails({
           ...fanmarkData,
           emoji_ids: emojiIds,
-          fanmark: displayFanmark,
+          display_fanmark: displayFanmark,
+          fanmark: normalizedDisplay,
           license_history: Array.isArray(fanmarkData.license_history)
             ? fanmarkData.license_history.map((item: any) => ({
                 license_start: item.license_start,
@@ -139,6 +141,7 @@ export const useFanmarkDetails = (shortId: string | undefined) => {
       } else {
         const { data, error } = await supabase.rpc('add_fanmark_favorite', {
           input_emoji_ids: emojiIds,
+          input_display_fanmark: details.display_fanmark,
         });
         if (error) throw error;
         if (data) {

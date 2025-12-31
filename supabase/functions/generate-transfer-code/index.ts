@@ -75,6 +75,7 @@ serve(async (req) => {
         status,
         license_end,
         transfer_locked_until,
+        display_fanmark,
         fanmarks!inner (
           id,
           user_input_fanmark,
@@ -103,6 +104,7 @@ serve(async (req) => {
     }
 
     const fanmark = (license.fanmarks as any)?.[0] || license.fanmarks;
+    const displayFanmark = license.display_fanmark ?? '';
     const now = new Date();
 
     if (license.transfer_locked_until) {
@@ -221,7 +223,7 @@ serve(async (req) => {
       metadata: {
         license_id,
         fanmark_id: license.fanmark_id,
-        fanmark_name: fanmark?.user_input_fanmark,
+        fanmark_name: displayFanmark,
         expires_at: expiresAt.toISOString(),
       },
     });
@@ -233,7 +235,7 @@ serve(async (req) => {
       transfer_code: codeString,
       transfer_code_id: newCode.id,
       expires_at: expiresAt.toISOString(),
-      fanmark_name: fanmark?.user_input_fanmark,
+      fanmark_name: displayFanmark,
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

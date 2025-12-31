@@ -30,7 +30,6 @@ import { useFavoriteFanmarks } from '@/hooks/useFavoriteFanmarks';
 import { navigateToFanmark, getFanmarkUrlForClipboard } from '@/utils/emojiUrl';
 import { parseDateString } from '@/lib/utils';
 import { deriveLicenseTiming, type LicenseTimingResult } from '@/lib/licenseTiming';
-import { resolveFanmarkDisplay } from '@/lib/emojiConversion';
 import { useTransferCode } from '@/hooks/useTransferCode';
 import { FanmarkTransferSection } from '@/components/FanmarkTransferSection';
 import { TransferCodeIssueDialog } from '@/components/TransferCodeIssueDialog';
@@ -368,6 +367,7 @@ export const FanmarkDashboard = () => {
           excluded_at,
           plan_excluded,
           created_at,
+          display_fanmark,
           fanmarks (
             id,
             user_input_fanmark,
@@ -429,23 +429,14 @@ export const FanmarkDashboard = () => {
           const rawEmojiIds = Array.isArray(fanmark.emoji_ids)
             ? (fanmark.emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
             : [];
-          const fallbackEmojiString =
-            (typeof fanmark.user_input_fanmark === 'string' && fanmark.user_input_fanmark.length > 0
-              ? fanmark.user_input_fanmark
-              : null) ??
-            (typeof fanmark.normalized_emoji === 'string' && fanmark.normalized_emoji.length > 0
-              ? fanmark.normalized_emoji
-              : null) ??
-            '';
           const userInputValue =
             typeof fanmark.user_input_fanmark === 'string' && fanmark.user_input_fanmark.length > 0
               ? fanmark.user_input_fanmark
               : '';
-          const resolvedDisplay = resolveFanmarkDisplay(userInputValue || fallbackEmojiString, rawEmojiIds);
-          const displayFanmark = resolvedDisplay || userInputValue;
+          const displayFanmark = license.display_fanmark ?? '';
           const emojiKey = rawEmojiIds.length > 0
             ? rawEmojiIds.join(':')
-            : resolvedDisplay || userInputValue || fanmark.id;
+            : displayFanmark || userInputValue || fanmark.id;
           const basicConfig = basicConfigMap.get(license.id);
 
           return {

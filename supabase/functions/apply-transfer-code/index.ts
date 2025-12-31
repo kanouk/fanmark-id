@@ -4,11 +4,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { status: 204, headers: corsHeaders });
   }
 
   try {
@@ -75,6 +76,9 @@ serve(async (req) => {
         issuer_user_id,
         status,
         expires_at,
+        fanmark_licenses!inner (
+          display_fanmark
+        ),
         fanmarks!inner (
           id,
           user_input_fanmark,
@@ -269,13 +273,15 @@ serve(async (req) => {
 
     // Send notification to issuer
     const fanmark = (codeData.fanmarks as any)?.[0] || codeData.fanmarks;
+    const licenseForDisplay = (codeData.fanmark_licenses as any)?.[0] || codeData.fanmark_licenses;
+    const displayFanmark = licenseForDisplay?.display_fanmark ?? '';
 
     await supabase.rpc('create_notification_event', {
       event_type_param: 'transfer_requested',
       payload_param: {
         user_id: codeData.issuer_user_id,
         fanmark_id: codeData.fanmark_id,
-        fanmark_name: fanmark?.user_input_fanmark,
+        fanmark_name: displayFanmark,
         requester_user_id: requesterId,
         requester_name: requesterName,
         request_id: request.id,
@@ -289,7 +295,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       success: true,
       request_id: request.id,
-      fanmark_name: fanmark?.user_input_fanmark,
+      fanmark_name: displayFanmark,
       fanmark_short_id: fanmark?.short_id,
     }), {
       status: 200,

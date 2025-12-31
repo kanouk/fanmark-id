@@ -52,7 +52,7 @@ export const FanmarkMessage = ({ fanmark }: FanmarkMessageProps) => {
   };
 
   const handleCopyUrl = () => {
-    const url = getFanmarkUrlForClipboard(fanmark.fanmark || fanmark.user_input_fanmark, 'https://fanmark.id');
+    const url = getFanmarkUrlForClipboard(fanmark.fanmark, 'https://fanmark.id');
     navigator.clipboard.writeText(url);
     toast({
       title: t('common.linkCopied'),
@@ -60,7 +60,7 @@ export const FanmarkMessage = ({ fanmark }: FanmarkMessageProps) => {
     });
   };
 
-  const fanmarkValue = fanmark.fanmark || fanmark.user_input_fanmark || '';
+  const fanmarkValue = fanmark.fanmark || '';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background flex flex-col relative overflow-hidden">

@@ -134,8 +134,8 @@ export const FanmarkTransferSection = ({
     const ensureEntry = (fanmarkId: string, fanmark?: TransferCode['fanmark']) => {
       const existing = map.get(fanmarkId);
       if (existing) {
-        if (!existing.fanmarkLabel && fanmark?.user_input_fanmark) {
-          existing.fanmarkLabel = fanmark.user_input_fanmark;
+        if (!existing.fanmarkLabel && fanmark?.display_fanmark) {
+          existing.fanmarkLabel = fanmark.display_fanmark;
         }
         if (!existing.shortId && fanmark?.short_id) {
           existing.shortId = fanmark.short_id;
@@ -145,7 +145,7 @@ export const FanmarkTransferSection = ({
 
       const created: TransferEntry = {
         fanmarkId,
-        fanmarkLabel: fanmark?.user_input_fanmark ?? '',
+        fanmarkLabel: fanmark?.display_fanmark ?? '',
         shortId: fanmark?.short_id,
         requestsForMyCode: []
       };

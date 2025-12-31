@@ -7,11 +7,11 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useAuth } from '@/hooks/useAuth';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { supabase } from '@/integrations/supabase/client';
-import { resolveFanmarkDisplay } from '@/lib/emojiConversion';
 
 interface Fanmark {
   id: string;
   user_input_fanmark: string;
+  display_fanmark: string;
   emoji_ids: string[];
   fanmark: string;
   fanmark_name: string | null;
@@ -64,11 +64,12 @@ export default function FanmarkMessageboardPreview() {
         const emojiIds = Array.isArray(fanmarkData.emoji_ids)
           ? (fanmarkData.emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
           : [];
-        const displayFanmark = resolveFanmarkDisplay(fanmarkData.user_input_fanmark ?? '', emojiIds);
+        const displayFanmark = fanmarkData.display_fanmark ?? '';
 
         const fanmark: Fanmark = {
           id: fanmarkData.id,
           user_input_fanmark: fanmarkData.user_input_fanmark,
+          display_fanmark: displayFanmark,
           emoji_ids: emojiIds,
           fanmark: displayFanmark,
           fanmark_name: fanmarkData.fanmark_name || displayFanmark,

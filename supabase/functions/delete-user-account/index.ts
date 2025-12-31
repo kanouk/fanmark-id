@@ -51,6 +51,7 @@ async function returnUserFanmarks(supabase: any, userId: string): Promise<void> 
     .select(`
       id,
       fanmark_id,
+      display_fanmark,
       fanmarks(user_input_fanmark, short_id)
     `)
     .eq("user_id", userId)
@@ -102,12 +103,12 @@ async function returnUserFanmarks(supabase: any, userId: string): Promise<void> 
           action: "FANMARK_RETURNED_ON_ACCOUNT_DELETE",
           resource_type: "fanmark_license",
           resource_id: license.id,
-          metadata: {
-            fanmark_id: license.fanmark_id,
-            fanmark_name: license.fanmarks?.user_input_fanmark,
-            short_id: license.fanmarks?.short_id,
-            grace_expires_at: graceExpiresAtIso,
-            returned_at: nowIso,
+        metadata: {
+          fanmark_id: license.fanmark_id,
+          fanmark_name: license.display_fanmark,
+          short_id: license.fanmarks?.short_id,
+          grace_expires_at: graceExpiresAtIso,
+          returned_at: nowIso,
           },
         });
 
@@ -120,7 +121,7 @@ async function returnUserFanmarks(supabase: any, userId: string): Promise<void> 
         event_type_param: "fanmark_available",
         payload_param: {
           fanmark_id: license.fanmark_id,
-          fanmark_name: license.fanmarks?.user_input_fanmark,
+          fanmark_name: license.display_fanmark,
           short_id: license.fanmarks?.short_id,
         },
         source_param: "edge_function",

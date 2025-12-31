@@ -15,13 +15,14 @@ import { createFanmarkBadgeStyle } from '@/lib/fanmarkBadge';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
 import { normalizeEmojiPath, isEmojiOnly } from '@/utils/emojiUrl';
-import { convertEmojiSequenceToIdPair, resolveFanmarkDisplay, segmentEmojiSequence } from '@/lib/emojiConversion';
+import { convertEmojiSequenceToIdPair, segmentEmojiSequence } from '@/lib/emojiConversion';
 import NotFound from '@/pages/NotFound';
 import { useAuth } from '@/hooks/useAuth';
 
 interface FanmarkData {
   id: string;
   user_input_fanmark: string;
+  display_fanmark?: string;
   emoji_ids?: string[];
   fanmark?: string;
   fanmark_name: string;
@@ -135,12 +136,14 @@ export const FanmarkAccess = () => {
           : [];
         const userInputValue =
           typeof fanmarkRecord.user_input_fanmark === 'string' ? fanmarkRecord.user_input_fanmark : '';
-        const displayFanmark = resolveFanmarkDisplay(userInputValue, resolvedEmojiIds);
+        const displayFanmark =
+          typeof fanmarkRecord.display_fanmark === 'string' ? fanmarkRecord.display_fanmark : '';
 
         const resolvedFanmark: FanmarkData = {
           ...fanmarkRecord,
           user_input_fanmark: userInputValue,
           emoji_ids: resolvedEmojiIds,
+          display_fanmark: displayFanmark,
           fanmark: displayFanmark,
         };
 
@@ -301,7 +304,7 @@ export const FanmarkAccess = () => {
     return (
       <RedirectLoading
         targetUrl={fanmark.target_url}
-        fanmark={fanmark.fanmark || fanmark.user_input_fanmark}
+        fanmark={fanmark.fanmark}
       />
     );
   }
@@ -310,7 +313,7 @@ export const FanmarkAccess = () => {
   if (isShowingMessageboard && fanmark.access_type === 'text') {
     return (
       <MessageboardLoading
-        fanmark={fanmark.fanmark || fanmark.user_input_fanmark}
+        fanmark={fanmark.fanmark}
       />
     );
   }

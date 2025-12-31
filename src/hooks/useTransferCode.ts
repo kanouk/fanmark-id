@@ -12,6 +12,7 @@ export interface TransferCode {
   created_at: string;
   fanmark?: {
     user_input_fanmark: string;
+    display_fanmark?: string | null;
     short_id: string;
   };
 }
@@ -28,6 +29,7 @@ export interface TransferRequest {
   applied_at: string;
   fanmark?: {
     user_input_fanmark: string;
+    display_fanmark?: string | null;
     short_id: string;
   };
 }
@@ -54,6 +56,9 @@ export const useTransferCode = () => {
           status,
           expires_at,
           created_at,
+          fanmark_licenses (
+            display_fanmark
+          ),
           fanmarks (
             user_input_fanmark,
             short_id
@@ -66,7 +71,10 @@ export const useTransferCode = () => {
       if (codes) {
         setIssuedCodes(codes.map(c => ({
           ...c,
-          fanmark: c.fanmarks as TransferCode['fanmark']
+          fanmark: {
+            ...(c.fanmarks as TransferCode['fanmark']),
+            display_fanmark: (c.fanmark_licenses as { display_fanmark?: string | null } | null)?.display_fanmark ?? null,
+          }
         })));
       }
 
@@ -83,6 +91,9 @@ export const useTransferCode = () => {
           requester_display_name,
           status,
           applied_at,
+          fanmark_licenses (
+            display_fanmark
+          ),
           fanmarks (
             user_input_fanmark,
             short_id
@@ -97,7 +108,10 @@ export const useTransferCode = () => {
           .filter(r => myCodeIds.has(r.transfer_code_id))
           .map(r => ({
             ...r,
-            fanmark: r.fanmarks as TransferRequest['fanmark']
+            fanmark: {
+              ...(r.fanmarks as TransferRequest['fanmark']),
+              display_fanmark: (r.fanmark_licenses as { display_fanmark?: string | null } | null)?.display_fanmark ?? null,
+            }
           }));
 
         setPendingRequests(pendingForMe);
@@ -116,6 +130,9 @@ export const useTransferCode = () => {
           requester_display_name,
           status,
           applied_at,
+          fanmark_licenses (
+            display_fanmark
+          ),
           fanmarks (
             user_input_fanmark,
             short_id
@@ -128,7 +145,10 @@ export const useTransferCode = () => {
       if (myReqs) {
         setMyRequests(myReqs.map(r => ({
           ...r,
-          fanmark: r.fanmarks as TransferRequest['fanmark']
+          fanmark: {
+            ...(r.fanmarks as TransferRequest['fanmark']),
+            display_fanmark: (r.fanmark_licenses as { display_fanmark?: string | null } | null)?.display_fanmark ?? null,
+          }
         })));
       }
     } catch (error) {

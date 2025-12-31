@@ -7,6 +7,7 @@ interface TransferRequest {
   id: string;
   fanmark?: {
     user_input_fanmark: string;
+    display_fanmark?: string | null;
     short_id: string;
   };
   requester_username: string | null;
@@ -30,7 +31,7 @@ export const TransferApprovalDialog = ({
 }: TransferApprovalDialogProps) => {
   const { t } = useTranslation();
 
-  const fanmarkDisplay = request.fanmark?.user_input_fanmark || '---';
+  const fanmarkDisplay = request.fanmark?.display_fanmark || '---';
   const displayName = request.requester_display_name || request.requester_username || 'unknown';
 
   return (

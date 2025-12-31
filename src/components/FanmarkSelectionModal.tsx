@@ -228,7 +228,7 @@ export const FanmarkSelectionModal = ({
                   {/* Top: Emoji and Selection Indicator */}
                   <div className="flex items-start justify-between mb-2">
                     <span className="text-2xl leading-none">
-                      {fanmark.fanmark || fanmark.user_input_fanmark}
+                      {fanmark.fanmark}
                     </span>
                     <div className="flex-shrink-0">
                       {selected ? (

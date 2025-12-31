@@ -1,5 +1,4 @@
 import { supabase } from '@/integrations/supabase/client';
-import { resolveFanmarkDisplay } from '@/lib/emojiConversion';
 
 export type PlanType = 'free' | 'creator' | 'max' | 'business' | 'enterprise' | 'admin';
 
@@ -31,6 +30,7 @@ interface LicenseQueryResult {
   id: string;
   fanmark_id: string;
   license_end: string | null;
+  display_fanmark: string | null;
   fanmarks: {
     id: string;
     user_input_fanmark: string;
@@ -54,6 +54,7 @@ export async function fetchActiveFanmarks(userId: string): Promise<ActiveFanmark
       id,
       fanmark_id,
       license_end,
+      display_fanmark,
       fanmarks (
         id,
         user_input_fanmark,
@@ -79,7 +80,7 @@ export async function fetchActiveFanmarks(userId: string): Promise<ActiveFanmark
       const emojiIds = Array.isArray(license.fanmarks?.emoji_ids)
         ? (license.fanmarks?.emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
         : [];
-      const displayFanmark = resolveFanmarkDisplay(userInput, emojiIds);
+      const displayFanmark = license.display_fanmark ?? '';
 
       return {
         id: license.fanmark_id,

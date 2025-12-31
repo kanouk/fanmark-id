@@ -71,6 +71,7 @@ serve(async (req) => {
         fanmarks!inner(
           id,
           user_input_fanmark,
+          normalized_emoji,
           status
         )
       `)
@@ -85,6 +86,7 @@ serve(async (req) => {
           fanmarks: {
             id: string;
             user_input_fanmark: string;
+            normalized_emoji: string;
             status: string;
           };
         }> | null;
@@ -104,6 +106,7 @@ serve(async (req) => {
         fanmarks!inner(
           id,
           user_input_fanmark,
+          normalized_emoji,
           status
         )
       `)
@@ -119,6 +122,7 @@ serve(async (req) => {
           fanmarks: {
             id: string;
             user_input_fanmark: string;
+            normalized_emoji: string;
             status: string;
           };
         }> | null;
@@ -165,6 +169,7 @@ serve(async (req) => {
       
       for (const license of justExpiredLicenses) {
         try {
+          const displayFanmark = license.fanmarks?.normalized_emoji ?? null;
           // Calculate grace_expires_at (license_end + grace_period_days)
           // Round up to next UTC midnight for consistent batch processing
           const licenseEndDate = new Date(license.license_end);
@@ -215,7 +220,7 @@ serve(async (req) => {
             payload_param: {
               user_id: license.user_id,
               fanmark_id: license.fanmark_id,
-              fanmark_name: license.fanmarks?.user_input_fanmark,
+              fanmark_name: displayFanmark,
               license_end: license.license_end,
               grace_expires_at: graceExpiresAt.toISOString()
             },
@@ -229,7 +234,7 @@ serve(async (req) => {
 
           processedCount++;
           graceSuccessCount++;
-        console.log(`  ✓ ${license.fanmarks?.user_input_fanmark} -> grace`);
+        console.log(`  ✓ ${displayFanmark} -> grace`);
 
         } catch (error) {
           const errMsg = error instanceof Error ? error.message : 'Unknown error';
@@ -251,9 +256,10 @@ serve(async (req) => {
       
       for (const license of filteredGraceExpiredLicenses) {
         try {
+          const displayFanmark = license.fanmarks?.normalized_emoji ?? null;
           // STEP 1: Always expire the old license FIRST (before any lottery processing)
           // This ensures data integrity - no overlapping active/grace licenses
-          console.log(`  ${license.fanmarks?.user_input_fanmark}: Expiring old license first`);
+          console.log(`  ${displayFanmark}: Expiring old license first`);
           
           const { error: licenseUpdateError } = await supabase
             .from('fanmark_licenses')
@@ -331,7 +337,7 @@ serve(async (req) => {
             payload_param: {
               user_id: license.user_id,
               fanmark_id: license.fanmark_id,
-              fanmark_name: license.fanmarks?.user_input_fanmark,
+              fanmark_name: displayFanmark,
               expired_at: new Date().toISOString(),
               license_end: license.license_end
             },
@@ -343,7 +349,7 @@ serve(async (req) => {
             console.warn(`  ⚠️ Expired notification event failed for ${license.id}: ${expiredNotificationError.message}`);
           }
 
-          console.log(`  ✓ ${license.fanmarks?.user_input_fanmark} marked as expired`);
+          console.log(`  ✓ ${displayFanmark} marked as expired`);
 
           // STEP 5: Check for pending lottery entries
           const { data: pendingEntries, error: entriesError } = await supabase
@@ -361,7 +367,8 @@ serve(async (req) => {
           }
 
           const entryCount = pendingEntries?.length || 0;
-          console.log(`  ${license.fanmarks?.user_input_fanmark}: ${entryCount} lottery entries`);
+          const displayFanmark = license.fanmarks?.normalized_emoji ?? null;
+          console.log(`  ${displayFanmark}: ${entryCount} lottery entries`);
 
           if (entryCount === 0) {
             // No lottery entries - expiration already done
@@ -432,7 +439,7 @@ serve(async (req) => {
                 payload_param: {
                   user_id: winner.user_id,
                   fanmark_id: license.fanmark_id,
-                  fanmark_name: license.fanmarks?.user_input_fanmark,
+                  fanmark_name: displayFanmark,
                   current_count: winnerCurrentCount,
                   limit: winnerFanmarkLimit,
                 },
@@ -471,6 +478,7 @@ serve(async (req) => {
                 user_id: winner.user_id,
                 license_start: new Date().toISOString(),
                 license_end: newLicenseEnd.toISOString(),
+                display_fanmark: displayFanmark,
                 status: 'active',
                 is_initial_license: false,
               })
@@ -516,7 +524,7 @@ serve(async (req) => {
               payload_param: {
                 user_id: winner.user_id,
                 fanmark_id: license.fanmark_id,
-                fanmark_name: license.fanmarks?.user_input_fanmark,
+                fanmark_name: displayFanmark,
                 license_id: newLicense.id,
                 license_end: newLicenseEnd.toISOString(),
                 license_end_formatted: formatDate(newLicenseEnd),
@@ -623,7 +631,7 @@ serve(async (req) => {
                 payload_param: {
                   user_id: exceeded.user_id,
                   fanmark_id: license.fanmark_id,
-                  fanmark_name: license.fanmarks?.user_input_fanmark,
+                  fanmark_name: displayFanmark,
                   current_count: exceeded.currentCount,
                   limit: exceeded.limit,
                 },
@@ -689,6 +697,7 @@ serve(async (req) => {
                 user_id: winnerId,
                 license_start: new Date().toISOString(),
                 license_end: newLicenseEnd.toISOString(),
+                display_fanmark: displayFanmark,
                 status: 'active',
                 is_initial_license: false,
               })
@@ -755,7 +764,7 @@ serve(async (req) => {
                 payload_param: {
                   user_id: entry.user_id,
                   fanmark_id: license.fanmark_id,
-                  fanmark_name: license.fanmarks?.user_input_fanmark,
+                  fanmark_name: displayFanmark,
                   license_id: isWinner ? newLicense.id : undefined,
                   license_end: isWinner ? newLicenseEnd.toISOString() : undefined,
                   license_end_formatted: isWinner ? formatDate(newLicenseEnd) : undefined,

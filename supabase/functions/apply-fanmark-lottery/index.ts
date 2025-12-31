@@ -61,6 +61,7 @@ serve(async (req) => {
         fanmark_id,
         user_id,
         status,
+        display_fanmark,
         grace_expires_at,
         fanmarks!inner(
           id,
@@ -256,8 +257,7 @@ serve(async (req) => {
     }
 
     // Get fanmark name from array
-    const fanmarkInfo = Array.isArray(license.fanmarks) ? license.fanmarks[0] : license.fanmarks;
-    const fanmarkName = fanmarkInfo?.user_input_fanmark ?? '';
+    const fanmarkName = license.display_fanmark ?? '';
 
     // Create notification event
     const { error: notificationError } = await supabase.rpc('create_notification_event', {

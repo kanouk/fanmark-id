@@ -139,10 +139,10 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
   const licenseMissing = fanmark.access_type === 'profile' && !fanmark.license_id;
 
   const displayFanmark = useMemo(() => {
-    const raw = fanmark?.fanmark ?? fanmark?.user_input_fanmark ?? '';
+    const raw = fanmark?.fanmark ?? '';
     const trimmed = raw.trim();
     return trimmed.length > 0 ? trimmed : '✨';
-  }, [fanmark?.fanmark, fanmark?.user_input_fanmark]);
+  }, [fanmark?.fanmark]);
 
   const badgeStyle = useMemo(
     () => createFanmarkBadgeStyle(displayFanmark),
@@ -246,7 +246,7 @@ export const FanmarkProfile = ({ fanmark }: FanmarkProfileProps) => {
     : 50;
   const profileImage = emojiProfile?.theme_settings?.profile_image_url;
   const socialLinks = emojiProfile?.social_links as Record<string, string> || {};
-  const fanmarkValue = fanmark.fanmark || fanmark.user_input_fanmark || '';
+  const fanmarkValue = fanmark.fanmark || '';
   const hasSocialLinks = Object.keys(socialLinks).length > 0;
 
   return (

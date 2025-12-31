@@ -548,6 +548,7 @@ export type Database = {
         Row: {
           created_at: string
           discovery_id: string
+          display_fanmark: string | null
           fanmark_id: string | null
           id: string
           normalized_emoji_ids: string[]
@@ -556,6 +557,7 @@ export type Database = {
         Insert: {
           created_at?: string
           discovery_id: string
+          display_fanmark?: string | null
           fanmark_id?: string | null
           id?: string
           normalized_emoji_ids: string[]
@@ -564,6 +566,7 @@ export type Database = {
         Update: {
           created_at?: string
           discovery_id?: string
+          display_fanmark?: string | null
           fanmark_id?: string | null
           id?: string
           normalized_emoji_ids?: string[]
@@ -589,6 +592,7 @@ export type Database = {
       fanmark_licenses: {
         Row: {
           created_at: string
+          display_fanmark: string | null
           excluded_at: string | null
           excluded_from_plan: string | null
           fanmark_id: string
@@ -607,6 +611,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          display_fanmark?: string | null
           excluded_at?: string | null
           excluded_from_plan?: string | null
           fanmark_id: string
@@ -625,6 +630,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          display_fanmark?: string | null
           excluded_at?: string | null
           excluded_from_plan?: string | null
           fanmark_id?: string
@@ -1783,7 +1789,7 @@ export type Database = {
     }
     Functions: {
       add_fanmark_favorite: {
-        Args: { input_emoji_ids: string[] }
+        Args: { input_emoji_ids: string[]; input_display_fanmark: string }
         Returns: boolean
       }
       archive_old_notifications: {
@@ -1831,6 +1837,7 @@ export type Database = {
         Args: { input_emoji_ids: string[] }
         Returns: {
           access_type: string
+          display_fanmark: string
           emoji_ids: string[]
           fanmark_name: string
           id: string
@@ -1846,6 +1853,7 @@ export type Database = {
         Args: { shortid_param: string }
         Returns: {
           access_type: string
+          display_fanmark: string
           emoji_ids: string[]
           fanmark_name: string
           grace_expires_at: string
@@ -1870,6 +1878,7 @@ export type Database = {
           current_grace_expires_at: string
           current_license_status: string
           current_owner_id: string
+          display_fanmark: string
           emoji_ids: string[]
           fanmark_name: string
           has_active_license: boolean
@@ -1903,6 +1912,7 @@ export type Database = {
           current_owner_display_name: string
           current_owner_id: string
           current_owner_username: string
+          display_fanmark: string
           emoji_ids: string[]
           fanmark_created_at: string
           fanmark_id: string
@@ -1938,6 +1948,7 @@ export type Database = {
           current_owner_display_name: string
           current_owner_username: string
           discovery_id: string
+          display_fanmark: string
           emoji_ids: string[]
           fanmark_id: string
           fanmark_name: string

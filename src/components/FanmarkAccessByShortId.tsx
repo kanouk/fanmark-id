@@ -9,7 +9,7 @@ import { FanmarkMessage } from './FanmarkMessage';
 import { PasswordProtection } from './PasswordProtection';
 import { RedirectLoading } from './RedirectLoading';
 import { MessageboardLoading } from './MessageboardLoading';
-import { resolveFanmarkDisplay, segmentEmojiSequence } from '@/lib/emojiConversion';
+import { segmentEmojiSequence } from '@/lib/emojiConversion';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
 import { AppHeader } from '@/components/layout/AppHeader';
@@ -21,6 +21,7 @@ import { FiCompass } from 'react-icons/fi';
 interface FanmarkData {
   id: string;
   user_input_fanmark: string;
+  display_fanmark?: string;
   emoji_ids?: string[];
   fanmark?: string;
   fanmark_name: string;
@@ -91,7 +92,8 @@ export const FanmarkAccessByShortId = () => {
         const resolvedFanmark: FanmarkData = {
           ...fanmarkData,
           emoji_ids: emojiIds,
-          fanmark: resolveFanmarkDisplay(fanmarkData.user_input_fanmark ?? '', emojiIds),
+          display_fanmark: fanmarkData.display_fanmark,
+          fanmark: fanmarkData.display_fanmark,
         };
 
         if (!resolvedFanmark.license_id) {
@@ -324,7 +326,7 @@ export const FanmarkAccessByShortId = () => {
     return (
       <RedirectLoading
         targetUrl={fanmark.target_url}
-        fanmark={fanmark.fanmark || fanmark.user_input_fanmark}
+        fanmark={fanmark.fanmark}
       />
     );
   }
@@ -333,7 +335,7 @@ export const FanmarkAccessByShortId = () => {
   if (isShowingMessageboard && fanmark.access_type === 'text') {
     return (
       <MessageboardLoading
-        fanmark={fanmark.fanmark || fanmark.user_input_fanmark}
+        fanmark={fanmark.fanmark}
       />
     );
   }

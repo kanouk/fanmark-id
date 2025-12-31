@@ -40,6 +40,7 @@ interface Fanmark {
   id: string;
   short_id: string;
   user_input_fanmark: string;
+  display_fanmark: string;
   fanmark_name?: string;
 }
 
@@ -82,6 +83,7 @@ const Analytics = () => {
         .select(`
           id,
           fanmark_id,
+          display_fanmark,
           fanmarks (
             id,
             short_id,
@@ -96,9 +98,10 @@ const Analytics = () => {
       const licensesWithFanmarks = (licensesData || [])
         .map((license) => ({
           licenseId: license.id,
+          display_fanmark: license.display_fanmark as string | null,
           fanmark: license.fanmarks as unknown as { id: string; short_id: string; user_input_fanmark: string } | null,
         }))
-        .filter((item): item is { licenseId: string; fanmark: { id: string; short_id: string; user_input_fanmark: string } } => item.fanmark !== null);
+        .filter((item): item is { licenseId: string; display_fanmark: string | null; fanmark: { id: string; short_id: string; user_input_fanmark: string } } => item.fanmark !== null);
 
       if (licensesWithFanmarks.length === 0) return [];
 
@@ -120,6 +123,7 @@ const Analytics = () => {
         id: item.fanmark.id,
         short_id: item.fanmark.short_id,
         user_input_fanmark: item.fanmark.user_input_fanmark,
+        display_fanmark: item.display_fanmark ?? '',
         fanmark_name: configsMap.get(item.licenseId) || null,
       })) as Fanmark[];
     },
@@ -238,7 +242,7 @@ const Analytics = () => {
     const fanmarkRanking = fanmarks
       .map((fanmark) => {
         const accessCount = fanmarkAccessMap.get(fanmark.id) || 0;
-        const emoji = fanmark.user_input_fanmark || '';
+        const emoji = fanmark.display_fanmark || '';
         const fanmarkName = fanmark.fanmark_name || '';
         const displayName = fanmarkName ? `${emoji} (${fanmarkName})` : emoji;
         return {
@@ -403,7 +407,7 @@ const Analytics = () => {
               <SelectItem value="all">{t('analytics.allFanmarks')}</SelectItem>
               {fanmarks.map((fanmark) => (
                 <SelectItem key={fanmark.id} value={fanmark.id}>
-                  {fanmark.user_input_fanmark}{fanmark.fanmark_name ? ` (${fanmark.fanmark_name})` : ''}
+                  {fanmark.display_fanmark}{fanmark.fanmark_name ? ` (${fanmark.fanmark_name})` : ''}
                 </SelectItem>
               ))}
             </SelectContent>

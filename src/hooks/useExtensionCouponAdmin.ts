@@ -149,15 +149,15 @@ export const useExtensionCouponAdmin = () => {
         let fanmarkEmoji = '';
         let userDisplayName = '';
 
-        // Fetch fanmark emoji
+        // Fetch fanmark display emoji
         const { data: fanmarkData } = await supabase
-          .from('fanmarks')
-          .select('user_input_fanmark')
-          .eq('id', usage.fanmark_id)
+          .from('fanmark_licenses')
+          .select('display_fanmark')
+          .eq('id', usage.license_id)
           .maybeSingle();
 
         if (fanmarkData) {
-          fanmarkEmoji = fanmarkData.user_input_fanmark;
+          fanmarkEmoji = fanmarkData.display_fanmark ?? '';
         }
 
         // Fetch user display name

@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { resolveFanmarkDisplay } from '@/lib/emojiConversion';
 
 export const FAVORITE_FANMARKS_QUERY_KEY = ['favoriteFanmarks'];
 
@@ -49,10 +48,7 @@ const fetchFavoriteFanmarks = async (): Promise<FavoriteFanmark[]> => {
     const normalizedIds = Array.isArray(item.normalized_emoji_ids)
       ? (item.normalized_emoji_ids as (string | null)[]).filter((value): value is string => Boolean(value))
       : [];
-    const displayFanmark =
-      resolveFanmarkDisplay('', rawEmojiIds) ||
-      resolveFanmarkDisplay('', normalizedIds) ||
-      '';
+    const displayFanmark = item.display_fanmark ?? '';
 
     return {
       favoriteId: item.favorite_id,
