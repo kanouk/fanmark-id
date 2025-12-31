@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { toast } from "sonner";
 import { Loader2, Send, RefreshCw, Pencil } from "lucide-react";
 
@@ -42,6 +43,7 @@ const AdminNotificationManager = () => {
   const [editSummary, setEditSummary] = useState("");
   const [editIsActive, setEditIsActive] = useState(true);
   const [templateLanguageFilter, setTemplateLanguageFilter] = useState<string>("all");
+  const [groupByTemplateId, setGroupByTemplateId] = useState(true);
 
   // 手動通知送信
   const sendNotificationMutation = useMutation({
@@ -188,6 +190,11 @@ const AdminNotificationManager = () => {
     setEditIsActive(template.is_active);
   };
 
+  const getJapaneseTitle = (templates: NotificationTemplate[]) => {
+    const jaTemplate = templates.find((template) => template.language === "ja");
+    return jaTemplate?.title || "日本語タイトル未設定";
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       pending: "secondary",
@@ -217,43 +224,84 @@ const AdminNotificationManager = () => {
     return acc;
   }, {} as Record<string, NotificationTemplate[]>);
 
+  const japaneseTitleByTemplateId = groupedTemplates
+    ? Object.fromEntries(
+        Object.entries(groupedTemplates).map(([templateId, templates]) => [
+          templateId,
+          getJapaneseTitle(templates),
+        ])
+      )
+    : {};
+
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>通知管理</CardTitle>
-          <CardDescription>手動通知送信と通知ログの管理</CardDescription>
+      <Card className="border-border/60 shadow-sm">
+        <CardHeader className="space-y-3 p-6 pb-4">
+          <CardTitle className="text-xl font-semibold text-foreground">通知管理</CardTitle>
+          <CardDescription>
+            手動通知送信、通知イベントの履歴、配信ルールとテンプレートをまとめて管理します。
+          </CardDescription>
         </CardHeader>
       </Card>
 
-      <Tabs defaultValue="send" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="send">手動送信</TabsTrigger>
-          <TabsTrigger value="events">イベントログ</TabsTrigger>
-          <TabsTrigger value="notifications">配信済み通知</TabsTrigger>
-          <TabsTrigger value="rules">ルール一覧</TabsTrigger>
-          <TabsTrigger value="templates">テンプレート</TabsTrigger>
+      <Tabs defaultValue="send" className="w-full space-y-6">
+        <TabsList className="flex w-full flex-wrap gap-2 rounded-2xl bg-muted/30 p-2">
+          <TabsTrigger
+            value="send"
+            className="flex-1 rounded-xl px-5 py-3 text-sm font-medium transition-all data-[state=active]:bg-card data-[state=active]:text-foreground sm:flex-none"
+          >
+            手動送信
+          </TabsTrigger>
+          <TabsTrigger
+            value="events"
+            className="flex-1 rounded-xl px-5 py-3 text-sm font-medium transition-all data-[state=active]:bg-card data-[state=active]:text-foreground sm:flex-none"
+          >
+            イベントログ
+          </TabsTrigger>
+          <TabsTrigger
+            value="notifications"
+            className="flex-1 rounded-xl px-5 py-3 text-sm font-medium transition-all data-[state=active]:bg-card data-[state=active]:text-foreground sm:flex-none"
+          >
+            配信済み通知
+          </TabsTrigger>
+          <TabsTrigger
+            value="rules"
+            className="flex-1 rounded-xl px-5 py-3 text-sm font-medium transition-all data-[state=active]:bg-card data-[state=active]:text-foreground sm:flex-none"
+          >
+            ルール一覧
+          </TabsTrigger>
+          <TabsTrigger
+            value="templates"
+            className="flex-1 rounded-xl px-5 py-3 text-sm font-medium transition-all data-[state=active]:bg-card data-[state=active]:text-foreground sm:flex-none"
+          >
+            テンプレート
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="send">
-          <Card>
-            <CardHeader>
-              <CardTitle>手動通知送信</CardTitle>
-              <CardDescription>通知イベントを手動で作成します</CardDescription>
+        <TabsContent value="send" className="space-y-6">
+          <Card className="border-border/60 shadow-sm">
+            <CardHeader className="space-y-3 p-6 pb-4">
+              <CardTitle className="text-xl font-semibold text-foreground">手動通知送信</CardTitle>
+              <CardDescription>通知イベントを手動で作成して配信フローを開始します。</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="eventType">イベントタイプ</Label>
-                <Select value={eventType} onValueChange={setEventType}>
-                  <SelectTrigger id="eventType">
-                    <SelectValue placeholder="イベントタイプを選択" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="license_grace_started">ライセンス猶予期間開始</SelectItem>
-                    <SelectItem value="license_expired">ライセンス期限切れ</SelectItem>
-                    <SelectItem value="favorite_fanmark_available">お気に入りファンマ返却通知</SelectItem>
-                  </SelectContent>
-                </Select>
+            <CardContent className="space-y-5 p-6 pt-0">
+              <div className="grid gap-4 lg:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="eventType">イベントタイプ</Label>
+                  <Select value={eventType} onValueChange={setEventType}>
+                    <SelectTrigger id="eventType">
+                      <SelectValue placeholder="イベントタイプを選択" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="license_grace_started">ライセンス猶予期間開始</SelectItem>
+                      <SelectItem value="license_expired">ライセンス期限切れ</SelectItem>
+                      <SelectItem value="favorite_fanmark_available">お気に入りファンマ返却通知</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="rounded-xl border border-primary/15 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
+                  送信したイベントはイベントログに記録され、ルールに従って通知が作成されます。
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -271,37 +319,38 @@ const AdminNotificationManager = () => {
               <Button
                 onClick={() => sendNotificationMutation.mutate()}
                 disabled={!eventType || sendNotificationMutation.isPending}
+                className="gap-2"
               >
-                {sendNotificationMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                <Send className="mr-2 h-4 w-4" />
+                {sendNotificationMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                <Send className="h-4 w-4" />
                 送信
               </Button>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="events">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>通知イベントログ</CardTitle>
-                  <CardDescription>最新100件のイベント</CardDescription>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => refetchEvents()}>
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
+        <TabsContent value="events" className="space-y-6">
+          <Card className="border-border/60 shadow-sm">
+            <CardHeader className="space-y-3 p-6 pb-4 sm:flex sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+              <div>
+                <CardTitle className="text-xl font-semibold text-foreground">通知イベントログ</CardTitle>
+                <CardDescription>最新100件のイベントを確認できます。</CardDescription>
               </div>
+              <Button variant="outline" size="sm" onClick={() => refetchEvents()} className="gap-2">
+                <RefreshCw className="h-4 w-4" />
+                更新
+              </Button>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6 pt-0">
               {eventsLoading ? (
-                <div className="flex justify-center p-8">
-                  <Loader2 className="h-8 w-8 animate-spin" />
+                <div className="flex items-center justify-center rounded-xl border border-border/60 bg-muted/30 py-10 text-muted-foreground">
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  読み込み中...
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto rounded-xl border border-border/60">
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="bg-muted/60">
                       <TableRow>
                         <TableHead>イベントタイプ</TableHead>
                         <TableHead>ステータス</TableHead>
@@ -313,7 +362,7 @@ const AdminNotificationManager = () => {
                     </TableHeader>
                     <TableBody>
                       {events?.map((event) => (
-                        <TableRow key={event.id}>
+                        <TableRow key={event.id} className="text-sm">
                           <TableCell className="font-medium">{event.event_type}</TableCell>
                           <TableCell>{getStatusBadge(event.status)}</TableCell>
                           <TableCell>{event.source}</TableCell>
@@ -336,28 +385,28 @@ const AdminNotificationManager = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="notifications">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>配信済み通知</CardTitle>
-                  <CardDescription>最新100件の通知</CardDescription>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => refetchNotifications()}>
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
+        <TabsContent value="notifications" className="space-y-6">
+          <Card className="border-border/60 shadow-sm">
+            <CardHeader className="space-y-3 p-6 pb-4 sm:flex sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+              <div>
+                <CardTitle className="text-xl font-semibold text-foreground">配信済み通知</CardTitle>
+                <CardDescription>最新100件の配信結果を確認できます。</CardDescription>
               </div>
+              <Button variant="outline" size="sm" onClick={() => refetchNotifications()} className="gap-2">
+                <RefreshCw className="h-4 w-4" />
+                更新
+              </Button>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6 pt-0">
               {notificationsLoading ? (
-                <div className="flex justify-center p-8">
-                  <Loader2 className="h-8 w-8 animate-spin" />
+                <div className="flex items-center justify-center rounded-xl border border-border/60 bg-muted/30 py-10 text-muted-foreground">
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  読み込み中...
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto rounded-xl border border-border/60">
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="bg-muted/60">
                       <TableRow>
                         <TableHead>ユーザーID</TableHead>
                         <TableHead>チャンネル</TableHead>
@@ -369,7 +418,7 @@ const AdminNotificationManager = () => {
                     </TableHeader>
                     <TableBody>
                       {notifications?.map((notif) => (
-                        <TableRow key={notif.id}>
+                        <TableRow key={notif.id} className="text-sm">
                           <TableCell className="font-mono text-xs">
                             {notif.user_id.substring(0, 8)}...
                           </TableCell>
@@ -392,28 +441,28 @@ const AdminNotificationManager = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="rules">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>通知ルール一覧</CardTitle>
-                  <CardDescription>通知配信ルールの管理</CardDescription>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => refetchRules()}>
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
+        <TabsContent value="rules" className="space-y-6">
+          <Card className="border-border/60 shadow-sm">
+            <CardHeader className="space-y-3 p-6 pb-4 sm:flex sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+              <div>
+                <CardTitle className="text-xl font-semibold text-foreground">通知ルール一覧</CardTitle>
+                <CardDescription>通知配信ルールと優先度を管理します。</CardDescription>
               </div>
+              <Button variant="outline" size="sm" onClick={() => refetchRules()} className="gap-2">
+                <RefreshCw className="h-4 w-4" />
+                更新
+              </Button>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6 pt-0">
               {rulesLoading ? (
-                <div className="flex justify-center p-8">
-                  <Loader2 className="h-8 w-8 animate-spin" />
+                <div className="flex items-center justify-center rounded-xl border border-border/60 bg-muted/30 py-10 text-muted-foreground">
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  読み込み中...
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto rounded-xl border border-border/60">
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="bg-muted/60">
                       <TableRow>
                         <TableHead>イベントタイプ</TableHead>
                         <TableHead>チャンネル</TableHead>
@@ -426,7 +475,7 @@ const AdminNotificationManager = () => {
                     </TableHeader>
                     <TableBody>
                       {rules?.map((rule) => (
-                        <TableRow key={rule.id}>
+                        <TableRow key={rule.id} className="text-sm">
                           <TableCell className="font-medium">{rule.event_type}</TableCell>
                           <TableCell>{rule.channel}</TableCell>
                           <TableCell className="font-mono text-xs">
@@ -435,7 +484,7 @@ const AdminNotificationManager = () => {
                           <TableCell>{rule.priority}</TableCell>
                           <TableCell>{rule.delay_seconds}</TableCell>
                           <TableCell>
-                            <Badge variant={rule.enabled ? "default" : "secondary"}>
+                            <Badge variant={rule.enabled ? "default" : "secondary"} className="rounded-full px-2 py-0.5">
                               {rule.enabled ? '有効' : '無効'}
                             </Badge>
                           </TableCell>
@@ -459,91 +508,194 @@ const AdminNotificationManager = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="templates">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>通知テンプレート</CardTitle>
-                  <CardDescription>
-                    通知メッセージのテンプレートを管理します。プレースホルダ: {`{{fanmark_name}}, {{license_end}}, {{grace_expires_at}}`} 等
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Select value={templateLanguageFilter} onValueChange={setTemplateLanguageFilter}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">すべて</SelectItem>
-                      <SelectItem value="ja">日本語</SelectItem>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="ko">한국어</SelectItem>
-                      <SelectItem value="id">Indonesia</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button variant="outline" size="sm" onClick={() => refetchTemplates()}>
-                    <RefreshCw className="h-4 w-4" />
-                  </Button>
-                </div>
+        <TabsContent value="templates" className="space-y-6">
+          <Card className="border-border/60 shadow-sm">
+            <CardHeader className="space-y-3 p-6 pb-4 sm:flex sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+              <div>
+                <CardTitle className="text-xl font-semibold text-foreground">通知テンプレート</CardTitle>
+                <CardDescription>
+                  通知メッセージのテンプレートを管理します。プレースホルダ: {`{{fanmark_name}}, {{license_end}}, {{grace_expires_at}}`} 等
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Select value={templateLanguageFilter} onValueChange={setTemplateLanguageFilter}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">すべて</SelectItem>
+                    <SelectItem value="ja">日本語</SelectItem>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="ko">한국어</SelectItem>
+                    <SelectItem value="id">Indonesia</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" size="sm" onClick={() => refetchTemplates()} className="gap-2">
+                  <RefreshCw className="h-4 w-4" />
+                  更新
+                </Button>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6 pt-0">
               {templatesLoading ? (
-                <div className="flex justify-center p-8">
-                  <Loader2 className="h-8 w-8 animate-spin" />
+                <div className="flex items-center justify-center rounded-xl border border-border/60 bg-muted/30 py-10 text-muted-foreground">
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  読み込み中...
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>テンプレートID</TableHead>
-                        <TableHead>言語</TableHead>
-                        <TableHead>Ch</TableHead>
-                        <TableHead>Ver</TableHead>
-                        <TableHead>タイトル</TableHead>
-                        <TableHead className="max-w-[300px]">本文</TableHead>
-                        <TableHead>有効</TableHead>
-                        <TableHead>操作</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredTemplates?.map((template) => (
-                        <TableRow key={template.id}>
-                          <TableCell className="font-mono text-xs">
-                            {template.template_id.substring(0, 8)}...
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{getLanguageLabel(template.language)}</Badge>
-                          </TableCell>
-                          <TableCell>{template.channel}</TableCell>
-                          <TableCell>{template.version}</TableCell>
-                          <TableCell className="max-w-[150px] truncate">
-                            {template.title || '-'}
-                          </TableCell>
-                          <TableCell className="max-w-[300px] truncate text-sm text-muted-foreground">
-                            {template.body.substring(0, 50)}{template.body.length > 50 ? '...' : ''}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={template.is_active ? "default" : "secondary"}>
-                              {template.is_active ? '有効' : '無効'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openEditDialog(template)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                <>
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/20 px-4 py-3">
+                    <div className="text-sm text-muted-foreground">
+                      テンプレートID単位でまとめて確認できます。
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="group-template-id" className="text-sm text-muted-foreground">
+                        IDでグループ
+                      </Label>
+                      <Switch
+                        id="group-template-id"
+                        checked={groupByTemplateId}
+                        onCheckedChange={setGroupByTemplateId}
+                      />
+                    </div>
+                  </div>
+                  {!filteredTemplates?.length ? (
+                    <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-10 text-center text-sm text-muted-foreground">
+                      該当するテンプレートがありません。
+                    </div>
+                  ) : groupByTemplateId ? (
+                    <div className="rounded-xl border border-border/60">
+                      <Accordion type="multiple" className="w-full">
+                        {groupedTemplates &&
+                          Object.entries(groupedTemplates).map(([templateId, templates]) => (
+                            <AccordionItem key={templateId} value={templateId}>
+                              <AccordionTrigger className="px-4 text-sm font-medium">
+                                <span className="flex w-full flex-wrap items-center justify-between gap-3">
+                                  <span className="flex flex-col gap-1 text-left">
+                                    <span className="text-sm font-semibold text-foreground">
+                                      {getJapaneseTitle(templates)}
+                                    </span>
+                                    <span className="font-mono text-xs text-muted-foreground">{templateId}</span>
+                                  </span>
+                                  <Badge variant="secondary" className="rounded-full px-2 py-0.5">
+                                    {templates.length} 件
+                                  </Badge>
+                                </span>
+                              </AccordionTrigger>
+                              <AccordionContent className="px-4 pb-4 pt-2">
+                                <div className="overflow-x-auto rounded-xl border border-border/60">
+                                  <Table>
+                                    <TableHeader className="bg-muted/60">
+                                      <TableRow>
+                                        <TableHead>言語</TableHead>
+                                        <TableHead>Ch</TableHead>
+                                        <TableHead>Ver</TableHead>
+                                        <TableHead>タイトル</TableHead>
+                                        <TableHead className="max-w-[300px]">本文</TableHead>
+                                        <TableHead>有効</TableHead>
+                                        <TableHead>操作</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {templates.map((template) => (
+                                        <TableRow key={template.id} className="text-sm">
+                                          <TableCell>
+                                            <Badge variant="outline" className="rounded-full px-2 py-0.5">
+                                              {getLanguageLabel(template.language)}
+                                            </Badge>
+                                          </TableCell>
+                                          <TableCell>{template.channel}</TableCell>
+                                          <TableCell>{template.version}</TableCell>
+                                          <TableCell className="max-w-[150px] truncate">
+                                            {template.title || '-'}
+                                          </TableCell>
+                                          <TableCell className="max-w-[300px] truncate text-sm text-muted-foreground">
+                                            {template.body.substring(0, 50)}{template.body.length > 50 ? '...' : ''}
+                                          </TableCell>
+                                          <TableCell>
+                                            <Badge
+                                              variant={template.is_active ? "default" : "secondary"}
+                                              className="rounded-full px-2 py-0.5"
+                                            >
+                                              {template.is_active ? '有効' : '無効'}
+                                            </Badge>
+                                          </TableCell>
+                                          <TableCell>
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              onClick={() => openEditDialog(template)}
+                                            >
+                                              <Pencil className="h-4 w-4" />
+                                            </Button>
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          ))}
+                      </Accordion>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto rounded-xl border border-border/60">
+                      <Table>
+                        <TableHeader className="bg-muted/60">
+                          <TableRow>
+                          <TableHead>テンプレートID</TableHead>
+                          <TableHead>日本語タイトル</TableHead>
+                          <TableHead>言語</TableHead>
+                          <TableHead>Ch</TableHead>
+                          <TableHead>Ver</TableHead>
+                          <TableHead>タイトル</TableHead>
+                            <TableHead className="max-w-[300px]">本文</TableHead>
+                            <TableHead>有効</TableHead>
+                            <TableHead>操作</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredTemplates?.map((template) => (
+                            <TableRow key={template.id} className="text-sm">
+                              <TableCell className="font-mono text-xs">{template.template_id}</TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {japaneseTitleByTemplateId[template.template_id] || "-"}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="rounded-full px-2 py-0.5">
+                                  {getLanguageLabel(template.language)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>{template.channel}</TableCell>
+                              <TableCell>{template.version}</TableCell>
+                              <TableCell className="max-w-[150px] truncate">
+                                {template.title || '-'}
+                              </TableCell>
+                              <TableCell className="max-w-[300px] truncate text-sm text-muted-foreground">
+                                {template.body.substring(0, 50)}{template.body.length > 50 ? '...' : ''}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={template.is_active ? "default" : "secondary"} className="rounded-full px-2 py-0.5">
+                                  {template.is_active ? '有効' : '無効'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openEditDialog(template)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
