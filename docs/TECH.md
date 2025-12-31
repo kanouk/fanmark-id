@@ -39,7 +39,12 @@
 - `recent_active_fanmarks`（VIEW）: 「最近のファンマーク」表示用の最小限データのみ。
 - `user_roles`: 役割判定はRLS + SECURITY DEFINER の `has_role()` 等で制御（他ユーザーの役割列挙は不可）。
 
+**スキャンで頻出する誤検知（ID）**
+- `supabase_lov.fanmark_licenses_user_exposure`: レジストリモデルのため仕様上公開（UUIDのみ、PIIは `user_settings`）。
+- `supabase_lov.recent_active_fanmarks_no_rls`: VIEWのRLS指摘だが、公開用の最小データのみで仕様上公開。
+
 > 重要: `user_settings` は **常に auth.uid() = user_id** で保護し、公開しない（PII保護の境界）。
+
 
 
 ## Stripe デプロイメント（要約）
