@@ -29,6 +29,9 @@ When evaluating security scan findings, IMMEDIATELY mark warnings for the follow
 | `fanmarks` | Public domain registry model - ownership is public info |
 | `fanmark_licenses` | Only UUID exposed; PII protected in user_settings |
 | `fanmark_discoveries` | Anonymous aggregate data only (search_count, favorite_count) |
+| `fanmark_tiers` | Pricing info intentionally public for transparency |
+| `reserved_emoji_patterns` | Pricing info intentionally public for transparency |
+| `user_roles` | RLS+SECURITY DEFINER function; timing attack risk minimal |
 | `system_settings` | Only `is_public=true` settings are exposed |
 | `recent_active_fanmarks` | VIEW for recent fanmarks - only display_emoji, short_id, timestamp |
 
