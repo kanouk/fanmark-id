@@ -29,6 +29,19 @@
   - `check-expired-licenses-daily` (`0 0 * * *`) → `functions/v1/check-expired-licenses`  
   - `process-notification-events-every-minute` (`* * * * *`) → `functions/v1/process-notification-events`
 
+## セキュリティ / RLS の公開方針（誤検知対策）
+このプロダクトは「ドメインレジストリ（WHOIS）モデル」で、**一部のデータは意図的に公開**します。セキュリティスキャナが「公開＝危険」と判定しやすいため、以下の公開方針は **誤検知として無視（ignore）** します。
+
+- `fanmarks`: 所有/登録状態は公開情報（検索・トレンド機能の前提）。
+- `fanmark_licenses`: `user_id` はUUIDのみで、PIIは `user_settings` に隔離。所有関係は公開情報。
+- `fanmark_discoveries`: `search_count` / `favorite_count` 等の匿名集計のみ（PIIなし）。
+- `system_settings`: `is_public=true` の設定のみ公開。
+- `recent_active_fanmarks`（VIEW）: 「最近のファンマーク」表示用の最小限データのみ。
+- `user_roles`: 役割判定はRLS + SECURITY DEFINER の `has_role()` 等で制御（他ユーザーの役割列挙は不可）。
+
+> 重要: `user_settings` は **常に auth.uid() = user_id** で保護し、公開しない（PII保護の境界）。
+
+
 ## Stripe デプロイメント（要約）
 - テスト/本番で別々の Product/Price・Webhook エンドポイントを作成。Webhook URL: `https://<project>.supabase.co/functions/v1/handle-stripe-webhook`、イベントは checkout.session.completed / customer.subscription.* / invoice.payment_* を登録。
 - Supabase Secrets（Lovable/Supabase CLI 経由）を更新: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_CREATOR`, `STRIPE_PRICE_ID_BUSINESS`, `FRONTEND_URL`。
