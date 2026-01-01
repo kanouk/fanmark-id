@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { returnFanmarkByLicenseId, type ReturnContext } from "../_shared/return-helpers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -35,6 +36,148 @@ const addMonths = (base: Date, months: number) => {
     result.setDate(0);
   }
   return result;
+};
+
+const toIsoString = (unixSeconds?: number | null) => {
+  if (typeof unixSeconds !== "number" || Number.isNaN(unixSeconds)) {
+    return null;
+  }
+  try {
+    return new Date(unixSeconds * 1000).toISOString();
+  } catch (dateError) {
+    console.warn("[STRIPE-WEBHOOK] Unable to convert timestamp", {
+      unixSeconds,
+      error: dateError instanceof Error ? dateError.message : dateError,
+    });
+    return null;
+  }
+};
+
+const resolveUserIdFromCustomer = async (
+  supabaseClient: ReturnContext["supabase"],
+  stripe: Stripe,
+  stripeCustomerId: string,
+): Promise<string> => {
+  const { data: settingsRow, error: settingsLookupError } = await supabaseClient
+    .from("user_settings")
+    .select("user_id, stripe_customer_id")
+    .eq("stripe_customer_id", stripeCustomerId)
+    .maybeSingle();
+
+  if (settingsLookupError) {
+    logStep("WARNING: Failed to lookup user by stripe_customer_id", { error: settingsLookupError.message });
+  }
+
+  if (settingsRow?.user_id) {
+    logStep("Matched user by stripe_customer_id", { userId: settingsRow.user_id, stripeCustomerId });
+    return settingsRow.user_id;
+  }
+
+  const customer = await stripe.customers.retrieve(stripeCustomerId);
+  if (customer.deleted) {
+    throw new Error("Customer has been deleted");
+  }
+
+  const customerEmail = customer.email;
+  if (!customerEmail) {
+    throw new Error("Customer has no email");
+  }
+
+  const perPage = 200;
+  let page = 1;
+  let matchedUserId: string | null = null;
+
+  while (!matchedUserId) {
+    const { data: userData, error: userError } = await supabaseClient.auth.admin.listUsers({
+      page,
+      perPage,
+    });
+
+    if (userError) throw userError;
+
+    const foundUser = userData.users.find(u => u.email === customerEmail);
+    if (foundUser) {
+      matchedUserId = foundUser.id;
+      break;
+    }
+
+    if (userData.users.length < perPage) {
+      break;
+    }
+
+    page += 1;
+  }
+
+  if (!matchedUserId) {
+    logStep("User not found for email", { email: customerEmail });
+    throw new Error("User not found");
+  }
+
+  const { error: settingsUpdateError } = await supabaseClient
+    .from("user_settings")
+    .update({ stripe_customer_id: stripeCustomerId })
+    .eq("user_id", matchedUserId);
+
+  if (settingsUpdateError) {
+    logStep("WARNING: Failed to store stripe_customer_id", { error: settingsUpdateError.message });
+  }
+
+  return matchedUserId;
+};
+
+const fetchFreePlanLimit = async (supabaseClient: ReturnContext["supabase"]) => {
+  const { data, error } = await supabaseClient
+    .from("system_settings")
+    .select("setting_value")
+    .eq("setting_key", "free_fanmarks_limit")
+    .maybeSingle();
+
+  if (error) {
+    logStep("WARNING: Failed to fetch free_fanmarks_limit", { error: error.message });
+    return 3;
+  }
+
+  const value = data?.setting_value ? parseInt(data.setting_value, 10) : NaN;
+  return Number.isFinite(value) && value > 0 ? value : 3;
+};
+
+const enforceFreePlanLimit = async (
+  supabaseClient: ReturnContext["supabase"],
+  userId: string,
+) => {
+  const freeLimit = await fetchFreePlanLimit(supabaseClient);
+  if (freeLimit <= 0) return;
+
+  const nowIso = new Date().toISOString();
+  const { data: licenses, error: licensesError } = await supabaseClient
+    .from("fanmark_licenses")
+    .select("id, license_start, license_end")
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .or(`license_end.is.null,license_end.gt.${nowIso}`)
+    .order("license_start", { ascending: false });
+
+  if (licensesError) {
+    logStep("WARNING: Failed to fetch active licenses for auto-return", { error: licensesError.message });
+    return;
+  }
+
+  const activeLicenses = licenses ?? [];
+  if (activeLicenses.length <= freeLimit) {
+    return;
+  }
+
+  const returnTargets = activeLicenses.slice(0, activeLicenses.length - freeLimit);
+  const ctx: ReturnContext = { supabase: supabaseClient, userId };
+
+  for (const license of returnTargets) {
+    try {
+      await returnFanmarkByLicenseId(ctx, license.id);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logStep("Auto-return failed for license", { licenseId: license.id, error: message });
+    }
+  }
 };
 
 serve(async (req) => {
@@ -196,77 +339,7 @@ serve(async (req) => {
         logStep(`Processing ${event.type}`, { subscriptionId: subscription.id });
 
         const stripeCustomerId = subscription.customer as string;
-        let userId: string | null = null;
-
-        const { data: settingsRow, error: settingsLookupError } = await supabaseClient
-          .from("user_settings")
-          .select("user_id, stripe_customer_id")
-          .eq("stripe_customer_id", stripeCustomerId)
-          .maybeSingle();
-
-        if (settingsLookupError) {
-          logStep("WARNING: Failed to lookup user by stripe_customer_id", { error: settingsLookupError.message });
-        }
-
-        if (settingsRow?.user_id) {
-          userId = settingsRow.user_id;
-          logStep("Matched user by stripe_customer_id", { userId, stripeCustomerId });
-        } else {
-          const customer = await stripe.customers.retrieve(stripeCustomerId);
-          if (customer.deleted) {
-            throw new Error("Customer has been deleted");
-          }
-
-          const customerEmail = customer.email;
-          if (!customerEmail) {
-            throw new Error("Customer has no email");
-          }
-
-          const perPage = 200;
-          let page = 1;
-          let matchedUserId: string | null = null;
-
-          while (!matchedUserId) {
-            const { data: userData, error: userError } = await supabaseClient.auth.admin.listUsers({
-              page,
-              perPage,
-            });
-
-            if (userError) throw userError;
-
-            const foundUser = userData.users.find(u => u.email === customerEmail);
-            if (foundUser) {
-              matchedUserId = foundUser.id;
-              break;
-            }
-
-            if (userData.users.length < perPage) {
-              break;
-            }
-
-            page += 1;
-          }
-
-          if (!matchedUserId) {
-            logStep("User not found for email", { email: customerEmail });
-            throw new Error("User not found");
-          }
-
-          userId = matchedUserId;
-
-          const { error: settingsUpdateError } = await supabaseClient
-            .from("user_settings")
-            .update({ stripe_customer_id: stripeCustomerId })
-            .eq("user_id", userId);
-
-          if (settingsUpdateError) {
-            logStep("WARNING: Failed to store stripe_customer_id", { error: settingsUpdateError.message });
-          }
-        }
-
-        if (!userId) {
-          throw new Error("User not resolved for Stripe customer");
-        }
+        const userId = await resolveUserIdFromCustomer(supabaseClient, stripe, stripeCustomerId);
 
         const firstItem = subscription.items?.data?.[0];
         const priceId = typeof firstItem?.price?.id === "string" ? firstItem.price.id : null;
@@ -310,21 +383,6 @@ serve(async (req) => {
         }
 
         logStep("Plan type mapping", { priceId, planType });
-
-        const toIsoString = (unixSeconds?: number | null) => {
-          if (typeof unixSeconds !== "number" || Number.isNaN(unixSeconds)) {
-            return null;
-          }
-          try {
-            return new Date(unixSeconds * 1000).toISOString();
-          } catch (dateError) {
-            console.warn("[STRIPE-WEBHOOK] Unable to convert timestamp", {
-              unixSeconds,
-              error: dateError instanceof Error ? dateError.message : dateError,
-            });
-            return null;
-          }
-        };
 
         const periodStartIso = toIsoString(subscription.current_period_start);
         const periodEndIso = toIsoString(subscription.current_period_end);
@@ -376,6 +434,15 @@ serve(async (req) => {
           if (profileError) {
             logStep("Profile update failed", { error: profileError });
             throw profileError;
+          }
+
+          const { error: clearFailureError } = await supabaseClient
+            .from("user_subscriptions")
+            .update({ payment_failure_at: null, next_payment_attempt: null, payment_failure_type: null })
+            .eq("stripe_subscription_id", subscription.id);
+
+          if (clearFailureError) {
+            logStep("Failed to clear payment failure state", { error: clearFailureError.message });
           }
 
           logStep("Subscription and profile updated in database", { userId, status: subscription.status, planType });
@@ -449,11 +516,92 @@ serve(async (req) => {
           }
 
           logStep("Profile updated to free plan", { userId: targetUserId });
+          await enforceFreePlanLimit(supabaseClient, targetUserId);
         } else if (hasActiveSubscription) {
           logStep("Active subscription remains; skipping free plan update", { stripeCustomerId });
         }
 
         logStep("Subscription deleted from database");
+        break;
+      }
+
+      case "invoice.payment_failed":
+      case "invoice.payment_action_required": {
+        const invoice = event.data.object as Stripe.Invoice;
+        logStep(`Processing ${event.type}`, { invoiceId: invoice.id });
+
+        const stripeCustomerId = invoice.customer as string | null;
+        const subscriptionId =
+          typeof invoice.subscription === "string"
+            ? invoice.subscription
+            : (invoice.subscription as Stripe.Subscription | null)?.id ?? null;
+
+        if (!stripeCustomerId || !subscriptionId) {
+          logStep("Skipping invoice event without customer/subscription", { stripeCustomerId, subscriptionId });
+          break;
+        }
+
+        const userId = await resolveUserIdFromCustomer(supabaseClient, stripe, stripeCustomerId);
+        const nowIso = new Date().toISOString();
+        const nextAttemptIso = toIsoString(invoice.next_payment_attempt);
+
+        const { data: updateRows, error: updateError } = await supabaseClient
+          .from("user_subscriptions")
+          .update({
+            payment_failure_at: nowIso,
+            next_payment_attempt: nextAttemptIso,
+            payment_failure_type: event.type,
+            updated_at: nowIso,
+          })
+          .eq("stripe_subscription_id", subscriptionId)
+          .eq("user_id", userId)
+          .select("id");
+
+        if (updateError) {
+          logStep("Failed to record payment failure", { error: updateError.message });
+          break;
+        }
+
+        if (!updateRows || updateRows.length === 0) {
+          logStep("No subscription row found for payment failure", { subscriptionId, userId });
+        }
+
+        break;
+      }
+
+      case "invoice.payment_succeeded": {
+        const invoice = event.data.object as Stripe.Invoice;
+        logStep("Processing invoice.payment_succeeded", { invoiceId: invoice.id });
+
+        const stripeCustomerId = invoice.customer as string | null;
+        const subscriptionId =
+          typeof invoice.subscription === "string"
+            ? invoice.subscription
+            : (invoice.subscription as Stripe.Subscription | null)?.id ?? null;
+
+        if (!stripeCustomerId || !subscriptionId) {
+          logStep("Skipping invoice success without customer/subscription", { stripeCustomerId, subscriptionId });
+          break;
+        }
+
+        const userId = await resolveUserIdFromCustomer(supabaseClient, stripe, stripeCustomerId);
+        const nowIso = new Date().toISOString();
+
+        const { error: updateError } = await supabaseClient
+          .from("user_subscriptions")
+          .update({
+            payment_failure_at: null,
+            next_payment_attempt: null,
+            payment_failure_type: null,
+            updated_at: nowIso,
+          })
+          .eq("stripe_subscription_id", subscriptionId)
+          .eq("user_id", userId);
+
+        if (updateError) {
+          logStep("Failed to clear payment failure state", { error: updateError.message });
+        }
+
         break;
       }
 

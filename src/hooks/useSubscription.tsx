@@ -4,6 +4,7 @@ import { useAuth } from './useAuth';
 
 export interface SubscriptionStatus {
   subscribed: boolean;
+  status: string | null;
   product_id: string | null;
   subscription_start: string | null;
   subscription_end: string | null;
@@ -12,6 +13,9 @@ export interface SubscriptionStatus {
   interval: string | null;
   interval_count: number | null;
   cancel_at_period_end: boolean;
+  paymentFailureAt: string | null;
+  nextPaymentAttempt: string | null;
+  paymentFailureType: string | null;
   loading: boolean;
   error: string | null;
 }
@@ -20,6 +24,7 @@ export function useSubscription() {
   const { user } = useAuth();
   const [status, setStatus] = useState<SubscriptionStatus>({
     subscribed: false,
+    status: null,
     product_id: null,
     subscription_start: null,
     subscription_end: null,
@@ -28,6 +33,9 @@ export function useSubscription() {
     interval: null,
     interval_count: null,
     cancel_at_period_end: false,
+    paymentFailureAt: null,
+    nextPaymentAttempt: null,
+    paymentFailureType: null,
     loading: true,
     error: null,
   });
@@ -36,6 +44,7 @@ export function useSubscription() {
     if (!user) {
       setStatus({
         subscribed: false,
+        status: null,
         product_id: null,
         subscription_start: null,
         subscription_end: null,
@@ -44,6 +53,9 @@ export function useSubscription() {
         interval: null,
         interval_count: null,
         cancel_at_period_end: false,
+        paymentFailureAt: null,
+        nextPaymentAttempt: null,
+        paymentFailureType: null,
         loading: false,
         error: null,
       });
@@ -75,7 +87,8 @@ export function useSubscription() {
           .from('user_subscriptions')
           .select('*')
           .eq('user_id', user.id)
-          .eq('status', 'active')
+          .order('updated_at', { ascending: false })
+          .limit(1)
           .maybeSingle();
 
         if (error) {
@@ -91,7 +104,8 @@ export function useSubscription() {
         console.log('[useSubscription] Subscription data from DB:', data);
 
         setStatus({
-          subscribed: !!data,
+          subscribed: data?.status === 'active',
+          status: data?.status ?? null,
           product_id: data?.product_id || null,
           subscription_start: data?.current_period_start || null,
           subscription_end: data?.current_period_end || null,
@@ -100,6 +114,9 @@ export function useSubscription() {
           interval: data?.interval ?? null,
           interval_count: data?.interval_count ?? null,
           cancel_at_period_end: data?.cancel_at_period_end ?? false,
+          paymentFailureAt: data?.payment_failure_at ?? null,
+          nextPaymentAttempt: data?.next_payment_attempt ?? null,
+          paymentFailureType: data?.payment_failure_type ?? null,
           loading: false,
           error: null,
         });
@@ -114,6 +131,9 @@ export function useSubscription() {
           interval: null,
           interval_count: null,
           cancel_at_period_end: false,
+          paymentFailureAt: null,
+          nextPaymentAttempt: null,
+          paymentFailureType: null,
           error: err instanceof Error ? err.message : 'Unknown error occurred',
         }));
       }
@@ -151,13 +171,15 @@ export function useSubscription() {
         .from('user_subscriptions')
         .select('*')
         .eq('user_id', user.id)
-        .eq('status', 'active')
+        .order('updated_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (error) throw error;
 
       setStatus({
-        subscribed: !!data,
+        subscribed: data?.status === 'active',
+        status: data?.status ?? null,
         product_id: data?.product_id || null,
         subscription_start: data?.current_period_start || null,
         subscription_end: data?.current_period_end || null,
@@ -166,6 +188,9 @@ export function useSubscription() {
         interval: data?.interval ?? null,
         interval_count: data?.interval_count ?? null,
         cancel_at_period_end: data?.cancel_at_period_end ?? false,
+        paymentFailureAt: data?.payment_failure_at ?? null,
+        nextPaymentAttempt: data?.next_payment_attempt ?? null,
+        paymentFailureType: data?.payment_failure_type ?? null,
         loading: false,
         error: null,
       });

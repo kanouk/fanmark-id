@@ -798,6 +798,9 @@
     "userFallback": "Creator",
     "welcomeBadge": "You have {{count}} fanmark",
     "subtitle": "Manage your fanmarks and explore new ones.",
+    "paymentFailureWarningTitle": "Payment not confirmed",
+    "paymentFailureWarningDescription": "If payment is not confirmed by {{date}}, fanmarks over the Free plan limit will be returned in newest-first order (including fanmarks in transfer).",
+    "paymentFailureWarningDescriptionNoDate": "If payment is not confirmed, fanmarks over the Free plan limit will be returned in newest-first order (including fanmarks in transfer).",
     "stats": {
       "totalFanmarks": "Fanmarks obtained",
       "activeFanmarks": "Active fanmarks",
@@ -1364,7 +1367,7 @@
         },
         "paymentTerms": {
           "title": "5. Payment and Billing",
-          "content": "Some fanmarks require payment for licensing:\n\n• Pricing: Prices are displayed before purchase and may change with notice\n• Payment Processing: Payments are processed through Stripe and subject to their terms\n• Billing: You authorize the Operator to charge your payment method for renewal fees\n• No Refunds: License fees are non-refundable except as required by law\n• Failed Payments: Failure to pay may result in suspension or revocation of licenses\n• Tax: You are responsible for any applicable taxes"
+          "content": "Some fanmarks require payment for licensing:\n\n• Pricing: Prices are displayed before purchase and may change with notice\n• Payment Processing: Payments are processed through Stripe and subject to their terms\n• Billing: You authorize the Operator to charge your payment method for renewal fees\n• No Refunds: License fees are non-refundable except as required by law\n• Failed Payments: Stripe retry rules apply. If the subscription is ultimately canceled, your plan returns to Free and any excess fanmarks are automatically returned in newest-first order (including fanmarks in transfer, applies even if you do not log in)\n• Tax: You are responsible for any applicable taxes"
         },
         "userContent": {
           "title": "6. User Content",

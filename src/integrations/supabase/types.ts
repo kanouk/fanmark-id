@@ -1696,6 +1696,9 @@ export type Database = {
           id: string
           interval: string | null
           interval_count: number | null
+          next_payment_attempt: string | null
+          payment_failure_at: string | null
+          payment_failure_type: string | null
           price_id: string | null
           product_id: string
           status: string
@@ -1714,6 +1717,9 @@ export type Database = {
           id?: string
           interval?: string | null
           interval_count?: number | null
+          next_payment_attempt?: string | null
+          payment_failure_at?: string | null
+          payment_failure_type?: string | null
           price_id?: string | null
           product_id: string
           status: string
@@ -1732,6 +1738,9 @@ export type Database = {
           id?: string
           interval?: string | null
           interval_count?: number | null
+          next_payment_attempt?: string | null
+          payment_failure_at?: string | null
+          payment_failure_type?: string | null
           price_id?: string | null
           product_id?: string
           status?: string

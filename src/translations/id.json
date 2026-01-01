@@ -797,6 +797,9 @@
     "userFallback": "Kreator",
     "welcomeBadge": "Anda memiliki {{count}} fanmark",
     "subtitle": "Kelola, poles, dan dapatkan fanmark yang mewakili Anda.",
+    "paymentFailureWarningTitle": "Pembayaran belum terkonfirmasi",
+    "paymentFailureWarningDescription": "Jika pembayaran tidak terkonfirmasi hingga {{date}}, fanmark yang melebihi batas paket Free akan dikembalikan berdasarkan urutan terbaru (termasuk fanmark yang sedang ditransfer).",
+    "paymentFailureWarningDescriptionNoDate": "Jika pembayaran tidak terkonfirmasi, fanmark yang melebihi batas paket Free akan dikembalikan berdasarkan urutan terbaru (termasuk fanmark yang sedang ditransfer).",
     "stats": {
       "totalFanmarks": "Fanmark yang diperoleh",
       "activeFanmarks": "Fanmark aktif",
@@ -1364,7 +1367,7 @@
         },
         "paymentTerms": {
           "title": "5. Pembayaran dan Penagihan",
-          "content": "Beberapa fanmark memerlukan pembayaran untuk lisensi:\n\n• Penetapan Harga: Harga ditampilkan sebelum pembelian dan dapat berubah dengan pemberitahuan\n• Pemrosesan Pembayaran: Pembayaran diproses melalui Stripe dan tunduk pada syaratnya\n• Penagihan: Anda memberi wewenang kepada Operator untuk menagih metode pembayaran Anda untuk biaya pembaruan\n• Tanpa Pengembalian Dana: Biaya lisensi tidak dapat dikembalikan kecuali diwajibkan oleh hukum\n• Pembayaran Gagal: Kegagalan pembayaran dapat mengakibatkan penangguhan atau pembatalan lisensi\n• Pajak: Anda bertanggung jawab atas semua pajak yang berlaku"
+          "content": "Beberapa fanmark memerlukan pembayaran untuk lisensi:\n\n• Penetapan Harga: Harga ditampilkan sebelum pembelian dan dapat berubah dengan pemberitahuan\n• Pemrosesan Pembayaran: Pembayaran diproses melalui Stripe dan tunduk pada syaratnya\n• Penagihan: Anda memberi wewenang kepada Operator untuk menagih metode pembayaran Anda untuk biaya pembaruan\n• Tanpa Pengembalian Dana: Biaya lisensi tidak dapat dikembalikan kecuali diwajibkan oleh hukum\n• Pembayaran Gagal: Aturan retry Stripe berlaku. Jika langganan akhirnya dibatalkan, paket Anda kembali ke Free dan fanmark yang melebihi batas otomatis dikembalikan berdasarkan urutan terbaru (termasuk fanmark yang sedang ditransfer, berlaku meski Anda tidak login)\n• Pajak: Anda bertanggung jawab atas semua pajak yang berlaku"
         },
         "userContent": {
           "title": "6. Konten Pengguna",

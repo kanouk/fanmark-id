@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useTranslation } from '@/hooks/useTranslation';
-import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy, Undo2, QrCode, MoreVertical, Heart, BarChart3, ArrowRightLeft } from 'lucide-react';
+import { Search, Eye, Edit, Settings, Trash2, ExternalLink, Copy, Undo2, QrCode, MoreVertical, Heart, BarChart3, ArrowRightLeft, AlertTriangle } from 'lucide-react';
 import { FiTarget, FiLayers, FiCompass, FiStar, FiCheckCircle, FiMoon, FiUser, FiLink, FiFileText, FiClock, FiInbox } from 'react-icons/fi';
 import { MdSpaceDashboard } from 'react-icons/md';
 import { FanmarkAcquisition } from './FanmarkAcquisition';
@@ -27,12 +27,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { useFanmarkLimit } from '@/hooks/useFanmarkLimit';
 import { useFavoriteFanmarks } from '@/hooks/useFavoriteFanmarks';
+import { useSubscription } from '@/hooks/useSubscription';
 import { navigateToFanmark, getFanmarkUrlForClipboard } from '@/utils/emojiUrl';
 import { parseDateString } from '@/lib/utils';
 import { deriveLicenseTiming, type LicenseTimingResult } from '@/lib/licenseTiming';
 import { useTransferCode } from '@/hooks/useTransferCode';
 import { FanmarkTransferSection } from '@/components/FanmarkTransferSection';
 import { TransferCodeIssueDialog } from '@/components/TransferCodeIssueDialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const LICENSE_STATUS_WEIGHT: Record<LicenseTimingResult['status'], number> = {
   active: 0,
@@ -111,6 +113,7 @@ export const FanmarkDashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { settings } = useSystemSettings();
   const { limit: fanmarkLimit, isUnlimited } = useFanmarkLimit();
+  const { paymentFailureAt, nextPaymentAttempt } = useSubscription();
   const { count: favoriteCount, isLoading: favoritesLoading } = useFavoriteFanmarks({
     enabled: Boolean(user),
   });
@@ -149,6 +152,12 @@ export const FanmarkDashboard = () => {
   const [extendProcessing, setExtendProcessing] = useState(false);
   const [totalAccessCount, setTotalAccessCount] = useState<number | null>(null);
   const [accessCountLoading, setAccessCountLoading] = useState(true);
+  const paymentWarningDate = useMemo(() => {
+    if (!nextPaymentAttempt) return null;
+    const parsed = parseDateString(nextPaymentAttempt);
+    return parsed ? formatInTimeZone(parsed, 'Asia/Tokyo', 'yyyy/MM/dd HH:mm') : null;
+  }, [nextPaymentAttempt]);
+  const showPaymentWarning = Boolean(paymentFailureAt || nextPaymentAttempt);
 
   // Transfer system - single source of truth
   const transferCodeData = useTransferCode();
@@ -797,6 +806,18 @@ export const FanmarkDashboard = () => {
             {t('dashboard.subtitle')}
           </p>
         </div>
+
+        {showPaymentWarning && (
+          <Alert className="border-amber-200/70 bg-amber-50/80 text-amber-900">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <AlertTitle>{t('dashboard.paymentFailureWarningTitle')}</AlertTitle>
+            <AlertDescription>
+              {paymentWarningDate
+                ? t('dashboard.paymentFailureWarningDescription', { date: paymentWarningDate })
+                : t('dashboard.paymentFailureWarningDescriptionNoDate')}
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">

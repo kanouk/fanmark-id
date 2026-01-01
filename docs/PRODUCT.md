@@ -510,6 +510,9 @@ function addMonths(base: Date, months: number): Date {
 | `customer.subscription.updated` | サブスク更新 | user_subscriptions upsert, status=active の場合のみ user_settings.plan_type 更新（必要時） |
 | `customer.subscription.deleted` | サブスクキャンセル完了 | user_subscriptions 削除, 同一customerにactiveが無い場合のみ user_settings.plan_type = 'free' |
 | `checkout.session.completed` (type=license_extension) | ライセンス延長決済完了 | fanmark_licenses 更新, 抽選キャンセル, audit_log |
+| `invoice.payment_failed` | 支払い失敗の検知 | 支払い期限(`next_payment_attempt`)の保存、警告表示のための状態更新 |
+| `invoice.payment_action_required` | 追加アクション要求（3DS等） | 支払い期限(`next_payment_attempt`)の保存、警告表示のための状態更新 |
+| `invoice.payment_succeeded` | 支払い回復 | 支払い失敗状態の解除、期限情報のクリア |
 
 **priceId → planType 判定ロジック:**
 ```typescript
@@ -671,3 +674,36 @@ const showWarning = extendedEnd > sixMonthsFromNow;
 - `dashboard.extendDialog.longTermWarningDescriptionBefore`（リンク前のテキスト）
 - `dashboard.extendDialog.longTermWarningDescriptionLink`（リンクテキスト）
 - `dashboard.extendDialog.longTermWarningDescriptionAfter`（リンク後のテキスト）
+
+---
+
+## 15. 月次更新と支払い失敗時の扱い（仕様追加）
+
+### 15.1 基本方針
+- 月次更新の成否は Stripe が正。アプリ側は Webhook を受けて状態を反映する。
+- アプリ側で独自の猶予期間を持たない。支払い期限は Stripe の `next_payment_attempt` を使用する。
+- `status=active` のときのみプランは継続とみなす（既存挙動）。
+- Stripe の再試行ルール: Smart Retries を使用し、1週間に最大4回リトライ。全失敗時はサブスクリプションをキャンセル、請求書は期限超過のままにする。
+
+### 15.2 失敗検知と警告
+- `invoice.payment_failed` / `invoice.payment_action_required` を受信したら、以下を保存する:
+  - `next_payment_attempt`（支払い期限）
+  - 失敗中フラグ（UI 警告用）
+- UI では次の警告を表示する:
+  - 例: 「YYYY/MM/DD HH:mm までにお支払いが確認できない場合、Freeプラン上限を超える分はランダムに返却されます。」
+- `invoice.payment_succeeded` を受信したら、失敗中フラグと期限情報をクリアする。
+
+### 15.3 失敗確定（Free への遷移）
+- Stripe が `customer.subscription.deleted` を送信した時点で Free へ戻る（既存仕様）。
+- Free 移行時に上限超過がある場合は、超過分を取得日時が新しい順に返却する。
+  - 返却はサーバー側で自動実行し、未ログインでも適用される。
+  - 返却対象は上限に収まるまで、取得日時が新しい順に選定する（古いほど重要度が高い前提）。
+
+### 15.4 例外・復旧
+- 失敗中に支払いが復旧した場合、警告は解除され、返却は行わない。
+- Webhook 未達時は `check-subscription` で同期できること（警告状態も同期対象に含める）。
+
+### 15.5 利用規約への明記
+- 支払い失敗時の猶予は Stripe の再試行に従うこと。
+- 期限までに支払いがない場合、Free 移行とランダム返却が自動で行われること。
+- 未ログインでも返却が発生すること。
