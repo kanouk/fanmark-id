@@ -556,7 +556,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
                 <button
                   type="button"
                   onClick={() => handleRemove(index)}
-                  className="absolute -top-1 -right-1 sm:-top-[0.3rem] sm:-right-[0.3rem] lg:-top-[0.35rem] lg:-right-[0.35rem] hidden h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground transition hover:scale-105 group-hover:flex"
+                  className="absolute top-0 right-0 -translate-y-[20%] translate-x-[20%] sm:-translate-y-[25%] sm:translate-x-[25%] z-10 hidden h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground transition hover:scale-105 group-hover:flex"
                 >
                   <X className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                 </button>

@@ -744,12 +744,12 @@ export const FanmarkAcquisition = ({
                 </Tooltip>
 
                 {(searchResult?.lottery_entry_count ?? 0) > 0 && (
-                  <div className="absolute -top-8 left-1/2 -translate-x-1/2">
+                  <div className="absolute -top-9 right-0 sm:-top-8 sm:left-1/2 sm:right-auto sm:-translate-x-1/2">
                     <div className="relative rounded-2xl bg-primary px-4 py-1.5 text-[11px] font-semibold text-primary-foreground shadow-[0_8px_18px_rgba(101,195,200,0.25)] whitespace-nowrap">
                       {t('lottery.entryCount', { count: searchResult.lottery_entry_count })}
                       <span
                         aria-hidden="true"
-                        className="absolute left-1/2 top-full -mt-[5px] h-2.5 w-2.5 -translate-x-1/2 rotate-45 bg-primary"
+                        className="absolute right-4 top-full -mt-[5px] h-2.5 w-2.5 rotate-45 bg-primary sm:left-1/2 sm:right-auto sm:-translate-x-1/2"
                       />
                     </div>
                   </div>
