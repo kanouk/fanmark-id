@@ -1,6 +1,7 @@
 import { QRCodeSVG } from 'qrcode.react';
 import { cn } from '@/lib/utils';
 import { segmentEmojiSequence } from '@/lib/emojiConversion';
+import { AlertTriangle } from 'lucide-react';
 
 interface FanmarkQRCodeCardProps {
   emoji: string;
@@ -54,6 +55,9 @@ export const FanmarkQRCodeCard = ({ emoji, url, shortId, className }: FanmarkQRC
   const displaySegments = emojiSegments.length > 0 ? emojiSegments : ['✨'];
   const layout = getEmojiLayoutClasses(displaySegments.length);
 
+  // Validate URL - QR codes have a max capacity of ~2900 chars at lowest error correction
+  const isValidUrl = url && typeof url === 'string' && url.length > 0 && url.length < 2000;
+
   return (
     <div
       className={cn(
@@ -72,7 +76,14 @@ export const FanmarkQRCodeCard = ({ emoji, url, shortId, className }: FanmarkQRC
       </div>
 
       <div className="rounded-2xl bg-white p-4 shadow-inner shadow-primary/10">
-        <QRCodeSVG value={url} size={232} includeMargin fgColor="#111827" bgColor="#ffffff" />
+        {isValidUrl ? (
+          <QRCodeSVG value={url} size={232} includeMargin fgColor="#111827" bgColor="#ffffff" />
+        ) : (
+          <div className="flex h-[232px] w-[232px] flex-col items-center justify-center gap-2 text-muted-foreground">
+            <AlertTriangle className="h-8 w-8" />
+            <p className="text-sm">QRコードを生成できません</p>
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">
