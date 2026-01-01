@@ -21,7 +21,8 @@ interface SystemSettings {
   stripe_mode: 'test' | 'live';
 }
 
-export function useSystemSettings() {
+export function useSystemSettings(options?: { includePrivate?: boolean }) {
+  const includePrivate = options?.includePrivate ?? false;
   const [settings, setSettings] = useState<SystemSettings>({
     invitation_mode: false,
     social_login_enabled: true,
@@ -49,10 +50,15 @@ export function useSystemSettings() {
 
   const fetchSettings = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('system_settings')
-        .select('setting_key, setting_value')
-        .eq('is_public', true);
+        .select('setting_key, setting_value');
+
+      if (!includePrivate) {
+        query = query.eq('is_public', true);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 

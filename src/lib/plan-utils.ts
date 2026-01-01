@@ -2,6 +2,22 @@ import { supabase } from '@/integrations/supabase/client';
 
 export type PlanType = 'free' | 'creator' | 'max' | 'business' | 'enterprise' | 'admin';
 
+export interface PlanLimits {
+  free: number;
+  creator: number;
+  max: number;
+  business: number;
+  enterprise: number;
+  admin: number;
+}
+
+export interface PlanPricing {
+  creator: number;
+  max: number;
+  business: number;
+  enterprise: number;
+}
+
 export interface ActiveFanmark {
   id: string;
   user_input_fanmark: string;
@@ -13,17 +29,8 @@ export interface ActiveFanmark {
   access_type: string | null;
 }
 
-const PLAN_LIMITS: Record<PlanType, number> = {
-  free: 3,
-  creator: 10,
-  max: 500,
-  business: 50,
-  enterprise: 100,
-  admin: -1,
-};
-
-export function getPlanLimit(planType: PlanType): number {
-  return PLAN_LIMITS[planType] ?? PLAN_LIMITS.free;
+export function getPlanLimit(planType: PlanType, planLimits: PlanLimits): number {
+  return planLimits[planType] ?? planLimits.free;
 }
 
 interface LicenseQueryResult {
@@ -105,10 +112,11 @@ export interface PlanDowngradeEvaluation {
 export async function evaluatePlanDowngrade(
   userId: string | null | undefined,
   currentPlanType: PlanType,
-  newPlanType: PlanType
+  newPlanType: PlanType,
+  planLimits: PlanLimits
 ): Promise<PlanDowngradeEvaluation> {
-  const currentLimit = getPlanLimit(currentPlanType);
-  const newPlanLimit = getPlanLimit(newPlanType);
+  const currentLimit = getPlanLimit(currentPlanType, planLimits);
+  const newPlanLimit = getPlanLimit(newPlanType, planLimits);
 
   console.log('[evaluatePlanDowngrade] Plan change:', {
     currentPlanType,
@@ -143,14 +151,22 @@ export async function evaluatePlanDowngrade(
   return { requiresSelection, fanmarks: filteredFanmarks, newPlanLimit };
 }
 
-export function formatPlanPrice(planType: PlanType): string {
+const formatYen = (amount: number): string => {
+  return `¥${amount.toLocaleString('ja-JP')}`;
+};
+
+export function formatPlanPrice(planType: PlanType, planPricing: PlanPricing): string {
   switch (planType) {
     case 'free':
       return '¥0';
     case 'creator':
-      return '¥1,000';
+      return formatYen(planPricing.creator);
+    case 'max':
+      return formatYen(planPricing.max);
     case 'business':
-      return '¥2,000';
+      return formatYen(planPricing.business);
+    case 'enterprise':
+      return formatYen(planPricing.enterprise);
     default:
       return '';
   }

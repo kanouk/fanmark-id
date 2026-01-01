@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -15,6 +16,8 @@ import {
   evaluatePlanDowngrade,
   type PlanType,
   type ActiveFanmark,
+  type PlanLimits,
+  type PlanPricing,
 } from '@/lib/plan-utils';
 import { FanmarkSelectionModal } from '@/components/FanmarkSelectionModal';
 import { DowngradeWarningDialog } from '@/components/DowngradeWarningDialog';
@@ -44,6 +47,7 @@ const PlanSelection = () => {
   const { profile, loading, updateProfile, refetch: refetchProfile } = useProfile();
   const { user } = useAuth();
   const { subscription_end, refetch: refetchSubscription } = useSubscription();
+  const { settings } = useSystemSettings();
 
   const [processingPlan, setProcessingPlan] = useState<PlanType | null>(null);
   const [planProcessingMode, setPlanProcessingMode] = useState<'stripe' | 'processing' | null>(null);
@@ -68,23 +72,40 @@ const PlanSelection = () => {
     newLimit: number;
   } | null>(null);
 
+  const planLimits = useMemo<PlanLimits>(() => ({
+    free: settings.free_fanmarks_limit,
+    creator: settings.creator_fanmarks_limit,
+    max: settings.max_fanmarks_limit,
+    business: settings.business_fanmarks_limit,
+    enterprise: settings.enterprise_fanmarks_limit,
+    admin: -1,
+  }), [settings]);
+
+  const planPricing = useMemo<PlanPricing>(() => ({
+    creator: settings.premium_pricing,
+    max: settings.max_pricing,
+    business: settings.business_pricing,
+    enterprise: settings.enterprise_pricing,
+  }), [settings]);
+
   const planCards = useMemo<PlanCardCopy[]>(() => CUSTOMER_PLANS.map((planType) => {
+    const planLimit = getPlanLimit(planType, planLimits);
     return {
       type: planType,
       name: t(`planSelection.${planType}.name`),
       description: t(`planSelection.${planType}.description`),
       highlight: planType === 'creator',
       badge: undefined,
-      price: formatPlanPrice(planType),
+      price: formatPlanPrice(planType, planPricing),
       monthlySuffix: planType === 'free' ? undefined : t('planSelection.perMonth'),
       features: [
-        t(`planSelection.${planType}.feature1`),
+        t('planSelection.features.limit', { limit: planLimit }),
         t(`planSelection.${planType}.feature2`),
         // feature3 is only for creator and business plans
         ...(planType !== 'free' ? [t(`planSelection.${planType}.feature3`)] : []),
       ],
     };
-  }), [t]);
+  }), [planLimits, planPricing, t]);
 
   useEffect(() => {
     const fromPath = locationState?.from;
@@ -298,7 +319,7 @@ const PlanSelection = () => {
       }
       
       // Check if downgrade requires fanmark selection
-      const evaluation = await evaluatePlanDowngrade(user.id, currentPlanType, planType);
+      const evaluation = await evaluatePlanDowngrade(user.id, currentPlanType, planType, planLimits);
       
       if (evaluation.requiresSelection) {
         // Show fanmark selection modal for downgrades
@@ -366,8 +387,8 @@ const PlanSelection = () => {
         });
       } else {
         // DOWNGRADE: Show warning dialog first
-        const currentLimit = getPlanLimit(currentPlanType);
-        const newLimit = getPlanLimit(planType);
+        const currentLimit = getPlanLimit(currentPlanType, planLimits);
+        const newLimit = getPlanLimit(planType, planLimits);
         
         setDowngradeInfo({
           currentPlan: currentPlanType,

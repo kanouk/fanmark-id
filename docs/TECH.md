@@ -35,7 +35,7 @@
 - `fanmarks`: 所有/登録状態は公開情報（検索・トレンド機能の前提）。
 - `fanmark_licenses`: `user_id` はUUIDのみで、PIIは `user_settings` に隔離。所有関係は公開情報。
 - `fanmark_discoveries`: `search_count` / `favorite_count` 等の匿名集計のみ（PIIなし）。
-- `system_settings`: `is_public=true` の設定のみ公開。
+- `system_settings`: `is_public=true` の設定のみ公開。プランの表示価格・上限は `system_settings` を参照する。
 - `recent_active_fanmarks`（VIEW）: 「最近のファンマーク」表示用の最小限データのみ。
 - `user_roles`: 役割判定はRLS + SECURITY DEFINER の `has_role()` 等で制御（他ユーザーの役割列挙は不可）。
 

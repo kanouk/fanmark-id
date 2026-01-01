@@ -23,8 +23,9 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { usePreferredLanguage } from '@/hooks/usePreferredLanguage';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { ACTIVE_LANGUAGES, isActiveLanguage, FALLBACK_LANGUAGE, ActiveLanguageCode } from '@/lib/language';
-import { getPlanLimit, type PlanType } from '@/lib/plan-utils';
+import { getPlanLimit, type PlanLimits, type PlanType } from '@/lib/plan-utils';
 import { usePasswordValidation } from '@/hooks/usePasswordValidation';
 import { PasswordRequirement } from '@/components/PasswordRequirement';
 import { formatStripeAmount } from '@/lib/currency';
@@ -70,6 +71,7 @@ const Profile = () => {
   const { t } = useTranslation();
   const { toast } = useToast();
   const { persistPreferredLanguage, isSaving: isSavingPreferredLanguage } = usePreferredLanguage();
+  const { settings } = useSystemSettings();
   const navigate = useNavigate();
   const location = useLocation();
   const pathname = location.pathname;
@@ -204,7 +206,15 @@ const Profile = () => {
   };
   const currentPlanLabel = planLabelMap[profile?.plan_type ?? 'free'];
   const planType = (profile?.plan_type ?? 'free') as PlanType;
-  const planLimit = getPlanLimit(planType);
+  const planLimits = useMemo<PlanLimits>(() => ({
+    free: settings.free_fanmarks_limit,
+    creator: settings.creator_fanmarks_limit,
+    max: settings.max_fanmarks_limit,
+    business: settings.business_fanmarks_limit,
+    enterprise: settings.enterprise_fanmarks_limit,
+    admin: -1,
+  }), [settings]);
+  const planLimit = getPlanLimit(planType, planLimits);
   const planLimitCopy =
     planLimit === -1 ? t('userSettings.planUnlimited') : t('userSettings.planLimitInfo', { limit: planLimit });
 

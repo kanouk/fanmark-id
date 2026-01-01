@@ -25,7 +25,7 @@ type PlanSection = {
 };
 
 export const AdminPlanSettings = () => {
-  const { settings, loading, refetch } = useSystemSettings();
+  const { settings, loading, refetch } = useSystemSettings({ includePrivate: true });
   const { toast } = useToast();
   const [updating, setUpdating] = useState(false);
 
@@ -54,12 +54,16 @@ export const AdminPlanSettings = () => {
   const updateSystemSetting = async (key: string, value: number | string) => {
     setUpdating(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("system_settings")
         .update({ setting_value: value.toString() })
-        .eq("setting_key", key);
+        .eq("setting_key", key)
+        .select("setting_key");
 
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("No settings updated (permission or key mismatch).");
+      }
 
       toast({
         title: "設定更新完了",
@@ -309,5 +313,4 @@ export const AdminPlanSettings = () => {
     </div>
   );
 };
-
 

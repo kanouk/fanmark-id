@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,11 +8,13 @@ import { useAvatarUpload } from '@/hooks/useAvatarUpload';
 import { Save, User, Upload, Trash2, Loader2, Mail, Image as ImageIcon, UserRound, IdCard, AlertTriangle } from 'lucide-react';
 import { FanmarkSelectionModal } from './FanmarkSelectionModal';
 import { useAuth } from '@/hooks/useAuth';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
 import {
   getPlanLimit,
   evaluatePlanDowngrade,
   type PlanType,
   type ActiveFanmark,
+  type PlanLimits,
 } from '@/lib/plan-utils';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -34,6 +36,7 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
   const { t } = useTranslation();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { settings } = useSystemSettings();
   const { uploadAvatar, deleteAvatar, uploading } = useAvatarUpload();
   const [loading, setLoading] = useState(false);
   const [showFanmarkSelection, setShowFanmarkSelection] = useState(false);
@@ -47,6 +50,15 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
     avatar_url: profile?.avatar_url ?? '',
     plan_type: (profile?.plan_type ?? 'free') as PlanType,
   });
+
+  const planLimits = useMemo<PlanLimits>(() => ({
+    free: settings.free_fanmarks_limit,
+    creator: settings.creator_fanmarks_limit,
+    max: settings.max_fanmarks_limit,
+    business: settings.business_fanmarks_limit,
+    enterprise: settings.enterprise_fanmarks_limit,
+    admin: -1,
+  }), [settings]);
 
   useEffect(() => {
     setFormData(prev => ({
@@ -62,7 +74,8 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
       const { requiresSelection, fanmarks } = await evaluatePlanDowngrade(
         user?.id,
         currentPlanType,
-        newPlanType
+        newPlanType,
+        planLimits
       );
 
       if (requiresSelection) {
@@ -346,7 +359,7 @@ export const UserProfileForm = ({ profile, onUpdate }: UserProfileFormProps) => 
             setCurrentFanmarks([]);
           }}
           newPlanType={pendingPlanChange}
-          newPlanLimit={getPlanLimit(pendingPlanChange)}
+          newPlanLimit={getPlanLimit(pendingPlanChange, planLimits)}
           currentFanmarks={currentFanmarks}
           onConfirm={handleFanmarkSelectionConfirm}
         />
