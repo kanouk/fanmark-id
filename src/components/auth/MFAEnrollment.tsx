@@ -208,8 +208,21 @@ export const MFAEnrollment: React.FC<MFAEnrollmentProps> = ({ onSuccess, onCance
         {/* QR Code */}
         {qrCode && (
           <div className="flex flex-col items-center gap-4">
-            <div className="rounded-2xl border border-primary/20 bg-white p-4">
-              <QRCodeSVG value={qrCode} size={180} level="M" />
+            <div className="rounded-2xl border border-primary/20 bg-background p-4">
+              {qrCode.startsWith('data:') ? (
+                <img
+                  src={qrCode}
+                  alt="二段階認証のQRコード"
+                  loading="lazy"
+                  className="h-[180px] w-[180px]"
+                />
+              ) : qrCode.length < 1800 ? (
+                <QRCodeSVG value={qrCode} size={180} level="M" />
+              ) : (
+                <p className="max-w-[240px] text-center text-xs text-muted-foreground">
+                  QRコードのデータが長すぎるため表示できません。下のシークレットを手動で入力してください。
+                </p>
+              )}
             </div>
           </div>
         )}
