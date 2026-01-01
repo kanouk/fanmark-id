@@ -1772,5 +1772,30 @@
       "transferLockedDetail": "Anda tidak dapat menerbitkan kode transfer hingga {{date}}",
       "disclaimerRequired": "Persetujuan terhadap pemberitahuan diperlukan"
     }
+  },
+  "mfa": {
+    "setupTitle": "Atur Autentikasi Dua Faktor",
+    "setupDescription": "Pindai kode QR dengan aplikasi autentikator (Google Authenticator, Authy, dll.)",
+    "secretLabel": "Kode entri manual",
+    "enterCode": "Masukkan kode 6 digit",
+    "verifyButton": "Verifikasi",
+    "verifying": "Memverifikasi...",
+    "enrolling": "Menyiapkan...",
+    "setupSuccess": "Autentikasi dua faktor diaktifkan",
+    "setupSuccessDesc": "Kode autentikasi akan diperlukan untuk login berikutnya",
+    "challengeTitle": "Masukkan Kode Autentikasi",
+    "challengeDescription": "Masukkan kode 6 digit yang ditampilkan di aplikasi autentikator Anda",
+    "challengeSuccess": "Autentikasi berhasil",
+    "challengeSuccessDesc": "Mengakses dasbor admin",
+    "invalidCode": "Kode tidak valid. Silakan coba lagi",
+    "required": "Autentikasi dua faktor wajib untuk administrator",
+    "loadingFactors": "Memeriksa info autentikasi...",
+    "preparingSetup": "Menyiapkan autentikasi dua faktor...",
+    "challengeFailed": "Gagal membuat tantangan autentikasi",
+    "verificationFailed": "Autentikasi gagal",
+    "factorsNotFound": "Tidak ditemukan autentikasi dua faktor yang valid",
+    "logout": "Keluar",
+    "cancel": "Batal",
+    "scanQRCode": "Jika tidak dapat memindai kode QR, masukkan kode di bawah secara manual"
   }
 }

@@ -1772,5 +1772,30 @@
       "transferLockedDetail": "You cannot issue a transfer code until {{date}}",
       "disclaimerRequired": "Agreement to the notice is required"
     }
+  },
+  "mfa": {
+    "setupTitle": "Set Up Two-Factor Authentication",
+    "setupDescription": "Scan the QR code with your authenticator app (Google Authenticator, Authy, etc.)",
+    "secretLabel": "Manual entry code",
+    "enterCode": "Enter 6-digit code",
+    "verifyButton": "Verify",
+    "verifying": "Verifying...",
+    "enrolling": "Setting up...",
+    "setupSuccess": "Two-factor authentication enabled",
+    "setupSuccessDesc": "An authentication code will be required for future logins",
+    "challengeTitle": "Enter Authentication Code",
+    "challengeDescription": "Enter the 6-digit code shown in your authenticator app",
+    "challengeSuccess": "Authentication successful",
+    "challengeSuccessDesc": "Accessing admin dashboard",
+    "invalidCode": "Invalid code. Please try again",
+    "required": "Two-factor authentication is required for administrators",
+    "loadingFactors": "Checking authentication info...",
+    "preparingSetup": "Preparing two-factor authentication...",
+    "challengeFailed": "Failed to create authentication challenge",
+    "verificationFailed": "Authentication failed",
+    "factorsNotFound": "No valid two-factor authentication found",
+    "logout": "Log out",
+    "cancel": "Cancel",
+    "scanQRCode": "If you cannot scan the QR code, enter the code below manually"
   }
 }
