@@ -192,6 +192,11 @@ export const MFAEnrollment: React.FC<MFAEnrollmentProps> = ({ onSuccess, onCance
     );
   }
 
+  const trimmedQrCode = qrCode?.trim() ?? "";
+  const isDataUrl = trimmedQrCode.startsWith("data:");
+  const isSvgMarkup = trimmedQrCode.startsWith("<svg");
+  const canRenderAsQRCode = !isDataUrl && !isSvgMarkup && trimmedQrCode.length > 0 && trimmedQrCode.length < 512;
+
   return (
     <Card className="mx-auto max-w-md overflow-hidden rounded-3xl border border-primary/15 bg-background/90 shadow-lg">
       <CardHeader className="bg-gradient-to-r from-primary/20 via-accent/20 to-primary/10 pb-6 pt-8 text-center">
@@ -209,15 +214,21 @@ export const MFAEnrollment: React.FC<MFAEnrollmentProps> = ({ onSuccess, onCance
         {qrCode && (
           <div className="flex flex-col items-center gap-4">
             <div className="rounded-2xl border border-primary/20 bg-background p-4">
-              {qrCode.startsWith('data:') ? (
+              {isDataUrl ? (
                 <img
                   src={qrCode}
                   alt="二段階認証のQRコード"
                   loading="lazy"
                   className="h-[180px] w-[180px]"
                 />
-              ) : qrCode.length < 1800 ? (
-                <QRCodeSVG value={qrCode} size={180} level="M" />
+              ) : isSvgMarkup ? (
+                <div
+                  className="h-[180px] w-[180px] [&_svg]:h-full [&_svg]:w-full"
+                  aria-label="二段階認証のQRコード"
+                  dangerouslySetInnerHTML={{ __html: qrCode }}
+                />
+              ) : canRenderAsQRCode ? (
+                <QRCodeSVG value={trimmedQrCode} size={180} level="M" />
               ) : (
                 <p className="max-w-[240px] text-center text-xs text-muted-foreground">
                   QRコードのデータが長すぎるため表示できません。下のシークレットを手動で入力してください。
