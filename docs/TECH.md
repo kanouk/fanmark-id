@@ -39,14 +39,22 @@
 - `recent_active_fanmarks`（VIEW）: 「最近のファンマーク」表示用の最小限データのみ。
 - `user_roles`: 役割判定はRLS + SECURITY DEFINER の `has_role()` 等で制御（他ユーザーの役割列挙は不可）。
 
-**スキャンで頻出する誤検知（ID）**
-- `PUBLIC_USER_DATA` (fanmark_licenses): レジストリモデルのため仕様上公開（UUIDのみ、PIIは `user_settings`）。
-- `PUBLIC_USER_DATA` (fanmark_discoveries): 匿名集計データ（search_count, favorite_count）のみでPII無し。
-- `EXPOSED_SENSITIVE_DATA` (system_settings): `is_public=true` の設定のみ公開（RLSで制御済み）。
-- `MISSING_RLS_PROTECTION` (recent_active_fanmarks): VIEWのRLS指摘だが、公開用の最小データのみで仕様上公開。
-- `MISSING_RLS_PROTECTION` (user_roles): 役割テーブルは「本人のrole参照のみ」を許可。タイミング攻撃の懸念は一般的に許容範囲（必要ならレート制限/監査ログで補強）。
-- `SUPA_function_search_path_mutable`: 一部の関数でsearch_path未設定の警告。主要SECURITY DEFINER関数は設定済みで低リスク。
-- `SUPA_extension_in_public`: publicスキーマの拡張警告。実害なし。
+**スキャンで頻出する誤検知（ID / internal_id）**
+
+| ID | internal_id | 対象テーブル | 判定理由 |
+|----|-------------|--------------|----------|
+| `PUBLIC_USER_DATA` | `fanmark_licenses_user_exposure` | fanmark_licenses | レジストリモデルのため仕様上公開（UUIDのみ、PIIは `user_settings`） |
+| `PUBLIC_USER_DATA` | `licenses_uuid_only` | fanmark_licenses | 同上 |
+| `PUBLIC_USER_DATA` | `discoveries_aggregate` | fanmark_discoveries | 匿名集計データ（search_count, favorite_count）のみでPII無し |
+| `EXPOSED_SENSITIVE_DATA` | `system_settings_public` | system_settings | `is_public=true` の設定のみ公開（RLSで制御済み） |
+| `EXPOSED_SENSITIVE_DATA` | `user_subscriptions_payment_exposure` | user_subscriptions | RLSで `auth.uid() = user_id` のみ許可。他ユーザーのデータは見えない |
+| `MISSING_RLS_PROTECTION` | - | recent_active_fanmarks | VIEWのRLS指摘だが、公開用の最小データのみで仕様上公開 |
+| `MISSING_RLS_PROTECTION` | `fanmark_events_no_user_protection` | fanmark_events | service_role/adminのみアクセス可。audit_logsで監査済み |
+| `MISSING_RLS_PROTECTION` | - | user_roles | 「本人のrole参照のみ」を許可。タイミング攻撃は許容範囲 |
+| `PUBLIC_DATA_EXPOSURE` | `fanmarks_broad_access` | fanmarks | レジストリモデルで意図的に公開 |
+| `STORAGE_EXPOSURE` | `storage_bucket_policies` | storage.objects | avatars/cover-imagesは適切なRLS設定済み |
+| `SUPA_function_search_path_mutable` | - | - | 主要SECURITY DEFINER関数は設定済みで低リスク |
+| `SUPA_extension_in_public` | - | - | publicスキーマの拡張警告。実害なし |
 
 > 重要: `user_settings` は **常に auth.uid() = user_id** で保護し、公開しない（PII保護の境界）。
 
