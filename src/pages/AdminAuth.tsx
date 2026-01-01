@@ -158,6 +158,11 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ onMFAComplete }) => {
     setPassword("");
   };
 
+  const handleMFAReset = () => {
+    // After unenrolling MFA, go to enroll screen
+    setMfaStep("enroll");
+  };
+
   // Render MFA enrollment screen
   if (mfaStep === "enroll") {
     return (
@@ -177,7 +182,11 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ onMFAComplete }) => {
       <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
         <SimpleHeader className="border-border/40 bg-background/80 backdrop-blur-xl" />
         <main className="flex flex-1 items-center justify-center px-4 py-12">
-          <MFAChallenge onSuccess={handleMFASuccess} onCancel={handleMFACancel} />
+          <MFAChallenge 
+            onSuccess={handleMFASuccess} 
+            onCancel={handleMFACancel} 
+            onResetMFA={handleMFAReset}
+          />
         </main>
         <SiteFooter className="border-primary/20 bg-background/80 backdrop-blur" />
       </div>

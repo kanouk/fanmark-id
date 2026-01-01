@@ -1,23 +1,69 @@
 import React, { useState, useEffect } from "react";
-import { ShieldCheck, Loader2 } from "lucide-react";
+import { ShieldCheck, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface MFAChallengeProps {
   onSuccess: () => void;
   onCancel?: () => void;
+  onResetMFA?: () => void;
 }
 
-export const MFAChallenge: React.FC<MFAChallengeProps> = ({ onSuccess, onCancel }) => {
+export const MFAChallenge: React.FC<MFAChallengeProps> = ({ onSuccess, onCancel, onResetMFA }) => {
   const { toast } = useToast();
   const [code, setCode] = useState("");
   const [verifying, setVerifying] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [factorId, setFactorId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Handle MFA reset - unenroll existing factor
+  const handleResetMFA = async () => {
+    if (!factorId) return;
+
+    setResetting(true);
+    setError(null);
+
+    try {
+      const { error: unenrollError } = await supabase.auth.mfa.unenroll({
+        factorId,
+      });
+
+      if (unenrollError) {
+        console.error("MFA unenroll error:", unenrollError);
+        setError("二段階認証の解除に失敗しました");
+        setResetting(false);
+        return;
+      }
+
+      toast({
+        title: "二段階認証を解除しました",
+        description: "新しいQRコードで再設定してください",
+      });
+
+      onResetMFA?.();
+    } catch (err) {
+      console.error("MFA unenroll failed:", err);
+      setError("二段階認証の解除に失敗しました");
+    } finally {
+      setResetting(false);
+    }
+  };
 
   // Get the TOTP factor on mount
   useEffect(() => {
@@ -180,11 +226,50 @@ export const MFAChallenge: React.FC<MFAChallengeProps> = ({ onSuccess, onCancel 
             <Button
               variant="ghost"
               onClick={onCancel}
-              disabled={verifying}
+              disabled={verifying || resetting}
               className="w-full"
             >
               ログアウト
             </Button>
+          )}
+
+          {/* MFA Reset Option */}
+          {onResetMFA && factorId && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="link"
+                  size="sm"
+                  disabled={verifying || resetting}
+                  className="mt-2 text-muted-foreground"
+                >
+                  <RefreshCw className="mr-1 h-3 w-3" />
+                  認証アプリを変更・再設定
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>二段階認証をリセットしますか？</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    現在の二段階認証設定を解除し、新しいQRコードで再設定します。
+                    認証アプリに登録がない場合や、端末を変更した場合はこのオプションを使用してください。
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleResetMFA} disabled={resetting}>
+                    {resetting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        解除中...
+                      </>
+                    ) : (
+                      "リセットして再設定"
+                    )}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
         </div>
       </CardContent>
