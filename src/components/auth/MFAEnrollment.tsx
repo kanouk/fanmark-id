@@ -26,70 +26,95 @@ export const MFAEnrollment: React.FC<MFAEnrollmentProps> = ({ onSuccess, onCance
 
   // Enroll MFA on mount
   useEffect(() => {
+    let isMounted = true;
+
     const enrollMFA = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        // If a factor already exists, do NOT try to enroll again.
-        // - verified: user should go to challenge
-        // - unverified: clean it up and re-enroll to show a fresh QR
+        // Step 1: List existing factors
         const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
 
         if (factorsError) {
           console.error("Failed to list factors:", factorsError);
-          setError("認証情報の取得に失敗しました");
-          setLoading(false);
+          if (isMounted) {
+            setError("認証情報の取得に失敗しました");
+            setLoading(false);
+          }
           return;
         }
 
+        // Step 2: If a verified factor exists, go to challenge screen
         const verifiedTotp = factorsData?.totp?.find((f) => f.status === "verified");
         if (verifiedTotp) {
-          onGoToChallenge?.();
-          setLoading(false);
+          if (isMounted) {
+            onGoToChallenge?.();
+            setLoading(false);
+          }
           return;
         }
 
-        const existingTotp = factorsData?.totp?.[0];
-        if (existingTotp) {
-          // Unenroll leftover/unverified factor so enroll() can succeed
+        // Step 3: Unenroll ALL existing TOTP factors (unverified ones)
+        const existingTotpFactors = factorsData?.totp || [];
+        for (const factor of existingTotpFactors) {
+          console.log(`Unenrolling existing factor: ${factor.id} (${factor.friendly_name})`);
           const { error: unenrollError } = await supabase.auth.mfa.unenroll({
-            factorId: existingTotp.id,
+            factorId: factor.id,
           });
           if (unenrollError) {
             console.error("MFA unenroll error:", unenrollError);
-            setError("既存の二段階認証設定を解除できませんでした。下のキャンセルからやり直してください。");
-            setLoading(false);
-            return;
+            // Continue trying to unenroll others even if one fails
           }
         }
 
-        // Enroll new factor
+        // Step 4: Wait a moment for unenroll to propagate
+        if (existingTotpFactors.length > 0) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+
+        if (!isMounted) return;
+
+        // Step 5: Enroll new factor with unique name
+        const uniqueName = `Admin Auth ${Date.now()}`;
+        console.log(`Enrolling new MFA factor: ${uniqueName}`);
+        
         const { data, error: enrollError } = await supabase.auth.mfa.enroll({
           factorType: "totp",
-          friendlyName: "Authenticator App",
+          friendlyName: uniqueName,
         });
 
         if (enrollError) {
           console.error("MFA enroll error:", enrollError);
-          setError(enrollError.message);
+          if (isMounted) {
+            setError("二段階認証の設定に失敗しました。もう一度お試しください。");
+          }
           return;
         }
 
-        if (data?.totp) {
+        if (data?.totp && isMounted) {
+          console.log("MFA enroll success, factor ID:", data.id);
           setQrCode(data.totp.qr_code);
           setSecret(data.totp.secret);
           setFactorId(data.id);
         }
       } catch (err) {
         console.error("MFA enrollment failed:", err);
-        setError("二段階認証の設定に失敗しました");
+        if (isMounted) {
+          setError("二段階認証の設定に失敗しました");
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     enrollMFA();
+
+    return () => {
+      isMounted = false;
+    };
   }, [onGoToChallenge]);
 
   const handleCopySecret = async () => {
