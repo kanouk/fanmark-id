@@ -52,6 +52,43 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ onMFAComplete }) => {
   const [mfaStep, setMfaStep] = useState<MFAStep>("login");
   const [checkingMFA, setCheckingMFA] = useState(false);
 
+  // If already signed in (e.g., AdminRoute re-renders), skip the login form and go straight to MFA.
+  useEffect(() => {
+    let mounted = true;
+
+    const init = async () => {
+      setCheckingMFA(true);
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!mounted) return;
+
+        if (!data.session) {
+          return;
+        }
+
+        const mfaStatus = await checkMFAStatus();
+        if (!mounted) return;
+
+        if (mfaStatus === "complete") {
+          onMFAComplete?.();
+        } else if (mfaStatus === "challenge") {
+          setMfaStep("challenge");
+        } else {
+          setMfaStep("enroll");
+        }
+      } finally {
+        if (mounted) setCheckingMFA(false);
+      }
+    };
+
+    init();
+
+    return () => {
+      mounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Check MFA status after login
   const checkMFAStatus = async (): Promise<"enroll" | "challenge" | "complete"> => {
     try {
@@ -169,7 +206,11 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ onMFAComplete }) => {
       <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
         <SimpleHeader className="border-border/40 bg-background/80 backdrop-blur-xl" />
         <main className="flex flex-1 items-center justify-center px-4 py-12">
-          <MFAEnrollment onSuccess={handleMFASuccess} onCancel={handleMFACancel} />
+          <MFAEnrollment
+            onSuccess={handleMFASuccess}
+            onCancel={handleMFACancel}
+            onGoToChallenge={() => setMfaStep("challenge")}
+          />
         </main>
         <SiteFooter className="border-primary/20 bg-background/80 backdrop-blur" />
       </div>

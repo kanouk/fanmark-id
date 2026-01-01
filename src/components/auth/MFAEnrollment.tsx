@@ -10,9 +10,10 @@ import { supabase } from "@/integrations/supabase/client";
 interface MFAEnrollmentProps {
   onSuccess: () => void;
   onCancel?: () => void;
+  onGoToChallenge?: () => void;
 }
 
-export const MFAEnrollment: React.FC<MFAEnrollmentProps> = ({ onSuccess, onCancel }) => {
+export const MFAEnrollment: React.FC<MFAEnrollmentProps> = ({ onSuccess, onCancel, onGoToChallenge }) => {
   const { toast } = useToast();
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [secret, setSecret] = useState<string | null>(null);
@@ -30,6 +31,40 @@ export const MFAEnrollment: React.FC<MFAEnrollmentProps> = ({ onSuccess, onCance
       setError(null);
 
       try {
+        // If a factor already exists, do NOT try to enroll again.
+        // - verified: user should go to challenge
+        // - unverified: clean it up and re-enroll to show a fresh QR
+        const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
+
+        if (factorsError) {
+          console.error("Failed to list factors:", factorsError);
+          setError("認証情報の取得に失敗しました");
+          setLoading(false);
+          return;
+        }
+
+        const verifiedTotp = factorsData?.totp?.find((f) => f.status === "verified");
+        if (verifiedTotp) {
+          onGoToChallenge?.();
+          setLoading(false);
+          return;
+        }
+
+        const existingTotp = factorsData?.totp?.[0];
+        if (existingTotp) {
+          // Unenroll leftover/unverified factor so enroll() can succeed
+          const { error: unenrollError } = await supabase.auth.mfa.unenroll({
+            factorId: existingTotp.id,
+          });
+          if (unenrollError) {
+            console.error("MFA unenroll error:", unenrollError);
+            setError("既存の二段階認証設定を解除できませんでした。下のキャンセルからやり直してください。");
+            setLoading(false);
+            return;
+          }
+        }
+
+        // Enroll new factor
         const { data, error: enrollError } = await supabase.auth.mfa.enroll({
           factorType: "totp",
           friendlyName: "Authenticator App",
@@ -55,7 +90,7 @@ export const MFAEnrollment: React.FC<MFAEnrollmentProps> = ({ onSuccess, onCance
     };
 
     enrollMFA();
-  }, []);
+  }, [onGoToChallenge]);
 
   const handleCopySecret = async () => {
     if (secret) {
