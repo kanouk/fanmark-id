@@ -6,7 +6,13 @@ import idTranslations from '@/translations/id.json';
 import { normalizeLanguage } from '@/lib/language';
 
 type Language = 'ja' | 'en' | 'ko' | 'id';
-type Translations = typeof jaTranslations;
+// Keep JSON types loose enough so minor key drift between locales doesn't break builds.
+// (Missing keys still safely fall back to returning the key string.)
+type Translations =
+  | typeof jaTranslations
+  | typeof enTranslations
+  | typeof koTranslations
+  | typeof idTranslations;
 type TranslationVars = Record<string, string | number>;
 
 interface TranslationContextType {

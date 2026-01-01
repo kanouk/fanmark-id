@@ -42,6 +42,7 @@
 **スキャンで頻出する誤検知（ID）**
 - `supabase_lov.fanmark_licenses_user_exposure`: レジストリモデルのため仕様上公開（UUIDのみ、PIIは `user_settings`）。
 - `supabase_lov.recent_active_fanmarks_no_rls`: VIEWのRLS指摘だが、公開用の最小データのみで仕様上公開。
+- `supabase_lov.user_roles_missing_policies`: 役割テーブルは「本人のrole参照のみ」を許可。タイミング攻撃の懸念は一般的に許容範囲（必要ならレート制限/監査ログで補強）。
 
 > 重要: `user_settings` は **常に auth.uid() = user_id** で保護し、公開しない（PII保護の境界）。
 

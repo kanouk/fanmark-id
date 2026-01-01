@@ -822,11 +822,13 @@
     "searchSubtitle": "Coba kombinasi emoji berbeda dan lihat apa yang masih tersedia.",
     "remainingFanmarksLabel": "{remaining} slot tersisa",
     "acquireButton": "Dapatkan fanmark ini",
+    "acquireButtonShort": "Dapatkan",
     "acquireLoginButton": "Masuk untuk dapatkan",
     "acquireConfirmTitle": "Dapatkan fanmark ini?",
     "acquireConfirmDescription": "Setelah memperoleh, Anda akan memiliki {remaining} slot tersisa.",
     "acquireConfirmAction": "Dapatkan",
     "acquireReadyMessage": "Fanmark ini siap untuk diperoleh!",
+
     "acquireHint": "Cari fanmark yang tersedia untuk mengaktifkan tombol.",
     "acquireSuccessTitle": "Fanmark diamankan!",
     "acquireSuccessDescription": "Membawa Anda ke layar pengaturan.",

@@ -366,9 +366,8 @@ serve(async (req) => {
             continue;
           }
 
-          const entryCount = pendingEntries?.length || 0;
-          const displayFanmark = license.fanmarks?.normalized_emoji ?? null;
-          console.log(`  ${displayFanmark}: ${entryCount} lottery entries`);
+           const entryCount = pendingEntries?.length || 0;
+           console.log(`  ${displayFanmark}: ${entryCount} lottery entries`);
 
           if (entryCount === 0) {
             // No lottery entries - expiration already done
