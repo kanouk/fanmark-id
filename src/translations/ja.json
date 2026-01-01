@@ -1770,5 +1770,30 @@
       "transferLockedDetail": "移管直後のため、{{date}} まで移管コードを発行できません",
       "disclaimerRequired": "注意事項への同意が必要です"
     }
+  },
+  "mfa": {
+    "setupTitle": "二段階認証の設定",
+    "setupDescription": "認証アプリ（Google Authenticator、Authy等）でQRコードをスキャンしてください",
+    "secretLabel": "手動入力用コード",
+    "enterCode": "6桁のコードを入力",
+    "verifyButton": "確認",
+    "verifying": "確認中...",
+    "enrolling": "設定中...",
+    "setupSuccess": "二段階認証が有効になりました",
+    "setupSuccessDesc": "次回ログイン時から認証コードが必要です",
+    "challengeTitle": "認証コードを入力",
+    "challengeDescription": "認証アプリに表示されている6桁のコードを入力してください",
+    "challengeSuccess": "認証成功",
+    "challengeSuccessDesc": "管理画面にアクセスします",
+    "invalidCode": "コードが正しくありません。もう一度お試しください",
+    "required": "管理者は二段階認証が必須です",
+    "loadingFactors": "認証情報を確認中...",
+    "preparingSetup": "二段階認証を準備中...",
+    "challengeFailed": "認証チャレンジの作成に失敗しました",
+    "verificationFailed": "認証に失敗しました",
+    "factorsNotFound": "有効な二段階認証が見つかりません",
+    "logout": "ログアウト",
+    "cancel": "キャンセル",
+    "scanQRCode": "QRコードをスキャンできない場合は、以下のコードを手動で入力してください"
   }
 }

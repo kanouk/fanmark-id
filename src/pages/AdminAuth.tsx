@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from "react";
-import { Home, Lock, Mail, ShieldAlert, LogIn } from "lucide-react";
+import React, { useMemo, useState, useEffect } from "react";
+import { Home, Lock, Mail, ShieldAlert, LogIn, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { SimpleHeader } from "@/components/layout/SimpleHeader";
@@ -8,6 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { MFAEnrollment } from "@/components/auth/MFAEnrollment";
+import { MFAChallenge } from "@/components/auth/MFAChallenge";
+
+type MFAStep = "login" | "enroll" | "challenge";
 
 // Get the main site URL (user-facing site, not admin subdomain)
 const getMainSiteUrl = (): string => {
@@ -33,7 +37,11 @@ const getMainSiteUrl = (): string => {
   return `${protocol}//${hostname}/`;
 };
 
-const AdminAuth = () => {
+interface AdminAuthProps {
+  onMFAComplete?: () => void;
+}
+
+const AdminAuth: React.FC<AdminAuthProps> = ({ onMFAComplete }) => {
   const mainSiteUrl = useMemo(() => getMainSiteUrl(), []);
   const { toast } = useToast();
 
@@ -41,6 +49,48 @@ const AdminAuth = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mfaStep, setMfaStep] = useState<MFAStep>("login");
+  const [checkingMFA, setCheckingMFA] = useState(false);
+
+  // Check MFA status after login
+  const checkMFAStatus = async (): Promise<"enroll" | "challenge" | "complete"> => {
+    try {
+      // Get AAL level
+      const { data: aalData, error: aalError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+      if (aalError) {
+        console.error("Failed to get AAL:", aalError);
+        return "enroll";
+      }
+
+      // If already at AAL2, MFA is complete
+      if (aalData?.currentLevel === "aal2") {
+        return "complete";
+      }
+
+      // Check if user has enrolled factors
+      const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
+
+      if (factorsError) {
+        console.error("Failed to list factors:", factorsError);
+        return "enroll";
+      }
+
+      // Check for verified TOTP factor
+      const hasVerifiedTOTP = factorsData?.totp?.some((f) => f.status === "verified");
+
+      if (hasVerifiedTOTP) {
+        // User has MFA set up, needs to verify
+        return "challenge";
+      } else {
+        // User needs to enroll MFA
+        return "enroll";
+      }
+    } catch (err) {
+      console.error("Error checking MFA status:", err);
+      return "enroll";
+    }
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,9 +115,23 @@ const AdminAuth = () => {
 
       toast({
         title: "ログインしました",
-        description: "管理者権限を確認しています…",
+        description: "二段階認証を確認しています…",
       });
-      // Auth state will update and AdminRoute will re-render automatically.
+
+      // Check MFA status
+      setCheckingMFA(true);
+      const mfaStatus = await checkMFAStatus();
+
+      if (mfaStatus === "complete") {
+        // Already at AAL2, proceed to admin
+        onMFAComplete?.();
+      } else if (mfaStatus === "challenge") {
+        // Need to verify existing MFA
+        setMfaStep("challenge");
+      } else {
+        // Need to enroll MFA
+        setMfaStep("enroll");
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "ログインに失敗しました";
       setError(message);
@@ -78,9 +142,49 @@ const AdminAuth = () => {
       });
     } finally {
       setLoading(false);
+      setCheckingMFA(false);
     }
   };
 
+  const handleMFASuccess = () => {
+    onMFAComplete?.();
+  };
+
+  const handleMFACancel = async () => {
+    // Sign out and reset to login
+    await supabase.auth.signOut();
+    setMfaStep("login");
+    setEmail("");
+    setPassword("");
+  };
+
+  // Render MFA enrollment screen
+  if (mfaStep === "enroll") {
+    return (
+      <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
+        <SimpleHeader className="border-border/40 bg-background/80 backdrop-blur-xl" />
+        <main className="flex flex-1 items-center justify-center px-4 py-12">
+          <MFAEnrollment onSuccess={handleMFASuccess} onCancel={handleMFACancel} />
+        </main>
+        <SiteFooter className="border-primary/20 bg-background/80 backdrop-blur" />
+      </div>
+    );
+  }
+
+  // Render MFA challenge screen
+  if (mfaStep === "challenge") {
+    return (
+      <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
+        <SimpleHeader className="border-border/40 bg-background/80 backdrop-blur-xl" />
+        <main className="flex flex-1 items-center justify-center px-4 py-12">
+          <MFAChallenge onSuccess={handleMFASuccess} onCancel={handleMFACancel} />
+        </main>
+        <SiteFooter className="border-primary/20 bg-background/80 backdrop-blur" />
+      </div>
+    );
+  }
+
+  // Render login form
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
       <SimpleHeader className="border-border/40 bg-background/80 backdrop-blur-xl" />
@@ -141,9 +245,18 @@ const AdminAuth = () => {
                   </div>
                 )}
 
-                <Button type="submit" disabled={loading} className="w-full gap-2 rounded-full">
-                  <LogIn className="h-4 w-4" />
-                  {loading ? "ログイン中…" : "ログイン"}
+                <Button type="submit" disabled={loading || checkingMFA} className="w-full gap-2 rounded-full">
+                  {loading || checkingMFA ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {checkingMFA ? "認証確認中…" : "ログイン中…"}
+                    </>
+                  ) : (
+                    <>
+                      <LogIn className="h-4 w-4" />
+                      ログイン
+                    </>
+                  )}
                 </Button>
 
                 <div className="flex justify-center pt-2">
@@ -165,4 +278,3 @@ const AdminAuth = () => {
 };
 
 export default AdminAuth;
-
