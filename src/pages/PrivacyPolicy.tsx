@@ -10,6 +10,7 @@ export const PrivacyPolicy: React.FC = () => {
   const sections = [
     { id: "informationWeCollect", key: "informationWeCollect" },
     { id: "howWeUseYourInformation", key: "howWeUseYourInformation" },
+    { id: "emailNotifications", key: "emailNotifications" },
     { id: "dataSharing", key: "dataSharing" },
     { id: "dataRetention", key: "dataRetention" },
     { id: "security", key: "security" },
