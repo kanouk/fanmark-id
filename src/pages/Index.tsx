@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useFanmarkLimit } from '@/hooks/useFanmarkLimit';
 import { RecentFanmarksScroll } from '@/components/RecentFanmarksScroll';
 import { Sparkles } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 const Index = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -59,6 +60,14 @@ const Index = () => {
         block: 'start'
       });
     }
+  };
+
+  const handleCopyExampleFanmark = (emoji: string) => {
+    navigator.clipboard.writeText(emoji);
+    toast({
+      title: t('dashboard.emojiCopiedTitle'),
+      description: emoji,
+    });
   };
 
   useEffect(() => {
@@ -242,9 +251,15 @@ const Index = () => {
               >
                 <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 transition-opacity duration-300 group-hover:opacity-100`} aria-hidden />
                 <CardHeader className="relative flex flex-1 flex-col items-center gap-5 px-6 pt-10 pb-6 text-center">
-                  <span className="text-4xl">
+                  <button
+                    type="button"
+                    className="text-4xl cursor-pointer transition-transform duration-200 hover:scale-110"
+                    onClick={() => handleCopyExampleFanmark(emoji)}
+                    title={t('dashboard.clickToCopyEmoji')}
+                    aria-label={t('dashboard.clickToCopyEmoji')}
+                  >
                     {emoji}
-                  </span>
+                  </button>
                   <CardTitle className="text-lg font-semibold text-foreground">
                     {t(`sections.examples.${key}.title`)}
                   </CardTitle>

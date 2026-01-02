@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, Sparkles, ExternalLink, Plus, Heart, Ticket, TicketX } from 'lucide-react';
+import { Search, Sparkles, ExternalLink, Check, Heart, Ticket, TicketX } from 'lucide-react';
 import { FiInfo, FiAlertTriangle } from 'react-icons/fi';
 import FanmarkSearch from '@/components/FanmarkSearch';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -102,7 +102,11 @@ export const FanmarkAcquisition = ({
   const isTaken = useMemo(() => searchResult?.status === 'taken' || searchResult?.status === 'not_available', [searchResult?.status]);
   const canShowFanmarkAccess = useMemo(() => searchResult?.status === 'taken', [searchResult?.status]);
   const canNavigateToDetail = Boolean(searchResult?.short_id);
-  const displayedFanmark = searchResult?.display_fanmark || searchResult?.fanmark || '';
+  const displayedFanmark =
+    searchResult?.display_fanmark || searchResult?.fanmark || searchResult?.user_input_fanmark || '';
+  const canVisitFanmark = Boolean(displayedFanmark) &&
+    searchResult?.status !== 'available' &&
+    !(searchResult?.status === 'invalid' && searchResult?.id === 'invalid');
   const favoriteSequenceKeys = useMemo(() => {
     return new Set(
       favorites.map((favorite) => favorite.normalizedEmojiIds.join(','))
@@ -252,10 +256,10 @@ export const FanmarkAcquisition = ({
   }, [navigate, onObtain, searchResult, t, toast]);
 
   const handleVisitFanmark = useCallback(() => {
-    if (!searchResult?.fanmark) return;
+    if (!displayedFanmark) return;
 
-    navigateToFanmark(searchResult.fanmark ?? '', true);
-  }, [searchResult?.fanmark]);
+    navigateToFanmark(displayedFanmark, true);
+  }, [displayedFanmark]);
 
   const handleToggleFavorite = useCallback(async () => {
     if (!searchResult) return;
@@ -614,7 +618,7 @@ export const FanmarkAcquisition = ({
                 onClick={handleAcquireRequest}
                 disabled={!canAcquireNow}
               >
-                <Plus className="h-4 w-4" />
+                <Check className="h-4 w-4" />
                 {user
                   ? isMobile && isGraceBlocked
                     ? t('dashboard.acquireButtonShort')
@@ -623,6 +627,23 @@ export const FanmarkAcquisition = ({
               </Button>
               {/* 右側のボタングループ - 取得ボタンの右隣に絶対配置 */}
               <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 flex items-center gap-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-10 w-10 rounded-full border border-primary/15 bg-background/80 text-muted-foreground hover:bg-primary/10 hover:text-primary disabled:opacity-50"
+                      onClick={handleVisitFanmark}
+                      disabled={!canVisitFanmark}
+                      aria-label={t('dashboard.visitFanmarkButton')}
+                    >
+                      <ExternalLink className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    {t('dashboard.visitFanmarkButton')}
+                  </TooltipContent>
+                </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
