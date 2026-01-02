@@ -423,7 +423,7 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoog
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {socialButtons.map(({ key, label, Icon, onClick, disabled }) => (
               <Button
                 key={key}
@@ -431,10 +431,14 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoog
                 onClick={onClick}
                 disabled={disabled}
                 variant="outline"
-                className="w-full gap-2 rounded-full border-primary/20 bg-background/80 shadow-sm transition-all duration-300 hover:shadow-md"
+                className="group w-full justify-center rounded-2xl border-primary/15 bg-background/80 px-4 py-3 text-center font-semibold text-foreground shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/5 hover:shadow-md whitespace-normal"
               >
-                <Icon className="h-4 w-4" />
-                {label}
+                <span className="relative flex w-full items-center justify-center">
+                  <span className="absolute left-4 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary shadow-inner transition group-hover:bg-primary/15">
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <span className="text-center text-xs leading-snug sm:text-sm">{label}</span>
+                </span>
               </Button>
             ))}
           </div>
@@ -721,7 +725,7 @@ const SignUpForm = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {socialButtons.map(({ key, label, Icon, onClick, disabled }) => (
             <Button
               key={key}
@@ -729,10 +733,14 @@ const SignUpForm = ({
               onClick={onClick}
               disabled={disabled}
               variant="outline"
-              className="w-full gap-2 rounded-full border-primary/20 bg-background/80 shadow-sm transition-all duration-300 hover:shadow-md"
+              className="group w-full justify-center rounded-2xl border-primary/15 bg-background/80 px-4 py-3 text-center font-semibold text-foreground shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/5 hover:shadow-md whitespace-normal"
             >
-              <Icon className="h-4 w-4" />
-              {label}
+              <span className="relative flex w-full items-center justify-center">
+                <span className="absolute left-4 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary shadow-inner transition group-hover:bg-primary/15">
+                  <Icon className="h-4 w-4" />
+                </span>
+                <span className="text-center text-xs leading-snug sm:text-sm">{label}</span>
+              </span>
             </Button>
           ))}
         </div>
