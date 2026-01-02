@@ -1222,7 +1222,7 @@ export const FanmarkDashboard = () => {
                                           </Tooltip>
                                           <DropdownMenuContent align="end" sideOffset={8} collisionPadding={16} className="w-48">
                                             <DropdownMenuItem
-                                              onSelect={(event) => { event.preventDefault(); event.stopPropagation(); navigateToFanmark(fanmark.fanmark, true); }}
+                                              onSelect={(event) => { event.stopPropagation(); navigateToFanmark(fanmark.fanmark, true); }}
                                               className="gap-2"
                                             >
                                               <ExternalLink className="h-4 w-4 text-primary" />
@@ -1230,7 +1230,7 @@ export const FanmarkDashboard = () => {
                                             </DropdownMenuItem>
                                             {fanmark.short_id && (
                                               <DropdownMenuItem
-                                                onSelect={(event) => { event.preventDefault(); event.stopPropagation(); window.open(`/q/${fanmark.short_id}`, '_blank', 'noopener,noreferrer'); }}
+                                                onSelect={(event) => { event.stopPropagation(); window.open(`/q/${fanmark.short_id}`, '_blank', 'noopener,noreferrer'); }}
                                                 className="gap-2"
                                               >
                                                 <QrCode className="h-4 w-4 text-primary" />
@@ -1239,7 +1239,6 @@ export const FanmarkDashboard = () => {
                                             )}
                                             <DropdownMenuItem
                                               onSelect={(event) => {
-                                                event.preventDefault();
                                                 event.stopPropagation();
                                                 const fullUrl = getFanmarkUrlForClipboard(fanmark.fanmark);
                                                 navigator.clipboard.writeText(fullUrl);
@@ -1255,7 +1254,6 @@ export const FanmarkDashboard = () => {
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
                                               onSelect={(event) => {
-                                                event.preventDefault();
                                                 event.stopPropagation();
                                                 if (!canExtend) return;
                                                 openExtendDialog(fanmark, timing);
@@ -1268,7 +1266,6 @@ export const FanmarkDashboard = () => {
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
                                               onSelect={(event) => {
-                                                event.preventDefault();
                                                 event.stopPropagation();
                                                 if (!canReturn) return;
                                                 openReturnDialog(fanmark);
@@ -1281,7 +1278,6 @@ export const FanmarkDashboard = () => {
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
                                               onSelect={(event) => {
-                                                event.preventDefault();
                                                 event.stopPropagation();
                                                 if (!canReturn || hasActiveTransfer(fanmark.id)) return;
                                                 openTransferDialog(fanmark);
@@ -1295,7 +1291,7 @@ export const FanmarkDashboard = () => {
                                             <DropdownMenuSeparator />
                                             {canAccessAnalytics && (
                                               <DropdownMenuItem
-                                                onSelect={(event) => { event.preventDefault(); event.stopPropagation(); navigate(`/analytics?fanmark=${fanmark.short_id}`); }}
+                                                onSelect={(event) => { event.stopPropagation(); navigate(`/analytics?fanmark=${fanmark.short_id}`); }}
                                                 className="gap-2"
                                               >
                                                 <BarChart3 className="h-4 w-4 text-primary" />
