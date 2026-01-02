@@ -21,8 +21,8 @@ interface EmailTemplate {
 const fallbackTranslations: Record<string, Record<SupportedLanguage, EmailTemplate>> = {
   signup: {
     ja: {
-      subject: "【Fanmark】メールアドレスの確認をお願いいたします",
-      body_text: "この度はFanmarkにご登録いただき、誠にありがとうございます。\n\nアカウントの作成を完了するには、下記のボタンをクリックしてメールアドレスの確認を行ってください。\n\nこのリンクは24時間有効です。期限が切れた場合は、再度登録手続きを行ってください。",
+      subject: "【ファンマID】メールアドレスの確認をお願いいたします",
+      body_text: "この度はファンマIDにご登録いただき、誠にありがとうございます。\n\nアカウントの作成を完了するには、下記のボタンをクリックしてメールアドレスの確認を行ってください。\n\nこのリンクは24時間有効です。期限が切れた場合は、再度登録手続きを行ってください。",
       button_text: "メールアドレスを確認する",
     },
     en: {
@@ -43,7 +43,7 @@ const fallbackTranslations: Record<string, Record<SupportedLanguage, EmailTempla
   },
   recovery: {
     ja: {
-      subject: "【Fanmark】パスワード再設定のご案内",
+      subject: "【ファンマID】パスワード再設定のご案内",
       body_text: "パスワード再設定のリクエストを承りました。\n\n下記のボタンをクリックして、新しいパスワードを設定してください。\n\nこのリンクは1時間有効です。期限が切れた場合は、再度パスワード再設定をリクエストしてください。\n\n※ このリクエストに心当たりがない場合は、このメールを無視してください。アカウントは安全な状態で保護されています。",
       button_text: "パスワードを再設定する",
     },
@@ -65,8 +65,8 @@ const fallbackTranslations: Record<string, Record<SupportedLanguage, EmailTempla
   },
   magiclink: {
     ja: {
-      subject: "【Fanmark】ログインリンクのご案内",
-      body_text: "ログインリンクをリクエストいただきありがとうございます。\n\n下記のボタンをクリックして、Fanmarkにログインしてください。\n\nこのリンクは15分間有効です。期限が切れた場合は、再度ログインをリクエストしてください。\n\n※ セキュリティ上の理由により、このリンクは一度のみ使用可能です。",
+      subject: "【ファンマID】ログインリンクのご案内",
+      body_text: "ログインリンクをリクエストいただきありがとうございます。\n\n下記のボタンをクリックして、ファンマIDにログインしてください。\n\nこのリンクは15分間有効です。期限が切れた場合は、再度ログインをリクエストしてください。\n\n※ セキュリティ上の理由により、このリンクは一度のみ使用可能です。",
       button_text: "ログインする",
     },
     en: {
@@ -87,7 +87,7 @@ const fallbackTranslations: Record<string, Record<SupportedLanguage, EmailTempla
   },
   email_change: {
     ja: {
-      subject: "【Fanmark】メールアドレス変更の確認",
+      subject: "【ファンマID】メールアドレス変更の確認",
       body_text: "メールアドレス変更のリクエストを承りました。\n\n下記のボタンをクリックして、新しいメールアドレスを確認してください。\n\nこのリンクは24時間有効です。\n\n※ このリクエストに心当たりがない場合は、アカウントのセキュリティを確認してください。",
       button_text: "メールアドレスを確認する",
     },
