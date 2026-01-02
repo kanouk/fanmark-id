@@ -51,6 +51,9 @@ verify_jwt = true
 [functions.send-auth-email]
 verify_jwt = false
 
+[functions.send-broadcast-email]
+verify_jwt = true
+
 # ========================================
 # Cron Jobs Configuration
 # ========================================

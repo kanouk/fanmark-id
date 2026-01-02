@@ -12,6 +12,7 @@ import { AdminInvitationManager } from "@/components/AdminInvitationManager";
 import { AdminExtensionCoupons } from "@/components/AdminExtensionCoupons";
 import AdminNotificationManager from "@/components/AdminNotificationManager";
 import AdminEmailTemplates from "@/components/AdminEmailTemplates";
+import { AdminBroadcastEmail } from "@/components/AdminBroadcastEmail";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { LogOut, ShieldCheck, Sparkles } from "lucide-react";
@@ -109,6 +110,12 @@ const AdminDashboard = () => {
                 className="flex-1 rounded-xl px-5 py-3 text-sm font-medium transition-all data-[state=active]:bg-card data-[state=active]:text-foreground sm:flex-none"
               >
                 メールテンプレート
+              </TabsTrigger>
+              <TabsTrigger
+                value="broadcast-email"
+                className="flex-1 rounded-xl px-5 py-3 text-sm font-medium transition-all data-[state=active]:bg-card data-[state=active]:text-foreground sm:flex-none"
+              >
+                一括メール
               </TabsTrigger>
               <TabsTrigger
                 value="data-reset"
@@ -252,6 +259,22 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent className="space-y-6 p-6 pt-0">
                   <AdminEmailTemplates />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="broadcast-email" className="space-y-8">
+              <Card className="border-border/60 shadow-sm">
+                <CardHeader className="space-y-3 p-6 pb-4">
+                  <CardTitle className="text-xl font-semibold text-foreground">
+                    一括メール送信
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    全ユーザーへのお知らせ・メンテナンス通知を一括送信します。ユーザーの言語設定に応じてテンプレートが選択されます。
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-6 p-6 pt-0">
+                  <AdminBroadcastEmail />
                 </CardContent>
               </Card>
             </TabsContent>
