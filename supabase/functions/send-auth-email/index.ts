@@ -4,7 +4,11 @@ import { Resend } from "npm:resend@4.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-const hookSecret = Deno.env.get("SEND_EMAIL_HOOK_SECRET") as string;
+// Handle v1, prefix that Supabase generates with webhook secrets
+const rawHookSecret = Deno.env.get("SEND_EMAIL_HOOK_SECRET") as string;
+const hookSecret = rawHookSecret?.startsWith("v1,") 
+  ? rawHookSecret.slice(3) 
+  : rawHookSecret;
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
