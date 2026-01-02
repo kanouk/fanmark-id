@@ -12,7 +12,7 @@ import { PasswordRequirement } from '@/components/PasswordRequirement';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Heart, Users, Mail, Sparkle, ArrowLeft, Lock, Check, X, CheckCircle2, XCircle, Eye, EyeOff } from 'lucide-react';
+import { Heart, Users, Mail, Sparkle, ArrowLeft, Lock, Check, X, CheckCircle2, XCircle, Eye, EyeOff, RotateCw } from 'lucide-react';
 import { FaGoogle, FaApple, FaDiscord, FaGithub } from 'react-icons/fa';
 import { AuthFormData, AuthState } from '@/types/auth';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
@@ -26,7 +26,7 @@ const Auth = () => {
   const location = useLocation();
   const { t } = useTranslation();
   const { toast } = useToast();
-  const { formData, authState, updateFormData, signUp, signIn, signInWithGoogle, signInWithGithub, signInWithDiscord, signInWithApple, resendConfirmation } = useAuthForm();
+  const { formData, authState, updateFormData, signUp, signIn, signInWithGoogle, signInWithGithub, signInWithDiscord, signInWithApple, resendConfirmation, exitAwaitingConfirmation } = useAuthForm();
   const { requirements, isValid } = usePasswordValidation(formData.password);
   const { settings, loading: settingsLoading } = useSystemSettings();
   const invitationGateActive = !settingsLoading && settings.invitation_mode;
@@ -34,6 +34,7 @@ const Auth = () => {
   const showSocialLogin = socialLoginAvailable && !invitationGateActive;
   const [invitationValidated, setInvitationValidated] = useState(false);
   const [validatedInvitationCode, setValidatedInvitationCode] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
 
   useEffect(() => {
     if (user && session) {
@@ -89,58 +90,72 @@ const Auth = () => {
     }
   }, [invitationGateActive]);
 
+  const handleBackToSignup = () => {
+    updateFormData('email', '');
+    exitAwaitingConfirmation();
+    setActiveTab('signup');
+  };
 
   if (authState.awaitingConfirmation) {
     return (
       <div className="flex min-h-screen flex-col bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      <div className="flex flex-1 items-center justify-center px-4 py-16">
-          <AuthLayout
-            title={t('auth.awaitingConfirmation')}
-            description={t('auth.checkEmail')}
-          >
-            <div className="space-y-6 rounded-3xl border border-primary/20 bg-background/90 p-6 text-center shadow-[0_20px_45px_rgba(101,195,200,0.14)]">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <Mail className="h-6 w-6" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold text-foreground">
-                  {t('auth.confirmationSent')}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {t('auth.checkEmail')}
-                </p>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Button
-                  onClick={resendConfirmation}
-                  disabled={authState.loading}
-                  className="rounded-full"
-                >
-                  {authState.loading ? (
-                    <>
-                      <Users className="mr-2 h-4 w-4 animate-spin" />
-                      {t('common.loading')}
-                    </>
-                  ) : (
-                    <>
-                      <Sparkle className="mr-2 h-4 w-4" />
-                      {t('auth.resendConfirmation')}
-                    </>
-                  )}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => updateFormData('email', '')}
-                  className="rounded-full"
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  {t('common.back')}
-                </Button>
+        <SimpleHeader className="sticky top-0 z-50 border-border/40 bg-background/80 backdrop-blur" />
+        <div className="flex flex-1 items-center justify-center px-4 py-16">
+          <div className="w-full max-w-4xl space-y-10">
+            <div className="space-y-4 text-center">
+              <h1 className="text-3xl font-bold text-foreground sm:text-4xl">
+                {t('auth.pageTitle')}
+              </h1>
+              <p className="mx-auto max-w-2xl text-sm text-muted-foreground md:text-base">
+                {t('auth.pageDescription')}
+              </p>
+            </div>
+
+            <div className="rounded-3xl border border-primary/20 bg-background/90 p-6 shadow-[0_22px_55px_rgba(101,195,200,0.16)] backdrop-blur md:p-10">
+              <div className="flex flex-col items-center gap-4 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Mail className="h-6 w-6" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {t('common.confirmationEmailSent')}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {t('common.confirmationEmailDesc')}
+                  </p>
+                </div>
+                <div className="mt-2 grid w-full max-w-md gap-3 sm:grid-cols-2">
+                  <Button
+                    onClick={resendConfirmation}
+                    disabled={authState.loading}
+                    className="rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 hover:shadow-xl"
+                  >
+                    {authState.loading ? (
+                      <>
+                        <Users className="mr-2 h-4 w-4 animate-spin" />
+                        {t('common.loading')}
+                      </>
+                    ) : (
+                      <>
+                        <RotateCw className="mr-2 h-4 w-4" />
+                        {t('auth.resendConfirmation')}
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleBackToSignup}
+                    className="rounded-full border-primary/20 bg-background/80 text-foreground shadow-sm transition-all duration-300 hover:border-primary/30 hover:bg-background"
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    {t('common.back')}
+                  </Button>
+                </div>
               </div>
             </div>
-          </AuthLayout>
+          </div>
         </div>
-      <SiteFooter />
+        <SiteFooter />
       </div>
     );
   }
@@ -161,7 +176,7 @@ const Auth = () => {
 
           <div className="rounded-3xl border border-primary/20 bg-background/90 p-6 shadow-[0_22px_55px_rgba(101,195,200,0.16)] backdrop-blur md:p-10">
             <div className="space-y-8">
-              <Tabs defaultValue="login" className="space-y-6">
+              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'login' | 'signup')} className="space-y-6">
                 <TabsList className="grid w-full grid-cols-2 gap-2 rounded-full border border-primary/20 bg-background/80 p-2 backdrop-blur">
                   <TabsTrigger
                     value="login"

@@ -345,6 +345,14 @@ export const useAuthForm = () => {
     }
   };
 
+  const exitAwaitingConfirmation = () => {
+    setAuthState(prev => ({
+      ...prev,
+      awaitingConfirmation: false,
+      error: '',
+    }));
+  };
+
   return {
     formData,
     authState,
@@ -356,6 +364,7 @@ export const useAuthForm = () => {
     signInWithDiscord,
     signInWithApple,
     forgotPassword,
-    resendConfirmation
+    resendConfirmation,
+    exitAwaitingConfirmation
   };
 };
