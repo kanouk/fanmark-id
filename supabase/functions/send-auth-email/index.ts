@@ -158,8 +158,8 @@ function generateEmailHtml(
   ).join('');
 
   // Language-specific logo text
-  const logoText = language === "ja" ? "ファンマ" : "Fanmark";
-  const logoAlt = language === "ja" ? "ファンマ" : "Fanmark";
+  const logoText = language === "ja" ? "ファンマID" : "Fanmark";
+  const logoAlt = language === "ja" ? "ファンマID" : "Fanmark";
 
   return `
 <!DOCTYPE html>
