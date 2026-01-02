@@ -221,7 +221,7 @@ function generateEmailHtml(
                     <table role="presentation" style="width: 100%; border-collapse: collapse;">
                       <tr>
                         <td align="center" style="padding: 8px 0 24px;">
-                          <a href="${actionUrl}" target="_blank" style="display: inline-block; padding: 16px 40px; font-size: 16px; font-weight: 600; color: #ffffff; background: linear-gradient(135deg, #65C3C8 0%, #EF9FBC 100%); text-decoration: none; border-radius: 10px; box-shadow: 0 4px 14px 0 rgba(239, 159, 188, 0.4);">${template.button_text}</a>
+                          <a href="${actionUrl}" target="_blank" style="display: inline-block; padding: 16px 40px; font-size: 16px; font-weight: 600; color: #ffffff; background: #65C3C8; text-decoration: none; border-radius: 10px; box-shadow: 0 4px 14px 0 rgba(101, 195, 200, 0.4);">${template.button_text}</a>
                         </td>
                       </tr>
                     </table>
