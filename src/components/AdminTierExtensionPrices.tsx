@@ -3,9 +3,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Save, Copy, Check } from "lucide-react";
+import { Loader2, Save, Copy, Check, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ExtensionPrice {
   id: string;
@@ -14,6 +15,7 @@ interface ExtensionPrice {
   price_yen: number;
   is_active: boolean;
   stripe_price_id: string | null;
+  stripe_price_id_live: string | null;
 }
 
 interface FanmarkTier {
@@ -24,6 +26,8 @@ interface FanmarkTier {
   is_active: boolean;
   description: string | null;
 }
+
+type EnvironmentTab = 'test' | 'live';
 
 const MONTH_OPTIONS = [1, 2, 3, 6];
 
@@ -37,7 +41,9 @@ export const AdminTierExtensionPrices = () => {
   const [editedPrices, setEditedPrices] = useState<Record<string, number>>({});
   const [tierEdits, setTierEdits] = useState<Record<string, number | null>>({});
   const [editedStripePrices, setEditedStripePrices] = useState<Record<string, string>>({});
+  const [editedStripePricesLive, setEditedStripePricesLive] = useState<Record<string, string>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<EnvironmentTab>('test');
 
   const fetchAll = async () => {
     setLoading(true);
@@ -64,12 +70,15 @@ export const AdminTierExtensionPrices = () => {
       setPrices(typedPrices);
       const initialPrices: Record<string, number> = {};
       const initialStripePrices: Record<string, string> = {};
+      const initialStripePricesLive: Record<string, string> = {};
       typedPrices.forEach(price => {
         initialPrices[price.id] = price.price_yen;
         initialStripePrices[price.id] = price.stripe_price_id || '';
+        initialStripePricesLive[price.id] = price.stripe_price_id_live || '';
       });
       setEditedPrices(initialPrices);
       setEditedStripePrices(initialStripePrices);
+      setEditedStripePricesLive(initialStripePricesLive);
 
       const typedTiers = (tierData || []) as unknown as FanmarkTier[];
       setTiers(typedTiers);
@@ -199,6 +208,13 @@ export const AdminTierExtensionPrices = () => {
     }));
   };
 
+  const handleStripePriceLiveChange = (id: string, value: string) => {
+    setEditedStripePricesLive(prev => ({
+      ...prev,
+      [id]: value.trim(),
+    }));
+  };
+
   const handleUpdateStripePrice = async (id: string) => {
     const edited = editedStripePrices[id];
     if (edited === undefined) return;
@@ -216,7 +232,7 @@ export const AdminTierExtensionPrices = () => {
 
       toast({
         title: "更新完了",
-        description: "Stripe Price IDを更新しました",
+        description: "Stripe Price ID（テスト）を更新しました",
       });
 
       setPrices(prev =>
@@ -231,6 +247,45 @@ export const AdminTierExtensionPrices = () => {
       toast({
         title: "エラー",
         description: "Stripe Price IDの更新に失敗しました",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleUpdateStripePriceLive = async (id: string) => {
+    const edited = editedStripePricesLive[id];
+    if (edited === undefined) return;
+
+    setUpdating(true);
+    try {
+      const { error } = await supabase
+        .from("fanmark_tier_extension_prices" as any)
+        .update({
+          stripe_price_id_live: edited || null,
+        })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: "更新完了",
+        description: "Stripe Price ID（本番）を更新しました",
+      });
+
+      setPrices(prev =>
+        prev.map(price =>
+          price.id === id
+            ? { ...price, stripe_price_id_live: edited || null }
+            : price
+        )
+      );
+    } catch (error) {
+      console.error("Error updating Stripe Price ID (Live):", error);
+      toast({
+        title: "エラー",
+        description: "本番Stripe Price IDの更新に失敗しました",
         variant: "destructive",
       });
     } finally {
@@ -314,11 +369,148 @@ export const AdminTierExtensionPrices = () => {
     return acc;
   }, {} as Record<number, ExtensionPrice[]>);
 
+  const renderPriceCard = (priceData: ExtensionPrice, months: number, isLiveMode: boolean) => {
+    const editedPrice = editedPrices[priceData.id];
+    const originalPrice = priceData.price_yen;
+    const isDirty = editedPrice !== originalPrice;
+    const isInvalid = editedPrice === undefined || editedPrice < 0;
+
+    const editedStripeId = isLiveMode 
+      ? (editedStripePricesLive[priceData.id] ?? '')
+      : (editedStripePrices[priceData.id] ?? '');
+    const originalStripeId = isLiveMode 
+      ? (priceData.stripe_price_id_live || '')
+      : (priceData.stripe_price_id || '');
+    const isStripeDirty = editedStripeId !== originalStripeId;
+
+    const copyKey = isLiveMode ? `${priceData.id}-live` : priceData.id;
+
+    return (
+      <div
+        key={`${priceData.id}-${isLiveMode ? 'live' : 'test'}`}
+        className={cn(
+          "space-y-3 rounded-xl border p-4 transition-colors",
+          priceData.is_active
+            ? isLiveMode 
+              ? "border-orange-300 bg-orange-50/50 dark:border-orange-700 dark:bg-orange-950/20"
+              : "border-border bg-background"
+            : "border-border/40 bg-muted/30 opacity-60"
+        )}
+      >
+        <div className="flex items-center justify-between">
+          <Label className="text-sm font-semibold">
+            {months}ヶ月延長
+          </Label>
+          <button
+            onClick={() => handleToggleActive(priceData.id, priceData.is_active)}
+            disabled={updating}
+            className={cn(
+              "rounded-full px-2 py-0.5 text-[0.65rem] font-medium transition-colors",
+              priceData.is_active
+                ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            )}
+          >
+            {priceData.is_active ? "有効" : "無効"}
+          </button>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              value={editedPrice ?? priceData.price_yen}
+              onChange={(event) => handlePriceChange(priceData.id, event.target.value)}
+              min={0}
+              disabled={updating}
+              className="h-9 text-sm"
+            />
+            <span className="text-xs text-muted-foreground">円</span>
+          </div>
+
+          <Button
+            onClick={() => handleUpdatePrice(priceData.id)}
+            disabled={updating || isInvalid || !isDirty}
+            size="sm"
+            className="w-full gap-1.5"
+          >
+            {updating ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Save className="h-3.5 w-3.5" />
+            )}
+            料金を更新
+          </Button>
+        </div>
+
+        <div className="space-y-2 border-t border-border/40 pt-2">
+          <Label className={cn(
+            "text-xs font-medium",
+            isLiveMode ? "text-orange-600 dark:text-orange-400" : "text-muted-foreground"
+          )}>
+            Stripe Price ID {isLiveMode ? "(本番)" : "(テスト)"}
+          </Label>
+          <div className="flex items-center gap-1">
+            <Input
+              type="text"
+              value={editedStripeId}
+              onChange={(e) => isLiveMode 
+                ? handleStripePriceLiveChange(priceData.id, e.target.value)
+                : handleStripePriceChange(priceData.id, e.target.value)
+              }
+              placeholder="price_xxxxx"
+              disabled={updating}
+              className={cn(
+                "h-8 text-xs font-mono",
+                isLiveMode && "border-orange-300 focus:border-orange-500 dark:border-orange-700"
+              )}
+            />
+            {editedStripeId && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 w-8 p-0"
+                onClick={() => copyToClipboard(editedStripeId, copyKey)}
+              >
+                {copiedId === copyKey ? (
+                  <Check className="h-3 w-3 text-emerald-600" />
+                ) : (
+                  <Copy className="h-3 w-3" />
+                )}
+              </Button>
+            )}
+          </div>
+
+          <Button
+            onClick={() => isLiveMode 
+              ? handleUpdateStripePriceLive(priceData.id)
+              : handleUpdateStripePrice(priceData.id)
+            }
+            disabled={updating || !isStripeDirty}
+            size="sm"
+            variant={isLiveMode ? "default" : "outline"}
+            className={cn(
+              "w-full gap-1.5",
+              isLiveMode && "bg-orange-600 hover:bg-orange-700 text-white"
+            )}
+          >
+            {updating ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Save className="h-3.5 w-3.5" />
+            )}
+            Price ID更新
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-primary/10 bg-primary/5 p-4">
         <p className="text-sm text-muted-foreground">
-          ファンマークのTierごとに、ライセンス延長期間（1/2/3/6ヶ月）の料金とStripe Price IDを設定できます。テスト環境ではテスト用Price ID、本番環境では本番用Price IDを設定してください。
+          ファンマークのTierごとに、ライセンス延長期間（1/2/3/6ヶ月）の料金とStripe Price IDを設定できます。タブを切り替えてテスト環境と本番環境のPrice IDを管理してください。
         </p>
       </div>
 
@@ -399,157 +591,117 @@ export const AdminTierExtensionPrices = () => {
         </div>
       </div>
 
-      <div className="space-y-6">
-        {tiers
-          .slice()
-          .sort((a, b) => a.tier_level - b.tier_level)
-          .map(tier => {
-            const tierPrices = pricesByTier[tier.tier_level] || [];
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as EnvironmentTab)} className="space-y-4">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="test" className="gap-2">
+            テスト環境
+          </TabsTrigger>
+          <TabsTrigger 
+            value="live" 
+            className="gap-2 data-[state=active]:bg-orange-100 data-[state=active]:text-orange-700 dark:data-[state=active]:bg-orange-950 dark:data-[state=active]:text-orange-300"
+          >
+            <AlertTriangle className="h-3.5 w-3.5" />
+            本番環境
+          </TabsTrigger>
+        </TabsList>
 
-            return (
-              <div
-                key={tier.tier_level}
-                className="space-y-4 rounded-2xl border border-border/60 bg-card/70 p-6 shadow-sm"
-              >
-                <div className="space-y-1 border-b border-border/40 pb-3">
-                  <h3 className="text-lg font-semibold text-foreground">
-                    {tier.display_name ?? `Tier ${tier.tier_level}`}
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    {tier.description ?? "ティアの説明は設定されていません"}
-                  </p>
-                </div>
+        {activeTab === 'live' && (
+          <div className="rounded-lg border border-orange-300 bg-orange-50 p-3 dark:border-orange-700 dark:bg-orange-950/30">
+            <div className="flex items-center gap-2 text-sm text-orange-700 dark:text-orange-300">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="font-medium">本番環境のPrice IDを編集中です。変更は実際の課金に影響します。</span>
+            </div>
+          </div>
+        )}
 
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  {MONTH_OPTIONS.map(months => {
-                    const priceData = tierPrices.find(p => p.months === months);
+        <TabsContent value="test" className="space-y-6">
+          {tiers
+            .slice()
+            .sort((a, b) => a.tier_level - b.tier_level)
+            .map(tier => {
+              const tierPrices = pricesByTier[tier.tier_level] || [];
 
-                    if (!priceData) {
-                      return (
-                        <div
-                          key={`${tier.tier_level}-${months}`}
-                          className="flex flex-col justify-center rounded-xl border border-dashed border-border/40 bg-muted/20 p-4 text-center text-xs text-muted-foreground"
-                        >
-                          {months}ヶ月プランは未設定です
-                        </div>
-                      );
-                    }
+              return (
+                <div
+                  key={tier.tier_level}
+                  className="space-y-4 rounded-2xl border border-border/60 bg-card/70 p-6 shadow-sm"
+                >
+                  <div className="space-y-1 border-b border-border/40 pb-3">
+                    <h3 className="text-lg font-semibold text-foreground">
+                      {tier.display_name ?? `Tier ${tier.tier_level}`}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      {tier.description ?? "ティアの説明は設定されていません"}
+                    </p>
+                  </div>
 
-                    const editedPrice = editedPrices[priceData.id];
-                    const originalPrice = priceData.price_yen;
-                    const isDirty = editedPrice !== originalPrice;
-                    const isInvalid = editedPrice === undefined || editedPrice < 0;
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {MONTH_OPTIONS.map(months => {
+                      const priceData = tierPrices.find(p => p.months === months);
 
-                    const editedStripeId = editedStripePrices[priceData.id] ?? '';
-                    const originalStripeId = priceData.stripe_price_id || '';
-                    const isStripeDirty = editedStripeId !== originalStripeId;
-
-                    return (
-                      <div
-                        key={priceData.id}
-                        className={cn(
-                          "space-y-3 rounded-xl border p-4 transition-colors",
-                          priceData.is_active
-                            ? "border-border bg-background"
-                            : "border-border/40 bg-muted/30 opacity-60"
-                        )}
-                      >
-                        <div className="flex items-center justify-between">
-                          <Label className="text-sm font-semibold">
-                            {months}ヶ月延長
-                          </Label>
-                          <button
-                            onClick={() => handleToggleActive(priceData.id, priceData.is_active)}
-                            disabled={updating}
-                            className={cn(
-                              "rounded-full px-2 py-0.5 text-[0.65rem] font-medium transition-colors",
-                              priceData.is_active
-                                ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                            )}
+                      if (!priceData) {
+                        return (
+                          <div
+                            key={`${tier.tier_level}-${months}`}
+                            className="flex flex-col justify-center rounded-xl border border-dashed border-border/40 bg-muted/20 p-4 text-center text-xs text-muted-foreground"
                           >
-                            {priceData.is_active ? "有効" : "無効"}
-                          </button>
-                        </div>
-
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Input
-                              type="number"
-                              value={editedPrice ?? priceData.price_yen}
-                              onChange={(event) => handlePriceChange(priceData.id, event.target.value)}
-                              min={0}
-                              disabled={updating}
-                              className="h-9 text-sm"
-                            />
-                            <span className="text-xs text-muted-foreground">円</span>
+                            {months}ヶ月プランは未設定です
                           </div>
+                        );
+                      }
 
-                          <Button
-                            onClick={() => handleUpdatePrice(priceData.id)}
-                            disabled={updating || isInvalid || !isDirty}
-                            size="sm"
-                            className="w-full gap-1.5"
-                          >
-                            {updating ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Save className="h-3.5 w-3.5" />
-                            )}
-                            料金を更新
-                          </Button>
-                        </div>
-
-                        <div className="space-y-2 border-t border-border/40 pt-2">
-                          <Label className="text-xs font-medium text-muted-foreground">Stripe Price ID</Label>
-                          <div className="flex items-center gap-1">
-                            <Input
-                              type="text"
-                              value={editedStripeId}
-                              onChange={(e) => handleStripePriceChange(priceData.id, e.target.value)}
-                              placeholder="price_xxxxx"
-                              disabled={updating}
-                              className="h-8 text-xs font-mono"
-                            />
-                            {editedStripeId && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-8 w-8 p-0"
-                                onClick={() => copyToClipboard(editedStripeId, priceData.id)}
-                              >
-                                {copiedId === priceData.id ? (
-                                  <Check className="h-3 w-3 text-emerald-600" />
-                                ) : (
-                                  <Copy className="h-3 w-3" />
-                                )}
-                              </Button>
-                            )}
-                          </div>
-
-                          <Button
-                            onClick={() => handleUpdateStripePrice(priceData.id)}
-                            disabled={updating || !isStripeDirty}
-                            size="sm"
-                            variant="outline"
-                            className="w-full gap-1.5"
-                          >
-                            {updating ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Save className="h-3.5 w-3.5" />
-                            )}
-                            Price ID更新
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
+                      return renderPriceCard(priceData, months, false);
+                    })}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-      </div>
+              );
+            })}
+        </TabsContent>
+
+        <TabsContent value="live" className="space-y-6">
+          {tiers
+            .slice()
+            .sort((a, b) => a.tier_level - b.tier_level)
+            .map(tier => {
+              const tierPrices = pricesByTier[tier.tier_level] || [];
+
+              return (
+                <div
+                  key={tier.tier_level}
+                  className="space-y-4 rounded-2xl border border-orange-200 bg-orange-50/30 p-6 shadow-sm dark:border-orange-800 dark:bg-orange-950/10"
+                >
+                  <div className="space-y-1 border-b border-orange-200/60 pb-3 dark:border-orange-800/60">
+                    <h3 className="text-lg font-semibold text-foreground">
+                      {tier.display_name ?? `Tier ${tier.tier_level}`}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      {tier.description ?? "ティアの説明は設定されていません"}
+                    </p>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {MONTH_OPTIONS.map(months => {
+                      const priceData = tierPrices.find(p => p.months === months);
+
+                      if (!priceData) {
+                        return (
+                          <div
+                            key={`${tier.tier_level}-${months}`}
+                            className="flex flex-col justify-center rounded-xl border border-dashed border-orange-300/40 bg-orange-100/20 p-4 text-center text-xs text-muted-foreground dark:border-orange-700/40 dark:bg-orange-950/20"
+                          >
+                            {months}ヶ月プランは未設定です
+                          </div>
+                        );
+                      }
+
+                      return renderPriceCard(priceData, months, true);
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
