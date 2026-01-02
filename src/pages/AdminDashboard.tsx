@@ -11,6 +11,7 @@ import { AdminTierExtensionPrices } from "@/components/AdminTierExtensionPrices"
 import { AdminInvitationManager } from "@/components/AdminInvitationManager";
 import { AdminExtensionCoupons } from "@/components/AdminExtensionCoupons";
 import AdminNotificationManager from "@/components/AdminNotificationManager";
+import AdminEmailTemplates from "@/components/AdminEmailTemplates";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { LogOut, ShieldCheck, Sparkles } from "lucide-react";
@@ -102,6 +103,12 @@ const AdminDashboard = () => {
                 className="flex-1 rounded-xl px-5 py-3 text-sm font-medium transition-all data-[state=active]:bg-card data-[state=active]:text-foreground sm:flex-none"
               >
                 通知管理
+              </TabsTrigger>
+              <TabsTrigger
+                value="email-templates"
+                className="flex-1 rounded-xl px-5 py-3 text-sm font-medium transition-all data-[state=active]:bg-card data-[state=active]:text-foreground sm:flex-none"
+              >
+                メールテンプレート
               </TabsTrigger>
               <TabsTrigger
                 value="data-reset"
@@ -231,6 +238,22 @@ const AdminDashboard = () => {
 
             <TabsContent value="notifications" className="space-y-8">
               <AdminNotificationManager />
+            </TabsContent>
+
+            <TabsContent value="email-templates" className="space-y-8">
+              <Card className="border-border/60 shadow-sm">
+                <CardHeader className="space-y-3 p-6 pb-4">
+                  <CardTitle className="text-xl font-semibold text-foreground">
+                    メールテンプレート管理
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    認証メール（サインアップ確認・パスワードリセットなど）の件名・本文・ボタンテキストを言語別に編集できます。
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-6 p-6 pt-0">
+                  <AdminEmailTemplates />
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="data-reset" className="space-y-8">

@@ -47,6 +47,42 @@ export type Database = {
         }
         Relationships: []
       }
+      email_templates: {
+        Row: {
+          body_text: string
+          button_text: string
+          created_at: string
+          email_type: string
+          id: string
+          is_active: boolean
+          language: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          body_text: string
+          button_text: string
+          created_at?: string
+          email_type: string
+          id?: string
+          is_active?: boolean
+          language?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          body_text?: string
+          button_text?: string
+          created_at?: string
+          email_type?: string
+          id?: string
+          is_active?: boolean
+          language?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       emoji_master: {
         Row: {
           category: string | null
