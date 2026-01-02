@@ -977,6 +977,7 @@ export type Database = {
           months: number
           price_yen: number
           stripe_price_id: string | null
+          stripe_price_id_live: string | null
           tier_level: number
           updated_at: string
         }
@@ -987,6 +988,7 @@ export type Database = {
           months: number
           price_yen: number
           stripe_price_id?: string | null
+          stripe_price_id_live?: string | null
           tier_level: number
           updated_at?: string
         }
@@ -997,6 +999,7 @@ export type Database = {
           months?: number
           price_yen?: number
           stripe_price_id?: string | null
+          stripe_price_id_live?: string | null
           tier_level?: number
           updated_at?: string
         }

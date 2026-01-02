@@ -91,10 +91,14 @@ serve(async (req) => {
       }
     }
 
-    // Get price ID from database
+    // Determine if using live or test mode based on Stripe key
+    const isLiveMode = stripeKey.startsWith('sk_live_');
+    logStep("Stripe mode detected", { isLiveMode });
+
+    // Get price ID from database (select appropriate column based on mode)
     const { data: priceData, error: priceError } = await supabaseClient
       .from("fanmark_tier_extension_prices")
-      .select("id, tier_level, months, price_yen, stripe_price_id, is_active")
+      .select("id, tier_level, months, price_yen, stripe_price_id, stripe_price_id_live, is_active")
       .eq("tier_level", tierLevel)
       .eq("months", months)
       .eq("is_active", true)
@@ -106,11 +110,12 @@ serve(async (req) => {
       throw new Error(`Extension plan not found for ${months} months (tier_level=${tierLevel})`);
     }
 
-    const priceId = priceData.stripe_price_id;
+    // Select price ID based on environment
+    const priceId = isLiveMode ? priceData.stripe_price_id_live : priceData.stripe_price_id;
     if (!priceId) {
-      throw new Error("Price ID not configured");
+      throw new Error(`Price ID not configured for ${isLiveMode ? 'live' : 'test'} mode`);
     }
-    logStep("Price ID retrieved", { priceId, months, price_yen: priceData.price_yen });
+    logStep("Price ID retrieved", { priceId, months, price_yen: priceData.price_yen, mode: isLiveMode ? 'live' : 'test' });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const origin = req.headers.get("origin") || "http://localhost:3000";
