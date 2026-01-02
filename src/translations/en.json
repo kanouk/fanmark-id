@@ -1312,40 +1312,44 @@
           "title": "2. How We Use Your Information",
           "content": "We use the information we collect to:\n\n• Provide, maintain, and improve our Service\n• Create and manage your account\n• Process fanmark registrations, extensions, and returns\n• Send transactional emails (confirmations, resets, notifications)\n• Monitor and analyze service usage and trends\n• Detect, prevent, and address fraud and security issues\n• Comply with legal obligations\n• Communicate with you about service updates and changes"
         },
+        "emailNotifications": {
+          "title": "3. Email Notifications",
+          "content": "Your email address is used to send important operational notifications, including:\n\n• Security alerts and account-related notifications\n• Service maintenance and planned downtime notices\n• Important changes to Terms of Service or Privacy Policy\n• Significant updates or changes to the Service\n• Other information essential for continued use of the Service\n\nThese operational notifications are essential for maintaining your account and ensuring the safe operation of the Service. They cannot be opted out of."
+        },
         "dataSharing": {
-          "title": "3. Data Sharing and Disclosure",
+          "title": "4. Data Sharing and Disclosure",
           "content": "We do not sell your personal data. We may share information:\n\n• With Service Providers: Third-party vendors who help operate our Service (hosting, email, analytics)\n• For Legal Reasons: When required by law or to protect our rights\n• Public Fanmark Data: Your fanmark and associated profile information may be visible to the public based on your privacy settings\n• Anonymized Data: We may share aggregated, anonymized data for analytics and research"
         },
         "dataRetention": {
-          "title": "4. Data Retention",
+          "title": "5. Data Retention",
           "content": "We retain your personal data as long as your account is active and for a reasonable period afterward to comply with legal obligations. You can request deletion of your account, which will remove most personal data, though some information may be retained for legal or operational purposes."
         },
         "security": {
-          "title": "5. Security",
+          "title": "6. Security",
           "content": "We implement industry-standard security measures including encryption, secure authentication, and regular security audits. However, no method of transmission over the internet is completely secure. We cannot guarantee absolute security."
         },
         "cookies": {
-          "title": "6. Cookies and Similar Technologies",
+          "title": "7. Cookies and Similar Technologies",
           "content": "We use cookies and similar technologies to enhance your experience, remember preferences, and analyze usage patterns. You can control cookie settings through your browser. Some features may not work properly if cookies are disabled."
         },
         "childrenPrivacy": {
-          "title": "7. Children's Privacy",
+          "title": "8. Children's Privacy",
           "content": "Our Service is not intended for individuals under 13 years of age. We do not knowingly collect personal data from children under 13. If we learn that we have collected such information, we will take steps to delete it promptly."
         },
         "yourRights": {
-          "title": "8. Your Privacy Rights",
+          "title": "9. Your Privacy Rights",
           "content": "Depending on your location, you may have the following rights:\n\n• Access: Request access to your personal data\n• Correction: Request correction of inaccurate data\n• Deletion: Request deletion of your data\n• Portability: Request a copy of your data in a structured format\n• Opt-out: Unsubscribe from marketing communications\n\nTo exercise these rights, please contact us at privacy@fanmark.id"
         },
         "thirdPartyLinks": {
-          "title": "9. Third-Party Links",
+          "title": "10. Third-Party Links",
           "content": "Our Service may contain links to external websites. We are not responsible for the privacy practices of third-party sites. Please review their privacy policies before providing personal information."
         },
         "changesTopolicy": {
-          "title": "10. Changes to This Privacy Policy",
+          "title": "11. Changes to This Privacy Policy",
           "content": "We may update this Privacy Policy from time to time. We will notify you of material changes by posting the new Privacy Policy and updating the \"Last updated\" date. Continued use of the Service indicates your acceptance of the updated policy."
         },
         "contactUs": {
-          "title": "11. Contact Us",
+          "title": "12. Contact Us",
           "content": "If you have questions about this Privacy Policy or our privacy practices, please contact us at:\n\nEmail: privacy@fanmark.id"
         }
       }
@@ -1363,68 +1367,72 @@
           "title": "2. Account and Registration",
           "content": "You are responsible for maintaining the confidentiality of your account credentials and password. You agree to accept responsibility for all activities that occur under your account. You must provide accurate, complete, and current information during registration. You agree to notify us immediately of any unauthorized use of your account.\n\nInvitation Code: Access to the Service may require an invitation code. Invitation codes are non-transferable and can be revoked at any time."
         },
+        "emailNotifications": {
+          "title": "3. Email Notifications",
+          "content": "You agree that the Operator may send the following notifications to your registered email address in connection with your use of the Service:\n\n• Security alerts and account-related notifications\n• Maintenance, planned downtime, and service change notices\n• Important updates to Terms of Service or Privacy Policy\n• License expiration reminders\n• Other essential information required for continued use of the Service\n\nThese operational notifications are essential for maintaining your account and ensuring the safe operation of the Service, and therefore cannot be opted out of. By continuing to use the Service, you are deemed to have consented to receiving these notifications."
+        },
         "fanmarkRights": {
-          "title": "3. Fanmark Ownership and Rights",
+          "title": "4. Fanmark Ownership and Rights",
           "content": "Each fanmark (emoji combination) has ownership limitations:\n\n• You may own multiple fanmarks up to your plan limit\n• Fanmarks are granted on a license basis for specified periods\n• You retain rights to content you create (profiles, messages, etc.)\n• The Operator retains all rights to the fanmark platform, technology, and infrastructure\n• Fanmark Transfer: You may transfer fanmarks to other users through the approved transfer feature\n• Transfer License Terms: Upon transfer completion, the recipient receives a new license period based on the fanmark's tier (remaining period is not transferred)\n• Transfer Finality: Approved transfers cannot be reversed or cancelled\n• User Transaction Disclaimer: The Operator is not involved in and bears no responsibility for any monetary transactions or agreements between users related to fanmark transfers. This includes, but is not limited to, payment failures, fraud, and other disputes\n• Self-Responsibility: All fanmark transfers are conducted at your own risk\n• Unused fanmarks may enter a grace period before becoming available to others"
         },
         "fanmarkRetention": {
-          "title": "4. Fanmark License Terms",
+          "title": "5. Fanmark License Terms",
           "content": "Fanmark licenses are subject to:\n\n• License Period: Initial license duration varies by fanmark tier (1-5 emojis)\n• Perpetual Licenses: Fanmarks with 4+ emojis receive perpetual, non-expiring licenses (may be subject to future changes)\n• Paid Fanmarks: Premium fanmarks (1-3 emojis) require renewal through our payment system\n• License Renewal: You may extend licenses before expiration\n• Grace Period: Upon expiration, a grace period allows renewal before the fanmark becomes available to others\n• Return: You may voluntarily return a fanmark at any time"
         },
         "paymentTerms": {
-          "title": "5. Payment and Billing",
+          "title": "6. Payment and Billing",
           "content": "Some fanmarks require payment for licensing:\n\n• Pricing: Prices are displayed before purchase and may change with notice\n• Payment Processing: Payments are processed through Stripe and subject to their terms\n• Billing: You authorize the Operator to charge your payment method for renewal fees\n• No Refunds: License fees are non-refundable except as required by law\n• Failed Payments: Stripe retry rules apply. If the subscription is ultimately canceled, your plan returns to Free and any excess fanmarks are automatically returned in newest-first order (including fanmarks in transfer, applies even if you do not log in)\n• Tax: You are responsible for any applicable taxes"
         },
         "userContent": {
-          "title": "6. User Content",
+          "title": "7. User Content",
           "content": "You grant the Operator a non-exclusive, royalty-free license to use, reproduce, modify, and display your user-generated content (profiles, messages, avatars, etc.) for providing and improving the Service.\n\n• You retain ownership of your content\n• You warrant that your content does not infringe on third-party rights\n• You are solely responsible for the content you create\n• We may remove content that violates these Terms"
         },
         "intellectualProperty": {
-          "title": "7. Intellectual Property",
+          "title": "8. Intellectual Property",
           "content": "The Service, including all code, design, features, and functionality, is owned by the Operator. All intellectual property rights are reserved. You may not reproduce, distribute, or transmit the Service or its content without permission."
         },
         "limitationOfLiability": {
-          "title": "8. Limitation of Liability",
+          "title": "9. Limitation of Liability",
           "content": "TO THE FULLEST EXTENT PERMITTED BY LAW:\n\n• The Service is provided on an \"as-is\" basis without warranties of any kind\n• The Operator is not liable for indirect, incidental, special, or consequential damages\n• The Operator's total liability shall not exceed the amount you paid in the past 12 months\n• Some jurisdictions do not allow liability limitations, which may not apply to you"
         },
         "disclaimers": {
-          "title": "9. Disclaimers",
+          "title": "10. Disclaimers",
           "content": "• We make no warranties regarding the Service's uninterrupted or error-free operation\n• We are not responsible for third-party services, links, or content\n• Data loss or service interruptions may occur; backup your important data\n• We do not guarantee fanmark availability or permanence"
         },
         "indemnification": {
-          "title": "10. Indemnification",
+          "title": "11. Indemnification",
           "content": "You agree to defend, indemnify, and hold harmless the Operator and its affiliates from any claims, damages, losses, or expenses arising from:\n\n• Your use of the Service\n• Your violation of these Terms\n• Your violation of third-party rights\n• Your user-generated content"
         },
         "suspensionTermination": {
-          "title": "11. Suspension and Termination",
+          "title": "12. Suspension and Termination",
           "content": "The Operator may suspend or terminate your account if you:\n\n• Violate these Terms\n• Engage in illegal or fraudulent activity\n• Harass other users\n• Create objectionable content\n• Violate intellectual property rights\n• Fail to pay fees\n\nTermination may be immediate without notice for serious violations."
         },
         "serviceTermination": {
-          "title": "12. Service Termination and Discontinuation",
+          "title": "13. Service Termination and Discontinuation",
           "content": "Service Termination Notice: The Operator may discontinue or materially modify the Service at any time. The Operator will provide at least 6 months' prior notice to all active users if the Service is terminated.\n\nService Guarantee Period: After a service termination decision, the Service will continue to operate for at least 6 months until the termination date. Existing licenses will remain valid during this period.\n\nLicense Extensions:\n• License extensions have a maximum of 6 months per extension\n• Multiple extensions may result in a license period exceeding 6 months\n• If a license period exceeds 6 months, periods beyond 6 months may not be guaranteed in the event of service termination\n• New license extensions may be suspended after service termination is announced\n\nNo Refunds:\n• Purchased license extension fees are non-refundable for any reason\n• No refunds will be provided for purchased license periods in the event of service termination\n• No refunds will be provided for periods extending beyond the service termination date\n\nUser Data: Upon Service termination, the Operator will:\n• Provide a reasonable opportunity (at least 60 days from the service termination date) to retrieve or export your data\n• Make reasonable efforts to facilitate data export in a standard, portable format\n• Retain your data according to applicable laws and our Privacy Policy\n\nLimitation of Liability: Provided the notice and data export procedures outlined above are followed, the Operator is not liable for any loss of data, business, profits, or opportunities resulting from Service termination. By accepting these Terms, you acknowledge and accept the risks associated with license periods extending beyond the service termination date."
         },
         "governing": {
-          "title": "13. Governing Law",
+          "title": "14. Governing Law",
           "content": "These Terms are governed by the laws of the jurisdiction where the Operator operates, without regard to conflict of law principles."
         },
         "disputeResolution": {
-          "title": "14. Dispute Resolution",
+          "title": "15. Dispute Resolution",
           "content": "Any disputes shall be resolved through:\n\n• Good Faith Negotiation: First, parties will attempt to resolve disputes through discussion\n• Mediation: If negotiation fails, disputes may be submitted to mediation\n• Arbitration/Litigation: If mediation fails, disputes shall be resolved through arbitration or court proceedings as applicable by law"
         },
         "changes": {
-          "title": "15. Changes to Terms",
+          "title": "16. Changes to Terms",
           "content": "The Operator may modify these Terms at any time. Material changes will be communicated through email or prominent notification on the Service. Continued use after changes indicates acceptance of the updated Terms."
         },
         "severability": {
-          "title": "16. Severability",
+          "title": "17. Severability",
           "content": "If any provision of these Terms is found invalid, that provision will be modified to the minimum extent necessary to make it valid, or removed if necessary. The remaining provisions will continue in effect."
         },
         "entireAgreement": {
-          "title": "17. Entire Agreement",
+          "title": "18. Entire Agreement",
           "content": "These Terms, along with our Privacy Policy, constitute the entire agreement between you and the Operator regarding your use of the Service."
         },
         "contactUs": {
-          "title": "18. Contact Us",
+          "title": "19. Contact Us",
           "content": "If you have questions about these Terms, please contact us at:\n\nEmail: legal@fanmark.id"
         }
       }

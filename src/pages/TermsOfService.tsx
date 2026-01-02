@@ -10,6 +10,7 @@ export const TermsOfService: React.FC = () => {
   const sections = [
     { id: "useAgreement", key: "useAgreement" },
     { id: "accountResponsibility", key: "accountResponsibility" },
+    { id: "emailNotifications", key: "emailNotifications" },
     { id: "fanmarkRights", key: "fanmarkRights" },
     { id: "fanmarkRetention", key: "fanmarkRetention" },
     { id: "paymentTerms", key: "paymentTerms" },

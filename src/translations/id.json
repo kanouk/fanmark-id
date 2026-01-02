@@ -1312,40 +1312,44 @@
           "title": "2. Cara Kami Menggunakan Informasi Anda",
           "content": "Kami menggunakan informasi yang kami kumpulkan untuk:\n\n• Menyediakan, memelihara, dan meningkatkan Layanan kami\n• Membuat dan mengelola akun Anda\n• Memproses pendaftaran, perpanjangan, dan pengembalian fanmark\n• Mengirim email transaksi (konfirmasi, penyetelan ulang, pemberitahuan)\n• Memantau dan menganalisis penggunaan layanan dan tren\n• Mendeteksi, mencegah, dan mengatasi masalah penipuan dan keamanan\n• Mematuhi kewajiban hukum\n• Berkomunikasi dengan Anda tentang pembaruan dan perubahan layanan"
         },
+        "emailNotifications": {
+          "title": "3. Pemberitahuan Email",
+          "content": "Alamat email Anda digunakan untuk mengirim pemberitahuan operasional penting, termasuk:\n\n• Peringatan keamanan dan pemberitahuan terkait akun\n• Pemberitahuan pemeliharaan layanan dan waktu henti terencana\n• Perubahan penting pada Syarat Layanan atau Kebijakan Privasi\n• Pembaruan atau perubahan signifikan pada Layanan\n• Informasi lain yang penting untuk penggunaan Layanan secara berkelanjutan\n\nPemberitahuan operasional ini penting untuk memelihara akun Anda dan memastikan operasi Layanan yang aman. Anda tidak dapat berhenti berlangganan dari pemberitahuan ini."
+        },
         "dataSharing": {
-          "title": "3. Berbagi dan Pengungkapan Data",
+          "title": "4. Berbagi dan Pengungkapan Data",
           "content": "Kami tidak menjual data pribadi Anda. Kami dapat berbagi informasi:\n\n• Dengan Penyedia Layanan: Vendor pihak ketiga yang membantu mengoperasikan Layanan kami (hosting, email, analitik)\n• Untuk Alasan Hukum: Ketika dipersyaratkan oleh hukum atau untuk melindungi hak kami\n• Data Fanmark Publik: Fanmark dan informasi profil terkait Anda dapat terlihat oleh publik berdasarkan pengaturan privasi Anda\n• Data Anonim: Kami dapat berbagi data teragregat dan anonim untuk analitik dan penelitian"
         },
         "dataRetention": {
-          "title": "4. Retensi Data",
+          "title": "5. Retensi Data",
           "content": "Kami menyimpan data pribadi Anda selama akun Anda aktif dan untuk periode yang wajar setelahnya untuk mematuhi kewajiban hukum. Anda dapat meminta penghapusan akun Anda, yang akan menghapus sebagian besar data pribadi, meskipun beberapa informasi dapat disimpan untuk alasan hukum atau operasional."
         },
         "security": {
-          "title": "5. Keamanan",
+          "title": "6. Keamanan",
           "content": "Kami menerapkan langkah-langkah keamanan standar industri termasuk enkripsi, otentikasi aman, dan audit keamanan reguler. Namun, tidak ada metode transmisi melalui Internet yang sepenuhnya aman. Kami tidak dapat menjamin keamanan absolut."
         },
         "cookies": {
-          "title": "6. Cookie dan Teknologi Serupa",
+          "title": "7. Cookie dan Teknologi Serupa",
           "content": "Kami menggunakan cookie dan teknologi serupa untuk meningkatkan pengalaman Anda, mengingat preferensi, dan menganalisis pola penggunaan. Anda dapat mengontrol pengaturan cookie melalui browser Anda. Beberapa fitur mungkin tidak berfungsi dengan baik jika cookie dinonaktifkan."
         },
         "childrenPrivacy": {
-          "title": "7. Privasi Anak-Anak",
+          "title": "8. Privasi Anak-Anak",
           "content": "Layanan kami tidak ditujukan untuk individu di bawah 13 tahun. Kami tidak dengan sengaja mengumpulkan data pribadi dari anak-anak di bawah 13 tahun. Jika kami mengetahui bahwa kami telah mengumpulkan informasi tersebut, kami akan segera mengambil langkah untuk menghapusnya."
         },
         "yourRights": {
-          "title": "8. Hak Privasi Anda",
+          "title": "9. Hak Privasi Anda",
           "content": "Tergantung pada lokasi Anda, Anda mungkin memiliki hak-hak berikut:\n\n• Akses: Meminta akses ke data pribadi Anda\n• Koreksi: Meminta koreksi data yang tidak akurat\n• Penghapusan: Meminta penghapusan data Anda\n• Portabilitas: Meminta salinan data Anda dalam format terstruktur\n• Opt-out: Berhenti berlangganan komunikasi pemasaran\n\nUntuk menggunakan hak-hak ini, silakan hubungi kami di privacy@fanmark.id"
         },
         "thirdPartyLinks": {
-          "title": "9. Tautan Pihak Ketiga",
+          "title": "10. Tautan Pihak Ketiga",
           "content": "Layanan kami mungkin berisi tautan ke situs web eksternal. Kami tidak bertanggung jawab atas praktik privasi situs pihak ketiga. Silakan tinjau kebijakan privasi mereka sebelum memberikan informasi pribadi."
         },
         "changesTopolicy": {
-          "title": "10. Perubahan Kebijakan Privasi Ini",
+          "title": "11. Perubahan Kebijakan Privasi Ini",
           "content": "Kami dapat memperbarui Kebijakan Privasi ini dari waktu ke waktu. Kami akan memberi tahu Anda tentang perubahan material dengan memposting Kebijakan Privasi baru dan memperbarui tanggal \"Pembaruan terakhir\". Penggunaan Layanan kami yang berkelanjutan menunjukkan penerimaan Anda terhadap kebijakan yang diperbarui."
         },
         "contactUs": {
-          "title": "11. Hubungi Kami",
+          "title": "12. Hubungi Kami",
           "content": "Jika Anda memiliki pertanyaan tentang Kebijakan Privasi ini atau praktik privasi kami, silakan hubungi kami di:\n\nEmail: privacy@fanmark.id"
         }
       }
@@ -1363,68 +1367,72 @@
           "title": "2. Akun dan Pendaftaran",
           "content": "Anda bertanggung jawab untuk mempertahankan kerahasiaan kredensial akun dan kata sandi Anda. Anda setuju untuk menerima tanggung jawab atas semua aktivitas yang terjadi di akun Anda. Anda harus memberikan informasi yang akurat, lengkap, dan terkini selama pendaftaran. Anda setuju untuk memberi tahu kami segera tentang penggunaan tidak sah akun Anda.\n\nKode Undangan: Akses ke Layanan mungkin memerlukan kode undangan. Kode undangan tidak dapat dialihkan dan dapat dibatalkan kapan saja."
         },
+        "emailNotifications": {
+          "title": "3. Pemberitahuan Email",
+          "content": "Anda setuju bahwa Operator dapat mengirim pemberitahuan berikut ke alamat email terdaftar Anda terkait dengan penggunaan Layanan:\n\n• Peringatan keamanan dan pemberitahuan terkait akun\n• Pemberitahuan pemeliharaan, waktu henti terencana, dan perubahan layanan\n• Pembaruan penting pada Syarat Layanan atau Kebijakan Privasi\n• Pengingat kedaluwarsa lisensi\n• Informasi penting lainnya yang diperlukan untuk penggunaan Layanan secara berkelanjutan\n\nPemberitahuan operasional ini penting untuk memelihara akun Anda dan memastikan operasi Layanan yang aman, sehingga tidak dapat dihentikan berlangganannya. Dengan terus menggunakan Layanan, Anda dianggap telah menyetujui untuk menerima pemberitahuan ini."
+        },
         "fanmarkRights": {
-          "title": "3. Kepemilikan Fanmark dan Hak",
+          "title": "4. Kepemilikan Fanmark dan Hak",
           "content": "Setiap fanmark (kombinasi emoji) memiliki batasan kepemilikan:\n\n• Anda dapat memiliki beberapa fanmark hingga batas paket Anda\n• Fanmark diberikan berdasarkan lisensi untuk periode yang ditentukan\n• Anda mempertahankan hak atas konten yang Anda buat (profil, pesan, dll.)\n• Operator mempertahankan semua hak atas platform, teknologi, dan infrastruktur\n• Transfer Fanmark: Anda dapat mentransfer fanmark ke pengguna lain melalui fitur transfer yang disetujui\n• Ketentuan Lisensi Transfer: Setelah transfer selesai, penerima menerima periode lisensi baru berdasarkan tier fanmark (periode sisa tidak ditransfer)\n• Finalitas Transfer: Transfer yang disetujui tidak dapat dibatalkan atau dikembalikan\n• Penafian Transaksi Pengguna: Operator tidak terlibat dan tidak bertanggung jawab atas transaksi moneter atau perjanjian apa pun antara pengguna yang terkait dengan transfer fanmark. Ini termasuk, tetapi tidak terbatas pada, kegagalan pembayaran, penipuan, dan sengketa lainnya\n• Tanggung Jawab Sendiri: Semua transfer fanmark dilakukan atas risiko Anda sendiri\n• Fanmark yang tidak digunakan mungkin memasuki periode grace"
         },
         "fanmarkRetention": {
-          "title": "4. Syarat Lisensi Fanmark",
+          "title": "5. Syarat Lisensi Fanmark",
           "content": "Lisensi fanmark tunduk pada:\n\n• Periode Lisensi: Durasi lisensi awal bervariasi menurut tier fanmark (1-5 emoji)\n• Lisensi Seumur Hidup: Fanmark dengan 4+ emoji menerima lisensi non-ekspirasi selamanya (dapat mengalami perubahan di masa mendatang)\n• Fanmark Berbayar: Fanmark premium (1-3 emoji) memerlukan pembaruan melalui sistem pembayaran kami\n• Perpanjangan Lisensi: Anda dapat memperpanjang lisensi sebelum kedaluwarsa\n• Periode Grace: Saat kedaluwarsa, periode grace memungkinkan pembaruan sebelum fanmark tersedia untuk orang lain\n• Pengembalian: Anda dapat secara sukarela mengembalikan fanmark kapan saja"
         },
         "paymentTerms": {
-          "title": "5. Pembayaran dan Penagihan",
+          "title": "6. Pembayaran dan Penagihan",
           "content": "Beberapa fanmark memerlukan pembayaran untuk lisensi:\n\n• Penetapan Harga: Harga ditampilkan sebelum pembelian dan dapat berubah dengan pemberitahuan\n• Pemrosesan Pembayaran: Pembayaran diproses melalui Stripe dan tunduk pada syaratnya\n• Penagihan: Anda memberi wewenang kepada Operator untuk menagih metode pembayaran Anda untuk biaya pembaruan\n• Tanpa Pengembalian Dana: Biaya lisensi tidak dapat dikembalikan kecuali diwajibkan oleh hukum\n• Pembayaran Gagal: Aturan retry Stripe berlaku. Jika langganan akhirnya dibatalkan, paket Anda kembali ke Free dan fanmark yang melebihi batas otomatis dikembalikan berdasarkan urutan terbaru (termasuk fanmark yang sedang ditransfer, berlaku meski Anda tidak login)\n• Pajak: Anda bertanggung jawab atas semua pajak yang berlaku"
         },
         "userContent": {
-          "title": "6. Konten Pengguna",
+          "title": "7. Konten Pengguna",
           "content": "Anda memberikan kepada Operator lisensi non-eksklusif tanpa royalti untuk menggunakan, mereproduksi, memodifikasi, dan menampilkan konten buatan pengguna Anda (profil, pesan, avatar, dll.) untuk menyediakan dan meningkatkan Layanan.\n\n• Anda mempertahankan kepemilikan konten Anda\n• Anda menjamin bahwa konten Anda tidak melanggar hak pihak ketiga\n• Anda sepenuhnya bertanggung jawab atas konten yang Anda buat\n• Kami dapat menghapus konten yang melanggar Syarat ini"
         },
         "intellectualProperty": {
-          "title": "7. Kekayaan Intelektual",
+          "title": "8. Kekayaan Intelektual",
           "content": "Layanan ini, termasuk semua kode, desain, fitur, dan fungsionalitas, dimiliki oleh Operator. Semua hak kekayaan intelektual disediakan. Anda tidak dapat mereproduksi, mendistribusikan, atau mengirimkan Layanan atau kontennya tanpa izin."
         },
         "limitationOfLiability": {
-          "title": "8. Pembatasan Tanggung Jawab",
+          "title": "9. Pembatasan Tanggung Jawab",
           "content": "SEJAUH DIMUNGKINKAN OLEH HUKUM:\n\n• Layanan disediakan dengan \"apa adanya\" tanpa jaminan dari jenis apa pun\n• Operator tidak bertanggung jawab atas kerusakan tidak langsung, insidental, khusus, atau konsekuensial\n• Tanggung jawab total Operator tidak akan melebihi jumlah yang Anda bayarkan dalam 12 bulan terakhir\n• Beberapa yurisdiksi tidak memungkinkan pembatasan tanggung jawab, yang mungkin tidak berlaku untuk Anda"
         },
         "disclaimers": {
-          "title": "9. Penafian",
+          "title": "10. Penafian",
           "content": "• Kami tidak menjamin operasi Layanan yang tidak terputus atau bebas kesalahan\n• Kami tidak bertanggung jawab atas layanan, tautan, atau konten pihak ketiga\n• Kehilangan data atau gangguan layanan dapat terjadi; cadangkan data penting Anda\n• Kami tidak menjamin ketersediaan atau permanensi fanmark"
         },
         "indemnification": {
-          "title": "10. Penggantian Rugi",
+          "title": "11. Penggantian Rugi",
           "content": "Anda setuju untuk membela, mengganti rugi, dan mempertahankan Operator dan afiliasinya bebas dari klaim, kerusakan, kerugian, atau biaya apa pun yang timbul dari:\n\n• Penggunaan Layanan Anda\n• Pelanggaran Syarat ini\n• Pelanggaran hak pihak ketiga Anda\n• Konten buatan pengguna Anda"
         },
         "suspensionTermination": {
-          "title": "11. Penangguhan dan Penghentian",
+          "title": "12. Penangguhan dan Penghentian",
           "content": "Operator dapat menangguhkan atau menghentikan akun Anda jika Anda:\n\n• Melanggar Syarat ini\n• Terlibat dalam kegiatan ilegal atau penipuan\n• Mengganggu pengguna lain\n• Membuat konten yang keberatan\n• Melanggar hak kekayaan intelektual\n• Gagal membayar biaya\n\nPenghentian dapat segera tanpa pemberitahuan untuk pelanggaran serius."
         },
         "serviceTermination": {
-          "title": "12. Penghentian dan Pemutusan Layanan",
+          "title": "13. Penghentian dan Pemutusan Layanan",
           "content": "Pemberitahuan Penghentian Layanan: Operator dapat menghentikan atau melakukan modifikasi material pada Layanan kapan saja. Jika Layanan dihentikan, Operator akan memberikan pemberitahuan minimal 6 bulan sebelumnya kepada semua pengguna aktif.\n\nPeriode Jaminan Layanan: Setelah keputusan penghentian layanan, Layanan akan terus beroperasi selama minimal 6 bulan hingga tanggal penghentian. Lisensi yang ada akan tetap berlaku selama periode ini.\n\nPerpanjangan Lisensi:\n• Perpanjangan lisensi maksimal 6 bulan per perpanjangan\n• Beberapa kali perpanjangan dapat menghasilkan periode lisensi melebihi 6 bulan\n• Jika periode lisensi melebihi 6 bulan, periode melebihi 6 bulan mungkin tidak dijamin jika terjadi penghentian layanan\n• Perpanjangan lisensi baru dapat dihentikan setelah penghentian layanan diumumkan\n\nTanpa Pengembalian Dana:\n• Biaya perpanjangan lisensi yang telah dibeli tidak dapat dikembalikan dengan alasan apa pun\n• Tidak ada pengembalian dana untuk periode lisensi yang telah dibeli jika terjadi penghentian layanan\n• Tidak ada pengembalian dana untuk periode yang melampaui tanggal penghentian layanan\n\nData Pengguna: Setelah Layanan dihentikan, Operator akan:\n• Memberikan kesempatan yang wajar (minimal 60 hari sejak tanggal penghentian layanan) untuk mengambil atau mengekspor data Anda\n• Melakukan upaya yang wajar untuk memfasilitasi ekspor data dalam format standar yang dapat dibawa\n• Menyimpan data Anda sesuai dengan hukum yang berlaku dan Kebijakan Privasi\n\nPembatasan Tanggung Jawab: Dengan syarat prosedur pemberitahuan dan ekspor data yang diuraikan di atas diikuti, Operator tidak bertanggung jawab atas kehilangan data, bisnis, keuntungan, atau peluang yang diakibatkan oleh penghentian Layanan. Dengan menerima Syarat ini, Anda mengakui dan menerima risiko yang terkait dengan periode lisensi yang melampaui tanggal penghentian layanan."
         },
         "governing": {
-          "title": "13. Hukum yang Berlaku",
+          "title": "14. Hukum yang Berlaku",
           "content": "Syarat ini diatur oleh hukum yurisdiksi tempat Operator beroperasi, tanpa mempertimbangkan prinsip konflik hukum."
         },
         "disputeResolution": {
-          "title": "14. Penyelesaian Sengketa",
+          "title": "15. Penyelesaian Sengketa",
           "content": "Setiap sengketa harus diselesaikan melalui:\n\n• Negosiasi Baik: Pertama, pihak akan mencoba menyelesaikan sengketa melalui diskusi\n• Mediasi: Jika negosiasi gagal, sengketa dapat diajukan ke mediasi\n• Arbitrase/Litigasi: Jika mediasi gagal, sengketa harus diselesaikan melalui arbitrase atau proses pengadilan sesuai dengan hukum yang berlaku"
         },
         "changes": {
-          "title": "15. Perubahan Syarat",
+          "title": "16. Perubahan Syarat",
           "content": "Operator dapat memodifikasi Syarat ini kapan saja. Perubahan material akan dikomunikasikan melalui email atau pemberitahuan menonjol pada Layanan. Penggunaan berkelanjutan setelah perubahan menunjukkan penerimaan Anda atas Syarat yang diperbarui."
         },
         "severability": {
-          "title": "16. Pemisahan",
+          "title": "17. Pemisahan",
           "content": "Jika suatu ketentuan dalam Syarat ini ditemukan tidak sah, ketentuan tersebut akan dimodifikasi sejauh minimal yang diperlukan untuk membuatnya valid, atau dihapus jika perlu. Ketentuan yang tersisa akan terus berlaku."
         },
         "entireAgreement": {
-          "title": "17. Perjanjian Lengkap",
+          "title": "18. Perjanjian Lengkap",
           "content": "Syarat ini, bersama dengan Kebijakan Privasi kami, merupakan seluruh perjanjian antara Anda dan Operator mengenai penggunaan Layanan."
         },
         "contactUs": {
-          "title": "18. Hubungi Kami",
+          "title": "19. Hubungi Kami",
           "content": "Jika Anda memiliki pertanyaan tentang Syarat ini, silakan hubungi kami di:\n\nEmail: legal@fanmark.id"
         }
       }
