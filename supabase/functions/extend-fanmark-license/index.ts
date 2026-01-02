@@ -11,6 +11,7 @@ import {
   createGenericErrorResponse,
   createValidationErrorResponse,
 } from "../_shared/validation.ts";
+import { countActiveFanmarks, getUserFanmarkLimit } from "../_shared/plan-limits.ts";
 
 interface FanmarkInfo {
   id: string;
@@ -196,6 +197,23 @@ serve(async (req) => {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    if (licenseRecord.status === 'grace') {
+      const { limit, isUnlimited } = await getUserFanmarkLimit(supabase, authData.user.id);
+      if (!isUnlimited) {
+        const currentCount = await countActiveFanmarks(supabase, authData.user.id);
+        if (currentCount >= limit) {
+          return new Response(JSON.stringify({
+            error: 'fanmark_limit_exceeded',
+            current: currentCount,
+            limit,
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
     }
 
     // Check for active transfer

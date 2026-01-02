@@ -159,7 +159,44 @@ export const ExtendLicenseDialog = ({
 
   const getCouponErrorDescription = async (err: unknown): Promise<string> => {
     const fallback = t('dashboard.extendDialog.couponErrorDescription');
-    const knownCodes = new Set(['coupon_expired', 'coupon_usage_exceeded', 'coupon_not_found', 'tier_not_allowed', 'coupon_already_used_on_fanmark', 'perpetual_license', 'transfer_in_progress']);
+    const knownCodes = new Set([
+      'coupon_expired',
+      'coupon_usage_exceeded',
+      'coupon_not_found',
+      'tier_not_allowed',
+      'coupon_already_used_on_fanmark',
+      'fanmark_limit_exceeded',
+      'perpetual_license',
+      'transfer_in_progress',
+    ]);
+
+    const formatCouponError = (errorCode: string): string => {
+      if (errorCode === 'coupon_expired') {
+        return t('dashboard.extendDialog.couponErrorExpired');
+      }
+      if (errorCode === 'coupon_usage_exceeded') {
+        return t('dashboard.extendDialog.couponErrorUsageExceeded');
+      }
+      if (errorCode === 'coupon_not_found') {
+        return t('dashboard.extendDialog.couponErrorNotFound');
+      }
+      if (errorCode === 'tier_not_allowed') {
+        return t('dashboard.extendDialog.couponErrorTierNotAllowed');
+      }
+      if (errorCode === 'coupon_already_used_on_fanmark') {
+        return t('dashboard.extendDialog.couponErrorAlreadyUsed');
+      }
+      if (errorCode === 'fanmark_limit_exceeded') {
+        return t('dashboard.extendDialog.couponErrorFanmarkLimit');
+      }
+      if (errorCode === 'perpetual_license') {
+        return t('dashboard.extendDialog.couponErrorPerpetual');
+      }
+      if (errorCode === 'transfer_in_progress') {
+        return t('dashboard.extendDialog.couponErrorTransferInProgress');
+      }
+      return fallback;
+    };
 
     const parseErrorCode = (value: unknown): string | null => {
       if (!value) return null;
@@ -192,14 +229,7 @@ export const ExtendLicenseDialog = ({
       // Direct error property
       const direct = parseErrorCode(anyErr?.error);
       if (direct) {
-        const errorCode = direct;
-        if (errorCode === 'coupon_expired') {
-          return t('dashboard.extendDialog.couponErrorExpired');
-        }
-        if (errorCode === 'coupon_usage_exceeded') {
-          return t('dashboard.extendDialog.couponErrorUsageExceeded');
-        }
-        return fallback;
+        return formatCouponError(direct);
       }
 
       // Check context.response (Response object)
@@ -212,16 +242,9 @@ export const ExtendLicenseDialog = ({
             if (rawBody.trim()) {
               try {
                 const json = JSON.parse(rawBody);
-                if (json?.error && knownCodes.has(json.error)) {
-                  const errorCode = json.error;
-                  if (errorCode === 'coupon_expired') {
-                    return t('dashboard.extendDialog.couponErrorExpired');
+                  if (json?.error && knownCodes.has(json.error)) {
+                  return formatCouponError(json.error);
                   }
-                  if (errorCode === 'coupon_usage_exceeded') {
-                    return t('dashboard.extendDialog.couponErrorUsageExceeded');
-                  }
-                  return fallback;
-                }
               } catch {
                 // Not JSON, continue
               }
@@ -242,14 +265,7 @@ export const ExtendLicenseDialog = ({
                 try {
                   const json = JSON.parse(rawBody);
                   if (json?.error && knownCodes.has(json.error)) {
-                    const errorCode = json.error;
-                    if (errorCode === 'coupon_expired') {
-                      return t('dashboard.extendDialog.couponErrorExpired');
-                    }
-                    if (errorCode === 'coupon_usage_exceeded') {
-                      return t('dashboard.extendDialog.couponErrorUsageExceeded');
-                    }
-                    return fallback;
+                    return formatCouponError(json.error);
                   }
                 } catch {
                   // Not JSON, continue

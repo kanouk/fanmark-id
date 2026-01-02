@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { countActiveFanmarks, getUserFanmarkLimit } from "../_shared/plan-limits.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -72,6 +73,23 @@ serve(async (req) => {
       throw new Error("Tier level not found for fanmark");
     }
     logStep("License verified", { license_id: licenseData.id, tier_level: tierLevel });
+
+    if (licenseData.status === "grace") {
+      const { limit, isUnlimited } = await getUserFanmarkLimit(supabaseClient, user.id);
+      if (!isUnlimited) {
+        const currentCount = await countActiveFanmarks(supabaseClient, user.id);
+        if (currentCount >= limit) {
+          return new Response(JSON.stringify({
+            error: "fanmark_limit_exceeded",
+            current: currentCount,
+            limit,
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 400,
+          });
+        }
+      }
+    }
 
     // Get price ID from database
     const { data: priceData, error: priceError } = await supabaseClient

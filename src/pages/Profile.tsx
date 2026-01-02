@@ -638,11 +638,13 @@ const Profile = () => {
                     {t('userSettings.subscriptionActive')}
                   </Badge>
                 ) : (
-                  <span className="text-sm text-muted-foreground">-</span>
+                  <Badge variant="secondary" className="rounded-full">
+                    {t('userSettings.subscription.inactive')}
+                  </Badge>
                 )}
               </div>
 
-              {formattedAmount() && (
+              {subscribed && formattedAmount() && (
                 <div className="flex items-center justify-between rounded-xl bg-background/80 px-3 py-2.5">
                   <span className="text-sm text-muted-foreground">{t('userSettings.subscriptionAmountLabel')}</span>
                   <span className="text-sm font-medium text-foreground">
@@ -651,7 +653,7 @@ const Profile = () => {
                 </div>
               )}
 
-              {subscriptionEnd && (
+              {subscribed && subscriptionEnd && (
                 <div className="flex items-center justify-between rounded-xl bg-background/80 px-3 py-2.5">
                   <span className="text-sm text-muted-foreground">
                     {subscriptionCancels
@@ -664,7 +666,7 @@ const Profile = () => {
                 </div>
               )}
 
-              {subscriptionPeriod && (
+              {subscribed && subscriptionPeriod && (
                 <div className="flex items-center justify-between rounded-xl bg-background/80 px-3 py-2.5">
                   <span className="text-sm text-muted-foreground">{t('userSettings.subscriptionPeriodLabel')}</span>
                   <span className="text-sm font-medium text-foreground text-right">
@@ -673,7 +675,7 @@ const Profile = () => {
                 </div>
               )}
 
-              {subscriptionCancels && subscriptionEnd && (
+              {subscribed && subscriptionCancels && subscriptionEnd && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-900">
                   {t('userSettings.subscriptionCancellationNote', {
                     date: format(new Date(subscriptionEnd), 'yyyy/MM/dd')

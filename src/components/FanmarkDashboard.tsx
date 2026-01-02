@@ -113,7 +113,7 @@ export const FanmarkDashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { settings } = useSystemSettings();
   const { limit: fanmarkLimit, isUnlimited } = useFanmarkLimit();
-  const { paymentFailureAt, nextPaymentAttempt } = useSubscription();
+  const { paymentFailureAt, nextPaymentAttempt, subscription_end: subscriptionEnd } = useSubscription();
   const { count: favoriteCount, isLoading: favoritesLoading } = useFavoriteFanmarks({
     enabled: Boolean(user),
   });
@@ -153,10 +153,14 @@ export const FanmarkDashboard = () => {
   const [totalAccessCount, setTotalAccessCount] = useState<number | null>(null);
   const [accessCountLoading, setAccessCountLoading] = useState(true);
   const paymentWarningDate = useMemo(() => {
-    if (!nextPaymentAttempt) return null;
-    const parsed = parseDateString(nextPaymentAttempt);
-    return parsed ? formatInTimeZone(parsed, 'Asia/Tokyo', 'yyyy/MM/dd HH:mm') : null;
-  }, [nextPaymentAttempt]);
+    const nextAttemptDate = parseDateString(nextPaymentAttempt);
+    const subscriptionEndDate = parseDateString(subscriptionEnd);
+    const candidate = nextAttemptDate && subscriptionEndDate
+      ? (nextAttemptDate > subscriptionEndDate ? nextAttemptDate : subscriptionEndDate)
+      : nextAttemptDate ?? subscriptionEndDate;
+
+    return candidate ? formatInTimeZone(candidate, 'Asia/Tokyo', 'yyyy/MM/dd HH:mm') : null;
+  }, [nextPaymentAttempt, subscriptionEnd]);
   const showPaymentWarning = Boolean(paymentFailureAt || nextPaymentAttempt);
 
   // Transfer system - single source of truth
@@ -750,6 +754,15 @@ export const FanmarkDashboard = () => {
     return timing.status === 'active' && !isReturned(f);
   }).length;
 
+  const shouldBlockGraceExtension = useCallback(
+    (timing: LicenseTimingResult) => {
+      if (isUnlimited) return false;
+      if (fanmarkLimit <= 0) return true;
+      return (timing.status === 'grace' || timing.status === 'grace-return') && activeFanmarks >= fanmarkLimit;
+    },
+    [activeFanmarks, fanmarkLimit, isUnlimited],
+  );
+
   const filteredFanmarks = useMemo(() => {
     const sorted = [...dedupedFanmarks].sort((a, b) => {
       const aLicenseData = a.fanmark_licenses as any;
@@ -808,14 +821,22 @@ export const FanmarkDashboard = () => {
         </div>
 
         {showPaymentWarning && (
-          <Alert className="border-amber-200/70 bg-amber-50/80 text-amber-900">
-            <AlertTriangle className="h-4 w-4 text-amber-600" />
-            <AlertTitle>{t('dashboard.paymentFailureWarningTitle')}</AlertTitle>
-            <AlertDescription>
-              {paymentWarningDate
-                ? t('dashboard.paymentFailureWarningDescription', { date: paymentWarningDate })
-                : t('dashboard.paymentFailureWarningDescriptionNoDate')}
-            </AlertDescription>
+          <Alert className="rounded-2xl border border-amber-200/70 bg-amber-50/80 px-5 py-4 text-amber-950 shadow-sm sm:px-6 sm:py-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div className="flex-1 space-y-1">
+                <AlertTitle className="text-base font-semibold text-amber-900">
+                  {t('dashboard.paymentFailureWarningTitle')}
+                </AlertTitle>
+                <AlertDescription className="text-sm leading-relaxed text-amber-900/90">
+                  {paymentWarningDate
+                    ? t('dashboard.paymentFailureWarningDescription', { date: paymentWarningDate })
+                    : t('dashboard.paymentFailureWarningDescriptionNoDate')}
+                </AlertDescription>
+              </div>
+            </div>
           </Alert>
         )}
 
@@ -1036,7 +1057,7 @@ export const FanmarkDashboard = () => {
                                 const isGraceReturn = timing.status === 'grace-return';
                                 const hasPerpetualLicense = !licenseData?.license_end;
                                 const canReturn = !isReturned(fanmark) && timing.status === 'active';
-                                const canExtend = (['active', 'grace', 'grace-return'].includes(timing.status)) && (!isReturned(fanmark) || isGraceReturn) && !hasPerpetualLicense;
+                                const canExtend = (['active', 'grace', 'grace-return'].includes(timing.status)) && (!isReturned(fanmark) || isGraceReturn) && !hasPerpetualLicense && !shouldBlockGraceExtension(timing);
 
                                 const rowKey = `${fanmark.emoji_key}-${fanmark.current_license_id ?? licenseData?.license_end ?? idx}`;
                                 const isInactive = isFanmarkInactive(fanmark);
@@ -1318,7 +1339,7 @@ export const FanmarkDashboard = () => {
                         const isGraceReturn = timing.status === 'grace-return';
                         const hasPerpetualLicense = !licenseData?.license_end;
                         const canReturn = !isReturned(fanmark) && timing.status === 'active';
-                        const canExtend = (['active', 'grace', 'grace-return'].includes(timing.status)) && (!isReturned(fanmark) || isGraceReturn) && !hasPerpetualLicense;
+                        const canExtend = (['active', 'grace', 'grace-return'].includes(timing.status)) && (!isReturned(fanmark) || isGraceReturn) && !hasPerpetualLicense && !shouldBlockGraceExtension(timing);
                         const mobileTransferStatus = getTransferStatus(fanmark.id);
 
                         const cardKey = `${fanmark.id}-${fanmark.current_license_id ?? licenseData?.license_end ?? idx}`;
