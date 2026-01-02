@@ -47,6 +47,63 @@ export type Database = {
         }
         Relationships: []
       }
+      broadcast_emails: {
+        Row: {
+          body_text: string
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          email_type: string
+          error_details: Json | null
+          failed_count: number | null
+          id: string
+          recipient_filter: Json | null
+          scheduled_at: string | null
+          sent_count: number | null
+          started_at: string | null
+          status: string
+          subject: string
+          total_recipients: number | null
+          updated_at: string
+        }
+        Insert: {
+          body_text: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          email_type?: string
+          error_details?: Json | null
+          failed_count?: number | null
+          id?: string
+          recipient_filter?: Json | null
+          scheduled_at?: string | null
+          sent_count?: number | null
+          started_at?: string | null
+          status?: string
+          subject: string
+          total_recipients?: number | null
+          updated_at?: string
+        }
+        Update: {
+          body_text?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          email_type?: string
+          error_details?: Json | null
+          failed_count?: number | null
+          id?: string
+          recipient_filter?: Json | null
+          scheduled_at?: string | null
+          sent_count?: number | null
+          started_at?: string | null
+          status?: string
+          subject?: string
+          total_recipients?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           body_text: string
