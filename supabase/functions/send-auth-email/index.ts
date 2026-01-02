@@ -157,6 +157,10 @@ function generateEmailHtml(
     `<p style="margin: 0 0 16px; font-size: 15px; line-height: 1.7; color: #374151;">${p}</p>`
   ).join('');
 
+  // Language-specific logo text
+  const logoText = language === "ja" ? "ファンマ" : "Fanmark";
+  const logoAlt = language === "ja" ? "ファンマ" : "Fanmark";
+
   return `
 <!DOCTYPE html>
 <html lang="${language}">
@@ -189,8 +193,8 @@ function generateEmailHtml(
               <table role="presentation" style="border-collapse: collapse;">
                 <tr>
                   <td align="center" style="padding: 12px 24px;">
-                    <img src="https://fanmark.id/sparkles.png" alt="Fanmark" width="40" height="40" style="display: block; width: 40px; height: 40px; margin: 0 auto 8px;" />
-                    <span style="font-size: 24px; font-weight: 700; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.5px;">Fanmark</span>
+                    <img src="https://fanmark.id/sparkles.png" alt="${logoAlt}" width="40" height="40" style="display: block; width: 40px; height: 40px; margin: 0 auto 8px;" />
+                    <span style="font-size: 24px; font-weight: 700; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.5px;">${logoText}</span>
                   </td>
                 </tr>
               </table>
