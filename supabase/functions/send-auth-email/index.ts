@@ -194,7 +194,7 @@ function generateEmailHtml(
                 <tr>
                   <td align="center" style="padding: 12px 24px;">
                     <img src="https://fanmark.id/sparkles.png" alt="${logoAlt}" width="40" height="40" style="display: block; width: 40px; height: 40px; margin: 0 auto 8px;" />
-                    <span style="font-size: 24px; font-weight: 700; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.5px;">${logoText}</span>
+                    <span style="font-size: 24px; font-weight: 700; background: linear-gradient(135deg, #65C3C8 0%, #EF9FBC 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.5px;">${logoText}</span>
                   </td>
                 </tr>
               </table>
