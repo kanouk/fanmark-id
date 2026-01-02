@@ -373,8 +373,9 @@ serve(async (req) => {
     const emailType = mapEmailType(email_action_type);
     const template = await getEmailTemplate(emailType, language);
 
-    // Build action URL
-    const actionUrl = `${supabaseUrl}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${encodeURIComponent(redirect_to)}`;
+    // Build action URL using custom auth domain
+    const customAuthDomain = "https://auth.fanmark.id";
+    const actionUrl = `${customAuthDomain}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${encodeURIComponent(redirect_to)}`;
 
     // Generate HTML
     const html = generateEmailHtml(template, actionUrl, language);
