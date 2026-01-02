@@ -62,13 +62,17 @@ serve(async (req) => {
     }
     logStep("Plan type validated", { plan_type });
 
-    // Fetch price_id from system_settings
-    const settingKeyMap: Record<string, string> = {
-      creator: 'creator_stripe_price_id',
-      max: 'max_stripe_price_id',
-      business: 'business_stripe_price_id',
+    // Determine if using live or test mode based on Stripe key
+    const isLiveMode = stripeKey.startsWith('sk_live_');
+    logStep("Stripe mode detected", { isLiveMode });
+
+    // Fetch price_id from system_settings (use live or test key)
+    const settingKeyMap: Record<string, { test: string; live: string }> = {
+      creator: { test: 'creator_stripe_price_id', live: 'creator_stripe_price_id_live' },
+      max: { test: 'max_stripe_price_id', live: 'max_stripe_price_id_live' },
+      business: { test: 'business_stripe_price_id', live: 'business_stripe_price_id_live' },
     };
-    const settingKey = settingKeyMap[plan_type];
+    const settingKey = isLiveMode ? settingKeyMap[plan_type].live : settingKeyMap[plan_type].test;
     const { data: settingData, error: settingError } = await supabaseClient
       .from('system_settings')
       .select('setting_value')
@@ -85,7 +89,7 @@ serve(async (req) => {
       logStep("ERROR: Invalid price_id", { priceId });
       throw new Error(`Invalid price_id: ${priceId}`);
     }
-    logStep("Price ID retrieved", { priceId });
+    logStep("Price ID retrieved", { priceId, mode: isLiveMode ? 'live' : 'test' });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
