@@ -18,10 +18,24 @@ interface BroadcastRequest {
   broadcastId: string;
 }
 
+interface RecipientFilter {
+  plan_types?: string[];
+  languages?: string[];
+  registered_after?: string;
+  registered_before?: string;
+}
+
 interface UserWithEmail {
   user_id: string;
   preferred_language: string;
   email: string;
+}
+
+interface UserSettings {
+  user_id: string;
+  preferred_language: string;
+  plan_type: string;
+  created_at: string;
 }
 
 interface EmailTemplate {
@@ -172,28 +186,67 @@ async function processBroadcast(
     return { success: false, message: "Failed to get users" };
   }
 
-  // Get user settings for language preferences
-  const { data: userSettings, error: settingsError } = await ctx.supabase
+  // Parse recipient filter
+  const recipientFilter = broadcast.recipient_filter as RecipientFilter | null;
+  const hasFilter = recipientFilter && Object.keys(recipientFilter).length > 0;
+
+  // Get user settings for language preferences and apply filters
+  let settingsQuery = ctx.supabase
     .from("user_settings")
-    .select("user_id, preferred_language");
+    .select("user_id, preferred_language, plan_type, created_at");
+
+  if (hasFilter) {
+    if (recipientFilter.plan_types && recipientFilter.plan_types.length > 0) {
+      settingsQuery = settingsQuery.in("plan_type", recipientFilter.plan_types);
+    }
+    if (recipientFilter.languages && recipientFilter.languages.length > 0) {
+      settingsQuery = settingsQuery.in("preferred_language", recipientFilter.languages);
+    }
+    if (recipientFilter.registered_after) {
+      settingsQuery = settingsQuery.gte("created_at", recipientFilter.registered_after);
+    }
+    if (recipientFilter.registered_before) {
+      settingsQuery = settingsQuery.lte("created_at", recipientFilter.registered_before);
+    }
+  }
+
+  const { data: userSettings, error: settingsError } = await settingsQuery;
 
   if (settingsError) {
     console.error("Failed to get user settings:", settingsError);
   }
 
-  const languageMap = new Map<string, string>();
+  // Build a map of user_id -> settings for filtered users
+  const userSettingsMap = new Map<string, UserSettings>();
   userSettings?.forEach((setting) => {
-    languageMap.set(setting.user_id, setting.preferred_language);
+    userSettingsMap.set(setting.user_id, {
+      user_id: setting.user_id,
+      preferred_language: setting.preferred_language,
+      plan_type: setting.plan_type,
+      created_at: setting.created_at,
+    });
   });
 
-  // Build user list with emails
+  // Build user list with emails (only include users that match the filter)
   const users: UserWithEmail[] = authData.users
-    .filter((user) => user.email)
+    .filter((user) => {
+      if (!user.email) return false;
+      // If there's a filter, only include users who are in the filtered settings
+      if (hasFilter) {
+        return userSettingsMap.has(user.id);
+      }
+      return true;
+    })
     .map((user) => ({
       user_id: user.id,
       email: user.email!,
-      preferred_language: languageMap.get(user.id) || "ja",
+      preferred_language: userSettingsMap.get(user.id)?.preferred_language || "ja",
     }));
+
+  console.log(`Found ${users.length} users to email (filter applied: ${hasFilter})`);
+  if (hasFilter) {
+    console.log(`Filter: ${JSON.stringify(recipientFilter)}`);
+  }
 
   console.log(`Found ${users.length} users to email`);
 
@@ -309,6 +362,7 @@ async function processBroadcast(
       sent_count: totalSuccess,
       failed_count: totalFailed,
       email_type: broadcast.email_type,
+      recipient_filter: hasFilter ? recipientFilter : null,
     }
   );
 
