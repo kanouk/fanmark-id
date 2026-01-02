@@ -188,8 +188,9 @@ function generateEmailHtml(
             <td align="center" style="padding: 0 0 32px;">
               <table role="presentation" style="border-collapse: collapse;">
                 <tr>
-                  <td style="padding: 12px 24px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border-radius: 12px;">
-                    <span style="font-size: 24px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">Fanmark</span>
+                  <td align="center" style="padding: 12px 24px;">
+                    <img src="https://fanmark.id/sparkles.png" alt="Fanmark" width="40" height="40" style="display: block; width: 40px; height: 40px; margin: 0 auto 8px;" />
+                    <span style="font-size: 24px; font-weight: 700; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.5px;">Fanmark</span>
                   </td>
                 </tr>
               </table>
