@@ -48,6 +48,9 @@ verify_jwt = true
 [functions.apply-extension-coupon]
 verify_jwt = true
 
+[functions.send-auth-email]
+verify_jwt = false
+
 # ========================================
 # Cron Jobs Configuration
 # ========================================
