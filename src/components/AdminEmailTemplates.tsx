@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -145,32 +146,48 @@ export const AdminEmailTemplates: React.FC = () => {
   return (
     <div className="space-y-6">
       <Tabs value={selectedType} onValueChange={setSelectedType}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="flex w-full flex-wrap gap-2 rounded-2xl bg-muted/30 p-2">
           {EMAIL_TYPES.map((type) => (
-            <TabsTrigger key={type.value} value={type.value}>
+            <TabsTrigger
+              key={type.value}
+              value={type.value}
+              className="flex-1 rounded-xl px-5 py-3 text-sm font-medium transition-all data-[state=active]:bg-card data-[state=active]:text-foreground sm:flex-none"
+            >
               {type.label}
             </TabsTrigger>
           ))}
         </TabsList>
 
         {EMAIL_TYPES.map((type) => (
-          <TabsContent key={type.value} value={type.value} className="space-y-4 mt-6">
+          <TabsContent key={type.value} value={type.value} className="mt-6 space-y-6">
             <div className="grid gap-4 md:grid-cols-2">
               {LANGUAGES.map((lang) => {
                 const template = getTemplate(type.value, lang.value);
                 if (!template) return null;
 
                 return (
-                  <Card key={lang.value} className="border-border/60">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg flex items-center justify-between">
-                        <span>{lang.label}</span>
+                  <Card key={lang.value} className="border-border/60 shadow-sm">
+                    <CardHeader className="space-y-3 p-6 pb-4 sm:flex sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                      <div>
+                        <CardTitle className="text-lg font-semibold text-foreground">
+                          {lang.label}
+                        </CardTitle>
+                        <CardDescription>
+                          件名・本文・ボタンテキストを編集します。
+                        </CardDescription>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="rounded-full px-2 py-0.5">
+                          {lang.value.toUpperCase()}
+                        </Badge>
                         {hasChanges(template.id) && (
-                          <span className="text-xs font-normal text-amber-500">未保存の変更</span>
+                          <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-amber-600">
+                            未保存の変更
+                          </Badge>
                         )}
-                      </CardTitle>
+                      </div>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-4 p-6 pt-0">
                       <div className="space-y-2">
                         <Label htmlFor={`subject-${template.id}`}>件名</Label>
                         <Input
@@ -178,6 +195,7 @@ export const AdminEmailTemplates: React.FC = () => {
                           value={getEditingValue(template, "subject")}
                           onChange={(e) => handleChange(template.id, "subject", e.target.value)}
                           placeholder="件名を入力"
+                          className="bg-background"
                         />
                       </div>
 
@@ -188,6 +206,7 @@ export const AdminEmailTemplates: React.FC = () => {
                           value={getEditingValue(template, "body_text")}
                           onChange={(e) => handleChange(template.id, "body_text", e.target.value)}
                           placeholder="本文を入力"
+                          className="bg-background"
                           rows={4}
                         />
                       </div>
@@ -199,19 +218,21 @@ export const AdminEmailTemplates: React.FC = () => {
                           value={getEditingValue(template, "button_text")}
                           onChange={(e) => handleChange(template.id, "button_text", e.target.value)}
                           placeholder="ボタンテキストを入力"
+                          className="bg-background"
                         />
                       </div>
 
-                      <div className="flex gap-2 pt-2">
+                      <div className="flex flex-wrap gap-2 pt-2">
                         <Button
                           size="sm"
                           onClick={() => handleSave(template)}
                           disabled={!hasChanges(template.id) || updateMutation.isPending}
+                          className="gap-2"
                         >
                           {updateMutation.isPending ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            <Save className="h-4 w-4 mr-2" />
+                            <Save className="h-4 w-4" />
                           )}
                           保存
                         </Button>
@@ -220,8 +241,9 @@ export const AdminEmailTemplates: React.FC = () => {
                           variant="outline"
                           onClick={() => handleReset(template.id)}
                           disabled={!hasChanges(template.id)}
+                          className="gap-2"
                         >
-                          <RotateCcw className="h-4 w-4 mr-2" />
+                          <RotateCcw className="h-4 w-4" />
                           リセット
                         </Button>
                       </div>
