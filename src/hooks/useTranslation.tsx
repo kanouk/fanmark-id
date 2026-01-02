@@ -4,6 +4,7 @@ import enTranslations from '@/translations/en.json';
 import koTranslations from '@/translations/ko.json';
 import idTranslations from '@/translations/id.json';
 import { normalizeLanguage } from '@/lib/language';
+import { useLanguages, updateCachedLanguages } from '@/hooks/useLanguages';
 
 type Language = 'ja' | 'en' | 'ko' | 'id';
 // Keep JSON types loose enough so minor key drift between locales doesn't break builds.
@@ -33,6 +34,15 @@ const translations: Record<Language, Translations> = {
 };
 
 export function TranslationProvider({ children }: { children: ReactNode }) {
+  // Sync languages from DB to cache
+  const { languages } = useLanguages();
+  
+  useEffect(() => {
+    if (languages.length > 0) {
+      updateCachedLanguages(languages);
+    }
+  }, [languages]);
+
   const [language, setLanguage] = useState<Language>(() => {
     try {
       const saved = localStorage.getItem('fanmark-language');
