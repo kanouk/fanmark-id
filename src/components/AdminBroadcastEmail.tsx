@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -30,6 +31,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import {
   Mail,
@@ -41,11 +47,22 @@ import {
   CheckCircle,
   XCircle,
   Clock,
+  Filter,
+  ChevronDown,
+  Users,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
+import { useLanguages } from "@/hooks/useLanguages";
 
 type BroadcastStatus = "draft" | "scheduled" | "sending" | "completed" | "failed" | "cancelled";
+
+interface RecipientFilter {
+  plan_types?: string[];
+  languages?: string[];
+  registered_after?: string;
+  registered_before?: string;
+}
 
 interface BroadcastEmail {
   id: string;
@@ -56,6 +73,7 @@ interface BroadcastEmail {
   sent_count: number;
   failed_count: number;
   status: BroadcastStatus;
+  recipient_filter: RecipientFilter | null;
   created_at: string;
   started_at: string | null;
   completed_at: string | null;
@@ -75,6 +93,15 @@ const EMAIL_TYPES = [
   { value: "broadcast_security", label: "セキュリティ通知" },
 ];
 
+const PLAN_TYPES = [
+  { value: "free", label: "Free" },
+  { value: "creator", label: "Creator" },
+  { value: "max", label: "Max" },
+  { value: "business", label: "Business" },
+  { value: "enterprise", label: "Enterprise" },
+  { value: "admin", label: "Admin" },
+];
+
 const STATUS_CONFIG: Record<BroadcastStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ReactNode }> = {
   draft: { label: "下書き", variant: "outline", icon: <Clock className="h-3 w-3" /> },
   scheduled: { label: "予約済み", variant: "secondary", icon: <Clock className="h-3 w-3" /> },
@@ -86,14 +113,24 @@ const STATUS_CONFIG: Record<BroadcastStatus, { label: string; variant: "default"
 
 export function AdminBroadcastEmail() {
   const queryClient = useQueryClient();
+  const { activeLanguages } = useLanguages();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedBroadcast, setSelectedBroadcast] = useState<BroadcastEmail | null>(null);
+  const [estimatedCount, setEstimatedCount] = useState<number | null>(null);
+  const [isEstimating, setIsEstimating] = useState(false);
   const [formData, setFormData] = useState({
     email_type: "broadcast_announcement",
     subject: "",
     body_text: "",
+  });
+  const [filterData, setFilterData] = useState<RecipientFilter>({
+    plan_types: [],
+    languages: [],
+    registered_after: "",
+    registered_before: "",
   });
 
   // Fetch broadcast emails
@@ -127,21 +164,85 @@ export function AdminBroadcastEmail() {
     },
   });
 
+  // Estimate recipient count based on filters
+  const estimateRecipients = async () => {
+    setIsEstimating(true);
+    try {
+      let query = supabase.from("user_settings").select("user_id", { count: "exact", head: true });
+
+      if (filterData.plan_types && filterData.plan_types.length > 0) {
+        // Cast to the expected type for Supabase
+        query = query.in("plan_type", filterData.plan_types as ("free" | "creator" | "max" | "business" | "enterprise" | "admin")[]);
+      }
+      if (filterData.languages && filterData.languages.length > 0) {
+        query = query.in("preferred_language", filterData.languages as ("en" | "ja" | "ko" | "id")[]);
+      }
+      if (filterData.registered_after) {
+        query = query.gte("created_at", filterData.registered_after);
+      }
+      if (filterData.registered_before) {
+        query = query.lte("created_at", filterData.registered_before);
+      }
+
+      const { count, error } = await query;
+      if (error) throw error;
+      setEstimatedCount(count ?? 0);
+    } catch (err) {
+      console.error("Failed to estimate recipients:", err);
+      toast.error("対象者数の取得に失敗しました");
+    } finally {
+      setIsEstimating(false);
+    }
+  };
+
+  // Re-estimate when filters change
+  useEffect(() => {
+    const hasFilters =
+      (filterData.plan_types && filterData.plan_types.length > 0) ||
+      (filterData.languages && filterData.languages.length > 0) ||
+      filterData.registered_after ||
+      filterData.registered_before;
+
+    if (hasFilters) {
+      estimateRecipients();
+    } else {
+      setEstimatedCount(null);
+    }
+  }, [filterData]);
+
   // Create broadcast mutation
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       const { data: session } = await supabase.auth.getSession();
       if (!session.session?.user) throw new Error("Not authenticated");
 
+      // Build recipient filter (only include non-empty filters)
+      const recipientFilter: RecipientFilter = {};
+      if (filterData.plan_types && filterData.plan_types.length > 0) {
+        recipientFilter.plan_types = filterData.plan_types;
+      }
+      if (filterData.languages && filterData.languages.length > 0) {
+        recipientFilter.languages = filterData.languages;
+      }
+      if (filterData.registered_after) {
+        recipientFilter.registered_after = filterData.registered_after;
+      }
+      if (filterData.registered_before) {
+        recipientFilter.registered_before = filterData.registered_before;
+      }
+
+      const hasFilter = Object.keys(recipientFilter).length > 0;
+
       const { data: result, error } = await supabase
         .from("broadcast_emails")
-        .insert({
+        .insert([{
           email_type: data.email_type,
           subject: data.subject,
           body_text: data.body_text,
           created_by: session.session.user.id,
-          status: "draft",
-        })
+          status: "draft" as const,
+          recipient_filter: hasFilter ? recipientFilter as unknown as null : null,
+        }])
         .select()
         .single();
 
@@ -152,6 +253,8 @@ export function AdminBroadcastEmail() {
       queryClient.invalidateQueries({ queryKey: ["broadcast-emails"] });
       setIsCreateOpen(false);
       setFormData({ email_type: "broadcast_announcement", subject: "", body_text: "" });
+      setFilterData({ plan_types: [], languages: [], registered_after: "", registered_before: "" });
+      setEstimatedCount(null);
       toast.success("一括メールを作成しました");
     },
     onError: (error) => {
@@ -365,6 +468,126 @@ export function AdminBroadcastEmail() {
               </Select>
             </div>
 
+            {/* Recipient Filters */}
+            <Collapsible open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" className="w-full justify-between">
+                  <span className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    受信者フィルター
+                    {estimatedCount !== null && (
+                      <Badge variant="secondary" className="ml-2">
+                        <Users className="mr-1 h-3 w-3" />
+                        {estimatedCount}人
+                      </Badge>
+                    )}
+                  </span>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${isFilterOpen ? "rotate-180" : ""}`} />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-4 space-y-4 rounded-lg border bg-muted/30 p-4">
+                {/* Plan Type Filter */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">プランタイプ</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {PLAN_TYPES.map((plan) => (
+                      <label key={plan.value} className="flex items-center gap-2">
+                        <Checkbox
+                          checked={filterData.plan_types?.includes(plan.value) || false}
+                          onCheckedChange={(checked) => {
+                            setFilterData((prev) => ({
+                              ...prev,
+                              plan_types: checked
+                                ? [...(prev.plan_types || []), plan.value]
+                                : (prev.plan_types || []).filter((p) => p !== plan.value),
+                            }));
+                          }}
+                        />
+                        <span className="text-sm">{plan.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Language Filter */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">言語設定</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {activeLanguages.map((lang) => (
+                      <label key={lang.code} className="flex items-center gap-2">
+                        <Checkbox
+                          checked={filterData.languages?.includes(lang.code) || false}
+                          onCheckedChange={(checked) => {
+                            setFilterData((prev) => ({
+                              ...prev,
+                              languages: checked
+                                ? [...(prev.languages || []), lang.code]
+                                : (prev.languages || []).filter((l) => l !== lang.code),
+                            }));
+                          }}
+                        />
+                        <span className="text-sm">{lang.nativeLabel}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Registration Date Filter */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">登録日（以降）</Label>
+                    <Input
+                      type="date"
+                      value={filterData.registered_after || ""}
+                      onChange={(e) =>
+                        setFilterData((prev) => ({
+                          ...prev,
+                          registered_after: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">登録日（以前）</Label>
+                    <Input
+                      type="date"
+                      value={filterData.registered_before || ""}
+                      onChange={(e) =>
+                        setFilterData((prev) => ({
+                          ...prev,
+                          registered_before: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* Estimate Display */}
+                <div className="flex items-center justify-between rounded-lg bg-background p-3">
+                  <span className="text-sm text-muted-foreground">対象ユーザー数:</span>
+                  {isEstimating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : estimatedCount !== null ? (
+                    <span className="font-medium">{estimatedCount}人</span>
+                  ) : (
+                    <span className="text-muted-foreground">全ユーザー</span>
+                  )}
+                </div>
+
+                {/* Clear Filters */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setFilterData({ plan_types: [], languages: [], registered_after: "", registered_before: "" });
+                    setEstimatedCount(null);
+                  }}
+                >
+                  フィルターをクリア
+                </Button>
+              </CollapsibleContent>
+            </Collapsible>
+
             <div className="space-y-2">
               <Label>件名（オプション: 空の場合はテンプレートを使用）</Label>
               <Input
@@ -454,6 +677,29 @@ export function AdminBroadcastEmail() {
                 <span className="font-medium">件名:</span>{" "}
                 {selectedBroadcast.subject || "(テンプレート使用)"}
               </p>
+              {selectedBroadcast.recipient_filter && Object.keys(selectedBroadcast.recipient_filter).length > 0 && (
+                <div className="text-sm">
+                  <span className="font-medium">フィルター:</span>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {selectedBroadcast.recipient_filter.plan_types?.map((p) => (
+                      <Badge key={p} variant="outline" className="text-xs">{p}</Badge>
+                    ))}
+                    {selectedBroadcast.recipient_filter.languages?.map((l) => (
+                      <Badge key={l} variant="outline" className="text-xs">{l}</Badge>
+                    ))}
+                    {selectedBroadcast.recipient_filter.registered_after && (
+                      <Badge variant="outline" className="text-xs">
+                        {selectedBroadcast.recipient_filter.registered_after}以降
+                      </Badge>
+                    )}
+                    {selectedBroadcast.recipient_filter.registered_before && (
+                      <Badge variant="outline" className="text-xs">
+                        {selectedBroadcast.recipient_filter.registered_before}以前
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
