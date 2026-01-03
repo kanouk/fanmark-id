@@ -1107,14 +1107,18 @@
       },
       "redirect": {
         "label": "URL Pengalihan",
-        "linkTypeLabel": "Jenis tautan",
-        "linkTypeHelper": "Pilih apakah pengunjung membuka situs web atau memulai panggilan.",
+        "linkTypeLabel": "Jenis pengalihan",
+        "linkTypeHelper": "Pilih apakah akan membuka tautan atau memulai panggilan.",
         "linkTypeOptions": {
-          "url": "Situs web",
-          "urlDesc": "Alihkan ke URL http/https",
+          "url": "Tautan",
+          "urlDesc": "Alihkan ke tautan apa pun",
           "phone": "Nomor telepon",
           "phoneDesc": "Buka aplikasi telepon"
         },
+        "platformLabel": "Layanan tujuan",
+        "platformHelper": "Pilih SNS atau situs web, lalu masukkan ID atau URL.",
+        "platformPlaceholder": "Pilih layanan",
+        "inputLabel": "Tautan tujuan",
         "urlLabel": "URL situs web",
         "urlPlaceholder": "https://example.com",
         "urlHelper": "Hanya mendukung URL yang dimulai dengan http:// atau https://.",

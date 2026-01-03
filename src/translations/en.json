@@ -1107,14 +1107,18 @@
       },
       "redirect": {
         "label": "Redirect URL",
-        "linkTypeLabel": "Link destination",
-        "linkTypeHelper": "Send fans to a website or start a phone call.",
+        "linkTypeLabel": "Redirect type",
+        "linkTypeHelper": "Choose whether to open a link or start a phone call.",
         "linkTypeOptions": {
-          "url": "Website",
-          "urlDesc": "Open any http(s) URL",
+          "url": "Link",
+          "urlDesc": "Redirect to any link",
           "phone": "Phone number",
           "phoneDesc": "Launch the phone dialer"
         },
+        "platformLabel": "Link destination",
+        "platformHelper": "Pick a service and enter a handle or full URL.",
+        "platformPlaceholder": "Choose a service",
+        "inputLabel": "Link destination",
         "urlLabel": "Website URL",
         "urlPlaceholder": "https://example.com",
         "urlHelper": "Only http:// or https:// URLs are supported.",

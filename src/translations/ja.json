@@ -1097,14 +1097,18 @@
       },
       "redirect": {
         "label": "転送先URL",
-        "linkTypeLabel": "リンク種別",
+        "linkTypeLabel": "転送種別",
         "linkTypeHelper": "Webサイトに転送するか、電話発信を開始するかを選べます。",
         "linkTypeOptions": {
-          "url": "ウェブサイト",
-          "urlDesc": "好きなURLへ転送する",
+          "url": "リンク",
+          "urlDesc": "好きなリンク先へ転送する",
           "phone": "電話番号",
           "phoneDesc": "デバイスの電話発信画面を開く"
         },
+        "platformLabel": "リンク先サービス",
+        "platformHelper": "SNSやWebサイトを選び、IDまたはURLを入力してください。",
+        "platformPlaceholder": "サービスを選択",
+        "inputLabel": "リンク先",
         "urlLabel": "ウェブサイトURL",
         "urlPlaceholder": "https://example.com",
         "urlHelper": "http:// または https:// から始まるURLを入力してください。",

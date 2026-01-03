@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -15,6 +16,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, Eye, Edit, ArrowLeft, Sparkles } from 'lucide-react';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { cn } from '@/lib/utils';
+import { SocialLinkInputCard, SocialLinkInputMode } from '@/components/SocialLinkInputCard';
+import { socialPlatforms } from '@/lib/social-platforms';
 import { 
   FiType, 
   FiSettings, 
@@ -55,6 +58,24 @@ const sanitizePhoneInput = (value?: string) => {
   const digitsOnly = trimmed.replace(/\D/g, '');
   if (!digitsOnly) return '';
   return hasPlus ? `+${digitsOnly}` : digitsOnly;
+};
+
+const resolveSocialPlatformFromUrl = (targetUrl?: string) => {
+  if (!targetUrl) {
+    return { platformKey: 'website', mode: 'handle' as SocialLinkInputMode };
+  }
+
+  if (targetUrl.startsWith('http://')) {
+    return { platformKey: 'website', mode: 'url' as SocialLinkInputMode };
+  }
+
+  for (const platform of socialPlatforms) {
+    if (platform.baseUrl && targetUrl.startsWith(platform.baseUrl)) {
+      return { platformKey: platform.key, mode: 'handle' as SocialLinkInputMode };
+    }
+  }
+
+  return { platformKey: 'website', mode: 'url' as SocialLinkInputMode };
 };
 
 const settingsSchema = z.object({
@@ -188,6 +209,9 @@ export const FanmarkSettings = ({
 
   const isPasswordProtected = watch('isPasswordProtected');
 
+  const [redirectPlatformKey, setRedirectPlatformKey] = useState<string>('website');
+  const [redirectInputMode, setRedirectInputMode] = useState<SocialLinkInputMode>('handle');
+
   const draftStorageKey = fanmark ? `fanmark_settings_draft_${fanmark.id}` : null;
   const DRAFT_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -257,6 +281,11 @@ export const FanmarkSettings = ({
     }
 
     reset(nextFormData);
+    if (nextFormData.redirectLinkType === 'url') {
+      const resolved = resolveSocialPlatformFromUrl(nextFormData.targetUrl);
+      setRedirectPlatformKey(resolved.platformKey);
+      setRedirectInputMode(resolved.mode);
+    }
     if (nextFormData.accessType === 'profile') {
       setValue('createProfile', true, { shouldDirty: false, shouldTouch: false, shouldValidate: false });
     }
@@ -312,6 +341,31 @@ export const FanmarkSettings = ({
       setValue('targetUrl', '', { shouldDirty: true, shouldTouch: false, shouldValidate: false });
     }
   }, [accessType, watchedRedirectLinkType, getValues, setValue]);
+
+  useEffect(() => {
+    if (accessType !== 'redirect' || watchedRedirectLinkType !== 'url') return;
+    const resolved = resolveSocialPlatformFromUrl(getValues('targetUrl'));
+    setRedirectPlatformKey(resolved.platformKey);
+    setRedirectInputMode(resolved.mode);
+  }, [accessType, watchedRedirectLinkType, getValues]);
+
+  const handleRedirectPlatformChange = (value: string) => {
+    const nextPlatform = socialPlatforms.find((platform) => platform.key === value);
+    if (!nextPlatform) return;
+    setRedirectPlatformKey(value);
+    const nextMode: SocialLinkInputMode = nextPlatform.baseUrl ? 'handle' : 'url';
+    setRedirectInputMode(nextMode);
+
+    const currentUrl = getValues('targetUrl') || '';
+    const nextUrl = nextPlatform.baseUrl && currentUrl.startsWith(nextPlatform.baseUrl)
+      ? currentUrl
+      : nextPlatform.baseUrl
+        ? ''
+        : isValidHttpUrl(currentUrl)
+          ? currentUrl
+          : '';
+    setValue('targetUrl', nextUrl, { shouldDirty: true, shouldTouch: true, shouldValidate: false });
+  };
 
   const handleClose = () => {
     if (draftStorageKey) {
@@ -689,27 +743,60 @@ export const FanmarkSettings = ({
                   </div>
 
                   {watchedRedirectLinkType === 'url' && (
-                    <div className="space-y-2">
-                      <Label htmlFor="targetUrl" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                        <FiGlobe className="h-3.5 w-3.5" />
-                        {t('fanmarkSettings.fields.redirect.urlLabel')}
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        {t('fanmarkSettings.fields.redirect.urlHelper')}
-                      </p>
-                      <Input
-                        id="targetUrl"
-                        {...register('targetUrl')}
-                        placeholder={t('fanmarkSettings.fields.redirect.urlPlaceholder')}
-                        type="url"
-                        className="h-11 rounded-lg border border-border focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
-                      />
-                      {errors.targetUrl && (
-                        <p className="flex items-center gap-2 text-sm text-destructive">
-                          <FiAlertCircle className="h-4 w-4" />
-                          {t(`fanmarkSettings.${errors.targetUrl.message}`)}
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                          <FiGlobe className="h-3.5 w-3.5" />
+                          {t('fanmarkSettings.fields.redirect.platformLabel')}
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          {t('fanmarkSettings.fields.redirect.platformHelper')}
                         </p>
-                      )}
+                        <Select value={redirectPlatformKey} onValueChange={handleRedirectPlatformChange}>
+                          <SelectTrigger className="h-11 rounded-lg border border-border focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1">
+                            <SelectValue placeholder={t('fanmarkSettings.fields.redirect.platformPlaceholder')} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {socialPlatforms.map((platform) => {
+                              const Icon = platform.icon;
+                              return (
+                                <SelectItem key={platform.key} value={platform.key}>
+                                  <span className="inline-flex items-center gap-2">
+                                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-border/60 bg-background">
+                                      <Icon className="h-4 w-4" />
+                                    </span>
+                                    <span className="text-sm font-semibold">{platform.label}</span>
+                                  </span>
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <Controller
+                        control={control}
+                        name="targetUrl"
+                        render={({ field }) => {
+                          const activePlatform = socialPlatforms.find((platform) => platform.key === redirectPlatformKey)
+                            || socialPlatforms[socialPlatforms.length - 1];
+                          const errorMessage = errors.targetUrl ? t(`fanmarkSettings.${errors.targetUrl.message}`) : undefined;
+                          return (
+                            <SocialLinkInputCard
+                              platform={activePlatform}
+                              inputId="targetUrl"
+                              value={field.value ?? ''}
+                              onChange={field.onChange}
+                              onBlur={field.onBlur}
+                              inputRef={field.ref}
+                              mode={activePlatform.baseUrl ? redirectInputMode : 'url'}
+                              onModeChange={setRedirectInputMode}
+                              errorMessage={errorMessage}
+                              titleOverride={t('fanmarkSettings.fields.redirect.inputLabel')}
+                            />
+                          );
+                        }}
+                      />
                     </div>
                   )}
 

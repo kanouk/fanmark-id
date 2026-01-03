@@ -12,26 +12,10 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useAvatarUpload } from '@/hooks/useAvatarUpload';
 import { useCoverImageUpload } from '@/hooks/useCoverImageUpload';
 import { EmojiProfile } from '@/hooks/useEmojiProfile';
-import { Loader2, Upload, X, Image as ImageIcon, FileText, Link, Shield, User, Eye, AtSign, Link2 } from 'lucide-react';
-import { 
-  FiInstagram, 
-  FiGithub, 
-  FiYoutube,
-  FiGlobe,
-  FiFacebook
-} from 'react-icons/fi';
-import { 
-  SiTiktok, 
-  SiLine, 
-  SiTwitch, 
-  SiDiscord,
-  SiX,
-  SiBluesky,
-  SiSnapchat,
-  SiThreads,
-  SiBereal
-} from 'react-icons/si';
+import { Loader2, Upload, X, Image as ImageIcon, FileText, Link, Shield, User, Eye } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { socialPlatforms } from '@/lib/social-platforms';
+import { SocialLinkInputCard } from '@/components/SocialLinkInputCard';
 
 const profileSchema = z.object({
   display_name: z.string().min(1, '名前を入力してください').max(50, '名前は50文字以内で入力してください'),
@@ -74,23 +58,6 @@ interface EmojiProfileFormProps {
   onClose: () => void;
   onPreview?: () => void;
 }
-
-const socialPlatforms = [
-  { key: 'instagram', label: 'Instagram', icon: FiInstagram, placeholder: 'https://instagram.com/username', baseUrl: 'https://instagram.com/', handlePlaceholder: 'username' },
-  { key: 'tiktok', label: 'TikTok', icon: SiTiktok, placeholder: 'https://tiktok.com/@username', baseUrl: 'https://tiktok.com/@', handlePlaceholder: 'username' },
-  { key: 'x', label: 'X (Twitter)', icon: SiX, placeholder: 'https://x.com/username', baseUrl: 'https://x.com/', handlePlaceholder: 'username' },
-  { key: 'youtube', label: 'YouTube', icon: FiYoutube, placeholder: 'https://youtube.com/@username', baseUrl: 'https://youtube.com/@', handlePlaceholder: 'username' },
-  { key: 'bereal', label: 'BeReal', icon: SiBereal, placeholder: 'https://bere.al/username', baseUrl: 'https://bere.al/', handlePlaceholder: 'username' },
-  { key: 'line', label: 'LINE', icon: SiLine, placeholder: 'https://line.me/ti/p/username', baseUrl: 'https://line.me/ti/p/', handlePlaceholder: 'username' },
-  { key: 'threads', label: 'Threads', icon: SiThreads, placeholder: 'https://threads.net/@username', baseUrl: 'https://threads.net/@', handlePlaceholder: 'username' },
-  { key: 'bluesky', label: 'Bluesky', icon: SiBluesky, placeholder: 'https://bsky.app/profile/username.bsky.social', baseUrl: 'https://bsky.app/profile/', handlePlaceholder: 'handle.bsky.social' },
-  { key: 'github', label: 'GitHub', icon: FiGithub, placeholder: 'https://github.com/username', baseUrl: 'https://github.com/', handlePlaceholder: 'username' },
-  { key: 'discord', label: 'Discord', icon: SiDiscord, placeholder: 'https://discord.gg/invite', baseUrl: 'https://discord.gg/', handlePlaceholder: 'invite-code' },
-  { key: 'snapchat', label: 'Snapchat', icon: SiSnapchat, placeholder: 'https://snapchat.com/add/username', baseUrl: 'https://snapchat.com/add/', handlePlaceholder: 'username' },
-  { key: 'twitch', label: 'Twitch', icon: SiTwitch, placeholder: 'https://twitch.tv/username', baseUrl: 'https://twitch.tv/', handlePlaceholder: 'username' },
-  { key: 'facebook', label: 'Facebook', icon: FiFacebook, placeholder: 'https://facebook.com/username', baseUrl: 'https://facebook.com/', handlePlaceholder: 'username' },
-  { key: 'website', label: 'Website', icon: FiGlobe, placeholder: 'https://yourwebsite.com' },
-];
 
 export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose, onPreview }: EmojiProfileFormProps) => {
   const { t } = useTranslation();
@@ -554,116 +521,25 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose, onPre
                     control={control}
                     name={`social_links.${platform.key as keyof ProfileFormData['social_links']}`}
                     render={({ field }) => {
-                      const mode = socialInputModes[platform.key] || (platform.baseUrl ? 'handle' : 'url');
-                      const fullValue = field.value ?? '';
-                      const isHandleMode = mode === 'handle' && !!platform.baseUrl;
-                      const baseUrl = platform.baseUrl || '';
-                      const handleValue = isHandleMode && fullValue.startsWith(baseUrl)
-                        ? fullValue.slice(baseUrl.length)
-                        : isHandleMode
-                          ? ''
-                          : undefined;
                       const errorMessage = errors.social_links?.[platform.key as keyof ProfileFormData['social_links']]?.message;
 
-                      const toggleMode = () => {
-                        if (!platform.baseUrl) return;
-                        setSocialInputModes((prev) => {
-                          const prevMode = prev[platform.key] || 'handle';
-                          const nextMode = prevMode === 'handle' ? 'url' : 'handle';
-                          return {
-                            ...prev,
-                            [platform.key]: nextMode,
-                          };
-                        });
-
-                        const currentValue = field.value || '';
-                        if (mode === 'handle') {
-                          const withoutBase = currentValue.startsWith(baseUrl) ? currentValue.slice(baseUrl.length) : '';
-                          const nextUrl = withoutBase ? `${baseUrl}${withoutBase}` : `${baseUrl}`;
-                          field.onChange(nextUrl);
-                        } else {
-                          if (!currentValue || currentValue === baseUrl) {
-                            field.onChange(baseUrl);
-                          }
-                        }
-                      };
-
                       return (
-                        <div className="rounded-2xl border border-border/60 bg-background/70 p-4 shadow-sm transition hover:border-primary/30 hover:shadow-lg">
-                          <div className="flex flex-wrap items-center justify-between gap-3">
-                            <Label htmlFor={inputId} className="text-sm font-medium flex items-center gap-3 text-foreground/90">
-                              <span className="p-1.5 rounded-lg bg-primary/5">
-                                <platform.icon className="h-4 w-4 text-primary" />
-                              </span>
-                              {platform.label}
-                            </Label>
-                            {platform.baseUrl && (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                aria-label={`${platform.label}の入力モード切り替え`}
-                                aria-pressed={isHandleMode}
-                                className="flex h-9 items-center rounded-full border-border/70 bg-background/80 px-1 text-muted-foreground transition-colors"
-                                onClick={toggleMode}
-                              >
-                                <span
-                                  className={`flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground/70 transition-colors ${isHandleMode ? 'bg-primary text-primary-foreground shadow-sm' : ''}`}
-                                >
-                                  <AtSign className="h-3.5 w-3.5" />
-                                </span>
-                                <span
-                                  className={`ml-1 flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground/70 transition-colors ${!isHandleMode ? 'bg-primary text-primary-foreground shadow-sm' : ''}`}
-                                >
-                                  <Link2 className="h-3.5 w-3.5" />
-                                </span>
-                              </Button>
-                            )}
-                          </div>
-
-                          <div className="mt-3">
-                            {isHandleMode ? (
-                              <div className={`flex h-12 items-center overflow-hidden rounded-xl border ${errorMessage ? 'border-destructive/60 ring-2 ring-destructive/20' : 'border-border/80'} bg-background/90 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all`}>
-                                <span className="hidden sm:flex h-full items-center bg-muted/30 px-3 text-sm font-medium text-muted-foreground/80">
-                                  {baseUrl}
-                                </span>
-                                <span className="sm:hidden flex h-full items-center bg-muted/30 px-3 text-xs font-medium text-muted-foreground/80">
-                                  @{platform.label}
-                                </span>
-                                <input
-                                  id={inputId}
-                                  ref={field.ref}
-                                  type="text"
-                                  value={handleValue ?? ''}
-                                  onChange={(event) => {
-                                    const newHandle = event.target.value;
-                                    field.onChange(newHandle ? `${baseUrl}${newHandle}` : '');
-                                  }}
-                                  onBlur={field.onBlur}
-                                  placeholder={platform.handlePlaceholder || 'username'}
-                                  className="flex-1 h-full bg-transparent px-3 text-sm sm:text-base outline-none placeholder:text-muted-foreground/40"
-                                  autoComplete="off"
-                                />
-                              </div>
-                            ) : (
-                              <Input
-                                id={inputId}
-                                ref={field.ref}
-                                value={fullValue}
-                                onChange={(event) => field.onChange(event.target.value)}
-                                onBlur={field.onBlur}
-                                placeholder={platform.placeholder}
-                                className={`h-12 rounded-xl border-2 px-4 text-sm sm:text-base placeholder:text-muted-foreground/40 transition-colors ${errorMessage ? 'border-destructive/60 focus-visible:ring-destructive/30' : 'border-border hover:border-primary/30 focus:border-primary'}`}
-                              />
-                            )}
-                          </div>
-
-                          {errorMessage && (
-                            <p className="mt-2 text-xs font-medium text-destructive">
-                              {errorMessage}
-                            </p>
-                          )}
-                        </div>
+                        <SocialLinkInputCard
+                          platform={platform}
+                          inputId={inputId}
+                          value={field.value ?? ''}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          inputRef={field.ref}
+                          mode={socialInputModes[platform.key] || (platform.baseUrl ? 'handle' : 'url')}
+                          onModeChange={(nextMode) => {
+                            setSocialInputModes((prev) => ({
+                              ...prev,
+                              [platform.key]: nextMode,
+                            }));
+                          }}
+                          errorMessage={errorMessage}
+                        />
                       );
                     }}
                   />
