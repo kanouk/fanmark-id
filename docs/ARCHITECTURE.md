@@ -27,10 +27,11 @@
 - `/fanmarks/:fanmarkId/messageboard/preview`: `FanmarkMessageboardPreview.tsx`
 - `/f/:shortId`: ファンマ詳細（whois）: `FanmarkDetailsPage.tsx`
 - `/a/:shortId`: 短縮アクセス: `FanmarkAccessByShortId.tsx`
+- `/maintenance`: メンテナンスページ: `Maintenance.tsx`（`MaintenanceGate` により全体制御）
 - `/:emojiPath`: キャッチオールアクセス: `FanmarkAccess.tsx` + `FanmarkAcquisition.tsx`
 - `*`: `NotFound.tsx`
 - 管理画面 (admin サブドメイン想定): `AdminApp.tsx`, `AdminDashboard.tsx`, `AdminAuth.tsx`
-- 主要コンポーネント: `Navigation`, `LanguageToggle`, `FanmarkSearch`, `FanmarkRegistrationForm`, `EmojiInput`, `FanmarkStatusBadge`, `GraceStatusCountdown`, `InvitationSystem`, `AdminTierExtensionPrices`, `AdminPatternRules`, `AdminDataReset`, `AdminSettings`.
+- 主要コンポーネント: `Navigation`, `LanguageToggle`, `FanmarkSearch`, `FanmarkRegistrationForm`, `EmojiInput`, `FanmarkStatusBadge`, `GraceStatusCountdown`, `InvitationSystem`, `AdminTierExtensionPrices`, `AdminPatternRules`, `AdminDataReset`, `AdminSettings`, `MaintenanceGate`.
 
 ## サービスフローとデータ
 - 検索: `FanmarkSearch`/`useFanmarkSearch` → RPC `check_fanmark_availability`（Tier/SLA/available_at/lottery情報含む）。検索結果と最近取得は件数制限し、ローカルにプリフィル保存。

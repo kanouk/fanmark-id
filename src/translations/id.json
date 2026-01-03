@@ -1617,6 +1617,13 @@
       "goHome": "Kembali ke Beranda"
     }
   },
+  "maintenance": {
+    "title": "Sedang Maintenance",
+    "subtitle": "Saat ini kami sedang melakukan pemeliharaan layanan.",
+    "description": "Mohon maaf atas ketidaknyamanannya. Silakan coba lagi nanti.",
+    "scheduledEndLabel": "Perkiraan selesai",
+    "scheduledEndTbd": "Belum ditentukan"
+  },
   "analytics": {
     "pageTitle": "Analitik",
     "pageSubtitle": "Analisis akses ke fanmark Anda",

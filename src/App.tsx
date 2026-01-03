@@ -37,10 +37,12 @@ import ContactUs from "./pages/ContactUs";
 import CommercialTransactions from "./pages/CommercialTransactions";
 import About from "./pages/About";
 import Analytics from "./pages/Analytics";
+import Maintenance from "./pages/Maintenance";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LotteryActionOverlayProvider } from "@/providers/LotteryActionOverlayProvider";
 import { PasswordSetupGate } from "@/components/PasswordSetupGate";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import MaintenanceGate from "@/components/MaintenanceGate";
 
 const queryClient = new QueryClient();
 
@@ -57,43 +59,46 @@ const MainApp = () => (
             <BrowserRouter>
               <ScrollToTop />
               <PasswordSetupGate />
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/password-setup" element={<ProtectedRoute><PasswordSetup /></ProtectedRoute>} />
-                <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
-                <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-                <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-                <Route path="/plans" element={<PlanSelection />} />
-                <Route path="/plan" element={<PlanSelection />} />
-                <Route path="/pwa" element={<PWAApp />} />
-                <Route path="/pwa/search" element={<PWAApp />} />
-                <Route path="/pwa/history" element={<PWAApp />} />
-                <Route path="/fanmarks/:fanmarkId/settings" element={<FanmarkSettingsPage />} />
-                <Route path="/fanmarks/:fanmarkId/profile/edit" element={<EmojiProfileEdit />} />
-                <Route path="/fanmarks/:fanmarkId/profile/preview" element={<FanmarkProfilePreview />} />
-                <Route path="/fanmarks/:fanmarkId/messageboard/preview" element={<FanmarkMessageboardPreview />} />
-                <Route path="/q/:shortId" element={<FanmarkPublicQR />} />
-                {/* Short ID route for clean URLs */}
-                <Route path="/a/:shortId" element={<FanmarkAccessByShortId />} />
-                {/* Fanmark details route - must come before emojiPath */}
-                <Route path="/f/:shortId" element={<FanmarkDetailsPage />} />
-                {/* Legal and support pages */}
-                <Route path="/about" element={<About />} />
-                <Route path="/contact" element={<ContactUs />} />
-                <Route path="/privacy" element={<PrivacyPolicy />} />
-                <Route path="/terms" element={<TermsOfService />} />
-                <Route path="/commercial-transactions" element={<CommercialTransactions />} />
-                {/* Admin route - accessible via /admin path on main domain */}
-                <Route path="/admin/*" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="/:emojiPath" element={<FanmarkAccess />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <MaintenanceGate>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/password-setup" element={<ProtectedRoute><PasswordSetup /></ProtectedRoute>} />
+                  <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
+                  <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+                  <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                  <Route path="/plans" element={<PlanSelection />} />
+                  <Route path="/plan" element={<PlanSelection />} />
+                  <Route path="/pwa" element={<PWAApp />} />
+                  <Route path="/pwa/search" element={<PWAApp />} />
+                  <Route path="/pwa/history" element={<PWAApp />} />
+                  <Route path="/fanmarks/:fanmarkId/settings" element={<FanmarkSettingsPage />} />
+                  <Route path="/fanmarks/:fanmarkId/profile/edit" element={<EmojiProfileEdit />} />
+                  <Route path="/fanmarks/:fanmarkId/profile/preview" element={<FanmarkProfilePreview />} />
+                  <Route path="/fanmarks/:fanmarkId/messageboard/preview" element={<FanmarkMessageboardPreview />} />
+                  <Route path="/q/:shortId" element={<FanmarkPublicQR />} />
+                  <Route path="/maintenance" element={<Maintenance />} />
+                  {/* Short ID route for clean URLs */}
+                  <Route path="/a/:shortId" element={<FanmarkAccessByShortId />} />
+                  {/* Fanmark details route - must come before emojiPath */}
+                  <Route path="/f/:shortId" element={<FanmarkDetailsPage />} />
+                  {/* Legal and support pages */}
+                  <Route path="/about" element={<About />} />
+                  <Route path="/contact" element={<ContactUs />} />
+                  <Route path="/privacy" element={<PrivacyPolicy />} />
+                  <Route path="/terms" element={<TermsOfService />} />
+                  <Route path="/commercial-transactions" element={<CommercialTransactions />} />
+                  {/* Admin route - accessible via /admin path on main domain */}
+                  <Route path="/admin/*" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="/:emojiPath" element={<FanmarkAccess />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </MaintenanceGate>
             </BrowserRouter>
           </TooltipProvider>
         </LotteryActionOverlayProvider>

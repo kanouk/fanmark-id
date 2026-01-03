@@ -1617,6 +1617,13 @@
       "goHome": "Go Home"
     }
   },
+  "maintenance": {
+    "title": "Under Maintenance",
+    "subtitle": "We are currently performing maintenance.",
+    "description": "Sorry for the inconvenience. Please check back soon.",
+    "scheduledEndLabel": "Estimated completion",
+    "scheduledEndTbd": "To be announced"
+  },
   "analytics": {
     "pageTitle": "Analytics",
     "pageSubtitle": "Analyze access to your fanmarks",

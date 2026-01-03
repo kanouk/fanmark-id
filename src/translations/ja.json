@@ -1607,6 +1607,13 @@
       "goHome": "ホームに戻る"
     }
   },
+  "maintenance": {
+    "title": "メンテナンス中",
+    "subtitle": "現在サービスのメンテナンスを行っています。",
+    "description": "ご不便をおかけしますが、しばらくお待ちください。",
+    "scheduledEndLabel": "予定終了時刻",
+    "scheduledEndTbd": "未定"
+  },
   "analytics": {
     "pageTitle": "アナリティクス",
     "pageSubtitle": "ファンマへのアクセス状況を分析できます",

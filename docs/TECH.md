@@ -15,6 +15,12 @@
 5. Supabase ローカル: `npm run db:start` / `db:reset` / `db:stop`（`supabase` CLI 依存）。`supabase link --project-ref <ref>` で本番/ステージングへ接続。  
 6. 翻訳追加時は `src/translations/*.json` を編集し、UI で言語切替を確認。
 
+## メンテナンスモード（system_settings）
+- `maintenance_mode`: `true` でアプリ全体をメンテナンスページへ切替。
+- `maintenance_message`: メンテナンス画面に表示する本文。空の場合は翻訳キーのデフォルト文言を使う。
+- `maintenance_end_time`: ISO 8601 文字列（未設定は空文字）。表示はフロントでローカル日時に整形。
+- 制御: `MaintenanceGate` が設定値を監視し、`/admin` は常にバイパス、管理者は通常表示を継続できる。
+
 ## Supabase: スキーマ/関数運用
 - Migration-first: `supabase migration new <name>` で作成し、既存関数の返り値変更時は **必ず `DROP FUNCTION IF EXISTS ...`** を先頭に置く（`SUPABASE_MIGRATION_GUIDE.md` 方針）。
 - 主な Edge Functions:  

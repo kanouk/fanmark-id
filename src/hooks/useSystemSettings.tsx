@@ -15,6 +15,9 @@ interface SystemSettings {
   enterprise_pricing: number;
   max_emoji_characters: number;
   grace_period_days: number;
+  maintenance_mode: boolean;
+  maintenance_message: string;
+  maintenance_end_time: string | null;
   creator_stripe_price_id: string;
   max_stripe_price_id: string;
   business_stripe_price_id: string;
@@ -37,6 +40,9 @@ export function useSystemSettings(options?: { includePrivate?: boolean }) {
     enterprise_pricing: 50000,
     max_emoji_characters: 5,
     grace_period_days: 7,
+    maintenance_mode: false,
+    maintenance_message: '',
+    maintenance_end_time: null,
     creator_stripe_price_id: '',
     max_stripe_price_id: '',
     business_stripe_price_id: '',
@@ -90,6 +96,12 @@ export function useSystemSettings(options?: { includePrivate?: boolean }) {
             acc.max_emoji_characters = parseInt(setting_value, 10);
           } else if (setting_key === 'grace_period_days') {
             acc.grace_period_days = parseInt(setting_value, 10);
+          } else if (setting_key === 'maintenance_mode') {
+            acc.maintenance_mode = setting_value === 'true';
+          } else if (setting_key === 'maintenance_message') {
+            acc.maintenance_message = setting_value;
+          } else if (setting_key === 'maintenance_end_time') {
+            acc.maintenance_end_time = setting_value ? setting_value : null;
           } else if (setting_key === 'creator_stripe_price_id') {
             acc.creator_stripe_price_id = setting_value;
           } else if (setting_key === 'max_stripe_price_id') {
