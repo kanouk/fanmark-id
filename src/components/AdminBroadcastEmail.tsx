@@ -365,43 +365,171 @@ export function AdminBroadcastEmail() {
     );
   };
 
+  const broadcastStats = React.useMemo(() => {
+    const stats = {
+      total: 0,
+      draft: 0,
+      scheduled: 0,
+      sending: 0,
+      completed: 0,
+      failed: 0,
+      cancelled: 0,
+    };
+
+    if (!broadcasts) return stats;
+
+    stats.total = broadcasts.length;
+    broadcasts.forEach((broadcast) => {
+      if (stats[broadcast.status] !== undefined) {
+        stats[broadcast.status] += 1;
+      }
+    });
+
+    return stats;
+  }, [broadcasts]);
+
+  const latestBroadcast = broadcasts?.[0];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">一括メール送信</h3>
-          <p className="text-sm text-muted-foreground">
-            全ユーザーへのお知らせ・メンテナンス通知を送信
-          </p>
+      <div className="rounded-2xl border border-border/60 bg-gradient-to-br from-background via-background to-muted/30 p-6 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
+              <Mail className="h-4 w-4" />
+              Broadcast Email
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-foreground">一括メール送信</h3>
+              <p className="text-sm text-muted-foreground">
+                全ユーザーへのお知らせ・メンテナンス通知を送信
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {latestBroadcast && (
+              <div className="hidden text-xs text-muted-foreground sm:block">
+                最新作成:{" "}
+                {format(new Date(latestBroadcast.created_at), "MM/dd HH:mm", {
+                  locale: ja,
+                })}
+              </div>
+            )}
+            <Button onClick={() => setIsCreateOpen(true)} className="gap-2 shadow-sm">
+              <Plus className="h-4 w-4" />
+              新規作成
+            </Button>
+          </div>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          新規作成
-        </Button>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <Card className="border-border/60 bg-card shadow-sm">
+          <CardContent className="flex items-center justify-between p-5">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                総件数
+              </p>
+              <p className="mt-1 text-2xl font-semibold text-foreground">
+                {broadcastStats.total}
+              </p>
+            </div>
+            <div className="rounded-full bg-primary/10 p-3 text-primary">
+              <Mail className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-border/60 bg-card shadow-sm">
+          <CardContent className="flex items-center justify-between p-5">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                下書き
+              </p>
+              <p className="mt-1 text-2xl font-semibold text-foreground">
+                {broadcastStats.draft}
+              </p>
+            </div>
+            <div className="rounded-full bg-muted/60 p-3 text-muted-foreground">
+              <Clock className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-border/60 bg-card shadow-sm">
+          <CardContent className="flex items-center justify-between p-5">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                送信中
+              </p>
+              <p className="mt-1 text-2xl font-semibold text-foreground">
+                {broadcastStats.sending + broadcastStats.scheduled}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                予約: {broadcastStats.scheduled}
+              </p>
+            </div>
+            <div className="rounded-full bg-primary/10 p-3 text-primary">
+              <Send className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-border/60 bg-card shadow-sm">
+          <CardContent className="flex items-center justify-between p-5">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                完了
+              </p>
+              <p className="mt-1 text-2xl font-semibold text-foreground">
+                {broadcastStats.completed}
+              </p>
+              {broadcastStats.failed > 0 && (
+                <p className="text-xs text-destructive">
+                  失敗: {broadcastStats.failed}
+                </p>
+              )}
+            </div>
+            <div className="rounded-full bg-emerald-100 p-3 text-emerald-600">
+              <CheckCircle className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Broadcast List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Mail className="h-4 w-4" />
-            送信履歴
-          </CardTitle>
+      <Card className="border-border/60 shadow-sm">
+        <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Mail className="h-4 w-4" />
+              送信履歴
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              最近の一括メールを表示しています（最大50件）。
+            </p>
+          </div>
+          <Badge variant="outline" className="w-fit rounded-full px-3 py-1">
+            {broadcastStats.total}件
+          </Badge>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : broadcasts?.length === 0 ? (
-            <div className="py-8 text-center text-muted-foreground">
-              送信履歴がありません
+            <div className="flex flex-col items-center gap-3 py-12 text-muted-foreground">
+              <div className="rounded-full bg-muted/40 p-4">
+                <Mail className="h-6 w-6" />
+              </div>
+              <div className="text-sm">送信履歴がありません</div>
+              <Button variant="outline" size="sm" onClick={() => setIsCreateOpen(true)}>
+                新規メールを作成
+              </Button>
             </div>
           ) : (
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="bg-muted/30">
                   <TableHead>タイプ</TableHead>
                   <TableHead>件名</TableHead>
                   <TableHead>ステータス</TableHead>
@@ -418,7 +546,7 @@ export function AdminBroadcastEmail() {
                   );
 
                   return (
-                    <TableRow key={broadcast.id}>
+                    <TableRow key={broadcast.id} className="hover:bg-muted/20">
                       <TableCell>
                         <Badge variant="outline">{emailType?.label || broadcast.email_type}</Badge>
                       </TableCell>
