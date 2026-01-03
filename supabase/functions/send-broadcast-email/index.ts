@@ -180,7 +180,7 @@ async function processTestSend(
     return { success: false, message: "No template found for broadcast" };
   }
 
-  const fromEmail = "Fanmark <noreply@fanmark.me>";
+  const fromEmail = "Fanmark <noreply@fanmark.id>";
   const subject = broadcast.subject || finalTemplate.subject;
   const html = buildEmailHtml(finalTemplate, broadcast.body_text, broadcast.subject);
 
@@ -377,7 +377,7 @@ async function processBroadcast(
   const allErrors: string[] = [];
 
   // Process users in batches
-  const fromEmail = "Fanmark <noreply@fanmark.me>";
+  const fromEmail = "Fanmark <noreply@fanmark.id>";
 
   for (const [lang, langUsers] of usersByLanguage) {
     const template = templateCache.get(lang) || fallbackTemplate;
