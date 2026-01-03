@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useMemo } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -62,6 +62,7 @@ export const AppHeader = ({
   const isOnFavorites = pathname.startsWith('/favorites');
   const isOnUserSettings = pathname.startsWith('/profile');
   const isOnAnalytics = pathname.startsWith('/analytics');
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   
   const canAccessAnalytics = useMemo(() => {
     const planType = profile?.plan_type;
@@ -132,6 +133,31 @@ export const AppHeader = ({
     }
   };
 
+  const markNotificationRead = async (notificationId: string) => {
+    if (!user) return;
+
+    const { error } = await supabase.rpc('mark_notification_read', {
+      notification_id_param: notificationId,
+      read_via_param: 'menu',
+    });
+
+    if (error) {
+      console.error('Error marking notification as read:', error);
+      return;
+    }
+
+    queryClient.setQueryData(['notifications-preview', user.id], (prev: any) => {
+      if (!Array.isArray(prev)) return prev;
+      return prev.map((notification) =>
+        notification.id === notificationId
+          ? { ...notification, read_at: notification.read_at || new Date().toISOString() }
+          : notification,
+      );
+    });
+    queryClient.invalidateQueries({ queryKey: ['notifications-preview', user.id] });
+    queryClient.invalidateQueries({ queryKey: ['unread-notification-count', user.id] });
+  };
+
   return (
     <header className={cn('sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl', className)}>
       <div className={cn('container mx-auto flex items-center justify-between px-4 py-4 md:px-6', containerClassName)}>
@@ -158,7 +184,7 @@ export const AppHeader = ({
           {showLanguageToggle && <LanguageToggle />}
 
           {showNotifications && !authLoading && user && (
-            <DropdownMenu>
+            <DropdownMenu open={notificationsOpen} onOpenChange={setNotificationsOpen}>
               <DropdownMenuTrigger asChild>
                 <button
                   className="relative flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full text-muted-foreground transition-transform hover:-translate-y-0.5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -199,20 +225,29 @@ export const AppHeader = ({
                     <div className="space-y-2">
                       {recentNotifications.map((notification: any) => {
                         const { title, body } = formatNotificationContent(notification);
+                        const isUnread = !notification.read_at;
                         return (
                           <button
                             key={notification.id}
                             type="button"
-                            onClick={() => {
+                            onClick={async () => {
+                              if (isUnread) {
+                                await markNotificationRead(notification.id);
+                              }
                               const directLink =
                                 notification.payload?.link ??
                                 (notification.payload?.fanmark_short_id
                                   ? `/f/${notification.payload.fanmark_short_id}`
                                   : null);
+                              setNotificationsOpen(false);
                               if (directLink) {
-                                navigate(directLink);
+                                if (directLink !== pathname) {
+                                  navigate(directLink);
+                                }
                               } else {
-                                navigate('/notifications');
+                                if (pathname !== '/notifications') {
+                                  navigate('/notifications');
+                                }
                               }
                             }}
                             className="group w-full rounded-xl border border-transparent bg-transparent px-3 py-2 text-left transition-all hover:border-primary/40 hover:bg-primary/5"
@@ -242,8 +277,11 @@ export const AppHeader = ({
                 <DropdownMenuSeparator className="mx-4" />
                 <DropdownMenuItem
                   onSelect={(event) => {
-                    event.preventDefault();
-                    navigate('/notifications');
+                    setNotificationsOpen(false);
+                    if (pathname !== '/notifications') {
+                      event.preventDefault();
+                      navigate('/notifications');
+                    }
                   }}
                   className="cursor-pointer justify-center rounded-b-2xl px-4 py-3 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
                 >
