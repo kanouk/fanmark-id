@@ -50,6 +50,7 @@ import {
   Filter,
   ChevronDown,
   Users,
+  TestTube,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -117,10 +118,13 @@ export function AdminBroadcastEmail() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isTestSendOpen, setIsTestSendOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedBroadcast, setSelectedBroadcast] = useState<BroadcastEmail | null>(null);
   const [estimatedCount, setEstimatedCount] = useState<number | null>(null);
   const [isEstimating, setIsEstimating] = useState(false);
+  const [testEmail, setTestEmail] = useState("");
+  const [testLanguage, setTestLanguage] = useState("ja");
   const [formData, setFormData] = useState({
     email_type: "broadcast_announcement",
     subject: "",
@@ -286,6 +290,29 @@ export function AdminBroadcastEmail() {
     },
   });
 
+  // Test send mutation
+  const testSendMutation = useMutation({
+    mutationFn: async ({ broadcastId, email, language }: { broadcastId: string; email: string; language: string }) => {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session?.access_token) throw new Error("Not authenticated");
+
+      const response = await supabase.functions.invoke("send-broadcast-email", {
+        body: { broadcastId, testMode: true, testEmail: email, testLanguage: language },
+      });
+
+      if (response.error) throw response.error;
+      return response.data;
+    },
+    onSuccess: (data) => {
+      setIsTestSendOpen(false);
+      setTestEmail("");
+      toast.success(data.message || "テストメールを送信しました");
+    },
+    onError: (error) => {
+      toast.error(`テスト送信失敗: ${error.message}`);
+    },
+  });
+
   const handleCreate = () => {
     if (!formData.subject.trim()) {
       toast.error("件名を入力してください");
@@ -307,6 +334,29 @@ export function AdminBroadcastEmail() {
   const openPreviewDialog = (broadcast: BroadcastEmail) => {
     setSelectedBroadcast(broadcast);
     setIsPreviewOpen(true);
+  };
+
+  const openTestSendDialog = (broadcast: BroadcastEmail) => {
+    setSelectedBroadcast(broadcast);
+    setIsTestSendOpen(true);
+  };
+
+  const handleTestSend = () => {
+    if (!selectedBroadcast || !testEmail.trim()) {
+      toast.error("テスト送信先のメールアドレスを入力してください");
+      return;
+    }
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(testEmail.trim())) {
+      toast.error("有効なメールアドレスを入力してください");
+      return;
+    }
+    testSendMutation.mutate({
+      broadcastId: selectedBroadcast.id,
+      email: testEmail.trim(),
+      language: testLanguage,
+    });
   };
 
   const getTemplatePreview = (emailType: string, language: string) => {
@@ -413,17 +463,29 @@ export function AdminBroadcastEmail() {
                             variant="ghost"
                             size="sm"
                             onClick={() => openPreviewDialog(broadcast)}
+                            title="プレビュー"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
                           {broadcast.status === "draft" && (
-                            <Button
-                              variant="default"
-                              size="sm"
-                              onClick={() => openConfirmDialog(broadcast)}
-                            >
-                              <Send className="h-4 w-4" />
-                            </Button>
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openTestSendDialog(broadcast)}
+                                title="テスト送信"
+                              >
+                                <TestTube className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() => openConfirmDialog(broadcast)}
+                                title="送信開始"
+                              >
+                                <Send className="h-4 w-4" />
+                              </Button>
+                            </>
                           )}
                         </div>
                       </TableCell>
@@ -789,6 +851,82 @@ export function AdminBroadcastEmail() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>
               閉じる
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Test Send Dialog */}
+      <Dialog open={isTestSendOpen} onOpenChange={setIsTestSendOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <TestTube className="h-5 w-5 text-primary" />
+              テスト送信
+            </DialogTitle>
+            <DialogDescription>
+              指定したメールアドレスにテストメールを送信します。実際の送信前に内容を確認できます。
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedBroadcast && (
+            <div className="space-y-4">
+              <div className="rounded-lg border bg-muted/50 p-4">
+                <p className="text-sm">
+                  <span className="font-medium">タイプ:</span>{" "}
+                  {EMAIL_TYPES.find((t) => t.value === selectedBroadcast.email_type)?.label || selectedBroadcast.email_type}
+                </p>
+                <p className="text-sm">
+                  <span className="font-medium">件名:</span>{" "}
+                  {selectedBroadcast.subject || "(テンプレート使用)"}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="test-email">送信先メールアドレス</Label>
+                <Input
+                  id="test-email"
+                  type="email"
+                  placeholder="test@example.com"
+                  value={testEmail}
+                  onChange={(e) => setTestEmail(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>テンプレート言語</Label>
+                <Select value={testLanguage} onValueChange={setTestLanguage}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeLanguages.map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code}>
+                        {lang.nativeLabel} ({lang.code})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  選択した言語のテンプレートでメールが送信されます
+                </p>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsTestSendOpen(false)}>
+              キャンセル
+            </Button>
+            <Button
+              onClick={handleTestSend}
+              disabled={testSendMutation.isPending || !testEmail.trim()}
+            >
+              {testSendMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              <TestTube className="mr-2 h-4 w-4" />
+              テスト送信
             </Button>
           </DialogFooter>
         </DialogContent>

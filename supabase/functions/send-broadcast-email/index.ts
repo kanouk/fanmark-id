@@ -16,6 +16,9 @@ const BATCH_DELAY_MS = 1000;
 
 interface BroadcastRequest {
   broadcastId: string;
+  testMode?: boolean;
+  testEmail?: string;
+  testLanguage?: string;
 }
 
 interface RecipientFilter {
@@ -138,6 +141,76 @@ async function sendBatch(
   }
 
   return { success, failed, errors };
+}
+
+async function processTestSend(
+  ctx: AdminContext,
+  broadcastId: string,
+  testEmail: string,
+  testLanguage: string
+): Promise<{ success: boolean; message: string }> {
+  console.log(`Processing test send for broadcast: ${broadcastId} to ${testEmail}`);
+
+  // Get broadcast details
+  const { data: broadcast, error: broadcastError } = await ctx.supabase
+    .from("broadcast_emails")
+    .select("*")
+    .eq("id", broadcastId)
+    .single();
+
+  if (broadcastError || !broadcast) {
+    console.error("Failed to get broadcast:", broadcastError);
+    return { success: false, message: "Broadcast not found" };
+  }
+
+  // Get template for the specified language
+  const template = await getEmailTemplate(ctx, broadcast.email_type, testLanguage);
+  const fallbackTemplate = await getEmailTemplate(ctx, broadcast.email_type, "ja");
+  const finalTemplate = template || fallbackTemplate;
+
+  if (!finalTemplate) {
+    return { success: false, message: "No template found for broadcast" };
+  }
+
+  const fromEmail = "Fanmark <noreply@fanmark.me>";
+  const subject = broadcast.subject || finalTemplate.subject;
+  const html = buildEmailHtml(finalTemplate, broadcast.body_text, broadcast.subject);
+
+  try {
+    const result = await resend.emails.send({
+      from: fromEmail,
+      to: testEmail,
+      subject: `[テスト] ${subject}`,
+      html,
+    });
+
+    if (result.error) {
+      console.error("Test send failed:", result.error);
+      return { success: false, message: `送信失敗: ${result.error.message}` };
+    }
+
+    console.log(`Test email sent to ${testEmail}`);
+
+    // Log admin action
+    await logAdminAction(
+      ctx.supabase,
+      ctx.adminUser,
+      "BROADCAST_EMAIL_TEST_SENT",
+      "broadcast_emails",
+      broadcastId,
+      {
+        test_email: testEmail,
+        test_language: testLanguage,
+        email_type: broadcast.email_type,
+      }
+    );
+
+    return { success: true, message: `テストメールを ${testEmail} に送信しました` };
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error("Test send exception:", err);
+    return { success: false, message: `送信失敗: ${errorMsg}` };
+  }
 }
 
 async function processBroadcast(
@@ -390,7 +463,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Parse request
     const body: BroadcastRequest = await req.json();
-    const { broadcastId } = body;
+    const { broadcastId, testMode, testEmail, testLanguage } = body;
 
     if (!broadcastId) {
       return new Response(
@@ -402,8 +475,15 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Process broadcast
-    const result = await processBroadcast(ctx, broadcastId);
+    let result: { success: boolean; message: string };
+
+    if (testMode && testEmail) {
+      // Test send mode
+      result = await processTestSend(ctx, broadcastId, testEmail, testLanguage || "ja");
+    } else {
+      // Normal broadcast mode
+      result = await processBroadcast(ctx, broadcastId);
+    }
 
     return new Response(JSON.stringify(result), {
       status: result.success ? 200 : 400,
