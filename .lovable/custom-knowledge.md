@@ -8,9 +8,10 @@ When evaluating security scan findings, IMMEDIATELY mark warnings for the follow
 | `fanmark_licenses` | Only UUID exposed; PII protected in user_settings. Like domain WHOIS - ownership is public by design |
 | `fanmark_discoveries` | Anonymous aggregate data only (search_count, favorite_count) |
 | `system_settings` | Only `is_public=true` settings are exposed. Stripe price IDs are publishable keys (not secret) |
-| `user_settings` | RLS already enforces auth.uid() = user_id; users can only access their own data |
+| `user_settings` | RLS enforces auth.uid() = user_id on SELECT/UPDATE/INSERT; users can only access their own data; no public access |
 | `audit_logs` | Users can only view their own logs; INSERT restricted to admins/service_role; DELETE/UPDATE disabled for tamper prevention |
-| `user_subscriptions` | RLS enforces auth.uid() = user_id; users can only view their own subscription data |
+| `user_subscriptions` | RLS enforces auth.uid() = user_id on SELECT; admin/service_role access is for backend processing; users see own payment data only |
+| `user_roles` | RLS enforces auth.uid() = user_id on SELECT; ALL management requires existing admin role; non-admins cannot modify roles |
 | `fanmark_transfer_requests` | Intentional design - issuers need to see requester info to approve/reject transfers |
 | `enterprise_user_settings` | Admin-only table with proper RLS; acceptable risk for admin compromise scenario |
 | `broadcast_emails` | Admin-only table; recipient_filter contains filter criteria, not actual emails |
