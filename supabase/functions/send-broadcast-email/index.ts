@@ -120,8 +120,11 @@ async function sendBatch(
   let failed = 0;
   const errors: string[] = [];
 
-  // Send emails one by one (Resend batch API has limitations)
-  for (const email of emails) {
+// Send emails one by one with rate limiting (Resend allows 2 requests/second)
+  const SEND_DELAY_MS = 600; // 600ms between each email to stay under 2/sec limit
+  
+  for (let i = 0; i < emails.length; i++) {
+    const email = emails[i];
     try {
       const result = await resend.emails.send(email);
       if (result.error) {
@@ -137,6 +140,11 @@ async function sendBatch(
       const errorMsg = err instanceof Error ? err.message : String(err);
       errors.push(`${email.to}: ${errorMsg}`);
       console.error(`Exception sending to ${email.to}:`, err);
+    }
+    
+    // Add delay between emails to respect rate limit
+    if (i < emails.length - 1) {
+      await sleep(SEND_DELAY_MS);
     }
   }
 
