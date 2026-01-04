@@ -49,8 +49,8 @@ interface FanmarkData {
 }
 
 const socialPlatforms = [
-  { key: 'instagram', label: 'Instagram', icon: FiInstagram },
   { key: 'tiktok', label: 'TikTok', icon: SiTiktok },
+  { key: 'instagram', label: 'Instagram', icon: FiInstagram },
   { key: 'x', label: 'X (Twitter)', icon: SiX },
   { key: 'youtube', label: 'YouTube', icon: FiYoutube },
   { key: 'bereal', label: 'BeReal', icon: SiBereal },

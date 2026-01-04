@@ -145,13 +145,12 @@ const FanmarkSettingsPage = () => {
     if (!loading && fanmark && location.state?.isNew) {
       // 紙吹雪を発動
       showEmojiConfetti(fanmark.fanmark);
-      
-      // history.state から isNew フラグを削除（ブラウザバック時の再発動を防止）
-      const newState = { ...location.state };
-      delete newState.isNew;
-      window.history.replaceState(newState, document.title);
+
+      // isNew フラグだけ削除して履歴を置き換え（再発動を防止）
+      const { isNew, ...rest } = location.state ?? {};
+      navigate(location.pathname, { replace: true, state: rest });
     }
-  }, [loading, fanmark, location.state]);
+  }, [loading, fanmark, location.state, location.pathname, navigate]);
 
   const handleClose = () => {
     navigate('/dashboard');

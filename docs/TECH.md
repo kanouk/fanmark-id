@@ -35,6 +35,23 @@
   - `check-expired-licenses-daily` (`0 0 * * *`) → `functions/v1/check-expired-licenses`  
   - `process-notification-events-every-minute` (`* * * * *`) → `functions/v1/process-notification-events`
 
+## 絵文字マスタ更新（Unicode emoji-test.txt）
+1. Unicode 公式から `emoji-test.txt` を取得して `data/emoji/` に保存する。  
+   - 例:  
+     - `curl -o data/emoji/emoji-test.txt https://unicode.org/Public/emoji/15.1/emoji-test.txt`
+2. `emoji-variation-sequences.txt` が公開されていれば取得する（Unicode 配布に無い場合は ISO/IEC 10646 側を確認）。ない場合はスキップする。  
+   - 例（ISO/IEC 10646）: `curl -o data/emoji/emoji-variation-sequences.txt https://standards.iso.org/iso-iec/10646/ed-6/en/emoji-variation-sequences.txt`  
+   - `scripts/convert-emoji-test.mjs` はファイル未取得でも警告のみで継続する。
+2. 変換スクリプトでマスタCSV/JSONを生成する。  
+   - `node scripts/convert-emoji-test.mjs --format both`  
+   - 出力: `data/emoji/emoji-master.csv` / `data/emoji/emoji-master.json`
+3. 管理画面 > 絵文字マスタ管理 で CSV/JSON をインポートする。  
+   - CSV ヘッダー: `emoji,short_name,codepoints,keywords,category,subcategory,sort_order`  
+   - codepoints はスペース区切り
+4. フロント用のカタログを再生成する（Supabase から `emoji_master` を取得）。  
+   - `SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/generate-emoji-catalog.ts`  
+   - 出力: `src/data/emojiCatalog.ts`
+
 ## セキュリティ / RLS の公開方針（誤検知対策）
 このプロダクトは「ドメインレジストリ（WHOIS）モデル」で、**一部のデータは意図的に公開**します。セキュリティスキャナが「公開＝危険」と判定しやすいため、以下の公開方針は **誤検知として無視（ignore）** します。
 

@@ -62,7 +62,7 @@ const sanitizePhoneInput = (value?: string) => {
 
 const resolveSocialPlatformFromUrl = (targetUrl?: string) => {
   if (!targetUrl) {
-    return { platformKey: 'website', mode: 'handle' as SocialLinkInputMode };
+    return { platformKey: 'tiktok', mode: 'handle' as SocialLinkInputMode };
   }
 
   if (targetUrl.startsWith('http://')) {
@@ -75,7 +75,7 @@ const resolveSocialPlatformFromUrl = (targetUrl?: string) => {
     }
   }
 
-  return { platformKey: 'website', mode: 'url' as SocialLinkInputMode };
+  return { platformKey: 'tiktok', mode: 'url' as SocialLinkInputMode };
 };
 
 const settingsSchema = z.object({
@@ -209,7 +209,7 @@ export const FanmarkSettings = ({
 
   const isPasswordProtected = watch('isPasswordProtected');
 
-  const [redirectPlatformKey, setRedirectPlatformKey] = useState<string>('website');
+  const [redirectPlatformKey, setRedirectPlatformKey] = useState<string>('tiktok');
   const [redirectInputMode, setRedirectInputMode] = useState<SocialLinkInputMode>('handle');
 
   const draftStorageKey = fanmark ? `fanmark_settings_draft_${fanmark.id}` : null;
@@ -294,9 +294,9 @@ export const FanmarkSettings = ({
     setHydratedDraftKey(draftStorageKey);
   }, [fanmark, draftStorageKey, reset, restoreEditingState, hydratedDraftKey, t]);
 
-  // Persist draft as the user edits
+  // Persist draft as the user edits (wait until initial hydration completes)
   useEffect(() => {
-    if (!draftStorageKey) return;
+    if (!draftStorageKey || hydratedDraftKey !== draftStorageKey) return;
     const subscription = watch((values) => {
       try {
         sessionStorage.setItem(
@@ -316,7 +316,7 @@ export const FanmarkSettings = ({
     });
 
     return () => subscription.unsubscribe();
-  }, [watch, draftStorageKey, isEditingPassword]);
+  }, [watch, draftStorageKey, hydratedDraftKey, isEditingPassword]);
 
   useEffect(() => {
     if (!isPasswordProtected) {

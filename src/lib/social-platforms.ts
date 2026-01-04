@@ -22,8 +22,8 @@ export type SocialPlatform = {
 };
 
 export const socialPlatforms: SocialPlatform[] = [
-  { key: 'instagram', label: 'Instagram', icon: FiInstagram, placeholder: 'https://instagram.com/username', baseUrl: 'https://instagram.com/', handlePlaceholder: 'username' },
   { key: 'tiktok', label: 'TikTok', icon: SiTiktok, placeholder: 'https://tiktok.com/@username', baseUrl: 'https://tiktok.com/@', handlePlaceholder: 'username' },
+  { key: 'instagram', label: 'Instagram', icon: FiInstagram, placeholder: 'https://instagram.com/username', baseUrl: 'https://instagram.com/', handlePlaceholder: 'username' },
   { key: 'x', label: 'X (Twitter)', icon: SiX, placeholder: 'https://x.com/username', baseUrl: 'https://x.com/', handlePlaceholder: 'username' },
   { key: 'youtube', label: 'YouTube', icon: FiYoutube, placeholder: 'https://youtube.com/@username', baseUrl: 'https://youtube.com/@', handlePlaceholder: 'username' },
   { key: 'bereal', label: 'BeReal', icon: SiBereal, placeholder: 'https://bere.al/username', baseUrl: 'https://bere.al/', handlePlaceholder: 'username' },
