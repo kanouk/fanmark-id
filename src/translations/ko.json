@@ -1305,7 +1305,7 @@
   "legalPages": {
     "privacyPolicy": {
       "title": "개인정보 보호정책",
-      "lastUpdated": "마지막 업데이트: 2025년 12월",
+      "lastUpdated": "마지막 업데이트: 2026년 1월",
       "introduction": "fanmark.id(\"당사\", \"우리\", \"우리의\" 또는 \"서비스\")는 귀하의 개인정보 보호를 최우선으로 생각합니다. 본 개인정보 보호정책은 귀하가 당사의 웹사이트 및 서비스를 이용할 때 당사가 귀하의 정보를 어떻게 수집, 사용, 공개 및 보호하는지 설명합니다.",
       "sections": {
         "informationWeCollect": {
@@ -1360,7 +1360,7 @@
     },
     "termsOfService": {
       "title": "서비스 약관",
-      "lastUpdated": "마지막 업데이트: 2025년 12월",
+      "lastUpdated": "마지막 업데이트: 2026년 1월",
       "introduction": "본 서비스 약관(\"약관\", \"계약\")은 귀하(\"사용자\", \"귀하\", \"귀사\")와 Fanmark(\"본 서비스\")의 운영자(\"운영자\") 간의 법적 구속력 있는 계약을 구성합니다. 본 서비스에 접근하거나 사용함으로써 귀하는 본 약관에 구속되는 것에 동의합니다.",
       "sections": {
         "useAgreement": {
@@ -1536,7 +1536,7 @@
     },
     "commercialTransactions": {
       "title": "전자상거래법에 따른 표기",
-      "lastUpdated": "마지막 업데이트: 2025년 12월",
+      "lastUpdated": "마지막 업데이트: 2026년 1월",
       "introduction": "전자상거래법에 따라 다음과 같이 고지합니다.",
       "sections": {
         "seller": {
@@ -1553,7 +1553,7 @@
         },
         "phone": {
           "title": "전화번호",
-          "content": "070-8482-1646\n※응대 시간: 평일 10:00~18:00"
+          "content": "전화번호는 요청이 있을 경우 지체 없이 공개합니다.\n{contactLink}를 통해 이메일 또는 X 계정으로 연락해 주세요."
         },
         "email": {
           "title": "이메일",

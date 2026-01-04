@@ -1305,7 +1305,7 @@
   "legalPages": {
     "privacyPolicy": {
       "title": "Kebijakan Privasi",
-      "lastUpdated": "Pembaruan terakhir: Desember 2025",
+      "lastUpdated": "Pembaruan terakhir: Januari 2026",
       "introduction": "fanmark.id (\"kami\", \"kami\", \"milik kami\", atau \"Layanan\") berkomitmen untuk melindungi privasi Anda. Kebijakan Privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, mengungkapkan, dan melindungi informasi Anda saat Anda menggunakan situs web dan layanan kami.",
       "sections": {
         "informationWeCollect": {
@@ -1360,7 +1360,7 @@
     },
     "termsOfService": {
       "title": "Syarat Layanan",
-      "lastUpdated": "Pembaruan terakhir: Desember 2025",
+      "lastUpdated": "Pembaruan terakhir: Januari 2026",
       "introduction": "Syarat Layanan ini (\"Syarat\", \"Perjanjian\") membentuk kontrak yang mengikat secara hukum antara Anda (\"Pengguna\", \"Anda\", \"Milik Anda\") dan operator Fanmark (\"Layanan\", \"Operator\", \"kami\"). Dengan mengakses atau menggunakan Layanan, Anda setuju untuk terikat oleh Syarat ini.",
       "sections": {
         "useAgreement": {
@@ -1536,7 +1536,7 @@
     },
     "commercialTransactions": {
       "title": "Pengungkapan Undang-Undang Transaksi Komersial",
-      "lastUpdated": "Pembaruan terakhir: Desember 2025",
+      "lastUpdated": "Pembaruan terakhir: Januari 2026",
       "introduction": "Sesuai dengan Undang-Undang Transaksi Komersial, informasi berikut disediakan.",
       "sections": {
         "seller": {
@@ -1553,7 +1553,7 @@
         },
         "phone": {
           "title": "Nomor telepon",
-          "content": "070-8482-1646\n*Jam layanan: hari kerja 10:00–18:00 (JST)"
+          "content": "Nomor telepon akan kami ungkapkan tanpa penundaan jika diminta.\nSilakan hubungi kami melalui {contactLink} lewat email atau akun X."
         },
         "email": {
           "title": "Email",

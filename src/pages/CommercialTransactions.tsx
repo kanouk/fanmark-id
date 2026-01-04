@@ -6,12 +6,40 @@ import { Card, CardContent } from "@/components/ui/card";
 
 export const CommercialTransactions: React.FC = () => {
   const { t, tWithBreaks } = useTranslation();
+  const contactLinkText = t("legalPages.footerLinks.contactUs");
+
+  const renderContactLinkContent = (text: string) => {
+    const token = "{contactLink}";
+    const link = (
+      <a
+        href="/contact"
+        className="font-medium text-primary underline underline-offset-4 hover:text-primary/80"
+      >
+        {contactLinkText}
+      </a>
+    );
+
+    return text.split("\n").map((line, lineIndex) => {
+      const parts = line.split(token);
+      return (
+        <span key={`contact-line-${lineIndex}`}>
+          {lineIndex > 0 && <br />}
+          {parts.map((part, partIndex) => (
+            <React.Fragment key={`contact-part-${lineIndex}-${partIndex}`}>
+              {part}
+              {partIndex < parts.length - 1 && link}
+            </React.Fragment>
+          ))}
+        </span>
+      );
+    });
+  };
 
   const sections = [
     { id: "seller", title: t("legalPages.commercialTransactions.sections.seller.title"), content: tWithBreaks("legalPages.commercialTransactions.sections.seller.content") },
     { id: "administrator", title: t("legalPages.commercialTransactions.sections.administrator.title"), content: tWithBreaks("legalPages.commercialTransactions.sections.administrator.content") },
     { id: "location", title: t("legalPages.commercialTransactions.sections.location.title"), content: tWithBreaks("legalPages.commercialTransactions.sections.location.content") },
-    { id: "phone", title: t("legalPages.commercialTransactions.sections.phone.title"), content: tWithBreaks("legalPages.commercialTransactions.sections.phone.content") },
+    { id: "phone", title: t("legalPages.commercialTransactions.sections.phone.title"), content: renderContactLinkContent(t("legalPages.commercialTransactions.sections.phone.content")) },
     { id: "email", title: t("legalPages.commercialTransactions.sections.email.title"), content: tWithBreaks("legalPages.commercialTransactions.sections.email.content") },
     { id: "pricing", title: t("legalPages.commercialTransactions.sections.pricing.title"), content: tWithBreaks("legalPages.commercialTransactions.sections.pricing.content") },
     { id: "additionalFees", title: t("legalPages.commercialTransactions.sections.additionalFees.title"), content: tWithBreaks("legalPages.commercialTransactions.sections.additionalFees.content") },

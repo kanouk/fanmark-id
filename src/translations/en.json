@@ -1305,7 +1305,7 @@
   "legalPages": {
     "privacyPolicy": {
       "title": "Privacy Policy",
-      "lastUpdated": "Last updated: December 2025",
+      "lastUpdated": "Last updated: January 2026",
       "introduction": "fanmark.id (\"we\", \"us\", \"our\", or \"Service\") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our website and services.",
       "sections": {
         "informationWeCollect": {
@@ -1360,7 +1360,7 @@
     },
     "termsOfService": {
       "title": "Terms of Service",
-      "lastUpdated": "Last updated: December 2025",
+      "lastUpdated": "Last updated: January 2026",
       "introduction": "These Terms of Service (\"Terms\", \"Agreement\") form a legally binding contract between you (\"User\", \"you\", \"your\") and the operator of Fanmark (\"Service\", \"Operator\", \"we\", \"us\", \"our\"). By accessing or using the Service, you agree to be bound by these Terms.",
       "sections": {
         "useAgreement": {
@@ -1536,7 +1536,7 @@
     },
     "commercialTransactions": {
       "title": "Commercial Transactions Act Disclosure",
-      "lastUpdated": "Last updated: December 2025",
+      "lastUpdated": "Last updated: January 2026",
       "introduction": "In accordance with the Act on Specified Commercial Transactions, we disclose the following.",
       "sections": {
         "seller": {
@@ -1553,7 +1553,7 @@
         },
         "phone": {
           "title": "Phone",
-          "content": "070-8482-1646\nHours: Weekdays 10:00–18:00 (JST)"
+          "content": "We will disclose our phone number without delay upon request.\nPlease contact us via {contactLink} by email or X account."
         },
         "email": {
           "title": "Email",
