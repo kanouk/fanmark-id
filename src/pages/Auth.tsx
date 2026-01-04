@@ -516,28 +516,28 @@ const SignUpForm = ({
   const socialButtons = [
     {
       key: 'google',
-      label: t('auth.signInWithGoogle'),
+      label: t('auth.signUpWithGoogle'),
       Icon: FaGoogle,
       onClick: () => signInWithGoogle(),
       disabled: authState.loading,
     },
     {
       key: 'apple',
-      label: t('auth.signInWithApple'),
+      label: t('auth.signUpWithApple'),
       Icon: FaApple,
       onClick: () => signInWithApple(),
       disabled: authState.loading,
     },
     {
       key: 'discord',
-      label: t('auth.signInWithDiscord'),
+      label: t('auth.signUpWithDiscord'),
       Icon: FaDiscord,
       onClick: () => signInWithDiscord(),
       disabled: authState.loading,
     },
     {
       key: 'github',
-      label: t('auth.signInWithGithub'),
+      label: t('auth.signUpWithGithub'),
       Icon: FaGithub,
       onClick: () => signInWithGithub(),
       disabled: authState.loading,

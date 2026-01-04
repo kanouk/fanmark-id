@@ -157,6 +157,7 @@ export default function EmojiProfileEdit() {
             isSubmitting={isSubmitting}
             onClose={handleClose}
             onPreview={handlePreview}
+            draftStorageKey={licenseId ? `emoji_profile_draft_${licenseId}` : undefined}
           />
         </div>
       </div>

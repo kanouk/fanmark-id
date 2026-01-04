@@ -118,6 +118,10 @@
     "signInWithApple": "Apple로 로그인",
     "signInWithDiscord": "Discord로 로그인",
     "signInWithGithub": "GitHub로 로그인",
+    "signUpWithGoogle": "Google로 가입하기",
+    "signUpWithApple": "Apple로 가입하기",
+    "signUpWithDiscord": "Discord로 가입하기",
+    "signUpWithGithub": "GitHub로 가입하기",
     "or": "또는",
     "forgotPassword": "비밀번호를 잊으셨나요?",
     "resetPassword": "비밀번호 재설정",
@@ -1306,7 +1310,7 @@
     "privacyPolicy": {
       "title": "개인정보 보호정책",
       "lastUpdated": "마지막 업데이트: 2026년 1월",
-      "introduction": "fanmark.id(\"당사\", \"우리\", \"우리의\" 또는 \"서비스\")는 귀하의 개인정보 보호를 최우선으로 생각합니다. 본 개인정보 보호정책은 귀하가 당사의 웹사이트 및 서비스를 이용할 때 당사가 귀하의 정보를 어떻게 수집, 사용, 공개 및 보호하는지 설명합니다.",
+      "introduction": "Fanmark(\"당사\", \"우리\", \"우리의\" 또는 \"서비스\")는 귀하의 개인정보 보호를 최우선으로 생각합니다. 본 개인정보 보호정책은 귀하가 당사의 웹사이트 및 서비스를 이용할 때 당사가 귀하의 정보를 어떻게 수집, 사용, 공개 및 보호하는지 설명합니다.",
       "sections": {
         "informationWeCollect": {
           "title": "1. 당사가 수집하는 정보",

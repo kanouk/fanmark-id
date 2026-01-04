@@ -118,6 +118,10 @@
     "signInWithApple": "Masuk dengan Apple",
     "signInWithDiscord": "Masuk dengan Discord",
     "signInWithGithub": "Masuk dengan GitHub",
+    "signUpWithGoogle": "Daftar dengan Google",
+    "signUpWithApple": "Daftar dengan Apple",
+    "signUpWithDiscord": "Daftar dengan Discord",
+    "signUpWithGithub": "Daftar dengan GitHub",
     "or": "atau",
     "forgotPassword": "Lupa Kata Sandi?",
     "resetPassword": "Atur Ulang Kata Sandi",
@@ -1306,7 +1310,7 @@
     "privacyPolicy": {
       "title": "Kebijakan Privasi",
       "lastUpdated": "Pembaruan terakhir: Januari 2026",
-      "introduction": "fanmark.id (\"kami\", \"kami\", \"milik kami\", atau \"Layanan\") berkomitmen untuk melindungi privasi Anda. Kebijakan Privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, mengungkapkan, dan melindungi informasi Anda saat Anda menggunakan situs web dan layanan kami.",
+      "introduction": "Fanmark (\"kami\", \"kami\", \"milik kami\", atau \"Layanan\") berkomitmen untuk melindungi privasi Anda. Kebijakan Privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, mengungkapkan, dan melindungi informasi Anda saat Anda menggunakan situs web dan layanan kami.",
       "sections": {
         "informationWeCollect": {
           "title": "1. Informasi yang Kami Kumpulkan",

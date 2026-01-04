@@ -118,6 +118,10 @@
     "signInWithApple": "Appleでログイン",
     "signInWithDiscord": "Discordでログイン",
     "signInWithGithub": "GitHubでログイン",
+    "signUpWithGoogle": "Googleで新規登録",
+    "signUpWithApple": "Appleで新規登録",
+    "signUpWithDiscord": "Discordで新規登録",
+    "signUpWithGithub": "GitHubで新規登録",
     "or": "または",
     "forgotPassword": "パスワードを忘れた場合",
     "resetPassword": "パスワードリセット",
@@ -1296,7 +1300,7 @@
     "privacyPolicy": {
       "title": "プライバシーポリシー",
       "lastUpdated": "最終更新：2026年1月",
-      "introduction": "fanmark.id（「当社」、「弊社」、「私たち」、または「本サービス」）は、お客様のプライバシー保護を最優先としています。本プライバシーポリシーは、お客様が本ウェブサイトおよび本サービスを利用される際に、当社がどのようにして情報を収集、利用、開示、および保護するかについて説明するものです。",
+      "introduction": "ファンマID（「当社」、「弊社」、「私たち」、または「本サービス」）は、お客様のプライバシー保護を最優先としています。本プライバシーポリシーは、お客様が本ウェブサイトおよび本サービスを利用される際に、当社がどのようにして情報を収集、利用、開示、および保護するかについて説明するものです。",
       "sections": {
         "informationWeCollect": {
           "title": "1. 当社が収集する情報",

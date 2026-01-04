@@ -57,9 +57,48 @@ interface EmojiProfileFormProps {
   isSubmitting: boolean;
   onClose: () => void;
   onPreview?: () => void;
+  draftStorageKey?: string;
 }
 
-export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose, onPreview }: EmojiProfileFormProps) => {
+const buildDefaultValues = (profile: EmojiProfile | null): ProfileFormData => ({
+  display_name: profile?.display_name || '',
+  bio: profile?.bio || '',
+  social_links: {
+    instagram: profile?.social_links?.instagram || '',
+    tiktok: profile?.social_links?.tiktok || '',
+    x: profile?.social_links?.x || '',
+    youtube: profile?.social_links?.youtube || '',
+    bereal: profile?.social_links?.bereal || '',
+    line: profile?.social_links?.line || '',
+    threads: profile?.social_links?.threads || '',
+    bluesky: profile?.social_links?.bluesky || '',
+    github: profile?.social_links?.github || '',
+    discord: profile?.social_links?.discord || '',
+    snapchat: profile?.social_links?.snapchat || '',
+    twitch: profile?.social_links?.twitch || '',
+    facebook: profile?.social_links?.facebook || '',
+    website: profile?.social_links?.website || '',
+  },
+  theme_settings: {
+    cover_image_url: profile?.theme_settings?.cover_image_url || '',
+    cover_image_dimensions: (profile?.theme_settings?.cover_image_dimensions as { width: number; height: number } | undefined),
+    cover_image_position: typeof profile?.theme_settings?.cover_image_position === 'number'
+      ? profile?.theme_settings?.cover_image_position
+      : 50,
+    profile_image_url: profile?.theme_settings?.profile_image_url || '',
+    theme_color: profile?.theme_settings?.theme_color || '#3B82F6',
+    button_style: profile?.theme_settings?.button_style || 'rounded',
+  },
+});
+
+export const EmojiProfileForm = ({
+  profile,
+  onSave,
+  isSubmitting,
+  onClose,
+  onPreview,
+  draftStorageKey,
+}: EmojiProfileFormProps) => {
   const { t } = useTranslation();
   const { uploadAvatar, uploading } = useAvatarUpload();
   const { uploadCoverImage, uploading: coverUploading } = useCoverImageUpload();
@@ -67,6 +106,7 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose, onPre
   const initialCoverDimensions = profile?.theme_settings?.cover_image_dimensions as { width: number; height: number } | undefined;
   const initialCoverPosition = profile?.theme_settings?.cover_image_position;
   const initialProfileUrl = profile?.theme_settings?.profile_image_url;
+  const [hydratedDraftKey, setHydratedDraftKey] = useState<string | null>(null);
 
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(
     typeof initialCoverUrl === 'string' && initialCoverUrl.length > 0 ? initialCoverUrl : null
@@ -96,41 +136,72 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose, onPre
     handleSubmit,
     control,
     watch,
+    reset,
     setValue,
     formState: { errors },
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
-    defaultValues: {
-      display_name: profile?.display_name || '',
-      bio: profile?.bio || '',
-      social_links: {
-        instagram: profile?.social_links?.instagram || '',
-        tiktok: profile?.social_links?.tiktok || '',
-        x: profile?.social_links?.x || '',
-        youtube: profile?.social_links?.youtube || '',
-        bereal: profile?.social_links?.bereal || '',
-        line: profile?.social_links?.line || '',
-        threads: profile?.social_links?.threads || '',
-        bluesky: profile?.social_links?.bluesky || '',
-        github: profile?.social_links?.github || '',
-        discord: profile?.social_links?.discord || '',
-        snapchat: profile?.social_links?.snapchat || '',
-        twitch: profile?.social_links?.twitch || '',
-        facebook: profile?.social_links?.facebook || '',
-        website: profile?.social_links?.website || '',
-      },
-      theme_settings: {
-        cover_image_url: profile?.theme_settings?.cover_image_url || '',
-        cover_image_dimensions: (profile?.theme_settings?.cover_image_dimensions as { width: number; height: number } | undefined),
-        cover_image_position: typeof profile?.theme_settings?.cover_image_position === 'number'
-          ? profile?.theme_settings?.cover_image_position
-          : 50,
-        profile_image_url: profile?.theme_settings?.profile_image_url || '',
-        theme_color: profile?.theme_settings?.theme_color || '#3B82F6',
-        button_style: profile?.theme_settings?.button_style || 'rounded',
-      },
-    },
+    defaultValues: buildDefaultValues(profile),
   });
+
+  useEffect(() => {
+    if (!draftStorageKey) return;
+
+    const DRAFT_TTL = 24 * 60 * 60 * 1000;
+    let nextFormData = buildDefaultValues(profile);
+
+    try {
+      const cached = sessionStorage.getItem(draftStorageKey);
+      if (cached) {
+        const parsed = JSON.parse(cached) as { timestamp?: number; form?: Partial<ProfileFormData> } | null;
+        if (parsed && parsed.timestamp && Date.now() - parsed.timestamp <= DRAFT_TTL && parsed.form) {
+          nextFormData = {
+            ...nextFormData,
+            ...parsed.form,
+            social_links: {
+              ...nextFormData.social_links,
+              ...(parsed.form.social_links ?? {}),
+            },
+            theme_settings: {
+              ...nextFormData.theme_settings,
+              ...(parsed.form.theme_settings ?? {}),
+            },
+          };
+        } else if (parsed?.timestamp) {
+          sessionStorage.removeItem(draftStorageKey);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load emoji profile draft:', error);
+    }
+
+    reset(nextFormData);
+    setCoverImageUrl(nextFormData.theme_settings?.cover_image_url || null);
+    setCoverImageDimensions((nextFormData.theme_settings?.cover_image_dimensions as { width: number; height: number } | undefined) || null);
+    setCoverImagePosition(typeof nextFormData.theme_settings?.cover_image_position === 'number' ? nextFormData.theme_settings.cover_image_position : 50);
+    setProfileImageUrl(nextFormData.theme_settings?.profile_image_url || null);
+    setHydratedDraftKey(draftStorageKey);
+  }, [draftStorageKey, profile, reset]);
+
+  useEffect(() => {
+    if (!draftStorageKey || hydratedDraftKey !== draftStorageKey) return;
+
+    const subscription = watch((values) => {
+      try {
+        sessionStorage.setItem(
+          draftStorageKey,
+          JSON.stringify({
+            timestamp: Date.now(),
+            form: values,
+          })
+        );
+      } catch (error) {
+        console.warn('Failed to persist emoji profile draft:', error);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [draftStorageKey, hydratedDraftKey, watch]);
 
   useEffect(() => {
     setSocialInputModes((prev) => {
@@ -265,6 +336,9 @@ export const EmojiProfileForm = ({ profile, onSave, isSubmitting, onClose, onPre
           profile_image_url: profileImageUrl ?? '',
         },
       });
+      if (draftStorageKey) {
+        sessionStorage.removeItem(draftStorageKey);
+      }
     } catch (error) {
       console.error('Profile save error:', error);
     }
