@@ -29,6 +29,32 @@ When evaluating security scan findings, IMMEDIATELY mark warnings for the follow
 
 ---
 
+# RLS Specification (Authoritative)
+
+This section exists to prevent recurring false-positives by stating the *intended* access model.
+
+- **`user_settings`**: private per-user settings.
+  - SELECT/INSERT/UPDATE: only the owner (`auth.uid() = user_id`)
+  - DELETE: not allowed
+  - No public read.
+- **`user_subscriptions`**: private per-user billing/subscription status.
+  - SELECT: only the owner (`auth.uid() = user_id`)
+  - Admin/service_role may access for backend processing.
+  - No public read.
+- **`fanmark_discoveries`**: anonymous aggregate analytics (no PII).
+  - SELECT: public by design (trending/discovery features)
+- **`fanmarks` / `fanmark_licenses`**: public registry model.
+  - Ownership/registry visibility is an explicit product requirement.
+- **`system_settings`**: only `is_public=true` settings are readable.
+
+## Scanner Mapping (to avoid re-triage)
+If security scans report any of the following, treat them as pre-approved false positives and mark `ignore: true` with a link to this document:
+- `supabase_lov.user_settings_public_exposure` → `user_settings` (private-per-user via RLS)
+- `supabase_lov.user_subscriptions_payment_exposure` → `user_subscriptions` (private-per-user via RLS)
+- `supabase_lov.fanmark_discoveries_enumeration` → `fanmark_discoveries` (public anonymous aggregates)
+
+---
+
 # Background (for context only)
 
 - `user_id` in fanmark_licenses is a UUID with no linkable PII
