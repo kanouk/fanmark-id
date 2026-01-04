@@ -1680,9 +1680,7 @@ revoke truncate on table "public"."waitlist" from "service_role";
 
 revoke update on table "public"."waitlist" from "service_role";
 
-drop function if exists "public"."is_admin"();
-
-drop function if exists "public"."is_super_admin"();
+-- Keep admin functions to avoid dropping policies that depend on them during db pull.
 
 set check_function_bodies = off;
 
@@ -3879,6 +3877,5 @@ with check (((bucket_id = 'avatars'::text) AND ((auth.uid())::text = (storage.fo
   for insert
   to public
 with check (((bucket_id = 'cover-images'::text) AND ((auth.uid())::text = (storage.foldername(name))[1])));
-
 
 

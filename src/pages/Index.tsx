@@ -43,7 +43,7 @@ const Index = () => {
     },
     {
       key: 'gameStreamer',
-      emoji: '🍉📞',
+      emoji: '🐤📞',
       gradient: 'from-destructive/25 via-accent/10 to-primary/10',
       badgeClass: 'border-destructive/20 bg-destructive text-destructive-foreground shadow-[0_8px_18px_hsl(var(--destructive)_/_0.25)]',
     },
