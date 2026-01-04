@@ -1,9 +1,5 @@
 create extension if not exists "pg_net" with schema "public" version '0.19.5';
 
-drop function if exists "public"."is_admin"() cascade;
-
-drop function if exists "public"."is_super_admin"() cascade;
-
 set check_function_bodies = off;
 
 CREATE OR REPLACE FUNCTION public.add_fanmark_favorite(input_emoji_ids uuid[], input_display_fanmark text)
@@ -525,41 +521,41 @@ CREATE OR REPLACE FUNCTION public.get_fanmark_by_short_id(shortid_param text)
  SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
-begin
-  return query
-  select
+BEGIN
+  RETURN QUERY
+  SELECT
     f.id,
     f.short_id,
     f.user_input_fanmark,
     fl.display_fanmark,
     f.emoji_ids,
-    coalesce(bc.fanmark_name, f.user_input_fanmark) as fanmark_name,
-    coalesce(bc.access_type, 'inactive') as access_type,
+    COALESCE(bc.fanmark_name, f.user_input_fanmark) AS fanmark_name,
+    COALESCE(bc.access_type, 'inactive') AS access_type,
     rc.target_url,
-    mc.content as text_content,
+    mc.content AS text_content,
     f.status,
-    coalesce(pc.is_enabled, false) as is_password_protected,
-    fl.id as license_id,
-    fl.status as license_status,
+    COALESCE(pc.is_enabled, false) AS is_password_protected,
+    fl.id AS license_id,
+    fl.status AS license_status,
     fl.license_end,
     fl.grace_expires_at,
     fl.is_returned
-  from fanmarks f
-  left join lateral (
-    select fl_inner.*
-    from fanmark_licenses fl_inner
-    where fl_inner.fanmark_id = f.id
-      and fl_inner.status in ('active', 'grace')
-    order by fl_inner.license_end desc nulls last
-    limit 1
-  ) fl on true
-  left join fanmark_basic_configs bc on fl.id = bc.license_id
-  left join fanmark_redirect_configs rc on fl.id = rc.license_id
-  left join fanmark_messageboard_configs mc on fl.id = mc.license_id
-  left join fanmark_password_configs pc on fl.id = pc.license_id
-  where f.short_id = shortid_param
-    and f.status = 'active';
-end;
+  FROM fanmarks f
+  LEFT JOIN LATERAL (
+    SELECT fl_inner.*
+    FROM fanmark_licenses fl_inner
+    WHERE fl_inner.fanmark_id = f.id
+      AND fl_inner.status = 'active'
+    ORDER BY fl_inner.license_end DESC NULLS LAST
+    LIMIT 1
+  ) fl ON TRUE
+  LEFT JOIN fanmark_basic_configs bc ON fl.id = bc.license_id
+  LEFT JOIN fanmark_redirect_configs rc ON fl.id = rc.license_id
+  LEFT JOIN fanmark_messageboard_configs mc ON fl.id = mc.license_id
+  LEFT JOIN fanmark_password_configs pc ON fl.id = pc.license_id
+  WHERE f.short_id = shortid_param
+    AND f.status = 'active';
+END;
 $function$
 ;
 
@@ -2125,5 +2121,232 @@ BEGIN
 END;
 $function$
 ;
+
+create policy "Admins can write audit logs"
+on "public"."audit_logs"
+as permissive
+for insert
+to public
+with check ((is_admin() OR (auth.role() = 'service_role'::text)));
+
+
+create policy "Admins can manage broadcast emails"
+on "public"."broadcast_emails"
+as permissive
+for all
+to public
+using (is_admin())
+with check (is_admin());
+
+
+create policy "Admins can manage email templates"
+on "public"."email_templates"
+as permissive
+for all
+to public
+using (is_admin())
+with check (is_admin());
+
+
+create policy "Admins can manage emoji master"
+on "public"."emoji_master"
+as permissive
+for all
+to public
+using (is_admin())
+with check (is_admin());
+
+
+create policy "Only admins can manage enterprise user settings"
+on "public"."enterprise_user_settings"
+as permissive
+for all
+to public
+using (is_admin())
+with check (is_admin());
+
+
+create policy "Admins can manage all usages"
+on "public"."extension_coupon_usages"
+as permissive
+for all
+to public
+using (is_admin())
+with check (is_admin());
+
+
+create policy "Admins can manage all coupons"
+on "public"."extension_coupons"
+as permissive
+for all
+to public
+using (is_admin())
+with check (is_admin());
+
+
+create policy "Only admins can manage availability rules"
+on "public"."fanmark_availability_rules"
+as permissive
+for all
+to public
+using (is_admin());
+
+
+create policy "Allow read events"
+on "public"."fanmark_events"
+as permissive
+for select
+to public
+using (((auth.role() = 'service_role'::text) OR is_admin()));
+
+
+create policy "Only admins can manage all licenses"
+on "public"."fanmark_licenses"
+as permissive
+for all
+to public
+using (is_admin())
+with check (is_admin());
+
+
+create policy "Admins can manage all lottery entries"
+on "public"."fanmark_lottery_entries"
+as permissive
+for all
+to public
+using (is_admin());
+
+
+create policy "Admins can view lottery history"
+on "public"."fanmark_lottery_history"
+as permissive
+for select
+to public
+using (is_admin());
+
+
+create policy "Allow admin read fanmark tiers"
+on "public"."fanmark_tiers"
+as permissive
+for select
+to public
+using (is_admin());
+
+
+create policy "Allow admin update fanmark tiers"
+on "public"."fanmark_tiers"
+as permissive
+for update
+to public
+using (is_admin())
+with check (is_admin());
+
+
+create policy "Only admins can manage tiers"
+on "public"."fanmark_tiers"
+as permissive
+for all
+to public
+using (is_admin());
+
+
+create policy "System can manage all transfer codes"
+on "public"."fanmark_transfer_codes"
+as permissive
+for all
+to public
+using (((auth.role() = 'service_role'::text) OR is_admin()));
+
+
+create policy "System can manage all transfer requests"
+on "public"."fanmark_transfer_requests"
+as permissive
+for all
+to public
+using (((auth.role() = 'service_role'::text) OR is_admin()));
+
+
+create policy "Only admins can manage invitation codes"
+on "public"."invitation_codes"
+as permissive
+for all
+to public
+using (is_admin())
+with check (is_admin());
+
+
+create policy "Only admins can modify languages"
+on "public"."languages"
+as permissive
+for all
+to public
+using (is_admin());
+
+
+create policy "Admins can view notification events"
+on "public"."notification_events"
+as permissive
+for select
+to public
+using (is_admin());
+
+
+create policy "Admins can manage notification rules"
+on "public"."notification_rules"
+as permissive
+for all
+to public
+using (is_admin());
+
+
+create policy "Admins can manage templates"
+on "public"."notification_templates"
+as permissive
+for all
+to public
+using (is_admin());
+
+
+create policy "Admins can view all notifications"
+on "public"."notifications"
+as permissive
+for select
+to public
+using (is_admin());
+
+
+create policy "Admins can view notification history"
+on "public"."notifications_history"
+as permissive
+for select
+to public
+using (is_admin());
+
+
+create policy "Admins can update all settings"
+on "public"."system_settings"
+as permissive
+for update
+to authenticated
+using (is_admin())
+with check (is_admin());
+
+
+create policy "Admins can view all settings"
+on "public"."system_settings"
+as permissive
+for select
+to authenticated
+using (is_admin());
+
+
+create policy "Admins can view all subscriptions"
+on "public"."user_subscriptions"
+as permissive
+for select
+to public
+using (is_admin());
+
+
 
 

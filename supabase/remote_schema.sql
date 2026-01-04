@@ -592,7 +592,7 @@ $$;
 ALTER FUNCTION "public"."get_fanmark_by_emoji"("input_emoji_ids" "uuid"[]) OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_fanmark_by_short_id"("shortid_param" "text") RETURNS TABLE("id" "uuid", "short_id" "text", "user_input_fanmark" "text", "emoji_ids" "uuid"[], "fanmark_name" "text", "access_type" "text", "target_url" "text", "text_content" "text", "status" "text", "is_password_protected" boolean, "license_id" "uuid", "license_status" "text", "license_end" timestamp with time zone, "grace_expires_at" timestamp with time zone, "is_returned" boolean)
+CREATE OR REPLACE FUNCTION "public"."get_fanmark_by_short_id"("shortid_param" "text") RETURNS TABLE("id" "uuid", "short_id" "text", "user_input_fanmark" "text", "display_fanmark" "text", "emoji_ids" "uuid"[], "fanmark_name" "text", "access_type" "text", "target_url" "text", "text_content" "text", "status" "text", "is_password_protected" boolean, "license_id" "uuid", "license_status" "text", "license_end" timestamp with time zone, "grace_expires_at" timestamp with time zone, "is_returned" boolean)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
@@ -602,6 +602,7 @@ BEGIN
         f.id,
         f.short_id,
         f.user_input_fanmark,
+        fl.display_fanmark,
         f.emoji_ids,
         COALESCE(bc.fanmark_name, f.user_input_fanmark) AS fanmark_name,
         COALESCE(bc.access_type, 'inactive') AS access_type,
@@ -619,7 +620,7 @@ BEGIN
         SELECT fl_inner.*
         FROM fanmark_licenses fl_inner
         WHERE fl_inner.fanmark_id = f.id
-          AND fl_inner.status IN ('active', 'grace')
+          AND fl_inner.status = 'active'
         ORDER BY fl_inner.license_end DESC NULLS LAST
         LIMIT 1
     ) fl ON TRUE

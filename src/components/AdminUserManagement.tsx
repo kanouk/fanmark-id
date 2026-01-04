@@ -209,6 +209,9 @@ export const AdminUserManagement: React.FC = () => {
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [passwordResetReason, setPasswordResetReason] = useState("");
   const [lastResetLink, setLastResetLink] = useState<string | null>(null);
+  const [isExpireDialogOpen, setIsExpireDialogOpen] = useState(false);
+  const [expireTarget, setExpireTarget] = useState<{ licenseId: string; label: string } | null>(null);
+  const [expireReason, setExpireReason] = useState("");
 
   useEffect(() => {
     const timeout = setTimeout(() => setDebouncedSearch(search), 400);
@@ -382,6 +385,40 @@ export const AdminUserManagement: React.FC = () => {
       toast({
         title: "エラーが発生しました",
         description: err instanceof Error ? err.message : "リセットリンクの生成に失敗しました",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const expireMutation = useMutation({
+    mutationFn: async () => {
+      if (!expireTarget?.licenseId) throw new Error("No license selected");
+      const { data, error } = await supabase.functions.invoke("admin-expire-license", {
+        body: {
+          licenseId: expireTarget.licenseId,
+          reason: expireReason || null,
+        },
+      });
+      if (error) throw new Error(error.message || "即時失効に失敗しました");
+      return data as { success: boolean; alreadyExpired?: boolean };
+    },
+    onSuccess: (data) => {
+      toast({
+        title: data?.alreadyExpired ? "既に失効しています" : "即時失効を実行しました",
+        description: expireTarget ? `${expireTarget.label} のライセンスを失効しました` : "ライセンスを失効しました",
+      });
+      queryClient.invalidateQueries({ queryKey: listQueryKey });
+      if (selectedUserId) {
+        queryClient.invalidateQueries({ queryKey: ["admin-user-detail", selectedUserId] });
+      }
+      setIsExpireDialogOpen(false);
+      setExpireTarget(null);
+      setExpireReason("");
+    },
+    onError: (err: unknown) => {
+      toast({
+        title: "エラーが発生しました",
+        description: err instanceof Error ? err.message : "即時失効に失敗しました",
         variant: "destructive",
       });
     },
@@ -701,20 +738,38 @@ export const AdminUserManagement: React.FC = () => {
               {selectedDetail.recentFanmarks.length > 0 && (
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-foreground">最近のファンマーク</h3>
-                  <div className="space-y-2 text-sm">
-                    {selectedDetail.recentFanmarks.map((record) => (
-                      <div key={record.licenseId} className="rounded-lg border border-border/50 bg-muted/10 p-3">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium text-foreground">
-                            {record.emoji} {record.fanmarkName ? `- ${record.fanmarkName}` : ""}
-                          </span>
+                <div className="space-y-2 text-sm">
+                  {selectedDetail.recentFanmarks.map((record) => (
+                    <div key={record.licenseId} className="rounded-lg border border-border/50 bg-muted/10 p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-foreground">
+                          {record.emoji} {record.fanmarkName ? `- ${record.fanmarkName}` : ""}
+                        </span>
+                        <div className="flex items-center gap-2">
                           <Badge variant="outline" className="capitalize">
                             {record.status}
                           </Badge>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="destructive"
+                            disabled={record.status === "expired"}
+                            onClick={() => {
+                              setExpireTarget({
+                                licenseId: record.licenseId,
+                                label: `${record.emoji}${record.fanmarkName ? ` ${record.fanmarkName}` : ""}`.trim(),
+                              });
+                              setExpireReason("");
+                              setIsExpireDialogOpen(true);
+                            }}
+                          >
+                            即時失効
+                          </Button>
                         </div>
-                        <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                          <span>ライセンス期限: {formatDate(record.licenseEnd)}</span>
-                          <span>猶予期限: {record.graceExpiresAt ? formatDate(record.graceExpiresAt) : "-"}</span>
+                      </div>
+                      <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                        <span>ライセンス期限: {formatDate(record.licenseEnd)}</span>
+                        <span>猶予期限: {record.graceExpiresAt ? formatDate(record.graceExpiresAt) : "-"}</span>
                         </div>
                       </div>
                     ))}
@@ -934,6 +989,36 @@ export const AdminUserManagement: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={isExpireDialogOpen} onOpenChange={setIsExpireDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ライセンスを即時失効しますか？</AlertDialogTitle>
+            <AlertDialogDescription>
+              {expireTarget ? `${expireTarget.label} を即時に失効させます。` : "対象ライセンスを即時に失効させます。"}
+              設定データは削除され、復元できません。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div>
+            <Textarea
+              value={expireReason}
+              onChange={(event) => setExpireReason(event.target.value)}
+              placeholder="内部向けのメモ / 理由 (任意)"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>キャンセル</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => expireMutation.mutate()}
+              disabled={expireMutation.isPending || !expireTarget}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {expireMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              失効する
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

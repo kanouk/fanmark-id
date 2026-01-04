@@ -192,10 +192,6 @@ export const useAuthForm = () => {
         return;
       }
 
-      toast({
-        title: t('common.loginSuccess'),
-        description: t('common.loginSuccessDesc'),
-      });
       navigate('/dashboard');
     } catch (error) {
       const message = error instanceof Error ? error.message : undefined;
