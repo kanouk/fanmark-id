@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,6 +37,7 @@ interface FanmarkData {
 export const FanmarkAccessByShortId = () => {
   const { shortId } = useParams<{ shortId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -197,6 +198,12 @@ export const FanmarkAccessByShortId = () => {
     const trimmed = raw.trim();
     return trimmed.length > 0 ? trimmed : '✨';
   }, [fanmark?.fanmark, fanmark?.user_input_fanmark]);
+  const prefillFanmark = useMemo(() => {
+    const state = location.state as { prefillFanmark?: string } | null;
+    const candidate = state?.prefillFanmark ?? displayFanmark;
+    const trimmed = candidate?.trim?.() ?? '';
+    return trimmed.length > 0 ? trimmed : displayFanmark;
+  }, [location.state, displayFanmark]);
 
   const badgeStyle = useMemo(
     () => createFanmarkBadgeStyle(displayFanmark),
@@ -283,18 +290,21 @@ export const FanmarkAccessByShortId = () => {
                 </h1>
               </div>
               <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-                <Button
-                  onClick={() => {
-                    try {
-                      localStorage.setItem('fanmark.prefill', displayFanmark);
-                    } catch (error) {
-                      console.warn('Failed to persist fanmark prefill:', error);
-                    }
-                    navigate('/', { state: { prefillFanmark: displayFanmark, scrollToSearch: true } });
-                  }}
-                  className="px-5 min-w-[10rem]"
-                  size="default"
-                >
+                    <Button
+                      onClick={() => {
+                        try {
+                          localStorage.setItem('fanmark.prefill', prefillFanmark);
+                        } catch (error) {
+                          console.warn('Failed to persist fanmark prefill:', error);
+                        }
+                        const encodedPrefill = encodeURIComponent(prefillFanmark);
+                        navigate(`/?prefill=${encodedPrefill}`, {
+                          state: { prefillFanmark, scrollToSearch: true },
+                        });
+                      }}
+                      className="px-5 min-w-[10rem]"
+                      size="default"
+                    >
                   <Sparkles className="h-4 w-4 mr-2" />
                   {t('common.acquireThisFanmark')}
                 </Button>

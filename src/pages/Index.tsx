@@ -123,9 +123,18 @@ const Index = () => {
 
   useEffect(() => {
     const state = location.state as { prefillFanmark?: string; scrollToSearch?: boolean } | null;
+    const searchParams = new URLSearchParams(location.search);
     let nextPrefill = state?.prefillFanmark;
     const shouldScrollToSearch = Boolean(state?.scrollToSearch);
     let shouldClearState = Boolean(nextPrefill || shouldScrollToSearch);
+
+    if (!nextPrefill) {
+      const prefillFromQuery = searchParams.get('prefill');
+      if (prefillFromQuery) {
+        nextPrefill = prefillFromQuery;
+        shouldClearState = true;
+      }
+    }
 
     if (!nextPrefill) {
       try {

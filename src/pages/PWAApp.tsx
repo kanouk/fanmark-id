@@ -155,7 +155,9 @@ export default function PWAApp() {
                     <Button
                       variant="default"
                       className="h-10 rounded-xl px-4"
+                      disabled={searchResult?.blocking_status === "grace"}
                       onClick={() => {
+                        if (searchResult?.blocking_status === "grace") return;
                         // 履歴に追加
                         const shortId = searchResult?.shortId || searchQuery;
                         addToHistory(searchQuery, shortId);

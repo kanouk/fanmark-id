@@ -154,8 +154,13 @@ export const FanmarkAccess = () => {
         // NEW: Redirect to short_id URL format for better UX
         if (resolvedFanmark.short_id) {
           const shortIdPath = `/a/${resolvedFanmark.short_id}`;
+          const prefillCandidate =
+            displayFanmark ||
+            userInputValue ||
+            normalizedEmoji ||
+            decodedEmojiPath;
           console.log('🔄 Redirecting to short_id URL:', { from: window.location.pathname, to: shortIdPath });
-          navigate(shortIdPath, { replace: true });
+          navigate(shortIdPath, { replace: true, state: { prefillFanmark: prefillCandidate } });
           return; // Don't proceed with rendering, let the redirect happen
         }
 

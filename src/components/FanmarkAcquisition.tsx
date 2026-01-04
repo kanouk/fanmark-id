@@ -104,8 +104,10 @@ export const FanmarkAcquisition = ({
   const canNavigateToDetail = Boolean(searchResult?.short_id);
   const displayedFanmark =
     searchResult?.display_fanmark || searchResult?.fanmark || searchResult?.user_input_fanmark || '';
+  const isGraceBlocked = searchResult?.blocking_status === 'grace';
   const canVisitFanmark = Boolean(displayedFanmark) &&
     searchResult?.status !== 'available' &&
+    !isGraceBlocked &&
     !(searchResult?.status === 'invalid' && searchResult?.id === 'invalid');
   const favoriteSequenceKeys = useMemo(() => {
     return new Set(
@@ -154,8 +156,6 @@ export const FanmarkAcquisition = ({
       return null;
     }
   }, [language, searchResult?.available_at]);
-
-  const isGraceBlocked = searchResult?.blocking_status === 'grace';
 
   const canAcquireNow = useMemo(() => {
     if (!searchResult || searchResult.status !== 'available') {
@@ -764,17 +764,20 @@ export const FanmarkAcquisition = ({
                   </TooltipContent>
                 </Tooltip>
 
-                {(searchResult?.lottery_entry_count ?? 0) > 0 && (
-                  <div className="absolute -top-9 right-0 sm:-top-8 sm:left-1/2 sm:right-auto sm:-translate-x-1/2">
-                    <div className="relative rounded-2xl bg-primary px-4 py-1.5 text-[11px] font-semibold text-primary-foreground shadow-[0_8px_18px_rgba(101,195,200,0.25)] whitespace-nowrap">
-                      {t('lottery.entryCount', { count: searchResult.lottery_entry_count })}
-                      <span
-                        aria-hidden="true"
-                        className="absolute right-4 top-full -mt-[5px] h-2.5 w-2.5 rotate-45 bg-primary sm:left-1/2 sm:right-auto sm:-translate-x-1/2"
-                      />
+                {(() => {
+                  const lotteryEntryCount = Math.max(0, searchResult?.lottery_entry_count ?? 0);
+                  return (
+                    <div className="absolute -top-9 right-0 sm:-top-8 sm:left-1/2 sm:right-auto sm:-translate-x-1/2">
+                      <div className="relative rounded-2xl bg-primary px-4 py-1.5 text-[11px] font-semibold text-primary-foreground shadow-[0_8px_18px_rgba(101,195,200,0.25)] whitespace-nowrap">
+                        {t('lottery.entryCount', { count: lotteryEntryCount })}
+                        <span
+                          aria-hidden="true"
+                          className="absolute right-4 top-full -mt-[5px] h-2.5 w-2.5 rotate-45 bg-primary sm:left-1/2 sm:right-auto sm:-translate-x-1/2"
+                        />
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             )}
               </div>
