@@ -137,7 +137,7 @@ export const FanmarkAccessByShortId = () => {
             if (targetUrl.startsWith('tel:')) {
               setTimeout(() => {
                 navigate(user ? '/dashboard' : '/', { replace: true });
-              }, 1000);
+              }, 10000);
             }
           }, 2000); // Show redirect loading for 2 seconds
           return;
@@ -176,7 +176,7 @@ export const FanmarkAccessByShortId = () => {
           if (targetUrl.startsWith('tel:')) {
             setTimeout(() => {
               navigate(user ? '/dashboard' : '/', { replace: true });
-            }, 1000);
+            }, 10000);
           }
         }, 2000); // Show loading for 2 seconds
       } else if (fanmark.access_type === 'text') {
