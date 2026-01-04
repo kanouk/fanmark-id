@@ -343,15 +343,17 @@ export const FanmarkAcquisition = ({
       return;
     }
     if (!storageKey || typeof window === 'undefined') return;
-    if (hasLoadedInitialStorage.current) return;
 
     // 🎯 prefilledEmoji が明示的に渡されている場合は、sessionStorage より優先
+    // hasLoadedInitialStorage より先にチェックすることで、後から渡された場合にも対応
     // これにより、存在しないファンマへのアクセス後のリダイレクトで確実に検索フィールドに設定される
     if (prefilledEmoji) {
       setQuery(normalizeQuery(prefilledEmoji));
       hasLoadedInitialStorage.current = true;
       return;
     }
+
+    if (hasLoadedInitialStorage.current) return;
 
     // prefilledEmoji がない場合のみ sessionStorage から復元
     const stored = sessionStorage.getItem(storageKey);

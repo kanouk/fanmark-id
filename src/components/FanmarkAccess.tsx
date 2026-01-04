@@ -345,7 +345,18 @@ export const FanmarkAccess = () => {
     
     case 'inactive': {
       const handleGetFanmark = () => {
-        navigate('/', { state: { scrollToSearch: true } });
+        const prefillEmoji =
+          fanmark?.display_fanmark ||
+          fanmark?.fanmark ||
+          fanmark?.user_input_fanmark ||
+          displayFanmark;
+
+        navigate('/', {
+          state: {
+            scrollToSearch: true,
+            prefillFanmark: prefillEmoji,
+          }
+        });
       };
 
       return (
