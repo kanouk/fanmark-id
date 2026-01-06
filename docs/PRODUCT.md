@@ -44,6 +44,7 @@
 ## 招待・認証
 - 招待制: `system_settings.invitation_mode` が ON の場合、サインアップ前に `validate_invitation_code` 成功が必須。`use_invitation_code` で消費し、残数と期限を検証。待機リストは `waitlist` テーブルで管理し、管理UIから招待コード配布。
 - 認証: Supabase Auth。`social_login_enabled=false` または招待モード中は OAuth を抑止し、OAuth でも初回パスワード設定を強制。パスワード要件表示、メール確認・再送、リセット対応。
+- 確認メール: Supabase Auth の Confirm email は ON。メール/パスワード登録のみ確認メールを送信し、OAuth サインアップは `send-auth-email` で `email_action_type=signup` かつ provider≠email の場合に送信をスキップする。
 - 多言語: 日本語/英語の翻訳バンドルを用意し、ヘッダーで切替可能。
 
 ## アクセスタイプ仕様

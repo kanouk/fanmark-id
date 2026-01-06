@@ -12,6 +12,7 @@ const hookSecret = rawHookSecret?.startsWith("v1,")
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
 type SupportedLanguage = "ja" | "en" | "ko" | "id";
 
@@ -368,7 +369,21 @@ serve(async (req) => {
       };
     };
 
-    console.log(`[send-auth-email] Processing ${email_action_type} email for user ${user.id}`);
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(user.id);
+    if (authError) {
+      console.error("[send-auth-email] Failed to fetch auth user:", authError);
+    }
+
+    const provider = authUser?.user?.app_metadata?.provider || "";
+    console.log(`[send-auth-email] Processing ${email_action_type} email for user ${user.id} (provider=${provider || "unknown"})`);
+
+    if (email_action_type === "signup" && provider && provider !== "email") {
+      console.log(`[send-auth-email] Skipping signup email for OAuth user ${user.id} (provider=${provider})`);
+      return new Response(JSON.stringify({ skipped: true, reason: "oauth_signup" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     // Get user's preferred language
     const language = await getUserLanguage(user.id);
