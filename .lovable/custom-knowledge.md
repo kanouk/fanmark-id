@@ -51,7 +51,10 @@ This section exists to prevent recurring false-positives by stating the *intende
 If security scans report any of the following, treat them as pre-approved false positives and mark `ignore: true` with a link to this document:
 - `supabase_lov.user_settings_public_exposure` → `user_settings` (private-per-user via RLS)
 - `supabase_lov.user_subscriptions_payment_exposure` → `user_subscriptions` (private-per-user via RLS)
+- `supabase_lov.user_subscriptions_exposure_risk` → `user_subscriptions` (private-per-user via RLS)
 - `supabase_lov.fanmark_discoveries_enumeration` → `fanmark_discoveries` (public anonymous aggregates)
+- `supabase_lov.fanmark_licenses_public_readable` → `fanmark_licenses` (public registry model - like domain WHOIS)
+- `supabase_lov.recent_active_fanmarks_view_exposure` → `recent_active_fanmarks` VIEW (inherits RLS, no PII exposed)
 
 ---
 
