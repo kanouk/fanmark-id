@@ -26,7 +26,7 @@ const Auth = () => {
   const location = useLocation();
   const { t } = useTranslation();
   const { toast } = useToast();
-  const { formData, authState, updateFormData, signUp, signIn, signInWithGoogle, signInWithGithub, signInWithDiscord, signInWithApple, resendConfirmation, exitAwaitingConfirmation } = useAuthForm();
+  const { formData, authState, updateFormData, signUp, signIn, signInWithGoogle, signInWithGithub, signInWithDiscord, signInWithApple, resendConfirmation, resendCooldown, exitAwaitingConfirmation } = useAuthForm();
   const { requirements, isValid } = usePasswordValidation(formData.password);
   const { settings, loading: settingsLoading } = useSystemSettings();
   const invitationGateActive = !settingsLoading && settings.invitation_mode;
@@ -127,13 +127,18 @@ const Auth = () => {
                 <div className="mt-2 grid w-full max-w-md gap-3 sm:grid-cols-2">
                   <Button
                     onClick={resendConfirmation}
-                    disabled={authState.loading}
-                    className="rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 hover:shadow-xl"
+                    disabled={authState.loading || resendCooldown > 0}
+                    className="rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 hover:shadow-xl disabled:opacity-60"
                   >
                     {authState.loading ? (
                       <>
                         <Users className="mr-2 h-4 w-4 animate-spin" />
                         {t('common.loading')}
+                      </>
+                    ) : resendCooldown > 0 ? (
+                      <>
+                        <RotateCw className="mr-2 h-4 w-4" />
+                        {t('auth.resendConfirmation')} ({resendCooldown}s)
                       </>
                     ) : (
                       <>

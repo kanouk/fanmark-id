@@ -377,9 +377,11 @@ serve(async (req) => {
     const provider = authUser?.user?.app_metadata?.provider || "";
     console.log(`[send-auth-email] Processing ${email_action_type} email for user ${user.id} (provider=${provider || "unknown"})`);
 
-    if (email_action_type === "signup" && provider && provider !== "email") {
-      console.log(`[send-auth-email] Skipping signup email for OAuth user ${user.id} (provider=${provider})`);
-      return new Response(JSON.stringify({ skipped: true, reason: "oauth_signup" }), {
+    // OAuthユーザーの場合、signup と password_changed_notification をスキップ
+    const skipForOAuthTypes = ["signup", "password_changed_notification"];
+    if (skipForOAuthTypes.includes(email_action_type) && provider && provider !== "email") {
+      console.log(`[send-auth-email] Skipping ${email_action_type} email for OAuth user ${user.id} (provider=${provider})`);
+      return new Response(JSON.stringify({ skipped: true, reason: "oauth_user" }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       });

@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthFormData, AuthState } from '@/types/auth';
 import { isActiveLanguage, type ActiveLanguageCode } from '@/lib/language';
+
+const RESEND_COOLDOWN_SECONDS = 60;
 
 interface CheckEmailExistsResponse {
   exists: boolean;
@@ -36,6 +38,31 @@ export const useAuthForm = () => {
     error: '',
     awaitingConfirmation: false
   });
+
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const cooldownTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      cooldownTimerRef.current = window.setInterval(() => {
+        setResendCooldown(prev => {
+          if (prev <= 1) {
+            if (cooldownTimerRef.current) {
+              clearInterval(cooldownTimerRef.current);
+              cooldownTimerRef.current = null;
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (cooldownTimerRef.current) {
+        clearInterval(cooldownTimerRef.current);
+      }
+    };
+  }, [resendCooldown > 0]);
 
   const updateFormData = (field: keyof AuthFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -159,6 +186,7 @@ export const useAuthForm = () => {
       }
 
       setAwaitingConfirmation(true);
+      setResendCooldown(RESEND_COOLDOWN_SECONDS);
       toast({
         title: t('common.confirmationEmailSent'),
         description: t('common.confirmationEmailDesc'),
@@ -233,6 +261,10 @@ export const useAuthForm = () => {
       return;
     }
 
+    if (resendCooldown > 0) {
+      return;
+    }
+
     setLoading(true);
     try {
       const { error } = await supabase.auth.resend({
@@ -245,6 +277,7 @@ export const useAuthForm = () => {
 
       if (error) throw error;
 
+      setResendCooldown(RESEND_COOLDOWN_SECONDS);
       toast({
         title: t('common.confirmationResent'),
         description: t('common.confirmationEmailDesc'),
@@ -361,6 +394,7 @@ export const useAuthForm = () => {
     signInWithApple,
     forgotPassword,
     resendConfirmation,
+    resendCooldown,
     exitAwaitingConfirmation
   };
 };
