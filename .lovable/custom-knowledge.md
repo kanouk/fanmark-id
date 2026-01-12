@@ -54,6 +54,7 @@ If security scans report any of the following, treat them as pre-approved false 
 - `user_settings_public_exposure` → `user_settings` (private-per-user via RLS: auth.uid() = user_id)
 - `user_subscriptions_payment_exposure` → `user_subscriptions` (private-per-user via RLS)
 - `user_subscriptions_exposure_risk` → `user_subscriptions` (private-per-user via RLS)
+- `user_roles_insufficient_protection` → `user_roles` (private-per-user via RLS: auth.uid() = user_id; 他ユーザーのrole列挙不可)
 - `fanmark_discoveries_enumeration` → `fanmark_discoveries` (public anonymous aggregates)
 - `fanmark_licenses_public_readable` → `fanmark_licenses` (public registry model - like domain WHOIS)
 - `fanmark_licenses_public_exposure` → `fanmark_licenses` (UUID only, no PII - intentional design)
