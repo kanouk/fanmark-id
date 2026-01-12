@@ -112,7 +112,7 @@ serve(async (req) => {
     configDeleteErrors.messageboard = messageConfigDeleteError?.message ?? null;
     configDeleteErrors.password = passwordConfigDeleteError?.message ?? null;
 
-    const fanmarkData = license.fanmarks as { user_input_fanmark: string; short_id: string } | null;
+    const fanmarkData = license.fanmarks as unknown as { user_input_fanmark: string; short_id: string } | null;
     const displayFanmark =
       license.display_fanmark ?? fanmarkData?.user_input_fanmark ?? "";
 

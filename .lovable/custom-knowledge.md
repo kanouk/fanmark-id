@@ -49,12 +49,21 @@ This section exists to prevent recurring false-positives by stating the *intende
 
 ## Scanner Mapping (to avoid re-triage)
 If security scans report any of the following, treat them as pre-approved false positives and mark `ignore: true` with a link to this document:
-- `supabase_lov.user_settings_public_exposure` → `user_settings` (private-per-user via RLS)
-- `supabase_lov.user_subscriptions_payment_exposure` → `user_subscriptions` (private-per-user via RLS)
-- `supabase_lov.user_subscriptions_exposure_risk` → `user_subscriptions` (private-per-user via RLS)
-- `supabase_lov.fanmark_discoveries_enumeration` → `fanmark_discoveries` (public anonymous aggregates)
-- `supabase_lov.fanmark_licenses_public_readable` → `fanmark_licenses` (public registry model - like domain WHOIS)
-- `supabase_lov.recent_active_fanmarks_view_exposure` → `recent_active_fanmarks` VIEW (inherits RLS, no PII exposed)
+
+### supabase_lov scanner
+- `user_settings_public_exposure` → `user_settings` (private-per-user via RLS: auth.uid() = user_id)
+- `user_subscriptions_payment_exposure` → `user_subscriptions` (private-per-user via RLS)
+- `user_subscriptions_exposure_risk` → `user_subscriptions` (private-per-user via RLS)
+- `fanmark_discoveries_enumeration` → `fanmark_discoveries` (public anonymous aggregates)
+- `fanmark_licenses_public_readable` → `fanmark_licenses` (public registry model - like domain WHOIS)
+- `fanmark_licenses_public_exposure` → `fanmark_licenses` (UUID only, no PII - intentional design)
+- `recent_active_fanmarks_view_exposure` → `recent_active_fanmarks` VIEW (inherits RLS, no PII exposed)
+- `fanmark_access_logs_missing_policies` → `fanmark_access_logs` (SELECT restricted to fanmark owners only via license check)
+
+### supabase linter
+- `SUPA_rls_policy_always_true` → emoji_master (public catalog) and fanmark_discoveries (anonymous aggregates) - both intentionally public
+- `SUPA_extension_in_public` → Standard Supabase config, no security impact
+- `SUPA_function_search_path_mutable` → Low risk; critical SECURITY DEFINER functions have search_path set
 
 ---
 
