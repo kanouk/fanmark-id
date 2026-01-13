@@ -56,10 +56,13 @@ If security scans report any of the following, treat them as pre-approved false 
 - `user_subscriptions_exposure_risk` → `user_subscriptions` (private-per-user via RLS)
 - `user_roles_insufficient_protection` → `user_roles` (private-per-user via RLS: auth.uid() = user_id; 他ユーザーのrole列挙不可)
 - `fanmark_discoveries_enumeration` → `fanmark_discoveries` (public anonymous aggregates)
+- `fanmark_discoveries_user_tracking` → `fanmark_discoveries` (public anonymous aggregates; trending/discovery要件)
 - `fanmark_licenses_public_readable` → `fanmark_licenses` (public registry model - like domain WHOIS)
 - `fanmark_licenses_public_exposure` → `fanmark_licenses` (UUID only, no PII - intentional design)
+- `fanmark_licenses_user_exposure` → `fanmark_licenses` (public registry model; ownership visibility is product requirement)
 - `recent_active_fanmarks_view_exposure` → `recent_active_fanmarks` VIEW (inherits RLS, no PII exposed)
 - `fanmark_access_logs_missing_policies` → `fanmark_access_logs` (SELECT restricted to fanmark owners only via license check)
+- `fanmark_access_logs_owner_only` → `fanmark_access_logs` (owner-only analytics by design; RLS license check)
 
 ### supabase linter
 - `SUPA_rls_policy_always_true` → emoji_master (public catalog) and fanmark_discoveries (anonymous aggregates) - both intentionally public
