@@ -1,7 +1,7 @@
 {
   "hero": {
     "title": "fanmark.id",
-    "subtitle": "Get your own special fanmark",
+    "subtitle": "Create your own address with emoji",
     "description": "A next-generation ID service that unlocks the full potential of fanmark",
     "searchPlaceholder": "Search for your perfect emoji combination! 🔍",
     "searchButton": "Search",
@@ -332,7 +332,7 @@
     "pageTitle": "Access your fanmark.id account",
     "pageDescription": "Sign in or create a new account to manage your fanmarks, customize your profile, and explore new emoji combinations.",
     "serviceName": "Fanmark",
-    "serviceTagline": "Next-generation fanmark ID service",
+    "serviceTagline": "Create your own address with emoji",
     "rulesFetchError": "Failed to fetch rules",
     "updateComplete": "Update complete",
     "rulesUpdateError": "Failed to update rules",

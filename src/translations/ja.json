@@ -1,7 +1,7 @@
 {
   "hero": {
     "title": "fanmark.id",
-    "subtitle": "あなただけの特別な\nファンマを手に入れよう",
+    "subtitle": "絵文字でつくる\nあなただけのアドレス",
     "description": "ファンマの可能性が広がる新世代のIDサービス",
     "searchPlaceholder": "完璧なファンマ組み合わせを探そう！🔍",
     "searchButton": "検索",
@@ -331,7 +331,7 @@
     "pageTitle": "fanmark.id アカウントにアクセス",
     "pageDescription": "サインインまたは新規登録して、ファンマの管理やプロフィールのカスタマイズ、新しい絵文字の組み合わせをチェックしましょう。",
     "serviceName": "ファンマID",
-    "serviceTagline": "新世代のファンマIDサービス",
+    "serviceTagline": "絵文字でつくる、あなただけのアドレス",
     "rulesFetchError": "ルールの取得に失敗しました",
     "updateComplete": "更新完了",
     "rulesUpdateError": "ルールの更新に失敗しました",

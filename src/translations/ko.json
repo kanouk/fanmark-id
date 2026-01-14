@@ -1,7 +1,7 @@
 {
   "hero": {
     "title": "fanmark.id",
-    "subtitle": "당신만의 특별한 팬마크를 가져보세요",
+    "subtitle": "이모지로 만드는 나만의 주소",
     "description": "팬마크의 가능성이 무한해지는 새로운 ID 서비스",
     "searchPlaceholder": "완벽한 팬마크 조합을 찾아보세요! 🔍",
     "searchButton": "검색",
@@ -332,7 +332,7 @@
     "pageTitle": "fanmark.id 계정에 접근",
     "pageDescription": "로그인하거나 새 계정을 만들어서 팬마크를 관리하고 프로필을 커스터마이즈하고 새 이모지 조합을 확인하세요.",
     "serviceName": "Fanmark",
-    "serviceTagline": "차세대 팬마 ID 서비스",
+    "serviceTagline": "이모지로 만드는 나만의 주소",
     "rulesFetchError": "규칙 가져오기 실패",
     "updateComplete": "업데이트 완료",
     "rulesUpdateError": "규칙 업데이트 실패",

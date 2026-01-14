@@ -1,7 +1,7 @@
 {
   "hero": {
     "title": "fanmark.id",
-    "subtitle": "Dapatkan fanmark unik Anda sendiri",
+    "subtitle": "Buat alamatmu sendiri dengan emoji",
     "description": "Layanan ID generasi baru yang membuka potensi fanmark",
     "searchPlaceholder": "Cari kombinasi fanmark sempurna Anda! 🔍",
     "searchButton": "Cari",
@@ -332,7 +332,7 @@
     "pageTitle": "Akses akun fanmark.id Anda",
     "pageDescription": "Masuk atau buat akun baru untuk mengelola fanmark Anda, menyesuaikan profil Anda, dan jelajahi kombinasi emoji baru.",
     "serviceName": "Fanmark",
-    "serviceTagline": "Layanan ID fanmark generasi baru",
+    "serviceTagline": "Buat alamatmu sendiri dengan emoji",
     "rulesFetchError": "Gagal mengambil aturan",
     "updateComplete": "Pembaruan selesai",
     "rulesUpdateError": "Gagal memperbarui aturan",
