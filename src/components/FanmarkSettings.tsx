@@ -71,7 +71,8 @@ const resolveSocialPlatformFromUrl = (targetUrl?: string) => {
 
   for (const platform of socialPlatforms) {
     if (platform.baseUrl && targetUrl.startsWith(platform.baseUrl)) {
-      return { platformKey: platform.key, mode: 'handle' as SocialLinkInputMode };
+      const mode: SocialLinkInputMode = platform.key === 'website' ? 'url' : 'handle';
+      return { platformKey: platform.key, mode };
     }
   }
 
@@ -353,7 +354,11 @@ export const FanmarkSettings = ({
     const nextPlatform = socialPlatforms.find((platform) => platform.key === value);
     if (!nextPlatform) return;
     setRedirectPlatformKey(value);
-    const nextMode: SocialLinkInputMode = nextPlatform.baseUrl ? 'handle' : 'url';
+    const nextMode: SocialLinkInputMode = nextPlatform.key === 'website'
+      ? 'url'
+      : nextPlatform.baseUrl
+        ? 'handle'
+        : 'url';
     setRedirectInputMode(nextMode);
 
     const currentUrl = getValues('targetUrl') || '';

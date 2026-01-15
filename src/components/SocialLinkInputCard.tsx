@@ -111,8 +111,17 @@ export const SocialLinkInputCard = ({
               type="text"
               value={handleValue ?? ''}
               onChange={(event) => {
-                const newHandle = event.target.value;
-                onChange(newHandle ? `${baseUrl}${newHandle}` : '');
+                const rawHandle = event.target.value.trim();
+                const cleanedHandle = (() => {
+                  const withoutProtocol = rawHandle.replace(/^https?:\/\//i, '');
+                  const normalizedBase = baseUrl.replace(/^https?:\/\//i, '');
+                  let next = withoutProtocol;
+                  if (normalizedBase && next.startsWith(normalizedBase)) {
+                    next = next.slice(normalizedBase.length);
+                  }
+                  return next.replace(/^\/+/, '');
+                })();
+                onChange(cleanedHandle ? `${baseUrl}${cleanedHandle}` : '');
               }}
               onBlur={onBlur}
               placeholder={platform.handlePlaceholder || 'username'}
