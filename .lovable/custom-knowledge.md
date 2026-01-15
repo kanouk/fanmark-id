@@ -60,6 +60,8 @@ If security scans report any of the following, treat them as pre-approved false 
 - `fanmark_licenses_public_readable` → `fanmark_licenses` (public registry model - like domain WHOIS)
 - `fanmark_licenses_public_exposure` → `fanmark_licenses` (UUID only, no PII - intentional design)
 - `fanmark_licenses_user_exposure` → `fanmark_licenses` (public registry model; ownership visibility is product requirement for recent/trending features)
+- `fanmark_licenses_user_tracking` → `fanmark_licenses` (public registry model; ownership visibility is product requirement)
+- `broadcast_emails_recipient_exposure` → `broadcast_emails` (admin-only table; recipient_filter is targeting criteria, not emails)
 - `recent_active_fanmarks_view_exposure` → `recent_active_fanmarks` VIEW (inherits RLS, no PII exposed)
 - `fanmark_access_logs_missing_policies` → `fanmark_access_logs` (SELECT restricted to fanmark owners only via license check)
 - `fanmark_access_logs_owner_only` → `fanmark_access_logs` (owner-only analytics by design; RLS license check)
