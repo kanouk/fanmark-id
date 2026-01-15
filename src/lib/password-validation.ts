@@ -8,7 +8,7 @@ export const checkPasswordRequirements = (password: string, t: (key: string) => 
   { met: /[a-z]/.test(password), text: t('password.requirements.lowercase') },
   { met: /[A-Z]/.test(password), text: t('password.requirements.uppercase') },
   { met: /\d/.test(password), text: t('password.requirements.number') },
-  { met: /[!@#$%^&*(),.?":{}|<>]/.test(password), text: t('password.requirements.special') }
+  { met: /[!@#$%^&*(),.?":{}|<>_+=';/~\[\]\\`-]/.test(password), text: t('password.requirements.special') }
 ];
 
 export const isPasswordValid = (password: string): boolean => {
