@@ -1310,15 +1310,15 @@
     "privacyPolicy": {
       "title": "Privacy Policy",
       "lastUpdated": "Last updated: January 2026",
-      "introduction": "Fanmark (\"we\", \"us\", \"our\", or \"Service\") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our website and services.",
+      "introduction": "Fanmark (the \"Service\") is operated by the Operator (the \"Operator\"). The Operator is committed to protecting your privacy. This Privacy Policy explains how the Operator collects, uses, discloses, and safeguards your information when you use this website and the Service.",
       "sections": {
         "informationWeCollect": {
           "title": "1. Information We Collect",
-          "content": "We collect information in several ways:\n\n• Account Information: When you create an account, we collect your email address, password (hashed), display name, and avatar image.\n\n• Fanmark Data: Information about your emoji combinations (fanmarks) you create, including display names, access types, redirect URLs, and associated profile information.\n\n• Usage Data: We collect information about how you interact with our Service, including search queries, access patterns, and actions taken.\n\n• Communication Data: If you contact us, we may retain your messages and communications.\n\n• Technical Data: We collect IP addresses, browser type, operating system, and device information through cookies and similar technologies."
+          "content": "The Operator collects information in several ways:\n\n• Account Information: When you create an account, the Operator collects your email address, password (hashed), display name, and avatar image.\n\n• Fanmark Data: Information about the emoji combinations (fanmarks) you create, including display names, access types, redirect URLs, and associated profile information.\n\n• Usage Data: Information about how you interact with the Service, including search queries, access patterns, and actions taken.\n\n• Communication Data: If you contact the Operator, your messages and communications may be retained.\n\n• Technical Data: IP addresses, browser type, operating system, and device information collected through cookies and similar technologies."
         },
         "howWeUseYourInformation": {
           "title": "2. How We Use Your Information",
-          "content": "We use the information we collect to:\n\n• Provide, maintain, and improve our Service\n• Create and manage your account\n• Process fanmark registrations, extensions, and returns\n• Send transactional emails (confirmations, resets, notifications)\n• Monitor and analyze service usage and trends\n• Detect, prevent, and address fraud and security issues\n• Comply with legal obligations\n• Communicate with you about service updates and changes"
+          "content": "The Operator uses the information collected to:\n\n• Provide, maintain, and improve the Service\n• Create and manage your account\n• Process fanmark registrations, extensions, and returns\n• Send transactional emails (confirmations, resets, notifications)\n• Monitor and analyze service usage and trends\n• Detect, prevent, and address fraud and security issues\n• Comply with legal obligations\n• Communicate with you about service updates and changes"
         },
         "emailNotifications": {
           "title": "3. Email Notifications",
@@ -1326,23 +1326,23 @@
         },
         "dataSharing": {
           "title": "4. Data Sharing and Disclosure",
-          "content": "We do not sell your personal data. We may share information:\n\n• With Service Providers: Third-party vendors who help operate our Service (hosting, email, analytics)\n• For Legal Reasons: When required by law or to protect our rights\n• Public Fanmark Data: Your fanmark and associated profile information may be visible to the public based on your privacy settings\n• Anonymized Data: We may share aggregated, anonymized data for analytics and research"
+          "content": "The Operator does not sell your personal data. The Operator may share information:\n\n• With Service Providers: Third-party vendors who help operate the Service (hosting, email, analytics)\n• For Legal Reasons: When required by law or to protect the Operator's rights\n• Public Fanmark Data: Your fanmark and associated profile information may be visible to the public based on your privacy settings\n• Anonymized Data: Aggregated, anonymized data may be shared for analytics and research"
         },
         "dataRetention": {
           "title": "5. Data Retention",
-          "content": "We retain your personal data as long as your account is active and for a reasonable period afterward to comply with legal obligations. You can request deletion of your account, which will remove most personal data, though some information may be retained for legal or operational purposes."
+          "content": "The Operator retains your personal data as long as your account is active and for a reasonable period afterward to comply with legal obligations. You can request deletion of your account, which will remove most personal data, though some information may be retained for legal or operational purposes."
         },
         "security": {
           "title": "6. Security",
-          "content": "We implement industry-standard security measures including encryption, secure authentication, and regular security audits. However, no method of transmission over the internet is completely secure. We cannot guarantee absolute security."
+          "content": "The Operator implements industry-standard security measures including encryption, secure authentication, and regular security audits. However, no method of transmission over the internet is completely secure, and the Operator cannot guarantee absolute security."
         },
         "cookies": {
           "title": "7. Cookies and Similar Technologies",
-          "content": "We use cookies and similar technologies to enhance your experience, remember preferences, and analyze usage patterns. You can control cookie settings through your browser. Some features may not work properly if cookies are disabled."
+          "content": "The Operator uses cookies and similar technologies to enhance your experience, remember preferences, and analyze usage patterns. You can control cookie settings through your browser. Some features may not work properly if cookies are disabled."
         },
         "childrenPrivacy": {
           "title": "8. Children's Privacy",
-          "content": "Our Service is not intended for individuals under 13 years of age. We do not knowingly collect personal data from children under 13. If we learn that we have collected such information, we will take steps to delete it promptly."
+          "content": "The Service is not intended for individuals under 13 years of age. The Operator does not knowingly collect personal data from children under 13. If such information is collected, the Operator will take steps to delete it promptly."
         },
         "yourRights": {
           "title": "9. Your Privacy Rights",
@@ -1350,22 +1350,22 @@
         },
         "thirdPartyLinks": {
           "title": "10. Third-Party Links",
-          "content": "Our Service may contain links to external websites. We are not responsible for the privacy practices of third-party sites. Please review their privacy policies before providing personal information."
+          "content": "The Service may contain links to external websites. The Operator is not responsible for the privacy practices of third-party sites. Please review their privacy policies before providing personal information."
         },
         "changesTopolicy": {
           "title": "11. Changes to This Privacy Policy",
-          "content": "We may update this Privacy Policy from time to time. We will notify you of material changes by posting the new Privacy Policy and updating the \"Last updated\" date. Continued use of the Service indicates your acceptance of the updated policy."
+          "content": "The Operator may update this Privacy Policy from time to time. Material changes will be communicated by posting the new Privacy Policy and updating the \"Last updated\" date. Continued use of the Service indicates your acceptance of the updated policy."
         },
         "contactUs": {
           "title": "12. Contact Us",
-          "content": "If you have questions about this Privacy Policy or our privacy practices, please contact us at:\n\nEmail: privacy@fanmark.id"
+          "content": "If you have questions about this Privacy Policy or the Operator's privacy practices, please contact:\n\nEmail: privacy@fanmark.id"
         }
       }
     },
     "termsOfService": {
       "title": "Terms of Service",
       "lastUpdated": "Last updated: January 2026",
-      "introduction": "These Terms of Service (\"Terms\", \"Agreement\") form a legally binding contract between you (\"User\", \"you\", \"your\") and the operator of Fanmark (\"Service\", \"Operator\", \"we\", \"us\", \"our\"). By accessing or using the Service, you agree to be bound by these Terms.",
+      "introduction": "These Terms of Service (\"Terms\", \"Agreement\") form a legally binding contract between you (\"User\", \"you\", \"your\") and the operator of Fanmark (the \"Service\", the \"Operator\"). By accessing or using the Service, you agree to be bound by these Terms.",
       "sections": {
         "useAgreement": {
           "title": "1. Use Agreement",
@@ -1373,7 +1373,7 @@
         },
         "accountResponsibility": {
           "title": "2. Account and Registration",
-          "content": "You are responsible for maintaining the confidentiality of your account credentials and password. You agree to accept responsibility for all activities that occur under your account. You must provide accurate, complete, and current information during registration. You agree to notify us immediately of any unauthorized use of your account.\n\nInvitation Code: Access to the Service may require an invitation code. Invitation codes are non-transferable and can be revoked at any time."
+          "content": "You are responsible for maintaining the confidentiality of your account credentials and password. You agree to accept responsibility for all activities that occur under your account. You must provide accurate, complete, and current information during registration. You agree to notify the Operator immediately of any unauthorized use of your account.\n\nInvitation Code: Access to the Service may require an invitation code. Invitation codes are non-transferable and can be revoked at any time."
         },
         "emailNotifications": {
           "title": "3. Email Notifications",
@@ -1385,7 +1385,7 @@
         },
         "fanmarkRetention": {
           "title": "5. Fanmark License Terms",
-          "content": "Fanmark licenses are subject to:\n\n• License Period: Initial license duration varies by fanmark tier (1-5 emojis)\n• Perpetual Licenses: Fanmarks with 4+ emojis receive perpetual, non-expiring licenses (may be subject to future changes)\n• Paid Fanmarks: Premium fanmarks (1-3 emojis) require renewal through our payment system\n• License Renewal: You may extend licenses before expiration\n• Grace Period: Upon expiration, a grace period allows renewal before the fanmark becomes available to others\n• Return: You may voluntarily return a fanmark at any time"
+          "content": "Fanmark licenses are subject to:\n\n• License Period: Initial license duration varies by fanmark tier (1-5 emojis)\n• Perpetual Licenses: Fanmarks with 4+ emojis receive perpetual, non-expiring licenses (may be subject to future changes)\n• Paid Fanmarks: Premium fanmarks (1-3 emojis) require renewal through the Operator's payment system\n• License Renewal: You may extend licenses before expiration\n• Grace Period: Upon expiration, a grace period allows renewal before the fanmark becomes available to others\n• Return: You may voluntarily return a fanmark at any time"
         },
         "paymentTerms": {
           "title": "6. Payment and Billing",
@@ -1393,7 +1393,7 @@
         },
         "userContent": {
           "title": "7. User Content",
-          "content": "You grant the Operator a non-exclusive, royalty-free license to use, reproduce, modify, and display your user-generated content (profiles, messages, avatars, etc.) for providing and improving the Service.\n\n• You retain ownership of your content\n• You warrant that your content does not infringe on third-party rights\n• You are solely responsible for the content you create\n• We may remove content that violates these Terms"
+          "content": "You grant the Operator a non-exclusive, royalty-free license to use, reproduce, modify, and display your user-generated content (profiles, messages, avatars, etc.) for providing and improving the Service.\n\n• You retain ownership of your content\n• You warrant that your content does not infringe on third-party rights\n• You are solely responsible for the content you create\n• The Operator may remove content that violates these Terms"
         },
         "intellectualProperty": {
           "title": "8. Intellectual Property",
@@ -1405,7 +1405,7 @@
         },
         "disclaimers": {
           "title": "10. Disclaimers",
-          "content": "• We make no warranties regarding the Service's uninterrupted or error-free operation\n• We are not responsible for third-party services, links, or content\n• Data loss or service interruptions may occur; backup your important data\n• We do not guarantee fanmark availability or permanence"
+          "content": "• The Operator makes no warranties regarding the Service's uninterrupted or error-free operation\n• The Operator is not responsible for third-party services, links, or content\n• Data loss or service interruptions may occur; back up your important data\n• The Operator does not guarantee fanmark availability or permanence"
         },
         "indemnification": {
           "title": "11. Indemnification",
@@ -1437,11 +1437,11 @@
         },
         "entireAgreement": {
           "title": "18. Entire Agreement",
-          "content": "These Terms, along with our Privacy Policy, constitute the entire agreement between you and the Operator regarding your use of the Service."
+          "content": "These Terms, along with the Privacy Policy, constitute the entire agreement between you and the Operator regarding your use of the Service."
         },
         "contactUs": {
           "title": "19. Contact Us",
-          "content": "If you have questions about these Terms, please contact us at:\n\nEmail: legal@fanmark.id"
+          "content": "If you have questions about these Terms, please contact the Operator at:\n\nEmail: legal@fanmark.id"
         }
       }
     },

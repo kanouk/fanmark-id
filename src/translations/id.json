@@ -1310,15 +1310,15 @@
     "privacyPolicy": {
       "title": "Kebijakan Privasi",
       "lastUpdated": "Pembaruan terakhir: Januari 2026",
-      "introduction": "Fanmark (\"kami\", \"kami\", \"milik kami\", atau \"Layanan\") berkomitmen untuk melindungi privasi Anda. Kebijakan Privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, mengungkapkan, dan melindungi informasi Anda saat Anda menggunakan situs web dan layanan kami.",
+      "introduction": "Fanmark (\"Layanan\") dioperasikan oleh Operator (\"Operator\"). Operator berkomitmen untuk melindungi privasi Anda. Kebijakan Privasi ini menjelaskan bagaimana Operator mengumpulkan, menggunakan, mengungkapkan, dan melindungi informasi Anda saat Anda menggunakan situs web ini dan Layanan.",
       "sections": {
         "informationWeCollect": {
           "title": "1. Informasi yang Kami Kumpulkan",
-          "content": "Kami mengumpulkan informasi dengan beberapa cara:\n\n• Informasi Akun: Saat Anda membuat akun, kami mengumpulkan alamat email, kata sandi (di-hash), nama tampilan, dan gambar avatar Anda.\n\n• Data Fanmark: Informasi tentang kombinasi emoji (fanmark) yang Anda buat, termasuk nama tampilan, jenis akses, URL pengalihan, dan informasi profil terkait.\n\n• Data Penggunaan: Kami mengumpulkan informasi tentang cara Anda berinteraksi dengan Layanan kami, termasuk kueri pencarian, pola akses, dan tindakan yang diambil.\n\n• Data Komunikasi: Jika Anda menghubungi kami, kami dapat menyimpan pesan dan konten komunikasi Anda.\n\n• Data Teknis: Kami mengumpulkan alamat IP, jenis browser, sistem operasi, dan informasi perangkat melalui cookie dan teknologi serupa."
+          "content": "Operator mengumpulkan informasi dengan beberapa cara:\n\n• Informasi Akun: Saat Anda membuat akun, Operator mengumpulkan alamat email, kata sandi (di-hash), nama tampilan, dan gambar avatar Anda.\n\n• Data Fanmark: Informasi tentang kombinasi emoji (fanmark) yang Anda buat, termasuk nama tampilan, jenis akses, URL pengalihan, dan informasi profil terkait.\n\n• Data Penggunaan: Informasi tentang cara Anda berinteraksi dengan Layanan, termasuk kueri pencarian, pola akses, dan tindakan yang diambil.\n\n• Data Komunikasi: Jika Anda menghubungi Operator, pesan dan konten komunikasi Anda dapat disimpan.\n\n• Data Teknis: Alamat IP, jenis browser, sistem operasi, dan informasi perangkat yang dikumpulkan melalui cookie dan teknologi serupa."
         },
         "howWeUseYourInformation": {
           "title": "2. Cara Kami Menggunakan Informasi Anda",
-          "content": "Kami menggunakan informasi yang kami kumpulkan untuk:\n\n• Menyediakan, memelihara, dan meningkatkan Layanan kami\n• Membuat dan mengelola akun Anda\n• Memproses pendaftaran, perpanjangan, dan pengembalian fanmark\n• Mengirim email transaksi (konfirmasi, penyetelan ulang, pemberitahuan)\n• Memantau dan menganalisis penggunaan layanan dan tren\n• Mendeteksi, mencegah, dan mengatasi masalah penipuan dan keamanan\n• Mematuhi kewajiban hukum\n• Berkomunikasi dengan Anda tentang pembaruan dan perubahan layanan"
+          "content": "Operator menggunakan informasi yang dikumpulkan untuk:\n\n• Menyediakan, memelihara, dan meningkatkan Layanan\n• Membuat dan mengelola akun Anda\n• Memproses pendaftaran, perpanjangan, dan pengembalian fanmark\n• Mengirim email transaksi (konfirmasi, penyetelan ulang, pemberitahuan)\n• Memantau dan menganalisis penggunaan layanan dan tren\n• Mendeteksi, mencegah, dan mengatasi masalah penipuan dan keamanan\n• Mematuhi kewajiban hukum\n• Berkomunikasi dengan Anda tentang pembaruan dan perubahan layanan"
         },
         "emailNotifications": {
           "title": "3. Pemberitahuan Email",
@@ -1326,23 +1326,23 @@
         },
         "dataSharing": {
           "title": "4. Berbagi dan Pengungkapan Data",
-          "content": "Kami tidak menjual data pribadi Anda. Kami dapat berbagi informasi:\n\n• Dengan Penyedia Layanan: Vendor pihak ketiga yang membantu mengoperasikan Layanan kami (hosting, email, analitik)\n• Untuk Alasan Hukum: Ketika dipersyaratkan oleh hukum atau untuk melindungi hak kami\n• Data Fanmark Publik: Fanmark dan informasi profil terkait Anda dapat terlihat oleh publik berdasarkan pengaturan privasi Anda\n• Data Anonim: Kami dapat berbagi data teragregat dan anonim untuk analitik dan penelitian"
+          "content": "Operator tidak menjual data pribadi Anda. Operator dapat berbagi informasi:\n\n• Dengan Penyedia Layanan: Vendor pihak ketiga yang membantu mengoperasikan Layanan (hosting, email, analitik)\n• Untuk Alasan Hukum: Ketika dipersyaratkan oleh hukum atau untuk melindungi hak Operator\n• Data Fanmark Publik: Fanmark dan informasi profil terkait Anda dapat terlihat oleh publik berdasarkan pengaturan privasi Anda\n• Data Anonim: Data teragregat dan anonim dapat dibagikan untuk analitik dan penelitian"
         },
         "dataRetention": {
           "title": "5. Retensi Data",
-          "content": "Kami menyimpan data pribadi Anda selama akun Anda aktif dan untuk periode yang wajar setelahnya untuk mematuhi kewajiban hukum. Anda dapat meminta penghapusan akun Anda, yang akan menghapus sebagian besar data pribadi, meskipun beberapa informasi dapat disimpan untuk alasan hukum atau operasional."
+          "content": "Operator menyimpan data pribadi Anda selama akun Anda aktif dan untuk periode yang wajar setelahnya untuk mematuhi kewajiban hukum. Anda dapat meminta penghapusan akun Anda, yang akan menghapus sebagian besar data pribadi, meskipun beberapa informasi dapat disimpan untuk alasan hukum atau operasional."
         },
         "security": {
           "title": "6. Keamanan",
-          "content": "Kami menerapkan langkah-langkah keamanan standar industri termasuk enkripsi, otentikasi aman, dan audit keamanan reguler. Namun, tidak ada metode transmisi melalui Internet yang sepenuhnya aman. Kami tidak dapat menjamin keamanan absolut."
+          "content": "Operator menerapkan langkah-langkah keamanan standar industri termasuk enkripsi, otentikasi aman, dan audit keamanan reguler. Namun, tidak ada metode transmisi melalui Internet yang sepenuhnya aman. Operator tidak dapat menjamin keamanan absolut."
         },
         "cookies": {
           "title": "7. Cookie dan Teknologi Serupa",
-          "content": "Kami menggunakan cookie dan teknologi serupa untuk meningkatkan pengalaman Anda, mengingat preferensi, dan menganalisis pola penggunaan. Anda dapat mengontrol pengaturan cookie melalui browser Anda. Beberapa fitur mungkin tidak berfungsi dengan baik jika cookie dinonaktifkan."
+          "content": "Operator menggunakan cookie dan teknologi serupa untuk meningkatkan pengalaman Anda, mengingat preferensi, dan menganalisis pola penggunaan. Anda dapat mengontrol pengaturan cookie melalui browser Anda. Beberapa fitur mungkin tidak berfungsi dengan baik jika cookie dinonaktifkan."
         },
         "childrenPrivacy": {
           "title": "8. Privasi Anak-Anak",
-          "content": "Layanan kami tidak ditujukan untuk individu di bawah 13 tahun. Kami tidak dengan sengaja mengumpulkan data pribadi dari anak-anak di bawah 13 tahun. Jika kami mengetahui bahwa kami telah mengumpulkan informasi tersebut, kami akan segera mengambil langkah untuk menghapusnya."
+          "content": "Layanan ini tidak ditujukan untuk individu di bawah 13 tahun. Operator tidak dengan sengaja mengumpulkan data pribadi dari anak-anak di bawah 13 tahun. Jika informasi tersebut terkumpul, Operator akan segera mengambil langkah untuk menghapusnya."
         },
         "yourRights": {
           "title": "9. Hak Privasi Anda",
@@ -1350,22 +1350,22 @@
         },
         "thirdPartyLinks": {
           "title": "10. Tautan Pihak Ketiga",
-          "content": "Layanan kami mungkin berisi tautan ke situs web eksternal. Kami tidak bertanggung jawab atas praktik privasi situs pihak ketiga. Silakan tinjau kebijakan privasi mereka sebelum memberikan informasi pribadi."
+          "content": "Layanan ini mungkin berisi tautan ke situs web eksternal. Operator tidak bertanggung jawab atas praktik privasi situs pihak ketiga. Silakan tinjau kebijakan privasi mereka sebelum memberikan informasi pribadi."
         },
         "changesTopolicy": {
           "title": "11. Perubahan Kebijakan Privasi Ini",
-          "content": "Kami dapat memperbarui Kebijakan Privasi ini dari waktu ke waktu. Kami akan memberi tahu Anda tentang perubahan material dengan memposting Kebijakan Privasi baru dan memperbarui tanggal \"Pembaruan terakhir\". Penggunaan Layanan kami yang berkelanjutan menunjukkan penerimaan Anda terhadap kebijakan yang diperbarui."
+          "content": "Operator dapat memperbarui Kebijakan Privasi ini dari waktu ke waktu. Perubahan material akan diberitahukan dengan memposting Kebijakan Privasi baru dan memperbarui tanggal \"Pembaruan terakhir\". Penggunaan Layanan secara berkelanjutan menunjukkan penerimaan Anda terhadap kebijakan yang diperbarui."
         },
         "contactUs": {
           "title": "12. Hubungi Kami",
-          "content": "Jika Anda memiliki pertanyaan tentang Kebijakan Privasi ini atau praktik privasi kami, silakan hubungi kami di:\n\nEmail: privacy@fanmark.id"
+          "content": "Jika Anda memiliki pertanyaan tentang Kebijakan Privasi ini atau praktik privasi Operator, silakan hubungi:\n\nEmail: privacy@fanmark.id"
         }
       }
     },
     "termsOfService": {
       "title": "Syarat Layanan",
       "lastUpdated": "Pembaruan terakhir: Januari 2026",
-      "introduction": "Syarat Layanan ini (\"Syarat\", \"Perjanjian\") membentuk kontrak yang mengikat secara hukum antara Anda (\"Pengguna\", \"Anda\", \"Milik Anda\") dan operator Fanmark (\"Layanan\", \"Operator\", \"kami\"). Dengan mengakses atau menggunakan Layanan, Anda setuju untuk terikat oleh Syarat ini.",
+      "introduction": "Syarat Layanan ini (\"Syarat\", \"Perjanjian\") membentuk kontrak yang mengikat secara hukum antara Anda (\"Pengguna\", \"Anda\", \"Milik Anda\") dan operator Fanmark (\"Layanan\", \"Operator\"). Dengan mengakses atau menggunakan Layanan, Anda setuju untuk terikat oleh Syarat ini.",
       "sections": {
         "useAgreement": {
           "title": "1. Perjanjian Penggunaan",
@@ -1373,7 +1373,7 @@
         },
         "accountResponsibility": {
           "title": "2. Akun dan Pendaftaran",
-          "content": "Anda bertanggung jawab untuk mempertahankan kerahasiaan kredensial akun dan kata sandi Anda. Anda setuju untuk menerima tanggung jawab atas semua aktivitas yang terjadi di akun Anda. Anda harus memberikan informasi yang akurat, lengkap, dan terkini selama pendaftaran. Anda setuju untuk memberi tahu kami segera tentang penggunaan tidak sah akun Anda.\n\nKode Undangan: Akses ke Layanan mungkin memerlukan kode undangan. Kode undangan tidak dapat dialihkan dan dapat dibatalkan kapan saja."
+          "content": "Anda bertanggung jawab untuk mempertahankan kerahasiaan kredensial akun dan kata sandi Anda. Anda setuju untuk menerima tanggung jawab atas semua aktivitas yang terjadi di akun Anda. Anda harus memberikan informasi yang akurat, lengkap, dan terkini selama pendaftaran. Anda setuju untuk memberi tahu Operator segera tentang penggunaan tidak sah akun Anda.\n\nKode Undangan: Akses ke Layanan mungkin memerlukan kode undangan. Kode undangan tidak dapat dialihkan dan dapat dibatalkan kapan saja."
         },
         "emailNotifications": {
           "title": "3. Pemberitahuan Email",
@@ -1385,7 +1385,7 @@
         },
         "fanmarkRetention": {
           "title": "5. Syarat Lisensi Fanmark",
-          "content": "Lisensi fanmark tunduk pada:\n\n• Periode Lisensi: Durasi lisensi awal bervariasi menurut tier fanmark (1-5 emoji)\n• Lisensi Seumur Hidup: Fanmark dengan 4+ emoji menerima lisensi non-ekspirasi selamanya (dapat mengalami perubahan di masa mendatang)\n• Fanmark Berbayar: Fanmark premium (1-3 emoji) memerlukan pembaruan melalui sistem pembayaran kami\n• Perpanjangan Lisensi: Anda dapat memperpanjang lisensi sebelum kedaluwarsa\n• Periode Grace: Saat kedaluwarsa, periode grace memungkinkan pembaruan sebelum fanmark tersedia untuk orang lain\n• Pengembalian: Anda dapat secara sukarela mengembalikan fanmark kapan saja"
+          "content": "Lisensi fanmark tunduk pada:\n\n• Periode Lisensi: Durasi lisensi awal bervariasi menurut tier fanmark (1-5 emoji)\n• Lisensi Seumur Hidup: Fanmark dengan 4+ emoji menerima lisensi non-ekspirasi selamanya (dapat mengalami perubahan di masa mendatang)\n• Fanmark Berbayar: Fanmark premium (1-3 emoji) memerlukan pembaruan melalui sistem pembayaran Operator\n• Perpanjangan Lisensi: Anda dapat memperpanjang lisensi sebelum kedaluwarsa\n• Periode Grace: Saat kedaluwarsa, periode grace memungkinkan pembaruan sebelum fanmark tersedia untuk orang lain\n• Pengembalian: Anda dapat secara sukarela mengembalikan fanmark kapan saja"
         },
         "paymentTerms": {
           "title": "6. Pembayaran dan Penagihan",
@@ -1393,7 +1393,7 @@
         },
         "userContent": {
           "title": "7. Konten Pengguna",
-          "content": "Anda memberikan kepada Operator lisensi non-eksklusif tanpa royalti untuk menggunakan, mereproduksi, memodifikasi, dan menampilkan konten buatan pengguna Anda (profil, pesan, avatar, dll.) untuk menyediakan dan meningkatkan Layanan.\n\n• Anda mempertahankan kepemilikan konten Anda\n• Anda menjamin bahwa konten Anda tidak melanggar hak pihak ketiga\n• Anda sepenuhnya bertanggung jawab atas konten yang Anda buat\n• Kami dapat menghapus konten yang melanggar Syarat ini"
+          "content": "Anda memberikan kepada Operator lisensi non-eksklusif tanpa royalti untuk menggunakan, mereproduksi, memodifikasi, dan menampilkan konten buatan pengguna Anda (profil, pesan, avatar, dll.) untuk menyediakan dan meningkatkan Layanan.\n\n• Anda mempertahankan kepemilikan konten Anda\n• Anda menjamin bahwa konten Anda tidak melanggar hak pihak ketiga\n• Anda sepenuhnya bertanggung jawab atas konten yang Anda buat\n• Operator dapat menghapus konten yang melanggar Syarat ini"
         },
         "intellectualProperty": {
           "title": "8. Kekayaan Intelektual",
@@ -1405,7 +1405,7 @@
         },
         "disclaimers": {
           "title": "10. Penafian",
-          "content": "• Kami tidak menjamin operasi Layanan yang tidak terputus atau bebas kesalahan\n• Kami tidak bertanggung jawab atas layanan, tautan, atau konten pihak ketiga\n• Kehilangan data atau gangguan layanan dapat terjadi; cadangkan data penting Anda\n• Kami tidak menjamin ketersediaan atau permanensi fanmark"
+          "content": "• Operator tidak menjamin operasi Layanan yang tidak terputus atau bebas kesalahan\n• Operator tidak bertanggung jawab atas layanan, tautan, atau konten pihak ketiga\n• Kehilangan data atau gangguan layanan dapat terjadi; cadangkan data penting Anda\n• Operator tidak menjamin ketersediaan atau permanensi fanmark"
         },
         "indemnification": {
           "title": "11. Penggantian Rugi",
@@ -1437,11 +1437,11 @@
         },
         "entireAgreement": {
           "title": "18. Perjanjian Lengkap",
-          "content": "Syarat ini, bersama dengan Kebijakan Privasi kami, merupakan seluruh perjanjian antara Anda dan Operator mengenai penggunaan Layanan."
+          "content": "Syarat ini, bersama dengan Kebijakan Privasi, merupakan seluruh perjanjian antara Anda dan Operator mengenai penggunaan Layanan."
         },
         "contactUs": {
           "title": "19. Hubungi Kami",
-          "content": "Jika Anda memiliki pertanyaan tentang Syarat ini, silakan hubungi kami di:\n\nEmail: legal@fanmark.id"
+          "content": "Jika Anda memiliki pertanyaan tentang Syarat ini, silakan hubungi Operator di:\n\nEmail: legal@fanmark.id"
         }
       }
     },
