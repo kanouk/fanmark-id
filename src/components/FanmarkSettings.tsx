@@ -761,7 +761,8 @@ export const FanmarkSettings = ({
                           <SelectTrigger className="h-11 rounded-lg border border-border focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1">
                             <SelectValue placeholder={t('fanmarkSettings.fields.redirect.platformPlaceholder')} />
                           </SelectTrigger>
-                          <SelectContent position="popper" className="max-h-[min(var(--radix-select-content-available-height),20rem)]">
+                          <SelectContent className="overflow-y-auto max-h-[min(var(--radix-select-content-available-height),20rem)]">
+
                             {socialPlatforms.map((platform) => {
                               const Icon = platform.icon;
                               return (
