@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import type React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,14 +7,15 @@ import type { SocialPlatform } from '@/lib/social-platforms';
 
 export type SocialLinkInputMode = 'handle' | 'url';
 
-const normalizeHandleInput = (rawValue: string, baseUrl: string) => {
+const normalizeHandleInput = (rawValue: string, baseUrl: string, stripLeadingAt: boolean) => {
   const withoutProtocol = rawValue.replace(/^https?:\/\//i, '');
   const normalizedBase = baseUrl.replace(/^https?:\/\//i, '');
   let next = withoutProtocol;
   if (normalizedBase && next.startsWith(normalizedBase)) {
     next = next.slice(normalizedBase.length);
   }
-  return next.replace(/^\/+/, '').replace(/^@+/, '');
+  const withoutLeadingSlash = next.replace(/^\/+/, '');
+  return stripLeadingAt ? withoutLeadingSlash.replace(/^@+/, '') : withoutLeadingSlash;
 };
 
 interface SocialLinkInputCardProps {
@@ -48,19 +48,10 @@ export const SocialLinkInputCard = ({
   const isHandleMode = mode === 'handle' && !!platform.baseUrl;
   const baseUrl = platform.baseUrl || '';
   const handleValue = isHandleMode && value.startsWith(baseUrl)
-    ? value.slice(baseUrl.length).replace(/^@+/, '')
+    ? value.slice(baseUrl.length)
     : isHandleMode
       ? ''
       : undefined;
-
-  useEffect(() => {
-    if (!isHandleMode || !baseUrl || !value.startsWith(baseUrl)) return;
-    const nextHandle = normalizeHandleInput(value.slice(baseUrl.length), baseUrl);
-    const nextValue = nextHandle ? `${baseUrl}${nextHandle}` : '';
-    if (value !== nextValue) {
-      onChange(nextValue);
-    }
-  }, [isHandleMode, baseUrl, value, onChange]);
 
   const toggleMode = () => {
     if (!platform.baseUrl) return;
@@ -69,7 +60,8 @@ export const SocialLinkInputCard = ({
     const currentValue = value || '';
 
     if (nextMode === 'url') {
-      const withoutBase = currentValue.startsWith(baseUrl) ? currentValue.slice(baseUrl.length) : '';
+      const withoutBaseRaw = currentValue.startsWith(baseUrl) ? currentValue.slice(baseUrl.length) : '';
+      const withoutBase = normalizeHandleInput(withoutBaseRaw, baseUrl, true);
       const nextUrl = withoutBase ? `${baseUrl}${withoutBase}` : `${baseUrl}`;
       onChange(nextUrl);
     } else if (!currentValue || currentValue === baseUrl) {
@@ -122,8 +114,8 @@ export const SocialLinkInputCard = ({
             <span className="hidden sm:flex h-full items-center bg-muted/30 px-3 text-sm font-medium text-muted-foreground/80">
               {baseUrl}
             </span>
-            <span className="sm:hidden flex h-full items-center bg-muted/30 px-3 text-xs font-medium text-muted-foreground/80">
-              @{platform.label}
+            <span className="sm:hidden max-w-[45%] truncate flex h-full items-center bg-muted/30 px-3 text-[11px] font-medium text-muted-foreground/80">
+              {baseUrl}
             </span>
             <input
               id={inputId}
@@ -132,10 +124,17 @@ export const SocialLinkInputCard = ({
               value={handleValue ?? ''}
               onChange={(event) => {
                 const rawHandle = event.target.value.trim();
-                const cleanedHandle = normalizeHandleInput(rawHandle, baseUrl);
+                const cleanedHandle = normalizeHandleInput(rawHandle, baseUrl, false);
                 onChange(cleanedHandle ? `${baseUrl}${cleanedHandle}` : '');
               }}
-              onBlur={onBlur}
+              onBlur={(event) => {
+                const normalizedHandle = normalizeHandleInput(event.target.value.trim(), baseUrl, true);
+                const normalizedValue = normalizedHandle ? `${baseUrl}${normalizedHandle}` : '';
+                if (value !== normalizedValue) {
+                  onChange(normalizedValue);
+                }
+                onBlur?.();
+              }}
               placeholder={platform.handlePlaceholder || 'username'}
               className="flex-1 h-full bg-transparent px-3 text-sm sm:text-base outline-none placeholder:text-muted-foreground/40"
               autoComplete="off"

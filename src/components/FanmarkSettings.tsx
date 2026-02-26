@@ -17,7 +17,7 @@ import { Loader2, Eye, Edit, ArrowLeft, Sparkles } from 'lucide-react';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { cn } from '@/lib/utils';
 import { SocialLinkInputCard, SocialLinkInputMode } from '@/components/SocialLinkInputCard';
-import { socialPlatforms } from '@/lib/social-platforms';
+import { normalizeSocialUrlForSave, socialPlatforms } from '@/lib/social-platforms';
 import { 
   FiType, 
   FiSettings, 
@@ -394,6 +394,10 @@ export const FanmarkSettings = ({
     setIsSubmitting(true);
 
     try {
+      const normalizedTargetUrl = data.redirectLinkType === 'url'
+        ? normalizeSocialUrlForSave(data.targetUrl)
+        : data.targetUrl;
+
       // Update fanmark basic config (fanmark name and access type)
       const { error: basicConfigError } = await supabase
         .from('fanmark_basic_configs')
@@ -408,12 +412,12 @@ export const FanmarkSettings = ({
       if (basicConfigError) throw basicConfigError;
 
       // Update specific config tables based on access type
-      if (data.accessType === 'redirect' && data.targetUrl) {
+      if (data.accessType === 'redirect' && normalizedTargetUrl) {
         const { error: redirectError } = await supabase
           .from('fanmark_redirect_configs')
           .upsert({
             license_id: fanmark.license_id,
-            target_url: data.targetUrl
+            target_url: normalizedTargetUrl
           }, {
             onConflict: 'license_id'
           });

@@ -37,3 +37,19 @@ export const socialPlatforms: SocialPlatform[] = [
   { key: 'facebook', label: 'Facebook', icon: FiFacebook, placeholder: 'https://facebook.com/username', baseUrl: 'https://facebook.com/', handlePlaceholder: 'username' },
   { key: 'website', label: 'Website', icon: FiGlobe, placeholder: 'https://yourwebsite.com', baseUrl: 'https://', handlePlaceholder: 'yourwebsite.com' },
 ];
+
+export const normalizeSocialUrlForSave = (value?: string) => {
+  if (!value) return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+
+  for (const platform of socialPlatforms) {
+    if (!platform.baseUrl || platform.key === 'website') continue;
+    if (trimmed.startsWith(platform.baseUrl)) {
+      const handle = trimmed.slice(platform.baseUrl.length).replace(/^@+/, '');
+      return handle ? `${platform.baseUrl}${handle}` : '';
+    }
+  }
+
+  return trimmed;
+};

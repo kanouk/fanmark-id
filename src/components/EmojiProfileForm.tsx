@@ -14,7 +14,7 @@ import { useCoverImageUpload } from '@/hooks/useCoverImageUpload';
 import { EmojiProfile } from '@/hooks/useEmojiProfile';
 import { Loader2, Upload, X, Image as ImageIcon, FileText, Link, Shield, User, Eye } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
-import { socialPlatforms } from '@/lib/social-platforms';
+import { normalizeSocialUrlForSave, socialPlatforms } from '@/lib/social-platforms';
 import { SocialLinkInputCard } from '@/components/SocialLinkInputCard';
 
 const profileSchema = z.object({
@@ -320,9 +320,16 @@ export const EmojiProfileForm = ({
 
   const onSubmit = async (data: ProfileFormData) => {
     try {
+      const normalizedSocialLinks = Object.fromEntries(
+        Object.entries(data.social_links || {}).map(([key, value]) => [
+          key,
+          normalizeSocialUrlForSave(value),
+        ])
+      );
+
       // Filter out empty social links
       const filteredSocialLinks = Object.fromEntries(
-        Object.entries(data.social_links || {}).filter(([_, value]) => value && value.trim() !== '')
+        Object.entries(normalizedSocialLinks).filter(([_, value]) => value && value.trim() !== '')
       );
 
       await onSave({
