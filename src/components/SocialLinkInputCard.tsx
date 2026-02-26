@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import type React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,6 +7,16 @@ import { AtSign, Link2 } from 'lucide-react';
 import type { SocialPlatform } from '@/lib/social-platforms';
 
 export type SocialLinkInputMode = 'handle' | 'url';
+
+const normalizeHandleInput = (rawValue: string, baseUrl: string) => {
+  const withoutProtocol = rawValue.replace(/^https?:\/\//i, '');
+  const normalizedBase = baseUrl.replace(/^https?:\/\//i, '');
+  let next = withoutProtocol;
+  if (normalizedBase && next.startsWith(normalizedBase)) {
+    next = next.slice(normalizedBase.length);
+  }
+  return next.replace(/^\/+/, '').replace(/^@+/, '');
+};
 
 interface SocialLinkInputCardProps {
   platform: SocialPlatform;
@@ -37,10 +48,19 @@ export const SocialLinkInputCard = ({
   const isHandleMode = mode === 'handle' && !!platform.baseUrl;
   const baseUrl = platform.baseUrl || '';
   const handleValue = isHandleMode && value.startsWith(baseUrl)
-    ? value.slice(baseUrl.length)
+    ? value.slice(baseUrl.length).replace(/^@+/, '')
     : isHandleMode
       ? ''
       : undefined;
+
+  useEffect(() => {
+    if (!isHandleMode || !baseUrl || !value.startsWith(baseUrl)) return;
+    const nextHandle = normalizeHandleInput(value.slice(baseUrl.length), baseUrl);
+    const nextValue = nextHandle ? `${baseUrl}${nextHandle}` : '';
+    if (value !== nextValue) {
+      onChange(nextValue);
+    }
+  }, [isHandleMode, baseUrl, value, onChange]);
 
   const toggleMode = () => {
     if (!platform.baseUrl) return;
@@ -112,15 +132,7 @@ export const SocialLinkInputCard = ({
               value={handleValue ?? ''}
               onChange={(event) => {
                 const rawHandle = event.target.value.trim();
-                const cleanedHandle = (() => {
-                  const withoutProtocol = rawHandle.replace(/^https?:\/\//i, '');
-                  const normalizedBase = baseUrl.replace(/^https?:\/\//i, '');
-                  let next = withoutProtocol;
-                  if (normalizedBase && next.startsWith(normalizedBase)) {
-                    next = next.slice(normalizedBase.length);
-                  }
-                  return next.replace(/^\/+/, '');
-                })();
+                const cleanedHandle = normalizeHandleInput(rawHandle, baseUrl);
                 onChange(cleanedHandle ? `${baseUrl}${cleanedHandle}` : '');
               }}
               onBlur={onBlur}
