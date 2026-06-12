@@ -295,13 +295,15 @@ bun install && bunx tsc --noEmit && bun run build
 1. **生成スクリプトの二分割出力**: `scripts/generate-emoji-catalog.ts` を修正し、2つのファイルを生成する:
    - `src/data/emojiConversionTable.ts`(コンパクト版): 各エントリの `{ id, emoji, codepoints }` のみ。`shortName` / `keywords` / `category` / `subcategory`(ファイルの大半を占めるピッカー検索専用データ)を含めない。
    - `src/data/emojiCatalog.ts`(フル版): 現行どおり全フィールド。ただし末尾の `emojiToId` / `emojiIdToEmoji` マップ(約12,000行)は **entries から導出可能な重複データなので生成をやめ**、必要側で実行時に導出する。
+   - **注意①(パイプライン影響範囲)**: カタログ更新フローは「Unicode `emoji-test.txt` → `scripts/convert-emoji-test.mjs` でCSV/JSON化 → 管理画面で `emoji_master` へインポート → `generate-emoji-catalog.ts` で出力」の3段階。改修するのは最終段のみで、上流の `convert-emoji-test.mjs` と管理画面インポートは変更不要。運用手順も従来どおり。
+   - **注意②(正規化キーの再現)**: 現行スクリプトは `emojiToId` のキーに正規化済み絵文字を使っている(`generate-emoji-catalog.ts:68` の `normalizeEmojiForLookup`)。マップを実行時導出に切り替える場合、`src/lib/emojiConversion.ts` 側で同一の正規化を適用してキー集合が完全一致することをテストで確認すること。
 2. **`src/lib/emojiConversion.ts` の import 先をコンパクト版に変更**: 既存のインデックス構築(`emojiIdToRecord` 等)は `id`/`emoji`/`codepoints` しか使っていないため、ロジック変更なしで載せ替え可能。`emojiToId`/`emojiIdToEmoji` 由来のルックアップはコンパクト版entriesから導出する。
 3. **フルカタログの遅延ロード化**: フルカタログを静的importしているのはピッカー系のみになるはず(`grep -rn "from '@/data/emojiCatalog'" src/` で確認)。`EmojiInput.tsx` 等を dynamic import に変更:
    ```ts
    const loadCatalog = () => import('@/data/emojiCatalog').then(m => m.emojiCatalogEntries);
    ```
    読み込み中はピッカー内にスケルトン表示。React Query の `useQuery({ queryKey: ['emojiCatalog'], queryFn: loadCatalog, staleTime: Infinity })` でキャッシュすると実装が簡潔。
-4. **回帰テスト必須**: Phase 0 で導入した Vitest で、分割前後の `convertEmojiSequenceToIdPair` / `segmentEmojiSequence` / `canonicalizeEmojiString` の出力一致テストを書く(肌色トーン付き・ZWJ結合・国旗など複合絵文字を最低20ケース)。**URL→ID変換は取得・検索・アクセスの根幹ロジックであり、ここの回帰は事故になる。**
+4. **回帰テスト必須**: Phase 0 で導入した Vitest で、分割前後の `convertEmojiSequenceToIdPair` / `segmentEmojiSequence` / `canonicalizeEmojiString` の出力一致テストを書く(肌色トーン付き・ZWJ結合・国旗など複合絵文字を最低20ケース)。既存の手動テストスクリプト `scripts/test-emoji-conversion.ts` / `scripts/test-emoji-extract.ts` にテストケースの蓄積があるため、これらをVitestケースへ移植するのが近道。**URL→ID変換は取得・検索・アクセスの根幹ロジックであり、ここの回帰は事故になる。**
 5. `docs/TECH.md` の「絵文字マスタ更新」手順(生成スクリプトの出力先・フォーマット)を新構成に合わせて更新する。
 
 **受け入れ基準(リダイレクト訪問者の体験)**:
