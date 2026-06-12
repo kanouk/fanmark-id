@@ -279,19 +279,36 @@ bun install && bunx tsc --noEmit && bun run build
 
 **目的**: 単一3.4MBバンドルを分割し、初期ロードを軽くする。**ユーザー体感に直結する最も費用対効果の高いフェーズ。**
 
-### 3.1 絵文字カタログ(84,492行)の遅延ロード化 ★最重要
+### 3.1 絵文字カタログ(84,492行 / 約2MB)の分割と遅延ロード化 ★最重要
 
-`src/data/emojiCatalog.ts` は84,492行の静的データで、現在は通常のimportにより**全ページの初期バンドルに含まれている**。利用者は絵文字ピッカー(`EmojiInput.tsx` 等)を開いたユーザーのみ。
+**背景(必読)**: `src/data/emojiCatalog.ts`(約2MB)は全ページの初期バンドルに含まれている。最悪のケースは**リダイレクト目的の訪問者**: ファンマークリンク(`/a/:shortId` や `/:emojiPath`)を踏んだだけの人が、リダイレクト先に飛ぶためだけに3.4MBのJSをダウンロードし、さらに `src/lib/emojiConversion.ts` がモジュール読み込み時に全カタログのインデックス構築ループを実行するのを待たされる。
+
+**重要な依存関係**: カタログの利用者はピッカー(`EmojiInput.tsx`)だけではない。`src/lib/emojiConversion.ts:1` がカタログを静的importしており、これを **リダイレクト経路自身が使っている**:
+- `src/components/FanmarkAccess.tsx:18`(`/:emojiPath`): `convertEmojiSequenceToIdPair`(URL絵文字→ID変換、RPC呼び出しに必要)+ `segmentEmojiSequence`(表示用)
+- `src/components/FanmarkAccessByShortId.tsx:12`(`/a/:shortId`): `segmentEmojiSequence` のみ
+- 他12ファイルも `emojiConversion` をimport
+
+したがって「カタログを丸ごと遅延ロード」では解決しない(リダイレクト経路が同期的に変換関数を必要とするため)。**データを「変換用コンパクト表」と「ピッカー用フルカタログ」に分割する**のが正解。
 
 **実装手順**:
 
-1. `emojiCatalog.ts` のデータ本体を `src/data/emojiCatalog.json`(または `.ts` のままでもよい)として分離し、型定義のみ `src/data/emojiCatalogTypes.ts` に残す。
-2. 利用箇所(`grep -rn "emojiCatalog" src/` で特定。`EmojiInput.tsx` など)を dynamic import に変更:
+1. **生成スクリプトの二分割出力**: `scripts/generate-emoji-catalog.ts` を修正し、2つのファイルを生成する:
+   - `src/data/emojiConversionTable.ts`(コンパクト版): 各エントリの `{ id, emoji, codepoints }` のみ。`shortName` / `keywords` / `category` / `subcategory`(ファイルの大半を占めるピッカー検索専用データ)を含めない。
+   - `src/data/emojiCatalog.ts`(フル版): 現行どおり全フィールド。ただし末尾の `emojiToId` / `emojiIdToEmoji` マップ(約12,000行)は **entries から導出可能な重複データなので生成をやめ**、必要側で実行時に導出する。
+2. **`src/lib/emojiConversion.ts` の import 先をコンパクト版に変更**: 既存のインデックス構築(`emojiIdToRecord` 等)は `id`/`emoji`/`codepoints` しか使っていないため、ロジック変更なしで載せ替え可能。`emojiToId`/`emojiIdToEmoji` 由来のルックアップはコンパクト版entriesから導出する。
+3. **フルカタログの遅延ロード化**: フルカタログを静的importしているのはピッカー系のみになるはず(`grep -rn "from '@/data/emojiCatalog'" src/` で確認)。`EmojiInput.tsx` 等を dynamic import に変更:
    ```ts
-   const loadCatalog = () => import('@/data/emojiCatalog').then(m => m.emojiCatalog);
+   const loadCatalog = () => import('@/data/emojiCatalog').then(m => m.emojiCatalogEntries);
    ```
    読み込み中はピッカー内にスケルトン表示。React Query の `useQuery({ queryKey: ['emojiCatalog'], queryFn: loadCatalog, staleTime: Infinity })` でキャッシュすると実装が簡潔。
-3. `docs/TECH.md` の「絵文字マスタ更新」手順(`scripts/generate-emoji-catalog.ts` の出力先)を新構成に合わせて更新する。**生成スクリプト側の出力フォーマットも忘れずに追従させること。**
+4. **回帰テスト必須**: Phase 0 で導入した Vitest で、分割前後の `convertEmojiSequenceToIdPair` / `segmentEmojiSequence` / `canonicalizeEmojiString` の出力一致テストを書く(肌色トーン付き・ZWJ結合・国旗など複合絵文字を最低20ケース)。**URL→ID変換は取得・検索・アクセスの根幹ロジックであり、ここの回帰は事故になる。**
+5. `docs/TECH.md` の「絵文字マスタ更新」手順(生成スクリプトの出力先・フォーマット)を新構成に合わせて更新する。
+
+**受け入れ基準(リダイレクト訪問者の体験)**:
+- `bun run build` の出力で、`/a/:shortId` 到達時にロードされるチャンク群に `keywords` 等のフルカタログデータが含まれないこと(チャンク内容を `grep` で確認)。
+- 3.2 のルート分割と合わせ、`/a/:shortId` 直撃時の JS 合計が gzip 300KB 以下であること。
+
+**さらなる削減(任意・別PR)**: `/a/:shortId` が使うのは表示分割(`segmentEmojiSequence`)だけなので、`Intl.Segmenter`(grapheme分割)で代替できれば変換表すら不要になる。ただし既存実装はカタログ優先順位付きの独自分割であり、複合絵文字での差異リスクがあるため、4 の回帰テストで全ケース一致を確認できた場合のみ採用すること。
 
 ### 3.2 ルート単位のコード分割
 
@@ -327,8 +344,10 @@ build: {
 
 ### ✅ Phase 3 完了チェックリスト
 
-- [ ] 絵文字カタログが初期バンドルから消えた(build出力で確認)
+- [ ] カタログが変換用コンパクト表とピッカー用フルカタログに分割され、フルカタログが初期バンドルから消えた(build出力で確認)
+- [ ] 絵文字変換関数の分割前後の出力一致テストが通る(複合絵文字20ケース以上)
 - [ ] 全27ルートが lazy 化され、Suspense フォールバックが機能
+- [ ] **リダイレクト経路(`/a/:shortId`, `/:emojiPath`)直撃時のJS合計が gzip 300KB 以下**
 - [ ] 初期ロードJS(エントリチャンク)が gzip 300KB 以下
 - [ ] PWA precache が新チャンク構成で正常
 - [ ] TECH.md の絵文字カタログ手順を更新、計測ログ更新
