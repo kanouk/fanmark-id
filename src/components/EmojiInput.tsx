@@ -371,6 +371,8 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
 
     } catch (error) {
       console.error('Paste failed:', error);
+      setDirectInputText(value);
+      setShowDirectInput(true);
       toast({
         title: t('common.error'),
         description: t('common.clipboardReadFailed'),
@@ -662,7 +664,7 @@ export const EmojiInput: React.FC<EmojiInputProps> = ({
 interface EmojiInputUtilitiesProps {
   disabled?: boolean;
   hasValue: boolean;
-  onPaste: () => void;
+  onPaste: () => void | boolean | Promise<void | boolean>;
   onClear: () => void;
   onDirectInput?: (input: string) => void;
   value?: string;
@@ -686,6 +688,23 @@ export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
     if (disabled || !onDirectInput) return;
     setDirectInputText(value ?? '');
     setShowDirectInput(true);
+  };
+
+  const handlePasteClick = async () => {
+    if (disabled) return;
+
+    try {
+      const result = await onPaste();
+      if (result === false && onDirectInput) {
+        setDirectInputText(value ?? '');
+        setShowDirectInput(true);
+      }
+    } catch {
+      if (onDirectInput) {
+        setDirectInputText(value ?? '');
+        setShowDirectInput(true);
+      }
+    }
   };
 
   const handleDirectInputConfirm = () => {
@@ -727,7 +746,7 @@ export const EmojiInputUtilities: React.FC<EmojiInputUtilitiesProps> = ({
             variant="ghost"
             size="sm"
             disabled={disabled}
-            onClick={onPaste}
+            onClick={handlePasteClick}
             aria-label={t('common.pasteFromClipboard')}
             className={fixedSize ? "h-7 px-2 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1" : "h-7 sm:h-8 px-1.5 sm:px-3 rounded-full text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary flex items-center gap-1 sm:gap-1.5"}
           >

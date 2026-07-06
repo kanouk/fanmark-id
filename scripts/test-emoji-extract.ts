@@ -8,6 +8,7 @@ const samples: Array<{ label: string; input: string }> = [
   { label: 'Skin tone variations', input: '肌色 🙋🏻‍♂️ と 🙋🏿‍♀️ の組み合わせ' },
   { label: 'Hearts comparison', input: '♥と❤️と💕と💖が並ぶ' },
   { label: 'Keycap and numbers', input: '番号1️⃣2️⃣3️⃣と文字' },
+  { label: 'Emoji 17.0 additions', input: '新絵文字🫈🫪🫯🫍🛘🪊🪎を抽出' },
   {
     label: 'Whitespace and control characters',
     input: String.raw`

@@ -277,29 +277,32 @@ export const resolveFanmarkDisplay = (
   }
 };
 
-const EMOJI_REGEX =
-  /\p{Extended_Pictographic}(?:\p{Emoji_Modifier}|\uFE0F|\u200D(?:\p{Extended_Pictographic}|\p{Emoji_Modifier})*)*|\p{Regional_Indicator}{2}|\d\uFE0F\u20E3|[#*]\uFE0F\u20E3|\p{Emoji_Presentation}|\p{Emoji_Modifier}/gu;
-
 export const extractEmojiString = (input: string): string => {
   if (!input) return '';
 
-  const matches = input.match(EMOJI_REGEX);
-  if (!matches) {
-    return '';
-  }
-
+  const sanitized = sanitizeForCanonicalization(input);
   const extractedSegments: string[] = [];
+  let index = 0;
 
-  for (const candidate of matches) {
-    try {
-      const canonical = canonicalizeEmojiString(candidate);
-      convertEmojiSequenceToIds(canonical);
-      extractedSegments.push(canonical);
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('[extractEmojiString] discarded candidate', { candidate, error });
+  while (index < sanitized.length) {
+    const firstChar = sanitized.charAt(index);
+    const candidates = lookupEntriesByFirstChar.get(firstChar) ?? [];
+    const match = candidates.find((entry) => sanitized.startsWith(entry.key, index));
+
+    if (match) {
+      try {
+        extractedSegments.push(convertEmojiIdsToSequence([match.id]));
+      } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[extractEmojiString] discarded candidate', { match, error });
+        }
       }
+      index += match.key.length;
+      continue;
     }
+
+    const [fallback] = Array.from(sanitized.slice(index));
+    index += fallback?.length ?? 1;
   }
 
   return extractedSegments.join('');

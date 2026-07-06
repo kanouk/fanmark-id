@@ -541,7 +541,7 @@ export const FanmarkAcquisition = ({
                       description: t('common.clipboardNotSupported'),
                       variant: 'destructive',
                     });
-                    return;
+                    return false;
                   }
 
                   const clipboardText = await navigator.clipboard.readText();
@@ -551,7 +551,7 @@ export const FanmarkAcquisition = ({
                       description: t('common.clipboardEmptyBody'),
                       variant: 'warning',
                     });
-                    return;
+                    return true;
                   }
 
                   const extracted = extractEmojiString(clipboardText);
@@ -561,7 +561,7 @@ export const FanmarkAcquisition = ({
                       description: t('common.nonEmojiRejectedBody'),
                       variant: 'warning',
                     });
-                    return;
+                    return true;
                   }
 
                   handleQueryChange(extracted);
@@ -570,6 +570,7 @@ export const FanmarkAcquisition = ({
                     title: t('common.pasteCompletedTitle'),
                     description: t('common.pasteCompleted'),
                   });
+                  return true;
 
                 } catch (error) {
                   toast({
@@ -577,6 +578,7 @@ export const FanmarkAcquisition = ({
                     description: t('common.clipboardReadFailed'),
                     variant: 'destructive',
                   });
+                  return false;
                 }
               }}
                 onDirectInput={(input: string) => {

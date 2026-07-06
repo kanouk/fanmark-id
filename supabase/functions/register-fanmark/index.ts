@@ -69,6 +69,11 @@ interface ClassifiedTier {
   monthly_price_usd: number | null;
 }
 
+interface EmojiMasterLookupRecord {
+  id: string;
+  emoji: string;
+}
+
 const SKIN_TONE_MODIFIER_REGEX = /\p{Emoji_Modifier}/u;
 const SKIN_TONE_MODIFIER_GLOBAL_REGEX = /\p{Emoji_Modifier}/gu;
 const EMOJI_CHARACTER_REGEX = /\p{Emoji}/u;
@@ -81,6 +86,9 @@ const FE_VARIATION_SELECTOR_REGEX = /\uFE0F+/g;
 
 const normalizeEmojiForLookup = (emoji: string): string =>
   emoji.normalize('NFC').replace(FE_VARIATION_SELECTOR_REGEX, '\uFE0F');
+
+const normalizeEmojiForComparison = (emoji: string): string =>
+  normalizeEmojiForLookup(emoji).replace(FE_VARIATION_SELECTOR_REGEX, '');
 
 function getGraphemes(text: string): string[] {
   if (typeof (Intl as { Segmenter?: typeof Intl.Segmenter }).Segmenter === 'function') {
@@ -201,13 +209,50 @@ async function getMaxEmojiCharacters(supabase: DatabaseClient): Promise<number> 
 }
 
 // Validate emoji combination - strict emoji-only validation
-async function validateEmojiCombination(supabase: DatabaseClient, emoji: string): Promise<{ valid: boolean; error?: string; emojiCount: number }> {
+async function validateEmojiCombination(
+  supabase: DatabaseClient,
+  emoji: string,
+  emojiIds: string[] = [],
+): Promise<{ valid: boolean; error?: string; emojiCount: number }> {
   if (!emoji || emoji.trim().length === 0) {
     return { valid: false, error: 'Emoji combination is required', emojiCount: 0 };
   }
 
   // Remove all whitespace for validation
   const cleanEmoji = emoji.replace(/\s/g, '');
+
+  // Prefer catalog-backed validation when the client sends emoji IDs. Unicode
+  // property regexes can lag behind newly released emoji in the Edge runtime.
+  if (emojiIds.length > 0) {
+    const maxEmojiCharacters = await getMaxEmojiCharacters(supabase);
+
+    if (emojiIds.length < 1 || emojiIds.length > maxEmojiCharacters) {
+      return { valid: false, error: `Emoji combination must contain 1-${maxEmojiCharacters} emojis`, emojiCount: emojiIds.length };
+    }
+
+    const { data, error } = await supabase
+      .from('emoji_master')
+      .select('id, emoji')
+      .in('id', emojiIds) as { data: EmojiMasterLookupRecord[] | null; error: { message?: string } | null };
+
+    if (error) {
+      logSafeError('validate_emoji_ids', error);
+      throw new Error('Failed to validate emoji IDs');
+    }
+
+    const byId = new Map((data ?? []).map((record) => [record.id, record]));
+    const missingId = emojiIds.find((id) => !byId.has(id));
+    if (missingId) {
+      return { valid: false, error: `Emoji id not found in master: ${missingId}`, emojiCount: 0 };
+    }
+
+    const expectedEmoji = emojiIds.map((id) => byId.get(id)?.emoji ?? '').join('');
+    if (normalizeEmojiForComparison(cleanEmoji) !== normalizeEmojiForComparison(expectedEmoji)) {
+      return { valid: false, error: 'Emoji input does not match emoji IDs', emojiCount: emojiIds.length };
+    }
+
+    return { valid: true, emojiCount: emojiIds.length };
+  }
   
   // Check if string contains only emojis
   const emojiRegex = /^[\p{Emoji}\p{Emoji_Modifier}\p{Emoji_Component}\p{Emoji_Modifier_Base}\p{Emoji_Presentation}]+$/u;
@@ -423,25 +468,32 @@ serve(async (req) => {
       );
     }
 
-    // Validate fanmark string (emoji-specific validation)
-    const emojiValidation = await validateEmojiCombination(supabase, user_input_fanmark);
-    if (!emojiValidation.valid) {
-      return new Response(
-        JSON.stringify({ error: emojiValidation.error }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     const cleanEmoji = user_input_fanmark.replace(/\s/g, '');
     let emojiIds = Array.isArray(inputEmojiIds) ? inputEmojiIds.filter(Boolean) : [];
     if (emojiIds.length === 0) {
       // Fallback for legacy clients: resolve IDs on the backend (will be removed once migration completes)
-      emojiIds = await convertEmojiSequenceToIds(supabase, cleanEmoji);
+      try {
+        emojiIds = await convertEmojiSequenceToIds(supabase, cleanEmoji);
+      } catch (error) {
+        return new Response(
+          JSON.stringify({ error: error instanceof Error ? error.message : 'Failed to resolve emoji IDs' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     if (emojiIds.length === 0) {
       return new Response(
         JSON.stringify({ error: 'emoji_ids are required to register a fanmark' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate fanmark string (emoji-specific validation)
+    const emojiValidation = await validateEmojiCombination(supabase, user_input_fanmark, emojiIds);
+    if (!emojiValidation.valid) {
+      return new Response(
+        JSON.stringify({ error: emojiValidation.error }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -452,7 +504,14 @@ serve(async (req) => {
       ? inputNormalizedEmojiIds.filter(Boolean)
       : [];
     if (normalizedEmojiIds.length === 0) {
-      normalizedEmojiIds = await convertEmojiSequenceToIds(supabase, normalizedEmoji);
+      try {
+        normalizedEmojiIds = await convertEmojiSequenceToIds(supabase, normalizedEmoji);
+      } catch (error) {
+        return new Response(
+          JSON.stringify({ error: error instanceof Error ? error.message : 'Failed to resolve normalized emoji IDs' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
     console.log('Normalized emoji:', normalizedEmoji);
     

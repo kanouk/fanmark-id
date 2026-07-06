@@ -60,7 +60,7 @@ export default function PWAApp() {
           description: t("common.clipboardNotSupported"),
           variant: "destructive",
         });
-        return;
+        return false;
       }
       const clipboardText = await navigator.clipboard.readText();
       if (!clipboardText.trim()) {
@@ -69,7 +69,7 @@ export default function PWAApp() {
           description: t("common.clipboardEmptyBody"),
           variant: "warning",
         });
-        return;
+        return true;
       }
       const extracted = extractEmojiString(clipboardText);
       if (!extracted) {
@@ -78,13 +78,14 @@ export default function PWAApp() {
           description: t("common.nonEmojiRejectedBody"),
           variant: "warning",
         });
-        return;
+        return true;
       }
       setSearchQuery(extracted);
       toast({
         title: t("common.pasteCompletedTitle"),
         description: t("common.pasteCompleted"),
       });
+      return true;
     } catch (error) {
       console.error("Failed to paste emoji:", error);
       toast({
@@ -92,6 +93,7 @@ export default function PWAApp() {
         description: t("common.clipboardReadFailed"),
         variant: "destructive",
       });
+      return false;
     }
   };
 
