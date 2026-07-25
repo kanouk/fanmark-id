@@ -33,7 +33,7 @@
 - RPC/ビュー: `check_fanmark_availability`, `get_fanmark_by_emoji/short_id/complete_data`, `validate_invitation_code`, `use_invitation_code`, `add/remove_fanmark_favorite`, `get_favorite_fanmarks`, `record_fanmark_search`, `get_user_lottery_entries`, `notification` 系など。追加時は `src/integrations/supabase/types.ts` を同期。
 - Cron: Supabase Dashboard > Database > Cron Jobs で HTTP POST 実行。  
   - `check-expired-licenses-daily` (`0 0 * * *`) → `functions/v1/check-expired-licenses`  
-  - `process-notification-events-every-minute` (`* * * * *`) → `functions/v1/process-notification-events`
+  - `process-notification-events-every-minute` (`* * * * *`) → `functions/v1/process-notification-events`。通常は無効で、`notification_events` に pending が追加された時だけDBトリガーが有効化する。Edge Function はキューが空になった時だけ無効化し、呼び出し失敗時は有効状態を維持して翌分に再実行する。将来時刻の pending がある場合も有効状態を維持する。
 
 ## 絵文字マスタ更新（Unicode emoji-test.txt）
 1. Unicode 公式から `emoji-test.txt` を取得して `data/emoji/` に保存する。  
@@ -97,7 +97,7 @@
 - `checkout.session.completed` で `metadata.type=license_extension` の場合、延長後は必ず status=active, grace_expires_at=null, is_returned=false、除外解除、UTC 0:00 に丸めた `license_end` へ更新し、フロントの延長パス（extend-fanmark-license）と同じ状態遷移に揃える。
 
 ## 通知・お気に入り・抽選の実装ガイド
-- 通知: まず `notification_events` にイベントを登録（`create_notification_event` RPC）。`notification_rules` でチャネル・遅延・クールダウンを定義し、`process-notification-events` が `notifications` を生成。フロントは React Query で in-app 未読を購読し、既読更新 RPC を提供。
+- 通知: まず `notification_events` にイベントを登録（`create_notification_event` RPC）。pending 追加トリガーが通知Cronを起動し、`notification_rules` でチャネル・遅延・クールダウンを定義して `process-notification-events` が `notifications` を生成する。処理後に pending がなければCronを停止する。フロントは React Query で in-app 未読を購読し、既読更新 RPC を提供。
 - お気に入り: `fanmark_discoveries` で未取得も含めたカタログを保持し、`fanmark_favorites` と `fanmark_events` で使用履歴を管理。UI トグル後はキャッシュを無効化して一覧と統計カードを同期。
 - 抽選: Grace 中のみ申込可。延長は申込中でも可能で、延長実行時は pending エントリーを `cancelled_by_extension` に更新し通知。バッチで抽選→ライセンス発行→通知→履歴保存までをトランザクションで処理。
 - 移管ロック: 移管完了時に `fanmark_licenses.transfer_locked_until` を30日後で更新し、`generate-transfer-code` で発行をブロック。

@@ -72,13 +72,16 @@ verify_jwt = true
 #   );
 #   Schedule: 0 0 * * *
 #
-# 通知イベント処理（毎分）:
+# 通知イベント処理（pending キューがある間のみ毎分）:
 #   SELECT net.http_post(
 #     url := 'https://ppqgtbjykitqtiaisyji.supabase.co/functions/v1/process-notification-events',
 #     headers := '{"Content-Type": "application/json"}'::jsonb,
 #     body := jsonb_build_object('timestamp', now()::text)
 #   );
 #   Schedule: * * * * *
+#   通常時: active=false
+#   notification_events のトリガーと process-notification-events が
+#   cron.alter_job() で active を動的に切り替える。
 #
-# 詳細は docs/CRON_SETUP.md を参照
+# 詳細は docs/TECH.md の Cron セクションを参照
 # ========================================

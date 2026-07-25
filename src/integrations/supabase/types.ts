@@ -1926,6 +1926,7 @@ export type Database = {
       }
     }
     Functions: {
+      activate_notification_worker: { Args: never; Returns: boolean }
       add_fanmark_favorite: {
         Args: { input_display_fanmark: string; input_emoji_ids: string[] }
         Returns: boolean
@@ -1966,6 +1967,7 @@ export type Database = {
         }
         Returns: string
       }
+      deactivate_notification_worker_if_idle: { Args: never; Returns: boolean }
       generate_safe_display_name: {
         Args: { user_email: string; user_id: string }
         Returns: string

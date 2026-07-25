@@ -43,7 +43,7 @@
 - お気に入り: `record_fanmark_search`, `add/remove_fanmark_favorite`, `get_favorite_fanmarks` で discovery/favorite を維持し、返却完了時に通知イベントを生成。
 - プラン: `change-subscription` / `create-checkout` / `create-extension-checkout` / `customer-portal` / `handle-stripe-webhook` / `check-subscription` が Stripe 同期を担う。`subscription-sync-flow` に従いポーリングでプラン状態を反映。
 - 公開アクセス: `FanmarkAccess`/`FanmarkAccessByShortId` が RPC から最小データを取得し、アクセスタイプごとに UI 分岐。パスワード保護は `fanmark_password_configs` 経由。
-- 通知: `notification_events` → `notification_rules` → `notifications`。`process-notification-events` Edge Function がスケジュール実行し、in-app/メール等をチャネル別に生成。`notification_templates` で本文管理、`notifications_history` にアーカイブ。
+- 通知: `notification_events` → `notification_rules` → `notifications`。pending イベントの INSERT/再スケジュールでDBトリガーが `process-notification-events` の毎分Cronを有効化し、Edge Function がキューを空にするとCronを無効化する。失敗時はCronを有効なまま残して翌分に再呼び出しする。in-app/メール等をチャネル別に生成し、`notification_templates` で本文管理、`notifications_history` にアーカイブ。
 - OGP: `fanmark-ogp` / `generate-ogp-image` で OGP 動的生成。
 - 表示と正規化: 検索・同一性判定は正規化済みIDを使い、表示は `display_fanmark` を優先する。whois は正規化後のプレーン表記を表示し、お気に入りと通知は登録時の表示を固定保持する。
 
@@ -54,7 +54,7 @@
 - 画像/アップロード: Supabase Storage を利用。プロフィール画像はローカルステート基準で同期。
 
 ## バッチ・スケジュール
-- Cron (Supabase Dashboard/pg_cron): `check-expired-licenses-daily` (毎日 UTC 0:00), `process-notification-events-every-minute` (毎分) が HTTP POST で Edge Functions を叩く。
+- Cron (Supabase Dashboard/pg_cron): `check-expired-licenses-daily` は毎日 UTC 0:00 に実行。`process-notification-events-every-minute` はスケジュール自体を毎分のまま保持するが、通常は `active=false` とし、pending 通知が存在する間だけ動的に有効化して HTTP POST で Edge Function を叩く。
 - `check-expired-licenses` はライセンスの active→grace→expired 遷移、抽選実行、通知イベント挿入を担当。
 
 ## 監査とセキュリティ

@@ -101,3 +101,4 @@ REVOKE EXECUTE ON FUNCTION public.archive_old_notifications(integer) FROM PUBLIC
 REVOKE EXECUTE ON FUNCTION public.create_notification_event(text, jsonb, text, text, timestamptz) FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.get_waitlist_email_by_id(uuid) FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.get_waitlist_secure(integer, integer) FROM PUBLIC, anon, authenticated;
+;

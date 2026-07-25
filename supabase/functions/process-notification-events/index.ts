@@ -1,4 +1,7 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import {
+  createClient,
+  type SupabaseClient,
+} from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { corsHeaders } from "../_shared/return-helpers.ts";
 
 const DEFAULT_LANGUAGE = 'ja';
@@ -61,6 +64,7 @@ Deno.serve(async (req) => {
 
     if (!events || events.length === 0) {
       console.log("No pending events to process");
+      await deactivateWorkerIfIdle(supabase);
       return new Response(
         JSON.stringify({ processed: 0, message: "No pending events" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -100,6 +104,7 @@ Deno.serve(async (req) => {
     }
 
     console.log(`Processed: ${processedCount}, Failed: ${failedCount}`);
+    await deactivateWorkerIfIdle(supabase);
 
     return new Response(
       JSON.stringify({ processed: processedCount, failed: failedCount }),
@@ -113,6 +118,23 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+async function deactivateWorkerIfIdle(supabase: SupabaseClient): Promise<void> {
+  const { data: deactivated, error } = await supabase
+    .rpc("deactivate_notification_worker_if_idle");
+
+  if (error) {
+    // Fail open: the active cron job will try again on the next minute.
+    console.warn("Failed to deactivate notification worker:", error);
+    return;
+  }
+
+  if (deactivated) {
+    console.log("Notification queue is empty; cron worker deactivated");
+  } else {
+    console.log("Notification queue still has pending events; cron worker remains active");
+  }
+}
 
 async function processEvent(supabase: any, event: NotificationEvent): Promise<void> {
   console.log(`Processing event ${event.id} of type ${event.event_type}`);

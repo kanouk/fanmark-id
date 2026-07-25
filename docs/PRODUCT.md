@@ -33,7 +33,7 @@
 
 ## お気に入り・通知
 - お気に入り: `fanmark_discoveries` / `fanmark_favorites` で未取得ファンマも管理。トグルは RPC `add/remove_fanmark_favorite`。返却完了時にお気に入り登録者へ `favorite_fanmark_available` 通知イベントを生成。
-- 通知基盤: `notification_events` → `notification_rules` → `notifications`。イベント例: grace開始/失効、抽選当落、移管関連、手動告知。`process-notification-events` Scheduled Function が展開・配信し、in-app/メール等に対応。
+- 通知基盤: `notification_events` → `notification_rules` → `notifications`。イベント例: grace開始/失効、抽選当落、移管関連、手動告知。`process-notification-events` は、pending イベント追加時だけ有効になる毎分Cronワーカーとして展開・配信し、キューが空になると停止する。これにより通知の最大約1分の反映時間を維持しながら、空キューの定期実行を行わない。in-app/メール等に対応。
 
 ## 表示と正規化（ファンマ）
 - 内部の同一性判定・検索は正規化済み（肌色除去）を使用し、表示はユーザーが意図した表記を保持する。
