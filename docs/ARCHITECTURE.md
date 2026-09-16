@@ -15,6 +15,7 @@
 
 ## 画面とモジュールのマッピング
 - `/` トップ/ランディング: `src/pages/Index.tsx`
+  - ヒーロー下の最近取得表示: `src/components/RecentFanmarksScroll.tsx` → 公開用 RPC `list_recent_fanmarks`（新しい順に最大20件）。未ログインでも表示するため、閲覧者のRLSが適用される `recent_active_fanmarks` ビューを直接参照しない。
 - `/auth`: 認証/サインアップ/パスワードリセット: `src/pages/Auth.tsx`
 - `/forgot-password`: `ForgotPassword.tsx`
 - `/reset-password`: `ResetPassword.tsx`

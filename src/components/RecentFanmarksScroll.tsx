@@ -19,16 +19,13 @@ export function RecentFanmarksScroll() {
 
   const fetchRecentFanmarks = async () => {
     try {
-      const { data, error } = await supabase
-        .from('recent_active_fanmarks' as any)
-        .select('*')
-        .order('license_created_at', { ascending: false })
-        .limit(20);
+      // Use the public RPC so anonymous visitors can read recent activity under RLS.
+      const { data, error } = await supabase.rpc('list_recent_fanmarks', { p_limit: 20 });
 
       if (error) throw error;
 
       if (data) {
-        const formattedFanmarks = data.map((item: any) => ({
+        const formattedFanmarks = data.map((item) => ({
           id: item.license_id || item.fanmark_id,
           emoji: item.display_emoji || '❓',
           created_at: item.license_created_at
