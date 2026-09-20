@@ -40,8 +40,12 @@ The active-to-grace operation is one D1 batch. Its guarded update compares the
 license, fanmark, owner, end time, status, generation, active fanmark, and
 operation journal row. The batch then inserts the audit and outbox rows only
 from the claimed license, records the run item as `processed`, and clears the
-claim. Every statement must affect exactly one row where applicable. A failed
-batch rolls back the state and effects together.
+claim. Before clearing the claim, a CHECK-backed SQL guard requires the
+operation-bound audit, outbox, and processed run item to exist. A missing
+effect aborts inside the transaction, so a successful zero-row effect cannot
+leave a committed license transition. The temporary guard is deleted in the
+same batch, and a final SQL assertion aborts if cleanup leaves that guard
+behind. A failed batch rolls back the state and effects together.
 
 An uncertain batch acknowledgement is accepted only when the current license,
 run item, audit payload, outbox payload, operation ID, dedupe key, and captured
@@ -61,6 +65,9 @@ The proof covers:
   deadline behavior;
 - setting prefix parsing, fallback, missing-setting failure, query failure,
   and durable run binding;
+- atomic rollback when any mandatory audit/outbox/run-item effect is suppressed,
+  including a successful zero-row statement or suppressed guard cleanup, clean
+  retry, and no retained guard;
 - atomic rollback, lost-ACK recovery, exact operation/dedupe binding, and
   retry without duplicate audit or outbox effects;
 - different-run concurrency, same-run concurrent callers, stale candidate

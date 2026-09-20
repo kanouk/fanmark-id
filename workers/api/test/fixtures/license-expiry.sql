@@ -81,3 +81,9 @@ CREATE TABLE IF NOT EXISTS lifecycle_outbox (
   payload_json TEXT NOT NULL,
   UNIQUE (license_id, generation, event_type)
 );
+
+-- Must succeed inside the transition batch, before the claim is cleared.
+CREATE TABLE IF NOT EXISTS license_expiry_effect_guards (
+  operation_id TEXT PRIMARY KEY,
+  allowed INTEGER NOT NULL CHECK (allowed = 1)
+);

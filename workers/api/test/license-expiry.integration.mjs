@@ -385,7 +385,7 @@ async function testRollbackAndUnknownAcknowledgement(database) {
   const failingDatabase = {
     prepare: database.prepare.bind(database),
     async batch(statements) {
-      if (statements.length !== 5) return database.batch(statements);
+      if (statements.length !== 8) return database.batch(statements);
       return database.batch([
         ...statements,
         database.prepare("SELECT * FROM missing_license_expiry_table"),
@@ -407,7 +407,7 @@ async function testRollbackAndUnknownAcknowledgement(database) {
     prepare: database.prepare.bind(database),
     async batch(statements) {
       const result = await database.batch(statements);
-      if (loseAcknowledgement && statements.length === 5) {
+      if (loseAcknowledgement && statements.length === 8) {
         loseAcknowledgement = false;
         throw new Error("synthetic lost acknowledgement");
       }
@@ -417,6 +417,7 @@ async function testRollbackAndUnknownAcknowledgement(database) {
   const acknowledged = await repository(uncertainDatabase, "run-ack").runActiveToGrace();
   assert.equal(acknowledged.alreadyCommitted, 0);
   assert.equal(acknowledged.processed, 1);
+  assert.equal(await countRows(database, "license_expiry_effect_guards"), 0);
   assert.equal(await countRows(database, "audit_logs"), 1);
   assert.equal(await countRows(database, "lifecycle_outbox"), 1);
   assert.equal((await database.prepare("SELECT outcome FROM license_expiry_run_items WHERE run_id = ?").bind("run-ack").first()).outcome, "processed");
@@ -426,6 +427,47 @@ async function testRollbackAndUnknownAcknowledgement(database) {
   assert.equal(retry.alreadyCommitted, 0);
   assert.equal(await countRows(database, "audit_logs"), 1);
   assert.equal(await countRows(database, "lifecycle_outbox"), 1);
+}
+
+async function testMissingEffectsRollback(database) {
+  for (const missingIndex of [1, 2, 3, 6]) {
+    await reset(database);
+    await insertFanmark(database, "fanmark-missing-effect");
+    await insertLicense(database, {
+      id: "license-missing-effect", fanmarkId: "fanmark-missing-effect",
+      licenseEnd: "2026-09-20T12:00:00.000000Z",
+    });
+    let suppressed = false;
+    const missingEffectDatabase = {
+      prepare: database.prepare.bind(database),
+      batch(statements) {
+        if (statements.length !== 8) return database.batch(statements);
+        suppressed = true;
+        const altered = [...statements];
+        // Simulate an effect statement that succeeds but writes no row.
+        altered[missingIndex] = database.prepare("SELECT 1 WHERE 0");
+        return database.batch(altered);
+      },
+    };
+    await assert.rejects(
+      repository(missingEffectDatabase, "run-missing-effect").runActiveToGrace(),
+      (error) => assertErrorCode(error, "active_to_grace_batch_failed"),
+    );
+    assert.equal(suppressed, true);
+    const license = await readLicense(database, "license-missing-effect");
+    assert.equal(license.status, "active");
+    assert.equal(license.generation, 0);
+    assert.equal(license.lifecycle_claim_id, null);
+    assert.equal(await countRows(database, "audit_logs"), 0);
+    assert.equal(await countRows(database, "lifecycle_outbox"), 0);
+    assert.equal(await countRows(database, "license_expiry_effect_guards"), 0);
+    const item = await database.prepare("SELECT outcome FROM license_expiry_run_items WHERE run_id = ?")
+      .bind("run-missing-effect").first();
+    assert.equal(item.outcome, "pending");
+    const recovered = await repository(database, "run-missing-effect").runActiveToGrace();
+    assert.equal(recovered.processed, 1);
+    assert.equal(await countRows(database, "license_expiry_effect_guards"), 0);
+  }
 }
 
 async function testProgressCrashRecovery(database) {
@@ -530,6 +572,8 @@ async function testConcurrentExpiry(database) {
   assert.equal(await countRows(database, "audit_logs"), 1);
   assert.equal(await countRows(database, "lifecycle_outbox"), 1);
   assert.equal((await readLicense(database, "license-concurrent")).generation, 1);
+  assert.equal((await readLicense(database, "license-concurrent")).lifecycle_claim_id, null);
+  assert.equal(await countRows(database, "license_expiry_effect_guards"), 0);
 
   await reset(database);
   await insertFanmark(database, "fanmark-duplicate-run");
@@ -637,6 +681,7 @@ async function main() {
     await testTimeBoundaries(database);
     await testSettingCompatibilityAndBindings(database);
     await testRollbackAndUnknownAcknowledgement(database);
+    await testMissingEffectsRollback(database);
     await testProgressCrashRecovery(database);
     await testConcurrentExpiry(database);
     await testStaleCandidateGuard(database);

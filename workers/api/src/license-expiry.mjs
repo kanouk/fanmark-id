@@ -624,6 +624,32 @@ async function applyActiveToGrace(database, candidate, runId, capturedNow, grace
       ),
     database
       .prepare(`
+        INSERT INTO license_expiry_effect_guards (operation_id, allowed)
+        SELECT ?, CASE WHEN
+          EXISTS (SELECT 1 FROM audit_logs
+            WHERE id = ? AND license_id = ? AND generation = ?
+              AND run_id = ? AND metadata_json = ?)
+          AND EXISTS (SELECT 1 FROM lifecycle_outbox
+            WHERE id = ? AND license_id = ? AND generation = ?
+              AND run_id = ? AND dedupe_key = ? AND payload_json = ?)
+          AND EXISTS (SELECT 1 FROM license_expiry_run_items
+            WHERE run_id = ? AND license_id = ? AND operation_id = ?
+              AND generation = ? AND outcome = 'processed'
+              AND grace_expires_at = ?)
+          THEN 1 ELSE 0 END
+        FROM fanmark_licenses
+        WHERE id = ? AND lifecycle_claim_id = ?
+          AND status = 'grace' AND generation = ?
+      `)
+      .bind(
+        operationId,
+        auditId, candidate.licenseId, nextGeneration, runId, payload,
+        outboxId, candidate.licenseId, nextGeneration, runId, dedupeKey, payload,
+        runId, candidate.licenseId, operationId, candidate.generation, graceExpiresAt,
+        candidate.licenseId, operationId, nextGeneration,
+      ),
+    database
+      .prepare(`
         UPDATE fanmark_licenses
         SET lifecycle_claim_id = NULL
         WHERE id = ?
@@ -632,6 +658,16 @@ async function applyActiveToGrace(database, candidate, runId, capturedNow, grace
           AND lifecycle_claim_id = ?
       `)
       .bind(candidate.licenseId, nextGeneration, operationId),
+    database.prepare("DELETE FROM license_expiry_effect_guards WHERE operation_id = ?")
+      .bind(operationId),
+    // A suppressed cleanup must abort the entire transaction too. This
+    // statement writes no row on success; a retained guard violates CHECK.
+    database.prepare(`
+      INSERT INTO license_expiry_effect_guards (operation_id, allowed)
+      SELECT ?, 0 WHERE EXISTS (
+        SELECT 1 FROM license_expiry_effect_guards WHERE operation_id = ?
+      )
+    `).bind(operationId, operationId),
   ];
 
   let batchResult;
@@ -655,7 +691,7 @@ async function applyActiveToGrace(database, candidate, runId, capturedNow, grace
   }
 
   const changes = batchResult.map(resultChanges);
-  if (changes.every((value) => value === 1)) {
+  if (changes.length === 8 && changes.slice(0, 7).every((value) => value === 1) && changes[7] === 0) {
     return {
       status: "processed",
       operationId,

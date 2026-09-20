@@ -104,3 +104,5 @@ Astraが復元済みのsynthetic generatorを確認し、Node 22.6.0で40表・�
 active→graceの[期限処理local proof](license-expiry-proof.md)を追加。UTC microsecondの期限境界、元設定のparseInt/fallback、owner/end/generation付きCAS、audit/outboxとの同時commit、durable run-itemによる停止後の再開を検証する。ACK再確認でprocessedを変更せず、同runの並行再開でも件数を保持する。AstraがNode22.6の専用npm scriptを独立実行して成功し、CI隔離検査も成功。65行のkeyset traversalと最大32件の返却sampleを確認した。fixtureは縮小したsynthetic schemaで、全schema統合、grace→expired、lottery、cron接続、本番動作の同等性は未完了。
 
 credential変換の[隔離local proof](credential-transform-proof.md)を追加。source envelopeの入力/identity結合、prepared bcrypt結果の再利用、lease/fence、config・generation・台帳の同時適用、ACK不明後の復旧、移送先incarnationと値の再照合を実装した。実clockでD1 batch送信を期限後まで遅らせるprepare/apply拒否も確認。AstraのNode22.6独立実行で17件成功・skipなし、前後のcore/fixture/test hash一致、CI隔離検査成功。合成データ1行単位のproofであり、全行descriptor/importer統合、実credential移送、remote CPU、全writer、本番切替は未完了。
+
+期限処理の必須effect確認を同一D1 batch内のCHECK-backed guardへ補強。audit/outbox/run-itemが0行で成功しても状態変更をrollbackし、guard cleanup欠落も最終SQLでabortする。Node22専用suiteで4種類の欠落と正常再開、ACK/競合後のclaim・guard cleanupを検証して成功。初版7文の補強は独立静的reviewでblocking指摘なし、その指摘を受けcleanup保証を追加した。全schema統合は引き続き未完了。
