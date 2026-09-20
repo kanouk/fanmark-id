@@ -1,6 +1,7 @@
 export interface Env {
   ASSETS?: Fetcher;
   FANMARK_DB?: D1Database;
+  AVAILABILITY_BACKEND?: string;
   RECENT_FANMARKS_BACKEND?: string;
   SUPABASE_URL?: string;
   SUPABASE_PUBLISHABLE_KEY?: string;
@@ -84,7 +85,7 @@ function isAllowedSupabaseKey(value: string): boolean {
   return decodeJwtPayload(value)?.role === "anon";
 }
 
-function configuredSupabaseKey(env: Env): string {
+export function configuredSupabaseKey(env: Env): string {
   const publishableKey = env.SUPABASE_PUBLISHABLE_KEY?.trim();
   const anonKey = env.SUPABASE_ANON_KEY?.trim();
   const key = publishableKey || anonKey;
@@ -96,7 +97,7 @@ function configuredSupabaseKey(env: Env): string {
   return key;
 }
 
-function configuredSupabaseUrl(env: Env): URL {
+export function configuredSupabaseUrl(env: Env): URL {
   const rawUrl = env.SUPABASE_URL?.trim();
   if (!rawUrl) throw new RecentFanmarksConfigurationError();
 
@@ -124,7 +125,7 @@ function configuredSupabaseUrl(env: Env): URL {
   }
 }
 
-function configuredTimeout(env: Env): number {
+export function configuredSupabaseTimeout(env: Env): number {
   const rawTimeout = env.SUPABASE_REQUEST_TIMEOUT_MS?.trim();
   if (!rawTimeout) return DEFAULT_SUPABASE_REQUEST_TIMEOUT_MS;
 
@@ -139,7 +140,7 @@ function stringOrNull(value: unknown): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
-function isAbortError(error: unknown): boolean {
+export function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === "AbortError";
 }
 
@@ -169,7 +170,7 @@ export function createSupabaseRecentFanmarksRepository(
 ): RecentFanmarksRepository {
   const key = configuredSupabaseKey(env);
   const baseUrl = configuredSupabaseUrl(env);
-  const timeoutMs = configuredTimeout(env);
+  const timeoutMs = configuredSupabaseTimeout(env);
 
   return {
     async listRecent(limit) {

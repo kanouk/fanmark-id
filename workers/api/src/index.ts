@@ -7,8 +7,20 @@ import {
   type Env,
 } from "./repository";
 import { createD1RecentFanmarksRepository } from "./d1-repository";
+import {
+  AvailabilityConfigurationError,
+  AvailabilityTimeoutError,
+  AvailabilityUpstreamError,
+  parseAvailabilityRequest,
+  sanitizeAvailabilityResult,
+  type AvailabilityClock,
+} from "./availability";
+import { createD1AvailabilityRepository } from "./availability-d1-repository";
+import { createSupabaseAvailabilityRepository } from "./availability-repository";
 
-const ALLOWED_METHODS = "GET, OPTIONS";
+const RECENT_ALLOWED_METHODS = "GET, OPTIONS";
+const AVAILABILITY_ALLOWED_METHODS = "POST, OPTIONS";
+const AVAILABILITY_ALLOWED_HEADERS = "content-type";
 const JSON_CONTENT_TYPE = "application/json; charset=utf-8";
 
 function baseHeaders(): Headers {
@@ -44,7 +56,12 @@ function parseAllowedOrigins(value: string | undefined): Set<string> {
   );
 }
 
-function corsHeaders(request: Request, env: Env): { allowed: boolean; headers: Headers } {
+function corsHeaders(
+  request: Request,
+  env: Env,
+  allowedMethods: string,
+  allowedHeaders?: string,
+): { allowed: boolean; headers: Headers } {
   const headers = new Headers();
   const origin = request.headers.get("Origin");
   if (!origin) return { allowed: true, headers };
@@ -54,7 +71,8 @@ function corsHeaders(request: Request, env: Env): { allowed: boolean; headers: H
   }
 
   headers.set("access-control-allow-origin", origin);
-  headers.set("access-control-allow-methods", ALLOWED_METHODS);
+  headers.set("access-control-allow-methods", allowedMethods);
+  if (allowedHeaders) headers.set("access-control-allow-headers", allowedHeaders);
   headers.set("vary", "Origin");
   return { allowed: true, headers };
 }
@@ -76,6 +94,21 @@ function createRecentFanmarksRepository(env: Env, outboundFetch: typeof fetch) {
   }
   // An explicit unknown value must not silently select another data source.
   throw new RecentFanmarksConfigurationError();
+}
+
+function createAvailabilityRepository(
+  env: Env,
+  outboundFetch: typeof fetch,
+  clock: AvailabilityClock,
+) {
+  const configuredBackend = env.AVAILABILITY_BACKEND?.trim();
+  if (!configuredBackend) {
+    return createSupabaseAvailabilityRepository(env, outboundFetch);
+  }
+  if (configuredBackend === "d1") {
+    return createD1AvailabilityRepository(env, clock);
+  }
+  throw new AvailabilityConfigurationError();
 }
 
 function errorResponse(code: string, status: number, headers: Headers, extra?: HeadersInit): Response {
@@ -112,6 +145,7 @@ export async function handleRequest(
   request: Request,
   env: Env,
   outboundFetch: typeof fetch = fetch,
+  availabilityClock: AvailabilityClock = () => new Date(),
 ): Promise<Response> {
   const url = new URL(request.url);
   const routeHeaders = baseHeaders();
@@ -123,11 +157,23 @@ export async function handleRequest(
     return fetchStaticAsset(request, env.ASSETS);
   }
 
-  if (url.pathname !== "/api/fanmarks/recent") {
+  if (
+    url.pathname !== "/api/fanmarks/recent" &&
+    url.pathname !== "/api/fanmarks/availability"
+  ) {
     return errorResponse("not_found", 404, routeHeaders);
   }
 
-  const cors = corsHeaders(request, env);
+  const isAvailabilityRoute = url.pathname === "/api/fanmarks/availability";
+  const allowedMethods = isAvailabilityRoute
+    ? AVAILABILITY_ALLOWED_METHODS
+    : RECENT_ALLOWED_METHODS;
+  const cors = corsHeaders(
+    request,
+    env,
+    allowedMethods,
+    isAvailabilityRoute ? AVAILABILITY_ALLOWED_HEADERS : undefined,
+  );
   if (!cors.allowed) {
     return errorResponse("forbidden_origin", 403, routeHeaders);
   }
@@ -137,12 +183,43 @@ export async function handleRequest(
   cors.headers.forEach((value, key) => responseHeaders.set(key, value));
 
   if (method === "OPTIONS") {
-    responseHeaders.set("allow", ALLOWED_METHODS);
+    responseHeaders.set("allow", allowedMethods);
     return emptyResponse(204, responseHeaders);
   }
 
+  if (isAvailabilityRoute) {
+    if (method !== "POST") {
+      responseHeaders.set("allow", allowedMethods);
+      return errorResponse("method_not_allowed", 405, responseHeaders);
+    }
+
+    const emojiIds = await parseAvailabilityRequest(request);
+    if (!emojiIds) return errorResponse("invalid_request", 400, responseHeaders);
+
+    try {
+      const repository = createAvailabilityRepository(env, outboundFetch, availabilityClock);
+      const result = await repository.checkAvailability(emojiIds);
+      return jsonResponse(
+        { schemaVersion: 1, result: sanitizeAvailabilityResult(result) },
+        200,
+        responseHeaders,
+      );
+    } catch (error) {
+      if (error instanceof AvailabilityConfigurationError) {
+        return errorResponse("server_misconfigured", 500, responseHeaders);
+      }
+      if (error instanceof AvailabilityTimeoutError) {
+        return errorResponse("upstream_timeout", 504, responseHeaders);
+      }
+      if (error instanceof AvailabilityUpstreamError) {
+        return errorResponse("upstream_unavailable", 502, responseHeaders);
+      }
+      return errorResponse("upstream_unavailable", 502, responseHeaders);
+    }
+  }
+
   if (method !== "GET") {
-    responseHeaders.set("allow", ALLOWED_METHODS);
+    responseHeaders.set("allow", allowedMethods);
     return errorResponse("method_not_allowed", 405, responseHeaders);
   }
 

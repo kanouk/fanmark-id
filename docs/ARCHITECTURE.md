@@ -229,3 +229,5 @@
 `supabase/functions/_shared/stripe-receipt-ingress/index.ts` は署名付きStripeイベントを検証・正規化し、service-only receipt RPCへ渡す共通factory。現行Webhookへの接続や課金効果の適用は含まない。実SDKの署名・型互換性と保存経路の検証は `experiments/stripe-receipts/`、境界は `docs/migration/stripe-ingress-validation.md`。
 
 公開recent APIは `RECENT_FANMARKS_BACKEND=d1` と `FANMARK_DB` bindingを明示した環境でD1を選択できる。未指定ではSupabaseを使い、D1指定時の失敗では別のDBへ戻らない。local D1 fixtureは `workers/api/test/fixtures/` と専用test configに隔離し、本番schemaとは区別する。契約は `docs/migration/d1-recent-contract.md`。
+
+移行用取得可能判定は `workers/api/src/availability*.ts` と `src/lib/fanmark-availability.ts` に分離。`useFanmarkSearch.tsx` の2箇所の判定を接続先設定で切り替える。詳細取得・登録・ユーザーlookupは引き続き既存経路。契約と検証は [availability-validation.md](migration/availability-validation.md) を参照。

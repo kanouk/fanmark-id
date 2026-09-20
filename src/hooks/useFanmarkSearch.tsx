@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { loadFanmarkAvailability } from '@/lib/fanmark-availability';
 import { useTranslation } from './useTranslation';
 import {
   canonicalizeEmojiString,
@@ -85,20 +86,6 @@ interface RegisterFanmarkResponse {
   error?: string;
 }
 
-interface CheckFanmarkAvailabilityResponse {
-  available?: boolean;
-  fanmark_id?: string | null;
-  reason?: string | null;
-  tier_level?: number | null;
-  tier_display_name?: string | null;
-  price?: number | null;
-  license_days?: number | null;
-  available_at?: string | null;
-  blocking_status?: string | null;
-  lottery_entry_count?: number;
-  has_user_lottery_entry?: boolean;
-  user_lottery_entry_id?: string;
-}
 
 interface FanmarkCompleteDataRow {
   id: string;
@@ -278,19 +265,13 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
       const emojiIds = pair.emojiIds;
       const normalizedEmojiIds = pair.normalizedEmojiIds;
 
-      const { data: availabilityRaw, error: availabilityError } = await supabase
-        .rpc('check_fanmark_availability', { input_emoji_ids: normalizedEmojiIds } as { input_emoji_ids: string[] });
-
-      if (availabilityError) {
-        console.error('Error checking availability:', availabilityError);
-        throw availabilityError;
-      }
-
-      const availability = (availabilityRaw ?? null) as CheckFanmarkAvailabilityResponse | null;
-
-      if (!availability || typeof availability.available !== 'boolean') {
-        throw new Error('Failed to determine fanmark availability');
-      }
+      const availability = await loadFanmarkAvailability(normalizedEmojiIds, {
+        fallback: async () => {
+          const { data, error } = await supabase.rpc('check_fanmark_availability', { input_emoji_ids: normalizedEmojiIds });
+          if (error) throw error;
+          return data;
+        },
+      });
 
       const availabilityTierLevel = availability.tier_level ?? null;
       const availabilityTierDisplayName = availability.tier_display_name ?? undefined;
@@ -303,7 +284,7 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
         console.warn('Failed to record fanmark search:', searchRecordError);
       }
 
-      // 未登録のファンマークは即座に available 扱い
+      // Unknown IDs and unavailable tiers must not be displayed as acquirable.
       if (!availability.fanmark_id) {
         const derivedTierLevel = availabilityTierLevel ?? 1;
         setResult({
@@ -317,7 +298,8 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
           short_id: '',
           tier_level: derivedTierLevel,
           tier_display_name: availabilityTierDisplayName,
-          status: 'available',
+          status: availability.available ? 'available' : 'invalid',
+          error: availability.available ? undefined : t('search.validationError'),
           emoji_count: validation.emojiCount,
           license_days: availability.license_days ?? undefined,
         });
@@ -544,16 +526,13 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
         return false;
       }
 
-      const { data: availabilityRaw, error } = await supabase
-        .rpc('check_fanmark_availability', { input_emoji_ids: normalizedEmojiIds } as { input_emoji_ids: string[] });
-
-      if (error) throw error;
-
-      const availability = (availabilityRaw ?? null) as CheckFanmarkAvailabilityResponse | null;
-
-      if (!availability || typeof availability.available !== 'boolean') {
-        return false;
-      }
+      const availability = await loadFanmarkAvailability(normalizedEmojiIds, {
+        fallback: async () => {
+          const { data, error } = await supabase.rpc('check_fanmark_availability', { input_emoji_ids: normalizedEmojiIds });
+          if (error) throw error;
+          return data;
+        },
+      });
 
       if (!availability.available && availability.fanmark_id) {
         // 詳細を参照して status を確認し、非アクティブ状態の場合は取得不可とする

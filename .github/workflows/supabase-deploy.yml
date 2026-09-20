@@ -31,6 +31,9 @@ jobs:
       - name: Test recent API client
         run: npm run test:recent
 
+      - name: Test availability API client
+        run: npm run test:availability
+
       - name: Test offline emoji catalog generation
         run: npm run test:emoji-catalog
 
@@ -83,6 +86,9 @@ jobs:
       - name: Test D1 recent contract
         if: matrix.directory == 'workers/api'
         run: npm run test:d1
+      - name: Test D1 availability contract
+        if: matrix.directory == 'workers/api'
+        run: npm run test:availability:d1
       - name: Type check API and Stripe SDK boundaries
         if: matrix.directory == 'workers/api' || matrix.directory == 'experiments/stripe-receipts'
         run: npm run typecheck
