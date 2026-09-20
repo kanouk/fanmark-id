@@ -17,7 +17,7 @@ export function PlanetHero({ onExplore, recentFanmarks }: HomeHeroProps) {
   const [attempt, setAttempt] = useState(0);
   const [identities, setIdentities] = useState<string[] | null>(null);
   useEffect(() => {
-    if (recentFanmarks) setIdentities(previous => previous ?? [...new Set([...recentFanmarks.map(f => f.emoji), ...fallbackFanmarks])].slice(0, people.length + 8));
+    if (recentFanmarks) setIdentities(previous => (previous ?? [...new Set([...recentFanmarks.map(f => f.emoji), ...fallbackFanmarks])]).slice(0, people.length + 8));
   }, [recentFanmarks]);
   const choose = useCallback(async (emoji: string) => {
     try {

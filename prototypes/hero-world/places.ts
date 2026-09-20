@@ -8,10 +8,10 @@ const styles = [
 ] as const;
 
 // Equal-area distribution, including the back and southern hemisphere.
-export const people = Array.from({ length: 18 }, (_, i) => ({
+export const people = Array.from({ length: 12 }, (_, i) => ({
   ...styles[i % styles.length],
   id: `walker-${i}`,
-  lat: Math.asin(1 - 2 * (i + .5) / 18),
+  lat: Math.asin(1 - 2 * (i + .5) / 12),
   lon: i * 2.399963 + .6,
   speed: .036 + (i % 4) * .006,
 }));
