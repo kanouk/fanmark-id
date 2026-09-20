@@ -1,0 +1,16 @@
+{
+  "name": "fanmark-cloudflare-d1-concurrency",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --config vitest.config.mjs",
+    "test:watch": "vitest --config vitest.config.mjs"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "1.1.13",
+    "@cloudflare/workers-types": "5.20260920.1",
+    "miniflare": "5.20260918.0-alpha",
+    "vitest": "4.1.0",
+    "wrangler": "4.135.0"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "fanmark-cloudflare-auth-feasibility",
+  "main": "src/index.mjs",
+  "compatibility_date": "2026-09-20",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "BETTER_AUTH_URL": "http://example.test",
+    "BETTER_AUTH_SECRET": "synthetic-only-secret-32-characters-long"
+  },
+  "d1_databases": [
+    {
+      "binding": "AUTH_DB",
+      "database_name": "fanmark-auth-feasibility",
+      "database_id": "00000000-0000-0000-0000-000000000001",
+      "migrations_dir": "migrations"
+    }
+  ]
+}

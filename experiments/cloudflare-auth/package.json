@@ -1,0 +1,19 @@
+{
+  "name": "fanmark-cloudflare-auth-feasibility",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --config vitest.config.mjs",
+    "test:watch": "vitest --config vitest.config.mjs",
+    "dev": "wrangler dev --local --config wrangler.jsonc"
+  },
+  "dependencies": {
+    "bcryptjs": "3.0.3",
+    "better-auth": "1.7.5"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "1.1.13",
+    "vitest": "4.1.11",
+    "wrangler": "4.135.0"
+  }
+}

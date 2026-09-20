@@ -213,3 +213,9 @@
 - **`has_role()`関数**: SECURITY DEFINER + `set search_path = public` で無限再帰を防止
 - **`is_admin()`関数**: `has_role(auth.uid(), 'admin')` のラッパー
 - **service_role**: Edge Functions からのみ使用。直接クライアントアクセス不可
+
+## Cloudflare移行準備
+
+移行の段階・使用枠・再開手順は `docs/migration/EXECUTION.md`、コード側の棚卸しは `docs/migration/repository-inventory.md`、本番の読み取り結果は `docs/migration/live-observations.md`。`scripts/migration/inventory.mjs` でコード側の棚卸しを再生成できる。
+
+`experiments/cloudflare-auth/` と `experiments/cloudflare-d1-concurrency/` は合成データで動く独立したWorkers/D1検証用。通常アプリへ接続せず、現行のSupabaseバックエンドを置き換えたものではない。再現コマンドと限界は対応する `docs/migration/` の文書を参照する。
