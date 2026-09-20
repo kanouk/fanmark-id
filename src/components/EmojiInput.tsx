@@ -25,6 +25,7 @@ const normalizeInput = (text: string) => {
 export interface EmojiInputProps {
   utilities?: (onClear: () => void) => React.ReactNode;
   selectionStatus?: React.ReactNode;
+  acquisition?: (onEdit: () => void) => React.ReactNode;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;

@@ -554,73 +554,7 @@ export const FanmarkAcquisition = ({
     />
   );
 
-  return (
-    <div ref={containerRef} className={`space-y-6 ${inputComponent ? "fanmark-fusion" : ""}`}>
-      {/* ファンマ取得中のローディング画面 */}
-      {isRegistering && (
-        <FanmarkAcquisitionLoading emoji={searchResult?.fanmark} />
-      )}
-
-      <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
-        <AlertDialogContent className="rounded-3xl border border-primary/20 bg-background/95 shadow-[0_25px_60px_rgba(101,195,200,0.2)]">
-          <AlertDialogHeader className="space-y-3 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <Sparkles className="h-6 w-6" />
-            </div>
-            <AlertDialogTitle className="text-xl font-semibold text-foreground">
-              {t('dashboard.acquireConfirmTitle')}
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-sm text-muted-foreground">
-              {t('dashboard.acquireConfirmDescription', {
-                remaining: fanmarkLimit === -1 ? '∞' : Math.max(remainingCapacity - 1, 0),
-              })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-            <AlertDialogCancel
-              className="h-10 rounded-full border border-border bg-transparent px-5 text-sm font-semibold text-muted-foreground hover:bg-primary/10 hover:text-foreground"
-              disabled={isRegistering}
-            >
-              {t('common.cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              className="h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-md hover:bg-primary/90"
-              onClick={handleConfirmAcquire}
-              disabled={isRegistering}
-            >
-              {isRegistering ? t('common.processing') : t('dashboard.acquireConfirmAction')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <FanmarkSearchPanel
-        label=""
-        icon={<Search className="h-6 w-6 text-primary" />}
-        title={t('dashboard.searchFanma')}
-        meta={inputComponent ? undefined : inputStatus}
-        className={`${getSearchAreaBackgroundClass} ${inputComponent ? "fanmark-fusion-panel" : ""}`}
-      >
-        {/* ファンマ入力グループ - 入力と便利ツールが一体 */}
-        <div className={inputComponent ? "fusion-input-group" : "mt-6 mb-10 space-y-6"}>
-          <FanmarkSearch
-            inputComponent={inputComponent}
-            inputUtilities={inputComponent ? renderInputUtilities : undefined}
-            inputStatus={inputComponent ? inputStatus : undefined}
-            onSignupPrompt={() => onRequireAuth?.('')}
-            statusVariant={user ? 'authenticated' : 'public'}
-            showRecent={false}
-            onResultChange={setSearchResult}
-            query={query}
-            onQueryChange={handleQueryChange}
-          />
-
-          {/* 便利ツール - レスポンシブ間隔 */}
-          {!inputComponent && <div className="flex justify-center">{renderInputUtilities()}</div>}
-        </div>
-      </FanmarkSearchPanel>
-
-      {/* アクションボタン - 入力グループから分離 */}
+  const renderAcquisition = (onEdit?: () => void) => (
       <div className="flex flex-col gap-4 items-center w-full">
         <TooltipProvider>
           <div className="flex w-full items-center justify-center">
@@ -629,11 +563,11 @@ export const FanmarkAcquisition = ({
               <Button
                 size="default"
                 className="rounded-full gap-2 px-6 text-sm font-semibold shadow-md hover:shadow-lg transition-colors duration-200"
-                onClick={handleAcquireRequest}
-                disabled={!canAcquireNow}
+                onClick={inputComponent && searchResult && searchResult.status !== 'available' && onEdit ? onEdit : handleAcquireRequest}
+                disabled={inputComponent && searchResult && searchResult.status !== 'available' && onEdit ? false : !canAcquireNow}
               >
                 <Check className="h-4 w-4" />
-                {user
+                {inputComponent && searchResult && searchResult.status !== 'available' ? (language === 'ja' ? '組み合わせを変える' : 'Change emojis') : user
                   ? isMobile && isGraceBlocked
                     ? t('dashboard.acquireButtonShort')
                     : t('dashboard.acquireButton')
@@ -652,6 +586,7 @@ export const FanmarkAcquisition = ({
                       aria-label={t('dashboard.visitFanmarkButton')}
                     >
                       <ExternalLink className="h-5 w-5" />
+                      {inputComponent && <span>{t('dashboard.visitFanmarkButton')}</span>}
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="top">
@@ -672,6 +607,7 @@ export const FanmarkAcquisition = ({
                       aria-label={t('dashboard.openFanmarkPage')}
                     >
                       <Sparkles className="h-5 w-5" />
+                      {inputComponent && <span>{t('dashboard.openFanmarkPage')}</span>}
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="top">
@@ -813,6 +749,7 @@ export const FanmarkAcquisition = ({
                       aria-label={t('dashboard.visitFanmarkButton')}
                     >
                       <ExternalLink className="h-5 w-5" />
+                      {inputComponent && <span>{t('dashboard.visitFanmarkButton')}</span>}
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="top">
@@ -843,6 +780,76 @@ export const FanmarkAcquisition = ({
             </div>
           )}
         </div>
+  );
+
+  return (
+    <div ref={containerRef} className={`space-y-6 ${inputComponent ? "fanmark-fusion" : ""}`}>
+      {/* ファンマ取得中のローディング画面 */}
+      {isRegistering && (
+        <FanmarkAcquisitionLoading emoji={searchResult?.fanmark} />
+      )}
+
+      <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <AlertDialogContent className="rounded-3xl border border-primary/20 bg-background/95 shadow-[0_25px_60px_rgba(101,195,200,0.2)]">
+          <AlertDialogHeader className="space-y-3 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Sparkles className="h-6 w-6" />
+            </div>
+            <AlertDialogTitle className="text-xl font-semibold text-foreground">
+              {t('dashboard.acquireConfirmTitle')}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-muted-foreground">
+              {t('dashboard.acquireConfirmDescription', {
+                remaining: fanmarkLimit === -1 ? '∞' : Math.max(remainingCapacity - 1, 0),
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <AlertDialogCancel
+              className="h-10 rounded-full border border-border bg-transparent px-5 text-sm font-semibold text-muted-foreground hover:bg-primary/10 hover:text-foreground"
+              disabled={isRegistering}
+            >
+              {t('common.cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-md hover:bg-primary/90"
+              onClick={handleConfirmAcquire}
+              disabled={isRegistering}
+            >
+              {isRegistering ? t('common.processing') : t('dashboard.acquireConfirmAction')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <FanmarkSearchPanel
+        label=""
+        icon={<Search className="h-6 w-6 text-primary" />}
+        title={t('dashboard.searchFanma')}
+        meta={inputComponent ? undefined : inputStatus}
+        className={`${getSearchAreaBackgroundClass} ${inputComponent ? "fanmark-fusion-panel" : ""}`}
+      >
+        {/* ファンマ入力グループ - 入力と便利ツールが一体 */}
+        <div className={inputComponent ? "fusion-input-group" : "mt-6 mb-10 space-y-6"}>
+          <FanmarkSearch
+            inputComponent={inputComponent}
+            inputUtilities={inputComponent ? renderInputUtilities : undefined}
+            inputStatus={inputComponent ? inputStatus : undefined}
+            inputAcquisition={inputComponent ? renderAcquisition : undefined}
+            onSignupPrompt={() => onRequireAuth?.('')}
+            statusVariant={user ? 'authenticated' : 'public'}
+            showRecent={false}
+            onResultChange={setSearchResult}
+            query={query}
+            onQueryChange={handleQueryChange}
+          />
+
+          {/* 便利ツール - レスポンシブ間隔 */}
+          {!inputComponent && <div className="flex justify-center">{renderInputUtilities()}</div>}
+        </div>
+      </FanmarkSearchPanel>
+
+      {!inputComponent && renderAcquisition()}
     </div>
   );
 };

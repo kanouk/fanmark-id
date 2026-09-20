@@ -230,4 +230,4 @@
 
 `PaletteInput.tsx` は既存 `EmojiInputProps` に適合する入力コンポーネント。Index → FanmarkAcquisition → FanmarkSearch の任意inputComponentで接続する。名称検索・Jevクライアント/サーバーロジックは `prototypes/emoji-palette` を共有し、4179用middlewareとして起動する。選択列はFanmarkAcquisitionが保持し、既存の検索結果・取得・認証・抽選・お気に入りの処理を維持する。共有useFanmarkSearchは古い応答を世代番号で破棄する。
 
-入力の差し替え口は `utilities(onClear)` と `selectionStatus` も受け取る。FanmarkAcquisitionの既存ツール/判定ロジックを複製せず、PaletteInput内の操作列・結果プレビューへ配置できる。標準EmojiInputでは従来の外側配置を維持する。
+入力の差し替え口は `utilities(onClear)`、`selectionStatus`、`acquisition(onEdit)` も受け取る。FanmarkAcquisitionの既存ツール/判定/取得アクションを複製せず、PaletteInput内の編集列と取得エリアへ配置する。取得不可時のonEditはパレットを開き直す。標準EmojiInputでは従来の外側配置と動作を維持する。

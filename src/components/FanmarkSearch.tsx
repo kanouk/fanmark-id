@@ -15,6 +15,7 @@ import { canonicalizeEmojiString, segmentEmojiSequence } from '@/lib/emojiConver
 interface FanmarkSearchProps {
   inputUtilities?: (onClear: () => void) => React.ReactNode;
   inputStatus?: React.ReactNode;
+  inputAcquisition?: (onEdit: () => void) => React.ReactNode;
   inputComponent?: React.ComponentType<import("@/components/EmojiInput").EmojiInputProps>;
   onSignupPrompt?: () => void;
   onSearchPerformed?: (searchQuery: string) => void;
@@ -31,6 +32,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
   onSignupPrompt,
   inputUtilities,
   inputStatus,
+  inputAcquisition,
   inputComponent: InputComponent = EmojiInput,
   onSearchPerformed,
   onResultChange,
@@ -105,6 +107,7 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
           <InputComponent
             utilities={inputUtilities}
             selectionStatus={inputStatus}
+            acquisition={inputAcquisition}
             value={query}
             onChange={(value) => {
               onQueryChange(value);

@@ -17,7 +17,7 @@ const loadHistory = (): string[] => {
 type Mode = 'insert' | 'replace';
 type Snapshot = { selected: string[]; cursor: number; mode: Mode };
 
-export function PaletteInput({value, onChange, onSearchPerformed, disabled = false, utilities, selectionStatus}: EmojiInputProps) {
+export function PaletteInput({value, onChange, onSearchPerformed, disabled = false, utilities, selectionStatus, acquisition}: EmojiInputProps) {
   const { language } = useTranslation();
   const selected = useMemo(() => segmentEmojiSequence(canonicalizeEmojiString(value)).slice(0, 5).map(emoji => findEmoji(emoji)?.id ?? `literal:${emoji}`), [value]);
   const entryFor = (id: string): EmojiEntry | undefined => byId.get(id) ?? (id?.startsWith('literal:') ? {id, emoji:id.slice(8), name:id.slice(8), ja:id.slice(8), category:'', subcategory:'',words:[],variant:false} : undefined);
@@ -179,21 +179,20 @@ export function PaletteInput({value, onChange, onSearchPerformed, disabled = fal
   }
 
   return <div className="fanmark-palette">
-    <div className="integrated-editor">
+    <div className="composer-layout"><div className="integrated-editor">
       <div className="editor-topline"><p>{t('＋から絵文字を選ぶ', 'Choose emojis with +')}</p><span className="counter" aria-label={t(`${selected.length}個選択済み、最大5個`, `${selected.length} of 5 emojis selected`)}>{selected.length}<span> / 5</span></span></div>
       {selection(false)}
       <div className="input-toolbar" role="group" aria-label={t('入力の操作', 'Edit your selection')}>
         <div className="input-utilities">{utilities?.(clearSelection)}</div>
         <button className="undo-button" disabled={!undo || disabled} onClick={undoChange}><Undo2 size={15}/>{t('元に戻す', 'Undo')}</button>
       </div>
-      <div className={`address-preview ${sequence ? 'has-selection' : ''}`}>
-        <div className="address-topline"><span className="address-label">{t('アドレスのプレビュー', 'Address preview')}</span><div className="address-status">{selectionStatus}</div></div>
-        <div className="address-body"><div className="address-content">
-          <div className="url-preview"><span className="address-domain">fanmark.id<span className="address-slash">/</span></span>{sequence ? <span className="url-emoji">{sequence}</span> : <span className="address-placeholder">{t('絵文字を選ぶと、ここに表示', 'Your emojis will appear here')}</span>}</div>
-        </div>
-        <button className="copy-button" disabled={!selected.length} onClick={copy} aria-label={t('絵文字をコピー', 'Copy emojis')} title={t('絵文字の組み合わせをコピー', 'Copy the emoji combination')}>{copied ? <Check size={17}/> : <Copy size={17}/>}<span>{copied ? t('コピー済み', 'Copied') : t('絵文字をコピー', 'Copy emojis')}</span></button></div>
-      </div>
+      <div className="quiet-address"><span className="quiet-domain">fanmark.id/</span><span className="quiet-emojis">{sequence || '…'}</span><button disabled={!selected.length} onClick={copy} aria-label={t('絵文字をコピー', 'Copy emojis')} title={t('絵文字をコピー', 'Copy emojis')}>{copied ? <Check size={15}/> : <Copy size={15}/>}</button></div>
     </div>
+    <div className="acquisition-panel">
+      <div className="decision-heading">{t('このファンマを使う', 'Make it yours')}</div>
+      <div className="decision-status" aria-live="polite">{selectionStatus || <span>{selected.length ? t('空き状況を確認中…', 'Checking availability…') : t('絵文字を選ぶと、取得に進めます', 'Choose emojis to get started')}</span>}</div>
+      {acquisition?.(() => launch(selected.length < 5 ? selected.length : 0, selected.length < 5 ? 'insert' : 'replace'))}
+    </div></div>
     <div className="sr-only" role="status" aria-live="polite">{notice}</div>
     {!open && notice && <div className="page-notice" role="status">{notice}</div>}
 

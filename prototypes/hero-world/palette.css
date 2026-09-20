@@ -20,98 +20,88 @@
 
 .fanmark-palette .palette-overlay{z-index:80}.fanmark-palette .palette{z-index:81}.fanmark-palette{background:transparent}.fanmark-palette .integrated-editor{max-width:620px;margin:auto}.fanmark-palette .page-notice{z-index:90}.fanmark-fusion{max-width:800px;margin:auto;padding:20px 28px 32px;border:1px solid #ede4dc;border-radius:28px;background:#fffdf9;box-shadow:0 15px 50px #82644d0d}.fanmark-fusion .fanmark-fusion-panel{border:0;box-shadow:none;background:transparent}.fanmark-fusion .fanmark-fusion-panel h3{color:#625b50}.fanmark-palette .selection{margin:24px auto 14px}.fanmark-palette .selection-compact{margin:0 auto}.fanmark-palette .slot:disabled{opacity:.7}.fanmark-palette .example-card:disabled{opacity:.65}@media(max-width:600px){.fanmark-fusion{padding:8px 0 25px;border-radius:24px}.fanmark-fusion .fanmark-fusion-panel>div{padding-left:18px;padding-right:18px}}
 
-/* Input first, editing tools second, the resulting address last. */
-.fanmark-fusion{max-width:800px;padding:12px 24px 28px;background:#fffdfa}
-.fanmark-fusion .fusion-input-group{margin-top:18px;margin-bottom:0}
-.fanmark-palette .editor-topline{display:flex;align-items:center;justify-content:space-between;gap:16px;color:#796e65;font-size:13px}
-.fanmark-palette .counter{font-variant-numeric:tabular-nums;color:#544c45}
-.fanmark-palette .integrated-editor>.selection{gap:12px;margin:20px 0 0;padding:0 0 2px}
-.fanmark-palette .integrated-editor>.selection .slot-number{display:none}
-.fanmark-palette .integrated-editor .slot{border-radius:18px;min-height:54px}
-.fanmark-palette .integrated-editor .slot.filled{background:#f7f2eb;border-color:#e8ded2}
-.fanmark-palette .integrated-editor .slot.filled>span{font-size:clamp(36px,5vw,60px);line-height:1;filter:drop-shadow(0 3px 2px #6e493510)}
-.fanmark-palette .integrated-editor .slot.empty{background:#fcfaf7;border-color:#ddd3c7;color:#9d9184}
-.fanmark-palette .integrated-editor .slot.empty:hover{background:#eef7f3;border-color:#69aaa3;color:#508a83}
-.fanmark-palette .integrated-editor .remove{top:-8px;right:-6px;width:28px;height:28px;box-shadow:0 2px 5px #5443320a}
-.fanmark-palette .integrated-editor .remove svg{width:14px;height:14px}
-.fanmark-palette .integrated-editor .move-buttons{height:32px;gap:4px}
-.fanmark-palette .integrated-editor .move-buttons>button{width:30px;height:30px;color:#84776c}
-.fanmark-palette .integrated-editor .insert-before{width:24px;height:24px;left:-12px;top:35%}
-.fanmark-palette .input-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0 18px}
+/* Acquisition is the purpose; composing and secondary tools support it. */
+.fanmark-fusion{max-width:1000px;padding:12px 12px 18px;border:1px solid #e9e5de;border-radius:24px;background:#fffefa;box-shadow:0 16px 48px #58463808}
+.fanmark-fusion .fanmark-fusion-panel>div:first-child{padding:20px 24px 0}
+.fanmark-fusion .fanmark-fusion-panel>div:last-child{padding:0 24px 20px}
+.fanmark-fusion .fanmark-fusion-panel h3>div>span{font-size:22px;letter-spacing:-.5px;font-weight:650;color:#403e3a;background:none}
+.fanmark-fusion .fanmark-fusion-panel h3>div>span>svg{display:none}
+.fanmark-fusion .fusion-input-group{margin:24px 0 0}
+.fanmark-palette .composer-layout{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:32px;align-items:start}
+.fanmark-palette .integrated-editor{max-width:none;width:100%;margin:0}
+.fanmark-palette .editor-topline{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:12px;color:#79736b}
+.fanmark-palette .counter{font-size:12px;color:#6b645b;font-variant-numeric:tabular-nums;font-weight:500}
+.fanmark-palette .integrated-editor>.selection{margin:20px 0 0;padding:0;gap:10px}
+.fanmark-palette .integrated-editor .slot-number{display:none}
+.fanmark-palette .integrated-editor .slot{border-radius:16px;min-height:48px}
+.fanmark-palette .integrated-editor .slot.filled{border:1px solid #e8e1d7;background:#f7f3eb}
+.fanmark-palette .integrated-editor .slot.filled>span{font-size:clamp(34px,4.6vw,52px);line-height:1}
+.fanmark-palette .integrated-editor .slot.empty{background:#fcfaf6;border:1px dashed #dcd4c8;color:#a1998d}
+.fanmark-palette .integrated-editor .slot.empty:hover{background:#edf5f1;border-color:#68a699;color:#39796b}
+.fanmark-palette .integrated-editor .remove{width:26px;height:26px;top:-8px;right:-5px;background:#fffefa;border-color:#e7dfd3;box-shadow:none}
+.fanmark-palette .integrated-editor .remove svg{width:13px;height:13px}
+.fanmark-palette .integrated-editor .move-buttons{height:28px;gap:2px}
+.fanmark-palette .integrated-editor .move-buttons>button{height:28px;width:28px;color:#978d80}
+.fanmark-palette .integrated-editor .insert-before{height:22px;width:22px;left:-11px;top:33%}
+.fanmark-palette .input-toolbar{display:flex;justify-content:space-between;align-items:center;gap:4px;min-height:44px;margin-top:6px}
 .fanmark-palette .input-utilities>div{margin:0;justify-content:flex-start}
-.fanmark-palette .input-utilities>div>div{gap:2px;padding:0;border:0;border-radius:0;background:none;box-shadow:none}
-.fanmark-palette .input-utilities button,.fanmark-palette .input-toolbar>.undo-button{min-height:40px;padding:8px 10px;border-radius:9px;font-size:12px;color:#75695e;gap:6px}
-.fanmark-palette .input-utilities button:hover:not(:disabled),.fanmark-palette .input-toolbar>.undo-button:hover:not(:disabled){background:#f1ece5;color:#474039}
-.fanmark-palette .input-utilities button svg{width:15px;height:15px}
-.fanmark-palette .input-toolbar>.undo-button{white-space:nowrap}
-.fanmark-palette .address-preview{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 20px;background:#f3f7f4;border:1px solid #e1eae4;border-radius:16px}
-.fanmark-palette .address-content{min-width:0;flex:1}
-.fanmark-palette .address-label{display:block;font-size:11px;font-weight:500;color:#658078;margin-bottom:7px}
-.fanmark-palette .url-preview{border:0;min-height:38px;justify-content:flex-start;gap:0;flex-wrap:wrap;line-height:1.4}
-.fanmark-palette .address-domain{font-size:20px;font-weight:550;letter-spacing:-.5px;color:#405e57;white-space:nowrap}
-.fanmark-palette .address-slash{display:inline-block;margin:0 6px;color:#91a59d;font-weight:400}
-.fanmark-palette .url-emoji{font-size:34px;letter-spacing:2px;line-height:1.4}
-.fanmark-palette .address-placeholder{font-size:12px;color:#71847c}
-.fanmark-palette .address-preview .copy-button{min-height:42px;padding:10px 13px;flex:none;font-size:12px;background:white;color:#48796f;border:1px solid #d3e2d9;box-shadow:0 2px 3px #45615405}
-.fanmark-palette .address-preview .copy-button:hover:not(:disabled){background:#e7f0ea;border-color:#abcabe}
-.fanmark-fusion .fanmark-fusion-panel>div:first-child{padding-bottom:4px}
-.fanmark-fusion .fanmark-fusion-panel>div:last-child{padding-bottom:10px}
-/* Larger candidates and a compact selection leave room for discovery. */
+.fanmark-palette .input-utilities>div>div{padding:0;gap:0;border:0;background:none;box-shadow:none}
+.fanmark-palette .input-utilities button,.fanmark-palette .input-toolbar>.undo-button{padding:7px 8px;min-height:36px;gap:5px;font-size:11px;border-radius:7px;color:#80766a;white-space:nowrap}
+.fanmark-palette .input-utilities button span{font-size:11px}
+.fanmark-palette .input-utilities button svg{width:13px;height:13px}
+.fanmark-palette .input-utilities button:hover:not(:disabled),.fanmark-palette .input-toolbar>.undo-button:hover:not(:disabled){background:#f2ece3;color:#4b433a}
+.fanmark-palette .quiet-address{display:flex;align-items:center;gap:4px;color:#aaa196;font-size:12px;min-height:32px;margin-top:7px;flex-wrap:wrap}
+.fanmark-palette .quiet-domain{color:#9a9186}
+.fanmark-palette .quiet-emojis{font-size:16px;letter-spacing:1px;overflow-wrap:anywhere}
+.fanmark-palette .quiet-address button{display:flex;align-items:center;justify-content:center;min-width:32px;min-height:32px;color:#8e8477;border-radius:7px;margin-left:4px}
+.fanmark-palette .quiet-address button:hover:not(:disabled){background:#f0eae1}
+.fanmark-palette .acquisition-panel{border-left:1px solid #ebe6dd;padding:6px 0 0 28px;min-width:0;align-self:stretch}
+.fanmark-palette .decision-heading{font-size:17px;font-weight:650;letter-spacing:-.2px;color:#4b4842}
+.fanmark-palette .decision-status{font-size:12px;color:#877c6f;min-height:44px;display:flex;align-items:center;margin:6px 0 12px}
+.fanmark-palette .decision-status>div{justify-content:flex-start;gap:8px}
+.fanmark-palette .decision-status>div>div{padding:0;margin:0;border:0;border-radius:0;background:none;box-shadow:none;font-size:12px;font-weight:400;letter-spacing:0;gap:5px}
+.fanmark-palette .decision-status>div>div svg{width:13px;height:13px}
+.fanmark-palette .decision-status button{margin-left:auto;width:32px;height:32px;color:#9d9285;border-radius:8px}
+.fanmark-palette .decision-status button:hover{background:#f2ece4}
+.fanmark-fusion .fusion-acquire-main{display:flex;flex-direction:column;gap:12px;width:100%;align-items:stretch}
+.fanmark-fusion .fusion-acquire-main>button{display:flex;justify-content:center;align-items:center;gap:9px;width:100%;min-height:50px;border:0;border-radius:12px;background:#3c968a;color:white;font-size:14px;font-weight:650;box-shadow:0 5px 12px #3c968a18;padding:12px 16px}
+.fanmark-fusion .fusion-acquire-main>button:hover:not(:disabled){background:#307f74;transform:translateY(-1px)}
+.fanmark-fusion .fusion-acquire-main>button:disabled{background:#e6ebe7;color:#8b9990;opacity:1;box-shadow:none}
+.fanmark-fusion .fusion-acquire-main>button>svg{display:none}
+.fanmark-fusion .fusion-acquire-secondary{position:static;transform:none;margin:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%}
+.fanmark-fusion .fusion-acquire-secondary>button{display:flex;gap:7px;width:auto;height:auto;min-height:34px;padding:6px 0;border:0;border-radius:4px;background:none;box-shadow:none;color:#898174;font-size:11px;font-weight:400}
+.fanmark-fusion .fusion-acquire-secondary>button>svg{width:14px;height:14px}
+.fanmark-fusion .fusion-acquire-secondary>button:disabled{display:none}
+.fanmark-fusion .fusion-acquire-secondary>button:hover{color:#346e62;background:none;text-decoration:underline;text-underline-offset:4px}
+.fanmark-fusion .fusion-acquire-secondary>div{margin-top:30px}
+/* Keep the search palette familiar, but give candidates room to read and tap. */
 .fanmark-palette .palette{width:min(640px,calc(100vw - 32px))}
 .fanmark-palette .palette-head{padding:20px 24px 14px}
-.fanmark-palette .palette-head h2{font-size:20px}
-.fanmark-palette .palette-head p{color:#817266}
-.fanmark-palette .search-area{padding-bottom:14px}
 .fanmark-palette .search-box>input{font-size:16px}
 .fanmark-palette .jev-disclosure{font-size:10px;color:#85786c}
-.fanmark-palette .selected-area{padding-top:8px;padding-bottom:8px}
-.fanmark-palette .selection-compact{max-width:350px;gap:12px}
-.fanmark-palette .selection-compact .slot.filled>span{font-size:32px;line-height:1}
 .fanmark-palette .results-grid{grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
 .fanmark-palette .emoji-tile{min-height:78px;gap:7px}
 .fanmark-palette .emoji-glyph{font-size:36px}
 .fanmark-palette .emoji-label{font-size:11px;color:#7c6d60}
+.fanmark-palette .selection-compact .slot.filled>span{font-size:32px;line-height:1}
 .fanmark-palette .icon-button{min-width:40px;min-height:40px}
-.fanmark-palette .result-title{color:#736457}
-.fanmark-palette .selection-topline,.fanmark-palette .selection-hint{color:#6d877b}
 .fanmark-palette .done-button{min-height:42px;font-size:13px}
-@media(max-width:600px){
- .fanmark-fusion{padding:6px 0 20px}
- .fanmark-palette .editor-topline{font-size:12px}
- .fanmark-palette .integrated-editor>.selection{gap:9px;margin-top:18px}
- .fanmark-palette .integrated-editor .slot{border-radius:13px}
- .fanmark-palette .integrated-editor .slot.filled>span{font-size:clamp(30px,8vw,44px)}
- .fanmark-palette .input-toolbar{gap:0;padding-bottom:14px;flex-wrap:wrap}
- .fanmark-palette .input-utilities button,.fanmark-palette .input-toolbar>.undo-button{padding:8px 6px;gap:4px;font-size:11px;min-height:44px}
- .fanmark-palette .input-utilities button span{font-size:11px}
- .fanmark-palette .input-utilities button svg{width:13px;height:13px}
+@media(max-width:760px){
+ .fanmark-fusion{max-width:620px;padding:8px 0 0}
+ .fanmark-fusion .fanmark-fusion-panel>div:first-child{padding:18px 20px 0}
+ .fanmark-fusion .fanmark-fusion-panel>div:last-child{padding:0 20px 24px}
+ .fanmark-palette .composer-layout{grid-template-columns:minmax(0,1fr);gap:20px}
+ .fanmark-palette .acquisition-panel{border-left:0;border-top:1px solid #ebe6dd;padding:20px 0 0}
+ .fanmark-palette .decision-heading{font-size:16px}
+ .fanmark-palette .decision-status{min-height:30px;margin-bottom:10px}
+ .fanmark-palette .quiet-address{margin-top:0}
+ .fanmark-palette .integrated-editor .slot.filled>span{font-size:clamp(32px,8vw,48px)}
+ .fanmark-palette .input-utilities button,.fanmark-palette .input-toolbar>.undo-button{min-height:44px;padding:7px 5px}
+ .fanmark-palette .input-toolbar{flex-wrap:wrap}
  .fanmark-palette .input-toolbar>.undo-button{margin-left:auto}
- .fanmark-palette .address-preview{padding:14px;gap:8px;border-radius:13px}
- .fanmark-palette .address-domain{font-size:16px}
- .fanmark-palette .url-emoji{font-size:28px;letter-spacing:0}
- .fanmark-palette .address-placeholder{font-size:11px}
- .fanmark-palette .address-preview .copy-button{width:40px;height:44px;padding:0;justify-content:center}
- .fanmark-palette .address-preview .copy-button span{display:none}
+ .fanmark-fusion .fusion-acquire-secondary{flex-direction:row;flex-wrap:wrap;gap:12px}
  .fanmark-palette .palette{width:100%}
- .fanmark-palette .palette-head{padding:16px 18px 12px}
- .fanmark-palette .palette-head h2{font-size:18px}
  .fanmark-palette .results-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
- .fanmark-palette .emoji-tile{min-height:72px}
  .fanmark-palette .emoji-glyph{font-size:32px}
  .fanmark-palette .emoji-label{font-size:10px}
 }
-@media(max-height:630px){.fanmark-palette .selection-compact .slot.filled>span{font-size:26px}.fanmark-palette .jev-disclosure{display:block;font-size:9px;margin-top:3px}.fanmark-palette .palette-head{padding-top:10px;padding-bottom:8px}.fanmark-palette .search-area{padding-bottom:8px}}
-/* Availability belongs to the resulting address, beside its copy action. */
-.fanmark-palette .address-preview{display:block}
-.fanmark-palette .address-topline{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:36px;margin-top:-6px;margin-bottom:4px}
-.fanmark-palette .address-label{margin-bottom:0;white-space:nowrap}
-.fanmark-palette .address-body{display:flex;align-items:center;gap:14px}
-.fanmark-palette .address-status{min-width:0}
-.fanmark-palette .address-status>div{gap:4px}
-.fanmark-palette .address-status button{width:32px;height:32px;border-radius:50%;color:#71877c}
-.fanmark-palette .address-status button:hover{background:#e2ece5}
-.fanmark-palette .address-status [role=status]{font-size:11px}
-@media(max-width:600px){.fanmark-palette .address-topline{flex-wrap:wrap}.fanmark-palette .address-status{margin-left:auto}.fanmark-palette .address-body{gap:6px}.fanmark-palette .address-status>div>div{font-size:10px;padding:4px 7px}}
-
-.fanmark-fusion .fusion-acquire-main{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
-.fanmark-fusion .fusion-acquire-secondary{position:static;transform:none;margin-left:0}
