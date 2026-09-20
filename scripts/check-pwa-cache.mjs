@@ -8,8 +8,15 @@ const worker = await readFile("dist/sw.js", "utf8");
 const cleanup = await readFile("dist/clear-legacy-api-cache.js", "utf8");
 assert.match(worker, /importScripts\(["']clear-legacy-api-cache\.js["']\)/);
 assert.doesNotMatch(worker, /supabase-cache|new workbox\.(?:NetworkFirst|CacheFirst|StaleWhileRevalidate)/);
-assert.match(worker, /denylist:/);
-assert.match(worker, /\/\^\\\/api\(\?:\\\/\|\$\)\//);
+const denylistSource = worker.match(/denylist: (\[[^\n]+\])/);
+assert.ok(denylistSource, "generated worker must deny API navigation fallback");
+const denylist = runInNewContext(denylistSource[1]);
+for (const pathname of ["/api", "/api?limit=2", "/api/fanmarks/recent?limit=2"]) {
+  assert.ok(denylist.some((rule) => rule.test(pathname)), `${pathname} must not receive cached SPA HTML`);
+}
+for (const pathname of ["/pwa", "/dashboard", "/apiary"]) {
+  assert.ok(!denylist.some((rule) => rule.test(pathname)), `${pathname} keeps SPA routing`);
+}
 
 const existing = new Set(["supabase-cache", "workbox-precache-v2", "unrelated-cache"]);
 let activate;
