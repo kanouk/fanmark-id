@@ -365,3 +365,18 @@ proof with synthetic rows only:
 Until these tests and a private source compatibility rehearsal pass, this
 document does not authorize remote D1 writes, source export of real credential
 values, frontend cutover, or a claim of complete credential migration.
+
+## Implemented descriptor validation
+
+`scripts/migration/credential-descriptor.mjs` compiles explicit schema metadata
+and a versioned descriptor into an immutable six-column mapping plan. It checks
+the primary key, validated license uniqueness and cascading license foreign
+key, column types, and the pinned bcrypt codec/cost. The canonical descriptor
+digest binds those settings; accessors, symbols, hidden properties and unknown
+fields are rejected so validation and canonical serialization agree.
+
+The module accepts no source rows or database binding. It does not transform or
+import credentials, and the generic importer's `credential_transform_required`
+guard remains in force. `npm run test:migration-data` includes seven descriptor
+test groups; the parent review ran all 70 migration-data tests on Node 22.6.0
+with no failures or skips.
