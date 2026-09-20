@@ -205,15 +205,18 @@ required so an attacker cannot rotate short IDs or emoji selectors to obtain a
 fresh bcrypt budget on every request.
 
 Reservation is an atomic admission operation, not a failure-counter update.
-The Worker generates a fresh `reservation_id` and submits one D1 `batch()`
-which seeds or rolls each window, then inserts the reservation. A D1 trigger
-or equivalent single SQL guard on that insert must verify that **both** bucket
-rows are below the attempt limit and outside cooldown; the guard raises an
-abort result if either row is blocked. Its insert trigger increments
-`attempt_count` in both rows. Because the batch is atomic, a blocked resource
-cannot consume the requester row (or vice versa), and no proof path can accept
-an attempt without a reservation. The reservation ID remains server-side; no
-caller can supply one to unlock a route.
+The Worker generates a fresh `reservation_id`. It first advances an older
+bucket window in a monotonic D1 operation; this rollover is separate so a
+blocked admission cannot roll back a carried cooldown. It then submits one
+admission `batch()` that seeds both rows and inserts the reservation. A D1
+trigger or equivalent single SQL guard on that insert must verify that
+**both** bucket rows are below the attempt limit and outside cooldown; the
+guard raises an abort result if either row is blocked. Its insert trigger
+increments `attempt_count` in both rows. Because the admission batch is atomic,
+a blocked resource cannot consume the requester row (or vice versa), and no
+proof path can accept an attempt without a reservation. A delayed request may
+advance only an older window; it cannot roll a newer window backward. The
+reservation ID remains server-side; no caller can supply one to unlock a route.
 
 The reservation is consumed before bcrypt, so in-flight attempts count against
 the budget. A starting policy is five attempts per five-minute window, then a
@@ -222,7 +225,11 @@ The exact values need staging load evidence. A wrong-password finalization
 transitions the reservation once and increments `failure_count` plus cooldown
 state in both buckets. A successful comparison never resets another reserved
 or failed attempt. The transition and its audit insert are one guarded batch;
-duplicate finalization is rejected. If finalization cannot complete, the
+duplicate finalization is rejected. The local proof binds finalization to a
+reservation window and expiry, uses a single finalization ID, and writes a
+proof only through a guarded `INSERT ... SELECT`. Duplicate finalization cannot
+create another proof or audit; a stale or expired finalization is recorded as
+denial and cannot mint a proof. If finalization cannot complete, the
 already-reserved attempt remains consumed until the window rolls.
 
 Each admitted denial and success writes an audit record through the reservation
@@ -251,6 +258,9 @@ policy. Verification and protected routes are a separate credentialed surface:
   receive `Access-Control-Allow-Credentials: true`;
 - `Origin` is checked against that allowlist on every verification POST, and a
   wildcard origin is invalid;
+- a protected GET without an `Origin` must include the reviewed
+  `Sec-Fetch-Site: same-origin` signal; missing or cross-site metadata is
+  denied;
 - `Vary: Origin`, `no-store`, bounded JSON, and the host-only cookie are
   required; caller `Authorization` and arbitrary cookies are ignored;
 - the frontend uses `credentials: "include"` only for these routes and never
