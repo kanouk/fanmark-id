@@ -480,7 +480,7 @@ function expectedPlanDigest(plan) {
   });
 }
 
-function validatePlan(plan) {
+export function validateLifecycleTargetPlan(plan) {
   if (!isPlainObject(plan) || plan.schemaVersion !== LIFECYCLE_TARGET_SCHEMA_VERSION) {
     throw fail("invalid_lifecycle_schema_plan");
   }
@@ -508,6 +508,8 @@ function validatePlan(plan) {
     throw fail("lifecycle_schema_plan_source_mismatch");
   }
 }
+
+const validatePlan = validateLifecycleTargetPlan;
 
 export function generateLifecycleTargetSchema({ catalog, convertedSchema } = {}) {
   const converted = convertedSchema ?? convertSchema(catalog);
