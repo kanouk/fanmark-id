@@ -142,3 +142,13 @@ Astra independently ran the complete 63-test Stripe suite with the repository
 Node 22.6.0 and the SDK compatibility typecheck. All passed. These include 24
 invoice projection tests. The live webhook remains unwired; other billing
 writers must adopt the same customer-fence discipline before cutover.
+
+## Separate PostgreSQL connection proof
+
+The additional [PostgreSQL 17 concurrency harness](postgres-concurrency.md)
+uses separate backend connections and observes real lock waits for duplicate
+receipt and customer-fence contention. It also holds the first claim transaction
+open while another connection claims disjoint rows, and verifies final lease
+expiry and rollback. All five cases passed independently under Node 22.6.0
+with local PostgreSQL 17.10. This supplements the PGlite evidence above; it
+does not establish managed PostgreSQL 17.6 configuration or production wiring.

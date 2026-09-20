@@ -76,3 +76,5 @@ Stripeの請求状態同期を追加。API版をBasilへ固定し、現在のInv
 全表catalogに従う行変換bridgeを追加。PostgreSQLの値を文字列/SQL NULLとして取り出し、列順・enum・NOT NULL・配列次元を検証してD1 bindingへ変換する。UTC microsecondとJSONB textを保持し、BC/infinity/範囲外日付を拒否する。指定Nodeで行変換5テストと合成PostgreSQL投影が成功。consistent snapshotの保存・再実行可能なimport・全行照合は未実装。詳細は[row-conversion.md](row-conversion.md)。
 
 公開アクセスAPIのD1実装を追加。short ID・絵文字・公開profileの読み取りを明示設定で有効にする。公開可否と本文は同一SQLで取得し、password保護時と非選択の表示方式の本文を返さない。既存画面の空画像URL、日本語の文字数、長いZWJ絵文字、表示方式変更後に残る設定を検証。Astraの指定Node 22.6.0による独立実行でD1 entrypoint 11テストと型検査が成功。既存API21件、recent D1 4件、availability D1 7件、静的配信13件・実HTTP smoke・配備dry-runも独立実行で成功。CI項目も追加し、workflow隔離検査が成功。未設定時は503で、frontend接続・password検証経路・本番配備は未実施。
+
+独立接続のPostgreSQL 17.10でStripe競合5テストを追加。未commitの重複受信とcustomer fenceで実際のlock待ちを観測し、SKIP LOCKEDは先行transactionを開いたまま別接続が異なる行を取得することを検証した。期限切れの最終適用拒否と業務更新失敗時のrollbackも成功。AstraのNode22独立実行でも5件成功・skipなし、終了後のpostgresプロセスと一時clusterは0件。管理対象の17.6環境・本番設定の検証とは区別する。詳細は[postgres-concurrency.md](postgres-concurrency.md)。
