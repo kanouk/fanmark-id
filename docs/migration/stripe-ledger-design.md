@@ -7,8 +7,9 @@ is live. The receipt/dispatch foundation, signed ingress adapter, and
 claim/renew/retry lease RPCs now have bounded offline implementations for
 review; their validation records are [here](stripe-receipt-validation.md),
 [here](stripe-ingress-validation.md), and
-[here](stripe-dispatch-validation.md). This is the implementation boundary
-for issue #32 under parent issue #28.
+[here](stripe-dispatch-validation.md). The non-granting invoice projection
+slice is recorded [here](stripe-invoice-projection-validation.md). This is the
+implementation boundary for issue #32 under parent issue #28.
 
 The design starts with the current Supabase/Postgres system and keeps the
 same logical tables and invariants portable to D1. A Stripe webhook is treated
@@ -536,7 +537,7 @@ The current live endpoint selection remains unverified.
 | Extension intent and command | Persist intent before Stripe call; metadata intent ID; stable Checkout idempotency key; attach/recover Session ID. | Lost Stripe response recovers one Session; repeated request ID does not create a second Session; unrelated requests create distinct Sessions. |
 | Paid extension application | Current Session retrieval/payment/zero-total gating; locked owner/status check; additive end date; audit and lottery transaction. | completed plus async success for one Session grants once; authorized zero-total Session grants once; unpaid/positive-total unexplained no_payment_required/async failure/expired grants zero; two distinct Sessions both add months; stale owner/NULL owner cannot resurrect; duplicate audit/lottery cancellation is impossible. |
 | Subscription reconciliation | Customer queue, current Stripe retrieval, generation fence, tombstone upsert, authoritative plan derivation. | Updated then deleted and deleted then updated converge to current Stripe state; an old fence cannot overwrite a new one; multiple subscriptions prevent premature free; no mapping never merges by email. |
-| Invoice projection | Basil relationship normalizer and current invoice/subscription check. | Same event ID is applied once; a later attempt for the same invoice is reconciled rather than suppressed; Basil parent-path, legacy fallback, conflicting-path, and missing-path fixtures are covered; failure/action-required fields persist; database failure remains retryable; stale success cannot clear a newer failure; missing/null subscription is reviewable and non-mutating. |
+| Invoice projection (offline non-granting transaction complete; worker wiring remains) | Basil relationship normalizer and current invoice/subscription check. | Same event ID is applied once; a later attempt for the same invoice is reconciled rather than suppressed; Basil parent-path, rejected mixed-version provider relationships, conflicting-path, and missing-path fixtures are covered; failure/action-required fields persist; database failure remains retryable; stale success cannot clear a newer failure; missing/null subscription is reviewable and non-mutating. See the [offline validation](stripe-invoice-projection-validation.md). |
 | Free-plan return transaction | Current license_start-descending order and first-excess selection, conditional active-to-grace transition, audit and existing notification-event dedupe. | No qualifying subscription sets free and returns the newest excess licenses under current behavior; one transaction failure leaves no partial return; retry returns no license twice; owner/favorite dedupe keys remain stable. |
 | External outbox | Post-commit provider worker, stable idempotency key, provider result reconciliation, retry/backoff. | Crash after provider acceptance does not send a second logical message; retryable provider error keeps row pending; receipt dispatch is durable before 2xx. |
 | Outbound Stripe commands | Command ID for customer/create Checkout/update/cancel/Portal calls; stable idempotency keys; webhook remains state source. | retrying each command returns the same Stripe result; client timeout does not create a second customer/session; HTTP success alone does not set entitlement. |
@@ -624,10 +625,11 @@ ledger states, and Stripe endpoint ownership are accounted for; DNS rollback
 alone does not undo a committed grant.
 
 Offline implementation evidence already exists for the receipt/dispatch
-foundation and RPC, the signed ingress/normalizer adapter, and the dispatch
-claim/renew/retry lease RPCs; see the three validation records linked at the
-top. They are not applied to Supabase, connected to the current webhook,
-scheduled, or deployed. The application-ledger, outbox, Checkout-intent,
-customer-fence, business-worker application/finalization, external-send
+foundation and RPC, the signed ingress/normalizer adapter, the dispatch
+claim/renew/retry lease RPCs, and the non-granting invoice projection
+transaction; see the validation records linked at the top. They are not
+applied to Supabase, connected to the current webhook, scheduled, or
+deployed. Paid Checkout fulfillment, subscription reconciliation and
+free-limit returns, the remaining outbox/intent work, external-send
 idempotency, live-settings verification, and production rollout remain
 unimplemented and require separate review.

@@ -70,3 +70,5 @@ Storage exporter/verifierの再利用可能な実装を追加。23件のオフ�
 catalogから全表DDLと列codec対応・未解決条件を生成する[schema converter](schema-generator.md)を追加。NULL許可、整数型/範囲、文字列内のSQL構文、変換できない式/列型/外部Auth参照を検証。Astraの独立実行でStorage・値codecを含む32テストとCI境界検査が成功。実catalogから生成した同一SQLの104文がローカルD1で成功し、40表・131indexを読み戻した。20群の未解決条件があり、`deployable: false`を維持。全表のデータ移送、RLS/trigger/関数相当の業務実装、本番適用は未完了。
 
 指定Node 22.6.0でStorage verifierの`readableWebStream()`完了と明示closeによるnative abortを再現し、64 KiBずつの明示read/closeへ修正。空ファイル・複数buffer・末尾改変の検証を加え、指定版で移行データ33テストが成功。保存済み非公開Storage baselineも新verifierで再検証済み。シェルの既定Nodeは25.5.0だったため、以後は指定版を明示して検証する。
+
+Stripeの請求状態同期を追加。API版をBasilへ固定し、現在のInvoicePayment・顧客・subscription・最新invoiceを検証する。customer fence取得後に読出し、payment fields・台帳・receipt/dispatch完了を同一SQL transactionで更新する。古いイベントから現在状態を推測せず、不明/voidは60秒後の再試行へ戻す。Astraの指定Node 22.6.0による独立実行でStripe全63テスト・型互換性が成功。SQL内の遅延でleaseが失効するケースも、業務更新/台帳がrollbackされることを確認。詳細は[stripe-invoice-projection-validation.md](stripe-invoice-projection-validation.md)。既存Webhook接続・本番migration・独立Postgres接続の競合検証・他の課金効果は未完了。

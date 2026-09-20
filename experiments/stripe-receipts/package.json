@@ -5,7 +5,7 @@
   "description": "PostgreSQL-backed Stripe receipt foundation checks",
   "scripts": {
     "test": "node --import tsx --test test/*.test.mjs",
-    "typecheck": "tsc --noEmit --target ES2022 --module ESNext --moduleResolution Bundler --lib ES2022,DOM --allowImportingTsExtensions --skipLibCheck test/compatibility-types.ts ../../supabase/functions/_shared/stripe-receipt-ingress/index.ts"
+    "typecheck": "tsc --noEmit --target ES2022 --module ESNext --moduleResolution Bundler --lib ES2022,DOM --allowImportingTsExtensions --skipLibCheck test/compatibility-types.ts test/invoice-projection-compatibility.ts ../../supabase/functions/_shared/stripe-receipt-ingress/index.ts ../../supabase/functions/_shared/stripe-invoice-projection/index.ts"
   },
   "keywords": [],
   "author": "",
