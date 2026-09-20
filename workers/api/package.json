@@ -1,0 +1,21 @@
+{
+  "name": "fanmark-recent-api-contract",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --config vitest.config.mjs",
+    "test:watch": "vitest --config vitest.config.mjs",
+    "typecheck": "tsc --noEmit",
+    "build:dry-run": "wrangler deploy --dry-run --config wrangler.jsonc"
+  },
+  "devDependencies": {
+    "@msw/cloudflare": "0.0.1",
+    "@cloudflare/vitest-plugin": "1.1.13",
+    "@cloudflare/workers-types": "5.20260920.1",
+    "miniflare": "5.20260918.0-alpha",
+    "msw": "2.15.0",
+    "typescript": "5.8.3",
+    "vitest": "4.1.11",
+    "wrangler": "4.135.0"
+  }
+}
