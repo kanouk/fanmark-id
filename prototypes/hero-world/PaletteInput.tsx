@@ -28,6 +28,8 @@ export function PaletteInput({value, onChange, onSearchPerformed, disabled = fal
     onChange(next); onSearchPerformed?.(next);
   };
   const dragged = useRef<number | null>(null);
+  const [dragSource, setDragSource] = useState<number | null>(null);
+  const [dropTarget, setDropTarget] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
   const [cursor, setCursor] = useState(0);
   const [mode, setMode] = useState<Mode>('insert');
@@ -139,13 +141,36 @@ export function PaletteInput({value, onChange, onSearchPerformed, disabled = fal
     catch { setNotice(t('コピーできませんでした。下の絵文字列を選択してコピーしてください。', 'Copy failed. Select and copy the emoji text below.')); }
   }
 
-  function drop(event: React.DragEvent<HTMLButtonElement>, index:number) {
+  function endDrag() {
+    dragged.current = null;
+    setDragSource(null);
+    setDropTarget(null);
+  }
+  function startDrag(event: React.DragEvent<HTMLButtonElement>, index: number) {
+    dragged.current = index;
+    setDragSource(index);
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', String(index));
+  }
+  function dragOver(event: React.DragEvent<HTMLButtonElement>, index: number) {
+    if (disabled || dragged.current === null) return;
     event.preventDefault();
-    if(disabled || dragged.current === null)return;
-    const from=dragged.current;dragged.current=null;
-    if(from===index)return;
-    remember();const next=[...selected];const [item]=next.splice(from,1);
-    next.splice(Math.min(index,next.length),0,item);setSelected(next);
+    event.dataTransfer.dropEffect = 'move';
+    setDropTarget(index);
+  }
+  function drop(event: React.DragEvent<HTMLButtonElement>, index: number) {
+    event.preventDefault();
+    const from = dragged.current;
+    endDrag();
+    if (disabled || from === null || from === index) return;
+    remember();
+    const next = [...selected];
+    const [item] = next.splice(from, 1);
+    const destination = Math.min(index, next.length);
+    next.splice(destination, 0, item);
+    setSelected(next);
+    if (mode === 'replace') setCursor(destination);
+    setNotice(t('順番を変更しました', 'Order changed'));
   }
 
   function selection(inPalette: boolean) {
@@ -153,17 +178,16 @@ export function PaletteInput({value, onChange, onSearchPerformed, disabled = fal
       {Array.from({ length: 5 }, (_, index) => {
         const entry = entryFor(selected[index]);
         const active = inPalette && cursor === index;
-        return <div className={`slot-wrap ${active ? 'is-target' : ''}`} key={index}>
+        return <div className={`slot-wrap ${active ? 'is-target' : ''} ${dragSource === index ? 'is-dragging' : ''} ${dropTarget === index && dragSource !== index ? 'is-drop-target' : ''}`} key={index}>
           <span className="slot-number">{String(index + 1).padStart(2, '0')}</span>
           {entry ? <>
-            <button type="button" disabled={disabled} draggable={!disabled} onDragStart={() => { dragged.current=index; }} onDragEnd={() => { dragged.current=null; }} onDragOver={event=>event.preventDefault()} onDrop={event=>drop(event,index)} className={`slot filled ${active && mode === 'replace' ? 'replacing' : ''}`} aria-label={t(`${index + 1}個目の${label(entry)}を置き換える`, `Replace emoji ${index + 1}: ${label(entry)}`)} onClick={() => inPalette ? (setMode('replace'), setCursor(index)) : launch(index, 'replace')}><span>{entry.emoji}</span></button>
+            <button type="button" disabled={disabled} draggable={!disabled} onDragStart={event => startDrag(event, index)} onDragEnd={endDrag} onDragOver={event => dragOver(event, index)} onDrop={event=>drop(event,index)} className={`slot filled ${active && mode === 'replace' ? 'replacing' : ''}`} aria-label={t(`${index + 1}個目の${label(entry)}を置き換える`, `Replace emoji ${index + 1}: ${label(entry)}`)} onClick={() => inPalette ? (setMode('replace'), setCursor(index)) : launch(index, 'replace')}><span>{entry.emoji}</span></button>
             <button disabled={disabled} className="remove" type="button" aria-label={t(`${index + 1}個目の${label(entry)}を削除`, `Remove emoji ${index + 1}: ${label(entry)}`)} onClick={() => remove(index)}><X size={12} /></button>
             <div className="move-buttons">
               <button disabled={disabled || index === 0} aria-label={t(`${index + 1}個目を左へ`, `Move emoji ${index + 1} left`)} onClick={() => move(index, -1)}><ArrowLeft size={11} /></button>
               <button disabled={disabled || index === selected.length - 1} aria-label={t(`${index + 1}個目を右へ`, `Move emoji ${index + 1} right`)} onClick={() => move(index, 1)}><ArrowRight size={11} /></button>
             </div>
-            {selected.length < 5 && <button disabled={disabled} className="insert-before" aria-label={t(`${index + 1}番目に挿入`, `Insert at position ${index + 1}`)} title={t('この前に追加', 'Insert before')} onClick={() => inPalette ? (setMode('insert'), setCursor(index)) : launch(index, 'insert')}><Plus size={11} /></button>}
-          </> : <button disabled={disabled} onDragOver={event=>event.preventDefault()} onDrop={event=>drop(event,index)} className={`slot empty ${active ? 'active' : ''}`} aria-label={t(`${index + 1}個目のプラスを開く`, `Open plus ${index + 1}`)} onClick={() => inPalette ? (setMode('insert'), setCursor(selected.length), searchRef.current?.focus()) : launch(index, 'insert')}><Plus size={inPalette ? 22 : 27} strokeWidth={1.4} /></button>}
+          </> : <button disabled={disabled} onDragOver={event => dragOver(event, index)} onDrop={event=>drop(event,index)} className={`slot empty ${active ? 'active' : ''}`} aria-label={t(`${index + 1}個目のプラスを開く`, `Open plus ${index + 1}`)} onClick={() => inPalette ? (setMode('insert'), setCursor(selected.length), searchRef.current?.focus()) : launch(index, 'insert')}><Plus size={inPalette ? 22 : 27} strokeWidth={1.4} /></button>}
         </div>;
       })}
     </div>;

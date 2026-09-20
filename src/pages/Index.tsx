@@ -186,7 +186,7 @@ const Index = ({ hero: Hero, inputComponent }: { hero?: HomeHeroComponent; input
     }
   }, [prefilledEmoji]);
 
-  return <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
+  return <div className={inputComponent ? "min-h-screen bg-[#fffefa]" : "min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50"}>
       <AppHeader />
 
       {/* The preview can replace only the hero; all existing page flows stay shared. */}
@@ -231,7 +231,7 @@ const Index = ({ hero: Hero, inputComponent }: { hero?: HomeHeroComponent; input
       </section>}
 
       {/* Fanmark Search Section - Always show for search functionality */}
-      <div id="search" className="py-16 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+      <div id="search" className={inputComponent ? "py-16 bg-[#f8f7f3]" : "py-16 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50"}>
         <div className="container mx-auto px-4">
           <FanmarkAcquisition
             inputComponent={inputComponent}
@@ -250,7 +250,7 @@ const Index = ({ hero: Hero, inputComponent }: { hero?: HomeHeroComponent; input
         id="examples"
         className="relative overflow-hidden py-24"
       >
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-primary/15 via-accent/10 to-transparent" aria-hidden />
+        {!inputComponent && <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-primary/15 via-accent/10 to-transparent" aria-hidden />}
         <div className="container relative mx-auto px-4">
           <h2 className="text-center text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             {t('sections.howUsed')} 🚀
@@ -265,7 +265,7 @@ const Index = ({ hero: Hero, inputComponent }: { hero?: HomeHeroComponent; input
                 key={key}
                 className={`group relative flex h-full flex-col overflow-hidden border border-border/60 bg-background/95 shadow-[0_20px_45px_rgba(239,159,188,0.18)] transition-transform duration-300 hover:-translate-y-2 hover:shadow-[0_28px_60px_rgba(101,195,200,0.22)]`}
               >
-                <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 transition-opacity duration-300 group-hover:opacity-100`} aria-hidden />
+                {!inputComponent && <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 transition-opacity duration-300 group-hover:opacity-100`} aria-hidden />}
                 <CardHeader className="relative flex flex-1 flex-col items-center gap-5 px-6 pt-10 pb-6 text-center">
                   <button
                     type="button"
@@ -299,7 +299,7 @@ const Index = ({ hero: Hero, inputComponent }: { hero?: HomeHeroComponent; input
 
       {/* How It Works */}
       <section className="relative overflow-hidden py-24">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-accent/20 via-primary/15 to-transparent" aria-hidden />
+        {!inputComponent && <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-accent/20 via-primary/15 to-transparent" aria-hidden />}
         <div className="container relative mx-auto px-4">
           <h2 className="text-center text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             {t('sections.howItWorks')} 🛠️
@@ -315,7 +315,7 @@ const Index = ({ hero: Hero, inputComponent }: { hero?: HomeHeroComponent; input
               { emoji: '🎉', title: t('sections.step3'), description: t('sections.step3Description'), gradient: 'from-secondary/10 to-transparent' },
             ].map(({ emoji, title, description, gradient }, index) => (
               <Card key={title} className="relative overflow-hidden border border-border/60 bg-background/95 shadow-[0_18px_38px_rgba(101,195,200,0.18)]">
-                <div className={`pointer-events-none absolute inset-0 bg-gradient-to-b ${gradient} opacity-0 transition-opacity duration-300 hover:opacity-100`} aria-hidden />
+                {!inputComponent && <div className={`pointer-events-none absolute inset-0 bg-gradient-to-b ${gradient} opacity-0 transition-opacity duration-300 hover:opacity-100`} aria-hidden />}
                 <CardHeader className="relative flex flex-col items-center gap-4 px-8 pt-12 pb-8 text-center">
                   <span className="text-5xl">{emoji}</span>
                   <CardTitle className="text-xl font-semibold text-foreground">{index + 1}. {title}</CardTitle>
@@ -331,12 +331,12 @@ const Index = ({ hero: Hero, inputComponent }: { hero?: HomeHeroComponent; input
 
 
       {/* CTA */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 py-16">
+      <section className={inputComponent ? "relative overflow-hidden bg-[#f8f7f3] py-16" : "relative overflow-hidden bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 py-16"}>
         {/* Decorative background elements */}
-        <div className="absolute inset-0 overflow-hidden">
+        {!inputComponent && <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
           <div className="absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
-        </div>
+        </div>}
         
         <div className="container relative mx-auto px-4">
           <div className="mx-auto max-w-xl">

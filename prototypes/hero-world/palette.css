@@ -105,3 +105,10 @@
  .fanmark-palette .emoji-glyph{font-size:32px}
  .fanmark-palette .emoji-label{font-size:10px}
 }
+
+/* Moving the emoji itself is the primary way to reorder. */
+.fanmark-palette .slot.filled[draggable=true]{cursor:grab}
+.fanmark-palette .slot.filled[draggable=true]:active{cursor:grabbing}
+.fanmark-palette .slot-wrap.is-dragging .slot{opacity:.4}
+.fanmark-palette .slot-wrap.is-drop-target .slot{border:2px solid #579c8e;background:#eaf4ed;box-shadow:0 0 0 3px #579c8e18}
+.fanmark-palette .slot.filled>span{pointer-events:none;user-select:none}
