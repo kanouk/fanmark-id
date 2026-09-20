@@ -1,9 +1,14 @@
 # Stripe receipt, application ledger, and outbox design (#32)
 
-Status: design proposal only. This file does not add tables, change a function,
+Status: proposal for the remaining application ledger, outbox, intent/fence,
+and business-worker work. This file does not add tables, change a function,
 write to Supabase, change a Stripe endpoint, deploy, or claim that the design
-is live. It is the implementation boundary for issue #32 under parent issue
-#28.
+is live. The receipt/dispatch foundation, signed ingress adapter, and
+claim/renew/retry lease RPCs now have bounded offline implementations for
+review; their validation records are [here](stripe-receipt-validation.md),
+[here](stripe-ingress-validation.md), and
+[here](stripe-dispatch-validation.md). This is the implementation boundary
+for issue #32 under parent issue #28.
 
 The design starts with the current Supabase/Postgres system and keeps the
 same logical tables and invariants portable to D1. A Stripe webhook is treated
@@ -525,9 +530,9 @@ The current live endpoint selection remains unverified.
 
 | Unit | Implementation boundary | Required tests |
 | --- | --- | --- |
-| Receipt migration | Add private receipt, application, outbox, intent, and fence tables; unique indexes; internal access path; retention fields. | Event ID uniqueness; checkout Session uniqueness by extension effect; concurrent insert leaves one receipt/dispatch row. |
-| Signed ingress | Keep raw-body verification first; normalize envelope; transactionally insert receipt plus dispatch outbox; return 5xx on commit/enqueue failure. | Invalid signature leaves no receipt; valid event with DB failure returns retryable 5xx; duplicate terminal/nonterminal delivery does not apply twice; unknown type is durable. |
-| Worker lease | Atomic claim, lease expiry, attempt count, bounded error, retry/dead-letter policy. | Crash before commit retries; active lease prevents double worker; expired lease can be reclaimed; receipt is not terminal until application commit. |
+| Application-ledger migration | Add the remaining private application, outbox, intent, and fence tables; unique indexes; internal access path; retention fields. The receipt/dispatch tables and their event-ID boundary are covered by the [receipt foundation](stripe-receipt-validation.md). | Event ID uniqueness; checkout Session uniqueness by extension effect; concurrent insert leaves one receipt/dispatch row. |
+| Signed ingress (offline adapter complete; endpoint wiring remains) | Keep raw-body verification first; normalize envelope; transactionally insert receipt plus dispatch outbox; return 5xx on commit/enqueue failure. | Invalid signature leaves no receipt; valid event with DB failure returns retryable 5xx; duplicate terminal/nonterminal delivery does not apply twice; unknown type is durable. See the [offline ingress validation](stripe-ingress-validation.md). |
+| Worker lease (claim/renew/retry offline RPCs complete; application terminal transitions remain) | Atomic claim, lease expiry, attempt count, bounded error, retry/dead-letter policy. | Crash before commit retries; active lease prevents double worker; expired lease can be reclaimed; receipt is not terminal until application commit. See the [dispatch lease validation](stripe-dispatch-validation.md). |
 | Extension intent and command | Persist intent before Stripe call; metadata intent ID; stable Checkout idempotency key; attach/recover Session ID. | Lost Stripe response recovers one Session; repeated request ID does not create a second Session; unrelated requests create distinct Sessions. |
 | Paid extension application | Current Session retrieval/payment/zero-total gating; locked owner/status check; additive end date; audit and lottery transaction. | completed plus async success for one Session grants once; authorized zero-total Session grants once; unpaid/positive-total unexplained no_payment_required/async failure/expired grants zero; two distinct Sessions both add months; stale owner/NULL owner cannot resurrect; duplicate audit/lottery cancellation is impossible. |
 | Subscription reconciliation | Customer queue, current Stripe retrieval, generation fence, tombstone upsert, authoritative plan derivation. | Updated then deleted and deleted then updated converge to current Stripe state; an old fence cannot overwrite a new one; multiple subscriptions prevent premature free; no mapping never merges by email. |
@@ -556,8 +561,14 @@ selection. It also needs a controlled cutover so the old handler and new
 handler cannot both apply the same events. No production migration or
 endpoint change is part of this document.
 
-D1 can keep the same logical schema and effect keys with text IDs and integer
-timestamps. Use D1's batch API (`env.DB.batch(...)`) for each atomic group of
+D1 can keep the same logical schema and effect keys with text IDs. Timestamptz
+values for application tables must use fixed-width UTC text that preserves the
+source microsecond precision, as required by the [schema conversion
+rules](schema-conversion.md#representation-decisions-for-implementation); do
+not round-trip them through JavaScript `Date` or prescribe millisecond
+timestamps. An integer-microsecond encoding is a future option only after a
+range proof and an end-to-end exact bigint binding test; this design does not
+make that claim. Use D1's batch API (`env.DB.batch(...)`) for each atomic group of
 SQL statements; do not issue `BEGIN`/`COMMIT` or rely on an interactive
 JavaScript transaction from Worker code. Every batch statement that claims or
 applies work must carry unique or conditional guards for the effect key,
@@ -612,6 +623,11 @@ allowed to mutate state. A rollback restores code only after queued receipts,
 ledger states, and Stripe endpoint ownership are accounted for; DNS rollback
 alone does not undo a committed grant.
 
-Implemented in this handoff: this design document only. The tables, RPC,
-worker, idempotency keys, tests, live settings verification, database
-migration, and deploy remain unimplemented and require separate review.
+Offline implementation evidence already exists for the receipt/dispatch
+foundation and RPC, the signed ingress/normalizer adapter, and the dispatch
+claim/renew/retry lease RPCs; see the three validation records linked at the
+top. They are not applied to Supabase, connected to the current webhook,
+scheduled, or deployed. The application-ledger, outbox, Checkout-intent,
+customer-fence, business-worker application/finalization, external-send
+idempotency, live-settings verification, and production rollout remain
+unimplemented and require separate review.
