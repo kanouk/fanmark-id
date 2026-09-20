@@ -222,6 +222,8 @@
 - **`is_admin()`関数**: `has_role(auth.uid(), 'admin')` のラッパー
 - **service_role**: Edge Functions からのみ使用。直接クライアントアクセス不可
 
-## 箱庭ヒーローの独立試作（#27、本番未接続）
+## 惑星ヒーローの試作（#27、本番未導入）
 
-`prototypes/hero-world/` はThree.jsによる絵文字の街。`world.ts` が描画・モデル・看板の選択を担当し、`App.tsx` はHTMLの見出し・操作と遅延ロードを担当する。`npm run dev:hero` でポート4179。`public/world-poster.svg` は静止画の代替表示。既存トップや最近取得表示、通常ページは変更しない。詳細は試作READMEを参照。
+`prototypes/hero-world/main.tsx` は実アプリを `App homeHero={PlanetHero}` で起動する。`src/App.tsx` → `src/pages/Index.tsx` の任意差し替え口を通じ、ヒーローだけを置換する。通常エントリでは従来表示。`useRecentFanmarks` の公開RPC結果をIndexからPlanetHeroへ渡す。試作のファンマスクロールは撤去。通常エントリの `RecentFanmarksScroll` は同じフックを使う。
+
+`PlanetHero.tsx` は既存翻訳の見出し・HTML操作・遅延ロード、`world.ts` は惑星・人と動物・店・実ファンマの吹き出しと看板・回転/ズーム/コピー選択を担当する。ポート4179、静止画なし。既存検索・取得・認証・課金画面と同じアプリのため、プレビューも既存バックエンドへ接続する。詳細と検証範囲は試作READMEを参照。

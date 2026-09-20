@@ -11,7 +11,7 @@ import AdminApp, { AdminRoute } from "./components/AdminApp";
 import AdminDashboard from "./pages/AdminDashboard";
 import { LanguagePreferenceSync } from "@/components/LanguagePreferenceSync";
 import { DocumentTitleSync } from "@/components/DocumentTitleSync";
-import Index from "./pages/Index";
+import Index, { type HomeHeroComponent } from "./pages/Index";
 import Auth from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -46,7 +46,9 @@ import MaintenanceGate from "@/components/MaintenanceGate";
 
 const queryClient = new QueryClient();
 
-const MainApp = () => (
+type AppProps = { homeHero?: HomeHeroComponent };
+
+const MainApp = ({ homeHero }: AppProps) => (
   <QueryClientProvider client={queryClient}>
     <TranslationProvider>
       <AuthProvider>
@@ -61,7 +63,7 @@ const MainApp = () => (
               <PasswordSetupGate />
               <MaintenanceGate>
                 <Routes>
-                  <Route path="/" element={<Index />} />
+                  <Route path="/" element={<Index hero={homeHero} />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
@@ -107,7 +109,7 @@ const MainApp = () => (
   </QueryClientProvider>
 );
 
-const App = () => {
+const App = ({ homeHero }: AppProps = {}) => {
   const { isAdmin, subdomain } = useSubdomain();
   
   // デバッグ用ログ（本番環境では削除可能）
@@ -121,7 +123,7 @@ const App = () => {
   }
   
   // 通常のファンマークアプリを表示
-  return <MainApp />;
+  return <MainApp homeHero={homeHero} />;
 };
 
 export default App;

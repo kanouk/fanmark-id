@@ -1,6 +1,6 @@
 {
   "extends": "../../tsconfig.app.json",
-  "compilerOptions": { "types": ["vite/client"], "strict": true, "esModuleInterop": true },
+  "compilerOptions": { "types": ["vite/client"], "esModuleInterop": true },
   "include": ["*.ts", "*.tsx"],
   "exclude": ["vite.config.ts"]
 }

@@ -130,6 +130,8 @@ Jev接続にはサーバー環境変数 `TYPESAFE_API_KEY` またはリポジト
 
 型検査: `npx tsc --project prototypes/emoji-palette/tsconfig.json`。検索・データ出典・動作確認の詳細は `prototypes/emoji-palette/README.md` を参照。試作の日本語CLDR注釈は固定コミットから取得したもので、マスター更新パイプラインへの自動接続はまだ行っていない。
 
-## Three.js箱庭ヒーローのローカル試作
+## Three.js惑星ヒーローのローカル試作
 
-`npm ci --prefix prototypes/hero-world` の後、`npm run dev:hero` でポート4179、`npm run build:hero` で `dist/hero-world/`。Three.js依存は試作配下のロックで固定し、通常の本番バンドルとは分離。動的import、30fps上限、DPR制限、画面外/非表示時停止、静止画フォールバックを使用する。型検査は `npx tsc --project prototypes/hero-world/tsconfig.json`。移植時の注意と検証範囲は `prototypes/hero-world/README.md` を参照。
+`npm ci --prefix prototypes/hero-world` の後、`npm run dev:hero` でポート4179、`npm run build:hero` で `dist/hero-world/`。実アプリの任意hero propでトップのヒーローだけを置換する。Three.js依存は試作配下のロックで固定し、通常エントリでは従来表示・Three.jsバンドルなし。
+
+動的import、30fps上限、DPR制限、画面外/非表示時停止を使用。`useRecentFanmarks` から既存の公開RPC結果を受け取り、18キャラクターと8店舗へ初回に固定割り当てする。不足分は試作用絵文字で補完し、時間や再取得による入れ替えはしない。静止画は使用せず、失敗時は案内と再試行を提供。型検査は `npx tsc --project prototypes/hero-world/tsconfig.json`、描画コードのstrict検査は `tsconfig.scene.json`。実機モバイル等の未確認項目と移植手順は試作READMEを参照。

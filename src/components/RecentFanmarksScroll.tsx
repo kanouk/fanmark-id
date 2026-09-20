@@ -1,43 +1,11 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useRecentFanmarks } from '@/hooks/useRecentFanmarks';
 import { useTranslation } from '@/hooks/useTranslation';
 import { toast } from '@/hooks/use-toast';
 
-interface RecentFanmark {
-  id: string;
-  emoji: string;
-  created_at: string;
-}
-
 export function RecentFanmarksScroll() {
-  const [fanmarks, setFanmarks] = useState<RecentFanmark[]>([]);
+  const { data = [] } = useRecentFanmarks();
+  const fanmarks = [...data, ...data];
   const { t } = useTranslation();
-
-  useEffect(() => {
-    fetchRecentFanmarks();
-  }, []);
-
-  const fetchRecentFanmarks = async () => {
-    try {
-      // Use the public RPC so anonymous visitors can read recent activity under RLS.
-      const { data, error } = await supabase.rpc('list_recent_fanmarks', { p_limit: 20 });
-
-      if (error) throw error;
-
-      if (data) {
-        const formattedFanmarks = data.map((item) => ({
-          id: item.license_id || item.fanmark_id,
-          emoji: item.display_emoji || '❓',
-          created_at: item.license_created_at
-        }));
-        
-        // 2セット用意してシームレスにループさせる
-        setFanmarks([...formattedFanmarks, ...formattedFanmarks]);
-      }
-    } catch (error) {
-      console.error('Error fetching recent fanmarks:', error);
-    }
-  };
 
   if (fanmarks.length === 0) return null;
 

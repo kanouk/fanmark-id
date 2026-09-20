@@ -1,7 +1,25 @@
-export const places = [
-  { id: 'garden', emoji: '🌸🌿', name: '花と、暮らす。', en: 'A little room to bloom.', label: '小さな花屋', labelEn: 'Flower shop', color: '#efa8bb', position: [-3.3, 0, -.7] },
-  { id: 'cafe', emoji: '☕🥐', name: 'ひと息つける場所。', en: 'Your happy coffee place.', label: '森のカフェ', labelEn: 'Forest café', color: '#e8b878', position: [3.1, 0, -.5] },
-  { id: 'music', emoji: '🎧✨', name: '好きな音で、つながろう。', en: 'Good sounds. Good company.', label: '音楽のアトリエ', labelEn: 'Music studio', color: '#b4a0d5', position: [.3, 0, -3] },
-  { id: 'cat', emoji: '🐈⭐', name: '気ままな、わたしの居場所。', en: 'A place to be yourself.', label: 'ねこのおうち', labelEn: 'Cat’s little home', color: '#72bfc0', position: [0, 0, 2] },
+const styles = [
+  { kind: 'human', shirt: '#eaa2b8', skin: '#f3c9a7', hair: '#72534a' },
+  { kind: 'human', shirt: '#aa9cce', skin: '#b88360', hair: '#403733' },
+  { kind: 'cat', shirt: '#e5bb74', skin: '#f4d4b7', hair: '#b58052' },
+  { kind: 'human', shirt: '#73b9b1', skin: '#d8a179', hair: '#5a433c' },
+  { kind: 'human', shirt: '#b4bb8e', skin: '#f1c6a2', hair: '#52403a' },
+  { kind: 'rabbit', shirt: '#86b0d4', skin: '#a97150', hair: '#39343c' },
 ] as const;
-export type PlaceId = typeof places[number]['id'];
+
+// Equal-area distribution, including the back and southern hemisphere.
+export const people = Array.from({ length: 18 }, (_, i) => ({
+  ...styles[i % styles.length],
+  id: `walker-${i}`,
+  lat: Math.asin(1 - 2 * (i + .5) / 18),
+  lon: i * 2.399963 + .6,
+  speed: .036 + (i % 4) * .006,
+}));
+export type PersonId = string;
+
+export const fallbackFanmarks = [
+  '🌸🌿', '☕🥐', '🎧✨', '🐈⭐', '📷🌏', '🎮💫', '🍋🫧', '🦊🍂',
+  '🍞🧈', '🌙💜', '🐻🍯', '🐰🎀', '🌵☀️', '🌊🐚', '🧶🪡', '🎨🌈',
+  '🍓🍰', '🦋💐', '📚☕', '🍀🐾', '🪐🚀', '🦁👑', '🎹🎶', '🏕️🔥',
+  '🥨🧀', '🦉🌙', '🍇🍷', '🌻🐝', '🐧❄️', '🎸⚡', '🍑🩷', '🪴🏡',
+];

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ComponentType } from 'react';
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -12,13 +12,17 @@ import { FanmarkAcquisition } from '@/components/FanmarkAcquisition';
 import { supabase } from '@/integrations/supabase/client';
 import { useFanmarkLimit } from '@/hooks/useFanmarkLimit';
 import { RecentFanmarksScroll } from '@/components/RecentFanmarksScroll';
+import { useRecentFanmarks, type RecentFanmark } from '@/hooks/useRecentFanmarks';
 import { Sparkles } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-const Index = () => {
+export type HomeHeroProps = { onExplore: () => void; recentFanmarks: RecentFanmark[] | null };
+export type HomeHeroComponent = ComponentType<HomeHeroProps>;
+const Index = ({ hero: Hero }: { hero?: HomeHeroComponent } = {}) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { t, tWithBreaks } = useTranslation();
+  const recent = useRecentFanmarks(Boolean(Hero));
   const [fanmarkCount, setFanmarkCount] = useState(0);
   const { limit: fanmarkLimit, loading: limitLoading } = useFanmarkLimit();
   const [prefilledEmoji, setPrefilledEmoji] = useState<string | undefined>();
@@ -185,8 +189,10 @@ const Index = () => {
   return <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
       <AppHeader />
 
-      {/* Hero Section */}
-      <section
+      {/* The preview can replace only the hero; all existing page flows stay shared. */}
+      {Hero ? <section id="home" className="relative overflow-hidden">
+        <Hero onExplore={handleScrollToSearch} recentFanmarks={recent.data ?? (recent.isError ? [] : null)} />
+      </section> : <section
         id="home"
         className="relative overflow-hidden hero-gradient-animated"
       >
@@ -222,7 +228,7 @@ const Index = () => {
         
         {/* 最近取得されたファンマーク */}
         <RecentFanmarksScroll />
-      </section>
+      </section>}
 
       {/* Fanmark Search Section - Always show for search functionality */}
       <div id="search" className="py-16 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
