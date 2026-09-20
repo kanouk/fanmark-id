@@ -140,3 +140,7 @@ Environment の名前だけでは承認やブランチ制限は有効になら�
 - Stripe: Checkout → Webhook → `user_settings.plan_type` 反映、Customer Portal でプラン変更、延長決済の Price ID 設定。
 - お気に入り/通知: 返却時の `favorite_fanmark_available` 通知、未読バッジ、キャッシュ同期。
 - UI改修の原則: 本来不要なロジック（バリデーション・データ処理）を変更しない。仕様変更が必要な場合は必ず仕様を確認し、ユーザーの合意を取ってから行う。Auth では特に、ログインパスワードは8文字以上でチェック表示、目アイコンは入力が1文字以上のときだけ表示し、メール欄とアイコン位置を揃える。
+
+## PWA と移行時のキャッシュ
+
+Service Workerはビルド済み静的ファイルだけをprecacheする。SupabaseおよびWorker APIの応答はruntime cacheへ保存せず、`/api` 配下のnavigationへSPA HTMLを返さない。新しいService Workerのactivateで旧`supabase-cache`を削除し、過去のAPI応答が残らないようにする。静的precacheや他の名前のcacheは削除しない。既存端末への反映は配備後にService Workerが更新・activateした時点であり、ローカルビルドだけでは既存cacheの削除を確認したことにならない。

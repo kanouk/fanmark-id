@@ -34,6 +34,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Verify generated PWA cache boundary
+        run: node scripts/check-pwa-cache.mjs
+
   migration-validation:
     name: Validate migration (${{ matrix.directory }})
     runs-on: ubuntu-latest
