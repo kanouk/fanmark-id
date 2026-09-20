@@ -44,7 +44,7 @@ CLIのSQL接続はauth schemaの権限が不足していたが、既存ブラウ
 - パスワード形式の観測はbcrypt `$2a$10$`。これは形式・costの集計確認であり、実際のパスワードhashのexport/importやログイン検証ではない。
 - identity providerの集計にemail / Apple / Google / GitHub / Discordが存在。provider別の件数は複数連携を含み、ユーザー数と同一視しない。
 - MFA factorにはverified TOTPが存在。secretの可搬性や復旧手段は未確認。
-- Storageには `avatars` と `cover-images` のpublic bucketが存在。object件数・metadata上の容量を取得したが、ファイル本体の読出し・hash照合はまだ行っていない。metadata sizeは実ファイル照合の代用にしない。
+- Storageには `avatars` と `cover-images` のpublic bucketが存在。このSQL集計ではobject件数・metadata上の容量だけを取得した。その後、認証付きStorage APIでファイル本体を取得し、metadata size・SHA-256・取得前後の一覧一致とローカル再検証を完了した（[storage-baseline.md](storage-baseline.md)）。これは一時baselineで、確定snapshot・R2照合ではない。
 - cronは `check-expired-licenses-daily`（`0 0 * * *`、active）と `process-notification-events-every-minute`（`* * * * *`、観測時inactive）。後者はオンデマンドの有効化設計と整合するが、この瞬間のinactiveだけでワーカー不要とは判断しない。実行先・時刻設定・停止/再開は引き続き検証対象。
 
 集計の個別件数はローカルの非公開運用記録に保持し、公開リポジトリには保存しない。
