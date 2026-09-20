@@ -91,6 +91,9 @@ jobs:
       - name: Test protected public access proof
         if: matrix.directory == 'experiments/cloudflare-auth'
         run: npm run test:verified-access
+      - name: Test migration credential transform
+        if: matrix.directory == 'experiments/cloudflare-auth'
+        run: npm run test:credential-transform
       - name: Test D1 recent contract
         if: matrix.directory == 'workers/api'
         run: npm run test:d1
