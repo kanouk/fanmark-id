@@ -18,7 +18,7 @@
     "db:reset": "supabase db reset",
     "db:status": "supabase status",
     "db:push": "supabase db push",
-    "test:emoji-catalog": "node --experimental-strip-types --test scripts/test-emoji-catalog.ts"
+    "test:emoji-catalog": "node --experimental-strip-types --test scripts/test-emoji-catalog.ts scripts/test-emoji-release.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
