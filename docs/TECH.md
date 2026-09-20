@@ -17,7 +17,7 @@
 
 ## GitHub Actions: PR 検証と Supabase 本番デプロイ
 
-`.github/workflows/supabase-deploy.yml` は、PR の検証と本番デプロイを別ジョブで実行する。
+`.github/workflows/supabase-deploy.yml` は、有効化された場合にPR の検証と本番デプロイを別ジョブで実行する。2026-09-21の確認ではGitHub上のworkflow stateは `disabled_manually`。この変更では有効化せず、以下は有効化後の動作を説明する。
 
 - `pull_request`（対象ブランチ `main`）と `push`（`main`）では `validate` ジョブを実行する。`.node-version` の Node.js を使い、`npm ci --legacy-peer-deps`、`npm run check:ci`、`npm run typecheck`、`npm run build` を実行する。このジョブは Supabase の秘密情報、Supabase CLI、リモートプロジェクト、DB push にアクセスしない。
 - `deploy` ジョブは `validate` 成功後の `push`（`refs/heads/main`）に限って実行する。GitHub Environment の `Supabase` を明示的に使用し、そのジョブだけが `SUPABASE_ACCESS_TOKEN`、`SUPABASE_DB_PASSWORD`、`SUPABASE_PROJECT_ID` を参照する。プロジェクトを link して `supabase db push` を実行し、生成型を更新する。本番デプロイは `supabase-production` concurrency group で直列化し、実行中のデプロイをキャンセルしない。
