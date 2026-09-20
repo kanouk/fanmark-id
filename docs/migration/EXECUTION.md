@@ -60,3 +60,5 @@ Storageの2 bucketについて、認証付きAPIによる元ファイルの読�
 Storage exporter/verifierの再利用可能な実装を追加。23件のオフライン検証に加え、新実装による両bucketのread-only取得と独立verifierの検証が成功。詳細は[storage-export.md](storage-export.md)。非公開一時保存であり、R2転送は未実施。
 
 本番の列・制約・index定義をread-only catalogから取得した（a567ab1）。40表・406列・144制約・139indexの変換条件を[変換境界](schema-conversion.md)へ記録。実測結果は非公開。これをD1 schema適用済みと扱わない。
+
+絵文字カタログ生成はUUID付きJSONの明示入力を追加。Supabase環境変数が存在しても明示入力時はネットワークを使わず、ID・肌色sequenceを保持する。Unicode更新・D1へのmaster書込み・公開配信は未完了。

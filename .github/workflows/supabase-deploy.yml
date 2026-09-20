@@ -31,6 +31,9 @@ jobs:
       - name: Test recent API client
         run: npm run test:recent
 
+      - name: Test offline emoji catalog generation
+        run: npm run test:emoji-catalog
+
       - name: Type check
         run: npm run typecheck
 

@@ -71,6 +71,9 @@ Environment の名前だけでは承認やブランチ制限は有効になら�
 4. フロント用のカタログを再生成する（Supabase から `emoji_master` を取得）。  
    - `SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/generate-emoji-catalog.ts`  
    - 出力: `src/data/emojiCatalog.ts`
+   - D1移行準備では、DB UUIDを保持したレコード配列を明示入力できる: `node --experimental-strip-types scripts/generate-emoji-catalog.ts --input /private/path/emoji-records.json --output /private/path/emojiCatalog.ts`。`--input` 指定時はSupabase環境変数を使わず、ネットワーク接続しない。
+   - 入力は `id, emoji, short_name, keywords, category, subcategory, codepoints, sort_order` を持つJSON配列。D1のJSON格納列は配列へdecodeして渡す。UUIDを持たないUnicode変換直後のJSONや生のWrangler応答は直接入力しない。
+   - 重複UUID・lookupが曖昧になる絵文字・不正な配列を拒否し、検証成功後だけ出力を置換する。Unicode更新・D1書込み・本番カタログ公開は別工程。検証: `npm run test:emoji-catalog`。
 
 ## セキュリティ / RLS の公開方針（誤検知対策）
 このプロダクトは「ドメインレジストリ（WHOIS）モデル」で、**一部のデータは意図的に公開**します。セキュリティスキャナが「公開＝危険」と判定しやすいため、以下の公開方針は **誤検知として無視（ignore）** します。
