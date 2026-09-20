@@ -32,11 +32,12 @@ cookies:
 | Read protected emoji | `POST /api/fanmarks/access/emoji/protected` | JSON `{ "emojiIds": [uuid, ...] }` plus proof cookie | Same protected projection; a selected profile is nested in this response |
 | Read protected profile | `GET /api/fanmarks/public-profile/:licenseId/protected` | Proof cookie only from the profile verification route | Published profile projection after the password gate |
 
-The proof cookie is host-only and has `HttpOnly`, `Secure`, `SameSite=Lax`,
-`Path=/`, and a five-minute maximum age. Its value is random and is never
-returned in JSON, local storage, analytics, or logs. The D1 table stores only a
-hash of the value. A new successful verification replaces the browser's one
-active proof; it does not create a reusable account credential.
+The proof cookie is named `__Host-fanmark_access`, is host-only, and has
+`HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`, and a five-minute maximum age.
+Its value is random and is never returned in JSON, local storage, analytics, or
+logs. The D1 table stores only a hash of the value. A new successful
+verification replaces the browser's one active proof; it does not create a
+reusable account credential.
 
 Protected routes return `Cache-Control: no-store`. They accept no
 `Authorization` header, user ID, role, `unlocked`, `verified`, or session
@@ -325,12 +326,11 @@ Until these gates pass, keep the Worker password surface disabled and retain
 the existing Supabase path. Do not treat Better Auth's email/password or MFA
 proof as evidence for this separate anonymous fanmark authorization.
 
-## Next local proof slice
+## Implemented local proof slice
 
-The next implementation should stay isolated under
-`experiments/cloudflare-auth/`; it must not touch `workers/api`, the frontend,
-production Wrangler bindings, or the root migration. The exact proposed files
-and ownership are:
+The implementation is isolated under `experiments/cloudflare-auth/`. It does
+not register routes in `workers/api`, the frontend, production Wrangler
+bindings, or the root migration. Files and ownership are:
 
 - `src/verified-access-proof.mjs` owns canonical selector hashing, requester
   and resource bucket derivation, reservation/finalization helpers, bcrypt
@@ -358,6 +358,22 @@ and ownership are:
 This proof can establish local ordering and authorization invariants. It cannot
 establish the source password-format mapping or the target Cloudflare CPU
 budget; those remain private preflight and staging gates.
+
+## Local validation evidence
+
+Node 22.6.0 independently passed all 17 dedicated proof tests and all six
+existing account-auth tests. The dedicated suite runs sequentially against
+its separate synthetic D1 binding and is excluded from the default auth
+suite. CI invokes both commands explicitly. Tests include delayed old-window
+requests, cooldown across a window boundary, once-only finalization, stale
+proof insertion, selector/profile reassignment, and license delete/recreate
+invalidation. Test-only address overrides are confined to hooks. Originless
+same-origin GET requests use Fetch Metadata while verify POST requests
+require the configured Origin.
+
+This is synthetic local evidence. Existing-password conversion, production
+writers and invalidation, full source behavior parity, remote CPU, browser
+integration, deployment, and cutover remain unverified.
 
 ## References
 

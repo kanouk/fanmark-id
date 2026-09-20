@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "vitest run --config vitest.config.mjs",
+    "test:verified-access": "vitest run --config vitest.verified-access.config.mjs",
     "test:watch": "vitest --config vitest.config.mjs",
     "dev": "wrangler dev --local --config wrangler.jsonc"
   },

@@ -32,6 +32,7 @@ export default defineConfig({
   ],
   test: {
     include: ["./test/**/*.test.mjs"],
+    exclude: ["./test/verified-access.test.mjs"],
     fileParallelism: false,
     testTimeout: 15000,
     hookTimeout: 15000,
