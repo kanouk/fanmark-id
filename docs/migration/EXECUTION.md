@@ -30,7 +30,7 @@ Astraが設計確定、作業分解、差分レビュー、検証結果の確認
 ## 今回の開始状態
 
 - origin/mainから隔離したworktreeで開始。ヒーロー試作側のcheckoutは変更しない。
-- #29のCI分離はPR #39でmainへ反映済み（b307dd4）。ローカル型検査・ビルド・workflow否定検査は成功。GitHub workflowはdisabled_manuallyのまま。#30のオフライン棚卸しは構文解析テストと再現性検査まで完了。全体の本番対応表・設定照合は未完了。
+- #29のCI分離はPR #39でmainへ反映済み（b307dd4）。ローカル型検査・ビルド・workflow否定検査は成功。GitHub workflowはdisabled_manuallyのまま。#30のオフライン棚卸しと#31の初期local proofはPR #40でmainへ反映済み（e5a553c）。棚卸しは構文解析テストと再現性検査まで完了。全体の本番対応表・設定照合は未完了。
 - #31は合成ユーザーの認証3テスト、D1同時操作/再試行/rollbackの8テストがlocal runtimeで成功。実OAuth、管理者MFA、既存hash、remote CPU/負荷、実業務全体の受け入れは未完了。
 - 本番のread-only観測は [live-observations.md](live-observations.md) を参照。
 - 本番データ更新、DNS変更、Cloudflare本番配備、課金操作は未実施。

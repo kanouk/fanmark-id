@@ -19,7 +19,7 @@
 
 ## 未確認
 
-本番RLS/制約/関数本体/triggerの意味と移行先への対応、cron、整合したsnapshotでの件数照合・Storage容量、AuthのID対応・ハッシュ互換・MFA、Storageキー/所有者/ハッシュ、Stripe顧客と契約対応、OAuth管理画面、DNS/TLS、Resend設定、停止時間・復旧時間目標。本番のexport/importやデータ更新は未実行。Cloudflare環境の準備と認証検証も未完了。
+本番RLS/制約/関数本体/triggerの意味と移行先への対応、cron実行先と停止/再開、整合したsnapshotでの件数照合・Storage実ファイル容量、AuthのID対応・実ユーザーhash互換・MFA移送、Storageキー/所有者/ハッシュ、Stripe顧客と契約対応、OAuth管理画面、DNS委任/TLSと実フロー、Resend設定、停止時間・復旧時間目標。本番のexport/importやデータ更新は未実行。Cloudflare環境の準備と認証検証も未完了。
 
 ## 証拠の扱い
 
@@ -29,4 +29,24 @@
 
 read-only SQL接続では `audit_logs` のSELECT権限不足だった。別途、既存の管理権限で取得したAPI資格情報をプロセス内だけで使用し、REST HEAD + count=exactで全40テーブルの件数を取得した。レスポンス本文のデータ行は取得せず、資格情報も保存していない。件数は別々のリクエスト時点の観測であり、整合したsnapshotや最終移行照合ではない。個別件数は公開リポジトリに載せない。table-statsの値は引き続き推定値として区別する。
 
-Cloudflare CLIの既存OAuthログインを確認し、D1一覧をread-only取得した。観測時にfanmark専用D1は見つからない。新しいremote D1/Workerは作成していない。
+## ブラウザによる環境確認（2026-09-21 JST）
+
+- Supabase Settings > General は `auth.fanmark.id` を active custom domain と表示し、serving traffic と明記していた。以前のAPI取得403を「未設定」と解釈しない。この表示だけでは全OAuth callback/メールリンクの動作までは証明しない。
+- Cloudflare の fanmark.id ゾーンは、既存 Wrangler OAuth のアカウントとは別のアカウントに属していた。既存CLIで取得したD1一覧は別アカウントの一覧であり、fanmark用D1の存在確認には使えない。
+- ブラウザで確認したfanmark側account IDを明示した `wrangler d1 list --json` は authentication error 10000。対象アカウントのCLI権限が必要で、新しいremote D1/Workerは作成していない。別アカウントへ代替配備しない。
+- fanmark.id のDNS画面では apex / www / admin は同じ既存Aレコード、authは現行SupabaseプロジェクトへのCNAMEで、いずれもproxy有効。DNS変更はしていない。DNS画面内のNSレコードだけからレジストラの委任先は判定しない。
+
+
+## SQL Editorでの追加集計（2026-09-21 JST）
+
+CLIのSQL接続はauth schemaの権限が不足していたが、既存ブラウザセッションのSupabase SQL Editorでは `BEGIN READ ONLY` による集計を実行できた。認証情報・ファイル内容・ユーザー行・cron command本文は返していない。再現用SQLは `scripts/migration/auth-readiness.sql` と `scripts/migration/storage-cron-readiness.sql`。SQL Editorでそれぞれ3行と2行の集計結果を確認した。両クエリ間でsnapshotは共有しない。
+
+- パスワード形式の観測はbcrypt `$2a$10$`。これは形式・costの集計確認であり、実際のパスワードhashのexport/importやログイン検証ではない。
+- identity providerの集計にemail / Apple / Google / GitHub / Discordが存在。provider別の件数は複数連携を含み、ユーザー数と同一視しない。
+- MFA factorにはverified TOTPが存在。secretの可搬性や復旧手段は未確認。
+- Storageには `avatars` と `cover-images` のpublic bucketが存在。object件数・metadata上の容量を取得したが、ファイル本体の読出し・hash照合はまだ行っていない。metadata sizeは実ファイル照合の代用にしない。
+- cronは `check-expired-licenses-daily`（`0 0 * * *`、active）と `process-notification-events-every-minute`（`* * * * *`、観測時inactive）。後者はオンデマンドの有効化設計と整合するが、この瞬間のinactiveだけでワーカー不要とは判断しない。実行先・時刻設定・停止/再開は引き続き検証対象。
+
+集計の個別件数はローカルの非公開運用記録に保持し、公開リポジトリには保存しない。
+
+認証URL設定のブラウザ確認ではSite URLは `https://fanmark.id/`、redirect許可リストはfanmark.idと既存Lovableの4パターン（計5件）だった。将来のWorker preview URLを既に許可済みとは扱わない。許可リストは変更していない。
