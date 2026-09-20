@@ -134,3 +134,10 @@ private file modes, and complete manifest/status agreement. Credentials stayed
 in process memory; private manifests and source object paths were not committed.
 The pre/post inventory matched. This remains a temporary local observation,
 not a transactional cutover snapshot, durable backup, or R2 upload.
+## Runtime verification
+
+Use the repository's `.node-version` (22.6.0) for validation. The verifier reads
+files in bounded 64 KiB chunks and owns each file handle's close operation.
+This avoids a reproduced Node 22.6 native abort when `readableWebStream()`
+completion races with an explicit close. Empty files, multiple chunks, and
+same-size corruption in the final partial chunk are covered by the tests.

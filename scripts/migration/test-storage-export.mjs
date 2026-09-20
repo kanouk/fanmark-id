@@ -383,3 +383,24 @@ test("does not chmod a non-empty output directory before refusing it", async () 
   assert.equal((await fs.stat(outputDir)).mode & 0o777, 0o755);
   assert.equal(await exists(path.join(outputDir, "operator-file")), true);
 });
+
+test("verifies empty and multi-buffer files and detects corruption in the final partial read", async () => {
+  const content = Uint8Array.from({ length: 3 * 64 * 1024 + 5 }, (_, index) => index % 251);
+  const records = [
+    objectRecord({ bucket: "avatars", key: "large.bin", id: "large", content }),
+    objectRecord({ bucket: "avatars", key: "empty.bin", id: "empty", content: new Uint8Array() }),
+  ];
+  const fetchImpl = makeStorageFetch({ rounds: [records, records], bucketCount: 1 });
+  const { outputDir } = await runFixtureExport(fetchImpl, { buckets: ["avatars"] });
+  try {
+    const manifestPath = path.join(outputDir, "manifest.json");
+    assert.equal((await verifyManifest(manifestPath)).objectCount, 2);
+    const objectPath = path.join(outputDir, "objects", objectIdentityHash("avatars", "large.bin"));
+    const altered = await fs.readFile(objectPath);
+    altered[altered.length - 1] ^= 255;
+    await fs.writeFile(objectPath, altered);
+    await assert.rejects(verifyManifest(manifestPath), error => error instanceof StorageVerifyError && error.code === "hash_mismatch");
+  } finally {
+    await fs.rm(outputDir, { recursive: true, force: true });
+  }
+});

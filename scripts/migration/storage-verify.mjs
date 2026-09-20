@@ -39,7 +39,14 @@ async function sha256File(filePath) {
   const hash = createHash("sha256");
   const file = await fs.open(filePath, "r");
   try {
-    for await (const chunk of file.readableWebStream()) hash.update(chunk);
+    // Own the handle lifecycle explicitly. Node 22.6 can abort the process
+    // when readableWebStream completion races with an explicit close().
+    const buffer = Buffer.allocUnsafe(64 * 1024);
+    while (true) {
+      const { bytesRead } = await file.read(buffer, 0, buffer.length, null);
+      if (bytesRead === 0) break;
+      hash.update(buffer.subarray(0, bytesRead));
+    }
     return hash.digest("hex");
   } finally {
     await file.close().catch(() => {});
