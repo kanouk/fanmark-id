@@ -48,9 +48,11 @@ PR #41は棚卸し・本番設定のread-only確認とWorker API境界を保存�
 
 - `workers/api/`: 最近取得一覧の公開APIを6ebdf36で保存。応答列の制限、キー種別、Origin、タイムアウト、redirect、件数上限、実entrypointを含む14テスト、型検査、配備用dry-runがAstraの独立実行でも成功。remote未配備。フロントの明示的な接続先切り替えは394a9d0で保存し、9テスト・型検査をAstraも独立実行して成功。設定したWorkerが失敗してもSupabaseへ戻らない。合成Worker originを指定したViteビルドも成功し、値が生成物へ反映されることを確認。Workers Static Assetsでの配信構成を次に実装中。
 - live recent-listのview/RPC定義をread-onlyで取得し、active licenseのみ・created_at降順・同時刻の順序未指定などの現行条件を記録（43f5e12）。再現SQLも実行済み。D1版の実装は未完了。
-- `experiments/cloudflare-auth/`: 合成bcrypt/TOTPに加え、全認証経路に対する管理者APIのMFA強制を検証する。セッションごとのMFA証拠と失効が必要で、user.twoFactorEnabledだけで許可しない。
-- `docs/migration/stripe-ledger-design.md`: 現行Webhookの全分岐を受信・適用台帳とoutboxへ写す設計をf0b3a05で保存。BasilのInvoice.parentとD1 batchの境界もレビュー済み。receipt+dispatch保存のPostgreSQL基盤をオフライン実装中で、現行Webhookへの接続・本番適用は未実施。
-- 移行用3パッケージのlocalテストを秘密情報なしのCIへ追加し、deployの依存条件にした（361d5b9）。workflow設定の構文検査・否定検査は成功、GitHub workflow自体はdisabled_manuallyを維持。
+- `experiments/cloudflare-auth/`: bcrypt/TOTPと管理者APIのセッション/factor-bound MFA proofを7a11d4dで保存。6件のlocal runtimeテストをAstraも再実行して成功。テスト用ログイン経路は通常Workerに含めない。因子の置換とverifyの競合を次に検証中。実OAuth/既存因子移送/remote CPUは未完了。
+- `docs/migration/stripe-ledger-design.md`: 現行Webhookの全分岐を受信・適用台帳とoutboxへ写す設計をf0b3a05で保存。BasilのInvoice.parentとD1 batchの境界もレビュー済み。receipt+dispatch保存のPostgreSQL基盤をe63152dで保存し、PGliteによる14テストをAstraも再実行して成功。署名検証後の受信handlerを次に実装中。現行Webhookへの接続・本番適用は未実施。
+- 移行用4パッケージのlocalテストを秘密情報なしのCIへ追加し、deployの依存条件にした（361d5b9）。workflow設定の構文検査・否定検査は成功、GitHub workflow自体はdisabled_manuallyを維持。
 - PWAのAPI runtime cacheを廃止し、新Service Workerのactivate時に旧supabase-cacheのみ削除する。APIへのnavigationにはSPA fallbackを返さない（53072a2 / adef0c8）。アプリビルドと生成物検査が成功。本番配備・既存端末の更新確認は未実施。
 
 CloudflareのCLI認証先はfanmark対象アカウントと異なり、対象を明示したread-only呼び出しも認証エラー。対象側はWorkers Free（10 ms/request）。remote配備権限とbcrypt CPU/プラン判断は未解決。ブラウザではSupabase SQL Editorによる秘密値を返さない集計、既存Google/Apple callback、Resendドメインを確認できた。詳細はlive-observationsを参照。
+
+Storageの2 bucketについて、認証付きAPIによる元ファイルの読出し・metadata size照合・SHA-256作成・ローカルファイルの再検証を完了。取得前後の一覧も一致。非公開の一時baselineであり、確定snapshotやR2コピーとは扱わない。詳細は[storage-baseline.md](storage-baseline.md)。
