@@ -98,3 +98,5 @@ verified snapshotからの[D1 import core](d1-import.md)を追加。parent-first
 実catalogの40表構造で、各表0行のsynthetic snapshotを新規Miniflare D1へ移すprivate rehearsalが成功。40表/40checkpoint・source/targetとも0行、20群のschema gateを維持したpublic_rows_reconciledを確認し、runtime/temp cleanupの記録も確認した。これはschema接続の検証であり、実データや業務parityではない。既存Supabase CLI権限でlive-only期限処理と定期期限処理のsourceをread-only取得し、非公開0600/0700領域に保存した。body未取得の条件は解消したが、実装差分・呼出運用・認可の同等性は別途確認中。
 
 実catalogの40表に各1行のsyntheticデータを用意したnonzero rehearsalも成功。40 source行→40 D1行、40 checkpoint・complete・readback、内部FK/CHECK/enum/NOT NULL/uniqueと各値型を検証したprivate結果を確認。外部Authはsynthetic UUIDと未解決条件のまま、20群のschema gate、deployable/fullMigrationReconciled=falseを維持する。これは実source行のparityではない。取得した定期期限処理と共有helper計3ファイルがrepoとbyte-for-byte一致することも、Astraがhash付き非公開記録に保存した。
+
+Astraが復元済みのsynthetic generatorを確認し、Node 22.6.0で40表・各1行のnonzero rehearsalを独立再実行した。40行の移送、40表のcomplete/readback、public_rows_reconciledを再確認。cleanup失敗を成功扱いしていたprivate helperの記録を修正し、runtime dispose成功と一時directoryの不存在も確認した。20群の未解決schema条件、deployable/fullMigrationReconciled=falseは維持し、実source行・credential変換・業務parityの証拠とは扱わない。
