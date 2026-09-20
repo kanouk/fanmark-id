@@ -52,7 +52,6 @@ export function PlanetHero({ onExplore, recentFanmarks }: HomeHeroProps) {
       <div className="planet-copy">
         <h1>{tWithBreaks('hero.subtitle')}</h1>
         <p className="planet-description">{t('hero.description')}</p>
-        <p className="planet-story">{ja ? <>ひとりひとりの「好き」が、目印になる。</> : <>Little passions. Unique personalities.</>}</p>
         <button className="planet-cta" onClick={onExplore}>{t('hero.tryButton')}<ArrowRight size={18}/></button>
 
       </div>
