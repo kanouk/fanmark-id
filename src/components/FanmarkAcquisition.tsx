@@ -445,6 +445,115 @@ export const FanmarkAcquisition = ({
     return () => window.clearTimeout(timer);
   }, [scrollToSearch, onSearchScrolled]);
 
+  const inputStatus = (
+    searchResult && searchResult.fanmark && !searchResult.error ? (
+      <div className="flex w-full items-center justify-end gap-2">
+        <FanmarkStatusBadge
+          status={
+            searchResult.status === 'available'
+              ? 'available'
+              : searchResult.blocking_status === 'grace'
+                ? 'unavailable'
+                : (isOwnedByMe ? 'taken' : 'unavailable')
+          }
+        />
+        {canShowFavoriteButton && (
+          <Button
+            size="icon"
+            variant="ghost"
+            className={`h-9 w-9 rounded-full border border-transparent transition-colors duration-200 ${
+              effectiveIsFavorited
+                ? 'bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary'
+                : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
+            }`}
+            onClick={handleToggleFavorite}
+            disabled={isFavoriteButtonDisabled}
+            aria-label={effectiveIsFavorited ? t('fanmarkDetails.unfavorite') : t('fanmarkDetails.favorite')}
+          >
+            <Heart className={`h-4 w-4 ${effectiveIsFavorited ? 'fill-current' : ''}`} />
+          </Button>
+        )}
+      </div>
+    ) : null
+  );
+
+  const renderInputUtilities = (onClear = clearQuery) => (
+    <EmojiInputUtilities
+      disabled={false}
+      hasValue={!!query}
+      onPaste={async () => {
+        try {
+          if (!navigator.clipboard) {
+            toast({
+              title: t('common.error'),
+              description: t('common.clipboardNotSupported'),
+              variant: 'destructive',
+            });
+            return false;
+          }
+
+          const clipboardText = await navigator.clipboard.readText();
+          if (!clipboardText.trim()) {
+            toast({
+              title: t('common.clipboardEmptyTitle'),
+              description: t('common.clipboardEmptyBody'),
+              variant: 'warning',
+            });
+            return true;
+          }
+
+          const extracted = extractEmojiString(clipboardText);
+          if (!extracted) {
+            toast({
+              title: t('common.nonEmojiRejectedTitle'),
+              description: t('common.nonEmojiRejectedBody'),
+              variant: 'warning',
+            });
+            return true;
+          }
+
+          handleQueryChange(extracted);
+
+          toast({
+            title: t('common.pasteCompletedTitle'),
+            description: t('common.pasteCompleted'),
+          });
+          return true;
+
+        } catch (error) {
+          toast({
+            title: t('common.error'),
+            description: t('common.clipboardReadFailed'),
+            variant: 'destructive',
+          });
+          return false;
+        }
+      }}
+      onDirectInput={(input: string) => {
+        if (!input.trim()) return;
+
+        const extracted = extractEmojiString(input);
+        if (!extracted) {
+          toast({
+            title: t('common.nonEmojiRejectedTitle'),
+            description: t('common.nonEmojiRejectedBody'),
+            variant: 'warning',
+          });
+          return;
+        }
+
+        handleQueryChange(extracted);
+
+        toast({
+          title: t('common.inputCompletedTitle'),
+          description: t('common.inputCompleted'),
+        });
+      }}
+      onClear={onClear}
+      value={query}
+    />
+  );
+
   return (
     <div ref={containerRef} className={`space-y-6 ${inputComponent ? "fanmark-fusion" : ""}`}>
       {/* ファンマ取得中のローディング画面 */}
@@ -489,43 +598,15 @@ export const FanmarkAcquisition = ({
         label=""
         icon={<Search className="h-6 w-6 text-primary" />}
         title={t('dashboard.searchFanma')}
-        meta={
-          searchResult && searchResult.fanmark && !searchResult.error ? (
-            <div className="flex w-full items-center justify-end gap-2">
-              <FanmarkStatusBadge
-                status={
-                  searchResult.status === 'available'
-                    ? 'available'
-                    : searchResult.blocking_status === 'grace'
-                      ? 'unavailable'
-                      : (isOwnedByMe ? 'taken' : 'unavailable')
-                }
-              />
-              {canShowFavoriteButton && (
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className={`h-9 w-9 rounded-full border border-transparent transition-colors duration-200 ${
-                    effectiveIsFavorited
-                      ? 'bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary'
-                      : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
-                  }`}
-                  onClick={handleToggleFavorite}
-                  disabled={isFavoriteButtonDisabled}
-                  aria-label={effectiveIsFavorited ? t('fanmarkDetails.unfavorite') : t('fanmarkDetails.favorite')}
-                >
-                  <Heart className={`h-4 w-4 ${effectiveIsFavorited ? 'fill-current' : ''}`} />
-                </Button>
-              )}
-            </div>
-          ) : null
-        }
+        meta={inputComponent ? undefined : inputStatus}
         className={`${getSearchAreaBackgroundClass} ${inputComponent ? "fanmark-fusion-panel" : ""}`}
       >
         {/* ファンマ入力グループ - 入力と便利ツールが一体 */}
-        <div className="mt-6 mb-10 space-y-6">
+        <div className={inputComponent ? "fusion-input-group" : "mt-6 mb-10 space-y-6"}>
           <FanmarkSearch
             inputComponent={inputComponent}
+            inputUtilities={inputComponent ? renderInputUtilities : undefined}
+            inputStatus={inputComponent ? inputStatus : undefined}
             onSignupPrompt={() => onRequireAuth?.('')}
             statusVariant={user ? 'authenticated' : 'public'}
             showRecent={false}
@@ -535,84 +616,7 @@ export const FanmarkAcquisition = ({
           />
 
           {/* 便利ツール - レスポンシブ間隔 */}
-          <div className="flex justify-center">
-            <EmojiInputUtilities
-              disabled={false}
-              hasValue={!!query}
-              onPaste={async () => {
-                try {
-                  if (!navigator.clipboard) {
-                    toast({
-                      title: t('common.error'),
-                      description: t('common.clipboardNotSupported'),
-                      variant: 'destructive',
-                    });
-                    return false;
-                  }
-
-                  const clipboardText = await navigator.clipboard.readText();
-                  if (!clipboardText.trim()) {
-                    toast({
-                      title: t('common.clipboardEmptyTitle'),
-                      description: t('common.clipboardEmptyBody'),
-                      variant: 'warning',
-                    });
-                    return true;
-                  }
-
-                  const extracted = extractEmojiString(clipboardText);
-                  if (!extracted) {
-                    toast({
-                      title: t('common.nonEmojiRejectedTitle'),
-                      description: t('common.nonEmojiRejectedBody'),
-                      variant: 'warning',
-                    });
-                    return true;
-                  }
-
-                  handleQueryChange(extracted);
-
-                  toast({
-                    title: t('common.pasteCompletedTitle'),
-                    description: t('common.pasteCompleted'),
-                  });
-                  return true;
-
-                } catch (error) {
-                  toast({
-                    title: t('common.error'),
-                    description: t('common.clipboardReadFailed'),
-                    variant: 'destructive',
-                  });
-                  return false;
-                }
-              }}
-                onDirectInput={(input: string) => {
-                if (!input.trim()) return;
-
-                const extracted = extractEmojiString(input);
-                if (!extracted) {
-                  toast({
-                    title: t('common.nonEmojiRejectedTitle'),
-                    description: t('common.nonEmojiRejectedBody'),
-                    variant: 'warning',
-                  });
-                  return;
-                }
-
-                handleQueryChange(extracted);
-
-                toast({
-                  title: t('common.inputCompletedTitle'),
-                  description: t('common.inputCompleted'),
-                });
-              }}
-                onClear={() => {
-                clearQuery();
-              }}
-                value={query}
-              />
-          </div>
+          {!inputComponent && <div className="flex justify-center">{renderInputUtilities()}</div>}
         </div>
       </FanmarkSearchPanel>
 
@@ -621,7 +625,7 @@ export const FanmarkAcquisition = ({
         <TooltipProvider>
           <div className="flex w-full items-center justify-center">
             {/* 取得ボタンを relative で囲み、右側のボタンを絶対配置 */}
-            <div className="relative">
+            <div className="relative fusion-acquire-main">
               <Button
                 size="default"
                 className="rounded-full gap-2 px-6 text-sm font-semibold shadow-md hover:shadow-lg transition-colors duration-200"
@@ -636,7 +640,7 @@ export const FanmarkAcquisition = ({
                   : t('dashboard.acquireLoginButton')}
               </Button>
               {/* 右側のボタングループ - 取得ボタンの右隣に絶対配置 */}
-              <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 flex items-center gap-2">
+              <div className="fusion-acquire-secondary absolute left-full top-1/2 -translate-y-1/2 ml-3 flex items-center gap-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button

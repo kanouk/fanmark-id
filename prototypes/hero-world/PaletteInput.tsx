@@ -17,7 +17,7 @@ const loadHistory = (): string[] => {
 type Mode = 'insert' | 'replace';
 type Snapshot = { selected: string[]; cursor: number; mode: Mode };
 
-export function PaletteInput({value, onChange, onSearchPerformed, disabled = false}: EmojiInputProps) {
+export function PaletteInput({value, onChange, onSearchPerformed, disabled = false, utilities, selectionStatus}: EmojiInputProps) {
   const { language } = useTranslation();
   const selected = useMemo(() => segmentEmojiSequence(canonicalizeEmojiString(value)).slice(0, 5).map(emoji => findEmoji(emoji)?.id ?? `literal:${emoji}`), [value]);
   const entryFor = (id: string): EmojiEntry | undefined => byId.get(id) ?? (id?.startsWith('literal:') ? {id, emoji:id.slice(8), name:id.slice(8), ja:id.slice(8), category:'', subcategory:'',words:[],variant:false} : undefined);
@@ -63,7 +63,6 @@ export function PaletteInput({value, onChange, onSearchPerformed, disabled = fal
   const jevIds = new Set(jev.ids);
   const searching = Boolean(query.trim() || browse || category);
   const shown = searching ? results.slice(0, limit) : recommended;
-  const examples = language === 'ja' ? ['美容室', 'カフェ', '控えめに応援', '宇宙'] : ['hair salon', 'coffee', 'support', 'space'];
 
   useEffect(() => { setLimit(64); }, [query, category, variants]);
   useEffect(() => { if (!notice)return;const timeout=window.setTimeout(()=>setNotice(''),2500);return()=>clearTimeout(timeout); }, [notice]);
@@ -139,9 +138,6 @@ export function PaletteInput({value, onChange, onSearchPerformed, disabled = fal
     try { await navigator.clipboard.writeText(sequence); setCopied(true); setNotice(t('コピーしました', 'Copied')); }
     catch { setNotice(t('コピーできませんでした。下の絵文字列を選択してコピーしてください。', 'Copy failed. Select and copy the emoji text below.')); }
   }
-  function applyExample(keyword: string) {
-    setQuery(keyword); setCategory(''); setBrowse(false); searchRef.current?.focus();
-  }
 
   function drop(event: React.DragEvent<HTMLButtonElement>, index:number) {
     event.preventDefault();
@@ -184,13 +180,19 @@ export function PaletteInput({value, onChange, onSearchPerformed, disabled = fal
 
   return <div className="fanmark-palette">
     <div className="integrated-editor">
-      <div className="card-top"><span className="pill"><Sparkles size={13}/>{t('あなただけの組み合わせ', 'A combination that’s yours')}</span><span className="counter">{selected.length}<span> / 5</span></span></div>
-      <p className="muted">{t('絵文字は5つまで。名前や気分から探せます。', 'Up to five emojis. Search by name or feeling.')}</p>
+      <div className="editor-topline"><p>{t('＋から絵文字を選ぶ', 'Choose emojis with +')}</p><span className="counter" aria-label={t(`${selected.length}個選択済み、最大5個`, `${selected.length} of 5 emojis selected`)}>{selected.length}<span> / 5</span></span></div>
       {selection(false)}
-      <div className="url-preview"><span>fanmark.id /</span><span className="url-emoji">{sequence || '…'}</span></div>
-      <div className="editor-actions"><button className="undo-button" disabled={!undo || disabled} onClick={undoChange}><Undo2 size={13}/>{t('ひとつ戻す', 'Undo')}</button><button className="copy-button" disabled={!selected.length} onClick={copy}>{copied ? <Check size={16}/> : <Copy size={16}/>} {copied ? t('コピーしました', 'Copied') : t('入力をコピー', 'Copy emojis')}</button></div>
-      <div className="sample-divider"/><div className="try-label">{t('こんな言葉で探してみる', 'A little inspiration')}</div>
-      <div className="example-cards">{[{query:examples[0],emoji:'💈',color:'pink'},{query:examples[1],emoji:'☕',color:'cream'},{query:examples[3],emoji:'🪐',color:'mint'}].map(item=><button disabled={disabled} className={`example-card ${item.color}`} key={item.query} onClick={()=>launch(selected.length,'insert',item.query)}><span>{item.emoji}</span><span>{item.query}</span><ArrowRight size={14}/></button>)}</div>
+      <div className="input-toolbar" role="group" aria-label={t('入力の操作', 'Edit your selection')}>
+        <div className="input-utilities">{utilities?.(clearSelection)}</div>
+        <button className="undo-button" disabled={!undo || disabled} onClick={undoChange}><Undo2 size={15}/>{t('元に戻す', 'Undo')}</button>
+      </div>
+      <div className={`address-preview ${sequence ? 'has-selection' : ''}`}>
+        <div className="address-topline"><span className="address-label">{t('アドレスのプレビュー', 'Address preview')}</span><div className="address-status">{selectionStatus}</div></div>
+        <div className="address-body"><div className="address-content">
+          <div className="url-preview"><span className="address-domain">fanmark.id<span className="address-slash">/</span></span>{sequence ? <span className="url-emoji">{sequence}</span> : <span className="address-placeholder">{t('絵文字を選ぶと、ここに表示', 'Your emojis will appear here')}</span>}</div>
+        </div>
+        <button className="copy-button" disabled={!selected.length} onClick={copy} aria-label={t('絵文字をコピー', 'Copy emojis')} title={t('絵文字の組み合わせをコピー', 'Copy the emoji combination')}>{copied ? <Check size={17}/> : <Copy size={17}/>}<span>{copied ? t('コピー済み', 'Copied') : t('絵文字をコピー', 'Copy emojis')}</span></button></div>
+      </div>
     </div>
     <div className="sr-only" role="status" aria-live="polite">{notice}</div>
     {!open && notice && <div className="page-notice" role="status">{notice}</div>}
@@ -203,8 +205,7 @@ export function PaletteInput({value, onChange, onSearchPerformed, disabled = fal
           <div className="palette-head"><div className="palette-symbol"><Sparkles size={21} /></div><div><Dialog.Title>{t('ぴったりの絵文字を。', 'Find the right emoji.')}</Dialog.Title><Dialog.Description>{t('名前でも、気分でも。思いつく言葉でどうぞ。', 'A name, a feeling, or whatever comes to mind.')}</Dialog.Description></div><Dialog.Close className="icon-button close" aria-label={t('パレットを閉じる', 'Close palette')}><X size={19} /></Dialog.Close></div>
           <div className="search-area">
             <div className="search-box"><Search size={20} /><input ref={searchRef} value={query} onChange={event => setQuery(event.target.value)} onCompositionStart={() => { composing.current = true; setIsComposing(true); }} onCompositionEnd={() => { composing.current = false; setIsComposing(false); }} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); if (composing.current || event.nativeEvent.isComposing || event.keyCode === 229) return; searchRef.current?.closest('.palette')?.querySelector<HTMLButtonElement>('.results-grid .emoji-tile:not(:disabled)')?.focus(); } }} placeholder={t('例：美容室、春っぽい、coffee', 'Try hair salon, spring, or カフェ')} aria-label={t('絵文字を検索', 'Search emojis')} autoComplete="off" autoCorrect="off" spellCheck={false} />{query ? <button className="icon-button" onClick={() => { setQuery(''); searchRef.current?.focus(); }} aria-label={t('検索語をクリア', 'Clear search')}><X size={17} /></button> : <span className="search-hint">JA / EN</span>}</div>
-            <div className="query-chips">{examples.map(word => <button key={word} className={query === word ? 'active' : ''} onClick={() => applyExample(word)}>{word}</button>)}</div>
-            <div className="jev-controls"><label><input type="checkbox" checked={jevEnabled} onChange={event => setJevEnabled(event.target.checked)} /><Sparkles size={12} />{t('Jevで候補を探す', 'Find suggestions with Jev')}</label><span className={`jev-status ${jev.status}`} role="status">{jev.status === 'loading' ? <><Loader2 size={12} className="spin" />{t('候補を探しています', 'Finding suggestions')}</> : jev.status === 'ready' ? <>{jev.ids.length ? t('Jev反映済み', 'Jev suggestions ready') : t('Jevの追加候補なし', 'No extra Jev suggestions')} · {jev.cached ? t('キャッシュ', 'cached') : `${(jev.elapsedMs! / 1000).toFixed(2)}s`}</> : jev.status === 'error' ? t(jev.error === 'rate_limit' || jev.error === 'provider_rate_limit' ? '混雑中・辞書候補を表示' : 'Jevに接続できません・辞書候補を表示', 'Jev unavailable · dictionary results') : !jevEnabled ? t('辞書のみで検索', 'Dictionary only') : [...query.trim()].length > 160 ? t('Jevは160文字まで', 'Jev supports up to 160 characters') : isComposing ? t('変換確定後に検索', 'Waiting for composition') : t('2文字以上で検索', 'Type at least 2 characters')}</span></div>
+              <div className="jev-controls"><label><input type="checkbox" checked={jevEnabled} onChange={event => setJevEnabled(event.target.checked)} /><Sparkles size={12} />{t('Jevで候補を探す', 'Find suggestions with Jev')}</label><span className={`jev-status ${jev.status}`} role="status">{jev.status === 'loading' ? <><Loader2 size={12} className="spin" />{t('候補を探しています', 'Finding suggestions')}</> : jev.status === 'ready' ? <>{jev.ids.length ? t('Jev反映済み', 'Jev suggestions ready') : t('Jevの追加候補なし', 'No extra Jev suggestions')} · {jev.cached ? t('キャッシュ', 'cached') : `${(jev.elapsedMs! / 1000).toFixed(2)}s`}</> : jev.status === 'error' ? t(jev.error === 'rate_limit' || jev.error === 'provider_rate_limit' ? '混雑中・辞書候補を表示' : 'Jevに接続できません・辞書候補を表示', 'Jev unavailable · dictionary results') : !jevEnabled ? t('辞書のみで検索', 'Dictionary only') : [...query.trim()].length > 160 ? t('Jevは160文字まで', 'Jev supports up to 160 characters') : isComposing ? t('変換確定後に検索', 'Waiting for composition') : t('2文字以上で検索', 'Type at least 2 characters')}</span></div>
             {jevEnabled && <p className="jev-disclosure">{t('検索語をTypeSafe AI（Jev）へ送信します。履歴・入力済み絵文字は送信しません。', 'Search text is sent to TypeSafe AI (Jev). History and selected emojis stay here.')}</p>}
           </div>
           <section className="selected-area" aria-label={t('入力中の絵文字', 'Your selection')}>

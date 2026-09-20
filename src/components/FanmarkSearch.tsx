@@ -13,6 +13,8 @@ import { FiAlertTriangle, FiInfo } from 'react-icons/fi';
 import { canonicalizeEmojiString, segmentEmojiSequence } from '@/lib/emojiConversion';
 
 interface FanmarkSearchProps {
+  inputUtilities?: (onClear: () => void) => React.ReactNode;
+  inputStatus?: React.ReactNode;
   inputComponent?: React.ComponentType<import("@/components/EmojiInput").EmojiInputProps>;
   onSignupPrompt?: () => void;
   onSearchPerformed?: (searchQuery: string) => void;
@@ -27,6 +29,8 @@ interface FanmarkSearchProps {
 
 const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
   onSignupPrompt,
+  inputUtilities,
+  inputStatus,
   inputComponent: InputComponent = EmojiInput,
   onSearchPerformed,
   onResultChange,
@@ -99,6 +103,8 @@ const FanmarkSearch: React.FC<FanmarkSearchProps> = ({
       <div className="relative overflow-visible">
         <div>
           <InputComponent
+            utilities={inputUtilities}
+            selectionStatus={inputStatus}
             value={query}
             onChange={(value) => {
               onQueryChange(value);
