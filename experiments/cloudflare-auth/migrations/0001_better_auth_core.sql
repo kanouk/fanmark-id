@@ -69,17 +69,72 @@ create table "adminRole" (
 
 create index "adminRole_role_idx" on "adminRole" ("role");
 
+create table "mfaGeneration" (
+  "id" integer not null primary key check ("id" = 1),
+  "generation" integer not null default 0
+);
+
 create table "mfaAssurance" (
   "id" text not null primary key,
   "userId" text not null references "user" ("id") on delete cascade,
   "sessionId" text not null unique references "session" ("id") on delete cascade,
   "factorId" text not null references "twoFactor" ("id") on delete cascade,
+  "generation" integer not null,
   "verifiedAt" date not null,
   "expiresAt" date not null
 );
 
 create index "mfaAssurance_userId_idx" on "mfaAssurance" ("userId");
 create index "mfaAssurance_factorId_idx" on "mfaAssurance" ("factorId");
+
+insert into "mfaGeneration" ("id", "generation") values (1, 0);
+
+create trigger "mfa_generation_factor_insert"
+after insert on "twoFactor"
+begin
+  update "mfaGeneration" set "generation" = "generation" + 1 where "id" = 1;
+  delete from "mfaAssurance" where "userId" = new."userId";
+end;
+
+create trigger "mfa_generation_factor_delete"
+after delete on "twoFactor"
+begin
+  update "mfaGeneration" set "generation" = "generation" + 1 where "id" = 1;
+  delete from "mfaAssurance" where "userId" = old."userId";
+end;
+
+create trigger "mfa_generation_factor_secret_update"
+after update of "secret" on "twoFactor"
+when old."userId" = new."userId" and old."secret" is not new."secret"
+begin
+  update "mfaGeneration" set "generation" = "generation" + 1 where "id" = 1;
+  delete from "mfaAssurance" where "userId" = new."userId";
+end;
+
+create trigger "mfa_generation_factor_user_update"
+after update of "userId" on "twoFactor"
+when old."userId" is not new."userId"
+begin
+  update "mfaGeneration" set "generation" = "generation" + 1 where "id" = 1;
+  delete from "mfaAssurance" where "userId" = old."userId";
+  delete from "mfaAssurance" where "userId" = new."userId";
+end;
+
+create trigger "mfa_generation_factor_unverify"
+after update of "verified" on "twoFactor"
+when old."verified" = 1 and new."verified" = 0
+begin
+  update "mfaGeneration" set "generation" = "generation" + 1 where "id" = 1;
+  delete from "mfaAssurance" where "userId" = new."userId";
+end;
+
+create trigger "mfa_generation_user_disable"
+after update of "twoFactorEnabled" on "user"
+when old."twoFactorEnabled" = 1 and new."twoFactorEnabled" = 0
+begin
+  update "mfaGeneration" set "generation" = "generation" + 1 where "id" = 1;
+  delete from "mfaAssurance" where "userId" = new."id";
+end;
 
 insert into "user" ("id", "name", "email", "emailVerified", "image", "createdAt", "updatedAt")
 values (

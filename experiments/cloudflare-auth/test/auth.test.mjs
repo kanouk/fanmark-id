@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { env, exports } from "cloudflare:workers";
 import schemaSql from "../migrations/0001_better_auth_core.sql?raw";
+import { captureMfaGeneration, createAuth } from "../src/index.mjs";
 
 const userId = "11111111-1111-4111-8111-111111111111";
 const mfaUserId = "33333333-3333-4333-8333-333333333333";
@@ -48,6 +49,56 @@ function cookieFromSetCookie(response, name) {
   );
   expect(cookie).toBeTruthy();
   return cookie;
+}
+
+async function mfaGeneration() {
+  const row = await env.AUTH_DB.prepare(
+    'select "generation" from "mfaGeneration" where "id" = 1',
+  ).first();
+  return Number(row?.generation);
+}
+
+function createAssuranceBarrier() {
+  let reachedResolve;
+  let releaseResolve;
+  const reached = new Promise((resolve) => {
+    reachedResolve = resolve;
+  });
+  const released = new Promise((resolve) => {
+    releaseResolve = resolve;
+  });
+  return {
+    beforeInsert(details) {
+      reachedResolve(details);
+      return released;
+    },
+    waitUntilReached() {
+      return reached;
+    },
+    release() {
+      releaseResolve();
+    },
+  };
+}
+
+async function requestWithAuthState(path, init, requestState, assuranceBarrier = null) {
+  const requestHeaders = new Headers(init?.headers);
+  requestHeaders.set("Origin", "http://example.test");
+  const auth = createAuth(env, [], requestState, assuranceBarrier);
+  return auth.handler(
+    new Request(`http://example.test${path}`, {
+      ...init,
+      headers: requestHeaders,
+    }),
+  );
+}
+
+async function requestWithAssuranceBarrier(path, init, barrier) {
+  const requestState = await captureMfaGeneration(env);
+  if (requestState === null) {
+    throw new Error("synthetic MFA generation row is unavailable");
+  }
+  return requestWithAuthState(path, init, requestState, barrier);
 }
 
 const base32Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
@@ -110,13 +161,54 @@ async function guaranteedWrongTotp(base32Secret) {
   throw new Error("could not choose a wrong TOTP fixture");
 }
 
+function splitMigrationStatements(sql) {
+  const statements = [];
+  let start = 0;
+  let singleQuoted = false;
+  let doubleQuoted = false;
+
+  for (let index = 0; index < sql.length; index += 1) {
+    const character = sql[index];
+    const next = sql[index + 1];
+    if (character === "'" && !doubleQuoted) {
+      if (singleQuoted && next === "'") {
+        index += 1;
+      } else {
+        singleQuoted = !singleQuoted;
+      }
+      continue;
+    }
+    if (character === '"' && !singleQuoted) {
+      if (doubleQuoted && next === '"') {
+        index += 1;
+      } else {
+        doubleQuoted = !doubleQuoted;
+      }
+      continue;
+    }
+    if (character !== ";" || singleQuoted || doubleQuoted) continue;
+
+    const candidate = sql.slice(start, index).trim();
+    const triggerStatement = /^create\s+trigger\b/i.test(candidate);
+    if (triggerStatement && !/\bend\s*$/i.test(candidate)) continue;
+    if (candidate) statements.push(candidate);
+    start = index + 1;
+  }
+
+  const finalStatement = sql.slice(start).trim();
+  if (finalStatement) statements.push(finalStatement);
+  return statements;
+}
+
 beforeAll(async () => {
-  const statements = schemaSql
-    .split(/;\s*(?:\r?\n|$)/)
-    .map((statement) => statement.trim())
-    .filter(Boolean)
-    .map((statement) => env.AUTH_DB.prepare(statement));
-  await env.AUTH_DB.batch(statements);
+  // Prepare each complete statement. Trigger bodies contain internal
+  // semicolons, so the parser keeps each CREATE TRIGGER intact instead of
+  // sending incomplete fragments to D1.
+  await env.AUTH_DB.batch(
+    splitMigrationStatements(schemaSql).map((statement) =>
+      env.AUTH_DB.prepare(statement),
+    ),
+  );
 });
 
 describe("Better Auth on a local Workers + D1 runtime", () => {
@@ -234,6 +326,8 @@ describe("Better Auth on a local Workers + D1 runtime", () => {
     const enrollmentUri = new URL(enableBody.totpURI);
     const base32Secret = enrollmentUri.searchParams.get("secret");
     expect(base32Secret).toBeTruthy();
+    const generationAfterEnable = await mfaGeneration();
+    expect(Number.isInteger(generationAfterEnable)).toBe(true);
 
     const enrollmentCode = await totpCode(base32Secret);
     const enrollmentVerify = await request("/api/auth/two-factor/verify-totp", {
@@ -245,6 +339,7 @@ describe("Better Auth on a local Workers + D1 runtime", () => {
       body: JSON.stringify({ code: enrollmentCode }),
     });
     expect(enrollmentVerify.status).toBe(200);
+    expect(await mfaGeneration()).toBe(generationAfterEnable);
     const enrollmentVerifyBody = await enrollmentVerify.json();
     expect(enrollmentVerifyBody.user.id).toBe(mfaUserId);
     const authenticatedCookie = cookieFromSetCookie(
@@ -317,6 +412,7 @@ describe("Better Auth on a local Workers + D1 runtime", () => {
       body: JSON.stringify({ code: wrongCode }),
     });
     expect(wrongVerify.status).toBe(401);
+    expect(await mfaGeneration()).toBe(generationAfterEnable);
 
     const correctCode = await totpCode(base32Secret);
     const correctVerify = await request("/api/auth/two-factor/verify-totp", {
@@ -461,6 +557,16 @@ describe("Better Auth on a local Workers + D1 runtime", () => {
     const enrolledAdminSessionBody = await enrolledAdminSession.json();
     expect(adminAssurance?.sessionId).toBe(enrolledAdminSessionBody.session.id);
     expect(adminAssurance?.factorId).toBe(adminFactor.id);
+    const storedSessionExpiry = await env.AUTH_DB.prepare(
+      'select typeof("expiresAt") as storageType, "expiresAt" from "session" where "id" = ? limit 1',
+    )
+      .bind(enrolledAdminSessionBody.session.id)
+      .first();
+    expect(storedSessionExpiry?.storageType).toBe("text");
+    expect(Number.isFinite(new Date(storedSessionExpiry?.expiresAt).getTime())).toBe(true);
+    expect(storedSessionExpiry?.expiresAt).toBe(
+      new Date(storedSessionExpiry?.expiresAt).toISOString(),
+    );
 
     const adminSignOut = await request("/api/auth/sign-out", {
       method: "POST",
@@ -522,6 +628,217 @@ describe("Better Auth on a local Workers + D1 runtime", () => {
     expect(assuredOAuthRoute.status).toBe(200);
     expect((await assuredOAuthRoute.json()).userId).toBe(adminUserId);
 
+    const unrelatedFactor = await env.AUTH_DB.prepare(
+      'select "id", "secret", "verified" from "twoFactor" where "userId" = ? limit 1',
+    )
+      .bind(mfaUserId)
+      .first();
+    expect(unrelatedFactor?.verified).toBe(1);
+    const generationBeforeUnrelatedMutation = await mfaGeneration();
+    await env.AUTH_DB.prepare(
+      'update "twoFactor" set "secret" = ? where "id" = ?',
+    )
+      .bind("synthetic-unrelated-reset", unrelatedFactor.id)
+      .run();
+    expect(await mfaGeneration()).toBe(generationBeforeUnrelatedMutation + 1);
+    const routeDuringUnrelatedMutation = await request("/admin/protected", {
+      headers: { Cookie: oauthEquivalentCookie },
+    });
+    expect(routeDuringUnrelatedMutation.status).toBe(200);
+    await env.AUTH_DB.prepare(
+      'update "twoFactor" set "secret" = ? where "id" = ?',
+    )
+      .bind(unrelatedFactor.secret, unrelatedFactor.id)
+      .run();
+    expect(await mfaGeneration()).toBe(generationBeforeUnrelatedMutation + 2);
+
+    const missingGenerationSession = await fixtureRequest(
+      "/api/auth/__fixture/oauth-equivalent-session",
+      { method: "POST" },
+    );
+    expect(missingGenerationSession.status).toBe(200);
+    const missingGenerationCookie = cookieFromSetCookie(
+      missingGenerationSession,
+      "better-auth.session_token",
+    );
+    expect(
+      (await request("/admin/protected", {
+        headers: { Cookie: missingGenerationCookie },
+      })).status,
+    ).toBe(403);
+    const missingGenerationVerify = await requestWithAuthState(
+      "/api/auth/two-factor/verify-totp",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: missingGenerationCookie,
+        },
+        body: JSON.stringify({ code: await totpCode(adminSecret) }),
+      },
+      null,
+    );
+    expect(missingGenerationVerify.status).toBe(200);
+    const missingGenerationSessionResponse = await request(
+      "/api/auth/get-session",
+      { headers: { Cookie: missingGenerationCookie } },
+    );
+    expect(missingGenerationSessionResponse.status).toBe(200);
+    const missingGenerationSessionBody =
+      await missingGenerationSessionResponse.json();
+    const missingGenerationAssurance = await env.AUTH_DB.prepare(
+      'select count(*) as count from "mfaAssurance" where "sessionId" = ?',
+    )
+      .bind(missingGenerationSessionBody.session.id)
+      .first();
+    expect(Number(missingGenerationAssurance?.count)).toBe(0);
+    expect(
+      (await request("/admin/protected", {
+        headers: { Cookie: missingGenerationCookie },
+      })).status,
+    ).toBe(403);
+
+    const barrierSession = await fixtureRequest(
+      "/api/auth/__fixture/oauth-equivalent-session",
+      { method: "POST" },
+    );
+    expect(barrierSession.status).toBe(200);
+    const barrierCookie = cookieFromSetCookie(
+      barrierSession,
+      "better-auth.session_token",
+    );
+    const factorBeforeReset = await env.AUTH_DB.prepare(
+      'select "id", "secret", "verified" from "twoFactor" where "userId" = ? limit 1',
+    )
+      .bind(adminUserId)
+      .first();
+    expect(factorBeforeReset?.verified).toBe(1);
+    expect(typeof factorBeforeReset?.secret).toBe("string");
+    const generationBeforeReset = await mfaGeneration();
+    const assuranceBarrier = createAssuranceBarrier();
+    const racedVerify = requestWithAssuranceBarrier(
+      "/api/auth/two-factor/verify-totp",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: barrierCookie,
+        },
+        body: JSON.stringify({ code: await totpCode(adminSecret) }),
+      },
+      assuranceBarrier,
+    );
+    const barrierDetails = await assuranceBarrier.waitUntilReached();
+    expect(barrierDetails.generation).toBe(generationBeforeReset);
+
+    await env.AUTH_DB.prepare(
+      'update "twoFactor" set "secret" = ? where "id" = ?',
+    )
+      .bind("synthetic-reset-before-assurance", factorBeforeReset.id)
+      .run();
+    expect(await mfaGeneration()).toBe(generationBeforeReset + 1);
+    const resetAssuranceRows = await env.AUTH_DB.prepare(
+      'select count(*) as count from "mfaAssurance" where "userId" = ?',
+    )
+      .bind(adminUserId)
+      .first();
+    expect(Number(resetAssuranceRows?.count)).toBe(0);
+
+    assuranceBarrier.release();
+    const racedVerifyResponse = await racedVerify;
+    expect(racedVerifyResponse.status).toBe(200);
+    const staleAfterReset = await request("/admin/protected", {
+      headers: { Cookie: barrierCookie },
+    });
+    expect(staleAfterReset.status).toBe(403);
+
+    await env.AUTH_DB.prepare(
+      'update "twoFactor" set "secret" = ? where "id" = ?',
+    )
+      .bind(factorBeforeReset.secret, factorBeforeReset.id)
+      .run();
+    expect(await mfaGeneration()).toBe(generationBeforeReset + 2);
+
+    const freshAfterReset = await request("/api/auth/two-factor/verify-totp", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: barrierCookie,
+      },
+      body: JSON.stringify({ code: await totpCode(adminSecret) }),
+    });
+    expect(freshAfterReset.status).toBe(200);
+    const freshAfterResetRoute = await request("/admin/protected", {
+      headers: { Cookie: barrierCookie },
+    });
+    expect(freshAfterResetRoute.status).toBe(200);
+
+    const unrelatedBarrierSession = await fixtureRequest(
+      "/api/auth/__fixture/oauth-equivalent-session",
+      { method: "POST" },
+    );
+    expect(unrelatedBarrierSession.status).toBe(200);
+    const unrelatedBarrierCookie = cookieFromSetCookie(
+      unrelatedBarrierSession,
+      "better-auth.session_token",
+    );
+    const generationBeforeUnrelatedInFlight = await mfaGeneration();
+    const unrelatedAssuranceBarrier = createAssuranceBarrier();
+    const racedUnrelatedVerify = requestWithAssuranceBarrier(
+      "/api/auth/two-factor/verify-totp",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: unrelatedBarrierCookie,
+        },
+        body: JSON.stringify({ code: await totpCode(adminSecret) }),
+      },
+      unrelatedAssuranceBarrier,
+    );
+    const unrelatedBarrierDetails =
+      await unrelatedAssuranceBarrier.waitUntilReached();
+    expect(unrelatedBarrierDetails.generation).toBe(
+      generationBeforeUnrelatedInFlight,
+    );
+    await env.AUTH_DB.prepare(
+      'update "twoFactor" set "secret" = ? where "id" = ?',
+    )
+      .bind("synthetic-unrelated-inflight-reset", unrelatedFactor.id)
+      .run();
+    expect(await mfaGeneration()).toBe(generationBeforeUnrelatedInFlight + 1);
+    unrelatedAssuranceBarrier.release();
+    const racedUnrelatedResponse = await racedUnrelatedVerify;
+    expect(racedUnrelatedResponse.status).toBe(200);
+    expect(
+      (await request("/admin/protected", {
+        headers: { Cookie: unrelatedBarrierCookie },
+      })).status,
+    ).toBe(403);
+    await env.AUTH_DB.prepare(
+      'update "twoFactor" set "secret" = ? where "id" = ?',
+    )
+      .bind(unrelatedFactor.secret, unrelatedFactor.id)
+      .run();
+    expect(await mfaGeneration()).toBe(generationBeforeUnrelatedInFlight + 2);
+    const retryAfterUnrelatedMutation = await request(
+      "/api/auth/two-factor/verify-totp",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: unrelatedBarrierCookie,
+        },
+        body: JSON.stringify({ code: await totpCode(adminSecret) }),
+      },
+    );
+    expect(retryAfterUnrelatedMutation.status).toBe(200);
+    expect(
+      (await request("/admin/protected", {
+        headers: { Cookie: unrelatedBarrierCookie },
+      })).status,
+    ).toBe(200);
+
     const changedSession = await fixtureRequest(
       "/api/auth/__fixture/oauth-equivalent-session",
       { method: "POST" },
@@ -553,12 +870,72 @@ describe("Better Auth on a local Workers + D1 runtime", () => {
       headers: { Cookie: disabledAdminCookie },
     });
     expect(disabledFactorAdminRoute.status).toBe(403);
+    const staleReplacedFactorRoute = await request("/admin/protected", {
+      headers: { Cookie: barrierCookie },
+    });
+    expect(staleReplacedFactorRoute.status).toBe(403);
     const assuranceRows = await env.AUTH_DB.prepare(
       'select count(*) as count from "mfaAssurance" where "userId" = ?',
     )
       .bind(adminUserId)
       .first();
     expect(Number(assuranceRows?.count)).toBe(0);
+
+    const replacementEnable = await request("/api/auth/two-factor/enable", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: disabledAdminCookie,
+      },
+      body: JSON.stringify({ password: adminPassword, method: "totp" }),
+    });
+    expect(replacementEnable.status).toBe(200);
+    const replacementBody = await replacementEnable.json();
+    const replacementSecret = new URL(replacementBody.totpURI).searchParams.get(
+      "secret",
+    );
+    expect(replacementSecret).toBeTruthy();
+    const replacementFactor = await env.AUTH_DB.prepare(
+      'select "id", "verified" from "twoFactor" where "userId" = ? limit 1',
+    )
+      .bind(adminUserId)
+      .first();
+    expect(replacementFactor?.verified).toBe(0);
+    expect(replacementFactor?.id).not.toBe(adminFactor.id);
+
+    const replacementVerify = await request(
+      "/api/auth/two-factor/verify-totp",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: disabledAdminCookie,
+        },
+        body: JSON.stringify({ code: await totpCode(replacementSecret) }),
+      },
+    );
+    expect(replacementVerify.status).toBe(200);
+    const replacementAdminCookie = cookieFromSetCookie(
+      replacementVerify,
+      "better-auth.session_token",
+    );
+    const replacementAdminRoute = await request("/admin/protected", {
+      headers: { Cookie: replacementAdminCookie },
+    });
+    expect(replacementAdminRoute.status).toBe(200);
+    const replacementAssurance = await env.AUTH_DB.prepare(
+      'select "sessionId", "factorId" from "mfaAssurance" where "userId" = ? limit 1',
+    )
+      .bind(adminUserId)
+      .first();
+    const replacementSession = await request("/api/auth/get-session", {
+      headers: { Cookie: replacementAdminCookie },
+    });
+    expect(replacementSession.status).toBe(200);
+    expect(replacementAssurance?.sessionId).toBe(
+      (await replacementSession.json()).session.id,
+    );
+    expect(replacementAssurance?.factorId).toBe(replacementFactor.id);
 
     const oauthSignOut = await request("/api/auth/sign-out", {
       method: "POST",
@@ -573,9 +950,21 @@ describe("Better Auth on a local Workers + D1 runtime", () => {
       method: "POST",
       headers: { Cookie: changedSessionCookie },
     });
-    await request("/api/auth/sign-out", {
+    const replacementSignOut = await request("/api/auth/sign-out", {
       method: "POST",
-      headers: { Cookie: disabledAdminCookie },
+      headers: { Cookie: replacementAdminCookie },
     });
+    expect(replacementSignOut.status).toBe(200);
+    expect(
+      (await request("/admin/protected", {
+        headers: { Cookie: replacementAdminCookie },
+      })).status,
+    ).toBe(401);
+    const postReplacementSignOutAssurance = await env.AUTH_DB.prepare(
+      'select count(*) as count from "mfaAssurance" where "userId" = ?',
+    )
+      .bind(adminUserId)
+      .first();
+    expect(Number(postReplacementSignOutAssurance?.count)).toBe(0);
   });
 });

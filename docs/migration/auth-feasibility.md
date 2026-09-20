@@ -66,9 +66,9 @@ user はテスト専用の架空値で、OAuth provider の callback や credent
 ものではない。
 
 `npm ci && npm test` の直近の実行では 6 tests passed となった。4 並列 sign-in の
-ローカル wall time は `302 ms`、最初の cold sign-in は `4.265 s` だった。この時間は
-workerd のテスト wall time であり、Cloudflare が請求する CPU time の測定値では
-ない。テストの主張範囲は synthetic data とローカル runtime に限る。
+ローカル wall time は `296 ms` だった。この時間は workerd のテスト wall time であり、
+Cloudflare が請求する CPU time の測定値ではない。テストの主張範囲は synthetic data
+とローカル runtime に限る。
 
 ## 検証した範囲
 
@@ -205,11 +205,35 @@ OAuth hook の完全な移行を証明しない。
 
 factor ID を assurance に保存し、current factor と照合することで、通常の
 disable/再 enrollment で factor row が置き換わったとき旧 factor の proof を再利用
-できない形にした。ただし、factor reset と verify hook の間を本番 D1 で原子的に
-直列化できることはこの local proof で測っていない。特に同じ factor row を更新する
-reset、TOTP検証後・factor読込前の置換、または factor を読み取った直後の concurrent disable が stale assurance を
-書き込まないことは未証明であり、transaction/locking と race test を staging の
-必須 gate とする。hook の削除だけで reset race が解決したとは扱わない。
+できない形にした。さらに、`mfaGeneration(id = 1, generation)` という D1 の singleton
+行を追加した。factor の insert/delete、secret または `userId` の変更、verified の
+`1 -> 0`、user の `twoFactorEnabled` の `1 -> 0` は SQLite trigger で generation を
+増やし、その factor/user に属する assurance を削除する。失敗回数の更新と
+enrollment の `false -> true` では増やさない。
+
+Worker は `verify-totp` の handler に入る前に generation だけを一度読み取る。cookie
+を解析したり、入力 cookie から user/session を先に引いたりはしない。Better Auth の
+supported context で TOTP 成功と user/session の一致を確認した後、guard 付きの一つの
+`INSERT ... SELECT` が、同じ generation、現在の session/user、verified factor、
+enabled user、未期限切れ session を同時に確認して assurance を保存する。D1 の SQLite
+adapter がこの proof の session expiry を ISO text として保存することは実際の row の
+`typeof(expiresAt)` と parse をテストで確認し、guard は同じ ISO 表現で比較している。
+
+test-only barrier で Better Auth の TOTP 成功後・guarded insert 前に同じ factor の
+secret を更新すると、trigger が assurance を削除し generation を増やし、verify 自体は
+`200` のままでも assurance は作られず `/admin/protected` は `403` になった。secret を
+戻した後の新しい TOTP verify は `200` で route を通った。通常の disable/delete 後に
+新しい factor を enable/verify した場合は factor ID が変わり、新しい session-bound
+assurance だけが有効になった。sign-out 後は session の cascade で route が `401` に
+戻った。
+
+singleton generation は新しい assurance の optimistic concurrency guard であり、無関係
+な user の MFA 変更が同時に起きると、新しい assurance を保守的に作らず retry を要求
+することがある。既存 assurance の admin request で global generation を比較しないため、
+無関係な user の変更で確立済み session を全体 revoke はしない。local D1 でこの順序を
+再現した証拠は得たが、remote D1 の multi-Worker concurrency、Better Auth session 作成
+と assurance 保存をまたぐ本番 transaction、実 factor reset API の運用は未検証であり、
+staging の race/trigger/load test が残る。
 
 Supabase 側は read-only aggregate で既存 factor type が TOTP だと確認できたが、
 factor の secret、recovery code、user 対応、移行可能性は確認していない。件数や
@@ -224,7 +248,7 @@ synthetic enrollment を実データ移行の証明に変えない。
 | bcrypt import | synthetic `$2b$10$` と `$2a$10$` の正しい/誤った password、session/UUID 関係。live aggregate は観測 hash を `$2a$10$` と確認 | 実 hash 内容/user 対応、CPU、成功時 rehash、失敗時の lock/rate limit |
 | UUID | synthetic user/account/session で UUID を完全一致 | `auth.users.id` と identity/account の実対応表、既存 session の扱い、export/import rehearsal |
 | Apple/Google/GitHub/Discord | 公式 docs と provider 設定項目の確認 | staging secret、実 callback、profile/email/null、link/unlink、origin/return URL |
-| MFA | synthetic user の local HTTP TOTP enrollment/challenge/verification、UUID/session 関係。admin route は role、current verified factor、session/factor-bound assurance を再検査し、OAuth 相当 session を verify 前に拒否。live aggregate は factor type を TOTP と確認 | Supabase factor secret/user 対応・移送可否、再登録、4 provider の実 callback と challenge policy、factor reset/verify race の原子性、staging admin authorization |
+| MFA | synthetic user の local HTTP TOTP enrollment/challenge/verification、UUID/session 関係。admin route は role、current verified factor、session/factor-bound assurance を再検査し、OAuth 相当 session を verify 前に拒否。MFA mutation generation と guarded assurance insert を実 D1 barrier で検証し、同じ factor secret reset、factor replacement、sign-out 後の stale assurance を拒否。live aggregate は factor type を TOTP と確認 | Supabase factor secret/user 対応・移送可否、再登録、4 provider の実 callback と challenge policy、remote D1 multi-Worker concurrency、staging admin authorization |
 | CPU/concurrency | local 4 並列 sign-in が成功 | staged Worker の CPU metrics、plan/limit、D1 concurrency、rate limit、ピーク負荷 |
 
 これらの gate を通る前に本番 migration、旧 Auth の停止、OAuth provider の
