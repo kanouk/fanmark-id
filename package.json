@@ -19,7 +19,7 @@
     "db:status": "supabase status",
     "db:push": "supabase db push",
     "test:emoji-catalog": "node --experimental-strip-types --test scripts/test-emoji-catalog.ts scripts/test-emoji-release.ts",
-    "test:migration-data": "node --test scripts/migration/test-storage-export.mjs scripts/migration/test-value-conversion.mjs scripts/migration/test-schema-convert.mjs scripts/migration/test-row-conversion.mjs",
+    "test:migration-data": "node --test scripts/migration/test-storage-export.mjs scripts/migration/test-value-conversion.mjs scripts/migration/test-schema-convert.mjs scripts/migration/test-row-conversion.mjs scripts/migration/test-storage-r2-import.mjs",
     "test:availability": "node --experimental-strip-types --test src/lib/fanmark-availability.test.ts"
   },
   "dependencies": {

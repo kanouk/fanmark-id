@@ -80,3 +80,5 @@ Stripeの請求状態同期を追加。API版をBasilへ固定し、現在のInv
 独立接続のPostgreSQL 17.10でStripe競合5テストを追加。未commitの重複受信とcustomer fenceで実際のlock待ちを観測し、SKIP LOCKEDは先行transactionを開いたまま別接続が異なる行を取得することを検証した。期限切れの最終適用拒否と業務更新失敗時のrollbackも成功。AstraのNode22独立実行でも5件成功・skipなし、終了後のpostgresプロセスと一時clusterは0件。管理対象の17.6環境・本番設定の検証とは区別する。詳細は[postgres-concurrency.md](postgres-concurrency.md)。
 
 パスワード付き公開アクセスの[移行設計](verified-access-design.md)を5aca0e4で保存。short ID・絵文字・profileのselectorに結び付けた短期proof、同一SQLでの本文保護、D1による試行予約と世代番号の検証を定義した。アカウント認証とは別の認可経路として扱う。隔離したlocal proofは実装中で、既存password値の互換性・全writerの失効処理・remote CPU・frontend切り替えは未検証。
+
+Storage exportからR2へ移す[再実行可能なimport core](storage-r2-import.md)を追加。既存/新規objectを本文hash・size・metadataで読み戻し、再開時にも全対象を再検証する。条件付き作成により競合objectを上書きせず、応答停止や途中失敗を未完了として保存する。AstraのNode22独立実行で移行データ52テストとloopback Miniflareの実R2検証が成功。16 MiBの競合転送でも上書きなし・停止を確認した。local R2は条件不一致でも本文を全消費するため、早期キャンセルやremoteのmemory/CPUは証明していない。CIへ追加し隔離検査が成功。remote runner・bucket設定・本番upload・URL切り替えは未実施。

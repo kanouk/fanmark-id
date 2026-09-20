@@ -11,7 +11,8 @@
     "build:static-assets:dry-run": "test -f ../../dist/index.html && wrangler deploy --dry-run --config wrangler.static-assets.jsonc",
     "test:d1": "vitest run --config vitest.d1.config.mjs",
     "test:availability:d1": "vitest run --config vitest.availability-d1.config.mjs",
-    "test:public-access:d1": "vitest run --config vitest.public-access-d1.config.mjs"
+    "test:public-access:d1": "vitest run --config vitest.public-access-d1.config.mjs",
+    "test:storage-r2": "node test/storage-r2-import.integration.mjs"
   },
   "devDependencies": {
     "@msw/cloudflare": "0.0.1",

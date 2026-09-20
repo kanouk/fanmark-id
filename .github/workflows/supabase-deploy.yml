@@ -97,6 +97,9 @@ jobs:
       - name: Test D1 public access contract
         if: matrix.directory == 'workers/api'
         run: npm run test:public-access:d1
+      - name: Test local R2 import and readback
+        if: matrix.directory == 'workers/api'
+        run: npm run test:storage-r2
       - name: Type check API and Stripe SDK boundaries
         if: matrix.directory == 'workers/api' || matrix.directory == 'experiments/stripe-receipts'
         run: npm run typecheck
