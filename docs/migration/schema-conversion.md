@@ -122,3 +122,10 @@ This preflight does not cover all timestamp columns, JSONB numeric precision,
 array elements, source export consistency, foreign-key reconciliation, or any
 write path. Those remain required import/rehearsal checks. `value-readiness.sql`
 records the reviewed predicates for a future run with authorized SELECT access.
+
+## Source-text codec implementation
+
+The exact source-text conversion helpers and D1 binding evidence are documented
+in [value-codecs.md](value-codecs.md). The importer must use reviewed per-column
+codecs and preserve text before JSON parsing; these helpers do not replace the
+full schema, array-dimension preflight, or row reconciliation.

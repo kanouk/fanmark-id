@@ -64,3 +64,5 @@ Storage exporter/verifierの再利用可能な実装を追加。23件のオフ�
 絵文字カタログ生成はUUID付きJSONの明示入力を追加。Supabase環境変数が存在しても明示入力時はネットワークを使わず、ID・肌色sequenceを保持する。Unicode更新・D1へのmaster書込み・公開配信は未完了。
 
 絵文字の版付きlocal artifact builderを追加。旧UUIDの削除/再割当て、manifest/moduleの混在を拒否し、検証完了後に版別directoryへ保存する。生成系7テスト・型検査が成功。本番emoji_masterをread-onlyで新規取得し、生成版との全UUID/emoji/codepoints照合と取得前後一致を確認。成果物は非公開一時保存。D1 import・APIの版切替・公開rollbackは未実装。
+
+値変換codecを追加。PostgreSQL text入力から正確なcents、安全範囲bigint、UTC microsecond、decimal/JSON text、順序付き配列へ変換する。Storageと合わせ28テスト成功。実D1 bind/readbackで型・値・microsecond順序を検証し、既存競合試験と合わせ9件成功。全表importは未完了。

@@ -34,6 +34,9 @@ jobs:
       - name: Test offline emoji catalog generation
         run: npm run test:emoji-catalog
 
+      - name: Test migration data boundaries
+        run: npm run test:migration-data
+
       - name: Type check
         run: npm run typecheck
 
