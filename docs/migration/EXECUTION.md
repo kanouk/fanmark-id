@@ -90,3 +90,5 @@ public全表を同一read-only repeatable-read transactionから保存する[sna
 パスワード付き公開アクセスの隔離local proofを追加。selector/licence/世代に結び付けた短期cookie、D1による二重の試行制限、世代変更・削除再作成時の失効、同一SQLによる本文保護を検証する。AstraのNode22独立実行で専用17件と既存認証6件が成功。遅延要求による期間巻き戻し、finalization再実行、失敗時の部分カウント、Originなし同一site GETも検証し、専用suiteをCIへ追加した。実password変換・全production writer・remote CPU・frontend接続・本番配備は未完了。詳細は[verified access design](verified-access-design.md)。
 
 DB動作の非公開gap inventoryを作成し、元catalogの77 policy・36 trigger・1 view・58 functionの全名称が対応表に含まれることと0600権限をAstraも確認した。暫定分類はpolicyがlocal対応済み0/部分4/未対応73、triggerが0/0/36、viewが0/1/0、functionが3/11/44。対応済みも限定的なlocal実装の証拠であり、本番parityやRLS全体移植を意味しない。次は期限ジョブの状態遷移・競合・付随効果を整理する。
+
+verified snapshotからの[D1 import core](d1-import.md)を追加。parent-first順、全batchのcheckpoint guard、同時実行/ACK不明後の再開、移送先incarnation、application/ledger双方のDDL検証、全値・SQLite保存型・PK・件数・hash・FKの読み戻しを行う。AstraのNode22独立実行でCIと同じコマンドの12件と明示Miniflare integrationが成功し、CI隔離検査も成功。初回report書込失敗からの復旧、改変検知、query/SQL/変換後row上限も含む。結果はpublic_rows_reconciledに限定し、deployable/fullMigrationReconciledはfalse。実40表の行移送、credential変換、外部Auth参照、業務動作の同等性、remote適用、backup/restoreは未完了。
