@@ -41,3 +41,13 @@ Astraが設計確定、作業分解、差分レビュー、検証結果の確認
 2. 未コミット作業を確認し、作業ツリーと実装者の担当範囲を復元する。
 3. 前回の成功した検証と未確認条件を区別し、変更/失敗/未解決の理由がある範囲を検証する。
 4. 次の未完了の実装単位を指定して再開する。本番切り替えは確認・監視・復旧までの余裕を確保してから開始する。
+
+## 継続中の作業（2026-09-21）
+
+PR #41は棚卸し・本番設定のread-only確認を保存するdraft。対応案と再現用集計SQLはコミット済み。以下の追加実装はAstraレビュー中で、未コミット部分を完成済みと扱わない。
+
+- `workers/api/`: 最近取得一覧の公開API。応答列の制限、キー種別、Origin、タイムアウト、redirect、件数上限、実entrypointの検証を行う。フロントはまだ未接続。
+- `experiments/cloudflare-auth/`: 合成bcrypt/TOTPに加え、全認証経路に対する管理者APIのMFA強制を検証する。セッションごとのMFA証拠と失効が必要で、user.twoFactorEnabledだけで許可しない。
+- `docs/migration/stripe-ledger-design.md`: 現行Webhookの全分岐を受信・適用台帳とoutboxへ写す設計。まだ実装・適用済みではない。
+
+CloudflareのCLI認証先はfanmark対象アカウントと異なり、対象を明示したread-only呼び出しも認証エラー。対象側はWorkers Free（10 ms/request）。remote配備権限とbcrypt CPU/プラン判断は未解決。ブラウザではSupabase SQL Editorによる秘密値を返さない集計、既存Google/Apple callback、Resendドメインを確認できた。詳細はlive-observationsを参照。
