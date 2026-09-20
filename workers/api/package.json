@@ -14,7 +14,8 @@
     "test:public-access:d1": "vitest run --config vitest.public-access-d1.config.mjs",
     "test:storage-r2": "node test/storage-r2-import.integration.mjs",
     "test:d1-import": "node --test ../../scripts/migration/test-d1-import.mjs",
-    "test:license-expiry": "node test/license-expiry.integration.mjs"
+    "test:license-expiry": "node test/license-expiry.integration.mjs",
+    "test:lifecycle-schema": "node --test test/lifecycle-target-schema.integration.mjs"
   },
   "devDependencies": {
     "@msw/cloudflare": "0.0.1",
