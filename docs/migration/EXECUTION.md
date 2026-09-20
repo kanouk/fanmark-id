@@ -120,3 +120,5 @@ credential descriptorのmetadata compilerを追加。6列の対応、PK・valida
 世代管理の接続reviewでcredential proofのincarnation台帳欠落を0とみなすfallbackを除去。target read・prepare/apply/finalizeのSQLで台帳の存在を必須にした。予約前の欠落とreconcile read後の削除を検証し、Node22.6のcredential suiteは19件成功・skipなし。source-shaped世代triggerとの接続自体は未完了。
 
 [世代管理trigger](lifecycle-generation-schema.md)を追加。license作成時の初期化、削除時のretained incarnation更新、PK変更拒否、password作成/更新/移動/削除時のpassword/access世代更新を同じtransactionで行う。cascade時の親消滅と通常writerの台帳欠落を区別し、overflow/mismatchではrollbackする。親reviewでinspectionのbase plan結合も追加。Node22.6のschema/generation計4 test group、実40表構造の空D1への7 trigger適用・再適用・readback・runtime dispose、CI隔離検査が成功。credential applyの二重increment除去、全writer/protected runtime/expiryとの接続、remote適用は未完了。
+
+protected-access proofにもlicense incarnationを独立して保存・照合する境界を追加。同じUUIDの削除/再作成でpassword/access世代が同値になっても古いverificationを拒否する。全体実行の停止を調査し、追加列を反映していなかったreplayテストINSERTを修正、診断ログを除去した。親のNode22.6独立実行で17件成功（4.33秒）、実行前後の3ファイルhash一致。source-shaped runtimeとの接続や本番移行は未完了。通常枠22%のため新規投入を停止し、再開条件と次の統合順序をHANDOFF.mdに記録した。

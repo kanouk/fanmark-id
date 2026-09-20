@@ -69,6 +69,7 @@ CREATE TABLE fanmark_access_proofs (
   license_id TEXT NOT NULL REFERENCES fanmark_licenses(id) ON DELETE CASCADE,
   password_generation INTEGER NOT NULL,
   lifecycle_generation INTEGER NOT NULL,
+  license_incarnation INTEGER NOT NULL,
   created_at TEXT NOT NULL,
   expires_at TEXT NOT NULL
 );
@@ -137,6 +138,7 @@ CREATE UNIQUE INDEX fanmark_access_attempt_audit_once_idx
 CREATE TRIGGER fanmark_access_license_insert_version
 AFTER INSERT ON fanmark_licenses
 BEGIN
+  INSERT OR IGNORE INTO fanmark_license_incarnations (license_id, incarnation) VALUES (new.id, 0);
   INSERT OR IGNORE INTO fanmark_access_versions
     (license_id, password_generation, lifecycle_generation, updated_at)
   VALUES (

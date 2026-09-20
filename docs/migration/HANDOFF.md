@@ -29,12 +29,13 @@ These checks ran on Node 22.6.0 without skips. CI configuration isolation checks
 passed, but the GitHub workflow remains manually disabled; local results are
 not a successful hosted CI run.
 
-Public-access proof changes in the working tree bind license incarnation
-separately from access generations. The focused same-UUID/equal-generation
-case and ordinary successful access passed, but the full suite stalled at an
-existing reservation-window race. That investigation remains in progress;
-do not call these uncommitted changes fully validated. Preserve the three
-files under `experiments/cloudflare-auth` until the investigation is resolved.
+The public-access proof also binds license incarnation separately from access
+generations. Its same-UUID/equal-generation case rejects the old verification.
+The apparent full-suite stall was traced to an outdated replay-test INSERT
+that omitted the added column. After correction and removal of diagnostic
+logging, the parent independently ran all 17 tests successfully in 4.33 seconds,
+with identical source/fixture/test hashes before and after. This validates the
+isolated proof; connection to the source-shaped runtime remains incomplete.
 
 ## Next implementation sequence after the reserve permits it
 

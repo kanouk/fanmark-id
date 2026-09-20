@@ -580,7 +580,10 @@ describe("isolated verified public access on Workers + D1", () => {
     expect(await count("SELECT count(*) AS count FROM fanmark_access_proofs")).toBe(0);
   });
 
-  it("rejects same-UUID license deletion and recreation during bcrypt", async () => {
+  it("rejects same-UUID recreation with equal access generations before proof creation", async () => {
+    await env.ACCESS_DB.prepare("UPDATE fanmark_profiles SET bio = 'updated before recreation' WHERE license_id = ?")
+      .bind(PROFILE_LICENSE).run();
+    const beforeVersion = await row("SELECT password_generation, lifecycle_generation FROM fanmark_access_versions WHERE license_id = ?", PROFILE_LICENSE);
     let hold = true;
     let reachedResolve;
     let releaseResolve;
@@ -592,7 +595,8 @@ describe("isolated verified public access on Workers + D1", () => {
     });
     setVerificationTestHooks({
       now: () => testNow,
-      duringCompare: async () => {
+      duringCompare: async ({ comparePromise }) => {
+        await comparePromise;
         if (!hold) return;
         hold = false;
         reachedResolve();
@@ -619,7 +623,9 @@ describe("isolated verified public access on Workers + D1", () => {
          VALUES (?, 1, 'Synthetic Public Profile', 'Synthetic bio🙂', '')`,
       ).bind(PROFILE_LICENSE),
     ]);
+    const recreatedVersion = await row("SELECT password_generation, lifecycle_generation FROM fanmark_access_versions WHERE license_id = ?", PROFILE_LICENSE);
     releaseResolve();
+    expect(recreatedVersion).toEqual(beforeVersion);
     expect((await pending).status).toBe(401);
     expect(await count("SELECT count(*) AS count FROM fanmark_access_proofs")).toBe(0);
     const incarnation = await row(
@@ -682,7 +688,8 @@ describe("isolated verified public access on Workers + D1", () => {
     const duplicateProof = await env.ACCESS_DB.prepare(
       `INSERT INTO fanmark_access_proofs
        SELECT id || '-replay', token_hash || '-replay', finalization_id, selector_kind, selector_hash,
-              fanmark_id, license_id, password_generation, lifecycle_generation, created_at, expires_at
+              fanmark_id, license_id, password_generation, lifecycle_generation, license_incarnation,
+              created_at, expires_at
        FROM fanmark_access_proofs WHERE finalization_id = ?`,
     ).bind(successReservation.finalization_id).run().catch((error) => error);
     expect(String(duplicateProof?.message || duplicateProof)).toContain("UNIQUE");

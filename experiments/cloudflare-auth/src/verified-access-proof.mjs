@@ -244,6 +244,7 @@ function rowToTarget(row) {
     profilePublic: Number(row.profile_public) === 1,
     passwordGeneration: Number(row.password_generation),
     lifecycleGeneration: Number(row.lifecycle_generation),
+    licenseIncarnation: Number(row.license_incarnation),
   };
 }
 
@@ -263,12 +264,14 @@ const TARGET_SELECT = `
     f."expires_at" AS fanmark_expires_at,
     p."is_public" AS profile_public,
     v."password_generation" AS password_generation,
-    v."lifecycle_generation" AS lifecycle_generation
+    v."lifecycle_generation" AS lifecycle_generation,
+    i."incarnation" AS license_incarnation
   FROM fanmark_licenses l
   JOIN fanmarks f ON f."id" = l."fanmark_id"
   LEFT JOIN fanmark_access_configs c ON c."license_id" = l."id"
   LEFT JOIN fanmark_profiles p ON p."license_id" = l."id"
   JOIN fanmark_access_versions v ON v."license_id" = l."id"
+  JOIN fanmark_license_incarnations i ON i."license_id" = l."id"
 `;
 
 async function resolveShort(db, shortId) {
@@ -471,13 +474,14 @@ async function finalizeSuccess(env, reservation, target, selectorKind, canonical
   const sql = `
     INSERT INTO fanmark_access_proofs
       (id, token_hash, finalization_id, selector_kind, selector_hash, fanmark_id, license_id,
-       password_generation, lifecycle_generation, created_at, expires_at)
-    SELECT ?, ?, r."finalization_id", ?, ?, f."id", l."id", v."password_generation", v."lifecycle_generation", ?, ?
+       password_generation, lifecycle_generation, license_incarnation, created_at, expires_at)
+    SELECT ?, ?, r."finalization_id", ?, ?, f."id", l."id", v."password_generation", v."lifecycle_generation", i."incarnation", ?, ?
     FROM fanmark_access_attempt_reservations r
     JOIN fanmark_licenses l ON l."id" = r."license_id"
     JOIN fanmarks f ON f."id" = l."fanmark_id"
     JOIN fanmark_access_configs c ON c."license_id" = l."id"
     JOIN fanmark_access_versions v ON v."license_id" = l."id"
+  JOIN fanmark_license_incarnations i ON i."license_id" = l."id"
     LEFT JOIN fanmark_profiles p ON p."license_id" = l."id"
     WHERE r."reservation_id" = ?
       AND r."outcome" = 'success'
@@ -493,6 +497,7 @@ async function finalizeSuccess(env, reservation, target, selectorKind, canonical
       AND c."access_type" = ?
       AND v."password_generation" = ?
       AND v."lifecycle_generation" = ?
+      AND i."incarnation" = ?
       AND (${selectorCondition(selectorKind)})
       AND (c."access_type" <> 'profile' OR p."is_public" = 1)
   `;
@@ -520,6 +525,7 @@ async function finalizeSuccess(env, reservation, target, selectorKind, canonical
         target.accessType,
         target.passwordGeneration,
         target.lifecycleGeneration,
+        target.licenseIncarnation,
         selectorParam,
       ),
       db.prepare(
@@ -600,6 +606,7 @@ async function protectedProjection(env, request, selectorKind, canonical, target
           AND pr."expires_at" > ?
           AND pr."password_generation" = v."password_generation"
           AND pr."lifecycle_generation" = v."lifecycle_generation"
+          AND pr."license_incarnation" = i."incarnation"
           AND pr."fanmark_id" = f."id"
           AND pr."license_id" = l."id"
           AND l."status" = 'active' AND l."returned" = 0
@@ -624,6 +631,7 @@ async function protectedProjection(env, request, selectorKind, canonical, target
       LEFT JOIN fanmark_access_configs c ON c."license_id" = l."id"
       LEFT JOIN fanmark_profiles p ON p."license_id" = l."id"
       JOIN fanmark_access_versions v ON v."license_id" = l."id"
+  JOIN fanmark_license_incarnations i ON i."license_id" = l."id"
       WHERE pr."token_hash" = ?
         AND pr."selector_kind" = ?
         AND pr."selector_hash" = ?

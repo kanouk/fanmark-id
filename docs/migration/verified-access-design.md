@@ -387,6 +387,15 @@ integration, deployment, and cutover remain unverified.
 
 ## References
 
+The local proof now stores and checks retained license incarnation independently
+of password/access generations. A delete/recreate with the same UUID and equal
+generation values cannot finalize an older password verification. Target lookup,
+proof creation, and protected projection require the incarnation authority.
+The parent independently ran all 17 tests on Node 22.6.0 with matching
+source/fixture/test hashes before and after. An outdated replay-test INSERT
+omitted the new column; that test SQL was corrected and all diagnostic logging
+removed. This remains an isolated proof, not production migration evidence.
+
 - [Better Auth email and password](https://better-auth.com/docs/authentication/email-password) — default scrypt and the custom `password.hash`/`password.verify` hooks.
 - [Better Auth Cloudflare D1 support](https://better-auth.com/blog/1-5) — direct D1 binding and the D1 `batch()` limitation on interactive transactions.
 - [Better Auth two-factor plugin](https://better-auth.com/docs/plugins/2fa) — TOTP/session behavior kept separate from this fanmark proof.
