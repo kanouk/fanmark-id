@@ -50,3 +50,11 @@ CLIのSQL接続はauth schemaの権限が不足していたが、既存ブラウ
 集計の個別件数はローカルの非公開運用記録に保持し、公開リポジトリには保存しない。
 
 認証URL設定のブラウザ確認ではSite URLは `https://fanmark.id/`、redirect許可リストはfanmark.idと既存Lovableの4パターン（計5件）だった。将来のWorker preview URLを既に許可済みとは扱わない。許可リストは変更していない。
+
+Google Cloud の既存fanmark-id OAuthクライアント画面では、JavaScript originは `https://fanmark.id`、redirect URIは `https://auth.fanmark.id/auth/v1/callback` の各1件。新Better Auth callbackを既に許可済みとは扱わない。クライアントやsecretの作成/変更はしていない。
+
+Apple Developerでは既存Services ID `id.fanmark.login` にSign in with Appleが有効、Primary App IDはFanmark。Web Authenticationの登録ドメインは `auth.fanmark.id` / `fanmark.id`、Return URLは `https://auth.fanmark.id/auth/v1/callback` を確認した。既存のFanmark用Sign In Keyも一覧に存在するが、秘密鍵は取得/再発行していない。Appleも新callbackの登録と実フロー検証が必要で、現在の設定を変更していない。
+
+対象CloudflareアカウントのWorkers & Pages一覧は「No projects found」。Workersのプラン画面ではFreeが「現在のプラン」で、CPU上限は10 ms/requestと表示されていた。認証のlocal wall-clock検証ではこのCPU制限内の動作を証明できない。remote CPUを測定し、必要なプランを決めるまで認証の本番適合とは判定しない。プラン変更・課金は行っていない。
+
+Resendのfanmark.id workspaceで、送信ドメイン `fanmark.id` はVerified。メール送信や鍵の表示/変更は行っていない。Stripeについては本番/テストの配信先・API version・DB内契約との対応確認を継続する。コードの存在だけから現行Webhookが正常配信中とは扱わない。
