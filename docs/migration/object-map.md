@@ -36,6 +36,12 @@ The readback contains no user rows. Reproducible metadata SQL is in
 [scripts/migration/recent-contract-readiness.sql](../../scripts/migration/recent-contract-readiness.sql).
 A checked-in type or migration history alone is not proof of production state.
 
+The subsequent column/index catalog readback covers 406 columns and 139 indexes.
+Exact numeric, timestamp, array, enum, and constraint conversion requirements
+are recorded in [schema-conversion.md](schema-conversion.md); the reproducible
+query is `scripts/migration/schema-readiness.sql`. No target schema or data
+import is implied by that readback.
+
 The live catalog reports rls=true and force_rls=false for each of the 40
 tables. Table rows below show live P/C/T counts for policy, constraint, and
 user-defined trigger metadata. These are observations of the current database
