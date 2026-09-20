@@ -44,9 +44,9 @@ Astraが設計確定、作業分解、差分レビュー、検証結果の確認
 
 ## 継続中の作業（2026-09-21）
 
-PR #41は棚卸し・本番設定のread-only確認を保存するdraft。対応案と再現用集計SQLはコミット済み。以下の追加実装はAstraレビュー中で、未コミット部分を完成済みと扱わない。
+PR #41は棚卸し・本番設定のread-only確認とWorker API境界を保存するdraft。対応案と再現用集計SQL、公開recent APIはコミット済み。以下の未コミット部分を完成済みと扱わない。
 
-- `workers/api/`: 最近取得一覧の公開API。応答列の制限、キー種別、Origin、タイムアウト、redirect、件数上限、実entrypointの検証を行う。フロントはまだ未接続。
+- `workers/api/`: 最近取得一覧の公開APIを6ebdf36で保存。応答列の制限、キー種別、Origin、タイムアウト、redirect、件数上限、実entrypointを含む14テスト、型検査、配備用dry-runがAstraの独立実行でも成功。remote未配備。フロントの明示的な接続先切り替えを実装中。
 - `experiments/cloudflare-auth/`: 合成bcrypt/TOTPに加え、全認証経路に対する管理者APIのMFA強制を検証する。セッションごとのMFA証拠と失効が必要で、user.twoFactorEnabledだけで許可しない。
 - `docs/migration/stripe-ledger-design.md`: 現行Webhookの全分岐を受信・適用台帳とoutboxへ写す設計。まだ実装・適用済みではない。
 

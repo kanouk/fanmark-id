@@ -36,6 +36,15 @@ assert(jobBlocks.has("validate") && jobBlocks.has("deploy"), "expected validate 
 
 const validate = jobBlocks.get("validate");
 const deploy = jobBlocks.get("deploy");
+const migrationValidation = jobBlocks.get("migration-validation");
+assert(migrationValidation, "expected secret-free local migration validation");
+for (const directory of ["workers/api", "experiments/cloudflare-auth", "experiments/cloudflare-d1-concurrency"]) {
+  assert(migrationValidation.includes(`- ${directory}`), `migration tests must cover ${directory}`);
+}
+assert(/run: npm ci\s*$/m.test(migrationValidation), "migration tests must install locked dependencies");
+assert(/run: npm test\s*$/m.test(migrationValidation), "migration tests must execute");
+assert(/^    needs: \[validate, migration-validation\]\s*$/m.test(deploy), "deployment must wait for application and migration validation");
+
 
 for (const [jobName, job] of jobBlocks) {
   if (jobName === "deploy") {

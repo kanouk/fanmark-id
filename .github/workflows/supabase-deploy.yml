@@ -34,10 +34,41 @@ jobs:
       - name: Build
         run: npm run build
 
+  migration-validation:
+    name: Validate migration (${{ matrix.directory }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        directory:
+          - workers/api
+          - experiments/cloudflare-auth
+          - experiments/cloudflare-d1-concurrency
+    defaults:
+      run:
+        working-directory: ${{ matrix.directory }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: ${{ matrix.directory }}/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Test local Workers runtime
+        run: npm test
+      - name: Type check API
+        if: matrix.directory == 'workers/api'
+        run: npm run typecheck
+      - name: Validate API bundle without deployment
+        if: matrix.directory == 'workers/api'
+        run: npm run build:dry-run
+
   deploy:
     name: Deploy Supabase production
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: validate
+    needs: [validate, migration-validation]
     runs-on: ubuntu-latest
     concurrency:
       group: supabase-production
