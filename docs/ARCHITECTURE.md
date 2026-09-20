@@ -15,7 +15,7 @@
 
 ## 画面とモジュールのマッピング
 - `/` トップ/ランディング: `src/pages/Index.tsx`
-  - ヒーロー下の最近取得表示: `src/components/RecentFanmarksScroll.tsx` → 公開用 RPC `list_recent_fanmarks`（新しい順に最大20件）。未ログインでも表示するため、閲覧者のRLSが適用される `recent_active_fanmarks` ビューを直接参照しない。
+  - ヒーロー下の最近取得表示: `src/components/RecentFanmarksScroll.tsx` + `src/lib/recent-fanmarks.ts` → `VITE_FANMARK_API_BASE_URL` が設定されたビルドでは公開recent Worker API、未設定では公開用 RPC `list_recent_fanmarks`（新しい順に最大20件）。Worker 選択時の失敗は RPC にフォールバックしない。未ログインでも表示するため、閲覧者のRLSが適用される `recent_active_fanmarks` ビューを直接参照しない。
 - `/auth`: 認証/サインアップ/パスワードリセット: `src/pages/Auth.tsx`
 - `/forgot-password`: `ForgotPassword.tsx`
 - `/reset-password`: `ResetPassword.tsx`
@@ -220,6 +220,6 @@
 
 `experiments/cloudflare-auth/` と `experiments/cloudflare-d1-concurrency/` は合成データで動く独立したWorkers/D1検証用。通常アプリへ接続せず、現行のSupabaseバックエンドを置き換えたものではない。再現コマンドと限界は対応する `docs/migration/` の文書を参照する。
 
-`workers/api/` は移行用の公開recent APIを検証する独立Worker。現在のフロントはまだこのWorkerへ接続せず、既存Supabase RPCを利用する。契約・実行方法・配備条件は `docs/migration/recent-api-contract.md`。DB・RPC・Edgeの移行対応案は `docs/migration/object-map.md`。
+`workers/api/` は移行用の公開recent APIを検証する独立Worker。フロントは `VITE_FANMARK_API_BASE_URL` を明示したビルドだけこのWorkerを選択し、未設定では既存Supabase RPCを利用する。Worker選択時の失敗は別データソースへフォールバックしない。契約・実行方法・配備条件は `docs/migration/recent-api-contract.md`。DB・RPC・Edgeの移行対応案は `docs/migration/object-map.md`。
 
 `scripts/migration/auth-readiness.sql` と `scripts/migration/storage-cron-readiness.sql` は本番棚卸し用の読み取り専用集計。秘密値やデータ行を返さず、出力の個別件数は公開リポジトリへ保存しない。

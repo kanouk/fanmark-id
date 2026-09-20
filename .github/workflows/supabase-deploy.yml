@@ -28,6 +28,9 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
+      - name: Test recent API client
+        run: npm run test:recent
+
       - name: Type check
         run: npm run typecheck
 

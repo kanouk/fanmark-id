@@ -1,9 +1,9 @@
 # Recent fanmarks Worker API contract
 
 This is a phase 0/1 preparation fixture for issue [#33](https://github.com/kanouk/fanmark-id/issues/33).
-It is a read-only API scaffold under `workers/api/`. It is not wired into the
-React application, does not replace the Supabase client, and is not a production
-migration or API adoption. No Worker deployment or Cloudflare resource change was
+It is a read-only API scaffold under `workers/api/` with an explicit frontend
+opt-in. It does not replace the general Supabase client or constitute a
+production migration. No Worker deployment or Cloudflare resource change was
 performed.
 
 ## Source contract
@@ -51,6 +51,23 @@ The default limit is `20`. The response is always an explicit versioned object:
 or out-of-range `limit` values return `400` without an upstream request. Other
 methods return `405` with `Allow: GET, OPTIONS`. `OPTIONS` returns `204` and the
 same explicit method allowlist. Unknown paths return `404`.
+
+## Frontend selection
+
+`src/components/RecentFanmarksScroll.tsx` reads the optional
+`VITE_FANMARK_API_BASE_URL` setting through `src/lib/recent-fanmarks.ts`:
+
+- unset or blank: keep the existing public Supabase RPC
+  `list_recent_fanmarks({ p_limit: 20 })`;
+- non-empty: call the Worker endpoint above and do not fall back to Supabase if
+  the URL, request, status, timeout, or versioned response is invalid;
+- Worker requests send only `Accept: application/json`, use
+  `credentials: "omit"`, enforce a bounded timeout, and are aborted when the
+  component unmounts.
+
+The client accepts HTTPS origins and permits HTTP only for loopback development
+origins such as `localhost`. It validates `schemaVersion: 1` and the public
+`id`/`emoji`/`createdAt` item shape before updating the existing scroll UI.
 
 ## Supabase adapter boundary
 
@@ -146,6 +163,19 @@ missing/forbidden keys, caller credential non-forwarding, extra-field
 stripping, sanitized upstream errors, body-read timeout, and redirect
 rejection.
 
+From the repository root, the frontend contract tests run with the Node
+standard test runner under the repository's Node `22.6.0` version and do not
+add a test dependency:
+
+```sh
+npm run test:recent
+npm run typecheck
+```
+
+They cover backend selection, URL validation, license-id precedence in the
+Supabase fallback mapping, malformed Worker payloads and HTTP errors, omitted
+credentials, request timeout, and unmount cancellation.
+
 Cloudflare documents the `fetch` handler and environment bindings in the [Fetch
 Handler](https://developers.cloudflare.com/workers/runtime-apis/handlers/fetch/)
 and [environment variables](https://developers.cloudflare.com/workers/configuration/environment-variables/)
@@ -158,7 +188,8 @@ guides.
 This proof does not establish production Worker deployment, target-account
 authentication, DNS/routing, secret provisioning, CORS policy approval, Supabase
 availability, upstream latency, rate limits, or production API compatibility. It
-does not claim that the frontend consumes this route or that a D1 read model is
-ready. A later stage must review the public projection, configure the target
-Cloudflare account, verify the environment secrets and exact origin list, and
-perform staging/API acceptance before any frontend cutover.
+does not establish that the frontend Worker setting has been configured in any
+deployment or that the route is reachable from production. A later stage must
+review the public projection, configure the target Cloudflare account, verify the
+environment secrets and exact origin list, and perform staging/API acceptance
+before enabling the Worker setting in a release.

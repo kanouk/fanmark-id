@@ -9,6 +9,7 @@
     "build:dev": "vite build --mode development",
     "check:ci": "node scripts/check-supabase-workflow.mjs",
     "lint": "eslint .",
+    "test:recent": "node --experimental-strip-types --test src/lib/recent-fanmarks.test.ts",
     "preview": "vite preview",
     "supabase": "supabase",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
