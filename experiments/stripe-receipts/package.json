@@ -4,13 +4,18 @@
   "version": "1.0.0",
   "description": "PostgreSQL-backed Stripe receipt foundation checks",
   "scripts": {
-    "test": "node --test test/receipt-foundation.test.mjs"
+    "test": "node --import tsx --test test/*.test.mjs",
+    "typecheck": "tsc --noEmit --target ES2022 --module ESNext --moduleResolution Bundler --lib ES2022,DOM --allowImportingTsExtensions --skipLibCheck test/compatibility-types.ts ../../supabase/functions/_shared/stripe-receipt-ingress/index.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "devDependencies": {
-    "@electric-sql/pglite": "0.5.8"
+    "@electric-sql/pglite": "0.5.8",
+    "@supabase/supabase-js": "2.57.4",
+    "stripe": "18.5.0",
+    "tsx": "4.20.6",
+    "typescript": "5.8.3"
   }
 }

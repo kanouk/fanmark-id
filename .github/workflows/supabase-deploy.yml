@@ -74,8 +74,8 @@ jobs:
         run: npm ci
       - name: Test local Workers runtime
         run: npm test
-      - name: Type check API
-        if: matrix.directory == 'workers/api'
+      - name: Type check API and Stripe SDK boundaries
+        if: matrix.directory == 'workers/api' || matrix.directory == 'experiments/stripe-receipts'
         run: npm run typecheck
       - name: Validate API bundle without deployment
         if: matrix.directory == 'workers/api'
