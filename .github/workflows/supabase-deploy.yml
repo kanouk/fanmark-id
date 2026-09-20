@@ -37,6 +37,11 @@ jobs:
       - name: Test offline emoji catalog generation
         run: npm run test:emoji-catalog
 
+      - name: Install SQLite for schema conversion validation
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends sqlite3
+
       - name: Test migration data boundaries
         run: npm run test:migration-data
 
