@@ -88,3 +88,5 @@ DB動作定義のread-only棚卸しを追加。40表のRLS設定、77 policy、3
 public全表を同一read-only repeatable-read transactionから保存する[snapshot exporter/verifier](snapshot-export-design.md)を追加。列・制約・index・enumのcatalog fingerprint、行順序・hash・件数・値codecを検証し、途中失敗を完了として扱わない。partition/inheritanceを明示拒否する。AstraのNode22独立実行で移行データ63件、CIと同じStripe npm test 65件、実psqlとPostgreSQL 17のtransport検証2件が成功（いずれもskipなし）。一度の全体実行停止は単独実行と全体再実行で再現せず、原因は未確定。テストの失敗時cleanupとtimeoutも追加した。sourceの実データexport、暗号化backup、Auth/Storageを含むfreeze、unique/FKの全体照合、二つのsnapshot間比較は未完了。
 
 パスワード付き公開アクセスの隔離local proofを追加。selector/licence/世代に結び付けた短期cookie、D1による二重の試行制限、世代変更・削除再作成時の失効、同一SQLによる本文保護を検証する。AstraのNode22独立実行で専用17件と既存認証6件が成功。遅延要求による期間巻き戻し、finalization再実行、失敗時の部分カウント、Originなし同一site GETも検証し、専用suiteをCIへ追加した。実password変換・全production writer・remote CPU・frontend接続・本番配備は未完了。詳細は[verified access design](verified-access-design.md)。
+
+DB動作の非公開gap inventoryを作成し、元catalogの77 policy・36 trigger・1 view・58 functionの全名称が対応表に含まれることと0600権限をAstraも確認した。暫定分類はpolicyがlocal対応済み0/部分4/未対応73、triggerが0/0/36、viewが0/1/0、functionが3/11/44。対応済みも限定的なlocal実装の証拠であり、本番parityやRLS全体移植を意味しない。次は期限ジョブの状態遷移・競合・付随効果を整理する。
