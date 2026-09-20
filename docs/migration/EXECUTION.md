@@ -78,3 +78,5 @@ Stripeの請求状態同期を追加。API版をBasilへ固定し、現在のInv
 公開アクセスAPIのD1実装を追加。short ID・絵文字・公開profileの読み取りを明示設定で有効にする。公開可否と本文は同一SQLで取得し、password保護時と非選択の表示方式の本文を返さない。既存画面の空画像URL、日本語の文字数、長いZWJ絵文字、表示方式変更後に残る設定を検証。Astraの指定Node 22.6.0による独立実行でD1 entrypoint 11テストと型検査が成功。既存API21件、recent D1 4件、availability D1 7件、静的配信13件・実HTTP smoke・配備dry-runも独立実行で成功。CI項目も追加し、workflow隔離検査が成功。未設定時は503で、frontend接続・password検証経路・本番配備は未実施。
 
 独立接続のPostgreSQL 17.10でStripe競合5テストを追加。未commitの重複受信とcustomer fenceで実際のlock待ちを観測し、SKIP LOCKEDは先行transactionを開いたまま別接続が異なる行を取得することを検証した。期限切れの最終適用拒否と業務更新失敗時のrollbackも成功。AstraのNode22独立実行でも5件成功・skipなし、終了後のpostgresプロセスと一時clusterは0件。管理対象の17.6環境・本番設定の検証とは区別する。詳細は[postgres-concurrency.md](postgres-concurrency.md)。
+
+パスワード付き公開アクセスの[移行設計](verified-access-design.md)を5aca0e4で保存。short ID・絵文字・profileのselectorに結び付けた短期proof、同一SQLでの本文保護、D1による試行予約と世代番号の検証を定義した。アカウント認証とは別の認可経路として扱う。隔離したlocal proofは実装中で、既存password値の互換性・全writerの失効処理・remote CPU・frontend切り替えは未検証。
