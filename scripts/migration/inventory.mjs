@@ -659,7 +659,7 @@ function parseArgs(argv) {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const options = parseArgs(process.argv.slice(2));
-  const markdown = renderMarkdown(buildInventory(options.root));
+  const markdown = renderMarkdown(buildInventory(options.root)).trimEnd();
   if (options.output) {
     fs.mkdirSync(path.dirname(options.output), { recursive: true });
     fs.writeFileSync(options.output, `${markdown}\n`, "utf8");
