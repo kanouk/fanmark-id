@@ -17,6 +17,22 @@ import {
 } from "./availability";
 import { createD1AvailabilityRepository } from "./availability-d1-repository";
 import { createSupabaseAvailabilityRepository } from "./availability-repository";
+import { createD1PublicAccessRepository } from "./public-access-d1-repository";
+import {
+  mapPublicAccessRow,
+  mapPublicProfileRow,
+  parsePublicAccessEmojiRequest,
+  parsePublicAccessPathValue,
+  parsePublicAccessRoute,
+  PublicAccessConfigurationError,
+  PublicAccessResponseTooLargeError,
+  PublicAccessUnavailableError,
+  PublicAccessUpstreamError,
+  publicAccessAllowedHeaders,
+  publicAccessAllowedMethods,
+  serializePublicAccessBody,
+  type PublicAccessRepository,
+} from "./public-access";
 
 const RECENT_ALLOWED_METHODS = "GET, OPTIONS";
 const AVAILABILITY_ALLOWED_METHODS = "POST, OPTIONS";
@@ -111,12 +127,28 @@ function createAvailabilityRepository(
   throw new AvailabilityConfigurationError();
 }
 
+function createPublicAccessRepository(
+  env: Env,
+  publicAccessClock: () => Date,
+): PublicAccessRepository {
+  const configuredBackend = env.PUBLIC_ACCESS_BACKEND?.trim();
+  if (!configuredBackend) throw new PublicAccessUnavailableError();
+  if (configuredBackend === "d1") return createD1PublicAccessRepository(env, publicAccessClock);
+  throw new PublicAccessConfigurationError();
+}
+
 function errorResponse(code: string, status: number, headers: Headers, extra?: HeadersInit): Response {
   const responseHeaders = new Headers(headers);
   if (extra) {
     new Headers(extra).forEach((value, key) => responseHeaders.set(key, value));
   }
   return jsonResponse({ error: code }, status, responseHeaders);
+}
+
+function publicAccessJsonResponse(body: unknown, status: number, headers: Headers): Response {
+  const responseHeaders = new Headers(headers);
+  responseHeaders.set("content-type", JSON_CONTENT_TYPE);
+  return new Response(serializePublicAccessBody(body), { status, headers: responseHeaders });
 }
 
 async function fetchStaticAsset(request: Request, assets: Fetcher): Promise<Response> {
@@ -146,6 +178,7 @@ export async function handleRequest(
   env: Env,
   outboundFetch: typeof fetch = fetch,
   availabilityClock: AvailabilityClock = () => new Date(),
+  publicAccessClock: () => Date = () => new Date(),
 ): Promise<Response> {
   const url = new URL(request.url);
   const routeHeaders = baseHeaders();
@@ -157,22 +190,31 @@ export async function handleRequest(
     return fetchStaticAsset(request, env.ASSETS);
   }
 
+  const publicAccessRoute = parsePublicAccessRoute(url);
   if (
     url.pathname !== "/api/fanmarks/recent" &&
-    url.pathname !== "/api/fanmarks/availability"
+    url.pathname !== "/api/fanmarks/availability" &&
+    !publicAccessRoute
   ) {
     return errorResponse("not_found", 404, routeHeaders);
   }
 
   const isAvailabilityRoute = url.pathname === "/api/fanmarks/availability";
-  const allowedMethods = isAvailabilityRoute
-    ? AVAILABILITY_ALLOWED_METHODS
-    : RECENT_ALLOWED_METHODS;
+  const isRecentRoute = url.pathname === "/api/fanmarks/recent";
+  const allowedMethods = publicAccessRoute
+    ? publicAccessAllowedMethods(publicAccessRoute)
+    : isAvailabilityRoute
+      ? AVAILABILITY_ALLOWED_METHODS
+      : RECENT_ALLOWED_METHODS;
   const cors = corsHeaders(
     request,
     env,
     allowedMethods,
-    isAvailabilityRoute ? AVAILABILITY_ALLOWED_HEADERS : undefined,
+    publicAccessRoute
+      ? publicAccessAllowedHeaders(publicAccessRoute)
+      : isAvailabilityRoute
+        ? AVAILABILITY_ALLOWED_HEADERS
+        : undefined,
   );
   if (!cors.allowed) {
     return errorResponse("forbidden_origin", 403, routeHeaders);
@@ -185,6 +227,69 @@ export async function handleRequest(
   if (method === "OPTIONS") {
     responseHeaders.set("allow", allowedMethods);
     return emptyResponse(204, responseHeaders);
+  }
+
+  if (publicAccessRoute) {
+    if (publicAccessRoute.kind === "emoji") {
+      if (method !== "POST") {
+        responseHeaders.set("allow", allowedMethods);
+        return errorResponse("method_not_allowed", 405, responseHeaders);
+      }
+      const emojiIds = await parsePublicAccessEmojiRequest(request);
+      if (!emojiIds) return errorResponse("invalid_request", 400, responseHeaders);
+      try {
+        const repository = createPublicAccessRepository(env, publicAccessClock);
+        const row = await repository.getByEmojiIds(emojiIds, publicAccessClock());
+        if (!row) return errorResponse("not_found", 404, responseHeaders);
+        return publicAccessJsonResponse(mapPublicAccessRow(row), 200, responseHeaders);
+      } catch (error) {
+        if (error instanceof PublicAccessUnavailableError) {
+          return errorResponse("public_access_unavailable", 503, responseHeaders);
+        }
+        if (error instanceof PublicAccessConfigurationError) {
+          return errorResponse("server_misconfigured", 500, responseHeaders);
+        }
+        if (error instanceof PublicAccessResponseTooLargeError || error instanceof PublicAccessUpstreamError) {
+          return errorResponse("upstream_unavailable", 502, responseHeaders);
+        }
+        return errorResponse("upstream_unavailable", 502, responseHeaders);
+      }
+    }
+
+    if (method !== "GET") {
+      responseHeaders.set("allow", allowedMethods);
+      return errorResponse("method_not_allowed", 405, responseHeaders);
+    }
+
+    try {
+      const repository = createPublicAccessRepository(env, publicAccessClock);
+      if (publicAccessRoute.kind === "short") {
+        const shortId = parsePublicAccessPathValue(publicAccessRoute.rawValue);
+        if (!shortId) return errorResponse("invalid_request", 400, responseHeaders);
+        const row = await repository.getByShortId(shortId);
+        if (!row) return errorResponse("not_found", 404, responseHeaders);
+        return publicAccessJsonResponse(mapPublicAccessRow(row), 200, responseHeaders);
+      }
+
+      const licenseId = parsePublicAccessPathValue(publicAccessRoute.rawValue);
+      if (!licenseId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu.test(licenseId)) {
+        return errorResponse("invalid_request", 400, responseHeaders);
+      }
+      const row = await repository.getPublicProfile(licenseId.toLowerCase(), publicAccessClock());
+      if (!row) return errorResponse("not_found", 404, responseHeaders);
+      return publicAccessJsonResponse(mapPublicProfileRow(row), 200, responseHeaders);
+    } catch (error) {
+      if (error instanceof PublicAccessUnavailableError) {
+        return errorResponse("public_access_unavailable", 503, responseHeaders);
+      }
+      if (error instanceof PublicAccessConfigurationError) {
+        return errorResponse("server_misconfigured", 500, responseHeaders);
+      }
+      if (error instanceof PublicAccessResponseTooLargeError || error instanceof PublicAccessUpstreamError) {
+        return errorResponse("upstream_unavailable", 502, responseHeaders);
+      }
+      return errorResponse("upstream_unavailable", 502, responseHeaders);
+    }
   }
 
   if (isAvailabilityRoute) {
@@ -218,7 +323,7 @@ export async function handleRequest(
     }
   }
 
-  if (method !== "GET") {
+  if (!isRecentRoute || method !== "GET") {
     responseHeaders.set("allow", allowedMethods);
     return errorResponse("method_not_allowed", 405, responseHeaders);
   }

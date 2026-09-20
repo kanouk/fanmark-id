@@ -2,6 +2,7 @@ export interface Env {
   ASSETS?: Fetcher;
   FANMARK_DB?: D1Database;
   AVAILABILITY_BACKEND?: string;
+  PUBLIC_ACCESS_BACKEND?: string;
   RECENT_FANMARKS_BACKEND?: string;
   SUPABASE_URL?: string;
   SUPABASE_PUBLISHABLE_KEY?: string;

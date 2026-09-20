@@ -4,17 +4,11 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [
     cloudflareTest({
-      wrangler: { configPath: "./wrangler.jsonc" },
+      wrangler: { configPath: "./wrangler.public-access-d1-test.jsonc" },
     }),
   ],
   test: {
-    include: ["./test/**/*.test.ts"],
-    exclude: [
-      "./test/static-assets.test.ts",
-      "./test/d1-repository.test.ts",
-      "./test/availability-d1.test.ts",
-      "./test/public-access.test.ts",
-    ],
+    include: ["./test/public-access.test.ts"],
     fileParallelism: false,
     setupFiles: ["./test/setup.ts"],
   },
