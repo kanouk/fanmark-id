@@ -375,6 +375,36 @@ test("rejects a changed source envelope and preserves the applied artifact", asy
   assert.equal((await transformCredential({ db, source: original, testClock })).artifactId, first.artifactId);
 });
 
+test("rejects a missing incarnation authority before reservation", async () => {
+  await db.prepare("DELETE FROM fanmark_license_incarnations WHERE license_id = ?").bind(LICENSE_ID).run();
+  await assert.rejects(
+    reserveArtifact({ db, source: source(), testClock }),
+    isTransformError("target_not_found"),
+  );
+  assert.equal(await count("credential_transform_artifacts"), 0);
+  assert.equal(await count("fanmark_access_configs"), 0);
+});
+
+test("rejects incarnation removal between reconciliation read and final SQL", async () => {
+  const reserved = await reserveArtifact({ db, source: source(), testClock });
+  const prepared = await prepareArtifact({ db, source: source(), handle: reserved, testClock });
+  const applied = await applyArtifact({ db, source: source(), handle: prepared, testClock });
+  await assert.rejects(
+    reconcileArtifact({
+      db, source: source(), artifactId: applied.artifactId, testClock,
+      testBeforeFinalize: async () => {
+        await db.prepare("DELETE FROM fanmark_license_incarnations WHERE license_id = ?").bind(LICENSE_ID).run();
+      },
+    }),
+    isTransformError("reconcile_mismatch"),
+  );
+  assert.equal((await row("SELECT state FROM credential_transform_artifacts")).state, "applied");
+  await assert.rejects(
+    reconcileArtifact({ db, source: source(), artifactId: applied.artifactId, testClock }),
+    isTransformError("reconcile_mismatch"),
+  );
+});
+
 test("rejects same-UUID license recreation through the retained incarnation", async () => {
   const reserved = await reserveArtifact({ db, source: source(), testClock, leaseMs: 5_000 });
   await db.prepare("DELETE FROM fanmark_licenses WHERE id = ?").bind(LICENSE_ID).run();

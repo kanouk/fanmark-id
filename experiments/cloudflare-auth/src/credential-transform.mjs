@@ -253,12 +253,12 @@ async function targetSnapshot(db, source) {
        l.id AS license_id,
        l.status AS license_status,
        l.returned AS license_returned,
-       COALESCE(i.incarnation, 0) AS license_incarnation,
+       i.incarnation AS license_incarnation,
        v.password_generation,
        v.lifecycle_generation
      FROM migration_targets t
      JOIN fanmark_licenses l ON l.id = ?
-     LEFT JOIN fanmark_license_incarnations i ON i.license_id = l.id
+     JOIN fanmark_license_incarnations i ON i.license_id = l.id
      JOIN fanmark_access_versions v ON v.license_id = l.id
      WHERE t.target_identity = ?
      LIMIT 2`,
@@ -535,11 +535,11 @@ export async function prepareArtifact({ db, source, handle, testClock, fault = n
            FROM migration_targets t
            JOIN fanmark_licenses l ON l.id = credential_transform_artifacts.destination_license_id
            JOIN fanmark_access_versions v ON v.license_id = l.id
-           LEFT JOIN fanmark_license_incarnations i ON i.license_id = l.id
+           JOIN fanmark_license_incarnations i ON i.license_id = l.id
            WHERE t.target_identity = credential_transform_artifacts.target_identity
              AND t.target_incarnation = credential_transform_artifacts.target_incarnation
              AND l.status = 'active' AND l.returned = 0
-             AND COALESCE(i.incarnation, 0) = credential_transform_artifacts.license_incarnation
+             AND i.incarnation = credential_transform_artifacts.license_incarnation
              AND v.password_generation = credential_transform_artifacts.expected_password_generation
              AND v.lifecycle_generation = credential_transform_artifacts.expected_lifecycle_generation
          )`,
@@ -562,7 +562,7 @@ function applyGuardSql(testClock) {
       JOIN migration_targets t ON t.target_identity = a.target_identity
       JOIN fanmark_licenses l ON l.id = a.destination_license_id
       JOIN fanmark_access_versions v ON v.license_id = l.id
-      LEFT JOIN fanmark_license_incarnations i ON i.license_id = l.id
+      JOIN fanmark_license_incarnations i ON i.license_id = l.id
       LEFT JOIN fanmark_access_configs c ON c.license_id = l.id
       WHERE a.artifact_id = ?
         AND a.state = 'prepared'
@@ -572,7 +572,7 @@ function applyGuardSql(testClock) {
         AND t.target_incarnation = a.target_incarnation
         AND l.status = 'active'
         AND l.returned = 0
-        AND COALESCE(i.incarnation, 0) = a.license_incarnation
+        AND i.incarnation = a.license_incarnation
         AND v.password_generation = a.expected_password_generation
         AND v.lifecycle_generation = a.expected_lifecycle_generation
         AND (c.license_id IS NULL OR (
@@ -672,14 +672,14 @@ export async function reconcileArtifact({ db, source, artifactId, testClock, tes
        c.destination_transform_digest AS config_transform_digest,
        l.status AS license_status,
        l.returned AS license_returned,
-       COALESCE(i.incarnation, 0) AS current_incarnation,
+       i.incarnation AS current_incarnation,
        v.password_generation,
        v.lifecycle_generation
      FROM credential_transform_artifacts a
      JOIN migration_targets t ON t.target_identity = a.target_identity
      JOIN fanmark_licenses l ON l.id = a.destination_license_id
      JOIN fanmark_access_versions v ON v.license_id = l.id
-     LEFT JOIN fanmark_license_incarnations i ON i.license_id = l.id
+     JOIN fanmark_license_incarnations i ON i.license_id = l.id
      JOIN fanmark_access_configs c ON c.license_id = l.id
      WHERE a.artifact_id = ?
        AND t.target_incarnation = a.target_incarnation`,
@@ -726,13 +726,13 @@ export async function reconcileArtifact({ db, source, artifactId, testClock, tes
              FROM migration_targets t
              JOIN fanmark_licenses l ON l.id = a.destination_license_id
              JOIN fanmark_access_versions v ON v.license_id = l.id
-             LEFT JOIN fanmark_license_incarnations i ON i.license_id = l.id
+             JOIN fanmark_license_incarnations i ON i.license_id = l.id
              JOIN fanmark_access_configs c ON c.license_id = l.id
              WHERE t.target_identity = a.target_identity
                AND t.target_incarnation = a.target_incarnation
                AND l.status = 'active'
                AND l.returned = 0
-               AND COALESCE(i.incarnation, 0) = a.license_incarnation
+               AND i.incarnation = a.license_incarnation
                AND v.password_generation = a.expected_password_generation + 1
                AND v.lifecycle_generation = a.expected_lifecycle_generation
                AND c.enabled = a.enabled

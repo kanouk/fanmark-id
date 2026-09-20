@@ -79,3 +79,12 @@ not present here. Source compatibility rehearsal, remote bcrypt CPU/plan
 measurement, single-writer cutover, and production lifecycle/authorization
 readback remain separate gates. No re-enrollment shortcut or runtime
 plaintext fallback is implied.
+
+## Required incarnation authority
+
+The retained license-incarnation row must exist in every target read and final
+SQL guard. A missing row is never interpreted as incarnation zero. Parent
+review added reservation and reconciliation-race regressions for this boundary;
+the Node 22.6.0 credential suite now passes 19 tests with no skips. Removing
+the authority between reconciliation read and final SQL leaves the artifact
+applied, rather than incorrectly marking it reconciled.

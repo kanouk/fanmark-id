@@ -116,3 +116,5 @@ credential descriptorのmetadata compilerを追加。6列の対応、PK・valida
 [lifecycle target schema](lifecycle-target-schema.md)の生成・適用・厳密readbackを追加。全source DDLとextensionを照合し、部分適用、quoted literal/制約変更、未知index/view/triggerを拒否する。親の実catalog検証で4列のNULL条件の誤りを検出・修正し、40表構造の空local D1へ5表・4索引を追加、再適用no-opとreadback、runtime disposeを確認した。Node22.6の親独立実行で2 test group成功・skipなし、実行前後hash一致、CI隔離検査成功。source row import、credential/generation mutator統合、expiry実行接続、本番適用は未完了。
 
 追加reviewでread-only schema inspectionにもsource fingerprintとSQL/inventoryの整合性検証を追加。catalog/report fingerprint・SQL・inventoryの個別改変を拒否し、専用2 test groupと実40表構造rehearsalの再実行が成功。これは入力plan内部の整合性確認であり、外部由来planの真正性やsourceデータ移送完了を保証しない。
+
+世代管理の接続reviewでcredential proofのincarnation台帳欠落を0とみなすfallbackを除去。target read・prepare/apply/finalizeのSQLで台帳の存在を必須にした。予約前の欠落とreconcile read後の削除を検証し、Node22.6のcredential suiteは19件成功・skipなし。source-shaped世代triggerとの接続自体は未完了。
