@@ -100,3 +100,5 @@ verified snapshotからの[D1 import core](d1-import.md)を追加。parent-first
 実catalogの40表に各1行のsyntheticデータを用意したnonzero rehearsalも成功。40 source行→40 D1行、40 checkpoint・complete・readback、内部FK/CHECK/enum/NOT NULL/uniqueと各値型を検証したprivate結果を確認。外部Authはsynthetic UUIDと未解決条件のまま、20群のschema gate、deployable/fullMigrationReconciled=falseを維持する。これは実source行のparityではない。取得した定期期限処理と共有helper計3ファイルがrepoとbyte-for-byte一致することも、Astraがhash付き非公開記録に保存した。
 
 Astraが復元済みのsynthetic generatorを確認し、Node 22.6.0で40表・各1行のnonzero rehearsalを独立再実行した。40行の移送、40表のcomplete/readback、public_rows_reconciledを再確認。cleanup失敗を成功扱いしていたprivate helperの記録を修正し、runtime dispose成功と一時directoryの不存在も確認した。20群の未解決schema条件、deployable/fullMigrationReconciled=falseは維持し、実source行・credential変換・業務parityの証拠とは扱わない。
+
+active→graceの[期限処理local proof](license-expiry-proof.md)を追加。UTC microsecondの期限境界、元設定のparseInt/fallback、owner/end/generation付きCAS、audit/outboxとの同時commit、durable run-itemによる停止後の再開を検証する。ACK再確認でprocessedを変更せず、同runの並行再開でも件数を保持する。AstraがNode22.6の専用npm scriptを独立実行して成功し、CI隔離検査も成功。65行のkeyset traversalと最大32件の返却sampleを確認した。fixtureは縮小したsynthetic schemaで、全schema統合、grace→expired、lottery、cron接続、本番動作の同等性は未完了。
