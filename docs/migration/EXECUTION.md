@@ -92,3 +92,5 @@ public全表を同一read-only repeatable-read transactionから保存する[sna
 DB動作の非公開gap inventoryを作成し、元catalogの77 policy・36 trigger・1 view・58 functionの全名称が対応表に含まれることと0600権限をAstraも確認した。暫定分類はpolicyがlocal対応済み0/部分4/未対応73、triggerが0/0/36、viewが0/1/0、functionが3/11/44。対応済みも限定的なlocal実装の証拠であり、本番parityやRLS全体移植を意味しない。次は期限ジョブの状態遷移・競合・付随効果を整理する。
 
 verified snapshotからの[D1 import core](d1-import.md)を追加。parent-first順、全batchのcheckpoint guard、同時実行/ACK不明後の再開、移送先incarnation、application/ledger双方のDDL検証、全値・SQLite保存型・PK・件数・hash・FKの読み戻しを行う。AstraのNode22独立実行でCIと同じコマンドの12件と明示Miniflare integrationが成功し、CI隔離検査も成功。初回report書込失敗からの復旧、改変検知、query/SQL/変換後row上限も含む。結果はpublic_rows_reconciledに限定し、deployable/fullMigrationReconciledはfalse。実40表の行移送、credential変換、外部Auth参照、業務動作の同等性、remote適用、backup/restoreは未完了。
+
+[credential transform設計](credential-transform-design.md)を追加。immutableな非公開sourceと変換後digestを分け、prepared時点でbcrypt結果を固定し、lease/fence付きの再開と全行カバレッジを定義した。Supabase/D1の二重writerは許容せず、freeze後に単一authorityへ切り替える。通常row importerへの変換descriptor統合、変換実装、暗号化sourceによるrehearsalは未完了。[期限ジョブ設計](license-expiry-design.md)も保存し、active→graceのlocal proofに着手。grace→expired/lottery等のparity gateは未解決。
