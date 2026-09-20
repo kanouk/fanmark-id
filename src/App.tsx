@@ -46,9 +46,9 @@ import MaintenanceGate from "@/components/MaintenanceGate";
 
 const queryClient = new QueryClient();
 
-type AppProps = { homeHero?: HomeHeroComponent };
+type AppProps = { homeHero?: HomeHeroComponent; homeInput?: import("react").ComponentType<import("@/components/EmojiInput").EmojiInputProps> };
 
-const MainApp = ({ homeHero }: AppProps) => (
+const MainApp = ({ homeHero, homeInput }: AppProps) => (
   <QueryClientProvider client={queryClient}>
     <TranslationProvider>
       <AuthProvider>
@@ -63,7 +63,7 @@ const MainApp = ({ homeHero }: AppProps) => (
               <PasswordSetupGate />
               <MaintenanceGate>
                 <Routes>
-                  <Route path="/" element={<Index hero={homeHero} />} />
+                  <Route path="/" element={<Index hero={homeHero} inputComponent={homeInput} />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
@@ -109,7 +109,7 @@ const MainApp = ({ homeHero }: AppProps) => (
   </QueryClientProvider>
 );
 
-const App = ({ homeHero }: AppProps = {}) => {
+const App = ({ homeHero, homeInput }: AppProps = {}) => {
   const { isAdmin, subdomain } = useSubdomain();
   
   // デバッグ用ログ（本番環境では削除可能）
@@ -123,7 +123,7 @@ const App = ({ homeHero }: AppProps = {}) => {
   }
   
   // 通常のファンマークアプリを表示
-  return <MainApp homeHero={homeHero} />;
+  return <MainApp homeHero={homeHero} homeInput={homeInput} />;
 };
 
 export default App;

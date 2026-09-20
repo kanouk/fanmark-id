@@ -17,7 +17,7 @@ import { Sparkles } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 export type HomeHeroProps = { onExplore: () => void; recentFanmarks: RecentFanmark[] | null };
 export type HomeHeroComponent = ComponentType<HomeHeroProps>;
-const Index = ({ hero: Hero }: { hero?: HomeHeroComponent } = {}) => {
+const Index = ({ hero: Hero, inputComponent }: { hero?: HomeHeroComponent; inputComponent?: ComponentType<import("@/components/EmojiInput").EmojiInputProps> } = {}) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -234,6 +234,7 @@ const Index = ({ hero: Hero }: { hero?: HomeHeroComponent } = {}) => {
       <div id="search" className="py-16 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
         <div className="container mx-auto px-4">
           <FanmarkAcquisition
+            inputComponent={inputComponent}
             fanmarkLimit={fanmarkLimit}
             currentCount={fanmarkCount}
             prefilledEmoji={prefilledEmoji}

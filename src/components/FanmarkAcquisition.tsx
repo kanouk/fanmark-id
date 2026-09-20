@@ -33,6 +33,7 @@ import { FanmarkSearchPanel } from '@/components/FanmarkSearchPanel';
 const SCROLL_TARGET_KEY = 'fanmark-search:scroll-target';
 
 interface FanmarkAcquisitionProps {
+  inputComponent?: import("react").ComponentType<import("@/components/EmojiInput").EmojiInputProps>;
   prefilledEmoji?: string;
   fanmarkLimit?: number;
   currentCount?: number;
@@ -45,6 +46,7 @@ interface FanmarkAcquisitionProps {
 
 export const FanmarkAcquisition = ({
   prefilledEmoji,
+  inputComponent,
   fanmarkLimit = 0,
   currentCount = 0,
   onObtain,
@@ -374,6 +376,7 @@ export const FanmarkAcquisition = ({
       const trimmed = value.trim();
 
       if (!trimmed) {
+        setSearchResult(null);
         setQuery('');
         if (rememberSearch && storageKey) {
           sessionStorage.removeItem(storageKey);
@@ -392,6 +395,7 @@ export const FanmarkAcquisition = ({
       }
 
       const normalized = normalizeQuery(extracted);
+      if (normalized !== query) setSearchResult(null);
       setQuery(normalized);
       if (!rememberSearch || !storageKey) return;
 
@@ -402,10 +406,11 @@ export const FanmarkAcquisition = ({
 
       sessionStorage.setItem(storageKey, normalized);
     },
-    [rememberSearch, storageKey, normalizeQuery, toast, t],
+    [rememberSearch, storageKey, normalizeQuery, toast, t, query],
   );
 
   const clearQuery = useCallback(() => {
+    setSearchResult(null);
     setQuery('');
     if (storageKey && typeof window !== 'undefined') {
       sessionStorage.removeItem(storageKey);
@@ -441,7 +446,7 @@ export const FanmarkAcquisition = ({
   }, [scrollToSearch, onSearchScrolled]);
 
   return (
-    <div ref={containerRef} className="space-y-6">
+    <div ref={containerRef} className={`space-y-6 ${inputComponent ? "fanmark-fusion" : ""}`}>
       {/* ファンマ取得中のローディング画面 */}
       {isRegistering && (
         <FanmarkAcquisitionLoading emoji={searchResult?.fanmark} />
@@ -515,11 +520,12 @@ export const FanmarkAcquisition = ({
             </div>
           ) : null
         }
-        className={getSearchAreaBackgroundClass}
+        className={`${getSearchAreaBackgroundClass} ${inputComponent ? "fanmark-fusion-panel" : ""}`}
       >
         {/* ファンマ入力グループ - 入力と便利ツールが一体 */}
         <div className="mt-6 mb-10 space-y-6">
           <FanmarkSearch
+            inputComponent={inputComponent}
             onSignupPrompt={() => onRequireAuth?.('')}
             statusVariant={user ? 'authenticated' : 'public'}
             showRecent={false}
@@ -532,7 +538,7 @@ export const FanmarkAcquisition = ({
           <div className="flex justify-center">
             <EmojiInputUtilities
               disabled={false}
-              hasValue={!!searchResult?.fanmark}
+              hasValue={!!query}
               onPaste={async () => {
                 try {
                   if (!navigator.clipboard) {

@@ -22,7 +22,7 @@ const normalizeInput = (text: string) => {
   return canonicalizeEmojiString(text);
 };
 
-interface EmojiInputProps {
+export interface EmojiInputProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;

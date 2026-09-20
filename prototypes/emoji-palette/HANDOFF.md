@@ -62,3 +62,7 @@ TYPESAFE_API_KEY_FILE=/path/to/private-key-file npm run dev:palette
 7. stagingで連続追加・置換・削除・Undo・クリア・履歴・IME・古い応答・障害時の名称検索・実機表示を検証する。マスター更新と旧履歴の互換性も確認してから本番へ反映する。
 
 保存時点では #26 の本番受け入れチェックを完了扱いにしない。導入再開はCloudflare全面移行の完了後に行う。
+
+## 追加の統合プレビュー（2026-09-20）
+
+`codex/hero-emoji-world` に、既存トップの検索エリアへ接続した `prototypes/hero-world/PaletteInput.tsx` を保存する。UIの移植例としてこちらも参照可能。単独版の保存コミットは置き換えず、本番導入は #28 完了後とする。ポート4179の統合版は実アプリの空き状況/取得導線と接続しているため、操作確認時の登録・決済に注意する。移植構造・動作確認範囲は `../hero-world/README.md` を参照。

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from './useTranslation';
 import {
@@ -138,6 +138,7 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
   const { t } = useTranslation();
   const [result, setResult] = useState<FanmarkSearchResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const searchVersion = useRef(0);
   const [recentFanmarks, setRecentFanmarks] = useState<FanmarkSearchResult[]>([]);
 
   const normalizedQuery = useMemo(() => {
@@ -153,11 +154,14 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
 
   // Search when query changes
   useEffect(() => {
+    const version = ++searchVersion.current;
+    setResult(null);
     if (normalizedQuery) {
-      searchFanmarks(normalizedQuery, searchQuery);
+      void searchFanmarks(normalizedQuery, searchQuery, version);
     } else {
-      setResult(null);
+      setLoading(false);
     }
+    return () => { searchVersion.current++; };
   }, [normalizedQuery, searchQuery]);
 
   const fetchRecentFanmarks = async () => {
@@ -245,7 +249,8 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
     }
   };
 
-  const searchFanmarks = async (query: string, rawQuery: string) => {
+  const searchFanmarks = async (query: string, rawQuery: string, version: number) => {
+    const publish = (value: FanmarkSearchResult | null) => { if (version === searchVersion.current) setResult(value); };
     setLoading(true);
     try {
       // Get current user
@@ -253,7 +258,7 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
       
       const validation = validateEmojiInput(rawQuery);
       if (!validation.valid) {
-        setResult({
+        publish({
           id: 'invalid',
           user_input_fanmark: rawQuery,
           display_fanmark: rawQuery,
@@ -295,6 +300,7 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
       const availabilityTierLevel = availability.tier_level ?? null;
       const availabilityTierDisplayName = availability.tier_display_name ?? undefined;
 
+      if (version !== searchVersion.current) return;
       onSearchCompleted?.(compactQuery);
 
       try {
@@ -306,7 +312,7 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
       // 未登録のファンマークは即座に available 扱い
       if (!availability.fanmark_id) {
         const derivedTierLevel = availabilityTierLevel ?? 1;
-        setResult({
+        publish({
           id: '',
           user_input_fanmark: rawQuery,
           display_fanmark: rawQuery,
@@ -356,7 +362,7 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
       // ステータスが active でないものは利用不可として扱う
       if (fanmarkData.status !== 'active') {
         const displayFanmark = fanmarkData.display_fanmark ?? '';
-        setResult({
+        publish({
           id: fanmarkData.id,
           user_input_fanmark: fanmarkData.user_input_fanmark,
           display_fanmark: displayFanmark,
@@ -379,7 +385,7 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
 
       if (isBlockedForRegistration) {
         const displayFanmark = fanmarkData.display_fanmark ?? '';
-        setResult({
+        publish({
           id: fanmarkData.id,
           user_input_fanmark: fanmarkData.user_input_fanmark,
           display_fanmark: displayFanmark,
@@ -405,7 +411,7 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
 
       if (!fanmarkData.has_active_license) {
         const displayFanmark = fanmarkData.display_fanmark ?? '';
-        setResult({
+        publish({
           id: fanmarkData.id,
           user_input_fanmark: fanmarkData.user_input_fanmark,
           display_fanmark: displayFanmark,
@@ -430,7 +436,7 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
 
       if (isOwnedByCurrentUser) {
         const displayFanmark = fanmarkData.display_fanmark ?? '';
-        setResult({
+        publish({
           id: fanmarkData.id,
           user_input_fanmark: fanmarkData.user_input_fanmark,
           display_fanmark: displayFanmark,
@@ -456,7 +462,7 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
       }
 
       const displayFanmark = fanmarkData.display_fanmark ?? '';
-      setResult({
+      publish({
         id: fanmarkData.id,
         user_input_fanmark: fanmarkData.user_input_fanmark,
         display_fanmark: displayFanmark,
@@ -476,9 +482,9 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
       });
     } catch (error) {
       console.error('Error searching fanmarks:', error);
-      setResult(null);
+      publish(null);
     } finally {
-      setLoading(false);
+      if (version === searchVersion.current) setLoading(false);
     }
   };
   

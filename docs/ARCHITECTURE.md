@@ -224,6 +224,8 @@
 
 ## 惑星ヒーローの試作（#27、本番未導入）
 
-`prototypes/hero-world/main.tsx` は実アプリを `App homeHero={PlanetHero}` で起動する。`src/App.tsx` → `src/pages/Index.tsx` の任意差し替え口を通じ、ヒーローだけを置換する。通常エントリでは従来表示。`useRecentFanmarks` の公開RPC結果をIndexからPlanetHeroへ渡す。試作のファンマスクロールは撤去。通常エントリの `RecentFanmarksScroll` は同じフックを使う。
+`prototypes/hero-world/main.tsx` は実アプリを `App homeHero={PlanetHero} homeInput={PaletteInput}` で起動する。`src/App.tsx` → `src/pages/Index.tsx` の任意差し替え口を通じ、ヒーローと検索エリアの入力UIを置換する。通常エントリでは従来表示。`useRecentFanmarks` の公開RPC結果をIndexからPlanetHeroへ渡す。試作のファンマスクロールは撤去。通常エントリの `RecentFanmarksScroll` は同じフックを使う。
 
 `PlanetHero.tsx` は既存翻訳の見出し・HTML操作・遅延ロード、`world.ts` は惑星・人と動物・店・実ファンマの吹き出しと看板・回転/ズーム/コピー選択を担当する。ポート4179、静止画なし。既存検索・取得・認証・課金画面と同じアプリのため、プレビューも既存バックエンドへ接続する。詳細と検証範囲は試作READMEを参照。
+
+`PaletteInput.tsx` は既存 `EmojiInputProps` に適合する入力コンポーネント。Index → FanmarkAcquisition → FanmarkSearch の任意inputComponentで接続する。名称検索・Jevクライアント/サーバーロジックは `prototypes/emoji-palette` を共有し、4179用middlewareとして起動する。選択列はFanmarkAcquisitionが保持し、既存の検索結果・取得・認証・抽選・お気に入りの処理を維持する。共有useFanmarkSearchは古い応答を世代番号で破棄する。

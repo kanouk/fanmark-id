@@ -167,7 +167,7 @@ export async function findWithJev(input: SearchInput, key: string, signal: Abort
   return { ids, model: actualModel, elapsedMs: Math.round(performance.now() - started), candidateCount, cached: false };
 }
 
-export function jevPlugin(): Plugin {
+export function jevPlugin(port = 4178): Plugin {
   const cache = new Map<string, { at: number; value: JevResult }>();
   const active = new Set<AbortController>();
   let requestTimes: number[] = [];
@@ -177,7 +177,7 @@ export function jevPlugin(): Plugin {
       if (!res.destroyed) { res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(value)); }
     };
     const origin = req.headers.origin;
-    if (!['127.0.0.1:4178', 'localhost:4178'].includes(req.headers.host ?? '') || (origin && !['http://127.0.0.1:4178', 'http://localhost:4178'].includes(origin)) || req.headers['x-fanmark-palette'] !== '1') { send(403, { error: 'forbidden' }); return; }
+    if (![`127.0.0.1:${port}`, `localhost:${port}`].includes(req.headers.host ?? '') || (origin && ![`http://127.0.0.1:${port}`, `http://localhost:${port}`].includes(origin)) || req.headers['x-fanmark-palette'] !== '1') { send(403, { error: 'forbidden' }); return; }
     if (req.method !== 'POST') { send(405, { error: 'method_not_allowed' }); return; }
     if (!req.headers['content-type']?.startsWith('application/json')) { send(415, { error: 'invalid_content_type' }); return; }
     let input: SearchInput;
