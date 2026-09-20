@@ -346,3 +346,18 @@ Worker opt-in. Implement short-id plus published-profile read projections
 first, then route emoji lookup and OGP through that shared projection. Keep
 password verification, anonymous details, access analytics, and user-specific
 lottery/favorite data on their existing boundaries.
+
+### Response-size preflight
+
+[`public-access-readiness.sql`](../../scripts/migration/public-access-readiness.sql)
+checks the proposed byte bounds with aggregate booleans in a read-only,
+repeatable-read transaction. It requires an already-authorized source role;
+it does not grant privileges. The current read-only observation found no
+violations of the checked name, message, redirect, short-ID, social JSON, or
+theme JSON bounds. Raw output remains private. This does not prove that future
+UI writes fit those bounds, that the combined serialized response fits its
+budget, or that all profile values satisfy the target mapper. Re-run during
+rehearsal and resolve any failing condition before switching the frontend.
+Character limits from the UI must be measured as JavaScript string length,
+separately from UTF-8 response-byte limits; Japanese text is not one byte per
+character.
