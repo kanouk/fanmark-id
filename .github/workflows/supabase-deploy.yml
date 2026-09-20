@@ -40,6 +40,15 @@ jobs:
       - name: Verify generated PWA cache boundary
         run: node scripts/check-pwa-cache.mjs
 
+      - name: Install Static Assets validation dependencies
+        run: npm ci --prefix workers/api
+
+      - name: Verify Static Assets routing with the fresh application build
+        run: npm run --prefix workers/api test:static-assets
+
+      - name: Validate Static Assets bundle without deployment
+        run: npm run --prefix workers/api build:static-assets:dry-run
+
   migration-validation:
     name: Validate migration (${{ matrix.directory }})
     runs-on: ubuntu-latest

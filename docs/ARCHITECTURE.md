@@ -223,3 +223,5 @@
 `workers/api/` は移行用の公開recent APIを検証する独立Worker。フロントは `VITE_FANMARK_API_BASE_URL` を明示したビルドだけこのWorkerを選択し、未設定では既存Supabase RPCを利用する。Worker選択時の失敗は別データソースへフォールバックしない。契約・実行方法・配備条件は `docs/migration/recent-api-contract.md`。DB・RPC・Edgeの移行対応案は `docs/migration/object-map.md`。
 
 `scripts/migration/auth-readiness.sql` と `scripts/migration/storage-cron-readiness.sql` は本番棚卸し用の読み取り専用集計。秘密値やデータ行を返さず、出力の個別件数は公開リポジトリへ保存しない。
+
+`workers/api/wrangler.static-assets.jsonc` はViteの `dist` とAPIを一体化する別構成。Workerが `/api` と `/api/*` を先に処理し、それ以外のGETナビゲーションだけSPAへフォールバックする。存在しない非ナビゲーションのアセットは404を維持する。ローカル検証手順と未確認の本番条件は `docs/migration/static-assets.md`。

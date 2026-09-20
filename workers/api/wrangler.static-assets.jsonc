@@ -1,0 +1,17 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "fanmark-app-static-assets-preparation",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-18",
+  "assets": {
+    "directory": "../../dist",
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/*"]
+  },
+  "vars": {
+    "SUPABASE_URL": "https://synthetic-project.supabase.co",
+    "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_fixture_only",
+    "CORS_ALLOWED_ORIGINS": "https://app.example.test"
+  }
+}

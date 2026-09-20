@@ -73,6 +73,28 @@ function errorResponse(code: string, status: number, headers: Headers, extra?: H
   return jsonResponse({ error: code }, status, responseHeaders);
 }
 
+async function fetchStaticAsset(request: Request, assets: Fetcher): Promise<Response> {
+  const response = await assets.fetch(request);
+  const isNavigation =
+    request.method === "GET" &&
+    (request.headers.get("Sec-Fetch-Mode") === "navigate" ||
+      request.headers.get("Accept")?.includes("text/html") === true);
+  if (
+    response.status === 404 &&
+    isNavigation
+  ) {
+    // Keep SPA fallback limited to browser navigations. A missing script,
+    // stylesheet, or other asset must remain a real non-HTML 404.
+    return assets.fetch(
+      new Request(new URL("/index.html", request.url), {
+        method: "GET",
+        headers: request.headers,
+      }),
+    );
+  }
+  return response;
+}
+
 export async function handleRequest(
   request: Request,
   env: Env,
@@ -80,6 +102,13 @@ export async function handleRequest(
 ): Promise<Response> {
   const url = new URL(request.url);
   const routeHeaders = baseHeaders();
+
+  // Static Assets owns files and the Worker applies the navigation fallback.
+  // API paths stay in this Worker so an unknown API error can never be
+  // rewritten to index.html.
+  if (!url.pathname.startsWith("/api/") && url.pathname !== "/api" && env.ASSETS) {
+    return fetchStaticAsset(request, env.ASSETS);
+  }
 
   if (url.pathname !== "/api/fanmarks/recent") {
     return errorResponse("not_found", 404, routeHeaders);

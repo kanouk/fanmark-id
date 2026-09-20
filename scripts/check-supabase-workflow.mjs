@@ -59,6 +59,10 @@ assert(/npm run check:ci/.test(validate), "PR validation must check workflow iso
 assert(/npm ci --legacy-peer-deps/.test(validate), "PR validation must install the locked dependencies");
 assert(/npm run typecheck/.test(validate), "PR validation must run the application type check");
 assert(/npm run build/.test(validate), "PR validation must run the production build");
+assert(validate.includes("npm ci --prefix workers/api"), "Static Assets validation must install locked dependencies");
+for (const command of ["npm run --prefix workers/api test:static-assets", "npm run --prefix workers/api build:static-assets:dry-run"]) {
+  assert(validate.indexOf(command) > validate.indexOf("run: npm run build"), "Static Assets checks must follow the fresh application build");
+}
 assert(!/SUPABASE_(ACCESS_TOKEN|DB_PASSWORD|PROJECT_ID)/.test(validate), "PR validation must not reference Supabase credentials");
 
 assert(/^    if:\s*github\.event_name\s*==\s*'push'\s*&&\s*github\.ref\s*==\s*'refs\/heads\/main'\s*$/m.test(deploy), "deployment must be limited to push on main");
