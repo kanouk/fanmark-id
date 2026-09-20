@@ -73,6 +73,7 @@ function fixtureCatalog() {
 
 const parentId = "00000000-0000-4000-8000-000000000001";
 const childId = "00000000-0000-4000-8000-000000000002";
+const passwordConfigId = "00000000-0000-4000-8000-000000000010";
 
 function fixtureRows() {
   return {
@@ -128,6 +129,43 @@ function authFixture() {
   const rows = fixtureRows();
   rows.parent[0].columns.push("auth_user_id");
   rows.parent[0].values.auth_user_id = "00000000-0000-4000-8000-000000000099";
+  return { catalog, rows };
+}
+
+function credentialFixture() {
+  const catalog = fixtureCatalog();
+  catalog.columns.push(
+    column("fanmark_password_configs", "id", 1, "uuid", { not_null: true }),
+    column("fanmark_password_configs", "license_id", 2, "uuid", { not_null: true }),
+    column("fanmark_password_configs", "access_password", 3, "text", { not_null: true }),
+    column("fanmark_password_configs", "is_enabled", 4, "boolean", { not_null: true }),
+    column("fanmark_password_configs", "created_at", 5, "timestamp with time zone", { not_null: true }),
+    column("fanmark_password_configs", "updated_at", 6, "timestamp with time zone", { not_null: true }),
+  );
+  catalog.constraints.push({
+    table_name: "fanmark_password_configs",
+    name: "fanmark_password_configs_pkey",
+    kind: "p",
+    definition: "PRIMARY KEY (id)",
+    validated: true,
+    deferrable: false,
+    initially_deferred: false,
+  });
+  const rows = fixtureRows();
+  rows.fanmark_password_configs = [{
+    schemaVersion: 1,
+    table: "fanmark_password_configs",
+    columns: ["id", "license_id", "access_password", "is_enabled", "created_at", "updated_at"],
+    values: {
+      id: passwordConfigId,
+      license_id: parentId,
+      access_password: "0123",
+      is_enabled: "t",
+      created_at: "2026-09-21T12:34:56.123456Z",
+      updated_at: "2026-09-21T12:34:56.123456Z",
+    },
+    arrayMetadata: {},
+  }];
   return { catalog, rows };
 }
 
@@ -326,6 +364,37 @@ export async function runLocalD1Integration() {
 }
 
 const isMain = process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url;
+
+if (isMain) test("fails closed before report, ledger, or target writes when the catalog contains an untransformed credential", async () => {
+  const fixture = await openFixture(credentialFixture());
+  try {
+    const beforeRows = await fixture.database.prepare(
+      'SELECT COUNT(*) AS "count" FROM "fanmark_password_configs"',
+    ).all();
+    assert.deepEqual(beforeRows.results, [{ count: 0 }]);
+    const beforeLedger = await fixture.database.prepare(
+      'SELECT "name" FROM "sqlite_master" WHERE "type" = \'table\' AND "name" LIKE \'__fanmark_d1_import_%\' ORDER BY "name"',
+    ).all();
+    assert.deepEqual(beforeLedger.results, []);
+
+    await assert.rejects(
+      importD1Snapshot(importOptions(fixture, { allowUnresolvedGates: true })),
+      (error) => error.code === "credential_transform_required",
+    );
+
+    const afterRows = await fixture.database.prepare(
+      'SELECT COUNT(*) AS "count" FROM "fanmark_password_configs"',
+    ).all();
+    assert.deepEqual(afterRows.results, [{ count: 0 }]);
+    const afterLedger = await fixture.database.prepare(
+      'SELECT "name" FROM "sqlite_master" WHERE "type" = \'table\' AND "name" LIKE \'__fanmark_d1_import_%\' ORDER BY "name"',
+    ).all();
+    assert.deepEqual(afterLedger.results, []);
+    await assert.rejects(fs.stat(fixture.reportPath), (error) => error.code === "ENOENT");
+  } finally {
+    await fixture.close();
+  }
+});
 
 if (isMain) test("rejects a late duplicate inside one batch without committing its earlier row", async () => {
   const fixture = await openFixture({ rows: twoParentRows() });

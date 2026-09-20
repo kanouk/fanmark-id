@@ -65,6 +65,30 @@ the final status. A successful local run reports
 `public_rows_reconciled`; this is a scoped row result, not a full migration or
 production-readiness claim.
 
+## Credential fail-closed boundary
+
+The generic importer does not yet own the credential descriptor, protected
+codec, or transform ledger. After the manifest has passed the private snapshot
+verifier, it inspects the verified catalog. If the catalog contains
+`fanmark_password_configs.access_password`, it raises
+`credential_transform_required` immediately. This happens before report-parent
+creation, importer-ledger creation, target-schema inspection, checkpoints, or
+any target row mutation.
+
+`allowUnresolvedGates: true` and `mode: "local"` cannot bypass this boundary;
+that option only admits explicitly reviewed external identity gates. The
+snapshot exporter, verifier, and row converter continue to retain and verify
+the complete source envelope, including the credential column, so this guard
+does not authorize dropping source evidence. It only prevents the current
+generic text codec from copying an untransformed credential into D1.
+
+The existing 40-table synthetic rehearsal therefore intentionally stops when
+the catalog includes this source table until the descriptor-integrated
+transform path is implemented and independently reconciled. The next slice
+must bind the descriptor and codec before generating generic bindings, then
+write the transformed value and source-row coverage in one reviewed D1
+transaction.
+
 The implementation bounds defaults at 50 rows and 512 KiB of source envelope
 bytes per batch. Source envelope lines have a separate 16 MiB local input cap;
 each converted target row is capped at 1,900,000 encoded value bytes, each

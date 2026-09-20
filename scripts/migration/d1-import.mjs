@@ -245,6 +245,19 @@ function expectedTargetType(codec) {
   return codec.targetType.toUpperCase();
 }
 
+function assertCredentialTransformBoundary(catalog) {
+  // Until the descriptor/codec is part of the import plan, a generic text
+  // binding would copy an untransformed credential into D1. Keep this guard
+  // independent of allowUnresolvedGates: that option is only for reviewed
+  // external identity gates and must never authorize raw credential writes.
+  const hasPasswordConfig = Array.isArray(catalog?.columns)
+    && catalog.columns.some((column) => (
+      column?.table_name === "fanmark_password_configs"
+      && column?.column_name === "access_password"
+    ));
+  if (hasPasswordConfig) throw fail("credential_transform_required");
+}
+
 function buildImportPlan(catalog, convertedSchema, { allowUnresolvedGates }) {
   const tableNames = getTableNames(catalog);
   const tableSet = new Set(tableNames);
@@ -1269,6 +1282,7 @@ export async function importD1Snapshot({
   if (typeof now !== "function") throw fail("invalid_clock");
   validateOptions({ maxRowsPerBatch, maxBatchBytes, maxBindingsPerBatch, scanBatchRows, maxRowBytes, maxTargetRowBytes });
   const snapshot = await loadVerifiedSnapshot(manifestPath);
+  assertCredentialTransformBoundary(snapshot.catalog);
   const absoluteReportPath = reportPathFor(snapshot.manifestPath, reportPath);
   await ensurePrivateReportParent(absoluteReportPath);
   const plan = buildImportPlan(snapshot.catalog, snapshot.convertedSchema, { allowUnresolvedGates });

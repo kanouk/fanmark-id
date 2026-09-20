@@ -106,3 +106,5 @@ active→graceの[期限処理local proof](license-expiry-proof.md)を追加。U
 credential変換の[隔離local proof](credential-transform-proof.md)を追加。source envelopeの入力/identity結合、prepared bcrypt結果の再利用、lease/fence、config・generation・台帳の同時適用、ACK不明後の復旧、移送先incarnationと値の再照合を実装した。実clockでD1 batch送信を期限後まで遅らせるprepare/apply拒否も確認。AstraのNode22.6独立実行で17件成功・skipなし、前後のcore/fixture/test hash一致、CI隔離検査成功。合成データ1行単位のproofであり、全行descriptor/importer統合、実credential移送、remote CPU、全writer、本番切替は未完了。
 
 期限処理の必須effect確認を同一D1 batch内のCHECK-backed guardへ補強。audit/outbox/run-itemが0行で成功しても状態変更をrollbackし、guard cleanup欠落も最終SQLでabortする。Node22専用suiteで4種類の欠落と正常再開、ACK/競合後のclaim・guard cleanupを検証して成功。初版7文の補強は独立静的reviewでblocking指摘なし、その指摘を受けcleanup保証を追加した。全schema統合は引き続き未完了。
+
+generic D1 importerはverified catalogにcredential列があれば、report/ledger/target mutation前にcredential_transform_requiredで停止するよう変更。local/allowUnresolvedGatesでも迂回不可。AstraのNode22独立実行で13件成功・skipなし。従来40表synthetic rehearsalも今後はdescriptor統合まで意図的に停止する。認証変換と[lifecycle schema統合設計](lifecycle-schema-integration.md)を揃え、同じsource行へのhash保存、retained incarnation、独立したstate/access/password世代、import前の厳密target profile作成を定義した。設計であり全schema統合は未実装。
