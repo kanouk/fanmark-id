@@ -121,3 +121,11 @@
 - Stripe: Checkout → Webhook → `user_settings.plan_type` 反映、Customer Portal でプラン変更、延長決済の Price ID 設定。
 - お気に入り/通知: 返却時の `favorite_fanmark_available` 通知、未読バッジ、キャッシュ同期。
 - UI改修の原則: 本来不要なロジック（バリデーション・データ処理）を変更しない。仕様変更が必要な場合は必ず仕様を確認し、ユーザーの合意を取ってから行う。Auth では特に、ログインパスワードは8文字以上でチェック表示、目アイコンは入力が1文字以上のときだけ表示し、メール欄とアイコン位置を揃える。
+
+## Web版パレットのローカル試作
+
+`npm run dev:palette` で `http://127.0.0.1:4178/`、`npm run build:palette` で `dist/palette-prototype/` を生成する。通常の本番ビルドとは独立している。
+
+Jev接続にはサーバー環境変数 `TYPESAFE_API_KEY` またはリポジトリ外の秘密ファイルを指す `TYPESAFE_API_KEY_FILE` を指定して起動する。`VITE_` 変数は使用しない。Vite middlewareの `/api/palette/jev` がTypeSafeへ2段階で問い合わせる。各Choiceは255候補以下。1段目は6観点を2問ずつ3リクエストで並列評価し、2段目も2問ずつ最大5リクエストで並列評価する。場所のイメージと比喩・象徴は最大6グループを2群ずつ評価し、その他の観点は最大2グループを評価する。全体12秒タイムアウト、ローカル名称検索へフォールバック。静的ビルドだけではJev APIは提供されない。本番Workerへの移植・認証・運用は別工程。
+
+型検査: `npx tsc --project prototypes/emoji-palette/tsconfig.json`。検索・データ出典・動作確認の詳細は `prototypes/emoji-palette/README.md` を参照。試作の日本語CLDR注釈は固定コミットから取得したもので、マスター更新パイプラインへの自動接続はまだ行っていない。

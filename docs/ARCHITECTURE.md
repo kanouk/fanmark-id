@@ -34,6 +34,14 @@
 - 管理画面 (admin サブドメイン想定): `AdminApp.tsx`, `AdminDashboard.tsx`, `AdminAuth.tsx`
 - 主要コンポーネント: `Navigation`, `LanguageToggle`, `FanmarkSearch`, `FanmarkRegistrationForm`, `EmojiInput`, `FanmarkStatusBadge`, `GraceStatusCountdown`, `InvitationSystem`, `AdminTierExtensionPrices`, `AdminPatternRules`, `AdminDataReset`, `AdminSettings`, `MaintenanceGate`.
 
+## Web版絵文字パレットの試作（本番未接続）
+
+- `prototypes/emoji-palette/`: 独立したViteエントリ。`npm run dev:palette` で `http://127.0.0.1:4178/` を開く。
+- `App.tsx`: 入力欄とパレットが状態を共有するUI。連続追加、置き換え、途中挿入、削除、Undo、履歴、コピー。
+- `search.ts`: 既存 `emojiCatalog.ts` のUUIDを使うローカル検索。日本語CLDRの名称・キーワードを追加。手作業の連想辞書は使わない。
+- `useJevSearch.ts` → `jev-server.ts`: 開発サーバーの `/api/palette/jev` を介してJevへ接続。6観点それぞれの分類選択と候補再評価の2段構成。分類は既存大分類を125件ずつに分割し、上位2群までを展開（場所のイメージと比喩・象徴は6群までを2群ずつ評価）。分類選択の3リクエストを並列実行してから、候補選択の最大5リクエストを並列実行する。各リクエストは2問まで。ローカル名称検索へフォールバック。秘密はサーバー側のみ。
+- 既存 `EmojiInput.tsx`、本番ルート、Supabaseへは接続しない。通常の `npm run build` に試作ページは含まれない。
+
 ## サービスフローとデータ
 - 検索: `FanmarkSearch`/`useFanmarkSearch` → RPC `check_fanmark_availability`（Tier/SLA/available_at/lottery情報含む）。検索結果と最近取得は件数制限し、ローカルにプリフィル保存。
 - 取得: `register-fanmark` Edge Functionが Tier 判定 (`classify_fanmark_tier`)、ライセンス作成、監査ログを実行。成功後は設定ページへ遷移。

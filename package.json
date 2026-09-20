@@ -14,7 +14,9 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
     "db:status": "supabase status",
-    "db:push": "supabase db push"
+    "db:push": "supabase db push",
+    "dev:palette": "vite --config prototypes/emoji-palette/vite.config.ts",
+    "build:palette": "vite build --config prototypes/emoji-palette/vite.config.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
