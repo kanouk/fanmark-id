@@ -227,3 +227,5 @@
 `workers/api/wrangler.static-assets.jsonc` はViteの `dist` とAPIを一体化する別構成。Workerが `/api` と `/api/*` を先に処理し、それ以外のGETナビゲーションだけSPAへフォールバックする。存在しない非ナビゲーションのアセットは404を維持する。ローカル検証手順と未確認の本番条件は `docs/migration/static-assets.md`。
 
 `supabase/functions/_shared/stripe-receipt-ingress/index.ts` は署名付きStripeイベントを検証・正規化し、service-only receipt RPCへ渡す共通factory。現行Webhookへの接続や課金効果の適用は含まない。実SDKの署名・型互換性と保存経路の検証は `experiments/stripe-receipts/`、境界は `docs/migration/stripe-ingress-validation.md`。
+
+公開recent APIは `RECENT_FANMARKS_BACKEND=d1` と `FANMARK_DB` bindingを明示した環境でD1を選択できる。未指定ではSupabaseを使い、D1指定時の失敗では別のDBへ戻らない。local D1 fixtureは `workers/api/test/fixtures/` と専用test configに隔離し、本番schemaとは区別する。契約は `docs/migration/d1-recent-contract.md`。

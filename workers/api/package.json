@@ -8,7 +8,8 @@
     "test:watch": "vitest --config vitest.config.mjs",
     "typecheck": "tsc --noEmit",
     "build:dry-run": "wrangler deploy --dry-run --config wrangler.jsonc",
-    "build:static-assets:dry-run": "test -f ../../dist/index.html && wrangler deploy --dry-run --config wrangler.static-assets.jsonc"
+    "build:static-assets:dry-run": "test -f ../../dist/index.html && wrangler deploy --dry-run --config wrangler.static-assets.jsonc",
+    "test:d1": "vitest run --config vitest.d1.config.mjs"
   },
   "devDependencies": {
     "@msw/cloudflare": "0.0.1",

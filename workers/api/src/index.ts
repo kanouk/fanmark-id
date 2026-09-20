@@ -6,6 +6,7 @@ import {
   RecentFanmarksUpstreamError,
   type Env,
 } from "./repository";
+import { createD1RecentFanmarksRepository } from "./d1-repository";
 
 const ALLOWED_METHODS = "GET, OPTIONS";
 const JSON_CONTENT_TYPE = "application/json; charset=utf-8";
@@ -63,6 +64,18 @@ function parseLimit(url: URL): number | null {
   if (values.length === 0) return 20;
   if (values.length !== 1 || !/^(?:[1-9]|1[0-9]|20)$/.test(values[0])) return null;
   return Number(values[0]);
+}
+
+function createRecentFanmarksRepository(env: Env, outboundFetch: typeof fetch) {
+  const configuredBackend = env.RECENT_FANMARKS_BACKEND?.trim();
+  if (!configuredBackend) {
+    return createSupabaseRecentFanmarksRepository(env, outboundFetch);
+  }
+  if (configuredBackend === "d1") {
+    return createD1RecentFanmarksRepository(env);
+  }
+  // An explicit unknown value must not silently select another data source.
+  throw new RecentFanmarksConfigurationError();
 }
 
 function errorResponse(code: string, status: number, headers: Headers, extra?: HeadersInit): Response {
@@ -137,7 +150,7 @@ export async function handleRequest(
   if (limit === null) return errorResponse("invalid_limit", 400, responseHeaders);
 
   try {
-    const repository = createSupabaseRecentFanmarksRepository(env, outboundFetch);
+    const repository = createRecentFanmarksRepository(env, outboundFetch);
     const rows = await repository.listRecent(limit);
     return jsonResponse(mapRecentFanmarkRows(rows, limit), 200, responseHeaders);
   } catch (error) {

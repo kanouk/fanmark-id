@@ -21,7 +21,7 @@
 
 - `pull_request`（対象ブランチ `main`）と `push`（`main`）では `validate` ジョブを実行する。`.node-version` の Node.js を使い、`npm ci --legacy-peer-deps`、`npm run check:ci`、`npm run typecheck`、`npm run build` を実行する。このジョブは Supabase の秘密情報、Supabase CLI、リモートプロジェクト、DB push にアクセスしない。
 - `validate` は生成したPWAのキャッシュ境界を検査し、その直後のViteビルドを使って `workers/api` のStatic Assetsルーティング（local HTTPを含む）と配備用dry-runも検証する。再現手順は `docs/migration/static-assets.md`。
-- `migration-validation` は `workers/api`、`experiments/cloudflare-auth`、`experiments/cloudflare-d1-concurrency`、`experiments/stripe-receipts` を別々に `npm ci` / `npm test` で検証する。APIの型検査と配備用dry-run、Stripe受信adapterと実SDKの型互換性検査も含む。合成データとlocal Workers/D1・in-memory PostgreSQLのみを使い、秘密情報やremote配備権限を渡さない。
+- `migration-validation` は `workers/api`、`experiments/cloudflare-auth`、`experiments/cloudflare-d1-concurrency`、`experiments/stripe-receipts` を別々に `npm ci` / `npm test` で検証する。APIの型検査・D1 recent契約試験・配備用dry-run、Stripe受信adapterと実SDKの型互換性検査も含む。合成データとlocal Workers/D1・in-memory PostgreSQLのみを使い、秘密情報やremote配備権限を渡さない。
 - `deploy` ジョブは `validate` と `migration-validation` の成功後の `push`（`refs/heads/main`）に限って実行する。GitHub Environment の `Supabase` を明示的に使用し、そのジョブだけが `SUPABASE_ACCESS_TOKEN`、`SUPABASE_DB_PASSWORD`、`SUPABASE_PROJECT_ID` を参照する。プロジェクトを link して `supabase db push` を実行し、生成型を更新する。本番デプロイは `supabase-production` concurrency group で直列化し、実行中のデプロイをキャンセルしない。
 - 生成型の差分がある場合、`deploy` ジョブは `src/integrations/supabase/types.ts` をコミットして main へ push する。デプロイジョブには `contents: write` が必要である。
 
