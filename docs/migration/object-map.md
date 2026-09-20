@@ -21,12 +21,20 @@ purpose, but its definitions are not reproduced here.
 | Local Edge entrypoints | 34 | Checked-in supabase/functions/*/index.ts routes |
 | Live-only Edge name | 1 | manual-expire-grace-licenses, recorded separately in [live observations](live-observations.md) |
 
-The private live catalog file did not contain a view collection. A separate
-read-only live public-type readback did include recent_active_fanmarks, so its
-name and existence are observed at that readback. Its full definition, column
-projection, ordering, and security behavior still require direct view
-inspection. A checked-in generated type, SQL snapshot, or migration history is
-not treated as proof of current production state.
+The initial private live catalog did not contain a view collection. A direct
+read-only catalog inspection on 2026-09-21 subsequently confirmed
+`recent_active_fanmarks`: join `fanmark_licenses` to `fanmarks` by fanmark ID,
+select the license ID, fanmark ID/short ID, license `display_fanmark`, and license
+`created_at`, and filter only license `status = active`. It has
+`security_invoker=true`. The `list_recent_fanmarks(integer)` wrapper is stable,
+security-definer, fixes search_path to public, orders license created_at
+descending, and clamps its limit to 1..50 (default 20). Equal timestamp order is
+not defined. The current view adds no separate license-end or fanmark-status
+filter; a target adapter must not silently invent one. This is observed query
+behavior, not evidence that all authorization or product cases are correct.
+The readback contains no user rows. Reproducible metadata SQL is in
+[scripts/migration/recent-contract-readiness.sql](../../scripts/migration/recent-contract-readiness.sql).
+A checked-in type or migration history alone is not proof of production state.
 
 The live catalog reports rls=true and force_rls=false for each of the 40
 tables. Table rows below show live P/C/T counts for policy, constraint, and
@@ -113,7 +121,7 @@ Source shorthand used below:
 
 | View | Evidence | Tentative target and boundary | Uncertainty / decision |
 | --- | --- | --- | --- |
-| recent_active_fanmarks | T:1909; R:2963; F src/components/RecentFanmarksScroll.tsx:23; the UI actually calls list_recent_fanmarks | Derived public read model, or a D1 query behind a Worker public operation; do not expose a direct D1 view until its projection is verified | Medium/high: live public types confirm the name exists, but verify the live definition, columns, ordering, security behavior, and whether the RPC is the only supported path |
+| recent_active_fanmarks | T:1909; R:2963; F src/components/RecentFanmarksScroll.tsx:23; the UI actually calls list_recent_fanmarks | D1 query behind the reviewed Worker public projection; frontend continues using the API/RPC boundary | Live definition and RPC wrapper observed 2026-09-21 as described above; D1 parity and target authorization tests remain |
 
 ## Public functions and RPCs
 
@@ -252,9 +260,9 @@ after a read-only production review.
 
 ## Decisions required before implementation
 
-1. Verify the live view definition, projection, and security behavior for
-   recent_active_fanmarks and reconcile
-   it with the public list_recent_fanmarks contract.
+1. Implement D1 parity tests for the observed recent_active_fanmarks and
+   list_recent_fanmarks semantics; query definition readback is complete,
+   while target query implementation and authorization tests remain.
 2. Reconcile the 58 live function names with the 45 generated types and
    decide which of the 13 trigger/auth/audit helpers become D1 triggers,
    explicit Worker writes, derived artifacts, or retirements.

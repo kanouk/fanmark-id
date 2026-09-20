@@ -193,3 +193,15 @@ deployment or that the route is reachable from production. A later stage must
 review the public projection, configure the target Cloudflare account, verify the
 environment secrets and exact origin list, and perform staging/API acceptance
 before enabling the Worker setting in a release.
+
+## Live query definition readback (2026-09-21)
+
+Direct read-only catalog inspection confirms that the source view selects active
+licenses joined to fanmarks, uses the license display_fanmark and created_at,
+and adds no separate expiry or fanmark-status filter. The security-definer RPC
+orders created_at descending with a 1..50 limit; this API narrows the supported
+public limit to 1..20. Equal timestamps have no specified tie order. Future D1
+parity tests must retain these source semantics or record an explicit product
+change. No user rows were needed for this inspection. See the
+[object map](object-map.md) and
+[reproducible metadata query](../../scripts/migration/recent-contract-readiness.sql).
