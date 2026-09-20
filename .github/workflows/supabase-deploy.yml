@@ -50,6 +50,7 @@ jobs:
           - workers/api
           - experiments/cloudflare-auth
           - experiments/cloudflare-d1-concurrency
+          - experiments/stripe-receipts
     defaults:
       run:
         working-directory: ${{ matrix.directory }}

@@ -1,0 +1,16 @@
+{
+  "name": "stripe-receipts",
+  "private": true,
+  "version": "1.0.0",
+  "description": "PostgreSQL-backed Stripe receipt foundation checks",
+  "scripts": {
+    "test": "node --test test/receipt-foundation.test.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8"
+  }
+}
