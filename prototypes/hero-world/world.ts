@@ -91,13 +91,13 @@ export function createWorld(host: HTMLElement, onSelect: (emoji: string) => void
   const globe=new T.Mesh(globeGeo,ownMat(new T.MeshStandardMaterial({vertexColors:true,roughness:.92})));planet.add(globe);
 
   // Irregular, curved patches hug the sphere rather than sitting on a flat island.
-  function patch(lat:number,lon:number,size:number,color:string,seed:number){
+  function patch(lat:number,lon:number,size:number,color:string,seed:number,offset=.018){
     const center=surface(lat,lon).normalize();const tangent=new T.Vector3(Math.cos(lon),0,-Math.sin(lon));const other=new T.Vector3().crossVectors(center,tangent).normalize();
     const verts:number[]=[];const indices:number[]=[];const N=64, rings=24;
     const p=new T.Vector3();
     for(let j=0;j<=rings;j++)for(let i=0;i<=N;i++){
       const a=i/N*Math.PI*2;const radius=size*j/rings*(1+.13*Math.sin(a*3+seed)+.08*Math.cos(a*5-seed));
-      p.copy(center).multiplyScalar(R).addScaledVector(tangent,Math.cos(a)*radius).addScaledVector(other,Math.sin(a)*radius*.68).normalize().multiplyScalar(R+.018);
+      p.copy(center).multiplyScalar(R).addScaledVector(tangent,Math.cos(a)*radius).addScaledVector(other,Math.sin(a)*radius*.68).normalize().multiplyScalar(R+offset);
       verts.push(p.x,p.y,p.z);
       if(j<rings&&i<N){const k=j*(N+1)+i;indices.push(k,k+1,k+N+1,k+1,k+N+2,k+N+1);}
     }
@@ -105,14 +105,27 @@ export function createWorld(host: HTMLElement, onSelect: (emoji: string) => void
     const material=mat(color);material.side=T.DoubleSide;const m=new T.Mesh(g,material);planet.add(m);
   }
   patch(-.5,-.7,1.7,'#a5ced0',1);patch(-.5,1.6,1.4,'#a2c9c9',2);patch(.75,-2.1,1.6,'#a2c8af',3);patch(-.8,-2.4,1.6,'#accdb9',5);
-  // Latitude paths also follow the sphere, including the hidden back hemisphere.
-  function path(lat:number,width:number,color:string){
-    const vertices:number[]=[];const indices:number[]=[];const n=180;
-    for(let i=0;i<=n;i++)for(const offset of [-width,width]){const p=surface(lat+offset,i/n*Math.PI*2,R+.026);vertices.push(p.x,p.y,p.z);}
-    for(let i=0;i<n;i++){const j=i*2;indices.push(j,j+1,j+2,j+1,j+3,j+2);}
-    const g=ownGeo(new T.BufferGeometry());g.setAttribute('position',new T.Float32BufferAttribute(vertices,3));g.setIndex(indices);g.computeVertexNormals();const m=mat(color);m.side=T.DoubleSide;planet.add(new T.Mesh(g,m));
+  // Curving promenades follow the surface instead of forming latitude bands.
+  const roadPoints:T.Vector3[]=[];
+  function ribbon(points:T.Vector3[],width:number,color:string,closed=false,offset=.028){
+    const curve=new T.CatmullRomCurve3(points,closed,'centripetal');
+    const vertices:number[]=[],indices:number[]=[];
+    const n=closed?300:90;
+    for(let i=0;i<=n;i++){
+      const t=i/n,center=curve.getPoint(t).normalize();
+      const direction=curve.getTangent(t).normalize();
+      const side=new T.Vector3().crossVectors(center,direction).normalize();
+      for(const edge of [-1,1]){const p=center.clone().multiplyScalar(R).addScaledVector(side,edge*width).normalize().multiplyScalar(R+offset);vertices.push(p.x,p.y,p.z);}
+      if(i<n){const j=i*2;indices.push(j,j+1,j+2,j+1,j+3,j+2);}
+      if(i%4===0)roadPoints.push(center.clone());
+    }
+    const g=ownGeo(new T.BufferGeometry());g.setAttribute('position',new T.Float32BufferAttribute(vertices,3));g.setIndex(indices);g.computeVertexNormals();
+    const material=mat(color);material.side=T.DoubleSide;planet.add(new T.Mesh(g,material));
   }
-  path(.56,.048,'#e7e1c7');path(.85,.035,'#e2dec4');
+  const avenue=Array.from({length:12},(_,i)=>surface(.23+.28*Math.sin(i/12*Math.PI*4),i/12*Math.PI*2,1));
+  ribbon(avenue,.13,'#e9dfc8',true);
+  const southernWalk=Array.from({length:12},(_,i)=>surface(-.58+.19*Math.cos(i/12*Math.PI*4),i/12*Math.PI*2,1));
+  ribbon(southernWalk,.10,'#e9dfc8',true);
   const shadowCanvas=document.createElement('canvas');shadowCanvas.width=shadowCanvas.height=64;
   const ctx=shadowCanvas.getContext('2d')!;const gradient=ctx.createRadialGradient(32,32,0,32,32,32);gradient.addColorStop(0,'rgba(58,75,55,.28)');gradient.addColorStop(.45,'rgba(58,75,55,.1)');gradient.addColorStop(1,'rgba(58,75,55,0)');ctx.fillStyle=gradient;ctx.fillRect(0,0,64,64);
   const shadowTex=new T.CanvasTexture(shadowCanvas);textures.add(shadowTex);
@@ -130,16 +143,60 @@ export function createWorld(host: HTMLElement, onSelect: (emoji: string) => void
     round(g,'#f6eddb',.22,.32,.04,.05,0,.18,.28);round(g,'#8caaa4',.17,.22,.05,.04,-.18,.46,.29);shadow(g,1.05);
   }
 house(.42,-2.75,'#eddbb6','#8bb9ae');house(-.15,2,'#d5c9dc','#b49bc8');
+  function flowerPot(parent:T.Object3D,x:number,z:number,color='#e9a9bd'){
+    const g=new T.Group();g.position.set(x,0,z);parent.add(g);
+    cylinder(g,'#c69c7b',.11,.075,.16,0,.08,0);cylinder(g,'#e0bda0',.12,.12,.035,0,.155,0);
+    for(let i=0;i<3;i++){
+      const a=i*2.4;const fx=Math.sin(a)*.065,fz=Math.cos(a)*.065;
+      cylinder(g,'#729b79',.011,.012,.18,fx,.24,fz);
+      ball(g,'#85ad81',fx+.035,.23,fz,.06,.028,.036);
+      for(let j=0;j<5;j++){const p=j/5*Math.PI*2;ball(g,color,fx+Math.cos(p)*.035,.35+Math.sin(p)*.035,fz,.031);}
+      ball(g,'#efcd7b',fx,.35,fz+.022,.021);
+    }
+  }
+  function bench(parent:T.Object3D,x:number,z:number,turn=0){
+    const g=new T.Group();parent.add(g);g.position.set(x,0,z);g.rotation.y=turn;
+    for(const side of [-1,1]){
+      round(g,'#6e8278',.055,.24,.28,.022,side*.28,.13,0);
+      round(g,'#6e8278',.045,.37,.05,.02,side*.28,.35,-.12);
+      round(g,'#b39471',.055,.045,.35,.02,side*.34,.37,0);
+    }
+    for(let i=0;i<3;i++)round(g,'#cba67b',.78,.055,.075,.02,0,.27,-.09+i*.085);
+    for(let i=0;i<2;i++)round(g,'#dbb98b',.78,.075,.055,.022,0,.4+i*.09,-.14);
+    shadow(g,.95);
+  }
+  const lampGlow=ownMat(new T.MeshBasicMaterial({color:'#ffdda1'}));
+  function lamp(parent:T.Object3D,x:number,z:number){
+    const g=new T.Group();parent.add(g);g.position.set(x,0,z);
+    cylinder(g,'#7c7964',.065,.10,.10,0,.055,0);cylinder(g,'#7c7964',.025,.04,.74,0,.44,0);
+    const light=new T.Mesh(sphere,lampGlow);light.scale.set(.085,.135,.085);light.position.y=.89;g.add(light);
+    for(const a of [0,Math.PI/2,Math.PI,Math.PI*1.5])cylinder(g,'#7c7964',.011,.011,.24,Math.cos(a)*.085,.89,Math.sin(a)*.085);
+    cylinder(g,'#8e876b',.10,.10,.035,0,.77,0);
+    mesh(ownGeo(new T.ConeGeometry(.15,.13,6)),'#8e876b',g,0,1.05,0);ball(g,'#b29a6e',0,1.13,0,.03);
+  }
+  function signpost(parent:T.Object3D,x:number,z:number){
+    const g=new T.Group();parent.add(g);g.position.set(x,0,z);
+    cylinder(g,'#ba9873',.025,.035,.55,0,.28,0);
+    round(g,'#d8b48a',.34,.1,.045,.035,.065,.46,0).rotation.z=.07;
+    round(g,'#b69872',.29,.1,.045,.035,-.08,.32,0).rotation.z=-.1;
+  }
   function shop(lat:number,lon:number,kind:'flowers'|'cafe'){
-    const g=ground(lat,lon);g.scale.setScalar(.75);
+    const g=ground(lat,lon);g.scale.setScalar(1.15);
     shopNormals.push(surface(lat,lon,1));
+    patch(lat-.05,lon,1.12,'#e9e1ce',2,.022);
+    const door=surface(lat-.34,lon,1);
+    const connection=surface(lat>0?.23+.28*Math.sin(lon*2):-.58+.19*Math.cos(lon*2),lon+.1,1);
+    ribbon([door,door.clone().lerp(connection,.5).normalize(),connection],.075,'#e9dfc8',false,.033);
     const accent=kind==='flowers'?'#df9fb4':'#75b2ac';
     round(g,kind==='flowers'?'#f9e5d1':'#f0d9b2',1.22,1,.87,.11,0,.51,0);
     const roofGeo=ownGeo(new T.ConeGeometry(.95,.5,4));roofGeo.rotateY(Math.PI/4);
     const roof=mesh(roofGeo,accent,g,0,1.24,0);roof.scale.z=.82;
-    round(g,'#ad9e7c',.27,.55,.08,.1,.3,.29,.48);
+    round(g,'#aa8462',.3,.57,.08,.14,.3,.29,.48);
+    round(g,'#cda879',.23,.5,.05,.1,.3,.3,.53);
+    ball(g,'#e8c875',.36,.3,.56,.018);
+    round(g,'#e9d9bb',.42,.075,.23,.035,.3,.035,.66);
     round(g,'#fff4dd',.43,.38,.08,.045,-.27,.59,.48);
-    round(g,'#85b8b0',.34,.29,.09,.025,-.27,.59,.53);
+    round(g,kind==='flowers'?'#93b4a5':'#dbb977',.34,.29,.09,.025,-.27,.59,.53);
     round(g,'#fff4dd',.035,.29,.025,.007,-.27,.59,.58);
     round(g,'#fff9e9',1.36,.13,.55,.045,0,.91,.52).rotation.x=.16;
     for(let i=0;i<5;i++)round(g,accent,.14,.14,.56,.02,-.52+i*.26,.92,.52).rotation.x=.16;
@@ -156,11 +213,27 @@ house(.42,-2.75,'#eddbb6','#8bb9ae');house(-.15,2,'#d5c9dc','#b49bc8');
       cylinder(g,'#dab787',.25,.25,.075,.75,.46,.54);cylinder(g,'#b59573',.035,.05,.42,.75,.22,.54);
       ball(g,'#fff6e7',.75,.55,.54,.065,.09,.065);
     }
+    bench(g,-1.0,.46,.1);lamp(g,.94,.5);flowerPot(g,-.76,-.18);flowerPot(g,.55,.72,kind==='flowers'?'#ecb6c8':'#edcd88');
+    signpost(g,-.93,.98);
     const board=fanmark(null);
     // Store signs belong to their buildings; human bubbles remain head-tracked.
     board.removeFromParent();g.add(board);board.position.set(0,1.09,.63);board.scale.setScalar(.7);shadow(g,1.4);
   }
   for(let i=0;i<8;i++)shop(Math.asin(1-2*(i+.5)/8),i*2.399963-.85,i%2?'cafe':'flowers');
+  // Groves and small resting places continue around the unseen hemisphere too.
+  const treeColors=['#a4c19b','#91b49c','#e6a9bd','#b9caa1','#d3b5cf'];
+  for(let i=0;i<42;i++){
+    const lat=Math.asin(1-2*(i+.5)/42),lon=i*2.399963+1.1;
+    const n=surface(lat,lon,1);
+    if(shopNormals.some(s=>s.angleTo(n)<.5)||roadPoints.some(p=>p.angleTo(n)<.08))continue;
+    tree(lat,lon,.48+(i%3)*.10,treeColors[i%treeColors.length]);
+    const bushes=ground(lat-.08,lon+.08);
+    for(let j=0;j<3;j++)ball(bushes,j%2?'#8dab82':'#b1c398',j*.12-.12,.09,Math.sin(j)*.06,.13,.12,.12);
+  }
+  for(const [lat,lon] of [[.02,-.65],[-.4,1.05],[.3,2.5]]){
+    patch(lat,lon,.48,'#e8e0ca',4,.024);
+    const park=ground(lat,lon);bench(park,0,0,.25);lamp(park,.48,0);flowerPot(park,-.5,.03);shadow(park,1.1);
+  }
   // Flowers and pebbles make the back of the planet worth exploring too.
   for(let i=0;i<34;i++){
     const lat=Math.asin(1-2*(i+.5)/34),lon=i*2.399;const g=ground(lat,lon);
@@ -202,14 +275,14 @@ house(.42,-2.75,'#eddbb6','#8bb9ae');house(-.15,2,'#d5c9dc','#b49bc8');
   function randomDestination(){
     let result:T.Vector3;
     do {result=surface(Math.asin(Math.random()*2-1),Math.random()*Math.PI*2,1);}
-    while(shopNormals.some(shop=>shop.angleTo(result)<.35));
+    while(shopNormals.some(shop=>shop.angleTo(result)<.45));
     return result;
   }
   people.forEach((person,index)=>{
     const animal=person.kind==='human'?null:person.kind;
     const skin=animal?(animal==='cat'?'#efd7ad':'#d5c8e5'):person.skin;
     let start=surface(person.lat,person.lon,1);
-    if(shopNormals.some(shop=>shop.angleTo(start)<.4))start=randomDestination();
+    if(shopNormals.some(shop=>shop.angleTo(start)<.5))start=randomDestination();
     const root=ground(Math.asin(start.y),Math.atan2(start.x,start.z));const body=new T.Group();root.add(body);body.scale.setScalar(.82);
     // Oversized heads and short articulated limbs give them a soft toy-like silhouette.
     const legs:T.Group[]=[],arms:T.Group[]=[];
@@ -306,15 +379,15 @@ house(.42,-2.75,'#eddbb6','#8bb9ae');house(-.15,2,'#d5c9dc','#b49bc8');
       const desired=w.destination.clone().addScaledVector(w.position,-w.destination.dot(w.position)).normalize();
       for(const shop of shopNormals){
         const angle=w.position.angleTo(shop);
-        if(angle<.46){
+        if(angle<.58){
           const away=w.position.clone().sub(shop).addScaledVector(w.position,-w.position.clone().sub(shop).dot(w.position)).normalize();
-          desired.addScaledVector(away,(.46-angle)*14);
+          desired.addScaledVector(away,(.58-angle)*14);
         }
       }
       desired.normalize();
       w.direction.lerp(desired,Math.min(1,dt*2)).addScaledVector(w.position,-w.direction.dot(w.position)).normalize();
       const next=w.position.clone().addScaledVector(w.direction,w.speed*dt).normalize();
-      if(shopNormals.every(shop=>shop.angleTo(next)>.23))w.position.copy(next);
+      if(shopNormals.every(shop=>shop.angleTo(next)>.34))w.position.copy(next);
       else w.destination=randomDestination();
     });
   }

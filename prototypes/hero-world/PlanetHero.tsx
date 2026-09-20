@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Move, Pause, Play, RotateCcw, Plus, Minus } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Pause, Play, RotateCcw, Plus, Minus } from 'lucide-react';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import type { HomeHeroProps } from '../../src/pages/Index';
 import { toast } from '../../src/hooks/use-toast';
@@ -59,7 +59,6 @@ export function PlanetHero({ onExplore, recentFanmarks }: HomeHeroProps) {
       <div className={`planet-stage ${ready && !failed ? 'is-ready' : ''}`}>
         <div ref={host} className="planet-canvas" tabIndex={ready ? 0 : -1} role="group" aria-label={ja ? 'ドラッグで惑星を回す。矢印キーでも回転できます。ファンマを押すとコピーできます。' : 'Drag or use arrow keys to turn the planet. Tap a fanmark to copy.'}/>
         {!ready && <div className="planet-loading" role="status">{failed ? <><p>{ja ? '3Dを表示できませんでした。検索はそのまま使えます。' : 'The planet could not load. You can still search below.'}</p><button onClick={() => setAttempt(v => v + 1)}>{ja ? 'もう一度表示する' : 'Try again'}</button></> : <><span className="planet-loader"/>{ja ? '小さな世界を準備中…' : 'Making a little world…'}</>}</div>}
-        <div className="planet-drag-hint"><Move size={14}/>{ja ? 'ドラッグで回転 · ＋−でズーム' : 'Drag to turn · + / − to zoom'}</div>
         <div className="planet-controls" role="group" aria-label={ja ? '惑星の操作' : 'Planet controls'}>
           <button disabled={!ready} onClick={() => world.current?.rotate(-.32,0)} aria-label={ja ? '惑星を左へ回す' : 'Turn left'}><ArrowLeft size={17}/></button>
           <button disabled={!ready} onClick={() => world.current?.rotate(.32,0)} aria-label={ja ? '惑星を右へ回す' : 'Turn right'}><ArrowRight size={17}/></button>
