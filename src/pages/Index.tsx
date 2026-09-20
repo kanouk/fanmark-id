@@ -186,10 +186,10 @@ const Index = ({ hero: Hero, inputComponent }: { hero?: HomeHeroComponent; input
     }
   }, [prefilledEmoji]);
 
-  return <div className={inputComponent ? "min-h-screen bg-[#fffefa]" : "min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50"}>
+  return <div className={inputComponent ? "home-preview min-h-screen bg-[#fffefa]" : "min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50"}>
       <AppHeader />
 
-      {/* The preview can replace only the hero; all existing page flows stay shared. */}
+      {/* Prototype presentation is optional; existing page flows remain shared. */}
       {Hero ? <section id="home" className="relative overflow-hidden">
         <Hero onExplore={handleScrollToSearch} recentFanmarks={recent.data ?? (recent.isError ? [] : null)} />
       </section> : <section
@@ -253,17 +253,17 @@ const Index = ({ hero: Hero, inputComponent }: { hero?: HomeHeroComponent; input
         {!inputComponent && <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-primary/15 via-accent/10 to-transparent" aria-hidden />}
         <div className="container relative mx-auto px-4">
           <h2 className="text-center text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            {t('sections.howUsed')} 🚀
+            {t('sections.howUsed')}{!inputComponent && ' 🚀'}
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-center text-base text-muted-foreground sm:text-lg">
             {t('search.joinThousands')}
           </p>
 
-          <div className="mt-14 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+          <div className="home-examples-grid mt-14 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
             {exampleCards.map(({ key, emoji, gradient, badgeClass }) => (
               <Card
                 key={key}
-                className={`group relative flex h-full flex-col overflow-hidden border border-border/60 bg-background/95 shadow-[0_20px_45px_rgba(239,159,188,0.18)] transition-transform duration-300 hover:-translate-y-2 hover:shadow-[0_28px_60px_rgba(101,195,200,0.22)]`}
+                className={`home-example-card group relative flex h-full flex-col overflow-hidden border border-border/60 bg-background/95 shadow-[0_20px_45px_rgba(239,159,188,0.18)] transition-transform duration-300 hover:-translate-y-2 hover:shadow-[0_28px_60px_rgba(101,195,200,0.22)]`}
               >
                 {!inputComponent && <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 transition-opacity duration-300 group-hover:opacity-100`} aria-hidden />}
                 <CardHeader className="relative flex flex-1 flex-col items-center gap-5 px-6 pt-10 pb-6 text-center">
@@ -298,27 +298,27 @@ const Index = ({ hero: Hero, inputComponent }: { hero?: HomeHeroComponent; input
       </section>
 
       {/* How It Works */}
-      <section className="relative overflow-hidden py-24">
+      <section className="home-steps relative overflow-hidden py-24">
         {!inputComponent && <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-accent/20 via-primary/15 to-transparent" aria-hidden />}
         <div className="container relative mx-auto px-4">
           <h2 className="text-center text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            {t('sections.howItWorks')} 🛠️
+            {t('sections.howItWorks')}{!inputComponent && ' 🛠️'}
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-center text-base text-muted-foreground sm:text-lg">
             {t('sections.howItWorksDescription')}
           </p>
 
-          <div className="mt-16 grid gap-8 md:grid-cols-3">
+          <div className="home-steps-grid mt-16 grid gap-8 md:grid-cols-3">
             {[
               { emoji: '🪪', title: t('sections.step1'), description: t('sections.step1Description'), gradient: 'from-primary/10 to-transparent' },
               { emoji: '🎯', title: t('sections.step2'), description: t('sections.step2Description'), gradient: 'from-accent/10 to-transparent' },
               { emoji: '🎉', title: t('sections.step3'), description: t('sections.step3Description'), gradient: 'from-secondary/10 to-transparent' },
             ].map(({ emoji, title, description, gradient }, index) => (
-              <Card key={title} className="relative overflow-hidden border border-border/60 bg-background/95 shadow-[0_18px_38px_rgba(101,195,200,0.18)]">
+              <Card key={title} className="home-step-card relative overflow-hidden border border-border/60 bg-background/95 shadow-[0_18px_38px_rgba(101,195,200,0.18)]">
                 {!inputComponent && <div className={`pointer-events-none absolute inset-0 bg-gradient-to-b ${gradient} opacity-0 transition-opacity duration-300 hover:opacity-100`} aria-hidden />}
                 <CardHeader className="relative flex flex-col items-center gap-4 px-8 pt-12 pb-8 text-center">
-                  <span className="text-5xl">{emoji}</span>
-                  <CardTitle className="text-xl font-semibold text-foreground">{index + 1}. {title}</CardTitle>
+                  <span className={inputComponent ? "home-step-number" : "text-5xl"}>{inputComponent ? String(index + 1).padStart(2, '0') : emoji}</span>
+                  <CardTitle className="text-xl font-semibold text-foreground">{!inputComponent && `${index + 1}. `}{title}</CardTitle>
                   <CardDescription className="text-sm leading-relaxed text-muted-foreground">
                     {description}
                   </CardDescription>
@@ -331,7 +331,7 @@ const Index = ({ hero: Hero, inputComponent }: { hero?: HomeHeroComponent; input
 
 
       {/* CTA */}
-      <section className={inputComponent ? "relative overflow-hidden bg-[#f8f7f3] py-16" : "relative overflow-hidden bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 py-16"}>
+      <section className={inputComponent ? "home-closing relative overflow-hidden bg-[#f8f7f3] py-16" : "relative overflow-hidden bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 py-16"}>
         {/* Decorative background elements */}
         {!inputComponent && <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
@@ -340,7 +340,7 @@ const Index = ({ hero: Hero, inputComponent }: { hero?: HomeHeroComponent; input
         
         <div className="container relative mx-auto px-4">
           <div className="mx-auto max-w-xl">
-            <div className="rounded-3xl border border-primary/20 bg-white/80 px-8 py-10 shadow-[0_25px_60px_rgba(101,195,200,0.2)] backdrop-blur-sm sm:px-10">
+            <div className="home-closing-card rounded-3xl border border-primary/20 bg-white/80 px-8 py-10 shadow-[0_25px_60px_rgba(101,195,200,0.2)] backdrop-blur-sm sm:px-10">
               <div className="text-center">
                 <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
                   {t('sections.cta')}

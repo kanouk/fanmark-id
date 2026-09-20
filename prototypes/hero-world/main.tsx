@@ -6,8 +6,9 @@ import { PaletteInput } from './PaletteInput';
 import './palette.css';
 import '../../src/index.css';
 import './styles.css';
+import './home.css';
 
-// Render the real site; only the Index hero is substituted in this preview.
+// Render the real site with the prototype hero, input, and home-only visual system.
 // No service worker is registered on the preview origin.
 createRoot(document.getElementById('root')!).render(
   <ThemeProvider defaultTheme="pastel"><App homeHero={PlanetHero} homeInput={PaletteInput}/></ThemeProvider>,
