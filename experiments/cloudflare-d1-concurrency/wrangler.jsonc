@@ -1,0 +1,13 @@
+{
+  "name": "fanmark-cloudflare-d1-concurrency",
+  "main": "src/index.mjs",
+  "compatibility_date": "2026-09-18",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "fanmark-d1-concurrency",
+      "database_id": "00000000-0000-0000-0000-000000000031",
+      "migrations_dir": "migrations"
+    }
+  ]
+}
