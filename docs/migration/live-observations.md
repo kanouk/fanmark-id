@@ -58,3 +58,7 @@ Apple Developerでは既存Services ID `id.fanmark.login` にSign in with Apple�
 対象CloudflareアカウントのWorkers & Pages一覧は「No projects found」。Workersのプラン画面ではFreeが「現在のプラン」で、CPU上限は10 ms/requestと表示されていた。認証のlocal wall-clock検証ではこのCPU制限内の動作を証明できない。remote CPUを測定し、必要なプランを決めるまで認証の本番適合とは判定しない。プラン変更・課金は行っていない。
 
 Resendのfanmark.id workspaceで、送信ドメイン `fanmark.id` はVerified。メール送信や鍵の表示/変更は行っていない。Stripeについては本番/テストの配信先・API version・DB内契約との対応確認を継続する。コードの存在だけから現行Webhookが正常配信中とは扱わない。
+
+## 最近取得一覧の定義確認（2026-09-21 JST）
+
+読み取り専用のcatalog queryで `recent_active_fanmarks` の定義・security_invoker設定と `list_recent_fanmarks(integer)` の関数定義を確認した。active licenseとfanmarksのjoin、license側の表示・作成日時、RPCの作成日時降順・件数制限が現行条件。ユーザー行は取得していない。`scripts/migration/recent-contract-readiness.sql` はview定義と関数metadata/fingerprintを返す再現用SQLで、実行済み。詳細とD1移植時の注意は `object-map.md` / `recent-api-contract.md` に記録する。
