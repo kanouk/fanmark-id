@@ -96,3 +96,29 @@ to an empty local database, import a synthetic edge-case dataset and a private
 rehearsal snapshot, verify row/key/relationship/value reconciliation, exercise
 all mutating operation invariants, and repeat on the authorized target account.
 Passing one recent-list query is not evidence for the full schema migration.
+
+## Read-only value preflight
+
+The catalog-reading CLI role could not SELECT `fanmark_discoveries`, so the
+initial `scripts/migration/value-readiness.sql` invocation failed on permissions
+and produced no result. No grants or roles were changed. Equivalent aggregate
+predicates subsequently ran successfully in the already-authorized Supabase
+SQL Editor, wrapped in `BEGIN READ ONLY` / `COMMIT`.
+
+At that observation, the inspected bigint columns fit JavaScript's safe integer
+range, the two USD columns could be converted to exact integer cents, the nine
+array columns had no nonempty multidimensional/non-1-based arrays, and lottery
+probabilities had no negative or nonfinite values. This does not authorize
+future coercion: the importer must enforce the same rules on its actual snapshot.
+
+**License creation timestamps do contain sub-millisecond precision.** A
+JavaScript Date round trip would discard real source information. The D1
+recent repository and importer must preserve the timestamp string at full
+precision. The inspected creation timestamps were finite and within the
+four-digit AD year range. The affected count stays in the private observation
+artifact and is not published here.
+
+This preflight does not cover all timestamp columns, JSONB numeric precision,
+array elements, source export consistency, foreign-key reconciliation, or any
+write path. Those remain required import/rehearsal checks. `value-readiness.sql`
+records the reviewed predicates for a future run with authorized SELECT access.
