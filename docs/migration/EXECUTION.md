@@ -82,3 +82,5 @@ Stripeの請求状態同期を追加。API版をBasilへ固定し、現在のInv
 パスワード付き公開アクセスの[移行設計](verified-access-design.md)を5aca0e4で保存。short ID・絵文字・profileのselectorに結び付けた短期proof、同一SQLでの本文保護、D1による試行予約と世代番号の検証を定義した。アカウント認証とは別の認可経路として扱う。隔離したlocal proofは実装中で、既存password値の互換性・全writerの失効処理・remote CPU・frontend切り替えは未検証。
 
 Storage exportからR2へ移す[再実行可能なimport core](storage-r2-import.md)を追加。既存/新規objectを本文hash・size・metadataで読み戻し、再開時にも全対象を再検証する。条件付き作成により競合objectを上書きせず、応答停止や途中失敗を未完了として保存する。AstraのNode22独立実行で移行データ52テストとloopback Miniflareの実R2検証が成功。16 MiBの競合転送でも上書きなし・停止を確認した。local R2は条件不一致でも本文を全消費するため、早期キャンセルやremoteのmemory/CPUは証明していない。CIへ追加し隔離検査が成功。remote runner・bucket設定・本番upload・URL切り替えは未実施。
+
+DB動作定義のread-only棚卸しを追加。40表のRLS設定、77 policy、36 user trigger、1 view、58 function/procedureの定義・権限情報を非公開artifactへ保存した。収集できたことはD1への変換・認可同等性を証明しない。schema converterの未対応scopeと業務移植の条件は維持する。既存password設定も値を返さない形式/参照関係の初期集計を実施し、UUID/ライセンス対応の異常は観測されなかった。形式変換・本人の既存入力による動作同等性・最終snapshotは別途検証が必要。
