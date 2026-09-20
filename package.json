@@ -16,7 +16,9 @@
     "db:status": "supabase status",
     "db:push": "supabase db push",
     "dev:palette": "vite --config prototypes/emoji-palette/vite.config.ts",
-    "build:palette": "vite build --config prototypes/emoji-palette/vite.config.ts"
+    "build:palette": "vite build --config prototypes/emoji-palette/vite.config.ts",
+    "dev:hero": "vite --config prototypes/hero-world/vite.config.ts",
+    "build:hero": "vite build --config prototypes/hero-world/vite.config.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

@@ -129,3 +129,7 @@
 Jev接続にはサーバー環境変数 `TYPESAFE_API_KEY` またはリポジトリ外の秘密ファイルを指す `TYPESAFE_API_KEY_FILE` を指定して起動する。`VITE_` 変数は使用しない。Vite middlewareの `/api/palette/jev` がTypeSafeへ2段階で問い合わせる。各Choiceは255候補以下。1段目は6観点を2問ずつ3リクエストで並列評価し、2段目も2問ずつ最大5リクエストで並列評価する。場所のイメージと比喩・象徴は最大6グループを2群ずつ評価し、その他の観点は最大2グループを評価する。全体12秒タイムアウト、ローカル名称検索へフォールバック。静的ビルドだけではJev APIは提供されない。本番Workerへの移植・認証・運用は別工程。
 
 型検査: `npx tsc --project prototypes/emoji-palette/tsconfig.json`。検索・データ出典・動作確認の詳細は `prototypes/emoji-palette/README.md` を参照。試作の日本語CLDR注釈は固定コミットから取得したもので、マスター更新パイプラインへの自動接続はまだ行っていない。
+
+## Three.js箱庭ヒーローのローカル試作
+
+`npm ci --prefix prototypes/hero-world` の後、`npm run dev:hero` でポート4179、`npm run build:hero` で `dist/hero-world/`。Three.js依存は試作配下のロックで固定し、通常の本番バンドルとは分離。動的import、30fps上限、DPR制限、画面外/非表示時停止、静止画フォールバックを使用する。型検査は `npx tsc --project prototypes/hero-world/tsconfig.json`。移植時の注意と検証範囲は `prototypes/hero-world/README.md` を参照。

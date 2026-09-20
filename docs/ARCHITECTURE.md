@@ -221,3 +221,7 @@
 - **`has_role()`関数**: SECURITY DEFINER + `set search_path = public` で無限再帰を防止
 - **`is_admin()`関数**: `has_role(auth.uid(), 'admin')` のラッパー
 - **service_role**: Edge Functions からのみ使用。直接クライアントアクセス不可
+
+## 箱庭ヒーローの独立試作（#27、本番未接続）
+
+`prototypes/hero-world/` はThree.jsによる絵文字の街。`world.ts` が描画・モデル・看板の選択を担当し、`App.tsx` はHTMLの見出し・操作と遅延ロードを担当する。`npm run dev:hero` でポート4179。`public/world-poster.svg` は静止画の代替表示。既存トップや最近取得表示、通常ページは変更しない。詳細は試作READMEを参照。

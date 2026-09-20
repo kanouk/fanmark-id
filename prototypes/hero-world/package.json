@@ -1,0 +1,10 @@
+{
+  "name": "fanmark-hero-world-prototype",
+  "private": true,
+  "type": "module",
+  "description": "Isolated Three.js dependencies for the hero prototype",
+  "dependencies": {
+    "@types/three": "0.186.0",
+    "three": "0.186.0"
+  }
+}
