@@ -24,6 +24,12 @@ unreviewed object cannot be hidden by a partial schema. Cloudflare's provider
 `_cf_METADATA` table is the only permitted extra object, and only with type
 `table`.
 
+Both inspection and application recompute the source fingerprint from its
+catalog/report fingerprints and SQL, and rebuild the inventory from that SQL.
+A stale or edited inventory cannot retain the original source identity. These
+checks establish internal consistency, not authenticity of a caller-supplied
+plan; application additionally regenerates the plan from the supplied catalog.
+
 The inventory is ordered with tables before indexes so a local source-schema
 batch can create referenced tables before their indexes. This ordering is part
 of the deterministic plan; object comparisons still bind both object type and

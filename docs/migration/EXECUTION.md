@@ -114,3 +114,5 @@ disabled credentialの既存UI/RPC/read/delete経路を、repoと取得済みliv
 credential descriptorのmetadata compilerを追加。6列の対応、PK・validated UNIQUE・license FK、型、bcryptの版/costを検証し、immutable mappingとcanonical digestを生成する。親レビューでnon-enumerableな既知設定がdigestから欠落するケースを拒否し、回帰検証を追加した。Node22.6の親独立実行で移行データ70件が成功・skipなし。source行やDB bindingは受け取らず、変換/importer統合は未完了。credential_transform_requiredの停止条件は維持する。
 
 [lifecycle target schema](lifecycle-target-schema.md)の生成・適用・厳密readbackを追加。全source DDLとextensionを照合し、部分適用、quoted literal/制約変更、未知index/view/triggerを拒否する。親の実catalog検証で4列のNULL条件の誤りを検出・修正し、40表構造の空local D1へ5表・4索引を追加、再適用no-opとreadback、runtime disposeを確認した。Node22.6の親独立実行で2 test group成功・skipなし、実行前後hash一致、CI隔離検査成功。source row import、credential/generation mutator統合、expiry実行接続、本番適用は未完了。
+
+追加reviewでread-only schema inspectionにもsource fingerprintとSQL/inventoryの整合性検証を追加。catalog/report fingerprint・SQL・inventoryの個別改変を拒否し、専用2 test groupと実40表構造rehearsalの再実行が成功。これは入力plan内部の整合性確認であり、外部由来planの真正性やsourceデータ移送完了を保証しない。

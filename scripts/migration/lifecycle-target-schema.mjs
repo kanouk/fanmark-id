@@ -493,6 +493,20 @@ function validatePlan(plan) {
   if (!/^[0-9a-f]{64}$/u.test(plan.extensionDigest) || expectedPlanDigest(plan) !== plan.extensionDigest) {
     throw fail("lifecycle_schema_plan_digest_mismatch");
   }
+  for (const key of ["sourceFingerprint", "sourceCatalogFingerprint", "sourceReportFingerprint"]) {
+    if (typeof plan[key] !== "string" || !/^[0-9a-f]{64}$/u.test(plan[key])) {
+      throw fail("lifecycle_schema_plan_source_mismatch");
+    }
+  }
+  const sourceFingerprint = sha256Hex({
+    catalogFingerprint: plan.sourceCatalogFingerprint,
+    sourceReportFingerprint: plan.sourceReportFingerprint,
+    sourceSql: plan.sourceSchemaSql,
+  });
+  if (sourceFingerprint !== plan.sourceFingerprint ||
+      canonicalJson(sourceObjectInventory(plan.sourceSchemaSql)) !== canonicalJson(plan.sourceObjectInventory)) {
+    throw fail("lifecycle_schema_plan_source_mismatch");
+  }
 }
 
 export function generateLifecycleTargetSchema({ catalog, convertedSchema } = {}) {

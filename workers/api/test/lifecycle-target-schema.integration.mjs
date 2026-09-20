@@ -271,6 +271,18 @@ test("applies the source-shaped extension, preserves source columns, and re-runs
     }]);
     const inspected = await inspectLifecycleTargetSchema(fixture.database, fixture.plan);
     assert.equal(inspected.complete, true);
+    for (const changedSource of [
+      { sourceFingerprint: "0".repeat(64) },
+      { sourceCatalogFingerprint: "0".repeat(64) },
+      { sourceReportFingerprint: "0".repeat(64) },
+      { sourceSchemaSql: `${fixture.plan.sourceSchemaSql}\n-- changed source` },
+      { sourceObjectInventory: fixture.plan.sourceObjectInventory.slice(1) },
+    ]) {
+      await assert.rejects(
+        inspectLifecycleTargetSchema(fixture.database, { ...fixture.plan, ...changedSource }),
+        (error) => error.code === "lifecycle_schema_plan_source_mismatch",
+      );
+    }
     await fixture.database.prepare('CREATE VIEW "post_apply_unreviewed_view" AS SELECT "id" FROM "fanmarks"').run();
     await assert.rejects(
       inspectLifecycleTargetSchema(fixture.database, fixture.plan),
