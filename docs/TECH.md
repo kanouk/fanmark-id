@@ -15,6 +15,24 @@
 5. Supabase ローカル: `npm run db:start` / `db:reset` / `db:stop`（`supabase` CLI 依存）。`supabase link --project-ref <ref>` で本番/ステージングへ接続。  
 6. 翻訳追加時は `src/translations/*.json` を編集し、UI で言語切替を確認。
 
+## GitHub Actions: PR 検証と Supabase 本番デプロイ
+
+`.github/workflows/supabase-deploy.yml` は、有効化された場合にPR の検証と本番デプロイを別ジョブで実行する。2026-09-21の確認ではGitHub上のworkflow stateは `disabled_manually`。この変更では有効化せず、以下は有効化後の動作を説明する。
+
+- `pull_request`（対象ブランチ `main`）と `push`（`main`）では `validate` ジョブを実行する。`.node-version` の Node.js を使い、`npm ci --legacy-peer-deps`、`npm run check:ci`、`npm run typecheck`、`npm run build` を実行する。このジョブは Supabase の秘密情報、Supabase CLI、リモートプロジェクト、DB push にアクセスしない。
+- `deploy` ジョブは `validate` 成功後の `push`（`refs/heads/main`）に限って実行する。GitHub Environment の `Supabase` を明示的に使用し、そのジョブだけが `SUPABASE_ACCESS_TOKEN`、`SUPABASE_DB_PASSWORD`、`SUPABASE_PROJECT_ID` を参照する。プロジェクトを link して `supabase db push` を実行し、生成型を更新する。本番デプロイは `supabase-production` concurrency group で直列化し、実行中のデプロイをキャンセルしない。
+- 生成型の差分がある場合、`deploy` ジョブは `src/integrations/supabase/types.ts` をコミットして main へ push する。デプロイジョブには `contents: write` が必要である。
+
+有効化する前に、リポジトリの Settings > Environments で `Supabase` Environment を作成または確認し、次の Environment secrets を登録する。
+
+- `SUPABASE_ACCESS_TOKEN`: Supabase CLI の認証トークン
+- `SUPABASE_DB_PASSWORD`: 対象プロジェクトのデータベースパスワード
+- `SUPABASE_PROJECT_ID`: 対象 Supabase プロジェクトの ref
+
+Environment の名前だけでは承認やブランチ制限は有効にならない。Required reviewers、Deployment branches、待機時間などを運用上必要とする場合は、Settings > Environments で個別に設定し、設定済みであることを確認する。GitHub Actions の `GITHUB_TOKEN` が main への push を許可されていることも確認する。PR 検証にはこれらの秘密情報や設定は不要である。
+
+`validate` の `--legacy-peer-deps` は、現在の lockfile が date-fns 4 と react-day-picker 8 の組み合わせを保持しており、npm の通常の peer dependency 解決では `npm ci` が停止するために指定している。依存関係を更新して peer range を解消できた場合は、このフラグを外せるか再確認する。
+
 ## メンテナンスモード（system_settings）
 - `maintenance_mode`: `true` でアプリ全体をメンテナンスページへ切替。
 - `maintenance_message`: メンテナンス画面に表示する本文。空の場合は翻訳キーのデフォルト文言を使う。
