@@ -119,3 +119,23 @@ The next bounded implementation must prove on local D1:
 
 These are local acceptance criteria. Production downtime, full backup restore,
 remote limits, application writers, and the final cutover remain unproven.
+
+## Initialization and schema verification invariants
+
+Target identity must be generated once, persisted at the target, and bound to
+the private report. A caller-selected label alone cannot identify a recreated
+database. Initialization must tolerate interruption before a report exists and
+between ledger setup and the first public-row batch. A report bound to a lost
+target ledger must never authorize silently rebuilding that target as a resume.
+
+Verify the importer ledger definitions as well as application tables: matching
+column names does not establish the guard CHECK, PK, UNIQUE, or FK constraints.
+Reject unexpected application views and triggers. Any provider-owned metadata
+exception must use observed exact names and object kinds; SQL LIKE underscores
+are wildcards and cannot stand for a literal reserved-name prefix. SQL
+normalization must preserve whitespace inside string literals.
+
+Readback must select SQLite typeof() explicitly, because JavaScript numbers do
+not distinguish an INTEGER from an integral REAL value. A manually advanced
+source iterator must be closed in finally when target reconciliation fails.
+These are review requirements, not a claim that the importer has passed them.
