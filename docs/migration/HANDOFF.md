@@ -10,7 +10,9 @@ original checkout contains unrelated UI work. Use Node 22.6.0 explicitly;
 the shell's default Node version differs.
 
 The user requires at least 20% of the ordinary Codex allowance to remain.
-At the last check, 22% remained, so no new implementation units may be assigned.
+The user authorized one further bounded unit after the 22% checkpoint.
+At the latest check, 21% remained; that unit is now saved and no further
+implementation units should be assigned without renewed budget headroom.
 Finish verification and preserve the current work before that reserve is
 consumed. Luna's separately displayed reserve does not establish that its work
 cannot consume the ordinary allowance. Resume new units after a quota reset or
@@ -36,6 +38,15 @@ that omitted the added column. After correction and removal of diagnostic
 logging, the parent independently ran all 17 tests successfully in 4.33 seconds,
 with identical source/fixture/test hashes before and after. This validates the
 isolated proof; connection to the source-shaped runtime remains incomplete.
+
+A subsequent bounded unit added `credential-import-projection.mjs`: canonical
+snapshot records are checked with the existing row converter and record hash/PK
+contract, then split into five ordinary bindings and a one-use opaque transform
+input. Parent verification passed 74 migration-data tests, actual 40-table
+metadata plus one synthetic row, and CI isolation checks. The generic importer
+is still guarded. The integration design now requires a single six-column
+INSERT assembled with the prepared hash, preserving NOT NULL and avoiding a
+second trigger increment; deferred rows remain whole in the private source.
 
 ## Next implementation sequence after the reserve permits it
 

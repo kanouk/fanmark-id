@@ -11,6 +11,7 @@
   - `lib` / `utils`: 変換・バリデーション・フォーマッタ（emoji 正規化、URL/電話番号生成など）。
 - `supabase/functions/`: Edge Functions 群。主要なものは下記参照。
 - `supabase/migrations/`: DB マイグレーション（Supabase CLI 生成形式）。
+- `scripts/migration/`: Cloudflare移行用のschema変換・snapshot・照合ツール。`credential-import-projection.mjs` は原本の6列を検証し、通常の5列と非公開のcredential入力を分離する。D1 importerへの接続は未完了。
 - `public/`: アセット。`generate-ogp-image` のテンプレート画像等。
 
 ## 画面とモジュールのマッピング

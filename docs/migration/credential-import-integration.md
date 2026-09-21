@@ -1,9 +1,10 @@
 # Credential transform integration with the full D1 importer
 
 This document is the implementation contract for adding the credential
-transform to the verified-snapshot importer. It is a design slice only. It
-does not change `scripts/migration`, process source rows, create D1 resources,
-or claim that the 40-table migration is complete.
+transform to the verified-snapshot importer. Descriptor validation and a
+separate import projection implement parts of this contract; the transactional
+writer, coverage, and full importer integration remain unimplemented. These
+local components do not create D1 resources or complete the 40-table migration.
 
 The existing local transform proof is deliberately narrower: it proves one
 synthetic source binding and writes a synthetic `fanmark_access_configs`
@@ -178,12 +179,22 @@ transactional unit:
    be recomputed; a prepared artifact always reuses its stored bcrypt result.
 4. Prepare the transformed result without writing the target row. The raw
    input is discarded after the prepared artifact batch succeeds.
-5. Compose one D1 `batch()` containing the stale-checkpoint guard, the
-   non-credential source-row insert, the prepared credential destination
-   update, the artifact `applied` transition, the coverage-ledger insert, the
-   generation update, the checkpoint update, and guard cleanup.
+5. Compose one D1 `batch()` containing the stale-checkpoint guard, a single
+   source-shaped row INSERT assembled from the five ordinary bindings and the
+   prepared credential artifact, the artifact `applied` transition, the
+   coverage-ledger insert, the checkpoint update, and guard cleanup. The
+   password INSERT trigger owns the password/access generation increment;
+   read its resulting generations instead of incrementing them again.
 6. Read back the artifact, destination row, coverage entry, and checkpoint.
    Mark the artifact `reconciled` only after all predicates agree.
+
+The credential column is NOT NULL. Do not insert only the five ordinary
+columns and fill the credential in a later UPDATE: the first statement would
+fail its constraint, and two mutations would also invalidate generations
+twice. The ordinary projection is an input to the specialized row writer,
+not an independently insertable row. The final INSERT must obtain its
+credential from the prepared artifact under the same binding/fence checks;
+it must never fall back to the immutable source credential.
 
 The transform core therefore needs a statement-builder or transaction hook;
 calling its existing `applyArtifact()` as a nested `db.batch()` from
@@ -245,19 +256,22 @@ the run incomplete; never discard the source credential or place it in D1 as
 ordinary text.
 
 Rows whose `license_id` points to a non-active, returned, expired, or otherwise
-ineligible license are still imported as ordinary six-column source rows and
-must not disappear from coverage. The migration policy must choose one of two
-explicit outcomes before `fullMigrationReconciled` can become true:
+ineligible license remain in the immutable source snapshot and must not
+disappear from coverage. They must not be inserted as ordinary six-column
+rows containing an untransformed credential. The migration policy must choose
+one of two explicit outcomes before `fullMigrationReconciled` can become true:
 
 - **Preserve for later reactivation:** transform the credential into the
   protected destination column while retaining the source enabled flag, under
   an importer-only lifecycle mode that verifies the exact license UUID and
   incarnation but does not grant public access. Public access continues to
   require the active/lifecycle predicates owned by the lifecycle slice.
-- **Defer safely:** write no source credential value, record
-  `deferred_inactive`, retain the immutable private source artifact, and keep
-  the run incomplete until a reviewed reactivation transform or non-usable
-  destination representation is applied.
+- **Defer safely:** write neither a partial target row nor a source credential
+  value, record `deferred_inactive`, retain the complete immutable private
+  source row, and keep the run incomplete until a reviewed reactivation
+  transform or non-usable destination representation is applied. The NOT NULL
+  constraint remains intact. The same row-preservation rule applies to
+  `deferred_disabled`.
 
 The current synthetic core requires an active target, so it does not yet prove
 the first policy. Until a lifecycle-compatible transform mode is implemented
@@ -380,3 +394,36 @@ import credentials, and the generic importer's `credential_transform_required`
 guard remains in force. `npm run test:migration-data` includes seven descriptor
 test groups; the parent review ran all 70 migration-data tests on Node 22.6.0
 with no failures or skips.
+
+
+## Implemented import projection
+
+`scripts/migration/credential-import-projection.mjs` exposes
+`compileCredentialImportProjection({ catalog, descriptor, destinationCatalog? })`.
+The compiled function accepts a single canonical snapshot record string without
+its NDJSON newline. It validates all six source values through the existing row
+converter, checks the existing row hash/primary-key/ordinal record contract,
+and returns only the five ordinary columns and bindings, plus source identity
+metadata and an opaque transform-input handle. It emits no INSERT statement.
+The compiled catalog and descriptor cannot be changed by later caller edits.
+
+`consumeCredentialTransformInput(handle)` consumes that handle once and returns
+the exact canonical source envelope bytes and immutable descriptor metadata to
+the trusted transform consumer. Serializing or inspecting the unconsumed handle
+does not expose source values; forged, copied and consumed handles are rejected.
+The consumed payload is private and must never be logged. This is accidental
+serialization protection, not a sandbox or guaranteed JavaScript memory erasure.
+Parser and converter causes are not attached to outward-facing errors.
+
+This validates one row's internal consistency, not the snapshot's authenticity,
+manifest binding, stream order, target identity or license eligibility. The
+caller must still verify those and integrate the prepared artifact, coverage,
+checkpoint and trigger-owned generations into the single transaction described
+above. Disabled input remains present in the private handle and is not marked
+complete by this projection. Snapshot export and the generic importer's
+`credential_transform_required` guard are unchanged.
+
+The Node 22.6 migration-data suite passed all 74 tests (four new projection
+cases), with no skips. A separate check compiled the actual 40-table metadata
+catalog and projected one synthetic row successfully; no real source values,
+remote DB, credential hashing or destination writes were used.

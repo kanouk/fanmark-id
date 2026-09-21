@@ -122,3 +122,6 @@ credential descriptorのmetadata compilerを追加。6列の対応、PK・valida
 [世代管理trigger](lifecycle-generation-schema.md)を追加。license作成時の初期化、削除時のretained incarnation更新、PK変更拒否、password作成/更新/移動/削除時のpassword/access世代更新を同じtransactionで行う。cascade時の親消滅と通常writerの台帳欠落を区別し、overflow/mismatchではrollbackする。親reviewでinspectionのbase plan結合も追加。Node22.6のschema/generation計4 test group、実40表構造の空D1への7 trigger適用・再適用・readback・runtime dispose、CI隔離検査が成功。credential applyの二重increment除去、全writer/protected runtime/expiryとの接続、remote適用は未完了。
 
 protected-access proofにもlicense incarnationを独立して保存・照合する境界を追加。同じUUIDの削除/再作成でpassword/access世代が同値になっても古いverificationを拒否する。全体実行の停止を調査し、追加列を反映していなかったreplayテストINSERTを修正、診断ログを除去した。親のNode22.6独立実行で17件成功（4.33秒）、実行前後の3ファイルhash一致。source-shaped runtimeとの接続や本番移行は未完了。通常枠22%のため新規投入を停止し、再開条件と次の統合順序をHANDOFF.mdに記録した。
+
+
+ユーザーの「もう少し進めていいです」を受け、20%下限を維持して追加の1単位を実施。credential import projectionはcanonical snapshot recordの6列とrow hash/PK/ordinalを検証し、通常5列と一度だけ消費できる非公開入力handleへ分離する。parserの秘密値がerror causeへ出ないよう拒否時は固定codeとし、設定変更・handle偽造/複製/再利用も検証。Luna Maxへ委任したが成果物が戻らず中断し、親Astraが実装・検証した。Node22.6のmigration-dataは74件成功・skipなし、実40表catalogと合成1行でも成功、CI隔離検査成功。統合設計の「5列INSERT後にhash UPDATE」を、NOT NULLとtrigger二重更新を避ける単一INSERTへ訂正。実source値取得・hash生成・D1書き込み・importer接続・本番変更は未実施。検証時の通常残量21%。
