@@ -80,3 +80,24 @@ first. Credentials remained in process memory and artifacts remained in a
 private temporary directory. This proves the observed catalog can pass the
 initial artifact path; it is not a transactional snapshot, D1 import, or
 publication of that version.
+
+## Live public catalog staged locally (2026-09-23)
+
+Two independent read-only exports from the authenticated Supabase SQL Editor
+selected only `id`, `emoji`, `short_name`, `keywords`, `category`,
+`subcategory`, `codepoints`, and `sort_order`. Both contained 3,944 rows and
+normalized to the same SHA-256:
+`84a67b361adf96534bc6e564ec7510249758c2b20492e4d0b97acc7fd88309c0`.
+Every UUID and emoji was unique. The immutable release version is
+`10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed`.
+
+That release was staged into an ephemeral local Miniflare D1 database after
+seeding a source-shaped canonical `emoji_master` fixture. All 3,944 canonical
+rows and 3,944 separate staging rows read back, and every staged record matched
+the verified release; the version reached `ready`. This validates the release
+builder and staging path with the observed public master data. The Supabase
+source was read-only; no remote D1, user rows, Auth data, production master
+write, API/frontend activation, or public release was involved. The local
+canonical table was only a fixture and was unchanged outside this disposable
+database. The proof and related suites ran on the pinned Node 22.6.0. Private
+export files remain outside the repository.
