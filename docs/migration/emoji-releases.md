@@ -51,9 +51,10 @@ pointer is configured.
 Validation: `npm run test:emoji-catalog` covers generator input boundaries,
 identity preservation, version reuse, row-order independence, mixed-file
 rejection, old-version preservation, and failed identity review. These are
-local artifact checks. Remaining #36 gates include remote staging under the
-approved Cloudflare environment, administrator authorization,
+local artifact checks. Remaining gates include administrator authorization,
 reference-aware release and rollback review, and production observation.
+Remote D1 creation, staging, and activation remain reserved for the #38 final
+migration gate.
 
 ## Isolated D1 staging (2026-09-23)
 

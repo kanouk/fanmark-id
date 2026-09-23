@@ -76,10 +76,10 @@ second trigger increment; deferred rows remain whole in the private source.
    built from two matching read-only exports of the authoritative public master
    and all 3,944 rows passed isolated local D1 staging/readback on 2026-09-23.
    A local private pointer and read-only API/frontend selector now support the
-   release path with identity guards. Next, configure the correct Cloudflare
-   account's D1 binding and rehearse remote staging only after access is ready;
-   reconcile user-held references before any public release. No remote D1 write,
-   deployment, or public activation has occurred.
+   release path with identity guards. Reconcile user-held references and use
+   the local path in #37's synthetic rehearsal. Remote D1 creation/staging and
+   deployment remain reserved for #38's final migration gate; no remote D1
+   write, deployment, or public activation has occurred.
 3. Complete the synthetic end-to-end rehearsal in #37 across the app, explicit
    masters, auth, storage, and billing sandbox. Exercise planned maintenance
    and individual support steps where that is simpler than zero-downtime
