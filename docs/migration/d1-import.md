@@ -71,9 +71,14 @@ The generic importer does not yet own the credential descriptor, protected
 codec, or transform ledger. After the manifest has passed the private snapshot
 verifier, it inspects the verified catalog. If the catalog contains
 `fanmark_password_configs.access_password`, it raises
-`credential_transform_required` immediately. This happens before report-parent
-creation, importer-ledger creation, target-schema inspection, checkpoints, or
-any target row mutation.
+`credential_transform_required` before report-parent creation,
+importer-ledger creation, checkpoints, or any target row mutation. By default
+this rejection happens before target-schema inspection. A caller may pass
+`expectedTargetProfile` with the generated lifecycle, generation, and
+credential schema plans plus the descriptor; in that mode the importer first
+performs a read-only exact profile/schema check bound to the verified snapshot
+and then rejects the generic credential import. The profile preflight does not
+enable credential transformation or row import.
 
 `allowUnresolvedGates: true` and `mode: "local"` cannot bypass this boundary;
 that option only admits explicitly reviewed external identity gates. The
@@ -84,10 +89,13 @@ generic text codec from copying an untransformed credential into D1.
 
 The existing 40-table synthetic rehearsal therefore intentionally stops when
 the catalog includes this source table until the descriptor-integrated
-transform path is implemented and independently reconciled. The next slice
-must bind the descriptor and codec before generating generic bindings, then
-write the transformed value and source-row coverage in one reviewed D1
-transaction.
+transform path is implemented and independently reconciled. A five-table
+source-shaped Miniflare test now verifies the composed lifecycle, generation,
+and credential DDL, checks the profile through the importer preflight, and
+confirms that the rejection still leaves report and ledger state untouched.
+The next slice must bind the descriptor and codec before generating generic
+bindings, then write the transformed value and source-row coverage in one
+reviewed D1 transaction.
 
 The implementation bounds defaults at 50 rows and 512 KiB of source envelope
 bytes per batch. Source envelope lines have a separate 16 MiB local input cap;

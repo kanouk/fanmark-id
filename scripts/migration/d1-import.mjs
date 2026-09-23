@@ -36,6 +36,7 @@ import {
 } from "./snapshot-format.mjs";
 import { compileRowConverter } from "./row-conversion.mjs";
 import { SnapshotVerificationError, verifySnapshot } from "./snapshot-verify.mjs";
+import { inspectCredentialTransformSchema } from "./credential-transform-schema.mjs";
 
 export const D1_IMPORT_SCHEMA_VERSION = 1;
 export const D1_IMPORT_CODEC_VERSION = 1;
@@ -1111,31 +1112,57 @@ async function* readSourceIterator({ filePath, entry, tablePlan, maxRowBytes }) 
   return stats;
 }
 
-async function assertTargetSchema(database, snapshot, plan) {
-  const expectedObjects = generatedSchemaObjects(snapshot.convertedSchema.sql);
-  // Include every user object kind. A stray trigger or view can change write
-  // semantics while leaving table_info and the table/index set unchanged.
-  // SQLite's implicit autoindexes have no portable source name; their parent
-  // table's exact CREATE SQL still carries the declared PK/UNIQUE semantics.
-  const actualRows = await allRows(database, "SELECT type, name, sql FROM sqlite_master WHERE substr(name, 1, 7) <> 'sqlite_' AND type IN ('table', 'index', 'view', 'trigger')");
-  const actualObjects = new Map();
-  for (const row of actualRows) {
-    if (typeof row.name !== "string" || typeof row.type !== "string" || typeof row.sql !== "string") throw fail("target_schema_metadata_invalid");
-    // The ledger is importer-owned, and the exact provider metadata object is
-    // the only local D1 object outside the generated application scope.
-    if (Object.values(LEDGER_TABLES).includes(row.name) || D1_PROVIDER_OBJECTS.has(`${row.type}:${row.name}`)) continue;
-    actualObjects.set(`${row.type}:${row.name}`, normalizeSql(row.sql));
-  }
-  const expectedKeys = [...expectedObjects.keys()].sort(compareUtf8);
-  const actualKeys = [...actualObjects.keys()].sort(compareUtf8);
-  if (JSON.stringify(expectedKeys) !== JSON.stringify(actualKeys)) throw fail("target_schema_scope_mismatch", { expectedKeys, actualKeys });
-  for (const key of expectedKeys) {
-    if (actualObjects.get(key) !== expectedObjects.get(key)) throw fail("target_schema_definition_mismatch");
+async function assertTargetSchema(database, snapshot, plan, { credentialProfile = null } = {}) {
+  if (credentialProfile !== null) {
+    const profileKeys = Reflect.ownKeys(credentialProfile);
+    const expectedProfileKeys = ["credentialPlan", "descriptor", "generationPlan", "lifecyclePlan"];
+    if (
+      profileKeys.length !== expectedProfileKeys.length ||
+      profileKeys.some((key) => typeof key !== "string" || !expectedProfileKeys.includes(key)) ||
+      profileKeys.some((key) => {
+        const descriptor = Object.getOwnPropertyDescriptor(credentialProfile, key);
+        return !descriptor || !descriptor.enumerable || !Object.hasOwn(descriptor, "value");
+      })
+    ) throw fail("target_profile_shape_invalid");
+    let inspected;
+    try {
+      inspected = await inspectCredentialTransformSchema(database, credentialProfile.credentialPlan, {
+        catalog: snapshot.catalog,
+        convertedSchema: snapshot.convertedSchema,
+        lifecyclePlan: credentialProfile.lifecyclePlan,
+        generationPlan: credentialProfile.generationPlan,
+        descriptor: credentialProfile.descriptor,
+      });
+    } catch {
+      throw fail("target_profile_schema_mismatch");
+    }
+    if (!inspected.complete) throw fail("target_profile_schema_incomplete");
+  } else {
+    const expectedObjects = generatedSchemaObjects(snapshot.convertedSchema.sql);
+    // Include every user object kind. A stray trigger or view can change write
+    // semantics while leaving table_info and the table/index set unchanged.
+    // SQLite's implicit autoindexes have no portable source name; their parent
+    // table's exact CREATE SQL still carries the declared PK/UNIQUE semantics.
+    const actualRows = await allRows(database, "SELECT type, name, sql FROM sqlite_master WHERE substr(name, 1, 7) <> 'sqlite_' AND type IN ('table', 'index', 'view', 'trigger')");
+    const actualObjects = new Map();
+    for (const row of actualRows) {
+      if (typeof row.name !== "string" || typeof row.type !== "string" || typeof row.sql !== "string") throw fail("target_schema_metadata_invalid");
+      // The ledger is importer-owned, and the exact provider metadata object is
+      // the only local D1 object outside the generated application scope.
+      if (Object.values(LEDGER_TABLES).includes(row.name) || D1_PROVIDER_OBJECTS.has(`${row.type}:${row.name}`)) continue;
+      actualObjects.set(`${row.type}:${row.name}`, normalizeSql(row.sql));
+    }
+    const expectedKeys = [...expectedObjects.keys()].sort(compareUtf8);
+    const actualKeys = [...actualObjects.keys()].sort(compareUtf8);
+    if (JSON.stringify(expectedKeys) !== JSON.stringify(actualKeys)) throw fail("target_schema_scope_mismatch", { expectedKeys, actualKeys });
+    for (const key of expectedKeys) {
+      if (actualObjects.get(key) !== expectedObjects.get(key)) throw fail("target_schema_definition_mismatch");
+    }
   }
   for (const table of plan.tableNames) {
     const rows = await allRows(database, `PRAGMA table_info(${quoteIdentifier(table)})`);
     const expectedColumns = plan.tables.get(table).columns;
-    if (rows.length !== expectedColumns.length) throw fail("target_columns_mismatch");
+    if (credentialProfile === null ? rows.length !== expectedColumns.length : rows.length < expectedColumns.length) throw fail("target_columns_mismatch");
     for (let index = 0; index < expectedColumns.length; index += 1) {
       const actual = rows[index];
       const expected = expectedColumns[index];
@@ -1265,6 +1292,7 @@ export async function importD1Snapshot({
   reportPath,
   mode = "local",
   allowUnresolvedGates = false,
+  expectedTargetProfile = null,
   maxRowsPerBatch = DEFAULT_MAX_ROWS_PER_BATCH,
   maxBatchBytes = DEFAULT_MAX_BATCH_BYTES,
   maxBindingsPerBatch = DEFAULT_MAX_BINDINGS_PER_BATCH,
@@ -1282,10 +1310,18 @@ export async function importD1Snapshot({
   if (typeof now !== "function") throw fail("invalid_clock");
   validateOptions({ maxRowsPerBatch, maxBatchBytes, maxBindingsPerBatch, scanBatchRows, maxRowBytes, maxTargetRowBytes });
   const snapshot = await loadVerifiedSnapshot(manifestPath);
+  let plan = null;
+  if (expectedTargetProfile !== null) {
+    plan = buildImportPlan(snapshot.catalog, snapshot.convertedSchema, { allowUnresolvedGates });
+    // This is a read-only preflight. It confirms the exact lifecycle,
+    // generation, and credential target profile before the generic importer
+    // refuses to move any row from a credential-bearing catalog.
+    await assertTargetSchema(database, snapshot, plan, { credentialProfile: expectedTargetProfile });
+  }
   assertCredentialTransformBoundary(snapshot.catalog);
   const absoluteReportPath = reportPathFor(snapshot.manifestPath, reportPath);
   await ensurePrivateReportParent(absoluteReportPath);
-  const plan = buildImportPlan(snapshot.catalog, snapshot.convertedSchema, { allowUnresolvedGates });
+  plan ??= buildImportPlan(snapshot.catalog, snapshot.convertedSchema, { allowUnresolvedGates });
   if (snapshot.convertedSchema.report.unresolvedGateCount > 0 && !allowUnresolvedGates) throw fail("schema_gates_unresolved");
   const existingReport = await readReport(absoluteReportPath);
   if (existingReport) assertReportIdentity(existingReport, snapshot, { mode, destinationId, targetIncarnation }, plan);

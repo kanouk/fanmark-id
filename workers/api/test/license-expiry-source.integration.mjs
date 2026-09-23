@@ -3,6 +3,8 @@
 /** Synthetic local-D1 integration proof against catalog-shaped source tables. */
 
 import assert from "node:assert/strict";
+import { promises as fs } from "node:fs";
+import os from "node:os";
 import { test } from "node:test";
 import { randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
@@ -18,6 +20,17 @@ import {
   applyLifecycleGenerationSchema,
   generateLifecycleGenerationSchema,
 } from "../../../scripts/migration/lifecycle-generation-schema.mjs";
+import {
+  applyCredentialTransformSchema,
+  generateCredentialTransformSchema,
+  inspectCredentialTransformSchema,
+} from "../../../scripts/migration/credential-transform-schema.mjs";
+import {
+  CREDENTIAL_CODEC_COST,
+  CREDENTIAL_CODEC_ID,
+} from "../../../scripts/migration/credential-descriptor.mjs";
+import { importD1Snapshot } from "../../../scripts/migration/d1-import.mjs";
+import { exportSnapshot } from "../../../scripts/migration/snapshot-export.mjs";
 import { createSourceLicenseExpiryRepository } from "../src/license-expiry-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -135,6 +148,41 @@ function fixtureCatalog() {
   };
 }
 
+function credentialDescriptor() {
+  return {
+    version: 1,
+    sourceRelation: "fanmark_password_configs",
+    sourceColumn: "access_password",
+    sourcePrimaryKeyColumns: ["id"],
+    enabledColumn: "is_enabled",
+    licenseColumn: "license_id",
+    destinationRelation: "fanmark_password_configs",
+    destinationColumn: "access_password",
+    transformKind: "credential_to_bcrypt",
+    codecId: CREDENTIAL_CODEC_ID,
+    codecCost: CREDENTIAL_CODEC_COST,
+    transformContractVersion: 1,
+    policyVersion: 1,
+    inactiveLicensePolicy: "migration_gate",
+  };
+}
+
+async function emptySnapshot(catalog, outputDir) {
+  return exportSnapshot({
+    catalog,
+    outputDir,
+    session: {
+      async begin() { return { currentUser: "postgres", isolation: "repeatable read", readOnly: true }; },
+      async readCatalog() { return catalog; },
+      async *streamTable() {},
+      async countTable() { return "0"; },
+      async commit() {},
+      async rollback() {},
+      async close() {},
+    },
+  });
+}
+
 function splitSqlStatements(sql) {
   const withoutLineComments = String(sql).replace(/^\s*--[^\n]*(?:\n|$)/gmu, "");
   const statements = [];
@@ -191,6 +239,13 @@ async function setup() {
   const convertedSchema = convertSchema(catalog);
   const lifecyclePlan = generateLifecycleTargetSchema({ catalog, convertedSchema });
   const generationPlan = generateLifecycleGenerationSchema({ catalog, convertedSchema, lifecyclePlan });
+  const credentialPlan = generateCredentialTransformSchema({
+    catalog,
+    convertedSchema,
+    lifecyclePlan,
+    generationPlan,
+    descriptor: credentialDescriptor(),
+  });
   const local = await createLocalD1();
   try {
     await applySql(local.database, convertedSchema.sql);
@@ -198,7 +253,24 @@ async function setup() {
     await applyLifecycleGenerationSchema({
       database: local.database, plan: generationPlan, catalog, convertedSchema, lifecyclePlan,
     });
-    return { ...local, catalog, convertedSchema, lifecyclePlan, generationPlan };
+    await applyCredentialTransformSchema({
+      database: local.database,
+      plan: credentialPlan,
+      catalog,
+      convertedSchema,
+      lifecyclePlan,
+      generationPlan,
+      descriptor: credentialDescriptor(),
+    });
+    const inspectedCredentialProfile = await inspectCredentialTransformSchema(local.database, credentialPlan, {
+      catalog,
+      convertedSchema,
+      lifecyclePlan,
+      generationPlan,
+      descriptor: credentialDescriptor(),
+    });
+    assert.equal(inspectedCredentialProfile.complete, true);
+    return { ...local, catalog, convertedSchema, lifecyclePlan, generationPlan, credentialPlan };
   } catch (error) {
     await local.miniflare.dispose();
     throw error;
@@ -233,7 +305,7 @@ function repository(fixture, { runId = randomUUID(), capturedNow = CAPTURED_NOW,
     database,
     runId,
     targetIncarnation: "synthetic-target-incarnation-1",
-    schemaExtensionDigest: fixture.generationPlan.extensionDigest,
+    schemaExtensionDigest: fixture.credentialPlan.extensionDigest,
     capturedNow,
     gracePeriodDays: 3,
     uuidFactory: randomUUID,
@@ -264,6 +336,11 @@ test("applies nullable-owner expiry with independent lifecycle/access generation
     assert.equal(summary.results[0].status, "processed");
     assert.equal(summary.results[0].licenseLifecycleGeneration, 1);
     assert.equal(summary.results[0].accessGeneration, 2);
+    const run = await row(fixture.database,
+      'SELECT "schema_extension_digest" FROM "license_expiry_runs" WHERE "run_id" = ?',
+      runId,
+    );
+    assert.equal(run.schema_extension_digest, fixture.credentialPlan.extensionDigest);
 
     const license = await row(fixture.database,
       'SELECT "status", "user_id", "license_end", "grace_expires_at", "is_returned", "lifecycle_generation", "lifecycle_claim_id" FROM "fanmark_licenses" WHERE "id" = ?',
@@ -543,5 +620,54 @@ test("does not select a license at the exact expiry boundary", async () => {
     )).status, "active");
   } finally {
     await fixture.miniflare.dispose();
+  }
+});
+
+test("validates the integrated target profile read-only before refusing generic credential import", async () => {
+  const fixture = await setup();
+  const scratch = await fs.mkdtemp(path.join(os.tmpdir(), "fanmark-expiry-import-profile-"));
+  await fs.chmod(scratch, 0o700);
+  const snapshotDir = path.join(scratch, "snapshot");
+  const reportPath = path.join(scratch, "report", "import.json");
+  try {
+    const snapshot = await emptySnapshot(fixture.catalog, snapshotDir);
+    const importOptions = {
+      manifestPath: snapshot.manifestPath,
+      database: fixture.database,
+      destinationId: "local-source-shaped-profile",
+      targetIncarnation: "source-profile-incarnation-1",
+      reportPath,
+      mode: "local",
+      allowUnresolvedGates: true,
+      expectedTargetProfile: {
+        lifecyclePlan: fixture.lifecyclePlan,
+        generationPlan: fixture.generationPlan,
+        credentialPlan: fixture.credentialPlan,
+        descriptor: credentialDescriptor(),
+      },
+    };
+    await fixture.database.prepare('CREATE VIEW "unexpected_profile_view" AS SELECT 1').run();
+    await assert.rejects(
+      importD1Snapshot(importOptions),
+      (error) => error.code === "target_profile_schema_mismatch",
+    );
+    await fixture.database.prepare('DROP VIEW "unexpected_profile_view"').run();
+    await assert.rejects(
+      importD1Snapshot(importOptions),
+      (error) => error.code === "credential_transform_required",
+    );
+
+    const ledger = await row(fixture.database,
+      'SELECT COUNT(*) AS count FROM "sqlite_master" WHERE "type" = \'table\' AND "name" LIKE \'__fanmark_d1_import_%\'',
+    );
+    assert.equal(ledger.count, 0);
+    await assert.rejects(fs.stat(reportPath), (error) => error.code === "ENOENT");
+    await assert.rejects(fs.stat(path.dirname(reportPath)), (error) => error.code === "ENOENT");
+    assert.equal(await row(fixture.database,
+      'SELECT COUNT(*) AS count FROM "fanmark_password_configs"',
+    ).then((result) => result.count), 0);
+  } finally {
+    await fixture.miniflare.dispose();
+    await fs.rm(scratch, { recursive: true, force: true });
   }
 });

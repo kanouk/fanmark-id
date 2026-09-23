@@ -21,20 +21,28 @@ untouched. The version 2 durable run item also captures `fanmarks.short_id`
 and `normalized_emoji`, which the notification event uses for `fanmark_name`,
 the short-ID field, and `/f/:shortId` link.
 
+The same local database now receives the descriptor-bound credential
+transform schema after the source, lifecycle, and generation schemas. Its
+independent readback verifies that all expected source and extension objects
+are present together. The expiry run stores that integrated extension digest,
+and the test reads it back to prove that a resumed run cannot silently switch
+to a different schema profile.
+
 The repository uses durable per-run IDs for the operation, audit, and
 notification event; a single guarded batch for the license state, access
 generation, source-shaped audit/event effects, run item, and claim cleanup; and
-an exact readback after an uncertain acknowledgement. Ten Miniflare checks
+an exact readback after an uncertain acknowledgement. Eleven Miniflare checks
 cover nullable-owner success, generation separation, lost-ACK recovery,
 rollback and resume when audit, notification, access-version, run-item, or
 guard-cleanup effects are suppressed, stale fanmark conflict, and the strict
 expiry boundary. Run with
 `npm --prefix workers/api run test:license-expiry-source`.
 
-This is still a synthetic subset rather than the complete 40-table profile or
-the full target importer. It does not implement grace-to-expired, lottery,
-notification delivery, cron/Worker wiring, or remote D1 operation. Those
-remain separate #34 and #37 acceptance work.
+This is still a five-source-table synthetic subset rather than the complete
+40-table profile or the full target importer. It does not import source rows
+through the generic importer, transform credentials, implement
+grace-to-expired, lottery, notification delivery, cron/Worker wiring, or
+remote D1 operation. Those remain separate #34 and #37 acceptance work.
 
 ## Evidence and current mismatch
 

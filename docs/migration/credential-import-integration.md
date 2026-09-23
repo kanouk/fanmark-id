@@ -444,7 +444,12 @@ The five Miniflare integration cases use only the synthetic target catalog and
 contain no source credential values. The suite is included in the workers/api
 test:lifecycle-schema command and its existing CI step. This is schema
 preparation only: d1-import.mjs still rejects a credential catalog before
-writes, and the isolated transform core still uses its synthetic
+writes. Its optional `expectedTargetProfile` preflight validates the composed
+source/lifecycle/generation/credential DDL read-only against the verified
+snapshot, then keeps the generic-import rejection. The synthetic Miniflare
+integration verifies that an unexpected view fails this preflight and that an
+exact profile still stops at `credential_transform_required` without report
+or ledger creation. The isolated transform core still uses its synthetic
 fanmark_access_configs schema. It is not yet compatible with this
 source-shaped target profile and must not be called by the importer until the
 row-level atomic writer, coverage/checkpoint integration, and typed readback
