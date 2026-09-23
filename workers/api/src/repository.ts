@@ -1,6 +1,9 @@
 export interface Env {
   ASSETS?: Fetcher;
   FANMARK_DB?: D1Database;
+  AUTH_BACKEND?: string;
+  BETTER_AUTH_SECRET?: string;
+  BETTER_AUTH_URL?: string;
   AVAILABILITY_BACKEND?: string;
   EMOJI_CATALOG_BACKEND?: string;
   PUBLIC_ACCESS_BACKEND?: string;

@@ -97,6 +97,9 @@ jobs:
       - name: Test D1 recent contract
         if: matrix.directory == 'workers/api'
         run: npm run test:d1
+      - name: Test integrated Better Auth route
+        if: matrix.directory == 'workers/api'
+        run: npm run test:auth:d1
       - name: Test D1 availability contract
         if: matrix.directory == 'workers/api'
         run: npm run test:availability:d1

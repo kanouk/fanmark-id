@@ -7,6 +7,7 @@ import {
   type Env,
 } from "./repository";
 import { createD1RecentFanmarksRepository } from "./d1-repository";
+import { captureMfaGeneration, createAuth } from "./better-auth.mjs";
 import {
   AvailabilityConfigurationError,
   AvailabilityTimeoutError,
@@ -159,6 +160,169 @@ function publicAccessJsonResponse(body: unknown, status: number, headers: Header
   return new Response(serializePublicAccessBody(body), { status, headers: responseHeaders });
 }
 
+const AUTH_CLOSED_ENDPOINTS = new Set([
+  "/sign-up/email",
+  "/sign-up/username",
+  "/sign-in/social",
+  "/link-social",
+  "/unlink-account",
+  "/change-email",
+  "/delete-user",
+  "/delete-user/callback",
+  "/forget-password",
+  "/request-password-reset",
+  "/reset-password",
+  "/send-verification-email",
+  "/verify-email",
+]);
+const AUTH_KNOWN_ENDPOINTS = new Set([
+  ...AUTH_CLOSED_ENDPOINTS,
+  "/sign-in/email",
+  "/sign-out",
+  "/get-session",
+  "/change-password",
+  "/update-user",
+  "/verify-password",
+  "/update-session",
+  "/ok",
+  "/list-sessions",
+  "/revoke-session",
+  "/revoke-sessions",
+  "/revoke-other-sessions",
+  "/two-factor/enable",
+  "/two-factor/disable",
+  "/two-factor/get-totp-uri",
+  "/two-factor/verify-totp",
+  "/two-factor/send-otp",
+  "/two-factor/verify-otp",
+  "/two-factor/generate-backup-codes",
+  "/two-factor/verify-backup-code",
+]);
+
+interface ConfiguredAuth {
+  database: D1Database;
+  secret: string;
+  url: string;
+  trustedOrigins: string[];
+}
+
+function configuredAuth(env: Env): ConfiguredAuth | null {
+  const authUrl = env.BETTER_AUTH_URL?.trim();
+  const secret = env.BETTER_AUTH_SECRET?.trim();
+  if (!authUrl || !secret || secret.length < 32 || !env.FANMARK_DB) return null;
+
+  try {
+    const base = new URL(authUrl);
+    if (
+      base.protocol !== "https:" ||
+      base.username ||
+      base.password ||
+      base.pathname !== "/" ||
+      base.search ||
+      base.hash
+    ) return null;
+
+    const origins = new Set([base.origin]);
+    for (const value of (env.CORS_ALLOWED_ORIGINS ?? "").split(",").map((item) => item.trim()).filter(Boolean)) {
+      const origin = new URL(value);
+      if (
+        origin.protocol !== "https:" ||
+        origin.origin !== value ||
+        origin.username ||
+        origin.password
+      ) return null;
+      origins.add(origin.origin);
+    }
+    return {
+      database: env.FANMARK_DB,
+      secret,
+      url: base.origin,
+      trustedOrigins: [...origins],
+    };
+  } catch {
+    return null;
+  }
+}
+
+function authResponseHeaders(response: Response, origin: string | null): Response {
+  const headers = new Headers(response.headers);
+  headers.set("cache-control", "no-store");
+  if (origin) {
+    headers.set("access-control-allow-origin", origin);
+    headers.set("access-control-allow-credentials", "true");
+    headers.set("vary", "Origin");
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
+async function handleBetterAuthRequest(request: Request, env: Env, url: URL): Promise<Response> {
+  const authPath = url.pathname.slice("/api/auth".length);
+  const isResetTokenRoute = authPath.startsWith("/reset-password/");
+  const isOAuthCallback = authPath.startsWith("/callback/");
+  if (
+    !AUTH_KNOWN_ENDPOINTS.has(authPath) &&
+    !isOAuthCallback &&
+    !isResetTokenRoute
+  ) {
+    return jsonResponse({ error: "not_found" }, 404);
+  }
+  if (env.AUTH_BACKEND !== "better-auth") {
+    return jsonResponse({ error: "auth_unavailable" }, 503);
+  }
+  const authConfig = configuredAuth(env);
+  if (!authConfig) return jsonResponse({ error: "auth_unavailable" }, 503);
+
+  const requestOrigin = request.headers.get("Origin");
+  if (requestOrigin && !authConfig.trustedOrigins.includes(requestOrigin)) {
+    return jsonResponse({ error: "forbidden_origin" }, 403);
+  }
+
+  const corsHeaders = new Headers();
+  if (requestOrigin) {
+    corsHeaders.set("access-control-allow-origin", requestOrigin);
+    corsHeaders.set("access-control-allow-credentials", "true");
+    corsHeaders.set("access-control-allow-methods", "GET, POST, OPTIONS");
+    corsHeaders.set("access-control-allow-headers", "content-type, authorization, x-requested-with, x-csrf-token");
+    corsHeaders.set("vary", "Origin");
+  }
+  if (request.method.toUpperCase() === "OPTIONS") {
+    corsHeaders.set("allow", "GET, POST, OPTIONS");
+    return emptyResponse(204, corsHeaders);
+  }
+
+  if (AUTH_CLOSED_ENDPOINTS.has(authPath) || isOAuthCallback || isResetTokenRoute) {
+    return errorResponse("auth_flow_unavailable", 403, corsHeaders);
+  }
+
+  try {
+    const requestState = authPath === "/two-factor/verify-totp"
+      ? await captureMfaGeneration({ AUTH_DB: authConfig.database })
+      : null;
+    const auth = createAuth(
+      {
+        AUTH_DB: authConfig.database,
+        BETTER_AUTH_SECRET: authConfig.secret,
+        BETTER_AUTH_URL: authConfig.url,
+      },
+      [],
+      requestState,
+      null,
+      {
+        appName: "fanmark.id",
+        issuer: "fanmark.id",
+        trustedOrigins: authConfig.trustedOrigins,
+      },
+    );
+    return authResponseHeaders(await auth.handler(request), requestOrigin);
+  } catch {
+    return jsonResponse({ error: "auth_unavailable" }, 503, corsHeaders);
+  }
+}
+
 async function fetchStaticAsset(request: Request, assets: Fetcher): Promise<Response> {
   const response = await assets.fetch(request);
   const isNavigation =
@@ -196,6 +360,10 @@ export async function handleRequest(
   // rewritten to index.html.
   if (!url.pathname.startsWith("/api/") && url.pathname !== "/api" && env.ASSETS) {
     return fetchStaticAsset(request, env.ASSETS);
+  }
+
+  if (url.pathname.startsWith("/api/auth/")) {
+    return handleBetterAuthRequest(request, env, url);
   }
 
   const publicAccessRoute = parsePublicAccessRoute(url);

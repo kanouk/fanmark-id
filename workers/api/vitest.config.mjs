@@ -15,6 +15,7 @@ export default defineConfig({
       "./test/availability-d1.test.ts",
       "./test/public-access.test.ts",
       "./test/emoji-catalog-api.test.ts",
+      "./test/auth-d1.test.ts",
     ],
     fileParallelism: false,
     setupFiles: ["./test/setup.ts"],

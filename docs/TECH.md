@@ -21,7 +21,7 @@
 
 - `pull_request`（対象ブランチ `main`）と `push`（`main`）では `validate` ジョブを実行する。`.node-version` の Node.js を使い、`npm ci --legacy-peer-deps`、`npm run check:ci`、`npm run typecheck`、`npm run build` を実行する。このジョブは Supabase の秘密情報、Supabase CLI、リモートプロジェクト、DB push にアクセスしない。
 - `validate` は生成したPWAのキャッシュ境界を検査し、その直後のViteビルドを使って `workers/api` のStatic Assetsルーティング（local HTTPを含む）と配備用dry-runも検証する。再現手順は `docs/migration/static-assets.md`。
-- `migration-validation` は `workers/api`、`experiments/cloudflare-auth`、`experiments/cloudflare-d1-concurrency`、`experiments/stripe-receipts` を別々に `npm ci` / `npm test` で検証する。APIの型検査・D1 recent契約試験・配備用dry-run、Stripe受信adapterと実SDKの型互換性検査も含む。合成データとlocal Workers/D1・in-memory PostgreSQLのみを使い、秘密情報やremote配備権限を渡さない。
+- `migration-validation` は `workers/api`、`experiments/cloudflare-auth`、`experiments/cloudflare-d1-concurrency`、`experiments/stripe-receipts` を別々に `npm ci` / `npm test` で検証する。APIの型検査・D1 recent/Auth契約試験・配備用dry-run、Stripe受信adapterと実SDKの型互換性検査も含む。Node 22.6.0のclean installを通すため、Vitestを使う3 packageはVite 6.4.3へoverrideしている。合成データとlocal Workers/D1・in-memory PostgreSQLのみを使い、秘密情報やremote配備権限を渡さない。
 - `deploy` ジョブは `validate` と `migration-validation` の成功後の `push`（`refs/heads/main`）に限って実行する。GitHub Environment の `Supabase` を明示的に使用し、そのジョブだけが `SUPABASE_ACCESS_TOKEN`、`SUPABASE_DB_PASSWORD`、`SUPABASE_PROJECT_ID` を参照する。プロジェクトを link して `supabase db push` を実行し、生成型を更新する。本番デプロイは `supabase-production` concurrency group で直列化し、実行中のデプロイをキャンセルしない。
 - 生成型の差分がある場合、`deploy` ジョブは `src/integrations/supabase/types.ts` をコミットして main へ push する。デプロイジョブには `contents: write` が必要である。
 
@@ -152,3 +152,5 @@ Cloudflare版では、`workers/api/src/index.ts`の`GET /api/emoji/catalog`がD1
 Service Workerはビルド済み静的ファイルだけをprecacheする。SupabaseおよびWorker APIの応答はruntime cacheへ保存せず、`/api` 配下のnavigationへSPA HTMLを返さない。新しいService Workerのactivateで旧`supabase-cache`を削除し、過去のAPI応答が残らないようにする。静的precacheや他の名前のcacheは削除しない。既存端末への反映は配備後にService Workerが更新・activateした時点であり、ローカルビルドだけでは既存cacheの削除を確認したことにならない。
 
 取得可能判定のWorker接続は `VITE_FANMARK_API_BASE_URL`、Worker側のD1選択は独立した `AVAILABILITY_BACKEND=d1` と `FANMARK_DB` を使う。未設定は既存Supabase RPC。フロント検証は `npm run test:availability`、Worker検証は `workers/api` の `npm test` と `npm run test:availability:d1`。
+
+Better Authは `workers/api/src/better-auth.mjs` に共通化し、通常Workerの `/api/auth/*` から利用する。`AUTH_BACKEND=better-auth`、`FANMARK_DB`、32文字以上の `BETTER_AUTH_SECRET`、HTTPSの `BETTER_AUTH_URL` がそろわないと503で停止し、Supabase Authへはフォールバックしない。CORSは明示したHTTPS originだけをCookie付きで許可する。招待登録、メール検証/再送/リセット、OAuthは仕様と配信機能の移植まで閉じる。合成D1検証は `npm --prefix workers/api run test:auth:d1`、既存TOTP/admin-assurance検証は `npm --prefix experiments/cloudflare-auth test`。

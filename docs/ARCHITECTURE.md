@@ -221,11 +221,11 @@
 
 移行の段階・優先順・再開手順は `docs/migration/EXECUTION.md`、コード側の棚卸しは `docs/migration/repository-inventory.md`、本番の読み取り結果は `docs/migration/live-observations.md`。`scripts/migration/inventory.mjs` でコード側の棚卸しを再生成できる。
 
-`experiments/cloudflare-auth/` と `experiments/cloudflare-d1-concurrency/` は合成データで動く独立したWorkers/D1検証用。通常アプリへ接続せず、現行のSupabaseバックエンドを置き換えたものではない。再現コマンドと限界は対応する `docs/migration/` の文書を参照する。
+`experiments/cloudflare-auth/` と `experiments/cloudflare-d1-concurrency/` は合成データで動く独立したWorkers/D1検証用。Better Authの共通認証実装は `workers/api/src/better-auth.mjs` にあり、実験Workerの `/admin/protected` MFA認可検証は引き続き独立している。通常Workerは明示的な認証設定がある場合だけ `/api/auth/*` を処理するが、招待・メール配信が未実装のためsignup/OAuth/メール送信フローは閉じている。これは現行Supabaseバックエンドや認可済み業務APIを置き換えたものではない。再現コマンドと限界は対応する `docs/migration/` の文書を参照する。
 
-`workers/api/migrations/` はD1上の非公開移行staging領域を作るSQL migrationを置く。
+`workers/api/migrations/` はD1上の非公開移行staging領域とBetter Auth/MFA schemaを作るSQL migrationを置く。`0003_better_auth_core.sql` はschemaと世代管理triggerだけで、ユーザー/credential/session行を含めない。
 
-`workers/api/` は移行用の公開recent APIを検証する独立Worker。フロントは `VITE_FANMARK_API_BASE_URL` を明示したビルドだけこのWorkerを選択し、未設定では既存Supabase RPCを利用する。Worker選択時の失敗は別データソースへフォールバックしない。契約・実行方法・配備条件は `docs/migration/recent-api-contract.md`。DB・RPC・Edgeの移行対応案は `docs/migration/object-map.md`。
+`workers/api/` は移行用の公開recent APIと認証入口を検証するWorker。フロントは `VITE_FANMARK_API_BASE_URL` を明示したビルドだけrecent APIを選択し、未設定では既存Supabase RPCを利用する。`/api/auth/*` は `AUTH_BACKEND=better-auth` とD1/secret/base URLを明示した場合だけBetter Authを使い、未設定時は503で停止する。Worker選択時の失敗は別データソースへフォールバックしない。signup/OAuth/メール配信とadmin/業務認可は未接続。API契約・実行方法・配備条件は `docs/migration/recent-api-contract.md` と `docs/migration/auth-feasibility.md`。DB・RPC・Edgeの移行対応案は `docs/migration/object-map.md`。
 
 `scripts/migration/auth-readiness.sql` と `scripts/migration/storage-cron-readiness.sql` は本番棚卸し用の読み取り専用集計。秘密値やデータ行を返さず、出力の個別件数は公開リポジトリへ保存しない。
 

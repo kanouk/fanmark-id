@@ -8,7 +8,8 @@ has been performed.
 
 Use branch `codex/cloudflare-api-preparation` in the migration worktree. The
 original checkout contains unrelated UI work. Use Node 22.6.0 explicitly;
-the shell's default Node version differs.
+the shell's default Node version differs. Workers/API/Auth/concurrency Vitest
+projects pin Vite 6.4.3 for this Node version and have passed clean `npm ci`.
 
 On 2026-09-23, the user explicitly removed the old remaining-usage stop rule and
 asked us to continue without reserving a percentage. Do not stop at 20% or 22%;
@@ -41,6 +42,7 @@ cannot be recovered. The old/new systems must not dual-write business rows.
 | Credential descriptor | `59a02f1` | Six-column mapping and schema/codec policy checks. No row transform/import connection. |
 | Credential import projection | `ddcbfea` | Source snapshot row/hash/PK validation and private one-use credential input; migration-data suite 74 passed with actual 40-table metadata plus one synthetic row. Generic importer still blocks credential-bearing snapshots. |
 | Local Better Auth/D1 proof | `docs/migration/auth-feasibility.md` | Better Auth 1.7.5 + bcryptjs 3.0.3 verified synthetic `$2a$10$`/`$2b$10$` password, UUID/session, and TOTP flows under workerd. No real Auth rows or hashes were exported. |
+| Application Worker Auth route | Current worktree | `/api/auth/*` now reaches the shared Better Auth core behind an explicit backend/config gate with exact trusted-origin CORS. A row-free Auth D1 migration and five Miniflare tests verify synthetic login/session, wrong-password and unverified-email rejection, closed signup/OAuth/email flows, parallel sign-in, CORS, and fail-closed behavior. App admin/business authorization and production email/OAuth remain unintegrated; no remote D1 or deployment. See `docs/migration/auth-feasibility.md`. |
 | Emoji master D1 staging/API/frontend | Current worktree | Two independent read-only exports of the 3,944-row public master matched and all rows staged/read back in disposable local D1. A private pointer has identity-guarded promotion/rollback. A paginated read-only D1 API and opt-in frontend selector now consume it locally; 7 release tests, 3 API tests, 5 client tests, 1 conversion test, typechecks, Worker-selected build, and dry-run pass. No remote D1 binding, deployment, or public activation. See `docs/migration/emoji-releases.md`. |
 | Lifecycle target schema | `01a1507`, `8034735` | Exact source/extension DDL and fingerprint consistency; actual 40-table catalog applied to empty local D1. No production rows. |
 | Credential incarnation authority | `7cf0fe6` | Missing retained authority is rejected by reads and final SQL; credential suite 19 passed. Isolated proof schema. |
@@ -72,8 +74,9 @@ second trigger increment; deferred rows remain whole in the private source.
 1. Continue the basic local/staging application and infrastructure slice
    under #34: finish integrated D1 schema/importer validation, connect the
    expiry work to the full synthetic target profile, complete remaining
-   Workers + Static Assets routes/jobs and synthetic Auth integration, and
-   run focused permission/parallel-operation checks. The active-to-grace
+   Workers + Static Assets routes/jobs, integrate admin/business authorization
+   with the new synthetic Auth route, and run focused permission/parallel-operation
+   checks. The active-to-grace
    source-shaped subset now has a local proof, but no production rows or
    service secrets enter these local proofs.
 2. Continue #36's emoji-master path: the verified UUID-bearing release was

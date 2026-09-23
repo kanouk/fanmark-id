@@ -17,5 +17,8 @@
     "@cloudflare/vitest-plugin": "1.1.13",
     "vitest": "4.1.11",
     "wrangler": "4.135.0"
+  },
+  "overrides": {
+    "vite": "6.4.3"
   }
 }

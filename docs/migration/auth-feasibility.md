@@ -2,9 +2,9 @@
 
 確認日: 2026-09-23 (JST)
 
-この調査は、Supabase Auth の本番データを移行したり、Cloudflare のリモート
-D1/Worker を変更したりするものではない。`experiments/cloudflare-auth/` に、
-架空のユーザー、架空の UUID、架空の bcrypt hash だけを入れたローカル
+この調査と後続のローカル Worker 統合では、Supabase Auth の本番データ移行や
+Cloudflare のリモート D1/Worker 変更は行っていない。`experiments/cloudflare-auth/`
+とWorker統合テストには、架空のユーザー、UUID、bcrypt hash だけを使うローカル
 Workers + D1 proof を置いた。OAuth の provider 登録、OAuth callback、Supabase
 MFA factor の移行、実データの export/import は実施していない。
 
@@ -41,6 +41,27 @@ Postgresであり、Cloudflare D1向けのコードではない。同ガイド�
 aggregate は bcrypt `$2a$10$` 形式を示すが、hash 内容、実ユーザー ID の対応付け、
 MFA secret の移送、provider の token と profile の挙動、Cloudflare の CPU plan は
 まだ未確認であり、下記の gate を通す必要がある。
+
+## Application Workerへの統合 (2026-09-23)
+
+Better Authの共通実装を`workers/api/src/better-auth.mjs`へ移し、通常のアプリWorkerから
+`/api/auth/*`を処理する。`AUTH_BACKEND=better-auth`、ローカルD1 binding、32文字以上の
+secret、HTTPSのbase URLがそろった場合だけ有効にする。Cookieを使うCORSはWorker設定の
+HTTPS originとの完全一致を要求する。設定がなければSupabaseへフォールバックせず`503`を返す。
+実環境でbackendを有効にする前に、該当D1 migrationを適用してschemaを独立readbackする必要がある。
+
+`workers/api/migrations/0003_better_auth_core.sql`にはBetter Auth/MFAのschema、singleton
+MFA generation行、generation triggerを含める。user、account、password hash、factor、sessionの
+行は入れない。テスト実行時だけ合成行を作る。ログインではemail verificationを必須にする。
+招待・メール配信を含む`docs/PRODUCT.md`の仕様が未実装のため、signup、social login、password reset、
+verification email/linkのendpointは閉じたままにした。既存の`/admin/protected`検証は隔離された
+feasibility Workerにあり、アプリWorkerのadmin endpointにはまだ接続していない。
+
+`npm --prefix workers/api run test:auth:d1`で合成ログイン/session読戻し、誤passwordと未確認emailの
+拒否、閉鎖中endpoint、4並列sign-in、origin確認、preflight、backend未設定を検証し、Miniflareの5件が
+成功した。共通実装変更後も`npm --prefix experiments/cloudflare-auth test`のTOTP/admin-assurance
+6件が成功し、通常Workerの`build:dry-run`も成功した。いずれもローカル合成データの確認であり、remote
+CPU制限、D1の適用、実メール/OAuth、MFA factorの移送、業務データの認可は検証していない。
 
 ## 再現方法と固定バージョン
 
