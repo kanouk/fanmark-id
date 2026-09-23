@@ -45,14 +45,25 @@ function artifacts(records: EmojiMasterRecord[]) {
   return {recordsSource,moduleSource,manifest,version:digest(canonical(manifest))};
 }
 
+export function createEmojiReleaseArtifacts(records: unknown) {
+  validateRecords(records);
+  const built = artifacts(records);
+  return {
+    records: JSON.parse(built.recordsSource) as EmojiMasterRecord[],
+    recordsSource: built.recordsSource,
+    moduleSource: built.moduleSource,
+    manifest: {...built.manifest,version:built.version},
+    version: built.version,
+  };
+}
+
 export async function verifyRelease(directory: string) {
   const manifest = JSON.parse(await fs.readFile(path.join(directory,'manifest.json'),'utf8'));
   const recordsSource = await fs.readFile(path.join(directory,'records.json'),'utf8');
   const records: unknown = JSON.parse(recordsSource);
-  validateRecords(records);
-  const expected = artifacts(records);
+  const expected = createEmojiReleaseArtifacts(records);
   const moduleSource = await fs.readFile(path.join(directory,'emojiCatalog.ts'),'utf8');
-  if (canonical(manifest) !== canonical({...expected.manifest,version:expected.version}) ||
+  if (canonical(manifest) !== canonical(expected.manifest) ||
       recordsSource !== expected.recordsSource || moduleSource !== expected.moduleSource) {
     throw new Error('Emoji release integrity or version mismatch');
   }
@@ -66,7 +77,7 @@ export async function buildRelease(input: string, releasesDirectory: string, pre
     const previous = await verifyRelease(previousDirectory);
     assertIdentityContinuity(previous.records,records);
   }
-  const built = artifacts(records);
+  const built = createEmojiReleaseArtifacts(records);
   await fs.mkdir(releasesDirectory,{recursive:true});
   const target = path.join(releasesDirectory,built.version);
   let exists = false;
@@ -86,7 +97,7 @@ export async function buildRelease(input: string, releasesDirectory: string, pre
   try {
     await fs.writeFile(path.join(staging,'records.json'),built.recordsSource,{flag:'wx'});
     await fs.writeFile(path.join(staging,'emojiCatalog.ts'),built.moduleSource,{flag:'wx'});
-    await fs.writeFile(path.join(staging,'manifest.json'),JSON.stringify({...built.manifest,version:built.version},null,2)+'\n',{flag:'wx'});
+    await fs.writeFile(path.join(staging,'manifest.json'),JSON.stringify(built.manifest,null,2)+'\n',{flag:'wx'});
     await verifyRelease(staging);
     // Only a complete verified directory receives the immutable version name.
     await fs.rename(staging,target);

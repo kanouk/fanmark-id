@@ -39,7 +39,7 @@ cannot be recovered. The old/new systems must not dual-write business rows.
 | Credential descriptor | `59a02f1` | Six-column mapping and schema/codec policy checks. No row transform/import connection. |
 | Credential import projection | `ddcbfea` | Source snapshot row/hash/PK validation and private one-use credential input; migration-data suite 74 passed with actual 40-table metadata plus one synthetic row. Generic importer still blocks credential-bearing snapshots. |
 | Local Better Auth/D1 proof | `docs/migration/auth-feasibility.md` | Better Auth 1.7.5 + bcryptjs 3.0.3 verified synthetic `$2a$10$`/`$2b$10$` password, UUID/session, and TOTP flows under workerd. No real Auth rows or hashes were exported. |
-| Emoji master D1 staging | Current worktree | 4 local Miniflare D1 integration tests pass. On 2026-09-23, two independent read-only exports of the 3,944-row public master matched; all rows staged into disposable local D1 and read back byte-for-byte against the verified release. No remote rows or public version activation. See `docs/migration/emoji-releases.md`. |
+| Emoji master D1 staging/activation | Current worktree | 6 local Miniflare D1 integration tests pass. On 2026-09-23, two independent read-only exports of the 3,944-row public master matched and all rows staged/read back in disposable local D1. A private pointer can promote and roll back only when identity continuity holds; ready rows and activation history are immutable. No remote rows or public API/frontend activation. See `docs/migration/emoji-releases.md`. |
 | Lifecycle target schema | `01a1507`, `8034735` | Exact source/extension DDL and fingerprint consistency; actual 40-table catalog applied to empty local D1. No production rows. |
 | Credential incarnation authority | `7cf0fe6` | Missing retained authority is rejected by reads and final SQL; credential suite 19 passed. Isolated proof schema. |
 | License/password generation triggers | `b6c85c5` | Seven triggers; schema/generation suites total four test groups passed; actual 40-table catalog plus extensions applied/reapplied/read back locally. Runtime disposal verified. |
@@ -75,9 +75,10 @@ second trigger increment; deferred rows remain whole in the private source.
 2. Continue #36's emoji-master path: the verified UUID-bearing release was
    built from two matching read-only exports of the authoritative public master
    and all 3,944 rows passed isolated local D1 staging/readback on 2026-09-23.
-   Implement and test promotion, API/frontend version selection, and rollback
-   locally while preserving user-owned references and stable UUIDs. No remote
-   D1 write or public activation has occurred.
+   A local private pointer now supports promotion/rollback with identity guards.
+   Next, connect a read-only API/frontend selector and reconcile user-held
+   references before any public release. No remote D1 write or public activation
+   has occurred.
 3. Complete the synthetic end-to-end rehearsal in #37 across the app, explicit
    masters, auth, storage, and billing sandbox. Exercise planned maintenance
    and individual support steps where that is simpler than zero-downtime

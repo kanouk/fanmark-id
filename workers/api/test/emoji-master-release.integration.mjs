@@ -12,12 +12,17 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 
-import { buildRelease } from "../../../scripts/build-emoji-release.ts";
+import { buildRelease, verifyRelease } from "../../../scripts/build-emoji-release.ts";
+import {
+  activateEmojiMasterRelease,
+  readEmojiMasterActiveRelease,
+} from "../../../scripts/migration/emoji-master-release-activate.mjs";
 import { stageEmojiMasterRelease } from "../../../scripts/migration/emoji-master-release-stage.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const miniflarePath = path.join(repoRoot, "workers/api/node_modules/miniflare/dist/src/index.js");
 const ddlPath = path.join(repoRoot, "workers/api/migrations/0001_emoji_master_release_staging.sql");
+const activationDdlPath = path.join(repoRoot, "workers/api/migrations/0002_emoji_master_release_activation.sql");
 const source = {
   id: "00000000-0000-4000-8000-000000000001",
   emoji: "👋",
@@ -93,31 +98,67 @@ async function createLocalD1() {
   return { miniflare, database: await miniflare.getD1Database("DB") };
 }
 
+function splitSqlStatements(sql) {
+  const source = sql.replace(/^--.*(?:\r?\n|$)/gm, "");
+  const statements = [];
+  let current = "";
+  let parentheses = 0;
+  let trigger = false;
+  for (const line of source.split(/\r?\n/)) {
+    current += line + "\n";
+    if (!trigger && /^\s*CREATE\s+TRIGGER\b/i.test(current)) trigger = true;
+    if (!trigger) {
+      for (const character of line) {
+        if (character === "(") parentheses += 1;
+        if (character === ")") parentheses -= 1;
+      }
+      if (line.trimEnd().endsWith(";") && parentheses === 0) {
+        statements.push(current.trim());
+        current = "";
+      }
+    } else if (/^\s*END;\s*$/.test(line)) {
+      statements.push(current.trim());
+      current = "";
+      trigger = false;
+      parentheses = 0;
+    }
+  }
+  if (current.trim()) throw new Error("incomplete_sql_migration_statement");
+  return statements;
+}
+
 async function applySql(database, sql) {
-  const statements = sql.split(/;\s*(?:\n|$)/).map((entry) => entry.trim()).filter(Boolean);
-  const results = await database.batch(statements.map((statement) => database.prepare(statement)));
-  assert.equal(results.every((result) => result.success === true), true);
+  for (const statement of splitSqlStatements(sql)) {
+    const result = await database.prepare(statement).run();
+    assert.equal(result.success, true, statement);
+  }
 }
 
 async function createDatabase({ seedSource = true } = {}) {
   const local = await createLocalD1();
-  await applySql(local.database, sourceDdl);
-  await applySql(local.database, await fs.readFile(ddlPath, "utf8"));
-  if (seedSource) {
-    await local.database.prepare(
-      "INSERT INTO emoji_master (id, emoji, short_name, keywords, category, subcategory, codepoints, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-    ).bind(
-      source.id,
-      source.emoji,
-      "old_wave_label",
-      JSON.stringify(source.keywords),
-      source.category,
-      source.subcategory,
-      JSON.stringify(source.codepoints),
-      source.sort_order,
-    ).run();
+  try {
+    await applySql(local.database, sourceDdl);
+    await applySql(local.database, await fs.readFile(ddlPath, "utf8"));
+    await applySql(local.database, await fs.readFile(activationDdlPath, "utf8"));
+    if (seedSource) {
+      await local.database.prepare(
+        "INSERT INTO emoji_master (id, emoji, short_name, keywords, category, subcategory, codepoints, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      ).bind(
+        source.id,
+        source.emoji,
+        "old_wave_label",
+        JSON.stringify(source.keywords),
+        source.category,
+        source.subcategory,
+        JSON.stringify(source.codepoints),
+        source.sort_order,
+      ).run();
+    }
+    return local;
+  } catch (error) {
+    await local.miniflare.dispose();
+    throw error;
   }
-  return local;
 }
 
 async function createRelease(directory, records, previousDirectory) {
@@ -171,23 +212,20 @@ test("verified release is staged, read back, and kept separate from canonical ma
     });
     assert.equal(reused.reused, true);
 
-    await local.database.prepare(
-      "UPDATE fanmark_emoji_master_release_staging SET short_name = ? WHERE release_version = ? AND id = ?",
-    ).bind("tampered", release.version, source.id).run();
     await assert.rejects(
-      () => stageEmojiMasterRelease({ database: local.database, releaseDirectory: release.directory }),
-      (error) => error.code === "staging_readback_mismatch",
+      () => local.database.prepare(
+        "UPDATE fanmark_emoji_master_release_staging SET short_name = ? WHERE release_version = ? AND id = ?",
+      ).bind("tampered", release.version, source.id).run(),
+      /emoji_release_ready_immutable/,
     );
+    const reusedAgain = await stageEmojiMasterRelease({ database: local.database, releaseDirectory: release.directory });
+    assert.equal(reusedAgain.reused, true);
     const importState = await readSingle(
       local.database,
       "SELECT status FROM fanmark_emoji_master_release_imports WHERE release_version = ?",
       [release.version],
     );
-    assert.equal(importState.status, "failed");
-    await assert.rejects(
-      () => stageEmojiMasterRelease({ database: local.database, releaseDirectory: release.directory }),
-      (error) => error.code === "staging_version_quarantined",
-    );
+    assert.equal(importState.status, "ready");
   } finally {
     await local.miniflare.dispose();
     await fs.rm(directory, { recursive: true, force: true });
@@ -219,6 +257,10 @@ test("an interrupted chunk stays non-ready and a retry replaces partial staging 
     );
     assert.equal(partial.status, "loading");
     assert.equal(partial.row_count, 3);
+    await assert.rejects(
+      () => activateEmojiMasterRelease({ database: local.database, releaseDirectory: release.directory }),
+      (error) => error.code === "release_not_ready",
+    );
     const partialRows = await readSingle(
       local.database,
       "SELECT count(*) AS count FROM fanmark_emoji_master_release_staging WHERE release_version = ?",
@@ -301,6 +343,140 @@ test("two verified release versions remain independently staged", async () => {
     assert.equal(oldRows.count, 2);
     const canonical = await local.database.prepare("SELECT count(*) AS count FROM emoji_master").first();
     assert.equal(canonical.count, 1);
+  } finally {
+    await local.miniflare.dispose();
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("verified versions promote and roll back through an immutable, generation-checked pointer", async () => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "fanmark-emoji-master-activation-"));
+  const local = await createDatabase();
+  try {
+    const first = await createRelease(directory, [source, added]);
+    const changedSource = { ...source, short_name: "wave_updated", keywords: ["wave", "greeting"] };
+    const second = await createRelease(directory, [changedSource, added], first.directory);
+    await stageEmojiMasterRelease({ database: local.database, releaseDirectory: first.directory });
+    await stageEmojiMasterRelease({ database: local.database, releaseDirectory: second.directory });
+
+    assert.equal(await readEmojiMasterActiveRelease(local.database), null);
+    const initial = await activateEmojiMasterRelease({
+      database: local.database,
+      releaseDirectory: first.directory,
+    });
+    assert.deepEqual(initial, {
+      version: first.version,
+      previousVersion: null,
+      generation: 1,
+      changed: true,
+    });
+    const repeated = await activateEmojiMasterRelease({
+      database: local.database,
+      releaseDirectory: first.directory,
+    });
+    assert.deepEqual(repeated, {
+      version: first.version,
+      previousVersion: null,
+      generation: 1,
+      changed: false,
+    });
+
+    const promoted = await activateEmojiMasterRelease({
+      database: local.database,
+      releaseDirectory: second.directory,
+    });
+    assert.deepEqual(promoted, {
+      version: second.version,
+      previousVersion: first.version,
+      generation: 2,
+      changed: true,
+    });
+
+    const rollback = await activateEmojiMasterRelease({
+      database: local.database,
+      releaseDirectory: first.directory,
+      action: "rollback",
+    });
+    assert.deepEqual(rollback, {
+      version: first.version,
+      previousVersion: second.version,
+      generation: 3,
+      changed: true,
+    });
+    const active = await readEmojiMasterActiveRelease(local.database);
+    assert.equal(active.version, first.version);
+    assert.equal(active.generation, 3);
+    assert.deepEqual(active.records, (await verifyRelease(first.directory)).records);
+
+    const activations = await local.database.prepare(
+      "SELECT generation, action, from_version, to_version FROM fanmark_emoji_master_release_activations ORDER BY generation",
+    ).all();
+    assert.deepEqual(activations.results, [
+      { generation: 1, action: "promotion", from_version: null, to_version: first.version },
+      { generation: 2, action: "promotion", from_version: first.version, to_version: second.version },
+      { generation: 3, action: "rollback", from_version: second.version, to_version: first.version },
+    ]);
+    await assert.rejects(
+      () => local.database.prepare(
+        "UPDATE fanmark_emoji_master_release_staging SET short_name = ? WHERE release_version = ? AND id = ?",
+      ).bind("tampered", first.version, source.id).run(),
+      /emoji_release_active_data_immutable/,
+    );
+    const canonical = await local.database.prepare("SELECT count(*) AS count FROM emoji_master").first();
+    assert.equal(canonical.count, 1);
+  } finally {
+    await local.miniflare.dispose();
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("ready releases are immutable and rollback refuses to lose a released identity", async () => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "fanmark-emoji-master-rollback-guard-"));
+  const local = await createDatabase();
+  try {
+    const first = await createRelease(directory, [source]);
+    const second = await createRelease(directory, [source, added], first.directory);
+    const third = await createRelease(directory, [source, added, addedAgain], second.directory);
+    await stageEmojiMasterRelease({ database: local.database, releaseDirectory: first.directory });
+    await stageEmojiMasterRelease({ database: local.database, releaseDirectory: second.directory });
+    await stageEmojiMasterRelease({ database: local.database, releaseDirectory: third.directory });
+    await activateEmojiMasterRelease({ database: local.database, releaseDirectory: first.directory });
+    await activateEmojiMasterRelease({ database: local.database, releaseDirectory: second.directory });
+
+    await assert.rejects(
+      () => activateEmojiMasterRelease({
+        database: local.database,
+        releaseDirectory: first.directory,
+        action: "rollback",
+      }),
+      (error) => error.code === "release_identity_break",
+    );
+    const activeAfterUnsafeRollback = await readEmojiMasterActiveRelease(local.database);
+    assert.equal(activeAfterUnsafeRollback.version, second.version);
+    assert.equal(activeAfterUnsafeRollback.generation, 2);
+
+    await assert.rejects(
+      () => local.database.prepare(
+        "UPDATE fanmark_emoji_master_release_staging SET short_name = ? WHERE release_version = ? AND id = ?",
+      ).bind("tampered", third.version, source.id).run(),
+      /emoji_release_ready_immutable/,
+    );
+    await assert.rejects(
+      () => local.database.prepare(
+        "UPDATE fanmark_emoji_master_release_imports SET manifest_json = ? WHERE release_version = ?",
+      ).bind("{}", third.version).run(),
+      /emoji_release_ready_immutable/,
+    );
+    const promoted = await activateEmojiMasterRelease({ database: local.database, releaseDirectory: third.directory });
+    assert.equal(promoted.version, third.version);
+    assert.equal(promoted.generation, 3);
+    const activeAfterPromotion = await readEmojiMasterActiveRelease(local.database);
+    assert.equal(activeAfterPromotion.version, third.version);
+    assert.equal(activeAfterPromotion.generation, 3);
+    const eventCount = await local.database.prepare(
+      "SELECT count(*) AS count FROM fanmark_emoji_master_release_activations",
+    ).first();
+    assert.equal(eventCount.count, 3);
   } finally {
     await local.miniflare.dispose();
     await fs.rm(directory, { recursive: true, force: true });

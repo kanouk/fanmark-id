@@ -1,8 +1,9 @@
 # Versioned emoji catalog artifacts
 
 The local release builder prepares the immutable artifact boundary for #36.
-It does not import D1 rows, edit the administrator UI, upload to R2, activate a
-public version, or change existing frontend lookup behavior.
+It does not import D1 rows, edit the administrator UI, upload to R2, or change
+existing frontend lookup behavior. The activation helper only changes a
+private D1 version pointer; no current API or frontend reads that pointer.
 
 Use an authoritative database export with the UUID-bearing record format
 specified in TECH.md. Unicode conversion output has no database UUIDs and is
@@ -48,10 +49,10 @@ rollback. No live rollback or active-version pointer exists yet.
 Validation: `npm run test:emoji-catalog` covers generator input boundaries,
 identity preservation, version reuse, row-order independence, mixed-file
 rejection, old-version preservation, and failed identity review. These are
-local artifact checks. Remaining #36 gates include promotion into the canonical
-D1 table and full reference reconciliation, administrator authorization,
-version selection by API/frontend, publish/rollback transactions, and production
-observation.
+local artifact checks. Remaining #36 gates include remote staging under the
+approved Cloudflare environment, API/frontend selection of the active version,
+administrator authorization, reference-aware release and rollback review, and
+production observation.
 
 ## Isolated D1 staging (2026-09-23)
 
@@ -70,6 +71,18 @@ and retention of two staged versions. It leaves canonical `emoji_master`
 untouched; staging does not activate a public version, update API/frontend
 selection, provide rollback, or run against remote D1. Run it with
 `npm --prefix workers/api run test:emoji-master-release`.
+
+## Local D1 activation and rollback (2026-09-23)
+
+`workers/api/migrations/0002_emoji_master_release_activation.sql` adds a
+singleton active-version pointer and immutable activation history. The local
+activation helper re-derives the release hash from staged rows, checks them
+against the immutable artifact, preserves all active UUID/emoji/codepoint
+identities, and switches the pointer with a generation-checked write. Database
+triggers keep ready rows and activation history immutable. Rollback only
+targets a previously active version, and is refused if it would remove an
+identity introduced since that version. The current endpoints and frontend do
+not consume this pointer; it is not a public release or remote activation.
 
 ## Read-only source verification (2026-09-21)
 
