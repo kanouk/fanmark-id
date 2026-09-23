@@ -68,14 +68,14 @@ Environment の名前だけでは承認やブランチ制限は有効になら�
 3. 管理画面 > 絵文字マスタ管理 で CSV/JSON をインポートする。  
    - CSV ヘッダー: `emoji,short_name,codepoints,keywords,category,subcategory,sort_order`  
    - codepoints はスペース区切り
-4. フロント用のカタログを再生成する（Supabase から `emoji_master` を取得）。  
+4. 従来のフロント用カタログを再生成する（Supabase から `emoji_master` を取得）。
    - `SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/generate-emoji-catalog.ts`  
    - 出力: `src/data/emojiCatalog.ts`
    - D1移行準備では、DB UUIDを保持したレコード配列を明示入力できる: `node --experimental-strip-types scripts/generate-emoji-catalog.ts --input /private/path/emoji-records.json --output /private/path/emojiCatalog.ts`。`--input` 指定時はSupabase環境変数を使わず、ネットワーク接続しない。
    - 入力は `id, emoji, short_name, keywords, category, subcategory, codepoints, sort_order` を持つJSON配列。D1のJSON格納列は配列へdecodeして渡す。UUIDを持たないUnicode変換直後のJSONや生のWrangler応答は直接入力しない。
    - 重複UUID・lookupが曖昧になる絵文字・不正な配列を拒否し、検証成功後だけ出力を置換する。Unicode更新・D1書込み・本番カタログ公開は別工程。検証: `npm run test:emoji-catalog`。
 
-版付き成果物は `scripts/build-emoji-release.ts` で生成する。旧版とのUUID/sequence照合、内容hash、検証後の版別保存は[移行用カタログ成果物](migration/emoji-releases.md)を参照。`scripts/migration/emoji-master-release-stage.mjs` は検証済みreleaseをローカルD1のprivate stagingへ読み込み、独立readback後にreadyとする。canonical `emoji_master` の更新や公開切り替えは未実装。
+Cloudflare版では、`workers/api/src/index.ts`の`GET /api/emoji/catalog`がD1の有効releaseだけを読み取り、`VITE_EMOJI_CATALOG_BACKEND=worker`を設定したフロントが起動時に500件ずつ版固定で取得する。Worker APIは`EMOJI_CATALOG_BACKEND=d1`と`FANMARK_DB`を明示して設定する。取得に失敗した場合はSupabase/静的版へフォールバックしない。Workerを使わないビルドでは既存の生成カタログを遅延読込する。版付き成果物は `scripts/build-emoji-release.ts` で生成する。旧版とのUUID/sequence照合、内容hash、検証後の版別保存は[移行用カタログ成果物](migration/emoji-releases.md)を参照。`scripts/migration/emoji-master-release-stage.mjs` は検証済みreleaseをローカルD1のprivate stagingへ読み込み、独立readback後にreadyとする。canonical `emoji_master` の更新やremote D1配備は未実施。
 
 ## セキュリティ / RLS の公開方針（誤検知対策）
 このプロダクトは「ドメインレジストリ（WHOIS）モデル」で、**一部のデータは意図的に公開**します。セキュリティスキャナが「公開＝危険」と判定しやすいため、以下の公開方針は **誤検知として無視（ignore）** します。

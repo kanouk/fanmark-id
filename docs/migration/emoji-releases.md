@@ -1,9 +1,10 @@
 # Versioned emoji catalog artifacts
 
 The local release builder prepares the immutable artifact boundary for #36.
-It does not import D1 rows, edit the administrator UI, upload to R2, or change
-existing frontend lookup behavior. The activation helper only changes a
-private D1 version pointer; no current API or frontend reads that pointer.
+Verified releases can be staged and activated in local D1. A read-only Worker
+route now serves the active release and an opt-in frontend build loads it before
+rendering. This local code does not edit the administrator UI, upload to R2,
+mutate canonical `emoji_master`, or configure/deploy remote D1.
 
 Use an authoritative database export with the UUID-bearing record format
 specified in TECH.md. Unicode conversion output has no database UUIDs and is
@@ -43,16 +44,16 @@ local rename is not a claim of remote publication atomicity or fsync durability.
 
 `verifyRelease(directory)` detects mixed versions, modified records/modules,
 and inconsistent manifest fields. A valid old release remains independently
-verifiable after a new one is built, so its bytes are available for a future
-rollback. No live rollback or active-version pointer exists yet.
+verifiable after a new one is built, so its bytes are available for rollback.
+Local D1 promotion/rollback and its audit pointer are described below; no remote
+pointer is configured.
 
 Validation: `npm run test:emoji-catalog` covers generator input boundaries,
 identity preservation, version reuse, row-order independence, mixed-file
 rejection, old-version preservation, and failed identity review. These are
 local artifact checks. Remaining #36 gates include remote staging under the
-approved Cloudflare environment, API/frontend selection of the active version,
-administrator authorization, reference-aware release and rollback review, and
-production observation.
+approved Cloudflare environment, administrator authorization,
+reference-aware release and rollback review, and production observation.
 
 ## Isolated D1 staging (2026-09-23)
 
@@ -81,8 +82,34 @@ against the immutable artifact, preserves all active UUID/emoji/codepoint
 identities, and switches the pointer with a generation-checked write. Database
 triggers keep ready rows and activation history immutable. Rollback only
 targets a previously active version, and is refused if it would remove an
-identity introduced since that version. The current endpoints and frontend do
-not consume this pointer; it is not a public release or remote activation.
+identity introduced since that version. The local API and frontend below read
+this pointer; it is not a public release or remote activation.
+
+## Local read-only API and frontend connection (2026-09-23)
+
+`GET /api/emoji/catalog` reads only the active versioned staging tables through
+the `FANMARK_DB` binding when `EMOJI_CATALOG_BACKEND=d1` is explicit. It returns
+the public catalog fields, caps each response at 500 rows, validates row count
+and ordinal continuity, and accepts an optional pinned version for later pages.
+Missing active data fails closed; unknown backend configuration is a server
+error. The route never reads browser credentials, user tables, or canonical
+`emoji_master`.
+
+When the frontend build sets `VITE_EMOJI_CATALOG_BACKEND=worker` and
+`VITE_FANMARK_API_BASE_URL`, startup fetches all pages pinned to the first
+response's version, verifies page shape and catalog identity uniqueness, then
+installs synchronous conversion indexes before React renders. Requests omit
+credentials and disable HTTP caching. An API, network, or integrity failure
+shows a retry screen and does not fall back to Supabase or the bundled catalog.
+Without the Worker selector, the existing generated catalog is loaded as a
+separate startup chunk. The Worker-selected production build omits that chunk.
+
+Validation: three Worker-entrypoint/D1 API tests, seven D1 release tests, five
+frontend pagination/validation tests, one runtime conversion replacement test,
+API and frontend typechecks, a Worker-selected Vite build, and the Worker dry
+run passed locally. The default Worker deploy config still has no D1 binding;
+the dry run lists only synthetic Supabase variables. No remote D1 or deployment
+was changed, and the selected build has not been deployed or observed live.
 
 ## Read-only source verification (2026-09-21)
 
@@ -110,7 +137,7 @@ rows and 3,944 separate staging rows read back, and every staged record matched
 the verified release; the version reached `ready`. This validates the release
 builder and staging path with the observed public master data. The Supabase
 source was read-only; no remote D1, user rows, Auth data, production master
-write, API/frontend activation, or public release was involved. The local
+write, or public release was involved in that staging proof. The local
 canonical table was only a fixture and was unchanged outside this disposable
 database. The proof and related suites ran on the pinned Node 22.6.0. Private
 export files remain outside the repository.

@@ -2,6 +2,7 @@
 
 interface ImportMetaEnv {
   readonly VITE_FANMARK_API_BASE_URL?: string;
+  readonly VITE_EMOJI_CATALOG_BACKEND?: string;
 }
 
 interface ImportMeta {
@@ -14,7 +15,7 @@ declare module 'virtual:pwa-register' {
     onNeedRefresh?: () => void;
     onOfflineReady?: () => void;
     onRegistered?: (registration: ServiceWorkerRegistration | undefined) => void;
-    onRegisterError?: (error: any) => void;
+    onRegisterError?: (error: unknown) => void;
   }
 
   export function registerSW(options?: RegisterSWOptions): (reloadPage?: boolean) => Promise<void>;

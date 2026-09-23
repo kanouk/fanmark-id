@@ -18,6 +18,10 @@ import {
   readEmojiMasterActiveRelease,
 } from "../../../scripts/migration/emoji-master-release-activate.mjs";
 import { stageEmojiMasterRelease } from "../../../scripts/migration/emoji-master-release-stage.mjs";
+import {
+  createEmojiMasterD1Repository,
+  parseEmojiCatalogPageRequest,
+} from "../src/emoji-master-d1-repository.ts";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const miniflarePath = path.join(repoRoot, "workers/api/node_modules/miniflare/dist/src/index.js");
@@ -477,6 +481,63 @@ test("ready releases are immutable and rollback refuses to lose a released ident
       "SELECT count(*) AS count FROM fanmark_emoji_master_release_activations",
     ).first();
     assert.equal(eventCount.count, 3);
+  } finally {
+    await local.miniflare.dispose();
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("read-only D1 catalog pages pin a version across an active-version switch", async () => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "fanmark-emoji-master-api-"));
+  const local = await createDatabase();
+  const env = {
+    FANMARK_DB: local.database,
+    EMOJI_CATALOG_BACKEND: "d1",
+    CORS_ALLOWED_ORIGINS: "https://app.example.test",
+  };
+  try {
+    const first = await createRelease(directory, [source, added]);
+    const second = await createRelease(directory, [source, added, addedAgain], first.directory);
+    await stageEmojiMasterRelease({ database: local.database, releaseDirectory: first.directory });
+    await stageEmojiMasterRelease({ database: local.database, releaseDirectory: second.directory });
+    await activateEmojiMasterRelease({ database: local.database, releaseDirectory: first.directory });
+
+    const repository = createEmojiMasterD1Repository(env);
+    const firstRequest = parseEmojiCatalogPageRequest(new URL("https://api.example.test/api/emoji/catalog?limit=1"));
+    assert.ok(firstRequest);
+    const firstPage = await repository.readPage(firstRequest);
+    assert.deepEqual(firstPage, {
+      version: first.version,
+      total: 2,
+      offset: 0,
+      limit: 1,
+      nextOffset: 1,
+      items: [{
+        id: source.id,
+        emoji: source.emoji,
+        shortName: source.short_name,
+        keywords: source.keywords,
+        category: source.category,
+        subcategory: source.subcategory,
+        codepoints: source.codepoints,
+        sortOrder: source.sort_order,
+      }],
+    });
+
+    await activateEmojiMasterRelease({ database: local.database, releaseDirectory: second.directory });
+    const secondRequest = parseEmojiCatalogPageRequest(new URL(
+      `https://api.example.test/api/emoji/catalog?version=${first.version}&offset=1&limit=1`,
+    ));
+    assert.ok(secondRequest);
+    const secondPage = await repository.readPage(secondRequest);
+    assert.equal(secondPage.version, first.version);
+    assert.equal(secondPage.total, 2);
+    assert.equal(secondPage.nextOffset, null);
+    assert.deepEqual(secondPage.items.map((item) => item.id), [added.id]);
+
+    assert.equal(parseEmojiCatalogPageRequest(new URL(
+      `https://api.example.test/api/emoji/catalog?version=${first.version}&version=${second.version}`,
+    )), null);
   } finally {
     await local.miniflare.dispose();
     await fs.rm(directory, { recursive: true, force: true });

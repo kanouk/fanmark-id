@@ -19,6 +19,13 @@ import { createD1AvailabilityRepository } from "./availability-d1-repository";
 import { createSupabaseAvailabilityRepository } from "./availability-repository";
 import { createD1PublicAccessRepository } from "./public-access-d1-repository";
 import {
+  createEmojiMasterD1Repository,
+  EmojiCatalogConfigurationError,
+  EmojiCatalogUnavailableError,
+  EmojiCatalogUpstreamError,
+  parseEmojiCatalogPageRequest,
+} from "./emoji-master-d1-repository";
+import {
   mapPublicAccessRow,
   mapPublicProfileRow,
   parsePublicAccessEmojiRequest,
@@ -36,6 +43,7 @@ import {
 
 const RECENT_ALLOWED_METHODS = "GET, OPTIONS";
 const AVAILABILITY_ALLOWED_METHODS = "POST, OPTIONS";
+const EMOJI_CATALOG_ALLOWED_METHODS = "GET, OPTIONS";
 const AVAILABILITY_ALLOWED_HEADERS = "content-type";
 const JSON_CONTENT_TYPE = "application/json; charset=utf-8";
 
@@ -191,9 +199,11 @@ export async function handleRequest(
   }
 
   const publicAccessRoute = parsePublicAccessRoute(url);
+  const isEmojiCatalogRoute = url.pathname === "/api/emoji/catalog";
   if (
     url.pathname !== "/api/fanmarks/recent" &&
     url.pathname !== "/api/fanmarks/availability" &&
+    !isEmojiCatalogRoute &&
     !publicAccessRoute
   ) {
     return errorResponse("not_found", 404, routeHeaders);
@@ -203,9 +213,11 @@ export async function handleRequest(
   const isRecentRoute = url.pathname === "/api/fanmarks/recent";
   const allowedMethods = publicAccessRoute
     ? publicAccessAllowedMethods(publicAccessRoute)
-    : isAvailabilityRoute
-      ? AVAILABILITY_ALLOWED_METHODS
-      : RECENT_ALLOWED_METHODS;
+    : isEmojiCatalogRoute
+      ? EMOJI_CATALOG_ALLOWED_METHODS
+      : isAvailabilityRoute
+        ? AVAILABILITY_ALLOWED_METHODS
+        : RECENT_ALLOWED_METHODS;
   const cors = corsHeaders(
     request,
     env,
@@ -286,6 +298,31 @@ export async function handleRequest(
         return errorResponse("server_misconfigured", 500, responseHeaders);
       }
       if (error instanceof PublicAccessResponseTooLargeError || error instanceof PublicAccessUpstreamError) {
+        return errorResponse("upstream_unavailable", 502, responseHeaders);
+      }
+      return errorResponse("upstream_unavailable", 502, responseHeaders);
+    }
+  }
+
+  if (isEmojiCatalogRoute) {
+    if (method !== "GET") {
+      responseHeaders.set("allow", allowedMethods);
+      return errorResponse("method_not_allowed", 405, responseHeaders);
+    }
+    const pageRequest = parseEmojiCatalogPageRequest(url);
+    if (!pageRequest) return errorResponse("invalid_request", 400, responseHeaders);
+    try {
+      const repository = createEmojiMasterD1Repository(env);
+      const page = await repository.readPage(pageRequest);
+      return jsonResponse({ schemaVersion: 1, ...page }, 200, responseHeaders);
+    } catch (error) {
+      if (error instanceof EmojiCatalogUnavailableError) {
+        return errorResponse("emoji_catalog_unavailable", 503, responseHeaders);
+      }
+      if (error instanceof EmojiCatalogConfigurationError) {
+        return errorResponse("server_misconfigured", 500, responseHeaders);
+      }
+      if (error instanceof EmojiCatalogUpstreamError) {
         return errorResponse("upstream_unavailable", 502, responseHeaders);
       }
       return errorResponse("upstream_unavailable", 502, responseHeaders);
