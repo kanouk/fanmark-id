@@ -48,9 +48,28 @@ rollback. No live rollback or active-version pointer exists yet.
 Validation: `npm run test:emoji-catalog` covers generator input boundaries,
 identity preservation, version reuse, row-order independence, mixed-file
 rejection, old-version preservation, and failed identity review. These are
-local artifact checks. Remaining #36 gates include D1 staging/import and
-reference reconciliation, administrator authorization, version selection by
-API/frontend, publish/rollback transactions, and production observation.
+local artifact checks. Remaining #36 gates include promotion into the canonical
+D1 table and full reference reconciliation, administrator authorization,
+version selection by API/frontend, publish/rollback transactions, and production
+observation.
+
+## Isolated D1 staging (2026-09-23)
+
+`workers/api/migrations/0001_emoji_master_release_staging.sql` adds private
+release-import metadata and row staging tables. The new
+`scripts/migration/emoji-master-release-stage.mjs` verifies the immutable local
+release, checks source-shaped `emoji_master` UUID/emoji/codepoint continuity,
+loads catalog rows in bounded D1 batches, reads them back, then marks that
+version `ready`. A partial `loading` version is cleared and retried on the next
+run. A ready version is immutable to this importer: mismatching readback quarantines
+it as `failed` and fails closed.
+
+The local integration proof uses Miniflare D1 and synthetic records. It checks
+array encoding, identity conflicts, partial interruption/retry, version reuse,
+and retention of two staged versions. It leaves canonical `emoji_master`
+untouched; staging does not activate a public version, update API/frontend
+selection, provide rollback, or run against remote D1. Run it with
+`npm --prefix workers/api run test:emoji-master-release`.
 
 ## Read-only source verification (2026-09-21)
 

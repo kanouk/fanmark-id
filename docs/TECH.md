@@ -75,7 +75,7 @@ Environment の名前だけでは承認やブランチ制限は有効になら�
    - 入力は `id, emoji, short_name, keywords, category, subcategory, codepoints, sort_order` を持つJSON配列。D1のJSON格納列は配列へdecodeして渡す。UUIDを持たないUnicode変換直後のJSONや生のWrangler応答は直接入力しない。
    - 重複UUID・lookupが曖昧になる絵文字・不正な配列を拒否し、検証成功後だけ出力を置換する。Unicode更新・D1書込み・本番カタログ公開は別工程。検証: `npm run test:emoji-catalog`。
 
-版付き成果物は `scripts/build-emoji-release.ts` で生成する。旧版とのUUID/sequence照合、内容hash、検証後の版別保存は[移行用カタログ成果物](migration/emoji-releases.md)を参照。公開切り替えは未実装。
+版付き成果物は `scripts/build-emoji-release.ts` で生成する。旧版とのUUID/sequence照合、内容hash、検証後の版別保存は[移行用カタログ成果物](migration/emoji-releases.md)を参照。`scripts/migration/emoji-master-release-stage.mjs` は検証済みreleaseをローカルD1のprivate stagingへ読み込み、独立readback後にreadyとする。canonical `emoji_master` の更新や公開切り替えは未実装。
 
 ## セキュリティ / RLS の公開方針（誤検知対策）
 このプロダクトは「ドメインレジストリ（WHOIS）モデル」で、**一部のデータは意図的に公開**します。セキュリティスキャナが「公開＝危険」と判定しやすいため、以下の公開方針は **誤検知として無視（ignore）** します。

@@ -1,6 +1,6 @@
 # Cloudflare 移行: Better Auth 認証 feasibility
 
-確認日: 2026-09-21 (JST)
+確認日: 2026-09-23 (JST)
 
 この調査は、Supabase Auth の本番データを移行したり、Cloudflare のリモート
 D1/Worker を変更したりするものではない。`experiments/cloudflare-auth/` に、
@@ -15,6 +15,8 @@ MFA factor type が TOTP だった。集計件数はこの proof に記録せず
 
 ## 結論
 
+Supabase Auth自体をCloudflareのマネージド認証サービスへ移すのではなく、Cloudflare Workers上のBetter AuthとD1を新しい認証基盤として構築し、必要なユーザー/identity情報を対応付けて移行する。Better Authの公式ガイドはSupabase Authのuser/account移送を示す一方、Postgres向けの例である。D1への実データ移送は独自の変換・検証が必要。
+
 メール/パスワード認証の互換性については、条件付きでローカル feasibility を
 確認できた。Better Auth `1.7.5` の D1 adapter を workerd 上で動かし、
 `bcryptjs 3.0.3` をカスタム password verifier として渡すと、synthetic `$2b$` と
@@ -28,6 +30,12 @@ UUID 関係は保たれた。さらに、二人目の synthetic user につい�
 さらに synthetic administrator について、credential sign-in と OAuth 相当の
 session の両方をサーバー側の `/admin/protected` gate で検査し、同じ session と
 現在の verified factor に結び付いた TOTP assurance の後だけ通すことを確認した。
+
+Better Authの公式Supabase移行ガイドは`auth.users`/`auth.identities`から
+`user`/`account`への対応とbcrypt hashの保持方法を示しているが、例の移送先は
+Postgresであり、Cloudflare D1向けのコードではない。同ガイドでは既存sessionが
+失効し、2FA移行も対象外と明記されている。D1への実データ変換は別途実装・照合し、
+実ユーザーは#38の最終段階まで移送しない。
 
 これは「Better Auth へ実ユーザーを移行できる」証明ではない。Supabase の live
 aggregate は bcrypt `$2a$10$` 形式を示すが、hash 内容、実ユーザー ID の対応付け、
@@ -257,6 +265,7 @@ redirect 切替、MFA の無効化は行わない。
 ## 公式一次資料
 
 - [Better Auth installation](https://better-auth.com/docs/installation) — 依存関係と最新 package version の確認。
+- [Better Auth: Migrating from Supabase Auth](https://better-auth.com/docs/guides/supabase-migration-guide) — user/identity/password hash mapping、session invalidation、2FA coverage limit。
 - [Better Auth database concepts](https://better-auth.com/docs/concepts/database) — core table、account/session、D1 adapter のモデル。
 - [Better Auth 1.5: Cloudflare D1](https://better-auth.com/blog/1-5) — D1 binding、batch、interactive transaction の制約。
 - [Better Auth Hono integration](https://better-auth.com/docs/integrations/hono) — Workers の `nodejs_compat`。

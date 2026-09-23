@@ -2,13 +2,11 @@
 
 親イシュー: [#28](https://github.com/kanouk/fanmark-id/issues/28)。親の移行仕様・受け入れ条件を正とする。#26と#27の試作はこの移行へ一括マージしない。
 
-## 役割と使用枠
+## 役割と実装体制
 
 Astraが設計確定、作業分解、差分レビュー、検証結果の確認を行い、GPT-5.6 Luna（max）が範囲を区切った実装を担当する。設計不明点、認可/課金/ID/原子性に関わる変更はAstraが判断する。
 
-通常Codex枠の残り20%がユーザー指定の下限。各実装単位の開始前とレビュー後に最新残量を取得する。22%以下では新規投入を停止し、実行中の作業を保存して引き継ぐ。残量取得に失敗した場合は新しい大きな作業を開始しない。他タスクの消費・表示遅延により20%を厳密に保証する仕組みではない。
-
-使用量APIにはLunaに関連するgpt-reserve表示があるが、通常枠と独立して消費される条件は未確認。通常枠を使わない前提で作業量を決めない。DeepSeekなどの追加モデルは、この環境で実行可能と確認できた場合に限定した作業で評価する。利用できないモデルを使用済みと記録しない。
+ユーザーは2026-09-23に残量確保を停止条件にしないよう指示した。使用量の割合を理由に作業を止めない。実装は段階ごとに保存・検証し、実際のツール制限や未解決のデータ整合性・セキュリティ条件を停止理由として扱う。
 
 ## 段階
 
@@ -37,7 +35,7 @@ Astraが設計確定、作業分解、差分レビュー、検証結果の確認
 
 ## 再開時の確認
 
-1. 最新の使用枠とGit状態、親/子イシュー、PRの状態を読む。保存時の残量を現在値と扱わない。
+1. Git状態、親/子イシュー、PRの状態と、利用する実行環境の状態を読む。
 2. 未コミット作業を確認し、作業ツリーと実装者の担当範囲を復元する。
 3. 前回の成功した検証と未確認条件を区別し、変更/失敗/未解決の理由がある範囲を検証する。
 4. 次の未完了の実装単位を指定して再開する。本番切り替えは確認・監視・復旧までの余裕を確保してから開始する。
@@ -121,7 +119,13 @@ credential descriptorのmetadata compilerを追加。6列の対応、PK・valida
 
 [世代管理trigger](lifecycle-generation-schema.md)を追加。license作成時の初期化、削除時のretained incarnation更新、PK変更拒否、password作成/更新/移動/削除時のpassword/access世代更新を同じtransactionで行う。cascade時の親消滅と通常writerの台帳欠落を区別し、overflow/mismatchではrollbackする。親reviewでinspectionのbase plan結合も追加。Node22.6のschema/generation計4 test group、実40表構造の空D1への7 trigger適用・再適用・readback・runtime dispose、CI隔離検査が成功。credential applyの二重increment除去、全writer/protected runtime/expiryとの接続、remote適用は未完了。
 
-protected-access proofにもlicense incarnationを独立して保存・照合する境界を追加。同じUUIDの削除/再作成でpassword/access世代が同値になっても古いverificationを拒否する。全体実行の停止を調査し、追加列を反映していなかったreplayテストINSERTを修正、診断ログを除去した。親のNode22.6独立実行で17件成功（4.33秒）、実行前後の3ファイルhash一致。source-shaped runtimeとの接続や本番移行は未完了。通常枠22%のため新規投入を停止し、再開条件と次の統合順序をHANDOFF.mdに記録した。
+protected-access proofにもlicense incarnationを独立して保存・照合する境界を追加。同じUUIDの削除/再作成でpassword/access世代が同値になっても古いverificationを拒否する。全体実行の停止を調査し、追加列を反映していなかったreplayテストINSERTを修正、診断ログを除去した。親のNode22.6独立実行で17件成功（4.33秒）、実行前後の3ファイルhash一致。source-shaped runtimeとの接続や本番移行は未完了。当時の20%/22%停止ルールによる保留は、2026-09-23のユーザー指示で撤回された。
 
 
-ユーザーの「もう少し進めていいです」を受け、20%下限を維持して追加の1単位を実施。credential import projectionはcanonical snapshot recordの6列とrow hash/PK/ordinalを検証し、通常5列と一度だけ消費できる非公開入力handleへ分離する。parserの秘密値がerror causeへ出ないよう拒否時は固定codeとし、設定変更・handle偽造/複製/再利用も検証。Luna Maxへ委任したが成果物が戻らず中断し、親Astraが実装・検証した。Node22.6のmigration-dataは74件成功・skipなし、実40表catalogと合成1行でも成功、CI隔離検査成功。統合設計の「5列INSERT後にhash UPDATE」を、NOT NULLとtrigger二重更新を避ける単一INSERTへ訂正。実source値取得・hash生成・D1書き込み・importer接続・本番変更は未実施。検証時の通常残量21%。
+ユーザーの「もう少し進めていいです」を受けた当時の1単位。credential import projectionはcanonical snapshot recordの6列とrow hash/PK/ordinalを検証し、通常5列と一度だけ消費できる非公開入力handleへ分離する。parserの秘密値がerror causeへ出ないよう拒否時は固定codeとし、設定変更・handle偽造/複製/再利用も検証。Luna Maxへ委任したが成果物が戻らず中断し、親Astraが実装・検証した。Node22.6のmigration-dataは74件成功・skipなし、実40表catalogと合成1行でも成功、CI隔離検査成功。統合設計の「5列INSERT後にhash UPDATE」を、NOT NULLとtrigger二重更新を避ける単一INSERTへ訂正。実source値取得・hash生成・D1書き込み・importer接続・本番変更は未実施。以後の作業に残量の下限は適用しない。
+
+2026-09-23の順序変更: ユーザー指示により、旧20%/22%停止ルールを解除。基本アプリ・Workers/D1/R2/Auth（合成ユーザー）と許可済みマスターを先行し、#37 synthetic rehearsal後、#38で実ユーザーデータを最後に移送・照合し、公開DNS/ホスト名を最終操作とする。ユーザー数が少ないため計画メンテナンスと個別サポートは許容するが、アカウント/権利/課金の誤紐付け、秘密漏えい、復元不能な欠損は許容範囲に含めない。Supabase本番は最終切替まで唯一の業務書き込み先とする。
+
+認証移行の最新確認: `docs/migration/auth-feasibility.md` に記録済みのlocal workerd + D1 proofでは、Better Auth 1.7.5とbcryptjs 3.0.3を用い、synthetic `$2a$10$`/`$2b$10$` password、UUID維持、誤password拒否、並行sign-in、TOTP challengeを検証済み。Supabaseのread-only observationはhash形式が`$2a$10$`であることのみを確認し、hash本体・user対応・MFA secretは取得していない。実sessionはBetter Auth移行時に失効し、実OAuth callbackとMFA factor移送は未確認。
+
+絵文字マスター先行準備: `workers/api/migrations/0001_emoji_master_release_staging.sql` と `scripts/migration/emoji-master-release-stage.mjs` を追加。verified releaseのUUID/emoji/codepointが既存D1 masterと連続することを確認し、別version stagingへbounded batchで格納、独立readback後だけ`ready`にする。中断後のretry、同version再利用、readback tamperingのfailed隔離、ID衝突拒否、旧版と新版の両方を保持する動作をsynthetic dataで検証。Node 22.6の`npm --prefix workers/api run test:emoji-master-release`は4件成功、既存`npm run test:emoji-catalog`は7件成功、`npm run check:ci`、`npm --prefix workers/api run typecheck`、`git diff --check`成功。CI workflowにもこのD1 staging testを追加したが、hosted CIは未実行。canonical `emoji_master`は未変更。実カタログのD1格納、remote D1、API/frontend版選択、公開/rollbackは未実施。

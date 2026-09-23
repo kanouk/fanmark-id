@@ -1,0 +1,308 @@
+#!/usr/bin/env node
+
+/**
+ * Local-only staging proof for versioned, public emoji master data.
+ * Synthetic records are used; canonical emoji_master rows are never modified.
+ */
+
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { promises as fs } from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { pathToFileURL, fileURLToPath } from "node:url";
+
+import { buildRelease } from "../../../scripts/build-emoji-release.ts";
+import { stageEmojiMasterRelease } from "../../../scripts/migration/emoji-master-release-stage.mjs";
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
+const miniflarePath = path.join(repoRoot, "workers/api/node_modules/miniflare/dist/src/index.js");
+const ddlPath = path.join(repoRoot, "workers/api/migrations/0001_emoji_master_release_staging.sql");
+const source = {
+  id: "00000000-0000-4000-8000-000000000001",
+  emoji: "👋",
+  short_name: "wave",
+  keywords: ["wave", "hello"],
+  category: "People & Body",
+  subcategory: "hand-fingers-open",
+  codepoints: ["1F44B"],
+  sort_order: 1,
+};
+const added = {
+  id: "00000000-0000-4000-8000-000000000002",
+  emoji: "🎵",
+  short_name: "musical_note",
+  keywords: ["music", "note"],
+  category: "Objects",
+  subcategory: "music",
+  codepoints: ["1F3B5"],
+  sort_order: 2,
+};
+const addedAgain = {
+  id: "00000000-0000-4000-8000-000000000003",
+  emoji: "🌿",
+  short_name: "herb",
+  keywords: ["plant", "herb"],
+  category: "Nature",
+  subcategory: "plant-other",
+  codepoints: ["1F33F"],
+  sort_order: 3,
+};
+
+const sourceDdl = [
+  "CREATE TABLE emoji_master (",
+  "id TEXT PRIMARY KEY NOT NULL,",
+  "emoji TEXT NOT NULL UNIQUE,",
+  "short_name TEXT NOT NULL,",
+  "keywords TEXT NOT NULL CHECK (json_valid(keywords)),",
+  "category TEXT,",
+  "subcategory TEXT,",
+  "codepoints TEXT NOT NULL CHECK (json_valid(codepoints)),",
+  "sort_order INTEGER,",
+  "created_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP),",
+  "updated_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP)",
+  ");",
+].join("\n");
+
+async function createLocalD1() {
+  let Miniflare;
+  try {
+    ({ Miniflare } = await import(pathToFileURL(miniflarePath).href));
+  } catch (error) {
+    throw new Error("local_miniflare_unavailable", { cause: error });
+  }
+  const miniflare = new Miniflare({
+    workers: [{
+      config: {
+        name: "fanmark-emoji-master-stage-test",
+        type: "worker",
+        compatibilityDate: "2026-09-18",
+        env: { DB: { type: "d1", name: "fanmark-emoji-master-stage-test" } },
+        manifest: {
+          mainModule: "index.js",
+          modules: {
+            "index.js": {
+              type: "esm",
+              contents: "export default { fetch() { return new Response('ok'); } };",
+            },
+          },
+        },
+      },
+    }],
+  });
+  return { miniflare, database: await miniflare.getD1Database("DB") };
+}
+
+async function applySql(database, sql) {
+  const statements = sql.split(/;\s*(?:\n|$)/).map((entry) => entry.trim()).filter(Boolean);
+  const results = await database.batch(statements.map((statement) => database.prepare(statement)));
+  assert.equal(results.every((result) => result.success === true), true);
+}
+
+async function createDatabase({ seedSource = true } = {}) {
+  const local = await createLocalD1();
+  await applySql(local.database, sourceDdl);
+  await applySql(local.database, await fs.readFile(ddlPath, "utf8"));
+  if (seedSource) {
+    await local.database.prepare(
+      "INSERT INTO emoji_master (id, emoji, short_name, keywords, category, subcategory, codepoints, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    ).bind(
+      source.id,
+      source.emoji,
+      "old_wave_label",
+      JSON.stringify(source.keywords),
+      source.category,
+      source.subcategory,
+      JSON.stringify(source.codepoints),
+      source.sort_order,
+    ).run();
+  }
+  return local;
+}
+
+async function createRelease(directory, records, previousDirectory) {
+  const input = path.join(directory, "records-" + String(records.length) + ".json");
+  const releases = path.join(directory, "releases");
+  await fs.writeFile(input, JSON.stringify(records));
+  return buildRelease(input, releases, previousDirectory);
+}
+
+async function readSingle(database, sql, bindings = []) {
+  return database.prepare(sql).bind(...bindings).first();
+}
+
+test("verified release is staged, read back, and kept separate from canonical master rows", async () => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "fanmark-emoji-master-stage-"));
+  const local = await createDatabase();
+  try {
+    const release = await createRelease(directory, [added, source]);
+    const result = await stageEmojiMasterRelease({
+      database: local.database,
+      releaseDirectory: release.directory,
+      maxRowsPerBatch: 1,
+    });
+    assert.deepEqual(result, {
+      version: release.version,
+      recordCount: 2,
+      status: "ready",
+      reused: false,
+    });
+
+    const staged = await local.database.prepare(
+      "SELECT id, emoji, short_name, keywords_json, codepoints_json, ordinal FROM fanmark_emoji_master_release_staging WHERE release_version = ? ORDER BY ordinal",
+    ).bind(release.version).all();
+    assert.equal(staged.results.length, 2);
+    assert.deepEqual(JSON.parse(staged.results[0].keywords_json), ["wave", "hello"]);
+    assert.deepEqual(JSON.parse(staged.results[0].codepoints_json), ["1F44B"]);
+    assert.equal(staged.results[0].ordinal, 1);
+
+    const canonical = await local.database.prepare(
+      "SELECT id, emoji, short_name FROM emoji_master ORDER BY id",
+    ).all();
+    assert.deepEqual(canonical.results, [{
+      id: source.id,
+      emoji: source.emoji,
+      short_name: "old_wave_label",
+    }]);
+
+    const reused = await stageEmojiMasterRelease({
+      database: local.database,
+      releaseDirectory: release.directory,
+    });
+    assert.equal(reused.reused, true);
+
+    await local.database.prepare(
+      "UPDATE fanmark_emoji_master_release_staging SET short_name = ? WHERE release_version = ? AND id = ?",
+    ).bind("tampered", release.version, source.id).run();
+    await assert.rejects(
+      () => stageEmojiMasterRelease({ database: local.database, releaseDirectory: release.directory }),
+      (error) => error.code === "staging_readback_mismatch",
+    );
+    const importState = await readSingle(
+      local.database,
+      "SELECT status FROM fanmark_emoji_master_release_imports WHERE release_version = ?",
+      [release.version],
+    );
+    assert.equal(importState.status, "failed");
+    await assert.rejects(
+      () => stageEmojiMasterRelease({ database: local.database, releaseDirectory: release.directory }),
+      (error) => error.code === "staging_version_quarantined",
+    );
+  } finally {
+    await local.miniflare.dispose();
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("an interrupted chunk stays non-ready and a retry replaces partial staging safely", async () => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "fanmark-emoji-master-interrupt-"));
+  const local = await createDatabase();
+  try {
+    const release = await createRelease(directory, [source, added, addedAgain]);
+    await assert.rejects(
+      () => stageEmojiMasterRelease({
+        database: local.database,
+        releaseDirectory: release.directory,
+        maxRowsPerBatch: 1,
+        hooks: {
+          afterBatch: async ({ batchNumber }) => {
+            if (batchNumber === 1) throw new Error("synthetic_interruption");
+          },
+        },
+      }),
+      /synthetic_interruption/,
+    );
+    const partial = await readSingle(
+      local.database,
+      "SELECT status, row_count FROM fanmark_emoji_master_release_imports WHERE release_version = ?",
+      [release.version],
+    );
+    assert.equal(partial.status, "loading");
+    assert.equal(partial.row_count, 3);
+    const partialRows = await readSingle(
+      local.database,
+      "SELECT count(*) AS count FROM fanmark_emoji_master_release_staging WHERE release_version = ?",
+      [release.version],
+    );
+    assert.equal(partialRows.count, 1);
+
+    const result = await stageEmojiMasterRelease({
+      database: local.database,
+      releaseDirectory: release.directory,
+      maxRowsPerBatch: 2,
+    });
+    assert.equal(result.status, "ready");
+    assert.equal(result.recordCount, 3);
+    const staged = await local.database.prepare(
+      "SELECT count(*) AS count FROM fanmark_emoji_master_release_staging WHERE release_version = ?",
+    ).bind(release.version).first();
+    assert.equal(staged.count, 3);
+    const canonical = await local.database.prepare("SELECT count(*) AS count FROM emoji_master").first();
+    assert.equal(canonical.count, 1);
+  } finally {
+    await local.miniflare.dispose();
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("target identity conflicts fail before any release state or staging row is written", async () => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "fanmark-emoji-master-conflict-"));
+  const local = await createDatabase({ seedSource: false });
+  try {
+    await local.database.prepare(
+      "INSERT INTO emoji_master (id, emoji, short_name, keywords, category, subcategory, codepoints, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    ).bind(
+      source.id,
+      "😀",
+      source.short_name,
+      JSON.stringify(source.keywords),
+      source.category,
+      source.subcategory,
+      JSON.stringify(["1F600"]),
+      source.sort_order,
+    ).run();
+    const release = await createRelease(directory, [source, added]);
+    await assert.rejects(
+      () => stageEmojiMasterRelease({ database: local.database, releaseDirectory: release.directory }),
+      (error) => error.code === "target_identity_conflict",
+    );
+    const imports = await local.database.prepare(
+      "SELECT count(*) AS count FROM fanmark_emoji_master_release_imports",
+    ).first();
+    const rows = await local.database.prepare(
+      "SELECT count(*) AS count FROM fanmark_emoji_master_release_staging",
+    ).first();
+    assert.equal(imports.count, 0);
+    assert.equal(rows.count, 0);
+  } finally {
+    await local.miniflare.dispose();
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("two verified release versions remain independently staged", async () => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "fanmark-emoji-master-versions-"));
+  const local = await createDatabase();
+  try {
+    const first = await createRelease(directory, [source, added]);
+    const second = await createRelease(directory, [source, added, addedAgain], first.directory);
+    await stageEmojiMasterRelease({ database: local.database, releaseDirectory: first.directory });
+    await stageEmojiMasterRelease({ database: local.database, releaseDirectory: second.directory });
+
+    const versions = await local.database.prepare(
+      "SELECT release_version, row_count, status FROM fanmark_emoji_master_release_imports ORDER BY release_version",
+    ).all();
+    assert.equal(versions.results.length, 2);
+    assert.deepEqual(versions.results.map((row) => row.row_count).sort(), [2, 3]);
+    assert.equal(versions.results.every((row) => row.status === "ready"), true);
+    const oldRows = await local.database.prepare(
+      "SELECT count(*) AS count FROM fanmark_emoji_master_release_staging WHERE release_version = ?",
+    ).bind(first.version).first();
+    assert.equal(oldRows.count, 2);
+    const canonical = await local.database.prepare("SELECT count(*) AS count FROM emoji_master").first();
+    assert.equal(canonical.count, 1);
+  } finally {
+    await local.miniflare.dispose();
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});

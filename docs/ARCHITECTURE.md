@@ -11,7 +11,7 @@
   - `lib` / `utils`: 変換・バリデーション・フォーマッタ（emoji 正規化、URL/電話番号生成など）。
 - `supabase/functions/`: Edge Functions 群。主要なものは下記参照。
 - `supabase/migrations/`: DB マイグレーション（Supabase CLI 生成形式）。
-- `scripts/migration/`: Cloudflare移行用のschema変換・snapshot・照合ツール。`credential-import-projection.mjs` は原本の6列を検証し、通常の5列と非公開のcredential入力を分離する。D1 importerへの接続は未完了。
+- `scripts/migration/`: Cloudflare移行用のschema変換・snapshot・照合ツール。`credential-import-projection.mjs` は原本の6列を検証し、通常の5列と非公開のcredential入力を分離する。`emoji-master-release-stage.mjs` は検証済み絵文字releaseをD1のprivate stagingへ保存し、公開中の`emoji_master`は変更しない。
 - `public/`: アセット。`generate-ogp-image` のテンプレート画像等。
 
 ## 画面とモジュールのマッピング
@@ -217,9 +217,11 @@
 
 ## Cloudflare移行準備
 
-移行の段階・使用枠・再開手順は `docs/migration/EXECUTION.md`、コード側の棚卸しは `docs/migration/repository-inventory.md`、本番の読み取り結果は `docs/migration/live-observations.md`。`scripts/migration/inventory.mjs` でコード側の棚卸しを再生成できる。
+移行の段階・優先順・再開手順は `docs/migration/EXECUTION.md`、コード側の棚卸しは `docs/migration/repository-inventory.md`、本番の読み取り結果は `docs/migration/live-observations.md`。`scripts/migration/inventory.mjs` でコード側の棚卸しを再生成できる。
 
 `experiments/cloudflare-auth/` と `experiments/cloudflare-d1-concurrency/` は合成データで動く独立したWorkers/D1検証用。通常アプリへ接続せず、現行のSupabaseバックエンドを置き換えたものではない。再現コマンドと限界は対応する `docs/migration/` の文書を参照する。
+
+`workers/api/migrations/` はD1上の非公開移行staging領域を作るSQL migrationを置く。
 
 `workers/api/` は移行用の公開recent APIを検証する独立Worker。フロントは `VITE_FANMARK_API_BASE_URL` を明示したビルドだけこのWorkerを選択し、未設定では既存Supabase RPCを利用する。Worker選択時の失敗は別データソースへフォールバックしない。契約・実行方法・配備条件は `docs/migration/recent-api-contract.md`。DB・RPC・Edgeの移行対応案は `docs/migration/object-map.md`。
 
