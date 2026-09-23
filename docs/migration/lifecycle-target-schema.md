@@ -39,7 +39,10 @@ The extension adds `lifecycle_generation` and `lifecycle_claim_id` to
 `fanmark_licenses`, then creates the retained
 `fanmark_license_incarnations`, `fanmark_access_versions`,
 `license_expiry_runs`, `license_expiry_run_items`, and
-`license_expiry_effect_guards` tables. It also creates four lifecycle indexes.
+`license_expiry_effect_guards` tables. Version 2 of the run-item table retains
+the source `fanmarks.short_id` and `fanmarks.normalized_emoji` captured with a
+candidate, so the notification payload and public link can be replayed from
+the durable workset. It also creates four lifecycle indexes.
 The retained incarnation registry intentionally has no foreign key to the
 license row, so delete/recreate handling can preserve its ABA fence. The access
 version's `access_generation` remains a separate protected-access fence; it is

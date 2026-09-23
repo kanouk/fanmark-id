@@ -67,7 +67,9 @@ function fixtureCatalog() {
   const columns = [
     column("fanmarks", "id", 1, "uuid", { not_null: true }),
     column("fanmarks", "short_id", 2, "text", { not_null: true }),
-    column("fanmarks", "source_extra", 3, "text"),
+    column("fanmarks", "normalized_emoji", 3, "text", { not_null: true }),
+    column("fanmarks", "status", 4, "text", { not_null: true }),
+    column("fanmarks", "source_extra", 5, "text"),
     column("fanmark_licenses", "id", 1, "uuid", { not_null: true }),
     column("fanmark_licenses", "fanmark_id", 2, "uuid", { not_null: true }),
     column("fanmark_licenses", "user_id", 3, "uuid"),
@@ -207,8 +209,8 @@ async function applySql(database, sql) {
 async function applySource(database, converted) {
   await applySql(database, converted.sql);
   await database.prepare(
-    'INSERT INTO "fanmarks" ("id", "short_id", "source_extra") VALUES (?, ?, ?)',
-  ).bind("00000000-0000-4000-8000-000000000001", "ABCD1234", "retained").run();
+    'INSERT INTO "fanmarks" ("id", "short_id", "normalized_emoji", "status", "source_extra") VALUES (?, ?, ?, ?, ?)',
+  ).bind("00000000-0000-4000-8000-000000000001", "ABCD1234", "🌿", "active", "retained").run();
   await database.prepare(
     'INSERT INTO "fanmark_licenses" ("id", "fanmark_id", "user_id", "status", "license_end", "grace_expires_at", "is_returned", "source_extra") VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
   ).bind(

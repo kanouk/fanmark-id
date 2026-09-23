@@ -115,6 +115,9 @@ jobs:
       - name: Test local license expiry transitions
         if: matrix.directory == 'workers/api'
         run: npm run test:license-expiry
+      - name: Test source-shaped local license expiry transitions
+        if: matrix.directory == 'workers/api'
+        run: npm run test:license-expiry-source
       - name: Test local R2 import and readback
         if: matrix.directory == 'workers/api'
         run: npm run test:storage-r2

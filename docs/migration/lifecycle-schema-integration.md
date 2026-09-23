@@ -1,10 +1,40 @@
 # Lifecycle schema integration plan
 
-This document is the integration boundary between the isolated active-to-grace
-proof and the catalog-converted fanmark.id schema. It is a plan only: it does
-not alter the generated schema, apply DDL, run a source query, or wire a cron
-or Worker route. The reduced proof fixture remains synthetic until the
-extension below has been applied to a fresh, fully imported local D1 database.
+This document records the integration boundary between the isolated
+active-to-grace proof and the catalog-converted fanmark.id schema. A new local
+repository and Miniflare proof now use the source table names and reviewed
+target extensions described here. That proof applies only to a small synthetic
+catalog, has no production rows, and is not wired to a cron or Worker route.
+The earlier reduced proof remains available as a separate focused suite.
+
+## Implemented source-shaped local proof (2026-09-23)
+
+`workers/api/src/license-expiry-source.mjs` now implements a local-only
+active-to-grace repository against catalog-shaped `fanmark_licenses`,
+`fanmarks`, `audit_logs`, `notification_events`, and
+`fanmark_password_configs` tables plus the lifecycle and generation
+extensions. It keeps nullable `user_id`, `is_returned`, retained license
+incarnation, `lifecycle_generation`, and `access_generation` separate. The
+shared `workers/api/src/protected-access-generation.mjs` builder increments
+only `access_generation`; it leaves password bytes and `password_generation`
+untouched. The version 2 durable run item also captures `fanmarks.short_id`
+and `normalized_emoji`, which the notification event uses for `fanmark_name`,
+the short-ID field, and `/f/:shortId` link.
+
+The repository uses durable per-run IDs for the operation, audit, and
+notification event; a single guarded batch for the license state, access
+generation, source-shaped audit/event effects, run item, and claim cleanup; and
+an exact readback after an uncertain acknowledgement. Ten Miniflare checks
+cover nullable-owner success, generation separation, lost-ACK recovery,
+rollback and resume when audit, notification, access-version, run-item, or
+guard-cleanup effects are suppressed, stale fanmark conflict, and the strict
+expiry boundary. Run with
+`npm --prefix workers/api run test:license-expiry-source`.
+
+This is still a synthetic subset rather than the complete 40-table profile or
+the full target importer. It does not implement grace-to-expired, lottery,
+notification delivery, cron/Worker wiring, or remote D1 operation. Those
+remain separate #34 and #37 acceptance work.
 
 ## Evidence and current mismatch
 
@@ -195,6 +225,8 @@ CREATE TABLE license_expiry_run_items (
   run_id TEXT NOT NULL REFERENCES license_expiry_runs(run_id),
   license_id TEXT NOT NULL REFERENCES fanmark_licenses(id),
   fanmark_id TEXT NOT NULL REFERENCES fanmarks(id),
+  fanmark_short_id TEXT NOT NULL,
+  fanmark_name TEXT NOT NULL,
   user_id TEXT,
   license_end TEXT NOT NULL,
   license_incarnation INTEGER NOT NULL CHECK (license_incarnation >= 0),

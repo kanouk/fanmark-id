@@ -37,6 +37,7 @@ cannot be recovered. The old/new systems must not dual-write business rows.
 | Area | Saved change | Evidence and limit |
 | --- | --- | --- |
 | Credential transform target profile | Current worktree | Exact local DDL for artifact/coverage tables is bound to the source catalog, lifecycle schema, generation triggers, and descriptor. Five Miniflare tests pass, including exact readback, no-op reapply, partial/changed/unexpected rejection. Importer still rejects credential catalogs; the isolated transform core still targets its synthetic schema and is not yet integrated. See docs/migration/credential-import-integration.md. |
+| Active-to-grace source-shaped integration | Current worktree | Local-only repository now targets catalog-shaped license/audit/notification tables and separate license/access generations. Ten Miniflare checks pass for nullable owner, exact effect readback, lost acknowledgement, rollback/resume when mandatory effects are suppressed, stale fanmark, notification display/link, and strict expiry boundary. It uses a five-table synthetic subset; full-profile/importer, grace-to-expired, cron/API, and remote checks remain open. See docs/migration/lifecycle-schema-integration.md. |
 | Credential descriptor | `59a02f1` | Six-column mapping and schema/codec policy checks. No row transform/import connection. |
 | Credential import projection | `ddcbfea` | Source snapshot row/hash/PK validation and private one-use credential input; migration-data suite 74 passed with actual 40-table metadata plus one synthetic row. Generic importer still blocks credential-bearing snapshots. |
 | Local Better Auth/D1 proof | `docs/migration/auth-feasibility.md` | Better Auth 1.7.5 + bcryptjs 3.0.3 verified synthetic `$2a$10$`/`$2b$10$` password, UUID/session, and TOTP flows under workerd. No real Auth rows or hashes were exported. |
@@ -68,11 +69,13 @@ second trigger increment; deferred rows remain whole in the private source.
 
 ## Next implementation sequence
 
-1. Finish the basic local/staging application and infrastructure slice under
-   #34: deployable Workers + Static Assets shape, D1/R2 bindings, routes/jobs,
-   Auth integration with synthetic identities, CI isolation, and focused
-   permission/parallel-operation checks. No production rows or service secrets
-   enter these local proofs.
+1. Continue the basic local/staging application and infrastructure slice
+   under #34: finish integrated D1 schema/importer validation, connect the
+   expiry work to the full synthetic target profile, complete remaining
+   Workers + Static Assets routes/jobs and synthetic Auth integration, and
+   run focused permission/parallel-operation checks. The active-to-grace
+   source-shaped subset now has a local proof, but no production rows or
+   service secrets enter these local proofs.
 2. Continue #36's emoji-master path: the verified UUID-bearing release was
    built from two matching read-only exports of the authoritative public master
    and all 3,944 rows passed isolated local D1 staging/readback on 2026-09-23.

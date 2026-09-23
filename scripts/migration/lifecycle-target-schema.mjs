@@ -18,7 +18,7 @@ import {
   sha256Hex,
 } from "./snapshot-format.mjs";
 
-export const LIFECYCLE_TARGET_SCHEMA_VERSION = 1;
+export const LIFECYCLE_TARGET_SCHEMA_VERSION = 2;
 export const MAX_SAFE_SQL_INTEGER = Number.MAX_SAFE_INTEGER;
 
 const IDENTIFIER_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
@@ -42,6 +42,8 @@ const REQUIRED_SOURCE_COLUMNS = {
   fanmarks: {
     id: { postgresType: "uuid", notNull: true, primaryKey: true },
     short_id: { postgresType: "text", notNull: true },
+    normalized_emoji: { postgresType: "text", notNull: true },
+    status: { postgresType: "text", notNull: true },
   },
   audit_logs: {
     id: { postgresType: "uuid", notNull: true, primaryKey: true },
@@ -394,6 +396,8 @@ function buildExtensionDefinition() {
         '"run_id" TEXT NOT NULL REFERENCES "license_expiry_runs"("run_id")',
         '"license_id" TEXT NOT NULL REFERENCES "fanmark_licenses"("id")',
         '"fanmark_id" TEXT NOT NULL REFERENCES "fanmarks"("id")',
+        '"fanmark_short_id" TEXT NOT NULL',
+        '"fanmark_name" TEXT NOT NULL',
         '"user_id" TEXT',
         '"license_end" TEXT NOT NULL',
         `"license_incarnation" INTEGER NOT NULL CHECK (${extensionColumnCheck("license_incarnation")})`,

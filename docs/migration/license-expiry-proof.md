@@ -1,20 +1,24 @@
-# Local proof for the active-to-grace expiry slice
+# Local proofs for the active-to-grace expiry slice
 
-This is a preparatory local proof for issue #34. It exercises an isolated
-synthetic D1 schema and does not wire a cron, Worker route, production setting,
-or source database to the implementation. The fixture is deliberately smaller
-than the converted fanmark.id schema and is not deployable schema parity.
+The first suite below is a preparatory local proof for issue #34. It exercises
+an isolated synthetic D1 schema. The newer source-shaped suite uses catalog
+table names and the reviewed lifecycle extensions, but it too uses synthetic
+rows and a deliberately small catalog. Neither suite wires a cron, Worker
+route, production setting, or source database to the implementation.
 
 Run it from the repository root with the repository's Node 22 runtime:
 
 ```sh
 npm --prefix workers/api run test:license-expiry
+npm --prefix workers/api run test:license-expiry-source
 ```
 
-The test creates an actual local Miniflare D1 binding, applies
+The original suite creates a local Miniflare D1 binding, applies
 `workers/api/test/fixtures/license-expiry.sql`, inserts synthetic rows, and
-disposes the runtime. It does not use a mocked database, remote credentials,
-or a live Cloudflare resource.
+disposes the runtime. The source-shaped suite also uses Miniflare D1, but
+generates its fixture from a synthetic catalog and applies the lifecycle
+extensions. Neither test uses remote credentials or a live Cloudflare
+resource.
 
 ## Contract exercised
 
@@ -97,3 +101,22 @@ latency or limits, Cloudflare cron scheduling, source/Auth/Storage consistency,
 environment protection, or deployment readiness. The live-only manual expiry
 entrypoint and its operational invocation remain a separate parity gate. No
 production resource or external setting was changed by this proof.
+
+## Source-shaped suite
+
+`workers/api/src/license-expiry-source.mjs` runs the same state transition
+against catalog-shaped source tables and the target-only lifecycle/generation
+extensions. It writes the existing `audit_logs` and `notification_events`
+shapes, accepts historical licenses with a null owner, and advances
+`lifecycle_generation` and `access_generation` independently. The shared
+protected-access generation statement does not write password bytes or
+`password_generation`. The durable run item preserves the captured
+`normalized_emoji` and stable `short_id`; the notification retains the current
+`fanmark_name` value and adds `fanmark_short_id` plus its `/f/:shortId` link.
+
+The source-shaped suite runs ten Miniflare checks over synthetic rows. It
+verifies exact readback, strict expiry boundary behavior, lost-ack recovery,
+rollback when each mandatory effect is suppressed, safe resume, notification
+display/link payloads, and a stale fanmark conflict. It does not yet use the
+full 40-table profile, run through the migration importer, wire an API/cron
+route, or prove production parity.

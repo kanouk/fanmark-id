@@ -96,7 +96,9 @@ function fixtureCatalog() {
     columns: [
       column("fanmarks", "id", 1, "uuid", { not_null: true }),
       column("fanmarks", "short_id", 2, "text", { not_null: true }),
-      column("fanmarks", "source_extra", 3, "text"),
+      column("fanmarks", "normalized_emoji", 3, "text", { not_null: true }),
+      column("fanmarks", "status", 4, "text", { not_null: true }),
+      column("fanmarks", "source_extra", 5, "text"),
       column("fanmark_licenses", "id", 1, "uuid", { not_null: true }),
       column("fanmark_licenses", "fanmark_id", 2, "uuid", { not_null: true }),
       column("fanmark_licenses", "user_id", 3, "uuid"),
@@ -245,8 +247,8 @@ async function setup() {
 }
 
 async function insertFanmark(database, id, shortId) {
-  await database.prepare('INSERT INTO "fanmarks" ("id", "short_id", "source_extra") VALUES (?, ?, ?)')
-    .bind(id, shortId, "synthetic")
+  await database.prepare('INSERT INTO "fanmarks" ("id", "short_id", "normalized_emoji", "status", "source_extra") VALUES (?, ?, ?, ?, ?)')
+    .bind(id, shortId, "🌿", "active", "synthetic")
     .run();
 }
 

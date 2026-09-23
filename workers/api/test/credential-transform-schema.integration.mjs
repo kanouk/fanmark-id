@@ -94,6 +94,8 @@ function fixtureCatalog() {
     columns: [
       column("fanmarks", "id", 1, "uuid", { not_null: true }),
       column("fanmarks", "short_id", 2, "text", { not_null: true }),
+      column("fanmarks", "normalized_emoji", 3, "text", { not_null: true }),
+      column("fanmarks", "status", 4, "text", { not_null: true }),
       column("fanmark_licenses", "id", 1, "uuid", { not_null: true }),
       column("fanmark_licenses", "fanmark_id", 2, "uuid", { not_null: true }),
       column("fanmark_licenses", "user_id", 3, "uuid"),
