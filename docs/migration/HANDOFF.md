@@ -36,6 +36,7 @@ cannot be recovered. The old/new systems must not dual-write business rows.
 
 | Area | Saved change | Evidence and limit |
 | --- | --- | --- |
+| Credential transform target profile | Current worktree | Exact local DDL for artifact/coverage tables is bound to the source catalog, lifecycle schema, generation triggers, and descriptor. Five Miniflare tests pass, including exact readback, no-op reapply, partial/changed/unexpected rejection. Importer still rejects credential catalogs; the isolated transform core still targets its synthetic schema and is not yet integrated. See docs/migration/credential-import-integration.md. |
 | Credential descriptor | `59a02f1` | Six-column mapping and schema/codec policy checks. No row transform/import connection. |
 | Credential import projection | `ddcbfea` | Source snapshot row/hash/PK validation and private one-use credential input; migration-data suite 74 passed with actual 40-table metadata plus one synthetic row. Generic importer still blocks credential-bearing snapshots. |
 | Local Better Auth/D1 proof | `docs/migration/auth-feasibility.md` | Better Auth 1.7.5 + bcryptjs 3.0.3 verified synthetic `$2a$10$`/`$2b$10$` password, UUID/session, and TOTP flows under workerd. No real Auth rows or hashes were exported. |

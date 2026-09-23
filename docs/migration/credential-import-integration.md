@@ -427,3 +427,25 @@ The Node 22.6 migration-data suite passed all 74 tests (four new projection
 cases), with no skips. A separate check compiled the actual 40-table metadata
 catalog and projected one synthetic row successfully; no real source values,
 remote DB, credential hashing or destination writes were used.
+
+## Implemented source-shaped credential target profile (2026-09-23)
+
+scripts/migration/credential-transform-schema.mjs now generates the exact
+credential artifact/coverage DDL bound to the source catalog, lifecycle
+extension, password/access generation triggers, and explicit descriptor. It
+can apply or inspect that profile against local D1 only after the source-shaped
+schema and both lifecycle extensions are present. The checker rejects changed
+plans, partial extensions, changed object SQL, and unexpected target objects;
+reapplying an exact profile is a no-op. Deferred coverage states cannot carry
+destination digests, and completed transformed/disabled states require both
+digests.
+
+The five Miniflare integration cases use only the synthetic target catalog and
+contain no source credential values. The suite is included in the workers/api
+test:lifecycle-schema command and its existing CI step. This is schema
+preparation only: d1-import.mjs still rejects a credential catalog before
+writes, and the isolated transform core still uses its synthetic
+fanmark_access_configs schema. It is not yet compatible with this
+source-shaped target profile and must not be called by the importer until the
+row-level atomic writer, coverage/checkpoint integration, and typed readback
+are implemented and tested.
