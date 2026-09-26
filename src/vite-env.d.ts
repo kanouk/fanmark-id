@@ -7,6 +7,7 @@ interface ImportMetaEnv {
   readonly VITE_STORAGE_BACKEND?: string;
   readonly VITE_OWNED_FANMARKS_BACKEND?: string;
   readonly VITE_PROFILE_BACKEND?: string;
+  readonly VITE_ACCOUNT_DELETION_BACKEND?: string;
   readonly VITE_FANMARK_PROFILE_BACKEND?: string;
   readonly VITE_FANMARK_SETTINGS_BACKEND?: string;
   readonly VITE_FANMARK_RETURN_BACKEND?: string;

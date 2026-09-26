@@ -452,6 +452,7 @@
       "confirmDescriptionItems": "• Your owned fanmarks (returned immediately)\n• Favorites and notification settings\n• Profile information",
       "confirmDescriptionFooter": "License history will be retained, but your username will be displayed as \"Deleted User\".",
       "confirmPrompt": "Type \"DELETE\" to continue.",
+      "passwordPrompt": "Enter your current password to confirm deletion.",
       "confirmPlaceholder": "DELETE",
       "deleteButton": "Delete Account",
       "cancelButton": "Cancel",

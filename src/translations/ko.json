@@ -486,6 +486,7 @@
       "confirmDescriptionItems": "• 소유 팬마크 (즉시 반환됨)\n• 즐겨찾기, 알림 설정\n• 프로필 정보",
       "confirmDescriptionFooter": "라이선스 내역은 보관되지만 사용자명은 \"탈퇴한 사용자\"로 표시됩니다.",
       "confirmPrompt": "계속하려면 \"DELETE\"를 입력하세요.",
+      "passwordPrompt": "삭제를 확인하려면 현재 비밀번호를 입력하세요.",
       "confirmPlaceholder": "DELETE",
       "deleteButton": "삭제 실행",
       "cancelButton": "취소",

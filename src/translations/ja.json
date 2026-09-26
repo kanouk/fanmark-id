@@ -477,6 +477,7 @@
       "confirmDescriptionItems": "• 所有するファンマーク（即時返却されます）\n• お気に入り、通知設定\n• プロフィール情報",
       "confirmDescriptionFooter": "ライセンス履歴は保持されますが、ユーザー名は「退会したユーザー」と表示されます。",
       "confirmPrompt": "続行するには「DELETE」と入力してください。",
+      "passwordPrompt": "削除を確認するため、現在のパスワードを入力してください。",
       "confirmPlaceholder": "DELETE",
       "deleteButton": "削除を実行",
       "cancelButton": "キャンセル",

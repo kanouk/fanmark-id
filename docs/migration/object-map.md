@@ -256,7 +256,7 @@ authorization decision; the target boundary below is the proposed contract.
 | create-checkout | E: supabase/functions/create-checkout/index.ts | Worker user + retain Stripe | Medium: checkout ownership and redirect validation |
 | create-extension-checkout | E: supabase/functions/create-extension-checkout/index.ts | Worker user + retain Stripe | Medium: price lookup and license binding |
 | customer-portal | E: supabase/functions/customer-portal/index.ts | Worker user + retain Stripe | Medium: portal session ownership |
-| delete-user-account | E: supabase/functions/delete-user-account/index.ts | Worker user/internal + retain Auth | High: deletion order, billing cancellation, and PII retention |
+| delete-user-account | E: supabase/functions/delete-user-account/index.ts | Worker user/internal + retain Auth; staged `POST /api/me/account/delete` coordinator | Medium: local D1/Stripe tests and a live synthetic staging deletion/readback pass; populated Stripe customer cancellation, concurrent-transfer recovery, imported credential compatibility, and production cutover remain unverified. The direct Better Auth delete route stays closed. See `docs/migration/account-deletion-api.md`. |
 | extend-fanmark-license | E: supabase/functions/extend-fanmark-license/index.ts | Worker user + retain Stripe | Medium: grace, lottery, and payment invariants |
 | fanmark-ogp | E: supabase/functions/fanmark-ogp/index.ts | Worker public | Medium: cache headers and public projection |
 | generate-ogp-image | E: supabase/functions/generate-ogp-image/index.ts | Worker public / derived artifact | Medium: move image generation and cache storage to the selected asset path |

@@ -28,6 +28,8 @@ import {
 } from "./availability";
 import { createD1AvailabilityRepository } from "./availability-d1-repository";
 import { createSupabaseAvailabilityRepository } from "./availability-repository";
+import { handleAccountDeletionRequest, isAccountDeletionPath } from "./account-deletion-d1-api";
+import { cancelLinkedStripeSubscriptionsForAccountDeletion } from "./stripe-account-deletion";
 import { createD1PublicAccessRepository } from "./public-access-d1-repository";
 import { handleVerifiedAccessRequest, isVerifiedAccessPath } from "./verified-access.mjs";
 import { handleStorageRequest, type StorageAuthResult } from "./storage-r2";
@@ -972,6 +974,59 @@ export async function handleRequest(
 
   if (url.pathname.startsWith("/api/auth/")) {
     return handleBetterAuthRequest(request, env, url);
+  }
+
+  if (isAccountDeletionPath(url.pathname)) {
+    return handleAccountDeletionRequest(request, env, {
+      resolveUser: async (deleteRequest, requestEnv) => {
+        if (requestEnv.AUTH_BACKEND?.trim() !== "better-auth") throw new Error("auth_unavailable");
+        const config = configuredAuth(requestEnv);
+        if (!config) throw new Error("auth_unavailable");
+        const current = await createApplicationAuth(config).api.getSession({
+          headers: deleteRequest.headers,
+          query: { disableCookieCache: true },
+        });
+        return typeof current?.user?.id === "string" ? { userId: current.user.id } : null;
+      },
+      verifyPassword: async (deleteRequest, password, requestEnv) => {
+        const config = configuredAuth(requestEnv);
+        if (!config) throw new Error("auth_unavailable");
+        const authApi = createApplicationAuth(config).api as unknown as {
+          verifyPassword(input: { headers: Headers; body: { password: string } }): Promise<{ status: boolean }>;
+        };
+        try {
+          const result = await authApi.verifyPassword({ headers: deleteRequest.headers, body: { password } });
+          return result.status === true;
+        } catch {
+          return false;
+        }
+      },
+      cancelCustomerSubscriptions: (customerIds, requestEnv) =>
+        cancelLinkedStripeSubscriptionsForAccountDeletion(customerIds, requestEnv),
+      deleteAuthUser: async (deleteRequest, password, requestEnv) => {
+        const config = configuredAuth(requestEnv);
+        if (!config) throw new Error("auth_unavailable");
+        const authApi = createApplicationAuth(config).api as unknown as {
+          deleteUser(input: { headers: Headers; body: { password: string }; asResponse: true }): Promise<Response>;
+        };
+        const response = await authApi.deleteUser({
+          headers: deleteRequest.headers,
+          body: { password },
+          asResponse: true,
+        });
+        if (!response.ok) return { success: false };
+        let body: unknown;
+        try {
+          body = await response.json();
+        } catch {
+          return { success: false };
+        }
+        return {
+          success: typeof body === "object" && body !== null && (body as { success?: unknown }).success === true,
+          ...(response.headers.get("set-cookie") ? { setCookie: response.headers.get("set-cookie") as string } : {}),
+        };
+      },
+    });
   }
 
   const accessAnalyticsResponse = await handleFanmarkAccessAnalyticsRequest(request, env);

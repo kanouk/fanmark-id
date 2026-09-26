@@ -272,9 +272,15 @@ export function createAuth(
           },
         }
       : {}),
-    ...(Object.keys(additionalUserFields).length > 0
-      ? { user: { additionalFields: additionalUserFields } }
-      : {}),
+    user: {
+      ...(Object.keys(additionalUserFields).length > 0
+        ? { additionalFields: additionalUserFields }
+        : {}),
+      // The public /api/auth/delete-user path remains explicitly closed in
+      // the Worker gateway. The account-deletion coordinator invokes this
+      // Better Auth endpoint only after business cleanup and password proof.
+      deleteUser: { enabled: true },
+    },
     ...(userStatusSelected || authOptions.signupCommandId
       ? {
           databaseHooks: {

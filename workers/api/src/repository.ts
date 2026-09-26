@@ -27,6 +27,7 @@ export interface Env {
   STORAGE_BACKEND?: string;
   OWNED_FANMARKS_BACKEND?: string;
   PROFILE_BACKEND?: string;
+  ACCOUNT_DELETION_BACKEND?: string;
   FANMARK_PROFILE_BACKEND?: string;
   FANMARK_SETTINGS_BACKEND?: string;
   FANMARK_RETURN_BACKEND?: string;

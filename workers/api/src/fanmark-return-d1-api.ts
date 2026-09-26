@@ -125,16 +125,18 @@ async function recordReturnEffects(
   userId: string,
   graceExpiresAt: string,
   nowIso: string,
+  options: { accountDeletion?: boolean } = {},
 ): Promise<void> {
   const fanmarkId = String(row.fanmarkId);
   const displayFanmark = typeof row.displayFanmark === "string" ? row.displayFanmark : "";
   const fanmarkName = displayFanmark.trim() ? displayFanmark : "ファンマーク";
   const shortId = String(row.shortId);
+  const auditAction = options.accountDeletion ? "FANMARK_RETURNED_ON_ACCOUNT_DELETE" : "return_fanmark";
   try {
     await database.prepare(`
       INSERT INTO audit_logs (user_id, action, resource_type, resource_id, metadata, created_at)
-      VALUES (?, 'return_fanmark', 'fanmark', ?, ?, ?)
-    `).bind(userId, fanmarkId, JSON.stringify({
+      VALUES (?, ?, 'fanmark', ?, ?, ?)
+    `).bind(userId, auditAction, fanmarkId, JSON.stringify({
       user_input_fanmark: displayFanmark,
       returned_at: nowIso,
       grace_expires_at: graceExpiresAt,
@@ -143,17 +145,19 @@ async function recordReturnEffects(
     // Supabase's source helper treats audit failure as best effort.
   }
 
-  try {
-    await enqueueEvent(database, "fanmark_returned_owner", {
-      user_id: userId,
-      fanmark_id: fanmarkId,
-      fanmark_name: fanmarkName,
-      fanmark_short_id: shortId,
-      grace_expires_at: graceExpiresAt,
-      link: shortId ? `/f/${shortId}` : null,
-    }, `fanmark_returned_owner_${fanmarkId}_${userId}`, nowIso);
-  } catch {
-    // Notification enqueue failure does not undo a completed return.
+  if (!options.accountDeletion) {
+    try {
+      await enqueueEvent(database, "fanmark_returned_owner", {
+        user_id: userId,
+        fanmark_id: fanmarkId,
+        fanmark_name: fanmarkName,
+        fanmark_short_id: shortId,
+        grace_expires_at: graceExpiresAt,
+        link: shortId ? `/f/${shortId}` : null,
+      }, `fanmark_returned_owner_${fanmarkId}_${userId}`, nowIso);
+    } catch {
+      // Notification enqueue failure does not undo a completed return.
+    }
   }
 
   try {
@@ -258,6 +262,7 @@ async function returnLicenseById(
   userId: string,
   now: Date,
   nowIso: string,
+  accountDeletion = false,
 ): Promise<ReturnSuccess> {
   const row = await database.prepare(`
     SELECT l.id AS licenseId, l.fanmark_id AS fanmarkId, l.license_end AS licenseEnd,
@@ -307,7 +312,7 @@ async function returnLicenseById(
     throw new FanmarkReturnApiError("license_state_changed", 409);
   }
 
-  await recordReturnEffects(database, row, userId, graceExpiresAt, nowIso);
+  await recordReturnEffects(database, row, userId, graceExpiresAt, nowIso, { accountDeletion });
   return {
     licenseId,
     fanmarkId: row.fanmarkId,
@@ -315,6 +320,39 @@ async function returnLicenseById(
     fanmarkShortId: row.shortId,
     graceExpiresAt,
   };
+}
+
+/**
+ * Return every currently valid active license before a self-service account
+ * deletion. The per-license operation is deliberately reused so it keeps the
+ * same compare-and-set, transfer-code guard, audit, and favorite notification
+ * behavior as an ordinary return. Owner notifications are suppressed because
+ * the receiving account is about to be deleted.
+ */
+export async function returnAllActiveFanmarksForAccountDeletion(
+  database: D1Database,
+  userId: string,
+  now: Date,
+): Promise<number> {
+  const nowIso = now.toISOString();
+  const candidates = await database.prepare(`
+    SELECT id
+    FROM fanmark_licenses
+    WHERE user_id = ? AND status = 'active'
+      AND (license_end IS NULL OR license_end > ?)
+    ORDER BY CASE WHEN license_end IS NULL THEN 1 ELSE 0 END ASC,
+             license_end DESC, id ASC
+    LIMIT 1001
+  `).bind(userId, nowIso).all<{ id: unknown }>();
+  if (!candidates.success || candidates.results.length > 1000 ||
+      candidates.results.some((row) => typeof row.id !== "string" || !UUID.test(row.id))) {
+    throw new FanmarkReturnApiError("return_unavailable", 503);
+  }
+
+  for (const row of candidates.results) {
+    await returnLicenseById(database, row.id as string, userId, now, nowIso, true);
+  }
+  return candidates.results.length;
 }
 
 export async function handleFanmarkBulkReturnRequest(
