@@ -4,6 +4,7 @@ export interface Env {
   AUTH_DB?: D1Database;
   MASTER_DB?: D1Database;
   D1_TOPOLOGY?: string;
+  SYSTEM_SETTINGS_BACKEND?: string;
   AVATARS_BUCKET?: R2Bucket;
   COVER_IMAGES_BUCKET?: R2Bucket;
   AUTH_BACKEND?: string;

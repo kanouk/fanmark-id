@@ -64,7 +64,7 @@ const PlanSelection = () => {
   const { profile, loading, updateProfile, refetch: refetchProfile } = useProfile();
   const { user } = useAuth();
   const { subscription_end, refetch: refetchSubscription } = useSubscription();
-  const { settings } = useSystemSettings();
+  const { settings, loading: settingsLoading, error: settingsError, refetch: refetchSettings } = useSystemSettings();
 
   const [processingPlan, setProcessingPlan] = useState<PlanType | null>(null);
   const [planProcessingMode, setPlanProcessingMode] = useState<'stripe' | 'processing' | null>(null);
@@ -646,10 +646,21 @@ const PlanSelection = () => {
     }
   };
 
-  if (loading) {
+  if (loading || settingsLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (settingsError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 px-4">
+        <div role="alert" className="max-w-lg rounded-3xl border border-destructive/30 bg-background/95 px-8 py-10 text-center shadow-sm">
+          <p className="text-sm text-destructive">プラン設定を取得できません。料金や上限を確認できるまで、プラン変更は利用できません。</p>
+          <Button className="mt-6 rounded-full" onClick={() => void refetchSettings()}>再読み込み</Button>
+        </div>
       </div>
     );
   }

@@ -12,3 +12,14 @@ CREATE TABLE IF NOT EXISTS system_settings (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id TEXT PRIMARY KEY NOT NULL,
+  user_id TEXT,
+  action TEXT NOT NULL,
+  resource_type TEXT NOT NULL,
+  resource_id TEXT,
+  request_id TEXT,
+  metadata TEXT NOT NULL DEFAULT '{}' CHECK (json_valid(metadata)),
+  created_at TEXT NOT NULL
+);

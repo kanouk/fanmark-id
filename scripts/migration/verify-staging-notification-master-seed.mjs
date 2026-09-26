@@ -1,6 +1,9 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import {
+  stagingNonUserConfigBaselineState,
+} from "./staging-notification-master-baseline.mjs";
 
 const DATABASE = "fanmark-business-staging";
 const EXPECTED_SOURCE_SHA256 = "900f9f3a00bd5d0e68de541a0ad2a10a47c24def6613b89be69739b34584b3fb";
@@ -21,6 +24,15 @@ const BASELINE_QUERY = `
     (SELECT COUNT(*) FROM fanmarks) AS fanmarks,
     (SELECT COUNT(*) FROM fanmark_licenses) AS fanmark_licenses,
     (SELECT COUNT(*) FROM system_settings) AS system_settings,
+    (SELECT group_concat(setting_key || ':' || is_public, ',') FROM
+      (SELECT setting_key, is_public FROM system_settings ORDER BY setting_key)) AS system_settings_key_manifest,
+    (SELECT COUNT(*) FROM fanmark_availability_rules) AS availability_rules,
+    (SELECT COUNT(*) FROM fanmark_availability_rules WHERE created_by IS NULL AND (
+      (rule_type = 'specific_pattern' AND priority = 1) OR
+      (rule_type = 'duplicate_pattern' AND priority = 2) OR
+      (rule_type = 'prefix_pattern' AND priority = 3) OR
+      (rule_type = 'count_based' AND priority = 4)
+    )) AS expected_availability_rules,
     (SELECT COUNT(*) FROM system_settings
       WHERE setting_key = 'grace_period_days' AND setting_value = '1' AND is_public = 1) AS expected_system_setting,
     (SELECT COUNT(*) FROM system_settings
@@ -107,7 +119,14 @@ function main() {
   if (counts.notification_rules !== 10 || counts.notification_templates !== 40 ||
       counts.notification_preferences !== 0 || counts.notification_events !== 0 ||
       counts.notifications !== 0 || counts.user_settings !== 0 || counts.fanmarks !== 0 ||
-      counts.fanmark_licenses !== 0 || counts.system_settings !== 2 || counts.expected_system_setting !== 1 ||
+      counts.fanmark_licenses !== 0 || stagingNonUserConfigBaselineState({
+        system_settings: counts.system_settings,
+        system_settings_key_manifest: counts.system_settings_key_manifest,
+        grace_period_days: counts.expected_system_setting,
+        max_emoji_characters: counts.expected_max_emoji_setting,
+        availability_rules: counts.availability_rules,
+        expected_availability_rules: counts.expected_availability_rules,
+      }) !== "seeded" || counts.expected_system_setting !== 1 ||
       counts.expected_max_emoji_setting !== 1) {
     throw new Error("staging_notification_master_unexpected_business_baseline");
   }

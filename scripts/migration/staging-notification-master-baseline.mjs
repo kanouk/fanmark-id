@@ -3,6 +3,8 @@ export const NOTIFICATION_MASTER_COUNTS_SQL = `SELECT
   (SELECT COUNT(*) FROM "notification_templates") AS notification_templates`;
 export const STAGING_NON_USER_CONFIG_BASELINE_SQL = `SELECT
   (SELECT COUNT(*) FROM "system_settings") AS system_settings,
+  (SELECT group_concat(setting_key || ':' || is_public, ',') FROM
+    (SELECT setting_key, is_public FROM "system_settings" ORDER BY setting_key)) AS system_settings_key_manifest,
   (SELECT COUNT(*) FROM "system_settings"
     WHERE "setting_key" = 'grace_period_days' AND "setting_value" = '1' AND "is_public" = 1) AS grace_period_days,
   (SELECT COUNT(*) FROM "system_settings"
@@ -21,6 +23,30 @@ const STAGING_BASELINE_TABLES = new Set([
   "system_settings",
   "fanmark_availability_rules",
 ]);
+
+export const LEGACY_STAGING_SYSTEM_SETTINGS_MANIFEST = "grace_period_days:1,max_emoji_characters:1";
+export const STAGING_SYSTEM_SETTINGS_MANIFEST = [
+  "business_fanmarks_limit:1",
+  "business_pricing:1",
+  "business_stripe_price_id:1",
+  "business_stripe_price_id_live:1",
+  "creator_fanmarks_limit:1",
+  "creator_stripe_price_id:1",
+  "creator_stripe_price_id_live:1",
+  "enterprise_fanmarks_limit:0",
+  "enterprise_pricing:0",
+  "free_fanmarks_limit:1",
+  "grace_period_days:1",
+  "invitation_mode:1",
+  "max_emoji_characters:1",
+  "max_fanmarks_limit:1",
+  "max_pricing:1",
+  "max_stripe_price_id:1",
+  "max_stripe_price_id_live:1",
+  "premium_pricing:1",
+  "social_login_enabled:1",
+  "stripe_mode:1",
+].join(",");
 
 export function businessTablesWithoutStagingBaselines(tables, { authEmailTemplates = false } = {}) {
   return tables.filter((table) => !STAGING_BASELINE_TABLES.has(table) &&
@@ -45,12 +71,16 @@ export function hasStagingNonUserConfigBaseline(row) {
 
 export function stagingNonUserConfigBaselineState(row) {
   const settings = Number(row?.system_settings);
+  const settingManifest = row?.system_settings_key_manifest;
   const grace = Number(row?.grace_period_days);
   const maxEmoji = Number(row?.max_emoji_characters);
   const rules = Number(row?.availability_rules);
   const expectedRules = Number(row?.expected_availability_rules);
-  if (settings === 0 && grace === 0 && maxEmoji === 0 && rules === 0 && expectedRules === 0) return "empty";
-  if (settings === 2 && grace === 1 && maxEmoji === 1 && rules === 4 && expectedRules === 4) return "seeded";
+  if (settings === 0 && settingManifest == null && grace === 0 && maxEmoji === 0 && rules === 0 && expectedRules === 0) return "empty";
+  const stableMasters = rules === 4 && expectedRules === 4 && grace === 1 && maxEmoji === 1;
+  const legacySettings = settings === 2 && settingManifest === LEGACY_STAGING_SYSTEM_SETTINGS_MANIFEST;
+  const planSettings = settings === 20 && settingManifest === STAGING_SYSTEM_SETTINGS_MANIFEST;
+  if (stableMasters && (legacySettings || planSettings)) return "seeded";
   return "invalid";
 }
 

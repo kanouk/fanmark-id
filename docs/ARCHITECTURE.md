@@ -36,6 +36,7 @@
 - `/q/:shortId`: 公開QR表示: `FanmarkPublicQR.tsx` + `useFanmarkByShortId.ts`
 - `/maintenance`: メンテナンスページ: `Maintenance.tsx`（`MaintenanceGate` により全体制御）。`useMaintenanceSettings`は3つの公開メンテナンス設定だけを読む。stagingの`VITE_MAINTENANCE_SETTINGS_BACKEND=worker`では`GET /api/system/maintenance`と管理者MFA保護付き`PATCH /api/admin/system-settings/maintenance`を使い、失敗時にSupabaseへ戻らず一般画面を閉じる。通常buildはSupabaseを維持する。API契約は`docs/migration/maintenance-settings-api.md`。
 - 返却猶予期間: `AdminSettings.tsx`と`FanmarkDashboard.tsx`は`useLifecycleSettings`から専用の`grace_period_days`を読む。stagingの`VITE_LIFECYCLE_SETTINGS_BACKEND=worker`では公開`GET /api/system/lifecycle`でbusiness D1の設定1件を読み、管理者MFA保護付き`PATCH /api/admin/system-settings/lifecycle`で変更する。通常buildはSupabaseを維持し、Worker失敗時のフォールバックはしない。API契約は`docs/migration/lifecycle-settings-api.md`。
+- プラン選択と管理者の一般設定: `PlanSelection.tsx`、`AdminPlanSettings.tsx`、`AdminInvitationManager.tsx`はstagingで`VITE_SYSTEM_SETTINGS_BACKEND=worker`を選び、公開設定は`GET /api/system/settings`、管理者読取・更新はMFA保護付き`/api/admin/system-settings`を使う。Workerは公開キーの固定projectionだけを返し、Enterpriseの非公開値は管理者APIからのみ返す。設定失敗時のSupabaseフォールバックはなく、通常buildはSupabaseを維持する。18件の明示allowlist、更新のCAS監査、検証範囲は`docs/migration/system-settings-api.md`。
 - `/:emojiPath`: キャッチオールアクセス: `FanmarkAccess.tsx` + `FanmarkAcquisition.tsx`。Worker read選択時は同じ公開projection APIを使う。パスワード検証とアクセス解析はSupabase経路のまま。
 - `*`: `NotFound.tsx`
 - 管理画面 (admin サブドメイン想定): `AdminApp.tsx`, `AdminDashboard.tsx`, `AdminAuth.tsx`。Cloudflare staging modeはBetter Authのログイン/TOTP画面を使い、Workerでadmin roleとMFA assuranceを判定する。通常modeのSupabase認証は維持する。

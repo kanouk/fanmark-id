@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "vitest run --config vitest.config.mjs && vitest run --config vitest.verified-access-d1.config.mjs && npm run test:stripe-webhook-ingress-schema && npm run test:stripe-extension-checkout-d1 && npm run test:extension-coupon-application-d1 && npm run test:extension-coupon-admin-d1 && npm run test:stripe-plan-checkout-d1 && npm run test:stripe-plan-change-d1 && npm run test:notification-master-admin-d1 && npm run test:invitation-admin-d1 && npm run test:invitation-signup-d1 && npm run test:availability-rules-admin-d1 && npm run test:admin-user-management-d1 && npm run test:admin-email-templates-d1 && npm run test:api-contracts-d1 && npm run test:auth:d1 && npm run test:auth-email && npm run test:auth-social",
+    "test": "vitest run --config vitest.config.mjs && vitest run --config vitest.verified-access-d1.config.mjs && npm run test:stripe-webhook-ingress-schema && npm run test:stripe-extension-checkout-d1 && npm run test:extension-coupon-application-d1 && npm run test:extension-coupon-admin-d1 && npm run test:stripe-plan-checkout-d1 && npm run test:stripe-plan-change-d1 && npm run test:notification-master-admin-d1 && npm run test:invitation-admin-d1 && npm run test:invitation-signup-d1 && npm run test:availability-rules-admin-d1 && npm run test:admin-user-management-d1 && npm run test:admin-email-templates-d1 && npm run test:system-settings-d1 && npm run test:api-contracts-d1 && npm run test:auth:d1 && npm run test:auth-email && npm run test:auth-social",
     "test:verified-access:d1": "vitest run --config vitest.verified-access-d1.config.mjs",
     "test:static-assets": "test -f ../../dist/index.html && vitest run --config vitest.static-assets.config.mjs && node ./test/static-assets-router-smoke.mjs",
     "test:watch": "vitest --config vitest.config.mjs",
@@ -47,6 +47,7 @@
     "test:notifications-d1": "vitest run --config vitest.notifications-d1.config.mjs",
     "test:favorites-d1": "vitest run --config vitest.favorites-d1.config.mjs",
     "test:maintenance-settings-d1": "vitest run --config vitest.maintenance-settings.config.mjs",
+    "test:system-settings-d1": "vitest run --config vitest.system-settings.config.mjs",
     "test:storage-r2": "node test/storage-r2-import.integration.mjs",
     "test:d1-import": "node --test ../../scripts/migration/test-d1-import.mjs",
     "test:license-expiry": "node test/license-expiry.integration.mjs",

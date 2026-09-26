@@ -133,11 +133,17 @@ The 2026-09-23 v1 reference release is limited to `fanmark_tiers`,
 `languages`, and `reserved_emoji_patterns`. These three tables have no owner
 user relation in the current mapping and are staged as one versioned D1
 release. This does not make every configuration-looking table non-user data:
-`system_settings` is excluded wholesale. Only the individually allowlisted
-public `grace_period_days` and `max_emoji_characters` rows have been copied to
-staging. Availability rules and notification rules/templates use documented
-row/field allowlists; coupons, tier-extension prices, and remaining candidates
-still require per-table allowlists before export. Coupon configuration can move separately from owner-bound usage records; do not copy `created_by`, usage rows, or infer redemption history during master-data staging.
+`system_settings` is never copied wholesale. Staging contains the individually
+allowlisted public `grace_period_days` and `max_emoji_characters` rows plus a
+separate exact 18-key plan/pricing/feature projection. Two Enterprise values
+remain private and are served only by the MFA-protected admin API. The source
+projection and staged D1 readback match the pinned canonical digest; see
+[`system-settings-api.md`](system-settings-api.md). Availability rules and
+notification rules/templates use documented row/field allowlists; coupons,
+tier-extension prices, and remaining candidates still require per-table
+allowlists before export. Coupon configuration can move separately from
+owner-bound usage records; do not copy `created_by`, usage rows, or infer
+redemption history during master-data staging.
 
 ## View
 

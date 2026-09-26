@@ -46,6 +46,13 @@ test("counts every explicitly seeded non-user staging baseline row", () => {
     notification_templates: 40,
   }), 56);
   assert.equal(stagingBusinessBaselineRowCount({
+    system_settings: 20,
+    availability_rules: 4,
+  }, {
+    notification_rules: 10,
+    notification_templates: 40,
+  }), 74);
+  assert.equal(stagingBusinessBaselineRowCount({
     system_settings: 0,
     availability_rules: 0,
   }, {

@@ -8,6 +8,7 @@
     "AUTH_BACKEND": "better-auth",
     "MAINTENANCE_SETTINGS_BACKEND": "d1",
     "LIFECYCLE_SETTINGS_BACKEND": "d1",
+    "SYSTEM_SETTINGS_BACKEND": "d1",
     "BETTER_AUTH_URL": "https://api.example.test",
     "CORS_ALLOWED_ORIGINS": "https://app.example.test"
   },

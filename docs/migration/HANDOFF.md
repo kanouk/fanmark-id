@@ -43,9 +43,11 @@ basic-app/infrastructure/master-data stage and about 55–60% of the full
 migration. The live registration/auth/business/R2 rehearsal below now covers a
 major integrated path, but broader #37 acceptance, the 18 schema gates,
 production acceptance, user-data import, and final DNS cutover remain open.
+The plan/general-settings slice below has since been staged and deployed; this
+narrow addition does not materially change the coarse weighted estimate.
 
 `fanmark-app-staging` is deployed at 100% as version
-`a4b4886f-9289-435d-b345-843a7b2747a7` at
+`3310b139-f639-4cf2-8a15-ad2b63f9fbd6` at
 `https://fanmark-app-staging.fanmark-id.workers.dev`. The split business/Auth/
 master D1 bindings and two R2 buckets remain isolated to this workers.dev app.
 Recent, availability, public-access, auth, profile, owned-fanmark,
@@ -53,7 +55,9 @@ fanmark-profile, fanmark-settings, fanmark-search details, authenticated
 fanmark-whois details, fanmark-return,
 favorites, notifications, verified-access, maintenance and lifecycle settings,
 emoji/reference master, and R2 routes use their explicit Worker/D1/R2
-selectors on staging. Live
+selectors on staging. The general plan/config API is also selected through
+`VITE_SYSTEM_SETTINGS_BACKEND=worker`; its exact 18-row source projection is
+staged and digest-verified in business D1. Live
 owner-settings/protected-access and single-return smokes
 passed after deployment.
 
@@ -74,9 +78,10 @@ workers.dev Cron is enabled every minute for the D1 notification processor;
 the lifecycle and Stripe handlers remain disabled by their unset selectors.
 The business baseline has 10 global notification rules, 40 localized in-app
 templates, and 16 localized auth email templates (`signup`, `recovery`,
-`magiclink`, and `email_change`), four disabled availability rules, and two explicitly
-allowlisted public settings (`grace_period_days=1` and
-`max_emoji_characters=5`). User-owned
+`magiclink`, and `email_change`), four disabled availability rules, and 20
+explicitly allowlisted system settings. The 18 plan/pricing/feature settings
+match the private Supabase projection digest in D1; the baseline public
+settings remain `grace_period_days=1` and `max_emoji_characters=5`. User-owned
 business tables and Auth tables read back empty after the latest synthetic
 canaries. The latest redeploy selects the D1 analytics writer/read APIs and
 their SPA adapters. Its workers.dev canary recorded exactly one synthetic
@@ -185,8 +190,9 @@ unperformed.
 | Public access and owner analytics APIs | Current worktree + workers.dev staging | The staging SPA and Worker select D1 for `POST /api/fanmarks/access` and the session-scoped `/api/me/analytics/*` reads. The synthetic canary recorded one event, suppressed four duplicates, verified owner metrics and summary, received 401 anonymously, then removed its Auth/business rows. Worker D1 tests pass 8/8 and frontend client tests pass 3/3 for each adapter. Historical analytics remain in Supabase; user data, production traffic, and domain/DNS were untouched. Abuse controls, retention, populated-user authorization, and production CPU/plan fit remain open. See `docs/migration/fanmark-access-analytics-api.md`. |
 | D1 role separation | Current worktree + APAC staging | `D1_TOPOLOGY=split` selects business `FANMARK_DB`, Better Auth `AUTH_DB`, and emoji/reference `MASTER_DB`, failing closed for missing bindings. Business staging has 40 source-shaped tables plus applied lifecycle/credential/access extensions; its application baseline contains 10/40 global notification masters, four disabled availability rules, and the two explicitly allowlisted public settings `grace_period_days=1` and `max_emoji_characters=5`. User-owned business/Auth rows are empty. The separate protected-access tables retain documented synthetic canary telemetry and license-incarnation tombstones. Master D1 has 3,944 canonical emoji rows and active release, with reference-master generation 2. The source refresh has 40 tables, 406 columns, 144 constraints, 139 indexes, 15 enum labels, 36 triggers, 77 policies, 58 functions, and one view. Snapshot format 4 fingerprints eight scopes and validates the reviewed event sequence state; conversion v4 still has 18 blocking gates and `deployable: false`. No real rows or live event sequence state were migrated. |
 | Lifecycle settings API | Current worktree + staging Worker/SPA | Public `GET /api/system/lifecycle` reads only the public `grace_period_days` row through split business D1; `PATCH /api/admin/system-settings/lifecycle` requires administrator role and current-session MFA. Supabase public value `1` was read-only verified and copied as one staging config row. Client 4/4, combined settings D1 9/9, full standard suites 30/30 and 10/10 pass. Live GET returns 200/no-store; anonymous PATCH returns 401. The shared staging Cron is active for notifications; `LICENSE_EXPIRY_BACKEND` remains unset, so the lifecycle handler is disabled. Authenticated admin browser flow remains unverified. See `docs/migration/lifecycle-settings-api.md`. |
+| Plan and general system settings | Current worktree + workers.dev staging | An exact allowlist of 18 non-user Supabase settings was added to the two existing settings (20 total). Source and D1 canonical digests match `d1f809c44dcc26152acb3432907e1cad81a599d495fd9f3e48b75ea1e3beb16f`; the public GET returns exactly 17 public keys and omits both private Enterprise settings. Public GET and SPA returned 200/no-store; anonymous admin GET returned 401/no-store. Worker tests 5/5, client tests 4/4, migration-data 124/124, typechecks, staging build, and dry-run pass. Deployed at 100% as version `3310b139-f639-4cf2-8a15-ad2b63f9fbd6`. Authenticated MFA admin update and payment behavior remain untested; production stays on Supabase. See `docs/migration/system-settings-api.md`. |
 | Availability-rule administration | Current worktree + workers.dev staging | `AdminPatternRules` selects the MFA-protected D1 API only in staging. Four explicit source rules were seeded with `created_by=NULL`, remained disabled, and were read/edit/CAS-restored by the deployed TOTP canary. Worker tests 4/4 and frontend tests 5/5 pass. This does not move Stripe enforcement or other admin CRUD. See `docs/migration/availability-rules-admin-api.md`. |
-| Current app staging deployment | APAC `fanmark-app-staging` Worker + Static Assets | Current version `a4b4886f-9289-435d-b345-843a7b2747a7` at 100%; split D1 and both R2 bindings remain. Business migrations through `0015` and Auth migration `0008_auth_user_suspension.sql` are applied; all eight user-owned Auth tables, including status audit, read back empty after the latest TOTP canary. The 16 localized auth email master rows remain readback-verified against their pinned content/seed digests. MFA-gated user list/detail, plan, suspension/restoration, immediate license expiry, and password-reset mutation use split D1/Better Auth. Resend secrets remain absent, so password-reset delivery is closed with 503 before audit; no email was attempted. Prior live canary verified suspension, current-session revocation, restoration, immediate expiry, four config deletions, two audit rows, one notification event, and repeat safety, then cleaned synthetic rows. Post-run readback found zero user settings/licenses/favorites/notifications/user events/expiry audits/four config types and zero Auth user-owned rows; 43 license-incarnation tombstones remain as retained synthetic anti-reuse state. Signup and email delivery remain disabled because delivery is not configured; OAuth providers remain unset. The every-minute Cron remains for notification/Stripe dispatch; the separate daily lifecycle trigger is configured with its execution selector unset. No real user data, production routing, or domain/DNS changed. Authenticated reset-mail acceptance, remaining app/API inventory, Stripe sandbox/integrated acceptance, real user/Auth/object import, production routing, and domain/DNS remain open. |
+| Current app staging deployment | APAC `fanmark-app-staging` Worker + Static Assets | Current version `3310b139-f639-4cf2-8a15-ad2b63f9fbd6` at 100%; split D1 and both R2 bindings remain. Business migrations through `0015` and Auth migration `0008_auth_user_suspension.sql` are applied; all eight user-owned Auth tables, including status audit, read back empty after the latest TOTP canary. The 16 localized auth email master rows remain readback-verified against their pinned content/seed digests. MFA-gated user list/detail, plan, suspension/restoration, immediate license expiry, password-reset mutation, and system settings use split D1/Better Auth. Resend secrets remain absent, so password-reset delivery is closed with 503 before audit; no email was attempted. Prior live canary verified suspension, current-session revocation, restoration, immediate expiry, four config deletions, two audit rows, one notification event, and repeat safety, then cleaned synthetic rows. Post-run readback found zero user settings/licenses/favorites/notifications/user events/expiry audits/four config types and zero Auth user-owned rows; 43 license-incarnation tombstones remain as retained synthetic anti-reuse state. Signup and email delivery remain disabled because delivery is not configured; OAuth providers remain unset. The every-minute Cron remains for notification/Stripe dispatch; the separate daily lifecycle trigger is configured with its execution selector unset. No real user data, production routing, or domain/DNS changed. Authenticated reset-mail acceptance, remaining app/API inventory, Stripe sandbox/integrated acceptance, real user/Auth/object import, production routing, and domain/DNS remain open. |
 | Lifecycle target schema | `01a1507`, `8034735` | Exact source/extension DDL and fingerprint consistency; actual 40-table catalog applied to empty local D1. No production rows. |
 | Credential incarnation authority | `7cf0fe6` | Missing retained authority is rejected by reads and final SQL; credential suite 19 passed. Isolated proof schema. |
 | Lifecycle/access-generation and protected-access integration | Current worktree + workers.dev staging | 24 triggers invalidate proofs on license/password and source-backed fanmark selector, basic/redirect/messageboard/profile changes. The Worker verifier reads the same 40-table source profile and checks descriptor-bound credential provenance. Dedicated D1 and full source-profile tests pass; the frontend contract is covered. Deployed synthetic settings/protected-access canary passed and cleaned all rows. The selectors are active on staging only. Real source password-format compatibility, Cloudflare CPU and multi-instance checks, deployed-origin security review, and full browser acceptance remain open. |
@@ -1121,3 +1127,22 @@ other Cloudflare account. Do not authorize that account for this migration.
 After the user signs into the `bfc2890741f0b3fb236e2d755b6c9adc` account,
 recheck D1 baseline, seed and compare the exact 16 master rows, then deploy the
 staging Worker and SPA. No email or user data was sent or imported.
+
+## Plan and general system settings staging (2026-09-27 JST)
+
+The exact 18-key non-user configuration projection is present in staging
+business D1 and matches the private Supabase export's pinned canonical digest.
+The original two explicitly allowlisted settings remain, for an exact 20-row
+manifest. The Worker public route and staging SPA use D1; the public API returns
+exactly 17 public keys, omits the two private Enterprise keys, and anonymous
+admin settings reads return 401. The same-origin MFA admin editor is deployed,
+but an authenticated read/update has not yet been canaried.
+
+Version `3310b139-f639-4cf2-8a15-ad2b63f9fbd6` is active at 100% on
+`fanmark-app-staging`. Live checks returned SPA 200, public API 200/no-store,
+and anonymous admin API 401/no-store. Migration-data tests pass 124/124,
+settings Worker tests 5/5, settings client tests 4/4, both typechecks and the
+staging build pass. No production route, Stripe operation, user/Auth row,
+Storage object, or domain/DNS setting was changed. Authenticated admin
+acceptance, Stripe/integrated coverage, production, real user-data import, and
+domain cutover remain open. See `docs/migration/system-settings-api.md`.

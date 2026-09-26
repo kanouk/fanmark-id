@@ -1,7 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  fetchSystemSettingsFromWorker,
+  getSystemSettingsBackend,
+  updateSystemSettingInWorker,
+} from '@/lib/system-settings-api';
 
-interface SystemSettings {
+export interface SystemSettings {
   invitation_mode: boolean;
   social_login_enabled: boolean;
   free_fanmarks_limit: number;
@@ -41,9 +46,53 @@ export function useSystemSettings(options?: { includePrivate?: boolean }) {
     stripe_mode: 'test',
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchSettings = useCallback(async () => {
+    setLoading(true);
     try {
+      if (getSystemSettingsBackend() === 'worker') {
+        const values = await fetchSystemSettingsFromWorker({ includePrivate });
+        const settingsMap: Partial<SystemSettings> = {};
+        for (const [key, value] of Object.entries(values)) {
+          if (key === 'invitation_mode' || key === 'social_login_enabled') {
+            if (value !== 'true' && value !== 'false') throw new Error('invalid_system_setting');
+            settingsMap[key] = value === 'true';
+          } else if (key === 'stripe_mode') {
+            if (value !== 'test' && value !== 'live') throw new Error('invalid_system_setting');
+            settingsMap.stripe_mode = value;
+          } else if (key === 'creator_stripe_price_id' || key === 'max_stripe_price_id' ||
+              key === 'business_stripe_price_id') {
+            settingsMap[key] = value;
+          } else if (key === 'enterprise_fanmarks_limit') {
+            settingsMap.enterprise_fanmarks_limit = Number(value);
+          } else if (key === 'enterprise_pricing') {
+            settingsMap.enterprise_pricing = Number(value);
+          } else if (key === 'free_fanmarks_limit') {
+            settingsMap.free_fanmarks_limit = Number(value);
+          } else if (key === 'creator_fanmarks_limit') {
+            settingsMap.creator_fanmarks_limit = Number(value);
+          } else if (key === 'max_fanmarks_limit') {
+            settingsMap.max_fanmarks_limit = Number(value);
+          } else if (key === 'business_fanmarks_limit') {
+            settingsMap.business_fanmarks_limit = Number(value);
+          } else if (key === 'premium_pricing') {
+            settingsMap.premium_pricing = Number(value);
+          } else if (key === 'max_pricing') {
+            settingsMap.max_pricing = Number(value);
+          } else if (key === 'business_pricing') {
+            settingsMap.business_pricing = Number(value);
+          } else if (key === 'max_emoji_characters') {
+            settingsMap.max_emoji_characters = Number(value);
+          }
+        }
+        if (Object.values(settingsMap).some((value) => typeof value === 'number' && !Number.isSafeInteger(value))) {
+          throw new Error('invalid_system_setting');
+        }
+        setSettings(prev => ({ ...prev, ...settingsMap }));
+        setError(null);
+        return;
+      }
       let query = supabase
         .from('system_settings')
         .select('setting_key, setting_value')
@@ -100,8 +149,10 @@ export function useSystemSettings(options?: { includePrivate?: boolean }) {
 
         setSettings(prev => ({ ...prev, ...settingsMap }));
       }
+      setError(null);
     } catch (error) {
       console.error('Error fetching system settings:', error);
+      setError('system_settings_unavailable');
     } finally {
       setLoading(false);
     }
@@ -113,6 +164,16 @@ export function useSystemSettings(options?: { includePrivate?: boolean }) {
 
   const updateSetting = async <K extends keyof SystemSettings>(key: K, value: SystemSettings[K]) => {
     try {
+      if (getSystemSettingsBackend() === 'worker') {
+        await updateSystemSettingInWorker({
+          key,
+          value: String(value),
+          expectedValue: String(settings[key]),
+        });
+        setSettings(prev => ({ ...prev, [key]: value }));
+        await fetchSettings();
+        return true;
+      }
       const stringValue = typeof value === 'boolean' ? (value ? 'true' : 'false') : String(value);
       const { error } = await supabase
         .from('system_settings')
@@ -122,6 +183,7 @@ export function useSystemSettings(options?: { includePrivate?: boolean }) {
       if (error) throw error;
 
       setSettings(prev => ({ ...prev, [key]: value }));
+      setError(null);
       await fetchSettings();
       return true;
     } catch (error) {
@@ -130,5 +192,5 @@ export function useSystemSettings(options?: { includePrivate?: boolean }) {
     }
   };
 
-  return { settings, loading, refetch: fetchSettings, updateSetting };
+  return { settings, loading, error, refetch: fetchSettings, updateSetting };
 }

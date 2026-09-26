@@ -2030,3 +2030,34 @@ route, or domain/DNS setting. Targeted Node tests (3/3), ESLint, and
 `git diff --check` passed. This closes one integrated staging path, not all of
 #37: billing sandbox, broader source-event coverage, production acceptance,
 the 18 schema gates, user-data migration, and domain cutover remain open.
+
+## Plan and general system settings on staging (2026-09-27 JST)
+
+Added a same-origin Worker adapter for plan selection, plan administration, and
+invitation-mode settings. The public route returns a fixed 17-key projection;
+the admin route returns the two private Enterprise values only after
+Better Auth administrator and same-session MFA authorization. Admin edits use
+validated values, a stale-value guard, an atomic D1 update/audit batch, and
+readback. The audit contains the setting key but no previous or new value.
+Worker failures do not fall back to Supabase, and production/default builds
+remain on the Supabase selector.
+
+Exported only the exact 18-key non-user plan/pricing/feature allowlist from
+Supabase, stored the source artifact outside the repository with mode 600, and
+applied it to staging business D1. The exact D1 readback matched the pinned
+source digest
+`d1f809c44dcc26152acb3432907e1cad81a599d495fd9f3e48b75ea1e3beb16f`. With the
+separate `grace_period_days` and `max_emoji_characters` rows, staging has the
+expected 20-row settings manifest. No user or Auth data was included. The
+staging script was made idempotent for a previously applied, exact digest so a
+retry verifies instead of inserting again.
+
+The SPA/Worker deployment is active at 100% on the isolated workers.dev app as
+version `3310b139-f639-4cf2-8a15-ad2b63f9fbd6`. Live checks returned 200 for the
+SPA and public settings API, 200/no-store with exactly the expected 17 public
+keys, and 401/no-store for anonymous admin settings access. Public setting
+values were not printed. Migration-data tests passed 124/124, Worker settings
+tests 5/5, client contract tests 4/4, both typechecks, staging build, and
+Wrangler dry-run passed. Authenticated admin setting mutation, Stripe sandbox
+acceptance, broader integrated #37 coverage, production, user-data import, and
+domain/DNS remain open. See `system-settings-api.md`.
