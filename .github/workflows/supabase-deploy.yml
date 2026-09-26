@@ -63,6 +63,9 @@ jobs:
       - name: Test migration data boundaries
         run: npm run test:migration-data
 
+      - name: Test Stripe plan change client contract
+        run: npm run test:stripe-plan-change-api
+
       - name: Type check
         run: npm run typecheck
 

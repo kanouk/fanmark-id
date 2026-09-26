@@ -23,6 +23,13 @@ import { FanmarkSelectionModal } from '@/components/FanmarkSelectionModal';
 import { DowngradeWarningDialog } from '@/components/DowngradeWarningDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { bulkReturnFanmarksThroughWorker, getFanmarkReturnBackend } from '@/lib/fanmark-return-api';
+import { createStripeCustomerPortalThroughWorker, getStripeCustomerPortalBackend } from '@/lib/stripe-customer-portal-api';
+import {
+  changeStripePlanThroughWorker,
+  clearStripePlanChangeRequestId,
+  getStripePlanChangeBackend,
+  getStripePlanChangeRequestId,
+} from '@/lib/stripe-plan-change-api';
 import {
   clearStripePlanCheckoutRequestIds,
   createStripePlanCheckoutThroughWorker,
@@ -31,6 +38,8 @@ import {
   StripePlanCheckoutApiError,
 } from '@/lib/stripe-plan-checkout-api';
 import { Check, ArrowLeft, Loader2, Sparkle, Crown, Star, ExternalLink, Flame, ShieldCheck, TrendingUp, TrendingDown } from 'lucide-react';
+
+const PENDING_PLAN_CHANGE_KEY = 'fanmark.plan-change.pending-plan';
 
 interface PlanCardCopy {
   type: PlanType;
@@ -151,6 +160,10 @@ const PlanSelection = () => {
     }
 
     if (expectedPlan) {
+      if (getStripePlanChangeBackend() === 'worker') {
+        clearStripePlanChangeRequestId(expectedPlan as 'free' | 'creator' | 'max' | 'business');
+        try { window.sessionStorage.removeItem(PENDING_PLAN_CHANGE_KEY); } catch { /* Storage is optional. */ }
+      }
       toast({
         title: t('planSelection.downgradeSuccess'),
         description: t('planSelection.downgradeSuccessDescription', {
@@ -164,6 +177,45 @@ const PlanSelection = () => {
     setPendingPlanSync({ expectedPlan });
     setPlanSyncAttempts(0);
   }, []);
+
+  const beginWorkerPlanChange = useCallback(async (newPlan: PlanType) => {
+    const planType = newPlan as 'free' | 'creator' | 'max' | 'business';
+    setPlanProcessingMode('processing');
+    const result = await changeStripePlanThroughWorker({
+      planType,
+      requestId: getStripePlanChangeRequestId(planType),
+    });
+    if (result.requiresAction) {
+      setPlanProcessingMode('stripe');
+      try { window.sessionStorage.setItem(PENDING_PLAN_CHANGE_KEY, planType); } catch { /* Portal return remains usable without storage. */ }
+      const portal = getStripeCustomerPortalBackend() === 'worker'
+        ? await createStripeCustomerPortalThroughWorker()
+        : await (async () => {
+          const { data, error } = await supabase.functions.invoke('customer-portal');
+          if (error) throw error;
+          if (typeof data?.url !== 'string') throw new Error('customer portal URL is missing');
+          return { url: data.url as string };
+        })();
+      window.location.href = portal.url;
+      return;
+    }
+    startPlanSync(newPlan);
+  }, [startPlanSync]);
+
+  // Resume plan projection polling after a Customer Portal payment-action round trip.
+  useEffect(() => {
+    if (getStripePlanChangeBackend() !== 'worker' || pendingPlanSync) return;
+    let pendingPlan: string | null = null;
+    try { pendingPlan = window.sessionStorage.getItem(PENDING_PLAN_CHANGE_KEY); } catch { return; }
+    if (!['free', 'creator', 'max', 'business'].includes(pendingPlan ?? '')) return;
+    const expectedPlan = pendingPlan as 'free' | 'creator' | 'max' | 'business';
+    if (profile?.plan_type === expectedPlan) {
+      clearStripePlanChangeRequestId(expectedPlan);
+      try { window.sessionStorage.removeItem(PENDING_PLAN_CHANGE_KEY); } catch { /* Storage is optional. */ }
+      return;
+    }
+    startPlanSync(expectedPlan);
+  }, [pendingPlanSync, profile?.plan_type, startPlanSync]);
 
   // Handle checkout success or cancellation with auto-refresh
   useEffect(() => {
@@ -364,6 +416,10 @@ const PlanSelection = () => {
       
       if (isUpgrade) {
         // UPGRADE: Use change-subscription with proration (no warning)
+        if (getStripePlanChangeBackend() === 'worker') {
+          await beginWorkerPlanChange(planType);
+          return;
+        }
         setPlanProcessingMode('processing');
         
         const { data, error } = await supabase.functions.invoke('change-subscription', {
@@ -442,6 +498,10 @@ const PlanSelection = () => {
     setPlanProcessingMode('processing');
 
     try {
+      if (getStripePlanChangeBackend() === 'worker') {
+        await beginWorkerPlanChange(downgradeInfo.newPlan);
+        return;
+      }
       const { data, error } = await supabase.functions.invoke('change-subscription', {
         body: { 
           current_plan_type: downgradeInfo.currentPlan,
@@ -520,6 +580,11 @@ const PlanSelection = () => {
       setPlanProcessingMode('processing');
 
       const currentPlanType = profile?.plan_type as PlanType;
+
+      if (getStripePlanChangeBackend() === 'worker') {
+        await beginWorkerPlanChange(pendingPlanType);
+        return;
+      }
       
       const { data, error } = await supabase.functions.invoke('change-subscription', {
         body: { 

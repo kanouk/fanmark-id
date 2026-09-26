@@ -69,5 +69,6 @@ Deploying the endpoint does not activate it; requests remain unavailable until
 the complete webhook, dispatch, test-mode price, and signing-secret
 configuration is reviewed. This work does not execute a Stripe transaction,
 migrate user data, change
-production, or change DNS/domain routing. Plan changes for existing paid
-subscriptions and sandbox acceptance remain separate work.
+production, or change DNS/domain routing. Existing paid subscriptions use the
+separate [D1 plan change command](stripe-plan-change-api.md). Stripe sandbox
+acceptance remains separate work.

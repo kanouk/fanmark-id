@@ -1640,3 +1640,50 @@ license, and fanmark rows. Worker version
 returned 200 for `/`, `/robots.txt`, and `/api/auth/ok`, and 404 for
 `/api/stripe/webhook`. The lifecycle backend remains disabled in the restored
 configuration; no real user, production, or domain data changed.
+
+
+## 2026-09-26 paid-plan change command
+
+Added `POST /api/billing/plan-change` and its PlanSelection Worker client for
+existing paid subscriptions. The request omits client-supplied current plan,
+Customer, Subscription, and Price identifiers. The Worker requires the
+Better Auth owner, business profile/customer mapping, one active D1 subscription,
+current Stripe subscription/customer/Price, and mode-specific Price settings to
+agree. It persists an immutable owner-bound command before Stripe mutation and
+uses a unique per-owner open-command slot plus a stable 23-hour idempotency key.
+It follows PRODUCT's immediate prorated upgrade, no-proration paid downgrade,
+and immediate Free cancellation behavior. A server-side target-limit check
+blocks the command until selected license returns are reflected. An SCA/payment
+action returns the user to the existing Customer Portal; the PlanSelection
+screen resumes profile polling when the user returns. Entitlements are updated
+only by the existing signed webhook reconciliation.
+
+Nine Miniflare D1 tests and five frontend client tests passed, covering request
+ownership and mode binding, limits before mutation, no direct entitlement
+write, upgrade/downgrade/cancel parameters, payment-action fencing, lost
+acknowledgement recovery, and competing commands. Frontend/Worker typechecks,
+targeted ESLint, CI workflow isolation, staging build, Wrangler dry-run, and
+`git diff --check` passed.
+
+Business migration `0013_stripe_plan_change_commands.sql` was the only pending
+remote migration. It was applied to the APAC staging business D1; readback
+confirmed the command table exists, contains zero rows, and no migrations are
+pending. The staging frontend and Worker were deployed with the browser client
+selected but with `STRIPE_PLAN_CHANGE_BACKEND` absent and no Stripe secrets.
+Worker version `785e5754-21dd-4feb-8903-b0a797821ffb` is active at 100%.
+Read-only checks returned 200 for app root, robots, and Better Auth health, and
+404 for the disabled plan-change route. No Stripe transaction, user data,
+production route, or domain/DNS state changed. Stripe sandbox/integrated
+acceptance and other billing commands remain open.
+
+### Staging redeployment and readback
+
+After the portal-return polling fix and command-recovery race check, the full
+Worker suite passed, including nine plan-change D1 cases; the five frontend
+client cases, both TypeScript checks, targeted ESLint, staging build, and
+Wrangler dry-run also passed. The latest app Worker is
+`1b8c2bbe-c95d-4037-846a-9a7d67ba932b` at 100%. Read-only probes returned 200
+for `/`, `/robots.txt`, and `/api/auth/ok`, and 404 for the plan-change route.
+The remote command table remains empty and Wrangler reports no pending business
+migrations. Stripe secrets/selectors remain absent; no Stripe call, user data,
+production routing, or domain/DNS change occurred.
