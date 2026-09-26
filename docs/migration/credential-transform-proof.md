@@ -63,22 +63,25 @@ one changed row. A test mutates the target between the read and that update;
 the stale result remains `applied` and is rejected. Re-reading an already
 reconciled artifact also rejects an enabled-state mutation.
 
-Invalid four-digit input and disabled rows are covered. Disabled rows remain
-disabled and do not run bcrypt. Positive and wrong-input checks run for the
-enabled synthetic transform. No OAuth, MFA, Better Auth account identity,
-remote CPU measurement, source-format classification, or production writer is
-proved by this fixture.
+Invalid four-digit input and disabled rows are covered. In the full-import
+path, disabled rows now run the pinned bcrypt transform while retaining
+`is_enabled = 0`; a separate source-shaped Miniflare D1 test verifies the hash,
+coverage state, and typed readback. Positive and wrong-input checks also run
+for the enabled synthetic transform. No OAuth, MFA, Better Auth account
+identity, remote CPU measurement, source-format classification, or production
+writer is proved by these fixtures.
 
 ## Remaining migration gates
 
-This proof is the row-level codec and D1 state-machine slice only. The next
-unit must integrate the transformed-column descriptor into the general D1
-importer while preserving UUIDs, non-credential columns, row coverage, and
-the private immutable source artifact boundary. That importer integration is
-not present here. Source compatibility rehearsal, remote bcrypt CPU/plan
-measurement, single-writer cutover, and production lifecycle/authorization
-readback remain separate gates. No re-enrollment shortcut or runtime
-plaintext fallback is implied.
+This proof is the row-level codec and D1 state-machine slice; the descriptor is
+now integrated into the general D1 importer with source UUIDs, non-credential
+columns, credential coverage, and the private immutable source artifact
+boundary preserved. Separate local Miniflare tests prove active-license
+disabled rows are bcrypt-transformed and read back with `is_enabled = 0`.
+Inactive-license coverage, source compatibility rehearsal, remote bcrypt
+CPU/plan measurement, single-writer cutover, and production
+lifecycle/authorization readback remain separate gates. No re-enrollment
+shortcut or runtime plaintext fallback is implied.
 
 ## Required incarnation authority
 

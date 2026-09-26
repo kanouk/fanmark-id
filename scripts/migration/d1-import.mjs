@@ -1414,7 +1414,7 @@ async function reconcileCredentialArtifact(database, artifact, { now }) {
   const token = randomBytes(12).toString("hex");
   await runBatch(database, [
     database.prepare(
-      'UPDATE "credential_transform_artifacts" SET "state" = \'reconciled\', "reconciled_at" = ? WHERE "artifact_id" = ? AND "state" = \'applied\' AND "fencing_token" = ? AND EXISTS (SELECT 1 FROM "credential_transform_coverage" WHERE "artifact_id" = "credential_transform_artifacts"."artifact_id" AND "coverage_state" = \'transformed\')',
+      'UPDATE "credential_transform_artifacts" SET "state" = \'reconciled\', "reconciled_at" = ? WHERE "artifact_id" = ? AND "state" = \'applied\' AND "fencing_token" = ? AND EXISTS (SELECT 1 FROM "credential_transform_coverage" WHERE "artifact_id" = "credential_transform_artifacts"."artifact_id" AND "coverage_state" IN (\'transformed\', \'disabled\'))',
     ).bind(timestamp, artifact.artifact_id, Number(artifact.fencing_token)),
     database.prepare(
       'INSERT INTO "' + LEDGER_TABLES.guards + '" (token, must_be_one) SELECT ?, CASE WHEN EXISTS (SELECT 1 FROM "credential_transform_artifacts" WHERE "artifact_id" = ? AND "state" = \'reconciled\' AND "fencing_token" = ?) THEN 1 ELSE 0 END',
@@ -1497,7 +1497,7 @@ async function readAndValidateCredentialRow(database, snapshot, tablePlan, proje
     Number(coverage.expected_lifecycle_generation) !== Number(artifact.expected_lifecycle_generation) ||
     coverage.artifact_id !== artifact.artifact_id ||
     Number(coverage.fencing_token) !== Number(artifact.fencing_token) ||
-    coverage.coverage_state !== "transformed" ||
+    coverage.coverage_state !== (enabled === 1 ? "transformed" : "disabled") ||
     coverage.destination_transform_digest !== artifact.destination_transform_digest ||
     coverage.destination_digest !== destinationDigest ||
     coverage.reason_code !== null
@@ -1552,6 +1552,7 @@ async function commitCredentialRow(database, snapshot, tablePlan, checkpoint, ro
     rowHashes: [row.rowHash],
   });
   const destinationDigest = credentialDestinationDigest(projection, artifact);
+  const coverageState = projection.bindings[2] === 1 ? "transformed" : "disabled";
   const timestamp = nowIso(options.now);
   const checkpointUpdate = checkpointUpdateStatement({
     runId: snapshot.manifest.runId,
@@ -1630,7 +1631,7 @@ async function commitCredentialRow(database, snapshot, tablePlan, checkpoint, ro
     '"destination_relation", "destination_column", "destination_primary_key_json", "destination_license_id", "license_incarnation",',
     '"enabled", "expected_password_generation", "expected_access_generation", "expected_lifecycle_generation", "artifact_id", "fencing_token",',
     '"coverage_state", "destination_transform_digest", "destination_digest", "reason_code", "created_at", "updated_at"',
-    ') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, \'transformed\', ?, ?, NULL, ?, ?)',
+    ') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)',
   ].join(" ");
   const coverageBindings = [
     snapshot.manifest.runId,
@@ -1654,6 +1655,7 @@ async function commitCredentialRow(database, snapshot, tablePlan, checkpoint, ro
     Number(artifact.expected_lifecycle_generation),
     artifact.artifact_id,
     reservation.fencingToken,
+    coverageState,
     prepared.destinationTransformDigest,
     destinationDigest,
     timestamp,

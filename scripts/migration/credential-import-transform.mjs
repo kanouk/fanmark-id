@@ -242,7 +242,7 @@ function assertLiveStateMatchesArtifact(state, binding, wasApplied) {
 function buildBinding({ projection, input, state, destinationId, targetIncarnation, sourceManifestDigest, targetProfileFingerprint }) {
   const [sourceId, licenseId, enabled] = projection.bindings;
   if (!UUID_RE.test(sourceId ?? "") || !UUID_RE.test(licenseId ?? "")) fail("credential_projection_identity_invalid");
-  if (enabled !== 1) fail("credential_row_deferred_disabled");
+  if (![0, 1].includes(enabled)) fail("credential_projection_enabled_invalid");
   const binding = {
     targetProfileFingerprint,
     sourceManifestDigest,
@@ -466,7 +466,7 @@ export async function reserveCredentialImportArtifact({
   validateProjection(projection, catalog, input);
   if (input.descriptorDigest !== projection.credentialDescriptorDigest) fail("credential_descriptor_digest_mismatch");
   const licenseId = projection.bindings[1];
-  if (projection.bindings[2] !== 1) fail("credential_row_deferred_disabled");
+  if (![0, 1].includes(projection.bindings[2])) fail("credential_projection_enabled_invalid");
   const identity = {
     targetIdentity: destinationId,
     targetIncarnation,

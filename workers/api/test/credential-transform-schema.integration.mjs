@@ -8,6 +8,7 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import bcrypt from "bcryptjs";
 import os from "node:os";
 import { promises as fs } from "node:fs";
 import { pathToFileURL } from "node:url";
@@ -368,7 +369,7 @@ function syntheticCredentialProjection(catalog, { enabled = true, password = "Sy
   return project(canonicalJson(sourceRecord));
 }
 
-async function exportSyntheticCredentialSnapshot(catalog, credentialDescriptor) {
+async function exportSyntheticCredentialSnapshot(catalog, credentialDescriptor, { enabled = true, password = "Synthetic-credential-import-42" } = {}) {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), "fanmark-credential-import-snapshot-"));
   const rows = Object.fromEntries([...new Set(catalog.columns.map((entry) => entry.table_name))].map((table) => [table, []]));
   rows.fanmarks = [{
@@ -411,8 +412,8 @@ async function exportSyntheticCredentialSnapshot(catalog, credentialDescriptor) 
     values: {
       id: syntheticPasswordConfigId,
       license_id: syntheticLicenseId,
-      access_password: "Synthetic-credential-import-42",
-      is_enabled: "t",
+      access_password: password,
+      is_enabled: enabled ? "t" : "f",
       created_at: "2026-09-26T12:00:00.123456Z",
       updated_at: "2026-09-26T12:00:00.654321Z",
     },
@@ -508,6 +509,59 @@ test("D1 importer atomically writes credential row, coverage, artifact and check
       'SELECT "password_generation", "access_generation" FROM "fanmark_access_versions" WHERE "license_id" = ?',
     ).bind(syntheticLicenseId).first();
     assert.deepEqual(generations, { password_generation: 1, access_generation: 1 });
+  } finally {
+    await fixture.miniflare.dispose();
+    if (snapshot) await fs.rm(snapshot.directory, { recursive: true, force: true });
+    await fs.rm(reportDirectory, { recursive: true, force: true });
+  }
+});
+
+test("D1 importer hashes disabled credentials and preserves the disabled source flag", async () => {
+  const fixture = await prepareFixture({ credentialExtension: true });
+  const reportDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "fanmark-credential-disabled-report-"));
+  await fs.chmod(reportDirectory, 0o700);
+  const reportPath = path.join(reportDirectory, "import.report.json");
+  let snapshot;
+  try {
+    snapshot = await exportSyntheticCredentialSnapshot(fixture.catalog, descriptor(), { enabled: false, password: "0000" });
+    const result = await importD1Snapshot({
+      manifestPath: snapshot.manifestPath,
+      database: fixture.database,
+      destinationId: "synthetic-disabled-target",
+      targetIncarnation: "synthetic-disabled-incarnation-1",
+      reportPath,
+      allowUnresolvedGates: true,
+      expectedTargetProfile: {
+        credentialPlan: fixture.credentialPlan,
+        descriptor: descriptor(),
+        generationPlan: fixture.generationPlan,
+        lifecyclePlan: fixture.lifecyclePlan,
+      },
+      now: () => new Date("2026-09-26T12:00:00.000Z"),
+    });
+    assert.equal(result.status, "public_rows_reconciled");
+    assert.equal(result.fullMigrationReconciled, false);
+    const target = await fixture.database.prepare(
+      'SELECT "access_password", "is_enabled" FROM "fanmark_password_configs"',
+    ).first();
+    assert.equal(target.is_enabled, 0);
+    assert.notEqual(target.access_password, "0000");
+    assert.match(target.access_password, /^\$2[ab]\$10\$/u);
+    assert.equal(await bcrypt.compare("0000", target.access_password), true);
+    const coverage = await fixture.database.prepare(
+      'SELECT "coverage_state", "destination_transform_digest", "destination_digest", "reason_code" FROM "credential_transform_coverage"',
+    ).first();
+    assert.equal(coverage.coverage_state, "disabled");
+    assert.match(coverage.destination_transform_digest, /^[0-9a-f]{64}$/u);
+    assert.match(coverage.destination_digest, /^[0-9a-f]{64}$/u);
+    assert.equal(coverage.reason_code, null);
+    const artifact = await fixture.database.prepare(
+      'SELECT "state", "enabled", "destination_hash" FROM "credential_transform_artifacts"',
+    ).first();
+    assert.equal(artifact.state, "reconciled");
+    assert.equal(artifact.enabled, 0);
+    assert.equal(artifact.destination_hash, target.access_password);
+    assert.doesNotMatch(JSON.stringify({ target, coverage, artifact }), /0000/u);
   } finally {
     await fixture.miniflare.dispose();
     if (snapshot) await fs.rm(snapshot.directory, { recursive: true, force: true });
@@ -644,7 +698,7 @@ test("source-shaped credential artifact binds license generations and reuses pre
   }
 });
 
-test("credential preparation defers disabled and inactive source rows without storing artifacts", async () => {
+test("credential preparation transforms disabled rows and defers inactive source rows", async () => {
   const fixture = await prepareFixture({ credentialExtension: true });
   try {
     await seedActiveLicense(fixture.database);
@@ -658,19 +712,25 @@ test("credential preparation defers disabled and inactive source rows without st
       now: () => new Date(1_790_416_800_000),
       leaseMs: 1_000,
     };
-    await assert.rejects(
-      reserveCredentialImportArtifact({
-        ...context,
-        projection: syntheticCredentialProjection(fixture.catalog, { enabled: false }),
-      }),
-      (error) => error.code === "credential_row_deferred_disabled",
-    );
+    const disabledReservation = await reserveCredentialImportArtifact({
+      ...context,
+      projection: syntheticCredentialProjection(fixture.catalog, { enabled: false }),
+    });
+    const disabledArtifact = await prepareCredentialImportArtifact({
+      database: fixture.database,
+      reservation: disabledReservation,
+      now: context.now,
+    });
+    assert.equal(disabledArtifact.enabled, 0);
+    assert.equal(await bcrypt.compare("Synthetic-credential-42", disabledArtifact.destinationHash), true);
     await fixture.database.prepare(
       'UPDATE "fanmark_licenses" SET "status" = ? WHERE "id" = ?',
     ).bind("grace", syntheticLicenseId).run();
     await assert.rejects(
       reserveCredentialImportArtifact({
         ...context,
+        destinationId: "synthetic-inactive-target",
+        targetIncarnation: "synthetic-inactive-target-incarnation-1",
         projection: syntheticCredentialProjection(fixture.catalog),
       }),
       (error) => error.code === "credential_row_deferred_inactive",
@@ -678,7 +738,7 @@ test("credential preparation defers disabled and inactive source rows without st
     const artifacts = await fixture.database.prepare(
       'SELECT COUNT(*) AS "count" FROM "credential_transform_artifacts"',
     ).first();
-    assert.equal(artifacts.count, 0);
+    assert.equal(artifacts.count, 1);
   } finally {
     await fixture.miniflare.dispose();
   }

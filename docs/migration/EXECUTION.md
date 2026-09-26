@@ -1801,3 +1801,22 @@ deleted its Auth rows and verified all user-owned Auth tables returned to
 zero. The capability response keeps signup, email delivery, and social
 providers disabled. No email was sent, no real user row was copied, and no
 production route or domain/DNS setting changed.
+
+## Active-license disabled credential import coverage (2026-09-26 JST)
+
+Verified the checked-in password settings flow: disabling protection calls
+`upsert_fanmark_password_config` with `new_password = '0000'` and
+`enable_password = false`; the RPC persists both fields, and the UI requires a
+new four-digit value when protection is enabled again. Updated the synthetic
+D1 importer to hash the exact credential from disabled rows on active
+licenses, preserve `is_enabled = 0`, and atomically record `disabled` coverage
+with the artifact and checkpoint. Non-active licenses remain fail-closed and
+out of this change.
+
+The synthetic full-import regression confirms bcrypt comparison against the
+source fixture, no cleartext in target/artifact/coverage, artifact and coverage
+readback, and preserved disabled state. Node 22.6.0 validation passed:
+`npm run test:migration-data` (121/121), `npm --prefix workers/api run test:lifecycle-schema`
+(15/15), Worker typecheck, syntax checks, and `git diff --check`. No source
+credentials, remote D1, Worker deployment, production route, or domain/DNS
+setting was changed.

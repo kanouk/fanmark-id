@@ -1,9 +1,10 @@
 # Credential transform integration with the full D1 importer
 
-This document is the implementation contract for adding the credential
-transform to the verified-snapshot importer. As of 2026-09-26, the importer
-has a source-shaped special writer for enabled credentials attached to active
-licenses, with atomic artifact/coverage/checkpoint updates and typed readback.
+This document records the implementation contract and current evidence for the
+verified-snapshot credential importer. As of 2026-09-26, the importer has a
+source-shaped special writer for enabled and disabled credentials attached to
+active licenses, with atomic artifact/coverage/checkpoint updates and typed
+readback.
 A fresh current-catalog rehearsal has completed all 40 table checkpoints and
 whole-target readback using three synthetic rows, including ACK-unknown resume
 and tampered-coverage rejection. Deferred-row coverage and real user-data
@@ -135,13 +136,14 @@ source catalog contains `fanmark_password_configs`; the offline verifier
 revalidates the descriptor against the catalog and recomputes the digest. The
 descriptor contains no credential value. This establishes the snapshot-side
 binding only. The generic importer's private run row, per-table checkpoint,
-and report now also persist and compare the descriptor digest. Credential
-coverage rows already have a descriptor field in the target extension, but
-the importer does not create coverage entries or perform a credential
-transform yet. Once that importer integration is implemented, a changed
-descriptor, codec/cost, destination mapping, source schema fingerprint,
-generated DDL fingerprint, or policy version must not resume an old run; it
-requires a new isolated target incarnation or an explicitly reviewed repair.
+and report now also persist and compare the descriptor digest. The importer
+requires the exact composed target profile before writing credential rows,
+then stores transformed or disabled coverage atomically with the target row
+and checkpoint. Inactive-license rows remain fail-closed and do not yet receive
+durable deferred coverage. A changed descriptor, codec/cost, destination
+mapping, source schema fingerprint, generated DDL fingerprint, or policy
+version must not resume an old run; it requires a new isolated target
+incarnation or an explicitly reviewed repair.
 
 ## Row-conversion changes
 
@@ -252,17 +254,17 @@ one coverage entry before the table can be complete.
 
 `is_enabled = true` uses the pinned bcrypt transform and ends in
 `transformed` only after protected destination readback. `is_enabled = false`
-is not a completed `disabled` disposition until the source writer semantics
-have been verified. If a later source re-enable is expected to restore the
-same credential, the disabled row must retain a protected transformed value
-while its enabled flag remains false. If the source semantics permit a
-non-recoverable disabled row, a reviewed non-usable destination representation
-may be used instead. A fixed dummy value is never the default completion
-policy, and `is_enabled = 0` remains authoritative even when such a reviewed
-representation is required. Until that writer-semantics gate passes, record
-`deferred_disabled`, retain the immutable private source artifact, and keep
-the run incomplete; never discard the source credential or place it in D1 as
-ordinary text.
+uses the same transform, retains `is_enabled = 0`, and ends in `disabled` only
+after the same readback; its source credential is never an ordinary D1
+binding. The checked-in `FanmarkSettings` writer disables protection by calling
+`upsert_fanmark_password_config` with `new_password = '0000'` and
+`enable_password = false`. That RPC writes both supplied values on insert and
+conflict update. When the user enables protection again, the UI requires a new
+four-digit password. The importer still hashes the exact value in each source
+row rather than assuming every disabled row contains the UI placeholder. This
+preserves the stored value for authorized future writes without allowing
+public access while the disabled flag remains false. A fixed dummy is not
+substituted by the importer.
 
 Rows whose `license_id` points to a non-active, returned, expired, or otherwise
 ineligible license remain in the immutable source snapshot and must not
@@ -282,12 +284,12 @@ one of two explicit outcomes before `fullMigrationReconciled` can become true:
   constraint remains intact. The same row-preservation rule applies to
   `deferred_disabled`.
 
-The current synthetic core requires an active target, so it does not yet prove
-the first policy. Until a lifecycle-compatible transform mode is implemented
-and tested, the importer must use the second disposition and leave
-`fullMigrationReconciled=false`; it must not silently mark a non-active row
-complete. In either policy, the ordinary source row, UUIDs, status, dates, and
-relationships remain covered by the 40-table import.
+The current synthetic core requires an active target, so inactive-license
+rows still use the second disposition and leave `fullMigrationReconciled=false`;
+they are not silently marked complete. Disabled rows on active licenses are
+covered by the `disabled` transform state. In either policy, the ordinary
+source row, UUIDs, status, dates, and relationships remain covered by the
+40-table import.
 
 Invalid input, missing license mapping, duplicate destination mapping, or
 descriptor mismatch is `rejected` and stops the run. It is not converted into
@@ -517,16 +519,12 @@ after its lease expires; reclaim increments the fencing token without
 recomputing the hash. The final password-row insert trigger remains the sole
 owner of password/access generation increments.
 
-The source-shaped Miniflare test exercises reservation, preparation, an
-ACK-unknown result, expired-lease resume, reuse after the simulated row insert,
-and trigger-owned generation changes. It also checks disabled/inactive
-deferral, overlength rejection, and that synthetic plaintext does not appear
-in artifacts or target rows. The command npm --prefix workers/api run
-test:lifecycle-schema passes 13/13. This is still a separately tested
-preparation component: d1-import.mjs keeps credential_transform_required and
-has not yet wired the specialized insert, coverage row, checkpoint, atomic
-batch, or typed readback together. No real Auth, database, Storage, or
-credential values were read or migrated.
+At this earlier proof checkpoint, the source-shaped Miniflare test exercised
+reservation, preparation, an ACK-unknown result, expired-lease resume, reuse
+after the simulated row insert, and trigger-owned generation changes. It also
+checked disabled/inactive deferral and overlength rejection. The later
+integrated importer evidence below supersedes that checkpoint. No real Auth,
+database, Storage, or credential values were read or migrated.
 
 ## Integrated source-shaped writer (2026-09-26)
 
@@ -543,8 +541,10 @@ license incarnation/generations, and checkpoint. It marks an artifact
 reconciled only after those checks agree. A synthetic ACK-unknown test commits
 the batch, loses its acknowledgement, restarts the importer, and confirms it
 reuses the committed row and finishes reconciliation without inserting or
-hashing a second time. Disabled and inactive rows still fail closed and remain
-incomplete; their durable deferred-coverage policy has not been integrated.
+hashing a second time. At this checkpoint disabled and inactive rows still
+failed closed; a later bounded change enabled active-license disabled rows to
+use the same bcrypt path and `disabled` coverage. Inactive-license rows remain
+fail closed without durable deferred coverage.
 
 Validation at this checkpoint: `npm run test:migration-data` passed 116/116 and
 `npm --prefix workers/api run test:lifecycle-schema` passed 14/14. This proved
@@ -570,6 +570,8 @@ The harness initially attempted `PRAGMA integrity_check`, which Miniflare's D1
 authorizer rejects with `SQLITE_AUTH`. That engine-level diagnostic was removed
 from the D1 harness; the importer's full table reconciliation and supported
 `PRAGMA foreign_key_check` both passed. This does not lower the schema gates or
-prove production integrity. Disabled/inactive credential rows still do not
-have durable deferred coverage, and no source user rows or remote D1 were
-used.
+prove production integrity. This current-catalog case used an enabled
+credential row. A separate full-import fixture now verifies a disabled
+credential row is bcrypt-transformed, retains `is_enabled = 0`, receives
+`disabled` coverage, and passes readback. Inactive-license rows still lack
+durable deferred coverage. No source user rows or remote D1 were used.
