@@ -2192,32 +2192,41 @@ production backup destination, and real-user/Auth/Storage backup remain open.
 The R2 bucket is intentionally left empty and unbound. No Worker deployment,
 production resource, or domain/DNS setting changed.
 
-## Authenticated reference-master tier editor canary (2026-09-27 JST)
+## Authenticated reference-master editor staging canaries (2026-09-27 JST)
 
-Added an explicit opt-in action to the existing staging MFA smoke. It refuses
+Added explicit opt-in actions to the existing staging MFA smoke. Each refuses
 to run without the exact staging Auth D1 name and live-write flag, requires all
 Auth-owned tables to start empty, verifies zero business fanmarks/licenses,
 and checks the active 29-row reference release and Tier C perpetual baseline.
 The canary uses the deployed Worker API with a synthetic TOTP administrator;
 it does not write directly to Master D1.
 
-The live path rejected anonymous writes with 401, changed only Tier C from null
-to one day, read back all four reference masters (4 tiers, 4 languages, 5
-reserved patterns, 16 extension prices), rejected a stale-release write with
-409 without advancing the pointer, then restored Tier C to null through the
-MFA-gated editor API. Exact canonical readback matched the pre-canary values;
-the editor advanced the active pointer with compare-and-set and wrote
-append-only activation history. Two edit/restore canary runs ended at active
-generation 6 with Tier C null. The MFA generation singleton remains monotonic.
+The Tier C canary rejected anonymous writes with 401, changed only Tier C from
+null to one day, read back all four reference masters (4 tiers, 4 languages,
+5 reserved patterns, 16 extension prices), rejected a stale-release write
+with 409 without advancing the pointer, then restored Tier C to null through
+the MFA-gated editor API. Canonical reference-master values matched after
+restoration, apart from the expected release and edited-row updated_at changes.
+A separate extension-price canary changed the active tier-1 one-month
+price from ¥500 to ¥501, rejected anonymous and stale-version writes, then
+restored ¥500. The public extension-price read returned the restored value
+under the current release; canonical comparison confirmed all other
+master values and both Stripe IDs were unchanged. The editor used
+compare-and-set and wrote append-only activation history. The active release
+is generation 8 with Tier C null and the extension price restored. The MFA
+generation singleton remains monotonic.
 
 The first run found a test-harness cleanup omission for the synthetic target
 user/profile. Those exact example.invalid rows were deleted and read back at
-zero, the cleanup condition was corrected, and the second run completed with
-zero Auth users, accounts, sessions, verifications, factors, admin roles,
-assurances, status-audit rows, business profiles, fanmarks, and licenses.
+zero, the cleanup condition was corrected, and the repeated Tier run plus the
+extension-price run completed with zero Auth users, accounts, sessions,
+verifications, factors, admin roles, assurances, status-audit rows, business
+profiles, fanmarks, and licenses.
 
 The Worker reference-master API suite passed 6/6, reference-master service
 suite 5/5, frontend admin client suite 6/6, Node 22.6 syntax validation, and
-git diff whitespace validation. No Supabase data, production resource, Stripe
+git diff whitespace validation. The two live action flags were
+--reference-master-tier-roundtrip and
+--reference-master-extension-price-roundtrip. No Supabase data, production resource, Stripe
 resource, real user-owned row, or domain/DNS setting was changed. The browser
 click path, Stripe checkout, and production selectors remain unverified.

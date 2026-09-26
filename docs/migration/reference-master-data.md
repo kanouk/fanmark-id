@@ -189,24 +189,33 @@ The canary changed only Tier C from null to one day, read back the new version
 and all four release tables, rejected an anonymous write with 401, and rejected
 a stale-release write with 409 without changing the active pointer. It then
 restored Tier C to null through the same MFA-protected API. A canonical
-comparison of all four tables matched the pre-canary values after restoration;
-the two canary runs retained four immutable staging promotions in activation
-history. The active reference release is generation 6 at
-`d539bd5502a1bf115d2718d69bc8f9d27edcc4c5e9fdd269ba2746055127d2b4`.
+comparison of all four tables matched the pre-canary values after restoration,
+apart from the expected new release version and updated_at on the edited row.
+
+A separate canary changed the active tier-1 one-month extension price from
+¥500 to ¥501 and restored ¥500 through the same MFA-gated editor. Anonymous
+and stale-version writes were rejected, the public price API returned the
+restored value under the current release, and canonical comparison of all four
+masters confirmed that no other value or Stripe ID changed. The active
+reference release is generation 8 at
+`ba598c61b719d84c03c10ccaee9e5308d1829fd66b1f48abba6a0e5cde9b9c0c`.
 
 The first canary run exposed that its new flag was not included in the script's
 synthetic target-user cleanup condition. The remaining `example.invalid`
 synthetic identity and profile were identified by exact ID and removed; readback
 confirmed zero Auth users, accounts, sessions, verifications, factors, roles,
 assurances, status audits, business profiles, fanmarks, and licenses. The
-cleanup condition was corrected, and a second live run completed with the same
-zero-row cleanup proof. The retained MFA generation singleton is monotonic.
+cleanup condition was corrected, and the repeated Tier run plus the separate
+extension-price run completed with the same zero-row cleanup proof. The
+retained MFA generation singleton is monotonic.
 
 Local validation passed: Worker reference-master API tests 6/6, Worker
 reference-master service tests 5/5, frontend admin client tests 6/6, Node 22.6
-syntax check, and `git diff --check`. The smoke command was
-`node test/staging-admin-totp-smoke.mjs --run-live-staging-write --database=fanmark-auth-staging --reference-master-tier-roundtrip`.
-The two canary edits advanced only staging Master D1 release history; no
-Supabase row, production resource, Stripe resource, user-owned record, or
+syntax check, and `git diff --check`. The smoke commands used
+`--reference-master-tier-roundtrip` and
+`--reference-master-extension-price-roundtrip`, each with the explicit live
+staging write and database arguments. The canaries advanced only staging
+Master D1 release history; no Supabase row, production resource, Stripe
+resource, user-owned record, or
 domain/DNS setting was changed. Browser interaction with the admin editor,
 payment processing, and production selector changes remain unverified.
