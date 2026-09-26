@@ -1522,3 +1522,27 @@ anonymous admin session 401, and browser navigations to `/auth`,
 `/forgot-password`, and `/reset-password` served the SPA with 200. No real
 users, production routes, or domain/DNS settings were changed. See
 [auth feasibility](auth-feasibility.md).
+
+## Stripe invoice payment-state projection on D1 (2026-09-26)
+
+Added the additive staging migration `0008_stripe_invoice_projection_staging.sql`
+and a D1 runtime for the existing pinned-Basil invoice reconciler. The Worker
+re-fetches the source invoice and current subscription/latest invoice from
+Stripe under a customer-generation fence. It requires the exact D1 customer
+and subscription mapping and never joins by email. One D1 batch updates only
+payment-failure fields plus the application ledger, fence, receipt, and
+dispatch terminal state. It does not change plan, subscription entitlement,
+license, or notification data. Runtime lease checks use the current clock after
+provider reads; Stripe requests are limited to 10 seconds with no SDK retries.
+
+Nine Miniflare cases pass for paid/failure/action-required projection, both
+stale-event directions, missing mapping, fence contention/recovery, database
+rollback followed by retry, scheduled dispatch, a provider call that outlasts
+the dispatch lease, and the disabled-by-default scheduled path. The full Stripe
+ingress/application/projection suite passes 39/39, Worker typecheck passes, and
+the Wrangler dry-run bundles the new runtime. Migration `0008` is applied to the
+empty APAC `fanmark-business-staging` database, and Worker version
+`68a2e0bf-3236-444c-9c7a-a46294037855` is deployed at 100% to workers.dev
+staging. Stripe selectors/API secrets remain unset, so the feature stays
+disabled. No Stripe call, user data, production route, or domain/DNS change was
+made.

@@ -76,29 +76,49 @@ client; Supabase remains the default. Four Miniflare cases and five client
 contract cases pass with synthetic data and a fake Stripe client.
 
 `workers/api/src/stripe-webhook-d1-scheduled.ts` connects bounded D1 claims to
-the extension application. Transient application failures receive increasing
-retry delays and then dead-letter at the attempt limit. Non-extension billing
-events are explicitly dead-lettered for review because subscription and
-invoice projections are not ported. Three additional Miniflare cases cover
-scheduled paid application, unsupported-event dead-lettering, and retry then
-success.
+the extension application and the invoice projection. Transient failures
+receive increasing retry delays and then dead-letter at the attempt limit.
+Subscription events remain review-only. `0008_stripe_invoice_projection_staging.sql`
+adds the customer generation fence and private application ledger;
+`workers/api/src/stripe-invoice-projection-d1.ts` reuses the Basil normalizer
+and current Invoice/Subscription retrieval contract from the source-side
+projection. It confirms the exact Stripe customer-to-user and subscription
+mapping in D1, then atomically writes only the payment-failure fields, ledger,
+fence, receipt, and dispatch state. No email matching, plan change, entitlement,
+license, or notification write is used. The caller clock is refreshed after
+remote Stripe reads; SDK calls use a 10-second timeout, zero SDK retries, and a
+300-second dispatch/customer lease.
 
-Behavioral tests still use synthetic local D1 and fake Stripe clients; the
-staging apply only created empty schema. On 2026-09-26 Wrangler applied
+Nine additional Miniflare cases cover current paid/failure/action-required
+state, stale failed and success events, missing mapping, concurrent/expired
+customer fences, failure rollback followed by successful retry, scheduled
+invoice dispatch, a Stripe read that outlives its dispatch lease, and the
+disabled-by-default scheduled path. The expanded
+`npm run test:stripe-webhook-ingress-schema` command passes 39/39.
+Invoice behavior uses synthetic D1 and an injected provider; the staging
+selectors, Stripe API key, signing secret, and Stripe Cron dispatch remain off.
+Subscription entitlement/free-plan return and other billing effects remain
+unimplemented.
+
+Behavioral tests still use synthetic local D1 and fake Stripe clients. On
+2026-09-26 Wrangler applied
 migrations `0006` and `0007` to `fanmark-business-staging` after confirming
 the referenced lottery table existed. Remote readback found all six new
 tables, all six empty; `fanmarks`, `fanmark_licenses`, and `user_settings`
 also remained empty. A subsequent migration-list read returned no pending
-migrations. The Worker was not redeployed for this schema-only change.
+migrations. Migration `0008` was subsequently applied and verified: the
+expected invoice fence/application tables and indexes exist, and fence,
+application, receipt, and dispatch counts are all zero. Worker version
+`68a2e0bf-3236-444c-9c7a-a46294037855` was then deployed at 100% to workers.dev
+staging.
 
-The staging Worker still has no Stripe signing secret, API secret, backend
-selectors, or Cron trigger, so checkout and webhook routes remain disabled.
-Subscription/invoice event paths still need migration before any Stripe
-cutover. No Stripe API call, Stripe Dashboard change, production state, user
-data, or DNS was changed.
+The staging Worker still has no Stripe signing secret, API secret, or backend
+selectors, so checkout and webhook routes remain disabled. A synthetic webhook
+request returned 404 with the selector unset. No Stripe API call, Stripe
+Dashboard change, production state, user data, or DNS was changed.
 
-Read-only Wrangler secret inventory for the staging Worker showed no
-`STRIPE_WEBHOOK_SECRET`; no signing secret was created. A read-only remote D1
-migration-list request returned Cloudflare error 7403, so the current remote
-ledger was not refreshed in this checkpoint. No remote migration apply or
-Worker deploy command was run.
+The final staging secret inventory contains no Stripe API or signing secret,
+and all Stripe selectors are unset. Remote D1 verification after applying
+`0008` found the expected schema and zero rows in the invoice ledger, fence,
+receipt, and dispatch tables. The deployed webhook route remains unreachable
+while the selector is unset.

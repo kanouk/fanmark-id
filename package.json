@@ -22,6 +22,7 @@
     "test:staging-fanmark-transfer-smoke": "node scripts/migration/staging-fanmark-transfer-smoke.mjs",
     "test:staging-fanmark-bulk-return-smoke": "node scripts/migration/staging-fanmark-bulk-return-smoke.mjs",
     "test:staging-license-expiry-lottery-smoke": "node scripts/migration/staging-license-expiry-lottery-smoke.mjs",
+    "migration:apply-stripe-invoice-staging": "node scripts/migration/apply-stripe-invoice-staging.mjs",
     "test:staging-notification-processor-smoke": "node scripts/migration/staging-notification-processor-smoke.mjs",
     "test:staging-r2-profile-smoke": "node scripts/migration/staging-r2-profile-smoke.mjs",
     "test:owned-fanmarks-api": "node --experimental-strip-types --test src/lib/owned-fanmarks-api.test.ts",

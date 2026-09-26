@@ -1,4 +1,12 @@
 import { applyStripeExtensionReceiptInD1, StripeWebhookD1ApplicationError } from "./stripe-webhook-d1-application.ts";
+import Stripe from "stripe";
+import {
+  createStripeInvoiceProjectionProvider,
+  PINNED_STRIPE_API_VERSION,
+  type StripeInvoiceApiClient,
+  type StripeInvoiceProjectionProvider,
+} from "../../../supabase/functions/_shared/stripe-invoice-projection/index.ts";
+import { applyStripeInvoiceReceiptInD1 } from "./stripe-invoice-projection-d1.ts";
 import {
   claimStripeWebhookDispatchesFromD1,
   deadLetterStripeWebhookDispatchInD1,
@@ -13,6 +21,11 @@ const EXTENSION_EVENTS = new Set([
   "checkout.session.async_payment_succeeded",
   "checkout.session.async_payment_failed",
   "checkout.session.expired",
+]);
+const INVOICE_EVENTS = new Set([
+  "invoice.payment_failed",
+  "invoice.payment_action_required",
+  "invoice.payment_succeeded",
 ]);
 const DEFAULT_BATCH_SIZE = 10;
 const DEFAULT_MAX_ATTEMPTS = 8;
@@ -56,6 +69,8 @@ export async function dispatchStripeWebhookBatchInD1(args: {
   batchSize?: number;
   maxAttempts?: number;
   applyReceipt?: typeof applyStripeExtensionReceiptInD1;
+  invoiceProvider?: StripeInvoiceProjectionProvider;
+  getNow?: () => string;
 }): Promise<Omit<StripeWebhookD1ScheduledSummary, "status">> {
   const batchSize = configuredPositiveInteger(args.batchSize?.toString(), DEFAULT_BATCH_SIZE, 100);
   const maxAttempts = configuredPositiveInteger(args.maxAttempts?.toString(), DEFAULT_MAX_ATTEMPTS, 100);
@@ -77,7 +92,7 @@ export async function dispatchStripeWebhookBatchInD1(args: {
   const applyReceipt = args.applyReceipt ?? applyStripeExtensionReceiptInD1;
   for (const claim of claims) {
     const lease = identity(claim);
-    if (!EXTENSION_EVENTS.has(claim.eventType)) {
+    if (!EXTENSION_EVENTS.has(claim.eventType) && !INVOICE_EVENTS.has(claim.eventType)) {
       const result = await deadLetterStripeWebhookDispatchInD1({
         database: args.database,
         identity: lease,
@@ -89,11 +104,21 @@ export async function dispatchStripeWebhookBatchInD1(args: {
       continue;
     }
     try {
-      const result = await applyReceipt({
-        database: args.database,
-        identity: lease,
-        now: args.now,
-      });
+      if (INVOICE_EVENTS.has(claim.eventType)) {
+        if (!args.invoiceProvider) throw new StripeWebhookD1ApplicationError("stripe_invoice_provider_unavailable");
+        const result = await applyStripeInvoiceReceiptInD1({
+          database: args.database,
+          claim,
+          now: args.now,
+          getNow: args.getNow,
+          provider: args.invoiceProvider,
+        });
+        if (result.status === "applied") summary.applied += 1;
+        else if (result.status === "retryable") summary.retryable += 1;
+        else summary.leaseLost += 1;
+        continue;
+      }
+      const result = await applyReceipt({ database: args.database, identity: lease, now: args.now });
       if (result.receiptStatus === "applied") summary.applied += 1;
       else if (result.receiptStatus === "ignored") summary.ignored += 1;
       else if (result.receiptStatus === "dead_letter") summary.deadLettered += 1;
@@ -134,7 +159,7 @@ export async function runScheduledStripeWebhookDispatches(args: {
     return { status: "disabled", claimed: 0, applied: 0, ignored: 0, deadLettered: 0, retryable: 0, leaseLost: 0 };
   }
   if (backend !== "d1" || args.env.STRIPE_WEBHOOK_BACKEND?.trim() !== "d1" ||
-      !args.env.STRIPE_WEBHOOK_SECRET?.trim()) {
+      !args.env.STRIPE_WEBHOOK_SECRET?.trim() || !args.env.STRIPE_SECRET_KEY?.trim()) {
     throw new Error("stripe_dispatch_configuration_invalid");
   }
   const database = selectD1Database(args.env, "business");
@@ -144,11 +169,18 @@ export async function runScheduledStripeWebhookDispatches(args: {
   const batchSize = configuredPositiveInteger(args.env.STRIPE_DISPATCH_BATCH_SIZE, DEFAULT_BATCH_SIZE, 100);
   const maxAttempts = configuredPositiveInteger(args.env.STRIPE_DISPATCH_MAX_ATTEMPTS, DEFAULT_MAX_ATTEMPTS, 100);
   const now = new Date(args.scheduledTime).toISOString();
+  const stripe = new Stripe(args.env.STRIPE_SECRET_KEY.trim(), {
+    apiVersion: PINNED_STRIPE_API_VERSION,
+    timeout: 10_000,
+    maxNetworkRetries: 0,
+    httpClient: Stripe.createFetchHttpClient(),
+  });
+  const invoiceProvider = createStripeInvoiceProjectionProvider(stripe as unknown as StripeInvoiceApiClient);
   const test = await dispatchStripeWebhookBatchInD1({
-    database, livemode: false, now, batchSize, maxAttempts,
+    database, livemode: false, now, batchSize, maxAttempts, invoiceProvider,
   });
   const live = await dispatchStripeWebhookBatchInD1({
-    database, livemode: true, now, batchSize, maxAttempts,
+    database, livemode: true, now, batchSize, maxAttempts, invoiceProvider,
   });
   return {
     status: "completed",

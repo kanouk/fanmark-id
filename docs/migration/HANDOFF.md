@@ -984,3 +984,27 @@ the two expected synthetic incarnation tombstones, and left MFA generation
 unchanged. Its cleanup check now uses the shared staging-baseline exclusion so
 the four seeded availability rules are not miscounted as test residue. No real
 user data, production route, external email, R2 object, or DNS state changed.
+
+## Stripe invoice projection checkpoint (2026-09-26 JST)
+
+The current worktree adds a D1 port of the existing Basil non-granting invoice
+projection, plus additive business migration `0008`. It re-fetches the source
+invoice and current subscription/latest invoice under a per-customer generation
+fence, requires the exact D1 customer and subscription mapping, and never
+matches by email. The atomic D1 batch updates only the existing subscription's
+payment-failure fields and terminalizes its private application ledger, fence,
+receipt, and dispatch. Plan type, license rights, notifications, and Stripe
+objects are not changed. Dynamic lease checks happen after provider retrieval;
+the Stripe client uses 10-second request timeouts and disables SDK retries.
+
+Nine Miniflare tests cover failure/action-required/paid state, stale event
+ordering both ways, missing mapping, concurrent and expired fences, rollback
+then retry, scheduled processing, a provider call that outlives the receipt
+lease, and the disabled-by-default scheduled path. The complete Stripe
+ingress/application/projection suite passes 39/39; Worker typecheck and
+Wrangler dry-run pass. Migration `0008` is applied to the empty APAC
+`fanmark-business-staging` database. Worker version
+`68a2e0bf-3236-444c-9c7a-a46294037855` is deployed at 100% to workers.dev
+staging. Stripe API/signing secrets and all Stripe selectors remain unset;
+subscription entitlement reconciliation, free-plan returns, production
+billing, and Stripe operational rehearsal remain open.

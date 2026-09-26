@@ -1408,3 +1408,23 @@ Browser-navigation requests to `/auth`, `/forgot-password`, and
 provider callback, Auth/Business D1 write, production route, or domain/DNS
 change occurred. This verifies that the new integration is present but remains
 closed by default; provider delivery and successful login are untested.
+
+## Stripe invoice projection staging schema and disabled Worker deployment (2026-09-26 JST)
+
+Applied business migration `0008` to the APAC `fanmark-business-staging`
+database (`d4bb0c48-f24a-491f-8693-fa393ab0b873`) in account
+`fanmark.id@gmail.com`. The verified migration ledger contains nine ordered
+migrations. Exact readback confirmed the two invoice projection tables and two
+indexes; invoice fence/application rows and all Stripe receipt/dispatch rows
+remain zero. The existing fanmark, license, user-settings, and subscription
+tables also contain zero rows.
+
+Deployed Worker version `68a2e0bf-3236-444c-9c7a-a46294037855` to
+`fanmark-app-staging` at 100% on workers.dev. Read-only probes returned 200 for
+the SPA root and Better Auth health; auth capabilities remain false/empty.
+`POST /api/stripe/webhook` with a synthetic empty request returned 404 because
+the Stripe backend selector is unset. Read-only D1 metadata reported
+`changed_db=false` and `rows_written=0`. Secret inventory contains no Stripe
+API or signing secret. This confirms staging schema and code deployment only;
+no Stripe API call, user data, production route, or custom domain/DNS setting
+was touched.

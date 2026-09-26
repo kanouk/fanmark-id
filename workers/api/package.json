@@ -19,7 +19,7 @@
     "test:auth-email": "node --test test/auth-email.test.mjs",
     "test:auth-social": "node --test test/auth-social.test.mjs",
     "test:staging-admin-totp": "node test/staging-admin-totp-smoke.mjs",
-    "test:stripe-webhook-ingress-schema": "node --experimental-strip-types --test test/stripe-webhook-ingress-schema.integration.mjs test/stripe-webhook-d1-ingress.integration.mjs test/stripe-webhook-d1-application.integration.mjs",
+    "test:stripe-webhook-ingress-schema": "node --experimental-strip-types --test test/stripe-webhook-ingress-schema.integration.mjs test/stripe-webhook-d1-ingress.integration.mjs test/stripe-webhook-d1-application.integration.mjs test/stripe-invoice-projection-d1.integration.mjs",
     "test:stripe-extension-checkout-d1": "node --experimental-strip-types --test test/stripe-extension-checkout-d1.integration.mjs",
     "test:notification-master-admin-d1": "vitest run --config vitest.notification-master-admin.config.mjs",
     "test:invitation-admin-d1": "vitest run --config vitest.invitation-admin.config.mjs",

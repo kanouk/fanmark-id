@@ -134,9 +134,14 @@ npm run typecheck
 PGlite uses one in-memory connection. These tests exercise the actual SQL
 functions, constraints, role ACLs, and transaction rollback, but they do not
 prove independent-connection `SKIP LOCKED` concurrency or managed Supabase
-Postgres behavior. The worker still needs an explicit renew policy for remote
-calls longer than the dispatch lease, a production migration rehearsal, and a
-reviewed live endpoint cutover before any receipt can affect production state.
+Postgres behavior. The D1 Worker port now bounds Stripe reads with a 10-second
+request timeout, disables SDK retries, and rechecks the receipt/customer lease
+after the remote reads before applying state. It does not renew during a long
+provider call; work that may exceed the 300-second lease is rejected for retry.
+The additive D1 migration is applied only to the empty APAC staging database;
+the invoice projection code is deployed there but stays disabled because no
+Stripe selectors or secrets are configured. Production migration and reviewed
+live endpoint cutover remain open.
 
 Astra independently ran the complete 63-test Stripe suite with the repository
 Node 22.6.0 and the SDK compatibility typecheck. All passed. These include 24
