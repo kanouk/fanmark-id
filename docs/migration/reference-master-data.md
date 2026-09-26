@@ -41,7 +41,8 @@ existing emoji release pointer/history remained unchanged. The live Worker
 returned all four masters as HTTP 200 with `Cache-Control: no-store`; the
 extension-price response contained the 16 public fields and no Stripe IDs.
 The staging `AdminTierExtensionPrices` selector now reads and writes through
-the versioned D1 admin API; an authenticated edit has not yet been run. Checkout
+the versioned D1 admin API; at this 2026-09-25 checkpoint, an authenticated edit
+had not yet been run. Checkout
 and extension flows still use Supabase until their Edge Function secrets and
 selectors move with the same active release. No user rows, Storage objects,
 production service, or domain/DNS settings were changed.
@@ -173,4 +174,39 @@ service, or domain/DNS state was changed.
 
 The workers.dev staging app now builds with the Worker extension-price read selector, the versioned D1 admin editor selector, and the Worker extension-checkout client selector together. The app Worker selects the D1 admin API, which retains its Better Auth admin and verified same-session MFA gate. The checkout client cannot invoke the Supabase Edge Function as fallback.
 
-Live readback returned the existing 16-row extension-price projection under active release `49d582cfc482da61f5394fc83ea9d1bb67820a8d47d493dfdfb74218dd4b4c12`; the public DTO has no Stripe IDs. Anonymous admin access returned 401. No authenticated edit was made, so the release content and pointer remain unchanged. Stripe checkout remains unavailable: the server selector, webhook/dispatch selectors, and Stripe secrets are unset, and the Worker route returns 404. No payment was attempted. Production and Supabase defaults, legacy coupon/direct-extension functions, user data, and domain/DNS remain unchanged.
+Live readback returned the existing 16-row extension-price projection under active release `49d582cfc482da61f5394fc83ea9d1bb67820a8d47d493dfdfb74218dd4b4c12`; the public DTO has no Stripe IDs. Anonymous admin access returned 401. At this 2026-09-26 checkpoint, no authenticated edit had been made, so the release content and pointer remained unchanged. Stripe checkout remains unavailable: the server selector, webhook/dispatch selectors, and Stripe secrets are unset, and the Worker route returns 404. No payment was attempted. Production and Supabase defaults, legacy coupon/direct-extension functions, user data, and domain/DNS remain unchanged.
+
+## Authenticated Tier editor round-trip (2026-09-27 JST)
+
+The deployed workers.dev staging admin API was exercised with a synthetic
+Better Auth administrator whose same-session TOTP assurance was verified. The
+preflight required empty Auth tables, zero business fanmarks/licenses, the
+expected active Tier C value (`initial_license_days = null`), and the expected
+29-row release shape (4 tiers, 4 languages, 5 reserved patterns, 16 extension
+prices).
+
+The canary changed only Tier C from null to one day, read back the new version
+and all four release tables, rejected an anonymous write with 401, and rejected
+a stale-release write with 409 without changing the active pointer. It then
+restored Tier C to null through the same MFA-protected API. A canonical
+comparison of all four tables matched the pre-canary values after restoration;
+the two canary runs retained four immutable staging promotions in activation
+history. The active reference release is generation 6 at
+`d539bd5502a1bf115d2718d69bc8f9d27edcc4c5e9fdd269ba2746055127d2b4`.
+
+The first canary run exposed that its new flag was not included in the script's
+synthetic target-user cleanup condition. The remaining `example.invalid`
+synthetic identity and profile were identified by exact ID and removed; readback
+confirmed zero Auth users, accounts, sessions, verifications, factors, roles,
+assurances, status audits, business profiles, fanmarks, and licenses. The
+cleanup condition was corrected, and a second live run completed with the same
+zero-row cleanup proof. The retained MFA generation singleton is monotonic.
+
+Local validation passed: Worker reference-master API tests 6/6, Worker
+reference-master service tests 5/5, frontend admin client tests 6/6, Node 22.6
+syntax check, and `git diff --check`. The smoke command was
+`node test/staging-admin-totp-smoke.mjs --run-live-staging-write --database=fanmark-auth-staging --reference-master-tier-roundtrip`.
+The two canary edits advanced only staging Master D1 release history; no
+Supabase row, production resource, Stripe resource, user-owned record, or
+domain/DNS setting was changed. Browser interaction with the admin editor,
+payment processing, and production selector changes remain unverified.

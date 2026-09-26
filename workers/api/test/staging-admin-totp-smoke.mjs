@@ -39,18 +39,19 @@ function requireExplicitStagingConsent() {
   const args = new Set(process.argv.slice(2));
   const emojiMasterRoundtrip = args.has("--emoji-master-draft-roundtrip");
   const referenceMasterPricingReadback = args.has("--reference-master-pricing-readback");
+  const referenceMasterTierRoundtrip = args.has("--reference-master-tier-roundtrip");
   const adminUserManagementReadback = args.has("--admin-user-management-readback");
   const adminUserPlanReadback = args.has("--admin-user-plan-readback");
   const adminUserStatusReadback = args.has("--admin-user-status-readback");
   const systemSettingsReadback = args.has("--system-settings-readback");
   const notificationManualEvent = args.has("--notification-manual-event");
   if (!args.has("--run-live-staging-write") || !args.has(`--database=${expectedDatabase}`) ||
-      (!emojiMasterRoundtrip && !referenceMasterPricingReadback && !adminUserManagementReadback && !adminUserPlanReadback && !adminUserStatusReadback && !systemSettingsReadback && !notificationManualEvent)) {
+      (!emojiMasterRoundtrip && !referenceMasterPricingReadback && !referenceMasterTierRoundtrip && !adminUserManagementReadback && !adminUserPlanReadback && !adminUserStatusReadback && !systemSettingsReadback && !notificationManualEvent)) {
     throw new Error(
       `Refusing remote staging writes. Pass --run-live-staging-write --database=${expectedDatabase} and an explicit smoke flag.`,
     );
   }
-  return { emojiMasterRoundtrip, referenceMasterPricingReadback, adminUserManagementReadback, adminUserPlanReadback, adminUserStatusReadback, systemSettingsReadback, notificationManualEvent };
+  return { emojiMasterRoundtrip, referenceMasterPricingReadback, referenceMasterTierRoundtrip, adminUserManagementReadback, adminUserPlanReadback, adminUserStatusReadback, systemSettingsReadback, notificationManualEvent };
 }
 
 async function assertStagingTarget(actions) {
@@ -621,6 +622,212 @@ async function exerciseReferenceMasterPricingReadback(cookie) {
   const after = await queryMaster(`SELECT release_version, generation
     FROM fanmark_reference_master_active_release WHERE singleton_id = 1`);
   assert.deepEqual(after, before, "reference-master admin read changed the active release pointer");
+}
+
+async function readActiveReferenceMasterState() {
+  const activeRows = await queryMaster("SELECT active.release_version, active.generation " +
+    "FROM fanmark_reference_master_active_release AS active " +
+    "JOIN fanmark_reference_master_releases AS release " +
+    "ON release.release_version = active.release_version AND release.status = 'ready' " +
+    "WHERE active.singleton_id = 1");
+  assert.equal(activeRows.length, 1, "active reference-master release is missing or not ready");
+  const releaseVersion = activeRows[0].release_version;
+  const generation = Number(activeRows[0].generation);
+  const versionSql = sqlLiteral(releaseVersion);
+  const [tiers, languages, patterns, prices] = await Promise.all([
+    queryMaster("SELECT id, created_at, description, display_name, emoji_count_max, emoji_count_min, " +
+      "initial_license_days, is_active, monthly_price_cents, tier_level, updated_at " +
+      "FROM fanmark_tier_release_rows WHERE release_version = " + versionSql + " ORDER BY tier_level, id"),
+    queryMaster("SELECT code, created_at, id, is_active, label, native_label, sort_order, updated_at " +
+      "FROM fanmark_language_release_rows WHERE release_version = " + versionSql + " ORDER BY sort_order, code, id"),
+    queryMaster("SELECT created_at, description, id, is_active, pattern, price_yen, updated_at " +
+      "FROM fanmark_reserved_emoji_pattern_release_rows WHERE release_version = " + versionSql + " ORDER BY id"),
+    queryMaster("SELECT id, created_at, is_active, months, price_yen, stripe_price_id, stripe_price_id_live, " +
+      "tier_level, updated_at FROM fanmark_extension_price_release_rows " +
+      "WHERE release_version = " + versionSql + " ORDER BY tier_level, months, id"),
+  ]);
+  assert.equal(tiers.length, 4, "expected four active tier rows");
+  assert.equal(languages.length, 4, "expected four active language rows");
+  assert.equal(patterns.length, 5, "expected five active reserved-pattern rows");
+  assert.equal(prices.length, 16, "expected sixteen active extension-price rows");
+  const afterReads = await queryMaster("SELECT release_version, generation " +
+    "FROM fanmark_reference_master_active_release WHERE singleton_id = 1");
+  assert.deepEqual(afterReads, activeRows, "reference-master release changed while reading its active rows");
+  return { releaseVersion, generation, rows: { tiers, languages, patterns, prices } };
+}
+
+function canonicalReferenceMasterRows(state, tierId, tierDays) {
+  const canonical = {};
+  for (const [tableName, rows] of Object.entries(state.rows)) {
+    canonical[tableName] = rows.map((row) => {
+      const copy = { ...row };
+      delete copy.release_version;
+      delete copy.updated_at;
+      if (tableName === "tiers" && copy.id === tierId) {
+        copy.initial_license_days = tierDays;
+      }
+      return Object.fromEntries(Object.entries(copy).sort(([left], [right]) => left.localeCompare(right)));
+    }).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
+  }
+  return canonical;
+}
+
+async function exerciseReferenceMasterTierRoundtrip(cookie) {
+  const route = "/api/admin/reference-masters/pricing";
+  const businessRows = await queryBusiness("SELECT (SELECT count(*) FROM fanmarks) AS fanmarks, " +
+    "(SELECT count(*) FROM fanmark_licenses) AS licenses");
+  assert.equal(Number(businessRows[0]?.fanmarks), 0, "staging fanmarks must be empty before the master-edit canary");
+  assert.equal(Number(businessRows[0]?.licenses), 0, "staging licenses must be empty before the master-edit canary");
+
+  const baseline = await readActiveReferenceMasterState();
+  const targetTier = baseline.rows.tiers.find((tier) => tier.display_name === "C");
+  assert.ok(targetTier, "perpetual Tier C is missing from staging reference masters");
+  assert.equal(targetTier.initial_license_days, null, "Tier C must retain the PRODUCT.md perpetual baseline");
+  const originalDays = null;
+  const temporaryDays = 1;
+  const anonymous = await request(route, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      expectedReleaseVersion: baseline.releaseVersion,
+      type: "tier",
+      id: targetTier.id,
+      changes: { initialLicenseDays: temporaryDays },
+    }),
+  });
+  assertStatus(anonymous, 401, "anonymous reference-master tier write");
+
+  const initialRead = await request(route, { headers: { cookie } });
+  assertStatus(initialRead, 200, "MFA-protected reference-master canary baseline read");
+  const initialPricing = await initialRead.json();
+  assert.equal(initialPricing.releaseVersion, baseline.releaseVersion);
+  assert.equal(initialPricing.generation, baseline.generation);
+  assert.equal(initialPricing.tiers.find((tier) => tier.id === targetTier.id)?.initial_license_days, originalDays);
+
+  let writeAttempted = false;
+  let restored = false;
+  try {
+    writeAttempted = true;
+    const update = await request(route, {
+      method: "PUT",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        expectedReleaseVersion: baseline.releaseVersion,
+        type: "tier",
+        id: targetTier.id,
+        changes: { initialLicenseDays: temporaryDays },
+      }),
+    });
+    assertStatus(update, 200, "MFA-protected reference-master tier update");
+    assert.match(update.headers.get("cache-control") ?? "", /no-store/iu);
+    const changedPricing = await update.json();
+    assert.equal(changedPricing.schemaVersion, 1);
+    assert.notEqual(changedPricing.releaseVersion, baseline.releaseVersion);
+    assert.equal(changedPricing.generation, baseline.generation + 1);
+    assert.equal(changedPricing.tiers.find((tier) => tier.id === targetTier.id)?.initial_license_days, temporaryDays);
+
+    const changedState = await readActiveReferenceMasterState();
+    assert.equal(changedState.releaseVersion, changedPricing.releaseVersion);
+    assert.equal(changedState.generation, baseline.generation + 1);
+    assert.equal(changedState.rows.tiers.find((tier) => tier.id === targetTier.id)?.initial_license_days, temporaryDays);
+    assert.deepEqual(
+      canonicalReferenceMasterRows(changedState, targetTier.id, originalDays),
+      canonicalReferenceMasterRows(baseline, targetTier.id, originalDays),
+      "the temporary tier edit changed another reference-master value",
+    );
+
+    const stale = await request(route, {
+      method: "PUT",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        expectedReleaseVersion: baseline.releaseVersion,
+        type: "tier",
+        id: targetTier.id,
+        changes: { initialLicenseDays: 2 },
+      }),
+    });
+    assertStatus(stale, 409, "stale reference-master tier write");
+    assert.equal((await stale.json()).error, "reference_master_edit_conflict");
+    const afterStale = await readActiveReferenceMasterState();
+    assert.equal(afterStale.releaseVersion, changedState.releaseVersion);
+    assert.equal(afterStale.generation, changedState.generation);
+    assert.equal(afterStale.rows.tiers.find((tier) => tier.id === targetTier.id)?.initial_license_days, temporaryDays);
+
+    const restore = await request(route, {
+      method: "PUT",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        expectedReleaseVersion: changedPricing.releaseVersion,
+        type: "tier",
+        id: targetTier.id,
+        changes: { initialLicenseDays: originalDays },
+      }),
+    });
+    assertStatus(restore, 200, "MFA-protected reference-master tier restoration");
+    const restoredPricing = await restore.json();
+    assert.equal(restoredPricing.generation, baseline.generation + 2);
+    assert.notEqual(restoredPricing.releaseVersion, changedPricing.releaseVersion);
+    assert.equal(restoredPricing.tiers.find((tier) => tier.id === targetTier.id)?.initial_license_days, originalDays);
+
+    const restoredState = await readActiveReferenceMasterState();
+    assert.equal(restoredState.releaseVersion, restoredPricing.releaseVersion);
+    assert.equal(restoredState.generation, baseline.generation + 2);
+    assert.deepEqual(
+      canonicalReferenceMasterRows(restoredState, targetTier.id, originalDays),
+      canonicalReferenceMasterRows(baseline, targetTier.id, originalDays),
+      "restored reference-master values differ from the pre-canary baseline",
+    );
+    const activationRows = await queryMaster("SELECT generation, action, from_version, to_version " +
+      "FROM fanmark_reference_master_release_activations WHERE generation IN (" +
+      String(baseline.generation + 1) + ", " + String(baseline.generation + 2) + ") ORDER BY generation");
+    assert.deepEqual(activationRows.map((row) => ({
+      generation: Number(row.generation),
+      action: row.action,
+      from_version: row.from_version,
+      to_version: row.to_version,
+    })), [
+      { generation: baseline.generation + 1, action: "promotion", from_version: baseline.releaseVersion, to_version: changedPricing.releaseVersion },
+      { generation: baseline.generation + 2, action: "promotion", from_version: changedPricing.releaseVersion, to_version: restoredPricing.releaseVersion },
+    ], "append-only reference-master activation history differs from the two canary edits");
+    restored = true;
+  } finally {
+    if (writeAttempted && !restored) {
+      const current = await readActiveReferenceMasterState();
+      const currentDays = current.rows.tiers.find((tier) => tier.id === targetTier.id)?.initial_license_days;
+      const baselineContent = canonicalReferenceMasterRows(baseline, targetTier.id, originalDays);
+      if (currentDays === originalDays &&
+          digest(canonicalReferenceMasterRows(current, targetTier.id, originalDays)) === digest(baselineContent)) {
+        restored = true;
+      } else {
+        assert.equal(currentDays, temporaryDays,
+          "refusing automatic restoration because Tier C no longer has the canary value");
+        assert.equal(digest(canonicalReferenceMasterRows(current, targetTier.id, originalDays)), digest(baselineContent),
+          "refusing automatic restoration because another master value changed concurrently");
+        const currentRead = await request(route, { headers: { cookie } });
+        assertStatus(currentRead, 200, "reference-master cleanup baseline read");
+        const currentPricing = await currentRead.json();
+        assert.equal(currentPricing.releaseVersion, current.releaseVersion);
+        const cleanup = await request(route, {
+          method: "PUT",
+          headers: { cookie, "content-type": "application/json" },
+          body: JSON.stringify({
+            expectedReleaseVersion: current.releaseVersion,
+            type: "tier",
+            id: targetTier.id,
+            changes: { initialLicenseDays: originalDays },
+          }),
+        });
+        assertStatus(cleanup, 200, "reference-master cleanup restoration");
+        const cleanupPricing = await cleanup.json();
+        const cleanupState = await readActiveReferenceMasterState();
+        assert.equal(cleanupState.releaseVersion, cleanupPricing.releaseVersion);
+        assert.equal(cleanupState.rows.tiers.find((tier) => tier.id === targetTier.id)?.initial_license_days, originalDays);
+        assert.equal(digest(canonicalReferenceMasterRows(cleanupState, targetTier.id, originalDays)), digest(baselineContent),
+          "reference-master cleanup did not restore the pre-canary values");
+        restored = true;
+      }
+    }
+  }
 }
 
 async function exerciseAdminUserManagementReadback(cookie, target) {
@@ -1271,6 +1478,9 @@ async function main() {
     if (actions.referenceMasterPricingReadback) {
       await exerciseReferenceMasterPricingReadback(cookie);
     }
+    if (actions.referenceMasterTierRoundtrip) {
+      await exerciseReferenceMasterTierRoundtrip(cookie);
+    }
     if (actions.adminUserManagementReadback) {
       await exerciseAdminUserManagementReadback(cookie, {
         userId: targetUserId,
@@ -1321,7 +1531,7 @@ async function main() {
           `DELETE FROM "user" WHERE "id" = ${sqlLiteral(userId)};`,
           "synthetic identity cleanup",
         );
-        if (actions.adminUserManagementReadback || actions.adminUserPlanReadback || actions.adminUserStatusReadback || actions.systemSettingsReadback || actions.notificationManualEvent) {
+        if (actions.referenceMasterTierRoundtrip || actions.adminUserManagementReadback || actions.adminUserPlanReadback || actions.adminUserStatusReadback || actions.systemSettingsReadback || actions.notificationManualEvent) {
           if (actions.adminUserStatusReadback) {
             await executeBusiness(
               `DELETE FROM notifications WHERE user_id = ${sqlLiteral(targetUserId)};\n` +
@@ -1386,6 +1596,9 @@ async function main() {
   }
   if (actions.referenceMasterPricingReadback) {
     console.log("Staging MFA-protected reference-master pricing read matched the active D1 release; anonymous access was denied and both reads left the release pointer unchanged.");
+  }
+  if (actions.referenceMasterTierRoundtrip) {
+    console.log("Staging MFA-protected Tier C edit/restore passed: anonymous and stale writes were rejected, all four reference masters were read back, and the original Tier C null/perpetual value was restored. Two append-only staging release activations were recorded.");
   }
   if (actions.adminUserManagementReadback) {
     console.log("Staging MFA-protected admin user list/detail read the synthetic cross-D1 user; anonymous access was denied and cleanup returned Auth, profile, and audit canary rows to zero.");
