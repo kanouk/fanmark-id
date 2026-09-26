@@ -1956,3 +1956,35 @@ production route, email, Stripe transaction, or domain/DNS setting changed.
 Password-reset delivery, remaining app/API inventory, integrated rehearsal,
 the 18 schema gates, production acceptance, real data import, and domain/DNS
 cutover remain open.
+
+## MFA-protected admin password-reset route (2026-09-27 JST)
+
+Commit `094dcdf` adds `POST /api/admin/users/:userId/password-reset` to the
+Worker-mode user manager. The route requires the existing same-origin admin
+role and same-session MFA checks, resolves the email from Auth D1, and delegates
+reset-token creation to Better Auth. The token stays inside Better Auth; the
+browser receives only the target ID and request timestamp. A business audit
+row records the attempt before calling Resend. The route fails closed with 503
+when Resend is not configured and returns 502 if the provider callback fails.
+The admin UI now describes the Worker action as email delivery and corrects
+its earlier stale read-only banner; the Supabase link-generation flow remains
+unchanged.
+
+Synthetic Worker tests cover no-provider 503, MFA denial, mismatched target,
+the same-origin header, successful response/audit redaction, and retained
+attempt audit after provider failure. A separate Better Auth D1 test stubs the
+Resend HTTP call and verifies same-origin reset links without returning the
+email or token. The full Worker `npm test` command passes; after the final
+query-format adjustment the focused admin D1 suite passes 12/12 and Worker
+typecheck passes. Frontend admin API tests pass 7/7; root typecheck, targeted
+ESLint, Cloudflare staging build, Wrangler dry-run, and `git diff --check` pass.
+
+Deployed to `fanmark-app-staging` as version
+`a4b4886f-9289-435d-b345-843a7b2747a7` at 100% on workers.dev. Read-only live
+probes returned 200 for `/` and `/api/auth/ok`; an anonymous synthetic reset
+request returned 401/no-store before the handler could read a target or send
+email. The staging secret-name list contains no `RESEND_API_KEY` or
+`RESEND_FROM_EMAIL`, so no email was attempted and authenticated delivery
+acceptance remains gated. No source user rows, production route, Stripe request,
+or domain/DNS state changed. PR #41 was updated; `Supabase Preview` remains
+skipped by the repository's CI isolation setup.
