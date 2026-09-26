@@ -5,6 +5,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Trash2, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { getAdminDataResetMode } from "@/lib/admin-data-reset-mode";
 
 interface ResetResult {
   success: boolean;
@@ -22,12 +23,14 @@ interface ResetResult {
 }
 
 export const AdminDataReset = () => {
+  const resetDisabled = getAdminDataResetMode() === "disabled";
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [resetResult, setResetResult] = useState<ResetResult | null>(null);
   const { toast } = useToast();
 
   const handleReset = async () => {
+    if (resetDisabled) return;
     setIsResetting(true);
     setResetResult(null);
 
@@ -72,17 +75,22 @@ export const AdminDataReset = () => {
           <div className="mt-3 font-semibold text-green-600 dark:text-green-400">
             ✓ 保持されるデータ：ユーザーアカウント、システム設定、招待コード、ウェイトリスト
           </div>
+          {resetDisabled && (
+            <div className="mt-3 font-medium text-amber-700 dark:text-amber-300">
+              Cloudflare stagingでは、Supabase側のデータを誤って削除しないよう、この操作を停止しています。
+            </div>
+          )}
         </AlertDescription>
       </Alert>
 
       <Button
         variant="destructive"
         onClick={() => setIsDialogOpen(true)}
-        disabled={isResetting}
+        disabled={resetDisabled || isResetting}
         className="w-full"
       >
         <Trash2 className="mr-2 h-4 w-4" />
-        {isResetting ? "削除中..." : "ファンマークデータを削除"}
+        {resetDisabled ? "Cloudflare stagingでは利用できません" : isResetting ? "削除中..." : "ファンマークデータを削除"}
       </Button>
 
       {resetResult && (
@@ -119,6 +127,7 @@ export const AdminDataReset = () => {
             <AlertDialogCancel>キャンセル</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleReset}
+              disabled={resetDisabled}
               className="bg-destructive hover:bg-destructive/90"
             >
               削除を実行

@@ -1335,7 +1335,7 @@ bulk delivery and test delivery are disabled in Worker mode; there is no Worker
 send route or Supabase fallback from that mode.
 
 The isolated Worker API tests pass 6/6 and the full Worker chain completed with
-exit 0. The root migration-data suite passes 146/146 tests.
+exit 0. The latest root migration-data suite passes 147/147 tests.
 Frontend API contract tests pass 4/4, frontend and Worker typechecks pass,
 staging build passes, selector coverage passes, and targeted ESLint plus
 `git diff --check` pass. The source migration contains twelve static broadcast
@@ -1350,3 +1350,12 @@ Wrangler `whoami` fails reading the macOS Keychain (exit 51). The draft PR also
 cannot be updated from this checkout while `gh auth status` reports its saved
 token invalid. The unrelated `supabase/.temp/cli-latest` change remains
 unstaged.
+
+The Cloudflare staging build now explicitly disables the legacy
+`AdminDataReset` control with `VITE_ADMIN_DATA_RESET_BACKEND=disabled`. That
+screen would otherwise invoke the Supabase function that deletes fanmarks,
+licenses, configs, profiles, and favorites; the standard build still defaults
+to its existing Supabase behavior. The staging mode contract test, frontend
+typecheck, staging build, Wrangler dry-run, and targeted lint pass. This keeps
+the staging admin page from crossing into the live Supabase data plane while
+user-data migration is deferred.

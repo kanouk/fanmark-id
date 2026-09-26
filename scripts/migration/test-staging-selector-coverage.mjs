@@ -19,5 +19,5 @@ test("Cloudflare staging build explicitly selects every typed backend", () => {
   const missing = declaredSelectors.filter((selector) => !assignments.has(selector));
   assert.deepEqual(missing, [], "staging must not silently use a selector's Supabase default");
   assert.ok(declaredSelectors.length > 0, "the frontend backend contract must remain discoverable");
-  assert.ok([...assignments.values()].every((value) => ["worker", "supabase", "d1", "r2"].includes(value)));
+  assert.ok([...assignments.values()].every((value) => ["worker", "supabase", "d1", "r2", "disabled"].includes(value)));
 });

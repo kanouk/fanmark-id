@@ -93,6 +93,8 @@ Cloudflare版では、`workers/api/src/index.ts`の`GET /api/emoji/catalog`がD1
 
 Cloudflare staging modeの管理画面はBetter Authでログインし、`GET /api/admin/session`を通じてWorkerが管理者roleとsession/factorに結び付いた期限内MFA assuranceを再確認する。未設定ならWorkerが`mfa_enrollment_required`を返し、画面からTOTPを登録する。登録済みのMFAが未確認なら`mfa_required`となり、TOTP challengeを要求する。Supabase modeの管理認証は変わらず、stagingのWorker経路にSupabase fallbackはない。絵文字マスター管理は`/api/admin/emoji-master`経由でMaster D1のcanonical draftを更新する。公開済みUUID・絵文字・コードポイントはDB triggerで保護し、画面から削除できない。draft更新は公開版を変えず、release成果物の検証と別操作のactivationが必要。stagingのユーザー管理一覧/詳細・プラン変更・停止/復旧・ライセンス即時失効は、同一sessionのMFAを要求し、Auth D1/business D1へ分離して書き込む。即時失効はライセンス、4種の設定行、業務監査、管理監査、通知イベントを一括で確定する。パスワード再設定は`POST /api/admin/users/:userId/password-reset`からBetter Authのtoken生成とResend配信を行い、未設定時は503で閉じる。ブラウザーへメールアドレスやリンクは返さず、送信試行をbusiness D1へ監査記録する。broadcast email管理はstagingの`/api/admin/broadcast-emails`で下書き一覧・テンプレート参照・対象数集計・下書き作成までD1へ移すが、本送信/テスト送信はUIとWorkerの両方で未対応。テンプレートの最新Supabase照合とD1 seed、送信queue/再試行/opt-out/bounce設計は残る。詳細は`docs/migration/broadcast-email-admin-api.md`。残るadmin CRUDは未接続。ユーザー停止・即時失効・パスワード再設定の契約は`docs/migration/admin-user-status-api.md`、`docs/migration/admin-license-expiry-api.md`、`docs/migration/admin-password-reset-api.md`。
 
+`AdminDataReset`は全fanmark・license・関連設定を削除する旧Supabaseユーティリティである。Cloudflare staging buildでは`VITE_ADMIN_DATA_RESET_BACKEND=disabled`を明示し、実行ボタンとhandlerの両方でSupabase Edge呼び出しを止める。通常buildでは従来のSupabase動作を維持する。これはユーザーデータのstaging移行が完了するまで維持する。
+
 ## セキュリティ / RLS の公開方針（誤検知対策）
 このプロダクトは「ドメインレジストリ（WHOIS）モデル」で、**一部のデータは意図的に公開**します。セキュリティスキャナが「公開＝危険」と判定しやすいため、以下の公開方針は **誤検知として無視（ignore）** します。
 
