@@ -2058,6 +2058,13 @@ SPA and public settings API, 200/no-store with exactly the expected 17 public
 keys, and 401/no-store for anonymous admin settings access. Public setting
 values were not printed. Migration-data tests passed 124/124, Worker settings
 tests 5/5, client contract tests 4/4, both typechecks, staging build, and
-Wrangler dry-run passed. Authenticated admin setting mutation, Stripe sandbox
-acceptance, broader integrated #37 coverage, production, user-data import, and
-domain/DNS remain open. See `system-settings-api.md`.
+Wrangler dry-run passed. A synthetic Better Auth administrator then completed
+TOTP/MFA authorization, read the 19-key admin projection, updated
+`free_fanmarks_limit`, read the change back, rejected a stale update, restored
+the original value, and verified that both audit rows contain only the setting
+key. Cleanup removed the synthetic audit and Auth rows. This exercised the API
+directly, not the UI in a browser. Stripe sandbox acceptance, broader
+integrated #37 coverage, production, user-data import, and domain/DNS remain
+open. Post-canary Auth readback found zero user-owned rows; the monotonic
+`mfaGeneration` singleton reads 60 and remains retained by design. See
+`system-settings-api.md`.

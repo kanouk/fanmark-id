@@ -55,6 +55,15 @@ values were not printed. Migration-data tests pass 124/124, Worker settings D1
 tests 5/5, client contract tests 4/4, root/Worker typechecks pass, and the
 Cloudflare staging build and Wrangler dry-run pass.
 
-Authenticated admin settings reads/updates, populated-user behavior, Stripe
-sandbox acceptance, full integrated #37 acceptance, production routing, real
-user-data import, and final domain/DNS cutover remain open.
+A synthetic Better Auth administrator completed first-time TOTP enrollment and
+same-session MFA authorization, read the full admin projection, and updated
+`free_fanmarks_limit` through the API. The canary verified the exact D1
+readback, rejected an anonymous read and a stale-value update, restored the
+original value, checked that both audit rows contain only the setting key, and
+deleted those synthetic audit rows. Cleanup read back zero user-owned Auth
+rows. The monotonic `mfaGeneration` singleton read back at 60 and is retained
+by design. The admin API canary did not exercise the UI in a browser.
+
+Browser-level authenticated admin settings flow, populated-user behavior,
+Stripe sandbox acceptance, full integrated #37 acceptance, production
+routing, real user-data import, and final domain/DNS cutover remain open.

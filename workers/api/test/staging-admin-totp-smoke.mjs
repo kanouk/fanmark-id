@@ -3,7 +3,8 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createHash, randomBytes, randomUUID, webcrypto } from "node:crypto";
-import { access, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { existsSync, realpathSync } from "node:fs";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,7 +12,8 @@ import { fileURLToPath } from "node:url";
 import bcrypt from "bcryptjs";
 
 const apiDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const wrangler = path.join(apiDirectory, "node_modules", ".bin", "wrangler");
+const wrangler = "npx";
+const wranglerVersion = "4.139.0";
 const configPath = path.join(apiDirectory, "wrangler.app-staging.jsonc");
 const expectedBusinessDatabase = "fanmark-business-staging";
 const expectedBusinessDatabaseId = "d4bb0c48-f24a-491f-8693-fa393ab0b873";
@@ -39,13 +41,14 @@ function requireExplicitStagingConsent() {
   const adminUserManagementReadback = args.has("--admin-user-management-readback");
   const adminUserPlanReadback = args.has("--admin-user-plan-readback");
   const adminUserStatusReadback = args.has("--admin-user-status-readback");
+  const systemSettingsReadback = args.has("--system-settings-readback");
   if (!args.has("--run-live-staging-write") || !args.has(`--database=${expectedDatabase}`) ||
-      (!emojiMasterRoundtrip && !referenceMasterPricingReadback && !adminUserManagementReadback && !adminUserPlanReadback && !adminUserStatusReadback)) {
+      (!emojiMasterRoundtrip && !referenceMasterPricingReadback && !adminUserManagementReadback && !adminUserPlanReadback && !adminUserStatusReadback && !systemSettingsReadback)) {
     throw new Error(
       `Refusing remote staging writes. Pass --run-live-staging-write --database=${expectedDatabase} and an explicit smoke flag.`,
     );
   }
-  return { emojiMasterRoundtrip, referenceMasterPricingReadback, adminUserManagementReadback, adminUserPlanReadback, adminUserStatusReadback };
+  return { emojiMasterRoundtrip, referenceMasterPricingReadback, adminUserManagementReadback, adminUserPlanReadback, adminUserStatusReadback, systemSettingsReadback };
 }
 
 async function assertStagingTarget() {
@@ -70,6 +73,7 @@ async function assertStagingTarget() {
   assert.equal(config.vars?.REFERENCE_MASTER_ADMIN_BACKEND, "d1", "expected D1-backed reference-master admin API");
   assert.equal(config.vars?.ADMIN_USER_MANAGEMENT_BACKEND, "d1", "expected D1-backed admin user-management API");
   assert.equal(config.vars?.AUTH_USER_STATUS_BACKEND, "d1", "expected Auth D1 suspension enforcement");
+  assert.equal(config.vars?.SYSTEM_SETTINGS_BACKEND, "d1", "expected D1-backed system settings API");
   const masterBinding = config.d1_databases?.find((database) => database.binding === "MASTER_DB");
   assert.equal(masterBinding?.database_name, expectedMasterDatabase, "unexpected Master D1 name");
   assert.equal(masterBinding?.database_id, expectedMasterDatabaseId, "unexpected Master D1 id");
@@ -78,10 +82,24 @@ async function assertStagingTarget() {
 }
 
 function runWrangler(args) {
+  const activeNode = realpathSync(process.execPath);
+  const childPath = (process.env.PATH ?? "").split(path.delimiter).filter((directory) => {
+    const candidate = path.join(directory, "node");
+    if (!existsSync(candidate)) return true;
+    try {
+      return realpathSync(candidate) !== activeNode;
+    } catch {
+      return true;
+    }
+  }).join(path.delimiter);
+  const childEnv = { ...process.env, PATH: childPath, CI: process.env.CI ?? "1" };
+  for (const key of Object.keys(childEnv)) {
+    if (/^npm_config_/iu.test(key) || key === "npm_execpath" || /^npm_lifecycle_/iu.test(key)) delete childEnv[key];
+  }
   return new Promise((resolve, reject) => {
-    const child = spawn(wrangler, [...args, "--config", configPath], {
+    const child = spawn(wrangler, ["--yes", `wrangler@${wranglerVersion}`, ...args, "--config", configPath], {
       cwd: apiDirectory,
-      env: process.env,
+      env: childEnv,
       stdio: ["ignore", "pipe", "pipe"],
     });
     let stdout = "";
@@ -652,6 +670,84 @@ async function exerciseAdminUserPlanReadback(cookie, target) {
   assert.equal(finalProfile[0]?.plan_type, "free", "synthetic plan baseline was not restored");
 }
 
+async function readSystemSettingValue(key) {
+  const rows = await queryBusiness(`SELECT setting_value FROM system_settings WHERE setting_key = ${sqlLiteral(key)} AND is_public = 1`);
+  assert.equal(rows.length, 1, "the allowlisted public system setting is missing or duplicated");
+  assert.equal(typeof rows[0].setting_value, "string");
+  return rows[0].setting_value;
+}
+
+async function restoreSystemSetting(cookie, state) {
+  if (!state.key || state.originalValue === null || state.temporaryValue === null) return;
+  const current = await readSystemSettingValue(state.key);
+  if (current === state.originalValue) return;
+  assert.equal(current, state.temporaryValue, "system setting changed to an unexpected value during canary");
+  const response = await request("/api/admin/system-settings", {
+    method: "PATCH",
+    headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ key: state.key, value: state.originalValue, expectedValue: state.temporaryValue }),
+  });
+  assertStatus(response, 200, "system setting baseline restoration");
+  assert.deepEqual(await response.json(), { schemaVersion: 1, updatedSetting: state.key });
+  assert.equal(await readSystemSettingValue(state.key), state.originalValue, "system setting baseline was not restored");
+}
+
+async function exerciseSystemSettingsReadback(cookie, adminUserId, state) {
+  const route = "/api/admin/system-settings";
+  const anonymous = await request(route);
+  assertStatus(anonymous, 401, "anonymous admin system settings read");
+
+  const admin = await request(route, { headers: { cookie } });
+  assertStatus(admin, 200, "MFA-protected admin system settings read");
+  const adminPayload = await admin.json();
+  const expectedAdminKeys = [
+    "invitation_mode", "social_login_enabled", "free_fanmarks_limit", "creator_fanmarks_limit",
+    "max_fanmarks_limit", "business_fanmarks_limit", "premium_pricing", "max_pricing",
+    "business_pricing", "max_emoji_characters", "creator_stripe_price_id", "max_stripe_price_id",
+    "business_stripe_price_id", "creator_stripe_price_id_live", "max_stripe_price_id_live",
+    "business_stripe_price_id_live", "stripe_mode", "enterprise_fanmarks_limit", "enterprise_pricing",
+  ].sort();
+  assert.equal(adminPayload.schemaVersion, 1);
+  assert.deepEqual(Object.keys(adminPayload.settings ?? {}).sort(), expectedAdminKeys);
+  assert.ok(Object.values(adminPayload.settings).every((value) => typeof value === "string"));
+
+  state.key = "free_fanmarks_limit";
+  state.originalValue = await readSystemSettingValue(state.key);
+  assert.match(state.originalValue, /^(?:0|[1-9]\d*)$/u);
+  const originalNumber = Number(state.originalValue);
+  assert.ok(Number.isSafeInteger(originalNumber) && originalNumber >= 1 && originalNumber <= 1_000_000);
+  state.temporaryValue = String(originalNumber === 1_000_000 ? originalNumber - 1 : originalNumber + 1);
+
+  try {
+    const update = await request(route, {
+      method: "PATCH",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ key: state.key, value: state.temporaryValue, expectedValue: state.originalValue }),
+    });
+    assertStatus(update, 200, "MFA-protected system setting update");
+    assert.deepEqual(await update.json(), { schemaVersion: 1, updatedSetting: state.key });
+    assert.equal(await readSystemSettingValue(state.key), state.temporaryValue, "system setting update did not reach D1");
+
+    const stale = await request(route, {
+      method: "PATCH",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ key: state.key, value: state.originalValue, expectedValue: state.originalValue }),
+    });
+    assertStatus(stale, 409, "stale system setting update");
+    assert.equal(await readSystemSettingValue(state.key), state.temporaryValue, "stale update changed the setting");
+  } finally {
+    await restoreSystemSetting(cookie, state);
+  }
+
+  const auditRows = await queryBusiness(`SELECT action, resource_type, resource_id, metadata FROM audit_logs
+    WHERE user_id = ${sqlLiteral(adminUserId)} AND action = 'ADMIN_UPDATE_SYSTEM_SETTING'
+      AND resource_type = 'system_setting' AND resource_id = ${sqlLiteral(state.key)} ORDER BY created_at, id`);
+  assert.equal(auditRows.length, 2, "expected the update and restoration audit rows");
+  for (const row of auditRows) {
+    assert.deepEqual(JSON.parse(row.metadata), { settingKey: state.key });
+  }
+}
+
 async function exerciseAdminUserStatusReadback(cookie, target) {
   const route = `/api/admin/users/${encodeURIComponent(target.userId)}/status`;
   const now = new Date();
@@ -980,7 +1076,6 @@ function assertStatus(response, status, operation) {
 async function main() {
   const actions = requireExplicitStagingConsent();
   await assertStagingTarget();
-  await access(wrangler);
   await readUserOwnedCounts();
   console.log("Staging target and empty Auth tables verified; provisioning one synthetic identity.");
 
@@ -1001,6 +1096,7 @@ async function main() {
   let flowPassed = false;
   let cleanupError = null;
   let cookie = "";
+  const systemSettingState = { key: "", originalValue: null, temporaryValue: null };
 
   try {
     seedAttempted = true;
@@ -1094,11 +1190,15 @@ async function main() {
         expiryLicenseId, expiryFanmarkId, expiryFanmark, expiryShortId,
       });
     }
+    if (actions.systemSettingsReadback) {
+      await exerciseSystemSettingsReadback(cookie, userId, systemSettingState);
+    }
     flowPassed = true;
     console.log("Staging TOTP verification and same-session admin authorization passed.");
   } finally {
     if (seedAttempted) {
       try {
+        if (actions.systemSettingsReadback) await restoreSystemSetting(cookie, systemSettingState);
         await executeFile(
           `DELETE FROM "mfaAssurance" WHERE "userId" = ${sqlLiteral(userId)};\n` +
           `DELETE FROM "adminRole" WHERE "userId" = ${sqlLiteral(userId)};\n` +
@@ -1109,7 +1209,7 @@ async function main() {
           `DELETE FROM "user" WHERE "id" = ${sqlLiteral(userId)};`,
           "synthetic identity cleanup",
         );
-        if (actions.adminUserManagementReadback || actions.adminUserPlanReadback || actions.adminUserStatusReadback) {
+        if (actions.adminUserManagementReadback || actions.adminUserPlanReadback || actions.adminUserStatusReadback || actions.systemSettingsReadback) {
           if (actions.adminUserStatusReadback) {
             await executeBusiness(
               `DELETE FROM notifications WHERE user_id = ${sqlLiteral(targetUserId)};\n` +
@@ -1127,6 +1227,7 @@ async function main() {
           await executeBusiness(
             `DELETE FROM enterprise_user_settings WHERE user_id = ${sqlLiteral(targetUserId)};\n` +
             `DELETE FROM audit_logs WHERE (user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL', 'ADMIN_UPDATE_PLAN', 'admin_expire_license') AND (resource_id IS NULL OR resource_id IN (${sqlLiteral(targetUserId)}, ${sqlLiteral(expiryLicenseId)}))) OR (resource_id = ${sqlLiteral(expiryLicenseId)} AND action = 'license_expired');\n` +
+            (actions.systemSettingsReadback ? `DELETE FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND action = 'ADMIN_UPDATE_SYSTEM_SETTING' AND resource_type = 'system_setting' AND resource_id = ${sqlLiteral(systemSettingState.key)};\n` : "") +
             `DELETE FROM user_settings WHERE user_id = ${sqlLiteral(targetUserId)};`,
             "synthetic admin user-management cleanup",
           );
@@ -1135,16 +1236,20 @@ async function main() {
             `DELETE FROM "user" WHERE "id" = ${sqlLiteral(targetUserId)} AND "email" = ${sqlLiteral(targetEmail)};`,
             "synthetic admin target Auth cleanup",
           );
-          const [profileRows, auditRows, authRows, statusAuditRows] = await Promise.all([
+          const [profileRows, auditRows, authRows, statusAuditRows, settingsAuditRows] = await Promise.all([
             queryBusiness(`SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(targetUserId)}`),
             queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE (user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL', 'ADMIN_UPDATE_PLAN', 'admin_expire_license') AND (resource_id IS NULL OR resource_id IN (${sqlLiteral(targetUserId)}, ${sqlLiteral(expiryLicenseId)}))) OR (resource_id = ${sqlLiteral(expiryLicenseId)} AND action = 'license_expired')`),
             query(`SELECT COUNT(*) AS count FROM "user" WHERE id = ${sqlLiteral(targetUserId)} AND email = ${sqlLiteral(targetEmail)}`),
             query(`SELECT COUNT(*) AS count FROM "adminUserStatusAudit" WHERE "actorUserId" = ${sqlLiteral(userId)} OR "targetUserId" = ${sqlLiteral(targetUserId)}`),
+            queryBusiness(actions.systemSettingsReadback
+              ? `SELECT COUNT(*) AS count FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND action = 'ADMIN_UPDATE_SYSTEM_SETTING' AND resource_type = 'system_setting' AND resource_id = ${sqlLiteral(systemSettingState.key)}`
+              : "SELECT 0 AS count"),
           ]);
           assert.equal(Number(profileRows[0]?.count), 0, "synthetic target profile remained in business D1");
           assert.equal(Number(auditRows[0]?.count), 0, "synthetic admin audit rows remained in business D1");
           assert.equal(Number(authRows[0]?.count), 0, "synthetic target identity remained in Auth D1");
           assert.equal(Number(statusAuditRows[0]?.count), 0, "synthetic user status audit remained in Auth D1");
+          assert.equal(Number(settingsAuditRows[0]?.count), 0, "synthetic system setting audit rows remained in business D1");
         }
         await readUserOwnedCounts();
         if (cookie) {
@@ -1178,6 +1283,9 @@ async function main() {
   }
   if (actions.adminUserStatusReadback) {
     console.log("Staging MFA-protected suspension/restoration and immediate license expiry passed. Session revocation, license/config changes, lifecycle/admin audits, notification event, repeat safety, and cleanup were verified.");
+  }
+  if (actions.systemSettingsReadback) {
+    console.log("Staging MFA-protected system settings read/update passed. The API exposed the exact admin projection, rejected anonymous access and a stale write, restored the original value, and cleaned the synthetic audit rows.");
   }
   console.log("Synthetic Auth rows were deleted; readback found all user-owned Auth tables empty.");
   console.log("The monotonic MFA generation counter was preserved and may have advanced during the synthetic factor lifecycle.");
