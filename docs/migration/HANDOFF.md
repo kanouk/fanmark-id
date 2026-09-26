@@ -51,7 +51,7 @@ through Better Auth/D1 on the staging build; its focused live synthetic canary
 passed, without materially changing the coarse estimate.
 
 `fanmark-app-staging` is deployed at 100% as version
-`e64d6cd4-1cb0-4592-a4a2-276a648adf06` at
+`676be6eb-f0fb-4741-8f84-4880fbb9052f` at
 `https://fanmark-app-staging.fanmark-id.workers.dev`. The split business/Auth/
 master D1 bindings and the two image R2 buckets remain isolated to this
 workers.dev app. A third, dedicated APAC Standard migration-backup bucket is
@@ -1239,3 +1239,27 @@ empty, and the cleanup guard was fixed before the successful rerun. Worker
 email-template D1 tests pass 4/4, frontend client tests 3/3, script syntax and
 `git diff --check` pass. This is staging-only API acceptance; browser UI review,
 production, imported users, and domain/DNS cutover remain open.
+
+## Waitlist admin list/reveal on staging (2026-09-27 JST)
+
+Draft PR #41 adds the staging-selected Worker/D1 implementation of restricted
+waitlist admin reads. A live synthetic canary passed sign-in, same-session
+TOTP/MFA authorization, anonymous denial, email-hash-only listing, and explicit
+email reveal with an `EMAIL_ACCESS` audit row whose metadata contains no
+address. It ran against staging version
+`676be6eb-f0fb-4741-8f84-4880fbb9052f`. The exact waitlist entry, temporary
+admin profile, audit rows, and synthetic Auth identities were removed; direct
+readback returned the waitlist, business profiles, audit canary rows, and all
+user-owned Auth tables to zero. The monotonic MFA generation counter remains
+retained and may have advanced.
+
+The first live run exposed two gaps in the smoke harness cleanup: the list
+access audit stores a null resource ID, and this standalone action had omitted
+the common synthetic target user's cleanup branch. Exact synthetic rows were
+removed after ID/marker verification, both cleanup conditions were fixed, and
+the repeat canary exited successfully with empty-table readback. Waitlist D1
+route tests pass 6/6 and frontend API client tests pass 5/5; CI run
+`36270707064` passed both Worker and staging-app validation jobs. No real
+waitlist data was imported, public submission still uses Supabase, and no
+production route or domain/DNS was changed. See
+`docs/migration/waitlist-admin-api.md`.

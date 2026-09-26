@@ -1688,7 +1688,7 @@ async function exerciseWaitlistAdmin(cookie, userId) {
   } finally {
     if (seedAttempted) {
       await executeBusiness(
-        `DELETE FROM audit_logs WHERE (resource_id = ${sqlLiteral(waitlistId)} AND action IN ('AUTHORIZED_WAITLIST_ACCESS', 'EMAIL_ACCESS', 'UNAUTHORIZED_WAITLIST_ACCESS', 'UNAUTHORIZED_EMAIL_ACCESS')) OR (user_id = ${sqlLiteral(userId)} AND resource_type = 'system' AND action = 'ADMIN_CHECK');\n` +
+        `DELETE FROM audit_logs WHERE (resource_id = ${sqlLiteral(waitlistId)} AND action IN ('AUTHORIZED_WAITLIST_ACCESS', 'EMAIL_ACCESS', 'UNAUTHORIZED_WAITLIST_ACCESS', 'UNAUTHORIZED_EMAIL_ACCESS')) OR (user_id = ${sqlLiteral(userId)} AND resource_type = 'system' AND action = 'ADMIN_CHECK') OR (user_id = ${sqlLiteral(userId)} AND resource_type = 'waitlist' AND resource_id IS NULL AND action = 'AUTHORIZED_WAITLIST_ACCESS');\n` +
         `DELETE FROM waitlist WHERE id = ${sqlLiteral(waitlistId)} AND email = ${sqlLiteral(email)};\n` +
         `DELETE FROM user_settings WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(username)};`,
         "synthetic waitlist canary cleanup",
@@ -1699,7 +1699,7 @@ async function exerciseWaitlistAdmin(cookie, userId) {
   const [waitlistRows, profileRows, auditRows] = await Promise.all([
     queryBusiness(`SELECT COUNT(*) AS count FROM waitlist WHERE id = ${sqlLiteral(waitlistId)} OR email = ${sqlLiteral(email)}`),
     queryBusiness(`SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(username)}`),
-    queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE resource_id = ${sqlLiteral(waitlistId)} OR (user_id = ${sqlLiteral(userId)} AND action = 'ADMIN_CHECK')`),
+    queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE resource_id = ${sqlLiteral(waitlistId)} OR (user_id = ${sqlLiteral(userId)} AND ((action = 'ADMIN_CHECK' AND resource_type = 'system') OR (action = 'AUTHORIZED_WAITLIST_ACCESS' AND resource_type = 'waitlist' AND resource_id IS NULL)))`),
   ]);
   assert.equal(Number(waitlistRows[0]?.count), 0, "synthetic waitlist row remained in business D1");
   assert.equal(Number(profileRows[0]?.count), 0, "synthetic waitlist administrator profile remained in business D1");
@@ -1882,7 +1882,7 @@ async function main() {
           `DELETE FROM "user" WHERE "id" = ${sqlLiteral(userId)};`,
           "synthetic identity cleanup",
         );
-        if (actions.referenceMasterTierRoundtrip || actions.referenceMasterExtensionPriceRoundtrip || actions.authEmailTemplateEditRoundtrip || actions.adminUserManagementReadback || actions.adminUserPlanReadback || actions.adminUserStatusReadback || actions.systemSettingsReadback || actions.notificationManualEvent) {
+        if (actions.waitlistAdminReadback || actions.referenceMasterTierRoundtrip || actions.referenceMasterExtensionPriceRoundtrip || actions.authEmailTemplateEditRoundtrip || actions.adminUserManagementReadback || actions.adminUserPlanReadback || actions.adminUserStatusReadback || actions.systemSettingsReadback || actions.notificationManualEvent) {
           if (actions.adminUserStatusReadback) {
             await executeBusiness(
               `DELETE FROM notifications WHERE user_id = ${sqlLiteral(targetUserId)};\n` +

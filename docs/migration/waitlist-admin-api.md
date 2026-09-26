@@ -29,6 +29,12 @@ domain/DNS setting is changed by this work.
 Email retention, deletion, and export policy remain open decisions. The
 current CSV intentionally includes hashes only. Local route tests are
 `npm --prefix workers/api run test:waitlist-admin-d1`; frontend response and
-selector tests are included in `npm run test:migration-data`. A live synthetic
-staging read/reveal/cleanup result must be recorded in the migration handoff
-before treating the staging slice as verified.
+selector tests are included in `npm run test:migration-data`. On 2026-09-27,
+the live synthetic staging canary passed list/reveal authorization and data
+minimization checks on Worker version
+`676be6eb-f0fb-4741-8f84-4880fbb9052f`; it read back zero synthetic waitlist,
+profile, audit, and user-owned Auth rows after cleanup. The first harness run
+found that a null-resource-ID list audit and the standalone action's synthetic
+target user were omitted from shared cleanup; both harness predicates were
+fixed and a repeat run passed. See the detailed result and scope boundaries in
+`docs/migration/HANDOFF.md`.
