@@ -31,6 +31,7 @@ const BASE_MIGRATIONS = Object.freeze([
   "0007_stripe_extension_application_staging.sql",
 ]);
 const EXPECTED_MIGRATIONS = [...BASE_MIGRATIONS, MIGRATION_NAME];
+const LATER_APPROVED_MIGRATIONS = [...EXPECTED_MIGRATIONS, "0009_stripe_subscription_identity.sql"];
 
 function fail(code) {
   const error = new Error(code);
@@ -120,7 +121,10 @@ async function verifyTarget(migration, objects) {
   }
 
   const ledger = runD1('SELECT "name" FROM "d1_migrations" ORDER BY "id"').map((row) => row.name);
-  if (JSON.stringify(ledger) !== JSON.stringify(EXPECTED_MIGRATIONS)) fail("business_migration_ledger_mismatch");
+  if (JSON.stringify(ledger) !== JSON.stringify(EXPECTED_MIGRATIONS) &&
+      JSON.stringify(ledger) !== JSON.stringify(LATER_APPROVED_MIGRATIONS)) {
+    fail("business_migration_ledger_mismatch");
+  }
   const names = objects.map((object) => `'${object.name}'`).join(", ");
   const actual = runD1(`SELECT "type", "name", "sql" FROM "sqlite_schema" WHERE "name" IN (${names}) ORDER BY "type", "name"`);
   if (actual.length !== objects.length) fail("stripe_invoice_schema_object_count_mismatch");
@@ -167,7 +171,8 @@ async function main() {
   if (mode === "--apply") {
     await verifyTargetBeforeApply();
     const ledger = runD1('SELECT "name" FROM "d1_migrations" ORDER BY "id"').map((row) => row.name);
-    if (JSON.stringify(ledger) === JSON.stringify(EXPECTED_MIGRATIONS)) {
+    if (JSON.stringify(ledger) === JSON.stringify(EXPECTED_MIGRATIONS) ||
+        JSON.stringify(ledger) === JSON.stringify(LATER_APPROVED_MIGRATIONS)) {
       // Applying twice is a read-only verification.
     } else if (JSON.stringify(ledger) === JSON.stringify(BASE_MIGRATIONS)) {
       await applyMigrationFile(migration);

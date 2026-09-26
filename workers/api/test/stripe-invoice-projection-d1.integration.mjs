@@ -12,6 +12,7 @@ const migrations = [
   "workers/api/migrations-business/0006_stripe_webhook_ingress_staging.sql",
   "workers/api/migrations-business/0007_stripe_extension_application_staging.sql",
   "workers/api/migrations-business/0008_stripe_invoice_projection_staging.sql",
+  "workers/api/migrations-business/0009_stripe_subscription_identity.sql",
 ];
 const miniflarePath = path.join(repoRoot, "workers/api/node_modules/miniflare/dist/src/index.js");
 const ingressPath = path.join(repoRoot, "workers/api/src/stripe-webhook-d1-ingress.ts");
@@ -484,6 +485,32 @@ test("scheduled Stripe API key is bound to the dispatch livemode", () => {
   assert.throws(() => stripeSecretKeyForMode("sk_live_synthetic", false), /stripe_dispatch_configuration_invalid/u);
   assert.throws(() => stripeSecretKeyForMode("sk_test_synthetic", true), /stripe_dispatch_configuration_invalid/u);
   assert.throws(() => stripeSecretKeyForMode(undefined, false), /stripe_dispatch_configuration_invalid/u);
+});
+
+test("Stripe subscription identity cannot be reassigned across users or customers", async () => {
+  const { miniflare, database } = await createDatabase();
+  try {
+    await seedMapping(database);
+    await assert.rejects(database.prepare(`
+      INSERT INTO user_subscriptions (
+        id, user_id, stripe_customer_id, stripe_subscription_id, product_id, status,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      "00000000-0000-4000-8000-000000000202",
+      "00000000-0000-4000-8000-000000000202",
+      "cus_synthetic_other_user",
+      SUBSCRIPTION_ID,
+      "prod_synthetic_other_user",
+      "active",
+      NOW,
+      NOW,
+    ).run());
+    assert.equal(await database.prepare("SELECT COUNT(*) AS count FROM user_subscriptions WHERE stripe_subscription_id = ?")
+      .bind(SUBSCRIPTION_ID).first("count"), 1);
+  } finally {
+    await miniflare.dispose();
+  }
 });
 
 test("stale dispatch lease cannot write payment state", async () => {

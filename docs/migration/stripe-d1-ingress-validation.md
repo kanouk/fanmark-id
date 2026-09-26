@@ -89,14 +89,15 @@ license, or notification write is used. The caller clock is refreshed after
 remote Stripe reads; SDK calls use a 10-second timeout, zero SDK retries, and a
 300-second dispatch/customer lease.
 
-Ten additional Miniflare cases cover current paid/failure/action-required
+Eleven additional Miniflare cases cover current paid/failure/action-required
 state, stale failed and success events, missing mapping, concurrent/expired
 customer fences, failure rollback followed by successful retry, scheduled
 invoice dispatch, a Stripe read that outlives its dispatch lease, and the
 disabled-by-default scheduled path. The suite also rejects a test-mode API key
-for a live queue (and vice versa); scheduled invoice retrieval creates separate
-providers from `STRIPE_SECRET_KEY_TEST` and `STRIPE_SECRET_KEY_LIVE`. The
-expanded `npm run test:stripe-webhook-ingress-schema` command passes 40/40.
+for a live queue (and vice versa), and rejects reassignment of one Stripe
+subscription ID across users/customers. Scheduled invoice retrieval creates
+separate providers from `STRIPE_SECRET_KEY_TEST` and `STRIPE_SECRET_KEY_LIVE`.
+The expanded `npm run test:stripe-webhook-ingress-schema` command passes 41/41.
 Invoice behavior uses synthetic D1 and an injected provider; the staging
 selectors, mode-specific Stripe API keys, signing secret, and Stripe Cron
 dispatch remain off. The generic `STRIPE_SECRET_KEY` used by the separate
@@ -112,7 +113,11 @@ tables, all six empty; `fanmarks`, `fanmark_licenses`, and `user_settings`
 also remained empty. A subsequent migration-list read returned no pending
 migrations. Migration `0008` was subsequently applied and verified: the
 expected invoice fence/application tables and indexes exist, and fence,
-application, receipt, and dispatch counts are all zero. Worker version
+application, receipt, and dispatch counts are all zero. Migration `0009` then
+added a target-side unique index over `user_subscriptions.stripe_subscription_id`.
+Remote readback confirmed the exact index definition, `unique=1`, no pending
+migrations, no foreign-key violations, and zero subscriptions, fanmarks,
+licenses, user settings, webhook receipts, or dispatches. Worker version
 `68a2e0bf-3236-444c-9c7a-a46294037855` was then deployed at 100% to workers.dev
 staging.
 
@@ -123,6 +128,6 @@ Dashboard change, production state, user data, or DNS was changed.
 
 The final staging secret inventory contains no Stripe API or signing secret,
 and all Stripe selectors are unset. Remote D1 verification after applying
-`0008` found the expected schema and zero rows in the invoice ledger, fence,
-receipt, and dispatch tables. The deployed webhook route remains unreachable
-while the selector is unset.
+`0008`/`0009` found the expected schema and zero rows in the invoice ledger,
+fence, receipt, dispatch, and subscription tables. The deployed webhook route
+remains unreachable while the selector is unset.
