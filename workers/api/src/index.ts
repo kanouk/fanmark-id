@@ -58,6 +58,10 @@ import {
   handleStripeExtensionCheckoutD1Request,
   isStripeExtensionCheckoutPath,
 } from "./stripe-extension-checkout-d1-api";
+import {
+  handleStripeCustomerPortalD1Request,
+  isStripeCustomerPortalPath,
+} from "./stripe-customer-portal-d1-api";
 import { handleMaintenanceSettingsRequest, isMaintenanceSettingsPath } from "./maintenance-settings-d1-api";
 import { handleLifecycleSettingsRequest, isLifecycleSettingsPath } from "./lifecycle-settings-d1-api";
 import { handleFavoritesRequest, isFavoritesPath } from "./favorites-d1-api";
@@ -880,6 +884,22 @@ export async function handleRequest(
 
   if (isStripeWebhookPath(url.pathname)) {
     return (await handleStripeWebhookD1Request(request, env)) ?? errorResponse("not_found", 404, routeHeaders);
+  }
+
+  if (isStripeCustomerPortalPath(url.pathname)) {
+    return (await handleStripeCustomerPortalD1Request(request, env, {
+      resolveUser: async (portalRequest) => {
+        if (env.AUTH_BACKEND?.trim() !== "better-auth") throw new Error("auth_unavailable");
+        const config = configuredAuth(env);
+        if (!config) throw new Error("auth_unavailable");
+        const current = await createApplicationAuth(config).api.getSession({
+          headers: portalRequest.headers,
+          query: { disableCookieCache: true },
+        });
+        const userId = current?.user?.id;
+        return typeof userId === "string" ? userId : null;
+      },
+    })) ?? errorResponse("not_found", 404, routeHeaders);
   }
 
   if (isStripeExtensionCheckoutPath(url.pathname)) {

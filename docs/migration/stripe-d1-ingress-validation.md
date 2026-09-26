@@ -180,3 +180,10 @@ unreachable while the selector is unset.
 The deleted-subscription/Free-return Worker handler from commit `0ed264a` is now included in workers.dev staging version `cec31381-d388-492d-906c-879b70d03cf3` at 100%. It is not enabled for incoming Stripe events: the Stripe backend selectors and signing/API secrets are absent, and read-only `GET /api/stripe/webhook` returns 404. The recurring notification Cron remains configured; the daily expiry Cron is configured but its backend selector remains absent. D1 migrations `0006`–`0011` are applied, with zero user/license/return/event rows.
 
 Post-deploy checks returned 200 for the SPA root, robots, and Auth health; 54/54 Stripe integration tests, Worker typecheck, staging build, Wrangler dry-run, and staging schema readback passed. No Stripe API call or production/user-data/domain change occurred.
+
+
+## Customer Portal D1 API staging rollout (2026-09-26)
+
+The Better Auth profile client and Worker endpoint for Stripe Customer Portal are deployed in workers.dev version d895ec75-76fb-457e-a74d-fd8102ff7110. The endpoint uses the authenticated owner’s exact user_settings.stripe_customer_id and a same-origin /plans return URL; it never searches Stripe by email. Its backend selector and all required Stripe secrets are absent, so POST /api/billing/customer-portal remains 404. The Stripe webhook remains 404 as well.
+
+The combined Worker Stripe suite passes 59/59 and the client contract suite 5/5. Worker and frontend typechecks, the Cloudflare staging build, Wrangler dry-run, and post-deploy HTTP checks pass. No Stripe request, user-data write, production route, or DNS/domain change occurred.

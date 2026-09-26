@@ -1554,3 +1554,12 @@ PR #41 commit `0ed264a` added subscription deleted handling and guarded Free-pla
 Workers.dev staging now runs version `cec31381-d388-492d-906c-879b70d03cf3` at 100%. The staging config retains the existing `* * * * *` notification/Stripe-dispatch trigger and `0 0 * * *` expiry trigger. Notification processing remains selected; expiry is disabled because `LICENSE_EXPIRY_BACKEND` is unset. Stripe selectors and Stripe secrets are absent, so webhook GET returns 404 and dispatch stays disabled.
 
 Read-only canaries after deploy returned 200 for `/`, `/robots.txt`, and `/api/auth/ok`, and 404 for `/api/stripe/webhook`. Remote business-D1 readback found zero users, fanmarks, licenses, return batches/items, and notification events. No Stripe API call, real user data, production route, or DNS/domain setting was changed.
+
+
+## 2026-09-26 Customer Portal D1 API staging rollout
+
+Added an authenticated Worker endpoint for opening Stripe Customer Portal from the profile page. It reads only the signed-in owner’s exact D1 stripe_customer_id, refuses email-based customer search, pins return_url to the allowlisted Better Auth origin at /plans, and validates Stripe’s HTTPS response URL. The client is enabled for the staging build and does not fall back to Supabase on Worker errors.
+
+The endpoint requires STRIPE_CUSTOMER_PORTAL_BACKEND=d1, the D1 webhook/dispatch selectors and signing secret, a matching STRIPE_SECRET_KEY plus test/live dispatcher keys, and a Better Auth session. Those Stripe selectors and secrets remain unset, so POST /api/billing/customer-portal returns 404. Stripe webhook remains 404.
+
+Worker version d895ec75-76fb-457e-a74d-fd8102ff7110 is active at 100% on workers.dev. Post-deploy read-only checks returned 200 for / and /api/auth/ok, 404 for both billing routes. No Stripe call or D1 write occurred. Local verification passed the Stripe Worker suite 59/59, Customer Portal client tests 5/5, both TypeScript checks, staging build, and Wrangler deploy dry-run.

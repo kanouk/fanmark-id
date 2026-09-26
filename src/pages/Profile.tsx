@@ -30,6 +30,10 @@ import { usePasswordValidation } from '@/hooks/usePasswordValidation';
 import { PasswordRequirement } from '@/components/PasswordRequirement';
 import { formatStripeAmount } from '@/lib/currency';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  createStripeCustomerPortalThroughWorker,
+  getStripeCustomerPortalBackend,
+} from '@/lib/stripe-customer-portal-api';
 
 type Section = 'account' | 'plan' | 'language';
 // TODO: Re-enable when features are implemented
@@ -288,11 +292,16 @@ const Profile = () => {
   const handleOpenCustomerPortal = async () => {
     setPortalLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('customer-portal');
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, '_blank');
-      }
+      const backend = getStripeCustomerPortalBackend();
+      const portal = backend === 'worker'
+        ? await createStripeCustomerPortalThroughWorker()
+        : await (async () => {
+          const { data, error } = await supabase.functions.invoke('customer-portal');
+          if (error) throw error;
+          if (typeof data?.url !== 'string') throw new Error('customer portal URL is missing');
+          return { url: data.url as string };
+        })();
+      window.open(portal.url, '_blank');
     } catch (error) {
       console.error('Failed to open customer portal:', error);
       toast({
