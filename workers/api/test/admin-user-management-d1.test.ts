@@ -140,6 +140,24 @@ describe("D1 administrator user directory", () => {
     expect(payload.meta.totalMatchedBeforeStatus).toBe(0);
   });
 
+  it("matches email substrings literally without LIKE-pattern limits", async () => {
+    const wildcardLikeSearch = await request("/api/admin/users", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ search: "alpha%", page: 1, pageSize: 10 }),
+    });
+    expect(wildcardLikeSearch.status).toBe(200);
+    expect((await wildcardLikeSearch.json() as { data: unknown[] }).data).toHaveLength(0);
+
+    const longSearch = await request("/api/admin/users", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ search: "x".repeat(180), page: 1, pageSize: 10 }),
+    });
+    expect(longSearch.status).toBe(200);
+    expect((await longSearch.json() as { data: unknown[] }).data).toHaveLength(0);
+  });
+
   it("returns recent license, MFA, and redacted audit projections behind the admin authorizer", async () => {
     const denied = await request(`/api/admin/users/${userA}`, {
       method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: userA }),

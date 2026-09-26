@@ -1840,3 +1840,27 @@ Node 22.6.0 validation passed: public price client 7/7, admin price client
 6/6, Worker reference-master D1 6/6, signed reference-master service 5/5,
 Worker typecheck, and syntax/diff checks. The server-side Stripe extension
 checkout remains disabled pending its selectors and secrets.
+
+## Admin user directory email search on staging (2026-09-26 JST)
+
+Replaced `LIKE`-pattern email and profile matching with literal, lowercased
+`instr` substring matching after the deployed D1 search returned
+`LIKE or GLOB pattern too complex` for an ordinary synthetic email. Added a
+regression test for literal wildcard characters and a 180-character search.
+The focused split-D1 suite passes 4/4; Worker typecheck and staging Wrangler
+dry-run pass.
+
+Deployed version `a684314f-2b65-4358-87f2-be97a272850e` to the isolated
+workers.dev staging app. The live MFA/TOTP canary verified profile and email
+search, the cross-D1 user detail DTO, 401 for anonymous list/detail, and
+no-store responses. It removed its synthetic administrator, target Auth user,
+profile, and audit rows. Independent remote D1 readback found zero rows in
+Auth `user`, `account`, `session`, `verification`, `twoFactor`, `adminRole`,
+and `mfaAssurance`, and zero business `user_settings`, `fanmark_licenses`,
+and `audit_logs`; the monotonic `mfaGeneration` value remains 1. HTTP probes
+returned 200 for `/`, 200 for `/api/auth/ok`, and 401 for anonymous
+`/api/admin/session` and `/api/admin/users`.
+
+No real user data, production route, email, Stripe request, or domain/DNS
+state was accessed or changed. Admin plan/status/reset/expiry mutations remain
+unfinished and disabled in Worker mode.

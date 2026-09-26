@@ -23,6 +23,38 @@ function fail(code: string, status = 503): never {
   throw new AdminUserManagementD1Error(code, status);
 }
 
+function logAdminUserManagementStageFailure(stage: string, error: unknown, searchTerm?: string): void {
+  let diagnostic = error instanceof AdminUserManagementD1Error ? error.code : "unexpected_error";
+  let sanitizedMessage = "";
+  if (!(error instanceof AdminUserManagementD1Error) && error instanceof Error) {
+    let safeMessage = error.message;
+    if (searchTerm) {
+      const normalizedSearch = searchTerm.toLocaleLowerCase();
+      safeMessage = safeMessage.replaceAll(searchTerm, "<search>").replaceAll(normalizedSearch, "<search>");
+    }
+    safeMessage = safeMessage
+      .replace(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/giu, "<email>")
+      .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/giu, "<uuid>")
+      .replace(/\b\d{4,}\b/gu, "<number>")
+      .replace(/\s+/gu, " ")
+      .slice(0, 180);
+    sanitizedMessage = safeMessage;
+    const message = safeMessage.toLowerCase();
+    const categories: Array<[string, RegExp]> = [
+      ["sql_syntax_error", /syntax error|incomplete input/u],
+      ["sql_no_such_column", /no such column/u],
+      ["sql_no_such_table", /no such table/u],
+      ["sql_bind_parameter_mismatch", /bind parameter|binding count|wrong number of arguments/u],
+      ["sql_too_many_variables", /too many (?:sql )?variables/u],
+      ["sql_escape_error", /escape expression|like.*escape/u],
+      ["sql_database_locked", /database is locked/u],
+      ["sql_constraint_error", /constraint failed/u],
+    ];
+    diagnostic = categories.find(([, pattern]) => pattern.test(message))?.[0] ?? `unexpected_${error.name.toLowerCase()}`;
+  }
+  console.error("admin_user_management_stage_failed", { stage, diagnostic, sanitizedMessage });
+}
+
 function json(body: unknown, status: number, headers?: HeadersInit): Response {
   const responseHeaders = new Headers(headers);
   responseHeaders.set("cache-control", "no-store");
@@ -127,14 +159,25 @@ function parseListRequest(value: unknown): ListRequest {
   };
 }
 
-function likePattern(value: string): string {
-  return `%${value.toLocaleLowerCase().replace(/[\\%_]/gu, "\\$&")}%`;
-}
-
 async function readProfiles(
   business: D1Database,
   auth: D1Database,
   request: ListRequest,
+): Promise<{ profiles: Array<Record<string, unknown>>; profileCount: number }> {
+  let stage = "build_profile_filter";
+  try {
+    return await readProfilesCore(business, auth, request, (nextStage) => { stage = nextStage; });
+  } catch (error) {
+    logAdminUserManagementStageFailure(stage, error, request.search ?? undefined);
+    throw error;
+  }
+}
+
+async function readProfilesCore(
+  business: D1Database,
+  auth: D1Database,
+  request: ListRequest,
+  setStage: (stage: string) => void,
 ): Promise<{ profiles: Array<Record<string, unknown>>; profileCount: number }> {
   const clauses: string[] = [];
   const values: unknown[] = [];
@@ -143,14 +186,17 @@ async function readProfiles(
     values.push(...request.plans);
   }
   if (request.search) {
-    clauses.push(`(lower(COALESCE(display_name, '')) LIKE ? ESCAPE '\\' OR lower(username) LIKE ? ESCAPE '\\')`);
-    values.push(likePattern(request.search), likePattern(request.search));
+    clauses.push(`(instr(lower(COALESCE(display_name, '')), ?) > 0 OR instr(lower(username), ?) > 0)`);
+    const normalizedSearch = request.search.toLocaleLowerCase();
+    values.push(normalizedSearch, normalizedSearch);
   }
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  setStage("count_profile_rows");
   const count = await business.prepare(`SELECT COUNT(*) AS count FROM user_settings ${where}`)
     .bind(...values).first<{ count?: unknown }>();
   if (typeof count?.count !== "number" || !Number.isSafeInteger(count.count) || count.count < 0) fail("admin_user_management_unavailable");
   if (count.count > MAX_FETCH) fail("admin_user_dataset_too_large", 413);
+  setStage("read_profile_rows");
   const result = await business.prepare(`
     SELECT user_id, username, display_name, plan_type, preferred_language, updated_at, created_at
     FROM user_settings ${where} ORDER BY created_at DESC, user_id ASC LIMIT ?
@@ -159,27 +205,44 @@ async function readProfiles(
   const profilesById = new Map(result.results.map((row) => [String(row.user_id), row]));
 
   if (request.search) {
-    const emailMatches = await auth.prepare(`
-      SELECT id FROM "user" WHERE lower(email) LIKE ? ESCAPE '\\' ORDER BY id ASC LIMIT ?
-    `).bind(likePattern(request.search), MAX_FETCH + 1).all<{ id?: unknown }>();
+    setStage("search_auth_emails");
+    let emailMatches;
+    try {
+      emailMatches = await auth.prepare(`
+        SELECT id FROM "user" WHERE instr(lower(email), ?) > 0 ORDER BY id ASC LIMIT ?
+      `).bind(request.search.toLocaleLowerCase(), MAX_FETCH + 1).all<{ id?: unknown }>();
+    } catch (error) {
+      throw error;
+    }
     if (!emailMatches.success || !Array.isArray(emailMatches.results) || emailMatches.results.length > MAX_FETCH) {
       fail("admin_user_dataset_too_large", 413);
     }
     const emailUserIds = emailMatches.results.map((row) => {
-      if (typeof row.id !== "string" || row.id.length < 1 || row.id.length > 128) fail("admin_user_management_unavailable");
+      if (typeof row.id !== "string" || row.id.length < 1 || row.id.length > 128) {
+        fail("admin_user_management_unavailable");
+      }
       return row.id;
     }).filter((id) => !profilesById.has(id));
     const planSql = request.plans ? ` AND plan_type IN (${request.plans.map(() => "?").join(",")})` : "";
+    setStage("lookup_email_profiles");
     for (let index = 0; index < emailUserIds.length; index += 100) {
       const chunk = emailUserIds.slice(index, index + 100);
-      const byEmail = await business.prepare(`SELECT user_id, username, display_name, plan_type, preferred_language, updated_at, created_at
-        FROM user_settings WHERE user_id IN (${chunk.map(() => "?").join(",")})${planSql}`)
-        .bind(...chunk, ...(request.plans ?? [])).all<Record<string, unknown>>();
-      if (!byEmail.success || !Array.isArray(byEmail.results)) fail("admin_user_management_unavailable");
+      let byEmail;
+      try {
+        byEmail = await business.prepare(`SELECT user_id, username, display_name, plan_type, preferred_language, updated_at, created_at
+          FROM user_settings WHERE user_id IN (${chunk.map(() => "?").join(",")})${planSql}`)
+          .bind(...chunk, ...(request.plans ?? [])).all<Record<string, unknown>>();
+      } catch (error) {
+        throw error;
+      }
+      if (!byEmail.success || !Array.isArray(byEmail.results)) {
+        fail("admin_user_management_unavailable");
+      }
       for (const row of byEmail.results) profilesById.set(String(row.user_id), row);
     }
   }
 
+  setStage("sort_profile_rows");
   if (profilesById.size > MAX_FETCH) fail("admin_user_dataset_too_large", 413);
   const profiles = [...profilesById.values()].sort((left, right) => {
     const byCreatedAt = String(right.created_at).localeCompare(String(left.created_at));
@@ -381,7 +444,13 @@ async function listUsers(
     readEnterpriseSettings(business, ids),
     readLastSignIns(auth, ids),
   ]);
-  const assembled = profilesToListedUsers(profiles, authUsers, licenseCounts, enterprise, lastSignIns, input);
+  let assembled: ListedUser[];
+  try {
+    assembled = profilesToListedUsers(profiles, authUsers, licenseCounts, enterprise, lastSignIns, input);
+  } catch (error) {
+    logAdminUserManagementStageFailure("assemble_user_list", error);
+    throw error;
+  }
   const totalFiltered = assembled.length;
   const start = (input.page - 1) * input.pageSize;
   const pagedUsers = assembled.slice(start, start + input.pageSize);

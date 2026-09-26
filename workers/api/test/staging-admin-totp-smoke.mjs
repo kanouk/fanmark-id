@@ -35,13 +35,14 @@ function requireExplicitStagingConsent() {
   const args = new Set(process.argv.slice(2));
   const emojiMasterRoundtrip = args.has("--emoji-master-draft-roundtrip");
   const referenceMasterPricingReadback = args.has("--reference-master-pricing-readback");
+  const adminUserManagementReadback = args.has("--admin-user-management-readback");
   if (!args.has("--run-live-staging-write") || !args.has(`--database=${expectedDatabase}`) ||
-      (!emojiMasterRoundtrip && !referenceMasterPricingReadback)) {
+      (!emojiMasterRoundtrip && !referenceMasterPricingReadback && !adminUserManagementReadback)) {
     throw new Error(
       `Refusing remote staging writes. Pass --run-live-staging-write --database=${expectedDatabase} and an explicit smoke flag.`,
     );
   }
-  return { emojiMasterRoundtrip, referenceMasterPricingReadback };
+  return { emojiMasterRoundtrip, referenceMasterPricingReadback, adminUserManagementReadback };
 }
 
 async function assertStagingTarget() {
@@ -63,6 +64,7 @@ async function assertStagingTarget() {
   assert.equal(config.vars?.AUTH_EMAIL_TEMPLATE_BACKEND, "d1", "expected D1-backed Better Auth email templates");
   assert.equal(config.vars?.STAGING_NO_INDEX, "true", "expected no-index staging Worker");
   assert.equal(config.vars?.REFERENCE_MASTER_ADMIN_BACKEND, "d1", "expected D1-backed reference-master admin API");
+  assert.equal(config.vars?.ADMIN_USER_MANAGEMENT_BACKEND, "d1", "expected D1-backed admin user-management API");
   const masterBinding = config.d1_databases?.find((database) => database.binding === "MASTER_DB");
   assert.equal(masterBinding?.database_name, expectedMasterDatabase, "unexpected Master D1 name");
   assert.equal(masterBinding?.database_id, expectedMasterDatabaseId, "unexpected Master D1 id");
@@ -158,6 +160,27 @@ async function executeFile(sql, label) {
     const result = parseWranglerJson(output);
     if (!Array.isArray(result) || result.some((item) => item.success !== true)) {
       throw new Error(`Remote Auth D1 ${label} failed`);
+    }
+  } finally {
+    await rm(temporaryDirectory, { recursive: true, force: true });
+  }
+}
+
+async function executeBusiness(sql, label) {
+  const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "fanmark-business-staging-"));
+  try {
+    await writeFile(path.join(temporaryDirectory, "operation.sql"), sql, {
+      encoding: "utf8",
+      mode: 0o600,
+      flag: "wx",
+    });
+    const output = await runWrangler([
+      "d1", "execute", expectedBusinessDatabase, "--remote", "--file",
+      path.join(temporaryDirectory, "operation.sql"), "--yes", "--json",
+    ]);
+    const result = parseWranglerJson(output);
+    if (!Array.isArray(result) || result.some((item) => item.success !== true)) {
+      throw new Error(`Remote business D1 ${label} failed`);
     }
   } finally {
     await rm(temporaryDirectory, { recursive: true, force: true });
@@ -489,6 +512,80 @@ async function exerciseReferenceMasterPricingReadback(cookie) {
   assert.deepEqual(after, before, "reference-master admin read changed the active release pointer");
 }
 
+async function exerciseAdminUserManagementReadback(cookie, target) {
+  const route = "/api/admin/users";
+  const listBody = { search: target.email, page: 1, pageSize: 20 };
+  const unfiltered = await request(route, {
+    method: "POST",
+    headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ page: 1, pageSize: 20 }),
+  });
+  assertStatus(unfiltered, 200, "MFA-protected unfiltered admin user list");
+  assert.match(unfiltered.headers.get("cache-control") ?? "", /no-store/iu);
+  const unfilteredBody = await unfiltered.json();
+  assert.ok(unfilteredBody.data.some((user) => user.userId === target.userId),
+    "unfiltered user list omitted the synthetic target");
+
+  const usernameMatch = await request(route, {
+    method: "POST",
+    headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ search: target.username, page: 1, pageSize: 20 }),
+  });
+  assertStatus(usernameMatch, 200, "MFA-protected profile-field admin user search");
+  const usernameMatchBody = await usernameMatch.json();
+  assert.equal(usernameMatchBody.data.length, 1);
+  assert.equal(usernameMatchBody.data[0].userId, target.userId);
+
+  const anonymousList = await request(route, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(listBody),
+  });
+  assertStatus(anonymousList, 401, "anonymous admin user list");
+
+  const listed = await request(route, {
+    method: "POST",
+    headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify(listBody),
+  });
+  if (listed.status !== 200) {
+    const failure = await listed.json().catch(() => null);
+    throw new Error(`MFA-protected synthetic user list returned HTTP ${listed.status} (${failure?.error ?? "no error code"})`);
+  }
+  assert.match(listed.headers.get("cache-control") ?? "", /no-store/iu);
+  const list = await listed.json();
+  assert.equal(list.data.length, 1);
+  assert.equal(list.data[0].userId, target.userId);
+  assert.equal(list.data[0].email, target.email);
+  assert.equal(list.data[0].username, target.username);
+  assert.equal(list.data[0].planType, "free");
+  assert.deepEqual(list.data[0].licenseCounts, { active: 0, grace: 0, expired: 0 });
+  assert.deepEqual(list.filters, { search: target.email, plans: null, status: null });
+
+  const anonymousDetail = await request(`${route}/${encodeURIComponent(target.userId)}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ userId: target.userId }),
+  });
+  assertStatus(anonymousDetail, 401, "anonymous admin user detail");
+
+  const detailResponse = await request(`${route}/${encodeURIComponent(target.userId)}`, {
+    method: "POST",
+    headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ userId: target.userId }),
+  });
+  assertStatus(detailResponse, 200, "MFA-protected synthetic user detail");
+  assert.match(detailResponse.headers.get("cache-control") ?? "", /no-store/iu);
+  const detail = await detailResponse.json();
+  assert.equal(detail.auth.email, target.email);
+  assert.equal(detail.profile.userId, target.userId);
+  assert.equal(detail.profile.username, target.username);
+  assert.equal(detail.profile.planType, "free");
+  assert.deepEqual(detail.licenseSummary, { active: 0, grace: 0, expired: 0, total: 0 });
+  assert.deepEqual(detail.recentFanmarks, []);
+  assert.ok(!/password|credential|secret|token/iu.test(JSON.stringify(detail)));
+}
+
 async function exerciseAvailabilityRulesAdmin(cookie) {
   const route = "/api/admin/availability-rules";
   const initialRows = await queryBusiness(`SELECT id, rule_type, priority, is_available, rule_config
@@ -668,7 +765,7 @@ async function exerciseInvitationAdmin(cookie) {
 }
 
 function assertStatus(response, status, operation) {
-  assert.equal(response.status, status, `${operation} returned an unexpected HTTP status`);
+  assert.equal(response.status, status, `${operation} returned HTTP ${response.status}; expected ${status}`);
 }
 
 async function main() {
@@ -679,6 +776,9 @@ async function main() {
   console.log("Staging target and empty Auth tables verified; provisioning one synthetic identity.");
 
   const userId = randomUUID();
+  const targetUserId = randomUUID();
+  const targetEmail = `codex-admin-target-${targetUserId}@example.invalid`;
+  const targetUsername = `codex-${targetUserId.slice(0, 8)}`;
   const accountId = randomUUID();
   const email = `codex-totp-${userId}@example.invalid`;
   const password = `Synthetic-${randomBytes(32).toString("base64url")}!`;
@@ -694,9 +794,13 @@ async function main() {
     await executeFile(
       `INSERT INTO "user" ("id", "name", "email", "emailVerified", "createdAt", "updatedAt") VALUES (${sqlLiteral(userId)}, 'Synthetic staging MFA', ${sqlLiteral(email)}, 1, ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});\n` +
       `INSERT INTO "account" ("id", "accountId", "providerId", "userId", "password", "createdAt", "updatedAt") VALUES (${sqlLiteral(accountId)}, ${sqlLiteral(userId)}, 'credential', ${sqlLiteral(userId)}, ${sqlLiteral(passwordHash)}, ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});\n` +
-      `INSERT INTO "adminRole" ("userId", "role") VALUES (${sqlLiteral(userId)}, 'admin');\n`,
+      `INSERT INTO "adminRole" ("userId", "role") VALUES (${sqlLiteral(userId)}, 'admin');\n` +
+      `INSERT INTO "user" ("id", "name", "email", "emailVerified", "createdAt", "updatedAt") VALUES (${sqlLiteral(targetUserId)}, 'Synthetic admin target', ${sqlLiteral(targetEmail)}, 1, ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});\n`,
       "synthetic identity provision",
     );
+    await executeBusiness(`INSERT INTO user_settings (user_id, username, display_name, avatar_url, plan_type, preferred_language, created_at, updated_at)
+      VALUES (${sqlLiteral(targetUserId)}, ${sqlLiteral(targetUsername)}, ${sqlLiteral(targetEmail)}, NULL, 'free', 'ja', ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});`,
+    "synthetic admin target profile provision");
     console.log("Synthetic account provisioned; exercising the deployed sign-in and TOTP routes.");
 
     const signIn = await request("/api/auth/sign-in/email", {
@@ -761,6 +865,13 @@ async function main() {
     if (actions.referenceMasterPricingReadback) {
       await exerciseReferenceMasterPricingReadback(cookie);
     }
+    if (actions.adminUserManagementReadback) {
+      await exerciseAdminUserManagementReadback(cookie, {
+        userId: targetUserId,
+        email: targetEmail,
+        username: targetUsername,
+      });
+    }
     flowPassed = true;
     console.log("Staging TOTP verification and same-session admin authorization passed.");
   } finally {
@@ -776,6 +887,25 @@ async function main() {
           `DELETE FROM "user" WHERE "id" = ${sqlLiteral(userId)};`,
           "synthetic identity cleanup",
         );
+        if (actions.adminUserManagementReadback) {
+          await executeBusiness(
+            `DELETE FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL') AND (resource_id IS NULL OR resource_id = ${sqlLiteral(targetUserId)});\n` +
+            `DELETE FROM user_settings WHERE user_id = ${sqlLiteral(targetUserId)};`,
+            "synthetic admin user-management cleanup",
+          );
+          await executeFile(
+            `DELETE FROM "user" WHERE "id" = ${sqlLiteral(targetUserId)} AND "email" = ${sqlLiteral(targetEmail)};`,
+            "synthetic admin target Auth cleanup",
+          );
+          const [profileRows, auditRows, authRows] = await Promise.all([
+            queryBusiness(`SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(targetUserId)}`),
+            queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL') AND (resource_id IS NULL OR resource_id = ${sqlLiteral(targetUserId)})`),
+            query(`SELECT COUNT(*) AS count FROM "user" WHERE id = ${sqlLiteral(targetUserId)} AND email = ${sqlLiteral(targetEmail)}`),
+          ]);
+          assert.equal(Number(profileRows[0]?.count), 0, "synthetic target profile remained in business D1");
+          assert.equal(Number(auditRows[0]?.count), 0, "synthetic admin audit rows remained in business D1");
+          assert.equal(Number(authRows[0]?.count), 0, "synthetic target identity remained in Auth D1");
+        }
         await readUserOwnedCounts();
         if (cookie) {
           const invalidatedSession = await request("/api/auth/get-session", { headers: { cookie } });
@@ -799,6 +929,9 @@ async function main() {
   }
   if (actions.referenceMasterPricingReadback) {
     console.log("Staging MFA-protected reference-master pricing read matched the active D1 release; anonymous access was denied and both reads left the release pointer unchanged.");
+  }
+  if (actions.adminUserManagementReadback) {
+    console.log("Staging MFA-protected admin user list/detail read the synthetic cross-D1 user; anonymous access was denied and cleanup returned Auth, profile, and audit canary rows to zero.");
   }
   console.log("Synthetic Auth rows were deleted; readback found all user-owned Auth tables empty.");
   console.log("The monotonic MFA generation counter was preserved and may have advanced during the synthetic factor lifecycle.");
