@@ -78,7 +78,9 @@ contract cases pass with synthetic data and a fake Stripe client.
 `workers/api/src/stripe-webhook-d1-scheduled.ts` connects bounded D1 claims to
 the extension application and the invoice projection. Transient failures
 receive increasing retry delays and then dead-letter at the attempt limit.
-Subscription events remain review-only. `0008_stripe_invoice_projection_staging.sql`
+Created/updated subscription events now have a local D1 reconciliation path;
+deletion events remain review-only until the free-plan limit return can commit
+atomically. `0008_stripe_invoice_projection_staging.sql`
 adds the customer generation fence and private application ledger;
 `workers/api/src/stripe-invoice-projection-d1.ts` reuses the Basil normalizer
 and current Invoice/Subscription retrieval contract from the source-side
@@ -89,6 +91,19 @@ license, or notification write is used. The caller clock is refreshed after
 remote Stripe reads; SDK calls use a 10-second timeout, zero SDK retries, and a
 300-second dispatch/customer lease.
 
+`workers/api/src/stripe-subscription-reconciliation-d1.ts` retrieves the
+current Subscription, current active subscriptions for its customer, and the
+Stripe Customer under a mode-specific customer fence. It resolves users only
+through an exact D1 customer relation or a verified UUID in Customer metadata;
+it never falls back to email. It uses private test/live Price ID settings,
+projects current status and billing fields, and applies plan changes only for
+active subscriptions. If more than one active subscription exists, the
+highest existing plan order (Creator, Max, Business) determines the plan.
+An active update also clears that subscription's local payment-failure fields.
+Non-active updates do not grant or remove entitlement. A CHECK-backed D1 batch
+guard keeps the subscription rows, customer link, plan, application ledger,
+fence, receipt, and dispatch terminal state atomic.
+
 Eleven additional Miniflare cases cover current paid/failure/action-required
 state, stale failed and success events, missing mapping, concurrent/expired
 customer fences, failure rollback followed by successful retry, scheduled
@@ -97,13 +112,18 @@ disabled-by-default scheduled path. The suite also rejects a test-mode API key
 for a live queue (and vice versa), and rejects reassignment of one Stripe
 subscription ID across users/customers. Scheduled invoice retrieval creates
 separate providers from `STRIPE_SECRET_KEY_TEST` and `STRIPE_SECRET_KEY_LIVE`.
-The expanded `npm run test:stripe-webhook-ingress-schema` command passes 41/41.
+Seven subscription cases cover current-state reconciliation, active-only plan
+behavior, mode-specific Price IDs, deterministic multiple-active plan choice,
+dispatcher routing, exact customer mapping, and ownership conflict rollback.
+The expanded `npm run test:stripe-webhook-ingress-schema` command passes 48/48;
+Worker typecheck also passes.
 Invoice behavior uses synthetic D1 and an injected provider; the staging
 selectors, mode-specific Stripe API keys, signing secret, and Stripe Cron
 dispatch remain off. The generic `STRIPE_SECRET_KEY` used by the separate
 extension Checkout creator is not reused for scheduled invoice retrieval.
-Subscription entitlement/free-plan return and other billing effects remain
-unimplemented.
+This new subscription handler remains local-only and has not been deployed.
+Deletion reconciliation, free-plan entitlement/limit return, and other
+billing effects remain unimplemented.
 
 Behavioral tests still use synthetic local D1 and fake Stripe clients. On
 2026-09-26 Wrangler applied
@@ -119,7 +139,12 @@ Remote readback confirmed the exact index definition, `unique=1`, no pending
 migrations, no foreign-key violations, and zero subscriptions, fanmarks,
 licenses, user settings, webhook receipts, or dispatches. Worker version
 `68a2e0bf-3236-444c-9c7a-a46294037855` was then deployed at 100% to workers.dev
-staging.
+staging. Migration `0010_stripe_subscription_reconciliation_staging.sql` was
+subsequently applied to the same empty business D1. Remote readback confirms
+its application ledger, transaction-guard table, and customer index; the new
+ledger and guard tables are empty, `user_subscriptions` remains empty, and
+Wrangler reports no pending migrations. The deployed Worker is still the older
+version above; the new subscription handler is not deployed.
 
 The staging Worker still has no Stripe signing secret, API secret, or backend
 selectors, so checkout and webhook routes remain disabled. A synthetic webhook
@@ -128,6 +153,6 @@ Dashboard change, production state, user data, or DNS was changed.
 
 The final staging secret inventory contains no Stripe API or signing secret,
 and all Stripe selectors are unset. Remote D1 verification after applying
-`0008`/`0009` found the expected schema and zero rows in the invoice ledger,
-fence, receipt, dispatch, and subscription tables. The deployed webhook route
-remains unreachable while the selector is unset.
+`0008`–`0010` found the expected schemas and zero rows in the invoice and
+subscription ledgers, fence, receipt, dispatch, and subscription tables. The
+deployed webhook route remains unreachable while the selector is unset.

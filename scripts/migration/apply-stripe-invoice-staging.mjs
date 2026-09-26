@@ -31,7 +31,11 @@ const BASE_MIGRATIONS = Object.freeze([
   "0007_stripe_extension_application_staging.sql",
 ]);
 const EXPECTED_MIGRATIONS = [...BASE_MIGRATIONS, MIGRATION_NAME];
-const LATER_APPROVED_MIGRATIONS = [...EXPECTED_MIGRATIONS, "0009_stripe_subscription_identity.sql"];
+const LATER_APPROVED_MIGRATIONS = [
+  ...EXPECTED_MIGRATIONS,
+  "0009_stripe_subscription_identity.sql",
+  "0010_stripe_subscription_reconciliation_staging.sql",
+];
 
 function fail(code) {
   const error = new Error(code);
