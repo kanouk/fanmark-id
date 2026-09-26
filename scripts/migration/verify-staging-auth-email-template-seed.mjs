@@ -3,12 +3,13 @@ import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { AUTH_EMAIL_TEMPLATE_EXPECTED_SHA256 } from "./staging-auth-email-template-baseline.mjs";
 
 const DATABASE = "fanmark-business-staging";
 const ALLOWED_TYPES = new Set(["signup", "recovery", "magiclink", "email_change"]);
 const ALLOWED_LANGUAGES = new Set(["en", "ja", "ko", "id"]);
 const FIELDS = ["id", "email_type", "language", "subject", "body_text", "button_text", "is_active", "created_at", "updated_at"];
-const EXPECTED_SOURCE_SHA256 = "2ccb14f36ef431950871ac820a2e49f1574e415b8c0a3d2d5ad5f0bb17a108e2";
+const EXPECTED_SOURCE_SHA256 = AUTH_EMAIL_TEMPLATE_EXPECTED_SHA256;
 const EXPECTED_SEED_SQL_SHA256 = "938736e71425bcf0823d17836458619eefddd2d90b405265d6728ff0ce4df80b";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const WORKER_DIR = resolve(ROOT, "workers/api");

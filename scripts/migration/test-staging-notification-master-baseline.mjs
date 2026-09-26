@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { authEmailTemplateBaselineState } from "./staging-auth-email-template-baseline.mjs";
 import {
   businessTablesWithoutStagingBaselines,
   hasStagingNotificationMasterBaseline,
@@ -35,4 +36,32 @@ test("business row-empty checks exclude only reviewed staging baseline tables", 
     ]),
     ["fanmarks", "notifications"],
   );
+  assert.deepEqual(
+    businessTablesWithoutStagingBaselines(["email_templates", "fanmarks"], { authEmailTemplates: true }),
+    ["fanmarks"],
+  );
+  assert.deepEqual(
+    businessTablesWithoutStagingBaselines(["email_templates", "fanmarks"]),
+    ["email_templates", "fanmarks"],
+  );
+});
+
+test("auth email templates count as a baseline only with the exact reviewed content digest", () => {
+  assert.equal(authEmailTemplateBaselineState([], 0), "empty");
+  assert.equal(authEmailTemplateBaselineState([], 16), "invalid");
+  const rows = ["signup", "recovery", "magiclink", "email_change"].flatMap((emailType, typeIndex) =>
+    ["en", "id", "ja", "ko"].map((language, languageIndex) => ({
+      id: `00000000-0000-4000-8000-${String(typeIndex * 4 + languageIndex + 1).padStart(12, "0")}`,
+      email_type: emailType,
+      language,
+      subject: "Synthetic subject",
+      body_text: "Synthetic body",
+      button_text: "Continue",
+      is_active: 1,
+      created_at: "2026-01-02T12:32:58.206Z",
+      updated_at: "2026-01-02T21:56:21.064Z",
+    })),
+  );
+  assert.equal(authEmailTemplateBaselineState(rows, 16), "invalid");
+  assert.equal(authEmailTemplateBaselineState(rows, 17), "invalid");
 });

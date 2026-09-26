@@ -22,8 +22,9 @@ const STAGING_BASELINE_TABLES = new Set([
   "fanmark_availability_rules",
 ]);
 
-export function businessTablesWithoutStagingBaselines(tables) {
-  return tables.filter((table) => !STAGING_BASELINE_TABLES.has(table));
+export function businessTablesWithoutStagingBaselines(tables, { authEmailTemplates = false } = {}) {
+  return tables.filter((table) => !STAGING_BASELINE_TABLES.has(table) &&
+    !(authEmailTemplates && table === "email_templates"));
 }
 
 export function notificationMasterBaselineState(row) {

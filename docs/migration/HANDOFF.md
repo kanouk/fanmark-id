@@ -40,10 +40,9 @@ cannot be recovered. The old/new systems must not dual-write business rows.
 
 Weighted progress estimate at this checkpoint: about 70% of the prioritized
 basic-app/infrastructure/master-data stage and about 55–60% of the full
-migration. The auth email-template seed and admin plan/suspension/expiry rollouts below
-are incremental progress and do not materially change the estimate while the 18 schema gates,
-integrated rehearsal, production acceptance, user-data import, and final DNS
-cutover remain open.
+migration. The live registration/auth/business/R2 rehearsal below now covers a
+major integrated path, but broader #37 acceptance, the 18 schema gates,
+production acceptance, user-data import, and final DNS cutover remain open.
 
 `fanmark-app-staging` is deployed at 100% as version
 `a4b4886f-9289-435d-b345-843a7b2747a7` at
@@ -87,6 +86,15 @@ zero. Protected-access extensions retain their documented synthetic audit,
 reservation, rate-limit, policy, and incarnation-tombstone state. Master D1 serves the original
 emoji release at activation generation 3 after a staging-only promotion/rollback
 rehearsal; reference-master release generation 2 remains active.
+
+On 2026-09-27, the integrated registration smoke passed against the current
+workers.dev staging app after the preflight learned to recognize only the exact
+16-row auth email-template baseline by content digest. Registration, Better
+Auth session use, R2 cover upload/public read, profile save, lottery apply and
+cancel, anonymous/owner details, and rejection paths passed. Cleanup read back
+zero ordinary business rows, zero synthetic Auth rows, and an absent R2 object;
+the template baseline matched before and after. This does not complete all of
+#37 or verify email delivery, Stripe, production, or imported-user behavior.
 
 Admin password reset is now wired in the same staging deployment through
 `POST /api/admin/users/:userId/password-reset`, same-session admin MFA, and
@@ -152,6 +160,7 @@ unperformed.
 
 | Area | Saved change | Evidence and limit |
 | --- | --- | --- |
+| Integrated registration/auth/business/R2 staging rehearsal | Current worktree + workers.dev staging | The synthetic registration smoke passed login/session use, registration, R2 cover upload/public read/owner delete, profile save, lottery apply/cancel, anonymous versus owner details, and rejection paths. It verified all 16 auth email-template rows against the pinned digest before and after, then read back zero ordinary business rows, zero user-owned Auth rows, and no R2 object. No email, Stripe, production, real user data, or DNS was used. Broader #37 acceptance remains open. |
 | Credential transform target profile | Current worktree | Exact local DDL is bound to the source catalog, lifecycle/generation schema, and descriptor. The special six-column writer atomically applies transformed/disabled rows for active licenses. Inactive/returned rows now atomically receive metadata-only `deferred_inactive` coverage and checkpoint advancement, with no destination row/hash; a synthetic ACK-unknown restart and full reconciliation test passes. The credential schema/import suite passes 11/11. The separate current-catalog rehearsal still covers 3 synthetic rows and all 40 checkpoints; no live user data was read. `deployable` and `fullMigrationReconciled` remain false with 18 schema gates unresolved. See `docs/migration/credential-import-integration.md`. |
 | License expiry source-shaped integration | Current worktree + deployed staging Cron canary | Local source-shaped suite passes 25 checks; lottery selection 10 and scheduler contract 8 pass. The remote staging canary completed one synthetic winner through an actual workers.dev scheduled event, then restored the baseline setting, removed synthetic rows/journals, and preserved retained lifecycle state. The latest Worker routes `0 0 * * *` only to lifecycle and `* * * * *` to notifications/Stripe dispatch. Staging declares both triggers but keeps `LICENSE_EXPIRY_BACKEND` unset, so daily lifecycle invocations return disabled before D1 access. A separate earlier local `--test-scheduled` rerun hit `ECONNRESET`; the deployed lifecycle Cron run supplies the live scheduler evidence. Production CPU/plan fit, recurring activation, and user-row cutover remain open. See `docs/migration/license-expiry-proof.md` and `docs/migration/lottery-selection.md`. |
 | Credential descriptor/row path | `59a02f1` + current worktree | Six-column mapping, exact `credential-to-bcrypt` codec, manifest/descriptor/target binding, private one-use credential input, prepared hash reuse, atomic artifact/coverage/checkpoint write, and typed readback are integrated. Disabled rows on active licenses transform to bcrypt; inactive/returned rows are durably deferred without writing a target credential. |

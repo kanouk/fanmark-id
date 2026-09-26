@@ -2004,3 +2004,29 @@ The local credential schema/import integration suite passes 11/11, including
 an ACK-unknown commit followed by restart, typed readback, and explicit
 source/target/deferred row counts. No live source rows, remote D1, production
 route, or domain/DNS setting was accessed or changed.
+
+## Integrated synthetic registration rehearsal (2026-09-27 JST)
+
+The registration smoke's initial read-only preflight stopped on the existing
+16-row `email_templates` master baseline. The guard now excludes that table
+only when all 16 allowed auth templates match the pinned source-content SHA-256;
+it rejects extra, missing, duplicate, malformed, or changed rows. The smoke
+checks the same digest before and after the canary, so it cannot silently
+ignore arbitrary rows by table name. The focused baseline tests pass 3/3.
+
+Ran `npm run test:staging-fanmark-registration-smoke` with Node 22.6.0 against
+the isolated workers.dev app and its split staging D1/R2 resources. A synthetic
+Better Auth identity completed registration, owner-session checks, R2 cover
+upload/public read/owner delete, profile save, lottery apply/cancel, anonymous
+and owner details, and expected rejection paths for oversized, duplicate, and
+unauthenticated requests. Cross-owner and wrong-bucket image paths were also
+rejected. The 16-row email-template baseline matched the exact digest both
+before and after the run.
+
+Cleanup read back zero rows across ordinary business tables, zero synthetic
+Auth users/accounts/sessions, and an absent R2 canary object. The run sent no
+email, made no Stripe call, and touched no Supabase source rows, production
+route, or domain/DNS setting. Targeted Node tests (3/3), ESLint, and
+`git diff --check` passed. This closes one integrated staging path, not all of
+#37: billing sandbox, broader source-event coverage, production acceptance,
+the 18 schema gates, user-data migration, and domain cutover remain open.
