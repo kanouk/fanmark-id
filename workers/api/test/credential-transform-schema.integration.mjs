@@ -369,7 +369,12 @@ function syntheticCredentialProjection(catalog, { enabled = true, password = "Sy
   return project(canonicalJson(sourceRecord));
 }
 
-async function exportSyntheticCredentialSnapshot(catalog, credentialDescriptor, { enabled = true, password = "Synthetic-credential-import-42" } = {}) {
+async function exportSyntheticCredentialSnapshot(catalog, credentialDescriptor, {
+  enabled = true,
+  password = "Synthetic-credential-import-42",
+  licenseStatus = "active",
+  isReturned = false,
+} = {}) {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), "fanmark-credential-import-snapshot-"));
   const rows = Object.fromEntries([...new Set(catalog.columns.map((entry) => entry.table_name))].map((table) => [table, []]));
   rows.fanmarks = [{
@@ -398,10 +403,10 @@ async function exportSyntheticCredentialSnapshot(catalog, credentialDescriptor, 
       id: syntheticLicenseId,
       fanmark_id: syntheticFanmarkId,
       user_id: null,
-      status: "active",
+      status: licenseStatus,
       license_end: "2030-01-01T00:00:00.000000Z",
       grace_expires_at: null,
-      is_returned: "f",
+      is_returned: isReturned ? "t" : "f",
     },
     arrayMetadata: {},
   }];
@@ -569,6 +574,92 @@ test("D1 importer hashes disabled credentials and preserves the disabled source 
   }
 });
 
+test("D1 importer durably defers credentials for inactive licenses without copying a hash or raw credential", async () => {
+  const fixture = await prepareFixture({ credentialExtension: true });
+  const reportDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "fanmark-credential-deferred-report-"));
+  await fs.chmod(reportDirectory, 0o700);
+  const reportPath = path.join(reportDirectory, "import.report.json");
+  let snapshot;
+  try {
+    const sourcePassword = "Synthetic-deferred-credential-42";
+    snapshot = await exportSyntheticCredentialSnapshot(fixture.catalog, descriptor(), {
+      password: sourcePassword,
+      licenseStatus: "grace",
+    });
+    const options = {
+      manifestPath: snapshot.manifestPath,
+      database: fixture.database,
+      destinationId: "synthetic-deferred-target",
+      targetIncarnation: "synthetic-deferred-incarnation-1",
+      reportPath,
+      allowUnresolvedGates: true,
+      expectedTargetProfile: {
+        credentialPlan: fixture.credentialPlan,
+        descriptor: descriptor(),
+        generationPlan: fixture.generationPlan,
+        lifecyclePlan: fixture.lifecyclePlan,
+      },
+      now: () => new Date("2026-09-26T12:00:00.000Z"),
+    };
+    let loseAcknowledgement = true;
+    await assert.rejects(
+      importD1Snapshot({
+        ...options,
+        hooks: {
+          afterCredentialBatchCommit() {
+            if (loseAcknowledgement) {
+              loseAcknowledgement = false;
+              throw new Error("synthetic deferred acknowledgement loss");
+            }
+          },
+        },
+      }),
+      (error) => error.code === "credential_batch_ack_unknown",
+    );
+    const checkpoint = await fixture.database.prepare(
+      'SELECT "next_ordinal", "rows_imported", "status" FROM "__fanmark_d1_import_checkpoints" WHERE "table_name" = ?',
+    ).bind(PASSWORD_TABLE).first();
+    assert.deepEqual(checkpoint, { next_ordinal: 1, rows_imported: 1, status: "in_progress" });
+
+    const artifact = await fixture.database.prepare(
+      'SELECT "state", "failure_code", "destination_hash", "destination_transform_digest" FROM "credential_transform_artifacts"',
+    ).first();
+    assert.deepEqual(artifact, {
+      state: "rejected",
+      failure_code: "credential_row_deferred_inactive",
+      destination_hash: null,
+      destination_transform_digest: null,
+    });
+    const coverage = await fixture.database.prepare(
+      'SELECT "coverage_state", "destination_transform_digest", "destination_digest", "reason_code" FROM "credential_transform_coverage"',
+    ).first();
+    assert.deepEqual(coverage, {
+      coverage_state: "deferred_inactive",
+      destination_transform_digest: null,
+      destination_digest: null,
+      reason_code: "credential_row_deferred_inactive",
+    });
+    const destinationRows = await fixture.database.prepare(
+      'SELECT COUNT(*) AS "count" FROM "fanmark_password_configs"',
+    ).first();
+    assert.equal(destinationRows.count, 0);
+    assert.doesNotMatch(JSON.stringify({ artifact, coverage }), new RegExp(sourcePassword, "u"));
+
+    const resumed = await importD1Snapshot(options);
+    assert.equal(resumed.status, "public_rows_reconciled");
+    assert.equal(resumed.fullMigrationReconciled, false);
+    const report = JSON.parse(await fs.readFile(reportPath, "utf8"));
+    const reconciliation = report.reconciledTables.find((table) => table.table === PASSWORD_TABLE);
+    assert.equal(reconciliation.rowCount, 1);
+    assert.equal(reconciliation.targetRowCount, 0);
+    assert.equal(reconciliation.deferredRows, 1);
+  } finally {
+    await fixture.miniflare.dispose();
+    if (snapshot) await fs.rm(snapshot.directory, { recursive: true, force: true });
+    await fs.rm(reportDirectory, { recursive: true, force: true });
+  }
+});
+
 test("source-shaped credential artifact binds license generations and reuses prepared bcrypt after ACK-unknown and restart", async () => {
   const fixture = await prepareFixture({ credentialExtension: true });
   try {
@@ -726,19 +817,36 @@ test("credential preparation transforms disabled rows and defers inactive source
     await fixture.database.prepare(
       'UPDATE "fanmark_licenses" SET "status" = ? WHERE "id" = ?',
     ).bind("grace", syntheticLicenseId).run();
-    await assert.rejects(
-      reserveCredentialImportArtifact({
-        ...context,
-        destinationId: "synthetic-inactive-target",
-        targetIncarnation: "synthetic-inactive-target-incarnation-1",
-        projection: syntheticCredentialProjection(fixture.catalog),
-      }),
-      (error) => error.code === "credential_row_deferred_inactive",
-    );
+    const deferredReservation = await reserveCredentialImportArtifact({
+      ...context,
+      destinationId: "synthetic-inactive-target",
+      targetIncarnation: "synthetic-inactive-target-incarnation-1",
+      projection: syntheticCredentialProjection(fixture.catalog),
+    });
+    assert.equal(deferredReservation.state, "deferred_inactive");
+    const deferredArtifact = await fixture.database.prepare(
+      'SELECT "state", "failure_code", "destination_hash", "destination_transform_digest" FROM "credential_transform_artifacts" WHERE "target_identity" = ?',
+    ).bind("synthetic-inactive-target").first();
+    assert.deepEqual(deferredArtifact, {
+      state: "rejected",
+      failure_code: "credential_row_deferred_inactive",
+      destination_hash: null,
+      destination_transform_digest: null,
+    });
+    await fixture.database.prepare(
+      'UPDATE "fanmark_licenses" SET "status" = ?, "is_returned" = ? WHERE "id" = ?',
+    ).bind("active", 1, syntheticLicenseId).run();
+    const returnedReservation = await reserveCredentialImportArtifact({
+      ...context,
+      destinationId: "synthetic-returned-target",
+      targetIncarnation: "synthetic-returned-target-incarnation-1",
+      projection: syntheticCredentialProjection(fixture.catalog),
+    });
+    assert.equal(returnedReservation.state, "deferred_inactive");
     const artifacts = await fixture.database.prepare(
       'SELECT COUNT(*) AS "count" FROM "credential_transform_artifacts"',
     ).first();
-    assert.equal(artifacts.count, 1);
+    assert.equal(artifacts.count, 3);
   } finally {
     await fixture.miniflare.dispose();
   }

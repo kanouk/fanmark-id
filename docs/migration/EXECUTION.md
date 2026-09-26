@@ -1988,3 +1988,19 @@ email. The staging secret-name list contains no `RESEND_API_KEY` or
 acceptance remains gated. No source user rows, production route, Stripe request,
 or domain/DNS state changed. PR #41 was updated; `Supabase Preview` remains
 skipped by the repository's CI isolation setup.
+
+## Inactive-license credential coverage (2026-09-27 JST)
+
+The source-shaped D1 importer now records credentials for inactive or returned
+licenses as `deferred_inactive` using a terminal metadata-only artifact and a
+coverage row. It does not hash or persist the source credential in D1 and does
+not create a destination password row. Coverage and checkpoint advancement
+commit together only while the bound license incarnation/generations remain
+inactive and no destination row exists. Replay/readback and final
+reconciliation require the exact deferred reason and retain
+`fullMigrationReconciled=false`.
+
+The local credential schema/import integration suite passes 11/11, including
+an ACK-unknown commit followed by restart, typed readback, and explicit
+source/target/deferred row counts. No live source rows, remote D1, production
+route, or domain/DNS setting was accessed or changed.

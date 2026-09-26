@@ -1080,15 +1080,15 @@ async function reconcileCredentialTable(database, snapshot, tablePlan, entry, op
     tablePlan,
     maxRowBytes: options.maxRowBytes,
   })[Symbol.asyncIterator]();
+  const targetIterator = scanTargetRows(database, tablePlan, options.scanBatchRows)[Symbol.asyncIterator]();
   try {
     let sourceNext = await sourceIterator.next();
     let targetCount = 0;
+    let deferredRows = 0;
     const targetHash = createHash("sha256");
-    for await (const targetRow of scanTargetRows(database, tablePlan, options.scanBatchRows)) {
-      if (sourceNext.done) throw fail("target_extra_rows");
+    let targetNext = await targetIterator.next();
+    while (!sourceNext.done) {
       const sourceRow = sourceNext.value;
-      const targetPk = tablePlan.primaryNames.map((name) => String(targetRow[name]));
-      if (JSON.stringify(targetPk) !== JSON.stringify(sourceRow.record.primaryKey)) throw fail("target_primary_key_mismatch");
       const validated = await readAndValidateCredentialRow(
         database,
         snapshot,
@@ -1096,6 +1096,22 @@ async function reconcileCredentialTable(database, snapshot, tablePlan, entry, op
         sourceRow.converted.credentialProjection,
         options,
       );
+      if (validated.disposition === "deferred_inactive") {
+        if (!targetNext.done) {
+          const targetPk = tablePlan.primaryNames.map((name) => String(targetNext.value[name]));
+          if (JSON.stringify(targetPk) === JSON.stringify(sourceRow.record.primaryKey)) throw fail("credential_deferred_target_row_present");
+        }
+        targetHash.update(canonicalJson({ table: tablePlan.table, ordinal: sourceRow.ordinal, disposition: "deferred_inactive" }));
+        targetHash.update("\n");
+        deferredRows += 1;
+        sourceNext = await sourceIterator.next();
+        continue;
+      }
+
+      if (targetNext.done) throw fail("target_missing_rows");
+      const targetRow = targetNext.value;
+      const targetPk = tablePlan.primaryNames.map((name) => String(targetRow[name]));
+      if (JSON.stringify(targetPk) !== JSON.stringify(sourceRow.record.primaryKey)) throw fail("target_primary_key_mismatch");
       for (const column of tablePlan.columns) {
         if (!Object.hasOwn(targetRow, column.name) || targetRow[column.name] !== validated.target[column.name]) {
           throw fail("credential_target_scan_readback_mismatch");
@@ -1105,28 +1121,33 @@ async function reconcileCredentialTable(database, snapshot, tablePlan, entry, op
       targetHash.update(canonicalJson({
         table: tablePlan.table,
         ordinal: sourceRow.ordinal,
+        disposition: validated.coverage.coverage_state,
         values: tablePlan.columns.map((column) => targetRow[column.name]),
       }));
       targetHash.update("\n");
       targetCount += 1;
+      targetNext = await targetIterator.next();
       sourceNext = await sourceIterator.next();
     }
-    if (!sourceNext.done) throw fail("target_missing_rows");
+    if (!targetNext.done) throw fail("target_extra_rows");
     const sourceStats = sourceNext.value;
     if (
-      sourceStats.rowCount !== targetCount ||
+      sourceStats.rowCount !== targetCount + deferredRows ||
       sourceStats.rowCount !== Number(entry.rowCount) ||
       String(sourceStats.byteCount) !== entry.byteCount ||
       sourceStats.streamHash !== entry.streamHash
     ) throw fail("reconciliation_count_or_digest_mismatch");
     return {
-      rowCount: targetCount,
+      rowCount: sourceStats.rowCount,
+      targetRowCount: targetCount,
+      deferredRows,
       byteCount: sourceStats.byteCount,
       targetHash: targetHash.digest("hex"),
       sourceStreamHash: sourceStats.streamHash,
     };
   } finally {
     if (typeof sourceIterator.return === "function") await Promise.resolve(sourceIterator.return()).catch(() => {});
+    if (typeof targetIterator.return === "function") await Promise.resolve(targetIterator.return()).catch(() => {});
   }
 }
 
@@ -1394,6 +1415,17 @@ async function readCredentialLicenseState(database, licenseId) {
   );
 }
 
+function assertCredentialDeferredInactiveState(state, artifact) {
+  if (
+    (state.status === "active" && Number(state.is_returned) === 0) ||
+    Number(state.license_incarnation) !== Number(artifact.license_incarnation) ||
+    Number(state.version_license_incarnation) !== Number(artifact.license_incarnation) ||
+    Number(state.password_generation) !== Number(artifact.expected_password_generation) ||
+    Number(state.access_generation) !== Number(artifact.expected_access_generation) ||
+    Number(state.lifecycle_generation) !== Number(artifact.expected_lifecycle_generation)
+  ) throw fail("credential_deferred_license_state_changed");
+}
+
 function assertCredentialPostTransformState(state, artifact) {
   const licenseIncarnation = Number(artifact.license_incarnation);
   if (
@@ -1447,8 +1479,57 @@ async function readAndValidateCredentialRow(database, snapshot, tablePlan, proje
     artifact.target_incarnation !== options.targetIncarnation ||
     artifact.destination_relation !== CREDENTIAL_SOURCE_RELATION ||
     artifact.destination_column !== "access_password" ||
-    !["applied", "reconciled"].includes(artifact.state)
+    (!["applied", "reconciled"].includes(artifact.state) &&
+      !(artifact.state === "rejected" && artifact.failure_code === "credential_row_deferred_inactive"))
   ) throw fail("credential_artifact_readback_mismatch");
+  if (artifact.state === "rejected") {
+    if (
+      artifact.destination_hash !== null ||
+      artifact.destination_transform_digest !== null ||
+      artifact.prepared_at !== null ||
+      artifact.applied_at !== null ||
+      artifact.reconciled_at !== null
+    ) throw fail("credential_artifact_readback_mismatch");
+    const coverages = await allRows(
+      database,
+      'SELECT * FROM "credential_transform_coverage" WHERE "run_id" = ? AND "table_name" = ? AND "source_row_identity_digest" = ? LIMIT 2',
+      [snapshot.manifest.runId, CREDENTIAL_SOURCE_RELATION, projection.sourceRowIdentityDigest],
+    );
+    if (coverages.length !== 1) throw fail("credential_coverage_readback_missing_or_duplicate");
+    const coverage = coverages[0];
+    if (
+      coverage.target_profile_fingerprint !== artifact.target_profile_fingerprint ||
+      coverage.source_manifest_digest !== snapshot.manifestDigest ||
+      coverage.descriptor_digest !== projection.credentialDescriptorDigest ||
+      coverage.target_identity !== options.destinationId ||
+      coverage.target_incarnation !== options.targetIncarnation ||
+      coverage.source_primary_key_json !== JSON.stringify(projection.primaryKey) ||
+      coverage.source_envelope_digest !== projection.sourceEnvelopeDigest ||
+      coverage.destination_relation !== CREDENTIAL_SOURCE_RELATION ||
+      coverage.destination_column !== "access_password" ||
+      coverage.destination_primary_key_json !== JSON.stringify(projection.primaryKey) ||
+      coverage.destination_license_id !== licenseId ||
+      Number(coverage.license_incarnation) !== Number(artifact.license_incarnation) ||
+      Number(coverage.enabled) !== enabled ||
+      Number(coverage.expected_password_generation) !== Number(artifact.expected_password_generation) ||
+      Number(coverage.expected_access_generation) !== Number(artifact.expected_access_generation) ||
+      Number(coverage.expected_lifecycle_generation) !== Number(artifact.expected_lifecycle_generation) ||
+      coverage.artifact_id !== artifact.artifact_id ||
+      Number(coverage.fencing_token) !== Number(artifact.fencing_token) ||
+      coverage.coverage_state !== "deferred_inactive" ||
+      coverage.destination_transform_digest !== null ||
+      coverage.destination_digest !== null ||
+      coverage.reason_code !== "credential_row_deferred_inactive"
+    ) throw fail("credential_coverage_readback_mismatch");
+    const targets = await allRows(
+      database,
+      'SELECT "id" FROM "fanmark_password_configs" WHERE "id" = ? OR "license_id" = ? LIMIT 2',
+      [sourceId, licenseId],
+    );
+    if (targets.length !== 0) throw fail("credential_deferred_target_row_present");
+    assertCredentialDeferredInactiveState(await readCredentialLicenseState(database, licenseId), artifact);
+    return { target: null, artifact, coverage, disposition: "deferred_inactive" };
+  }
   const targetColumns = tablePlan.columns
     .map((column, index) => `${quoteIdentifier(column.name)}, typeof(${quoteIdentifier(column.name)}) AS ${quoteIdentifier(`__d1_storage_type_${index}`)}`)
     .join(", ");
@@ -1511,6 +1592,143 @@ async function readAndValidateCredentialRow(database, snapshot, tablePlan, proje
   return { target, artifact, coverage, destinationDigest };
 }
 
+async function commitDeferredCredentialRow(database, snapshot, tablePlan, checkpoint, row, projection, reservation, options) {
+  const artifact = await oneRow(
+    database,
+    'SELECT * FROM "credential_transform_artifacts" WHERE "artifact_id" = ? LIMIT 2',
+    [reservation.artifactId],
+    "credential_artifact_read_failed",
+  );
+  if (
+    reservation.state !== "deferred_inactive" ||
+    artifact.state !== "rejected" ||
+    artifact.failure_code !== "credential_row_deferred_inactive" ||
+    Number(artifact.fencing_token) !== reservation.fencingToken
+  ) throw fail("credential_artifact_checkpoint_mismatch");
+  if (row.lineBytes > options.maxRowBytes) throw fail("source_row_size_exceeded");
+
+  const [sourceId, licenseId, enabled] = projection.bindings;
+  const nextOrdinal = checkpoint.next_ordinal + 1;
+  const prefixDigest = nextPrefixDigest(checkpoint.prefix_digest, row.rowHash);
+  const chunkDigest = sha256Hex({
+    table: tablePlan.table,
+    startOrdinal: checkpoint.next_ordinal,
+    endOrdinal: nextOrdinal,
+    rowHashes: [row.rowHash],
+  });
+  const timestamp = nowIso(options.now);
+  const checkpointUpdate = checkpointUpdateStatement({
+    runId: snapshot.manifest.runId,
+    tableName: tablePlan.table,
+    generation: checkpoint.generation,
+    expectedNextOrdinal: checkpoint.next_ordinal,
+    nextOrdinal,
+    nextGeneration: checkpoint.generation + 1,
+    nextStatus: "in_progress",
+    lastPkJson: JSON.stringify(row.record.primaryKey),
+    prefixDigest,
+    rowsImported: nextOrdinal,
+    bytesImported: checkpoint.bytes_imported + row.lineBytes,
+    chunkStart: checkpoint.next_ordinal,
+    chunkEnd: nextOrdinal,
+    chunkDigest,
+  });
+  const checkpointToken = randomBytes(12).toString("hex");
+  const coverageToken = randomBytes(12).toString("hex");
+  const checkpointVerifyToken = randomBytes(12).toString("hex");
+  const checkpointGuard = guardStatement({
+    runId: snapshot.manifest.runId,
+    tableName: tablePlan.table,
+    generation: checkpoint.generation,
+    nextOrdinal: checkpoint.next_ordinal,
+    token: checkpointToken,
+  });
+  const coverageInsert = [
+    'INSERT INTO "credential_transform_coverage" (',
+    '"run_id", "target_profile_fingerprint", "source_manifest_digest", "descriptor_digest", "target_identity", "target_incarnation",',
+    '"table_name", "source_primary_key_json", "source_row_identity_digest", "source_envelope_digest",',
+    '"destination_relation", "destination_column", "destination_primary_key_json", "destination_license_id", "license_incarnation",',
+    '"enabled", "expected_password_generation", "expected_access_generation", "expected_lifecycle_generation", "artifact_id", "fencing_token",',
+    '"coverage_state", "destination_transform_digest", "destination_digest", "reason_code", "created_at", "updated_at"',
+    ') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, \'deferred_inactive\', NULL, NULL, \'credential_row_deferred_inactive\', ?, ?)',
+  ].join(" ");
+  const coverageBindings = [
+    snapshot.manifest.runId,
+    artifact.target_profile_fingerprint,
+    snapshot.manifestDigest,
+    snapshot.manifest.credentialDescriptorDigest,
+    options.destinationId,
+    options.targetIncarnation,
+    tablePlan.table,
+    JSON.stringify(projection.primaryKey),
+    projection.sourceRowIdentityDigest,
+    projection.sourceEnvelopeDigest,
+    CREDENTIAL_SOURCE_RELATION,
+    "access_password",
+    JSON.stringify(projection.primaryKey),
+    licenseId,
+    Number(artifact.license_incarnation),
+    enabled,
+    Number(artifact.expected_password_generation),
+    Number(artifact.expected_access_generation),
+    Number(artifact.expected_lifecycle_generation),
+    artifact.artifact_id,
+    reservation.fencingToken,
+    timestamp,
+    timestamp,
+  ];
+  const proofSql = [
+    'INSERT INTO "' + LEDGER_TABLES.guards + '" (token, must_be_one)',
+    'SELECT ?, CASE WHEN EXISTS (SELECT 1 FROM "credential_transform_artifacts" AS a',
+    'JOIN "fanmark_licenses" AS l ON l."id" = a."destination_license_id"',
+    'JOIN "fanmark_license_incarnations" AS i ON i."license_id" = l."id"',
+    'JOIN "fanmark_access_versions" AS v ON v."license_id" = l."id"',
+    'JOIN "credential_transform_coverage" AS c ON c."artifact_id" = a."artifact_id"',
+    'WHERE a."artifact_id" = ? AND a."state" = \'rejected\' AND a."failure_code" = \'credential_row_deferred_inactive\'',
+    'AND a."fencing_token" = ? AND c."run_id" = ? AND c."source_row_identity_digest" = ?',
+    'AND c."coverage_state" = \'deferred_inactive\' AND c."reason_code" = \'credential_row_deferred_inactive\'',
+    'AND (l."status" != \'active\' OR l."is_returned" != 0)',
+    'AND i."incarnation" = a."license_incarnation" AND v."license_incarnation" = i."incarnation"',
+    'AND v."password_generation" = a."expected_password_generation" AND v."access_generation" = a."expected_access_generation"',
+    'AND l."lifecycle_generation" = a."expected_lifecycle_generation"',
+    'AND NOT EXISTS (SELECT 1 FROM "fanmark_password_configs" AS p WHERE p."id" = ? OR p."license_id" = ?)) THEN 1 ELSE 0 END',
+  ].join(" ");
+  const statements = [
+    database.prepare(checkpointGuard.sql).bind(...checkpointGuard.bindings),
+    database.prepare(coverageInsert).bind(...coverageBindings),
+    database.prepare(proofSql).bind(
+      coverageToken,
+      artifact.artifact_id,
+      reservation.fencingToken,
+      snapshot.manifest.runId,
+      projection.sourceRowIdentityDigest,
+      sourceId,
+      licenseId,
+    ),
+    database.prepare(checkpointUpdate.sql).bind(...checkpointUpdate.bindings),
+    database.prepare(
+      'INSERT INTO "' + LEDGER_TABLES.guards + '" (token, must_be_one) SELECT ?, CASE WHEN EXISTS (SELECT 1 FROM "' + LEDGER_TABLES.checkpoints + '" WHERE run_id = ? AND table_name = ? AND generation = ? AND next_ordinal = ? AND status = \'in_progress\') THEN 1 ELSE 0 END',
+    ).bind(checkpointVerifyToken, snapshot.manifest.runId, tablePlan.table, checkpoint.generation + 1, nextOrdinal),
+    database.prepare('DELETE FROM "' + LEDGER_TABLES.guards + '" WHERE token IN (?, ?, ?)').bind(checkpointToken, coverageToken, checkpointVerifyToken),
+  ];
+  await options.hooks?.beforeCredentialBatchCommit?.({ table: tablePlan.table, ordinal: row.ordinal, disposition: "deferred_inactive" });
+  await runBatch(database, statements);
+  try {
+    await options.hooks?.afterCredentialBatchCommit?.({ table: tablePlan.table, ordinal: row.ordinal, disposition: "deferred_inactive" });
+  } catch {
+    throw fail("credential_batch_ack_unknown");
+  }
+  const checkpointAfter = await getCheckpoint(database, snapshot.manifest.runId, tablePlan.table);
+  if (
+    checkpointAfter.next_ordinal !== nextOrdinal ||
+    checkpointAfter.generation !== checkpoint.generation + 1 ||
+    checkpointAfter.prefix_digest !== prefixDigest
+  ) throw fail("credential_checkpoint_readback_mismatch");
+  const validated = await readAndValidateCredentialRow(database, snapshot, tablePlan, projection, options);
+  if (validated.disposition !== "deferred_inactive") throw fail("credential_coverage_readback_mismatch");
+  return { checkpoint: checkpointAfter, target: null, artifact: validated.artifact, disposition: "deferred_inactive" };
+}
+
 async function commitCredentialRow(database, snapshot, tablePlan, checkpoint, row, options) {
   const projection = row.converted.credentialProjection;
   const reservation = await reserveCredentialImportArtifact({
@@ -1523,6 +1741,9 @@ async function commitCredentialRow(database, snapshot, tablePlan, checkpoint, ro
     targetProfileFingerprint: options.expectedTargetProfile.credentialPlan.targetProfileFingerprint,
     now: options.now,
   });
+  if (reservation.state === "deferred_inactive") {
+    return commitDeferredCredentialRow(database, snapshot, tablePlan, checkpoint, row, projection, reservation, options);
+  }
   if (reservation.state !== "reserved") throw fail("credential_artifact_checkpoint_mismatch");
   const prepared = await prepareCredentialImportArtifact({ database, reservation, now: options.now });
   if (prepared.state !== "prepared") throw fail("credential_artifact_checkpoint_mismatch");
@@ -1925,7 +2146,15 @@ export async function importD1Snapshot({
     const reconciledTables = [];
     for (const table of plan.importOrder) {
       const result = await reconcileTable(database, snapshot, plan.tables.get(table), snapshot.tablesByName.get(table), { maxRowBytes, scanBatchRows, maxTargetRowBytes, destinationId, targetIncarnation, expectedTargetProfile, now });
-      reconciledTables.push({ table, rowCount: result.rowCount, byteCount: result.byteCount, targetHash: result.targetHash, sourceStreamHash: result.sourceStreamHash });
+      reconciledTables.push({
+        table,
+        rowCount: result.rowCount,
+        ...(result.targetRowCount === undefined ? {} : { targetRowCount: result.targetRowCount }),
+        ...(result.deferredRows === undefined ? {} : { deferredRows: result.deferredRows }),
+        byteCount: result.byteCount,
+        targetHash: result.targetHash,
+        sourceStreamHash: result.sourceStreamHash,
+      });
     }
     await assertForeignKeys(database);
     const timestamp = nowIso(now);

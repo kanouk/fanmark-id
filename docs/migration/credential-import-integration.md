@@ -1,15 +1,17 @@
 # Credential transform integration with the full D1 importer
 
 This document records the implementation contract and current evidence for the
-verified-snapshot credential importer. As of 2026-09-26, the importer has a
+verified-snapshot credential importer. As of 2026-09-27, the importer has a
 source-shaped special writer for enabled and disabled credentials attached to
-active licenses, with atomic artifact/coverage/checkpoint updates and typed
-readback.
+active licenses, plus durable `deferred_inactive` coverage for credentials
+attached to inactive or returned licenses. Both paths atomically advance the
+coverage/checkpoint state and have typed readback.
 A fresh current-catalog rehearsal has completed all 40 table checkpoints and
 whole-target readback using three synthetic rows, including ACK-unknown resume
-and tampered-coverage rejection. Deferred-row coverage and real user-data
-migration remain incomplete and out of the current cutover stage. These local
-components do not create remote D1 resources.
+and tampered-coverage rejection. A separate synthetic full-import case now
+proves inactive-license deferral, ACK-unknown resume, and explicit report
+counts. Real user-data migration remains incomplete and out of the current
+cutover stage. These local components do not create remote D1 resources.
 
 The existing local transform proof is deliberately narrower: it proves one
 synthetic source binding and writes a synthetic `fanmark_access_configs`
@@ -139,8 +141,9 @@ binding only. The generic importer's private run row, per-table checkpoint,
 and report now also persist and compare the descriptor digest. The importer
 requires the exact composed target profile before writing credential rows,
 then stores transformed or disabled coverage atomically with the target row
-and checkpoint. Inactive-license rows remain fail-closed and do not yet receive
-durable deferred coverage. A changed descriptor, codec/cost, destination
+and checkpoint. Inactive-license rows receive durable `deferred_inactive`
+coverage with no target credential row or destination hash, while the overall
+run remains incomplete for full-migration purposes. A changed descriptor, codec/cost, destination
 mapping, source schema fingerprint, generated DDL fingerprint, or policy
 version must not resume an old run; it requires a new isolated target
 incarnation or an explicitly reviewed repair.
@@ -573,5 +576,27 @@ from the D1 harness; the importer's full table reconciliation and supported
 prove production integrity. This current-catalog case used an enabled
 credential row. A separate full-import fixture now verifies a disabled
 credential row is bcrypt-transformed, retains `is_enabled = 0`, receives
-`disabled` coverage, and passes readback. Inactive-license rows still lack
-durable deferred coverage. No source user rows or remote D1 were used.
+`disabled` coverage, and passes readback. No source user rows or remote D1
+were used.
+
+## Durable inactive-license deferral (2026-09-27)
+
+The source-shaped importer now records an inactive/returned license credential
+as a terminal metadata-only artifact with
+`failure_code = credential_row_deferred_inactive`, then inserts matching
+`deferred_inactive` coverage and advances the source checkpoint in one D1
+batch. The batch proves the same license incarnation and generations are still
+present and inactive, and that no destination credential row exists for the
+source ID or license ID. It never hashes or stores the source credential.
+
+Readback requires the terminal artifact, exact source/descriptor/target
+binding, null destination hash/digests, explicit reason, unchanged inactive
+license generations, and no destination row. Reconciliation treats the source
+row as covered but absent from target storage, includes that disposition in
+the target reconciliation digest, and reports source row count, target row
+count, and deferred row count separately. `fullMigrationReconciled` remains
+false. A local synthetic integration test loses the batch acknowledgement,
+restarts, completes all table reconciliation, and confirms one source row,
+zero destination credential rows, and one deferred row. The focused
+credential schema/import suite passes 11/11. No real source credential or
+remote D1 was used.

@@ -317,12 +317,12 @@ async function findArtifacts(database, binding) {
   );
 }
 
-function makeReservation(row) {
+function makeReservation(row, state = row.state) {
   return Object.freeze({
     artifactId: row.artifact_id,
     artifactKey: row.artifact_key,
     sourceBindingDigest: row.source_binding_digest,
-    state: row.state,
+    state,
     targetIdentity: row.target_identity,
     targetIncarnation: row.target_incarnation,
     destinationLicenseId: row.destination_license_id,
@@ -399,6 +399,64 @@ async function reserveNew(database, binding, nowMs, leaseMs) {
     "credential_artifact_read_failed",
   );
   if (rows.length !== 1 || rows[0].state !== "reserved") fail("credential_artifact_reserve_failed");
+  return rows[0];
+}
+
+async function reserveDeferred(database, binding, state, nowMs) {
+  const artifactId = randomUUID();
+  const sql = [
+    'INSERT INTO "credential_transform_artifacts" (',
+    '"artifact_id", "artifact_key", "source_binding_digest", "target_profile_fingerprint",',
+    '"source_manifest_digest", "descriptor_digest", "source_relation", "source_primary_key_json",',
+    '"source_row_identity_digest", "source_envelope_digest", "source_revision",',
+    '"destination_relation", "destination_column", "destination_license_id",',
+    '"target_identity", "target_incarnation", "license_incarnation", "enabled",',
+    '"codec_id", "codec_parameters_version", "codec_cost", "transform_contract_version",',
+    '"policy_version", "expected_password_generation", "expected_access_generation",',
+    '"expected_lifecycle_generation", "state", "lease_id", "lease_expires_at", "fencing_token", "created_at", "failure_code"',
+    ') SELECT',
+    '?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,',
+    '\'rejected\', NULL, NULL, 1, ?, \'credential_row_deferred_inactive\'',
+    'WHERE EXISTS (SELECT 1 FROM "fanmark_licenses" AS l',
+    'JOIN "fanmark_license_incarnations" AS i ON i."license_id" = l."id"',
+    'JOIN "fanmark_access_versions" AS v ON v."license_id" = l."id"',
+    'WHERE l."id" = ? AND l."status" = ? AND l."is_returned" = ?',
+    'AND (l."status" != \'active\' OR l."is_returned" != 0)',
+    'AND i."incarnation" = ? AND v."license_incarnation" = i."incarnation"',
+    'AND v."password_generation" = ? AND v."access_generation" = ? AND l."lifecycle_generation" = ?)',
+  ].join(" ");
+  const values = [
+    artifactId, binding.artifactKey, binding.sourceBindingDigest, binding.targetProfileFingerprint,
+    binding.sourceManifestDigest, binding.descriptorDigest, binding.sourceRelation, binding.sourcePrimaryKeyJson,
+    binding.sourceRowIdentityDigest, binding.sourceEnvelopeDigest, binding.sourceRevision,
+    binding.destinationRelation, binding.destinationColumn, binding.destinationLicenseId,
+    binding.targetIdentity, binding.targetIncarnation, binding.licenseIncarnation, binding.enabled,
+    binding.codecId, binding.codecParametersVersion, binding.codecCost, binding.transformContractVersion,
+    binding.policyVersion, binding.expectedPasswordGeneration, binding.expectedAccessGeneration,
+    binding.expectedLifecycleGeneration, isoTimestamp(nowMs),
+    binding.destinationLicenseId, state.status, state.returned,
+    binding.licenseIncarnation, binding.expectedPasswordGeneration,
+    binding.expectedAccessGeneration, binding.expectedLifecycleGeneration,
+  ];
+  try {
+    await runBatch(database, sql, values, "credential_artifact_defer_failed");
+  } catch {
+    const raced = await findArtifacts(database, binding);
+    if (raced.length === 1) {
+      assertArtifactBinding(raced[0], binding);
+      if (raced[0].state === "rejected" && raced[0].failure_code === "credential_row_deferred_inactive") return raced[0];
+    }
+    fail("credential_artifact_defer_failed");
+  }
+  const rows = await queryRows(
+    database,
+    'SELECT * FROM "credential_transform_artifacts" WHERE "artifact_id" = ? LIMIT 2',
+    [artifactId],
+    "credential_artifact_read_failed",
+  );
+  if (rows.length !== 1 || rows[0].state !== "rejected" || rows[0].failure_code !== "credential_row_deferred_inactive") {
+    fail("credential_artifact_defer_failed");
+  }
   return rows[0];
 }
 
@@ -479,7 +537,6 @@ export async function reserveCredentialImportArtifact({
   let binding;
   if (existing.length === 0) {
     const state = await readLicenseState(database, licenseId);
-    assertEligibleLicense(state);
     binding = buildBinding({
       projection,
       input,
@@ -489,7 +546,9 @@ export async function reserveCredentialImportArtifact({
       sourceManifestDigest,
       targetProfileFingerprint,
     });
-    row = await reserveNew(database, binding, nowMs, leaseMs);
+    row = state.status === "active" && state.returned === 0
+      ? await reserveNew(database, binding, nowMs, leaseMs)
+      : await reserveDeferred(database, binding, state, nowMs);
   } else {
     row = existing[0];
     binding = buildBinding({
@@ -508,6 +567,16 @@ export async function reserveCredentialImportArtifact({
     });
     assertArtifactBinding(row, binding);
     const state = await readLicenseState(database, licenseId);
+    if (row.state === "rejected" && row.failure_code === "credential_row_deferred_inactive") {
+      if (
+        (state.status === "active" && state.returned === 0) ||
+        state.licenseIncarnation !== binding.licenseIncarnation ||
+        state.passwordGeneration !== binding.expectedPasswordGeneration ||
+        state.accessGeneration !== binding.expectedAccessGeneration ||
+        state.lifecycleGeneration !== binding.expectedLifecycleGeneration
+      ) fail("credential_artifact_target_changed");
+      return makeReservation(row, "deferred_inactive");
+    }
     assertLiveStateMatchesArtifact(state, binding, ["applied", "reconciled"].includes(row.state));
     if (["applied", "reconciled"].includes(row.state)) return makeReservation(row);
     if (!["reserved", "prepared"].includes(row.state)) fail("credential_artifact_state_invalid");
@@ -515,7 +584,9 @@ export async function reserveCredentialImportArtifact({
     if (row.lease_id && expiresAt > nowMs) fail("credential_artifact_lease_busy");
     row = await reclaim(database, row, binding, nowMs, leaseMs);
   }
-  const reservation = makeReservation(row);
+  const reservation = row.state === "rejected" && row.failure_code === "credential_row_deferred_inactive"
+    ? makeReservation(row, "deferred_inactive")
+    : makeReservation(row);
   if (row.state === "reserved") {
     const sourceEnvelope = JSON.parse(input.sourceEnvelopeBytes);
     const sourcePassword = sourceEnvelope?.values?.[input.descriptor.sourceColumn];

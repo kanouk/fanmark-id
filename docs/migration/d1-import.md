@@ -103,17 +103,24 @@ generations, and checkpoint before the artifact is marked `reconciled`. An
 acknowledgement-unknown retry reuses the prepared artifact and converges on the
 same row.
 
-Disabled credentials and credentials tied to inactive/returned licenses still
-fail with explicit deferred-row errors. Durable deferred-coverage records are
-not implemented, so these cases cannot be skipped or declared reconciled. The
-current source-shaped proof also remains local and synthetic: the fresh
-40-table catalog rehearsal imported three synthetic rows, completed all 40
-checkpoints, resumed after an injected acknowledgement-unknown result, read
-back all tables, and rejected tampered credential coverage. Its final status
-was `public_rows_reconciled`, with `deployable` and
-`fullMigrationReconciled` false. The catalog still has 18 blocking schema
-gates. No real Auth, business, Storage, or credential rows were read or
-migrated.
+Disabled credentials on active licenses are bcrypt-transformed with the
+disabled flag preserved. Credentials attached to inactive/returned licenses
+are recorded as `deferred_inactive`: the importer writes no target credential
+row or destination hash. A metadata-only terminal artifact is first
+conditionally inserted against the observed inactive license state; its
+existence, matching coverage, and unchanged license incarnation/generations
+are then checked in the atomic coverage/checkpoint batch. Readback verifies the
+explicit reason and absence of a target row.
+Reconciliation counts these source rows as covered and reports target and
+deferred counts separately; `fullMigrationReconciled` remains false.
+
+The source-shaped proof remains local and synthetic: the fresh 40-table
+catalog rehearsal imported three synthetic rows, completed all 40 checkpoints,
+resumed after an injected acknowledgement-unknown result, read back all
+tables, and rejected tampered credential coverage. A separate inactive-license
+full-import fixture verifies durable deferral and ACK-unknown resume. The
+catalog still has 18 blocking schema gates. No real Auth, business, Storage,
+or credential rows were read or migrated.
 
 ### Current catalog rerun (2026-09-26)
 
