@@ -1389,3 +1389,22 @@ master Worker/D1 tests 6/6, and same-session admin authorization tests 13/13.
 The authenticated admin editor and paired Supabase Edge checkout cutover remain
 open. No user rows, Stripe resources, production routes, or domain/DNS settings
 changed.
+
+## Conditional Better Auth email/OAuth deployment (2026-09-26 JST)
+
+After confirming there were no pending migrations on business, Auth, or master
+D1, commit `76293cc` was deployed to `fanmark-app-staging`. Wrangler reported
+Worker version `bc5ad53e-5f08-492b-81fb-8046c9be9600`; the deployment list
+shows it at 100%. The deployment retains the existing split D1/R2 bindings and
+Cron schedules. No email/OAuth selector or provider secret was added.
+
+Read-only requests returned `/api/auth/capabilities` with
+`emailVerification:false`, `passwordReset:false`, `signUp:false`, and
+`socialProviders:[]`; `/api/auth/ok` returned 200 and anonymous
+`/api/admin/session` returned 401. Synthetic email/password signup, password
+reset request, social sign-in, and Google callback requests returned 403.
+Browser-navigation requests to `/auth`, `/forgot-password`, and
+`/reset-password?token=synthetic` served the SPA with 200. No email, OAuth
+provider callback, Auth/Business D1 write, production route, or domain/DNS
+change occurred. This verifies that the new integration is present but remains
+closed by default; provider delivery and successful login are untested.

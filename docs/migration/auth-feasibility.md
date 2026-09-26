@@ -385,11 +385,15 @@ disabled; this wiring can authenticate only identities already present in the
 Better Auth store. The frontend exposes reset and social actions only when the
 Worker reports the corresponding capability. No live OAuth callback was run.
 
-These changes are local to the migration worktree and are not present in the
-currently deployed staging Worker. Staging selectors and provider/email
-secrets remain unset. Real verification delivery, password reset, OAuth
-provider registration/callbacks, identity linking, and user/Auth migration
-remain unverified and out of this implementation stage.
+These changes are deployed to the workers.dev staging Worker as version
+`bc5ad53e-5f08-492b-81fb-8046c9be9600` at 100%. Live capabilities read back
+`emailVerification: false`, `passwordReset: false`, `signUp: false`, and an
+empty provider list. Synthetic sign-up, reset, social sign-in, and OAuth
+callback requests all returned 403; auth health returned 200 and anonymous
+admin session returned 401. Staging selectors and provider/email secrets
+remain unset. No real mail or provider callback was run. Identity linking,
+real provider registration, user/Auth migration, and CPU fit remain
+unverified.
 
 ## 公式一次資料
 

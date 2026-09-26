@@ -1513,8 +1513,12 @@ only when the Worker reports the corresponding capability.
 Local verification passed for auth-email 3/3, auth-social 3/3, auth D1 15/15,
 and Better Auth client 13/13. The full Worker suite, both TypeScript checks,
 CI isolation check, and Cloudflare staging build passed on Node 22.6.0. No
-Resend or OAuth credentials are configured, no mail or provider callback was
-executed, and these changes have not been deployed. The currently deployed
-Worker therefore still keeps signup, email, OAuth, and reset routes closed.
-No real users, production routes, or domain/DNS settings were changed. See
+Resend or OAuth credentials are configured and no mail or provider callback
+was executed. Version `bc5ad53e-5f08-492b-81fb-8046c9be9600` is deployed at
+100% to workers.dev staging. Live capability readback returned all email and
+signup flags false with no social providers; synthetic signup, reset,
+social-sign-in, and callback requests returned 403. Auth health returned 200,
+anonymous admin session 401, and browser navigations to `/auth`,
+`/forgot-password`, and `/reset-password` served the SPA with 200. No real
+users, production routes, or domain/DNS settings were changed. See
 [auth feasibility](auth-feasibility.md).
