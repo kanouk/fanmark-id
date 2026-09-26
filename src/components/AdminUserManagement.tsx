@@ -221,6 +221,15 @@ export const AdminUserManagement: React.FC = () => {
             }
           : undefined;
 
+      if (userManagementBackend === "worker") {
+        return workerUserApi.updatePlan({
+          userId: selectedUserId,
+          newPlanType: targetPlan,
+          enterpriseOverrides: overrides,
+          reason: planChangeReason || null,
+        });
+      }
+
       const { data, error } = await supabase.functions.invoke("admin-update-user-plan", {
         body: {
           userId: selectedUserId,
@@ -745,7 +754,7 @@ export const AdminUserManagement: React.FC = () => {
           <SheetFooter className="flex flex-col gap-3">
             <div className="grid grid-cols-1 gap-3">
               <Button
-                disabled={!selectedDetail || workerReadOnly}
+                disabled={!selectedDetail}
                 onClick={() => setIsPlanDialogOpen(true)}
                 variant="outline"
                 className="justify-start"

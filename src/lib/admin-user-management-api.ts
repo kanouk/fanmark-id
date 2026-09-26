@@ -79,6 +79,14 @@ export interface AdminUserDetailResponse {
   }>;
 }
 
+export interface AdminPlanUpdateResult {
+  success: true;
+  previousPlanType: AdminListedUser["planType"];
+  newPlanType: AdminListedUser["planType"];
+  enterpriseSettings: { customFanmarksLimit: number | null; customPricing: number | null; notes: string | null } | null;
+  updatedAt: string;
+}
+
 export class AdminUserManagementApiError extends Error {
   readonly kind: "configuration" | "http" | "invalid_response" | "network" | "timeout";
   readonly status?: number;
@@ -221,6 +229,22 @@ function parseDetail(value: unknown): AdminUserDetailResponse {
   return value as unknown as AdminUserDetailResponse;
 }
 
+function parsePlanUpdate(value: unknown): AdminPlanUpdateResult {
+  if (!isRecord(value) || !exactKeys(value, ["success", "previousPlanType", "newPlanType", "enterpriseSettings", "updatedAt"]) ||
+      value.success !== true || typeof value.previousPlanType !== "string" || !PLANS.has(value.previousPlanType) ||
+      typeof value.newPlanType !== "string" || !PLANS.has(value.newPlanType) || !validTime(value.updatedAt)) {
+    throw new AdminUserManagementApiError("invalid_response");
+  }
+  if (value.enterpriseSettings !== null && (!isRecord(value.enterpriseSettings) ||
+      !exactKeys(value.enterpriseSettings, ["customFanmarksLimit", "customPricing", "notes"]) ||
+      !(value.enterpriseSettings.customFanmarksLimit === null || nonnegativeInteger(value.enterpriseSettings.customFanmarksLimit)) ||
+      !(value.enterpriseSettings.customPricing === null || nonnegativeInteger(value.enterpriseSettings.customPricing)) ||
+      !nullableText(value.enterpriseSettings.notes, 8192))) {
+    throw new AdminUserManagementApiError("invalid_response");
+  }
+  return value as unknown as AdminPlanUpdateResult;
+}
+
 function endpoint(baseUrl: string, suffix = ""): URL {
   try {
     const url = buildRecentFanmarksApiUrl(baseUrl);
@@ -297,6 +321,18 @@ export function createAdminUserManagementApi(options: RequestOptions = {}) {
     async detail(userId: string): Promise<AdminUserDetailResponse> {
       if (!userId || userId.length > 128 || !/^[A-Za-z0-9_-]+$/u.test(userId)) throw new AdminUserManagementApiError("configuration");
       return parseDetail(await request(`/${encodeURIComponent(userId)}`, { userId }, options));
+    },
+    async updatePlan(input: {
+      userId: string;
+      newPlanType: AdminListedUser["planType"];
+      enterpriseOverrides?: { customFanmarksLimit: number | null; customPricing: number | null; notes: string | null };
+      reason?: string | null;
+    }): Promise<AdminPlanUpdateResult> {
+      if (!input.userId || input.userId.length > 128 || !/^[A-Za-z0-9_-]+$/u.test(input.userId) ||
+          !PLANS.has(input.newPlanType) || (input.reason !== undefined && input.reason !== null && input.reason.length > 2000)) {
+        throw new AdminUserManagementApiError("configuration");
+      }
+      return parsePlanUpdate(await request(`/${encodeURIComponent(input.userId)}/plan`, { ...input }, options));
     },
   };
 }

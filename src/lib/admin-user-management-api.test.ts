@@ -84,3 +84,46 @@ test("loads one user detail and rejects cross-origin auth or malformed worker pa
     (error: unknown) => error instanceof AdminUserManagementApiError && error.kind === "invalid_response",
   );
 });
+
+test("updates plans through a credentialed same-origin Worker request and validates the result", async () => {
+  let seenRequest: Request | undefined;
+  const api = createAdminUserManagementApi({
+    baseUrl: "https://app.example.test",
+    authBaseUrl: "https://app.example.test",
+    fetchImpl: async (input, init) => {
+      seenRequest = new Request(input, init);
+      return Response.json({
+        success: true,
+        previousPlanType: "free",
+        newPlanType: "enterprise",
+        enterpriseSettings: { customFanmarksLimit: 250, customPricing: 55000, notes: "synthetic" },
+        updatedAt: time,
+      }, { headers: { "cache-control": "no-store" } });
+    },
+  });
+  const result = await api.updatePlan({
+    userId,
+    newPlanType: "enterprise",
+    enterpriseOverrides: { customFanmarksLimit: 250, customPricing: 55000, notes: "synthetic" },
+    reason: "synthetic verification",
+  });
+  assert.equal(result.newPlanType, "enterprise");
+  assert.equal(seenRequest?.url, `https://app.example.test/api/admin/users/${userId}/plan`);
+  assert.equal(seenRequest?.credentials, "include");
+  assert.equal(seenRequest?.cache, "no-store");
+  assert.deepEqual(await seenRequest?.json(), {
+    userId,
+    newPlanType: "enterprise",
+    enterpriseOverrides: { customFanmarksLimit: 250, customPricing: 55000, notes: "synthetic" },
+    reason: "synthetic verification",
+  });
+
+  await assert.rejects(
+    createAdminUserManagementApi({
+      baseUrl: "https://app.example.test",
+      authBaseUrl: "https://app.example.test",
+      fetchImpl: async () => Response.json({ success: true, previousPlanType: "free", newPlanType: "enterprise", enterpriseSettings: { customFanmarksLimit: -1, customPricing: null, notes: null }, updatedAt: time }),
+    }).updatePlan({ userId, newPlanType: "enterprise" }),
+    (error: unknown) => error instanceof AdminUserManagementApiError && error.kind === "invalid_response",
+  );
+});

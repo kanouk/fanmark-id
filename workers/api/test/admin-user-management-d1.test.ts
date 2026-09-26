@@ -79,8 +79,9 @@ async function resetRows(): Promise<void> {
       VALUES (?, 'user-two', 'Second User', NULL, 'creator', 'en', ?, ?)`)
       .bind(userB, time, time),
     business.prepare(`INSERT INTO enterprise_user_settings
-      (user_id, custom_fanmarks_limit, custom_pricing, notes, updated_at) VALUES (?, 99, 1200, 'synthetic note', ?)`)
-      .bind(userA, time),
+      (user_id, custom_fanmarks_limit, custom_pricing, notes, created_at, updated_at, created_by)
+      VALUES (?, 99, 1200, 'synthetic note', ?, ?, ?)`)
+      .bind(userA, time, time, "49999999-9999-4999-8999-999999999999"),
     business.prepare(`INSERT INTO fanmarks (id, user_input_fanmark, status, tier_level) VALUES (?, '🍋', 'active', 1), (?, '🌸', 'active', 2)`)
       .bind(fanmarkA1, fanmarkA2),
     business.prepare(`INSERT INTO fanmark_licenses
@@ -156,6 +157,85 @@ describe("D1 administrator user directory", () => {
     });
     expect(longSearch.status).toBe(200);
     expect((await longSearch.json() as { data: unknown[] }).data).toHaveLength(0);
+  });
+
+  it("updates the plan, Enterprise settings, and audit record in one D1 batch", async () => {
+    const enterprise = await request(`/api/admin/users/${userA}/plan`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        userId: userA,
+        newPlanType: "enterprise",
+        enterpriseOverrides: { customFanmarksLimit: 250, customPricing: 55000, notes: "synthetic plan test" },
+        reason: "synthetic verification",
+      }),
+    });
+    expect(enterprise.status).toBe(200);
+    expect(await enterprise.json()).toMatchObject({
+      success: true,
+      previousPlanType: "free",
+      newPlanType: "enterprise",
+      enterpriseSettings: { customFanmarksLimit: 250, customPricing: 55000, notes: "synthetic plan test" },
+      updatedAt: now.toISOString(),
+    });
+    const enterpriseProfile = await business!.prepare("SELECT plan_type FROM user_settings WHERE user_id = ?")
+      .bind(userA).first<{ plan_type: string }>();
+    const enterpriseSettings = await business!.prepare(`SELECT custom_fanmarks_limit, custom_pricing, notes
+      FROM enterprise_user_settings WHERE user_id = ?`).bind(userA).first<Record<string, unknown>>();
+    expect(enterpriseProfile?.plan_type).toBe("enterprise");
+    expect(enterpriseSettings).toEqual({ custom_fanmarks_limit: 250, custom_pricing: 55000, notes: "synthetic plan test" });
+
+    const maxPlan = await request(`/api/admin/users/${userA}/plan`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ userId: userA, newPlanType: "max" }),
+    });
+    expect(maxPlan.status).toBe(200);
+    expect(await maxPlan.json()).toMatchObject({ previousPlanType: "enterprise", newPlanType: "max", enterpriseSettings: null });
+    const remainingSettings = await business!.prepare("SELECT user_id FROM enterprise_user_settings WHERE user_id = ?")
+      .bind(userA).first();
+    expect(remainingSettings).toBeNull();
+    const audit = await business!.prepare(`SELECT COUNT(*) AS count FROM audit_logs WHERE action = 'ADMIN_UPDATE_PLAN'
+      AND user_id = ? AND resource_id = ?`).bind("49999999-9999-4999-8999-999999999999", userA)
+      .first<{ count: number }>();
+    expect(audit?.count).toBe(2);
+  });
+
+  it("rejects invalid plan changes and rolls back when the audit effect fails", async () => {
+    const denied = await request(`/api/admin/users/${userA}/plan`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ userId: userA, newPlanType: "enterprise" }),
+    }, {}, denyAdmin);
+    expect(denied.status).toBe(403);
+
+    const invalid = await request(`/api/admin/users/${userA}/plan`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ userId: userA, newPlanType: "enterprise", enterpriseOverrides: { customPricing: -1 } }),
+    });
+    expect(invalid.status).toBe(400);
+
+    await business!.prepare(`CREATE TRIGGER reject_admin_plan_audit BEFORE INSERT ON audit_logs
+      WHEN NEW.action = 'ADMIN_UPDATE_PLAN' BEGIN SELECT RAISE(ABORT, 'synthetic audit failure'); END`).run();
+    try {
+      const failed = await request(`/api/admin/users/${userA}/plan`, {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ userId: userA, newPlanType: "enterprise", enterpriseOverrides: { customFanmarksLimit: 250 } }),
+      });
+      expect(failed.status).toBe(503);
+      const profile = await business!.prepare("SELECT plan_type FROM user_settings WHERE user_id = ?")
+        .bind(userA).first<{ plan_type: string }>();
+      const enterprise = await business!.prepare("SELECT user_id FROM enterprise_user_settings WHERE user_id = ?")
+        .bind(userA).first();
+      const enterpriseSettings = await business!.prepare(`SELECT custom_fanmarks_limit, custom_pricing, notes
+        FROM enterprise_user_settings WHERE user_id = ?`).bind(userA).first<Record<string, unknown>>();
+      const audit = await business!.prepare("SELECT id FROM audit_logs WHERE action = 'ADMIN_UPDATE_PLAN'").first();
+      expect(profile?.plan_type).toBe("free");
+      expect(enterprise).not.toBeNull();
+      expect(enterpriseSettings).toEqual({ custom_fanmarks_limit: 99, custom_pricing: 1200, notes: "synthetic note" });
+      expect(audit).toBeNull();
+    } finally {
+      await business!.prepare("DROP TRIGGER reject_admin_plan_audit").run();
+    }
   });
 
   it("returns recent license, MFA, and redacted audit projections behind the admin authorizer", async () => {

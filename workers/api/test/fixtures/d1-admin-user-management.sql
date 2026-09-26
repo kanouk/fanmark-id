@@ -10,11 +10,15 @@ CREATE TABLE user_settings (
   updated_at TEXT NOT NULL
 );
 CREATE TABLE enterprise_user_settings (
-  user_id TEXT PRIMARY KEY,
+  id TEXT NOT NULL DEFAULT ('synthetic-' || lower(hex(randomblob(8)))),
+  user_id TEXT NOT NULL UNIQUE,
   custom_fanmarks_limit INTEGER,
   custom_pricing INTEGER,
   notes TEXT,
-  updated_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  created_by TEXT,
+  PRIMARY KEY (id)
 );
 CREATE TABLE fanmarks (
   id TEXT PRIMARY KEY,

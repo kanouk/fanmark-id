@@ -159,6 +159,48 @@ function parseListRequest(value: unknown): ListRequest {
   };
 }
 
+interface UpdatePlanRequest {
+  userId: string;
+  newPlanType: string;
+  reason: string | null;
+  enterpriseOverrides: { customFanmarksLimit: number | null; customPricing: number | null; notes: string | null };
+}
+
+function parseNullableNonnegativeInteger(value: unknown): number | null {
+  if (value === undefined || value === null || (typeof value === "string" && !value.trim())) return null;
+  const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value) : Number.NaN;
+  if (!Number.isSafeInteger(parsed) || parsed < 0) fail("invalid_request", 400);
+  return parsed;
+}
+
+function parseUpdatePlanRequest(value: unknown, pathUserId: string): UpdatePlanRequest {
+  if (!isRecord(value) || Object.keys(value).some((key) =>
+    !["userId", "newPlanType", "reason", "enterpriseOverrides"].includes(key)) ||
+      value.userId !== pathUserId || typeof value.newPlanType !== "string" || !PLANS.has(value.newPlanType)) {
+    fail("invalid_request", 400);
+  }
+  const reason = value.reason === undefined || value.reason === null ? null : value.reason;
+  if (!(reason === null || (typeof reason === "string" && reason.length <= 2000))) fail("invalid_request", 400);
+  const overrides = value.enterpriseOverrides;
+  if (overrides !== undefined && overrides !== null && (!isRecord(overrides) || Object.keys(overrides).some((key) =>
+    !["customFanmarksLimit", "customPricing", "notes"].includes(key)))) {
+    fail("invalid_request", 400);
+  }
+  const overrideValues = isRecord(overrides) ? overrides : {};
+  const notes = overrideValues.notes === undefined || overrideValues.notes === null ? null : overrideValues.notes;
+  if (!(notes === null || (typeof notes === "string" && notes.length <= 8192))) fail("invalid_request", 400);
+  return {
+    userId: pathUserId,
+    newPlanType: value.newPlanType,
+    reason,
+    enterpriseOverrides: {
+      customFanmarksLimit: parseNullableNonnegativeInteger(overrideValues.customFanmarksLimit),
+      customPricing: parseNullableNonnegativeInteger(overrideValues.customPricing),
+      notes,
+    },
+  };
+}
+
 async function readProfiles(
   business: D1Database,
   auth: D1Database,
@@ -474,6 +516,65 @@ async function listUsers(
   }, 200, headers);
 }
 
+async function updateUserPlan(
+  input: UpdatePlanRequest,
+  business: D1Database,
+  auth: D1Database,
+  authorization: { userId: string; sessionId: string },
+  now: Date,
+  headers: Headers,
+): Promise<Response> {
+  const [profile, authUser] = await Promise.all([
+    business.prepare("SELECT plan_type FROM user_settings WHERE user_id = ?").bind(input.userId)
+      .first<{ plan_type?: unknown }>(),
+    auth.prepare('SELECT id FROM "user" WHERE id = ?').bind(input.userId).first<{ id?: unknown }>(),
+  ]);
+  if (!profile || !authUser || authUser.id !== input.userId) fail("user_not_found", 404);
+  if (typeof profile.plan_type !== "string" || !PLANS.has(profile.plan_type)) fail("admin_user_management_unavailable");
+
+  const previousPlanType = profile.plan_type;
+  const updatedAt = now.toISOString();
+  const id = crypto.randomUUID();
+  const enterprise = input.newPlanType === "enterprise" ? input.enterpriseOverrides : null;
+  const metadata = JSON.stringify({
+    previousPlan: previousPlanType,
+    newPlan: input.newPlanType,
+    reason: input.reason,
+    enterpriseOverrides: enterprise,
+  });
+  const statements = [
+    business.prepare(`UPDATE user_settings SET plan_type = ?, updated_at = ?
+      WHERE user_id = ? AND plan_type = ?`).bind(input.newPlanType, updatedAt, input.userId, previousPlanType),
+    business.prepare(`INSERT INTO audit_logs (id, user_id, action, resource_type, resource_id, metadata, created_at)
+      SELECT ?, ?, 'ADMIN_UPDATE_PLAN', 'user', ?, ?, ? WHERE changes() = 1`)
+      .bind(id, authorization.userId, input.userId, metadata, updatedAt),
+    enterprise
+      ? business.prepare(`INSERT INTO enterprise_user_settings
+          (user_id, custom_fanmarks_limit, custom_pricing, notes, created_at, updated_at, created_by)
+        SELECT ?, ?, ?, ?, ?, ?, ? WHERE changes() = 1
+        ON CONFLICT(user_id) DO UPDATE SET
+          custom_fanmarks_limit = excluded.custom_fanmarks_limit,
+          custom_pricing = excluded.custom_pricing,
+          notes = excluded.notes,
+          updated_at = excluded.updated_at,
+          created_by = excluded.created_by`)
+        .bind(input.userId, enterprise.customFanmarksLimit, enterprise.customPricing, enterprise.notes, updatedAt,
+          updatedAt, authorization.userId)
+      : business.prepare("DELETE FROM enterprise_user_settings WHERE user_id = ? AND changes() = 1")
+        .bind(input.userId),
+  ];
+  const results = await business.batch(statements);
+  if (results.length !== statements.length || results.some((result) => !result.success)) fail("admin_user_management_unavailable");
+  if (results[0]?.meta.changes !== 1) fail("user_plan_conflict", 409);
+  return json({
+    success: true,
+    previousPlanType,
+    newPlanType: input.newPlanType,
+    enterpriseSettings: enterprise,
+    updatedAt,
+  }, 200, headers);
+}
+
 function safeMetadata(value: unknown): Record<string, unknown> {
   if (value === null || value === undefined) return {};
   if (typeof value !== "string" || value.length > 16 * 1024) fail("admin_user_management_unavailable");
@@ -628,8 +729,9 @@ export async function handleAdminUserManagementRequest(
   if (url.search || url.hash) return json({ error: "not_found" }, 404);
   const headers = new Headers();
   if (!cors(request, env, headers)) return json({ error: "forbidden_origin" }, 403);
+  const planMatch = /^\/api\/admin\/users\/([^/]+)\/plan$/u.exec(url.pathname);
   const detailMatch = /^\/api\/admin\/users\/([^/]+)$/u.exec(url.pathname);
-  const userId = detailMatch?.[1] ?? null;
+  const userId = planMatch?.[1] ?? detailMatch?.[1] ?? null;
   if (url.pathname !== API_PATH && userId === null) return json({ error: "not_found" }, 404, headers);
   if (userId !== null && (!userId || userId.length > 128 || !/^[A-Za-z0-9_-]+$/u.test(userId))) return json({ error: "not_found" }, 404, headers);
   if (request.method === "OPTIONS") { headers.set("allow", "POST, OPTIONS"); return new Response(null, { status: 204, headers }); }
@@ -640,6 +742,12 @@ export async function handleAdminUserManagementRequest(
 
   try {
     const { business, auth } = selectedDatabases(env);
+    if (planMatch && userId !== null) {
+      const body = await readBody(request);
+      return await updateUserPlan(
+        parseUpdatePlanRequest(body, userId), business, auth, authorization, dependencies.now?.() ?? new Date(), headers,
+      );
+    }
     if (userId !== null) {
       const body = await readBody(request);
       if (!isRecord(body) || Object.keys(body).length !== 1 || body.userId !== userId) fail("invalid_request", 400);

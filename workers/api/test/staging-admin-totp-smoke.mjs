@@ -36,13 +36,14 @@ function requireExplicitStagingConsent() {
   const emojiMasterRoundtrip = args.has("--emoji-master-draft-roundtrip");
   const referenceMasterPricingReadback = args.has("--reference-master-pricing-readback");
   const adminUserManagementReadback = args.has("--admin-user-management-readback");
+  const adminUserPlanReadback = args.has("--admin-user-plan-readback");
   if (!args.has("--run-live-staging-write") || !args.has(`--database=${expectedDatabase}`) ||
-      (!emojiMasterRoundtrip && !referenceMasterPricingReadback && !adminUserManagementReadback)) {
+      (!emojiMasterRoundtrip && !referenceMasterPricingReadback && !adminUserManagementReadback && !adminUserPlanReadback)) {
     throw new Error(
       `Refusing remote staging writes. Pass --run-live-staging-write --database=${expectedDatabase} and an explicit smoke flag.`,
     );
   }
-  return { emojiMasterRoundtrip, referenceMasterPricingReadback, adminUserManagementReadback };
+  return { emojiMasterRoundtrip, referenceMasterPricingReadback, adminUserManagementReadback, adminUserPlanReadback };
 }
 
 async function assertStagingTarget() {
@@ -586,6 +587,67 @@ async function exerciseAdminUserManagementReadback(cookie, target) {
   assert.ok(!/password|credential|secret|token/iu.test(JSON.stringify(detail)));
 }
 
+async function exerciseAdminUserPlanReadback(cookie, target) {
+  const route = `/api/admin/users/${encodeURIComponent(target.userId)}/plan`;
+  const anonymous = await request(route, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ userId: target.userId, newPlanType: "enterprise" }),
+  });
+  assertStatus(anonymous, 401, "anonymous admin plan update");
+
+  const enterprise = await request(route, {
+    method: "POST",
+    headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({
+      userId: target.userId,
+      newPlanType: "enterprise",
+      enterpriseOverrides: { customFanmarksLimit: 250, customPricing: 55000, notes: "synthetic staging verification" },
+      reason: "synthetic staging verification",
+    }),
+  });
+  assertStatus(enterprise, 200, "MFA-protected Enterprise plan update");
+  const enterpriseBody = await enterprise.json();
+  assert.equal(enterpriseBody.success, true);
+  assert.equal(enterpriseBody.previousPlanType, "free");
+  assert.equal(enterpriseBody.newPlanType, "enterprise");
+  assert.deepEqual(enterpriseBody.enterpriseSettings, {
+    customFanmarksLimit: 250,
+    customPricing: 55000,
+    notes: "synthetic staging verification",
+  });
+  assert.ok(Number.isFinite(Date.parse(enterpriseBody.updatedAt)), "plan response did not contain an update timestamp");
+
+  const rows = await queryBusiness(`SELECT id, custom_fanmarks_limit, custom_pricing, notes, created_by
+    FROM enterprise_user_settings WHERE user_id = ${sqlLiteral(target.userId)}`);
+  assert.equal(rows.length, 1, "Enterprise settings row was not written exactly once");
+  assert.equal(Number(rows[0].custom_fanmarks_limit), 250);
+  assert.equal(Number(rows[0].custom_pricing), 55000);
+  assert.equal(rows[0].notes, "synthetic staging verification");
+  assert.equal(rows[0].created_by, target.adminUserId);
+
+  const max = await request(route, {
+    method: "POST",
+    headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ userId: target.userId, newPlanType: "max" }),
+  });
+  assertStatus(max, 200, "MFA-protected Max plan update and Enterprise cleanup");
+  assert.equal((await max.json()).newPlanType, "max");
+  const deletedSettings = await queryBusiness(`SELECT COUNT(*) AS count FROM enterprise_user_settings
+    WHERE user_id = ${sqlLiteral(target.userId)}`);
+  assert.equal(Number(deletedSettings[0]?.count), 0, "Enterprise settings remained after leaving Enterprise");
+
+  const restore = await request(route, {
+    method: "POST",
+    headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ userId: target.userId, newPlanType: "free" }),
+  });
+  assertStatus(restore, 200, "synthetic plan baseline restoration");
+  assert.equal((await restore.json()).newPlanType, "free");
+  const finalProfile = await queryBusiness(`SELECT plan_type FROM user_settings WHERE user_id = ${sqlLiteral(target.userId)}`);
+  assert.equal(finalProfile[0]?.plan_type, "free", "synthetic plan baseline was not restored");
+}
+
 async function exerciseAvailabilityRulesAdmin(cookie) {
   const route = "/api/admin/availability-rules";
   const initialRows = await queryBusiness(`SELECT id, rule_type, priority, is_available, rule_config
@@ -872,6 +934,9 @@ async function main() {
         username: targetUsername,
       });
     }
+    if (actions.adminUserPlanReadback) {
+      await exerciseAdminUserPlanReadback(cookie, { userId: targetUserId, adminUserId: userId });
+    }
     flowPassed = true;
     console.log("Staging TOTP verification and same-session admin authorization passed.");
   } finally {
@@ -887,9 +952,10 @@ async function main() {
           `DELETE FROM "user" WHERE "id" = ${sqlLiteral(userId)};`,
           "synthetic identity cleanup",
         );
-        if (actions.adminUserManagementReadback) {
+        if (actions.adminUserManagementReadback || actions.adminUserPlanReadback) {
           await executeBusiness(
-            `DELETE FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL') AND (resource_id IS NULL OR resource_id = ${sqlLiteral(targetUserId)});\n` +
+            `DELETE FROM enterprise_user_settings WHERE user_id = ${sqlLiteral(targetUserId)};\n` +
+            `DELETE FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL', 'ADMIN_UPDATE_PLAN') AND (resource_id IS NULL OR resource_id = ${sqlLiteral(targetUserId)});\n` +
             `DELETE FROM user_settings WHERE user_id = ${sqlLiteral(targetUserId)};`,
             "synthetic admin user-management cleanup",
           );
@@ -899,7 +965,7 @@ async function main() {
           );
           const [profileRows, auditRows, authRows] = await Promise.all([
             queryBusiness(`SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(targetUserId)}`),
-            queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL') AND (resource_id IS NULL OR resource_id = ${sqlLiteral(targetUserId)})`),
+            queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL', 'ADMIN_UPDATE_PLAN') AND (resource_id IS NULL OR resource_id = ${sqlLiteral(targetUserId)})`),
             query(`SELECT COUNT(*) AS count FROM "user" WHERE id = ${sqlLiteral(targetUserId)} AND email = ${sqlLiteral(targetEmail)}`),
           ]);
           assert.equal(Number(profileRows[0]?.count), 0, "synthetic target profile remained in business D1");
@@ -932,6 +998,9 @@ async function main() {
   }
   if (actions.adminUserManagementReadback) {
     console.log("Staging MFA-protected admin user list/detail read the synthetic cross-D1 user; anonymous access was denied and cleanup returned Auth, profile, and audit canary rows to zero.");
+  }
+  if (actions.adminUserPlanReadback) {
+    console.log("Staging MFA-protected plan mutation changed a synthetic profile to Enterprise, verified exact override D1 fields, changed it to Max and back to Free, then cleaned its audit and D1 rows.");
   }
   console.log("Synthetic Auth rows were deleted; readback found all user-owned Auth tables empty.");
   console.log("The monotonic MFA generation counter was preserved and may have advanced during the synthetic factor lifecycle.");

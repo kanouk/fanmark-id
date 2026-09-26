@@ -1861,6 +1861,33 @@ and `audit_logs`; the monotonic `mfaGeneration` value remains 1. HTTP probes
 returned 200 for `/`, 200 for `/api/auth/ok`, and 401 for anonymous
 `/api/admin/session` and `/api/admin/users`.
 
-No real user data, production route, email, Stripe request, or domain/DNS
-state was accessed or changed. Admin plan/status/reset/expiry mutations remain
-unfinished and disabled in Worker mode.
+At that checkpoint, no real user data, production route, email, Stripe request,
+or domain/DNS state was accessed or changed. Admin mutations were disabled;
+the following staging checkpoint records the plan update that was added later.
+
+## MFA-protected admin plan update on staging (2026-09-26 JST)
+
+Added `POST /api/admin/users/:userId/plan` and connected the admin dialog to
+the same-origin Worker client when staging selects D1. The operation checks
+both the Auth identity and business profile, then batches the profile plan
+change, admin audit insert, and Enterprise override upsert/removal in one D1
+transaction. The target D1 table's required `id`, `created_at`, and
+`created_by` columns are populated from its default and the authenticated
+admin. Invalid negative/non-integer overrides are rejected. The API supports
+the `max` option already present in the UI. Audit failure rolls back the plan
+and Enterprise setting together.
+
+The D1 suite passes 6/6, Worker/frontend typechecks pass, the same-origin API
+client suite passes 4/4, the Cloudflare staging build and Wrangler dry-run pass.
+Version `9db2a730-a8e2-49ad-b980-4441368c681e` is active at 100% on
+workers.dev. A live TOTP canary changed one synthetic user Free→Enterprise,
+read back the exact custom limit, JPY price, notes, and admin actor; changed
+the same identity to Max (removing the Enterprise row); and restored Free.
+Anonymous plan mutation returned 401. Independent remote D1 readback found
+zero profiles, Enterprise settings, audits, licenses, Auth users, accounts,
+sessions, factors, roles, and assurances. The monotonic `mfaGeneration`
+singleton remains 1.
+
+No email, Stripe request, real user data, production route, or domain/DNS
+state was accessed or changed. Suspension, reset-link, and immediate-expiry
+operations remain disabled pending their D1/Auth implementations.
