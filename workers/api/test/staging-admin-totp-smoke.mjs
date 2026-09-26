@@ -56,6 +56,8 @@ async function assertStagingTarget() {
   assert.equal(config.vars?.INVITATION_ADMIN_BACKEND, "d1", "expected D1-backed invitation admin API");
   assert.equal(config.vars?.AVAILABILITY_RULES_ADMIN_BACKEND, "d1", "expected D1-backed availability rule admin API");
   assert.equal(config.vars?.NOTIFICATION_MASTER_BACKEND, "d1", "expected D1-backed notification admin API");
+  assert.equal(config.vars?.EMAIL_TEMPLATE_ADMIN_BACKEND, "d1", "expected D1-backed auth email-template admin API");
+  assert.equal(config.vars?.AUTH_EMAIL_TEMPLATE_BACKEND, "d1", "expected D1-backed Better Auth email templates");
   assert.equal(config.vars?.STAGING_NO_INDEX, "true", "expected no-index staging Worker");
   const masterBinding = config.d1_databases?.find((database) => database.binding === "MASTER_DB");
   assert.equal(masterBinding?.database_name, expectedMasterDatabase, "unexpected Master D1 name");
@@ -373,6 +375,42 @@ async function exerciseNotificationMasters(cookie) {
   assert.deepEqual(afterCounts, beforeCounts, "notification log reads changed D1 rows");
 }
 
+async function exerciseAuthEmailTemplatesAdmin(cookie) {
+  const route = "/api/admin/email-templates";
+  const rowsSql = `SELECT id, email_type, language, subject, body_text, button_text,
+      is_active, created_at, updated_at
+    FROM email_templates
+    WHERE email_type IN ('signup', 'recovery', 'magiclink', 'email_change')
+    ORDER BY email_type, language`;
+  const beforeRows = await queryBusiness(rowsSql);
+  assert.equal(beforeRows.length, 16, "expected all 16 allowlisted auth email templates before admin read");
+  const anonymous = await request(route);
+  assertStatus(anonymous, 401, "unauthenticated auth email-template admin read");
+
+  const response = await request(route, { headers: { cookie } });
+  assertStatus(response, 200, "MFA-protected auth email-template list");
+  assert.match(response.headers.get("cache-control") ?? "", /no-store/iu);
+  const body = await response.json();
+  assert.ok(Array.isArray(body.templates));
+  assert.equal(body.templates.length, 16);
+  const expected = new Set(
+    ["signup", "recovery", "magiclink", "email_change"]
+      .flatMap((type) => ["en", "ja", "ko", "id"].map((language) => `${type}/${language}`)),
+  );
+  const actual = body.templates.map((template) => `${template.email_type}/${template.language}`);
+  assert.equal(new Set(actual).size, 16, "auth email-template identities must be unique");
+  assert.deepEqual([...actual].sort(), [...expected].sort());
+  assert.ok(body.templates.every((template) => template.is_active === true));
+  assert.deepEqual(
+    body.templates,
+    beforeRows.map((row) => ({ ...row, is_active: Number(row.is_active) === 1 })),
+    "MFA-protected auth email-template response differed from the full D1 readback",
+  );
+
+  const afterRows = await queryBusiness(rowsSql);
+  assert.deepEqual(afterRows, beforeRows, "auth email-template admin read changed D1 data");
+}
+
 async function exerciseAvailabilityRulesAdmin(cookie) {
   const route = "/api/admin/availability-rules";
   const initialRows = await queryBusiness(`SELECT id, rule_type, priority, is_available, rule_config
@@ -637,6 +675,7 @@ async function main() {
     assert.equal(Number(assuranceRows[0]?.count), 1, "MFA assurance was not persisted for this session");
     await exerciseEmojiMasterDraft(cookie);
     await exerciseNotificationMasters(cookie);
+    await exerciseAuthEmailTemplatesAdmin(cookie);
     await exerciseAvailabilityRulesAdmin(cookie);
     await exerciseInvitationAdmin(cookie);
     flowPassed = true;
@@ -672,6 +711,7 @@ async function main() {
   console.log("Staging MFA-protected invitation-code create/list/CAS-edit/disable/delete round-trip passed and returned business D1 to zero invitation rows.");
   console.log("Staging MFA-protected availability-rule list/CAS-edit/stale-write rejection/restore passed; all four rules remain disabled and created_by stays NULL.");
   console.log("Staging MFA-protected notification rules/templates and payload-redacted event/delivery log reads passed without changing notification rows.");
+  console.log("Staging MFA-protected auth email-template list returned all 16 type/locale pairs; anonymous access was denied without changing D1 rows.");
   console.log("Synthetic Auth rows were deleted; readback found all user-owned Auth tables empty.");
   console.log("The monotonic MFA generation counter was preserved and may have advanced during the synthetic factor lifecycle.");
 }

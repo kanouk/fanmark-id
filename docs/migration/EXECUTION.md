@@ -1794,6 +1794,10 @@ The Cloudflare staging SPA build and Wrangler dry-run passed. Worker version
 `9b1f777e-76e1-4721-8408-1fd44145b4b0` is active at 100%. Read-only probes
 returned 200 for `/`, `/robots.txt`, `/api/auth/ok`, and
 `/api/auth/capabilities`; anonymous `/api/admin/session` and
-`/api/admin/email-templates` returned 401. The capability response keeps
-signup, email delivery, and social providers disabled. No email was sent, no
-user row was copied, and no production route or domain/DNS setting changed.
+`/api/admin/email-templates` returned 401. A synthetic admin completed the
+deployed TOTP/MFA flow, read all 16 template rows from the protected API, and
+matched every field to a D1 readback; the GET left D1 unchanged. The canary
+deleted its Auth rows and verified all user-owned Auth tables returned to
+zero. The capability response keeps signup, email delivery, and social
+providers disabled. No email was sent, no real user row was copied, and no
+production route or domain/DNS setting changed.

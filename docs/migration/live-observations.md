@@ -1449,3 +1449,15 @@ admin-session and email-template requests returned 401. The capability
 response keeps signup, password reset, verification email, and social providers
 disabled. No email was sent; no user data, production routing, or domain/DNS
 setting changed.
+
+## Auth email-template authenticated read canary (2026-09-26 JST)
+
+Extended and ran the existing staging admin TOTP canary against the deployed
+Worker. A synthetic Better Auth admin completed sign-in, first-time TOTP
+enrollment, session rotation, and same-session MFA authorization. The
+unauthenticated email-template list returned 401; the authorized list returned
+all 16 expected type/locale pairs, and every response field matched the D1
+readback. Before/after D1 rows were identical. Existing invitation, availability,
+notification, and emoji-admin round-trips also passed. The canary removed the
+synthetic Auth identity and verified all user-owned Auth tables returned to
+zero; the MFA generation counter remained monotonic and may have advanced.

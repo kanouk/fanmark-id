@@ -46,5 +46,7 @@ readback, the source-content digest, the seed SQL digest, and zero user-owned
 rows. Staging Worker version `9b1f777e-76e1-4721-8408-1fd44145b4b0` now selects
 the D1 editor/template reader; root, robots, Auth health, and Auth capabilities
 return 200, while anonymous admin-session/template requests return 401. Signup,
-OAuth, and email delivery remain disabled; no message was sent and no user data,
-production route, or domain/DNS state changed.
+OAuth, and email delivery remain disabled. A synthetic TOTP admin read all 16
+rows from the protected editor API; each field matched the D1 readback and the
+GET left D1 unchanged. The canary removed its synthetic Auth rows. No message
+was sent and no real user data, production route, or domain/DNS state changed.
