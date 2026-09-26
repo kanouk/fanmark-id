@@ -46,16 +46,21 @@ flow fails closed on locked records; it does not call the legacy Supabase
 password RPC or render empty content. The default Supabase path retains the
 existing protected flow. Production/default access analytics still call the
 Supabase `record-fanmark-access` function; workers.dev staging selects the
-paired D1 write and owner-read APIs described below. The owner/history
-`/f/:shortId` details view remains on Supabase. The staging frontend sets the
-public-read selector and its Worker sets `PUBLIC_ACCESS_BACKEND=d1`. Fanmark/license/config
+paired D1 write and owner-read APIs described below. The `/f/:shortId` details
+view has a separate staging selector: `VITE_FANMARK_DETAILS_BACKEND=worker`
+calls `/api/fanmarks/details`, and the Worker requires
+`FANMARK_DETAILS_BACKEND=d1`. Anonymous details redact ownership/history and
+authenticated details derive owner, favorite, lottery, and history fields
+from the Better Auth session. The staging frontend sets the public-read
+selector and its Worker sets `PUBLIC_ACCESS_BACKEND=d1`. Fanmark/license/config
 and profile projections use the business `FANMARK_DB`; emoji ID and codepoint
 normalization uses the separate `MASTER_DB`. The live synthetic canary
-returned 200/no-store for all three routes while the business D1 had zero
-emoji-master rows, proving the lookup uses the split master binding. Business
-staging otherwise contains only the 40-table structural baseline and no
-imported rows. Production remains on Supabase; this staging proof is not
-evidence of real-data parity or a production cutover.
+returned 200/no-store for all three public routes while the business D1 had
+zero emoji-master rows, proving the lookup uses the split master binding. A
+separate synthetic details canary verified the authenticated projection and
+cleanup. Business staging contains no imported user rows. Production remains
+on Supabase; this staging proof is not evidence of real-data parity or a
+production cutover.
 
 The access routes return a strict versioned object so both lookup methods use
 one mapper:
