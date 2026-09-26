@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { authEmailTemplateBaselineState } from "./staging-auth-email-template-baseline.mjs";
+import {
+  authEmailTemplateBaselineState,
+  authEmailTemplateContentDigest,
+} from "./staging-auth-email-template-baseline.mjs";
 import {
   LEGACY_STAGING_SYSTEM_SETTINGS_MANIFEST,
   STAGING_SYSTEM_SETTINGS_MANIFEST,
@@ -73,4 +76,12 @@ test("auth email templates count as a baseline only with the exact reviewed cont
   );
   assert.equal(authEmailTemplateBaselineState(rows, 16), "invalid");
   assert.equal(authEmailTemplateBaselineState(rows, 17), "invalid");
+  const baselineContentDigest = authEmailTemplateContentDigest(rows);
+  assert.equal(
+    authEmailTemplateContentDigest(rows.map((row) => ({ ...row, updated_at: "2026-09-27T23:59:59.999Z" }))),
+    baselineContentDigest,
+  );
+  assert.notEqual(authEmailTemplateContentDigest(rows.map((row, index) => index === 0
+    ? { ...row, body_text: "Changed synthetic body" }
+    : row)), baselineContentDigest);
 });

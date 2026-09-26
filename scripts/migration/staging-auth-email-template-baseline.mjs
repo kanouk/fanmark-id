@@ -5,6 +5,7 @@ export const AUTH_EMAIL_TEMPLATE_FIELDS = Object.freeze([
 ]);
 
 export const AUTH_EMAIL_TEMPLATE_EXPECTED_SHA256 = "2ccb14f36ef431950871ac820a2e49f1574e415b8c0a3d2d5ad5f0bb17a108e2";
+export const AUTH_EMAIL_TEMPLATE_CONTENT_EXPECTED_SHA256 = "7eaab683337cbdfc36130f075c00287468e3adfaf64adf3b0225e82b139ad8fc";
 
 const ALLOWED_TYPES = new Set(["signup", "recovery", "magiclink", "email_change"]);
 const ALLOWED_LANGUAGES = new Set(["en", "ja", "ko", "id"]);
@@ -48,10 +49,17 @@ export function authEmailTemplateBaselineState(rows, tableRowCount = rows?.lengt
   if (Array.isArray(rows) && rows.length === 0 && count === 0) return "empty";
   if (count !== 16) return "invalid";
   try {
-    const normalized = stableAuthEmailTemplateRows(rows);
-    const actual = createHash("sha256").update(JSON.stringify(normalized)).digest("hex");
-    return actual === AUTH_EMAIL_TEMPLATE_EXPECTED_SHA256 ? "seeded" : "invalid";
+    return authEmailTemplateContentDigest(rows) === AUTH_EMAIL_TEMPLATE_CONTENT_EXPECTED_SHA256 ? "seeded" : "invalid";
   } catch {
     return "invalid";
   }
+}
+
+export function authEmailTemplateContentDigest(rows) {
+  const normalized = stableAuthEmailTemplateRows(rows);
+  // Admin edits use updated_at for compare-and-swap and audit ordering. A
+  // restore therefore intentionally keeps the newer timestamp while restoring
+  // all template content and identity fields.
+  const content = normalized.map(({ updated_at: _updatedAt, ...row }) => row);
+  return createHash("sha256").update(JSON.stringify(content)).digest("hex");
 }

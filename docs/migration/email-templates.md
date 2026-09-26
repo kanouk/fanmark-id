@@ -62,3 +62,12 @@ its exact synthetic Auth/profile rows were removed and verified zero before the
 corrected smoke was rerun successfully. The staging secret-name inventory has
 no Resend key or sender identity, and the admin edit path sends no email. No
 message was sent.
+
+The edit canary advances `updated_at` as required by compare-and-swap, so it is
+not part of the immutable content-baseline digest. The full source/seed digest
+still covers `updated_at` and is used by the snapshot/seed verifier; the live
+staging baseline compares the other identity and content fields against a
+separate pinned digest. This permits an audited edit/restore while still
+rejecting changes to template content. Authenticated admin browser use remains
+unverified. The independent scheduled expiry/lottery Cron proof is recorded in
+[`license-expiry-proof.md`](license-expiry-proof.md).

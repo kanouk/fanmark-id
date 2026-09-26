@@ -222,3 +222,29 @@ This revalidates the one-shot synthetic scheduled path on the current staging
 Worker; `LICENSE_EXPIRY_BACKEND` remains unset, so recurring lifecycle
 processing is still disabled. No real user rows, production route, or domain
 state changed.
+
+## 2026-09-27 staging Cron revalidation
+
+The staging canary's email-template preflight originally compared the entire
+row digest, including `updated_at`. A prior MFA edit/restore correctly left the
+new compare-and-swap timestamp in place, so the stale guard stopped before it
+seeded data or changed the Cron. The live template contents were read back and
+matched the checked-in 16-row seed after excluding only that mutable timestamp.
+The baseline helper now pins those identity/content fields separately while
+the source/seed verifier retains its full digest.
+
+The next run completed the deployed expiry, grace finalization, lottery winner
+issuance, and both in-app notifications. Its first cleanup assertion exposed
+two synthetic derived `notifications` rows left by the successful scheduled
+work. Readback matched both rows to the canary's exact generated users and
+`fanmark_id`; only those rows were removed, and global notification count was
+verified zero. Cleanup now removes those exact derived rows before their source
+events. The full rerun finished with `winner_finalized`, the public grace
+setting restored, lifecycle journals and synthetic business rows at zero, the
+16-row template baseline intact, user-owned Auth tables empty, and all 45
+pre-existing license-incarnation tombstones unchanged. The temporary Cron and
+`LICENSE_EXPIRY_BACKEND` selector were restored to the disabled lifecycle
+baseline; staging version `243e68a0-df6a-4e7c-b290-1ec20bdd2005` is the restored
+build. No email, Stripe operation, production route, real data, or DNS change
+was involved. This remains a one-shot synthetic staging proof, not recurring
+production acceptance.

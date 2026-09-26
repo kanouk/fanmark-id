@@ -2270,3 +2270,29 @@ builds, migration-data tests, and targeted lint passed locally as well. No
 email was sent, real waitlist data was imported, or production/DNS setting was
 changed. The live proof and selector contract are recorded in
 [`waitlist-signup-api.md`](waitlist-signup-api.md).
+
+## Staging expiry/lottery Cron baseline and cleanup correction (2026-09-27 JST)
+
+The one-shot deployed Cron canary now accepts the 16-row localized
+`email_templates` master baseline. An earlier preflight stopped before seeding
+because the live digest included `updated_at`, which had advanced during a
+successful MFA edit/restore. The check now pins template identity/content while
+ignoring only that mutable timestamp; the full snapshot and seed digest still
+include every field. A regression test verifies timestamp tolerance and rejects
+a changed body.
+
+The next scheduled run finalized one synthetic expiry/grace/lottery path and
+emitted the two expected in-app notifications. The first cleanup check found
+those two derived rows after source events and test users were removed. Exact
+synthetic IDs and a zero-row preflight isolated them; only those two rows were
+deleted and global notification count returned to zero. The harness now cleans
+them before deleting their source events. A full rerun completed with
+`winner_finalized`; the grace-period setting was restored, synthetic business
+rows, notifications, events, lifecycle journals, and user-owned Auth rows all
+read back at zero, and the 45 pre-existing incarnation tombstones were
+unchanged. The temporary schedule and expiry selector were restored to the
+disabled lifecycle baseline. The restored Worker is
+`243e68a0-df6a-4e7c-b290-1ec20bdd2005` at 100%. No email, Stripe action,
+production route, real user data, or DNS setting was touched. This proves only
+one synthetic staging scheduled execution; recurring lifecycle activation and
+production acceptance remain open.
