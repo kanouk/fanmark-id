@@ -23,7 +23,7 @@
 - `/forgot-password`: `ForgotPassword.tsx`
 - `/reset-password`: `ResetPassword.tsx`
 - `/profile`: ユーザー設定: `Profile.tsx` + `UserProfileForm.tsx`
-  - `VITE_PROFILE_BACKEND=worker`の明示時はBetter Auth本人sessionで`GET/PATCH /api/me/profile`を使い、表示名・R2 avatar URL・優先言語だけを更新する。plan、Stripe顧客ID、招待コード、password setup状態はWorker APIの書込み対象外。workers.dev stagingでは選択済みで、productionの既定はSupabase。
+  - `VITE_PROFILE_BACKEND=worker`の明示時はBetter Auth本人sessionで`GET/PATCH /api/me/profile`を使い、表示名・R2 avatar URL・優先言語だけを更新する。`GET /api/me/username-availability`も本人sessionのIDで除外対象を決めてbusiness D1を照会する。plan、Stripe顧客ID、招待コード、password setup状態はWorker APIの書込み対象外。workers.dev stagingでは選択済みで、productionの既定はSupabase。
 - `/dashboard`: ダッシュボード（ファンマ管理+移管/抽選バッジ）: `Dashboard.tsx` + `FanmarkDashboard.tsx`
   - 所有ファンマ一覧は既定でSupabase。`VITE_OWNED_FANMARKS_BACKEND=worker`を明示した場合のみ`GET /api/me/fanmarks`へ切り替え、WorkerがBetter Auth sessionの本人IDでD1行を絞る。認証APIとWorkerのoriginを照合し、実行時エラーではSupabaseに戻らない。
 - `/favorites`: お気に入り一覧: `Favorites.tsx` + `useFavoriteFanmarks.ts`。`VITE_FAVORITES_BACKEND=worker`を明示したビルドはBetter Auth本人sessionの`/api/me/favorites`を使い、一覧・追加・削除を同じbackendへ送り、詳細ページの登録状態も同期する。

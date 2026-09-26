@@ -164,3 +164,56 @@ export function updateOwnProfile(patch: OwnProfilePatch, options: Parameters<typ
   }
   return requestProfile(patch, options);
 }
+
+export async function checkOwnUsernameAvailability(username: string, options: {
+  baseUrl?: string;
+  fetchImpl?: typeof fetch;
+  timeoutMs?: number;
+  authBaseUrl?: string;
+} = {}): Promise<boolean> {
+  if (typeof username !== "string" || new TextEncoder().encode(username).byteLength > 256) {
+    throw new ProfileApiError("configuration");
+  }
+  const baseUrl = options.baseUrl ?? getRecentFanmarksApiBaseUrl();
+  if (!baseUrl) throw new ProfileApiError("configuration");
+  const timeoutMs = options.timeoutMs ?? TIMEOUT_MS;
+  if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 30_000) throw new ProfileApiError("configuration");
+  const url = buildOwnProfileApiUrl(baseUrl);
+  url.pathname = "/api/me/username-availability";
+  url.searchParams.set("username", username);
+  const authBaseUrl = options.authBaseUrl ?? (import.meta.env?.VITE_AUTH_API_BASE_URL?.trim() ||
+    (typeof window === "undefined" ? undefined : window.location.origin));
+  assertAuthOrigin(baseUrl, authBaseUrl);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await (options.fetchImpl ?? fetch)(url, {
+      method: "GET",
+      headers: { accept: "application/json" },
+      credentials: "include",
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new ProfileApiError("http", response.status);
+    const contentType = response.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase();
+    if (contentType !== "application/json") throw new ProfileApiError("invalid_response");
+    const text = await response.text();
+    if (new TextEncoder().encode(text).byteLength > 1024) throw new ProfileApiError("invalid_response");
+    let payload: unknown;
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      throw new ProfileApiError("invalid_response");
+    }
+    if (!isRecord(payload) || Object.keys(payload).length !== 2 || payload.schemaVersion !== 1 || typeof payload.available !== "boolean") {
+      throw new ProfileApiError("invalid_response");
+    }
+    return payload.available;
+  } catch (error) {
+    if (error instanceof ProfileApiError) throw error;
+    if (controller.signal.aborted) throw new ProfileApiError("timeout");
+    throw new ProfileApiError("network");
+  } finally {
+    clearTimeout(timeout);
+  }
+}

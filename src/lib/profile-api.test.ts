@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildOwnProfileApiUrl,
+  checkOwnUsernameAvailability,
   getOwnProfileBackend,
   loadOwnProfile,
   ProfileApiError,
@@ -69,4 +70,42 @@ test("the client rejects malformed, oversized, and privilege-shaped responses or
     baseUrl: "https://api.example.test",
     fetchImpl: async () => new Response("x".repeat(16 * 1024 + 1), { headers: { "content-type": "application/json" } }),
   }), ProfileApiError);
+});
+
+test("username availability uses the authenticated same-origin Worker route without a caller-supplied user ID", async () => {
+  const calls: Array<{ url: URL; method: string | undefined; credentials: RequestCredentials | undefined; cache: RequestCache | undefined; body: BodyInit | null | undefined }> = [];
+  const fetchImpl: typeof fetch = async (input, init) => {
+    calls.push({ url: new URL(String(input)), method: init?.method, credentials: init?.credentials, cache: init?.cache, body: init?.body });
+    return new Response(JSON.stringify({ schemaVersion: 1, available: true }), {
+      headers: { "content-type": "application/json" },
+    });
+  };
+  assert.equal(await checkOwnUsernameAvailability("new name", { baseUrl: "https://api.example.test", fetchImpl }), true);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url.pathname, "/api/me/username-availability");
+  assert.equal(calls[0].url.searchParams.get("username"), "new name");
+  assert.deepEqual([...calls[0].url.searchParams.keys()], ["username"]);
+  assert.equal(calls[0].method, "GET");
+  assert.equal(calls[0].credentials, "include");
+  assert.equal(calls[0].cache, "no-store");
+  assert.equal(calls[0].body, undefined);
+});
+
+test("username availability fails closed on HTTP errors, malformed DTOs, and auth-origin mismatch", async () => {
+  let attempts = 0;
+  await assert.rejects(checkOwnUsernameAvailability("candidate", {
+    baseUrl: "https://api.example.test",
+    fetchImpl: async () => { attempts += 1; return new Response("{}", { status: 401 }); },
+  }), (error: unknown) => error instanceof ProfileApiError && error.kind === "http" && error.status === 401);
+  assert.equal(attempts, 1);
+  await assert.rejects(checkOwnUsernameAvailability("candidate", {
+    baseUrl: "https://api.example.test",
+    fetchImpl: async () => new Response(JSON.stringify({ schemaVersion: 1, available: true, userId: "forged" }), { headers: { "content-type": "application/json" } }),
+  }), ProfileApiError);
+  await assert.rejects(checkOwnUsernameAvailability("candidate", {
+    baseUrl: "https://api.example.test",
+    authBaseUrl: "https://auth.example.test",
+    fetchImpl: async () => new Response(JSON.stringify({ schemaVersion: 1, available: true }), { headers: { "content-type": "application/json" } }),
+  }), ProfileApiError);
+  await assert.rejects(checkOwnUsernameAvailability("x".repeat(257), { baseUrl: "https://api.example.test" }), ProfileApiError);
 });

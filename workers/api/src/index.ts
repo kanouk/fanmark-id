@@ -92,6 +92,7 @@ import { handleLifecycleSettingsRequest, isLifecycleSettingsPath } from "./lifec
 import { handleSystemSettingsRequest, isSystemSettingsPath } from "./system-settings-d1-api";
 import { handleFavoritesRequest, isFavoritesPath } from "./favorites-d1-api";
 import { handleSubscriptionRequest, isSubscriptionPath } from "./subscription-d1-api";
+import { handleUsernameAvailabilityRequest, isUsernameAvailabilityPath } from "./username-availability-d1-api";
 import { handleOgpRequest } from "./ogp";
 import { handleFanmarkAccessAnalyticsRequest } from "./fanmark-access-analytics-d1-api";
 import { handleFanmarkAnalyticsRequest } from "./fanmark-analytics-d1-api";
@@ -1215,6 +1216,9 @@ export async function handleRequest(
   }
   if (isProfilePath(url.pathname)) {
     return handleProfileRequest(request, env, resolveStorageAuth);
+  }
+  if (isUsernameAvailabilityPath(url.pathname)) {
+    return (await handleUsernameAvailabilityRequest(request, env, resolveStorageAuth)) ?? errorResponse("not_found", 404, routeHeaders);
   }
   const fanmarkAnalyticsResponse = await handleFanmarkAnalyticsRequest(request, env, resolveStorageAuth, availabilityClock);
   if (fanmarkAnalyticsResponse) return fanmarkAnalyticsResponse;

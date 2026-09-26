@@ -144,6 +144,41 @@ describe("Better Auth own-profile API", () => {
     expect(JSON.stringify(body)).not.toContain("Other Private Name");
   });
 
+  it("checks username availability against D1 and excludes only the Better Auth owner", async () => {
+    const cookie = await signIn(ownerEmail);
+    const own = await request("/api/me/username-availability?username=profile-owner", { headers: { Cookie: cookie } });
+    expect(own.status).toBe(200);
+    expect(own.headers.get("cache-control")).toBe("no-store");
+    expect(own.headers.get("access-control-allow-credentials")).toBe("true");
+    expect(await own.json()).toEqual({ schemaVersion: 1, available: true });
+
+    const other = await request("/api/me/username-availability?username=profile-other", { headers: { Cookie: cookie } });
+    expect(other.status).toBe(200);
+    expect(await other.json()).toEqual({ schemaVersion: 1, available: false });
+
+    const caseInsensitive = await request("/api/me/username-availability?username=PROFILE-OTHER", { headers: { Cookie: cookie } });
+    expect(caseInsensitive.status).toBe(200);
+    expect(await caseInsensitive.json()).toEqual({ schemaVersion: 1, available: false });
+
+    const empty = await request("/api/me/username-availability?username=", { headers: { Cookie: cookie } });
+    expect(empty.status).toBe(200);
+    expect(await empty.json()).toEqual({ schemaVersion: 1, available: false });
+  });
+
+  it("requires an authenticated owner and rejects ambiguous or unsupported availability requests", async () => {
+    const anonymous = await request("/api/me/username-availability?username=profile-other");
+    expect(anonymous.status).toBe(401);
+    expect(anonymous.headers.get("cache-control")).toBe("no-store");
+
+    const cookie = await signIn(ownerEmail);
+    expect((await request("/api/me/username-availability?username=one&username=two", { headers: { Cookie: cookie } })).status).toBe(400);
+    expect((await request(`/api/me/username-availability?username=one&userId=${otherId}`, { headers: { Cookie: cookie } })).status).toBe(400);
+    expect((await request(`/api/me/username-availability?username=${"x".repeat(257)}`, { headers: { Cookie: cookie } })).status).toBe(400);
+    expect((await request("/api/me/username-availability?username=candidate", { method: "POST", headers: { Cookie: cookie } })).status).toBe(405);
+    expect((await request("/api/me/username-availability?username=candidate", { headers: { Origin: "https://attacker.example.test", Cookie: cookie } })).status).toBe(403);
+    expect((await request("/api/me/username-availability?username=candidate", { headers: { Cookie: cookie } }, { PROFILE_BACKEND: undefined })).status).toBe(503);
+  });
+
   it("updates only editable fields for the signed-in identity", async () => {
     const cookie = await signIn(ownerEmail);
     const response = await request("/api/me/profile", {

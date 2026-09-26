@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { UserSettings } from '@/lib/profile-utils';
-import { getOwnProfileBackend, loadOwnProfile, updateOwnProfile } from '@/lib/profile-api';
+import { checkOwnUsernameAvailability as checkWorkerUsernameAvailability, getOwnProfileBackend, loadOwnProfile, updateOwnProfile } from '@/lib/profile-api';
 
 export const useProfile = () => {
   const { user } = useAuth();
@@ -113,6 +113,9 @@ export const useProfile = () => {
     if (!username) return false;
     
     try {
+      if (getOwnProfileBackend() === 'worker') {
+        return await checkWorkerUsernameAvailability(username);
+      }
       const { data, error } = await supabase.rpc('check_username_availability_secure', {
         username_to_check: username,
         current_user_id: user?.id || null
