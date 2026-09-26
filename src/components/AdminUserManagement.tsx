@@ -47,6 +47,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Loader2, RefreshCcw, ShieldOff, ShieldCheck, KeyRound, Search, Users2, Crown } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import {
+  AdminUserManagementApiError,
   createAdminUserManagementApi,
   getAdminUserManagementBackend,
   type AdminListedUser,
@@ -98,7 +99,7 @@ export const AdminUserManagement: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const userManagementBackend = getAdminUserManagementBackend();
-  const workerReadOnly = userManagementBackend === "worker";
+  const workerBackend = userManagementBackend === "worker";
   const workerUserApi = useMemo(() => createAdminUserManagementApi(), []);
 
   const [search, setSearch] = useState("");
@@ -303,6 +304,13 @@ export const AdminUserManagement: React.FC = () => {
   const passwordMutation = useMutation({
     mutationFn: async () => {
       if (!selectedUserId) throw new Error("No user selected");
+      if (workerBackend) {
+        const result = await workerUserApi.requestPasswordReset({
+          userId: selectedUserId,
+          reason: passwordResetReason || null,
+        });
+        return { kind: "worker" as const, requestedAt: result.requestedAt };
+      }
       const { data, error } = await supabase.functions.invoke("admin-trigger-password-reset", {
         body: {
           userId: selectedUserId,
@@ -310,20 +318,27 @@ export const AdminUserManagement: React.FC = () => {
         },
       });
       if (error) throw new Error(error.message || "パスワードリセットに失敗しました");
-      return data as { actionLink: string };
+      return { kind: "supabase" as const, actionLink: (data as { actionLink: string }).actionLink };
     },
     onSuccess: (data) => {
-      setLastResetLink(data.actionLink);
-      toast({
-        title: "リセットリンクを生成しました",
-        description: "ユーザーへ共有するか、リンクを利用してリセットを完了してください",
-      });
+      if (data.kind === "worker") {
+        setLastResetLink(null);
+        toast({ title: "再設定メールを送信しました", description: "登録メールアドレス宛にパスワード再設定メールを送りました" });
+      } else {
+        setLastResetLink(data.actionLink);
+        toast({
+          title: "リセットリンクを生成しました",
+          description: "ユーザーへ共有するか、リンクを利用してリセットを完了してください",
+        });
+      }
       setIsPasswordDialogOpen(false);
     },
     onError: (err: unknown) => {
       toast({
         title: "エラーが発生しました",
-        description: err instanceof Error ? err.message : "リセットリンクの生成に失敗しました",
+        description: workerBackend && err instanceof AdminUserManagementApiError && err.status === 503
+          ? "Cloudflare stagingでResendの送信設定が有効でないため、メールを送信できませんでした。"
+          : err instanceof Error ? err.message : "パスワードの再設定に失敗しました",
         variant: "destructive",
       });
     },
@@ -486,10 +501,10 @@ export const AdminUserManagement: React.FC = () => {
             </div>
           </div>
 
-          {workerReadOnly && (
+          {workerBackend && (
             <Alert>
               <AlertDescription>
-                Cloudflare stagingでは一覧と詳細を読み取り専用で表示しています。プラン・アカウント・ライセンスの変更は移植後に有効になります。
+                Cloudflare stagingではユーザー一覧・詳細と、プラン変更・アカウント停止/復旧・ライセンス失効を利用できます。パスワード再設定メールはResendのstaging設定が有効な場合に送信されます。
               </AlertDescription>
             </Alert>
           )}
@@ -612,8 +627,8 @@ export const AdminUserManagement: React.FC = () => {
           <SheetHeader>
             <SheetTitle>ユーザー詳細</SheetTitle>
             <SheetDescription>
-              {workerReadOnly
-                ? "Cloudflare stagingではプラン変更、アカウント停止・復旧、ライセンスの即時失効ができます。パスワードリセットはまだ利用できません。"
+              {workerBackend
+                ? "Cloudflare stagingではプラン変更、アカウント停止・復旧、ライセンスの即時失効ができます。パスワード再設定メールにはResendのstaging設定が必要です。"
                 : "プラン変更、アカウント停止、パスワードリセットなどの操作を実行できます。"}
             </SheetDescription>
           </SheetHeader>
@@ -802,7 +817,7 @@ export const AdminUserManagement: React.FC = () => {
                 )}
               </Button>
               <Button
-                disabled={!selectedDetail || workerReadOnly}
+                disabled={!selectedDetail}
                 onClick={() => {
                   setPasswordResetReason("");
                   setIsPasswordDialogOpen(true);
@@ -811,7 +826,7 @@ export const AdminUserManagement: React.FC = () => {
                 className="justify-start"
               >
                 <KeyRound className="mr-2 h-4 w-4" />
-                パスワードリセットリンクを生成
+                {workerBackend ? "パスワード再設定メールを送信" : "パスワードリセットリンクを生成"}
               </Button>
             </div>
           </SheetFooter>
@@ -924,11 +939,13 @@ export const AdminUserManagement: React.FC = () => {
       <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>パスワードリセットリンクを生成</DialogTitle>
+            <DialogTitle>{workerBackend ? "パスワード再設定メールを送信" : "パスワードリセットリンクを生成"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              リンクは即時に生成され、メール送信は行われません。リンクをコピーしてユーザーに共有してください。
+              {workerBackend
+                ? "登録メールアドレス宛に再設定メールを送信します。メール送信にはCloudflare stagingのResend設定が必要です。リンクは画面に表示されません。"
+                : "リンクは即時に生成され、メール送信は行われません。リンクをコピーしてユーザーに共有してください。"}
             </p>
             <Textarea
               value={passwordResetReason}
@@ -942,7 +959,7 @@ export const AdminUserManagement: React.FC = () => {
             </Button>
             <Button onClick={() => passwordMutation.mutate()} disabled={passwordMutation.isPending}>
               {passwordMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              リンクを生成
+              {workerBackend ? "メールを送信" : "リンクを生成"}
             </Button>
           </DialogFooter>
         </DialogContent>

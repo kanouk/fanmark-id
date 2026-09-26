@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import bcrypt from "bcryptjs";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import emojiMasterSchemaSql from "../migrations/0000_emoji_master.sql?raw";
 import emojiReleaseSchemaSql from "../migrations/0001_emoji_master_release_staging.sql?raw";
 import emojiActivationSchemaSql from "../migrations/0002_emoji_master_release_activation.sql?raw";
@@ -485,6 +485,40 @@ describe("Better Auth through the application Worker", () => {
     }), emailEnv);
     expect(signup.status).toBe(403);
     expect(await signup.json()).toEqual({ error: "auth_flow_unavailable" });
+  });
+
+  it("sends Better Auth password reset through the configured Resend callback without returning its token", async () => {
+    const emailEnv = {
+      AUTH_EMAIL_BACKEND: "resend",
+      RESEND_API_KEY: "synthetic-resend-api-key-012345",
+      RESEND_FROM_EMAIL: "Fanmark <auth@example.test>",
+    };
+    const sent: Array<Record<string, unknown>> = [];
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("https://api.resend.com/emails");
+      sent.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+      return Response.json({ id: "synthetic-resend-message" });
+    });
+    try {
+      const response = await authRequest("/request-password-reset", jsonBody({
+        email: verifiedEmail,
+        redirectTo: `${apiBase}/reset-password`,
+      }), emailEnv);
+      expect(response.status).toBe(200);
+      const responseBody = await response.text();
+      expect(responseBody).not.toContain(verifiedEmail);
+      expect(responseBody).not.toMatch(/token=[A-Za-z0-9._~-]+/u);
+      expect(sent).toHaveLength(1);
+      expect(sent[0]).toMatchObject({
+        from: "Fanmark <auth@example.test>",
+        to: [verifiedEmail],
+        subject: "fanmark.id パスワードの再設定",
+      });
+      expect(String(sent[0]?.text)).toMatch(/https:\/\/api\.example\.test\/api\/auth\/reset-password\/[A-Za-z0-9._~-]{16,512}/u);
+      expect(String(sent[0]?.text)).toContain(encodeURIComponent(`${apiBase}/reset-password`));
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("starts only explicitly configured OAuth providers and never enables social signup", async () => {

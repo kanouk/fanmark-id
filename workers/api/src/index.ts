@@ -1104,6 +1104,24 @@ export async function handleRequest(
       const authConfig = configuredAuth(env);
       if (!authConfig) return errorResponse("auth_unavailable", 503, responseHeaders);
       return authorizeAdminRequest(adminRequest, authConfig, responseHeaders);
+    }, {
+      deliverPasswordReset: async ({ email, redirectTo, requestHeaders }) => {
+        const authConfig = configuredAuth(env);
+        if (!authConfig || !isResendAuthEmailConfigured(env)) throw new Error("password_reset_delivery_unavailable");
+        const callbackUrl = new URL(redirectTo, `${authConfig.url}/`);
+        if (callbackUrl.origin !== authConfig.url) throw new Error("password_reset_redirect_invalid");
+        const resetApi = createApplicationAuth(authConfig).api as unknown as {
+          requestPasswordReset(input: {
+            body: { email: string; redirectTo: string };
+            headers: Headers;
+          }): Promise<{ status: boolean }>;
+        };
+        const result = await resetApi.requestPasswordReset({
+          body: { email, redirectTo: callbackUrl.href },
+          headers: requestHeaders,
+        });
+        if (result.status !== true) throw new Error("password_reset_delivery_failed");
+      },
     })) ?? errorResponse("not_found", 404, routeHeaders);
   }
   if (isAdminEmailTemplatesPath(url.pathname)) {

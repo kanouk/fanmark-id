@@ -234,7 +234,7 @@ authorization decision; the target boundary below is the proposed contract.
 | admin-get-user-detail | E: supabase/functions/admin-get-user-detail/index.ts | Worker admin | High: minimize PII response |
 | admin-list-users | E: supabase/functions/admin-list-users/index.ts | Worker admin | High: pagination and PII projection need review |
 | admin-toggle-user-status | E: supabase/functions/admin-toggle-user-status/index.ts | Worker admin | Implemented for workers.dev staging in `docs/migration/admin-user-status-api.md`; Auth D1 suspension state, session revocation, same-batch Auth audit, and same-session MFA are covered. Production remains on Supabase. |
-| admin-trigger-password-reset | E: supabase/functions/admin-trigger-password-reset/index.ts | Worker admin / retain Auth | High: keep reset tokens inside Auth provider |
+| admin-trigger-password-reset | E: supabase/functions/admin-trigger-password-reset/index.ts | Worker admin / retain Auth | Implemented locally for workers.dev staging in `docs/migration/admin-password-reset-api.md`; reset tokens remain inside Better Auth and email delivery fails closed without Resend configuration. |
 | admin-update-user-plan | E: supabase/functions/admin-update-user-plan/index.ts | Worker admin/internal | High: define Stripe and D1 source-of-truth behavior |
 | apply-extension-coupon | E: supabase/functions/apply-extension-coupon/index.ts | Worker user | Medium: coupon redemption must be atomic |
 | apply-fanmark-lottery | E: supabase/functions/apply-fanmark-lottery/index.ts | Worker user | Medium: preserve one-entry and grace checks |

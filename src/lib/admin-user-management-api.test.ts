@@ -191,3 +191,30 @@ test("expires an owned license through the credentialed Worker API and validates
     (error: unknown) => error instanceof AdminUserManagementApiError && error.kind === "invalid_response",
   );
 });
+
+test("requests password reset through the credentialed Worker API without returning a link or email", async () => {
+  let seenRequest: Request | undefined;
+  const api = createAdminUserManagementApi({
+    baseUrl: "https://app.example.test",
+    authBaseUrl: "https://app.example.test",
+    fetchImpl: async (input, init) => {
+      seenRequest = new Request(input, init);
+      return Response.json({ success: true, userId, requestedAt: time });
+    },
+  });
+  const result = await api.requestPasswordReset({ userId, reason: "synthetic reset" });
+  assert.equal(result.userId, userId);
+  assert.equal(seenRequest?.url, `https://app.example.test/api/admin/users/${userId}/password-reset`);
+  assert.equal(seenRequest?.credentials, "include");
+  assert.equal(seenRequest?.cache, "no-store");
+  assert.deepEqual(await seenRequest?.json(), { userId, reason: "synthetic reset" });
+
+  await assert.rejects(
+    createAdminUserManagementApi({
+      baseUrl: "https://app.example.test",
+      authBaseUrl: "https://app.example.test",
+      fetchImpl: async () => Response.json({ success: true, userId, requestedAt: time, actionLink: "https://secret.example.test/token" }),
+    }).requestPasswordReset({ userId }),
+    (error: unknown) => error instanceof AdminUserManagementApiError && error.kind === "invalid_response",
+  );
+});

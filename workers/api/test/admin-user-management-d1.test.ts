@@ -44,6 +44,7 @@ async function request(
   init: RequestInit = {},
   overrides: Partial<Env> = {},
   authorize = allowAdmin,
+  deliverPasswordReset?: (input: { email: string; redirectTo: string; requestHeaders: Headers }) => Promise<void>,
 ): Promise<Response> {
   const headers = new Headers(init.headers);
   if (!headers.has("Origin")) headers.set("Origin", origin);
@@ -51,7 +52,7 @@ async function request(
     new Request(`${baseUrl}${path}`, { ...init, headers }),
     { ...runtimeEnv, ...overrides },
     authorize,
-    { now: () => now },
+    { now: () => now, deliverPasswordReset },
   );
   if (!response) throw new Error("Admin user management route did not match");
   return response;
@@ -414,6 +415,70 @@ describe("D1 administrator user directory", () => {
     } finally {
       await business!.prepare("DROP TRIGGER reject_admin_plan_audit").run();
     }
+  });
+
+  it("sends reset mail only through the configured provider and never exposes the reset link", async () => {
+    const route = `/api/admin/users/${userA}/password-reset`;
+    const init = {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ userId: userA, reason: "synthetic support request" }),
+    };
+    const resend = {
+      AUTH_EMAIL_BACKEND: "resend",
+      RESEND_API_KEY: "synthetic-resend-key-123456",
+      RESEND_FROM_EMAIL: "Fanmark <no-reply@example.test>",
+    };
+    const deliveries: Array<{ email: string; redirectTo: string }> = [];
+    const deliveryOrigins: string[] = [];
+    const deliver = async ({ email, redirectTo, requestHeaders }: { email: string; redirectTo: string; requestHeaders: Headers }) => {
+      deliveries.push({ email, redirectTo });
+      deliveryOrigins.push(requestHeaders.get("Origin") ?? "");
+    };
+
+    const unavailable = await request(route, init);
+    expect(unavailable.status).toBe(503);
+    expect(deliveries).toHaveLength(0);
+
+    const denied = await request(route, init, resend, denyAdmin, deliver);
+    expect(denied.status).toBe(403);
+    expect(deliveries).toHaveLength(0);
+
+    const mismatch = await request(route, {
+      ...init,
+      body: JSON.stringify({ userId: userB, reason: "synthetic support request" }),
+    }, resend, allowAdmin, deliver);
+    expect(mismatch.status).toBe(400);
+    expect(deliveries).toHaveLength(0);
+
+    const response = await request(route, init, resend, allowAdmin, deliver);
+    expect(response.status).toBe(200);
+    const responseText = await response.clone().text();
+    expect(await response.json()).toEqual({ success: true, userId: userA, requestedAt: now.toISOString() });
+    expect(deliveries).toEqual([{ email: "alpha@example.test", redirectTo: "/reset-password" }]);
+    expect(deliveryOrigins).toEqual([origin]);
+
+    const audit = await business!.prepare(`SELECT user_id, action, resource_id, metadata
+      FROM audit_logs WHERE action = 'ADMIN_TRIGGER_PASSWORD_RESET' AND metadata LIKE '%synthetic support request%'`)
+      .first<Record<string, unknown>>();
+    expect(audit).toMatchObject({
+      user_id: "49999999-9999-4999-8999-999999999999",
+      action: "ADMIN_TRIGGER_PASSWORD_RESET",
+      resource_id: userA,
+    });
+    expect(JSON.parse(String(audit?.metadata))).toEqual({ reason: "synthetic support request", status: "attempted" });
+    expect(JSON.stringify(audit)).not.toContain("alpha@example.test");
+    expect(responseText).not.toContain("alpha@example.test");
+
+    const failed = await request(route, {
+      ...init,
+      body: JSON.stringify({ userId: userA, reason: "synthetic provider failure" }),
+    }, resend, allowAdmin, async () => { throw new Error("synthetic provider failure"); });
+    expect(failed.status).toBe(502);
+    const failedAudit = await business!.prepare(`SELECT metadata FROM audit_logs
+      WHERE action = 'ADMIN_TRIGGER_PASSWORD_RESET' AND metadata LIKE '%synthetic provider failure%'`)
+      .first<{ metadata: string }>();
+    expect(JSON.parse(String(failedAudit?.metadata))).toEqual({ reason: "synthetic provider failure", status: "attempted" });
   });
 
   it("returns recent license, MFA, and redacted audit projections behind the admin authorizer", async () => {

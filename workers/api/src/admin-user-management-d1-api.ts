@@ -1,4 +1,5 @@
 import { selectD1Database, type Env } from "./repository.ts";
+import { isResendAuthEmailConfigured } from "./auth-email.mjs";
 
 const API_PATH = "/api/admin/users";
 const MAX_BODY_BYTES = 16 * 1024;
@@ -593,6 +594,11 @@ interface ExpireLicenseRequest {
   reason: string | null;
 }
 
+interface PasswordResetRequest {
+  userId: string;
+  reason: string | null;
+}
+
 function parseUpdateUserStatusRequest(value: unknown, pathUserId: string, now: Date): UpdateUserStatusRequest {
   if (!isRecord(value) || Object.keys(value).some((key) =>
     !["userId", "suspend", "reason", "bannedUntil"].includes(key)) ||
@@ -617,6 +623,57 @@ function parseUpdateUserStatusRequest(value: unknown, pathUserId: string, now: D
     fail("invalid_request", 400);
   }
   return { userId: pathUserId, suspend: value.suspend, reason, bannedUntil };
+}
+
+function parsePasswordResetRequest(value: unknown, pathUserId: string): PasswordResetRequest {
+  if (!isRecord(value) || value.userId !== pathUserId ||
+      Object.keys(value).some((key) => !["userId", "reason"].includes(key)) ||
+      (value.reason !== undefined && value.reason !== null &&
+        (typeof value.reason !== "string" || value.reason.length > 2000))) {
+    fail("invalid_request", 400);
+  }
+  return { userId: pathUserId, reason: typeof value.reason === "string" ? value.reason : null };
+}
+
+async function requestUserPasswordReset(
+  input: PasswordResetRequest,
+  env: Env,
+  business: D1Database,
+  auth: D1Database,
+  authorization: { userId: string; sessionId: string },
+  now: Date,
+  headers: Headers,
+  requestHeaders: Headers,
+  deliver: ((input: { email: string; redirectTo: string; requestHeaders: Headers }) => Promise<void>) | undefined,
+): Promise<Response> {
+  if (!isResendAuthEmailConfigured(env) || !deliver) fail("password_reset_delivery_unavailable", 503);
+  const users = await rowsByUserIds<Record<string, unknown>>(
+    auth,
+    (placeholders) => `SELECT id, email FROM "user" WHERE id IN (${placeholders})`,
+    [input.userId],
+  );
+  if (users.length !== 1 || users[0]?.id !== input.userId ||
+      typeof users[0]?.email !== "string" || users[0].email.length < 3 || users[0].email.length > 320) {
+    return json({ error: "user_email_not_found" }, 404, headers);
+  }
+
+  // Persist the actor/target before invoking the external mail provider. The
+  // audit records an attempted admin action, even if Resend later rejects it.
+  const auditId = crypto.randomUUID();
+  const requestedAt = now.toISOString();
+  const metadata = JSON.stringify({ reason: input.reason, status: "attempted" });
+  const audit = await business.prepare(`INSERT INTO audit_logs
+    (id, user_id, action, resource_type, resource_id, metadata, created_at)
+    VALUES (?, ?, 'ADMIN_TRIGGER_PASSWORD_RESET', 'user', ?, ?, ?)`)
+    .bind(auditId, authorization.userId, input.userId, metadata, requestedAt).run();
+  if (!audit.success || audit.meta.changes !== 1) fail("admin_user_management_unavailable");
+
+  try {
+    await deliver({ email: users[0].email, redirectTo: "/reset-password", requestHeaders });
+  } catch {
+    fail("password_reset_delivery_failed", 502);
+  }
+  return json({ success: true, userId: input.userId, requestedAt }, 200, headers);
 }
 
 async function updateUserStatus(
@@ -936,7 +993,10 @@ export async function handleAdminUserManagementRequest(
   request: Request,
   env: Env,
   authorizeAdmin: AdminUserManagementAuthorizer,
-  dependencies: { now?: () => Date } = {},
+  dependencies: {
+    now?: () => Date;
+    deliverPasswordReset?: (input: { email: string; redirectTo: string; requestHeaders: Headers }) => Promise<void>;
+  } = {},
 ): Promise<Response | null> {
   const url = new URL(request.url);
   if (!isAdminUserManagementPath(url.pathname)) return null;
@@ -945,9 +1005,10 @@ export async function handleAdminUserManagementRequest(
   if (!cors(request, env, headers)) return json({ error: "forbidden_origin" }, 403);
   const planMatch = /^\/api\/admin\/users\/([^/]+)\/plan$/u.exec(url.pathname);
   const statusMatch = /^\/api\/admin\/users\/([^/]+)\/status$/u.exec(url.pathname);
+  const passwordResetMatch = /^\/api\/admin\/users\/([^/]+)\/password-reset$/u.exec(url.pathname);
   const expireMatch = /^\/api\/admin\/users\/([^/]+)\/licenses\/([^/]+)\/expire$/u.exec(url.pathname);
   const detailMatch = /^\/api\/admin\/users\/([^/]+)$/u.exec(url.pathname);
-  const userId = planMatch?.[1] ?? statusMatch?.[1] ?? expireMatch?.[1] ?? detailMatch?.[1] ?? null;
+  const userId = planMatch?.[1] ?? statusMatch?.[1] ?? passwordResetMatch?.[1] ?? expireMatch?.[1] ?? detailMatch?.[1] ?? null;
   const licenseId = expireMatch?.[2] ?? null;
   if (url.pathname !== API_PATH && userId === null) return json({ error: "not_found" }, 404, headers);
   if (userId !== null && (!userId || userId.length > 128 || !/^[A-Za-z0-9_-]+$/u.test(userId))) return json({ error: "not_found" }, 404, headers);
@@ -970,6 +1031,13 @@ export async function handleAdminUserManagementRequest(
       const now = dependencies.now?.() ?? new Date();
       const body = await readBody(request);
       return await updateUserStatus(parseUpdateUserStatusRequest(body, userId, now), auth, authorization, now, headers);
+    }
+    if (passwordResetMatch && userId !== null) {
+      const body = await readBody(request);
+      return await requestUserPasswordReset(
+        parsePasswordResetRequest(body, userId), env, business, auth, authorization,
+        dependencies.now?.() ?? new Date(), headers, request.headers, dependencies.deliverPasswordReset,
+      );
     }
     if (expireMatch && userId !== null && licenseId !== null) {
       const body = await readBody(request);

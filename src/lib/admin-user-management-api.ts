@@ -103,6 +103,12 @@ export interface AdminLicenseExpireResult {
   updatedAt: string;
 }
 
+export interface AdminPasswordResetResult {
+  success: true;
+  userId: string;
+  requestedAt: string;
+}
+
 export class AdminUserManagementApiError extends Error {
   readonly kind: "configuration" | "http" | "invalid_response" | "network" | "timeout";
   readonly status?: number;
@@ -281,6 +287,14 @@ function parseLicenseExpireResult(value: unknown): AdminLicenseExpireResult {
   return value as unknown as AdminLicenseExpireResult;
 }
 
+function parsePasswordResetResult(value: unknown, expectedUserId: string): AdminPasswordResetResult {
+  if (!isRecord(value) || !exactKeys(value, ["success", "userId", "requestedAt"]) ||
+      value.success !== true || value.userId !== expectedUserId || !validTime(value.requestedAt)) {
+    throw new AdminUserManagementApiError("invalid_response");
+  }
+  return value as unknown as AdminPasswordResetResult;
+}
+
 function endpoint(baseUrl: string, suffix = ""): URL {
   try {
     const url = buildRecentFanmarksApiUrl(baseUrl);
@@ -386,6 +400,15 @@ export function createAdminUserManagementApi(options: RequestOptions = {}) {
         `/${encodeURIComponent(input.userId)}/licenses/${encodeURIComponent(input.licenseId)}/expire`,
         { ...input }, options,
       ));
+    },
+    async requestPasswordReset(input: { userId: string; reason?: string | null }): Promise<AdminPasswordResetResult> {
+      if (!input.userId || input.userId.length > 128 || !/^[A-Za-z0-9_-]+$/u.test(input.userId) ||
+          (input.reason !== undefined && input.reason !== null && input.reason.length > 2000)) {
+        throw new AdminUserManagementApiError("configuration");
+      }
+      return parsePasswordResetResult(await request(
+        `/${encodeURIComponent(input.userId)}/password-reset`, { ...input }, options,
+      ), input.userId);
     },
   };
 }
