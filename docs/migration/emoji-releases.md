@@ -265,3 +265,22 @@ fetch returned all 3,944 rows; the release version, `recordsSHA256`, and
 `identitySHA256` matched the independently verified artifact. Better Auth
 user-owned rows remain at 0. No production Worker, user data, Supabase write,
 R2 bucket/object, or custom domain/DNS was changed.
+
+## Independent acceptance review (2026-09-26 JST)
+
+Astra re-ran the release builder checks (7/7), Worker release-stage and
+promotion/rollback integration (7/7), version-pinned catalog API integration
+(3/3), and the emoji-master admin client contract (4/4). Together these cover
+UUID and codepoint identity preservation, duplicate/collision rejection,
+interrupted import remaining unpublished and safe retry, immutable ready
+releases, page consistency across active-version changes, guarded promotion,
+rollback, and stale-version rejection.
+
+A fresh read-only pagination of the deployed master catalog API returned all
+3,944 rows from release
+`10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed`; all
+3,944 IDs were unique and page version/offset/total metadata stayed consistent.
+The staging rollback rehearsal remains the operational evidence; this review
+performed no D1 writes or activation. The migration stage is complete for the
+isolated master D1 and workers.dev distribution path. Production API routing,
+custom domains/DNS, and user-data migration remain later stages.
