@@ -17,21 +17,34 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
-import { supabase } from "@/integrations/supabase/client";
+import { useMaintenanceSettings } from "@/hooks/useMaintenanceSettings";
+import { useLifecycleSettings } from "@/hooks/useLifecycleSettings";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Settings, Wrench } from "lucide-react";
 
 export const AdminSettings = () => {
-  const { settings, loading, refetch } = useSystemSettings();
+  const { settings: systemSettings, loading: systemLoading } = useSystemSettings();
+  const {
+    settings: lifecycleSettings,
+    loading: lifecycleLoading,
+    error: lifecycleError,
+    updateGracePeriod,
+  } = useLifecycleSettings();
+  const {
+    settings: maintenanceSettings,
+    loading: maintenanceLoading,
+    error: maintenanceError,
+    updateSettings: updateMaintenanceSettings,
+  } = useMaintenanceSettings();
   const { toast } = useToast();
   const [updating, setUpdating] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   // Grace period state
-  const [gracePeriodDays, setGracePeriodDays] = useState(settings.grace_period_days);
-  const [maintenanceMode, setMaintenanceMode] = useState(settings.maintenance_mode);
-  const [maintenanceMessage, setMaintenanceMessage] = useState(settings.maintenance_message);
+  const [gracePeriodDays, setGracePeriodDays] = useState(lifecycleSettings.grace_period_days);
+  const [maintenanceMessage, setMaintenanceMessage] = useState(maintenanceSettings.maintenance_message);
   const [maintenanceEndTime, setMaintenanceEndTime] = useState("");
+  const maintenanceMode = maintenanceSettings.maintenance_mode;
 
   const formatLocalDateTime = (value: string | null) => {
     if (!value) return "";
@@ -42,34 +55,25 @@ export const AdminSettings = () => {
   };
 
   useEffect(() => {
-    setGracePeriodDays(settings.grace_period_days);
-    setMaintenanceMode(settings.maintenance_mode);
-    setMaintenanceMessage(settings.maintenance_message);
-    setMaintenanceEndTime(formatLocalDateTime(settings.maintenance_end_time));
-  }, [settings]);
+    setGracePeriodDays(lifecycleSettings.grace_period_days);
+  }, [lifecycleSettings.grace_period_days]);
 
-  const updateSystemSetting = async (key: string, value: string | number | boolean) => {
+  useEffect(() => {
+    setMaintenanceMessage(maintenanceSettings.maintenance_message);
+    setMaintenanceEndTime(formatLocalDateTime(maintenanceSettings.maintenance_end_time));
+  }, [maintenanceSettings.maintenance_message, maintenanceSettings.maintenance_end_time]);
+
+  const handleSaveGracePeriod = async () => {
     setUpdating(true);
     try {
-      const { error } = await supabase
-        .from('system_settings')
-        .update({ setting_value: value.toString() })
-        .eq('setting_key', key);
-
-      if (error) throw error;
-
-      toast({
-        title: '設定更新完了',
-        description: `${key} を ${value} に更新しました`,
-      });
-
-      await refetch();
+      await updateGracePeriod(gracePeriodDays);
+      toast({ title: "設定更新完了", description: `返却猶予期間を${gracePeriodDays}日に更新しました` });
     } catch (error) {
-      console.error('Error updating system setting:', error);
+      console.error("Error updating lifecycle settings:", error);
       toast({
-        title: 'エラー',
-        description: '設定の更新に失敗しました',
-        variant: 'destructive',
+        title: "エラー",
+        description: "返却猶予期間の更新に失敗しました",
+        variant: "destructive",
       });
     } finally {
       setUpdating(false);
@@ -79,10 +83,28 @@ export const AdminSettings = () => {
   const handleSaveMaintenanceDetails = async () => {
     const endTimeValue = maintenanceEndTime
       ? new Date(maintenanceEndTime).toISOString()
-      : "";
+      : null;
+    await saveMaintenanceSettings({
+      maintenance_message: maintenanceMessage.trim(),
+      maintenance_end_time: endTimeValue,
+    });
+  };
 
-    await updateSystemSetting("maintenance_message", maintenanceMessage.trim());
-    await updateSystemSetting("maintenance_end_time", endTimeValue);
+  const saveMaintenanceSettings = async (
+    patch: Parameters<typeof updateMaintenanceSettings>[0],
+  ) => {
+    setUpdating(true);
+    try {
+      await updateMaintenanceSettings(patch);
+      toast({ title: "設定更新完了", description: "メンテナンス設定を更新しました" });
+      return true;
+    } catch (error) {
+      console.error("Error updating maintenance settings:", error);
+      toast({ title: "エラー", description: "メンテナンス設定の更新に失敗しました", variant: "destructive" });
+      return false;
+    } finally {
+      setUpdating(false);
+    }
   };
 
   const handleToggleMaintenance = (checked: boolean) => {
@@ -92,18 +114,21 @@ export const AdminSettings = () => {
     }
 
     if (!checked && maintenanceMode) {
-      updateSystemSetting("maintenance_mode", false);
-      setMaintenanceMode(false);
+      void saveMaintenanceSettings({ maintenance_mode: false });
     }
   };
 
   const confirmEnableMaintenance = async () => {
-    await updateSystemSetting("maintenance_mode", true);
-    setMaintenanceMode(true);
-    setConfirmOpen(false);
+    const endTimeValue = maintenanceEndTime ? new Date(maintenanceEndTime).toISOString() : null;
+    const saved = await saveMaintenanceSettings({
+      maintenance_mode: true,
+      maintenance_message: maintenanceMessage.trim(),
+      maintenance_end_time: endTimeValue,
+    });
+    if (saved) setConfirmOpen(false);
   };
 
-  if (loading) {
+  if (systemLoading || lifecycleLoading || maintenanceLoading) {
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -115,6 +140,11 @@ export const AdminSettings = () => {
     <div className="space-y-6">
       <Card className="border-border/60 shadow-sm">
         <div className="space-y-4 p-6">
+          {lifecycleError && (
+            <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+              猶予期間設定を読み込めないため、更新を停止しています。
+            </div>
+          )}
           <div className="space-y-2">
             <h2 className="flex items-center gap-2 text-xl font-semibold text-foreground">
               <Settings className="h-5 w-5" />
@@ -136,8 +166,8 @@ export const AdminSettings = () => {
                 max="365"
               />
               <Button
-                onClick={() => updateSystemSetting('grace_period_days', gracePeriodDays)}
-                disabled={updating || gracePeriodDays === settings.grace_period_days}
+                onClick={handleSaveGracePeriod}
+                disabled={updating || Boolean(lifecycleError) || gracePeriodDays === lifecycleSettings.grace_period_days}
                 size="sm"
               >
                 {updating ? <Loader2 className="h-4 w-4 animate-spin" /> : '更新'}
@@ -152,6 +182,11 @@ export const AdminSettings = () => {
 
       <Card className="border-border/60 shadow-sm">
         <div className="space-y-6 p-6">
+          {maintenanceError && (
+            <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+              メンテナンス設定を読み込めないため、切り替えと保存を停止しています。
+            </div>
+          )}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-2">
               <h2 className="flex items-center gap-2 text-xl font-semibold text-foreground">
@@ -177,7 +212,7 @@ export const AdminSettings = () => {
             <Switch
               checked={maintenanceMode}
               onCheckedChange={handleToggleMaintenance}
-              disabled={updating}
+              disabled={updating || Boolean(maintenanceError)}
             />
           </div>
 
@@ -207,7 +242,7 @@ export const AdminSettings = () => {
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 onClick={handleSaveMaintenanceDetails}
-                disabled={updating}
+                disabled={updating || Boolean(maintenanceError)}
                 size="sm"
               >
                 {updating ? <Loader2 className="h-4 w-4 animate-spin" /> : "保存"}
@@ -225,7 +260,7 @@ export const AdminSettings = () => {
       </Card>
 
       <div className="rounded-2xl border border-dashed border-border/50 bg-muted/10 p-5 text-sm text-muted-foreground">
-        招待制モード（現在: {settings.invitation_mode ? '有効' : '無効'}）と最大絵文字文字数（{settings.max_emoji_characters} 文字）の編集 UI は未実装です。必要に応じて設定テーブルを直接更新してください。
+        招待制モード（現在: {systemSettings.invitation_mode ? '有効' : '無効'}）と最大絵文字文字数（{systemSettings.max_emoji_characters} 文字）の編集 UI は未実装です。必要に応じて設定テーブルを直接更新してください。
       </div>
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
@@ -240,7 +275,7 @@ export const AdminSettings = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>キャンセル</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmEnableMaintenance}>
+            <AlertDialogAction onClick={confirmEnableMaintenance} disabled={updating || Boolean(maintenanceError)}>
               有効にする
             </AlertDialogAction>
           </AlertDialogFooter>

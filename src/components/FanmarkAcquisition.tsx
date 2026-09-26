@@ -27,8 +27,10 @@ import { EmojiInputUtilities } from '@/components/EmojiInput';
 import { FanmarkAcquisitionLoading } from '@/components/FanmarkAcquisitionLoading';
 import { supabase } from '@/integrations/supabase/client';
 import { useFavoriteFanmarks, useInvalidateFavoriteFanmarks } from '@/hooks/useFavoriteFanmarks';
+import { addFavoriteFanmark, removeFavoriteFanmark } from '@/lib/favorites-backend';
 import { useLotteryEntry } from '@/hooks/useLotteryEntry';
 import { FanmarkSearchPanel } from '@/components/FanmarkSearchPanel';
+import { invokeFanmarkRegistration } from '@/lib/fanmark-registration-api';
 
 const SCROLL_TARGET_KEY = 'fanmark-search:scroll-target';
 
@@ -215,14 +217,16 @@ export const FanmarkAcquisition = ({
         return;
       }
 
-      const response = await supabase.functions.invoke<{ success: boolean; fanmark?: { id: string; user_input_fanmark?: string; emoji_ids?: string[]; normalized_emoji_ids?: string[] }; error?: string }>('register-fanmark', {
-        body: { 
+      const registrationBody = {
           user_input_fanmark: sourceEmoji, 
           emoji_ids: emojiIds, 
           normalized_emoji_ids: normalizedEmojiIds,
           defaultFanmarkName: t('fanmarkSettings.summary.defaultName'),
-        },
-      });
+      };
+      const response = await invokeFanmarkRegistration(
+        registrationBody,
+        () => supabase.functions.invoke<{ success: boolean; fanmark?: { id: string; user_input_fanmark?: string; emoji_ids?: string[]; normalized_emoji_ids?: string[] }; error?: string }>('register-fanmark', { body: registrationBody }),
+      );
 
       if (response.error || !response.data?.success || !response.data.fanmark) {
         throw new Error(response.error?.message || response.data?.error || 'Failed to register fanmark');
@@ -276,22 +280,17 @@ export const FanmarkAcquisition = ({
     setFavoriteProcessing(true);
     try {
       if (effectiveIsFavorited) {
-        const { data, error } = await supabase.rpc('remove_fanmark_favorite', {
-          input_emoji_ids: emojiIds,
-        });
-        if (error) throw error;
-        if (data) {
+        const removed = await removeFavoriteFanmark(emojiIds);
+        if (removed) {
           setFavoriteOverride(false);
           invalidateFavorites();
         }
       } else {
-        const { data, error } = await supabase.rpc('add_fanmark_favorite', {
-          input_emoji_ids: emojiIds,
-          input_display_fanmark:
-            searchResult.display_fanmark || searchResult.user_input_fanmark || displayedFanmark,
-        });
-        if (error) throw error;
-        if (data) {
+        const added = await addFavoriteFanmark(
+          emojiIds,
+          searchResult.display_fanmark || searchResult.user_input_fanmark || displayedFanmark,
+        );
+        if (added) {
           setFavoriteOverride(true);
           invalidateFavorites();
         }

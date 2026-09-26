@@ -14,6 +14,7 @@ import { toast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { convertEmojiSequenceToIdPair } from '@/lib/emojiConversion';
 import { cn } from '@/lib/utils';
+import { invokeFanmarkRegistration } from '@/lib/fanmark-registration-api';
 
 type RedirectLinkType = 'url' | 'phone';
 
@@ -202,8 +203,7 @@ export const FanmarkRegistrationForm = ({
         return;
       }
 
-      const { data: result, error } = await supabase.functions.invoke('register-fanmark', {
-        body: {
+      const registrationBody = {
           user_input_fanmark: data.emojiCombination,
           emoji_ids: emojiIds,
           normalized_emoji_ids: normalizedEmojiIds,
@@ -214,19 +214,22 @@ export const FanmarkRegistrationForm = ({
           textContent: data.textContent || null,
           createProfile: data.createProfile,
           isTransferable: data.isTransferable,
-        },
-      });
+      };
+      const { data: result, error } = await invokeFanmarkRegistration(
+        registrationBody,
+        () => supabase.functions.invoke<{ success: boolean; error?: string }>('register-fanmark', { body: registrationBody }),
+      );
 
       if (error) throw error;
 
-      if (result.success) {
+      if (result?.success) {
         toast({
           title: t('registration.successMessage'),
           description: t('registration.successDescription'),
         });
         onSuccess?.();
       } else {
-        throw new Error(result.error || 'Registration failed');
+        throw new Error(result?.error || 'Registration failed');
       }
     } catch (error) {
       console.error('Registration error:', error);

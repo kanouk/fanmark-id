@@ -10,6 +10,14 @@
 - 公開アクセス: `/a/:shortId` / `/:emojiPath` でアクセスし、RPC `get_fanmark_by_emoji` などから最小データを取得して UI 分岐。パスワード保護時は 4 桁認証。
 - プロフィール管理: ユーザー自身のプロフィール・アバター・公開設定を編集。画像はローカルステートを単一ソースとして同期。
 
+## アカウント削除
+- `/profile` から実行し、確認語 `DELETE` の入力を必須にする。Better Auth/Worker 経路では、本人の現在パスワードも再確認する。
+- 有料契約はアカウントに記録された Stripe 顧客IDとの一致を確認し、現在の期間を残さず即時キャンセルする。test/live のどちらか判定できない、顧客IDが別ユーザーと共有されている、またはStripe操作を確認できない場合は削除を止める。顧客IDをメール検索で推測しない。
+- 有効期限内の所有ライセンス（無期限Tier Cを含む）は `grace` に返却し、ライセンス履歴は保つ。移管中など返却できないライセンスがある場合は削除を止める。
+- お気に入り、通知設定・受信箱、プロフィール、所有者ロールなどアカウントに属する行を削除する。本人が申請した未実行の抽選は取消し、過去の抽選履歴は残して勝者のユーザーIDを外す。監査にはユーザーIDと操作時刻を残し、メールアドレスは複製しない。
+- `broadcast_emails.created_by` の参照によりAuth削除が拒否される場合は、他の副作用を始める前に削除を止める。
+- Cloudflare staging では `ACCOUNT_DELETION_BACKEND=d1` と `VITE_ACCOUNT_DELETION_BACKEND=worker` を明示した経路を検証する。production の既定は引き続きSupabaseで、実ユーザーに対する削除操作は移行対象に含めない。
+
 ## 料金プランとティア
 - プラン (ユーザー枠): Free=3件, Creator=10件, Business=50件, Admin=無制限。延長は有料（Adminのみ無料延長）。上限超過時は取得不可。
 - プラン変更: アップグレードは即時適用。ダウングレード時は `FanmarkSelectionModal` で上限数だけ選択し、未選択分は一括返却（`bulk-return-fanmarks`）。選択は一度きりでキャンセル不可。
@@ -23,8 +31,8 @@
 
 ## 譲渡（移管）システム
 - フロー: 現所有者が移管コード（AuthCode）発行→受取側が申請→現所有者が承認→新ライセンス発行／旧ライセンス失効。申請中は延長・返却をブロック。
-- コード発行条件: 残期間48h以上、1ライセンス1コード、申請中は再発行不可、再発行で既存コードを自動 cancel。Tier C は有効期限上限30日。
-- 新ライセンス期間: Tier S 7日 / A 14日 / B 30日 / C 無期限。設定データは基本・redirect・messageboard・プロフィールをコピーし、パスワード設定は除外。
+- コード発行条件: アクティブライセンスの残期間48h以上、同時に有効なコードは1ライセンス1つ。新規発行時は以前の有効コードをcancelし、申請中のコードは承認または拒否まで再発行できない。有効期限は全ティア共通で発行から48hまたは `license_end` の短い方。
+- 新ライセンス期間: Tier S 7日 / A 14日 / B 30日 / C 無期限。承認時に旧ライセンスを失効させ、旧側の基本・redirect・messageboard・password・profile設定を削除する。受取側にはaccess type=`inactive`の基本設定を新規作成し、任意の表示名だけを設定する。旧設定内容はコピーしない。新ライセンスは30日間transfer lockされ、その間は返却・再移管・再発行できない。承認時には旧ライセンスのpending lottery申請もcancelする。
 
 ## 抽選システム
 - 対象: Grace 中のファンマ。ユーザーは1ファンマにつき1件申込、現オーナーも可。延長と抽選は排他（延長が優先し pending をキャンセル）。申込中でも延長は可能。
@@ -293,14 +301,13 @@
 3. UI: FanmarkSelectionModal 表示
 4. ユーザー: 上限数だけ選択して確定
 5. フロントエンド: `handleFanmarkSelectionConfirm(selectedIds)`
-   a. 未選択の fanmark_id リストを算出
-   b. `supabase.functions.invoke('bulk-return-fanmarks', { body: { fanmark_ids } })`
-6. Edge Function `bulk-return-fanmarks`:
-   a. 各ファンマの license を取得
-   b. status を 'grace' に更新
-   c. grace_expires_at を設定
-   d. 設定データをクリア
-   e. audit_log に記録
+   a. 未選択ファンマの `license_id` リストを算出
+   b. Supabase既定では `supabase.functions.invoke('bulk-return-fanmarks', { body: { license_ids } })`。Cloudflare選択時は `POST /api/me/fanmarks/bulk-return` を呼ぶ
+6. Edge Function または Worker `bulk-return-fanmarks`:
+   a. 所有者のactive licenseを確認
+   b. status を 'grace' に更新し、grace_expires_at を設定
+   c. audit/通知イベントをbest effortで記録
+   d. 各licenseを独立処理し、成功結果と失敗licenseを返す。Worker版は1〜50件に制限
 7. 返却完了後、`change-subscription` を呼び出し
 8. 以降は通常のダウングレード処理
 ```
@@ -366,18 +373,21 @@
 
 ```
 1. UI: ExtendLicenseDialog で月数選択
-2. フロントエンド: `supabase.functions.invoke('create-extension-checkout', { body: { fanmark_id, months } })`
+2. フロントエンド: 延長操作につきUUIDの `request_id` を作り、同じ要求の再送やタブ再読み込み後も `sessionStorage` の同じ値を使って `supabase.functions.invoke('create-extension-checkout', { body: { license_id, months, request_id } })` を呼び出す
 3. Edge Function `create-extension-checkout`:
    a. JWT から user を取得
    b. `fanmark_licenses` から該当ライセンスを取得
    c. 検証: user_id 一致、status が active/grace、license_end が null でない
    d. `fanmark_tiers` から tier_level を取得
    e. `fanmark_tier_extension_prices` から price_id を取得（tier_level + months で検索）
-   f. Stripe: `checkout.sessions.create({
+   f. `billing_ingress.stripe_extension_checkout_intents` に所有者・ライセンス・月数・Price ID・価格を先に記録する。同じ `request_id` の再送はこのスナップショットを使い、価格マスターを再評価して別条件にしない
+   g. Stripe: `checkout.sessions.create({
         mode: 'payment',
         line_items: [{ price: stripe_price_id, quantity: 1 }],
         metadata: {
           type: 'license_extension',
+          billing_intent_id,
+          price_id,
           fanmark_id,
           license_id,
           user_id,
@@ -385,7 +395,8 @@
           tier_level
         }
       })`
-   g. レスポンス: `{ url: session.url }`
+      `Idempotency-Key` は intent ID から導出し、返った Session ID をintentへ保存する。Session IDが保存済みなら同じSessionを再取得する。Stripeキーの安全な再送期間内にSession IDが記録されない場合は、新しいSessionを作らず照合対象にする。決済成功でダッシュボードへ戻った時にブラウザー内の要求IDを消去し、次の意図的な延長操作には新しいIDを使う
+   h. レスポンス: `{ url: session.url }`
 4. フロントエンド: Stripe Checkout へ遷移
 5. ユーザー: 決済完了
 6. Stripe: `checkout.session.completed` Webhook 送信
@@ -424,6 +435,16 @@ function addMonths(base: Date, months: number): Date {
 ```
 
 ---
+
+#### 5.5 クーポンによるライセンス延長
+
+`ExtendLicenseDialog`のクーポンタブは、ログイン中ユーザーが所有する`active`または`grace`ライセンスに対してクーポンを適用する。無期限ライセンス、移管ロック中・移管コード有効中・移管申請中のライセンスには適用できない。Graceライセンスは復帰後にプラン上限を超える場合は適用できない。
+
+クーポンは有効化済み・期限内・残り利用回数あり、対象ティアに含まれる場合に適用できる。適用可能月数は1、2、3、6ヶ月で、同じユーザーは同じクーポンを同じファンマークへ再適用できない。延長の基準日は`max(現在日時, 現在のlicense_end)`とし、月末を超える日付は月末へ丸め、その後UTC翌日0時へ切り上げる。
+
+適用成功では、クーポン利用数、利用履歴、ライセンス期間、抽選取消、応募者への通知イベント、監査ログを一体として確定する。再送にはUUIDの`request_id`を使い、同一要求は保存済みの成功結果を返す。抽選中の延長では、そのライセンスのpending応募を`cancelled_by_extension`へ遷移させ、応募者へ通知する。
+
+管理画面のクーポン作成・有効切替・使用履歴は管理者専用であり、Cloudflare stagingではBetter AuthのMFAをWorkerで確認する。stagingのクーポン設定と適用APIはD1を使う。Supabaseの既存クーポンや利用履歴はこの切替で自動コピーしない。
 
 ### 6. 返却・移管時の課金への影響
 
@@ -487,6 +508,7 @@ function addMonths(base: Date, months: number): Date {
 
 - 設定場所: `system_settings.grace_period_days`
 - デフォルト値: 1日（24時間以上を保証）
+- 管理画面で設定できる範囲: 1〜365日
 - 計算式: `grace_expires_at = roundUpToNextUtcMidnight(now + grace_period_days)`
 
 #### 8.2 グレース中の状態
@@ -600,7 +622,7 @@ const priceIdToPlanType = {
 | `change-subscription` | プラン変更 | new_plan_type | { success, checkoutUrl?, pending? } |
 | `check-subscription` | サブスク状態確認 | - | { subscribed, product_id, subscription_end } |
 | `handle-stripe-webhook` | Webhook 処理 | Stripe Event | 200 OK |
-| `bulk-return-fanmarks` | 一括返却 | fanmark_ids[] | { success, results[] } |
+| `bulk-return-fanmarks` | 一括返却 | license_ids[] | { success, results[], failed? } |
 | `customer-portal` | Portal セッション | - | { url } |
 
 ---

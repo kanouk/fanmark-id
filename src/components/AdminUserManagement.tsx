@@ -46,112 +46,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, RefreshCcw, ShieldOff, ShieldCheck, KeyRound, Search, Users2, Crown } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import {
+  AdminUserManagementApiError,
+  createAdminUserManagementApi,
+  getAdminUserManagementBackend,
+  type AdminListedUser,
+  type AdminListedUsersResponse,
+  type AdminUserDetailResponse,
+} from "@/lib/admin-user-management-api";
 
-type PlanType = "free" | "creator" | "business" | "enterprise" | "admin";
-
-type ListedUser = {
-  userId: string;
-  email: string | null;
-  emailConfirmedAt: string | null;
-  createdAt: string | null;
-  lastSignInAt: string | null;
-  status: "active" | "suspended";
-  bannedUntil: string | null;
-  displayName: string | null;
-  username: string;
-  planType: PlanType;
-  preferredLanguage: string;
-  profileUpdatedAt: string;
-  licenseCounts: {
-    active: number;
-    grace: number;
-    expired: number;
-  };
-  enterpriseSettings: {
-    custom_fanmarks_limit: number | null;
-    custom_pricing: number | null;
-    notes: string | null;
-  } | null;
-};
-
-type ListUsersResponse = {
-  data: ListedUser[];
-  pagination: {
-    page: number;
-    pageSize: number;
-    totalCount: number;
-    totalPages: number;
-  };
-  filters: {
-    search: string | null;
-    plans: string[] | null;
-    status: "active" | "suspended" | null;
-  };
-  meta: {
-    totalMatchedBeforeStatus: number | null;
-  };
-};
-
-type DetailResponse = {
-  auth: {
-    email: string | null;
-    emailConfirmedAt: string | null;
-    createdAt: string | null;
-    lastSignInAt: string | null;
-    phone: string | null;
-    status: "active" | "suspended";
-    bannedUntil: string | null;
-    factors: { type: string; createdAt: string | null }[];
-  };
-  profile: {
-    userId: string;
-    username: string;
-    displayName: string | null;
-    avatarUrl: string | null;
-    planType: PlanType;
-    preferredLanguage: string;
-    createdAt: string;
-    updatedAt: string;
-  };
-  enterpriseSettings: {
-    customFanmarksLimit: number | null;
-    customPricing: number | null;
-    notes: string | null;
-    updatedAt: string | null;
-  } | null;
-  licenseSummary: {
-    active: number;
-    grace: number;
-    expired: number;
-    total: number;
-  };
-  recentFanmarks: Array<{
-    licenseId: string;
-    status: string;
-    licenseEnd: string;
-    graceExpiresAt: string | null;
-    planExcluded: boolean;
-    excludedAt: string | null;
-    excludedFromPlan: string | null;
-    fanmarkId: string;
-    emoji: string;
-    fanmarkName: string | null;
-    accessType: string | null;
-  }>;
-  recentAuditLogs: Array<{
-    id: string;
-    userId: string | null;
-    action: string;
-    resourceType: string;
-    resourceId: string | null;
-    metadata: Record<string, unknown>;
-    createdAt: string;
-  }>;
-};
+type PlanType = "free" | "creator" | "max" | "business" | "enterprise" | "admin";
+type ListedUser = AdminListedUser;
+type ListUsersResponse = AdminListedUsersResponse;
+type DetailResponse = AdminUserDetailResponse;
 
 const planLabels: Record<PlanType, string> = {
   free: "Free",
   creator: "Creator",
+  max: "Max",
   business: "Business",
   enterprise: "Enterprise",
   admin: "Admin",
@@ -160,6 +72,7 @@ const planLabels: Record<PlanType, string> = {
 const planBadgeClass: Record<PlanType, string> = {
   free: "border-gray-300/50 bg-gray-50 text-gray-700",
   creator: "border-blue-300/60 bg-blue-50 text-blue-700",
+  max: "border-indigo-300/60 bg-indigo-50 text-indigo-700",
   business: "border-purple-300/60 bg-purple-50 text-purple-700",
   enterprise: "border-amber-300/60 bg-amber-50 text-amber-700",
   admin: "border-rose-300/60 bg-rose-50 text-rose-700",
@@ -185,6 +98,9 @@ function formatDate(value: string | null): string {
 export const AdminUserManagement: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const userManagementBackend = getAdminUserManagementBackend();
+  const workerBackend = userManagementBackend === "worker";
+  const workerUserApi = useMemo(() => createAdminUserManagementApi(), []);
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -256,9 +172,17 @@ export const AdminUserManagement: React.FC = () => {
       if (params.plan) payload.plans = [params.plan];
       if (params.status) payload.status = params.status;
 
-      const { data, error } = await supabase.functions.invoke("admin-list-users", {
-        body: payload,
-      });
+      if (userManagementBackend === "worker") {
+        return workerUserApi.list({
+          page: params.page,
+          pageSize: params.pageSize,
+          ...(params.search ? { search: params.search } : {}),
+          ...(params.plan ? { plans: [params.plan] } : {}),
+          ...(params.status ? { status: params.status } : {}),
+        });
+      }
+
+      const { data, error } = await supabase.functions.invoke("admin-list-users", { body: payload });
 
       if (error) {
         console.error("admin-list-users error", error);
@@ -274,9 +198,9 @@ export const AdminUserManagement: React.FC = () => {
     enabled: isDetailOpen && !!selectedUserId,
     queryFn: async ({ queryKey }) => {
       const userId = queryKey[1] as string;
-      const { data, error } = await supabase.functions.invoke("admin-get-user-detail", {
-        body: { userId },
-      });
+      if (userManagementBackend === "worker") return workerUserApi.detail(userId);
+
+      const { data, error } = await supabase.functions.invoke("admin-get-user-detail", { body: { userId } });
       if (error) {
         console.error("admin-get-user-detail error", error);
         throw new Error(error.message || "Failed to load user detail");
@@ -297,6 +221,15 @@ export const AdminUserManagement: React.FC = () => {
               notes: enterpriseNotes || null,
             }
           : undefined;
+
+      if (userManagementBackend === "worker") {
+        return workerUserApi.updatePlan({
+          userId: selectedUserId,
+          newPlanType: targetPlan,
+          enterpriseOverrides: overrides,
+          reason: planChangeReason || null,
+        });
+      }
 
       const { data, error } = await supabase.functions.invoke("admin-update-user-plan", {
         body: {
@@ -331,6 +264,13 @@ export const AdminUserManagement: React.FC = () => {
   const statusMutation = useMutation({
     mutationFn: async () => {
       if (!selectedUserId) throw new Error("No user selected");
+      if (userManagementBackend === "worker") {
+        return workerUserApi.updateStatus({
+          userId: selectedUserId,
+          suspend: statusAction === "suspend",
+          reason: statusReason || null,
+        });
+      }
       const { data, error } = await supabase.functions.invoke("admin-toggle-user-status", {
         body: {
           userId: selectedUserId,
@@ -364,6 +304,13 @@ export const AdminUserManagement: React.FC = () => {
   const passwordMutation = useMutation({
     mutationFn: async () => {
       if (!selectedUserId) throw new Error("No user selected");
+      if (workerBackend) {
+        const result = await workerUserApi.requestPasswordReset({
+          userId: selectedUserId,
+          reason: passwordResetReason || null,
+        });
+        return { kind: "worker" as const, requestedAt: result.requestedAt };
+      }
       const { data, error } = await supabase.functions.invoke("admin-trigger-password-reset", {
         body: {
           userId: selectedUserId,
@@ -371,20 +318,27 @@ export const AdminUserManagement: React.FC = () => {
         },
       });
       if (error) throw new Error(error.message || "パスワードリセットに失敗しました");
-      return data as { actionLink: string };
+      return { kind: "supabase" as const, actionLink: (data as { actionLink: string }).actionLink };
     },
     onSuccess: (data) => {
-      setLastResetLink(data.actionLink);
-      toast({
-        title: "リセットリンクを生成しました",
-        description: "ユーザーへ共有するか、リンクを利用してリセットを完了してください",
-      });
+      if (data.kind === "worker") {
+        setLastResetLink(null);
+        toast({ title: "再設定メールを送信しました", description: "登録メールアドレス宛にパスワード再設定メールを送りました" });
+      } else {
+        setLastResetLink(data.actionLink);
+        toast({
+          title: "リセットリンクを生成しました",
+          description: "ユーザーへ共有するか、リンクを利用してリセットを完了してください",
+        });
+      }
       setIsPasswordDialogOpen(false);
     },
     onError: (err: unknown) => {
       toast({
         title: "エラーが発生しました",
-        description: err instanceof Error ? err.message : "リセットリンクの生成に失敗しました",
+        description: workerBackend && err instanceof AdminUserManagementApiError && err.status === 503
+          ? "Cloudflare stagingでResendの送信設定が有効でないため、メールを送信できませんでした。"
+          : err instanceof Error ? err.message : "パスワードの再設定に失敗しました",
         variant: "destructive",
       });
     },
@@ -393,6 +347,14 @@ export const AdminUserManagement: React.FC = () => {
   const expireMutation = useMutation({
     mutationFn: async () => {
       if (!expireTarget?.licenseId) throw new Error("No license selected");
+      if (userManagementBackend === "worker") {
+        if (!selectedUserId) throw new Error("No user selected");
+        return workerUserApi.expireLicense({
+          userId: selectedUserId,
+          licenseId: expireTarget.licenseId,
+          reason: expireReason || null,
+        });
+      }
       const { data, error } = await supabase.functions.invoke("admin-expire-license", {
         body: {
           licenseId: expireTarget.licenseId,
@@ -451,7 +413,7 @@ export const AdminUserManagement: React.FC = () => {
   }, [isPlanDialogOpen, selectedDetail]);
 
   const renderStatusBadge = (user: ListedUser) => {
-    const isConfirmed = !!user.emailConfirmedAt;
+    const isConfirmed = user.emailVerified ?? !!user.emailConfirmedAt;
     const statusLabel = user.status === "active" ? "有効" : "停止中";
     return (
       <div className="flex flex-col gap-1">
@@ -538,6 +500,14 @@ export const AdminUserManagement: React.FC = () => {
               </Button>
             </div>
           </div>
+
+          {workerBackend && (
+            <Alert>
+              <AlertDescription>
+                Cloudflare stagingではユーザー一覧・詳細と、プラン変更・アカウント停止/復旧・ライセンス失効を利用できます。パスワード再設定メールはResendのstaging設定が有効な場合に送信されます。
+              </AlertDescription>
+            </Alert>
+          )}
 
           <div className="rounded-2xl border border-border/60 bg-card shadow-sm">
             <Table>
@@ -657,7 +627,9 @@ export const AdminUserManagement: React.FC = () => {
           <SheetHeader>
             <SheetTitle>ユーザー詳細</SheetTitle>
             <SheetDescription>
-              プラン変更、アカウント停止、パスワードリセットなどの操作を実行できます。
+              {workerBackend
+                ? "Cloudflare stagingではプラン変更、アカウント停止・復旧、ライセンスの即時失効ができます。パスワード再設定メールにはResendのstaging設定が必要です。"
+                : "プラン変更、アカウント停止、パスワードリセットなどの操作を実行できます。"}
             </SheetDescription>
           </SheetHeader>
 
@@ -854,7 +826,7 @@ export const AdminUserManagement: React.FC = () => {
                 className="justify-start"
               >
                 <KeyRound className="mr-2 h-4 w-4" />
-                パスワードリセットリンクを生成
+                {workerBackend ? "パスワード再設定メールを送信" : "パスワードリセットリンクを生成"}
               </Button>
             </div>
           </SheetFooter>
@@ -874,6 +846,7 @@ export const AdminUserManagement: React.FC = () => {
               <SelectContent>
                 <SelectItem value="free">Free</SelectItem>
                 <SelectItem value="creator">Creator</SelectItem>
+                <SelectItem value="max">Max</SelectItem>
                 <SelectItem value="business">Business</SelectItem>
                 <SelectItem value="enterprise">Enterprise</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
@@ -966,11 +939,13 @@ export const AdminUserManagement: React.FC = () => {
       <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>パスワードリセットリンクを生成</DialogTitle>
+            <DialogTitle>{workerBackend ? "パスワード再設定メールを送信" : "パスワードリセットリンクを生成"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              リンクは即時に生成され、メール送信は行われません。リンクをコピーしてユーザーに共有してください。
+              {workerBackend
+                ? "登録メールアドレス宛に再設定メールを送信します。メール送信にはCloudflare stagingのResend設定が必要です。リンクは画面に表示されません。"
+                : "リンクは即時に生成され、メール送信は行われません。リンクをコピーしてユーザーに共有してください。"}
             </p>
             <Textarea
               value={passwordResetReason}
@@ -984,7 +959,7 @@ export const AdminUserManagement: React.FC = () => {
             </Button>
             <Button onClick={() => passwordMutation.mutate()} disabled={passwordMutation.isPending}>
               {passwordMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              リンクを生成
+              {workerBackend ? "メールを送信" : "リンクを生成"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,46 +12,55 @@ import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Bell, Check, Link2 } from 'lucide-react';
 import { useNotificationFormatter } from '@/hooks/useNotificationFormatter';
-
-interface Notification {
-  id: string;
-  payload: any;
-  read_at: string | null;
-  triggered_at: string;
-  priority: number;
-  channel: string;
-}
+import {
+  getNotificationsBackend,
+  loadOwnNotifications,
+  markAllOwnNotificationsRead,
+  markOwnNotificationRead,
+  type UserNotification,
+} from '@/lib/notifications-api';
 
 export default function Notifications() {
   const { user } = useAuth();
   const { t } = useTranslation();
   const { formatNotificationContent } = useNotificationFormatter();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
+  const notificationsBackend = getNotificationsBackend();
 
   useEffect(() => {
     if (!user) return;
 
     const fetchNotifications = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('triggered_at', { ascending: false })
-        .limit(50);
-
-      if (error) {
+      try {
+        if (notificationsBackend === 'worker') {
+          setNotifications(await loadOwnNotifications(50));
+          return;
+        }
+        const { data, error } = await supabase
+          .from('notifications')
+          .select('id, payload, read_at, triggered_at, priority, channel')
+          .eq('user_id', user.id)
+          .order('triggered_at', { ascending: false })
+          .limit(50);
+        if (error) throw error;
+        setNotifications((data || []) as unknown as UserNotification[]);
+      } catch (error) {
         console.error('Error fetching notifications:', error);
         toast.error(t('notifications.toastFetchError'));
-      } else {
-        setNotifications(data || []);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
-    fetchNotifications();
+    void fetchNotifications();
+
+    if (notificationsBackend === 'worker') {
+      const interval = window.setInterval(() => void fetchNotifications(), 30000);
+      return () => window.clearInterval(interval);
+    }
 
     // Realtime subscription
     const channel = supabase
@@ -65,7 +74,7 @@ export default function Notifications() {
           filter: `user_id=eq.${user.id}`,
         },
         () => {
-          fetchNotifications();
+          void fetchNotifications();
         }
       )
       .subscribe();
@@ -73,28 +82,32 @@ export default function Notifications() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, notificationsBackend, t]);
 
   const markAsRead = async (notificationId: string) => {
-    const { error } = await supabase.rpc('mark_notification_read', {
-      notification_id_param: notificationId,
-      read_via_param: 'app'
-    });
-
-    if (error) {
-      console.error('Error marking notification as read:', error);
-      toast.error(t('notifications.toastMarkReadError'));
-    } else {
+    try {
+      if (notificationsBackend === 'worker') {
+        await markOwnNotificationRead(notificationId, 'app');
+      } else {
+        const { error } = await supabase.rpc('mark_notification_read', {
+          notification_id_param: notificationId,
+          read_via_param: 'app'
+        });
+        if (error) throw error;
+      }
       toast.success(t('notifications.toastMarkReadSuccess'));
       setNotifications((prev) =>
         prev.map((notification) =>
           notification.id === notificationId
-            ? { ...notification, read_at: new Date().toISOString() }
+            ? { ...notification, read_at: notification.read_at || new Date().toISOString() }
             : notification
         )
       );
       queryClient.invalidateQueries({ queryKey: ['notifications-preview', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['unread-notification-count', user?.id] });
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      toast.error(t('notifications.toastMarkReadError'));
     }
   };
 
@@ -108,26 +121,42 @@ export default function Notifications() {
     }
 
     setLoading(true);
-    const { error } = await supabase.rpc('mark_all_notifications_read', {
-      user_id_param: user.id,
-      read_via_param: 'app'
-    });
-
-    if (error) {
-      console.error('Error marking all notifications as read:', error);
-      toast.error(t('notifications.toastMarkAllReadError'));
-    } else {
+    try {
+      if (notificationsBackend === 'worker') {
+        await markAllOwnNotificationsRead();
+      } else {
+        const { error } = await supabase.rpc('mark_all_notifications_read', {
+          user_id_param: user.id,
+          read_via_param: 'app'
+        });
+        if (error) throw error;
+      }
       toast.success(t('notifications.toastMarkAllReadSuccess'));
-      setNotifications((prev) =>
-        prev.map((notification) => ({
-          ...notification,
-          read_at: notification.read_at || new Date().toISOString()
-        }))
-      );
+      try {
+        if (notificationsBackend === 'worker') {
+          setNotifications(await loadOwnNotifications(50));
+        } else {
+          const { data, error } = await supabase
+            .from('notifications')
+            .select('id, payload, read_at, triggered_at, priority, channel')
+            .eq('user_id', user.id)
+            .order('triggered_at', { ascending: false })
+            .limit(50);
+          if (error) throw error;
+          setNotifications((data || []) as unknown as UserNotification[]);
+        }
+      } catch (refreshError) {
+        console.error('Error refreshing notifications after marking all read:', refreshError);
+        toast.error(t('notifications.toastFetchError'));
+      }
       queryClient.invalidateQueries({ queryKey: ['notifications-preview', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['unread-notification-count', user?.id] });
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      toast.error(t('notifications.toastMarkAllReadError'));
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -197,11 +226,14 @@ export default function Notifications() {
               {notifications.map((notification) => {
                 const { title, body, summary } = formatNotificationContent(notification);
                 const isUnread = !notification.read_at;
+                const directLink = notification.payload.link;
+                const shortId = notification.payload.fanmark_short_id;
                 const linkTarget: string | null =
-                  notification.payload?.link ??
-                  (notification.payload?.fanmark_short_id
-                    ? `/f/${notification.payload.fanmark_short_id}`
-                    : null);
+                  typeof directLink === 'string' && directLink.startsWith('/') && !directLink.startsWith('//')
+                    ? directLink
+                    : typeof shortId === 'string'
+                      ? `/f/${encodeURIComponent(shortId)}`
+                      : null;
                 const showChannelBadge =
                   notification.channel && notification.channel !== 'in_app';
 

@@ -2,40 +2,48 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { returnFanmarkByLicenseId, type ReturnContext } from "../_shared/return-helpers.ts";
+import {
+  ReceiptIngressError,
+  buildReceiptPersistenceInput,
+  createSupabaseReceiptPersister,
+  readStripeWebhookBody,
+  type DurableReceiptResult,
+} from "../_shared/stripe-receipt-ingress/index.ts";
+import { validateStripeExtensionApplicationResult } from "../_shared/stripe-extension-application.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
 
-const logStep = (step: string, details?: any) => {
+const jsonResponse = (status: number, body: Record<string, unknown>) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" },
+  });
+
+const withTimeout = async <T>(operation: PromiseLike<T>, timeoutMs = 5_000): Promise<T> => {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error("database operation timed out")), timeoutMs);
+  });
+  try {
+    return await Promise.race([Promise.resolve(operation), timeout]);
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
+};
+
+const EXTENSION_CHECKOUT_EVENT_TYPES = new Set([
+  "checkout.session.completed",
+  "checkout.session.async_payment_succeeded",
+  "checkout.session.async_payment_failed",
+  "checkout.session.expired",
+]);
+
+const logStep = (step: string, details?: unknown) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[STRIPE-WEBHOOK] ${step}${detailsStr}`);
-};
-
-const roundUpToNextUtcMidnight = (input: Date) => {
-  const copy = new Date(input);
-  const isMidnight =
-    copy.getUTCHours() === 0 &&
-    copy.getUTCMinutes() === 0 &&
-    copy.getUTCSeconds() === 0 &&
-    copy.getUTCMilliseconds() === 0;
-
-  if (isMidnight) return copy;
-
-  copy.setUTCHours(0, 0, 0, 0);
-  copy.setUTCDate(copy.getUTCDate() + 1);
-  return copy;
-};
-
-const addMonths = (base: Date, months: number) => {
-  const result = new Date(base.getTime());
-  const originalDate = result.getDate();
-  result.setMonth(result.getMonth() + months);
-  if (result.getDate() !== originalDate) {
-    result.setDate(0);
-  }
-  return result;
 };
 
 const toIsoString = (unixSeconds?: number | null) => {
@@ -202,19 +210,27 @@ serve(async (req) => {
       throw new Error("Missing stripe-signature header");
     }
 
-    const body = await req.text();
+    let rawBody: Uint8Array;
+    try {
+      rawBody = await readStripeWebhookBody(req);
+    } catch (bodyError) {
+      if (bodyError instanceof ReceiptIngressError && bodyError.kind === "body_too_large") {
+        return jsonResponse(413, { error: "Request body too large" });
+      }
+      if (bodyError instanceof ReceiptIngressError && bodyError.kind === "body_timeout") {
+        return jsonResponse(408, { error: "Request body read timed out" });
+      }
+      return jsonResponse(400, { error: "Invalid request body" });
+    }
     logStep("Verifying webhook signature");
 
     let event: Stripe.Event;
     try {
-      event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
+      event = await stripe.webhooks.constructEventAsync(rawBody, signature, webhookSecret);
       logStep("Webhook signature verified", { type: event.type });
     } catch (err) {
       logStep("Webhook signature verification failed", { error: (err as Error).message });
-      return new Response(JSON.stringify({ error: "Invalid signature" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      });
+      return jsonResponse(400, { error: "Invalid signature" });
     }
 
     const supabaseClient = createClient(
@@ -223,113 +239,78 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Handle subscription and checkout events
-    switch (event.type) {
-      case "checkout.session.completed": {
-        const session = event.data.object as Stripe.Checkout.Session;
-        logStep("Processing checkout.session.completed", { sessionId: session.id });
-
-        // Check if this is a license extension payment
-        if (session.metadata?.type === "license_extension") {
-          const { fanmark_id, license_id, user_id, months } = session.metadata;
-          
-          if (!fanmark_id || !license_id || !user_id || !months) {
-            throw new Error("Missing metadata for license extension");
-          }
-
-          logStep("Processing license extension", { fanmark_id, license_id, months });
-
-          // Get current license
-          const { data: currentLicense, error: licenseError } = await supabaseClient
-            .from("fanmark_licenses")
-            .select("license_end, status, fanmark_id, grace_expires_at, is_returned, excluded_at, excluded_from_plan")
-            .eq("id", license_id)
-            .eq("user_id", user_id)
-            .single();
-
-          if (licenseError || !currentLicense) {
-            throw new Error("License not found or access denied");
-          }
-
-          // Calculate new license_end (month-safe and round to next UTC midnight)
-          const now = new Date();
-          const monthsToAdd = parseInt(months, 10);
-          if (!Number.isFinite(monthsToAdd) || monthsToAdd <= 0) {
-            throw new Error(`Invalid months value in metadata: ${months}`);
-          }
-          const currentEnd = currentLicense.license_end ? new Date(currentLicense.license_end) : null;
-          const baseDate = currentEnd && !Number.isNaN(currentEnd.getTime()) && currentEnd > now ? currentEnd : now;
-          const extended = addMonths(baseDate, monthsToAdd);
-          const roundedEnd = roundUpToNextUtcMidnight(extended);
-
-          // Update license (reset is_returned and grace_expires_at in case extending from grace status)
-          const { error: updateError } = await supabaseClient
-            .from("fanmark_licenses")
-            .update({
-              status: "active",
-              license_end: roundedEnd.toISOString(),
-              grace_expires_at: null,
-              is_returned: false,
-              excluded_at: null,
-              excluded_from_plan: null,
-        updated_at: now.toISOString(),
-      })
-            .eq("id", license_id);
-
-          if (updateError) {
-            throw updateError;
-          }
-
-          logStep("License extended successfully", { 
-            license_id, 
-            old_end: currentLicense.license_end,
-            new_end: roundedEnd.toISOString(),
-            grace_cleared: true,
-            is_returned_before: currentLicense.is_returned,
-            grace_expires_at_before: currentLicense.grace_expires_at,
-          });
-
-          // Cancel any pending lottery entries for this fanmark
-          const { data: lotteryEntries } = await supabaseClient
-            .from("fanmark_lottery_entries")
-            .select("id, user_id")
-            .eq("fanmark_id", fanmark_id)
-            .eq("entry_status", "pending");
-
-          if (lotteryEntries && lotteryEntries.length > 0) {
-            const { error: cancelError } = await supabaseClient
-              .from("fanmark_lottery_entries")
-              .update({
-                entry_status: "cancelled",
-                cancellation_reason: "license_extended",
-                cancelled_at: now.toISOString(),
-                updated_at: now.toISOString(),
-              })
-              .eq("fanmark_id", fanmark_id)
-              .eq("entry_status", "pending");
-
-            if (cancelError) {
-              logStep("Failed to cancel lottery entries", { error: cancelError });
-            } else {
-              logStep("Cancelled pending lottery entries", { count: lotteryEntries.length });
-            }
-          }
-
-          // Create audit log
-          await supabaseClient.from("audit_logs").insert({
-            user_id,
-            action: "LICENSE_EXTENDED",
-            resource_type: "fanmark_license",
-            resource_id: license_id,
-            metadata: {
-              fanmark_id,
-              months: monthsToAdd,
-              payment_session_id: session.id,
-              new_license_end: roundedEnd.toISOString(),
-              grace_cleared: true,
-            },
+    if (EXTENSION_CHECKOUT_EVENT_TYPES.has(event.type)) {
+      const session = event.data.object as Stripe.Checkout.Session;
+      if (session.metadata?.type === "license_extension") {
+        let durable: DurableReceiptResult;
+        try {
+          const input = await buildReceiptPersistenceInput(event, rawBody);
+          durable = await withTimeout(createSupabaseReceiptPersister(supabaseClient)(input));
+        } catch (receiptError) {
+          const kind = receiptError instanceof ReceiptIngressError ? receiptError.kind : "persistence";
+          logStep("License extension receipt was not durably accepted", { kind });
+          return jsonResponse(kind === "invalid_event" ? 400 : 503, {
+            error: kind === "invalid_event" ? "Invalid event" : "Receipt persistence unavailable",
           });
         }
+
+        if (durable.outcome === "duplicate_terminal") {
+          return jsonResponse(200, {
+            received: true,
+            outcome: durable.outcome,
+            receipt_status: durable.receipt_status,
+            dispatch_status: durable.dispatch_status,
+          });
+        }
+
+        let applicationResponse: { data: unknown; error: unknown };
+        try {
+          applicationResponse = await withTimeout(supabaseClient.rpc(
+            "apply_stripe_extension_receipt",
+            { p_receipt_id: durable.receipt_id },
+          ));
+        } catch {
+          logStep("License extension application transaction failed");
+          return jsonResponse(503, { error: "License extension application unavailable" });
+        }
+        const { data, error } = applicationResponse;
+        if (error) {
+          logStep("License extension application transaction failed");
+          return jsonResponse(503, { error: "License extension application unavailable" });
+        }
+
+        let applied;
+        try {
+          applied = validateStripeExtensionApplicationResult(durable.receipt_id, data);
+        } catch {
+          logStep("License extension application returned an invalid result");
+          return jsonResponse(503, { error: "License extension application unavailable" });
+        }
+
+        logStep("License extension receipt reached a terminal state", {
+          outcome: applied.outcome,
+          receiptStatus: applied.receipt_status,
+          dispatchStatus: applied.dispatch_status,
+        });
+        return jsonResponse(200, {
+          received: true,
+          outcome: applied.outcome,
+          receipt_status: applied.receipt_status,
+          dispatch_status: applied.dispatch_status,
+        });
+      }
+    }
+
+    // Handle subscription and checkout events
+    switch (event.type) {
+      case "checkout.session.completed":
+      case "checkout.session.async_payment_succeeded": {
+        logStep("Processing checkout session event", { eventType: event.type });
+        break;
+      }
+
+      case "checkout.session.async_payment_failed":
+      case "checkout.session.expired": {
         break;
       }
 

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useSystemSettings } from "@/hooks/useSystemSettings";
+import { useMaintenanceSettings } from "@/hooks/useMaintenanceSettings";
 import { Wrench } from "lucide-react";
 import { LanguageToggle } from "@/components/LanguageToggle";
 
@@ -12,7 +12,7 @@ const formatMaintenanceTime = (value: string) => {
 
 const Maintenance = () => {
   const { t } = useTranslation();
-  const { settings } = useSystemSettings();
+  const { settings } = useMaintenanceSettings();
 
   const scheduledEnd = useMemo(() => {
     if (!settings.maintenance_end_time) return t("maintenance.scheduledEndTbd");

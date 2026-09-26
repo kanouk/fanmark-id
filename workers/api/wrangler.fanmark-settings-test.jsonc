@@ -1,0 +1,26 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "fanmark-settings-edit-local-proof",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-18",
+  "vars": {
+    "D1_TOPOLOGY": "split",
+    "AUTH_BACKEND": "better-auth",
+    "FANMARK_SETTINGS_BACKEND": "d1",
+    "BETTER_AUTH_SECRET": "local-fanmark-settings-test-only-secret-not-for-deployment-000000000000",
+    "BETTER_AUTH_URL": "https://api.example.test",
+    "CORS_ALLOWED_ORIGINS": "https://app.example.test"
+  },
+  "d1_databases": [
+    {
+      "binding": "AUTH_DB",
+      "database_name": "fanmark-settings-auth-local-fixture",
+      "database_id": "00000000-0000-0000-0000-000000000079"
+    },
+    {
+      "binding": "FANMARK_DB",
+      "database_name": "fanmark-settings-business-local-fixture",
+      "database_id": "00000000-0000-0000-0000-000000000080"
+    }
+  ]
+}

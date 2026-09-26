@@ -1,27 +1,109 @@
 # Cloudflare 移行: Better Auth 認証 feasibility
 
-確認日: 2026-09-21 (JST)
+確認日: 2026-09-24 (JST)
 
-この調査は、Supabase Auth の本番データを移行したり、Cloudflare のリモート
-D1/Worker を変更したりするものではない。`experiments/cloudflare-auth/` に、
-架空のユーザー、架空の UUID、架空の bcrypt hash だけを入れたローカル
-Workers + D1 proof を置いた。OAuth の provider 登録、OAuth callback、MFA factor
-移行、実データの export/import は実施していない。
+この調査とローカル Worker 統合では、Supabase Auth の本番データ移行や
+Cloudflare のリモート D1/Worker 変更は行っていない。後続のisolated staging proofは
+文書末尾に分けて記録する。`experiments/cloudflare-auth/`
+とWorker統合テストには、架空のユーザー、UUID、bcrypt hash だけを使うローカル
+Workers + D1 proof を置いた。OAuth の provider 登録、OAuth callback、Supabase
+MFA factor の移行、実データの export/import は実施していない。
+
+別途、Supabase SQL Editor で `BEGIN READ ONLY` の aggregate を実行した live
+observation では、既存 `encrypted_password` の観測形式が bcrypt `$2a$10$`、検証済み
+MFA factor type が TOTP だった。集計件数はこの proof に記録せず、hash 内容・user
+対応・factor secret は取得/exportしていない。
 
 ## 結論
 
+Supabase Auth自体をCloudflareのマネージド認証サービスへ移すのではなく、Cloudflare Workers上のBetter AuthとD1を新しい認証基盤として構築し、必要なユーザー/identity情報を対応付けて移行する。Better Authの公式ガイドはSupabase Authのuser/account移送を示す一方、Postgres向けの例である。D1への実データ移送は独自の変換・検証が必要。
+
 メール/パスワード認証の互換性については、条件付きでローカル feasibility を
 確認できた。Better Auth `1.7.5` の D1 adapter を workerd 上で動かし、
-`bcryptjs 3.0.3` をカスタム password verifier として渡すと、既存形式を想定
-した `$2b$` bcrypt hash を検証できる。正しいパスワードでは synthetic user の
-UUID が response と session の `userId` にそのまま残り、誤ったパスワードでは
+`bcryptjs 3.0.3` をカスタム password verifier として渡すと、synthetic `$2b$` と
+live aggregate で観測した `$2a$10$` を想定した bcrypt hash を検証できる。正しい
+パスワードでは synthetic user の UUID が response と session の `userId` に
+そのまま残り、誤ったパスワードでは
 `401` になり session は増えなかった。4 件の並列 sign-in でも各 session の
-UUID 関係は保たれた。
+UUID 関係は保たれた。さらに、二人目の synthetic user について Better Auth
+`twoFactor()` の TOTP enrollment、credential sign-in の pending challenge、
+誤った/正しい TOTP の拒否・完了をローカル HTTP endpoint で確認した。
+さらに synthetic administrator について、credential sign-in と OAuth 相当の
+session の両方をサーバー側の `/admin/protected` gate で検査し、同じ session と
+現在の verified factor に結び付いた TOTP assurance の後だけ通すことを確認した。
 
-これは「Better Auth へ実ユーザーを移行できる」証明ではない。実際の Supabase
-hash の prefix/cost、実ユーザー ID の対応付け、MFA factor、provider の token と
-profile の挙動、Cloudflare の CPU plan はまだ未確認であり、下記の gate を通す
-必要がある。
+Better Authの公式Supabase移行ガイドは`auth.users`/`auth.identities`から
+`user`/`account`への対応とbcrypt hashの保持方法を示しているが、例の移送先は
+Postgresであり、Cloudflare D1向けのコードではない。同ガイドでは既存sessionが
+失効し、2FA移行も対象外と明記されている。D1への実データ変換は別途実装・照合し、
+実ユーザーは#38の最終段階まで移送しない。
+
+これは「Better Auth へ実ユーザーを移行できる」証明ではない。Supabase の live
+aggregate は bcrypt `$2a$10$` 形式を示すが、hash 内容、実ユーザー ID の対応付け、
+MFA secret の移送、provider の token と profile の挙動、Cloudflare の CPU plan は
+まだ未確認であり、下記の gate を通す必要がある。
+
+## Application Workerへの統合 (2026-09-23)
+
+Better Authの共通実装を`workers/api/src/better-auth.mjs`へ移し、通常のアプリWorkerから
+`/api/auth/*`を処理する。`AUTH_BACKEND=better-auth`、ローカルD1 binding、32文字以上の
+secret、HTTPSのbase URLがそろった場合だけ有効にする。Cookieを使うCORSはWorker設定の
+HTTPS originとの完全一致を要求する。設定がなければSupabaseへフォールバックせず`503`を返す。
+実環境でbackendを有効にする前に、該当D1 migrationを適用してschemaを独立readbackする必要がある。
+
+`workers/api/migrations/0003_better_auth_core.sql`にはBetter Auth/MFAのschema、singleton
+MFA generation行、generation triggerを含める。user、account、password hash、factor、sessionの
+行は入れない。テスト実行時だけ合成行を作る。ログインではemail verificationを必須にする。
+招待・メール配信を含む`docs/PRODUCT.md`の仕様が未実装のため、signup、social login、password reset、
+verification email/linkのendpointは閉じたままにした。`/admin/protected`検証は当初、隔離された
+feasibility Workerで行った。アプリWorker接続の証拠は以下に記録する。
+
+`npm --prefix workers/api run test:auth:d1`で合成ログイン/session読戻し、誤passwordと未確認emailの
+拒否、閉鎖中endpoint、4並列sign-in、origin確認、preflight、backend未設定を検証し、Miniflareの5件が
+成功した。共通実装変更後も`npm --prefix experiments/cloudflare-auth test`のTOTP/admin-assurance
+6件が成功し、通常Workerの`build:dry-run`も成功した。いずれもローカル合成データの確認であり、remote
+CPU制限、D1の適用、実メール/OAuth、MFA factorの移送、業務データの認可は検証していない。
+
+## Isolated Cloudflare staging follow-up (2026-09-23)
+
+After the local proof, the APAC staging D1 received `0003_better_auth_core.sql`
+through Wrangler's remote `--file` import path after the standard remote
+`migrations apply` query path returned `incomplete input`. Eight Auth tables,
+six generation triggers, the `mfaGeneration` singleton, and the standard
+`d1_migrations` record were read back. All user-owned Auth tables were empty.
+The `fanmark-app-staging` Worker was then deployed with a staging-only secret,
+and the configured origin returned a successful synthetic sign-in, session
+read, logout, and wrong-password rejection. Signup stayed closed and OAuth or
+email delivery was not configured. The temporary `example.invalid` user was
+deleted and remote readback confirmed zero user/account/session/factor rows.
+This proves only the empty staging schema and narrow API smoke path; it does
+not prove imported Supabase users, frontend auth integration, OAuth, production
+CPU/concurrency, or business/admin authorization. See
+[`live-observations.md`](live-observations.md) for the full deployment evidence.
+
+## App Worker admin session gate (2026-09-24)
+
+`GET /api/admin/session` now applies the isolated proof's core checks in the app
+Worker: it resolves the current Better Auth session with cookie cache disabled,
+requires `adminRole=admin`, `user.twoFactorEnabled=1`, exactly one current
+verified factor, and an unexpired `mfaAssurance` row bound to that exact user,
+session, and factor. Cross-origin cookie requests are limited to configured
+origins and return `Access-Control-Allow-Credentials`; responses use
+`Cache-Control: no-store`. Only `GET` and `OPTIONS` are accepted, and every other
+`/api/admin/*` route remains `404`. This endpoint returns only
+`{"authorized":true}`; it does not implement or authorize admin CRUD/business
+operations, which must run their own gate at the protected operation.
+
+On Node 22.6.0, the app Worker Auth/D1 suite passed all eight tests, including
+anonymous/non-admin rejection, absent/expired assurance, assurance for a
+different session, origin rejection, and an authorized synthetic session with
+a current factor. Worker TypeScript and Wrangler staging dry-run passed. The
+staging app Worker was deployed as version
+`73b2724e-4abd-4ab6-a0bd-8e3a66cb7760`; live unauthenticated `GET` returned
+`401 unauthenticated`, and an allowed-origin `OPTIONS` returned `204` with
+credentialed CORS. No D1 migration or row write occurred. This does not prove
+the authorized admin path in remote D1, a full browser admin sign-in, or any
+business/admin data endpoint.
 
 ## 再現方法と固定バージョン
 
@@ -47,10 +129,17 @@ proof の依存関係は `package.json` と lockfile に exact version で固定
 `BETTER_AUTH_SECRET` には local proof の署名用 synthetic fixture 値だけを置いている。
 この lockfile での `npm ci` 後に `npm audit --omit=dev` は 0 vulnerabilities だった。
 
-`npm ci && npm test` の直近の実行では 3 tests passed となった。4 並列 sign-in の
-ローカル wall time は `311 ms`、最初の cold sign-in は `4.475 s` だった。この時間は
-workerd のテスト wall time であり、Cloudflare が請求する CPU time の測定値では
-ない。テストの主張範囲は synthetic data とローカル runtime に限る。
+synthetic OAuth 相当 session を発行する endpoint は `src/test-fixture.mjs` と
+`wrangler.fixture.jsonc` に分離し、Vitest の auxiliary Worker としてだけ bundle
+している。通常の `src/index.mjs` と `wrangler.jsonc` はこの plugin/endpoint を
+import せず、通常 Worker への同じ request は `404` になる。fixture の secret と
+user はテスト専用の架空値で、OAuth provider の callback や credential を構成した
+ものではない。
+
+`npm ci && npm test` の直近の実行では 6 tests passed となった。4 並列 sign-in の
+ローカル wall time は `296 ms` だった。この時間は workerd のテスト wall time であり、
+Cloudflare が請求する CPU time の測定値ではない。テストの主張範囲は synthetic data
+とローカル runtime に限る。
 
 ## 検証した範囲
 
@@ -58,19 +147,19 @@ workerd のテスト wall time であり、Cloudflare が請求する CPU time �
 
 - Better Auth の新規 password hash の既定は scrypt なので、今回の検証では
   `emailAndPassword.password.verify` と `password.hash` を明示的に差し替えた。
-- `bcryptjs` の純 JavaScript 実装で synthetic `$2b$10$...` hash を workerd 内で
-  検証できた。既存 hash を `account.password` に置き、`providerId =
+- `bcryptjs` の純 JavaScript 実装で synthetic `$2b$10$...` と `$2a$10$...` hash を
+  workerd 内で検証できた。既存 hash を `account.password` に置き、`providerId =
   credential`、`accountId` と `userId` を同じ synthetic user UUID にした。
 - UUID `11111111-1111-4111-8111-111111111111` は response、D1 `session.userId`、
   `get-session` response で一致した。4 並列の成功でも session 数は 4 増えた。
 - 誤った password は `401` で、失敗リクエストによる session は作成されなかった。
 
-この証明から、Supabase の hash が同じ bcrypt 互換形式だとは判断できない。
-移行前に本番から hash を持ち出さずに prefix (`$2a$`, `$2b$`, `$2y$`)、cost、
-encoding、account/user の対応をサンプリングして判定し、成功時に Better Auth の
+live aggregate では観測された Supabase hash の prefix/cost が `$2a$10$` だったが、
+hash 本体や user 対応は取得していない。移行前に本番から hash を持ち出さずに
+encoding、account/user の対応、実装が `$2a$` を同じ意味で検証することを確認し、成功時に Better Auth の
 新しい hash へ更新する方針と rollback を決める必要がある。今回の proof は新規
-hash も bcrypt にしているため、scrypt/別方式へ再 hash する本番方針は未決定で
-ある。
+hash の compatibility を確認しただけで、scrypt/別方式へ再 hash する本番方針は
+未決定である。
 
 ### Better Auth + D1/Workers
 
@@ -113,7 +202,7 @@ Discord をサポート provider として扱っている。したがって、pr
 
 | provider | 公式ドキュメント上の入力/注意 | 未検証の移行 gate |
 | --- | --- | --- |
-| Apple | Service ID/client ID、Team ID、Key ID、private key から ES256 client secret を生成。JWT は最長 6 か月。Apple は `email` claim を最初の認可時だけ返す。 | Apple Developer 側の Service ID/return URL、実 callback、初回 email claim 欠落時の account linking、既存 Supabase identity の対応。 |
+| Apple | Better Auth の現行 guide は Service ID/client ID、Team ID、Key ID、private key から ES256 client secret を生成し、JWT は最長 6 か月としている。同 guide は `email` claim を最初の認可時だけと説明する一方、Apple の公式 web guide は subsequent authorization でも identity token に email を含めると説明し、user object/name は初回だけとしている。 | 公式資料の記述差を前提に、Apple の stable user identifier を主キーにする。Service ID/return URL、実 callback、identity token の email、初回 name/email の保存、既存 Supabase identity の対応を staging で確認する。 |
 | Google | client ID/secret と Better Auth の callback。base URL を正しく設定しないと `redirect_uri_mismatch`。 | 実 client の redirect、token/profile、既存 email との linking、production origin。 |
 | GitHub | client ID/secret と `user:email` scope が必要。 | 実 OAuth app の scope、非公開 email、既存 identity との linking。 |
 | Discord | client ID/secret と callback。電話番号だけのアカウントでは email が null の場合がある。 | 実 callback、email null の扱い、既存 identity との linking。 |
@@ -132,37 +221,193 @@ backupCodes、verified、失敗回数、lock 時刻など）を追加する。cr
 既定では 2FA の対象にならず、全方式に要求するなら hook 等の明示的な policy が
 必要である。
 
-この proof では plugin を有効にしておらず、Supabase の MFA factor/secret を
-Better Auth の `twoFactor` schema に変換していない。したがって MFA を「移行
-できる」とは判定しない。次の gate は、既存 factor の種類・状態・recovery code
+この proof では plugin の email/password TOTP endpoint は実行したが、Supabase の
+MFA factor/secret を Better Auth の `twoFactor` schema に変換していない。したがって
+MFA を「移行できる」とは判定しない。次の gate は、既存 factor の種類・状態・recovery code
 を本番から安全に分類し、secret を移行可能か（または再登録を要求するか）決め、
 credential と各 OAuth provider の challenge policy を staging で実行すること
 である。TOTP secret を無理に export できない場合は、ユーザー再登録と旧 MFA
 無効化の手順・期間を別途設計する。
 
+ローカル proof では、二人目の synthetic user（UUID
+`33333333-3333-4333-8333-333333333333`）だけに `twoFactor()` を有効化した。
+password sign-in 後に `POST /api/auth/two-factor/enable`（`method: "totp"`）を
+呼び、URI の secret をログへ出さずテストメモリ内で RFC 6238 の enrollment code
+を WebCrypto HMAC-SHA1 から生成して `verify-totp` を通した。sign-out 後の再 sign-in
+は `twoFactorRedirect: true` と `twoFactorMethods: ["totp"]` を返し、challenge
+を含む全 `Set-Cookie` name/value pair を forwarding した `get-session` は `null` に
+なった。Better Auth の current ±1 period 範囲から外した6桁 code は `401`、正しい
+current code は `200` で、同じ UUID の authenticated session が作られた。
+
+この endpoint proof は email/password 経路だけを対象とする。OAuth の4 provider
+で Better Auth の challenge が自動的に強制されること、Supabase の旧 MFA
+factor/secret/recovery code の移行は未確認である。
+
+### Administrator route の MFA assurance proof
+
+Better Auth の `twoFactor()` は OAuth/social sign-in を既定では 2FA の対象に
+しない。そのため、admin 操作は sign-in の種類に依存せず、サーバー側で認証済み
+session と MFA assurance を再検査する gate が必要になる。proof では synthetic
+admin に `adminRole` を付け、`/admin/protected` が次の全てを D1 と Better Auth
+session から確認するようにした。
+
+- `auth.api.getSession` による現在の session があり、role が `admin` である。
+- user の `twoFactorEnabled` と current `twoFactor.verified` が有効である。
+- `mfaAssurance` の `sessionId` が現在の session ID と一致し、期限内である。
+- `mfaAssurance.factorId` が current verified factor の ID と一致する。
+
+`mfaAssurance.sessionId` は `session(id)` への unique foreign key（cascade）で、
+`factorId` は `twoFactor(id)` への foreign key（cascade）である。verify hook は
+成功 response の user ID と Better Auth の supported context (`newSession` または
+current `session`) の user ID を比較し、既存 session の場合は token から internal
+adapter で再読込した同一 session を確認してから、current verified factor ID と
+共に assurance を保存する。admin gate は cookie や client header の MFA claimを
+信用せず、毎回この関係を D1 で照合する。session sign-out の cascade と
+two-factor enable/disable hook の assurance 削除も検証した。
+
+テストでは未認証、non-admin、MFA 未検証、pending sign-in の全 cookie、OAuth 相当
+session を順に拒否し、OAuth 相当 session も同じ session の TOTP verify 後だけ
+許可した。別 session の assurance は拒否し、disable 後は route と assurance row
+の両方が無効になった。OAuth 相当 session は実 provider callback ではなく、通常の
+Worker から分離した Vitest auxiliary Worker の test-only endpoint が
+`internalAdapter.createSession` と `setSessionCookie` で発行する synthetic session
+である。したがって、この結果は Apple/Google/GitHub/Discord の実 callback や
+OAuth hook の完全な移行を証明しない。
+
+factor ID を assurance に保存し、current factor と照合することで、通常の
+disable/再 enrollment で factor row が置き換わったとき旧 factor の proof を再利用
+できない形にした。さらに、`mfaGeneration(id = 1, generation)` という D1 の singleton
+行を追加した。factor の insert/delete、secret または `userId` の変更、verified の
+`1 -> 0`、user の `twoFactorEnabled` の `1 -> 0` は SQLite trigger で generation を
+増やし、その factor/user に属する assurance を削除する。失敗回数の更新と
+enrollment の `false -> true` では増やさない。
+
+Worker は `verify-totp` の handler に入る前に generation だけを一度読み取る。cookie
+を解析したり、入力 cookie から user/session を先に引いたりはしない。Better Auth の
+supported context で TOTP 成功と user/session の一致を確認した後、guard 付きの一つの
+`INSERT ... SELECT` が、同じ generation、現在の session/user、verified factor、
+enabled user、未期限切れ session を同時に確認して assurance を保存する。D1 の SQLite
+adapter がこの proof の session expiry を ISO text として保存することは実際の row の
+`typeof(expiresAt)` と parse をテストで確認し、guard は同じ ISO 表現で比較している。
+
+test-only barrier で Better Auth の TOTP 成功後・guarded insert 前に同じ factor の
+secret を更新すると、trigger が assurance を削除し generation を増やし、verify 自体は
+`200` のままでも assurance は作られず `/admin/protected` は `403` になった。secret を
+戻した後の新しい TOTP verify は `200` で route を通った。通常の disable/delete 後に
+新しい factor を enable/verify した場合は factor ID が変わり、新しい session-bound
+assurance だけが有効になった。sign-out 後は session の cascade で route が `401` に
+戻った。
+
+singleton generation は新しい assurance の optimistic concurrency guard であり、無関係
+な user の MFA 変更が同時に起きると、新しい assurance を保守的に作らず retry を要求
+することがある。既存 assurance の admin request で global generation を比較しないため、
+無関係な user の変更で確立済み session を全体 revoke はしない。local D1 でこの順序を
+再現した証拠は得たが、remote D1 の multi-Worker concurrency、Better Auth session 作成
+と assurance 保存をまたぐ本番 transaction、実 factor reset API の運用は未検証であり、
+staging の race/trigger/load test が残る。
+
+Supabase 側は read-only aggregate で既存 factor type が TOTP だと確認できたが、
+factor の secret、recovery code、user 対応、移行可能性は確認していない。件数や
+hash/factor の個別値は export していないため、この live observation は proof の
+synthetic enrollment を実データ移行の証明に変えない。
+
 ## 未確認事項と次の gate
 
 | surface | 今回の evidence | 未確認/次の gate |
 | --- | --- | --- |
-| D1 adapter | 公式 D1 support と local workerd/D1 の core auth/session | production schema parity、D1 batch の実負荷、migration rollback、remote resource policy |
-| bcrypt import | synthetic `$2b$` の正しい/誤った password、session/UUID 関係 | 実 Supabase hash 形式/cost、CPU、成功時 rehash、失敗時の lock/rate limit |
+| D1 adapter | 公式 D1 support、local workerd/D1 auth/session、isolated remote empty-schema apply/readback | full application schema parity、D1 batch の実負荷、migration rollback behavior、remote resource policy |
+| bcrypt import | synthetic `$2b$10$` と `$2a$10$` の正しい/誤った password、session/UUID 関係。live aggregate は観測 hash を `$2a$10$` と確認 | 実 hash 内容/user 対応、CPU、成功時 rehash、失敗時の lock/rate limit |
 | UUID | synthetic user/account/session で UUID を完全一致 | `auth.users.id` と identity/account の実対応表、既存 session の扱い、export/import rehearsal |
 | Apple/Google/GitHub/Discord | 公式 docs と provider 設定項目の確認 | staging secret、実 callback、profile/email/null、link/unlink、origin/return URL |
-| MFA | 公式 2FA plugin の schema/policy を確認 | Supabase factor の分類・移送可否、再登録、OAuth を含む challenge policy |
+| MFA | synthetic user の local HTTP TOTP enrollment/challenge/verification、UUID/session 関係。admin route は role、current verified factor、session/factor-bound assurance を再検査し、OAuth 相当 session を verify 前に拒否。MFA mutation generation と guarded assurance insert を実 D1 barrier で検証し、同じ factor secret reset、factor replacement、sign-out 後の stale assurance を拒否。remote staging D1 has the six generation triggers and singleton readback; live aggregate は factor type を TOTP と確認 | Supabase factor secret/user 対応・移送可否、再登録、4 provider の実 callback と challenge policy、remote D1 multi-Worker concurrency、staging admin authorization |
 | CPU/concurrency | local 4 並列 sign-in が成功 | staged Worker の CPU metrics、plan/limit、D1 concurrency、rate limit、ピーク負荷 |
 
 これらの gate を通る前に本番 migration、旧 Auth の停止、OAuth provider の
 redirect 切替、MFA の無効化は行わない。
 
+## Dedicated staging Auth D1 (2026-09-24 JST)
+
+The app staging Worker now selects a separate `AUTH_DB` under `D1_TOPOLOGY=split`.
+APAC `fanmark-auth-staging` contains only the Better Auth/MFA schema and its
+`0003` migration ledger; final remote readback found zero user-owned rows and
+generation 0. A temporary synthetic account successfully signed in through
+the deployed Worker for the R2 API smoke, then was deleted and all Auth table
+counts returned to zero. The previous master staging D1 retains its existing
+empty Auth schema; no user rows were copied or deleted. This validates the
+staging Auth binding and a synthetic login only, not real credential or MFA
+migration, production provider callbacks, or admin CRUD authorization.
+
+## Current staging revalidation (2026-09-24)
+
+`fanmark-app-staging` is currently deployed as Worker version
+`af25a447-01f2-4fee-a273-21cace0522ca`. A fresh synthetic credential rehearsal
+against this version inserted one `example.invalid` user/account into the
+dedicated Auth D1, signed in, read the same synthetic UUID from the session,
+signed out, and confirmed a wrong password returned 401 without creating a
+session. Cleanup removed that exact test identity; aggregate readback then
+showed zero rows in user, account, session, verification, factor, admin-role,
+and MFA-assurance tables.
+
+The staging root and JavaScript asset both returned 200, and the remote asset
+hash matched the local Cloudflare-staging build. That build selects the
+Better Auth email client, hides signup/social login/password reset, and sends
+session, sign-in, and sign-out requests to the same-origin Worker. The bundle
+still contains the normal Supabase path for other build modes. This is a
+staging UI/API integration check; business reads, profile metadata, and image
+storage still retain Supabase paths, and no Supabase identity was imported.
+
+Limited CPU measurements were recorded on the staging Worker versions during
+the same rehearsal window. On the current `af25a447` version,
+`GET /api/auth/ok` used 0–1 ms across four samples after its lightweight
+health-route change. Anonymous `GET /api/admin/session` used 1 ms and 25 ms in
+two samples. Earlier versions also showed variable admin-session costs. The
+credential sign-in CPU was not captured, and this sample is too small to
+establish a plan fit. Workers Free allows 10 ms CPU per HTTP request; the
+25 ms admin sample and the unmeasured bcrypt sign-in leave the Free/Paid
+decision unresolved. No plan upgrade was made. See [Cloudflare Workers
+limits](https://developers.cloudflare.com/workers/platform/limits/).
+
+## Conditional Resend mail and existing-account OAuth wiring (2026-09-26 JST)
+
+The current migration worktree adds conditional Resend-backed verification and
+password-reset callbacks. They are available only when
+`AUTH_EMAIL_BACKEND=resend`, `RESEND_API_KEY`, and `RESEND_FROM_EMAIL` are
+configured. Generated verification/reset links are restricted to the HTTPS
+Better Auth origin and expected auth paths. The Worker capability response
+reports only whether email is configured; auth mail routes stay closed when it
+is not. No real message was sent.
+
+Google, GitHub, Discord, and Apple sign-in are wired behind
+`AUTH_SOCIAL_BACKEND=better-auth` and complete per-provider client ID/secret
+pairs. The capability endpoint returns configured provider names without
+credentials. Better Auth social sign-up and email/password sign-up both remain
+disabled; this wiring can authenticate only identities already present in the
+Better Auth store. The frontend exposes reset and social actions only when the
+Worker reports the corresponding capability. No live OAuth callback was run.
+
+These changes are deployed to the workers.dev staging Worker as version
+`bc5ad53e-5f08-492b-81fb-8046c9be9600` at 100%. Live capabilities read back
+`emailVerification: false`, `passwordReset: false`, `signUp: false`, and an
+empty provider list. Synthetic sign-up, reset, social sign-in, and OAuth
+callback requests all returned 403; auth health returned 200 and anonymous
+admin session returned 401. Staging selectors and provider/email secrets
+remain unset. No real mail or provider callback was run. Identity linking,
+real provider registration, user/Auth migration, and CPU fit remain
+unverified.
+
 ## 公式一次資料
 
 - [Better Auth installation](https://better-auth.com/docs/installation) — 依存関係と最新 package version の確認。
+- [Better Auth: Migrating from Supabase Auth](https://better-auth.com/docs/guides/supabase-migration-guide) — user/identity/password hash mapping、session invalidation、2FA coverage limit。
 - [Better Auth database concepts](https://better-auth.com/docs/concepts/database) — core table、account/session、D1 adapter のモデル。
 - [Better Auth 1.5: Cloudflare D1](https://better-auth.com/blog/1-5) — D1 binding、batch、interactive transaction の制約。
 - [Better Auth Hono integration](https://better-auth.com/docs/integrations/hono) — Workers の `nodejs_compat`。
 - [Better Auth security reference](https://better-auth.com/docs/reference/security) — scrypt の既定と password hash/verify の差し替え。
 - [Better Auth OAuth concept](https://better-auth.com/docs/concepts/oauth) — social provider の共通モデル。
 - [Apple](https://better-auth.com/docs/authentication/apple)、[Google](https://better-auth.com/docs/authentication/google)、[GitHub](https://better-auth.com/docs/authentication/github)、[Discord](https://better-auth.com/docs/authentication/discord) — provider 固有の client、scope、callback 条件。
+- [Apple Developer: configuring your webpage for Sign in with Apple](https://developer.apple.com/documentation/signinwithapple/configuring-your-webpage-for-sign-in-with-apple) — user object/name の初回提供と identity token の email claim。
 - [Better Auth 2FA plugin](https://better-auth.com/docs/plugins/2fa) — TOTP/OTP、backup code、schema、OAuth の既定 policy。
+- [RFC 6238](https://www.rfc-editor.org/rfc/rfc6238) — test-only TOTP counter/HMAC routine の仕様。
 - [Cloudflare Workers limits](https://developers.cloudflare.com/workers/platform/limits/) — CPU、memory、startup の上限。
 - [Cloudflare Workers Vitest integration](https://developers.cloudflare.com/workers/testing/vitest-integration/) — workerd/Miniflare の local binding test。
+- [Cloudflare Workers Vitest configuration](https://developers.cloudflare.com/workers/testing/vitest-integration/configuration/) — test-only auxiliary Worker と service binding。

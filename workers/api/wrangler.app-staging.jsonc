@@ -1,0 +1,112 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "fanmark-app-staging",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-18",
+  "account_id": "bfc2890741f0b3fb236e2d755b6c9adc",
+  "workers_dev": true,
+  "assets": {
+    "directory": "../../dist-staging",
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/*"]
+  },
+  "triggers": {
+    "crons": ["* * * * *", "0 0 * * *"]
+  },
+  "ratelimits": [
+    {
+      "name": "WAITLIST_SIGNUP_LIMITER",
+      "namespace_id": "41092701",
+      "simple": {
+        "limit": 120,
+        "period": 60
+      }
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "FANMARK_DB",
+      "database_name": "fanmark-business-staging",
+      "database_id": "d4bb0c48-f24a-491f-8693-fa393ab0b873",
+      "migrations_dir": "migrations-business",
+      "remote": true
+    },
+    {
+      "binding": "AUTH_DB",
+      "database_name": "fanmark-auth-staging",
+      "database_id": "2116bc43-32ab-4e3e-b762-9378df88b95f",
+      "migrations_dir": "migrations",
+      "migrations_pattern": "migrations/000[378]_*.sql",
+      "remote": true
+    },
+    {
+      "binding": "MASTER_DB",
+      "database_name": "fanmark-emoji-master-staging",
+      "database_id": "160376b0-bde6-4d5f-8969-96deb5ae1183",
+      "migrations_dir": "migrations",
+      "migrations_pattern": "migrations/000[0-6]_*.sql",
+      "remote": true
+    }
+  ],
+  "vars": {
+    "D1_TOPOLOGY": "split",
+    "LICENSE_EXPIRY_CRON": "0 0 * * *",
+    "EMOJI_CATALOG_BACKEND": "d1",
+    "REFERENCE_MASTER_BACKEND": "d1",
+    "EMOJI_MASTER_ADMIN_BACKEND": "d1",
+    "AUTH_BACKEND": "better-auth",
+    "RECENT_FANMARKS_BACKEND": "d1",
+    "AVAILABILITY_BACKEND": "d1",
+    "PUBLIC_ACCESS_BACKEND": "d1",
+    "PROFILE_BACKEND": "d1",
+    "ACCOUNT_DELETION_BACKEND": "d1",
+    "OWNED_FANMARKS_BACKEND": "d1",
+    "FANMARK_PROFILE_BACKEND": "d1",
+    "FANMARK_SETTINGS_BACKEND": "d1",
+    "FANMARK_RETURN_BACKEND": "d1",
+    "FANMARK_REGISTRATION_BACKEND": "d1",
+    "FANMARK_LOTTERY_BACKEND": "d1",
+    "FANMARK_TRANSFER_BACKEND": "d1",
+    "FANMARK_SEARCH_BACKEND": "d1",
+    "FANMARK_DETAILS_BACKEND": "d1",
+    "FANMARK_ANALYTICS_BACKEND": "d1",
+    "FANMARK_ACCESS_ANALYTICS_BACKEND": "d1",
+    "FAVORITES_BACKEND": "d1",
+    "NOTIFICATIONS_BACKEND": "d1",
+    "NOTIFICATION_MASTER_BACKEND": "d1",
+    "NOTIFICATION_PROCESSOR_BACKEND": "d1",
+    "INVITATION_ADMIN_BACKEND": "d1",
+    "WAITLIST_ADMIN_BACKEND": "d1",
+    "WAITLIST_SIGNUP_BACKEND": "d1",
+    "REFERENCE_MASTER_ADMIN_BACKEND": "d1",
+    "EXTENSION_COUPON_BACKEND": "d1",
+    "EXTENSION_COUPON_ADMIN_BACKEND": "d1",
+    "ADMIN_USER_MANAGEMENT_BACKEND": "d1",
+    "AUTH_USER_STATUS_BACKEND": "d1",
+    "EMAIL_TEMPLATE_ADMIN_BACKEND": "d1",
+    "AUTH_EMAIL_TEMPLATE_BACKEND": "d1",
+    "AVAILABILITY_RULES_ADMIN_BACKEND": "d1",
+    "MAINTENANCE_SETTINGS_BACKEND": "d1",
+    "LIFECYCLE_SETTINGS_BACKEND": "d1",
+    "SYSTEM_SETTINGS_BACKEND": "d1",
+    "SUBSCRIPTION_BACKEND": "d1",
+    "VERIFIED_ACCESS_BACKEND": "d1",
+    "STORAGE_BACKEND": "r2",
+    "BETTER_AUTH_URL": "https://fanmark-app-staging.fanmark-id.workers.dev",
+    "SUPABASE_URL": "https://synthetic-project.supabase.co",
+    "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_fixture_only",
+    "CORS_ALLOWED_ORIGINS": "https://fanmark-app-staging.fanmark-id.workers.dev",
+    "STAGING_NO_INDEX": "true"
+  },
+  "r2_buckets": [
+    {
+      "binding": "AVATARS_BUCKET",
+      "bucket_name": "fanmark-avatars-staging"
+    },
+    {
+      "binding": "COVER_IMAGES_BUCKET",
+      "bucket_name": "fanmark-cover-images-staging"
+    }
+  ]
+}

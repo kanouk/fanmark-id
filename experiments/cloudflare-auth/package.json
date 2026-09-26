@@ -4,8 +4,10 @@
   "type": "module",
   "scripts": {
     "test": "vitest run --config vitest.config.mjs",
+    "test:verified-access": "vitest run --config vitest.verified-access.config.mjs",
     "test:watch": "vitest --config vitest.config.mjs",
-    "dev": "wrangler dev --local --config wrangler.jsonc"
+    "dev": "wrangler dev --local --config wrangler.jsonc",
+    "test:credential-transform": "node --test test/credential-transform.integration.mjs"
   },
   "dependencies": {
     "bcryptjs": "3.0.3",
@@ -15,5 +17,8 @@
     "@cloudflare/vitest-plugin": "1.1.13",
     "vitest": "4.1.11",
     "wrangler": "4.135.0"
+  },
+  "overrides": {
+    "vite": "6.4.3"
   }
 }

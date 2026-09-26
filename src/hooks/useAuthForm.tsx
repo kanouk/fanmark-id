@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/integrations/supabase/client';
+import { betterAuthClient, isBetterAuthEnabled } from '@/lib/auth-backend';
+import { BetterAuthClientError } from '@/lib/better-auth-client';
+import { useAuth } from '@/hooks/useAuth';
 import { AuthFormData, AuthState } from '@/types/auth';
 import { isActiveLanguage, type ActiveLanguageCode } from '@/lib/language';
 
@@ -26,6 +29,7 @@ export const useAuthForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useTranslation();
+  const { refreshSession } = useAuth();
   
   const [formData, setFormData] = useState<AuthFormData>({
     email: '',
@@ -41,6 +45,8 @@ export const useAuthForm = () => {
 
   const [resendCooldown, setResendCooldown] = useState(0);
   const cooldownTimerRef = useRef<number | null>(null);
+  const signupCommandIdRef = useRef<string | null>(null);
+  const signupTermsRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (resendCooldown > 0) {
@@ -116,71 +122,93 @@ export const useAuthForm = () => {
     setError('');
 
     try {
-      const emailExists = await checkEmailExists(formData.email);
-      if (emailExists) {
-        setError('このメールアドレスは既に登録されています');
-        return;
-      }
-
-      if (invitationRequired && normalizedInvitationCode) {
-        const { data, error } = await supabase.rpc('validate_invitation_code', {
-          code_to_check: normalizedInvitationCode
+      if (isBetterAuthEnabled()) {
+        const preferredLanguage = detectBrowserLanguage();
+        const terms = JSON.stringify([
+          formData.email.trim().toLowerCase(),
+          normalizedInvitationCode,
+          preferredLanguage,
+        ]);
+        if (signupTermsRef.current !== terms) {
+          signupTermsRef.current = terms;
+          signupCommandIdRef.current = crypto.randomUUID();
+        }
+        await betterAuthClient.signUpWithEmail({
+          email: formData.email,
+          password: formData.password,
+          commandId: signupCommandIdRef.current ?? crypto.randomUUID(),
+          invitationCode: normalizedInvitationCode,
+          preferredLanguage,
         });
-
-        if (error) {
-          console.error('Error validating invitation code before signup:', error);
-          setError(t('invitation.errorValidating'));
+        signupCommandIdRef.current = null;
+        signupTermsRef.current = null;
+      } else {
+        const emailExists = await checkEmailExists(formData.email);
+        if (emailExists) {
+          setError('このメールアドレスは既に登録されています');
           return;
         }
 
-        const result = data?.[0];
-        if (!result?.is_valid) {
-          setError(t('invitation.invalidCode'));
-          return;
-        }
-
-        if ((result.remaining_uses ?? 0) <= 0) {
-          setError(t('invitation.codeFullyUsed'));
-          return;
-        }
-      }
-
-      const signUpOptions = {
-        emailRedirectTo: `${window.location.origin}/`,
-        data: {
-          preferred_language: detectBrowserLanguage(),
-          ...(normalizedInvitationCode && { invitation_code: normalizedInvitationCode })
-        }
-      };
-
-      const { data: signUpData, error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: signUpOptions
-      });
-
-      if (error) throw error;
-
-      if (normalizedInvitationCode && !invitationRequired) {
-        const { error: consumeError } = await supabase.rpc('use_invitation_code', {
-          code_to_use: normalizedInvitationCode
-        });
-
-        if (consumeError) {
-          console.error('Error consuming invitation code:', consumeError);
-          toast({
-            title: t('common.error'),
-            description: t('invitation.errorValidating'),
-            variant: 'destructive',
+        if (invitationRequired && normalizedInvitationCode) {
+          const { data, error } = await supabase.rpc('validate_invitation_code', {
+            code_to_check: normalizedInvitationCode
           });
-        } else if (signUpData?.user?.id) {
-          const { error: settingsError } = await supabase
-            .from('user_settings')
-            .update({ invited_by_code: normalizedInvitationCode })
-            .eq('user_id', signUpData.user.id);
 
-          if (settingsError) {
-            console.error('Error updating user settings with invitation code:', settingsError);
+          if (error) {
+            console.error('Error validating invitation code before signup:', error);
+            setError(t('invitation.errorValidating'));
+            return;
+          }
+
+          const result = data?.[0];
+          if (!result?.is_valid) {
+            setError(t('invitation.invalidCode'));
+            return;
+          }
+
+          if ((result.remaining_uses ?? 0) <= 0) {
+            setError(t('invitation.codeFullyUsed'));
+            return;
+          }
+        }
+
+        const signUpOptions = {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            preferred_language: detectBrowserLanguage(),
+            ...(normalizedInvitationCode && { invitation_code: normalizedInvitationCode })
+          }
+        };
+
+        const { data: signUpData, error } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: signUpOptions
+        });
+
+        if (error) throw error;
+
+        if (normalizedInvitationCode && !invitationRequired) {
+          const { error: consumeError } = await supabase.rpc('use_invitation_code', {
+            code_to_use: normalizedInvitationCode
+          });
+
+          if (consumeError) {
+            console.error('Error consuming invitation code:', consumeError);
+            toast({
+              title: t('common.error'),
+              description: t('invitation.errorValidating'),
+              variant: 'destructive',
+            });
+          } else if (signUpData?.user?.id) {
+            const { error: settingsError } = await supabase
+              .from('user_settings')
+              .update({ invited_by_code: normalizedInvitationCode })
+              .eq('user_id', signUpData.user.id);
+
+            if (settingsError) {
+              console.error('Error updating user settings with invitation code:', settingsError);
+            }
           }
         }
       }
@@ -193,7 +221,24 @@ export const useAuthForm = () => {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : undefined;
-      setError(message || 'サインアップに失敗しました');
+      if (message === 'signup_command_expired' || message === 'signup_command_conflict') {
+        signupCommandIdRef.current = null;
+        signupTermsRef.current = null;
+      }
+      const signupError = message === 'invitation_required'
+        ? t('invitation.codeRequired')
+        : message === 'invitation_invalid_or_full'
+          ? t('invitation.invalidCode')
+          : message === 'signup_command_expired'
+            ? '登録手続きの有効時間が過ぎました。もう一度お試しください。'
+            : message === 'signup_command_conflict'
+              ? '入力内容が変わりました。招待コードを確認してもう一度お試しください。'
+              : message === 'verification_email_unavailable'
+                ? '確認メールを送信できませんでした。しばらくしてからもう一度お試しください。'
+                : message === 'signup_email_or_invitation_unavailable'
+                  ? '招待コードを利用できません。残り回数を確認してください。'
+                  : 'サインアップに失敗しました。しばらくしてからもう一度お試しください。';
+      setError(signupError);
     } finally {
       setLoading(false);
     }
@@ -204,6 +249,13 @@ export const useAuthForm = () => {
     setError('');
 
     try {
+      if (isBetterAuthEnabled()) {
+        await betterAuthClient.signInWithEmail(formData.email, formData.password);
+        await refreshSession();
+        navigate('/dashboard');
+        return;
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
@@ -222,8 +274,14 @@ export const useAuthForm = () => {
 
       navigate('/dashboard');
     } catch (error) {
-      const message = error instanceof Error ? error.message : undefined;
-      setError(message || 'ログインに失敗しました');
+      if (error instanceof BetterAuthClientError && error.status === 401) {
+        setError('メールアドレスまたはパスワードが正しくありません');
+      } else if (error instanceof BetterAuthClientError && error.status === 403) {
+        setError('メールアドレスの確認が完了していません。確認メールをご確認ください。');
+      } else {
+        const message = error instanceof Error ? error.message : undefined;
+        setError(message || 'ログインに失敗しました');
+      }
     } finally {
       setLoading(false);
     }
@@ -237,11 +295,17 @@ export const useAuthForm = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
-        redirectTo: `${window.location.origin}/reset-password`
-      });
-
-      if (error) throw error;
+      if (isBetterAuthEnabled()) {
+        await betterAuthClient.requestPasswordReset(
+          formData.email,
+          `${window.location.origin}/reset-password`,
+        );
+      } else {
+        const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
+          redirectTo: `${window.location.origin}/reset-password`
+        });
+        if (error) throw error;
+      }
 
       toast({
         title: t('common.resetEmailSent'),
@@ -267,15 +331,21 @@ export const useAuthForm = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: formData.email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`
-        }
-      });
-
-      if (error) throw error;
+      if (isBetterAuthEnabled()) {
+        await betterAuthClient.sendVerificationEmail(
+          formData.email,
+          `${window.location.origin}/auth`,
+        );
+      } else {
+        const { error } = await supabase.auth.resend({
+          type: 'signup',
+          email: formData.email,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`
+          }
+        });
+        if (error) throw error;
+      }
 
       setResendCooldown(RESEND_COOLDOWN_SECONDS);
       toast({
@@ -295,6 +365,13 @@ export const useAuthForm = () => {
     setError('');
 
     try {
+      if (isBetterAuthEnabled()) {
+        window.location.assign(await betterAuthClient.signInWithSocial(
+          'google',
+          `${window.location.origin}/auth`,
+        ));
+        return;
+      }
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -316,6 +393,13 @@ export const useAuthForm = () => {
     setError('');
 
     try {
+      if (isBetterAuthEnabled()) {
+        window.location.assign(await betterAuthClient.signInWithSocial(
+          'github',
+          `${window.location.origin}/auth`,
+        ));
+        return;
+      }
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
@@ -337,6 +421,13 @@ export const useAuthForm = () => {
     setError('');
 
     try {
+      if (isBetterAuthEnabled()) {
+        window.location.assign(await betterAuthClient.signInWithSocial(
+          'discord',
+          `${window.location.origin}/auth`,
+        ));
+        return;
+      }
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'discord',
         options: {
@@ -358,6 +449,13 @@ export const useAuthForm = () => {
     setError('');
 
     try {
+      if (isBetterAuthEnabled()) {
+        window.location.assign(await betterAuthClient.signInWithSocial(
+          'apple',
+          `${window.location.origin}/auth`,
+        ));
+        return;
+      }
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
         options: {

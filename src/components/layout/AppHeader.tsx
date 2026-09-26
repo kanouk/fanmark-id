@@ -25,6 +25,21 @@ import {
 import { Heart, LogOut, User, Bell, BarChart3, Crown } from 'lucide-react';
 import { MdSpaceDashboard } from 'react-icons/md';
 import { cn } from '@/lib/utils';
+import {
+  getNotificationsBackend,
+  loadOwnNotifications,
+  markOwnNotificationRead,
+  type UserNotification,
+} from '@/lib/notifications-api';
+
+type NotificationPreview = Pick<UserNotification, 'id' | 'payload' | 'triggered_at' | 'read_at'>;
+
+function notificationLink(payload: Record<string, unknown>): string | null {
+  const directLink = payload.link;
+  if (typeof directLink === 'string' && directLink.startsWith('/') && !directLink.startsWith('//')) return directLink;
+  const shortId = payload.fanmark_short_id;
+  return typeof shortId === 'string' ? `/f/${encodeURIComponent(shortId)}` : null;
+}
 
 type AppHeaderProps = {
   className?: string;
@@ -63,17 +78,21 @@ export const AppHeader = ({
   const isOnUserSettings = pathname.startsWith('/profile');
   const isOnAnalytics = pathname.startsWith('/analytics');
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const notificationsBackend = getNotificationsBackend();
   
   const canAccessAnalytics = useMemo(() => {
     const planType = profile?.plan_type;
     return planType === 'business' || planType === 'enterprise' || planType === 'admin';
   }, [profile?.plan_type]);
 
-  const { data: recentNotifications = [], isLoading: notificationsLoading } = useQuery({
+  const { data: recentNotifications = [], isLoading: notificationsLoading } = useQuery<NotificationPreview[]>({
     queryKey: ['notifications-preview', user?.id],
     enabled: !!user && showNotifications,
     staleTime: 30_000,
     queryFn: async () => {
+      if (notificationsBackend === 'worker') {
+        return loadOwnNotifications(5);
+      }
       const { data, error } = await supabase
         .from('notifications')
         .select('id, payload, triggered_at, read_at')
@@ -86,12 +105,12 @@ export const AppHeader = ({
         return [];
       }
 
-      return data ?? [];
+      return (data ?? []) as unknown as NotificationPreview[];
     },
   });
 
   useEffect(() => {
-    if (!user || !showNotifications) return;
+    if (!user || !showNotifications || notificationsBackend === 'worker') return;
 
     const channel = supabase
       .channel(`notifications-preview-${user.id}`)
@@ -113,7 +132,7 @@ export const AppHeader = ({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, queryClient, showNotifications]);
+  }, [user, queryClient, showNotifications, notificationsBackend]);
 
   const handleLogout = async () => {
     try {
@@ -136,17 +155,22 @@ export const AppHeader = ({
   const markNotificationRead = async (notificationId: string) => {
     if (!user) return;
 
-    const { error } = await supabase.rpc('mark_notification_read', {
-      notification_id_param: notificationId,
-      read_via_param: 'menu',
-    });
-
-    if (error) {
+    try {
+      if (notificationsBackend === 'worker') {
+        await markOwnNotificationRead(notificationId, 'menu');
+      } else {
+        const { error } = await supabase.rpc('mark_notification_read', {
+          notification_id_param: notificationId,
+          read_via_param: 'menu',
+        });
+        if (error) throw error;
+      }
+    } catch (error) {
       console.error('Error marking notification as read:', error);
       return;
     }
 
-    queryClient.setQueryData(['notifications-preview', user.id], (prev: any) => {
+    queryClient.setQueryData<NotificationPreview[]>(['notifications-preview', user.id], (prev) => {
       if (!Array.isArray(prev)) return prev;
       return prev.map((notification) =>
         notification.id === notificationId
@@ -223,7 +247,7 @@ export const AppHeader = ({
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {recentNotifications.map((notification: any) => {
+                      {recentNotifications.map((notification) => {
                         const { title, body } = formatNotificationContent(notification);
                         const isUnread = !notification.read_at;
                         return (
@@ -234,11 +258,7 @@ export const AppHeader = ({
                               if (isUnread) {
                                 await markNotificationRead(notification.id);
                               }
-                              const directLink =
-                                notification.payload?.link ??
-                                (notification.payload?.fanmark_short_id
-                                  ? `/f/${notification.payload.fanmark_short_id}`
-                                  : null);
+                              const directLink = notificationLink(notification.payload);
                               setNotificationsOpen(false);
                               if (directLink) {
                                 if (directLink !== pathname) {

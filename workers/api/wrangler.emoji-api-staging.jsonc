@@ -1,0 +1,20 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "fanmark-emoji-master-staging-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-18",
+  "account_id": "bfc2890741f0b3fb236e2d755b6c9adc",
+  "workers_dev": true,
+  "vars": {
+    "EMOJI_CATALOG_BACKEND": "d1",
+    "CORS_ALLOWED_ORIGINS": "https://fanmark.id"
+  },
+  "d1_databases": [
+    {
+      "binding": "MASTER_DB",
+      "database_name": "fanmark-emoji-master-staging",
+      "database_id": "160376b0-bde6-4d5f-8969-96deb5ae1183",
+      "remote": true
+    }
+  ]
+}

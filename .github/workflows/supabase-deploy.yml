@@ -28,16 +28,167 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
+      - name: Test recent API client
+        run: npm run test:recent
+
+      - name: Test owner-scoped dashboard API client
+        run: npm run test:owned-fanmarks-api
+
+      - name: Test own-profile API client
+        run: npm run test:profile-api
+
+      - name: Test notifications API client
+        run: npm run test:notifications-api
+
+      - name: Test favorites API client
+        run: npm run test:favorites-api
+
+      - name: Test fanmark registration API client
+        run: npm run test:fanmark-registration-api
+
+      - name: Test fanmark lottery API client
+        run: npm run test:fanmark-lottery-api
+
+      - name: Test availability API client
+        run: npm run test:availability
+
+      - name: Test offline emoji catalog generation
+        run: npm run test:emoji-catalog
+
+      - name: Install SQLite for schema conversion validation
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends sqlite3
+
+      - name: Test migration data boundaries
+        run: npm run test:migration-data
+
+      - name: Test Stripe plan change client contract
+        run: npm run test:stripe-plan-change-api
+
       - name: Type check
         run: npm run typecheck
 
       - name: Build
         run: npm run build
 
+      - name: Verify generated PWA cache boundary
+        run: node scripts/check-pwa-cache.mjs
+
+      - name: Install Static Assets validation dependencies
+        run: npm ci --prefix workers/api
+
+      - name: Verify Static Assets routing with the fresh application build
+        run: npm run --prefix workers/api test:static-assets
+
+      - name: Validate Static Assets bundle without deployment
+        run: npm run --prefix workers/api build:static-assets:dry-run
+
+  migration-validation:
+    name: Validate migration (${{ matrix.directory }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        directory:
+          - workers/api
+          - experiments/cloudflare-auth
+          - experiments/cloudflare-d1-concurrency
+          - experiments/stripe-receipts
+    defaults:
+      run:
+        working-directory: ${{ matrix.directory }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: ${{ matrix.directory }}/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Test local Workers runtime
+        run: npm test
+      - name: Test protected public access proof
+        if: matrix.directory == 'experiments/cloudflare-auth'
+        run: npm run test:verified-access
+      - name: Test migration credential transform
+        if: matrix.directory == 'experiments/cloudflare-auth'
+        run: npm run test:credential-transform
+      - name: Test D1 recent contract
+        if: matrix.directory == 'workers/api'
+        run: npm run test:d1
+      - name: Test integrated Better Auth route
+        if: matrix.directory == 'workers/api'
+        run: npm run test:auth:d1
+      - name: Test Better Auth protected R2 image API
+        if: matrix.directory == 'workers/api'
+        run: npm run test:storage-r2-api
+      - name: Test Better Auth owner-scoped dashboard API
+        if: matrix.directory == 'workers/api'
+        run: npm run test:owned-fanmarks-api
+      - name: Test Better Auth own-profile API
+        if: matrix.directory == 'workers/api'
+        run: npm run test:profile-d1
+      - name: Test Better Auth notifications API
+        if: matrix.directory == 'workers/api'
+        run: npm run test:notifications-d1
+      - name: Test Better Auth favorites API
+        if: matrix.directory == 'workers/api'
+        run: npm run test:favorites-d1
+      - name: Test D1 fanmark registration transaction
+        if: matrix.directory == 'workers/api'
+        run: npm run test:fanmark-registration-d1
+      - name: Test D1 fanmark lottery actions
+        if: matrix.directory == 'workers/api'
+        run: npm run test:fanmark-lottery-d1
+      - name: Test D1 availability contract
+        if: matrix.directory == 'workers/api'
+        run: npm run test:availability:d1
+      - name: Test D1 availability against versioned reference masters
+        if: matrix.directory == 'workers/api'
+        run: npm run test:availability:reference-master
+      - name: Test D1 public access contract
+        if: matrix.directory == 'workers/api'
+        run: npm run test:public-access:d1
+      - name: Test local D1 import and readback
+        if: matrix.directory == 'workers/api'
+        run: npm run test:d1-import
+      - name: Test versioned emoji master D1 staging
+        if: matrix.directory == 'workers/api'
+        run: npm run test:emoji-master-release
+      - name: Test versioned reference master D1 staging
+        if: matrix.directory == 'workers/api'
+        run: npm run test:reference-master-release
+      - name: Test lifecycle target schema
+        if: matrix.directory == 'workers/api'
+        run: npm run test:lifecycle-schema
+      - name: Test local license expiry transitions
+        if: matrix.directory == 'workers/api'
+        run: npm run test:license-expiry
+      - name: Test source-shaped local license expiry transitions
+        if: matrix.directory == 'workers/api'
+        run: npm run test:license-expiry-source
+      - name: Test deterministic license lottery selection
+        if: matrix.directory == 'workers/api'
+        run: npm run test:license-lottery-selection
+      - name: Test scheduled license expiry contract
+        if: matrix.directory == 'workers/api'
+        run: npm run test:license-expiry-scheduled
+      - name: Test local R2 import and readback
+        if: matrix.directory == 'workers/api'
+        run: npm run test:storage-r2
+      - name: Type check API and Stripe SDK boundaries
+        if: matrix.directory == 'workers/api' || matrix.directory == 'experiments/stripe-receipts'
+        run: npm run typecheck
+      - name: Validate API bundle without deployment
+        if: matrix.directory == 'workers/api'
+        run: npm run build:dry-run
+
   deploy:
     name: Deploy Supabase production
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: validate
+    needs: [validate, migration-validation]
     runs-on: ubuntu-latest
     concurrency:
       group: supabase-production

@@ -30,6 +30,11 @@ import { usePasswordValidation } from '@/hooks/usePasswordValidation';
 import { PasswordRequirement } from '@/components/PasswordRequirement';
 import { formatStripeAmount } from '@/lib/currency';
 import { supabase } from '@/integrations/supabase/client';
+import { deleteAccountThroughWorker, getAccountDeletionBackend } from '@/lib/account-deletion-api';
+import {
+  createStripeCustomerPortalThroughWorker,
+  getStripeCustomerPortalBackend,
+} from '@/lib/stripe-customer-portal-api';
 
 type Section = 'account' | 'plan' | 'language';
 // TODO: Re-enable when features are implemented
@@ -89,6 +94,7 @@ const Profile = () => {
   const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deletePassword, setDeletePassword] = useState('');
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const { requirements: passwordRequirements, isValid: isPasswordValid } = usePasswordValidation(newPassword);
@@ -233,12 +239,17 @@ const Profile = () => {
   };
 
   const handleDeleteAccount = async () => {
-    if (deleteConfirmText !== 'DELETE') return;
+    const accountDeletionBackend = getAccountDeletionBackend();
+    if (deleteConfirmText !== 'DELETE' || (accountDeletionBackend === 'worker' && !deletePassword)) return;
     
     setIsDeletingAccount(true);
     try {
-      const { error } = await supabase.functions.invoke('delete-user-account');
-      if (error) throw error;
+      if (accountDeletionBackend === 'worker') {
+        await deleteAccountThroughWorker(deletePassword);
+      } else {
+        const { error } = await supabase.functions.invoke('delete-user-account');
+        if (error) throw error;
+      }
       
       toast({
         title: t('userSettings.deleteAccount.successTitle'),
@@ -258,6 +269,7 @@ const Profile = () => {
     } finally {
       setIsDeletingAccount(false);
       setDeleteConfirmText('');
+      setDeletePassword('');
     }
   };
 
@@ -288,11 +300,16 @@ const Profile = () => {
   const handleOpenCustomerPortal = async () => {
     setPortalLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('customer-portal');
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, '_blank');
-      }
+      const backend = getStripeCustomerPortalBackend();
+      const portal = backend === 'worker'
+        ? await createStripeCustomerPortalThroughWorker()
+        : await (async () => {
+          const { data, error } = await supabase.functions.invoke('customer-portal');
+          if (error) throw error;
+          if (typeof data?.url !== 'string') throw new Error('customer portal URL is missing');
+          return { url: data.url as string };
+        })();
+      window.open(portal.url, '_blank');
     } catch (error) {
       console.error('Failed to open customer portal:', error);
       toast({
@@ -520,6 +537,19 @@ const Profile = () => {
                 )}
 
                 <div className="space-y-4">
+                  {getAccountDeletionBackend() === 'worker' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="delete-password">{t('userSettings.deleteAccount.passwordPrompt')}</Label>
+                      <Input
+                        id="delete-password"
+                        type="password"
+                        value={deletePassword}
+                        onChange={(event) => setDeletePassword(event.target.value)}
+                        autoComplete="current-password"
+                        maxLength={256}
+                      />
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <Label htmlFor="delete-confirm">{t('userSettings.deleteAccount.confirmPrompt')}</Label>
                     <Input
@@ -532,12 +562,12 @@ const Profile = () => {
                   </div>
                 </div>
                 <AlertDialogFooter>
-                  <AlertDialogCancel onClick={() => setDeleteConfirmText('')}>
+                  <AlertDialogCancel onClick={() => { setDeleteConfirmText(''); setDeletePassword(''); }}>
                     {t('userSettings.deleteAccount.cancelButton')}
                   </AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleDeleteAccount}
-                    disabled={deleteConfirmText !== 'DELETE' || isDeletingAccount}
+                    disabled={deleteConfirmText !== 'DELETE' || (getAccountDeletionBackend() === 'worker' && !deletePassword) || isDeletingAccount}
                     className="bg-destructive hover:bg-destructive/90"
                   >
                     {isDeletingAccount

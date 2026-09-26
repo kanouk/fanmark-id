@@ -33,6 +33,10 @@ import { useToast } from '@/hooks/use-toast';
 import { useExtensionCouponAdmin, ExtensionCouponRow, ExtensionCouponUsageRow, CreateCouponValues } from '@/hooks/useExtensionCouponAdmin';
 import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  fetchFanmarkTierMaster,
+  getReferenceMasterReadBackend,
+} from '@/lib/reference-master-api';
 
 interface TierOption {
   tier_level: number;
@@ -63,6 +67,7 @@ export const AdminExtensionCoupons = () => {
   
   const [tierOptions, setTierOptions] = useState<TierOption[]>([]);
   const [tiersLoading, setTiersLoading] = useState(true);
+  const [tiersError, setTiersError] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [usageDialogOpen, setUsageDialogOpen] = useState(false);
   const [selectedCouponForUsage, setSelectedCouponForUsage] = useState<ExtensionCouponRow | null>(null);
@@ -74,23 +79,48 @@ export const AdminExtensionCoupons = () => {
     let isMounted = true;
 
     const fetchTiers = async () => {
+      let mayUseLegacyFallback = false;
       setTiersLoading(true);
+      setTiersError(false);
       try {
-        const { data, error: tierError } = await supabase
-          .from('fanmark_tiers')
-          .select('tier_level, display_name, emoji_count_min, emoji_count_max, is_active')
-          .order('tier_level', { ascending: true });
-
-        if (tierError) throw tierError;
-
-        const activeTiers = (data || []).filter((tier) => tier.is_active !== false);
+        const backend = getReferenceMasterReadBackend();
+        mayUseLegacyFallback = backend === 'supabase';
+        const activeTiers = backend === 'worker'
+          ? (await fetchFanmarkTierMaster())
+            .filter((tier) => tier.isActive)
+            .map((tier) => ({
+              tier_level: tier.tierLevel,
+              display_name: tier.displayName,
+              emoji_count_min: tier.emojiCountMin,
+              emoji_count_max: tier.emojiCountMax,
+              is_active: tier.isActive,
+            }))
+          : await (async () => {
+            const { data, error: tierError } = await supabase
+              .from('fanmark_tiers')
+              .select('tier_level, display_name, emoji_count_min, emoji_count_max, is_active')
+              .order('tier_level', { ascending: true });
+            if (tierError) throw tierError;
+            return (data || []).filter((tier) => tier.is_active !== false);
+          })();
         if (isMounted) {
-          setTierOptions(activeTiers.length > 0 ? activeTiers : DEFAULT_TIER_OPTIONS);
+          if (activeTiers.length === 0) throw new Error('No active fanmark tiers in the selected release');
+          setTierOptions(activeTiers);
         }
       } catch (err) {
         console.error('Failed to fetch fanmark tiers:', err);
         if (isMounted) {
-          setTierOptions(DEFAULT_TIER_OPTIONS);
+          if (mayUseLegacyFallback) {
+            setTierOptions(DEFAULT_TIER_OPTIONS);
+          } else {
+            setTierOptions([]);
+            setTiersError(true);
+            toast({
+              title: 'ティア情報を読み込めませんでした',
+              description: '新しい延長クーポンの作成を無効にしました。再読み込みして確認してください。',
+              variant: 'destructive',
+            });
+          }
         }
       } finally {
         if (isMounted) {
@@ -104,7 +134,7 @@ export const AdminExtensionCoupons = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [toast]);
 
   const sortedCoupons = useMemo(
     () =>
@@ -191,7 +221,7 @@ export const AdminExtensionCoupons = () => {
             </Button>
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
               <DialogTrigger asChild>
-                <Button className="gap-2">
+                <Button className="gap-2" disabled={tiersLoading || tiersError || tierOptions.length === 0}>
                   <Plus className="h-4 w-4" />
                   {t('admin.extensionCoupon.createButton')}
                 </Button>
@@ -199,7 +229,7 @@ export const AdminExtensionCoupons = () => {
               <CreateCouponDialog
                 loading={submitting}
                 tierOptions={tierOptionLabels}
-                tiersLoading={tiersLoading}
+                tiersLoading={tiersLoading || tiersError}
                 onSubmit={handleCreate}
                 onClose={() => setCreateOpen(false)}
               />

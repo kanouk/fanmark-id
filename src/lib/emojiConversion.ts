@@ -1,5 +1,3 @@
-import { emojiCatalogEntries, emojiToId, emojiIdToEmoji } from '@/data/emojiCatalog';
-
 const FE_VARIATION_SELECTOR_REGEX = /\uFE0F+/g;
 const ZWJ_REGEX = /\u200D+/g;
 const SKIN_TONE_CODEPOINTS = new Set(['1F3FB', '1F3FC', '1F3FD', '1F3FE', '1F3FF']);
@@ -11,7 +9,16 @@ const normalizeEmojiForLookup = (emoji: string): string =>
 const toNormalizedCodepointKey = (codepoints: string[]) =>
   codepoints.filter((cp) => !SKIN_TONE_CODEPOINTS.has(cp)).join('-');
 
-type EmojiCatalogEntry = (typeof emojiCatalogEntries)[number];
+export interface EmojiCatalogEntry {
+  id: string;
+  emoji: string;
+  shortName: string;
+  keywords: readonly string[];
+  category: string | null;
+  subcategory: string | null;
+  codepoints: readonly string[];
+  sortOrder?: number | null;
+}
 
 type LookupEntry = {
   key: string;
@@ -23,8 +30,9 @@ type LookupEntry = {
 const emojiIdToRecord = new Map<string, EmojiCatalogEntry>();
 const normalizedCodepointsToId = new Map<string, string>();
 const keyToId = new Map<string, { id: string; priority: number }>();
-const lookupEntries: LookupEntry[] = [];
+let lookupEntries: LookupEntry[] = [];
 let maxLookupKeyLength = 0;
+const lookupEntriesByFirstChar = new Map<string, LookupEntry[]>();
 
 const registerLookupKey = (key: string, id: string, priority: number) => {
   if (!key) return;
@@ -38,49 +46,71 @@ const registerLookupKey = (key: string, id: string, priority: number) => {
   }
 };
 
-for (const entry of emojiCatalogEntries) {
-  emojiIdToRecord.set(entry.id, entry);
-  const normalizedKey = toNormalizedCodepointKey([...entry.codepoints]);
-  const hasSkinTone = entry.codepoints.some((cp) => SKIN_TONE_CODEPOINTS.has(cp));
-  if (!normalizedCodepointsToId.has(normalizedKey) || !hasSkinTone) {
-    normalizedCodepointsToId.set(normalizedKey, entry.id);
-  }
+function buildEmojiLookupIndexes(
+  entries: readonly EmojiCatalogEntry[],
+  generatedAliases?: Record<string, string>,
+): void {
+  emojiIdToRecord.clear();
+  normalizedCodepointsToId.clear();
+  keyToId.clear();
+  lookupEntries = [];
+  lookupEntriesByFirstChar.clear();
+  maxLookupKeyLength = 0;
 
-  const normalizedEmoji = normalizeEmojiForLookup(entry.emoji);
-  registerLookupKey(entry.emoji, entry.id, 0);
-  registerLookupKey(normalizedEmoji, entry.id, 1);
-  const withoutVS = normalizedEmoji.replace(FE_VARIATION_SELECTOR_REGEX, '');
-  registerLookupKey(withoutVS, entry.id, 2);
-  const withoutZWJ = normalizedEmoji.replace(ZWJ_REGEX, '');
-  registerLookupKey(withoutZWJ, entry.id, 3);
-  registerLookupKey(withoutVS.replace(ZWJ_REGEX, ''), entry.id, 4);
-}
-
-Object.keys(emojiToId).forEach((key) => registerLookupKey(key, emojiToId[key], 1));
-
-lookupEntries.sort((a, b) => {
-  if (b.length !== a.length) {
-    return b.length - a.length;
-  }
-  return a.priority - b.priority;
-});
-
-const lookupEntriesByFirstChar = new Map<string, LookupEntry[]>();
-for (const entry of lookupEntries) {
-  const first = entry.key.charAt(0);
-  if (!lookupEntriesByFirstChar.has(first)) {
-    lookupEntriesByFirstChar.set(first, []);
-  }
-  lookupEntriesByFirstChar.get(first)!.push(entry);
-}
-
-for (const entries of lookupEntriesByFirstChar.values()) {
-  entries.sort((a, b) => {
-    if (b.length !== a.length) {
-      return b.length - a.length;
+  for (const entry of entries) {
+    emojiIdToRecord.set(entry.id, entry);
+    const normalizedKey = toNormalizedCodepointKey([...entry.codepoints]);
+    const hasSkinTone = entry.codepoints.some((cp) => SKIN_TONE_CODEPOINTS.has(cp));
+    if (!normalizedCodepointsToId.has(normalizedKey) || !hasSkinTone) {
+      normalizedCodepointsToId.set(normalizedKey, entry.id);
     }
+
+    const normalizedEmoji = normalizeEmojiForLookup(entry.emoji);
+    registerLookupKey(entry.emoji, entry.id, 0);
+    registerLookupKey(normalizedEmoji, entry.id, 1);
+    const withoutVS = normalizedEmoji.replace(FE_VARIATION_SELECTOR_REGEX, '');
+    registerLookupKey(withoutVS, entry.id, 2);
+    const withoutZWJ = normalizedEmoji.replace(ZWJ_REGEX, '');
+    registerLookupKey(withoutZWJ, entry.id, 3);
+    registerLookupKey(withoutVS.replace(ZWJ_REGEX, ''), entry.id, 4);
+  }
+
+  if (generatedAliases) {
+    Object.keys(generatedAliases).forEach((key) => registerLookupKey(key, generatedAliases[key], 1));
+  }
+
+  lookupEntries.sort((a, b) => {
+    if (b.length !== a.length) return b.length - a.length;
     return a.priority - b.priority;
   });
+
+  for (const entry of lookupEntries) {
+    const first = entry.key.charAt(0);
+    const entriesForFirstChar = lookupEntriesByFirstChar.get(first) ?? [];
+    entriesForFirstChar.push(entry);
+    lookupEntriesByFirstChar.set(first, entriesForFirstChar);
+  }
+}
+
+/** Install conversion indexes from one fully validated catalog release. */
+export function installEmojiCatalog(
+  entries: readonly EmojiCatalogEntry[],
+  generatedAliases?: Record<string, string>,
+): void {
+  if (
+    entries.length === 0 ||
+    entries.some((entry) =>
+      !entry ||
+      typeof entry.id !== 'string' || !entry.id ||
+      typeof entry.emoji !== 'string' || !entry.emoji ||
+      typeof entry.shortName !== 'string' ||
+      !Array.isArray(entry.codepoints) || entry.codepoints.length === 0 ||
+      entry.codepoints.some((codepoint) => typeof codepoint !== 'string')
+    )
+  ) {
+    throw new Error('Invalid emoji catalog');
+  }
+  buildEmojiLookupIndexes(entries, generatedAliases);
 }
 
 export const segmentEmojiSequence = (emojiSequence: string): string[] => {
@@ -130,7 +160,7 @@ export const convertEmojiSequenceToIds = (emojiSequence: string): string[] => {
 
   return segments.map((segment) => {
     const entry = keyToId.get(segment);
-    const id = entry?.id ?? emojiToId[segment];
+    const id = entry?.id;
     if (!id) {
       throw new Error(`この絵文字はサポートされていません: ${segment}`);
     }
@@ -143,7 +173,7 @@ export const convertEmojiIdsToSequence = (ids: string[]): string => {
 
   return ids
     .map((id) => {
-      const emoji = emojiIdToEmoji[id];
+      const emoji = emojiIdToRecord.get(id)?.emoji;
       if (!emoji) {
         throw new Error(`未知の絵文字IDです: ${id}`);
       }
@@ -212,23 +242,25 @@ export const canonicalizeEmojiString = (input: string): string => {
     const candidates = lookupEntriesByFirstChar.get(firstChar) ?? [];
     let match: LookupEntry | null = null;
     let consumed = 0;
+    const remainingSlice = sanitized.slice(index);
 
-    for (const entry of candidates) {
-      const key = entry.key;
-      if (sanitized.startsWith(key, index)) {
-        match = entry;
-        consumed = key.length;
-        break;
+    const isCompleteRemainingEmoji = candidates.some((entry) => entry.key === remainingSlice);
+    if (!isCompleteRemainingEmoji) {
+      for (const entry of candidates) {
+        if (entry.length > remainingSlice.length && entry.key.startsWith(remainingSlice)) {
+          match = entry;
+          consumed = remainingSlice.length;
+          break;
+        }
       }
     }
 
     if (!match) {
       for (const entry of candidates) {
         const key = entry.key;
-        const remainingSlice = sanitized.slice(index);
-        if (key.startsWith(remainingSlice)) {
+        if (sanitized.startsWith(key, index)) {
           match = entry;
-          consumed = Math.min(remainingSlice.length, key.length);
+          consumed = key.length;
           break;
         }
       }

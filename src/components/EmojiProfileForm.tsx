@@ -11,7 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAvatarUpload } from '@/hooks/useAvatarUpload';
 import { useCoverImageUpload } from '@/hooks/useCoverImageUpload';
-import { EmojiProfile } from '@/hooks/useEmojiProfile';
+import type { EmojiProfile, EmojiProfileUpdates } from '@/hooks/useEmojiProfile';
 import { Loader2, Upload, X, Image as ImageIcon, FileText, Link, Shield, User, Eye } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { normalizeSocialUrlForSave, socialPlatforms } from '@/lib/social-platforms';
@@ -53,7 +53,7 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 
 interface EmojiProfileFormProps {
   profile: EmojiProfile | null;
-  onSave: (data: Partial<EmojiProfile>) => Promise<void>;
+  onSave: (data: EmojiProfileUpdates) => Promise<void>;
   isSubmitting: boolean;
   onClose: () => void;
   onPreview?: () => void;
@@ -366,13 +366,6 @@ export const EmojiProfileForm = ({
             <p className="text-sm text-muted-foreground leading-relaxed">
               カバー画像とプロフィール画像をアップロードして、完成イメージを確認してください
             </p>
-            {(profile as any)?.fanmark && (
-              <div className="flex justify-center pt-2">
-                <span className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-2xl md:text-3xl font-semibold tracking-[0.6em]">
-                  {(profile as any).fanmark.split('').join(' ')}
-                </span>
-              </div>
-            )}
           </CardHeader>
           <CardContent className="space-y-8 p-10">
             {/* Profile Preview Display */}
