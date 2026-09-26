@@ -1,6 +1,6 @@
 # fanmark.id repository inventory (offline)
 
-Base commit: `abfe272bb096470a7add6cc0f5809c1cf9269359`
+Base commit: `57d9b277597cbf3017e9bd025237ee5756ffefee`
 
 This report is generated from the checked-out repository only. It makes no network calls, reads no credentials, and does not claim that local generated types, migrations, or SQL snapshots equal the current production state.
 
@@ -176,8 +176,8 @@ Scanned `src/**/*.{ts,tsx}`: 213 callsites. Each row records the first line of t
 | `src/components/AdminBroadcastEmail.tsx:296` | auth | `auth` | `auth.getSession` |  |
 | `src/components/AdminBroadcastEmail.tsx:299` | edge | `send-broadcast-email` | `edge_function_invoke` |  |
 | `src/components/AdminDataReset.tsx:35` | edge | `reset-fanmark-data` | `edge_function_invoke` |  |
-| `src/components/AdminEmailTemplates.tsx:48` | table | `email_templates` | `table.select` |  |
-| `src/components/AdminEmailTemplates.tsx:61` | table | `email_templates` | `table.update` |  |
+| `src/components/AdminEmailTemplates.tsx:52` | table | `email_templates` | `table.select` |  |
+| `src/components/AdminEmailTemplates.tsx:74` | table | `email_templates` | `table.update` |  |
 | `src/components/AdminEmojiMaster.tsx:89` | table | `emoji_master` | `table.select` |  |
 | `src/components/AdminEmojiMaster.tsx:180` | table | `emoji_master` | `table.update` |  |
 | `src/components/AdminEmojiMaster.tsx:184` | table | `emoji_master` | `table.insert` |  |
@@ -203,12 +203,12 @@ Scanned `src/**/*.{ts,tsx}`: 213 callsites. Each row records the first line of t
 | `src/components/AdminTierExtensionPrices.tsx:264` | table | `fanmark_tier_extension_prices` | `table.update` |  |
 | `src/components/AdminTierExtensionPrices.tsx:306` | table | `fanmark_tier_extension_prices` | `table.update` |  |
 | `src/components/AdminTierExtensionPrices.tsx:373` | table | `fanmark_tiers` | `table.update` |  |
-| `src/components/AdminUserManagement.tsx:259` | edge | `admin-list-users` | `edge_function_invoke` |  |
-| `src/components/AdminUserManagement.tsx:277` | edge | `admin-get-user-detail` | `edge_function_invoke` |  |
-| `src/components/AdminUserManagement.tsx:301` | edge | `admin-update-user-plan` | `edge_function_invoke` |  |
-| `src/components/AdminUserManagement.tsx:334` | edge | `admin-toggle-user-status` | `edge_function_invoke` |  |
-| `src/components/AdminUserManagement.tsx:367` | edge | `admin-trigger-password-reset` | `edge_function_invoke` |  |
-| `src/components/AdminUserManagement.tsx:396` | edge | `admin-expire-license` | `edge_function_invoke` |  |
+| `src/components/AdminUserManagement.tsx:184` | edge | `admin-list-users` | `edge_function_invoke` |  |
+| `src/components/AdminUserManagement.tsx:202` | edge | `admin-get-user-detail` | `edge_function_invoke` |  |
+| `src/components/AdminUserManagement.tsx:224` | edge | `admin-update-user-plan` | `edge_function_invoke` |  |
+| `src/components/AdminUserManagement.tsx:257` | edge | `admin-toggle-user-status` | `edge_function_invoke` |  |
+| `src/components/AdminUserManagement.tsx:290` | edge | `admin-trigger-password-reset` | `edge_function_invoke` |  |
+| `src/components/AdminUserManagement.tsx:319` | edge | `admin-expire-license` | `edge_function_invoke` |  |
 | `src/components/auth/MFAChallenge.tsx:43` | auth_mfa | `auth` | `auth.mfa.unenroll` |  |
 | `src/components/auth/MFAChallenge.tsx:73` | auth_mfa | `auth` | `auth.mfa.listFactors` |  |
 | `src/components/auth/MFAChallenge.tsx:108` | auth_mfa | `auth` | `auth.mfa.challenge` |  |
@@ -218,8 +218,8 @@ Scanned `src/**/*.{ts,tsx}`: 213 callsites. Each row records the first line of t
 | `src/components/auth/MFAEnrollment.tsx:82` | auth_mfa | `auth` | `auth.mfa.enroll` |  |
 | `src/components/auth/MFAEnrollment.tsx:136` | auth_mfa | `auth` | `auth.mfa.challenge` |  |
 | `src/components/auth/MFAEnrollment.tsx:148` | auth_mfa | `auth` | `auth.mfa.verify` |  |
-| `src/components/ExtendLicenseDialog.tsx:96` | table | `fanmark_tier_extension_prices` | `table.select` |  |
-| `src/components/ExtendLicenseDialog.tsx:308` | edge | `apply-extension-coupon` | `edge_function_invoke` |  |
+| `src/components/ExtendLicenseDialog.tsx:102` | table | `fanmark_tier_extension_prices` | `table.select` |  |
+| `src/components/ExtendLicenseDialog.tsx:336` | edge | `apply-extension-coupon` | `edge_function_invoke` |  |
 | `src/components/FanmarkAccess.tsx:130` | rpc | `get_fanmark_by_emoji` | `rpc` |  |
 | `src/components/FanmarkAccessByShortId.tsx:87` | rpc | `get_fanmark_by_short_id` | `rpc` |  |
 | `src/components/FanmarkAccessByShortId.tsx:146` | edge | `record-fanmark-access` | `edge_function_invoke` |  |
@@ -277,13 +277,13 @@ Scanned `src/**/*.{ts,tsx}`: 213 callsites. Each row records the first line of t
 | `src/hooks/useEmojiProfile.tsx:73` | table | `fanmark_profiles` | `table.select` |  |
 | `src/hooks/useEmojiProfile.tsx:115` | table | `fanmark_profiles` | `table.select` |  |
 | `src/hooks/useEmojiProfile.tsx:154` | table | `fanmark_profiles` | `table.upsert` |  |
-| `src/hooks/useExtensionCouponAdmin.ts:46` | table | `extension_coupons` | `table.select` |  |
-| `src/hooks/useExtensionCouponAdmin.ts:69` | table | `extension_coupons` | `table.insert` |  |
-| `src/hooks/useExtensionCouponAdmin.ts:91` | table | `extension_coupons` | `table.update` |  |
-| `src/hooks/useExtensionCouponAdmin.ts:112` | table | `extension_coupons` | `table.delete` |  |
-| `src/hooks/useExtensionCouponAdmin.ts:129` | table | `extension_coupon_usages` | `table.select` |  |
-| `src/hooks/useExtensionCouponAdmin.ts:153` | table | `fanmark_licenses` | `table.select` |  |
-| `src/hooks/useExtensionCouponAdmin.ts:164` | table | `user_settings` | `table.select` |  |
+| `src/hooks/useExtensionCouponAdmin.ts:58` | table | `extension_coupons` | `table.select` |  |
+| `src/hooks/useExtensionCouponAdmin.ts:91` | table | `extension_coupons` | `table.insert` |  |
+| `src/hooks/useExtensionCouponAdmin.ts:124` | table | `extension_coupons` | `table.update` |  |
+| `src/hooks/useExtensionCouponAdmin.ts:147` | table | `extension_coupons` | `table.delete` |  |
+| `src/hooks/useExtensionCouponAdmin.ts:166` | table | `extension_coupon_usages` | `table.select` |  |
+| `src/hooks/useExtensionCouponAdmin.ts:177` | table | `fanmark_licenses` | `table.select` |  |
+| `src/hooks/useExtensionCouponAdmin.ts:183` | table | `user_settings` | `table.select` |  |
 | `src/hooks/useFanmarkByShortId.ts:57` | rpc | `get_fanmark_by_short_id` | `rpc` |  |
 | `src/hooks/useFanmarkDetails.tsx:93` | rpc | `get_fanmark_details_by_short_id` | `rpc` |  |
 | `src/hooks/useFanmarkSearch.tsx:148` | rpc | `list_recent_fanmarks` | `rpc` |  |
