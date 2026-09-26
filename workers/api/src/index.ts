@@ -73,6 +73,7 @@ import {
   handleWaitlistAdminRequest,
   isWaitlistAdminPath,
 } from "./waitlist-admin-d1-api";
+import { handleWaitlistSignupRequest } from "./waitlist-signup-d1-api";
 import { handleStripeWebhookD1Request, isStripeWebhookPath } from "./stripe-webhook-d1-api";
 import { runScheduledStripeWebhookDispatches } from "./stripe-webhook-d1-scheduled";
 import {
@@ -957,6 +958,9 @@ export async function handleRequest(
 ): Promise<Response> {
   const url = new URL(request.url);
   const routeHeaders = baseHeaders();
+
+  const waitlistSignupResponse = await handleWaitlistSignupRequest(request, env);
+  if (waitlistSignupResponse) return waitlistSignupResponse;
 
   const ogpResponse = await handleOgpRequest(request, env, publicAccessClock);
   if (ogpResponse) return ogpResponse;

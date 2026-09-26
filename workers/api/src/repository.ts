@@ -43,6 +43,10 @@ export interface Env {
   EMAIL_TEMPLATE_ADMIN_BACKEND?: string;
   INVITATION_ADMIN_BACKEND?: string;
   WAITLIST_ADMIN_BACKEND?: string;
+  WAITLIST_SIGNUP_BACKEND?: string;
+  WAITLIST_SIGNUP_LIMITER?: {
+    limit(input: { key: string }): Promise<{ success: boolean }>;
+  };
   NOTIFICATION_PROCESSOR_BACKEND?: string;
   MAINTENANCE_SETTINGS_BACKEND?: string;
   LIFECYCLE_SETTINGS_BACKEND?: string;

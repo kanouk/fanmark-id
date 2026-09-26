@@ -14,6 +14,16 @@
   "triggers": {
     "crons": ["* * * * *", "0 0 * * *"]
   },
+  "ratelimits": [
+    {
+      "name": "WAITLIST_SIGNUP_LIMITER",
+      "namespace_id": "41092701",
+      "simple": {
+        "limit": 120,
+        "period": 60
+      }
+    }
+  ],
   "d1_databases": [
     {
       "binding": "FANMARK_DB",
@@ -68,6 +78,7 @@
     "NOTIFICATION_PROCESSOR_BACKEND": "d1",
     "INVITATION_ADMIN_BACKEND": "d1",
     "WAITLIST_ADMIN_BACKEND": "d1",
+    "WAITLIST_SIGNUP_BACKEND": "d1",
     "REFERENCE_MASTER_ADMIN_BACKEND": "d1",
     "EXTENSION_COUPON_BACKEND": "d1",
     "EXTENSION_COUPON_ADMIN_BACKEND": "d1",

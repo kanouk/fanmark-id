@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { betterAuthClient, isBetterAuthEnabled } from '@/lib/auth-backend';
+import { getWaitlistSignupBackend, submitWaitlistSignup } from '@/lib/waitlist-signup-api';
 import { useTranslation } from './useTranslation';
 
 export type InvitationPerks = Record<string, unknown> | string[] | null;
@@ -98,6 +99,22 @@ export function useInvitationCode() {
   };
 
   const joinWaitlist = async (email: string, referralSource?: string): Promise<boolean> => {
+    let backend: 'supabase' | 'worker';
+    try {
+      backend = getWaitlistSignupBackend();
+    } catch (error) {
+      console.error('Error joining waitlist:', error);
+      return false;
+    }
+    if (backend === 'worker') {
+      try {
+        await submitWaitlistSignup(email, referralSource);
+        return true;
+      } catch (error) {
+        console.error('Error joining waitlist:', error);
+        return false;
+      }
+    }
     if (isBetterAuthEnabled()) return false;
     try {
       const { error } = await supabase

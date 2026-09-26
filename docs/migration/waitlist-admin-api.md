@@ -20,11 +20,13 @@ identity, never the email itself. Both routes are same-origin, credentialed,
 and `no-store`; API errors never fall back to Supabase after Worker selection.
 
 The D1 waitlist table is structurally present, but real waitlist rows have not
-been imported. The admin API only covers restricted read and reveal; public
-waitlist submission remains on its existing Supabase path. Staging tests must
-use synthetic `example.invalid` addresses and remove the exact address, admin
-profile, and audit rows afterward. No production selector, user data, or
-domain/DNS setting is changed by this work.
+been imported. Public staging submissions now use the separate
+`POST /api/waitlist` contract documented in
+[`waitlist-signup-api.md`](waitlist-signup-api.md); the regular frontend build
+continues to use Supabase. Staging tests must use synthetic `example.invalid`
+addresses and remove the exact address, admin profile, and audit rows
+afterward. No production selector, user data, or domain/DNS setting is changed
+by this work.
 
 Email retention, deletion, and export policy remain open decisions. The
 current CSV intentionally includes hashes only. Local route tests are

@@ -36,6 +36,7 @@ export default defineConfig({
       "./test/notification-master-admin-d1.test.ts",
       "./test/invitation-admin-d1.test.ts",
       "./test/waitlist-admin-d1.test.ts",
+      "./test/waitlist-signup-d1.test.ts",
       "./test/invitation-signup-d1.test.ts",
       "./test/availability-rules-admin-d1.test.ts",
       "./test/admin-user-management-d1.test.ts",

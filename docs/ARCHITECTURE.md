@@ -245,7 +245,7 @@
 
 `AdminPatternRules`はstagingで`VITE_AVAILABILITY_RULES_ADMIN_BACKEND=worker`を選び、現在セッションのMFAを要求するWorker APIとbusiness D1から4件のルールを読み書きする。Supabaseの管理者UUIDは移さず、Worker DTOにも含めない。公開設定`max_emoji_characters=5`は登録API用に個別反映済み。これらの設定移行は課金・Stripeの移行完了を意味しない。契約は `docs/migration/availability-rules-admin-api.md`。
 
-待機リスト管理画面`SecureWaitlistAdmin`はstagingで`VITE_WAITLIST_ADMIN_BACKEND=worker`を選べる。Workerはadminロールと同じセッションのMFAに加えてD1のadminプランを確認し、一覧ではメールアドレスをSHA-256化し、個別表示は成功した監査記録の後だけ返す。待機リスト行は未移行で、公開登録経路もSupabaseのまま。実データの保持・削除・エクスポート方針は未決定。詳細は `docs/migration/waitlist-admin-api.md`。
+待機リスト管理画面`SecureWaitlistAdmin`はstagingで`VITE_WAITLIST_ADMIN_BACKEND=worker`を選べる。Workerはadminロールと同じセッションのMFAに加えてD1のadminプランを確認し、一覧ではメールアドレスをSHA-256化し、個別表示は成功した監査記録の後だけ返す。公開登録フォームはstagingで`VITE_WAITLIST_SIGNUP_BACKEND=worker`を選び、公開`POST /api/waitlist`からbusiness D1へ保存する。新規/重複の応答は同じで、障害時にSupabaseへ戻らない。通常buildはSupabaseのまま。実データ行は未移行で、保持・削除・エクスポート方針も未決定。詳細は `docs/migration/waitlist-admin-api.md` と `docs/migration/waitlist-signup-api.md`。
 
 `scripts/migration/auth-readiness.sql` と `scripts/migration/storage-cron-readiness.sql` は本番棚卸し用の読み取り専用集計。秘密値やデータ行を返さず、出力の個別件数は公開リポジトリへ保存しない。
 
