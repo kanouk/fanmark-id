@@ -73,6 +73,10 @@ import {
   handleWaitlistAdminRequest,
   isWaitlistAdminPath,
 } from "./waitlist-admin-d1-api";
+import {
+  handleBroadcastEmailAdminRequest,
+  isBroadcastEmailAdminPath,
+} from "./broadcast-email-admin-d1-api";
 import { handleWaitlistSignupRequest } from "./waitlist-signup-d1-api";
 import { handleStripeWebhookD1Request, isStripeWebhookPath } from "./stripe-webhook-d1-api";
 import { runScheduledStripeWebhookDispatches } from "./stripe-webhook-d1-scheduled";
@@ -1235,6 +1239,16 @@ export async function handleRequest(
   }
   if (isWaitlistAdminPath(url.pathname)) {
     return (await handleWaitlistAdminRequest(request, env, async (adminRequest, responseHeaders) => {
+      if (env.AUTH_BACKEND?.trim() !== "better-auth") {
+        return errorResponse("auth_unavailable", 503, responseHeaders);
+      }
+      const authConfig = configuredAuth(env);
+      if (!authConfig) return errorResponse("auth_unavailable", 503, responseHeaders);
+      return authorizeAdminRequest(adminRequest, authConfig, responseHeaders);
+    })) ?? errorResponse("not_found", 404, routeHeaders);
+  }
+  if (isBroadcastEmailAdminPath(url.pathname)) {
+    return (await handleBroadcastEmailAdminRequest(request, env, async (adminRequest, responseHeaders) => {
       if (env.AUTH_BACKEND?.trim() !== "better-auth") {
         return errorResponse("auth_unavailable", 503, responseHeaders);
       }

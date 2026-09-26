@@ -41,6 +41,7 @@ export default defineConfig({
       "./test/availability-rules-admin-d1.test.ts",
       "./test/admin-user-management-d1.test.ts",
       "./test/admin-email-templates-d1.test.ts",
+      "./test/broadcast-email-admin-d1.test.ts",
       "./test/system-settings-d1.test.ts",
       "./test/account-deletion-d1.test.ts",
     ],

@@ -1323,3 +1323,30 @@ to Supabase; no real waitlist entries, production route, email, or domain/DNS
 were used. Rate Limiting is only a coarse staging guard; its IP key may group
 users behind shared networks and its counters are per Cloudflare location.
 See `docs/migration/waitlist-signup-api.md`.
+
+## Broadcast email D1 draft-only slice (2026-09-27 JST)
+
+The local branch now includes MFA/admin-plan guarded Worker endpoints for
+listing broadcast drafts and active broadcast templates, estimating recipients
+from business D1, and creating a draft with a server-derived creator ID and an
+atomic minimized audit row. The Cloudflare staging frontend selector is set to
+Worker in the build config. Standard/default builds still use Supabase. Both
+bulk delivery and test delivery are disabled in Worker mode; there is no Worker
+send route or Supabase fallback from that mode.
+
+The isolated Worker API tests pass 6/6 and the full Worker chain completed with
+exit 0. The root migration-data suite passes 146/146 tests.
+Frontend API contract tests pass 4/4, frontend and Worker typechecks pass,
+staging build passes, selector coverage passes, and targeted ESLint plus
+`git diff --check` pass. The source migration contains twelve static broadcast
+templates, but the current live Supabase rows were not read: `supabase db query
+--linked` returned `AccessTokenRequiredError`. Do not seed from the old static
+copy as if it were current source truth. Exact source export/digest, staging
+template seed/readback, live Worker deploy, and browser canary remain open.
+
+No email, user data, production routing, D1 remote write, R2 object, or domain/
+DNS setting changed in this slice. Current deployment could not be attempted:
+Wrangler `whoami` fails reading the macOS Keychain (exit 51). The draft PR also
+cannot be updated from this checkout while `gh auth status` reports its saved
+token invalid. The unrelated `supabase/.temp/cli-latest` change remains
+unstaged.
