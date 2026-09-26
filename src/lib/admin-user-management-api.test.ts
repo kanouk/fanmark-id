@@ -164,3 +164,30 @@ test("updates account status through the credentialed Worker API and rejects inv
     (error: unknown) => error instanceof AdminUserManagementApiError && error.kind === "invalid_response",
   );
 });
+
+test("expires an owned license through the credentialed Worker API and validates the result", async () => {
+  let seenRequest: Request | undefined;
+  const api = createAdminUserManagementApi({
+    baseUrl: "https://app.example.test",
+    authBaseUrl: "https://app.example.test",
+    fetchImpl: async (input, init) => {
+      seenRequest = new Request(input, init);
+      return Response.json({ success: true, licenseId, alreadyExpired: false, updatedAt: time });
+    },
+  });
+  const result = await api.expireLicense({ userId, licenseId, reason: "synthetic immediate expiry" });
+  assert.equal(result.alreadyExpired, false);
+  assert.equal(seenRequest?.url, `https://app.example.test/api/admin/users/${userId}/licenses/${licenseId}/expire`);
+  assert.equal(seenRequest?.credentials, "include");
+  assert.equal(seenRequest?.cache, "no-store");
+  assert.deepEqual(await seenRequest?.json(), { userId, licenseId, reason: "synthetic immediate expiry" });
+
+  await assert.rejects(
+    createAdminUserManagementApi({
+      baseUrl: "https://app.example.test",
+      authBaseUrl: "https://app.example.test",
+      fetchImpl: async () => Response.json({ success: true, licenseId, alreadyExpired: "yes", updatedAt: time }),
+    }).expireLicense({ userId, licenseId }),
+    (error: unknown) => error instanceof AdminUserManagementApiError && error.kind === "invalid_response",
+  );
+});

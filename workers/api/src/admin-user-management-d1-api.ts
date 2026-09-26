@@ -587,6 +587,12 @@ interface UpdateUserStatusRequest {
   bannedUntil: string | null;
 }
 
+interface ExpireLicenseRequest {
+  userId: string;
+  licenseId: string;
+  reason: string | null;
+}
+
 function parseUpdateUserStatusRequest(value: unknown, pathUserId: string, now: Date): UpdateUserStatusRequest {
   if (!isRecord(value) || Object.keys(value).some((key) =>
     !["userId", "suspend", "reason", "bannedUntil"].includes(key)) ||
@@ -657,6 +663,121 @@ async function updateUserStatus(
     bannedUntil: status === "suspended" ? current.banExpires : null,
     updatedAt,
   }, 200, headers);
+}
+
+function parseExpireLicenseRequest(value: unknown, pathUserId: string, pathLicenseId: string): ExpireLicenseRequest {
+  if (!isRecord(value) || Object.keys(value).some((key) => !["userId", "licenseId", "reason"].includes(key)) ||
+      value.userId !== pathUserId || value.licenseId !== pathLicenseId) fail("invalid_request", 400);
+  const reason = value.reason === undefined || value.reason === null ? null : value.reason;
+  if (!(reason === null || (typeof reason === "string" && reason.length <= 2000))) fail("invalid_request", 400);
+  return { userId: pathUserId, licenseId: pathLicenseId, reason };
+}
+
+async function expireUserLicense(
+  input: ExpireLicenseRequest,
+  business: D1Database,
+  authorization: { userId: string; sessionId: string },
+  now: Date,
+  headers: Headers,
+): Promise<Response> {
+  const license = await business.prepare(`
+    SELECT l.id, l.fanmark_id, l.user_id, l.status, l.license_end, l.grace_expires_at, l.excluded_at,
+      l.display_fanmark, f.user_input_fanmark
+    FROM fanmark_licenses AS l LEFT JOIN fanmarks AS f ON f.id = l.fanmark_id
+    WHERE l.id = ? LIMIT 1
+  `).bind(input.licenseId).first<Record<string, unknown>>();
+  if (!license || license.id !== input.licenseId || license.user_id !== input.userId) fail("license_not_found", 404);
+  if (typeof license.status !== "string" || !["active", "grace", "expired"].includes(license.status) ||
+      !(license.license_end === null || validTimestamp(license.license_end)) ||
+      !(license.grace_expires_at === null || validTimestamp(license.grace_expires_at)) ||
+      !(license.excluded_at === null || validTimestamp(license.excluded_at)) ||
+      !(license.display_fanmark === null || validNullableText(license.display_fanmark, 256)) ||
+      !(license.user_input_fanmark === null || validNullableText(license.user_input_fanmark, 256))) {
+    fail("admin_user_management_unavailable");
+  }
+  if (license.status === "expired") {
+    return json({ success: true, licenseId: input.licenseId, alreadyExpired: true, updatedAt: now.toISOString() }, 200, headers);
+  }
+
+  const nowIso = now.toISOString();
+  const auditId = crypto.randomUUID();
+  const adminAuditId = crypto.randomUUID();
+  const eventId = crypto.randomUUID();
+  const previousLicenseEnd = license.license_end as string | null;
+  const fanmarkId = typeof license.fanmark_id === "string" ? license.fanmark_id : null;
+  const displayFanmark = license.display_fanmark ?? license.user_input_fanmark ?? "";
+  const targetAuditMetadata = JSON.stringify({
+    fanmark_id: fanmarkId,
+    expired_at: nowIso,
+    license_end: previousLicenseEnd,
+    admin_user_id: authorization.userId,
+    reason: input.reason,
+    config_deletion_errors: { basic: null, redirect: null, message: null, password: null },
+  });
+  const eventPayload = JSON.stringify({
+    user_id: input.userId,
+    fanmark_id: fanmarkId,
+    fanmark_name: displayFanmark,
+    expired_at: nowIso,
+    license_end: previousLicenseEnd,
+  });
+  const adminAuditMetadata = JSON.stringify({
+    fanmark_id: fanmarkId,
+    target_user_id: input.userId,
+    previous_status: license.status,
+    reason: input.reason,
+  });
+  const statements = [
+    business.prepare(`UPDATE fanmark_licenses
+      SET status = 'expired', license_end = ?, grace_expires_at = ?, excluded_at = ?, updated_at = ?
+      WHERE id = ? AND user_id = ? AND status = ? AND license_end IS ?
+        AND grace_expires_at IS ? AND excluded_at IS ?`)
+      .bind(nowIso, nowIso, nowIso, nowIso, input.licenseId, input.userId, license.status,
+        license.license_end, license.grace_expires_at, license.excluded_at),
+    business.prepare(`INSERT INTO audit_logs
+      (id, user_id, action, resource_type, resource_id, metadata, created_at)
+      SELECT ?, ?, 'license_expired', 'fanmark_license', ?, ?, ? WHERE changes() = 1`)
+      .bind(auditId, input.userId, input.licenseId, targetAuditMetadata, nowIso),
+    business.prepare(`DELETE FROM fanmark_basic_configs WHERE license_id = ?
+      AND EXISTS (SELECT 1 FROM audit_logs WHERE id = ?)`)
+      .bind(input.licenseId, auditId),
+    business.prepare(`DELETE FROM fanmark_redirect_configs WHERE license_id = ?
+      AND EXISTS (SELECT 1 FROM audit_logs WHERE id = ?)`)
+      .bind(input.licenseId, auditId),
+    business.prepare(`DELETE FROM fanmark_messageboard_configs WHERE license_id = ?
+      AND EXISTS (SELECT 1 FROM audit_logs WHERE id = ?)`)
+      .bind(input.licenseId, auditId),
+    business.prepare(`DELETE FROM fanmark_password_configs WHERE license_id = ?
+      AND EXISTS (SELECT 1 FROM audit_logs WHERE id = ?)`)
+      .bind(input.licenseId, auditId),
+    business.prepare(`INSERT INTO notification_events
+      (id, event_type, event_version, source, payload, payload_schema, trigger_at,
+       dedupe_key, status, retry_count, created_at, updated_at)
+      SELECT ?, 'license_expired', 1, 'admin_ui', ?, 'license_expired.v1', ?, ?, 'pending', 0, ?, ?
+      WHERE EXISTS (SELECT 1 FROM audit_logs WHERE id = ?)`)
+      .bind(eventId, eventPayload, nowIso, `admin_expired_${input.licenseId}_${now.getTime()}`, nowIso, nowIso, auditId),
+    business.prepare(`INSERT INTO audit_logs
+      (id, user_id, action, resource_type, resource_id, metadata, created_at)
+      SELECT ?, ?, 'admin_expire_license', 'fanmark_license', ?, ?, ?
+      WHERE EXISTS (SELECT 1 FROM audit_logs WHERE id = ?)`)
+      .bind(adminAuditId, authorization.userId, input.licenseId, adminAuditMetadata, nowIso, auditId),
+  ];
+  const results = await business.batch(statements);
+  if (results.length !== statements.length || results.some((result) => !result.success)) {
+    fail("admin_user_management_unavailable");
+  }
+  if (Number(results[0]?.meta?.changes ?? 0) !== 1) {
+    const current = await business.prepare("SELECT status FROM fanmark_licenses WHERE id = ? AND user_id = ? LIMIT 1")
+      .bind(input.licenseId, input.userId).first<{ status?: unknown }>();
+    if (current?.status === "expired") {
+      return json({ success: true, licenseId: input.licenseId, alreadyExpired: true, updatedAt: nowIso }, 200, headers);
+    }
+    fail("license_state_changed", 409);
+  }
+  const current = await business.prepare("SELECT status, license_end FROM fanmark_licenses WHERE id = ? AND user_id = ? LIMIT 1")
+    .bind(input.licenseId, input.userId).first<{ status?: unknown; license_end?: unknown }>();
+  if (current?.status !== "expired" || current.license_end !== nowIso) fail("admin_user_management_unavailable");
+  return json({ success: true, licenseId: input.licenseId, alreadyExpired: false, updatedAt: nowIso }, 200, headers);
 }
 
 function safeMetadata(value: unknown): Record<string, unknown> {
@@ -824,10 +945,13 @@ export async function handleAdminUserManagementRequest(
   if (!cors(request, env, headers)) return json({ error: "forbidden_origin" }, 403);
   const planMatch = /^\/api\/admin\/users\/([^/]+)\/plan$/u.exec(url.pathname);
   const statusMatch = /^\/api\/admin\/users\/([^/]+)\/status$/u.exec(url.pathname);
+  const expireMatch = /^\/api\/admin\/users\/([^/]+)\/licenses\/([^/]+)\/expire$/u.exec(url.pathname);
   const detailMatch = /^\/api\/admin\/users\/([^/]+)$/u.exec(url.pathname);
-  const userId = planMatch?.[1] ?? statusMatch?.[1] ?? detailMatch?.[1] ?? null;
+  const userId = planMatch?.[1] ?? statusMatch?.[1] ?? expireMatch?.[1] ?? detailMatch?.[1] ?? null;
+  const licenseId = expireMatch?.[2] ?? null;
   if (url.pathname !== API_PATH && userId === null) return json({ error: "not_found" }, 404, headers);
   if (userId !== null && (!userId || userId.length > 128 || !/^[A-Za-z0-9_-]+$/u.test(userId))) return json({ error: "not_found" }, 404, headers);
+  if (licenseId !== null && !UUID.test(licenseId)) return json({ error: "not_found" }, 404, headers);
   if (request.method === "OPTIONS") { headers.set("allow", "POST, OPTIONS"); return new Response(null, { status: 204, headers }); }
   if (request.method !== "POST") { headers.set("allow", "POST, OPTIONS"); return json({ error: "method_not_allowed" }, 405, headers); }
   if (env.AUTH_BACKEND?.trim() !== "better-auth") return json({ error: "auth_unavailable" }, 503, headers);
@@ -846,6 +970,12 @@ export async function handleAdminUserManagementRequest(
       const now = dependencies.now?.() ?? new Date();
       const body = await readBody(request);
       return await updateUserStatus(parseUpdateUserStatusRequest(body, userId, now), auth, authorization, now, headers);
+    }
+    if (expireMatch && userId !== null && licenseId !== null) {
+      const body = await readBody(request);
+      return await expireUserLicense(
+        parseExpireLicenseRequest(body, userId, licenseId), business, authorization, dependencies.now?.() ?? new Date(), headers,
+      );
     }
     if (userId !== null) {
       const body = await readBody(request);

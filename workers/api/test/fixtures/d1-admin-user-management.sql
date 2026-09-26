@@ -44,6 +44,9 @@ CREATE TABLE fanmark_basic_configs (
   fanmark_name TEXT,
   access_type TEXT
 );
+CREATE TABLE fanmark_redirect_configs (license_id TEXT PRIMARY KEY, target_url TEXT);
+CREATE TABLE fanmark_messageboard_configs (license_id TEXT PRIMARY KEY, content TEXT);
+CREATE TABLE fanmark_password_configs (license_id TEXT PRIMARY KEY, password_hash TEXT);
 CREATE TABLE audit_logs (
   id TEXT PRIMARY KEY,
   user_id TEXT,
@@ -52,6 +55,21 @@ CREATE TABLE audit_logs (
   resource_id TEXT,
   metadata TEXT NOT NULL DEFAULT '{}',
   created_at TEXT NOT NULL
+);
+CREATE TABLE notification_events (
+  id TEXT PRIMARY KEY,
+  event_type TEXT NOT NULL,
+  event_version INTEGER NOT NULL,
+  source TEXT NOT NULL,
+  payload TEXT NOT NULL,
+  payload_schema TEXT,
+  trigger_at TEXT NOT NULL,
+  dedupe_key TEXT,
+  status TEXT NOT NULL,
+  retry_count INTEGER NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE (event_type, dedupe_key)
 );
 CREATE TABLE "user" (
   id TEXT PRIMARY KEY,

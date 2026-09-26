@@ -230,7 +230,7 @@ authorization decision; the target boundary below is the proposed contract.
 
 | Entrypoint | Local source | Tentative Worker boundary | Uncertainty / decision |
 | --- | --- | --- | --- |
-| admin-expire-license | E: supabase/functions/admin-expire-license/index.ts | Worker admin | Medium: preserve admin gate and lifecycle audit |
+| admin-expire-license | E: supabase/functions/admin-expire-license/index.ts | Worker admin | Implemented for workers.dev staging in `docs/migration/admin-license-expiry-api.md`; same-session MFA, ownership binding, atomic expiry/config cleanup/audit/notification, and synthetic rollback/idempotency tests are covered. Production remains on Supabase. |
 | admin-get-user-detail | E: supabase/functions/admin-get-user-detail/index.ts | Worker admin | High: minimize PII response |
 | admin-list-users | E: supabase/functions/admin-list-users/index.ts | Worker admin | High: pagination and PII projection need review |
 | admin-toggle-user-status | E: supabase/functions/admin-toggle-user-status/index.ts | Worker admin | Implemented for workers.dev staging in `docs/migration/admin-user-status-api.md`; Auth D1 suspension state, session revocation, same-batch Auth audit, and same-session MFA are covered. Production remains on Supabase. |

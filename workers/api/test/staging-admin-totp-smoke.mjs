@@ -718,6 +718,81 @@ async function exerciseAdminUserStatusReadback(cookie, target) {
   ]);
   assert.deepEqual(restoredUser, [{ banned: 0, banReason: null, banExpires: null }]);
   assert.equal(Number(auditCount[0]?.count), 2, "suspension and restoration were not both audited");
+
+  const createdAt = new Date().toISOString();
+  await executeBusiness(`
+    INSERT INTO fanmarks (id, user_input_fanmark, normalized_emoji, short_id, status, created_at, updated_at, emoji_ids, normalized_emoji_ids, tier_level)
+    VALUES (${sqlLiteral(target.expiryFanmarkId)}, ${sqlLiteral(target.expiryFanmark)}, ${sqlLiteral(target.expiryFanmark)}, ${sqlLiteral(target.expiryShortId)}, 'active', ${sqlLiteral(createdAt)}, ${sqlLiteral(createdAt)}, ${sqlLiteral(JSON.stringify([target.expiryFanmarkId]))}, ${sqlLiteral(JSON.stringify([target.expiryFanmarkId]))}, 1);
+    INSERT INTO fanmark_licenses (id, fanmark_id, user_id, license_start, license_end, status, is_initial_license, created_at, updated_at, display_fanmark)
+    VALUES (${sqlLiteral(target.expiryLicenseId)}, ${sqlLiteral(target.expiryFanmarkId)}, ${sqlLiteral(target.userId)}, ${sqlLiteral(createdAt)}, '2999-12-31T23:59:59.000Z', 'active', 1, ${sqlLiteral(createdAt)}, ${sqlLiteral(createdAt)}, ${sqlLiteral(target.expiryFanmark)});
+    INSERT INTO fanmark_basic_configs (license_id, fanmark_name, access_type, created_at, updated_at)
+    VALUES (${sqlLiteral(target.expiryLicenseId)}, ${sqlLiteral(target.expiryFanmark)}, 'profile', ${sqlLiteral(createdAt)}, ${sqlLiteral(createdAt)});
+    INSERT INTO fanmark_redirect_configs (license_id, target_url, created_at, updated_at)
+    VALUES (${sqlLiteral(target.expiryLicenseId)}, 'https://example.invalid/synthetic', ${sqlLiteral(createdAt)}, ${sqlLiteral(createdAt)});
+    INSERT INTO fanmark_messageboard_configs (license_id, content, created_at, updated_at)
+    VALUES (${sqlLiteral(target.expiryLicenseId)}, 'synthetic expiry test', ${sqlLiteral(createdAt)}, ${sqlLiteral(createdAt)});
+    INSERT INTO fanmark_password_configs (license_id, access_password, is_enabled, created_at, updated_at)
+    VALUES (${sqlLiteral(target.expiryLicenseId)}, 'synthetic-only-placeholder', 1, ${sqlLiteral(createdAt)}, ${sqlLiteral(createdAt)});
+  `, "synthetic immediate-expiry license and configs provision");
+
+  const expirePath = `/api/admin/users/${encodeURIComponent(target.userId)}/licenses/${encodeURIComponent(target.expiryLicenseId)}/expire`;
+  const anonymousExpire = await request(expirePath, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ userId: target.userId, licenseId: target.expiryLicenseId, reason: "synthetic staging verification" }),
+  });
+  assertStatus(anonymousExpire, 401, "anonymous admin license expiry");
+
+  const expired = await request(expirePath, {
+    method: "POST", headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ userId: target.userId, licenseId: target.expiryLicenseId, reason: "synthetic staging verification" }),
+  });
+  assertStatus(expired, 200, "MFA-protected synthetic immediate license expiry");
+  const expiredBody = await expired.json();
+  assert.equal(expiredBody.success, true);
+  assert.equal(expiredBody.licenseId, target.expiryLicenseId);
+  assert.equal(expiredBody.alreadyExpired, false);
+  assert.ok(Number.isFinite(Date.parse(expiredBody.updatedAt)), "expiry response did not contain a valid timestamp");
+  const eventKey = `admin_expired_${target.expiryLicenseId}_${new Date(expiredBody.updatedAt).getTime()}`;
+  const [expiredLicense, configCounts, expiryAudit, expiryEvent] = await Promise.all([
+    queryBusiness(`SELECT status, license_end, grace_expires_at, excluded_at FROM fanmark_licenses WHERE id = ${sqlLiteral(target.expiryLicenseId)}`),
+    queryBusiness(`SELECT
+      (SELECT COUNT(*) FROM fanmark_basic_configs WHERE license_id = ${sqlLiteral(target.expiryLicenseId)}) AS basic,
+      (SELECT COUNT(*) FROM fanmark_redirect_configs WHERE license_id = ${sqlLiteral(target.expiryLicenseId)}) AS redirect,
+      (SELECT COUNT(*) FROM fanmark_messageboard_configs WHERE license_id = ${sqlLiteral(target.expiryLicenseId)}) AS messageboard,
+      (SELECT COUNT(*) FROM fanmark_password_configs WHERE license_id = ${sqlLiteral(target.expiryLicenseId)}) AS password`),
+    queryBusiness(`SELECT user_id, action, metadata FROM audit_logs WHERE action = 'license_expired' AND resource_id = ${sqlLiteral(target.expiryLicenseId)}`),
+    queryBusiness(`SELECT event_type, source, payload_schema, status, payload FROM notification_events WHERE dedupe_key = ${sqlLiteral(eventKey)}`),
+  ]);
+  assert.deepEqual(expiredLicense, [{
+    status: "expired", license_end: expiredBody.updatedAt,
+    grace_expires_at: expiredBody.updatedAt, excluded_at: expiredBody.updatedAt,
+  }]);
+  assert.deepEqual(configCounts, [{ basic: 0, redirect: 0, messageboard: 0, password: 0 }]);
+  assert.equal(expiryAudit.length, 1);
+  assert.equal(expiryAudit[0].user_id, target.userId);
+  assert.equal(expiryAudit[0].action, "license_expired");
+  assert.equal(JSON.parse(expiryAudit[0].metadata).admin_user_id, target.adminUserId);
+  assert.equal(expiryEvent.length, 1, "license expiry notification event was not queued exactly once");
+  assert.equal(expiryEvent[0].event_type, "license_expired");
+  assert.equal(expiryEvent[0].source, "admin_ui");
+  assert.equal(expiryEvent[0].payload_schema, "license_expired.v1");
+  assert.ok(["pending", "processing", "processed"].includes(expiryEvent[0].status));
+  assert.deepEqual(JSON.parse(expiryEvent[0].payload), {
+    user_id: target.userId, fanmark_id: target.expiryFanmarkId, fanmark_name: target.expiryFanmark,
+    expired_at: expiredBody.updatedAt, license_end: "2999-12-31T23:59:59.000Z",
+  });
+  const repeated = await request(expirePath, {
+    method: "POST", headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ userId: target.userId, licenseId: target.expiryLicenseId }),
+  });
+  assertStatus(repeated, 200, "repeat immediate license expiry");
+  assert.equal((await repeated.json()).alreadyExpired, true);
+  const [eventCount, expiryAuditCount] = await Promise.all([
+    queryBusiness(`SELECT COUNT(*) AS count FROM notification_events WHERE dedupe_key = ${sqlLiteral(eventKey)}`),
+    queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE action = 'license_expired' AND resource_id = ${sqlLiteral(target.expiryLicenseId)}`),
+  ]);
+  assert.equal(Number(eventCount[0]?.count), 1, "repeat expiry duplicated notification event");
+  assert.equal(Number(expiryAuditCount[0]?.count), 1, "repeat expiry duplicated lifecycle audit");
 }
 
 async function exerciseAvailabilityRulesAdmin(cookie) {
@@ -913,6 +988,10 @@ async function main() {
   const targetUserId = randomUUID();
   const targetEmail = `codex-admin-target-${targetUserId}@example.invalid`;
   const targetUsername = `codex-${targetUserId.slice(0, 8)}`;
+  const expiryLicenseId = randomUUID();
+  const expiryFanmarkId = randomUUID();
+  const expiryFanmark = `synthetic-${randomBytes(8).toString("hex")}`;
+  const expiryShortId = `c${randomBytes(12).toString("hex")}`;
   const accountId = randomUUID();
   const email = `codex-totp-${userId}@example.invalid`;
   const password = `Synthetic-${randomBytes(32).toString("base64url")}!`;
@@ -1010,7 +1089,10 @@ async function main() {
       await exerciseAdminUserPlanReadback(cookie, { userId: targetUserId, adminUserId: userId });
     }
     if (actions.adminUserStatusReadback) {
-      await exerciseAdminUserStatusReadback(cookie, { userId: targetUserId, email: targetEmail, adminUserId: userId });
+      await exerciseAdminUserStatusReadback(cookie, {
+        userId: targetUserId, email: targetEmail, adminUserId: userId,
+        expiryLicenseId, expiryFanmarkId, expiryFanmark, expiryShortId,
+      });
     }
     flowPassed = true;
     console.log("Staging TOTP verification and same-session admin authorization passed.");
@@ -1028,9 +1110,23 @@ async function main() {
           "synthetic identity cleanup",
         );
         if (actions.adminUserManagementReadback || actions.adminUserPlanReadback || actions.adminUserStatusReadback) {
+          if (actions.adminUserStatusReadback) {
+            await executeBusiness(
+              `DELETE FROM notifications WHERE user_id = ${sqlLiteral(targetUserId)};\n` +
+              `DELETE FROM notification_events WHERE event_type = 'license_expired' AND json_extract(payload, '$.fanmark_id') = ${sqlLiteral(expiryFanmarkId)};\n` +
+              `DELETE FROM audit_logs WHERE resource_id = ${sqlLiteral(expiryLicenseId)} AND action IN ('license_expired', 'admin_expire_license');\n` +
+              `DELETE FROM fanmark_basic_configs WHERE license_id = ${sqlLiteral(expiryLicenseId)};\n` +
+              `DELETE FROM fanmark_redirect_configs WHERE license_id = ${sqlLiteral(expiryLicenseId)};\n` +
+              `DELETE FROM fanmark_messageboard_configs WHERE license_id = ${sqlLiteral(expiryLicenseId)};\n` +
+              `DELETE FROM fanmark_password_configs WHERE license_id = ${sqlLiteral(expiryLicenseId)};\n` +
+              `DELETE FROM fanmark_licenses WHERE id = ${sqlLiteral(expiryLicenseId)} AND user_id = ${sqlLiteral(targetUserId)};\n` +
+              `DELETE FROM fanmarks WHERE id = ${sqlLiteral(expiryFanmarkId)};`,
+              "synthetic immediate-expiry cleanup",
+            );
+          }
           await executeBusiness(
             `DELETE FROM enterprise_user_settings WHERE user_id = ${sqlLiteral(targetUserId)};\n` +
-            `DELETE FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL', 'ADMIN_UPDATE_PLAN') AND (resource_id IS NULL OR resource_id = ${sqlLiteral(targetUserId)});\n` +
+            `DELETE FROM audit_logs WHERE (user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL', 'ADMIN_UPDATE_PLAN', 'admin_expire_license') AND (resource_id IS NULL OR resource_id IN (${sqlLiteral(targetUserId)}, ${sqlLiteral(expiryLicenseId)}))) OR (resource_id = ${sqlLiteral(expiryLicenseId)} AND action = 'license_expired');\n` +
             `DELETE FROM user_settings WHERE user_id = ${sqlLiteral(targetUserId)};`,
             "synthetic admin user-management cleanup",
           );
@@ -1041,7 +1137,7 @@ async function main() {
           );
           const [profileRows, auditRows, authRows, statusAuditRows] = await Promise.all([
             queryBusiness(`SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(targetUserId)}`),
-            queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL', 'ADMIN_UPDATE_PLAN') AND (resource_id IS NULL OR resource_id = ${sqlLiteral(targetUserId)})`),
+            queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE (user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL', 'ADMIN_UPDATE_PLAN', 'admin_expire_license') AND (resource_id IS NULL OR resource_id IN (${sqlLiteral(targetUserId)}, ${sqlLiteral(expiryLicenseId)}))) OR (resource_id = ${sqlLiteral(expiryLicenseId)} AND action = 'license_expired')`),
             query(`SELECT COUNT(*) AS count FROM "user" WHERE id = ${sqlLiteral(targetUserId)} AND email = ${sqlLiteral(targetEmail)}`),
             query(`SELECT COUNT(*) AS count FROM "adminUserStatusAudit" WHERE "actorUserId" = ${sqlLiteral(userId)} OR "targetUserId" = ${sqlLiteral(targetUserId)}`),
           ]);
@@ -1081,7 +1177,7 @@ async function main() {
     console.log("Staging MFA-protected plan mutation changed a synthetic profile to Enterprise, verified exact override D1 fields, changed it to Max and back to Free, then cleaned its audit and D1 rows.");
   }
   if (actions.adminUserStatusReadback) {
-    console.log("Staging MFA-protected suspension/restoration, status readback, session revocation, and Auth D1 audit verification passed; all synthetic status rows were removed.");
+    console.log("Staging MFA-protected suspension/restoration and immediate license expiry passed. Session revocation, license/config changes, lifecycle/admin audits, notification event, repeat safety, and cleanup were verified.");
   }
   console.log("Synthetic Auth rows were deleted; readback found all user-owned Auth tables empty.");
   console.log("The monotonic MFA generation counter was preserved and may have advanced during the synthetic factor lifecycle.");

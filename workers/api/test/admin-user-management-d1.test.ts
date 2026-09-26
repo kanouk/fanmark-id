@@ -60,7 +60,11 @@ async function request(
 async function resetRows(): Promise<void> {
   if (!business || !auth) throw new Error("Split D1 bindings are unavailable");
   await business.batch([
+    business.prepare("DELETE FROM notification_events"),
     business.prepare("DELETE FROM audit_logs"),
+    business.prepare("DELETE FROM fanmark_password_configs"),
+    business.prepare("DELETE FROM fanmark_messageboard_configs"),
+    business.prepare("DELETE FROM fanmark_redirect_configs"),
     business.prepare("DELETE FROM fanmark_basic_configs"),
     business.prepare("DELETE FROM fanmark_licenses"),
     business.prepare("DELETE FROM fanmarks"),
@@ -92,6 +96,12 @@ async function resetRows(): Promise<void> {
         licenseA2, fanmarkA2, userA, "2026-08-01T00:00:00.000Z", "2026-08-02T00:00:00.000Z", time,
         licenseA3, fanmarkA1, userA, "2026-07-01T00:00:00.000Z", time),
     business.prepare("INSERT INTO fanmark_basic_configs (license_id, fanmark_name, access_type) VALUES (?, 'Citrus', 'profile'), (?, 'Flower', 'redirect')")
+      .bind(licenseA1, licenseA2),
+    business.prepare("INSERT INTO fanmark_redirect_configs (license_id, target_url) VALUES (?, 'https://example.test/'), (?, 'https://example.test/flower')")
+      .bind(licenseA1, licenseA2),
+    business.prepare("INSERT INTO fanmark_messageboard_configs (license_id, content) VALUES (?, 'synthetic board'), (?, 'synthetic flower')")
+      .bind(licenseA1, licenseA2),
+    business.prepare("INSERT INTO fanmark_password_configs (license_id, password_hash) VALUES (?, 'hash-placeholder'), (?, 'hash-placeholder')")
       .bind(licenseA1, licenseA2),
     business.prepare(`INSERT INTO audit_logs (id, user_id, action, resource_type, resource_id, metadata, created_at)
       VALUES (?, ?, 'TEST_ACTION', 'user', ?, ?, ?)`)
@@ -283,6 +293,90 @@ describe("D1 administrator user directory", () => {
       body: JSON.stringify({ userId: userA, suspend: false, bannedUntil: "2030-01-01T00:00:00.000Z" }),
     });
     expect(futureRestore.status).toBe(400);
+  });
+
+  it("expires only the target user's license and atomically removes configs, audits, and queues notification", async () => {
+    const route = `/api/admin/users/${userA}/licenses/${licenseA1}/expire`;
+    const anonymous = await request(route, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ userId: userA, licenseId: licenseA1 }),
+    }, {}, denyAdmin);
+    expect(anonymous.status).toBe(403);
+
+    const mismatched = await request(`/api/admin/users/${userB}/licenses/${licenseA1}/expire`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ userId: userB, licenseId: licenseA1 }),
+    });
+    expect(mismatched.status).toBe(404);
+
+    const response = await request(route, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ userId: userA, licenseId: licenseA1, reason: "synthetic immediate expiry" }),
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      success: true, licenseId: licenseA1, alreadyExpired: false, updatedAt: now.toISOString(),
+    });
+    expect(await business!.prepare(`SELECT status, license_end, grace_expires_at, excluded_at, updated_at
+      FROM fanmark_licenses WHERE id = ?`).bind(licenseA1).first()).toEqual({
+      status: "expired", license_end: now.toISOString(), grace_expires_at: now.toISOString(),
+      excluded_at: now.toISOString(), updated_at: now.toISOString(),
+    });
+    for (const table of ["fanmark_basic_configs", "fanmark_redirect_configs", "fanmark_messageboard_configs", "fanmark_password_configs"]) {
+      const remaining = await business!.prepare(`SELECT COUNT(*) AS count FROM ${table} WHERE license_id = ?`)
+        .bind(licenseA1).first<{ count: number }>();
+      expect(remaining?.count, `${table} remained after expiration`).toBe(0);
+    }
+    const lifecycleAudit = await business!.prepare(`SELECT user_id, action, resource_type, resource_id, metadata
+      FROM audit_logs WHERE action = 'license_expired' AND resource_id = ?`).bind(licenseA1).first<Record<string, unknown>>();
+    expect(lifecycleAudit).toMatchObject({ user_id: userA, action: "license_expired", resource_type: "fanmark_license", resource_id: licenseA1 });
+    expect(JSON.parse(String(lifecycleAudit?.metadata))).toMatchObject({
+      admin_user_id: "49999999-9999-4999-8999-999999999999", reason: "synthetic immediate expiry",
+      expired_at: now.toISOString(), license_end: "2026-10-01T00:00:00.000Z",
+    });
+    const adminAudit = await business!.prepare(`SELECT user_id, action, resource_type, resource_id, metadata
+      FROM audit_logs WHERE action = 'admin_expire_license' AND resource_id = ?`).bind(licenseA1).first<Record<string, unknown>>();
+    expect(adminAudit).toMatchObject({ user_id: "49999999-9999-4999-8999-999999999999", resource_id: licenseA1 });
+    const event = await business!.prepare(`SELECT event_type, source, payload_schema, trigger_at, payload
+      FROM notification_events WHERE event_type = 'license_expired'`).first<Record<string, unknown>>();
+    expect(event).toMatchObject({ event_type: "license_expired", source: "admin_ui", payload_schema: "license_expired.v1", trigger_at: now.toISOString() });
+    expect(JSON.parse(String(event?.payload))).toEqual({
+      user_id: userA, fanmark_id: fanmarkA1, fanmark_name: "🍋", expired_at: now.toISOString(),
+      license_end: "2026-10-01T00:00:00.000Z",
+    });
+
+    const repeated = await request(route, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ userId: userA, licenseId: licenseA1, reason: "repeat" }),
+    });
+    expect(await repeated.json()).toEqual({ success: true, licenseId: licenseA1, alreadyExpired: true, updatedAt: now.toISOString() });
+    expect(Number((await business!.prepare("SELECT COUNT(*) AS count FROM notification_events").first<{ count: number }>())?.count)).toBe(1);
+    expect(Number((await business!.prepare("SELECT COUNT(*) AS count FROM audit_logs WHERE resource_id = ? AND action IN ('license_expired', 'admin_expire_license')")
+      .bind(licenseA1).first<{ count: number }>())?.count)).toBe(2);
+  });
+
+  it("rolls immediate license expiration back when a config deletion fails", async () => {
+    await business!.prepare(`CREATE TRIGGER reject_password_config_expiry BEFORE DELETE ON fanmark_password_configs
+      BEGIN SELECT RAISE(ABORT, 'synthetic config cleanup failure'); END`).run();
+    try {
+      const response = await request(`/api/admin/users/${userA}/licenses/${licenseA1}/expire`, {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ userId: userA, licenseId: licenseA1, reason: "synthetic rollback" }),
+      });
+      expect(response.status).toBe(503);
+      expect(await business!.prepare("SELECT status, license_end FROM fanmark_licenses WHERE id = ?")
+        .bind(licenseA1).first()).toEqual({ status: "active", license_end: "2026-10-01T00:00:00.000Z" });
+      for (const table of ["fanmark_basic_configs", "fanmark_redirect_configs", "fanmark_messageboard_configs", "fanmark_password_configs"]) {
+        const remaining = await business!.prepare(`SELECT COUNT(*) AS count FROM ${table} WHERE license_id = ?`)
+          .bind(licenseA1).first<{ count: number }>();
+        expect(remaining?.count, `${table} was partially deleted`).toBe(1);
+      }
+      expect(await business!.prepare("SELECT id FROM notification_events").first()).toBeNull();
+      expect(await business!.prepare("SELECT id FROM audit_logs WHERE resource_id = ? AND action IN ('license_expired', 'admin_expire_license')")
+        .bind(licenseA1).first()).toBeNull();
+    } finally {
+      await business!.prepare("DROP TRIGGER reject_password_config_expiry").run();
+    }
   });
 
   it("rejects invalid plan changes and rolls back when the audit effect fails", async () => {

@@ -96,6 +96,13 @@ export interface AdminUserStatusUpdateResult {
   updatedAt: string;
 }
 
+export interface AdminLicenseExpireResult {
+  success: true;
+  licenseId: string;
+  alreadyExpired: boolean;
+  updatedAt: string;
+}
+
 export class AdminUserManagementApiError extends Error {
   readonly kind: "configuration" | "http" | "invalid_response" | "network" | "timeout";
   readonly status?: number;
@@ -265,6 +272,15 @@ function parseStatusUpdate(value: unknown): AdminUserStatusUpdateResult {
   return value as unknown as AdminUserStatusUpdateResult;
 }
 
+function parseLicenseExpireResult(value: unknown): AdminLicenseExpireResult {
+  if (!isRecord(value) || !exactKeys(value, ["success", "licenseId", "alreadyExpired", "updatedAt"]) ||
+      value.success !== true || typeof value.licenseId !== "string" || !UUID.test(value.licenseId) ||
+      typeof value.alreadyExpired !== "boolean" || !validTime(value.updatedAt)) {
+    throw new AdminUserManagementApiError("invalid_response");
+  }
+  return value as unknown as AdminLicenseExpireResult;
+}
+
 function endpoint(baseUrl: string, suffix = ""): URL {
   try {
     const url = buildRecentFanmarksApiUrl(baseUrl);
@@ -360,6 +376,16 @@ export function createAdminUserManagementApi(options: RequestOptions = {}) {
         throw new AdminUserManagementApiError("configuration");
       }
       return parseStatusUpdate(await request(`/${encodeURIComponent(input.userId)}/status`, { ...input }, options));
+    },
+    async expireLicense(input: { userId: string; licenseId: string; reason?: string | null }): Promise<AdminLicenseExpireResult> {
+      if (!input.userId || input.userId.length > 128 || !/^[A-Za-z0-9_-]+$/u.test(input.userId) ||
+          !UUID.test(input.licenseId) || (input.reason !== undefined && input.reason !== null && input.reason.length > 2000)) {
+        throw new AdminUserManagementApiError("configuration");
+      }
+      return parseLicenseExpireResult(await request(
+        `/${encodeURIComponent(input.userId)}/licenses/${encodeURIComponent(input.licenseId)}/expire`,
+        { ...input }, options,
+      ));
     },
   };
 }

@@ -332,6 +332,14 @@ export const AdminUserManagement: React.FC = () => {
   const expireMutation = useMutation({
     mutationFn: async () => {
       if (!expireTarget?.licenseId) throw new Error("No license selected");
+      if (userManagementBackend === "worker") {
+        if (!selectedUserId) throw new Error("No user selected");
+        return workerUserApi.expireLicense({
+          userId: selectedUserId,
+          licenseId: expireTarget.licenseId,
+          reason: expireReason || null,
+        });
+      }
       const { data, error } = await supabase.functions.invoke("admin-expire-license", {
         body: {
           licenseId: expireTarget.licenseId,
@@ -605,7 +613,7 @@ export const AdminUserManagement: React.FC = () => {
             <SheetTitle>ユーザー詳細</SheetTitle>
             <SheetDescription>
               {workerReadOnly
-                ? "Cloudflare stagingではプラン変更とアカウント停止・復旧ができます。パスワードリセットと即時期限切れはまだ利用できません。"
+                ? "Cloudflare stagingではプラン変更、アカウント停止・復旧、ライセンスの即時失効ができます。パスワードリセットはまだ利用できません。"
                 : "プラン変更、アカウント停止、パスワードリセットなどの操作を実行できます。"}
             </SheetDescription>
           </SheetHeader>
@@ -702,7 +710,7 @@ export const AdminUserManagement: React.FC = () => {
                             type="button"
                             size="sm"
                             variant="destructive"
-                            disabled={record.status === "expired" || workerReadOnly}
+                            disabled={record.status === "expired"}
                             onClick={() => {
                               setExpireTarget({
                                 licenseId: record.licenseId,

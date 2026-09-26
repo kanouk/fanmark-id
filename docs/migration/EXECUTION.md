@@ -1926,3 +1926,33 @@ domain/DNS settings were changed. This verifies one synthetic staging flow;
 password-reset delivery, immediate expiry, populated-user behavior, the 18
 schema gates, integrated rehearsal, production acceptance, user-data import,
 and final DNS cutover remain open.
+
+## MFA-protected immediate admin license expiry on staging (2026-09-27 JST)
+
+Added `POST /api/admin/users/:userId/licenses/:licenseId/expire` and connected
+the Worker-mode admin user screen. The route requires the same-session admin
+MFA assurance, checks that the license belongs to the path user, bounds the
+reason, and treats an already-expired license as an idempotent success. One
+business D1 batch conditionally changes the license to expired, removes its
+basic/redirect/messageboard/password configs, inserts target and admin audit
+rows, and queues one `license_expired.v1` event. A failed batch rolls back the
+entire operation; production/default routing remains on Supabase.
+
+Worker regression tests cover ownership, anonymous denial, the status and
+config changes, both audit rows, notification schema/payload, retry behavior,
+and rollback on forced config delete failure. The full Worker suite, root and
+Worker typechecks, frontend API client tests, CI isolation check, targeted
+lint, staging SPA build, Wrangler dry-run, and `git diff --check` passed.
+
+Deployed workers.dev version `b436c2bc-7f90-40cf-9e89-b116920b405a` is at
+100%. The live MFA/TOTP canary suspended and restored a synthetic account,
+verified active-session revocation, expired one synthetic active license,
+verified four config deletions, both audit rows, one notification event, and
+safe repeat behavior, then removed its synthetic rows. Independent readback
+found zero user-owned Auth rows, profiles, licenses, favorites, notifications,
+user events, expiry audits, and the four config types. Forty-three
+license-incarnation tombstones remain as anti-reuse state. No real user data,
+production route, email, Stripe transaction, or domain/DNS setting changed.
+Password-reset delivery, remaining app/API inventory, integrated rehearsal,
+the 18 schema gates, production acceptance, real data import, and domain/DNS
+cutover remain open.
