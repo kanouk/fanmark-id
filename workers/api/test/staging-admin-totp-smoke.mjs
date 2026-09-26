@@ -7,6 +7,7 @@ import { existsSync, realpathSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 
 import bcrypt from "bcryptjs";
@@ -42,16 +43,17 @@ function requireExplicitStagingConsent() {
   const adminUserPlanReadback = args.has("--admin-user-plan-readback");
   const adminUserStatusReadback = args.has("--admin-user-status-readback");
   const systemSettingsReadback = args.has("--system-settings-readback");
+  const notificationManualEvent = args.has("--notification-manual-event");
   if (!args.has("--run-live-staging-write") || !args.has(`--database=${expectedDatabase}`) ||
-      (!emojiMasterRoundtrip && !referenceMasterPricingReadback && !adminUserManagementReadback && !adminUserPlanReadback && !adminUserStatusReadback && !systemSettingsReadback)) {
+      (!emojiMasterRoundtrip && !referenceMasterPricingReadback && !adminUserManagementReadback && !adminUserPlanReadback && !adminUserStatusReadback && !systemSettingsReadback && !notificationManualEvent)) {
     throw new Error(
       `Refusing remote staging writes. Pass --run-live-staging-write --database=${expectedDatabase} and an explicit smoke flag.`,
     );
   }
-  return { emojiMasterRoundtrip, referenceMasterPricingReadback, adminUserManagementReadback, adminUserPlanReadback, adminUserStatusReadback, systemSettingsReadback };
+  return { emojiMasterRoundtrip, referenceMasterPricingReadback, adminUserManagementReadback, adminUserPlanReadback, adminUserStatusReadback, systemSettingsReadback, notificationManualEvent };
 }
 
-async function assertStagingTarget() {
+async function assertStagingTarget(actions) {
   const config = JSON.parse(await readFile(configPath, "utf8"));
   assert.equal(config.name, expectedWorker, "unexpected Worker config");
   assert.equal(config.workers_dev, true, "staging Worker must be workers.dev only");
@@ -74,6 +76,10 @@ async function assertStagingTarget() {
   assert.equal(config.vars?.ADMIN_USER_MANAGEMENT_BACKEND, "d1", "expected D1-backed admin user-management API");
   assert.equal(config.vars?.AUTH_USER_STATUS_BACKEND, "d1", "expected Auth D1 suspension enforcement");
   assert.equal(config.vars?.SYSTEM_SETTINGS_BACKEND, "d1", "expected D1-backed system settings API");
+  if (actions.notificationManualEvent) {
+    assert.equal(config.vars?.NOTIFICATION_PROCESSOR_BACKEND, "d1", "expected D1-backed notification processor");
+    assert.ok(config.triggers?.crons?.includes("* * * * *"), "expected the one-minute staging notification Cron");
+  }
   const masterBinding = config.d1_databases?.find((database) => database.binding === "MASTER_DB");
   assert.equal(masterBinding?.database_name, expectedMasterDatabase, "unexpected Master D1 name");
   assert.equal(masterBinding?.database_id, expectedMasterDatabaseId, "unexpected Master D1 id");
@@ -423,6 +429,88 @@ async function exerciseNotificationMasters(cookie) {
   const afterCounts = await queryBusiness(`SELECT (SELECT count(*) FROM notification_events) AS events,
     (SELECT count(*) FROM notifications) AS notifications`);
   assert.deepEqual(afterCounts, beforeCounts, "notification log reads changed D1 rows");
+}
+
+async function exerciseNotificationManualEvent(cookie, userId) {
+  const baseline = await queryBusiness(`SELECT
+    (SELECT count(*) FROM notification_events) AS events,
+    (SELECT count(*) FROM notifications) AS notifications,
+    (SELECT count(*) FROM user_settings WHERE user_id = ${sqlLiteral(userId)}) AS profiles`);
+  assert.equal(Number(baseline[0]?.events), 0, "notification event baseline is not empty");
+  assert.equal(Number(baseline[0]?.notifications), 0, "notification delivery baseline is not empty");
+  assert.equal(Number(baseline[0]?.profiles), 1, "synthetic notification recipient profile is missing");
+
+  const fanmarkId = randomUUID();
+  const fanmarkShortId = `n${randomBytes(10).toString("hex")}`;
+  const payload = {
+    user_id: userId,
+    fanmark_id: fanmarkId,
+    fanmark_short_id: fanmarkShortId,
+    fanmark_name: "合成通知イベント",
+    language: "ja",
+    grace_expires_at: "2026-10-10T00:00:00.000Z",
+  };
+  const anonymous = await request("/api/admin/notification-masters/events", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ eventType: "favorite_fanmark_available", payload }),
+  });
+  assertStatus(anonymous, 401, "anonymous manual notification-event create");
+  assert.deepEqual(await queryBusiness("SELECT (SELECT count(*) FROM notification_events) AS events"), [{ events: 0 }]);
+
+  const response = await request("/api/admin/notification-masters/events", {
+    method: "POST",
+    headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ eventType: "favorite_fanmark_available", payload }),
+  });
+  assertStatus(response, 201, "MFA-protected manual notification-event create");
+  const body = await response.json();
+  assert.equal(body.schemaVersion, 1);
+  assert.match(body.event?.id ?? "", /^[0-9a-f-]{36}$/iu);
+  const eventId = body.event.id;
+  const inserted = await queryBusiness(`SELECT event_type, source, status, payload
+    FROM notification_events WHERE id = ${sqlLiteral(eventId)}`);
+  assert.equal(inserted.length, 1, "manual notification event was not inserted exactly once");
+  assert.equal(inserted[0].event_type, "favorite_fanmark_available");
+  assert.equal(inserted[0].source, "admin_manual");
+  assert.equal(inserted[0].status, "pending");
+  assert.deepEqual(JSON.parse(inserted[0].payload), payload);
+
+  const eventLog = await request("/api/admin/notification-masters/events", { headers: { cookie } });
+  assertStatus(eventLog, 200, "MFA-protected manual notification-event log read");
+  const eventLogBody = await eventLog.json();
+  const logged = eventLogBody.events.find((event) => event.id === eventId);
+  assert.ok(logged, "created event is missing from the admin event log");
+  assert.equal(Object.hasOwn(logged, "payload"), false, "admin event log exposed the event payload");
+
+  const deadline = Date.now() + 120_000;
+  let resultRows = [];
+  while (Date.now() < deadline) {
+    resultRows = await queryBusiness(`SELECT e.status AS event_status, e.processed_at,
+        e.error_reason, n.id AS notification_id, n.user_id, n.channel, n.status AS notification_status,
+        n.delivered_at, json_extract(n.payload, '$.title') AS title,
+        json_extract(n.payload, '$.body') AS body,
+        json_extract(n.payload, '$.metadata.fanmark_id') AS payload_fanmark_id
+      FROM notification_events e LEFT JOIN notifications n ON n.event_id = e.id
+      WHERE e.id = ${sqlLiteral(eventId)} ORDER BY n.id`);
+    if (resultRows.some((row) => row.event_status === "failed")) {
+      throw new Error("manual notification event failed in the staging processor");
+    }
+    if (resultRows.length === 1 && resultRows[0].event_status === "processed" && resultRows[0].notification_id) break;
+    await delay(5_000);
+  }
+  assert.equal(resultRows.length, 1, "manual notification event did not produce exactly one delivery");
+  assert.equal(resultRows[0].event_status, "processed");
+  assert.ok(resultRows[0].processed_at);
+  assert.equal(resultRows[0].user_id, userId);
+  assert.equal(resultRows[0].channel, "in_app");
+  assert.equal(resultRows[0].notification_status, "delivered");
+  assert.ok(resultRows[0].delivered_at);
+  assert.equal(resultRows[0].title, "お気に入りファンマが返却されました");
+  assert.equal(resultRows[0].payload_fanmark_id, fanmarkId);
+  assert.match(String(resultRows[0].body), /合成通知イベント/u);
+
+  return { eventId };
 }
 
 async function exerciseAuthEmailTemplatesAdmin(cookie) {
@@ -1075,8 +1163,17 @@ function assertStatus(response, status, operation) {
 
 async function main() {
   const actions = requireExplicitStagingConsent();
-  await assertStagingTarget();
+  await assertStagingTarget(actions);
   await readUserOwnedCounts();
+  if (actions.notificationManualEvent) {
+    const baseline = await queryBusiness(`SELECT
+      (SELECT count(*) FROM notification_events) AS events,
+      (SELECT count(*) FROM notifications) AS notifications,
+      (SELECT count(*) FROM user_settings) AS profiles`);
+    assert.equal(Number(baseline[0]?.events), 0, "notification event staging baseline is not empty");
+    assert.equal(Number(baseline[0]?.notifications), 0, "notification delivery staging baseline is not empty");
+    assert.equal(Number(baseline[0]?.profiles), 0, "notification profile staging baseline is not empty");
+  }
   console.log("Staging target and empty Auth tables verified; provisioning one synthetic identity.");
 
   const userId = randomUUID();
@@ -1193,12 +1290,27 @@ async function main() {
     if (actions.systemSettingsReadback) {
       await exerciseSystemSettingsReadback(cookie, userId, systemSettingState);
     }
+    if (actions.notificationManualEvent) {
+      await exerciseNotificationManualEvent(cookie, targetUserId);
+    }
     flowPassed = true;
     console.log("Staging TOTP verification and same-session admin authorization passed.");
   } finally {
     if (seedAttempted) {
       try {
         if (actions.systemSettingsReadback) await restoreSystemSetting(cookie, systemSettingState);
+        if (actions.notificationManualEvent) {
+          await executeBusiness([
+            "DELETE FROM notifications WHERE event_id IN (SELECT id FROM notification_events WHERE source = 'admin_manual' AND json_extract(payload, '$.user_id') = " + sqlLiteral(targetUserId) + ")",
+            "DELETE FROM notification_events WHERE source = 'admin_manual' AND json_extract(payload, '$.user_id') = " + sqlLiteral(targetUserId),
+          ].join("; "), "synthetic manual notification-event cleanup");
+          const [eventRows, notificationRows] = await Promise.all([
+            queryBusiness("SELECT COUNT(*) AS count FROM notification_events WHERE source = 'admin_manual' AND json_extract(payload, '$.user_id') = " + sqlLiteral(targetUserId)),
+            queryBusiness("SELECT COUNT(*) AS count FROM notifications WHERE user_id = " + sqlLiteral(targetUserId)),
+          ]);
+          assert.equal(Number(eventRows[0]?.count), 0, "synthetic manual notification event remained in business D1");
+          assert.equal(Number(notificationRows[0]?.count), 0, "synthetic manual notification remained in business D1");
+        }
         await executeFile(
           `DELETE FROM "mfaAssurance" WHERE "userId" = ${sqlLiteral(userId)};\n` +
           `DELETE FROM "adminRole" WHERE "userId" = ${sqlLiteral(userId)};\n` +
@@ -1209,7 +1321,7 @@ async function main() {
           `DELETE FROM "user" WHERE "id" = ${sqlLiteral(userId)};`,
           "synthetic identity cleanup",
         );
-        if (actions.adminUserManagementReadback || actions.adminUserPlanReadback || actions.adminUserStatusReadback || actions.systemSettingsReadback) {
+        if (actions.adminUserManagementReadback || actions.adminUserPlanReadback || actions.adminUserStatusReadback || actions.systemSettingsReadback || actions.notificationManualEvent) {
           if (actions.adminUserStatusReadback) {
             await executeBusiness(
               `DELETE FROM notifications WHERE user_id = ${sqlLiteral(targetUserId)};\n` +
@@ -1286,6 +1398,9 @@ async function main() {
   }
   if (actions.systemSettingsReadback) {
     console.log("Staging MFA-protected system settings read/update passed. The API exposed the exact admin projection, rejected anonymous access and a stale write, restored the original value, and cleaned the synthetic audit rows.");
+  }
+  if (actions.notificationManualEvent) {
+    console.log("Staging MFA-protected manual notification-event creation passed; the deployed Cron produced one delivered Japanese in-app notification, and event, notification, profile, and Auth rows were removed.");
   }
   console.log("Synthetic Auth rows were deleted; readback found all user-owned Auth tables empty.");
   console.log("The monotonic MFA generation counter was preserved and may have advanced during the synthetic factor lifecycle.");

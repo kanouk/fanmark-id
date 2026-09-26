@@ -44,7 +44,7 @@
 - Worker D1 API合成試験: `npm --prefix workers/api run test:notification-master-admin-d1` (6 tests)
 - フロントAPI契約試験: `npm run test:notification-master-api` (5 tests)
 - Worker/frontend typecheckは成功。2026-09-26のdeployment `938f880d-f3db-46d5-9634-60612e4e2814` に対し、合成管理者のBetter Authサインイン、TOTP enrollment/verification、同一sessionのMFA認可後にrules/templatesを10件/40件読み、event/delivery logsも読み取った。通知ログDTOにpayloadがなく、user IDは8文字へ短縮される。匿名GETは401。master行と通知行は読み取りのみで変更なし。合成Auth行は削除後0件、MFA generation singletonは単調増加状態を保持した。
-- このスモークは合成Auth identityと絵文字draftのround-tripを使う。絵文字draftは元の値に復元し、active releaseは変更していない。イベント履歴と生成通知はstaging D1で空のまま。手動イベントPOSTはローカルsynthetic D1 suiteでだけ確認し、stagingには送信していない。
+- このスモークは合成Auth identityと絵文字draftのround-tripを使う。絵文字draftは元の値に復元し、active releaseは変更していない。2026-09-27には別の明示フラグ付きTOTP smokeで、空のevent/delivery/profile baselineを確認後、MFA認可された手動イベントPOSTを1件実行した。workers.devのCronが合成宛先向け日本語in-app通知を1件生成し、通知・イベント・profile・Auth行を削除して各baselineが0件へ戻った。再現コマンドは `node workers/api/test/staging-admin-totp-smoke.mjs --run-live-staging-write --database=fanmark-auth-staging --notification-manual-event`。絵文字draftとactive releaseは変更せず、実ユーザー行、production、domain/DNSは対象外。
 
 ## グローバルマスターデータ
 

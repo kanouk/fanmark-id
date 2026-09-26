@@ -2126,3 +2126,25 @@ check. The earlier preflight stopped before writes when it incorrectly counted
 those master rows as user data. No real user/Auth rows, production routes,
 Stripe objects, or custom-domain/DNS settings changed. See
 `own-profile-api.md`.
+
+## MFA-authorized manual notification event on staging (2026-09-27 JST)
+
+Extended the explicit staging TOTP smoke with an opt-in
+`--notification-manual-event` action. Before writing, it requires empty
+notification event, delivery, and profile tables, plus the pinned staging
+Auth/business D1 targets, notification processor selector, and one-minute Cron.
+The anonymous manual-event POST returned 401 and created no row. A synthetic
+Better Auth administrator then completed TOTP and same-session MFA
+authorization; its manual `favorite_fanmark_available` POST returned 201 and
+the event log omitted payload contents.
+
+The workers.dev Cron processed the event and created exactly one delivered
+Japanese in-app notification for the synthetic recipient. The smoke deleted
+the notification before the event, then removed the synthetic profile and
+Auth identities; readback confirmed event, notification, profile, and all
+user-owned Auth tables were empty. The retained MFA generation counter was
+preserved. The run used
+`node workers/api/test/staging-admin-totp-smoke.mjs --run-live-staging-write --database=fanmark-auth-staging --notification-manual-event`.
+The focused notification-master D1 suite passes 6/6 and the smoke script
+passes `node --check`. No real user data, production resource, or domain/DNS
+setting was touched.
