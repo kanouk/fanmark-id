@@ -1,0 +1,75 @@
+name: Cloudflare migration validation
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-migration-validation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  application:
+    name: Validate Cloudflare staging application
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install application dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Install SQLite schema-validation CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends sqlite3
+
+      - name: Verify workflow isolation
+        run: npm run check:ci
+
+      - name: Test migration data boundaries
+        run: npm run test:migration-data
+
+      - name: Type check application
+        run: npm run typecheck
+
+      - name: Build Cloudflare staging application
+        run: npm run build:cloudflare-staging
+
+  worker:
+    name: Validate Cloudflare Worker API
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: workers/api
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: workers/api/package-lock.json
+
+      - name: Install Worker dependencies
+        run: npm ci
+
+      - name: Test Worker API and local D1 contracts
+        run: npm test
+
+      - name: Type check Worker API
+        run: npm run typecheck
+
+      - name: Validate Worker bundle without deployment
+        run: npm run build:dry-run

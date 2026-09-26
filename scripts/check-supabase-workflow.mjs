@@ -4,6 +4,8 @@ import { readFile } from "node:fs/promises";
 
 const workflowPath = process.argv[2] ?? ".github/workflows/supabase-deploy.yml";
 const workflow = await readFile(workflowPath, "utf8");
+const cloudflareWorkflowPath = ".github/workflows/cloudflare-migration-validation.yml";
+const cloudflareWorkflow = await readFile(cloudflareWorkflowPath, "utf8");
 
 function assert(condition, message) {
   if (!condition) {
@@ -78,4 +80,14 @@ assert(/supabase db push\b/.test(deploy), "deployment must apply migrations");
 assert(/supabase gen types\b/.test(deploy), "deployment must generate types");
 assert(/\bgit\s+push\b/.test(deploy), "deployment must retain the generated-types commit push");
 
-console.log("Supabase workflow isolation checks passed");
+assert(/^  pull_request:\s*$/m.test(cloudflareWorkflow), "Cloudflare migration validation must run on pull requests");
+assert(/^  push:\s*$/m.test(cloudflareWorkflow), "Cloudflare migration validation must run on main pushes");
+assert(/^  workflow_dispatch:\s*$/m.test(cloudflareWorkflow), "Cloudflare migration validation must support an explicit manual run");
+assert(/^permissions:\s*\n^  contents:\s*read\s*$/m.test(cloudflareWorkflow), "Cloudflare migration validation must be read-only");
+assert(!/secrets\.|\bsupabase\b|\bwrangler\s+deploy\b|--remote\b|\bgit\s+push\b/i.test(cloudflareWorkflow), "Cloudflare migration validation must not access secrets or deploy/write remotely");
+assert(/run: npm run test:migration-data\s*$/m.test(cloudflareWorkflow), "Cloudflare validation must test migration data boundaries");
+assert(/run: npm run build:cloudflare-staging\s*$/m.test(cloudflareWorkflow), "Cloudflare validation must build the staging application");
+assert(/run: npm test\s*$/m.test(cloudflareWorkflow), "Cloudflare validation must run the complete Worker test chain");
+assert(/run: npm run build:dry-run\s*$/m.test(cloudflareWorkflow), "Cloudflare validation must validate the Worker bundle without deployment");
+
+console.log("Supabase deployment and Cloudflare validation workflow isolation checks passed");

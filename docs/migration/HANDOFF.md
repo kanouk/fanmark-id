@@ -250,9 +250,13 @@ unperformed.
 | Credential incarnation authority | `7cf0fe6` | Missing retained authority is rejected by reads and final SQL; credential suite 19 passed. Isolated proof schema. |
 | Lifecycle/access-generation and protected-access integration | Current worktree + workers.dev staging | 24 triggers invalidate proofs on license/password and source-backed fanmark selector, basic/redirect/messageboard/profile changes. The Worker verifier reads the same 40-table source profile and checks descriptor-bound credential provenance. Dedicated D1 and full source-profile tests pass; the frontend contract is covered. Deployed synthetic settings/protected-access canary passed and cleaned all rows. The selectors are active on staging only. Real source password-format compatibility, Cloudflare CPU and multi-instance checks, deployed-origin security review, and full browser acceptance remain open. |
 
-These checks ran on Node 22.6.0 without skips. CI configuration isolation checks
-passed, but the GitHub workflow remains manually disabled; local results are
-not a successful hosted CI run.
+These checks ran on Node 22.6.0 without skips. The combined Supabase CI/deploy
+workflow remains manually disabled because it also applies Supabase production
+migrations on main. A separate `.github/workflows/cloudflare-migration-validation.yml`
+now runs the migration-data tests, staging application build, complete Worker
+suite, typecheck, and non-deploying Worker dry-run on PR/main-push/manual events.
+The local isolation checker requires that workflow to stay secret-free and
+without Supabase or remote-deploy commands; a hosted run is still pending.
 
 The protected-access implementation separately binds license incarnation and
 password/access generations. The full source-profile test now rejects stale
