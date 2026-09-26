@@ -36,6 +36,24 @@ support are acceptable. That can avoid overengineering for zero downtime; it is
 not acceptance of account/entitlement mislinks, secret exposure, or data that
 cannot be recovered. The old/new systems must not dual-write business rows.
 
+## 2026-09-27 local validation and access retry
+
+The current migration worktree passes `npm run test:migration-data` (147/147),
+the complete `workers/api` `npm test` chain, root and Worker TypeScript checks,
+`npm run build:cloudflare-staging`, the Worker Wrangler deploy dry-run, and
+`npm run check:ci`. These are local/synthetic proofs; this refresh did not
+change remote state.
+
+A new read-only `supabase db query --linked --file
+scripts/migration/schema-readiness.sql` attempt failed with
+`AccessTokenRequiredError`. It returned no catalog, and no application rows
+were queried. The last successful catalog refresh remains 2026-09-26, documented
+in `schema-conversion.md`; the earlier terminal-input wait was not a live
+process. `wrangler whoami` also failed to read the macOS Keychain (exit 51), so
+no staging deployment was attempted. A `git push` failed because GitHub HTTPS
+credentials were unavailable; PR #41 is unchanged and the migration commits
+remain local. Preserve the unrelated modified `supabase/.temp/cli-latest` file.
+
 ## Current staging state (2026-09-27 JST)
 
 Weighted progress estimate at this checkpoint: about 70% of the prioritized
