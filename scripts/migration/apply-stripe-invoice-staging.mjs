@@ -35,6 +35,7 @@ const LATER_APPROVED_MIGRATIONS = [
   ...EXPECTED_MIGRATIONS,
   "0009_stripe_subscription_identity.sql",
   "0010_stripe_subscription_reconciliation_staging.sql",
+  "0011_stripe_subscription_free_return.sql",
 ];
 
 function fail(code) {

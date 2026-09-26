@@ -36,6 +36,7 @@ const INVOICE_EVENTS = new Set([
 const SUBSCRIPTION_EVENTS = new Set([
   "customer.subscription.created",
   "customer.subscription.updated",
+  "customer.subscription.deleted",
 ]);
 const DEFAULT_BATCH_SIZE = 10;
 const DEFAULT_MAX_ATTEMPTS = 8;

@@ -14,6 +14,7 @@ const migrations = [
   "workers/api/migrations-business/0008_stripe_invoice_projection_staging.sql",
   "workers/api/migrations-business/0009_stripe_subscription_identity.sql",
   "workers/api/migrations-business/0010_stripe_subscription_reconciliation_staging.sql",
+  "workers/api/migrations-business/0011_stripe_subscription_free_return.sql",
 ];
 const miniflarePath = path.join(repoRoot, "workers/api/node_modules/miniflare/dist/src/index.js");
 const ingressPath = path.join(repoRoot, "workers/api/src/stripe-webhook-d1-ingress.ts");

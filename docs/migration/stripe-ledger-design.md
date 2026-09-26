@@ -413,7 +413,7 @@ last-writer-wins updates are prohibited.
 
 ### Subscription and invoice reconciliation
 
-For subscription.created and subscription.updated:
+For subscription.created, subscription.updated, and subscription.deleted:
 
 1. Normalize customer and subscription IDs from the event.
 2. Resolve the local user through the stored customer relation or verified
@@ -422,22 +422,29 @@ For subscription.created and subscription.updated:
 3. Claim the customer fence, then retrieve the current Stripe subscription
    and the customer's current active subscription set.
 4. Validate mode, customer, status, and mapped private test/live Price IDs
-   before writing.
+   before writing. A deleted subscription remains as a canceled tombstone in
+   the D1 projection.
 5. In one fenced D1 batch, upsert the current subscription set and application
    ledger, verify unique customer/subscription ownership, and terminalize the
    dispatch and receipt. Active subscriptions determine paid entitlement;
-   non-active updates change their projection without changing the plan.
+   non-active created/updated events change their projection without changing
+   the plan.
 6. If multiple active subscriptions exist, use the established
    Creator < Max < Business plan order so event arrival order cannot lower the
    user's entitlement. An active subscription update also clears that
    subscription's payment-failure fields, matching the current source handler.
    An older invoice success still cannot clear a newer failure.
+7. For subscription.deleted, preserve a remaining active paid plan. If none
+   remain, set Free and enforce the configured limit (default 3) inside the
+   same batch. Return the newest excess unexpired active licenses to Grace,
+   clear excluded_at, calculate grace expiry from the configured grace period
+   (default one day), and write each audit plus owner/favorite notification
+   event with the existing dedupe key. An active transfer or a missing
+   transition/audit/outbox effect aborts the complete batch.
 
-The local D1 path currently supports only subscription.created and
-subscription.updated. subscription.deleted remains review-only because it
-must reconcile current customer state, retain an auditable tombstone, and
-atomically set Free plus return excess licenses, audits, and notification
-events. The current Worker path performs no free-plan transition.
+This path is currently local-only and its schema is applied to empty staging
+D1. The new handler has not been deployed, and Stripe selectors/secrets remain
+unset.
 
 For invoice.payment_failed and invoice.payment_action_required, normalize
 invoice.customer and resolve the subscription through the versioned Invoice
@@ -551,9 +558,9 @@ The current live endpoint selection remains unverified.
 | Worker lease (PostgreSQL and D1 claim/renew/retry primitives are local) | The D1 scheduled dispatcher now applies extension events, retries transient failures, and dead-letters unsupported billing events for review. Staging Cron/selectors remain off; operator recovery runbook remains open. | Crash before commit retries; active lease prevents double worker; expired lease can be reclaimed; receipt is not terminal until application commit. See the [dispatch lease validation](stripe-dispatch-validation.md) and [D1 validation](stripe-d1-ingress-validation.md). |
 | Extension intent and command (local PostgreSQL and D1 implementations) | Persist intent before Stripe call; pin active master price; attach/recover Session ID using an intent-derived idempotency key. The local D1 API requires Better Auth and matching D1 webhook/dispatch configuration. | PGlite and four Miniflare cases cover replay, changed-request rejection, immutable pricing, one-Session binding, grace plan limit, and owner checks. Five client contract tests cover the opt-in Worker client. A lost Stripe response with no Session ID remains reconciliation-only after 20 hours. No real Stripe request or staging selector is enabled. |
 | Paid extension application (local PostgreSQL transaction and D1 application slice implemented) | D1 checkout creation snapshots a matching private intent; the scheduler connects signed extension receipts to the application transaction. | PostgreSQL covers session-keyed idempotency and atomic business effects. D1 local Miniflare covers positive JPY payment, same-session replay and competing receipts, unpaid then async success, expired/failed sessions, stale owner, transfer lock, and injected audit rollback. Remote staging, subscription/non-extension events, and manual reconciliation remain open. See [D1 validation](stripe-d1-ingress-validation.md). |
-| Subscription reconciliation | The local D1 scheduler retrieves current Subscription/Customer state under a customer-generation fence for created/updated events, requires exact customer mapping or verified Customer metadata, uses private test/live Price IDs, upserts current subscription projections, derives active-only plan entitlement, clears payment-failure fields on an active update, and commits ledger/fence/receipt/dispatch atomically. Migration 0010 is applied to empty staging D1. The code is not deployed and Stripe selectors/secrets remain unset. Deleted events remain review-only. | Current-state stale-event handling, active-only entitlement, test/live mapping, deterministic multi-active plan order, scheduled routing, missing mapping, owner conflict rollback, and atomic terminal state. Still needed: deletion/tombstone reconciliation; atomic Free-plan limit returns with audit and owner/favorite notification events; integrated billing-command and staging acceptance. |
+| Subscription reconciliation | Local D1 handling for created/updated/deleted events retrieves current Stripe Subscription/Customer state under a customer-generation fence, requires exact customer mapping or verified Customer metadata, uses private test/live Price IDs, upserts current subscription projections, derives active-only plan entitlement, clears payment-failure fields on an active update, and commits ledger/fence/receipt/dispatch atomically. A last-subscription deletion sets Free and returns newest excess licenses with audit and owner/favorite outbox events in the same transaction; an active transfer blocks the entire batch. Migrations 0010/0011 are applied to empty staging D1. The code is not deployed and Stripe selectors/secrets remain unset. | Current-state stale-event handling, active-only entitlement, test/live mapping, deterministic multi-active plan order, deletion with and without another active subscription, newest-excess order, configured/default Free limit, transfer blocking, atomic rollback, dispatcher routing, missing mapping, and owner conflict. Still needed: plan Checkout/change/Portal commands, Stripe sandbox and integrated staging acceptance. |
 | Invoice projection (D1 Worker processor deployed to staging but disabled) | Basil relationship normalizer and current invoice/subscription check; customer generation fence; transactional non-granting D1 projection. | Same event ID is applied once; a later attempt for the same invoice is reconciled rather than suppressed; Basil relationship fixtures, exact customer/subscription mapping, failure/action-required/paid state, stale event ordering, rollback/retry, expired lease, and concurrent fence cases are covered. D1 application changes only `user_subscriptions` payment state, never plan or license entitlements. Empty staging schema is applied and Worker code is deployed, but Stripe selectors/secrets remain unset; subscription entitlement and free-plan-return event paths remain open. See the [D1 validation](stripe-d1-ingress-validation.md) and [offline validation](stripe-invoice-projection-validation.md). |
-| Free-plan return transaction | Current license_start-descending order and first-excess selection, conditional active-to-grace transition, audit and existing notification-event dedupe. | No qualifying subscription sets free and returns the newest excess licenses under current behavior; one transaction failure leaves no partial return; retry returns no license twice; owner/favorite dedupe keys remain stable. |
+| Free-plan return transaction | Local D1 subscription-deletion transaction selects newest excess unexpired active licenses, conditionally transitions them to grace, writes the return audit and existing owner/favorite notification dedupe keys, and verifies the full effect set before marking the receipt applied. Migrations 0011 return batch/items are applied to empty staging D1; the handler is not deployed. | No qualifying subscription sets free and returns the newest excess licenses under current behavior; another active subscription preserves paid entitlement; transfer conflicts and any SQL failure roll back all effects; retries do not duplicate returns; owner/favorite dedupe keys remain stable. |
 | External outbox | Post-commit provider worker, stable idempotency key, provider result reconciliation, retry/backoff. | Crash after provider acceptance does not send a second logical message; retryable provider error keeps row pending; receipt dispatch is durable before 2xx. |
 | Outbound Stripe commands | Command ID for customer/create Checkout/update/cancel/Portal calls; stable idempotency keys; webhook remains state source. | retrying each command returns the same Stripe result; client timeout does not create a second customer/session; HTTP success alone does not set entitlement. |
 | Basil fixtures and observability | Store versioned normalized replay fields plus hash/error result fields without raw user data in logs; add runbook for receipt replay and manual review. | Basil snapshots, legacy retry snapshot, expanded/unexpanded references, unknown event type, duplicate object/type event, changed payload hash, same-invoice later attempt, and authorized zero-total Session. |

@@ -419,12 +419,12 @@ test("scheduled D1 dispatch claims and applies a paid extension receipt", async 
   }
 });
 
-test("scheduled D1 dispatch keeps deletion events review-only until free-limit returns are atomic", async () => {
+test("scheduled D1 dispatch keeps unsupported billing events review-only", async () => {
   const { miniflare, database } = await createDatabase();
   try {
     await acceptStripeWebhookReceiptIntoD1({
       database,
-      event: stripeEvent({ eventId: "evt_synthetic_scheduled_subscription", type: "customer.subscription.deleted" }),
+      event: stripeEvent({ eventId: "evt_synthetic_scheduled_subscription", type: "customer.subscription.pending_update_applied" }),
       now: NOW,
       createId: nextUuid,
     });

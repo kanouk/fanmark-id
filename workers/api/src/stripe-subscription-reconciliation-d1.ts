@@ -52,7 +52,7 @@ export interface StripeSubscriptionD1ReconciliationResult {
   status: "applied" | "retryable" | "stale";
   code: string;
   applicationId?: string;
-  effectivePlanType?: PlanType;
+  effectivePlanType?: PlanType | "free";
   activeSubscriptionCount?: number;
 }
 
@@ -351,6 +351,243 @@ function choosePlan(subscriptions: ProjectedSubscription[]): PlanType | null {
     .sort((a, b) => PLAN_ORDER[b] - PLAN_ORDER[a])[0];
 }
 
+async function loadFreeReturnPolicy(database: D1Database, now: string): Promise<{
+  freeLimit: number;
+  graceExpiresAt: string;
+}> {
+  const rows = readSettingsRows(await database.prepare(`
+    SELECT setting_key, setting_value FROM system_settings
+    WHERE setting_key IN ('free_fanmarks_limit', 'grace_period_days')
+  `).all<{ setting_key: unknown; setting_value: unknown }>());
+  const readPositiveSetting = (key: string, fallback: number): number => {
+    const matches = rows.filter((row) => row.setting_key === key);
+    if (matches.length > 1) throw new StripeWebhookD1ApplicationError("subscription_return_setting_ambiguous");
+    const raw = matches[0]?.setting_value;
+    const parsed = typeof raw === "string" ? Number.parseInt(raw, 10) : Number.NaN;
+    return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback;
+  };
+  const freeLimit = readPositiveSetting("free_fanmarks_limit", 3);
+  const graceDays = readPositiveSetting("grace_period_days", 1);
+  const graceBase = new Date(now);
+  graceBase.setUTCDate(graceBase.getUTCDate() + graceDays);
+  if (!Number.isFinite(graceBase.getTime())) {
+    throw new StripeWebhookD1ApplicationError("subscription_return_grace_period_invalid");
+  }
+  if (graceBase.getUTCHours() || graceBase.getUTCMinutes() ||
+      graceBase.getUTCSeconds() || graceBase.getUTCMilliseconds()) {
+    graceBase.setUTCHours(0, 0, 0, 0);
+    graceBase.setUTCDate(graceBase.getUTCDate() + 1);
+  }
+  if (!Number.isFinite(graceBase.getTime())) {
+    throw new StripeWebhookD1ApplicationError("subscription_return_grace_period_invalid");
+  }
+  return { freeLimit, graceExpiresAt: graceBase.toISOString() };
+}
+
+function buildFreePlanReturnStatements(args: {
+  database: D1Database;
+  applicationId: string;
+  userId: string;
+  freeLimit: number;
+  now: string;
+  graceExpiresAt: string;
+}): D1PreparedStatement[] {
+  return [
+    args.database.prepare(`
+      INSERT INTO stripe_subscription_return_batches (
+        application_id, local_user_id, free_limit, active_license_count,
+        returned_license_count, returned_at, grace_expires_at, created_at
+      )
+      SELECT ?, ?, ?, COUNT(*),
+        CASE WHEN COUNT(*) > ? THEN COUNT(*) - ? ELSE 0 END, ?, ?, ?
+      FROM fanmark_licenses AS l
+      WHERE l.user_id = ? AND l.status = 'active'
+        AND (l.license_end IS NULL OR l.license_end > ?)
+        AND EXISTS (
+          SELECT 1 FROM stripe_subscription_applications
+          WHERE id = ? AND status = 'applying'
+        )
+    `).bind(
+      args.applicationId, args.userId, args.freeLimit, args.freeLimit, args.freeLimit,
+      args.now, args.graceExpiresAt, args.now, args.userId, args.now, args.applicationId,
+    ),
+    args.database.prepare(`
+      WITH eligible AS (
+        SELECT l.id AS license_id, l.fanmark_id, l.user_id, l.display_fanmark,
+          f.short_id,
+          ROW_NUMBER() OVER (ORDER BY l.license_start DESC, l.created_at DESC, l.id DESC) AS newest_rank
+        FROM fanmark_licenses AS l
+        JOIN fanmarks AS f ON f.id = l.fanmark_id
+        WHERE l.user_id = ? AND l.status = 'active'
+          AND (l.license_end IS NULL OR l.license_end > ?)
+      )
+      INSERT INTO stripe_subscription_return_items (
+        application_id, license_id, fanmark_id, user_id, display_fanmark,
+        short_id, returned_at, grace_expires_at
+      )
+      SELECT b.application_id, e.license_id, e.fanmark_id, e.user_id,
+        e.display_fanmark, e.short_id, b.returned_at, b.grace_expires_at
+      FROM eligible AS e
+      JOIN stripe_subscription_return_batches AS b
+        ON b.application_id = ? AND e.newest_rank <= b.returned_license_count
+      WHERE EXISTS (
+        SELECT 1 FROM stripe_subscription_applications
+        WHERE id = b.application_id AND status = 'applying'
+      )
+    `).bind(args.userId, args.now, args.applicationId),
+    args.database.prepare(`
+      UPDATE fanmark_licenses
+      SET status = 'grace',
+        license_end = (
+          SELECT ri.returned_at FROM stripe_subscription_return_items AS ri
+          WHERE ri.license_id = fanmark_licenses.id
+          ORDER BY ri.application_id LIMIT 1
+        ),
+        grace_expires_at = (
+          SELECT ri.grace_expires_at FROM stripe_subscription_return_items AS ri
+          WHERE ri.license_id = fanmark_licenses.id
+          ORDER BY ri.application_id LIMIT 1
+        ),
+        is_returned = 1, excluded_at = NULL, updated_at = (
+          SELECT ri.returned_at FROM stripe_subscription_return_items AS ri
+          WHERE ri.license_id = fanmark_licenses.id
+          ORDER BY ri.application_id LIMIT 1
+        )
+      WHERE status = 'active'
+        AND EXISTS (
+          SELECT 1 FROM stripe_subscription_return_items AS ri
+          JOIN stripe_subscription_applications AS a ON a.id = ri.application_id
+            AND a.status = 'applying'
+          WHERE ri.license_id = fanmark_licenses.id
+            AND ri.user_id = fanmark_licenses.user_id
+            AND ri.fanmark_id = fanmark_licenses.fanmark_id
+            AND (fanmark_licenses.license_end IS NULL OR fanmark_licenses.license_end > ri.returned_at)
+            AND NOT EXISTS (
+              SELECT 1 FROM fanmark_transfer_codes AS tc
+              WHERE tc.license_id = ri.license_id AND tc.status IN ('active', 'applied')
+            )
+        )
+    `),
+    args.database.prepare(`
+      INSERT INTO audit_logs (
+        user_id, action, resource_type, resource_id, request_id, metadata, created_at
+      )
+      SELECT ri.user_id, 'return_fanmark', 'fanmark', ri.fanmark_id,
+        ri.application_id || ':' || ri.license_id,
+        json_object(
+          'user_input_fanmark', COALESCE(ri.display_fanmark, ''),
+          'returned_at', ri.returned_at,
+          'grace_expires_at', ri.grace_expires_at
+        ),
+        ri.returned_at
+      FROM stripe_subscription_return_items AS ri
+      JOIN stripe_subscription_applications AS a ON a.id = ri.application_id
+        AND a.status = 'applying'
+    `),
+    args.database.prepare(`
+      INSERT OR IGNORE INTO notification_events (
+        event_type, event_version, source, payload, trigger_at,
+        dedupe_key, status, created_at, updated_at
+      )
+      SELECT 'fanmark_returned_owner', 1, 'edge_function',
+        json_object(
+          'user_id', ri.user_id,
+          'fanmark_id', ri.fanmark_id,
+          'fanmark_name', COALESCE(NULLIF(trim(ri.display_fanmark), ''), 'ファンマーク'),
+          'fanmark_short_id', COALESCE(ri.short_id, ''),
+          'grace_expires_at', ri.grace_expires_at,
+          'link', CASE WHEN COALESCE(ri.short_id, '') <> '' THEN '/f/' || ri.short_id ELSE NULL END
+        ),
+        ri.returned_at,
+        'fanmark_returned_owner_' || ri.fanmark_id || '_' || ri.user_id,
+        'pending', ri.returned_at, ri.returned_at
+      FROM stripe_subscription_return_items AS ri
+      JOIN stripe_subscription_applications AS a ON a.id = ri.application_id
+        AND a.status = 'applying'
+    `),
+    args.database.prepare(`
+      INSERT OR IGNORE INTO notification_events (
+        event_type, event_version, source, payload, trigger_at,
+        dedupe_key, status, created_at, updated_at
+      )
+      SELECT 'favorite_fanmark_available', 1, 'edge_function',
+        json_object(
+          'user_id', fav.user_id,
+          'fanmark_id', ri.fanmark_id,
+          'fanmark_name', COALESCE(fav.display_fanmark, ''),
+          'fanmark_short_id', COALESCE(ri.short_id, ''),
+          'grace_expires_at', ri.grace_expires_at,
+          'link', CASE WHEN COALESCE(ri.short_id, '') <> '' THEN '/f/' || ri.short_id ELSE NULL END
+        ),
+        ri.returned_at,
+        'favorite_available_' || ri.fanmark_id || '_' || fav.user_id,
+        'pending', ri.returned_at, ri.returned_at
+      FROM stripe_subscription_return_items AS ri
+      JOIN stripe_subscription_applications AS a ON a.id = ri.application_id
+        AND a.status = 'applying'
+      JOIN fanmark_favorites AS fav ON fav.fanmark_id = ri.fanmark_id
+        AND fav.user_id <> ri.user_id
+    `),
+  ];
+}
+
+function freePlanReturnGuardSql(): string {
+  return `EXISTS (
+    SELECT 1 FROM stripe_subscription_return_batches AS b
+    WHERE b.application_id = ? AND b.local_user_id = ?
+      AND b.returned_license_count = CASE
+        WHEN b.active_license_count > b.free_limit THEN b.active_license_count - b.free_limit
+        ELSE 0 END
+      AND (SELECT COUNT(*) FROM stripe_subscription_return_items AS ri
+        WHERE ri.application_id = b.application_id) = b.returned_license_count
+      AND (SELECT COUNT(*) FROM fanmark_licenses AS l
+        JOIN stripe_subscription_return_items AS ri ON ri.application_id = b.application_id
+          AND ri.license_id = l.id AND ri.user_id = l.user_id AND ri.fanmark_id = l.fanmark_id
+        WHERE l.status = 'grace' AND l.license_end = ri.returned_at
+          AND l.grace_expires_at = ri.grace_expires_at AND l.is_returned = 1
+          AND l.excluded_at IS NULL
+          AND NOT EXISTS (SELECT 1 FROM fanmark_transfer_codes AS tc
+            WHERE tc.license_id = ri.license_id AND tc.status IN ('active', 'applied'))
+      ) = b.returned_license_count
+      AND (SELECT COUNT(*) FROM fanmark_licenses AS l
+        WHERE l.user_id = b.local_user_id AND l.status = 'active'
+          AND (l.license_end IS NULL OR l.license_end > b.returned_at)
+      ) = b.active_license_count - b.returned_license_count
+      AND NOT EXISTS (
+        SELECT 1 FROM stripe_subscription_return_items AS ri
+        WHERE ri.application_id = b.application_id
+          AND NOT EXISTS (
+            SELECT 1 FROM audit_logs AS al
+            WHERE al.request_id = ri.application_id || ':' || ri.license_id
+              AND al.user_id = ri.user_id AND al.action = 'return_fanmark'
+              AND al.resource_type = 'fanmark' AND al.resource_id = ri.fanmark_id
+              AND json_extract(al.metadata, '$.returned_at') = ri.returned_at
+              AND json_extract(al.metadata, '$.grace_expires_at') = ri.grace_expires_at
+          )
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM stripe_subscription_return_items AS ri
+        WHERE ri.application_id = b.application_id
+          AND NOT EXISTS (
+            SELECT 1 FROM notification_events AS ne
+            WHERE ne.event_type = 'fanmark_returned_owner'
+              AND ne.dedupe_key = 'fanmark_returned_owner_' || ri.fanmark_id || '_' || ri.user_id
+          )
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM stripe_subscription_return_items AS ri
+        JOIN fanmark_favorites AS fav ON fav.fanmark_id = ri.fanmark_id
+          AND fav.user_id <> ri.user_id
+        WHERE ri.application_id = b.application_id
+          AND NOT EXISTS (
+            SELECT 1 FROM notification_events AS ne
+            WHERE ne.event_type = 'favorite_fanmark_available'
+              AND ne.dedupe_key = 'favorite_available_' || ri.fanmark_id || '_' || fav.user_id
+          )
+      )
+  )`;
+}
+
 function requireSubscriptionEvent(claim: StripeWebhookD1Claim): { subscriptionId: string; customerId: string } {
   const payload = claim.normalizedPayload;
   const event = asRecord(payload.event);
@@ -478,7 +715,8 @@ export async function applyStripeSubscriptionReceiptInD1(args: {
 }): Promise<StripeSubscriptionD1ReconciliationResult> {
   const initialNow = requireIso(args.now, "subscription_timestamp_invalid");
   if (args.claim.eventType !== "customer.subscription.created" &&
-      args.claim.eventType !== "customer.subscription.updated") {
+      args.claim.eventType !== "customer.subscription.updated" &&
+      args.claim.eventType !== "customer.subscription.deleted") {
     throw new StripeWebhookD1ApplicationError("subscription_event_unsupported");
   }
   const { subscriptionId, customerId } = requireSubscriptionEvent(args.claim);
@@ -532,8 +770,12 @@ export async function applyStripeSubscriptionReceiptInD1(args: {
     const projected = new Map(activeRecords.map((record) => [record.id, record]));
     projected.set(current.id, current);
     const subscriptions = [...projected.values()];
-    const effectivePlanType = choosePlan(subscriptions);
+    const paidPlanType = choosePlan(subscriptions);
+    const transitionsToFree = args.claim.eventType === "customer.subscription.deleted" && paidPlanType === null;
+    const effectivePlanType = paidPlanType ?? (transitionsToFree ? "free" : null);
+    const ledgerPlanType = effectivePlanType === "free" ? null : effectivePlanType;
     const now = requireIso(args.getNow?.() ?? new Date().toISOString(), "subscription_timestamp_invalid");
+    const freeReturnPolicy = transitionsToFree ? await loadFreeReturnPolicy(args.database, now) : null;
     const applicationId = requireUuid((args.createId ?? (() => crypto.randomUUID()))(), "subscription_application_id_invalid");
     const guardId = `subscription-guard:${applicationId}`;
     const livemode = args.claim.livemode ? 1 : 0;
@@ -571,7 +813,7 @@ export async function applyStripeSubscriptionReceiptInD1(args: {
       RETURNING id
     `).bind(
       applicationId, `subscription-reconcile:${args.claim.stripeEventId}`, customerId, subscriptionId,
-      localMapping.userId, fence.generation, effectivePlanType, activeRecords.length, now, now,
+      localMapping.userId, fence.generation, ledgerPlanType, activeRecords.length, now, now,
       args.claim.dispatchId, customerId, fence.token, fence.generation, now,
       args.claim.receiptId, livemode, args.claim.eventType, subscriptionId,
       args.claim.normalizedPayloadSha256, subscriptionId, customerId, args.claim.leaseToken,
@@ -615,12 +857,23 @@ export async function applyStripeSubscriptionReceiptInD1(args: {
         args.claim.claimGeneration, now,
       ));
     }
+    if (freeReturnPolicy) {
+      statements.push(...buildFreePlanReturnStatements({
+        database: args.database,
+        applicationId,
+        userId: localMapping.userId,
+        freeLimit: freeReturnPolicy.freeLimit,
+        now,
+        graceExpiresAt: freeReturnPolicy.graceExpiresAt,
+      }));
+    }
     statements.push(args.database.prepare(`
       INSERT INTO stripe_subscription_transaction_guards (id, passed)
       SELECT ?, CASE WHEN
         (SELECT COUNT(*) FROM stripe_subscription_applications WHERE id = ? AND status = 'applying') = 1
         AND (SELECT COUNT(*) FROM user_settings WHERE user_id = ? AND stripe_customer_id = ?) = 1
         AND (SELECT COUNT(*) FROM user_subscriptions WHERE ${identity.sql}) = ?
+        AND ${transitionsToFree ? freePlanReturnGuardSql() : "1 = 1"}
         AND ${current.status === "active"
           ? `(SELECT COUNT(*) FROM user_subscriptions WHERE user_id = ? AND stripe_customer_id = ?
               AND stripe_subscription_id = ? AND payment_failure_at IS NULL
@@ -638,6 +891,7 @@ export async function applyStripeSubscriptionReceiptInD1(args: {
       THEN 1 ELSE 0 END
     `).bind(
       guardId, applicationId, localMapping.userId, customerId, ...identity.values, subscriptions.length,
+      ...(transitionsToFree ? [applicationId, localMapping.userId] : []),
       ...(current.status === "active" ? [localMapping.userId, customerId, current.id] : []),
       priceKeys[0], priceValues[0], priceKeys[1], priceValues[1], priceKeys[2], priceValues[2],
       livemode, customerId, fence.token, fence.generation, now,

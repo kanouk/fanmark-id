@@ -14,6 +14,7 @@ const migrations = [
   "workers/api/migrations-business/0008_stripe_invoice_projection_staging.sql",
   "workers/api/migrations-business/0009_stripe_subscription_identity.sql",
   "workers/api/migrations-business/0010_stripe_subscription_reconciliation_staging.sql",
+  "workers/api/migrations-business/0011_stripe_subscription_free_return.sql",
 ];
 const miniflarePath = path.join(repoRoot, "workers/api/node_modules/miniflare/dist/src/index.js");
 const receiptNormalizerPath = path.join(repoRoot, "supabase/functions/_shared/stripe-receipt-ingress/index.ts");
@@ -251,6 +252,59 @@ async function scalar(database, sql, values = []) {
   return database.prepare(sql).bind(...values).first("value");
 }
 
+let fanmarkCounter = 0;
+async function seedActiveLicense(database, { licenseStart, favoriteUserId = null }) {
+  const index = fanmarkCounter++;
+  const fanmarkId = nextUuid();
+  const licenseId = nextUuid();
+  const discoveryId = nextUuid();
+  const emoji = "synthetic-emoji-" + String(index);
+  const shortId = "sub-return-" + String(index);
+  await database.prepare(`
+    INSERT INTO fanmarks (
+      id, user_input_fanmark, normalized_emoji, short_id, status,
+      created_at, updated_at, emoji_ids, normalized_emoji_ids, tier_level
+    ) VALUES (?, ?, ?, ?, 'active', ?, ?, ?, ?, 1)
+  `).bind(
+    fanmarkId, emoji, emoji, shortId, NOW, NOW,
+    JSON.stringify([index]), JSON.stringify([index]),
+  ).run();
+  await database.prepare(`
+    INSERT INTO fanmark_licenses (
+      id, fanmark_id, user_id, license_start, license_end, status,
+      is_initial_license, created_at, updated_at, plan_excluded, excluded_at,
+      grace_expires_at, is_returned, is_transferred, display_fanmark
+    ) VALUES (?, ?, ?, ?, NULL, 'active', 0, ?, ?, 0, ?, NULL, 0, 0, ?)
+  `).bind(
+    licenseId, fanmarkId, USER_ID, licenseStart, NOW, NOW, NOW, emoji,
+  ).run();
+  await database.prepare(`
+    INSERT INTO fanmark_discoveries (
+      id, emoji_ids, normalized_emoji_ids, fanmark_id, availability_status,
+      first_seen_at, last_seen_at
+    ) VALUES (?, ?, ?, ?, 'owned_by_user', ?, ?)
+  `).bind(
+    discoveryId, JSON.stringify([index]), JSON.stringify([index]), fanmarkId, NOW, NOW,
+  ).run();
+  if (favoriteUserId) {
+    await database.prepare(`
+      INSERT INTO fanmark_favorites (
+        id, user_id, discovery_id, fanmark_id, normalized_emoji_ids, created_at, display_fanmark
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      nextUuid(), favoriteUserId, discoveryId, fanmarkId, JSON.stringify([index]), NOW, "favorite-" + emoji,
+    ).run();
+  }
+  return { fanmarkId, licenseId, shortId, displayFanmark: emoji };
+}
+
+async function setSystemSetting(database, key, value) {
+  await database.prepare(`
+    INSERT INTO system_settings (setting_key, setting_value, is_public, created_at, updated_at)
+    VALUES (?, ?, 0, ?, ?)
+  `).bind(key, String(value), NOW, NOW).run();
+}
+
 test("active subscription created/updated reconciles current Stripe state and maps plan by mode", async () => {
   const { miniflare, database } = await createDatabase();
   try {
@@ -354,6 +408,206 @@ test("active subscriptions choose the highest source plan order deterministicall
   }
 });
 
+test("deleted final subscription sets Free and atomically returns newest excess licenses with audit and notifications", async () => {
+  const { miniflare, database } = await createDatabase();
+  try {
+    await seedConfiguration(database, { planType: "business" });
+    await setSystemSetting(database, "free_fanmarks_limit", 3);
+    await setSystemSetting(database, "grace_period_days", 2);
+    const favoritesUserId = "00000000-0000-4000-8000-000000000399";
+    const licenses = [];
+    for (let index = 1; index <= 5; index += 1) {
+      licenses.push(await seedActiveLicense(database, {
+        licenseStart: "2026-01-0" + String(index) + "T00:00:00.000Z",
+        favoriteUserId: index === 5 ? favoritesUserId : null,
+      }));
+    }
+    const deleted = subscriptionSnapshot({ status: "canceled" });
+    const claim = await claimEvent(database, subscriptionEvent({
+      eventId: "evt_synthetic_subscription_deleted_final",
+      type: "customer.subscription.deleted",
+      subscription: deleted,
+    }));
+    const result = await applyStripeSubscriptionReceiptInD1({
+      database: checkedDatabase(database), claim, now: NOW, getNow: () => NOW,
+      provider: provider({ current: deleted, active: [] }),
+      createId: nextUuid, createFenceToken: nextUuid,
+    });
+    assert.equal(result.status, "applied");
+    assert.equal(result.effectivePlanType, "free");
+    assert.equal(result.activeSubscriptionCount, 0);
+    assert.equal(await scalar(database, "SELECT plan_type AS value FROM user_settings WHERE user_id = ?", [USER_ID]), "free");
+    assert.equal(await scalar(database, "SELECT status AS value FROM user_subscriptions WHERE stripe_subscription_id = ?", [SUBSCRIPTION_ID]), "canceled");
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM stripe_subscription_return_batches"), 1);
+    assert.equal(await scalar(database, "SELECT returned_license_count AS value FROM stripe_subscription_return_batches"), 2);
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM stripe_subscription_return_items"), 2);
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM audit_logs WHERE action = 'return_fanmark' AND request_id LIKE ?", [result.applicationId + ":%"]), 2);
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM notification_events WHERE event_type = 'fanmark_returned_owner'"), 2);
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM notification_events WHERE event_type = 'favorite_fanmark_available'"), 1);
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM fanmark_licenses WHERE user_id = ? AND status = 'active'", [USER_ID]), 3);
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM fanmark_licenses WHERE user_id = ? AND status = 'grace' AND license_start >= '2026-01-04T00:00:00.000Z'", [USER_ID]), 2);
+    assert.equal(await scalar(database, "SELECT grace_expires_at AS value FROM fanmark_licenses WHERE id = ?", [licenses[4].licenseId]), "2026-09-29T00:00:00.000Z");
+    assert.equal(await scalar(database, "SELECT excluded_at AS value FROM fanmark_licenses WHERE id = ?", [licenses[4].licenseId]), null);
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM stripe_subscription_transaction_guards"), 0);
+    assert.equal(await scalar(database, "SELECT status AS value FROM stripe_webhook_receipts"), "applied");
+  } finally {
+    await miniflare.dispose();
+  }
+});
+
+test("deleted subscription keeps paid entitlement and performs no returns while another active plan remains", async () => {
+  const { miniflare, database } = await createDatabase();
+  try {
+    await seedConfiguration(database, { planType: "creator" });
+    await setSystemSetting(database, "free_fanmarks_limit", 3);
+    const licenses = [];
+    for (let index = 1; index <= 5; index += 1) {
+      licenses.push(await seedActiveLicense(database, {
+        licenseStart: "2026-02-0" + String(index) + "T00:00:00.000Z",
+      }));
+    }
+    const deleted = subscriptionSnapshot({ status: "canceled" });
+    const otherActive = subscriptionSnapshot({
+      subscriptionId: "sub_synthetic_subscription_other_active",
+      priceId: PRICE_IDS.max,
+    });
+    const claim = await claimEvent(database, subscriptionEvent({
+      eventId: "evt_synthetic_subscription_deleted_with_active",
+      type: "customer.subscription.deleted",
+      subscription: deleted,
+    }));
+    const result = await applyStripeSubscriptionReceiptInD1({
+      database: checkedDatabase(database), claim, now: NOW, getNow: () => NOW,
+      provider: provider({ current: deleted, active: [otherActive] }),
+      createId: nextUuid, createFenceToken: nextUuid,
+    });
+    assert.equal(result.effectivePlanType, "max");
+    assert.equal(await scalar(database, "SELECT plan_type AS value FROM user_settings WHERE user_id = ?", [USER_ID]), "max");
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM stripe_subscription_return_batches"), 0);
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM stripe_subscription_return_items"), 0);
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM audit_logs WHERE action = 'return_fanmark'"), 0);
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM notification_events WHERE event_type IN ('fanmark_returned_owner', 'favorite_fanmark_available')"), 0);
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM fanmark_licenses WHERE user_id = ? AND status = 'active'", [USER_ID]), licenses.length);
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM stripe_webhook_receipts WHERE status = 'applied'"), 1);
+  } finally {
+    await miniflare.dispose();
+  }
+});
+
+test("failed return audit rolls back deletion, Free plan, licenses, notifications, and receipt", async () => {
+  const { miniflare, database } = await createDatabase();
+  try {
+    await seedConfiguration(database, { planType: "business" });
+    await setSystemSetting(database, "free_fanmarks_limit", 3);
+    await seedActiveLicense(database, { licenseStart: "2026-03-01T00:00:00.000Z" });
+    await seedActiveLicense(database, { licenseStart: "2026-03-02T00:00:00.000Z" });
+    await seedActiveLicense(database, { licenseStart: "2026-03-03T00:00:00.000Z" });
+    await seedActiveLicense(database, { licenseStart: "2026-03-04T00:00:00.000Z" });
+    await database.prepare(`
+      CREATE TRIGGER fail_subscription_return_audit
+      BEFORE INSERT ON audit_logs
+      WHEN NEW.action = 'return_fanmark'
+      BEGIN SELECT RAISE(ABORT, 'injected subscription return audit failure'); END
+    `).run();
+    const deleted = subscriptionSnapshot({ status: "canceled" });
+    const claim = await claimEvent(database, subscriptionEvent({
+      eventId: "evt_synthetic_subscription_deleted_audit_failure",
+      type: "customer.subscription.deleted",
+      subscription: deleted,
+    }));
+    await assert.rejects(applyStripeSubscriptionReceiptInD1({
+      database: checkedDatabase(database), claim, now: NOW, getNow: () => NOW,
+      provider: provider({ current: deleted, active: [] }),
+      createId: nextUuid, createFenceToken: nextUuid,
+    }));
+    assert.equal(await scalar(database, "SELECT plan_type AS value FROM user_settings WHERE user_id = ?", [USER_ID]), "business");
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM user_subscriptions"), 0);
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM stripe_subscription_applications"), 0);
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM stripe_subscription_return_batches"), 0);
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM stripe_subscription_return_items"), 0);
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM fanmark_licenses WHERE user_id = ? AND status = 'active'", [USER_ID]), 4);
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM notification_events"), 0);
+    assert.equal(await scalar(database, "SELECT status AS value FROM stripe_webhook_receipts"), "processing");
+    assert.equal(await scalar(database, "SELECT status AS value FROM stripe_webhook_dispatches"), "processing");
+    assert.equal(await scalar(database, "SELECT owner_token AS value FROM stripe_sync_fences"), null);
+  } finally {
+    await miniflare.dispose();
+  }
+});
+
+test("deleted final subscription sets Free when within the default limit without returning licenses", async () => {
+  const { miniflare, database } = await createDatabase();
+  try {
+    await seedConfiguration(database, { planType: "creator" });
+    const claim = await claimEvent(database, subscriptionEvent({
+      eventId: "evt_synthetic_subscription_deleted_under_free_limit",
+      type: "customer.subscription.deleted",
+      subscription: subscriptionSnapshot({ status: "canceled" }),
+    }));
+    const deleted = subscriptionSnapshot({ status: "canceled" });
+    const result = await applyStripeSubscriptionReceiptInD1({
+      database: checkedDatabase(database), claim, now: NOW, getNow: () => NOW,
+      provider: provider({ current: deleted, active: [] }),
+      createId: nextUuid, createFenceToken: nextUuid,
+    });
+    assert.equal(result.effectivePlanType, "free");
+    assert.equal(await scalar(database, "SELECT plan_type AS value FROM user_settings WHERE user_id = ?", [USER_ID]), "free");
+    assert.equal(await scalar(database, "SELECT free_limit AS value FROM stripe_subscription_return_batches"), 3);
+    assert.equal(await scalar(database, "SELECT active_license_count AS value FROM stripe_subscription_return_batches"), 0);
+    assert.equal(await scalar(database, "SELECT returned_license_count AS value FROM stripe_subscription_return_batches"), 0);
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM stripe_subscription_return_items"), 0);
+  } finally {
+    await miniflare.dispose();
+  }
+});
+
+test("an active transfer blocks the entire Free-plan return batch", async () => {
+  const { miniflare, database } = await createDatabase();
+  try {
+    await seedConfiguration(database, { planType: "business" });
+    const freeLimit = 3;
+    await setSystemSetting(database, "free_fanmarks_limit", freeLimit);
+    const licenses = [];
+    for (let index = 1; index <= 4; index += 1) {
+      licenses.push(await seedActiveLicense(database, {
+        licenseStart: "2026-04-0" + String(index) + "T00:00:00.000Z",
+      }));
+    }
+    const newest = licenses.at(-1);
+    await database.prepare(`
+      INSERT INTO fanmark_transfer_codes (
+        id, license_id, fanmark_id, issuer_user_id, transfer_code, status,
+        expires_at, disclaimer_agreed_at, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?, ?)
+    `).bind(
+      nextUuid(), newest.licenseId, newest.fanmarkId, USER_ID, "SYNTHETIC-TRANSFER-CODE",
+      "2026-10-01T00:00:00.000Z", NOW, NOW, NOW,
+    ).run();
+    const deleted = subscriptionSnapshot({ status: "canceled" });
+    const claim = await claimEvent(database, subscriptionEvent({
+      eventId: "evt_synthetic_subscription_deleted_transfer_block",
+      type: "customer.subscription.deleted",
+      subscription: deleted,
+    }));
+    await assert.rejects(applyStripeSubscriptionReceiptInD1({
+      database: checkedDatabase(database), claim, now: NOW, getNow: () => NOW,
+      provider: provider({ current: deleted, active: [] }),
+      createId: nextUuid, createFenceToken: nextUuid,
+    }));
+    assert.equal(await scalar(database, "SELECT plan_type AS value FROM user_settings WHERE user_id = ?", [USER_ID]), "business");
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM user_subscriptions"), 0);
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM stripe_subscription_applications"), 0);
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM stripe_subscription_return_batches"), 0);
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM stripe_subscription_return_items"), 0);
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM audit_logs WHERE action = 'return_fanmark'"), 0);
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM notification_events"), 0);
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM fanmark_licenses WHERE user_id = ? AND status = 'active'", [USER_ID]), licenses.length);
+    assert.equal(await scalar(database, "SELECT owner_token AS value FROM stripe_sync_fences"), null);
+  } finally {
+    await miniflare.dispose();
+  }
+});
+
 test("scheduled D1 dispatcher routes created/updated subscription events to reconciliation", async () => {
   const { miniflare, database } = await createDatabase();
   try {
@@ -372,6 +626,35 @@ test("scheduled D1 dispatcher routes created/updated subscription events to reco
     });
     assert.equal(await scalar(database, "SELECT status AS value FROM stripe_webhook_receipts"), "applied");
     assert.equal(await scalar(database, "SELECT plan_type AS value FROM user_settings WHERE user_id = ?", [USER_ID]), "creator");
+  } finally {
+    await miniflare.dispose();
+  }
+});
+
+test("scheduled D1 dispatcher routes deleted events through atomic Free reconciliation", async () => {
+  const { miniflare, database } = await createDatabase();
+  try {
+    await seedConfiguration(database, { planType: "business" });
+    const current = subscriptionSnapshot({ status: "canceled" });
+    await acceptEvent(database, subscriptionEvent({
+      eventId: "evt_synthetic_scheduled_subscription_deleted",
+      type: "customer.subscription.deleted",
+      subscription: current,
+    }));
+    const summary = await dispatchStripeWebhookBatchInD1({
+      database: checkedDatabase(database),
+      livemode: false,
+      now: NOW,
+      getNow: () => NOW,
+      subscriptionProvider: provider({ current, active: [] }),
+    });
+    assert.deepEqual(summary, {
+      claimed: 1, applied: 1, ignored: 0, deadLettered: 0, retryable: 0, leaseLost: 0,
+    });
+    assert.equal(await scalar(database, "SELECT status AS value FROM stripe_webhook_receipts"), "applied");
+    assert.equal(await scalar(database, "SELECT plan_type AS value FROM user_settings WHERE user_id = ?", [USER_ID]), "free");
+    assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM stripe_subscription_return_batches"), 1);
+    assert.equal(await scalar(database, "SELECT status AS value FROM user_subscriptions WHERE stripe_subscription_id = ?", [SUBSCRIPTION_ID]), "canceled");
   } finally {
     await miniflare.dispose();
   }
