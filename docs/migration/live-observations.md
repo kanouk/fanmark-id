@@ -1461,3 +1461,15 @@ readback. Before/after D1 rows were identical. Existing invitation, availability
 notification, and emoji-admin round-trips also passed. The canary removed the
 synthetic Auth identity and verified all user-owned Auth tables returned to
 zero; the MFA generation counter remained monotonic and may have advanced.
+
+## Read-only public staging smoke (2026-09-27 JST)
+
+Direct GET probes against
+`https://fanmark-app-staging.fanmark-id.workers.dev` returned HTTP 200 for
+`/` (HTML, 2,896 bytes), `/api/auth/ok` (JSON, 11 bytes),
+`/api/emoji/catalog` (JSON, 133,363 bytes), and
+`/api/fanmarks/recent?limit=1` (JSON, 30 bytes). The response bodies were not
+read or logged. This confirms public route availability only; it does not
+verify browser behavior, authenticated flows, real-row parity, or production
+routing. The probes were GET-only and changed no D1, R2, production, or
+domain/DNS state.

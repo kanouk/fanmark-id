@@ -1,5 +1,23 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-09-27 staging公開GETとローカル再検証
+
+現在の移行worktreeでNode 22.6.0を使い、frontend typecheck、Cloudflare
+staging build、`src/App.tsx`のESLint、Workerの全`npm test`チェーンを再実行し、
+すべて成功した。npm 11.8.0はNode 22.6.0をサポート対象外として警告したが、
+各検査は終了コード0だった。staging buildは3,719 modulesを変換した。
+
+workers.devへの読み取り専用GETは`/`、`/api/auth/ok`、
+`/api/emoji/catalog`、`/api/fanmarks/recent?limit=1`が全て200だった。
+応答本文は取得・記録していない。詳細は
+[`live-observations.md`](live-observations.md)を参照。これは公開routeの疎通であり、
+ブラウザ認証、実データ同等性、Stripe sandbox、本番切替の証拠ではない。
+
+ローカルのplan-selection route guard commitは引き続きPR #41より1 commit先行し、
+作業ツリーには無関係な`supabase/.temp/cli-latest`の変更があるため触れていない。
+GitHub CLIの認証tokenは無効で、WranglerはmacOS Keychain読み出しexit 51で失敗した。
+したがってpush/deployはこの確認では実施していない。
+
 ## Stripe extension receipt effect on D1 (2026-09-26 JST)
 
 Added a staging-only D1 schema for Checkout intents, one application per
