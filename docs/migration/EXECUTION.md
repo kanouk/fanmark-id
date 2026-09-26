@@ -1723,3 +1723,12 @@ reporting `signUp: false`. Wrangler secret inventory contains only
 `VERIFIED_ACCESS_SECRET`; no Resend secret or signup selector is configured.
 No invitation records were seeded, no real email was sent, and no user data,
 production, or domain/DNS state changed.
+
+
+## Paired D1 extension pricing UI on workers.dev staging (2026-09-26 JST)
+
+The Cloudflare staging build now selects the public extension-price reader, MFA-protected D1 price editor, and extension-checkout client together. The Worker selects `REFERENCE_MASTER_ADMIN_BACKEND=d1`; the browser checkout client sends requests to the Worker and never falls back to the Supabase Edge Function. Production/default builds are unchanged.
+
+Deployed `fanmark-app-staging` version `691ce686-17fc-4ff3-a96b-371e3f2f5ee5` to workers.dev. Live read-only checks returned 200 for the SPA/auth health and all four public masters. Extension prices returned 16 rows from release `49d582cfc482da61f5394fc83ea9d1bb67820a8d47d493dfdfb74218dd4b4c12`, `Cache-Control: no-store`, and no Stripe IDs. The unauthenticated admin API returned 401. The extension Checkout endpoint returned 404 because the Worker-side Stripe Checkout, webhook, and dispatch selectors/secrets are deliberately absent; the staging checkout client therefore fails closed without calling Supabase or Stripe. No authenticated price edit was sent.
+
+Node 22.6 verification passed: frontend reference-master/admin/extension-checkout contract tests 18/18, Worker reference-master D1 6/6, signed price service 5/5, D1 extension-checkout integration 4/4, Better Auth D1 15/15, root/Worker typechecks, CI workflow isolation, Cloudflare staging build, and Wrangler deploy dry-run. Wrangler deployment succeeded. The existing staging Stripe secret inventory contains no Stripe keys. No D1 price record, user data, Stripe object, production route, or domain/DNS state was changed. Legacy coupon and direct-license-extension Edge Function paths remain on Supabase pending their own D1 implementation/acceptance.

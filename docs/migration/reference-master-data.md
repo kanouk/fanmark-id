@@ -165,3 +165,10 @@ with 401, and accepted the signed Edge helper requests without returning a
 Stripe ID to the coupon path. Root stayed `noindex`, Auth health stayed 200,
 and no user/Auth rows, D1 schema, Storage object, Stripe resource, production
 service, or domain/DNS state was changed.
+
+
+## Staging app wiring (2026-09-26 JST)
+
+The workers.dev staging app now builds with the Worker extension-price read selector, the versioned D1 admin editor selector, and the Worker extension-checkout client selector together. The app Worker selects the D1 admin API, which retains its Better Auth admin and verified same-session MFA gate. The checkout client cannot invoke the Supabase Edge Function as fallback.
+
+Live readback returned the existing 16-row extension-price projection under active release `49d582cfc482da61f5394fc83ea9d1bb67820a8d47d493dfdfb74218dd4b4c12`; the public DTO has no Stripe IDs. Anonymous admin access returned 401. No authenticated edit was made, so the release content and pointer remain unchanged. Stripe checkout remains unavailable: the server selector, webhook/dispatch selectors, and Stripe secrets are unset, and the Worker route returns 404. No payment was attempted. Production and Supabase defaults, legacy coupon/direct-extension functions, user data, and domain/DNS remain unchanged.
