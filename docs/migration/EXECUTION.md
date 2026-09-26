@@ -2090,3 +2090,39 @@ allowed staging origin. No subscription row, user/Auth data, Stripe object,
 production route, or domain/DNS setting was written or changed. This validates
 the anonymous boundary and synthetic API contracts, not an authenticated
 browser view or a Stripe sandbox flow.
+
+## Profile username availability on D1 staging (2026-09-27 JST)
+
+Added `GET /api/me/username-availability?username=...`. The Worker requires a
+Better Auth session, derives the excluded owner ID from that session, and reads
+only an availability boolean from business D1. Duplicate or unknown query
+parameters, oversized input, unsupported methods, unauthenticated callers, and
+untrusted origins fail closed. The client selects this route under the existing
+`VITE_PROFILE_BACKEND=worker` selector and does not fall back to Supabase.
+Production/default selectors remain Supabase; this endpoint does not reserve a
+username or write user data.
+
+The local Worker integration test verified self-exclusion, another synthetic
+user's taken name, case-insensitive candidate input, empty-name behavior,
+authentication, backend selection, and request validation. Frontend contract
+tests verified cookie credentials, same-origin checks, strict response shape,
+and no retries after errors. Both dedicated suites pass (Worker profile D1
+8/8, frontend 6/6), the full configured Worker test command passes, both
+TypeScript checks pass, focused ESLint and CI workflow isolation pass, and the
+Cloudflare staging SPA build and Wrangler dry-run pass. All three remote staging
+D1 databases report no pending migrations.
+
+Staging version `6572c37d-3d8c-4bf1-89a6-6a131dc4bb09` is active at 100% on
+`https://fanmark-app-staging.fanmark-id.workers.dev`. Live checks returned 200
+for the SPA and Better Auth health endpoint, 401/no-store for an anonymous
+username lookup, and 400 for a caller-supplied `userId`. The profile/R2 smoke
+then used one disposable synthetic account: its existing username and a new
+candidate both returned available, while the anonymous route returned 401.
+The smoke uploaded/read/deleted one synthetic object in each R2 bucket and
+verified profile/Auth row counts returned to zero and both object URLs to 404.
+Its preflight was updated to validate the exact pinned 16-row auth-email-master
+digest before excluding that approved non-user baseline from the empty-business
+check. The earlier preflight stopped before writes when it incorrectly counted
+those master rows as user data. No real user/Auth rows, production routes,
+Stripe objects, or custom-domain/DNS settings changed. See
+`own-profile-api.md`.

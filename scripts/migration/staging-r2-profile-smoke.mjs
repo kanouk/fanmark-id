@@ -15,6 +15,7 @@ import {
   STAGING_NON_USER_CONFIG_BASELINE_SQL,
   stagingNonUserConfigBaselineState,
 } from "./staging-notification-master-baseline.mjs";
+import { authEmailTemplateBaselineState } from "./staging-auth-email-template-baseline.mjs";
 
 const require = createRequire(new URL("../../workers/api/package.json", import.meta.url));
 const bcrypt = require("bcryptjs");
@@ -32,6 +33,9 @@ const COVER_BUCKET = "fanmark-cover-images-staging";
 const WRANGLER_VERSION = "4.140.0";
 const APP_CONFIG = "workers/api/wrangler.app-staging.jsonc";
 const AUTH_CONFIG = "workers/api/wrangler.auth-staging.jsonc";
+const AUTH_EMAIL_TEMPLATE_TYPES_SQL = "'signup', 'recovery', 'magiclink', 'email_change'";
+const AUTH_EMAIL_TEMPLATE_CONTENT_SQL = `SELECT id, email_type, language, subject, body_text, button_text, is_active, created_at, updated_at FROM email_templates WHERE email_type IN (${AUTH_EMAIL_TEMPLATE_TYPES_SQL}) ORDER BY email_type, language`;
+const AUTH_EMAIL_TEMPLATE_COUNT_SQL = "SELECT COUNT(*) AS row_count FROM email_templates";
 
 function fail(code) {
   const error = new Error(code);
@@ -114,7 +118,13 @@ function assertTarget() {
   const settings = d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, STAGING_NON_USER_CONFIG_BASELINE_SQL))[0];
   if (notificationMasterBaselineState(masters) === "invalid") fail("notification_master_baseline_mismatch");
   if (stagingNonUserConfigBaselineState(settings) === "invalid") fail("system_setting_baseline_mismatch");
-  const businessDataTables = businessTablesWithoutStagingBaselines(sourceTables);
+  const authEmailTemplateRows = d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, AUTH_EMAIL_TEMPLATE_CONTENT_SQL));
+  const authEmailTemplateCount = Number(d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, AUTH_EMAIL_TEMPLATE_COUNT_SQL))[0]?.row_count);
+  const authEmailTemplateBaseline = authEmailTemplateBaselineState(authEmailTemplateRows, authEmailTemplateCount);
+  if (authEmailTemplateBaseline === "invalid") fail("auth_email_template_baseline_mismatch");
+  const businessDataTables = businessTablesWithoutStagingBaselines(sourceTables, {
+    authEmailTemplates: authEmailTemplateBaseline === "seeded",
+  });
   const rowTotalSql = `SELECT ${businessDataTables.map((name) => `(SELECT COUNT(*) FROM "${name}")`).join(" + ")} AS total_rows`;
   if (Number(d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, rowTotalSql))[0]?.total_rows) !== 0) {
     fail("business_staging_has_source_rows");
@@ -252,11 +262,22 @@ async function main() {
 
     const anonymousProfile = await request("/api/me/profile");
     assertStatus(anonymousProfile, 401, "profile_auth_guard_failed");
+    const anonymousUsernameCheck = await request(`/api/me/username-availability?username=${encodeURIComponent(username)}`);
+    assertStatus(anonymousUsernameCheck, 401, "username_availability_auth_guard_failed");
     const before = await request("/api/me/profile", { headers: { cookie } });
     assertStatus(before, 200, "profile_get_failed");
     const initial = await before.json();
     assert.equal(initial.profile.user_id, userId);
     assert.equal(initial.profile.avatar_url, null);
+
+    const ownUsernameCheck = await request(`/api/me/username-availability?username=${encodeURIComponent(username)}`, { headers: { cookie } });
+    assertStatus(ownUsernameCheck, 200, "username_availability_own_check_failed");
+    assert.deepEqual(await ownUsernameCheck.json(), { schemaVersion: 1, available: true });
+    const newUsernameCheck = await request(`/api/me/username-availability?username=${encodeURIComponent(`candidate${nonce}`)}`, { headers: { cookie } });
+    assertStatus(newUsernameCheck, 200, "username_availability_candidate_check_failed");
+    assert.deepEqual(await newUsernameCheck.json(), { schemaVersion: 1, available: true });
+    const suppliedOwnerCheck = await request(`/api/me/username-availability?username=${encodeURIComponent(username)}&userId=${encodeURIComponent(userId)}`, { headers: { cookie } });
+    assertStatus(suppliedOwnerCheck, 400, "username_availability_supplied_owner_rejected");
 
     const unauthenticatedUpload = await request("/api/storage/object/avatars", {
       method: "POST",
@@ -349,7 +370,14 @@ async function main() {
     cleanupNeeded = false;
     return {
       worker: WORKER,
-      profile: { anonymousStatus: 401, authenticatedRead: 200, avatarSave: 200, crossOwnerUrlStatus: 400, cleared: true },
+      profile: {
+        anonymousStatus: 401,
+        authenticatedRead: 200,
+        usernameAvailability: { anonymousStatus: 401, own: true, availableCandidate: true, suppliedOwnerStatus: 400 },
+        avatarSave: 200,
+        crossOwnerUrlStatus: 400,
+        cleared: true,
+      },
       storage: {
         anonymousUploadStatus: 401,
         avatars: { ownerUpload: 201, publicRead: 200, ownerDelete: ownerDelete.status, sha256: contentSHA256 },
