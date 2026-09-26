@@ -30,6 +30,9 @@ jobs:
       - name: Install application dependencies
         run: npm ci --legacy-peer-deps
 
+      - name: Install Worker dependencies used by migration tests
+        run: npm ci --prefix workers/api
+
       - name: Install SQLite schema-validation CLI
         run: |
           sudo apt-get update

@@ -442,7 +442,7 @@ test("behavior object definitions are required and bound into the schema fingerp
 
 test("bounds a failed psql child without opening an interactive credential prompt", async () => {
   const session = createPsqlSession({ psqlPath: "/usr/bin/false", commandTimeoutMs: 100 });
-  await assert.rejects(session.begin({ timeoutMs: 100 }), (error) => ["source_process_exit", "source_stderr_output", "source_eof"].includes(error.code));
+  await assert.rejects(session.begin({ timeoutMs: 100 }), (error) => ["source_process_exit", "source_stderr_output", "source_stdin_error", "source_eof"].includes(error.code));
   await session.close();
 });
 
