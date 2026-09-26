@@ -1057,3 +1057,19 @@ production or domain/DNS.
 Plan mutation, suspension, password-reset, and immediate-license-expiry
 controls remain disabled in Worker mode. Continue by porting those routes and
 run an authenticated staging canary before calling user management complete.
+
+## 2026-09-26 local checkpoint: auth email template D1 path
+
+The worktree now contains an MFA-gated D1 auth-template editor, a same-origin
+frontend client, D1-backed Better Auth verification/reset copies, and a
+16-row staging seed plus exact readback verifier. The local Worker tests pass
+7/7 for auth email and 4/4 for the admin D1 API; the client tests pass 3/3 and
+both typechecks pass. `magiclink` and `email_change` masters are editable, while
+the currently wired Better Auth sender covers signup verification and recovery.
+
+This slice is not deployed. Saved Wrangler credentials now return Cloudflare
+authentication error 10000, and the browser OAuth session exposed only the
+other Cloudflare account. Do not authorize that account for this migration.
+After the user signs into the `bfc2890741f0b3fb236e2d755b6c9adc` account,
+recheck D1 baseline, seed and compare the exact 16 master rows, then deploy the
+staging Worker and SPA. No email or user data was sent or imported.

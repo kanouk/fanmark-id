@@ -13,6 +13,8 @@ const AUTH_EMAIL_COPY = {
     action: "パスワードを再設定",
   },
 };
+const AUTH_TEMPLATE_TYPES = Object.freeze({ verification: "signup", passwordReset: "recovery" });
+const TEMPLATE_LANGUAGES = new Set(["en", "ja", "ko", "id"]);
 
 function cleanText(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -80,19 +82,61 @@ export function isResendAuthEmailConfigured(env) {
     !containsLineBreak(env.RESEND_FROM_EMAIL);
 }
 
-export async function sendResendAuthEmail(env, { kind, to, url }, fetchImpl = fetch) {
-  const copy = AUTH_EMAIL_COPY[kind];
+async function resolveAuthEmailCopy(env, kind, userId) {
+  const selector = cleanText(env.AUTH_EMAIL_TEMPLATE_BACKEND);
+  if (!selector) {
+    const copy = AUTH_EMAIL_COPY[kind];
+    return copy ? { subject: copy.subject, bodyText: copy.intro, action: copy.action } : null;
+  }
+  if (selector !== "d1" || env.D1_TOPOLOGY?.trim() !== "split" || !env.FANMARK_DB) {
+    throw new Error("auth_email_template_unavailable");
+  }
+
+  const emailType = AUTH_TEMPLATE_TYPES[kind];
+  const normalizedUserId = cleanText(userId);
+  if (!emailType || !normalizedUserId || normalizedUserId.length > 128) {
+    throw new Error("auth_email_template_unavailable");
+  }
+
+  try {
+    const settings = await env.FANMARK_DB.prepare(`
+      SELECT preferred_language FROM user_settings WHERE user_id = ? LIMIT 1
+    `).bind(normalizedUserId).first();
+    const preferredLanguage = settings?.preferred_language;
+    const language = TEMPLATE_LANGUAGES.has(preferredLanguage) ? preferredLanguage : "ja";
+    const row = await env.FANMARK_DB.prepare(`
+      SELECT subject, body_text, button_text, is_active
+      FROM email_templates
+      WHERE email_type = ? AND language = ?
+      LIMIT 1
+    `).bind(emailType, language).first();
+    if (!row || Number(row.is_active) !== 1 || typeof row.subject !== "string" ||
+        row.subject.trim().length === 0 || row.subject.length > 256 || containsLineBreak(row.subject) ||
+        typeof row.body_text !== "string" || row.body_text.length === 0 || row.body_text.length > 10_000 ||
+        typeof row.button_text !== "string" || row.button_text.trim().length === 0 || row.button_text.length > 128) {
+      throw new Error("auth_email_template_unavailable");
+    }
+    return { subject: row.subject, bodyText: row.body_text, action: row.button_text };
+  } catch {
+    throw new Error("auth_email_template_unavailable");
+  }
+}
+
+export async function sendResendAuthEmail(env, { kind, to, url, userId }, fetchImpl = fetch) {
   const apiKey = cleanText(env.RESEND_API_KEY);
   const from = cleanText(env.RESEND_FROM_EMAIL);
   const recipient = cleanText(to);
-  if (!copy || !isResendAuthEmailConfigured(env) || !recipient || containsWhitespace(recipient)) {
+  if (!AUTH_EMAIL_COPY[kind] || !isResendAuthEmailConfigured(env) || !recipient || containsWhitespace(recipient)) {
     throw new Error("auth_email_unavailable");
   }
 
+  const copy = await resolveAuthEmailCopy(env, kind, userId);
+  if (!copy) throw new Error("auth_email_unavailable");
   const safeUrl = validateAuthEmailLink(env, url, kind);
   const htmlUrl = escapeHtml(safeUrl);
-  const html = `<p>${copy.intro}</p><p><a href="${htmlUrl}">${copy.action}</a></p>`;
-  const text = `${copy.intro}\n\n${copy.action}: ${safeUrl}`;
+  const htmlBody = escapeHtml(copy.bodyText).replace(/\r\n?/gu, "\n").replace(/\n/gu, "<br>");
+  const html = `<p>${htmlBody}</p><p><a href="${htmlUrl}">${escapeHtml(copy.action)}</a></p>`;
+  const text = `${copy.bodyText}\n\n${copy.action}: ${safeUrl}`;
   const response = await fetchImpl(RESEND_API_URL, {
     method: "POST",
     headers: {

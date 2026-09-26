@@ -38,6 +38,7 @@ export default defineConfig({
       "./test/invitation-signup-d1.test.ts",
       "./test/availability-rules-admin-d1.test.ts",
       "./test/admin-user-management-d1.test.ts",
+      "./test/admin-email-templates-d1.test.ts",
     ],
     fileParallelism: false,
     setupFiles: ["./test/setup.ts"],

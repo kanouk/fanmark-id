@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { createAdminEmailTemplatesApi, getAdminEmailTemplatesBackend } from "@/lib/admin-email-templates-api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,12 +40,15 @@ const LANGUAGES = [
 
 export const AdminEmailTemplates: React.FC = () => {
   const queryClient = useQueryClient();
+  const backend = getAdminEmailTemplatesBackend();
+  const workerApi = createAdminEmailTemplatesApi();
   const [selectedType, setSelectedType] = useState("signup");
   const [editingTemplates, setEditingTemplates] = useState<Record<string, Partial<EmailTemplate>>>({});
 
   const { data: templates, isLoading } = useQuery({
     queryKey: ["email-templates"],
     queryFn: async () => {
+      if (backend === "worker") return workerApi.list();
       const { data, error } = await supabase
         .from("email_templates")
         .select("*")
@@ -57,7 +61,16 @@ export const AdminEmailTemplates: React.FC = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: Partial<EmailTemplate> }) => {
+    mutationFn: async ({ id, expectedUpdatedAt, updates }: { id: string; expectedUpdatedAt: string; updates: Partial<EmailTemplate> }) => {
+      if (backend === "worker") {
+        return workerApi.update({
+          id,
+          expectedUpdatedAt,
+          subject: updates.subject ?? "",
+          bodyText: updates.body_text ?? "",
+          buttonText: updates.button_text ?? "",
+        });
+      }
       const { error } = await supabase
         .from("email_templates")
         .update({
@@ -69,7 +82,12 @@ export const AdminEmailTemplates: React.FC = () => {
 
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
+      setEditingTemplates((previous) => {
+        const next = { ...previous };
+        delete next[variables.id];
+        return next;
+      });
       queryClient.invalidateQueries({ queryKey: ["email-templates"] });
       toast.success("テンプレートを保存しました");
     },
@@ -108,6 +126,7 @@ export const AdminEmailTemplates: React.FC = () => {
 
     updateMutation.mutate({
       id: template.id,
+      expectedUpdatedAt: template.updated_at,
       updates: {
         subject: updates.subject ?? template.subject,
         body_text: updates.body_text ?? template.body_text,
@@ -115,12 +134,6 @@ export const AdminEmailTemplates: React.FC = () => {
       },
     });
 
-    // Clear editing state for this template
-    setEditingTemplates((prev) => {
-      const newState = { ...prev };
-      delete newState[template.id];
-      return newState;
-    });
   };
 
   const handleReset = (templateId: string) => {
@@ -143,8 +156,21 @@ export const AdminEmailTemplates: React.FC = () => {
     );
   }
 
+  if (!templates) {
+    return (
+      <div className="py-8 text-sm text-muted-foreground" role="alert">
+        メールテンプレートを読み込めませんでした。管理者権限と接続先を確認してください。
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {backend === "worker" && (
+        <p className="rounded-md border border-border/60 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+          認証メールテンプレートはCloudflare D1から読み込みます。変更は管理者MFAで保護され、送信処理も同じテンプレートを参照します。
+        </p>
+      )}
       <Tabs value={selectedType} onValueChange={setSelectedType}>
         <TabsList className="flex w-full flex-wrap gap-2 rounded-2xl bg-muted/30 p-2">
           {EMAIL_TYPES.map((type) => (

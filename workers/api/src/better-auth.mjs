@@ -199,6 +199,7 @@ export function createAuth(
             sendResetPassword: async ({ user, url }) => sendResendAuthEmail(env, {
               kind: "passwordReset",
               to: user.email,
+              userId: user.id,
               url,
             }),
           }
@@ -211,6 +212,7 @@ export function createAuth(
             sendVerificationEmail: async ({ user, url }) => sendResendAuthEmail(env, {
               kind: "verification",
               to: user.email,
+              userId: user.id,
               url,
             }),
           },

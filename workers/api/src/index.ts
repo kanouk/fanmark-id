@@ -60,6 +60,10 @@ import {
   isAdminUserManagementPath,
 } from "./admin-user-management-d1-api";
 import {
+  handleAdminEmailTemplatesRequest,
+  isAdminEmailTemplatesPath,
+} from "./admin-email-templates-d1-api";
+import {
   handleInvitationAdminRequest,
   isInvitationAdminPath,
 } from "./invitation-admin-d1-api";
@@ -1087,6 +1091,16 @@ export async function handleRequest(
   }
   if (isAdminUserManagementPath(url.pathname)) {
     return (await handleAdminUserManagementRequest(request, env, async (adminRequest, responseHeaders) => {
+      if (env.AUTH_BACKEND?.trim() !== "better-auth") {
+        return errorResponse("auth_unavailable", 503, responseHeaders);
+      }
+      const authConfig = configuredAuth(env);
+      if (!authConfig) return errorResponse("auth_unavailable", 503, responseHeaders);
+      return authorizeAdminRequest(adminRequest, authConfig, responseHeaders);
+    })) ?? errorResponse("not_found", 404, routeHeaders);
+  }
+  if (isAdminEmailTemplatesPath(url.pathname)) {
+    return (await handleAdminEmailTemplatesRequest(request, env, async (adminRequest, responseHeaders) => {
       if (env.AUTH_BACKEND?.trim() !== "better-auth") {
         return errorResponse("auth_unavailable", 503, responseHeaders);
       }

@@ -19,6 +19,7 @@ interface ImportMetaEnv {
   readonly VITE_FANMARK_ANALYTICS_BACKEND?: string;
   readonly VITE_NOTIFICATIONS_BACKEND?: string;
   readonly VITE_NOTIFICATION_MASTER_BACKEND?: string;
+  readonly VITE_EMAIL_TEMPLATES_BACKEND?: string;
   readonly VITE_INVITATION_ADMIN_BACKEND?: string;
   readonly VITE_MAINTENANCE_SETTINGS_BACKEND?: string;
   readonly VITE_LIFECYCLE_SETTINGS_BACKEND?: string;

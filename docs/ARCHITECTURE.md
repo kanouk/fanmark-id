@@ -40,6 +40,7 @@
 - `*`: `NotFound.tsx`
 - 管理画面 (admin サブドメイン想定): `AdminApp.tsx`, `AdminDashboard.tsx`, `AdminAuth.tsx`。Cloudflare staging modeはBetter Authのログイン/TOTP画面を使い、Workerでadmin roleとMFA assuranceを判定する。通常modeのSupabase認証は維持する。
 - 絵文字マスター管理: `AdminEmojiMaster.tsx` はCloudflare staging modeで`/api/admin/emoji-master`を使い、Better Auth sessionと期限内MFA assuranceで保護されたMaster D1 canonical draftを編集する。公開版のactivationは別の検証済みrelease経路で行う。Supabase modeは従来の管理経路を使う。
+- 認証メールテンプレート管理: 移行worktreeは`VITE_EMAIL_TEMPLATES_BACKEND=worker`で`AdminEmailTemplates.tsx`を`/api/admin/email-templates`のMFA保護D1 APIへ切替可能にする。D1 seedとステージング配備後、管理画面は4種類×4言語を編集する。Better Auth確認/再設定メールは`AUTH_EMAIL_TEMPLATE_BACKEND=d1`時にbusiness D1の有効な`signup`/`recovery`テンプレートを使う。通常構成はSupabaseのままで、Resend未設定時のWorker送信は無効。進捗と未適用状態は`docs/migration/email-templates.md`。
 - 主要コンポーネント: `Navigation`, `LanguageToggle`, `FanmarkSearch`, `FanmarkRegistrationForm`, `EmojiInput`, `FanmarkStatusBadge`, `GraceStatusCountdown`, `InvitationSystem`, `AdminTierExtensionPrices`, `AdminPatternRules`, `AdminDataReset`, `AdminSettings`, `MaintenanceGate`.
 
 ## サービスフローとデータ
