@@ -46,112 +46,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, RefreshCcw, ShieldOff, ShieldCheck, KeyRound, Search, Users2, Crown } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import {
+  createAdminUserManagementApi,
+  getAdminUserManagementBackend,
+  type AdminListedUser,
+  type AdminListedUsersResponse,
+  type AdminUserDetailResponse,
+} from "@/lib/admin-user-management-api";
 
-type PlanType = "free" | "creator" | "business" | "enterprise" | "admin";
-
-type ListedUser = {
-  userId: string;
-  email: string | null;
-  emailConfirmedAt: string | null;
-  createdAt: string | null;
-  lastSignInAt: string | null;
-  status: "active" | "suspended";
-  bannedUntil: string | null;
-  displayName: string | null;
-  username: string;
-  planType: PlanType;
-  preferredLanguage: string;
-  profileUpdatedAt: string;
-  licenseCounts: {
-    active: number;
-    grace: number;
-    expired: number;
-  };
-  enterpriseSettings: {
-    custom_fanmarks_limit: number | null;
-    custom_pricing: number | null;
-    notes: string | null;
-  } | null;
-};
-
-type ListUsersResponse = {
-  data: ListedUser[];
-  pagination: {
-    page: number;
-    pageSize: number;
-    totalCount: number;
-    totalPages: number;
-  };
-  filters: {
-    search: string | null;
-    plans: string[] | null;
-    status: "active" | "suspended" | null;
-  };
-  meta: {
-    totalMatchedBeforeStatus: number | null;
-  };
-};
-
-type DetailResponse = {
-  auth: {
-    email: string | null;
-    emailConfirmedAt: string | null;
-    createdAt: string | null;
-    lastSignInAt: string | null;
-    phone: string | null;
-    status: "active" | "suspended";
-    bannedUntil: string | null;
-    factors: { type: string; createdAt: string | null }[];
-  };
-  profile: {
-    userId: string;
-    username: string;
-    displayName: string | null;
-    avatarUrl: string | null;
-    planType: PlanType;
-    preferredLanguage: string;
-    createdAt: string;
-    updatedAt: string;
-  };
-  enterpriseSettings: {
-    customFanmarksLimit: number | null;
-    customPricing: number | null;
-    notes: string | null;
-    updatedAt: string | null;
-  } | null;
-  licenseSummary: {
-    active: number;
-    grace: number;
-    expired: number;
-    total: number;
-  };
-  recentFanmarks: Array<{
-    licenseId: string;
-    status: string;
-    licenseEnd: string;
-    graceExpiresAt: string | null;
-    planExcluded: boolean;
-    excludedAt: string | null;
-    excludedFromPlan: string | null;
-    fanmarkId: string;
-    emoji: string;
-    fanmarkName: string | null;
-    accessType: string | null;
-  }>;
-  recentAuditLogs: Array<{
-    id: string;
-    userId: string | null;
-    action: string;
-    resourceType: string;
-    resourceId: string | null;
-    metadata: Record<string, unknown>;
-    createdAt: string;
-  }>;
-};
+type PlanType = "free" | "creator" | "max" | "business" | "enterprise" | "admin";
+type ListedUser = AdminListedUser;
+type ListUsersResponse = AdminListedUsersResponse;
+type DetailResponse = AdminUserDetailResponse;
 
 const planLabels: Record<PlanType, string> = {
   free: "Free",
   creator: "Creator",
+  max: "Max",
   business: "Business",
   enterprise: "Enterprise",
   admin: "Admin",
@@ -160,6 +71,7 @@ const planLabels: Record<PlanType, string> = {
 const planBadgeClass: Record<PlanType, string> = {
   free: "border-gray-300/50 bg-gray-50 text-gray-700",
   creator: "border-blue-300/60 bg-blue-50 text-blue-700",
+  max: "border-indigo-300/60 bg-indigo-50 text-indigo-700",
   business: "border-purple-300/60 bg-purple-50 text-purple-700",
   enterprise: "border-amber-300/60 bg-amber-50 text-amber-700",
   admin: "border-rose-300/60 bg-rose-50 text-rose-700",
@@ -185,6 +97,9 @@ function formatDate(value: string | null): string {
 export const AdminUserManagement: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const userManagementBackend = getAdminUserManagementBackend();
+  const workerReadOnly = userManagementBackend === "worker";
+  const workerUserApi = useMemo(() => createAdminUserManagementApi(), []);
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -256,9 +171,17 @@ export const AdminUserManagement: React.FC = () => {
       if (params.plan) payload.plans = [params.plan];
       if (params.status) payload.status = params.status;
 
-      const { data, error } = await supabase.functions.invoke("admin-list-users", {
-        body: payload,
-      });
+      if (userManagementBackend === "worker") {
+        return workerUserApi.list({
+          page: params.page,
+          pageSize: params.pageSize,
+          ...(params.search ? { search: params.search } : {}),
+          ...(params.plan ? { plans: [params.plan] } : {}),
+          ...(params.status ? { status: params.status } : {}),
+        });
+      }
+
+      const { data, error } = await supabase.functions.invoke("admin-list-users", { body: payload });
 
       if (error) {
         console.error("admin-list-users error", error);
@@ -274,9 +197,9 @@ export const AdminUserManagement: React.FC = () => {
     enabled: isDetailOpen && !!selectedUserId,
     queryFn: async ({ queryKey }) => {
       const userId = queryKey[1] as string;
-      const { data, error } = await supabase.functions.invoke("admin-get-user-detail", {
-        body: { userId },
-      });
+      if (userManagementBackend === "worker") return workerUserApi.detail(userId);
+
+      const { data, error } = await supabase.functions.invoke("admin-get-user-detail", { body: { userId } });
       if (error) {
         console.error("admin-get-user-detail error", error);
         throw new Error(error.message || "Failed to load user detail");
@@ -451,7 +374,7 @@ export const AdminUserManagement: React.FC = () => {
   }, [isPlanDialogOpen, selectedDetail]);
 
   const renderStatusBadge = (user: ListedUser) => {
-    const isConfirmed = !!user.emailConfirmedAt;
+    const isConfirmed = user.emailVerified ?? !!user.emailConfirmedAt;
     const statusLabel = user.status === "active" ? "有効" : "停止中";
     return (
       <div className="flex flex-col gap-1">
@@ -538,6 +461,14 @@ export const AdminUserManagement: React.FC = () => {
               </Button>
             </div>
           </div>
+
+          {workerReadOnly && (
+            <Alert>
+              <AlertDescription>
+                Cloudflare stagingでは一覧と詳細を読み取り専用で表示しています。プラン・アカウント・ライセンスの変更は移植後に有効になります。
+              </AlertDescription>
+            </Alert>
+          )}
 
           <div className="rounded-2xl border border-border/60 bg-card shadow-sm">
             <Table>
@@ -657,7 +588,7 @@ export const AdminUserManagement: React.FC = () => {
           <SheetHeader>
             <SheetTitle>ユーザー詳細</SheetTitle>
             <SheetDescription>
-              プラン変更、アカウント停止、パスワードリセットなどの操作を実行できます。
+              {workerReadOnly ? "Cloudflare stagingの読み取り専用ユーザー情報です。" : "プラン変更、アカウント停止、パスワードリセットなどの操作を実行できます。"}
             </SheetDescription>
           </SheetHeader>
 
@@ -753,7 +684,7 @@ export const AdminUserManagement: React.FC = () => {
                             type="button"
                             size="sm"
                             variant="destructive"
-                            disabled={record.status === "expired"}
+                            disabled={record.status === "expired" || workerReadOnly}
                             onClick={() => {
                               setExpireTarget({
                                 licenseId: record.licenseId,
@@ -814,7 +745,7 @@ export const AdminUserManagement: React.FC = () => {
           <SheetFooter className="flex flex-col gap-3">
             <div className="grid grid-cols-1 gap-3">
               <Button
-                disabled={!selectedDetail}
+                disabled={!selectedDetail || workerReadOnly}
                 onClick={() => setIsPlanDialogOpen(true)}
                 variant="outline"
                 className="justify-start"
@@ -822,7 +753,7 @@ export const AdminUserManagement: React.FC = () => {
                 プランを変更
               </Button>
               <Button
-                disabled={!selectedDetail}
+                disabled={!selectedDetail || workerReadOnly}
                 onClick={() => {
                   if (!selectedDetail) return;
                   setStatusAction(selectedDetail.auth.status === "active" ? "suspend" : "restore");
@@ -845,7 +776,7 @@ export const AdminUserManagement: React.FC = () => {
                 )}
               </Button>
               <Button
-                disabled={!selectedDetail}
+                disabled={!selectedDetail || workerReadOnly}
                 onClick={() => {
                   setPasswordResetReason("");
                   setIsPasswordDialogOpen(true);
@@ -874,6 +805,7 @@ export const AdminUserManagement: React.FC = () => {
               <SelectContent>
                 <SelectItem value="free">Free</SelectItem>
                 <SelectItem value="creator">Creator</SelectItem>
+                <SelectItem value="max">Max</SelectItem>
                 <SelectItem value="business">Business</SelectItem>
                 <SelectItem value="enterprise">Enterprise</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>

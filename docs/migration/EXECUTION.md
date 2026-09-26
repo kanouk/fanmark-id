@@ -1741,4 +1741,32 @@ Business migration `0015_extension_coupon_application.sql` was the only pending 
 
 The final Worker version `09cb56d8-e0c2-4a4e-af40-d6506922e9a6` is active at 100% on workers.dev. Read-only probes returned 200 for `/` and `/api/auth/ok`; anonymous coupon application and coupon administration returned 401. No authenticated coupon use/admin mutation, user-data import, production route, or domain/DNS change occurred.
 
-The dedicated synthetic application suite passes 7/7, the admin suite 4/4, and frontend contracts 10/10. After the final concurrency adjustment, the full Worker `npm test` command, Worker typecheck, and Wrangler deploy dry-run passed; root typecheck and CI workflow-isolation check also passed. The Cloudflare staging build succeeded with only the existing browser-data and large-chunk advisories. Coupon tables contain no source coupon, usage, license, or user rows; authenticated staging success with imported records remains untested. Continue the remaining #34 app/API mapping and #37 synthetic integration rehearsal; real user-data import and public domain/DNS remain excluded until the final operational phase.
+
+## Admin user directory read APIs (2026-09-26 JST)
+
+Added MFA-gated `POST /api/admin/users` and `POST /api/admin/users/:userId`
+read routes. The list joins bounded business-profile candidates to Better Auth
+users, session-derived last-sign-in time, license counts, and Enterprise
+settings across split D1 bindings. Search includes Auth email as well as
+username/display name; candidate overflow fails closed instead of silently
+truncating. Detail returns recent licenses, TOTP presence, and recent audit
+rows. Audit metadata removes keys that can contain credentials or contact
+details, and responses are `no-store`.
+
+The frontend uses credentialed same-origin requests with no cache or redirect,
+validates the response contract, and never falls back to Supabase after Worker
+selection. Cloudflare staging screen mode is read-only; plan, suspension,
+reset-link, and immediate-expiry mutations remain disabled pending their D1/Auth
+implementations. Synthetic split-D1 API tests pass 3/3, frontend contract tests
+pass 3/3, and both root/Worker typechecks pass. The complete Worker `npm test`
+suite and Worker typecheck pass with the API included.
+
+Deployed `fanmark-app-staging` version
+`54c932cf-9589-4dc6-9409-7651ba0648a5` to
+`https://fanmark-app-staging.fanmark-id.workers.dev`. Read-only smoke checks
+returned 200 for `/` and `/api/auth/ok`; an anonymous `POST /api/admin/users`
+returned 401 with `no-store`. No authenticated admin session or user-row
+mutation was used, and no production route or domain/DNS setting changed.
+Plan mutation, suspension, password-reset, and immediate-license-expiry
+controls remain disabled in Worker mode; migrate those routes and run an
+authenticated staging canary before calling user management complete.

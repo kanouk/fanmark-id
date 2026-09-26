@@ -1033,3 +1033,27 @@ staging acceptance with synthetic local fixtures, not successful redemption
 against imported data. Continue #34's remaining app/API inventory and #37's
 synthetic integrated rehearsal. Keep real user-data migration and public
 domain/DNS as the final operational phase.
+
+## 2026-09-26 checkpoint: Admin user directory read path
+
+PR #41 now contains local MFA-gated D1 list/detail APIs for the admin user
+directory, a same-origin frontend adapter, and a Cloudflare-staging read-only
+screen mode. Synthetic split-D1 tests cover profile/email filtering, session
+last-sign-in projection, license counts, enterprise settings, recent fanmarks,
+factor presence, audit metadata redaction, rejected MFA, and invalid requests.
+Frontend contract tests verify cookie credentials, no-store behavior,
+same-origin enforcement, and malformed-response rejection. Both typechecks and
+the dedicated suites pass.
+
+Deployed `fanmark-app-staging` version
+`54c932cf-9589-4dc6-9409-7651ba0648a5` to
+`https://fanmark-app-staging.fanmark-id.workers.dev`. Read-only probes returned
+200 for `/` and `/api/auth/ok`; anonymous `POST /api/admin/users` returned 401
+with `no-store`. The full Worker test command, Worker typecheck, frontend/root
+checks, staging build, and Wrangler deploy passed. No authenticated admin
+session or user-row mutation was used, and this deployment did not change
+production or domain/DNS.
+
+Plan mutation, suspension, password-reset, and immediate-license-expiry
+controls remain disabled in Worker mode. Continue by porting those routes and
+run an authenticated staging canary before calling user management complete.
