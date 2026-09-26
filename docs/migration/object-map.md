@@ -91,8 +91,8 @@ Source shorthand used below:
 | email_templates | RLS; 2/2/1 | T:107; F src/components/AdminEmailTemplates.tsx:48,61 | D1 config; Worker admin edits, Worker internal renders and sends | Medium: template versioning and locale fallback are not fixed |
 | emoji_master | RLS; 2/2/2 | T:143; F src/components/AdminEmojiMaster.tsx:60,131; F src/lib/emoji-master-utils.ts:120 | D1 reference table; Worker public reads safe catalog, Worker admin updates; derived search catalog may be generated | Medium: preserve live DB UUIDs as initial migration authority; Unicode source updates and versioned catalog publication follow a separate release |
 | enterprise_user_settings | RLS; 2/2/1 | T:182; R:2370 | D1 private table; Worker user/admin as applicable, Worker internal for enterprise automation | High: no frontend callsite in the offline inventory; confirm product owner and fields |
-| extension_coupon_usages | RLS; 3/4/0 | T:215; F src/hooks/useExtensionCouponAdmin.ts:129 | D1 append-only usage table; Worker user reads own usage, Worker admin reads all, Worker internal records usage | Medium: preserve idempotency and coupon redemption transaction |
-| extension_coupons | RLS; 1/3/1 | T:271; F src/hooks/useExtensionCouponAdmin.ts:46,69,91,112 | D1 config; Worker admin manages, Worker user validates active coupons through an operation | Medium: public validation response and expiry semantics need API definition |
+| extension_coupon_usages | RLS; 3/4/0 | T:215; F src/hooks/useExtensionCouponAdmin.ts | D1 append-only usage table; atomic Worker command records redemption, MFA admin reads joined display DTO | Existing usage rows remain in Supabase until the separately excluded user-data migration; enforce per-coupon/user/fanmark uniqueness in D1 |
+| extension_coupons | RLS; 1/3/1 | T:271; F src/hooks/useExtensionCouponAdmin.ts | D1 coupon master; MFA Worker admin creates/updates activation, Worker user applies through atomic operation | Staging API is implemented; existing coupon rows and usage counts are not imported |
 | fanmark_access_daily_stats | RLS; 1/4/0 | T:313; F src/components/FanmarkDashboard.tsx:551; F src/pages/Analytics.tsx:159 | D1 derived aggregate; Worker internal updates, Worker user reads owned fanmark stats, Worker admin reads as needed | Medium: aggregation window, timezone, and rebuild path are unverified |
 | fanmark_access_logs | RLS; 1/3/0 | T:401; R:2459; P analytics | D1 append-only log; Worker public ingress writes through a bounded operation, Worker user reads owned data, Worker internal aggregates | Medium: retention and abuse/rate limits need a decision |
 | fanmark_availability_rules | RLS; 2/4/1 | T:480; F src/components/AdminPatternRules.tsx:37,57,90 | D1 config; MFA-protected Worker admin API reads/writes staging rules, Worker availability path reads active rules | Medium: staging admin DTO/CAS is verified; full precedence with tiers and reserved patterns still needs a test matrix |
@@ -137,7 +137,7 @@ release. This does not make every configuration-looking table non-user data:
 public `grace_period_days` and `max_emoji_characters` rows have been copied to
 staging. Availability rules and notification rules/templates use documented
 row/field allowlists; coupons, tier-extension prices, and remaining candidates
-still require classification before export.
+still require per-table allowlists before export. Coupon configuration can move separately from owner-bound usage records; do not copy `created_by`, usage rows, or infer redemption history during master-data staging.
 
 ## View
 
@@ -240,7 +240,7 @@ authorization decision; the target boundary below is the proposed contract.
 | apply-fanmark-lottery | E: supabase/functions/apply-fanmark-lottery/index.ts | Worker user | Medium: preserve one-entry and grace checks |
 | apply-transfer-code | E: supabase/functions/apply-transfer-code/index.ts | Worker user | Medium: preserve participant and expiry checks |
 | approve-transfer-request | E: supabase/functions/approve-transfer-request/index.ts | Worker user | Medium: owner approval and finalization must be atomic |
-| bulk-return-fanmarks | E: supabase/functions/bulk-return-fanmarks/index.ts | Worker user | Medium: all-or-partial return behavior needs a transaction decision |
+| bulk-return-fanmarks | E: supabase/functions/bulk-return-fanmarks/index.ts | Worker user | Resolved: process each license independently and return partial failures as 207, matching the source contract; audit/notification effects remain best-effort |
 | cancel-lottery-entry | E: supabase/functions/cancel-lottery-entry/index.ts | Worker user | Medium: preserve lottery state transitions |
 | cancel-transfer-code | E: supabase/functions/cancel-transfer-code/index.ts | Worker user | Medium: preserve transfer lock release |
 | change-subscription | E: supabase/functions/change-subscription/index.ts | Worker user/internal + retain Stripe | High: proration, downgrade selection, and webhook reconciliation |

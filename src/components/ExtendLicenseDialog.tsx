@@ -10,6 +10,12 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { formatInTimeZone } from 'date-fns-tz';
 import { supabase } from '@/integrations/supabase/client';
 import {
+  applyExtensionCouponThroughWorker,
+  clearExtensionCouponRequestId,
+  getExtensionCouponBackend,
+  getOrCreateExtensionCouponRequestId,
+} from '@/lib/extension-coupon-api';
+import {
   fetchExtensionPriceMaster,
   getExtensionPricingBackend,
 } from '@/lib/reference-master-api';
@@ -179,6 +185,12 @@ export const ExtendLicenseDialog = ({
       'fanmark_limit_exceeded',
       'perpetual_license',
       'transfer_in_progress',
+      'invalid_coupon_code',
+      'invalid_coupon_configuration',
+      'no_eligible_license',
+      'request_id_conflict',
+      'coupon_application_unavailable',
+      'authentication_required',
     ]);
 
     const formatCouponError = (errorCode: string): string => {
@@ -305,22 +317,40 @@ export const ExtendLicenseDialog = ({
 
     setCouponLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('apply-extension-coupon', {
-        body: {
-          coupon_code: couponCode.trim().toUpperCase(),
-          license_id: licenseId,
-        },
-      });
+      const normalizedCode = couponCode.trim().toUpperCase();
+      let months: number;
+      if (getExtensionCouponBackend() === 'worker') {
+        const requestId = await getOrCreateExtensionCouponRequestId(licenseId, normalizedCode);
+        const result = await applyExtensionCouponThroughWorker({
+          licenseId,
+          couponCode: normalizedCode,
+          requestId,
+        });
+        months = result.months;
+        try {
+          await clearExtensionCouponRequestId(licenseId, normalizedCode);
+        } catch (storageError) {
+          console.warn('[ExtendLicenseDialog] Could not clear completed coupon request marker:', storageError);
+        }
+      } else {
+        const { data, error } = await supabase.functions.invoke('apply-extension-coupon', {
+          body: {
+            coupon_code: normalizedCode,
+            license_id: licenseId,
+          },
+        });
 
-      if (error) throw error;
-      if (data?.error) {
-        // Create error object with error code for proper parsing
-        const errorObj = new Error(data.error);
-        throw errorObj;
+        if (error) throw error;
+        if (data?.error) {
+          // Create error object with error code for proper parsing
+          const errorObj = new Error(data.error);
+          throw errorObj;
+        }
+        months = data.months;
       }
 
       toast.success(t('dashboard.extendDialog.couponSuccessTitle'), {
-        description: t('dashboard.extendDialog.couponSuccessDescription', { months: data.months }),
+        description: t('dashboard.extendDialog.couponSuccessDescription', { months }),
       });
 
       setCouponCode('');

@@ -66,6 +66,14 @@ import {
   isStripeExtensionCheckoutPath,
 } from "./stripe-extension-checkout-d1-api";
 import {
+  handleExtensionCouponApplicationD1Request,
+  isExtensionCouponApplicationPath,
+} from "./extension-coupon-application-d1-api";
+import {
+  handleExtensionCouponAdminRequest,
+  isExtensionCouponAdminPath,
+} from "./extension-coupon-admin-d1-api";
+import {
   handleStripeCustomerPortalD1Request,
   isStripeCustomerPortalPath,
 } from "./stripe-customer-portal-d1-api";
@@ -1025,6 +1033,21 @@ export async function handleRequest(
     })) ?? errorResponse("not_found", 404, routeHeaders);
   }
 
+  if (isExtensionCouponApplicationPath(url.pathname)) {
+    return (await handleExtensionCouponApplicationD1Request(request, env, {
+      resolveUser: async (couponRequest) => {
+        if (env.AUTH_BACKEND?.trim() !== "better-auth") throw new Error("auth_unavailable");
+        const config = configuredAuth(env);
+        if (!config) throw new Error("auth_unavailable");
+        const current = await createApplicationAuth(config).api.getSession({
+          headers: couponRequest.headers,
+          query: { disableCookieCache: true },
+        });
+        return typeof current?.user?.id === "string" ? current.user.id : null;
+      },
+    })) ?? errorResponse("not_found", 404, routeHeaders);
+  }
+
   if (url.pathname === "/api/admin/session") {
     return handleAdminSessionRequest(request, env);
   }
@@ -1073,6 +1096,16 @@ export async function handleRequest(
   }
   if (isInvitationAdminPath(url.pathname)) {
     return (await handleInvitationAdminRequest(request, env, async (adminRequest, responseHeaders) => {
+      if (env.AUTH_BACKEND?.trim() !== "better-auth") {
+        return errorResponse("auth_unavailable", 503, responseHeaders);
+      }
+      const authConfig = configuredAuth(env);
+      if (!authConfig) return errorResponse("auth_unavailable", 503, responseHeaders);
+      return authorizeAdminRequest(adminRequest, authConfig, responseHeaders);
+    })) ?? errorResponse("not_found", 404, routeHeaders);
+  }
+  if (isExtensionCouponAdminPath(url.pathname)) {
+    return (await handleExtensionCouponAdminRequest(request, env, async (adminRequest, responseHeaders) => {
       if (env.AUTH_BACKEND?.trim() !== "better-auth") {
         return errorResponse("auth_unavailable", 503, responseHeaders);
       }

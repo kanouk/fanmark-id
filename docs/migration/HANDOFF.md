@@ -252,8 +252,9 @@ buckets; this was a read-only check and copied no objects.
    user-held references, finish business API wiring, and verify Wrangler
    plan/CPU fit before #37. Language reads and the read-only tier projection in
    the extension-coupon admin screen now use Worker APIs in staging; coupon
-   writes and editable tier settings remain on Supabase, and no frontend uses
-   reserved patterns yet. R2 is enabled: staging avatar/cover uploads and
+   admin CRUD and redemption use the D1 Worker path, with existing coupon and
+   usage rows still excluded from import. Editable tier settings remain on
+   Supabase, and no frontend uses reserved patterns yet. R2 is enabled: staging avatar/cover uploads and
    profile URLs use the two bound R2 buckets, while existing Supabase objects
    have not been copied and production remains on Supabase.
    Use synthetic
@@ -1008,3 +1009,27 @@ Wrangler dry-run pass. Migration `0008` is applied to the empty APAC
 staging. Stripe API/signing secrets and all Stripe selectors remain unset;
 subscription entitlement reconciliation, free-plan returns, production
 billing, and Stripe operational rehearsal remain open.
+
+## Extension coupon D1 staging slice (2026-09-26 JST)
+
+Business migration `0015_extension_coupon_application.sql` is applied to
+`fanmark-business-staging`; Wrangler reports no pending migrations. Readback
+confirmed the command table, guard/apply triggers, unique usage index, and
+lottery-entry index. Coupon, usage, and command tables remain at zero rows.
+
+The staging app uses Better Auth for the owner redemption API and the
+admin-role/MFA-protected coupon CRUD and usage API. Worker version
+`09cb56d8-e0c2-4a4e-af40-d6506922e9a6` is active at 100% on workers.dev.
+Read-only smoke checks returned 200 for `/` and `/api/auth/ok`, and 401 for
+anonymous redemption and anonymous coupon administration. Production/default
+selectors stay on Supabase; this deployment imported no user, license, coupon,
+or usage rows and did not change production or domain/DNS.
+
+Focused D1 application tests pass 7/7, coupon-admin tests 4/4, frontend
+contracts 10/10, and the complete Worker `npm test` command passes after the
+final concurrency retry change. Root and Worker typechecks, CI isolation,
+staging build, deploy dry-run, and `git diff --check` pass. This is API/schema
+staging acceptance with synthetic local fixtures, not successful redemption
+against imported data. Continue #34's remaining app/API inventory and #37's
+synthetic integrated rehearsal. Keep real user-data migration and public
+domain/DNS as the final operational phase.
