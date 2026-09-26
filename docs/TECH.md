@@ -126,7 +126,7 @@ Cloudflare staging modeの管理画面はBetter Authでログインし、`GET /a
 
 ## Stripe デプロイメント（要約）
 - テスト/本番で別々の Product/Price・Webhook エンドポイントを作成。Webhook URL: `https://<project>.supabase.co/functions/v1/handle-stripe-webhook`、イベントは checkout.session.completed / customer.subscription.* / invoice.payment_* を登録。
-- Cloudflare Worker側には`/api/stripe/webhook`の署名検証・D1 receipt/dispatch保存経路、拡張Checkout作成API、D1 scheduled dispatcherと拡張決済効果を追加した。staging business D1にはmigrations `0006`/`0007`の空schemaを適用済み。`STRIPE_WEBHOOK_BACKEND=d1`、`STRIPE_DISPATCH_BACKEND=d1`、`STRIPE_EXTENSION_CHECKOUT_BACKEND=d1`、署名secretとCronは未設定。subscription/invoiceイベントの効果も未移植のため、Stripe Dashboardのendpoint切替はまだ行わない。
+- Cloudflare Worker側には`/api/stripe/webhook`の署名検証・D1 receipt/dispatch保存経路、拡張Checkout作成API、D1 scheduled dispatcherと拡張決済効果を追加した。staging business D1にはmigrations `0006`/`0007`の空schemaを適用済み。`STRIPE_WEBHOOK_BACKEND=d1`、`STRIPE_DISPATCH_BACKEND=d1`、`STRIPE_EXTENSION_CHECKOUT_BACKEND=d1`、署名secretとCronは未設定。scheduled invoice照合は`STRIPE_SECRET_KEY_TEST`と`STRIPE_SECRET_KEY_LIVE`をモード別に要求する（拡張Checkout作成APIが使う`STRIPE_SECRET_KEY`とは別）。subscriptionイベントの効果も未移植のため、Stripe Dashboardのendpoint切替はまだ行わない。
 - Supabase Secrets（Lovable/Supabase CLI 経由）を更新: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_CREATOR`, `STRIPE_PRICE_ID_BUSINESS`, `FRONTEND_URL`。
 - Customer Portal はモードごとに設定し、プラン切替を許可。延長 Price ID は `fanmark_tier_extension_prices` を Admin UI から管理（環境変数不要）。
 - Checkout 後は `subscription-sync-flow` のポーリングでプラン同期。問題があれば `stripe_payment_intents` / `stripe_webhook_events` / `user_settings.plan_type` を照合。

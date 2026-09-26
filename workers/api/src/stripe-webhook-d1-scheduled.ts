@@ -62,6 +62,15 @@ function retryDelaySeconds(attemptCount: number): number {
   return Math.min(3600, 30 * (2 ** Math.min(Math.max(0, attemptCount - 1), 7)));
 }
 
+export function stripeSecretKeyForMode(value: string | undefined, livemode: boolean): string {
+  const key = value?.trim() ?? "";
+  const prefixes = livemode ? ["sk_live_", "rk_live_"] : ["sk_test_", "rk_test_"];
+  if (!prefixes.some((prefix) => key.startsWith(prefix) && key.length > prefix.length)) {
+    throw new Error("stripe_dispatch_configuration_invalid");
+  }
+  return key;
+}
+
 export async function dispatchStripeWebhookBatchInD1(args: {
   database: D1Database;
   livemode: boolean;
@@ -159,7 +168,7 @@ export async function runScheduledStripeWebhookDispatches(args: {
     return { status: "disabled", claimed: 0, applied: 0, ignored: 0, deadLettered: 0, retryable: 0, leaseLost: 0 };
   }
   if (backend !== "d1" || args.env.STRIPE_WEBHOOK_BACKEND?.trim() !== "d1" ||
-      !args.env.STRIPE_WEBHOOK_SECRET?.trim() || !args.env.STRIPE_SECRET_KEY?.trim()) {
+      !args.env.STRIPE_WEBHOOK_SECRET?.trim()) {
     throw new Error("stripe_dispatch_configuration_invalid");
   }
   const database = selectD1Database(args.env, "business");
@@ -169,18 +178,25 @@ export async function runScheduledStripeWebhookDispatches(args: {
   const batchSize = configuredPositiveInteger(args.env.STRIPE_DISPATCH_BATCH_SIZE, DEFAULT_BATCH_SIZE, 100);
   const maxAttempts = configuredPositiveInteger(args.env.STRIPE_DISPATCH_MAX_ATTEMPTS, DEFAULT_MAX_ATTEMPTS, 100);
   const now = new Date(args.scheduledTime).toISOString();
-  const stripe = new Stripe(args.env.STRIPE_SECRET_KEY.trim(), {
+  const testStripe = new Stripe(stripeSecretKeyForMode(args.env.STRIPE_SECRET_KEY_TEST, false), {
     apiVersion: PINNED_STRIPE_API_VERSION,
     timeout: 10_000,
     maxNetworkRetries: 0,
     httpClient: Stripe.createFetchHttpClient(),
   });
-  const invoiceProvider = createStripeInvoiceProjectionProvider(stripe as unknown as StripeInvoiceApiClient);
+  const liveStripe = new Stripe(stripeSecretKeyForMode(args.env.STRIPE_SECRET_KEY_LIVE, true), {
+    apiVersion: PINNED_STRIPE_API_VERSION,
+    timeout: 10_000,
+    maxNetworkRetries: 0,
+    httpClient: Stripe.createFetchHttpClient(),
+  });
+  const testInvoiceProvider = createStripeInvoiceProjectionProvider(testStripe as unknown as StripeInvoiceApiClient);
+  const liveInvoiceProvider = createStripeInvoiceProjectionProvider(liveStripe as unknown as StripeInvoiceApiClient);
   const test = await dispatchStripeWebhookBatchInD1({
-    database, livemode: false, now, batchSize, maxAttempts, invoiceProvider,
+    database, livemode: false, now, batchSize, maxAttempts, invoiceProvider: testInvoiceProvider,
   });
   const live = await dispatchStripeWebhookBatchInD1({
-    database, livemode: true, now, batchSize, maxAttempts, invoiceProvider,
+    database, livemode: true, now, batchSize, maxAttempts, invoiceProvider: liveInvoiceProvider,
   });
   return {
     status: "completed",

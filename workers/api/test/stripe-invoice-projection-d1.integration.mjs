@@ -21,7 +21,7 @@ const scheduledPath = path.join(repoRoot, "workers/api/src/stripe-webhook-d1-sch
 const { acceptStripeWebhookReceiptIntoD1 } = await import(pathToFileURL(ingressPath).href);
 const { claimStripeWebhookDispatchesFromD1 } = await import(pathToFileURL(dispatchPath).href);
 const { applyStripeInvoiceReceiptInD1, createD1InvoiceProjectionRuntime } = await import(pathToFileURL(invoicePath).href);
-const { dispatchStripeWebhookBatchInD1, runScheduledStripeWebhookDispatches } = await import(pathToFileURL(scheduledPath).href);
+const { dispatchStripeWebhookBatchInD1, runScheduledStripeWebhookDispatches, stripeSecretKeyForMode } = await import(pathToFileURL(scheduledPath).href);
 
 const NOW = "2026-09-26T04:05:06.000Z";
 const USER_ID = "00000000-0000-4000-8000-000000000101";
@@ -476,6 +476,14 @@ test("scheduled Worker Stripe handling stays disabled when staging selectors are
     status: "disabled", claimed: 0, applied: 0, ignored: 0,
     deadLettered: 0, retryable: 0, leaseLost: 0,
   });
+});
+
+test("scheduled Stripe API key is bound to the dispatch livemode", () => {
+  assert.equal(stripeSecretKeyForMode(" sk_test_synthetic ", false), "sk_test_synthetic");
+  assert.equal(stripeSecretKeyForMode("rk_live_synthetic", true), "rk_live_synthetic");
+  assert.throws(() => stripeSecretKeyForMode("sk_live_synthetic", false), /stripe_dispatch_configuration_invalid/u);
+  assert.throws(() => stripeSecretKeyForMode("sk_test_synthetic", true), /stripe_dispatch_configuration_invalid/u);
+  assert.throws(() => stripeSecretKeyForMode(undefined, false), /stripe_dispatch_configuration_invalid/u);
 });
 
 test("stale dispatch lease cannot write payment state", async () => {

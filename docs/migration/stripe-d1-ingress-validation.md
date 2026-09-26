@@ -89,14 +89,18 @@ license, or notification write is used. The caller clock is refreshed after
 remote Stripe reads; SDK calls use a 10-second timeout, zero SDK retries, and a
 300-second dispatch/customer lease.
 
-Nine additional Miniflare cases cover current paid/failure/action-required
+Ten additional Miniflare cases cover current paid/failure/action-required
 state, stale failed and success events, missing mapping, concurrent/expired
 customer fences, failure rollback followed by successful retry, scheduled
 invoice dispatch, a Stripe read that outlives its dispatch lease, and the
-disabled-by-default scheduled path. The expanded
-`npm run test:stripe-webhook-ingress-schema` command passes 39/39.
+disabled-by-default scheduled path. The suite also rejects a test-mode API key
+for a live queue (and vice versa); scheduled invoice retrieval creates separate
+providers from `STRIPE_SECRET_KEY_TEST` and `STRIPE_SECRET_KEY_LIVE`. The
+expanded `npm run test:stripe-webhook-ingress-schema` command passes 40/40.
 Invoice behavior uses synthetic D1 and an injected provider; the staging
-selectors, Stripe API key, signing secret, and Stripe Cron dispatch remain off.
+selectors, mode-specific Stripe API keys, signing secret, and Stripe Cron
+dispatch remain off. The generic `STRIPE_SECRET_KEY` used by the separate
+extension Checkout creator is not reused for scheduled invoice retrieval.
 Subscription entitlement/free-plan return and other billing effects remain
 unimplemented.
 
