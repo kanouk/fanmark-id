@@ -254,11 +254,17 @@ export const useAuthForm = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
-        redirectTo: `${window.location.origin}/reset-password`
-      });
-
-      if (error) throw error;
+      if (isBetterAuthEnabled()) {
+        await betterAuthClient.requestPasswordReset(
+          formData.email,
+          `${window.location.origin}/reset-password`,
+        );
+      } else {
+        const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
+          redirectTo: `${window.location.origin}/reset-password`
+        });
+        if (error) throw error;
+      }
 
       toast({
         title: t('common.resetEmailSent'),
@@ -284,15 +290,21 @@ export const useAuthForm = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: formData.email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`
-        }
-      });
-
-      if (error) throw error;
+      if (isBetterAuthEnabled()) {
+        await betterAuthClient.sendVerificationEmail(
+          formData.email,
+          `${window.location.origin}/auth`,
+        );
+      } else {
+        const { error } = await supabase.auth.resend({
+          type: 'signup',
+          email: formData.email,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`
+          }
+        });
+        if (error) throw error;
+      }
 
       setResendCooldown(RESEND_COOLDOWN_SECONDS);
       toast({
@@ -312,6 +324,13 @@ export const useAuthForm = () => {
     setError('');
 
     try {
+      if (isBetterAuthEnabled()) {
+        window.location.assign(await betterAuthClient.signInWithSocial(
+          'google',
+          `${window.location.origin}/auth`,
+        ));
+        return;
+      }
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -333,6 +352,13 @@ export const useAuthForm = () => {
     setError('');
 
     try {
+      if (isBetterAuthEnabled()) {
+        window.location.assign(await betterAuthClient.signInWithSocial(
+          'github',
+          `${window.location.origin}/auth`,
+        ));
+        return;
+      }
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
@@ -354,6 +380,13 @@ export const useAuthForm = () => {
     setError('');
 
     try {
+      if (isBetterAuthEnabled()) {
+        window.location.assign(await betterAuthClient.signInWithSocial(
+          'discord',
+          `${window.location.origin}/auth`,
+        ));
+        return;
+      }
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'discord',
         options: {
@@ -375,6 +408,13 @@ export const useAuthForm = () => {
     setError('');
 
     try {
+      if (isBetterAuthEnabled()) {
+        window.location.assign(await betterAuthClient.signInWithSocial(
+          'apple',
+          `${window.location.origin}/auth`,
+        ));
+        return;
+      }
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
         options: {

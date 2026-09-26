@@ -208,3 +208,88 @@ test('an empty Better Auth session remains unauthenticated', async () => {
 
   assert.equal(await client.getSession(), null);
 });
+
+test('Better Auth capabilities are fetched without caching and validate the feature boundary', async () => {
+  let request: { url: string; init?: RequestInit } | undefined;
+  const client = createBetterAuthClient({
+    baseUrl: 'https://fanmark-app-staging.example.workers.dev',
+    fetchImpl: async (input, init) => {
+      request = { url: String(input), init };
+      return new Response(JSON.stringify({
+        emailVerification: true,
+        passwordReset: true,
+        signUp: false,
+        socialProviders: [],
+      }), { status: 200, headers: { 'content-type': 'application/json' } });
+    },
+  });
+
+  assert.deepEqual(await client.getCapabilities(), {
+    emailVerification: true,
+    passwordReset: true,
+    signUp: false,
+    socialProviders: [],
+  });
+  assert.equal(request?.url, 'https://fanmark-app-staging.example.workers.dev/api/auth/capabilities');
+  assert.equal(request?.init?.credentials, 'include');
+  assert.equal(request?.init?.cache, 'no-store');
+});
+
+test('Better Auth email verification and password reset use their dedicated endpoints', async () => {
+  const requests: Array<{ url: string; body: unknown }> = [];
+  const client = createBetterAuthClient({
+    baseUrl: 'https://fanmark-app-staging.example.workers.dev',
+    fetchImpl: async (input, init) => {
+      requests.push({ url: String(input), body: JSON.parse(String(init?.body)) });
+      return new Response(JSON.stringify({ status: true }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    },
+  });
+
+  await client.sendVerificationEmail('user@example.invalid', 'https://fanmark-app-staging.example.workers.dev/auth');
+  await client.requestPasswordReset('user@example.invalid', 'https://fanmark-app-staging.example.workers.dev/reset-password');
+  await client.resetPassword('synthetic-reset-token', 'new-synthetic-password');
+
+  assert.deepEqual(requests, [
+    {
+      url: 'https://fanmark-app-staging.example.workers.dev/api/auth/send-verification-email',
+      body: { email: 'user@example.invalid', callbackURL: 'https://fanmark-app-staging.example.workers.dev/auth' },
+    },
+    {
+      url: 'https://fanmark-app-staging.example.workers.dev/api/auth/request-password-reset',
+      body: { email: 'user@example.invalid', redirectTo: 'https://fanmark-app-staging.example.workers.dev/reset-password' },
+    },
+    {
+      url: 'https://fanmark-app-staging.example.workers.dev/api/auth/reset-password',
+      body: { token: 'synthetic-reset-token', newPassword: 'new-synthetic-password' },
+    },
+  ]);
+});
+
+test('Better Auth social sign-in validates the redirect response before handing it to the browser', async () => {
+  let request: { url: string; init?: RequestInit } | undefined;
+  const client = createBetterAuthClient({
+    baseUrl: 'https://fanmark-app-staging.example.workers.dev',
+    fetchImpl: async (input, init) => {
+      request = { url: String(input), init };
+      return new Response(JSON.stringify({
+        url: 'https://accounts.google.com/o/oauth2/v2/auth?state=synthetic',
+        redirect: true,
+      }), { status: 200, headers: { 'content-type': 'application/json' } });
+    },
+  });
+
+  assert.equal(
+    await client.signInWithSocial('google', 'https://fanmark-app-staging.example.workers.dev/auth'),
+    'https://accounts.google.com/o/oauth2/v2/auth?state=synthetic',
+  );
+  assert.equal(request?.url, 'https://fanmark-app-staging.example.workers.dev/api/auth/sign-in/social');
+  assert.deepEqual(JSON.parse(String(request?.init?.body)), {
+    provider: 'google',
+    callbackURL: 'https://fanmark-app-staging.example.workers.dev/auth',
+    newUserCallbackURL: 'https://fanmark-app-staging.example.workers.dev/auth',
+    errorCallbackURL: 'https://fanmark-app-staging.example.workers.dev/auth',
+  });
+});

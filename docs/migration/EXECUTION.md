@@ -1499,3 +1499,22 @@ tests; Worker/frontend typechecks and Wrangler dry-run pass. The new daily
 trigger is configured but has not yet fired in production-like operation; the
 existing synthetic lifecycle Cron canary remains the runtime evidence. No
 license/user row, production route, or domain/DNS state changed.
+
+## Conditional Better Auth email and social-provider wiring (2026-09-26 JST)
+
+The current worktree adds Resend verification and password-reset callbacks,
+same-origin HTTPS URL validation, and a capability endpoint that returns only
+configured provider names/booleans. Google, GitHub, Discord, and Apple OAuth
+are wired behind a separate selector and complete credential pairs. New-user
+signup and Better Auth social signup remain disabled; this only supports
+pre-existing Better Auth identities. Frontend reset/social actions are shown
+only when the Worker reports the corresponding capability.
+
+Local verification passed for auth-email 3/3, auth-social 3/3, auth D1 15/15,
+and Better Auth client 13/13. The full Worker suite, both TypeScript checks,
+CI isolation check, and Cloudflare staging build passed on Node 22.6.0. No
+Resend or OAuth credentials are configured, no mail or provider callback was
+executed, and these changes have not been deployed. The currently deployed
+Worker therefore still keeps signup, email, OAuth, and reset routes closed.
+No real users, production routes, or domain/DNS settings were changed. See
+[auth feasibility](auth-feasibility.md).

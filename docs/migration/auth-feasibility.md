@@ -367,6 +367,30 @@ establish a plan fit. Workers Free allows 10 ms CPU per HTTP request; the
 decision unresolved. No plan upgrade was made. See [Cloudflare Workers
 limits](https://developers.cloudflare.com/workers/platform/limits/).
 
+## Conditional Resend mail and existing-account OAuth wiring (2026-09-26 JST)
+
+The current migration worktree adds conditional Resend-backed verification and
+password-reset callbacks. They are available only when
+`AUTH_EMAIL_BACKEND=resend`, `RESEND_API_KEY`, and `RESEND_FROM_EMAIL` are
+configured. Generated verification/reset links are restricted to the HTTPS
+Better Auth origin and expected auth paths. The Worker capability response
+reports only whether email is configured; auth mail routes stay closed when it
+is not. No real message was sent.
+
+Google, GitHub, Discord, and Apple sign-in are wired behind
+`AUTH_SOCIAL_BACKEND=better-auth` and complete per-provider client ID/secret
+pairs. The capability endpoint returns configured provider names without
+credentials. Better Auth social sign-up and email/password sign-up both remain
+disabled; this wiring can authenticate only identities already present in the
+Better Auth store. The frontend exposes reset and social actions only when the
+Worker reports the corresponding capability. No live OAuth callback was run.
+
+These changes are local to the migration worktree and are not present in the
+currently deployed staging Worker. Staging selectors and provider/email
+secrets remain unset. Real verification delivery, password reset, OAuth
+provider registration/callbacks, identity linking, and user/Auth migration
+remain unverified and out of this implementation stage.
+
 ## 公式一次資料
 
 - [Better Auth installation](https://better-auth.com/docs/installation) — 依存関係と最新 package version の確認。

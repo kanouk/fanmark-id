@@ -9,6 +9,8 @@ import {
 } from "./repository";
 import { createD1RecentFanmarksRepository } from "./d1-repository";
 import { captureMfaGeneration, createAuth } from "./better-auth.mjs";
+import { isResendAuthEmailConfigured } from "./auth-email.mjs";
+import { configuredSocialProviders, type ConfiguredSocialProviders } from "./auth-social.mjs";
 import {
   AvailabilityConfigurationError,
   AvailabilityTimeoutError,
@@ -235,12 +237,13 @@ function publicAccessJsonResponse(body: unknown, status: number, headers: Header
 const AUTH_CLOSED_ENDPOINTS = new Set([
   "/sign-up/email",
   "/sign-up/username",
-  "/sign-in/social",
   "/link-social",
   "/unlink-account",
   "/change-email",
   "/delete-user",
   "/delete-user/callback",
+]);
+const AUTH_EMAIL_ENDPOINTS = new Set([
   "/forget-password",
   "/request-password-reset",
   "/reset-password",
@@ -249,7 +252,9 @@ const AUTH_CLOSED_ENDPOINTS = new Set([
 ]);
 const AUTH_KNOWN_ENDPOINTS = new Set([
   ...AUTH_CLOSED_ENDPOINTS,
+  ...AUTH_EMAIL_ENDPOINTS,
   "/sign-in/email",
+  "/sign-in/social",
   "/sign-out",
   "/get-session",
   "/change-password",
@@ -257,6 +262,7 @@ const AUTH_KNOWN_ENDPOINTS = new Set([
   "/verify-password",
   "/update-session",
   "/ok",
+  "/capabilities",
   "/list-sessions",
   "/revoke-session",
   "/revoke-sessions",
@@ -276,12 +282,20 @@ interface ConfiguredAuth {
   secret: string;
   url: string;
   trustedOrigins: string[];
+  emailBackend: string;
+  resendApiKey: string;
+  resendFromEmail: string;
+  socialProviders: ConfiguredSocialProviders;
 }
 
 interface CachedApplicationAuth {
   secret: string;
   url: string;
   trustedOrigins: string[];
+  emailBackend: string;
+  resendApiKey: string;
+  resendFromEmail: string;
+  socialProviders: ConfiguredSocialProviders;
   auth: ReturnType<typeof createAuth>;
 }
 
@@ -320,6 +334,10 @@ function configuredAuth(env: Env): ConfiguredAuth | null {
       secret,
       url: base.origin,
       trustedOrigins: [...origins],
+      emailBackend: env.AUTH_EMAIL_BACKEND?.trim() ?? "",
+      resendApiKey: env.RESEND_API_KEY?.trim() ?? "",
+      resendFromEmail: env.RESEND_FROM_EMAIL?.trim() ?? "",
+      socialProviders: configuredSocialProviders(env),
     };
   } catch {
     return null;
@@ -330,11 +348,17 @@ function createApplicationAuth(config: ConfiguredAuth, requestState: number | nu
   const cached = applicationAuthByDatabase.get(config.database);
   const sameTrustedOrigins = cached?.trustedOrigins.length === config.trustedOrigins.length &&
     cached.trustedOrigins.every((origin, index) => origin === config.trustedOrigins[index]);
+  const sameEmailConfiguration = cached?.emailBackend === config.emailBackend &&
+    cached.resendApiKey === config.resendApiKey &&
+    cached.resendFromEmail === config.resendFromEmail;
+  const sameSocialProviders = JSON.stringify(cached?.socialProviders) === JSON.stringify(config.socialProviders);
   if (
     requestState === null && cached &&
     cached.secret === config.secret &&
     cached.url === config.url &&
-    sameTrustedOrigins
+    sameTrustedOrigins &&
+    sameEmailConfiguration &&
+    sameSocialProviders
   ) return cached.auth;
 
   const auth = createAuth(
@@ -342,6 +366,9 @@ function createApplicationAuth(config: ConfiguredAuth, requestState: number | nu
       AUTH_DB: config.database,
       BETTER_AUTH_SECRET: config.secret,
       BETTER_AUTH_URL: config.url,
+      AUTH_EMAIL_BACKEND: config.emailBackend,
+      RESEND_API_KEY: config.resendApiKey,
+      RESEND_FROM_EMAIL: config.resendFromEmail,
     },
     [],
     requestState,
@@ -350,6 +377,7 @@ function createApplicationAuth(config: ConfiguredAuth, requestState: number | nu
       appName: "fanmark.id",
       issuer: "fanmark.id",
       trustedOrigins: config.trustedOrigins,
+      socialProviders: config.socialProviders,
     },
   );
 
@@ -361,6 +389,10 @@ function createApplicationAuth(config: ConfiguredAuth, requestState: number | nu
       secret: config.secret,
       url: config.url,
       trustedOrigins: [...config.trustedOrigins],
+      emailBackend: config.emailBackend,
+      resendApiKey: config.resendApiKey,
+      resendFromEmail: config.resendFromEmail,
+      socialProviders: config.socialProviders,
       auth,
     });
   }
@@ -716,7 +748,44 @@ async function handleBetterAuthRequest(request: Request, env: Env, url: URL): Pr
     return jsonResponse({ ok: true }, 200, corsHeaders);
   }
 
-  if (AUTH_CLOSED_ENDPOINTS.has(authPath) || isOAuthCallback || isResetTokenRoute) {
+  if (authPath === "/capabilities" && request.method.toUpperCase() === "GET") {
+    const emailEnabled = isResendAuthEmailConfigured({
+      AUTH_EMAIL_BACKEND: authConfig.emailBackend,
+      RESEND_API_KEY: authConfig.resendApiKey,
+      RESEND_FROM_EMAIL: authConfig.resendFromEmail,
+    });
+    return jsonResponse({
+      emailVerification: emailEnabled,
+      passwordReset: emailEnabled,
+      signUp: false,
+      socialProviders: Object.keys(authConfig.socialProviders).sort(),
+    }, 200, corsHeaders);
+  }
+
+  const emailEnabled = isResendAuthEmailConfigured({
+    AUTH_EMAIL_BACKEND: authConfig.emailBackend,
+    RESEND_API_KEY: authConfig.resendApiKey,
+    RESEND_FROM_EMAIL: authConfig.resendFromEmail,
+  });
+  let requestedSocialProvider: string | null = null;
+  if (authPath === "/sign-in/social" && request.method.toUpperCase() === "POST") {
+    try {
+      const body: unknown = await request.clone().json();
+      if (body && typeof body === "object" && "provider" in body && typeof body.provider === "string") {
+        requestedSocialProvider = body.provider;
+      }
+    } catch {
+      requestedSocialProvider = null;
+    }
+  }
+  const oauthCallbackProvider = authPath.match(/^\/callback\/([a-z]+)$/u)?.[1] ?? null;
+  if (
+    AUTH_CLOSED_ENDPOINTS.has(authPath) ||
+    (AUTH_EMAIL_ENDPOINTS.has(authPath) && !emailEnabled) ||
+    (isResetTokenRoute && !emailEnabled) ||
+    (authPath === "/sign-in/social" && (!requestedSocialProvider || !Object.hasOwn(authConfig.socialProviders, requestedSocialProvider))) ||
+    (isOAuthCallback && (!oauthCallbackProvider || !Object.hasOwn(authConfig.socialProviders, oauthCallbackProvider)))
+  ) {
     return errorResponse("auth_flow_unavailable", 403, corsHeaders);
   }
 

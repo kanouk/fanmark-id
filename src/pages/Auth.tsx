@@ -19,7 +19,10 @@ import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { PasswordRequirement as PasswordRequirementType, isPasswordValid } from '@/lib/password-validation';
 import { SimpleHeader } from '@/components/layout/SimpleHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
-import { isBetterAuthEnabled } from '@/lib/auth-backend';
+import { betterAuthClient, isBetterAuthEnabled } from '@/lib/auth-backend';
+import type { BetterAuthCapabilities } from '@/lib/better-auth-client';
+
+const SOCIAL_PROVIDER_ORDER = ['google', 'apple', 'discord', 'github'] as const;
 
 const Auth = () => {
   const { user, session } = useAuth();
@@ -31,8 +34,33 @@ const Auth = () => {
   const { requirements, isValid } = usePasswordValidation(formData.password);
   const { settings, loading: settingsLoading } = useSystemSettings();
   const betterAuthEnabled = isBetterAuthEnabled();
+  const [betterAuthCapabilities, setBetterAuthCapabilities] = useState<BetterAuthCapabilities | null>(null);
+
+  useEffect(() => {
+    if (!betterAuthEnabled) {
+      setBetterAuthCapabilities(null);
+      return;
+    }
+    let active = true;
+    void betterAuthClient.getCapabilities()
+      .then((capabilities) => {
+        if (active) setBetterAuthCapabilities(capabilities);
+      })
+      .catch(() => {
+        if (active) setBetterAuthCapabilities(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [betterAuthEnabled]);
+
   const invitationGateActive = !betterAuthEnabled && !settingsLoading && settings.invitation_mode;
-  const socialLoginAvailable = !betterAuthEnabled && !settingsLoading && settings.social_login_enabled;
+  const betterAuthSocialProviders = betterAuthEnabled
+    ? SOCIAL_PROVIDER_ORDER.filter((provider) => betterAuthCapabilities?.socialProviders.includes(provider))
+    : undefined;
+  const socialLoginAvailable = betterAuthEnabled
+    ? (betterAuthSocialProviders?.length ?? 0) > 0
+    : !settingsLoading && settings.social_login_enabled;
   const showSocialLogin = socialLoginAvailable && !invitationGateActive;
   const [invitationValidated, setInvitationValidated] = useState(false);
   const [validatedInvitationCode, setValidatedInvitationCode] = useState<string | null>(null);
@@ -217,7 +245,8 @@ const Auth = () => {
                     signInWithApple={signInWithApple}
                     t={t}
                     socialEnabled={showSocialLogin}
-                    passwordResetEnabled={!betterAuthEnabled}
+                    socialProviders={betterAuthSocialProviders}
+                    passwordResetEnabled={!betterAuthEnabled || Boolean(betterAuthCapabilities?.passwordReset)}
                   />
                 </TabsContent>
 
@@ -256,6 +285,7 @@ const Auth = () => {
                       t={t}
                       invitationRequired={invitationGateActive}
                       socialEnabled={showSocialLogin}
+                      socialProviders={betterAuthSocialProviders}
                       invitationValidated={invitationValidated}
                       validatedInvitationCode={validatedInvitationCode}
                     />
@@ -301,10 +331,11 @@ interface LoginFormProps {
   signInWithApple: () => void;
   t: (key: string) => string;
   socialEnabled: boolean;
+  socialProviders?: readonly string[];
   passwordResetEnabled: boolean;
 }
 
-const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoogle, signInWithGithub, signInWithDiscord, signInWithApple, t, socialEnabled, passwordResetEnabled }: LoginFormProps) => {
+const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoogle, signInWithGithub, signInWithDiscord, signInWithApple, t, socialEnabled, socialProviders, passwordResetEnabled }: LoginFormProps) => {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const emailStatus = formData.email ? EMAIL_REGEX.test(formData.email) : null;
   // ログイン時は最低8文字を満たしたときだけOK表示、それ以外は未入力扱いで非表示
@@ -454,7 +485,9 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoog
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {socialButtons.map(({ key, label, Icon, onClick, disabled }) => (
+            {socialButtons
+              .filter(({ key }) => !socialProviders || socialProviders.includes(key))
+              .map(({ key, label, Icon, onClick, disabled }) => (
               <Button
                 key={key}
                 type="button"
@@ -470,7 +503,7 @@ const LoginForm = ({ formData, authState, updateFormData, signIn, signInWithGoog
                   <span className="text-center text-xs leading-snug sm:text-sm">{label}</span>
                 </span>
               </Button>
-            ))}
+              ))}
           </div>
         </>
       )}
@@ -493,6 +526,7 @@ interface SignUpFormProps {
   t: (key: string) => string;
   invitationRequired?: boolean;
   socialEnabled: boolean;
+  socialProviders?: readonly string[];
   invitationValidated?: boolean;
   validatedInvitationCode?: string | null;
 }
@@ -511,6 +545,7 @@ const SignUpForm = ({
   t,
   invitationRequired = false,
   socialEnabled,
+  socialProviders,
   invitationValidated = false,
   validatedInvitationCode,
 }: SignUpFormProps) => {
@@ -756,7 +791,9 @@ const SignUpForm = ({
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {socialButtons.map(({ key, label, Icon, onClick, disabled }) => (
+          {socialButtons
+            .filter(({ key }) => !socialProviders || socialProviders.includes(key))
+            .map(({ key, label, Icon, onClick, disabled }) => (
             <Button
               key={key}
               type="button"
@@ -772,7 +809,7 @@ const SignUpForm = ({
                 <span className="text-center text-xs leading-snug sm:text-sm">{label}</span>
               </span>
             </Button>
-          ))}
+            ))}
         </div>
       </>
     )}

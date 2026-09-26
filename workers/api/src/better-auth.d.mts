@@ -2,12 +2,20 @@ interface AuthEnvironment {
   AUTH_DB: D1Database;
   BETTER_AUTH_SECRET: string;
   BETTER_AUTH_URL: string;
+  AUTH_EMAIL_BACKEND?: string;
+  RESEND_API_KEY?: string;
+  RESEND_FROM_EMAIL?: string;
 }
 
 interface BetterAuthOptions {
   appName?: string;
   issuer?: string;
   trustedOrigins?: string[];
+  socialProviders?: Partial<Record<"google" | "github" | "discord" | "apple", {
+    clientId: string;
+    clientSecret: string;
+    disableSignUp: true;
+  }>>;
 }
 
 interface BetterAuthHandler {

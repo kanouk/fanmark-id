@@ -395,6 +395,85 @@ describe("Better Auth through the application Worker", () => {
     expect(Number(count?.count ?? 0)).toBe(0);
   });
 
+  it("exposes email capabilities and reset routes only when Resend is configured", async () => {
+    const unconfigured = await authRequest("/capabilities", { method: "GET" });
+    expect(await unconfigured.json()).toEqual({
+      emailVerification: false,
+      passwordReset: false,
+      signUp: false,
+      socialProviders: [],
+    });
+
+    const emailEnv = {
+      AUTH_EMAIL_BACKEND: "resend",
+      RESEND_API_KEY: "synthetic-resend-api-key-012345",
+      RESEND_FROM_EMAIL: "Fanmark <auth@example.test>",
+    };
+    const configured = await authRequest("/capabilities", { method: "GET" }, emailEnv);
+    expect(await configured.json()).toEqual({
+      emailVerification: true,
+      passwordReset: true,
+      signUp: false,
+      socialProviders: [],
+    });
+
+    const email = `missing-${crypto.randomUUID()}@example.invalid`;
+    const resetRequest = await authRequest("/request-password-reset", jsonBody({
+      email,
+      redirectTo: `${appOrigin}/reset-password`,
+    }), emailEnv);
+    expect(resetRequest.status).toBe(200);
+    expect(JSON.stringify(await resetRequest.json())).not.toContain(email);
+
+    const resetLink = await authRequest(
+      "/reset-password/synthetic-reset-token-1234567890?callbackURL=https%3A%2F%2Fapp.example.test%2Freset-password",
+      { method: "GET" },
+      emailEnv,
+    );
+    expect(resetLink.status).not.toBe(403);
+
+    const signup = await authRequest("/sign-up/email", jsonBody({
+      email: `signup-${crypto.randomUUID()}@example.invalid`,
+      password,
+      name: "Synthetic user",
+    }), emailEnv);
+    expect(signup.status).toBe(403);
+    expect(await signup.json()).toEqual({ error: "auth_flow_unavailable" });
+  });
+
+  it("starts only explicitly configured OAuth providers and never enables social signup", async () => {
+    const providerEnv = {
+      AUTH_SOCIAL_BACKEND: "better-auth",
+      GOOGLE_OAUTH_CLIENT_ID: "synthetic-google-client-id",
+      GOOGLE_OAUTH_CLIENT_SECRET: "synthetic-google-client-secret",
+    };
+    const capabilities = await authRequest("/capabilities", { method: "GET" }, providerEnv);
+    expect(await capabilities.json()).toEqual({
+      emailVerification: false,
+      passwordReset: false,
+      signUp: false,
+      socialProviders: ["google"],
+    });
+
+    const start = await authRequest("/sign-in/social", jsonBody({
+      provider: "google",
+      callbackURL: `${appOrigin}/auth`,
+    }), providerEnv);
+    expect(start.status).toBe(200);
+    const response = await start.json() as { url?: unknown; redirect?: unknown };
+    expect(response.redirect).toBe(true);
+    expect(typeof response.url).toBe("string");
+    expect(response.url).toContain("accounts.google.com");
+    expect(JSON.stringify(response)).not.toContain(providerEnv.GOOGLE_OAUTH_CLIENT_SECRET);
+
+    const unconfiguredProvider = await authRequest("/sign-in/social", jsonBody({
+      provider: "discord",
+      callbackURL: `${appOrigin}/auth`,
+    }), providerEnv);
+    expect(unconfiguredProvider.status).toBe(403);
+    expect(await unconfiguredProvider.json()).toEqual({ error: "auth_flow_unavailable" });
+  });
+
   it("handles concurrent sign-ins through the same Worker route", async () => {
     const responses = await Promise.all(
       Array.from({ length: 4 }, () => authRequest("/sign-in/email", {

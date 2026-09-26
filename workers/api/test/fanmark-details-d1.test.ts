@@ -17,6 +17,17 @@ const CURRENT_LICENSE_ID = "45222222-2222-4222-8222-222222222222";
 const ENTRY_ID = "45333333-3333-4333-8333-333333333333";
 const NOW = "2026-09-26T00:00:00.000Z";
 
+interface FanmarkDetailsTestResult extends Record<string, unknown> {
+  short_id: string;
+  is_current_owner: boolean;
+  has_pending_lottery: boolean;
+  is_favorited: boolean;
+  lottery_entry_count: number;
+  license_history: Array<{ username: string; status: string }>;
+  history_available: boolean;
+  current_owner_username: string | null;
+}
+
 const ownerAuth: StorageAuthResolver = async () => ({ available: true, userId: USER_ID });
 const otherAuth: StorageAuthResolver = async () => ({ available: true, userId: OTHER_USER_ID });
 const anonymousAuth: StorageAuthResolver = async () => ({ available: true, userId: null });
@@ -72,7 +83,7 @@ describe("authenticated fanmark details D1 API", () => {
     expect(response?.status).toBe(200);
     expect(response?.headers.get("cache-control")).toBe("no-store");
     const serialized = await response!.text();
-    const payload = JSON.parse(serialized) as { schemaVersion: number; result: Record<string, unknown> };
+    const payload = JSON.parse(serialized) as { schemaVersion: number; result: FanmarkDetailsTestResult };
     expect(payload.schemaVersion).toBe(1);
     expect(payload.result.short_id).toBe("rose-owned");
     expect(payload.result.is_current_owner).toBe(true);
@@ -91,7 +102,7 @@ describe("authenticated fanmark details D1 API", () => {
 
   it("serves an anonymous-safe projection, reports missing short IDs, and rejects malformed requests", async () => {
     const anonymous = await handleFanmarkDetailsRequest(await request({ shortId: "rose-owned" }), runtimeEnv, anonymousAuth);
-    const anonymousPayload = await anonymous?.json() as { result: Record<string, unknown> };
+    const anonymousPayload = await anonymous?.json() as { result: FanmarkDetailsTestResult };
     expect(anonymous?.status).toBe(200);
     expect(anonymousPayload.result.history_available).toBe(false);
     expect(anonymousPayload.result.license_history).toEqual([]);

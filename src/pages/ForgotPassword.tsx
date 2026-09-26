@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { betterAuthClient, isBetterAuthEnabled } from "@/lib/auth-backend";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,34 +28,50 @@ const InputStatusIcon = ({ status }: { status: boolean | null }) => {
 };
 
 const ForgotPassword = () => {
+  const navigate = useNavigate();
+  const betterAuthEnabled = isBetterAuthEnabled();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
   const { t } = useTranslation();
 
+  useEffect(() => {
+    if (!betterAuthEnabled) return;
+    let active = true;
+    void betterAuthClient.getCapabilities()
+      .then((capabilities) => {
+        if (active && !capabilities.passwordReset) navigate("/auth", { replace: true });
+      })
+      .catch(() => {
+        if (active) navigate("/auth", { replace: true });
+      });
+    return () => {
+      active = false;
+    };
+  }, [betterAuthEnabled, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`
-      });
-
-      if (error) {
-        toast({
-          title: t('common.error'),
-          description: error.message,
-          variant: "destructive",
-        });
+      if (betterAuthEnabled) {
+        await betterAuthClient.requestPasswordReset(
+          email,
+          `${window.location.origin}/reset-password`,
+        );
       } else {
-        setIsSubmitted(true);
-        toast({
-          title: t('auth.resetEmailSent'),
-          description: t('auth.resetEmailDescription'),
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`
         });
+        if (error) throw error;
       }
+      setIsSubmitted(true);
+      toast({
+        title: t('auth.resetEmailSent'),
+        description: t('auth.resetEmailDescription'),
+      });
     } catch (error) {
       toast({
         title: t('common.error'),

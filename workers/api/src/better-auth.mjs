@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { createAuthMiddleware } from "better-auth/api";
 import bcrypt from "bcryptjs";
 import { twoFactor } from "better-auth/plugins";
+import { isResendAuthEmailConfigured, sendResendAuthEmail } from "./auth-email.mjs";
 
 const bcryptPassword = {
   async hash(password) {
@@ -167,6 +168,7 @@ export function createAuth(
 ) {
   const appName = authOptions.appName ?? "fanmark-auth-feasibility";
   const issuer = authOptions.issuer ?? appName;
+  const resendEmailConfigured = isResendAuthEmailConfigured(env);
   const plugins = [
     twoFactor({ issuer }),
     createAdminMfaAssurancePlugin(env, requestState, assuranceBarrier),
@@ -188,10 +190,33 @@ export function createAuth(
     },
     emailAndPassword: {
       enabled: true,
+      disableSignUp: true,
       autoSignIn: false,
       requireEmailVerification: true,
       password: bcryptPassword,
+      ...(resendEmailConfigured
+        ? {
+            sendResetPassword: async ({ user, url }) => sendResendAuthEmail(env, {
+              kind: "passwordReset",
+              to: user.email,
+              url,
+            }),
+          }
+        : {}),
     },
+    ...(resendEmailConfigured
+      ? {
+          emailVerification: {
+            sendOnSignUp: true,
+            sendVerificationEmail: async ({ user, url }) => sendResendAuthEmail(env, {
+              kind: "verification",
+              to: user.email,
+              url,
+            }),
+          },
+        }
+      : {}),
+    socialProviders: authOptions.socialProviders ?? {},
     plugins,
   });
 }

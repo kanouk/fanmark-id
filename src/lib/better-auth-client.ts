@@ -37,6 +37,13 @@ export interface BetterAuthTotpEnrollment {
   backupCodes: string[];
 }
 
+export interface BetterAuthCapabilities {
+  emailVerification: boolean;
+  passwordReset: boolean;
+  signUp: boolean;
+  socialProviders: string[];
+}
+
 export type BetterAuthTotpVerification =
   | { status: true }
   | { token: string; user: BetterAuthUser };
@@ -132,6 +139,32 @@ export const createBetterAuthClient = ({ baseUrl, fetchImpl = fetch }: BetterAut
   };
 
   return {
+    async getCapabilities(): Promise<BetterAuthCapabilities> {
+      const response = await fetchImpl(endpoint('capabilities'), {
+        method: 'GET',
+        credentials: 'include',
+        cache: 'no-store',
+        headers: { accept: 'application/json' },
+      });
+      const body = await readJson(response);
+      if (!response.ok) throw responseError(response.status, body);
+      if (!body || typeof body !== 'object') throw new Error('Better Auth returned invalid capabilities');
+      const candidate = body as Record<string, unknown>;
+      if (
+        typeof candidate.emailVerification !== 'boolean' ||
+        typeof candidate.passwordReset !== 'boolean' ||
+        typeof candidate.signUp !== 'boolean' ||
+        !Array.isArray(candidate.socialProviders) ||
+        !candidate.socialProviders.every((provider) => typeof provider === 'string')
+      ) throw new Error('Better Auth returned invalid capabilities');
+      return {
+        emailVerification: candidate.emailVerification,
+        passwordReset: candidate.passwordReset,
+        signUp: candidate.signUp,
+        socialProviders: candidate.socialProviders as string[],
+      };
+    },
+
     async getSession(): Promise<BetterAuthSessionResponse | null> {
       const response = await fetchImpl(endpoint('get-session'), {
         method: 'GET',
@@ -151,6 +184,49 @@ export const createBetterAuthClient = ({ baseUrl, fetchImpl = fetch }: BetterAut
       if (isTwoFactorRedirect(body)) return body;
       if (!isSessionResponse(body)) throw new Error('Better Auth returned an invalid sign-in response');
       return body;
+    },
+
+    async signInWithSocial(
+      provider: 'google' | 'github' | 'discord' | 'apple',
+      callbackURL: string,
+    ): Promise<string> {
+      const body = await postAuth('sign-in/social', {
+        provider,
+        callbackURL,
+        newUserCallbackURL: callbackURL,
+        errorCallbackURL: callbackURL,
+      });
+      if (
+        !body || typeof body !== 'object' ||
+        typeof (body as { url?: unknown }).url !== 'string' ||
+        (body as { redirect?: unknown }).redirect !== true
+      ) throw new Error('Better Auth returned an invalid social sign-in response');
+      const destination = new URL((body as { url: string }).url);
+      if (destination.protocol !== 'https:' || destination.username || destination.password) {
+        throw new Error('Better Auth returned an unsafe social sign-in URL');
+      }
+      return destination.href;
+    },
+
+    async requestPasswordReset(email: string, redirectTo: string): Promise<void> {
+      const body = await postAuth('request-password-reset', { email, redirectTo });
+      if (!body || typeof body !== 'object' || (body as { status?: unknown }).status !== true) {
+        throw new Error('Better Auth did not accept the password reset request');
+      }
+    },
+
+    async sendVerificationEmail(email: string, callbackURL: string): Promise<void> {
+      const body = await postAuth('send-verification-email', { email, callbackURL });
+      if (!body || typeof body !== 'object' || (body as { status?: unknown }).status !== true) {
+        throw new Error('Better Auth did not accept the verification email request');
+      }
+    },
+
+    async resetPassword(token: string, newPassword: string): Promise<void> {
+      const body = await postAuth('reset-password', { token, newPassword });
+      if (!body || typeof body !== 'object' || (body as { status?: unknown }).status !== true) {
+        throw new Error('Better Auth did not reset the password');
+      }
     },
 
     async enableTotp(password: string): Promise<BetterAuthTotpEnrollment> {
