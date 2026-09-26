@@ -18,6 +18,7 @@ import {
   sha256Hex,
 } from "./snapshot-format.mjs";
 import { compileCredentialDescriptor } from "./credential-descriptor.mjs";
+import { isD1ProviderObject } from "./d1-provider-objects.mjs";
 import {
   generateLifecycleTargetSchema,
   validateLifecycleTargetPlan,
@@ -341,16 +342,16 @@ function comparePlanField(left, right, field, code = "credential_transform_plan_
   if (canonicalJson(left[field]) !== canonicalJson(right[field])) fail(code);
 }
 
-function validateProfilePlans({ catalog, convertedSchema, lifecyclePlan, generationPlan }) {
+function validateProfilePlans({ catalog, convertedSchema, lifecyclePlan, generationPlan, descriptor }) {
   let converted;
   try {
-    converted = convertedSchema ?? convertSchema(catalog);
+    converted = convertedSchema ?? convertSchema(catalog, { credentialDescriptor: descriptor });
     validateLifecycleTargetPlan(lifecyclePlan);
-    const expectedLifecycle = generateLifecycleTargetSchema({ catalog, convertedSchema: converted });
+    const expectedLifecycle = generateLifecycleTargetSchema({ catalog, convertedSchema: converted, credentialDescriptor: descriptor });
     for (const field of ["schemaVersion", "sourceFingerprint", "sourceCatalogFingerprint", "sourceReportFingerprint", "sourceSchemaSql", "sourceObjectInventory", "statements", "objectInventory", "extensionDigest"]) {
       comparePlanField(lifecyclePlan, expectedLifecycle, field, "credential_transform_lifecycle_plan_mismatch");
     }
-    const expectedGeneration = generateLifecycleGenerationSchema({ catalog, convertedSchema: converted, lifecyclePlan: expectedLifecycle });
+    const expectedGeneration = generateLifecycleGenerationSchema({ catalog, convertedSchema: converted, lifecyclePlan: expectedLifecycle, credentialDescriptor: descriptor });
     if (!isPlainObject(generationPlan) || generationPlan.schemaVersion !== LIFECYCLE_GENERATION_SCHEMA_VERSION) fail("credential_transform_generation_plan_mismatch");
     for (const field of ["schemaVersion", "lifecycleSchemaVersion", "lifecycleExtensionDigest", "sourceFingerprint", "sourceObjectInventory", "statements", "objectInventory", "extensionDigest"]) {
       comparePlanField(generationPlan, expectedGeneration, field, "credential_transform_generation_plan_mismatch");
@@ -365,13 +366,13 @@ function validateProfilePlans({ catalog, convertedSchema, lifecyclePlan, generat
 
 export function generateCredentialTransformSchema({ catalog, convertedSchema, lifecyclePlan, generationPlan, descriptor } = {}) {
   if (!isPlainObject(catalog) || !isPlainObject(lifecyclePlan) || !isPlainObject(generationPlan)) fail("credential_transform_configuration_invalid");
-  const profile = validateProfilePlans({ catalog, convertedSchema, lifecyclePlan, generationPlan });
   let mapping;
   try {
     mapping = compileCredentialDescriptor({ catalog, descriptor });
   } catch {
     fail("credential_transform_descriptor_invalid");
   }
+  const profile = validateProfilePlans({ catalog, convertedSchema, lifecyclePlan, generationPlan, descriptor: mapping.descriptor });
   const targetProfile = {
     sourceFingerprint: profile.lifecycle.sourceFingerprint,
     sourceCatalogFingerprint: profile.lifecycle.sourceCatalogFingerprint,
@@ -439,8 +440,6 @@ async function readObjects(database) {
   return objects;
 }
 
-const PROVIDER_OBJECT = objectKey("table", "_cf_METADATA");
-
 function assertObjects(actual, expected, code, allowed = new Set()) {
   const expectedByKey = new Map(expected.map((object) => [objectKey(object.type, object.name), object]));
   for (const object of expected) {
@@ -449,7 +448,7 @@ function assertObjects(actual, expected, code, allowed = new Set()) {
     if (String(row.type) !== object.type || normalizedSql(row.sql) !== normalizedSql(object.sql)) fail(`${code}_mismatch`);
   }
   for (const [key, row] of actual) {
-    if (expectedByKey.has(key) || allowed.has(key) || key === PROVIDER_OBJECT) continue;
+    if (expectedByKey.has(key) || allowed.has(key) || isD1ProviderObject(row.type, row.name)) continue;
     fail(`${code}_unexpected`);
   }
 }
@@ -462,7 +461,8 @@ function assertBaseline(actual, baseline, extensionKeys) {
     if (String(row.type) !== object.type || normalizedSql(row.sql) !== normalizedSql(object.sql)) fail("credential_transform_base_schema_mismatch");
   }
   for (const key of actual.keys()) {
-    if (baseline.some((object) => objectKey(object.type, object.name) === key) || allowed.has(key) || key === PROVIDER_OBJECT) continue;
+    const row = actual.get(key);
+    if (baseline.some((object) => objectKey(object.type, object.name) === key) || allowed.has(key) || isD1ProviderObject(row.type, row.name)) continue;
     fail("credential_transform_base_schema_unexpected");
   }
 }
@@ -491,15 +491,36 @@ function validatePlanAgainstInputs({ catalog, convertedSchema, lifecyclePlan, ge
   }
 }
 
-export async function inspectCredentialTransformSchema(database, plan, { catalog, convertedSchema, lifecyclePlan, generationPlan, descriptor } = {}) {
+export async function inspectCredentialTransformSchema(database, plan, {
+  catalog,
+  convertedSchema,
+  lifecyclePlan,
+  generationPlan,
+  descriptor,
+  additionalObjects = [],
+} = {}) {
   if (!database || typeof database.prepare !== "function") fail("invalid_target_database");
   if (!catalog || !lifecyclePlan || !generationPlan || !descriptor) fail("credential_transform_profile_missing");
+  if (!Array.isArray(additionalObjects) || additionalObjects.some((object) =>
+    !object || typeof object.type !== "string" || typeof object.name !== "string" || typeof object.sql !== "string")) {
+    fail("credential_transform_additional_inventory_invalid");
+  }
   validatePlanAgainstInputs({ catalog, convertedSchema, lifecyclePlan, generationPlan, descriptor, plan });
-  const profile = validateProfilePlans({ catalog, convertedSchema, lifecyclePlan, generationPlan });
+  const profile = validateProfilePlans({ catalog, convertedSchema, lifecyclePlan, generationPlan, descriptor });
   const baseline = profileObjects(profile.lifecycle, profile.generation);
   const state = await extensionState(database, plan);
-  assertBaseline(state.actual, baseline, [...CREDENTIAL_TRANSFORM_TABLE_NAMES.map((name) => objectKey("table", name)), ...CREDENTIAL_TRANSFORM_INDEX_NAMES.map((name) => objectKey("index", name))]);
-  if (state.complete) assertObjects(state.actual, [...baseline, ...plan.objectInventory.tables, ...plan.objectInventory.indexes].sort(compareObjects), "credential_transform_schema");
+  assertBaseline(state.actual, baseline, [
+    ...CREDENTIAL_TRANSFORM_TABLE_NAMES.map((name) => objectKey("table", name)),
+    ...CREDENTIAL_TRANSFORM_INDEX_NAMES.map((name) => objectKey("index", name)),
+    ...additionalObjects.map((object) => objectKey(object.type, object.name)),
+  ]);
+  if (state.complete) {
+    assertObjects(
+      state.actual,
+      [...baseline, ...plan.objectInventory.tables, ...plan.objectInventory.indexes, ...additionalObjects].sort(compareObjects),
+      "credential_transform_schema",
+    );
+  }
   return { ...state, extensionDigest: plan.extensionDigest, targetProfileFingerprint: plan.targetProfileFingerprint };
 }
 

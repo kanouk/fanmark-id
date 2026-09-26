@@ -700,7 +700,7 @@ async function completeRun(database, runId, expectedCursor) {
   return resultChanges(result) === 1;
 }
 
-function summaryFromRun(run, results = []) {
+function summaryFromRun(run, results = [], pagesProcessed = 0) {
   return {
     runId: run.run_id,
     capturedNow: run.captured_now,
@@ -708,6 +708,7 @@ function summaryFromRun(run, results = []) {
     candidateCount: Number(run.candidate_count),
     processed: Number(run.processed_count),
     conflicts: Number(run.conflict_count),
+    pagesProcessed,
     status: run.status,
     results,
   };
@@ -725,6 +726,7 @@ export function createSourceLicenseExpiryRepository({
   schemaExtensionDigest,
   capturedNow,
   gracePeriodDays,
+  maxPages,
   uuidFactory = defaultUuidFactory,
 }) {
   assertDatabase(database);
@@ -738,12 +740,16 @@ export function createSourceLicenseExpiryRepository({
     gracePeriodDays: assertDays(gracePeriodDays),
   };
   if (typeof uuidFactory !== "function") throw fail("invalid_uuid_factory");
+  if (maxPages !== undefined && (!Number.isSafeInteger(maxPages) || maxPages < 1 || maxPages > 100)) {
+    throw fail("invalid_max_pages");
+  }
 
   return {
     async runActiveToGrace() {
       let run = await ensureRun(database, bindings);
       if (run.status === "completed") return summaryFromRun(run);
       const samples = [];
+      let pagesProcessed = 0;
 
       while (true) {
         run = await readRun(database, bindings.runId);
@@ -754,7 +760,10 @@ export function createSourceLicenseExpiryRepository({
           run.captured_now !== bindings.capturedNow ||
           Number(run.grace_period_days) !== bindings.gracePeriodDays
         ) throw fail("run_binding_mismatch");
-        if (run.status === "completed") return summaryFromRun(run, samples);
+        if (run.status === "completed") return summaryFromRun(run, samples, pagesProcessed);
+        if (maxPages !== undefined && pagesProcessed >= maxPages) {
+          return summaryFromRun(run, samples, pagesProcessed);
+        }
 
         const cursor = String(run.last_license_id ?? "");
         let page = await readRunItemsPage(database, bindings.runId, cursor);
@@ -773,7 +782,7 @@ export function createSourceLicenseExpiryRepository({
             }
             const completed = await readRun(database, bindings.runId);
             if (!completed) throw fail("run_record_query_failed");
-            return summaryFromRun(completed, samples);
+            return summaryFromRun(completed, samples, pagesProcessed);
           }
           await seedRunItems(database, bindings.runId, candidates, bindings.gracePeriodDays, uuidFactory);
           page = await readRunItemsPage(database, bindings.runId, cursor);
@@ -807,6 +816,7 @@ export function createSourceLicenseExpiryRepository({
           page.at(-1).licenseId,
           counts,
         );
+        pagesProcessed += 1;
         if (advanced) {
           for (const item of pageResults) {
             if (samples.length >= SOURCE_EXPIRY_RESULT_LIMIT) break;

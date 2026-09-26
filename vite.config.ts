@@ -6,6 +6,9 @@ import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  // Point staging verification builds at a known-empty directory so they do
+  // not implicitly load workstation-specific credentials from mode files.
+  envDir: process.env.FANMARK_VITE_ENV_DIR?.trim() || undefined,
   server: {
     host: "::",
     port: 8080,

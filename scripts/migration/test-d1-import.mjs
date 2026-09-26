@@ -15,8 +15,9 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { test } from "node:test";
 
 import { convertSchema } from "./schema-convert.mjs";
-import { createTargetIncarnation, importD1Snapshot } from "./d1-import.mjs";
+import { createTargetIncarnation, importD1Snapshot, importEncryptedD1Snapshot } from "./d1-import.mjs";
 import { exportSnapshot } from "./snapshot-export.mjs";
+import { sealSnapshotDirectory } from "./snapshot-encryption.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const nodeModulesMiniflare = path.join(repoRoot, "workers/api/node_modules/miniflare/dist/src/index.js");
@@ -31,7 +32,7 @@ function column(table_name, column_name, ordinal, postgres_type, options = {}) {
     type_name: options.type_name ?? postgres_type,
     type_kind: options.type_kind ?? "b",
     not_null: options.not_null ?? false,
-    default_expression: null,
+    default_expression: options.default_expression ?? null,
     identity: "",
     generated: "",
     collation: null,
@@ -68,6 +69,38 @@ function fixtureCatalog() {
     rls_policies: [],
     views: [],
     functions: [],
+  };
+}
+
+function sequenceFixture({ isCalled = true, lastValue = "25", includeRow = true } = {}) {
+  const catalog = fixtureCatalog();
+  catalog.columns.push(column("fanmark_events", "id", 1, "bigint", {
+    not_null: true,
+    default_expression: "nextval('public.fanmark_events_id_seq'::regclass)",
+  }));
+  catalog.constraints.push({ table_name: "fanmark_events", name: "fanmark_events_pkey", kind: "p", definition: "PRIMARY KEY (id)", validated: true, deferrable: false, initially_deferred: false });
+  const rows = fixtureRows();
+  rows.fanmark_events = includeRow
+    ? [{ schemaVersion: 1, table: "fanmark_events", columns: ["id"], values: { id: "7" }, arrayMetadata: {} }]
+    : [];
+  return {
+    catalog,
+    rows,
+    sequenceStates: [{
+      schema: "public",
+      name: "fanmark_events_id_seq",
+      ownerSchema: "public",
+      ownerTable: "fanmark_events",
+      ownerColumn: "id",
+      startValue: "1",
+      incrementBy: "1",
+      minValue: "1",
+      maxValue: "9223372036854775807",
+      cacheSize: "1",
+      cycle: false,
+      lastValue,
+      isCalled,
+    }],
   };
 }
 
@@ -151,6 +184,26 @@ function credentialFixture() {
     deferrable: false,
     initially_deferred: false,
   });
+  catalog.constraints.push(
+    {
+      table_name: "fanmark_password_configs",
+      name: "fanmark_password_configs_license_id_key",
+      kind: "u",
+      definition: "UNIQUE (license_id)",
+      validated: true,
+      deferrable: false,
+      initially_deferred: false,
+    },
+    {
+      table_name: "fanmark_password_configs",
+      name: "fanmark_password_configs_license_id_fkey",
+      kind: "f",
+      definition: "FOREIGN KEY (license_id) REFERENCES public.fanmark_licenses(id) ON DELETE CASCADE",
+      validated: true,
+      deferrable: false,
+      initially_deferred: false,
+    },
+  );
   const rows = fixtureRows();
   rows.fanmark_password_configs = [{
     schemaVersion: 1,
@@ -166,7 +219,26 @@ function credentialFixture() {
     },
     arrayMetadata: {},
   }];
-  return { catalog, rows };
+  return {
+    catalog,
+    rows,
+    credentialDescriptor: {
+      version: 1,
+      sourceRelation: "fanmark_password_configs",
+      sourceColumn: "access_password",
+      sourcePrimaryKeyColumns: ["id"],
+      enabledColumn: "is_enabled",
+      licenseColumn: "license_id",
+      destinationRelation: "fanmark_password_configs",
+      destinationColumn: "access_password",
+      transformKind: "credential_to_bcrypt",
+      codecId: "bcryptjs@3.0.3",
+      codecCost: 10,
+      transformContractVersion: 1,
+      policyVersion: 1,
+      inactiveLicensePolicy: "migration_gate",
+    },
+  };
 }
 
 function largePayloadFixture(length) {
@@ -204,13 +276,16 @@ function wideFixture(columnCount, nameLength = 8) {
   };
 }
 
-function fakeSession(catalog, rows) {
+function fakeSession(catalog, rows, sequenceStates = []) {
   return {
     async begin() {
       return { currentUser: "postgres", isolation: "repeatable read", readOnly: true };
     },
     async readCatalog() {
       return catalog;
+    },
+    async readSequenceStates() {
+      return sequenceStates;
     },
     async *streamTable({ table }) {
       for (const envelope of rows[table] ?? []) yield envelope;
@@ -224,9 +299,9 @@ function fakeSession(catalog, rows) {
   };
 }
 
-async function makeSnapshot({ catalog = fixtureCatalog(), rows = fixtureRows() } = {}) {
+async function makeSnapshot({ catalog = fixtureCatalog(), rows = fixtureRows(), credentialDescriptor, sequenceStates = [] } = {}) {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), "fanmark-d1-snapshot-"));
-  const result = await exportSnapshot({ catalog, outputDir: directory, session: fakeSession(catalog, rows) });
+  const result = await exportSnapshot({ catalog, credentialDescriptor, outputDir: directory, session: fakeSession(catalog, rows, sequenceStates) });
   return { directory, manifestPath: result.manifestPath, runId: result.runId, catalog, rows };
 }
 
@@ -691,5 +766,69 @@ if (isMain) test("allows only explicitly reviewed Auth identity gates in local m
 if (isMain) {
   test("imports synthetic parent/child rows through local Miniflare D1 and independently reads them back", async () => {
     await runLocalD1Integration();
+  });
+
+  test("seeds the exact called sequence watermark and the next D1 event ID", async () => {
+    const fixture = await openFixture(sequenceFixture());
+    try {
+      const result = await importD1Snapshot(importOptions(fixture));
+      assert.equal(result.status, "public_rows_reconciled");
+      assert.equal(result.sequenceStateCount, 1);
+      const sequence = await fixture.database.prepare('SELECT CAST("seq" AS TEXT) AS "seq" FROM "sqlite_sequence" WHERE "name" = ?').bind("fanmark_events").all();
+      assert.deepEqual(sequence.results, [{ seq: "25" }]);
+      await fixture.database.prepare('INSERT INTO "fanmark_events" DEFAULT VALUES').run();
+      const events = await fixture.database.prepare('SELECT "id" FROM "fanmark_events" ORDER BY "id"').all();
+      assert.deepEqual(events.results, [{ id: 7 }, { id: 26 }]);
+      const report = JSON.parse(await fs.readFile(fixture.reportPath, "utf8"));
+      assert.deepEqual(report.sequenceStates, [{
+        schema: "public",
+        name: "fanmark_events_id_seq",
+        lastValue: "25",
+        isCalled: true,
+        sourceWatermark: "25",
+        importedTableMax: "7",
+        priorTargetWatermark: "7",
+        targetWatermark: "25",
+        readbackWatermark: "25",
+      }]);
+    } finally {
+      await fixture.close();
+    }
+  });
+
+  test("preserves is_called=false so an unused sequence still allocates its start value", async () => {
+    const fixture = await openFixture(sequenceFixture({ isCalled: false, lastValue: "1", includeRow: false }));
+    try {
+      await importD1Snapshot(importOptions(fixture));
+      const sequence = await fixture.database.prepare('SELECT CAST("seq" AS TEXT) AS "seq" FROM "sqlite_sequence" WHERE "name" = ?').bind("fanmark_events").all();
+      assert.deepEqual(sequence.results, [{ seq: "0" }]);
+      await fixture.database.prepare('INSERT INTO "fanmark_events" DEFAULT VALUES').run();
+      const events = await fixture.database.prepare('SELECT "id" FROM "fanmark_events"').all();
+      assert.deepEqual(events.results, [{ id: 1 }]);
+    } finally {
+      await fixture.close();
+    }
+  });
+
+  test("opens an authenticated encrypted snapshot for D1 import and cleans the plaintext restore", async () => {
+    const fixture = await openFixture();
+    const bundleDir = path.join(fixture.reportDirectory, "encrypted-snapshot");
+    const encryptionKey = Buffer.alloc(32, 13);
+    try {
+      const restoreTempsBefore = (await fs.readdir(os.tmpdir())).filter((name) => name.startsWith("fanmark-snapshot-restore-")).sort();
+      await sealSnapshotDirectory({ sourceDir: fixture.directory, bundleDir, encryptionKey });
+      const result = await importEncryptedD1Snapshot({
+        ...importOptions(fixture),
+        bundleDir,
+        encryptionKey,
+      });
+      assert.equal(result.status, "public_rows_reconciled");
+      const parent = await fixture.database.prepare('SELECT "id", "label" FROM "parent"').all();
+      assert.deepEqual(parent.results, [{ id: parentId, label: "parent row" }]);
+      const restoreTempsAfter = (await fs.readdir(os.tmpdir())).filter((name) => name.startsWith("fanmark-snapshot-restore-")).sort();
+      assert.deepEqual(restoreTempsAfter, restoreTempsBefore);
+    } finally {
+      await fixture.close();
+    }
   });
 }

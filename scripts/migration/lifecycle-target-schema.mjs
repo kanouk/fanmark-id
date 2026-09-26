@@ -11,6 +11,7 @@
  */
 
 import { convertSchema } from "./schema-convert.mjs";
+import { isD1ProviderObject } from "./d1-provider-objects.mjs";
 import {
   canonicalJson,
   catalogFingerprint,
@@ -18,7 +19,7 @@ import {
   sha256Hex,
 } from "./snapshot-format.mjs";
 
-export const LIFECYCLE_TARGET_SCHEMA_VERSION = 2;
+export const LIFECYCLE_TARGET_SCHEMA_VERSION = 4;
 export const MAX_SAFE_SQL_INTEGER = Number.MAX_SAFE_INTEGER;
 
 const IDENTIFIER_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
@@ -27,6 +28,11 @@ const SOURCE_TABLES = [
   "fanmarks",
   "audit_logs",
   "notification_events",
+  "fanmark_basic_configs",
+  "fanmark_redirect_configs",
+  "fanmark_messageboard_configs",
+  "fanmark_password_configs",
+  "fanmark_lottery_entries",
 ];
 
 const REQUIRED_SOURCE_COLUMNS = {
@@ -69,6 +75,23 @@ const REQUIRED_SOURCE_COLUMNS = {
     created_at: { postgresType: "timestamp with time zone", notNull: true },
     updated_at: { postgresType: "timestamp with time zone", notNull: true },
   },
+  fanmark_basic_configs: {
+    license_id: { postgresType: "uuid", notNull: true },
+  },
+  fanmark_redirect_configs: {
+    license_id: { postgresType: "uuid", notNull: true },
+  },
+  fanmark_messageboard_configs: {
+    license_id: { postgresType: "uuid", notNull: true },
+  },
+  fanmark_password_configs: {
+    license_id: { postgresType: "uuid", notNull: true },
+  },
+  fanmark_lottery_entries: {
+    id: { postgresType: "uuid", notNull: true, primaryKey: true },
+    license_id: { postgresType: "uuid", notNull: true },
+    entry_status: { postgresType: "text", notNull: true },
+  },
 };
 
 const EXTENSION_TABLE_NAMES = [
@@ -77,6 +100,8 @@ const EXTENSION_TABLE_NAMES = [
   "license_expiry_runs",
   "license_expiry_run_items",
   "license_expiry_effect_guards",
+  "license_grace_finalization_runs",
+  "license_grace_finalization_items",
 ];
 
 const EXTENSION_INDEX_NAMES = [
@@ -84,6 +109,8 @@ const EXTENSION_INDEX_NAMES = [
   "fanmark_licenses_lifecycle_claim",
   "fanmark_license_incarnations_scan",
   "license_expiry_run_items_cursor",
+  "fanmark_licenses_grace_finalization_scan",
+  "license_grace_finalization_items_cursor",
 ];
 
 const ALTERED_LICENSE_COLUMNS = ["lifecycle_generation", "lifecycle_claim_id"];
@@ -422,6 +449,53 @@ function buildExtensionDefinition() {
         `"allowed" INTEGER NOT NULL CHECK (typeof("allowed") = 'integer' AND "allowed" = 1)`,
       ],
     },
+    {
+      name: "license_grace_finalization_runs",
+      lines: [
+        '"run_id" TEXT PRIMARY KEY NOT NULL',
+        '"target_incarnation" TEXT NOT NULL',
+        '"schema_extension_digest" TEXT NOT NULL',
+        '"captured_now" TEXT NOT NULL',
+        '"status" TEXT NOT NULL CHECK ("status" IN (\'running\', \'completed\'))',
+        '"last_license_id" TEXT NOT NULL DEFAULT \'\'',
+        `"candidate_count" INTEGER NOT NULL DEFAULT 0 CHECK (typeof("candidate_count") = 'integer' AND "candidate_count" BETWEEN 0 AND ${safe})`,
+        `"processed_count" INTEGER NOT NULL DEFAULT 0 CHECK (typeof("processed_count") = 'integer' AND "processed_count" BETWEEN 0 AND ${safe})`,
+        `"conflict_count" INTEGER NOT NULL DEFAULT 0 CHECK (typeof("conflict_count") = 'integer' AND "conflict_count" BETWEEN 0 AND ${safe})`,
+        '"completed_at" TEXT',
+      ],
+    },
+    {
+      name: "license_grace_finalization_items",
+      lines: [
+        '"run_id" TEXT NOT NULL REFERENCES "license_grace_finalization_runs"("run_id")',
+        '"license_id" TEXT NOT NULL REFERENCES "fanmark_licenses"("id")',
+        '"fanmark_id" TEXT NOT NULL REFERENCES "fanmarks"("id")',
+        '"fanmark_short_id" TEXT NOT NULL',
+        '"fanmark_name" TEXT NOT NULL',
+        '"user_id" TEXT',
+        '"license_end" TEXT',
+        '"grace_expires_at" TEXT NOT NULL',
+        '"is_returned" INTEGER NOT NULL CHECK (typeof("is_returned") = \'integer\' AND "is_returned" IN (0, 1))',
+        `"license_incarnation" INTEGER NOT NULL CHECK (${extensionColumnCheck("license_incarnation")})`,
+        `"license_lifecycle_generation" INTEGER NOT NULL CHECK (${extensionColumnCheck("license_lifecycle_generation")})`,
+        `"access_generation" INTEGER NOT NULL CHECK (${extensionColumnCheck("access_generation")})`,
+        '"operation_id" TEXT NOT NULL',
+        '"audit_id" TEXT NOT NULL',
+        '"notification_event_id" TEXT NOT NULL',
+        '"lottery_seed" TEXT CHECK ("lottery_seed" IS NULL OR (length("lottery_seed") = 64 AND "lottery_seed" NOT GLOB \'*[^0-9a-f]*\'))',
+        '"lottery_inputs_json" TEXT CHECK ("lottery_inputs_json" IS NULL OR (json_valid("lottery_inputs_json") AND json_type("lottery_inputs_json") = \'object\'))',
+        '"lottery_plan_json" TEXT CHECK ("lottery_plan_json" IS NULL OR (json_valid("lottery_plan_json") AND json_type("lottery_plan_json") = \'object\'))',
+        '"outcome" TEXT NOT NULL DEFAULT \'pending\' CHECK ("outcome" IN (\'pending\', \'processed\', \'conflict\'))',
+        '"completed_at" TEXT',
+        'CHECK ("lottery_seed" IS NOT NULL OR ("lottery_inputs_json" IS NULL AND "lottery_plan_json" IS NULL))',
+        'CHECK ("lottery_inputs_json" IS NULL OR "lottery_seed" IS NOT NULL)',
+        'CHECK ("lottery_plan_json" IS NULL OR "lottery_inputs_json" IS NOT NULL)',
+        'PRIMARY KEY ("run_id", "license_id")',
+        'UNIQUE ("run_id", "operation_id")',
+        'UNIQUE ("run_id", "audit_id")',
+        'UNIQUE ("run_id", "notification_event_id")',
+      ],
+    },
   ];
   const tableSql = tables.map((table) => createTableStatement(table.name, table.lines));
   statements.push(...tableSql);
@@ -445,6 +519,16 @@ function buildExtensionDefinition() {
     {
       name: "license_expiry_run_items_cursor",
       table: "license_expiry_run_items",
+      columns: ["run_id", "license_id"],
+    },
+    {
+      name: "fanmark_licenses_grace_finalization_scan",
+      table: "fanmark_licenses",
+      columns: ["status", "grace_expires_at", "lifecycle_generation"],
+    },
+    {
+      name: "license_grace_finalization_items_cursor",
+      table: "license_grace_finalization_items",
       columns: ["run_id", "license_id"],
     },
   ].map((index) => ({
@@ -515,9 +599,10 @@ export function validateLifecycleTargetPlan(plan) {
 
 const validatePlan = validateLifecycleTargetPlan;
 
-export function generateLifecycleTargetSchema({ catalog, convertedSchema } = {}) {
-  const converted = convertedSchema ?? convertSchema(catalog);
-  const expectedConverted = convertSchema(catalog);
+export function generateLifecycleTargetSchema({ catalog, convertedSchema, credentialDescriptor } = {}) {
+  const conversionOptions = credentialDescriptor === undefined ? {} : { credentialDescriptor };
+  const converted = convertedSchema ?? convertSchema(catalog, conversionOptions);
+  const expectedConverted = convertSchema(catalog, conversionOptions);
   if (canonicalJson(converted) !== canonicalJson(expectedConverted)) {
     throw fail("converted_schema_mismatch");
   }
@@ -612,8 +697,6 @@ async function assertSourceShape(database, plan, catalog, convertedSchema) {
   void plan;
 }
 
-const ALLOWED_PROVIDER_OBJECTS = new Set(["_cf_METADATA"]);
-
 function expectedSourceObjects(plan, includeExtensionColumns = false) {
   const objects = plan.sourceObjectInventory.map((object) => ({ ...object }));
   if (includeExtensionColumns) {
@@ -650,11 +733,7 @@ async function assertExactObjectInventory(database, expectedObjects, codePrefix)
   }
   for (const name of actualNames) {
     if (expectedByName.has(name)) continue;
-    if (ALLOWED_PROVIDER_OBJECTS.has(name)) {
-      const actual = actualObjects.get(name);
-      if (String(actual.type) !== "table") throw fail(`${codePrefix}_mismatch`, name);
-      continue;
-    }
+    if (isD1ProviderObject(actualObjects.get(name)?.type, name)) continue;
     throw fail(`${codePrefix}_unexpected`, name);
   }
 }
@@ -664,7 +743,7 @@ async function assertNoUnexpectedObjects(database, allowedNames, code) {
   const allowed = new Set(allowedNames);
   for (const [name, actual] of actualObjects) {
     if (allowed.has(name)) continue;
-    if (ALLOWED_PROVIDER_OBJECTS.has(name) && String(actual.type) === "table") continue;
+    if (isD1ProviderObject(actual.type, name)) continue;
     throw fail(code, name);
   }
 }
@@ -731,13 +810,13 @@ export async function inspectLifecycleTargetSchema(database, plan) {
   };
 }
 
-export async function applyLifecycleTargetSchema({ database, plan, catalog, convertedSchema } = {}) {
+export async function applyLifecycleTargetSchema({ database, plan, catalog, convertedSchema, credentialDescriptor } = {}) {
   if (!database || typeof database.prepare !== "function" || typeof database.batch !== "function") {
     throw fail("invalid_target_database");
   }
   validatePlan(plan);
-  const converted = convertedSchema ?? convertSchema(catalog);
-  const expectedPlan = generateLifecycleTargetSchema({ catalog, convertedSchema: converted });
+  const converted = convertedSchema ?? convertSchema(catalog, credentialDescriptor === undefined ? {} : { credentialDescriptor });
+  const expectedPlan = generateLifecycleTargetSchema({ catalog, convertedSchema: converted, credentialDescriptor });
   if (
     expectedPlan.sourceFingerprint !== plan.sourceFingerprint ||
     expectedPlan.extensionDigest !== plan.extensionDigest ||

@@ -51,6 +51,8 @@ test("maps the versioned Worker payload and rejects malformed schema", () => {
           id: "license-1",
           emoji: "🌿",
           createdAt: "2026-09-21T00:00:00.000Z",
+          shortId: "PUBLIC01",
+          fanmarkId: "fanmark-1",
           privateField: "discarded",
         },
       ],
@@ -60,6 +62,8 @@ test("maps the versioned Worker payload and rejects malformed schema", () => {
         id: "license-1",
         emoji: "🌿",
         created_at: "2026-09-21T00:00:00.000Z",
+        short_id: "PUBLIC01",
+        fanmark_id: "fanmark-1",
       },
     ],
   );
@@ -69,6 +73,8 @@ test("maps the versioned Worker payload and rejects malformed schema", () => {
     { schemaVersion: 2, items: [] },
     { schemaVersion: 1, items: [{ id: "missing-emoji", createdAt: null }] },
     { schemaVersion: 1, items: [{ id: "bad-created-at", emoji: "🧪", createdAt: 1 }] },
+    { schemaVersion: 1, items: [{ id: "bad-short-id", emoji: "🧪", createdAt: null, shortId: 1 }] },
+    { schemaVersion: 1, items: [{ id: "bad-fanmark-id", emoji: "🧪", createdAt: null, fanmarkId: 1 }] },
   ]) {
     assert.throws(
       () => parseRecentFanmarksApiPayload(malformed),
@@ -83,6 +89,7 @@ test("preserves the Supabase fallback mapping and license-id precedence", () => 
       {
         license_id: "license-1",
         fanmark_id: "fanmark-1",
+        fanmark_short_id: "PUBLIC01",
         display_emoji: "🌿",
         license_created_at: "2026-09-21T00:00:00.000Z",
         user_id: "discarded",
@@ -95,8 +102,8 @@ test("preserves the Supabase fallback mapping and license-id precedence", () => 
       },
     ]),
     [
-      { id: "license-1", emoji: "🌿", created_at: "2026-09-21T00:00:00.000Z" },
-      { id: "fanmark-2", emoji: "❓", created_at: null },
+      { id: "license-1", emoji: "🌿", created_at: "2026-09-21T00:00:00.000Z", short_id: "PUBLIC01", fanmark_id: "fanmark-1" },
+      { id: "fanmark-2", emoji: "❓", created_at: null, short_id: null, fanmark_id: "fanmark-2" },
     ],
   );
 });
@@ -110,7 +117,7 @@ test("sends only public request metadata and validates HTTP failures", async () 
       requestInit = init;
       return Response.json({
         schemaVersion: 1,
-        items: [{ id: "fanmark-1", emoji: "🧪", createdAt: null }],
+        items: [{ id: "fanmark-1", emoji: "🧪", createdAt: null, shortId: "SHORT01", fanmarkId: "fanmark-1" }],
       });
     },
   });
@@ -123,7 +130,7 @@ test("sends only public request metadata and validates HTTP failures", async () 
   assert.equal(requestInit?.credentials, "omit");
   assert.equal(requestInit?.cache, "no-store");
   assert.equal(requestInit?.redirect, "error");
-  assert.deepEqual(response, [{ id: "fanmark-1", emoji: "🧪", created_at: null }]);
+  assert.deepEqual(response, [{ id: "fanmark-1", emoji: "🧪", created_at: null, short_id: "SHORT01", fanmark_id: "fanmark-1" }]);
 
   await assert.rejects(
     () =>

@@ -36,6 +36,8 @@ function checkoutEvent({
     fanmark_id: "fanmark_ingress_001",
     months: "3",
     secret_key: "must_not_be_retained",
+    expected_total_yen: "1200",
+    allow_zero_total: "false",
   },
 } = {}) {
   return {
@@ -121,8 +123,10 @@ test("real Stripe SDK verifies the raw signed bytes before the persister runs", 
     fanmark_id: "fanmark_ingress_001",
     license_id: "license_ingress_001",
     months: "3",
+    expected_total_yen: "1200",
     type: "license_extension",
     user_id: "user_ingress_001",
+    allow_zero_total: "false",
   });
   assert.equal("secret_key" in persisted[0].normalizedPayload.checkout_session.metadata, false);
 });
@@ -514,6 +518,38 @@ test("known object type and replay-critical collection limits are validated", ()
       },
     }),
     /incomplete for deterministic replay/,
+  );
+});
+
+test("extension price metadata is stored only as a complete positive JPY price policy", () => {
+  const event = checkoutEvent({ id: "evt_ingress_price_metadata" });
+  const metadata = event.data.object.metadata;
+
+  assert.throws(
+    () => normalizeStripeEvent({
+      ...event,
+      data: { object: { ...event.data.object, metadata: { ...metadata, allow_zero_total: "true" } } },
+    }),
+    /price metadata is invalid/,
+  );
+  assert.throws(
+    () => normalizeStripeEvent({
+      ...event,
+      data: { object: { ...event.data.object, metadata: { ...metadata, expected_total_yen: 0 } } },
+    }),
+    /price metadata is invalid/,
+  );
+  assert.throws(
+    () => normalizeStripeEvent({
+      ...event,
+      data: {
+        object: {
+          ...event.data.object,
+          metadata: Object.fromEntries(Object.entries(metadata).filter(([key]) => key !== "allow_zero_total")),
+        },
+      },
+    }),
+    /price metadata is incomplete/,
   );
 });
 

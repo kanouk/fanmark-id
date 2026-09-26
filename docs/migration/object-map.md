@@ -1,9 +1,13 @@
 # Cloudflare migration object map (proposal)
 
-This is a reviewable mapping proposal for the next migration design pass. It
-does not implement a D1 schema or a Worker API. Names and locations are
-complete for the checked-in object inventory and the read-only live metadata
-available to the coordinator; target choices are intentionally tentative.
+This is the reviewable mapping proposal for the migration design pass. Its
+table and function targets remain proposals unless a specific implementation
+and proof are linked from the migration handoff. Since this inventory was
+written, several isolated Worker APIs and master-data releases have been
+implemented; that progress does not yet provide a complete D1 schema or Worker
+API. Names and locations cover the checked-in inventory and the read-only live
+metadata available when the mapping was prepared; target choices remain
+subject to the evidence recorded in their implementation documents.
 
 The checked-in inventory was generated from base commit
 b307dd41fe7f151821730c24044a93f4ee5c54fe. The private live catalog was
@@ -91,7 +95,7 @@ Source shorthand used below:
 | extension_coupons | RLS; 1/3/1 | T:271; F src/hooks/useExtensionCouponAdmin.ts:46,69,91,112 | D1 config; Worker admin manages, Worker user validates active coupons through an operation | Medium: public validation response and expiry semantics need API definition |
 | fanmark_access_daily_stats | RLS; 1/4/0 | T:313; F src/components/FanmarkDashboard.tsx:551; F src/pages/Analytics.tsx:159 | D1 derived aggregate; Worker internal updates, Worker user reads owned fanmark stats, Worker admin reads as needed | Medium: aggregation window, timezone, and rebuild path are unverified |
 | fanmark_access_logs | RLS; 1/3/0 | T:401; R:2459; P analytics | D1 append-only log; Worker public ingress writes through a bounded operation, Worker user reads owned data, Worker internal aggregates | Medium: retention and abuse/rate limits need a decision |
-| fanmark_availability_rules | RLS; 2/4/1 | T:480; F src/components/AdminPatternRules.tsx:37,57,90 | D1 config; Worker admin writes, Worker public reads active rules through availability behavior | Medium: exact precedence with tiers and reserved patterns needs a test matrix |
+| fanmark_availability_rules | RLS; 2/4/1 | T:480; F src/components/AdminPatternRules.tsx:37,57,90 | D1 config; MFA-protected Worker admin API reads/writes staging rules, Worker availability path reads active rules | Medium: staging admin DTO/CAS is verified; full precedence with tiers and reserved patterns still needs a test matrix |
 | fanmark_basic_configs | RLS; 1/3/1 | T:519; F src/components/FanmarkDashboard.tsx:411; F src/components/FanmarkSettings.tsx:402 | D1 table; Worker user owns reads/writes, Worker public reads only published fields | Medium: public projection must be explicit so private draft fields do not cross the boundary |
 | fanmark_discoveries | RLS; 1/3/0 | T:561; R:2518; P:34-36 | D1 aggregate relation; Worker public reads safe aggregate, Worker internal updates from search/favorite events | Medium: preserve anonymous aggregation without exposing user behavior |
 | fanmark_events | RLS; 1/2/0 | T:605; R:2535; P audit/events | D1 append-only domain-event table or derived event log; Worker internal writes and consumes, Worker admin inspects | High: no direct frontend callsite; define event retention and replay need |
@@ -123,11 +127,23 @@ Source shorthand used below:
 | user_subscriptions | RLS; 3/3/1 | T:1817; F src/hooks/useSubscription.tsx:86,170; P:73-84,453-482 | D1 billing mirror; Worker user reads own status, Worker internal webhook syncs, Worker admin reads; retain Stripe as payment system | High: webhook idempotency and source-of-truth rules are not established by local code alone |
 | waitlist | RLS; 2/4/0 | T:1883; F src/hooks/useInvitationCode.tsx:83; P:44-48 | D1 private table; Worker public/user submits, Worker admin reads through a restricted operation | High: email PII retention and export/deletion behavior require a decision |
 
+## First explicit reference-data allowlist
+
+The 2026-09-23 v1 reference release is limited to `fanmark_tiers`,
+`languages`, and `reserved_emoji_patterns`. These three tables have no owner
+user relation in the current mapping and are staged as one versioned D1
+release. This does not make every configuration-looking table non-user data:
+`system_settings` is excluded wholesale. Only the individually allowlisted
+public `grace_period_days` and `max_emoji_characters` rows have been copied to
+staging. Availability rules and notification rules/templates use documented
+row/field allowlists; coupons, tier-extension prices, and remaining candidates
+still require classification before export.
+
 ## View
 
 | View | Evidence | Tentative target and boundary | Uncertainty / decision |
 | --- | --- | --- | --- |
-| recent_active_fanmarks | T:1909; R:2963; F src/components/RecentFanmarksScroll.tsx:23; the UI actually calls list_recent_fanmarks | D1 query behind the reviewed Worker public projection; frontend continues using the API/RPC boundary | Live definition and RPC wrapper observed 2026-09-21 as described above; D1 parity and target authorization tests remain |
+| recent_active_fanmarks | T:1909; R:2963; F src/components/RecentFanmarksScroll.tsx and src/hooks/useFanmarkSearch.tsx; UI calls list_recent_fanmarks through the shared loader | D1 query behind the reviewed Worker public projection; frontend continues using the API/RPC boundary | Local Supabase/D1 adapter contract tests pass; staging has only an empty 40-table structural baseline and no explicit recent backend, so the deployed D1 route and production parity remain unverified |
 
 ## Public functions and RPCs
 
@@ -151,13 +167,13 @@ locations, not proof that the corresponding snapshot is the live definition.
 | deactivate_notification_worker_if_idle | T:1970; N:45 | Worker internal | Notification worker sleep decision | High: replace database scheduler mutation after queue design |
 | generate_safe_display_name | T:1971; M:425 | Worker internal | Auth/user provisioning helper | High: no frontend callsite; preserve collision and localization behavior only after confirmation |
 | generate_transfer_code_string | T:1975; M:446; F E:generate-transfer-code | Worker internal | AuthCode generation helper | Medium: entropy, expiry, and one-code invariants need tests |
-| get_fanmark_by_emoji | T:1976; F FanmarkAccess.tsx:118 | Worker public | Public access by emoji path | Low/medium: return only the intended public projection |
-| get_fanmark_by_short_id | T:1992; F FanmarkAccessByShortId.tsx:75 | Worker public | Public short-id access and OGP route | Low/medium: owner/history fields need a reviewed public projection |
+| get_fanmark_by_emoji | T:1976; F FanmarkAccess.tsx | Worker public | Public access by emoji path; explicit frontend read selector uses the reviewed public projection | Medium: local D1 projection tests pass; Worker mode declines locked content until guarded verification exists; analytics remain Supabase, and staging has only an empty structural schema with the selector disabled |
+| get_fanmark_by_short_id | T:1992; F FanmarkAccessByShortId.tsx, useFanmarkByShortId.ts | Worker public | Public short-id access and QR lookup use the same opt-in projection; OGP remains separate | Medium: local D1 projection tests pass; Worker mode declines locked content; owner/history details remain on Supabase |
 | get_fanmark_complete_data | T:2013; F useFanmarkSearch.tsx:327,560; F preview/settings pages | Worker public/user | Shared read with request-context lottery and owner fields | Medium: split public preview from owner-specific fields in the Worker API |
 | get_fanmark_details_by_short_id | T:2043; F useFanmarkDetails.tsx:66 | Worker public/user | Whois/history and favorite state | Medium: history fields and current owner projection need explicit authorization |
 | get_fanmark_ownership_status | T:2073; M:807 | Worker user/internal | License ownership helper for lifecycle operations | High: no frontend callsite in the inventory; confirm whether it remains an internal helper |
 | get_favorite_fanmarks | T:2080; F useFavoriteFanmarks.ts:33 | Worker user | Authenticated user's favorite list | Low/medium: preserve aggregate fields without exposing unrelated user activity |
-| get_public_emoji_profile | T:2107; F useEmojiProfile.tsx:32; F E:fanmark-ogp | Worker public | Published profile projection | Low/medium: media URLs and public fields need a stable projection |
+| get_public_emoji_profile | T:2107; F useEmojiProfile.tsx; F E:fanmark-ogp | Worker public | Published profile read uses the same explicit frontend selector; OGP remains separate | Medium: local D1 projection tests pass; media URL and live staging/business-schema parity remain unverified |
 | get_public_fanmark_profile | T:2119; M:903 | Worker public | Published profile projection | High: no direct frontend callsite in the inventory; confirm whether it is legacy or OGP-only |
 | get_unread_notification_count | T:2132; F useUnreadNotifications.ts:13 | Worker user | Authenticated inbox count | Low/medium: enforce caller identity rather than trusting an arbitrary user id |
 | get_waitlist_email_by_id | T:2136; M:957; F SecureWaitlistAdmin.tsx:107 | Worker admin | Restricted waitlist email lookup | High: keep behind an explicit admin operation and audit path |
@@ -169,7 +185,7 @@ locations, not proof that the corresponding snapshot is the live definition.
 | is_fanmark_password_protected | T:2163; M:1177 | Worker public | Safe password-protection flag for access flow | Medium: never expose password material; pair with rate-limited verify operation |
 | is_super_admin | T:2167; R:1299; F SecureWaitlistAdmin.tsx:48 | Worker admin | Elevated admin gate | High: map role hierarchy and recovery path separately |
 | link_fanmark_discovery | T:2168; M:1190; F lifecycle Edge helpers | Worker internal | Link newly registered fanmark to discovery aggregate | Medium: transaction boundary with registration must be preserved |
-| list_recent_fanmarks | T:2172; F RecentFanmarksScroll.tsx:23 | Worker public | Landing-page recent list, capped by limit | Low/medium: define derived read model and public fields explicitly |
+| list_recent_fanmarks | T:2172; F RecentFanmarksScroll.tsx and useFanmarkSearch.tsx | Worker public | Recent list for landing page and search, capped by limit; Supabase RPC remains the unset-origin fallback | Low/medium: local adapter contracts pass; staging business-table parity and deployed route remain unverified |
 | mark_all_notifications_read | T:2182; F Notifications.tsx:111 | Worker user | Authenticated inbox mutation | Low/medium: bind user identity to session |
 | mark_notification_read | T:2186; F AppHeader.tsx:139, Notifications.tsx:79 | Worker user | Authenticated inbox mutation | Low/medium: bind notification ownership to session |
 | normalize_emoji_ids | T:2190; M:1483 | Derived artifact / Worker internal | Canonical emoji identity helper | Low/medium: must be shared by search, registration, and uniqueness |
@@ -241,7 +257,7 @@ authorization decision; the target boundary below is the proposed contract.
 | generate-transfer-code | E: supabase/functions/generate-transfer-code/index.ts | Worker user | Medium: code entropy and transfer lock |
 | handle-stripe-webhook | E: supabase/functions/handle-stripe-webhook/index.ts | Worker internal webhook + retain Stripe | High: signature verification, idempotency, and replay handling |
 | process-notification-events | E: supabase/functions/process-notification-events/index.ts | Worker internal Cron/Queue | High: replace pg_cron/pg_net wake/sleep behavior |
-| record-fanmark-access | E: supabase/functions/record-fanmark-access/index.ts | Worker public ingress → internal write | Medium: rate limiting, log retention, and aggregate update |
+| record-fanmark-access | E: supabase/functions/record-fanmark-access/index.ts | Worker public ingress → D1 atomic log + daily aggregate; paired with owner-scoped `/api/me/analytics/*` readers on workers.dev staging | Medium: historical data stays in Supabase; abuse controls, retention, populated-user authorization, and production CPU/plan fit remain open |
 | register-fanmark | E: supabase/functions/register-fanmark/index.ts | Worker user | Medium: D1 transaction must cover registry, license, discovery, and audit |
 | reject-transfer-request | E: supabase/functions/reject-transfer-request/index.ts | Worker user | Medium: participant authorization and notification |
 | reset-fanmark-data | E: supabase/functions/reset-fanmark-data/index.ts | Worker admin/internal | High: destructive operation needs explicit scope and audit |
@@ -266,9 +282,10 @@ after a read-only production review.
 
 ## Decisions required before implementation
 
-1. Implement D1 parity tests for the observed recent_active_fanmarks and
-   list_recent_fanmarks semantics; query definition readback is complete,
-   while target query implementation and authorization tests remain.
+1. Exercise recent_active_fanmarks and list_recent_fanmarks against the
+   source-shaped synthetic business D1 schema and verify the deployed Worker
+   route; business staging has the empty 40-table structural baseline, while
+   the feature selector remains disabled and the route is unverified live.
 2. Reconcile the 58 live function names with the 45 generated types and
    decide which of the 13 trigger/auth/audit helpers become D1 triggers,
    explicit Worker writes, derived artifacts, or retirements.

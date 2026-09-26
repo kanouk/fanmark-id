@@ -19,8 +19,9 @@ import {
   validateLifecycleTargetPlan,
   LIFECYCLE_TARGET_SCHEMA_VERSION,
 } from "./lifecycle-target-schema.mjs";
+import { isD1ProviderObject } from "./d1-provider-objects.mjs";
 
-export const LIFECYCLE_GENERATION_SCHEMA_VERSION = 1;
+export const LIFECYCLE_GENERATION_SCHEMA_VERSION = 4;
 export const MAX_SAFE_SQL_INTEGER = Number.MAX_SAFE_INTEGER;
 
 const IDENTIFIER_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
@@ -33,6 +34,42 @@ const PASSWORD_COLUMNS = [
   { name: "created_at", postgresType: "timestamp with time zone", targetType: "TEXT", notNull: true },
   { name: "updated_at", postgresType: "timestamp with time zone", targetType: "TEXT", notNull: true },
 ];
+const ACCESS_GENERATION_SHAPES = {
+  fanmarks: {
+    id: "uuid",
+    short_id: "text",
+    user_input_fanmark: "text",
+    normalized_emoji: "text",
+    emoji_ids: "uuid[]",
+    normalized_emoji_ids: "uuid[]",
+    status: "text",
+  },
+  fanmark_basic_configs: {
+    id: "uuid",
+    license_id: "uuid",
+    fanmark_name: "text",
+    access_type: "text",
+  },
+  fanmark_redirect_configs: {
+    id: "uuid",
+    license_id: "uuid",
+    target_url: "text",
+  },
+  fanmark_messageboard_configs: {
+    id: "uuid",
+    license_id: "uuid",
+    content: "text",
+  },
+  fanmark_profiles: {
+    id: "uuid",
+    license_id: "uuid",
+    display_name: "text",
+    bio: "text",
+    social_links: "jsonb",
+    theme_settings: "jsonb",
+    is_public: "boolean",
+  },
+};
 const TRIGGER_NAMES = [
   "fanmark_licenses_lifecycle_pk_guard",
   "fanmark_licenses_lifecycle_insert",
@@ -41,6 +78,23 @@ const TRIGGER_NAMES = [
   "fanmark_password_configs_generation_update_same",
   "fanmark_password_configs_generation_update_move",
   "fanmark_password_configs_generation_delete",
+  "fanmarks_access_generation_update",
+  "fanmark_basic_configs_access_generation_insert",
+  "fanmark_basic_configs_access_generation_update_same",
+  "fanmark_basic_configs_access_generation_update_move",
+  "fanmark_basic_configs_access_generation_delete",
+  "fanmark_redirect_configs_access_generation_insert",
+  "fanmark_redirect_configs_access_generation_update_same",
+  "fanmark_redirect_configs_access_generation_update_move",
+  "fanmark_redirect_configs_access_generation_delete",
+  "fanmark_messageboard_configs_access_generation_insert",
+  "fanmark_messageboard_configs_access_generation_update_same",
+  "fanmark_messageboard_configs_access_generation_update_move",
+  "fanmark_messageboard_configs_access_generation_delete",
+  "fanmark_profiles_access_generation_insert",
+  "fanmark_profiles_access_generation_update_same",
+  "fanmark_profiles_access_generation_update_move",
+  "fanmark_profiles_access_generation_delete",
 ];
 const REGISTRY = '"fanmark_license_incarnations"';
 const ACCESS_VERSIONS = '"fanmark_access_versions"';
@@ -182,9 +236,24 @@ function validatePasswordConfigShape(catalog, convertedSchema) {
   }
 }
 
-function expectedLifecyclePlan({ catalog, convertedSchema, lifecyclePlan }) {
+function validateAccessGenerationShapes(catalog) {
+  for (const [tableName, expectedColumns] of Object.entries(ACCESS_GENERATION_SHAPES)) {
+    const actualColumns = new Map(
+      catalog.columns
+        .filter((column) => column.table_name === tableName)
+        .map((column) => [column.column_name, column.postgres_type]),
+    );
+    for (const [columnName, expectedType] of Object.entries(expectedColumns)) {
+      if (actualColumns.get(columnName) !== expectedType) {
+        throw fail("access_generation_source_shape_mismatch", `${tableName}.${columnName}`);
+      }
+    }
+  }
+}
+
+function expectedLifecyclePlan({ catalog, convertedSchema, lifecyclePlan, credentialDescriptor }) {
   if (!isPlainObject(lifecyclePlan)) throw fail("invalid_lifecycle_target_plan");
-  const expected = generateLifecycleTargetSchema({ catalog, convertedSchema });
+  const expected = generateLifecycleTargetSchema({ catalog, convertedSchema, credentialDescriptor });
   const fields = [
     "schemaVersion",
     "sourceFingerprint",
@@ -223,30 +292,128 @@ function licenseCount(licenseExpression) {
   return `(SELECT COUNT(*) FROM ${LICENSES} WHERE "id" = ${licenseExpression})`;
 }
 
+function abortWhen(condition, message) {
+  return `SELECT RAISE(ABORT, '${message}') WHERE ${condition};`;
+}
+
 function passwordMutationBody(licenseExpression, { allowCascadeOrphan = false } = {}) {
   const match = accessVersionMatch(licenseExpression);
   const accessCount = accessVersionCount(licenseExpression);
   const parentCount = licenseCount(licenseExpression);
+  const expiryClaim = `EXISTS (SELECT 1 FROM ${LICENSES} WHERE "id" = ${licenseExpression} AND "status" = 'expired' AND "lifecycle_claim_id" IS NOT NULL)`;
+  const notExpiryClaim = `NOT (${expiryClaim})`;
+  const orphanCascade = `(${parentCount} = 0 AND ${accessCount} = 0)`;
   const lines = [];
   if (allowCascadeOrphan) {
     lines.push(
-      `SELECT CASE WHEN ${parentCount} = 0 AND ${accessCount} = 0 THEN NULL WHEN ${parentCount} = 0 OR ${match} <> 1 THEN RAISE(ABORT, 'lifecycle_password_access_version_missing') END;`,
+      abortWhen(`${notExpiryClaim} AND NOT ${orphanCascade} AND (${parentCount} = 0 OR ${match} <> 1)`, "lifecycle_password_access_version_missing"),
     );
   } else {
     lines.push(
-      `SELECT CASE WHEN ${parentCount} <> 1 OR ${match} <> 1 THEN RAISE(ABORT, 'lifecycle_password_access_version_missing') END;`,
+      abortWhen(`${notExpiryClaim} AND (${parentCount} <> 1 OR ${match} <> 1)`, "lifecycle_password_access_version_missing"),
     );
   }
   lines.push(
-    `SELECT CASE WHEN ${parentCount} = 0 AND ${accessCount} = 0 THEN NULL WHEN (SELECT "password_generation" FROM ${ACCESS_VERSIONS} WHERE "license_id" = ${licenseExpression}) >= ${MAX_SAFE_SQL} THEN RAISE(ABORT, 'lifecycle_password_generation_overflow') WHEN (SELECT "access_generation" FROM ${ACCESS_VERSIONS} WHERE "license_id" = ${licenseExpression}) >= ${MAX_SAFE_SQL} THEN RAISE(ABORT, 'lifecycle_access_generation_overflow') END;`,
+    abortWhen(`${notExpiryClaim} AND NOT ${orphanCascade} AND (SELECT "password_generation" FROM ${ACCESS_VERSIONS} WHERE "license_id" = ${licenseExpression}) >= ${MAX_SAFE_SQL}`, "lifecycle_password_generation_overflow"),
+    abortWhen(`${notExpiryClaim} AND NOT ${orphanCascade} AND (SELECT "access_generation" FROM ${ACCESS_VERSIONS} WHERE "license_id" = ${licenseExpression}) >= ${MAX_SAFE_SQL}`, "lifecycle_access_generation_overflow"),
   );
   lines.push(
-    `UPDATE ${ACCESS_VERSIONS} SET "password_generation" = "password_generation" + 1, "access_generation" = "access_generation" + 1, "updated_at" = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE "license_id" = ${licenseExpression};`,
+    `UPDATE ${ACCESS_VERSIONS} SET "password_generation" = "password_generation" + 1, "access_generation" = "access_generation" + 1, "updated_at" = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE "license_id" = ${licenseExpression} AND NOT (${expiryClaim});`,
   );
   lines.push(
-    `SELECT CASE WHEN ${parentCount} = 0 AND ${accessCount} = 0 THEN NULL WHEN changes() <> 1 THEN RAISE(ABORT, 'lifecycle_password_access_version_missing') END;`,
+    abortWhen(`${notExpiryClaim} AND NOT ${orphanCascade} AND changes() <> 1`, "lifecycle_password_access_version_missing"),
   );
   return lines;
+}
+
+function accessMutationBody(licenseExpression, { allowCascadeOrphan = false } = {}) {
+  const match = accessVersionMatch(licenseExpression);
+  const accessCount = accessVersionCount(licenseExpression);
+  const parentCount = licenseCount(licenseExpression);
+  const expiryClaim = `EXISTS (SELECT 1 FROM ${LICENSES} WHERE "id" = ${licenseExpression} AND "status" = 'expired' AND "lifecycle_claim_id" IS NOT NULL)`;
+  const notExpiryClaim = `NOT (${expiryClaim})`;
+  const orphanCascade = `(${parentCount} = 0 AND ${accessCount} = 0)`;
+  const lines = [];
+  if (allowCascadeOrphan) {
+    lines.push(
+      abortWhen(`${notExpiryClaim} AND NOT ${orphanCascade} AND (${parentCount} = 0 OR ${match} <> 1)`, "lifecycle_access_version_missing"),
+    );
+  } else {
+    lines.push(
+      abortWhen(`${notExpiryClaim} AND (${parentCount} <> 1 OR ${match} <> 1)`, "lifecycle_access_version_missing"),
+    );
+  }
+  lines.push(
+    abortWhen(`${notExpiryClaim} AND NOT ${orphanCascade} AND (SELECT "access_generation" FROM ${ACCESS_VERSIONS} WHERE "license_id" = ${licenseExpression}) >= ${MAX_SAFE_SQL}`, "lifecycle_access_generation_overflow"),
+  );
+  lines.push(
+    `UPDATE ${ACCESS_VERSIONS} SET "access_generation" = "access_generation" + 1, "updated_at" = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE "license_id" = ${licenseExpression} AND NOT (${expiryClaim});`,
+  );
+  lines.push(
+    abortWhen(`${notExpiryClaim} AND NOT ${orphanCascade} AND changes() <> 1`, "lifecycle_access_version_missing"),
+  );
+  return lines;
+}
+
+function accessConfigTriggerStatements(tableName, watchedColumns) {
+  const table = quoteIdentifier(tableName);
+  const licenseColumn = quoteIdentifier("license_id");
+  const updatedColumns = [licenseColumn, ...watchedColumns.map(quoteIdentifier)].join(", ");
+  const changed = watchedColumns
+    .map((column) => `OLD.${quoteIdentifier(column)} IS NOT NEW.${quoteIdentifier(column)}`)
+    .join(" OR ");
+  return [
+    triggerStatement(
+      `${tableName}_access_generation_insert`,
+      "AFTER",
+      `INSERT ON ${table}`,
+      accessMutationBody(`NEW.${licenseColumn}`),
+    ),
+    triggerStatement(
+      `${tableName}_access_generation_update_same`,
+      "AFTER",
+      `UPDATE OF ${updatedColumns} ON ${table} WHEN NEW.${licenseColumn} IS OLD.${licenseColumn} AND (${changed})`,
+      accessMutationBody(`NEW.${licenseColumn}`),
+    ),
+    triggerStatement(
+      `${tableName}_access_generation_update_move`,
+      "AFTER",
+      `UPDATE OF ${updatedColumns} ON ${table} WHEN NEW.${licenseColumn} IS NOT OLD.${licenseColumn}`,
+      [
+        ...accessMutationBody(`OLD.${licenseColumn}`),
+        ...accessMutationBody(`NEW.${licenseColumn}`),
+      ],
+    ),
+    triggerStatement(
+      `${tableName}_access_generation_delete`,
+      "AFTER",
+      `DELETE ON ${table}`,
+      accessMutationBody(`OLD.${licenseColumn}`, { allowCascadeOrphan: true }),
+    ),
+  ];
+}
+
+function fanmarkAccessMutationBody() {
+  const relatedLicenses = `SELECT "id" FROM ${LICENSES} WHERE "fanmark_id" = NEW."id"`;
+  return [
+    abortWhen(`EXISTS (
+      SELECT 1
+      FROM ${LICENSES} AS l
+      LEFT JOIN ${ACCESS_VERSIONS} AS av ON av."license_id" = l."id"
+      LEFT JOIN ${REGISTRY} AS ri ON ri."license_id" = av."license_id"
+      WHERE l."fanmark_id" = NEW."id"
+        AND (av."license_id" IS NULL OR ri."license_id" IS NULL OR av."license_incarnation" IS NOT ri."incarnation")
+    )`, "lifecycle_access_version_missing"),
+    abortWhen(`EXISTS (
+      SELECT 1 FROM ${ACCESS_VERSIONS} AS av
+      JOIN ${LICENSES} AS l ON l."id" = av."license_id"
+      WHERE l."fanmark_id" = NEW."id" AND av."access_generation" >= ${MAX_SAFE_SQL}
+    )`, "lifecycle_access_generation_overflow"),
+    `UPDATE ${ACCESS_VERSIONS}
+       SET "access_generation" = "access_generation" + 1,
+           "updated_at" = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+     WHERE "license_id" IN (${relatedLicenses});`,
+  ];
 }
 
 function buildTriggerDefinition() {
@@ -263,10 +430,11 @@ function buildTriggerDefinition() {
     `INSERT ON ${LICENSES}`,
     [
       `INSERT OR IGNORE INTO ${REGISTRY} ("license_id", "incarnation") VALUES (NEW.${quoteIdentifier("id")}, 0);`,
-      `SELECT CASE WHEN (SELECT COUNT(*) FROM ${REGISTRY} WHERE "license_id" = NEW.${quoteIdentifier("id")}) <> 1 THEN RAISE(ABORT, 'lifecycle_incarnation_missing') END;`,
-      `SELECT CASE WHEN (SELECT "incarnation" FROM ${REGISTRY} WHERE "license_id" = NEW.${quoteIdentifier("id")}) > ${MAX_SAFE_SQL} THEN RAISE(ABORT, 'lifecycle_incarnation_overflow') END;`,
+      abortWhen(`(SELECT COUNT(*) FROM ${REGISTRY} WHERE "license_id" = NEW.${quoteIdentifier("id")}) <> 1`, "lifecycle_incarnation_missing"),
+      abortWhen(`(SELECT "incarnation" FROM ${REGISTRY} WHERE "license_id" = NEW.${quoteIdentifier("id")}) > ${MAX_SAFE_SQL}`, "lifecycle_incarnation_overflow"),
       `INSERT OR IGNORE INTO ${ACCESS_VERSIONS} ("license_id", "license_incarnation", "password_generation", "access_generation", "updated_at") SELECT NEW.${quoteIdentifier("id")}, "incarnation", 0, 0, strftime('%Y-%m-%dT%H:%M:%fZ', 'now') FROM ${REGISTRY} WHERE "license_id" = NEW.${quoteIdentifier("id")};`,
-      `SELECT CASE WHEN ${accessVersionCount(`NEW.${quoteIdentifier("id")}`)} <> 1 THEN RAISE(ABORT, 'lifecycle_access_version_missing') WHEN ${accessVersionMatch(`NEW.${quoteIdentifier("id")}`)} <> 1 THEN RAISE(ABORT, 'lifecycle_access_version_mismatch') END;`,
+      abortWhen(`${accessVersionCount(`NEW.${quoteIdentifier("id")}`)} <> 1`, "lifecycle_access_version_missing"),
+      abortWhen(`${accessVersionMatch(`NEW.${quoteIdentifier("id")}`)} <> 1`, "lifecycle_access_version_mismatch"),
     ],
   ));
   statements.push(triggerStatement(
@@ -274,13 +442,14 @@ function buildTriggerDefinition() {
     "BEFORE",
     `DELETE ON ${LICENSES}`,
     [
-      `SELECT CASE WHEN (SELECT COUNT(*) FROM ${REGISTRY} WHERE "license_id" = OLD.${quoteIdentifier("id")}) <> 1 THEN RAISE(ABORT, 'lifecycle_incarnation_missing') WHEN (SELECT "incarnation" FROM ${REGISTRY} WHERE "license_id" = OLD.${quoteIdentifier("id")}) >= ${MAX_SAFE_SQL} THEN RAISE(ABORT, 'lifecycle_incarnation_overflow') END;`,
-      `SELECT CASE WHEN ${accessVersionCount(`OLD.${quoteIdentifier("id")}`)} <> 1 THEN RAISE(ABORT, 'lifecycle_access_version_missing') END;`,
-      `SELECT CASE WHEN ${accessVersionMatch(`OLD.${quoteIdentifier("id")}`)} <> 1 THEN RAISE(ABORT, 'lifecycle_access_version_mismatch') END;`,
+      abortWhen(`(SELECT COUNT(*) FROM ${REGISTRY} WHERE "license_id" = OLD.${quoteIdentifier("id")}) <> 1`, "lifecycle_incarnation_missing"),
+      abortWhen(`(SELECT "incarnation" FROM ${REGISTRY} WHERE "license_id" = OLD.${quoteIdentifier("id")}) >= ${MAX_SAFE_SQL}`, "lifecycle_incarnation_overflow"),
+      abortWhen(`${accessVersionCount(`OLD.${quoteIdentifier("id")}`)} <> 1`, "lifecycle_access_version_missing"),
+      abortWhen(`${accessVersionMatch(`OLD.${quoteIdentifier("id")}`)} <> 1`, "lifecycle_access_version_mismatch"),
       `DELETE FROM ${ACCESS_VERSIONS} WHERE "license_id" = OLD.${quoteIdentifier("id")};`,
-      `SELECT CASE WHEN changes() <> 1 THEN RAISE(ABORT, 'lifecycle_access_version_missing') END;`,
+      abortWhen("changes() <> 1", "lifecycle_access_version_missing"),
       `UPDATE ${REGISTRY} SET "incarnation" = "incarnation" + 1 WHERE "license_id" = OLD.${quoteIdentifier("id")};`,
-      `SELECT CASE WHEN changes() <> 1 THEN RAISE(ABORT, 'lifecycle_incarnation_missing') END;`,
+      abortWhen("changes() <> 1", "lifecycle_incarnation_missing"),
     ],
   ));
   statements.push(triggerStatement(
@@ -310,6 +479,30 @@ function buildTriggerDefinition() {
     `DELETE ON ${PASSWORD_CONFIGS}`,
     passwordMutationBody(`OLD.${quoteIdentifier("license_id")}`, { allowCascadeOrphan: true }),
   ));
+  const watchedFanmarkColumns = [
+    "short_id",
+    "user_input_fanmark",
+    "normalized_emoji",
+    "emoji_ids",
+    "normalized_emoji_ids",
+    "status",
+  ];
+  statements.push(triggerStatement(
+    "fanmarks_access_generation_update",
+    "AFTER",
+    `UPDATE OF ${watchedFanmarkColumns.map(quoteIdentifier).join(", ")} ON ${quoteIdentifier("fanmarks")} WHEN ${watchedFanmarkColumns.map((column) => `OLD.${quoteIdentifier(column)} IS NOT NEW.${quoteIdentifier(column)}`).join(" OR ")}`,
+    fanmarkAccessMutationBody(),
+  ));
+  statements.push(...accessConfigTriggerStatements("fanmark_basic_configs", ["fanmark_name", "access_type"]));
+  statements.push(...accessConfigTriggerStatements("fanmark_redirect_configs", ["target_url"]));
+  statements.push(...accessConfigTriggerStatements("fanmark_messageboard_configs", ["content"]));
+  statements.push(...accessConfigTriggerStatements("fanmark_profiles", [
+    "display_name",
+    "bio",
+    "social_links",
+    "theme_settings",
+    "is_public",
+  ]));
   return {
     statements,
     triggers: statements.map((sql, index) => ({
@@ -424,10 +617,11 @@ function validateGenerationPlan(plan) {
   }
 }
 
-export function generateLifecycleGenerationSchema({ catalog, convertedSchema, lifecyclePlan } = {}) {
-  const converted = convertedSchema ?? convertSchema(catalog);
-  const expectedLifecycle = expectedLifecyclePlan({ catalog, convertedSchema: converted, lifecyclePlan });
+export function generateLifecycleGenerationSchema({ catalog, convertedSchema, lifecyclePlan, credentialDescriptor } = {}) {
+  const converted = convertedSchema ?? convertSchema(catalog, credentialDescriptor === undefined ? {} : { credentialDescriptor });
+  const expectedLifecycle = expectedLifecyclePlan({ catalog, convertedSchema: converted, lifecyclePlan, credentialDescriptor });
   validatePasswordConfigShape(catalog, converted);
+  validateAccessGenerationShapes(catalog);
   const definition = buildTriggerDefinition();
   const objectInventory = { triggers: definition.triggers };
   const plan = {
@@ -483,8 +677,6 @@ async function readMasterObjects(database) {
   return objects;
 }
 
-const ALLOWED_PROVIDER_OBJECT = objectKey("table", "_cf_METADATA");
-
 async function assertExactInventory(database, expectedObjects, code, allowedKeys = new Set()) {
   const actual = await readMasterObjects(database);
   const expected = new Map(expectedObjects.map((object) => [objectKey(object.type, object.name), object]));
@@ -497,7 +689,7 @@ async function assertExactInventory(database, expectedObjects, code, allowedKeys
   }
   for (const [key, actualObject] of actual) {
     if (expected.has(key) || allowedKeys.has(key)) continue;
-    if (key === ALLOWED_PROVIDER_OBJECT) continue;
+    if (isD1ProviderObject(actualObject.type, actualObject.name)) continue;
     throw fail(`${code}_unexpected`, `${actualObject.type}:${actualObject.name}`);
   }
 }
@@ -525,12 +717,12 @@ async function triggerState(database, plan) {
   };
 }
 
-async function validatePlanForApply({ database, plan, catalog, convertedSchema, lifecyclePlan }) {
+async function validatePlanForApply({ database, plan, catalog, convertedSchema, lifecyclePlan, credentialDescriptor }) {
   if (!database || typeof database.prepare !== "function" || typeof database.batch !== "function") {
     throw fail("invalid_target_database");
   }
   validateGenerationPlan(plan);
-  const expected = generateLifecycleGenerationSchema({ catalog, convertedSchema, lifecyclePlan });
+  const expected = generateLifecycleGenerationSchema({ catalog, convertedSchema, lifecyclePlan, credentialDescriptor });
   const fields = [
     "schemaVersion",
     "lifecycleSchemaVersion",
@@ -549,9 +741,13 @@ async function validatePlanForApply({ database, plan, catalog, convertedSchema, 
   return expected;
 }
 
-export async function inspectLifecycleGenerationSchema(database, plan, lifecyclePlan) {
+export async function inspectLifecycleGenerationSchema(database, plan, lifecyclePlan, additionalObjects = []) {
   validateGenerationPlan(plan);
   validateLifecycleTargetPlan(lifecyclePlan);
+  if (!Array.isArray(additionalObjects) || additionalObjects.some((object) =>
+    !object || typeof object.type !== "string" || typeof object.name !== "string" || typeof object.sql !== "string")) {
+    throw fail("lifecycle_generation_additional_inventory_invalid");
+  }
   if (plan.sourceFingerprint !== lifecyclePlan.sourceFingerprint ||
       plan.lifecycleExtensionDigest !== lifecyclePlan.extensionDigest ||
       canonicalJson(plan.sourceObjectInventory) !== canonicalJson(lifecyclePlan.sourceObjectInventory)) {
@@ -559,7 +755,13 @@ export async function inspectLifecycleGenerationSchema(database, plan, lifecycle
   }
   const base = baselineObjects(lifecyclePlan);
   const trigger = await triggerState(database, plan);
-  if (trigger.complete) await assertExactInventory(database, [...base, ...plan.objectInventory.triggers].sort(compareObjects), "lifecycle_generation_schema");
+  if (trigger.complete) {
+    await assertExactInventory(
+      database,
+      [...base, ...plan.objectInventory.triggers, ...additionalObjects].sort(compareObjects),
+      "lifecycle_generation_schema",
+    );
+  }
   return {
     ...trigger,
     extensionDigest: plan.extensionDigest,
@@ -567,8 +769,8 @@ export async function inspectLifecycleGenerationSchema(database, plan, lifecycle
   };
 }
 
-export async function applyLifecycleGenerationSchema({ database, plan, catalog, convertedSchema, lifecyclePlan } = {}) {
-  const expected = await validatePlanForApply({ database, plan, catalog, convertedSchema, lifecyclePlan });
+export async function applyLifecycleGenerationSchema({ database, plan, catalog, convertedSchema, lifecyclePlan, credentialDescriptor } = {}) {
+  const expected = await validatePlanForApply({ database, plan, catalog, convertedSchema, lifecyclePlan, credentialDescriptor });
   const base = baselineObjects(lifecyclePlan);
   const triggerKeys = new Set(plan.objectInventory.triggers.map((object) => objectKey(object.type, object.name)));
   await assertExactInventory(database, base, "lifecycle_generation_base_schema", triggerKeys);

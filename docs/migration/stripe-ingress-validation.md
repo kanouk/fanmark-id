@@ -1,12 +1,14 @@
 # Stripe signed ingress and receipt adapter
 
-This document records the offline implementation for migration issue #32. It
-adds a reusable request handler and normalizer at
+This document records the reusable request-handler and normalizer validation
+for migration issue #32 at
 [`supabase/functions/_shared/stripe-receipt-ingress/index.ts`](../../supabase/functions/_shared/stripe-receipt-ingress/index.ts).
-It does not add an Edge Function, change the checked-in webhook, call the
-Stripe API, grant a license, mutate a subscription, or deploy configuration.
-The handler is a factory: a future endpoint supplies the Stripe SDK instance,
-the endpoint secret, and a service-only Supabase RPC adapter.
+The standalone factory behavior below remains covered by its tests. The
+checked-in `handle-stripe-webhook` now reuses the raw-byte reader, normalizer,
+and receipt persister for license-extension events; the separate
+[extension-application validation](stripe-extension-application-validation.md)
+covers that connection. Neither the local webhook edit nor SQL migration has
+been deployed or applied remotely.
 
 ## Validation boundary
 

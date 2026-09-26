@@ -77,10 +77,11 @@ exporter must also read the catalog relations inside the active transaction,
 using the same public base-table scope (`pg_class.relkind IN ('r', 'p')`) and
 ordered metadata fields. It computes a stable catalog fingerprint from the
 canonical JSON with the observation timestamp removed. For the current
-readiness query, that fingerprint scope is exactly `columns`, `constraints`,
-`indexes`, and `enums`; the input does not contain trigger, RLS, view, or
-function definitions, so the exporter must not claim those scopes are bound by
-the fingerprint. The fingerprint in the input catalog must equal the
+readiness query, the fingerprint covers `columns`, `constraints`, `indexes`,
+and `enums`, plus source database `datcollate` and `datctype` when present.
+The input does not contain trigger, RLS, view, or function definitions, so the
+exporter must not claim those scopes are bound by the fingerprint. The
+fingerprint in the input catalog must equal the
 fingerprint read inside the snapshot. A mismatch, missing catalog scope,
 duplicate table/column/constraint, or schema other than `public` aborts before
 any row is accepted.
@@ -90,13 +91,78 @@ The manifest records:
 ```json
 {
   "catalogFingerprint": "sha256",
-  "schemaConversionVersion": 1,
+  "schemaConversionVersion": 4,
   "rowEnvelopeVersion": 1,
   "schemaReportFingerprint": "sha256",
   "schemaDeployable": false,
-  "unresolvedGateCount": 20
+  "unresolvedGateCount": 18
 }
 ```
+
+Snapshot format version 2 added credential-transform policy metadata:
+`credentialDescriptorVersion`, `credentialDescriptorDigest`, and the complete
+`credentialDescriptor`. The descriptor contains policy only, never a source
+credential. All three fields are `null` only when the catalog does not contain
+`fanmark_password_configs`; if that relation is present, export requires a
+valid explicit descriptor and the offline verifier recomputes its canonical
+digest. This binds policy to the private snapshot but does not implement or
+authorize credential writes to D1.
+
+Snapshot format version 3 retains that descriptor contract and adds trigger,
+RLS policy, view, and function definitions to the required private source
+catalog and its fingerprint. A change to any of those definitions now changes
+the schema fingerprint. The D1 converter still blocks these untranslated
+behavior/security scopes; recording them does not claim parity.
+
+Snapshot format version 4 adds `sequenceStates` to the manifest. The exporter
+currently supports only the reviewed `public.fanmark_events_id_seq`, owned by
+`public.fanmark_events.id`, with the catalogued start/increment/min/max/cache
+settings. It captures the exact decimal `lastValue` and `isCalled` flag through
+the same read-only PostgreSQL connection. The offline verifier binds the state
+to that catalog target and rejects missing, extra, malformed, or changed
+sequence definitions. PostgreSQL sequence advancement is not MVCC-snapshotted;
+the source must be frozen against event inserts while a final cutover snapshot
+is captured. This metadata preparation and its synthetic rehearsal do not read
+or authorize a live user-data export.
+
+## Encrypted export and restore
+
+Use `scripts/migration/snapshot-export-encrypted.mjs` for any source export.
+The older `snapshot-export.mjs` command is disabled; its exported function is
+retained for synthetic tests only. The encrypted command requires a canonical
+32-byte base64 key in `FANMARK_SNAPSHOT_KEY_B64`, a mode-0600 catalog and
+optional descriptor under a mode-0700 directory, and a bundle destination
+outside the Git checkout under a mode-0700 directory. The encryption key is
+not written to the bundle, argv, status, or logs; the `psql` child explicitly
+does not inherit the key variable.
+
+The command exports into a unique mode-0700 OS temporary directory, seals the
+snapshot into one AES-256-GCM ciphertext object, and removes that plaintext
+directory in `finally`. The Git-external bundle contains only a mode-0600
+`bundle.header.json` and `snapshot.aesgcm`; the header reveals the algorithm, a
+short key identifier, nonce/tag, and total ciphertext size rounded to 64 KiB.
+File names, counts, exact sizes, the plaintext manifest, catalog, schema report,
+status, and row files are inside the authenticated ciphertext. A normal
+stop/failure cleans the scratch directory; forced process or machine failure
+can leave private temporary plaintext behind and requires cleanup before a
+real export is authorized.
+
+`openSnapshotBundle()` first authenticates the complete ciphertext in a fresh
+mode-0700 temporary area, then unpacks and verifies the normal snapshot before
+publishing the restored directory. `importEncryptedD1Snapshot()` composes that
+restore with the existing local-only D1 importer and removes the plaintext
+restore tree after the import attempt. The migration-data suite tests key
+mismatch, ciphertext tampering, private file modes, hidden bundle metadata,
+restored snapshot verification, and a synthetic encrypted-snapshot D1 import.
+This is backup/restore mechanism evidence only; no live source row was read or
+moved.
+
+The same canonical descriptor is passed into schema conversion and row
+validation. The schema report labels only `fanmark_password_configs.access_password`
+as `credential-to-bcrypt`; missing policy is a blocking codec, never ordinary
+text. The importer still rejects credential-bearing snapshots before target
+writes until the transformed INSERT and its checkpoint/coverage transaction
+are integrated.
 
 The exact gate values come from `schema-convert.mjs`; they are not suppressed
 by a successful source export. A source snapshot may be complete while
@@ -329,14 +395,12 @@ identity export, and a separately verified Storage export. Until those are
 bound to a reviewed operational freeze, the snapshot is a complete public-table
 database artifact only and must not be described as a complete system backup.
 
-The `0700` directory and `0600` files in this preparatory implementation are
-filesystem permissions for a short-lived private work directory, not
-encryption at rest. Issue #35's backup gate still requires an encrypted
-container or volume, key handling outside the repository and process argv,
-authenticated access controls, retention/deletion policy, and a restore test
-performed from the encrypted artifact. No live export, encrypted backup, Auth
-identity artifact, Storage artifact, or production restore is claimed by these
-local tests.
+The encrypted archive and synthetic restore mechanism now exist, but this does
+not yet prove an operational backup destination, independent key custody,
+authenticated access controls, retention/deletion policy, or restore from a
+persisted external artifact. No live export, real-user backup, Auth identity
+artifact, Storage artifact, or production restore is claimed by these local
+tests.
 
 ## Implementation and acceptance scope
 

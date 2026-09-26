@@ -31,9 +31,21 @@ describe("local Workers Static Assets routing", () => {
 
       expect(response.status).toBe(200);
       expect(response.headers.get("content-type")).toMatch(/text\/html/i);
+      expect(response.headers.get("x-robots-tag")).toBe("noindex, nofollow");
       expect(await response.text()).toContain('<div id="root"></div>');
     },
   );
+
+  it("blocks indexing and the production sitemap on staging", async () => {
+    const robots = await request("/robots.txt");
+    expect(robots.status).toBe(200);
+    expect(robots.headers.get("x-robots-tag")).toBe("noindex, nofollow");
+    expect(await robots.text()).toBe("User-agent: *\nDisallow: /\n");
+
+    const sitemap = await request("/sitemap.xml");
+    expect(sitemap.status).toBe(404);
+    expect(sitemap.headers.get("x-robots-tag")).toBe("noindex, nofollow");
+  });
 
   it("serves a known static asset with its non-HTML MIME type", async () => {
     const response = await request("/favicon.ico");
@@ -96,6 +108,8 @@ describe("local Workers Static Assets routing", () => {
       items: [
         {
           id: "static-route-fanmark",
+          fanmarkId: "static-route-fanmark",
+          shortId: null,
           emoji: "🧪",
           createdAt: "2026-09-21T00:00:00.000Z",
         },

@@ -42,7 +42,10 @@ async function loadSelectedEmojiCatalog(): Promise<void> {
   const baseUrl = import.meta.env.VITE_FANMARK_API_BASE_URL?.trim();
   if (!baseUrl) throw new Error("Worker API base URL is required for the emoji catalog");
 
-  const release = await loadEmojiCatalogFromWorker(baseUrl);
+  const pinnedVersion = import.meta.env.VITE_EMOJI_CATALOG_VERSION?.trim();
+  const release = await loadEmojiCatalogFromWorker(baseUrl, {
+    ...(pinnedVersion ? { version: pinnedVersion } : {}),
+  });
   installEmojiCatalog(release.items);
 }
 

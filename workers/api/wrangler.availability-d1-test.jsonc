@@ -4,14 +4,20 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-09-18",
   "vars": {
+    "D1_TOPOLOGY": "split",
     "AVAILABILITY_BACKEND": "d1",
     "CORS_ALLOWED_ORIGINS": "https://app.example.test"
   },
   "d1_databases": [
     {
       "binding": "FANMARK_DB",
-      "database_name": "fanmark-availability-fixture",
+      "database_name": "fanmark-availability-business-fixture",
       "database_id": "00000000-0000-0000-0000-000000000033"
+    },
+    {
+      "binding": "MASTER_DB",
+      "database_name": "fanmark-availability-master-fixture",
+      "database_id": "00000000-0000-0000-0000-000000000034"
     }
   ]
 }

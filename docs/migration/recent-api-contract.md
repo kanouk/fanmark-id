@@ -1,10 +1,12 @@
 # Recent fanmarks Worker API contract
 
-This is a phase 0/1 preparation fixture for issue [#33](https://github.com/kanouk/fanmark-id/issues/33).
-It is a read-only API scaffold under `workers/api/` with an explicit frontend
-opt-in. It does not replace the general Supabase client or constitute a
-production migration. No Worker deployment or Cloudflare resource change was
-performed.
+This documents the read-only recent-fanmarks API and frontend adapter for
+issue [#33](https://github.com/kanouk/fanmark-id/issues/33). It has Supabase and
+D1 Worker adapters plus an explicit frontend origin opt-in. It does not replace
+the general Supabase client or constitute a complete migration. The app and
+dedicated catalog Workers are deployed only on isolated `workers.dev` staging.
+No production Worker route, public-domain cutover, or user-data import is
+included.
 
 ## Source contract
 
@@ -16,14 +18,17 @@ follows:
 id        = license_id || fanmark_id
 emoji     = display_emoji || "❓"
 createdAt = license_created_at
+shortId   = fanmark_short_id
+fanmarkId = fanmark_id
 ```
 
 The checked-in Supabase definition returns `license_id`, `fanmark_id`,
-`fanmark_short_id`, `display_emoji`, and `license_created_at`. The Worker keeps
-only the three public fields above; upstream fields such as short IDs, user IDs,
-email addresses, and any future extra fields are discarded. Rows without either
-an ID are skipped. The response is capped at the requested limit after mapping,
-even if the upstream response contains more rows.
+`fanmark_short_id`, `display_emoji`, and `license_created_at`. The Worker
+projects `fanmark_short_id` as `shortId` so both the landing ticker and search
+page can keep their existing public-page link. User IDs, email addresses, and
+other upstream fields are discarded. Rows without either an ID are skipped.
+The response is capped at the requested limit after mapping, even if the
+upstream response contains more rows.
 
 ## Endpoint
 
@@ -41,7 +46,9 @@ The default limit is `20`. The response is always an explicit versioned object:
     {
       "id": "license-or-fanmark-id",
       "emoji": "🌿",
-      "createdAt": "2026-09-21T00:00:00.000Z"
+      "createdAt": "2026-09-21T00:00:00.000Z",
+      "shortId": "public-short-id",
+      "fanmarkId": "fanmark-uuid"
     }
   ]
 }
@@ -54,7 +61,8 @@ same explicit method allowlist. Unknown paths return `404`.
 
 ## Frontend selection
 
-`src/components/RecentFanmarksScroll.tsx` reads the optional
+`src/components/RecentFanmarksScroll.tsx` and `src/hooks/useFanmarkSearch.tsx`
+read the optional
 `VITE_FANMARK_API_BASE_URL` setting through `src/lib/recent-fanmarks.ts`:
 
 - unset or blank: keep the existing public Supabase RPC
@@ -67,13 +75,20 @@ same explicit method allowlist. Unknown paths return `404`.
 
 The client accepts HTTPS origins and permits HTTP only for loopback development
 origins such as `localhost`. It validates `schemaVersion: 1` and the public
-`id`/`emoji`/`createdAt` item shape before updating the existing scroll UI.
+`id`/`emoji`/`createdAt` item shape and optional `shortId` and `fanmarkId`
+before updating the UI. A missing short ID never creates a broken `/f/` link;
+the search screen uses `fanmarkId` for the existing lottery action.
 
-## Supabase adapter boundary
+`src/hooks/useFanmarkSearch.tsx` now uses the same loader with a limit of six.
+It preserves the prior Supabase mapping when no Worker origin is selected, and
+uses the Worker without a Supabase fallback once the Worker origin is configured.
+Both frontend call sites abort their request when unmounted.
+
+## Worker data-source adapters
 
 `workers/api/src/repository.ts` contains the small typed
-`RecentFanmarksRepository` interface and the current Supabase implementation.
-The Worker calls:
+`RecentFanmarksRepository` interface and the Supabase implementation. When
+selected, that adapter calls:
 
 ```text
 GET {SUPABASE_URL}/rest/v1/rpc/list_recent_fanmarks?p_limit={limit}
@@ -81,9 +96,16 @@ GET {SUPABASE_URL}/rest/v1/rpc/list_recent_fanmarks?p_limit={limit}
 
 The outbound request sends only `Accept: application/json` and `apikey`. It never
 copies the incoming `Authorization` or `Cookie` headers, so this public operation
-does not request or forward authenticated user data. The adapter is the replacement
-boundary for a later D1 read model; no D1 binding or application integration is
-included here.
+does not request or forward authenticated user data. A D1 adapter provides the
+same public projection, and the backend is selected by RECENT_FANMARKS_BACKEND.
+The staging Worker config now explicitly sets `RECENT_FANMARKS_BACKEND=d1`,
+and the staging bundle points this client at the same-origin Worker. A remote
+synthetic canary with two active and one grace license verified ordering,
+filtering, mapping, limits, CORS/no-store behavior, and invalid-limit handling;
+all inserted rows were deleted and read back as zero. With no business rows
+present, the deployed endpoint now correctly returns an empty list. This is
+staging-only evidence and does not replace the app's remaining Supabase APIs or
+establish production data parity.
 
 The adapter uses a five-second timeout by default. `SUPABASE_REQUEST_TIMEOUT_MS`
 may override it for a controlled environment with an integer from `1` through

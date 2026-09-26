@@ -45,6 +45,7 @@ describe("recent fanmarks API contract on a local Worker", () => {
       return upstreamJson([
         {
           fanmark_id: "configured-fanmark",
+          fanmark_short_id: "SYNTHETIC1",
           display_emoji: "🧪",
           license_created_at: "2026-09-21T00:00:00.000Z",
         },
@@ -66,6 +67,8 @@ describe("recent fanmarks API contract on a local Worker", () => {
           id: "configured-fanmark",
           emoji: "🧪",
           createdAt: "2026-09-21T00:00:00.000Z",
+          shortId: "SYNTHETIC1",
+          fanmarkId: "configured-fanmark",
         },
       ],
     });
@@ -84,6 +87,7 @@ describe("recent fanmarks API contract on a local Worker", () => {
         {
           license_id: "license-1",
           fanmark_id: "fanmark-1",
+          fanmark_short_id: "PUBLIC01",
           display_emoji: "🌿",
           license_created_at: "2026-09-21T00:00:00.000Z",
           user_id: "private-user-id",
@@ -117,11 +121,15 @@ describe("recent fanmarks API contract on a local Worker", () => {
           id: "license-1",
           emoji: "🌿",
           createdAt: "2026-09-21T00:00:00.000Z",
+          shortId: "PUBLIC01",
+          fanmarkId: "fanmark-1",
         },
         {
           id: "fanmark-2",
           emoji: "❓",
           createdAt: "2026-09-20T00:00:00.000Z",
+          shortId: null,
+          fanmarkId: "fanmark-2",
         },
       ],
     });

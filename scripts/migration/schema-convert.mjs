@@ -12,7 +12,9 @@ import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 
-export const SCHEMA_CONVERSION_VERSION = 1;
+import { compileCredentialDescriptor, CREDENTIAL_COLUMN, CREDENTIAL_SOURCE_RELATION } from "./credential-descriptor.mjs";
+
+export const SCHEMA_CONVERSION_VERSION = 4;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -22,6 +24,29 @@ const MONEY_COLUMNS = new Set([
   "fanmark_tiers.monthly_price_usd",
 ]);
 const SUPPORTED_INDEX_METHOD = "btree";
+const ROW_CONVERSION_GATE_CODES = new Set([
+  "uuid_import_validation",
+  "bigint_import_range_validation",
+  "date_import_validation",
+  "timestamp_import_precision",
+  "json_import_validation",
+  "array_import_validation",
+  "money_cents_import",
+  "decimal_import_validation",
+  "credential_transform_import_required",
+  "credential_descriptor_required",
+  "sequence_state_import_required",
+]);
+
+// SQLite/D1 has no gen_random_uuid(), but its randomblob/random functions can
+// construct a standard version-4 UUID. Imported rows still provide their
+// source IDs explicitly; this default only covers new target-side inserts.
+const D1_UUID_V4_DEFAULT = `lower(
+  hex(randomblob(4)) || '-' ||
+  hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2, 3) || '-' ||
+  substr('89ab', (random() & 3) + 1, 1) || substr(hex(randomblob(2)), 2, 3) || '-' ||
+  hex(randomblob(6))
+)`;
 
 export class SchemaConversionError extends Error {
   constructor(code, cause) {
@@ -87,6 +112,16 @@ function compareLocations(left, right) {
   return locationKey(left).localeCompare(locationKey(right));
 }
 
+function stageGateSummary(gates) {
+  const codes = [...new Set(gates.map((gate) => gate.code))].sort();
+  return {
+    ready: gates.length === 0,
+    gateGroupCount: gates.length,
+    affectedLocationCount: gates.reduce((count, gate) => count + gate.locations.length, 0),
+    gateCodes: codes,
+  };
+}
+
 function requireArray(catalog, name) {
   if (!Array.isArray(catalog[name])) throw fail("invalid_catalog", `missing ${name}`);
   return catalog[name];
@@ -94,6 +129,20 @@ function requireArray(catalog, name) {
 
 function normalizeCatalog(catalog) {
   if (!isPlainObject(catalog)) throw fail("invalid_catalog");
+  let databaseLocale;
+  if (Object.hasOwn(catalog, "database_locale")) {
+    if (
+      !isPlainObject(catalog.database_locale) ||
+      typeof catalog.database_locale.collate !== "string" ||
+      typeof catalog.database_locale.ctype !== "string"
+    ) {
+      throw fail("invalid_catalog_database_locale");
+    }
+    databaseLocale = {
+      collate: catalog.database_locale.collate,
+      ctype: catalog.database_locale.ctype,
+    };
+  }
   const columns = requireArray(catalog, "columns").map((column) => {
     if (
       !isPlainObject(column) ||
@@ -182,6 +231,7 @@ function normalizeCatalog(catalog) {
 
   return {
     observed_at: catalog.observed_at ?? null,
+    ...(databaseLocale ? { database_locale: databaseLocale } : {}),
     columns: [...columns].sort((left, right) => left.table_name.localeCompare(right.table_name) || left.ordinal - right.ordinal),
     constraints: [...constraints].sort((left, right) => left.table_name.localeCompare(right.table_name) || left.kind.localeCompare(right.kind) || left.name.localeCompare(right.name)),
     indexes: [...indexes].sort((left, right) => left.table_name.localeCompare(right.table_name) || left.name.localeCompare(right.name)),
@@ -462,6 +512,113 @@ function representationSensitiveColumns(expression, tableColumns) {
   return sensitive;
 }
 
+function unwrapSingleOuterParentheses(expression) {
+  const value = expression.trim();
+  if (!value.startsWith("(") || !value.endsWith(")")) return value;
+  let depth = 0;
+  let quotedIdentifier = false;
+  for (let index = 0; index < value.length; index += 1) {
+    const char = value[index];
+    if (char === '"') {
+      if (quotedIdentifier && value[index + 1] === '"') index += 1;
+      else quotedIdentifier = !quotedIdentifier;
+    } else if (!quotedIdentifier && char === "(") depth += 1;
+    else if (!quotedIdentifier && char === ")") {
+      depth -= 1;
+      if (depth === 0 && index !== value.length - 1) return value;
+      if (depth < 0) return value;
+    }
+  }
+  return depth === 0 && !quotedIdentifier ? value.slice(1, -1).trim() : value;
+}
+
+// Keep numeric > 0 exact after numeric columns move to canonical TEXT. Restrict
+// this rule to non-null unconstrained numerics so CHECK's NULL behavior is not
+// accidentally changed, and never compare through SQLite REAL.
+function translatePositiveCanonicalDecimalCheck(definition, tableColumns) {
+  const unwrapped = unwrapCheckDefinition(definition);
+  if (unwrapped === null) return null;
+  const expression = unwrapSingleOuterParentheses(unwrapped);
+  const match = expression.match(
+    /^(?:\"([A-Za-z_][A-Za-z0-9_]*)\"|([A-Za-z_][A-Za-z0-9_]*))\s*>\s*(?:\(\s*0(?:\.0+)?\s*\)|0(?:\.0+)?)(?:\s*::\s*(?:pg_catalog\.)?numeric)?$/i,
+  );
+  if (!match) return null;
+
+  const columnName = match[1] ?? match[2];
+  const column = tableColumns.find((candidate) => candidate.column_name === columnName);
+  if (!column || column.postgres_type.toLowerCase() !== "numeric" || !column.not_null) return null;
+
+  const quotedColumn = quoteIdentifier(column.column_name);
+  return [
+    `typeof(${quotedColumn}) = 'text'`,
+    `length(${quotedColumn}) > 0`,
+    `instr(${quotedColumn}, char(0)) = 0`,
+    `${quotedColumn} NOT GLOB '*[^0-9.]*'`,
+    `${quotedColumn} NOT GLOB '*.*.*'`,
+    `substr(${quotedColumn}, 1, 1) GLOB '[0-9]'`,
+    `(substr(${quotedColumn}, 1, 1) <> '0' OR substr(${quotedColumn}, 2, 1) = '.')`,
+    `(instr(${quotedColumn}, '.') = 0 OR instr(${quotedColumn}, '.') < length(${quotedColumn}))`,
+    `replace(replace(${quotedColumn}, '.', ''), '0', '') <> ''`,
+  ].join(" AND ");
+}
+
+// Translate only the three exact ASCII validation expressions present in the
+// source schema, and only when PostgreSQL's active database locale is C/C.
+// SQLite GLOB's ASCII ranges then preserve the source ranges; unknown locale,
+// expression, operator, collation, or column shape keeps the existing gate.
+function translateKnownPostgresRegexCheck(definition, tableName, tableColumns, databaseLocale) {
+  if (databaseLocale?.collate !== "C" || databaseLocale?.ctype !== "C") return null;
+  const unwrapped = unwrapCheckDefinition(definition);
+  if (unwrapped === null) return null;
+  const expression = unwrapSingleOuterParentheses(unwrapped);
+  const match = expression.match(
+    /^(?:"([A-Za-z_][A-Za-z0-9_]*)"|([A-Za-z_][A-Za-z0-9_]*))\s*(~\*|~)\s*'((?:''|[^'])*)'\s*(?:::\s*(?:"text"|(?:pg_catalog\.)?text))?$/i,
+  );
+  if (!match) return null;
+
+  const columnName = match[1] ?? match[2];
+  const operator = match[3];
+  const pattern = match[4].replaceAll("''", "'");
+  const column = tableColumns.find((candidate) => candidate.column_name === columnName);
+  if (
+    !column ||
+    column.postgres_type.toLowerCase() !== "text" ||
+    (column.collation !== null && column.collation !== undefined && column.collation !== '"default"')
+  ) return null;
+
+  const name = quoteIdentifier(columnName);
+  if (
+    tableName === "invitation_codes" && columnName === "code" && operator === "~" &&
+    pattern === "^[A-Z0-9]{6,12}$"
+  ) {
+    return `length(${name}) BETWEEN 6 AND 12 AND instr(${name}, char(0)) = 0 AND ${name} NOT GLOB '*[^A-Z0-9]*'`;
+  }
+  if (
+    tableName === "system_settings" && columnName === "setting_key" && operator === "~" &&
+    pattern === "^[a-z_]+$"
+  ) {
+    return `length(${name}) > 0 AND instr(${name}, char(0)) = 0 AND ${name} NOT GLOB '*[^a-z_]*'`;
+  }
+  if (
+    tableName === "waitlist" && columnName === "email" && operator === "~*" &&
+    pattern === "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+  ) {
+    const at = `instr(${name}, '@')`;
+    const local = `substr(${name}, 1, ${at} - 1)`;
+    const domain = `substr(${name}, ${at} + 1)`;
+    return [
+      `instr(${name}, char(0)) = 0`,
+      `(length(${name}) - length(replace(${name}, '@', ''))) = 1`,
+      `${at} > 1`,
+      `${local} NOT GLOB '*[^A-Za-z0-9._%+-]*'`,
+      `length(${domain}) > 0`,
+      `${domain} NOT GLOB '*[^A-Za-z0-9.-]*'`,
+      `${domain} GLOB '?*.[A-Za-z][A-Za-z]*'`,
+    ].join(" AND ");
+  }
+  return null;
+}
+
 function translateCheckExpression(definition, allowedColumns = null) {
   const unwrapped = unwrapCheckDefinition(definition);
   if (unwrapped === null) return null;
@@ -490,7 +647,7 @@ function integerStorageCheck(column, expression) {
   return column.not_null ? expression : `${name} IS NULL OR (${expression})`;
 }
 
-function typeInfo(column, enumLabels, gates, typeCounts) {
+function typeInfo(column, enumLabels, gates, typeCounts, credentialDescriptorPlan) {
   const sourceType = column.postgres_type;
   const location = { kind: "column", table: column.table_name, column: column.column_name };
   let targetType;
@@ -498,7 +655,19 @@ function typeInfo(column, enumLabels, gates, typeCounts) {
   let codec = "unsupported";
   let checks = [];
 
-  if (sourceType === "uuid") {
+  if (column.table_name === CREDENTIAL_SOURCE_RELATION && column.column_name === CREDENTIAL_COLUMN) {
+    targetType = "TEXT";
+    if (sourceType !== "text") {
+      codec = "unsupported";
+      gates.add("credential_source_type_invalid", "The credential source column must be PostgreSQL text and match the explicit transform descriptor.", location);
+    } else if (credentialDescriptorPlan) {
+      codec = "credential-to-bcrypt";
+      gates.add("credential_transform_import_required", "The source credential requires the dedicated transformed-row importer; generic text INSERTs are forbidden.", location);
+    } else {
+      codec = "credential-descriptor-required";
+      gates.add("credential_descriptor_required", "The credential column has no explicit transform descriptor and cannot use the ordinary text codec.", location);
+    }
+  } else if (sourceType === "uuid") {
     targetType = "TEXT";
     codec = "uuid-text";
     gates.add("uuid_import_validation", "UUID text must be validated and malformed values rejected during import.", location);
@@ -571,13 +740,16 @@ function typeInfo(column, enumLabels, gates, typeCounts) {
   return { sourceType, targetType, targetKind, codec, checks };
 }
 
-function translateDefault(column, info, gates) {
+function translateDefault(column, info, gates, sequencePrimaryKey = false) {
   const expression = column.default_expression;
   if (expression === null || expression === undefined || expression.trim() === "") return null;
   const location = { kind: "default", table: column.table_name, column: column.column_name };
   const trimmed = expression.trim();
   if (/^gen_random_uuid\s*\(\s*\)$/i.test(trimmed)) {
-    gates.add("uuid_default_requires_operation", "gen_random_uuid() is not a portable D1 default; the operation layer must generate new UUIDs.", location);
+    if (column.postgres_type.toLowerCase() === "uuid" && info.targetType === "TEXT") {
+      return `(${D1_UUID_V4_DEFAULT})`;
+    }
+    gates.add("uuid_default_requires_operation", "gen_random_uuid() can only be translated for UUID columns stored as TEXT.", location);
     return null;
   }
   if (/^now\s*\(\s*\)$/i.test(trimmed)) {
@@ -585,6 +757,14 @@ function translateDefault(column, info, gates) {
     return null;
   }
   if (/^nextval\s*\(/i.test(trimmed)) {
+    if (sequencePrimaryKey) {
+      gates.add(
+        "sequence_state_import_required",
+        "D1 AUTOINCREMENT preserves monotonic allocation from imported IDs, but the frozen import must seed PostgreSQL's exact next sequence value.",
+        location,
+      );
+      return null;
+    }
     gates.add("sequence_default_requires_operation", "nextval() is not a D1 default; the event ID allocation operation must be collision-safe.", location);
     return null;
   }
@@ -742,7 +922,22 @@ function translateIndex(index, constraintNames, tableNames, columnsByTable, gate
   }
   const columns = [];
   for (const expression of parsed.expressions) {
-    const match = expression.trim().match(/^([A-Za-z_][A-Za-z0-9_]*)(?:\s+(ASC|DESC))?$/i);
+    const normalizedExpression = expression.trim();
+    const match = normalizedExpression.match(/^([A-Za-z_][A-Za-z0-9_]*)(?:\s+(ASC|DESC))?$/i);
+    const seqKeyMatch = normalizedExpression.match(/^(?:public\.)?seq_key\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*\)(?:\s+(ASC|DESC))?$/i);
+    if (seqKeyMatch) {
+      const sourceColumn = columnsByTable.get(parsed.table)?.get(seqKeyMatch[1]);
+      // Validated non-empty UUID arrays are imported as canonical,
+      // order-preserving JSON text. An index on that representation preserves
+      // sequence equality outside the source MD5 helper's theoretical
+      // collision boundary, without recreating PostgreSQL MD5 in SQLite.
+      if (!sourceColumn || sourceColumn.postgres_type.trim().toLowerCase() !== "uuid[]") {
+        gates.add("unsupported_index_expression", "seq_key can only be replaced by the canonical JSON key for a UUID-array column.", location);
+        return null;
+      }
+      columns.push(`${quoteIdentifier(seqKeyMatch[1])}${seqKeyMatch[2] ? ` ${seqKeyMatch[2].toUpperCase()}` : ""}`);
+      continue;
+    }
     if (!match || !columnsByTable.get(parsed.table)?.has(match[1])) {
       gates.add("unsupported_index_expression", "Expression indexes are not copied as ordinary D1 indexes.", location);
       return null;
@@ -784,6 +979,22 @@ function renderTable(tableName, tableColumns, sourceConstraints, context) {
   const lines = [`CREATE TABLE ${quoteIdentifier(tableName)} (`];
   const definitions = [];
   const columnByName = new Map();
+  const primaryConstraints = sourceConstraints.filter((constraint) => constraint.kind === "p");
+  const primaryKeyColumns = primaryConstraints.length === 1
+    ? parseConstraintColumns(primaryConstraints[0].definition, "PRIMARY KEY")
+    : null;
+  const sequencePrimaryKeyColumns = new Set();
+  for (const column of tableColumns) {
+    const defaultExpression = column.default_expression?.trim() ?? "";
+    if (!/^nextval\s*\(/i.test(defaultExpression)) continue;
+    if (
+      column.postgres_type.toLowerCase() === "bigint" &&
+      primaryKeyColumns?.length === 1 &&
+      primaryKeyColumns[0] === column.column_name
+    ) {
+      sequencePrimaryKeyColumns.add(column.column_name);
+    }
+  }
   for (const column of tableColumns) {
     columnByName.set(column.column_name, column);
     if (column.identity) {
@@ -807,7 +1018,7 @@ function renderTable(tableName, tableColumns, sourceConstraints, context) {
         { kind: "column", table: tableName, column: column.column_name },
       );
     }
-    const info = typeInfo(column, context.enumLabels, context.gates, context.typeCounts);
+    const info = typeInfo(column, context.enumLabels, context.gates, context.typeCounts, context.credentialDescriptorPlan);
     context.columnCodecs.push({
       table: tableName,
       column: column.column_name,
@@ -816,8 +1027,10 @@ function renderTable(tableName, tableColumns, sourceConstraints, context) {
       codec: info.codec,
     });
     const parts = [quoteIdentifier(column.column_name), info.targetType];
+    const sequencePrimaryKey = sequencePrimaryKeyColumns.has(column.column_name);
+    if (sequencePrimaryKey) parts.push("PRIMARY KEY AUTOINCREMENT");
     if (column.not_null) parts.push("NOT NULL");
-    const defaultSql = translateDefault(column, info, context.gates);
+    const defaultSql = translateDefault(column, info, context.gates, sequencePrimaryKey);
     if (defaultSql !== null) parts.push(`DEFAULT ${defaultSql}`);
     definitions.push({ order: column.ordinal, sql: parts.join(" ") });
     for (const check of info.checks) {
@@ -847,6 +1060,10 @@ function renderTable(tableName, tableColumns, sourceConstraints, context) {
         context.gates.add("unsupported_constraint", "Constraint columns could not be parsed safely.", location);
         continue;
       }
+      if (constraint.kind === "p" && names.length === 1 && sequencePrimaryKeyColumns.has(names[0])) {
+        context.translatedConstraints.p += 1;
+        continue;
+      }
       definitions.push({ order: 20_000 + sourceOrder[constraint.kind], sql: `CONSTRAINT ${quoteIdentifier(constraint.name)} ${prefix} (${names.map(quoteIdentifier).join(", ")})` });
       context.translatedConstraints[constraint.kind] += 1;
     } else if (constraint.kind === "f") {
@@ -856,6 +1073,23 @@ function renderTable(tableName, tableColumns, sourceConstraints, context) {
         context.translatedConstraints.f += 1;
       }
     } else if (constraint.kind === "c") {
+      const positiveDecimalCheck = translatePositiveCanonicalDecimalCheck(constraint.definition, tableColumns);
+      if (positiveDecimalCheck !== null) {
+        definitions.push({ order: 40_000, sql: `CONSTRAINT ${quoteIdentifier(constraint.name)} CHECK (${positiveDecimalCheck})` });
+        context.translatedConstraints.c += 1;
+        continue;
+      }
+      const regexCheck = translateKnownPostgresRegexCheck(
+        constraint.definition,
+        tableName,
+        tableColumns,
+        context.databaseLocale,
+      );
+      if (regexCheck !== null) {
+        definitions.push({ order: 40_000, sql: `CONSTRAINT ${quoteIdentifier(constraint.name)} CHECK (${regexCheck})` });
+        context.translatedConstraints.c += 1;
+        continue;
+      }
       if (representationSensitiveColumns(constraint.definition, tableColumns).length > 0) {
         context.gates.add(
           "representation_sensitive_check",
@@ -882,16 +1116,34 @@ function renderTable(tableName, tableColumns, sourceConstraints, context) {
   return lines.join("\n");
 }
 
-export function convertSchema(catalogInput) {
+export function convertSchema(catalogInput, options = {}) {
+  if (!isPlainObject(options) || Object.keys(options).some((key) => key !== "credentialDescriptor")) {
+    throw fail("invalid_schema_conversion_options");
+  }
   const catalog = normalizeCatalog(catalogInput);
   const gates = new GateBook();
   const tableNames = new Set(catalog.columns.map((column) => column.table_name));
+  const hasCredentialColumn = catalog.columns.some((column) => (
+    column.table_name === CREDENTIAL_SOURCE_RELATION && column.column_name === CREDENTIAL_COLUMN
+  ));
+  let credentialDescriptorPlan = null;
+  if (options.credentialDescriptor !== undefined) {
+    try {
+      credentialDescriptorPlan = compileCredentialDescriptor({ catalog: catalogInput, descriptor: options.credentialDescriptor });
+    } catch (error) {
+      throw fail(error?.code ?? "credential_descriptor_invalid", error);
+    }
+  } else if (hasCredentialColumn) {
+    gates.add("credential_descriptor_required", "The credential column has no explicit transform descriptor and cannot use the ordinary text codec.", {
+      kind: "column", table: CREDENTIAL_SOURCE_RELATION, column: CREDENTIAL_COLUMN,
+    });
+  }
   const columnsByTable = new Map();
   const enumLabels = buildEnumLabels(catalog.enums);
   const typeCounts = new Map();
   const translatedConstraints = { p: 0, u: 0, f: 0, c: 0 };
   const columnCodecs = [];
-  const context = { gates, tableNames, columnsByTable, enumLabels, typeCounts, translatedConstraints, columnCodecs };
+  const context = { gates, tableNames, columnsByTable, enumLabels, typeCounts, translatedConstraints, columnCodecs, credentialDescriptorPlan, databaseLocale: catalog.database_locale };
 
   for (const section of ["triggers", "rls_policies", "views", "functions"]) {
     if (!Object.hasOwn(catalogInput, section)) {
@@ -947,6 +1199,9 @@ export function convertSchema(catalogInput) {
     indexCount: catalog.indexes.length,
     enumLabelCount: catalog.enums.length,
   };
+  const unresolvedGates = gates.values();
+  const rowConversionGates = unresolvedGates.filter((gate) => ROW_CONVERSION_GATE_CODES.has(gate.code));
+  const schemaAndOperationGates = unresolvedGates.filter((gate) => !ROW_CONVERSION_GATE_CODES.has(gate.code));
   const report = {
     schemaVersion: SCHEMA_CONVERSION_VERSION,
     source: sourceSummary,
@@ -959,9 +1214,13 @@ export function convertSchema(catalogInput) {
       typeMappings: Object.fromEntries([...typeCounts.entries()].sort(([left], [right]) => left.localeCompare(right))),
       columnCodecs: columnCodecs.sort((left, right) => left.table.localeCompare(right.table) || left.column.localeCompare(right.column)),
     },
-    deployable: gates.values().length === 0,
-    unresolvedGateCount: gates.values().length,
-    gates: gates.values(),
+    deployable: unresolvedGates.length === 0,
+    unresolvedGateCount: unresolvedGates.length,
+    stageReadiness: {
+      rowConversion: stageGateSummary(rowConversionGates),
+      schemaAndOperations: stageGateSummary(schemaAndOperationGates),
+    },
+    gates: unresolvedGates,
   };
   const sql = [
     "-- Generated by scripts/migration/schema-convert.mjs.",
@@ -991,16 +1250,24 @@ async function writeAtomic(filePath, content) {
   }
 }
 
-export const USAGE = `Usage: schema-convert.mjs --catalog PATH --sql-out PATH --report-out PATH
+export const USAGE = `Usage: schema-convert.mjs --catalog PATH --sql-out PATH --report-out PATH [--credential-descriptor PATH]
 
 Reads a private schema-readiness catalog JSON and writes deterministic SQL plus
 a machine-readable unresolved-gates report. It never applies SQL or reads rows.
+Credential-bearing catalogs require an explicit, value-free transform descriptor;
+the ordinary text codec is never used for the credential column.
 `;
 
-export function validateDistinctPaths(catalogPath, sqlPath, reportPath) {
-  const paths = [catalogPath, sqlPath, reportPath].map((value) => path.resolve(value));
+export function validateDistinctPaths(catalogPath, sqlPath, reportPath, credentialDescriptorPath) {
+  const paths = [catalogPath, sqlPath, reportPath, ...(credentialDescriptorPath ? [credentialDescriptorPath] : [])]
+    .map((value) => path.resolve(value));
   if (new Set(paths).size !== paths.length) throw fail("output_paths_must_differ");
-  return { catalog: paths[0], sqlOut: paths[1], reportOut: paths[2] };
+  return {
+    catalog: paths[0],
+    sqlOut: paths[1],
+    reportOut: paths[2],
+    ...(credentialDescriptorPath ? { credentialDescriptor: paths[3] } : {}),
+  };
 }
 
 async function main() {
@@ -1018,17 +1285,26 @@ async function main() {
     if (name === "--catalog") values.catalog = value;
     else if (name === "--sql-out") values.sqlOut = value;
     else if (name === "--report-out") values.reportOut = value;
+    else if (name === "--credential-descriptor") values.credentialDescriptorPath = value;
     else throw fail("invalid_arguments");
   }
   if (!values.catalog || !values.sqlOut || !values.reportOut) throw fail("missing_output_argument");
-  const outputPaths = validateDistinctPaths(values.catalog, values.sqlOut, values.reportOut);
+  const outputPaths = validateDistinctPaths(values.catalog, values.sqlOut, values.reportOut, values.credentialDescriptorPath);
   let catalog;
   try {
     catalog = JSON.parse(await fs.readFile(outputPaths.catalog, "utf8"));
   } catch (error) {
     throw fail("invalid_catalog_file", error);
   }
-  const result = convertSchema(catalog);
+  let credentialDescriptor;
+  if (values.credentialDescriptorPath) {
+    try {
+      credentialDescriptor = JSON.parse(await fs.readFile(outputPaths.credentialDescriptor, "utf8"));
+    } catch (error) {
+      throw fail("credential_descriptor_file_invalid", error);
+    }
+  }
+  const result = convertSchema(catalog, credentialDescriptor === undefined ? {} : { credentialDescriptor });
   await writeAtomic(outputPaths.sqlOut, result.sql);
   await writeAtomic(outputPaths.reportOut, `${JSON.stringify(result.report, null, 2)}\n`);
   console.log(`Schema conversion generated ${result.report.target.tableCount} tables and ${result.report.unresolvedGateCount} unresolved gates.`);

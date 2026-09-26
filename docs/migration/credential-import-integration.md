@@ -1,10 +1,14 @@
 # Credential transform integration with the full D1 importer
 
 This document is the implementation contract for adding the credential
-transform to the verified-snapshot importer. Descriptor validation and a
-separate import projection implement parts of this contract; the transactional
-writer, coverage, and full importer integration remain unimplemented. These
-local components do not create D1 resources or complete the 40-table migration.
+transform to the verified-snapshot importer. As of 2026-09-26, the importer
+has a source-shaped special writer for enabled credentials attached to active
+licenses, with atomic artifact/coverage/checkpoint updates and typed readback.
+A fresh current-catalog rehearsal has completed all 40 table checkpoints and
+whole-target readback using three synthetic rows, including ACK-unknown resume
+and tampered-coverage rejection. Deferred-row coverage and real user-data
+migration remain incomplete and out of the current cutover stage. These local
+components do not create remote D1 resources.
 
 The existing local transform proof is deliberately narrower: it proves one
 synthetic source binding and writes a synthetic `fanmark_access_configs`
@@ -124,15 +128,20 @@ tables and their constraints. Credential ledger DDL is a separate reviewed
 extension, and its exact SQL must be included in the destination schema
 fingerprint before import.
 
-The manifest needs a `credentialDescriptorVersion` and
-`credentialDescriptorDigest` (or an equivalently signed sidecar digest bound
-into the manifest). A sidecar that is not digest-bound to the manifest is
-replaceable and is not sufficient. `d1-import.mjs` adds the descriptor digest
-to `__fanmark_d1_import_runs`, every table checkpoint, the private report, and
-the transform coverage ledger. A changed descriptor, codec/cost, destination
-mapping, source schema fingerprint, generated DDL fingerprint, or policy
-version cannot resume an old run; it requires a new isolated target
-incarnation or an explicitly reviewed repair.
+Snapshot format version 3 stores `credentialDescriptorVersion`, the full
+`credentialDescriptor`, and its canonical `credentialDescriptorDigest` in the
+private manifest. The exporter requires this explicit policy whenever the
+source catalog contains `fanmark_password_configs`; the offline verifier
+revalidates the descriptor against the catalog and recomputes the digest. The
+descriptor contains no credential value. This establishes the snapshot-side
+binding only. The generic importer's private run row, per-table checkpoint,
+and report now also persist and compare the descriptor digest. Credential
+coverage rows already have a descriptor field in the target extension, but
+the importer does not create coverage entries or perform a credential
+transform yet. Once that importer integration is implemented, a changed
+descriptor, codec/cost, destination mapping, source schema fingerprint,
+generated DDL fingerprint, or policy version must not resume an old run; it
+requires a new isolated target incarnation or an explicitly reviewed repair.
 
 ## Row-conversion changes
 
@@ -395,6 +404,21 @@ guard remains in force. `npm run test:migration-data` includes seven descriptor
 test groups; the parent review ran all 70 migration-data tests on Node 22.6.0
 with no failures or skips.
 
+## Implemented descriptor-bound schema codec
+
+`schema-convert.mjs` now accepts the value-free descriptor as an explicit
+policy input. With a valid descriptor, the exact source credential column is
+reported as `credential-to-bcrypt`; without one, it is reported as
+`credential-descriptor-required`, never as ordinary `text`. A wrong source
+column or unsupported descriptor fails conversion. The dedicated-transform
+gate remains blocking until the importer performs the hash and atomic write.
+Snapshot export, offline verification, row validation, and target-profile
+preflight carry the same canonical descriptor so their schema fingerprints
+agree. Schema conversion and the generic import report/ledger versions were
+incremented to 2 so an earlier codec or checkpoint cannot resume under the
+new policy. This is still not a credential write path: the generic D1 importer
+continues to stop before its first target write.
+
 
 ## Implemented import projection
 
@@ -454,3 +478,98 @@ fanmark_access_configs schema. It is not yet compatible with this
 source-shaped target profile and must not be called by the importer until the
 row-level atomic writer, coverage/checkpoint integration, and typed readback
 are implemented and tested.
+
+## Descriptor-bound row assembly (2026-09-24)
+
+`scripts/migration/credential-import-row.mjs` accepts the five-column
+projection and a strictly shaped `prepared` artifact. It verifies descriptor,
+source row/envelope digests, source key/revision, destination relation and
+license, enabled state, pinned bcrypt codec/cost, and bcrypt hash shape, then
+builds one six-column `fanmark_password_configs` INSERT binding with the hash
+in the original credential column position. It rejects string data in the
+enabled binding as `raw_credential_binding`, and the result carries no source
+credential value. Synthetic tests cover successful assembly and
+descriptor/artifact mismatch. The adapter is not yet called by `d1-import.mjs`;
+artifact preparation, atomic coverage/checkpoint application, credential
+readback, and inactive-license dispositions remain open. The private generic
+run/checkpoint/report schemas now also bind the descriptor digest; the guard
+still stops credential-bearing imports before any ledger or target write.
+
+## Source-shaped artifact preparation (2026-09-26)
+
+scripts/migration/credential-import-transform.mjs adds a migration-specific
+artifact preparer for the source-shaped credential_transform_artifacts table.
+It revalidates the one-use projection against its canonical snapshot envelope,
+then binds the row to the verified manifest digest, descriptor, credential
+target-profile fingerprint, target incarnation, retained license incarnation,
+and the pre-transform password/access/lifecycle generations. Only an active,
+non-returned license with an enabled credential can reserve an artifact;
+disabled and inactive rows return explicit deferred errors without creating
+an artifact.
+
+The preparer hashes with the pinned bcryptjs@3.0.3 cost 10 codec, verifies the
+positive and negative comparison, and stores only the prepared hash and
+binding digests in D1. The source value is held in a one-call WeakMap and never
+becomes a SQL binding, report field, or error cause. Inputs over bcrypt's
+72-byte boundary are rejected with a stable failure code rather than silently
+truncated. A prepared artifact is reused after an ACK-unknown response and
+after its lease expires; reclaim increments the fencing token without
+recomputing the hash. The final password-row insert trigger remains the sole
+owner of password/access generation increments.
+
+The source-shaped Miniflare test exercises reservation, preparation, an
+ACK-unknown result, expired-lease resume, reuse after the simulated row insert,
+and trigger-owned generation changes. It also checks disabled/inactive
+deferral, overlength rejection, and that synthetic plaintext does not appear
+in artifacts or target rows. The command npm --prefix workers/api run
+test:lifecycle-schema passes 13/13. This is still a separately tested
+preparation component: d1-import.mjs keeps credential_transform_required and
+has not yet wired the specialized insert, coverage row, checkpoint, atomic
+batch, or typed readback together. No real Auth, database, Storage, or
+credential values were read or migrated.
+
+## Integrated source-shaped writer (2026-09-26)
+
+d1-import.mjs now requires the exact composed target profile before allowing
+a credential-bearing snapshot through its special row path. The five ordinary
+source columns are projected separately; one prepared bcrypt value is added
+only by the six-column credential INSERT. The artifact transition, transformed
+coverage entry, checkpoint advance, and stale-state guards share one D1 batch.
+The password-row trigger remains the sole owner of password/access generation
+increments.
+
+After the batch, the importer reads back the target row, artifact, coverage,
+license incarnation/generations, and checkpoint. It marks an artifact
+reconciled only after those checks agree. A synthetic ACK-unknown test commits
+the batch, loses its acknowledgement, restarts the importer, and confirms it
+reuses the committed row and finishes reconciliation without inserting or
+hashing a second time. Disabled and inactive rows still fail closed and remain
+incomplete; their durable deferred-coverage policy has not been integrated.
+
+Validation at this checkpoint: `npm run test:migration-data` passed 116/116 and
+`npm --prefix workers/api run test:lifecycle-schema` passed 14/14. This proved
+the smaller source-shaped synthetic fixture only; the current-catalog rehearsal
+was completed later as recorded below. No live source rows, user credentials,
+Auth data, Storage objects, remote D1, Worker deployment, or domain/DNS was
+changed by these local tests.
+
+## Fresh current-catalog 40-table rehearsal (2026-09-26)
+
+The linked public schema catalog was read with a read-only metadata query and
+contains 40 tables and 406 columns. The one-off harness generated the exact
+current source DDL, applied the reviewed lifecycle/generation/credential
+extensions to disposable Miniflare D1, and exported three synthetic source rows
+(`fanmarks`, `fanmark_licenses`, and an enabled credential row). It injected an
+ACK-unknown result after the credential batch, resumed the same import, and
+completed all 40 checkpoints and per-table typed/hash readbacks. The final
+status was `public_rows_reconciled`; `deployable` and
+`fullMigrationReconciled` stayed false. A modified coverage destination digest
+was rejected on a subsequent readback.
+
+The harness initially attempted `PRAGMA integrity_check`, which Miniflare's D1
+authorizer rejects with `SQLITE_AUTH`. That engine-level diagnostic was removed
+from the D1 harness; the importer's full table reconciliation and supported
+`PRAGMA foreign_key_check` both passed. This does not lower the schema gates or
+prove production integrity. Disabled/inactive credential rows still do not
+have durable deferred coverage, and no source user rows or remote D1 were
+used.

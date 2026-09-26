@@ -22,6 +22,7 @@ import {
 import { FanmarkSelectionModal } from '@/components/FanmarkSelectionModal';
 import { DowngradeWarningDialog } from '@/components/DowngradeWarningDialog';
 import { supabase } from '@/integrations/supabase/client';
+import { bulkReturnFanmarksThroughWorker, getFanmarkReturnBackend } from '@/lib/fanmark-return-api';
 import { Check, ArrowLeft, Loader2, Sparkle, Crown, Star, ExternalLink, Flame, ShieldCheck, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface PlanCardCopy {
@@ -474,15 +475,16 @@ const PlanSelection = () => {
 
       // Return unselected fanmarks using bulk-return-fanmarks
       if (unselectedLicenseIds.length > 0) {
-        const { error: bulkReturnError, data: bulkReturnData } = await supabase.functions.invoke<{
-          success: boolean;
-          failed?: Array<{ licenseId: string; error: string }>;
-        }>('bulk-return-fanmarks', {
-          body: { license_ids: unselectedLicenseIds },
-        });
-
-        if (bulkReturnError) {
-          throw bulkReturnError;
+        let bulkReturnData: { success: boolean; failed?: Array<{ licenseId: string; error: string }> } | null;
+        if (getFanmarkReturnBackend() === 'worker') {
+          bulkReturnData = await bulkReturnFanmarksThroughWorker(unselectedLicenseIds);
+        } else {
+          const { error: bulkReturnError, data } = await supabase.functions.invoke<{
+            success: boolean;
+            failed?: Array<{ licenseId: string; error: string }>;
+          }>('bulk-return-fanmarks', { body: { license_ids: unselectedLicenseIds } });
+          if (bulkReturnError) throw bulkReturnError;
+          bulkReturnData = data;
         }
 
         if (bulkReturnData?.failed && bulkReturnData.failed.length > 0) {

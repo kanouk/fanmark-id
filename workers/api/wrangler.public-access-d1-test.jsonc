@@ -4,6 +4,7 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-09-18",
   "vars": {
+    "D1_TOPOLOGY": "split",
     "PUBLIC_ACCESS_BACKEND": "d1",
     "CORS_ALLOWED_ORIGINS": "https://app.example.test"
   },
@@ -12,6 +13,11 @@
       "binding": "FANMARK_DB",
       "database_name": "fanmark-public-access-fixture",
       "database_id": "00000000-0000-0000-0000-000000000034"
+    },
+    {
+      "binding": "MASTER_DB",
+      "database_name": "fanmark-public-access-master-fixture",
+      "database_id": "00000000-0000-0000-0000-000000000037"
     }
   ]
 }

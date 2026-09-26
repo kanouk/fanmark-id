@@ -7,7 +7,7 @@
 
 import { createHash, randomBytes } from "node:crypto";
 
-export const SNAPSHOT_FORMAT_VERSION = 1;
+export const SNAPSHOT_FORMAT_VERSION = 4;
 export const ROW_RECORD_VERSION = 1;
 export const ROW_ENVELOPE_VERSION = 1;
 export const SNAPSHOT_STATUS_FILE = "snapshot.status.json";
@@ -17,7 +17,24 @@ export const SNAPSHOT_SCHEMA_REPORT_FILE = "schema-report.json";
 export const TABLE_DIRECTORY = "tables";
 
 const IDENTIFIER_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
-const CATALOG_KEYS = ["columns", "constraints", "enums", "indexes"];
+const CATALOG_KEYS = ["columns", "constraints", "enums", "functions", "indexes", "rls_policies", "triggers", "views"];
+export const SUPPORTED_SEQUENCE_TARGET = Object.freeze({
+  schema: "public",
+  name: "fanmark_events_id_seq",
+  ownerSchema: "public",
+  ownerTable: "fanmark_events",
+  ownerColumn: "id",
+  startValue: "1",
+  incrementBy: "1",
+  minValue: "1",
+  maxValue: "9223372036854775807",
+  cacheSize: "1",
+  cycle: false,
+});
+const SEQUENCE_STATE_KEYS = [
+  "schema", "name", "ownerSchema", "ownerTable", "ownerColumn", "startValue",
+  "incrementBy", "minValue", "maxValue", "cacheSize", "cycle", "lastValue", "isCalled",
+];
 
 export class SnapshotFormatError extends Error {
   constructor(code, cause) {
@@ -76,8 +93,22 @@ export function catalogForFingerprint(catalog) {
     if (!Array.isArray(catalog[key])) throw fail("missing_catalog_scope");
   }
   // observed_at is evidence about when the catalog was captured, not schema
-  // identity.  Keep exactly the current schema-readiness scope in the hash.
-  return Object.fromEntries(CATALOG_KEYS.map((key) => [key, canonicalize(catalog[key])]));
+  // identity. Database locale is included when supplied because it can affect
+  // CHECK-constraint behavior. Omitting it preserves legacy catalog digests.
+  const result = Object.fromEntries(CATALOG_KEYS.map((key) => [key, canonicalize(catalog[key])]));
+  if (Object.hasOwn(catalog, "database_locale")) {
+    const locale = catalog.database_locale;
+    if (
+      !isPlainObject(locale) ||
+      Object.keys(locale).length !== 2 ||
+      typeof locale.collate !== "string" ||
+      typeof locale.ctype !== "string"
+    ) {
+      throw fail("invalid_database_locale");
+    }
+    result.database_locale = { collate: locale.collate, ctype: locale.ctype };
+  }
+  return result;
 }
 
 export function catalogFingerprint(catalog) {
@@ -87,6 +118,53 @@ export function catalogFingerprint(catalog) {
 export function schemaReportFingerprint(report) {
   if (!isPlainObject(report)) throw fail("invalid_schema_report");
   return sha256Hex(report);
+}
+
+export function expectedSequenceTargets(catalog) {
+  if (!isPlainObject(catalog) || !Array.isArray(catalog.columns)) throw fail("invalid_catalog");
+  const sequenceColumns = catalog.columns.filter((column) => /^nextval\s*\(/i.test(String(column?.default_expression ?? "").trim()));
+  if (sequenceColumns.length === 0) return [];
+  if (sequenceColumns.length !== 1) throw fail("sequence_target_unsupported");
+  const [column] = sequenceColumns;
+  if (
+    column.table_name !== SUPPORTED_SEQUENCE_TARGET.ownerTable
+    || column.column_name !== SUPPORTED_SEQUENCE_TARGET.ownerColumn
+    || String(column.postgres_type).toLowerCase() !== "bigint"
+    || !/^nextval\s*\(\s*'(?:public\.)?fanmark_events_id_seq'\s*::\s*regclass\s*\)$/iu.test(String(column.default_expression).trim())
+  ) throw fail("sequence_target_unsupported");
+  const primaryKey = getPrimaryKeyInfo(catalog, SUPPORTED_SEQUENCE_TARGET.ownerTable);
+  if (primaryKey.columns.length !== 1 || primaryKey.columns[0].name !== SUPPORTED_SEQUENCE_TARGET.ownerColumn) throw fail("sequence_target_unsupported");
+  return [SUPPORTED_SEQUENCE_TARGET];
+}
+
+export function validateSequenceStates(catalog, sequenceStates) {
+  const expected = expectedSequenceTargets(catalog);
+  if (!Array.isArray(sequenceStates) || sequenceStates.length !== expected.length) throw fail("sequence_state_set_mismatch");
+  const byName = new Map();
+  for (const state of sequenceStates) {
+    if (!isPlainObject(state) || JSON.stringify(Object.keys(state).sort()) !== JSON.stringify([...SEQUENCE_STATE_KEYS].sort())) throw fail("sequence_state_shape_invalid");
+    if (typeof state.schema !== "string" || typeof state.name !== "string" || typeof state.ownerSchema !== "string" || typeof state.ownerTable !== "string" || typeof state.ownerColumn !== "string") throw fail("sequence_state_identity_invalid");
+    if (byName.has(`${state.schema}.${state.name}`)) throw fail("sequence_state_duplicate");
+    byName.set(`${state.schema}.${state.name}`, state);
+  }
+  for (const target of expected) {
+    const state = byName.get(`${target.schema}.${target.name}`);
+    if (!state) throw fail("sequence_state_missing");
+    for (const key of ["schema", "name", "ownerSchema", "ownerTable", "ownerColumn", "startValue", "incrementBy", "minValue", "maxValue", "cacheSize", "cycle"]) {
+      if (state[key] !== target[key]) throw fail("sequence_state_definition_mismatch");
+    }
+    if (typeof state.lastValue !== "string" || !/^-?(?:0|[1-9][0-9]*)$/.test(state.lastValue) || typeof state.isCalled !== "boolean") throw fail("sequence_state_value_invalid");
+    let lastValue;
+    try {
+      lastValue = BigInt(state.lastValue);
+      if (lastValue.toString() !== state.lastValue || lastValue < BigInt(target.minValue) || lastValue > BigInt(target.maxValue)) throw fail("sequence_state_value_invalid");
+      if (!state.isCalled && state.lastValue !== target.startValue) throw fail("sequence_state_value_invalid");
+    } catch (error) {
+      if (error instanceof SnapshotFormatError) throw error;
+      throw fail("sequence_state_value_invalid", error);
+    }
+  }
+  return sequenceStates;
 }
 
 export function tableFileName(tableName) {

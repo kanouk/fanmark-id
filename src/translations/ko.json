@@ -1236,6 +1236,7 @@
     "started": "획득 일시",
     "expires": "만료 (예정) 일시",
     "noHistory": "라이선스 이력이 없습니다",
+    "historySignInPrompt": "소유 기록과 즐겨찾기 정보를 보려면 로그인하세요.",
     "initial": "초기",
     "favorite": "즐겨찾기에 추가",
     "unfavorite": "즐겨찾기에서 삭제",

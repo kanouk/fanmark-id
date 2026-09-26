@@ -17,6 +17,8 @@ import {
   activateEmojiMasterRelease,
   readEmojiMasterActiveRelease,
 } from "../../../scripts/migration/emoji-master-release-activate.mjs";
+import { captureEmojiReleaseState } from "../../../scripts/migration/emoji-master-release-remote-guards.mjs";
+import { assertRemoteActivationReadback } from "../../../scripts/migration/emoji-master-release-remote-activation.mjs";
 import { stageEmojiMasterRelease } from "../../../scripts/migration/emoji-master-release-stage.mjs";
 import {
   createEmojiMasterD1Repository,
@@ -25,6 +27,7 @@ import {
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const miniflarePath = path.join(repoRoot, "workers/api/node_modules/miniflare/dist/src/index.js");
+const emojiMasterDdlPath = path.join(repoRoot, "workers/api/migrations/0000_emoji_master.sql");
 const ddlPath = path.join(repoRoot, "workers/api/migrations/0001_emoji_master_release_staging.sql");
 const activationDdlPath = path.join(repoRoot, "workers/api/migrations/0002_emoji_master_release_activation.sql");
 const source = {
@@ -57,21 +60,6 @@ const addedAgain = {
   codepoints: ["1F33F"],
   sort_order: 3,
 };
-
-const sourceDdl = [
-  "CREATE TABLE emoji_master (",
-  "id TEXT PRIMARY KEY NOT NULL,",
-  "emoji TEXT NOT NULL UNIQUE,",
-  "short_name TEXT NOT NULL,",
-  "keywords TEXT NOT NULL CHECK (json_valid(keywords)),",
-  "category TEXT,",
-  "subcategory TEXT,",
-  "codepoints TEXT NOT NULL CHECK (json_valid(codepoints)),",
-  "sort_order INTEGER,",
-  "created_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP),",
-  "updated_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP)",
-  ");",
-].join("\n");
 
 async function createLocalD1() {
   let Miniflare;
@@ -141,7 +129,7 @@ async function applySql(database, sql) {
 async function createDatabase({ seedSource = true } = {}) {
   const local = await createLocalD1();
   try {
-    await applySql(local.database, sourceDdl);
+    await applySql(local.database, await fs.readFile(emojiMasterDdlPath, "utf8"));
     await applySql(local.database, await fs.readFile(ddlPath, "utf8"));
     await applySql(local.database, await fs.readFile(activationDdlPath, "utf8"));
     if (seedSource) {
@@ -367,6 +355,7 @@ test("verified versions promote and roll back through an immutable, generation-c
     const initial = await activateEmojiMasterRelease({
       database: local.database,
       releaseDirectory: first.directory,
+      expectedCurrentVersion: null,
     });
     assert.deepEqual(initial, {
       version: first.version,
@@ -385,9 +374,22 @@ test("verified versions promote and roll back through an immutable, generation-c
       changed: false,
     });
 
+    await assert.rejects(
+      () => activateEmojiMasterRelease({
+        database: local.database,
+        releaseDirectory: second.directory,
+        expectedCurrentVersion: null,
+      }),
+      (error) => error.code === "activation_state_conflict",
+    );
+    const unchangedAfterConflict = await readEmojiMasterActiveRelease(local.database);
+    assert.equal(unchangedAfterConflict.version, first.version);
+    assert.equal(unchangedAfterConflict.generation, 1);
+
     const promoted = await activateEmojiMasterRelease({
       database: local.database,
       releaseDirectory: second.directory,
+      expectedCurrentVersion: first.version,
     });
     assert.deepEqual(promoted, {
       version: second.version,
@@ -396,6 +398,7 @@ test("verified versions promote and roll back through an immutable, generation-c
       changed: true,
     });
 
+    const beforeRollback = await captureEmojiReleaseState(local.database);
     const rollback = await activateEmojiMasterRelease({
       database: local.database,
       releaseDirectory: first.directory,
@@ -411,6 +414,34 @@ test("verified versions promote and roll back through an immutable, generation-c
     assert.equal(active.version, first.version);
     assert.equal(active.generation, 3);
     assert.deepEqual(active.records, (await verifyRelease(first.directory)).records);
+    const afterRollback = await captureEmojiReleaseState(local.database);
+    assertRemoteActivationReadback({
+      before: beforeRollback,
+      after: afterRollback,
+      current: active,
+      activation: rollback,
+      version: first.version,
+      action: "rollback",
+    });
+
+    const beforeNoOp = afterRollback;
+    const noOpPromotion = await activateEmojiMasterRelease({
+      database: local.database,
+      releaseDirectory: first.directory,
+      action: "promotion",
+      expectedCurrentVersion: first.version,
+    });
+    const currentAfterNoOp = await readEmojiMasterActiveRelease(local.database);
+    const afterNoOp = await captureEmojiReleaseState(local.database);
+    assert.equal(noOpPromotion.changed, false);
+    assertRemoteActivationReadback({
+      before: beforeNoOp,
+      after: afterNoOp,
+      current: currentAfterNoOp,
+      activation: noOpPromotion,
+      version: first.version,
+      action: "promotion",
+    });
 
     const activations = await local.database.prepare(
       "SELECT generation, action, from_version, to_version FROM fanmark_emoji_master_release_activations ORDER BY generation",
@@ -492,6 +523,8 @@ test("read-only D1 catalog pages pin a version across an active-version switch",
   const local = await createDatabase();
   const env = {
     FANMARK_DB: local.database,
+    MASTER_DB: local.database,
+    D1_TOPOLOGY: "split",
     EMOJI_CATALOG_BACKEND: "d1",
     CORS_ALLOWED_ORIGINS: "https://app.example.test",
   };

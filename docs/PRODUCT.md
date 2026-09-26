@@ -23,8 +23,8 @@
 
 ## 譲渡（移管）システム
 - フロー: 現所有者が移管コード（AuthCode）発行→受取側が申請→現所有者が承認→新ライセンス発行／旧ライセンス失効。申請中は延長・返却をブロック。
-- コード発行条件: 残期間48h以上、1ライセンス1コード、申請中は再発行不可、再発行で既存コードを自動 cancel。Tier C は有効期限上限30日。
-- 新ライセンス期間: Tier S 7日 / A 14日 / B 30日 / C 無期限。設定データは基本・redirect・messageboard・プロフィールをコピーし、パスワード設定は除外。
+- コード発行条件: アクティブライセンスの残期間48h以上、同時に有効なコードは1ライセンス1つ。新規発行時は以前の有効コードをcancelし、申請中のコードは承認または拒否まで再発行できない。有効期限は全ティア共通で発行から48hまたは `license_end` の短い方。
+- 新ライセンス期間: Tier S 7日 / A 14日 / B 30日 / C 無期限。承認時に旧ライセンスを失効させ、旧側の基本・redirect・messageboard・password・profile設定を削除する。受取側にはaccess type=`inactive`の基本設定を新規作成し、任意の表示名だけを設定する。旧設定内容はコピーしない。新ライセンスは30日間transfer lockされ、その間は返却・再移管・再発行できない。承認時には旧ライセンスのpending lottery申請もcancelする。
 
 ## 抽選システム
 - 対象: Grace 中のファンマ。ユーザーは1ファンマにつき1件申込、現オーナーも可。延長と抽選は排他（延長が優先し pending をキャンセル）。申込中でも延長は可能。
@@ -293,14 +293,13 @@
 3. UI: FanmarkSelectionModal 表示
 4. ユーザー: 上限数だけ選択して確定
 5. フロントエンド: `handleFanmarkSelectionConfirm(selectedIds)`
-   a. 未選択の fanmark_id リストを算出
-   b. `supabase.functions.invoke('bulk-return-fanmarks', { body: { fanmark_ids } })`
-6. Edge Function `bulk-return-fanmarks`:
-   a. 各ファンマの license を取得
-   b. status を 'grace' に更新
-   c. grace_expires_at を設定
-   d. 設定データをクリア
-   e. audit_log に記録
+   a. 未選択ファンマの `license_id` リストを算出
+   b. Supabase既定では `supabase.functions.invoke('bulk-return-fanmarks', { body: { license_ids } })`。Cloudflare選択時は `POST /api/me/fanmarks/bulk-return` を呼ぶ
+6. Edge Function または Worker `bulk-return-fanmarks`:
+   a. 所有者のactive licenseを確認
+   b. status を 'grace' に更新し、grace_expires_at を設定
+   c. audit/通知イベントをbest effortで記録
+   d. 各licenseを独立処理し、成功結果と失敗licenseを返す。Worker版は1〜50件に制限
 7. 返却完了後、`change-subscription` を呼び出し
 8. 以降は通常のダウングレード処理
 ```
@@ -366,18 +365,21 @@
 
 ```
 1. UI: ExtendLicenseDialog で月数選択
-2. フロントエンド: `supabase.functions.invoke('create-extension-checkout', { body: { fanmark_id, months } })`
+2. フロントエンド: 延長操作につきUUIDの `request_id` を作り、同じ要求の再送やタブ再読み込み後も `sessionStorage` の同じ値を使って `supabase.functions.invoke('create-extension-checkout', { body: { license_id, months, request_id } })` を呼び出す
 3. Edge Function `create-extension-checkout`:
    a. JWT から user を取得
    b. `fanmark_licenses` から該当ライセンスを取得
    c. 検証: user_id 一致、status が active/grace、license_end が null でない
    d. `fanmark_tiers` から tier_level を取得
    e. `fanmark_tier_extension_prices` から price_id を取得（tier_level + months で検索）
-   f. Stripe: `checkout.sessions.create({
+   f. `billing_ingress.stripe_extension_checkout_intents` に所有者・ライセンス・月数・Price ID・価格を先に記録する。同じ `request_id` の再送はこのスナップショットを使い、価格マスターを再評価して別条件にしない
+   g. Stripe: `checkout.sessions.create({
         mode: 'payment',
         line_items: [{ price: stripe_price_id, quantity: 1 }],
         metadata: {
           type: 'license_extension',
+          billing_intent_id,
+          price_id,
           fanmark_id,
           license_id,
           user_id,
@@ -385,7 +387,8 @@
           tier_level
         }
       })`
-   g. レスポンス: `{ url: session.url }`
+      `Idempotency-Key` は intent ID から導出し、返った Session ID をintentへ保存する。Session IDが保存済みなら同じSessionを再取得する。Stripeキーの安全な再送期間内にSession IDが記録されない場合は、新しいSessionを作らず照合対象にする。決済成功でダッシュボードへ戻った時にブラウザー内の要求IDを消去し、次の意図的な延長操作には新しいIDを使う
+   h. レスポンス: `{ url: session.url }`
 4. フロントエンド: Stripe Checkout へ遷移
 5. ユーザー: 決済完了
 6. Stripe: `checkout.session.completed` Webhook 送信
@@ -487,6 +490,7 @@ function addMonths(base: Date, months: number): Date {
 
 - 設定場所: `system_settings.grace_period_days`
 - デフォルト値: 1日（24時間以上を保証）
+- 管理画面で設定できる範囲: 1〜365日
 - 計算式: `grace_expires_at = roundUpToNextUtcMidnight(now + grace_period_days)`
 
 #### 8.2 グレース中の状態
@@ -600,7 +604,7 @@ const priceIdToPlanType = {
 | `change-subscription` | プラン変更 | new_plan_type | { success, checkoutUrl?, pending? } |
 | `check-subscription` | サブスク状態確認 | - | { subscribed, product_id, subscription_end } |
 | `handle-stripe-webhook` | Webhook 処理 | Stripe Event | 200 OK |
-| `bulk-return-fanmarks` | 一括返却 | fanmark_ids[] | { success, results[] } |
+| `bulk-return-fanmarks` | 一括返却 | license_ids[] | { success, results[], failed? } |
 | `customer-portal` | Portal セッション | - | { url } |
 
 ---

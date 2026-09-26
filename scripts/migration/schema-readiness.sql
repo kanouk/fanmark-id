@@ -1,9 +1,15 @@
 -- Read-only source schema evidence for D1 conversion; never reads table rows.
--- Default/constraint expressions can contain deployment-specific constants:
--- keep the result private and review before extracting public documentation.
+-- Defaults, function bodies, view definitions, and policy expressions can
+-- contain deployment-specific constants: keep the result private and review
+-- before extracting public documentation.
 BEGIN READ ONLY;
 SELECT jsonb_build_object(
   'observed_at', statement_timestamp(),
+  'database_locale', (
+    SELECT jsonb_build_object('collate', d.datcollate, 'ctype', d.datctype)
+    FROM pg_database d
+    WHERE d.datname = current_database()
+  ),
   'columns', (
     SELECT jsonb_agg(jsonb_build_object(
       'table_name', c.relname,
@@ -67,6 +73,58 @@ SELECT jsonb_build_object(
     JOIN pg_namespace n ON n.oid = t.typnamespace
     JOIN pg_enum e ON e.enumtypid = t.oid
     WHERE n.nspname = 'public'
+  ),
+  'triggers', (
+    SELECT COALESCE(jsonb_agg(jsonb_build_object(
+      'table_name', c.relname,
+      'name', t.tgname,
+      'definition', pg_get_triggerdef(t.oid, true),
+      'function_name', p.proname,
+      'enabled', t.tgenabled
+    ) ORDER BY c.relname, t.tgname), '[]'::jsonb)
+    FROM pg_trigger t
+    JOIN pg_class c ON c.oid = t.tgrelid
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    JOIN pg_proc p ON p.oid = t.tgfoid
+    WHERE n.nspname = 'public' AND NOT t.tgisinternal
+  ),
+  'rls_policies', (
+    SELECT COALESCE(jsonb_agg(jsonb_build_object(
+      'table_name', tablename,
+      'name', policyname,
+      'permissive', permissive,
+      'roles', roles,
+      'command', cmd,
+      'using', qual,
+      'with_check', with_check
+    ) ORDER BY tablename, policyname), '[]'::jsonb)
+    FROM pg_policies
+    WHERE schemaname = 'public'
+  ),
+  'views', (
+    SELECT COALESCE(jsonb_agg(jsonb_build_object(
+      'name', c.relname,
+      'kind', CASE c.relkind WHEN 'm' THEN 'materialized' ELSE 'view' END,
+      'definition', pg_get_viewdef(c.oid, true)
+    ) ORDER BY c.relname), '[]'::jsonb)
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public' AND c.relkind IN ('v', 'm')
+  ),
+  'functions', (
+    SELECT COALESCE(jsonb_agg(jsonb_build_object(
+      'name', p.proname,
+      'identity_arguments', pg_get_function_identity_arguments(p.oid),
+      'result', pg_get_function_result(p.oid),
+      'language', l.lanname,
+      'security_definer', p.prosecdef,
+      'volatility', p.provolatile,
+      'definition', pg_get_functiondef(p.oid)
+    ) ORDER BY p.proname, pg_get_function_identity_arguments(p.oid)), '[]'::jsonb)
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    JOIN pg_language l ON l.oid = p.prolang
+    WHERE n.nspname = 'public' AND p.prokind IN ('f', 'p')
   )
 );
 COMMIT;

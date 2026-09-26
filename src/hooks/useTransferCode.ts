@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { callFanmarkTransferWorker, getFanmarkTransferBackend } from '@/lib/fanmark-transfer-api';
 
 export interface TransferCode {
   id: string;
@@ -45,6 +46,17 @@ export const useTransferCode = () => {
     if (!user) return;
 
     try {
+      if (getFanmarkTransferBackend() === 'worker') {
+        const payload = await callFanmarkTransferWorker<{
+          issuedCodes: TransferCode[];
+          pendingRequests: TransferRequest[];
+          myRequests: TransferRequest[];
+        }>('list');
+        setIssuedCodes(payload.issuedCodes);
+        setPendingRequests(payload.pendingRequests);
+        setMyRequests(payload.myRequests);
+        return;
+      }
       // Fetch issued codes (where I am the issuer)
       const { data: codes } = await supabase
         .from('fanmark_transfer_codes')
@@ -163,13 +175,27 @@ export const useTransferCode = () => {
   }, [fetchTransferData]);
 
   const issueTransferCode = async (fanmarkId: string, licenseId: string) => {
-    const { data, error } = await supabase.functions.invoke('generate-transfer-code', {
-      body: {
-        fanmark_id: fanmarkId,
-        license_id: licenseId,
-        disclaimer_agreed: true
+    let data: Record<string, unknown> | null;
+    let error: unknown;
+    if (getFanmarkTransferBackend() === 'worker') {
+      try {
+        data = await callFanmarkTransferWorker<Record<string, unknown>>('issue', {
+          fanmark_id: fanmarkId,
+          license_id: licenseId,
+          disclaimer_agreed: true,
+        });
+        error = null;
+      } catch (caught) {
+        data = null;
+        error = caught;
       }
-    });
+    } else {
+      const result = await supabase.functions.invoke('generate-transfer-code', {
+        body: { fanmark_id: fanmarkId, license_id: licenseId, disclaimer_agreed: true }
+      });
+      data = result.data as Record<string, unknown> | null;
+      error = result.error;
+    }
 
     if (error) {
       let errorMessage = (error as Error)?.message || 'Unknown error';
@@ -226,28 +252,43 @@ export const useTransferCode = () => {
       }
       throw err;
     }
-    if (data?.error) throw new Error(data.error);
+    if (typeof data?.error === 'string') throw new Error(data.error);
+    if (typeof data?.transfer_code !== 'string') throw new Error('invalid_response');
 
     await fetchTransferData();
-    return data;
+    return { ...data, transfer_code: data.transfer_code };
   };
 
   const applyTransferCode = async (transferCode: string) => {
-    const { data, error } = await supabase.functions.invoke('apply-transfer-code', {
-      body: {
-        transfer_code: transferCode,
-        disclaimer_agreed: true
+    let data: Record<string, unknown> | null;
+    let error: unknown;
+    if (getFanmarkTransferBackend() === 'worker') {
+      try {
+        data = await callFanmarkTransferWorker<Record<string, unknown>>('apply', {
+          transfer_code: transferCode,
+          disclaimer_agreed: true,
+        });
+        error = null;
+      } catch (caught) {
+        data = null;
+        error = caught;
       }
-    });
+    } else {
+      const result = await supabase.functions.invoke('apply-transfer-code', {
+        body: { transfer_code: transferCode, disclaimer_agreed: true }
+      });
+      data = result.data as Record<string, unknown> | null;
+      error = result.error;
+    }
 
     // Handle errors - check both error object and data.error
     // When Edge Function returns non-2xx, error is set but data may contain the response body
-    const errorData = data?.error ? data : null;
+    const errorData = typeof data?.error === 'string' ? data : null;
 
     if (error || errorData) {
       const errorInfo = errorData || {};
-      let errorMessage = errorInfo.error || (error as Error)?.message || 'Unknown error';
-      let errorCode = errorInfo.error || '';
+      let errorMessage = (typeof errorInfo.error === 'string' ? errorInfo.error : null) || (error as Error)?.message || 'Unknown error';
+      let errorCode = typeof errorInfo.error === 'string' ? errorInfo.error : '';
       let current = errorInfo.current;
       let limit = errorInfo.limit;
 
@@ -322,36 +363,80 @@ export const useTransferCode = () => {
   };
 
   const approveRequest = async (requestId: string, transferredFanmarkName?: string) => {
-    const { data, error } = await supabase.functions.invoke('approve-transfer-request', {
-      body: { request_id: requestId, transferredFanmarkName }
-    });
+    let data: Record<string, unknown> | null;
+    let error: unknown;
+    if (getFanmarkTransferBackend() === 'worker') {
+      try {
+        data = await callFanmarkTransferWorker<Record<string, unknown>>('approve', {
+          request_id: requestId, transferredFanmarkName,
+        });
+        error = null;
+      } catch (caught) {
+        data = null;
+        error = caught;
+      }
+    } else {
+      const result = await supabase.functions.invoke('approve-transfer-request', {
+        body: { request_id: requestId, transferredFanmarkName }
+      });
+      data = result.data as Record<string, unknown> | null;
+      error = result.error;
+    }
 
     if (error) throw error;
-    if (data?.error) throw new Error(data.error);
+    if (typeof data?.error === 'string') throw new Error(data.error);
 
     await fetchTransferData();
     return data;
   };
 
   const rejectRequest = async (requestId: string) => {
-    const { data, error } = await supabase.functions.invoke('reject-transfer-request', {
-      body: { request_id: requestId }
-    });
+    let data: Record<string, unknown> | null;
+    let error: unknown;
+    if (getFanmarkTransferBackend() === 'worker') {
+      try {
+        data = await callFanmarkTransferWorker<Record<string, unknown>>('reject', { request_id: requestId });
+        error = null;
+      } catch (caught) {
+        data = null;
+        error = caught;
+      }
+    } else {
+      const result = await supabase.functions.invoke('reject-transfer-request', {
+        body: { request_id: requestId }
+      });
+      data = result.data as Record<string, unknown> | null;
+      error = result.error;
+    }
 
     if (error) throw error;
-    if (data?.error) throw new Error(data.error);
+    if (typeof data?.error === 'string') throw new Error(data.error);
 
     await fetchTransferData();
     return data;
   };
 
   const cancelCode = async (transferCodeId: string) => {
-    const { data, error } = await supabase.functions.invoke('cancel-transfer-code', {
-      body: { transfer_code_id: transferCodeId }
-    });
+    let data: Record<string, unknown> | null;
+    let error: unknown;
+    if (getFanmarkTransferBackend() === 'worker') {
+      try {
+        data = await callFanmarkTransferWorker<Record<string, unknown>>('cancel', { transfer_code_id: transferCodeId });
+        error = null;
+      } catch (caught) {
+        data = null;
+        error = caught;
+      }
+    } else {
+      const result = await supabase.functions.invoke('cancel-transfer-code', {
+        body: { transfer_code_id: transferCodeId }
+      });
+      data = result.data as Record<string, unknown> | null;
+      error = result.error;
+    }
 
     if (error) throw error;
-    if (data?.error) throw new Error(data.error);
+    if (typeof data?.error === 'string') throw new Error(data.error);
 
     await fetchTransferData();
     return data;

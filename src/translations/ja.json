@@ -1226,6 +1226,7 @@
     "started": "取得日時",
     "expires": "失効（予定）日時",
     "noHistory": "ライセンス履歴がありません",
+    "historySignInPrompt": "所有履歴とお気に入り情報を見るにはログインしてください。",
     "initial": "初回",
     "favorite": "お気に入りに追加",
     "unfavorite": "お気に入りから削除",

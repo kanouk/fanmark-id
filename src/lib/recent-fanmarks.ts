@@ -8,12 +8,16 @@ export interface RecentFanmark {
   id: string;
   emoji: string;
   created_at: string | null;
+  short_id: string | null;
+  fanmark_id: string | null;
 }
 
 export interface RecentFanmarkApiItem {
   id: string;
   emoji: string;
   createdAt: string | null;
+  shortId?: string | null;
+  fanmarkId?: string | null;
 }
 
 export type RecentFanmarksApiErrorKind =
@@ -127,7 +131,15 @@ export function parseRecentFanmarksApiPayload(
     const id = nonEmptyString(item.id);
     const emoji = nonEmptyString(item.emoji);
     const createdAt = item.createdAt;
-    if (!id || !emoji || (createdAt !== null && typeof createdAt !== "string")) {
+    const shortId = item.shortId;
+    const fanmarkId = item.fanmarkId;
+    if (
+      !id ||
+      !emoji ||
+      (createdAt !== null && typeof createdAt !== "string") ||
+      (shortId !== undefined && shortId !== null && typeof shortId !== "string") ||
+      (fanmarkId !== undefined && fanmarkId !== null && typeof fanmarkId !== "string")
+    ) {
       throw new RecentFanmarksApiError("invalid_response");
     }
 
@@ -135,6 +147,8 @@ export function parseRecentFanmarksApiPayload(
       id,
       emoji,
       created_at: createdAt === null ? null : (createdAt as string),
+      short_id: typeof shortId === "string" && shortId.length > 0 ? shortId : null,
+      fanmark_id: typeof fanmarkId === "string" && fanmarkId.length > 0 ? fanmarkId : null,
     });
   }
 
@@ -155,6 +169,8 @@ export function mapRecentFanmarkRpcRows(rows: unknown): RecentFanmark[] {
       id,
       emoji: nonEmptyString(row.display_emoji) ?? "❓",
       created_at: nonEmptyString(row.license_created_at),
+      short_id: nonEmptyString(row.fanmark_short_id),
+      fanmark_id: nonEmptyString(row.fanmark_id),
     });
   }
 

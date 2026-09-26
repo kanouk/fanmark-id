@@ -1236,6 +1236,7 @@
     "started": "Acquired At",
     "expires": "Expires (planned)",
     "noHistory": "No license history available",
+    "historySignInPrompt": "Sign in to view ownership history and your favorite status.",
     "initial": "Initial",
     "favorite": "Add to Favorites",
     "unfavorite": "Remove from Favorites",

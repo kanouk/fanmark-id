@@ -1,9 +1,10 @@
 # Cloudflare 移行: Better Auth 認証 feasibility
 
-確認日: 2026-09-23 (JST)
+確認日: 2026-09-24 (JST)
 
-この調査と後続のローカル Worker 統合では、Supabase Auth の本番データ移行や
-Cloudflare のリモート D1/Worker 変更は行っていない。`experiments/cloudflare-auth/`
+この調査とローカル Worker 統合では、Supabase Auth の本番データ移行や
+Cloudflare のリモート D1/Worker 変更は行っていない。後続のisolated staging proofは
+文書末尾に分けて記録する。`experiments/cloudflare-auth/`
 とWorker統合テストには、架空のユーザー、UUID、bcrypt hash だけを使うローカル
 Workers + D1 proof を置いた。OAuth の provider 登録、OAuth callback、Supabase
 MFA factor の移行、実データの export/import は実施していない。
@@ -54,14 +55,55 @@ HTTPS originとの完全一致を要求する。設定がなければSupabaseへ
 MFA generation行、generation triggerを含める。user、account、password hash、factor、sessionの
 行は入れない。テスト実行時だけ合成行を作る。ログインではemail verificationを必須にする。
 招待・メール配信を含む`docs/PRODUCT.md`の仕様が未実装のため、signup、social login、password reset、
-verification email/linkのendpointは閉じたままにした。既存の`/admin/protected`検証は隔離された
-feasibility Workerにあり、アプリWorkerのadmin endpointにはまだ接続していない。
+verification email/linkのendpointは閉じたままにした。`/admin/protected`検証は当初、隔離された
+feasibility Workerで行った。アプリWorker接続の証拠は以下に記録する。
 
 `npm --prefix workers/api run test:auth:d1`で合成ログイン/session読戻し、誤passwordと未確認emailの
 拒否、閉鎖中endpoint、4並列sign-in、origin確認、preflight、backend未設定を検証し、Miniflareの5件が
 成功した。共通実装変更後も`npm --prefix experiments/cloudflare-auth test`のTOTP/admin-assurance
 6件が成功し、通常Workerの`build:dry-run`も成功した。いずれもローカル合成データの確認であり、remote
 CPU制限、D1の適用、実メール/OAuth、MFA factorの移送、業務データの認可は検証していない。
+
+## Isolated Cloudflare staging follow-up (2026-09-23)
+
+After the local proof, the APAC staging D1 received `0003_better_auth_core.sql`
+through Wrangler's remote `--file` import path after the standard remote
+`migrations apply` query path returned `incomplete input`. Eight Auth tables,
+six generation triggers, the `mfaGeneration` singleton, and the standard
+`d1_migrations` record were read back. All user-owned Auth tables were empty.
+The `fanmark-app-staging` Worker was then deployed with a staging-only secret,
+and the configured origin returned a successful synthetic sign-in, session
+read, logout, and wrong-password rejection. Signup stayed closed and OAuth or
+email delivery was not configured. The temporary `example.invalid` user was
+deleted and remote readback confirmed zero user/account/session/factor rows.
+This proves only the empty staging schema and narrow API smoke path; it does
+not prove imported Supabase users, frontend auth integration, OAuth, production
+CPU/concurrency, or business/admin authorization. See
+[`live-observations.md`](live-observations.md) for the full deployment evidence.
+
+## App Worker admin session gate (2026-09-24)
+
+`GET /api/admin/session` now applies the isolated proof's core checks in the app
+Worker: it resolves the current Better Auth session with cookie cache disabled,
+requires `adminRole=admin`, `user.twoFactorEnabled=1`, exactly one current
+verified factor, and an unexpired `mfaAssurance` row bound to that exact user,
+session, and factor. Cross-origin cookie requests are limited to configured
+origins and return `Access-Control-Allow-Credentials`; responses use
+`Cache-Control: no-store`. Only `GET` and `OPTIONS` are accepted, and every other
+`/api/admin/*` route remains `404`. This endpoint returns only
+`{"authorized":true}`; it does not implement or authorize admin CRUD/business
+operations, which must run their own gate at the protected operation.
+
+On Node 22.6.0, the app Worker Auth/D1 suite passed all eight tests, including
+anonymous/non-admin rejection, absent/expired assurance, assurance for a
+different session, origin rejection, and an authorized synthetic session with
+a current factor. Worker TypeScript and Wrangler staging dry-run passed. The
+staging app Worker was deployed as version
+`73b2724e-4abd-4ab6-a0bd-8e3a66cb7760`; live unauthenticated `GET` returned
+`401 unauthenticated`, and an allowed-origin `OPTIONS` returned `204` with
+credentialed CORS. No D1 migration or row write occurred. This does not prove
+the authorized admin path in remote D1, a full browser admin sign-in, or any
+business/admin data endpoint.
 
 ## 再現方法と固定バージョン
 
@@ -273,15 +315,57 @@ synthetic enrollment を実データ移行の証明に変えない。
 
 | surface | 今回の evidence | 未確認/次の gate |
 | --- | --- | --- |
-| D1 adapter | 公式 D1 support と local workerd/D1 の core auth/session | production schema parity、D1 batch の実負荷、migration rollback、remote resource policy |
+| D1 adapter | 公式 D1 support、local workerd/D1 auth/session、isolated remote empty-schema apply/readback | full application schema parity、D1 batch の実負荷、migration rollback behavior、remote resource policy |
 | bcrypt import | synthetic `$2b$10$` と `$2a$10$` の正しい/誤った password、session/UUID 関係。live aggregate は観測 hash を `$2a$10$` と確認 | 実 hash 内容/user 対応、CPU、成功時 rehash、失敗時の lock/rate limit |
 | UUID | synthetic user/account/session で UUID を完全一致 | `auth.users.id` と identity/account の実対応表、既存 session の扱い、export/import rehearsal |
 | Apple/Google/GitHub/Discord | 公式 docs と provider 設定項目の確認 | staging secret、実 callback、profile/email/null、link/unlink、origin/return URL |
-| MFA | synthetic user の local HTTP TOTP enrollment/challenge/verification、UUID/session 関係。admin route は role、current verified factor、session/factor-bound assurance を再検査し、OAuth 相当 session を verify 前に拒否。MFA mutation generation と guarded assurance insert を実 D1 barrier で検証し、同じ factor secret reset、factor replacement、sign-out 後の stale assurance を拒否。live aggregate は factor type を TOTP と確認 | Supabase factor secret/user 対応・移送可否、再登録、4 provider の実 callback と challenge policy、remote D1 multi-Worker concurrency、staging admin authorization |
+| MFA | synthetic user の local HTTP TOTP enrollment/challenge/verification、UUID/session 関係。admin route は role、current verified factor、session/factor-bound assurance を再検査し、OAuth 相当 session を verify 前に拒否。MFA mutation generation と guarded assurance insert を実 D1 barrier で検証し、同じ factor secret reset、factor replacement、sign-out 後の stale assurance を拒否。remote staging D1 has the six generation triggers and singleton readback; live aggregate は factor type を TOTP と確認 | Supabase factor secret/user 対応・移送可否、再登録、4 provider の実 callback と challenge policy、remote D1 multi-Worker concurrency、staging admin authorization |
 | CPU/concurrency | local 4 並列 sign-in が成功 | staged Worker の CPU metrics、plan/limit、D1 concurrency、rate limit、ピーク負荷 |
 
 これらの gate を通る前に本番 migration、旧 Auth の停止、OAuth provider の
 redirect 切替、MFA の無効化は行わない。
+
+## Dedicated staging Auth D1 (2026-09-24 JST)
+
+The app staging Worker now selects a separate `AUTH_DB` under `D1_TOPOLOGY=split`.
+APAC `fanmark-auth-staging` contains only the Better Auth/MFA schema and its
+`0003` migration ledger; final remote readback found zero user-owned rows and
+generation 0. A temporary synthetic account successfully signed in through
+the deployed Worker for the R2 API smoke, then was deleted and all Auth table
+counts returned to zero. The previous master staging D1 retains its existing
+empty Auth schema; no user rows were copied or deleted. This validates the
+staging Auth binding and a synthetic login only, not real credential or MFA
+migration, production provider callbacks, or admin CRUD authorization.
+
+## Current staging revalidation (2026-09-24)
+
+`fanmark-app-staging` is currently deployed as Worker version
+`af25a447-01f2-4fee-a273-21cace0522ca`. A fresh synthetic credential rehearsal
+against this version inserted one `example.invalid` user/account into the
+dedicated Auth D1, signed in, read the same synthetic UUID from the session,
+signed out, and confirmed a wrong password returned 401 without creating a
+session. Cleanup removed that exact test identity; aggregate readback then
+showed zero rows in user, account, session, verification, factor, admin-role,
+and MFA-assurance tables.
+
+The staging root and JavaScript asset both returned 200, and the remote asset
+hash matched the local Cloudflare-staging build. That build selects the
+Better Auth email client, hides signup/social login/password reset, and sends
+session, sign-in, and sign-out requests to the same-origin Worker. The bundle
+still contains the normal Supabase path for other build modes. This is a
+staging UI/API integration check; business reads, profile metadata, and image
+storage still retain Supabase paths, and no Supabase identity was imported.
+
+Limited CPU measurements were recorded on the staging Worker versions during
+the same rehearsal window. On the current `af25a447` version,
+`GET /api/auth/ok` used 0–1 ms across four samples after its lightweight
+health-route change. Anonymous `GET /api/admin/session` used 1 ms and 25 ms in
+two samples. Earlier versions also showed variable admin-session costs. The
+credential sign-in CPU was not captured, and this sample is too small to
+establish a plan fit. Workers Free allows 10 ms CPU per HTTP request; the
+25 ms admin sample and the unmeasured bcrypt sign-in leave the Free/Paid
+decision unresolved. No plan upgrade was made. See [Cloudflare Workers
+limits](https://developers.cloudflare.com/workers/platform/limits/).
 
 ## 公式一次資料
 

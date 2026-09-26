@@ -24,6 +24,8 @@ const ALLOWED_METADATA_KEYS = new Set([
   "fanmark_id",
   "months",
   "tier_level",
+  "expected_total_yen",
+  "allow_zero_total",
   "intent_id",
   "billing_intent_id",
   "request_id",
@@ -102,6 +104,108 @@ export interface NormalizedReceipt {
   invoice?: JsonObject;
 }
 
+export type CheckoutExtensionPaymentAssessment =
+  | { outcome: "grant"; reason: "paid" }
+  | { outcome: "awaiting_payment_confirmation"; reason: "checkout_completed_unpaid" }
+  | { outcome: "no_grant"; reason: "async_payment_failed" | "checkout_expired" }
+  | { outcome: "reject"; reason: string };
+
+export function buildPaidExtensionPriceMetadata(priceYen: number): {
+  expected_total_yen: string;
+  allow_zero_total: "false";
+} {
+  if (!Number.isSafeInteger(priceYen) || priceYen <= 0) {
+    throw new Error("paid_extension_price_must_be_positive_integer_yen");
+  }
+  return {
+    expected_total_yen: String(priceYen),
+    allow_zero_total: "false",
+  };
+}
+
+/**
+ * Decide whether a signed Checkout Session is eligible to fulfill an extension.
+ * New sessions carry the expected total and zero-total policy set by the
+ * server-side price lookup. Legacy paid sessions remain compatible; this paid
+ * path never grants a zero-total Session under the current Product policy.
+ */
+export function assessCheckoutExtensionPayment(
+  eventType: string,
+  sessionValue: unknown,
+): CheckoutExtensionPaymentAssessment {
+  if (eventType === "checkout.session.async_payment_failed") {
+    return { outcome: "no_grant", reason: "async_payment_failed" };
+  }
+  if (eventType === "checkout.session.expired") {
+    return { outcome: "no_grant", reason: "checkout_expired" };
+  }
+  if (
+    eventType !== "checkout.session.completed" &&
+    eventType !== "checkout.session.async_payment_succeeded"
+  ) {
+    return { outcome: "reject", reason: "unsupported_checkout_event" };
+  }
+
+  const session = asRecord(sessionValue);
+  if (session === null) {
+    return { outcome: "reject", reason: "checkout_session_missing" };
+  }
+  if (session.mode !== "payment" || session.status !== "complete") {
+    return { outcome: "reject", reason: "checkout_session_not_complete_payment" };
+  }
+
+  const metadata = asRecord(session.metadata) ?? {};
+  const expectedTotalValue = metadata.expected_total_yen;
+  const allowZeroValue = metadata.allow_zero_total;
+  const hasExpectedTotal = expectedTotalValue !== undefined && expectedTotalValue !== null;
+  const hasZeroAuthorization = allowZeroValue !== undefined && allowZeroValue !== null;
+
+  if (hasExpectedTotal !== hasZeroAuthorization) {
+    return { outcome: "reject", reason: "checkout_price_expectation_incomplete" };
+  }
+
+  if (hasExpectedTotal) {
+    if (
+      typeof expectedTotalValue !== "string" ||
+      !/^[1-9][0-9]*$/u.test(expectedTotalValue) ||
+      (allowZeroValue !== "true" && allowZeroValue !== "false")
+    ) {
+      return { outcome: "reject", reason: "checkout_price_expectation_invalid" };
+    }
+
+    const expectedTotal = Number(expectedTotalValue);
+    if (
+      !Number.isSafeInteger(expectedTotal) ||
+      expectedTotal <= 0 ||
+      session.currency !== "jpy" ||
+      session.amount_total !== expectedTotal ||
+      (expectedTotal === 0) !== (allowZeroValue === "true")
+    ) {
+      return { outcome: "reject", reason: "checkout_total_mismatch" };
+    }
+  }
+
+  if (session.payment_status === "paid") {
+    return { outcome: "grant", reason: "paid" };
+  }
+
+  if (
+    eventType === "checkout.session.completed" &&
+    session.payment_status === "unpaid"
+  ) {
+    return {
+      outcome: "awaiting_payment_confirmation",
+      reason: "checkout_completed_unpaid",
+    };
+  }
+
+  if (session.payment_status === "no_payment_required") {
+    return { outcome: "reject", reason: "zero_total_not_authorized" };
+  }
+
+  return { outcome: "reject", reason: "checkout_payment_not_settled" };
+}
+
 export interface ReceiptPersistenceInput {
   stripeEventId: string;
   livemode: boolean;
@@ -143,6 +247,7 @@ export interface SupabaseRpcClient {
 export interface StripeReceiptIngressOptions {
   stripe: StripeWebhookVerifier;
   webhookSecret: string;
+  cryptoProvider?: unknown;
   persistReceipt: PersistReceipt;
   maxBodyBytes?: number;
   maxNormalizedBytes?: number;
@@ -235,6 +340,23 @@ function boundedRelationshipId(value: unknown, fieldName: string): string | null
 function allowlistedMetadata(value: unknown): JsonObject {
   const metadata = asRecord(value);
   if (!metadata) return {};
+
+  const hasExpectedTotal = Object.prototype.hasOwnProperty.call(metadata, "expected_total_yen");
+  const hasZeroPolicy = Object.prototype.hasOwnProperty.call(metadata, "allow_zero_total");
+  if (hasExpectedTotal !== hasZeroPolicy) {
+    throw new ReceiptIngressError("invalid_event", "checkout price metadata is incomplete");
+  }
+  if (hasExpectedTotal) {
+    const expectedTotal = metadata.expected_total_yen;
+    const allowZero = metadata.allow_zero_total;
+    if (
+      typeof expectedTotal !== "string" ||
+      !/^[1-9][0-9]{0,15}$/u.test(expectedTotal) ||
+      allowZero !== "false"
+    ) {
+      throw new ReceiptIngressError("invalid_event", "checkout price metadata is invalid");
+    }
+  }
 
   const output: JsonObject = {};
   let count = 0;
@@ -723,6 +845,14 @@ async function readBodyWithLimit(
   }
 }
 
+export function readStripeWebhookBody(
+  request: Request,
+  maxBodyBytes = DEFAULT_MAX_BODY_BYTES,
+  timeoutMs = DEFAULT_PERSIST_TIMEOUT_MS,
+): Promise<Uint8Array> {
+  return readBodyWithLimit(request, maxBodyBytes, timeoutMs);
+}
+
 function durableResult(value: unknown): DurableReceiptResult {
   if (!Array.isArray(value) || value.length !== 1) {
     throw new Error("receipt persistence returned an invalid durable result");
@@ -898,7 +1028,7 @@ export function createStripeReceiptIngress(
         signature,
         options.webhookSecret,
         tolerance,
-        undefined,
+        options.cryptoProvider,
         nowMs(),
       );
     } catch {

@@ -25,7 +25,9 @@ responses are reduced to `502`/`504` error codes without upstream details.
 
 The source semantics follow `docs/migration/availability-contract.md`:
 
-- resolve IDs through `emoji_master` in caller order;
+- resolve IDs in caller order through the active, ready,
+  `fanmark_emoji_master_release_staging` release in Master D1; the mutable
+  canonical `emoji_master` mirror is not used for request-time lookup;
 - concatenate the resolved emoji strings and remove only U+1F3FB through
   U+1F3FF skin-tone code points;
 - preserve variation selectors and zero-width joiners when looking up
@@ -47,7 +49,11 @@ sends only the public `apikey`, JSON content type, and the RPC body
 not forwarded. It rejects redirects, bounds the response body to 16 KiB, and
 uses a bounded timeout.
 
-The D1 adapter uses exact integer cents in the imported
+The D1 adapter first resolves the singleton active-release pointer and its
+ready metadata, then looks up every requested ID within that immutable version.
+An absent active release fails closed as an upstream error; an ID that exists
+only in the canonical mirror or an older release is returned as
+`invalid_emoji_ids`. Exact integer cents in the imported
 `fanmark_tiers.monthly_price_usd` target column, then divides by 100 at the
 public response boundary. It keeps imported timestamptz values as fixed-width
 UTC text, including microseconds, and compares them with a fixed-width UTC
@@ -74,9 +80,18 @@ precision, and a real SQL failure.
 
 This proof does not create or deploy a remote D1 database, run the full schema
 or data import, measure Cloudflare CPU limits, invoke the live Supabase RPC,
-or provide OAuth credentials. Those remain migration
-gates. The Supabase adapter contract is validated with synthetic MSW responses;
-only the D1 path has a local database execution proof.
+or provide OAuth credentials. Those remain migration gates. The Supabase
+adapter contract is validated with synthetic MSW responses; only the D1 path
+has a local database execution proof.
+
+An additional local proof applies the checked-in emoji-release activation and
+versioned reference-master migrations, stages synthetic emoji/reference
+releases, and then calls the availability Worker against both active views.
+It verifies that lookup follows the same emoji version used by registration,
+ignores a stale canonical mirror, rejects a mirror-only retired ID, and keeps
+the exact-cent tier conversion. The focused fixture retains boundary and
+fail-closed cases.
+Run it with `npm run test:availability:reference-master` from `workers/api`.
 
 ## Frontend integration
 
@@ -97,3 +112,26 @@ Parent read-only verification also called the live public RPC for five bounded
 ID combinations and confirmed both Worker and frontend validators accepted
 the returned shapes. No user fields or API keys were logged. This checks the
 observed response contract, not complete source/D1 row parity.
+
+
+## Staging D1 integration (2026-09-25 JST)
+
+The app staging Worker now sets `AVAILABILITY_BACKEND=d1`, and its SPA bundle
+uses the same-origin Worker base URL. A read-only live request resolved one
+canonical emoji from the active Master D1 release, queried the empty synthetic
+business D1, and returned HTTP 200 with `no-store`, the exact allowed CORS
+origin, and a valid available tier-4 DTO. The response contained no user data.
+Local verification passed the six frontend contracts, eight focused D1 cases,
+and three split reference-master cases. This only proves the staging contract
+against synthetic empty business data; search history, existing ownership,
+registration, user lookup, and full production parity remain on Supabase.
+
+## Registration staging boundary (2026-09-26 JST)
+
+The separate D1 registration API is now selected in the Cloudflare staging
+build. It reads the exact allowlisted public `max_emoji_characters=5` setting
+from business D1 and validates the count against that value; its test also
+sets a local fixture limit of one and verifies rejection. Registration and
+its user-owned rows remain synthetic staging behavior; production/default
+builds retain their existing Supabase path. See
+[fanmark registration API](fanmark-registration-api.md).

@@ -31,6 +31,24 @@ jobs:
       - name: Test recent API client
         run: npm run test:recent
 
+      - name: Test owner-scoped dashboard API client
+        run: npm run test:owned-fanmarks-api
+
+      - name: Test own-profile API client
+        run: npm run test:profile-api
+
+      - name: Test notifications API client
+        run: npm run test:notifications-api
+
+      - name: Test favorites API client
+        run: npm run test:favorites-api
+
+      - name: Test fanmark registration API client
+        run: npm run test:fanmark-registration-api
+
+      - name: Test fanmark lottery API client
+        run: npm run test:fanmark-lottery-api
+
       - name: Test availability API client
         run: npm run test:availability
 
@@ -100,9 +118,33 @@ jobs:
       - name: Test integrated Better Auth route
         if: matrix.directory == 'workers/api'
         run: npm run test:auth:d1
+      - name: Test Better Auth protected R2 image API
+        if: matrix.directory == 'workers/api'
+        run: npm run test:storage-r2-api
+      - name: Test Better Auth owner-scoped dashboard API
+        if: matrix.directory == 'workers/api'
+        run: npm run test:owned-fanmarks-api
+      - name: Test Better Auth own-profile API
+        if: matrix.directory == 'workers/api'
+        run: npm run test:profile-d1
+      - name: Test Better Auth notifications API
+        if: matrix.directory == 'workers/api'
+        run: npm run test:notifications-d1
+      - name: Test Better Auth favorites API
+        if: matrix.directory == 'workers/api'
+        run: npm run test:favorites-d1
+      - name: Test D1 fanmark registration transaction
+        if: matrix.directory == 'workers/api'
+        run: npm run test:fanmark-registration-d1
+      - name: Test D1 fanmark lottery actions
+        if: matrix.directory == 'workers/api'
+        run: npm run test:fanmark-lottery-d1
       - name: Test D1 availability contract
         if: matrix.directory == 'workers/api'
         run: npm run test:availability:d1
+      - name: Test D1 availability against versioned reference masters
+        if: matrix.directory == 'workers/api'
+        run: npm run test:availability:reference-master
       - name: Test D1 public access contract
         if: matrix.directory == 'workers/api'
         run: npm run test:public-access:d1
@@ -112,6 +154,9 @@ jobs:
       - name: Test versioned emoji master D1 staging
         if: matrix.directory == 'workers/api'
         run: npm run test:emoji-master-release
+      - name: Test versioned reference master D1 staging
+        if: matrix.directory == 'workers/api'
+        run: npm run test:reference-master-release
       - name: Test lifecycle target schema
         if: matrix.directory == 'workers/api'
         run: npm run test:lifecycle-schema
@@ -121,6 +166,12 @@ jobs:
       - name: Test source-shaped local license expiry transitions
         if: matrix.directory == 'workers/api'
         run: npm run test:license-expiry-source
+      - name: Test deterministic license lottery selection
+        if: matrix.directory == 'workers/api'
+        run: npm run test:license-lottery-selection
+      - name: Test scheduled license expiry contract
+        if: matrix.directory == 'workers/api'
+        run: npm run test:license-expiry-scheduled
       - name: Test local R2 import and readback
         if: matrix.directory == 'workers/api'
         run: npm run test:storage-r2

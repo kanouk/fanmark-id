@@ -99,6 +99,9 @@ function fixtureCatalog() {
       column("fanmarks", "normalized_emoji", 3, "text", { not_null: true }),
       column("fanmarks", "status", 4, "text", { not_null: true }),
       column("fanmarks", "source_extra", 5, "text"),
+      column("fanmarks", "user_input_fanmark", 6, "text"),
+      column("fanmarks", "emoji_ids", 7, "uuid[]"),
+      column("fanmarks", "normalized_emoji_ids", 8, "uuid[]"),
       column("fanmark_licenses", "id", 1, "uuid", { not_null: true }),
       column("fanmark_licenses", "fanmark_id", 2, "uuid", { not_null: true }),
       column("fanmark_licenses", "user_id", 3, "uuid"),
@@ -126,23 +129,56 @@ function fixtureCatalog() {
       column("notification_events", "retry_count", 10, "integer", { not_null: true }),
       column("notification_events", "created_at", 11, "timestamp with time zone", { not_null: true }),
       column("notification_events", "updated_at", 12, "timestamp with time zone", { not_null: true }),
+      column("fanmark_lottery_entries", "id", 1, "uuid", { not_null: true }),
+      column("fanmark_lottery_entries", "license_id", 2, "uuid", { not_null: true }),
+      column("fanmark_lottery_entries", "entry_status", 3, "text", { not_null: true }),
       column(PASSWORD_TABLE, "id", 1, "uuid", { not_null: true }),
       column(PASSWORD_TABLE, "license_id", 2, "uuid", { not_null: true }),
       column(PASSWORD_TABLE, "access_password", 3, "text", { not_null: true }),
       column(PASSWORD_TABLE, "is_enabled", 4, "boolean", { not_null: true, default_expression: "true" }),
       column(PASSWORD_TABLE, "created_at", 5, "timestamp with time zone", { not_null: true }),
       column(PASSWORD_TABLE, "updated_at", 6, "timestamp with time zone", { not_null: true }),
+      column("fanmark_basic_configs", "id", 1, "uuid", { not_null: true }),
+      column("fanmark_basic_configs", "license_id", 2, "uuid", { not_null: true }),
+      column("fanmark_basic_configs", "fanmark_name", 3, "text"),
+      column("fanmark_basic_configs", "access_type", 4, "text"),
+      column("fanmark_redirect_configs", "id", 1, "uuid", { not_null: true }),
+      column("fanmark_redirect_configs", "license_id", 2, "uuid", { not_null: true }),
+      column("fanmark_redirect_configs", "target_url", 3, "text"),
+      column("fanmark_messageboard_configs", "id", 1, "uuid", { not_null: true }),
+      column("fanmark_messageboard_configs", "license_id", 2, "uuid", { not_null: true }),
+      column("fanmark_messageboard_configs", "content", 3, "text"),
+      column("fanmark_profiles", "id", 1, "uuid", { not_null: true }),
+      column("fanmark_profiles", "license_id", 2, "uuid"),
+      column("fanmark_profiles", "display_name", 3, "text"),
+      column("fanmark_profiles", "bio", 4, "text"),
+      column("fanmark_profiles", "social_links", 5, "jsonb"),
+      column("fanmark_profiles", "theme_settings", 6, "jsonb"),
+      column("fanmark_profiles", "is_public", 7, "boolean"),
     ],
     constraints: [
       primary("fanmarks"),
       primary("fanmark_licenses"),
       primary("audit_logs"),
       primary("notification_events"),
+      primary("fanmark_lottery_entries"),
       primary(PASSWORD_TABLE),
+      primary("fanmark_basic_configs"),
+      primary("fanmark_redirect_configs"),
+      primary("fanmark_messageboard_configs"),
+      primary("fanmark_profiles"),
       unique("fanmarks", "fanmarks_short_id_key", "short_id"),
       unique(PASSWORD_TABLE, "fanmark_password_configs_license_id_key", "license_id"),
+      unique("fanmark_basic_configs", "fanmark_basic_configs_license_id_key", "license_id"),
+      unique("fanmark_redirect_configs", "fanmark_redirect_configs_license_id_key", "license_id"),
+      unique("fanmark_messageboard_configs", "fanmark_messageboard_configs_license_id_key", "license_id"),
+      unique("fanmark_profiles", "fanmark_profiles_license_id_key", "license_id"),
       foreign("fanmark_licenses", "fanmark_licenses_fanmark_id_fkey", "FOREIGN KEY (fanmark_id) REFERENCES public.fanmarks (id) ON DELETE RESTRICT ON UPDATE RESTRICT"),
       foreign(PASSWORD_TABLE, "fanmark_password_configs_license_id_fkey", "FOREIGN KEY (license_id) REFERENCES public.fanmark_licenses (id) ON DELETE CASCADE"),
+      foreign("fanmark_basic_configs", "fanmark_basic_configs_license_id_fkey", "FOREIGN KEY (license_id) REFERENCES public.fanmark_licenses (id) ON DELETE CASCADE"),
+      foreign("fanmark_redirect_configs", "fanmark_redirect_configs_license_id_fkey", "FOREIGN KEY (license_id) REFERENCES public.fanmark_licenses (id) ON DELETE CASCADE"),
+      foreign("fanmark_messageboard_configs", "fanmark_messageboard_configs_license_id_fkey", "FOREIGN KEY (license_id) REFERENCES public.fanmark_licenses (id) ON DELETE CASCADE"),
+      foreign("fanmark_profiles", "fanmark_profiles_license_id_fkey", "FOREIGN KEY (license_id) REFERENCES public.fanmark_licenses (id) ON DELETE CASCADE"),
     ],
     indexes: [],
     enums: [],
@@ -247,8 +283,8 @@ async function setup() {
 }
 
 async function insertFanmark(database, id, shortId) {
-  await database.prepare('INSERT INTO "fanmarks" ("id", "short_id", "normalized_emoji", "status", "source_extra") VALUES (?, ?, ?, ?, ?)')
-    .bind(id, shortId, "🌿", "active", "synthetic")
+  await database.prepare('INSERT INTO "fanmarks" ("id", "short_id", "normalized_emoji", "status", "source_extra", "user_input_fanmark", "emoji_ids", "normalized_emoji_ids") VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    .bind(id, shortId, "🌿", "active", "synthetic", "🌿", "[]", "[]")
     .run();
 }
 
@@ -275,6 +311,8 @@ test("applies generation triggers exactly once and rejects a changed trigger", a
   const fixture = await setup();
   try {
     assert.equal(fixture.generationPlan.sql.includes("IF NOT EXISTS"), false);
+    assert.equal(/(?:^|\n)\s*SELECT\s+CASE\b[^\n]*\bRAISE\s*\(/u.test(fixture.generationPlan.sql), false);
+    assert.match(fixture.generationPlan.sql, /SELECT RAISE\(ABORT,[^\n]+\) WHERE /u);
     const repeated = await applyLifecycleGenerationSchema({
       database: fixture.database,
       plan: fixture.generationPlan,
@@ -316,6 +354,63 @@ test("applies generation triggers exactly once and rejects a changed trigger", a
   }
 });
 
+test("allows only recognized Cloudflare D1 bookkeeping tables in schema readback", async () => {
+  const fixture = await setup();
+  try {
+    const withInventoryObjects = (extraObjects) => ({
+      prepare(sql) {
+        const statement = fixture.database.prepare(sql);
+        return {
+          async all() {
+            const result = await statement.all();
+            if (!sql.includes("FROM sqlite_master")) return result;
+            const existingNames = new Set(result.results.map((object) => object.name));
+            return {
+              ...result,
+              results: [...result.results, ...extraObjects.filter((object) => !existingNames.has(object.name))],
+            };
+          },
+        };
+      },
+    });
+    const providerObjects = ["_cf_KV", "_cf_METADATA", "d1_migrations"].map((name) => ({
+      type: "table",
+      name,
+      tbl_name: name,
+      sql: `CREATE TABLE "${name}" ("id" TEXT PRIMARY KEY)`,
+    }));
+    const downstreamObject = {
+      type: "table",
+      name: "future_extension_table",
+      tbl_name: "future_extension_table",
+      sql: 'CREATE TABLE "future_extension_table" ("id" TEXT PRIMARY KEY)',
+    };
+    assert.equal((await inspectLifecycleGenerationSchema(
+      withInventoryObjects([...providerObjects, downstreamObject]),
+      fixture.generationPlan,
+      fixture.lifecyclePlan,
+      [downstreamObject],
+    )).complete, true);
+
+    await assert.rejects(
+      inspectLifecycleGenerationSchema(
+        withInventoryObjects([...providerObjects, downstreamObject, {
+          type: "table",
+          name: "unexpected_application_object",
+          tbl_name: "unexpected_application_object",
+          sql: 'CREATE TABLE "unexpected_application_object" ("id" TEXT PRIMARY KEY)',
+        }]),
+        fixture.generationPlan,
+        fixture.lifecyclePlan,
+        [downstreamObject],
+      ),
+      (error) => error.code === "lifecycle_generation_schema_unexpected",
+    );
+  } finally {
+    await fixture.miniflare.dispose();
+  }
+});
+
 test("preserves incarnations, invalidates password/access generations, and rolls back unsafe mutations", async () => {
   const fixture = await setup();
   const { database } = fixture;
@@ -351,6 +446,61 @@ test("preserves incarnations, invalidates password/access generations, and rolls
     await database.prepare('DELETE FROM "fanmark_password_configs" WHERE "license_id" = ?').bind(IDS.license3).run();
     assert.deepEqual(await accessRow(database, IDS.license3), { license_incarnation: 0, password_generation: 2, access_generation: 2 });
 
+    await database.prepare('INSERT INTO "fanmark_basic_configs" ("id", "license_id", "fanmark_name", "access_type") VALUES (?, ?, ?, ?)')
+      .bind("00000000-0000-4000-8000-000000000401", IDS.license1, "🌿", "redirect")
+      .run();
+    assert.equal((await accessRow(database, IDS.license1)).access_generation, 4);
+    await database.prepare('UPDATE "fanmark_basic_configs" SET "fanmark_name" = "fanmark_name" WHERE "license_id" = ?')
+      .bind(IDS.license1)
+      .run();
+    assert.equal((await accessRow(database, IDS.license1)).access_generation, 4);
+    await database.prepare('UPDATE "fanmark_basic_configs" SET "access_type" = ? WHERE "license_id" = ?')
+      .bind("text", IDS.license1)
+      .run();
+    assert.equal((await accessRow(database, IDS.license1)).access_generation, 5);
+    await database.prepare('UPDATE "fanmark_basic_configs" SET "license_id" = ? WHERE "license_id" = ?')
+      .bind(IDS.license3, IDS.license1)
+      .run();
+    assert.equal((await accessRow(database, IDS.license1)).access_generation, 6);
+    assert.equal((await accessRow(database, IDS.license3)).access_generation, 3);
+    await database.prepare('DELETE FROM "fanmark_basic_configs" WHERE "license_id" = ?').bind(IDS.license3).run();
+    assert.equal((await accessRow(database, IDS.license3)).access_generation, 4);
+
+    await database.prepare('INSERT INTO "fanmark_redirect_configs" ("id", "license_id", "target_url") VALUES (?, ?, ?)')
+      .bind("00000000-0000-4000-8000-000000000402", IDS.license1, "https://example.test/one")
+      .run();
+    await database.prepare('UPDATE "fanmark_redirect_configs" SET "target_url" = ? WHERE "license_id" = ?')
+      .bind("https://example.test/two", IDS.license1)
+      .run();
+    assert.equal((await accessRow(database, IDS.license1)).access_generation, 8);
+    await database.prepare('DELETE FROM "fanmark_redirect_configs" WHERE "license_id" = ?').bind(IDS.license1).run();
+    assert.equal((await accessRow(database, IDS.license1)).access_generation, 9);
+
+    await database.prepare('INSERT INTO "fanmark_messageboard_configs" ("id", "license_id", "content") VALUES (?, ?, ?)')
+      .bind("00000000-0000-4000-8000-000000000403", IDS.license1, "synthetic text")
+      .run();
+    await database.prepare('UPDATE "fanmark_messageboard_configs" SET "content" = ? WHERE "license_id" = ?')
+      .bind("updated synthetic text", IDS.license1)
+      .run();
+    assert.equal((await accessRow(database, IDS.license1)).access_generation, 11);
+
+    await database.prepare('INSERT INTO "fanmark_profiles" ("id", "license_id", "display_name", "bio", "social_links", "theme_settings", "is_public") VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .bind("00000000-0000-4000-8000-000000000404", IDS.license1, "Synthetic", "Bio", "{}", "{}", 1)
+      .run();
+    await database.prepare('UPDATE "fanmark_profiles" SET "is_public" = 0 WHERE "license_id" = ?')
+      .bind(IDS.license1)
+      .run();
+    assert.equal((await accessRow(database, IDS.license1)).access_generation, 13);
+
+    await database.prepare('UPDATE "fanmarks" SET "normalized_emoji_ids" = ? WHERE "id" = ?')
+      .bind('["00000000-0000-4000-8000-000000000501"]', IDS.fanmark1)
+      .run();
+    assert.equal((await accessRow(database, IDS.license1)).access_generation, 14);
+    await database.prepare('UPDATE "fanmarks" SET "normalized_emoji_ids" = "normalized_emoji_ids" WHERE "id" = ?')
+      .bind(IDS.fanmark1)
+      .run();
+    assert.equal((await accessRow(database, IDS.license1)).access_generation, 14);
+
     await database.prepare('DELETE FROM "fanmark_access_versions" WHERE "license_id" = ?').bind(IDS.license3).run();
     await assert.rejects(insertPassword(database, "00000000-0000-4000-8000-000000000302", IDS.license3));
     const missingVersionPassword = await database.prepare('SELECT COUNT(*) AS "count" FROM "fanmark_password_configs" WHERE "license_id" = ?').bind(IDS.license3).all();
@@ -367,6 +517,11 @@ test("preserves incarnations, invalidates password/access generations, and rolls
       .bind(MAX_SAFE, MAX_SAFE, IDS.license2)
       .run();
     await assert.rejects(insertPassword(database, "00000000-0000-4000-8000-000000000303", IDS.license2));
+    await assert.rejects(
+      database.prepare('INSERT INTO "fanmark_basic_configs" ("id", "license_id", "fanmark_name", "access_type") VALUES (?, ?, ?, ?)')
+        .bind("00000000-0000-4000-8000-000000000405", IDS.license2, "Overflow", "text")
+        .run(),
+    );
     assert.deepEqual(await accessRow(database, IDS.license2), { license_incarnation: 7, password_generation: MAX_SAFE, access_generation: MAX_SAFE });
 
     await assert.rejects(

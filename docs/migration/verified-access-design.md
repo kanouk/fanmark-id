@@ -1,11 +1,21 @@
 # Verified public fanmark access design
 
-This is the target design for password-protected public fanmarks before the
-frontend moves away from the existing Supabase password path. It does not add
-routes, migrate password values, create remote D1 resources, or change the
-anonymous public projection. The design keeps the existing four-digit user
-experience while requiring a separate compatibility decision for every source
-password format.
+The Worker implementation for password-protected public fanmarks is connected
+to the source-shaped D1 profile and enabled on the workers.dev staging app only.
+The frontend uses the matching Worker selector there; production continues to
+use the Supabase path. A live synthetic four-digit password verification and
+protected read passed and all canary rows were removed. No real password values
+or user rows have been moved. Compatibility for each imported source hash
+format and Cloudflare CPU/plan fit remain separate gates.
+
+`workers/api/src/verified-access.mjs` implements the gated routes.
+`scripts/migration/verified-access-schema.mjs` generates, applies, and reads
+back the proof/rate-limit extension against the exact source, lifecycle,
+generation, and credential-transform plans. Local Miniflare tests exercise
+the route both on a focused fixture and on a synthetic row in the latest
+40-table profile. The live canary verifies the selected staging route with a
+new synthetic hash; it is not a live password-format preflight for migrated
+users or Cloudflare CPU-fit evidence.
 
 ## Decision
 
@@ -57,47 +67,66 @@ fallback.
 
 ## D1 state and invalidation
 
-The production schema needs explicit version rows before importing protected
-content:
+The current migration target already generates the lifecycle tables below.
+The verifier must reuse their exact names and columns; it must not introduce a
+second lifecycle counter:
 
 ```text
+fanmark_license_incarnations
+  license_id              TEXT PRIMARY KEY
+  incarnation             INTEGER NOT NULL
+
 fanmark_access_versions
   license_id              TEXT PRIMARY KEY REFERENCES fanmark_licenses(id)
+  license_incarnation     INTEGER NOT NULL
   password_generation     INTEGER NOT NULL
-  lifecycle_generation    INTEGER NOT NULL
+  access_generation       INTEGER NOT NULL
   updated_at              TEXT NOT NULL
 
 fanmark_access_proofs
   id                      TEXT PRIMARY KEY
-  token_hash              TEXT UNIQUE NOT NULL
+  token_hash              TEXT UNIQUE NOT NULL -- SHA-256 only
+  finalization_id         TEXT UNIQUE NOT NULL
   selector_kind           TEXT NOT NULL
-  selector_hash           TEXT NOT NULL
-  fanmark_id              TEXT NOT NULL
+  selector_hash           TEXT NOT NULL -- SHA-256 only
+  fanmark_id              TEXT NOT NULL REFERENCES fanmarks(id)
   license_id              TEXT NOT NULL REFERENCES fanmark_licenses(id)
   password_generation     INTEGER NOT NULL
-  lifecycle_generation    INTEGER NOT NULL
-  created_at               TEXT NOT NULL
+  access_generation       INTEGER NOT NULL
+  license_incarnation     INTEGER NOT NULL
+  created_at              TEXT NOT NULL
   expires_at               TEXT NOT NULL
+
+fanmark_access_rate_policy
+  id                      INTEGER PRIMARY KEY CHECK (id = 1)
+  window_ms               INTEGER NOT NULL
+  max_attempts            INTEGER NOT NULL
+  reservation_ms          INTEGER NOT NULL
 
 fanmark_access_rate_limits
   bucket_kind             TEXT NOT NULL -- requester or resource
-  bucket_hash              TEXT NOT NULL
-  window_started_at        TEXT NOT NULL
+  bucket_hash             TEXT NOT NULL -- HMAC-SHA256 only
+  window_id               INTEGER NOT NULL
+  window_started_at       INTEGER NOT NULL -- Unix milliseconds
+  window_expires_at       INTEGER NOT NULL
   attempt_count            INTEGER NOT NULL
   failure_count            INTEGER NOT NULL
-  cooldown_until           TEXT
-  updated_at               TEXT NOT NULL
+  cooldown_until           INTEGER -- Unix milliseconds
+  updated_at              INTEGER NOT NULL
   PRIMARY KEY (bucket_kind, bucket_hash)
 
 fanmark_access_attempt_reservations
   reservation_id          TEXT PRIMARY KEY
   requester_bucket_hash   TEXT NOT NULL
   resource_bucket_hash    TEXT NOT NULL
-  license_id              TEXT
+  license_id              TEXT REFERENCES fanmark_licenses(id)
   selector_hash           TEXT NOT NULL
-  reserved_at             TEXT NOT NULL
+  window_id               INTEGER NOT NULL
+  reserved_at             INTEGER NOT NULL -- Unix milliseconds
+  reservation_expires_at  INTEGER NOT NULL
   outcome                 TEXT NOT NULL
-  completed_at            TEXT
+  finalization_id         TEXT UNIQUE
+  completed_at            INTEGER
 
 fanmark_access_attempt_audit
   id                      TEXT PRIMARY KEY
@@ -106,25 +135,41 @@ fanmark_access_attempt_audit
   selector_hash           TEXT
   requester_hash          TEXT NOT NULL
   outcome                 TEXT NOT NULL
-  occurred_at             TEXT NOT NULL
+  occurred_at             INTEGER NOT NULL -- Unix milliseconds
   password_generation     INTEGER
-  lifecycle_generation    INTEGER
+  access_generation       INTEGER
+  license_incarnation     INTEGER
 ```
 
-The actual migration must use the repository's UUID, timestamp, foreign-key,
-and index conventions. The table sketch intentionally contains no password,
-password hash, raw IP address, user-agent, or browser token. A reservation ID
-is an internal single-attempt reference and is never accepted from a caller or
-exposed as a proof.
+The generated extension adds lookup/expiry indexes and four reservation
+triggers for dual-bucket admission, attempt counting, expiry checks, and
+failure cooldown updates. Its singleton policy row starts at five attempts per
+five-minute window, a 30-second reservation, and a one-minute cooldown after
+the limit. The table definitions contain no password/hash value, raw IP
+address, user-agent, or browser token; only token and requester/resource
+digests are stored. A reservation ID is an internal single-attempt reference
+and is never accepted from a caller or exposed as a proof.
 
-`password_generation` increments when a password hash, enabled flag, or
-password-config identity changes. `lifecycle_generation` increments when the
-selected license or parent fanmark becomes inactive, returned, expired, or
-otherwise no longer eligible, and when published profile visibility or the
-license relationship changes. D1 triggers or the only authorized mutation
-repository must cover every writer. A version change may delete proofs for
-the affected license, but deletion is cleanup; the equality checks below are
-the immediate invalidation mechanism.
+`password_generation` increments when a password value, enabled flag, or
+password-config identity changes. `access_generation` increments when the
+parent fanmark selector/status or selected basic, redirect, messageboard, or
+profile configuration changes. `license_incarnation` is copied from the
+retained `fanmark_license_incarnations` registry and changes when a license is
+deleted and recreated. These are the current generated target fields; the
+separate `fanmark_licenses.lifecycle_generation` used by lifecycle jobs is not
+a verifier generation. The credential-transform artifact's expected
+generations are checked when reconciling that import; they are not live proof
+generations and need not equal current versions after later authorized writes.
+D1 triggers or the only authorized mutation repository must cover every
+writer. A version change may delete proofs for the affected license, but
+deletion is cleanup; the equality checks below are the immediate invalidation
+mechanism.
+
+For a short-ID selector, the Worker chooses the latest eligible active license
+using the same expiry ordering as the public read and rejects a tie on the
+selected expiry. Emoji access requires exactly one eligible finite license.
+The final proof write rechecks that selection after bcrypt so a renewal racing
+the comparison cannot mint a proof for the former license.
 
 The protected projection must check, in one D1 statement, all of the
 following before selecting content:
@@ -132,9 +177,18 @@ following before selecting content:
 1. the proof token hash and selector hash match;
 2. the proof license and fanmark match the currently selected rows;
 3. proof expiry is in the future;
-4. both stored generations equal the current version row;
-5. the license/fanmark status, return flag, and expiry are currently eligible;
-6. the password configuration is still enabled and belongs to that license;
+4. `password_generation`, `access_generation`, and `license_incarnation` match
+   the current version and retained incarnation rows;
+5. `fanmarks.status` and `fanmark_licenses.status` are active,
+   `fanmark_licenses.is_returned` is false, and `license_end` is null or in the
+   future;
+6. the `fanmark_password_configs` row is still enabled and belongs to that
+   license, with exactly one matching credential-evidence row. For an imported
+   credential this is a reconciled credential-transform artifact proving that
+   the current `access_password` is its exact bcrypt destination hash. For a
+   password set later through the Worker owner-settings API, it is a
+   hash-free `fanmark_password_runtime_evidence` row matching the current
+   license incarnation, password generation, enabled state, and pinned codec;
 7. the requested access mode or profile is still the selected public object.
 
 The statement must use `CASE` or equivalent projection so a failed check
@@ -156,17 +210,44 @@ separate use of the same library; Better Auth's default account hash is
 scrypt, and its custom `emailAndPassword.password.verify` hook does not itself
 authorize fanmark content.
 
+The current source-shaped target has no `hash_scheme` column and no aggregate
+`fanmark_access_configs` table. Password values remain in
+`fanmark_password_configs.access_password`; access mode/name are in
+`fanmark_basic_configs`; redirect and text values are in
+`fanmark_redirect_configs` and `fanmark_messageboard_configs`; profile fields
+are in `fanmark_profiles`. Short-ID and emoji lookup use `fanmarks.short_id`
+and `fanmarks.normalized_emoji_ids`; there is no `fanmark_emoji_selectors`
+table.
+
 The migration preflight must classify source password-config values without
 exporting their contents. For each enabled row it records only the scheme
 class, cost/prefix class, UUID relation, and import outcome. Existing password
 behavior and license/config UUIDs are preserved; asking an owner to choose a
-new password is not the default migration strategy. A recognized bcrypt row
-is imported as a hash with an explicit `hash_scheme = 'bcrypt'`. An unknown,
-plaintext, malformed, or unsupported scheme is never compared by a public
-Worker: it needs a private one-time conversion/import rehearsal that proves
-equivalent verification, or an explicit owner decision if safe conversion is
-impossible. There is no runtime plaintext fallback, and the source-format
-mapping remains unresolved until that private preflight is complete.
+new password is not the default migration strategy. Runtime bcrypt eligibility
+must be proven by exactly one `credential_transform_artifacts` row in
+`reconciled` state whose pinned `codec_id` is `bcryptjs@3.0.3`, whose
+`destination_hash` equals the current `access_password`, and whose destination
+license and incarnation match the current license identity. Its expected
+password/access/lifecycle generations must have passed import-time
+reconciliation, but do not need to equal live generations after later
+authorized writes. The live proof instead binds to the current
+`fanmark_access_versions` generations. A string prefix by itself is not proof
+of scheme or import provenance. An unknown, plaintext, malformed, unsupported,
+or unreconciled value is never compared as a real password by a public Worker.
+There is no runtime plaintext fallback, and the source-format mapping remains
+unresolved until that private preflight is complete.
+
+An authorized Worker password change is a distinct post-import operation: it
+must not fabricate or rewrite the immutable import ledger. In the same D1
+batch as the owner-checked password-config write, the settings API records only
+the license ID, current incarnation, current password generation, enabled
+flag, pinned `bcryptjs@3.0.3` codec, and timestamps in
+`fanmark_password_runtime_evidence`. The table deliberately has no password or
+hash column. A trigger-driven generation change, license deletion/recreation,
+or changed enabled state makes the row stop matching. The verifier unions
+import-artifact and runtime evidence, then still requires exactly one matching
+row and the pinned codec; absent, duplicate, stale, or mismatched evidence
+fails closed.
 
 The verifier accepts the current four-digit input contract without trimming or
 rewriting the value. It validates the bounded JSON body, reads the current
@@ -219,12 +300,12 @@ advance only an older window; it cannot roll a newer window backward. The
 reservation ID remains server-side; no caller can supply one to unlock a route.
 
 The reservation is consumed before bcrypt, so in-flight attempts count against
-the budget. A starting policy is five attempts per five-minute window, then a
-one-minute cooldown with bounded exponential backoff up to fifteen minutes.
-The exact values need staging load evidence. A wrong-password finalization
-transitions the reservation once and increments `failure_count` plus cooldown
-state in both buckets. A successful comparison never resets another reserved
-or failed attempt. The transition and its audit insert are one guarded batch;
+the budget. The local policy row uses five attempts per five-minute window and
+a one-minute cooldown. This is a staging rehearsal value, not tuned from
+production load. A wrong-password finalization transitions the reservation
+once and increments `failure_count` plus cooldown state in both buckets. A
+successful comparison never resets another reserved or failed attempt. The
+transition and its audit insert are one guarded batch;
 duplicate finalization is rejected. The local proof binds finalization to a
 reservation window and expiry, uses a single finalization ID, and writes a
 proof only through a guarded `INSERT ... SELECT`. Duplicate finalization cannot
@@ -336,65 +417,71 @@ Until these gates pass, keep the Worker password surface disabled and retain
 the existing Supabase path. Do not treat Better Auth's email/password or MFA
 proof as evidence for this separate anonymous fanmark authorization.
 
-## Implemented local proof slice
+## Connected local source-shaped proof
 
-The implementation is isolated under `experiments/cloudflare-auth/`. It does
-not register routes in `workers/api`, the frontend, production Wrangler
-bindings, or the root migration. Files and ownership are:
+`workers/api/src/verified-access.mjs` implements the password routes and is
+registered by `workers/api/src/index.ts` only when
+`VERIFIED_ACCESS_BACKEND=d1`, the business D1 binding, and the verification
+secret are present. The staging flag remains unset and the frontend continues
+to use Supabase for password verification. The Worker reads current source
+tables and generation state from the same synthetic 40-table D1 profile used
+by the lifecycle rehearsal; it also checks credential-transform provenance
+before accepting a password hash. This is local integration evidence, not a
+staging deployment or approval to switch the frontend.
 
-- `src/verified-access-proof.mjs` owns canonical selector hashing, requester
-  and resource bucket derivation, reservation/finalization helpers, bcrypt
-  comparison, proof-cookie issuance, and the single-statement protected-read
-  guard. It accepts no caller-supplied reservation or unlocked flag.
-- `test/fixtures/verified-access.sql` owns only synthetic D1 tables, indexes,
-  triggers, and rows for the proof. The reservation insert trigger must reject
-  when either bucket is blocked and increment both `attempt_count` values only
-  after both pass. The finalization trigger increments both failure counters
-  only on a reserved-to-failure transition. Tests must execute complete SQL
-  statements (including trigger bodies), not split migration text naively on
-  semicolons.
-- `test/verified-access.test.mjs` owns local HTTP proof tests for the
-  short/emoji/profile selector matrix, nested-profile behavior, wrong and
-  correct `$2a$10$`/`$2b$10$` hashes, generation invalidation, reservation
-  races, selector rotation against the requester bucket, no partial bucket
-  consumption, success-without-reset, cooldown persistence, and audit
-  redaction.
-- `wrangler.verified-access.jsonc` and
-  `vitest.verified-access.config.mjs` own the test-only D1 binding and entry
-  point. The default Worker entry point must not import or register these
-  routes. Existing pinned dependencies remain in `package.json`; no production
-  password or OAuth secret is added.
+`scripts/migration/verified-access-schema.mjs` generates and applies the
+version-2 rate-limit/proof extension against exact source, lifecycle,
+generation, and credential-transform plan digests, then verifies the exact
+installed object set and idempotent reapplication. Its guarded v1-to-v2 path
+accepts only an exact v1 inventory missing the new runtime-evidence table,
+creates that table, and verifies exact readback; partial, changed, and
+unexpected objects are rejected. Local integration covers fresh apply,
+idempotent apply, and the v1-to-v2 upgrade. The extension is present only in
+disposable local tests; the remote business D1 has only the structural v4
+baseline and no imported rows.
 
-This proof can establish local ordering and authorization invariants. It cannot
-establish the source password-format mapping or the target Cloudflare CPU
-budget; those remain private preflight and staging gates.
+The current focused checks are:
 
-## Local validation evidence
+- `workers/api/test/verified-access-d1.test.ts`: 10 Miniflare D1 tests covering
+  selector binding, license ordering/ties, changed state during bcrypt,
+  imported/runtime credential evidence, stale generation rejection, rate
+  controls, and protected projections.
+- `workers/api/test/license-expiry-source.integration.mjs`: 20 passing checks
+  against the latest synthetic 40-table profile, including a synthetic
+  credential-transform artifact, exact extension readback, the v1-to-v2
+  extension upgrade, and a protected-text verification/read.
+- `workers/api/test/fanmark-settings-d1.test.ts`: 6 tests for owner-only
+  settings reads, redaction, atomic writes, runtime evidence, and rollback.
+- Worker and frontend TypeScript typechecks pass on Node 22.6.0.
 
-Node 22.6.0 independently passed all 17 dedicated proof tests and all six
-existing account-auth tests. The dedicated suite runs sequentially against
-its separate synthetic D1 binding and is excluded from the default auth
-suite. CI invokes both commands explicitly. Tests include delayed old-window
-requests, cooldown across a window boundary, once-only finalization, stale
-proof insertion, selector/profile reassignment, and license delete/recreate
-invalidation. Test-only address overrides are confined to hooks. Originless
-same-origin GET requests use Fetch Metadata while verify POST requests
-require the configured Origin.
+`src/lib/verified-access-api.ts` supports an explicit
+`VITE_VERIFIED_ACCESS_BACKEND=worker` choice. The short-ID and emoji pages use
+the same backend for anonymous lookup and password verification; they reject
+mixed selection. The client posts the password once, then reads the protected
+projection with the HttpOnly proof cookie, credentials included, `no-store`,
+bounded response parsing, and no fallback. Protected profile data is passed
+directly to the profile renderer so it does not make a second anonymous
+profile request. Seven client contract tests and the frontend typecheck pass.
+The selector remains unset in staging, and no browser canary has been run.
 
-This is synthetic local evidence. Existing-password conversion, production
-writers and invalidation, full source behavior parity, remote CPU, browser
-integration, deployment, and cutover remain unverified.
+The earlier `experiments/cloudflare-auth/` proof remains a separate account
+auth/MFA experiment; it is not the route implementation. Remaining gates are
+the source password-format inventory and approved credential transform/import
+path, Cloudflare plan/CPU measurement, multi-instance staging abuse-control
+checks, deployed-origin CSRF/cookie checks, and a frontend canary. Keep the
+Worker feature flag off and the existing Supabase path active until those gates
+pass. No real passwords, user rows, production DDL, or domain settings were
+changed by these local proofs.
 
 ## References
 
-The local proof now stores and checks retained license incarnation independently
-of password/access generations. A delete/recreate with the same UUID and equal
-generation values cannot finalize an older password verification. Target lookup,
-proof creation, and protected projection require the incarnation authority.
-The parent independently ran all 17 tests on Node 22.6.0 with matching
-source/fixture/test hashes before and after. An outdated replay-test INSERT
-omitted the new column; that test SQL was corrected and all diagnostic logging
-removed. This remains an isolated proof, not production migration evidence.
+The protected-access route stores and checks retained license incarnation
+independently of password/access generations. A delete/recreate with the same
+UUID and equal generation values cannot finalize an older password
+verification. Target lookup, proof creation, and protected projection require
+the incarnation authority. The source-shaped route test verifies synthetic
+protected text only; it does not establish compatibility with real stored
+passwords or Cloudflare CPU fit.
 
 - [Better Auth email and password](https://better-auth.com/docs/authentication/email-password) — default scrypt and the custom `password.hash`/`password.verify` hooks.
 - [Better Auth Cloudflare D1 support](https://better-auth.com/blog/1-5) — direct D1 binding and the D1 `batch()` limitation on interactive transactions.

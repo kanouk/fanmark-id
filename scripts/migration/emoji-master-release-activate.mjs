@@ -172,9 +172,16 @@ async function assertActivationSchema(database) {
   `);
 }
 
-export async function activateEmojiMasterRelease({ database, releaseDirectory, action = "promotion" }) {
+export async function activateEmojiMasterRelease({
+  database,
+  releaseDirectory,
+  action = "promotion",
+  expectedCurrentVersion,
+}) {
   if (!database || typeof database.prepare !== "function") throw fail("invalid_d1_database");
   if (action !== "promotion" && action !== "rollback") throw fail("invalid_activation_action");
+  if (expectedCurrentVersion !== undefined && expectedCurrentVersion !== null &&
+      !VERSION_RE.test(expectedCurrentVersion)) throw fail("invalid_expected_active_version");
 
   let verified;
   try {
@@ -192,6 +199,9 @@ export async function activateEmojiMasterRelease({ database, releaseDirectory, a
     WHERE singleton_id = 1
   `);
   const activeVersion = active?.release_version ?? null;
+  if (expectedCurrentVersion !== undefined && activeVersion !== expectedCurrentVersion) {
+    throw fail("activation_state_conflict");
+  }
   if (activeVersion === verified.version) {
     if (action === "rollback") throw fail("rollback_target_is_active");
     return {

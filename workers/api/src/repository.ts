@@ -1,23 +1,91 @@
 export interface Env {
   ASSETS?: Fetcher;
   FANMARK_DB?: D1Database;
+  AUTH_DB?: D1Database;
+  MASTER_DB?: D1Database;
+  D1_TOPOLOGY?: string;
+  AVATARS_BUCKET?: R2Bucket;
+  COVER_IMAGES_BUCKET?: R2Bucket;
   AUTH_BACKEND?: string;
+  STORAGE_BACKEND?: string;
+  OWNED_FANMARKS_BACKEND?: string;
+  PROFILE_BACKEND?: string;
+  FANMARK_PROFILE_BACKEND?: string;
+  FANMARK_SETTINGS_BACKEND?: string;
+  FANMARK_RETURN_BACKEND?: string;
+  FANMARK_REGISTRATION_BACKEND?: string;
+  FANMARK_LOTTERY_BACKEND?: string;
+  FANMARK_TRANSFER_BACKEND?: string;
+  FANMARK_SEARCH_BACKEND?: string;
+  FANMARK_DETAILS_BACKEND?: string;
+  NOTIFICATIONS_BACKEND?: string;
+  NOTIFICATION_MASTER_BACKEND?: string;
+  AVAILABILITY_RULES_ADMIN_BACKEND?: string;
+  INVITATION_ADMIN_BACKEND?: string;
+  NOTIFICATION_PROCESSOR_BACKEND?: string;
+  MAINTENANCE_SETTINGS_BACKEND?: string;
+  LIFECYCLE_SETTINGS_BACKEND?: string;
+  STRIPE_WEBHOOK_BACKEND?: string;
+  STRIPE_WEBHOOK_SECRET?: string;
+  STRIPE_DISPATCH_BACKEND?: string;
+  STRIPE_DISPATCH_BATCH_SIZE?: string;
+  STRIPE_DISPATCH_MAX_ATTEMPTS?: string;
+  STRIPE_EXTENSION_CHECKOUT_BACKEND?: string;
+  STRIPE_SECRET_KEY?: string;
+  FAVORITES_BACKEND?: string;
+  FANMARK_ACCESS_ANALYTICS_BACKEND?: string;
+  FANMARK_ANALYTICS_BACKEND?: string;
+  LICENSE_EXPIRY_BACKEND?: string;
+  LICENSE_EXPIRY_CRON?: string;
+  LICENSE_EXPIRY_TARGET_INCARNATION?: string;
+  LICENSE_EXPIRY_SCHEMA_EXTENSION_DIGEST?: string;
+  LICENSE_EXPIRY_MAX_PAGES?: string;
   BETTER_AUTH_SECRET?: string;
   BETTER_AUTH_URL?: string;
   AVAILABILITY_BACKEND?: string;
   EMOJI_CATALOG_BACKEND?: string;
+  EMOJI_MASTER_ADMIN_BACKEND?: string;
   PUBLIC_ACCESS_BACKEND?: string;
   RECENT_FANMARKS_BACKEND?: string;
+  REFERENCE_MASTER_BACKEND?: string;
+  REFERENCE_MASTER_ADMIN_BACKEND?: string;
+  REFERENCE_MASTER_SERVICE_SECRET?: string;
+  VERIFIED_ACCESS_BACKEND?: string;
+  VERIFIED_ACCESS_SECRET?: string;
+  VERIFIED_ACCESS_TEST?: string;
   SUPABASE_URL?: string;
   SUPABASE_PUBLISHABLE_KEY?: string;
   SUPABASE_ANON_KEY?: string;
   CORS_ALLOWED_ORIGINS?: string;
+  STAGING_NO_INDEX?: string;
   SUPABASE_REQUEST_TIMEOUT_MS?: string;
+}
+
+export type D1DatabaseRole = "business" | "auth" | "master";
+
+/**
+ * Select an explicit D1 boundary. Legacy single-database test/staging configs
+ * may use FANMARK_DB for all roles; split topology never falls back across
+ * databases when a required binding is missing.
+ */
+export function selectD1Database(env: Env, role: D1DatabaseRole): D1Database | undefined {
+  const topology = env.D1_TOPOLOGY?.trim();
+  if (topology && topology !== "legacy" && topology !== "split") return undefined;
+  if (topology === "split") {
+    if (role === "business") return env.FANMARK_DB;
+    if (role === "auth") return env.AUTH_DB;
+    return env.MASTER_DB;
+  }
+
+  if (role === "business") return env.FANMARK_DB;
+  if (role === "auth") return env.AUTH_DB ?? env.FANMARK_DB;
+  return env.MASTER_DB ?? env.FANMARK_DB;
 }
 
 export interface RecentFanmarkRpcRow {
   license_id?: unknown;
   fanmark_id?: unknown;
+  fanmark_short_id?: unknown;
   display_emoji?: unknown;
   license_created_at?: unknown;
   [key: string]: unknown;
@@ -27,6 +95,8 @@ export interface RecentFanmarkItem {
   id: string;
   emoji: string;
   createdAt: string | null;
+  shortId: string | null;
+  fanmarkId: string | null;
 }
 
 export interface RecentFanmarksPayload {
@@ -163,6 +233,8 @@ export function mapRecentFanmarkRows(rows: unknown, maxItems = 20): RecentFanmar
       id,
       emoji: stringOrNull(record.display_emoji) ?? "❓",
       createdAt: stringOrNull(record.license_created_at),
+      shortId: stringOrNull(record.fanmark_short_id),
+      fanmarkId: stringOrNull(record.fanmark_id),
     });
   }
 

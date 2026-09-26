@@ -8,9 +8,17 @@ import { test } from "node:test";
 
 import { createPsqlSession, exportSnapshot, extractCatalogSelect, parseSourceFrame } from "./snapshot-export.mjs";
 import { verifySnapshot } from "./snapshot-verify.mjs";
-import { canonicalJson, sha256Hex } from "./snapshot-format.mjs";
+import {
+  SUPPORTED_SEQUENCE_TARGET,
+  canonicalJson,
+  catalogFingerprint,
+  expectedSequenceTargets,
+  sha256Hex,
+  validateSequenceStates,
+} from "./snapshot-format.mjs";
 
 const ROOT = path.join(os.tmpdir(), "fanmark-snapshot-tests-");
+const SYNTHETIC_CREDENTIAL = "synthetic-fixture-only";
 
 function column(table_name, column_name, ordinal, postgres_type, options = {}) {
   return {
@@ -22,7 +30,7 @@ function column(table_name, column_name, ordinal, postgres_type, options = {}) {
     type_name: options.type_name ?? postgres_type,
     type_kind: options.type_kind ?? "b",
     not_null: options.not_null ?? false,
-    default_expression: null,
+    default_expression: options.default_expression ?? null,
     identity: "",
     generated: "",
     collation: null,
@@ -55,6 +63,92 @@ function catalog() {
   };
 }
 
+function sequenceCatalog() {
+  const value = catalog();
+  value.columns.push(column("fanmark_events", "id", 1, "bigint", {
+    not_null: true,
+    default_expression: "nextval('public.fanmark_events_id_seq'::regclass)",
+  }));
+  value.constraints.push({ table_name: "fanmark_events", name: "fanmark_events_pkey", kind: "p", definition: "PRIMARY KEY (id)", validated: true, deferrable: false, initially_deferred: false });
+  return value;
+}
+
+function sequenceState(overrides = {}) {
+  return {
+    schema: "public",
+    name: "fanmark_events_id_seq",
+    ownerSchema: "public",
+    ownerTable: "fanmark_events",
+    ownerColumn: "id",
+    startValue: "1",
+    incrementBy: "1",
+    minValue: "1",
+    maxValue: "9223372036854775807",
+    cacheSize: "1",
+    cycle: false,
+    lastValue: "1",
+    isCalled: false,
+    ...overrides,
+  };
+}
+
+function credentialCatalog() {
+  const value = catalog();
+  value.columns.push(
+    column("fanmark_password_configs", "id", 1, "uuid", { not_null: true }),
+    column("fanmark_password_configs", "license_id", 2, "uuid", { not_null: true }),
+    column("fanmark_password_configs", "access_password", 3, "text", { not_null: true }),
+    column("fanmark_password_configs", "is_enabled", 4, "boolean", { not_null: true }),
+    column("fanmark_password_configs", "created_at", 5, "timestamp with time zone", { not_null: true }),
+    column("fanmark_password_configs", "updated_at", 6, "timestamp with time zone", { not_null: true }),
+  );
+  value.constraints.push(
+    { table_name: "fanmark_password_configs", name: "fanmark_password_configs_pkey", kind: "p", definition: "PRIMARY KEY (id)", validated: true, deferrable: false, initially_deferred: false },
+    { table_name: "fanmark_password_configs", name: "fanmark_password_configs_license_id_key", kind: "u", definition: "UNIQUE (license_id)", validated: true, deferrable: false, initially_deferred: false },
+    { table_name: "fanmark_password_configs", name: "fanmark_password_configs_license_id_fkey", kind: "f", definition: "FOREIGN KEY (license_id) REFERENCES public.fanmark_licenses(id) ON DELETE CASCADE", validated: true, deferrable: false, initially_deferred: false },
+  );
+  return value;
+}
+
+function credentialDescriptor() {
+  return {
+    version: 1,
+    sourceRelation: "fanmark_password_configs",
+    sourceColumn: "access_password",
+    sourcePrimaryKeyColumns: ["id"],
+    enabledColumn: "is_enabled",
+    licenseColumn: "license_id",
+    destinationRelation: "fanmark_password_configs",
+    destinationColumn: "access_password",
+    transformKind: "credential_to_bcrypt",
+    codecId: "bcryptjs@3.0.3",
+    codecCost: 10,
+    transformContractVersion: 1,
+    policyVersion: 1,
+    inactiveLicensePolicy: "migration_gate",
+  };
+}
+
+function credentialRows() {
+  return {
+    ...structuredClone(envelopes),
+    fanmark_password_configs: [{
+      schemaVersion: 1,
+      table: "fanmark_password_configs",
+      columns: ["id", "license_id", "access_password", "is_enabled", "created_at", "updated_at"],
+      values: {
+        id: UUID1,
+        license_id: UUID2,
+        access_password: SYNTHETIC_CREDENTIAL,
+        is_enabled: "true",
+        created_at: "2026-09-22T12:00:00.000000Z",
+        updated_at: "2026-09-22T12:00:00.000000Z",
+      },
+      arrayMetadata: {},
+    }],
+  };
+}
+
 const UUID1 = "00000000-0000-4000-8000-000000000001";
 const UUID2 = "00000000-0000-4000-8000-000000000002";
 
@@ -75,13 +169,16 @@ const envelopes = {
   ],
 };
 
-function fakeSession({ rows = envelopes, countOverride = null, liveCatalog = catalog(), commitError = null } = {}) {
+function fakeSession({ rows = envelopes, countOverride = null, liveCatalog = catalog(), commitError = null, sequenceStates = [] } = {}) {
   return {
     async begin() {
       return { currentUser: "postgres", isolation: "repeatable read", readOnly: true };
     },
     async readCatalog() {
       return liveCatalog;
+    },
+    async readSequenceStates() {
+      return sequenceStates;
     },
     async *streamTable({ table }) {
       for (const envelope of rows[table] ?? []) yield envelope;
@@ -118,11 +215,134 @@ test("exports every catalog table and verifies bounded canonical streams", async
   assert.equal(tableStat.mode & 0o777, 0o700);
   const manifest = JSON.parse(await readFile(result.manifestPath, "utf8"));
   assert.equal(manifest.state, "complete");
+  assert.equal(manifest.formatVersion, 4);
+  assert.deepEqual(manifest.sequenceStates, []);
+  assert.equal(manifest.credentialDescriptorVersion, null);
+  assert.equal(manifest.credentialDescriptorDigest, null);
+  assert.equal(manifest.credentialDescriptor, null);
   assert.equal(manifest.reconciliation.foreignKeys, "not_checked");
   assert.deepEqual(manifest.tables.map((entry) => entry.table), ["alpha", "composite_keys", "numeric_keys"]);
   const tableNames = await readdir(path.join(outputDir, "tables"));
   assert.equal(tableNames.length, 3);
   for (const name of tableNames) assert.equal((await stat(path.join(outputDir, "tables", name))).mode & 0o777, 0o600);
+  await rm(outputDir, { recursive: true, force: true });
+});
+
+test("binds an explicit credential descriptor to the v4 manifest without copying credential data", async () => {
+  const outputDir = await tempOutput();
+  const sourceCatalog = credentialCatalog();
+  const policy = credentialDescriptor();
+  const result = await exportSnapshot({
+    catalog: sourceCatalog,
+    credentialDescriptor: policy,
+    outputDir,
+    session: fakeSession({ rows: credentialRows(), liveCatalog: sourceCatalog }),
+  });
+  try {
+    const verified = await verifySnapshot(result.manifestPath);
+    const manifest = JSON.parse(await readFile(result.manifestPath, "utf8"));
+    assert.equal(manifest.credentialDescriptorVersion, 1);
+    assert.equal(manifest.credentialDescriptorDigest, sha256Hex(policy));
+    assert.deepEqual(manifest.credentialDescriptor, policy);
+    assert.equal(JSON.stringify(manifest).includes(SYNTHETIC_CREDENTIAL), false);
+    assert.equal(verified.credentialDescriptorDigest, manifest.credentialDescriptorDigest);
+
+    manifest.credentialDescriptorDigest = "0".repeat(64);
+    await writeFile(result.manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, { mode: 0o600 });
+    await assert.rejects(verifySnapshot(result.manifestPath), (error) => error.code === "credential_descriptor_digest_mismatch");
+  } finally {
+    await rm(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("exports and verifies the exact supported PostgreSQL sequence state", async () => {
+  const outputDir = await tempOutput();
+  const sourceCatalog = sequenceCatalog();
+  const rows = {
+    ...structuredClone(envelopes),
+    fanmark_events: [{ schemaVersion: 1, table: "fanmark_events", columns: ["id"], values: { id: "1" }, arrayMetadata: {} }],
+  };
+  const state = sequenceState({ lastValue: "91", isCalled: true });
+  try {
+    const result = await exportSnapshot({
+      catalog: sourceCatalog,
+      outputDir,
+      session: fakeSession({ rows, liveCatalog: sourceCatalog, sequenceStates: [state] }),
+    });
+    const verified = await verifySnapshot(result.manifestPath);
+    const manifest = JSON.parse(await readFile(result.manifestPath, "utf8"));
+    assert.deepEqual(manifest.sequenceStates, [state]);
+    assert.equal(verified.valid, true);
+
+    manifest.sequenceStates[0].ownerTable = "other_table";
+    await writeFile(result.manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, { mode: 0o600 });
+    await assert.rejects(verifySnapshot(result.manifestPath), (error) => error.code === "sequence_state_definition_mismatch");
+  } finally {
+    await rm(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("accepts PostgreSQL's unqualified regclass rendering only with the exact public owner state", () => {
+  const sourceCatalog = sequenceCatalog();
+  const eventId = sourceCatalog.columns.find((column) =>
+    column.table_name === "fanmark_events" && column.column_name === "id");
+  eventId.default_expression = "nextval('fanmark_events_id_seq'::regclass)";
+  const state = sequenceState({ lastValue: "1", isCalled: false });
+  assert.deepEqual(expectedSequenceTargets(sourceCatalog), [SUPPORTED_SEQUENCE_TARGET]);
+  assert.deepEqual(validateSequenceStates(sourceCatalog, [state]), [state]);
+
+  eventId.default_expression = "nextval('other_id_seq'::regclass)";
+  assert.throws(
+    () => expectedSequenceTargets(sourceCatalog),
+    (error) => error.code === "sequence_target_unsupported",
+  );
+});
+
+test("requires sequence state for every catalog-bound nextval target", async () => {
+  const outputDir = await tempOutput();
+  const sourceCatalog = sequenceCatalog();
+  const session = fakeSession({ liveCatalog: sourceCatalog });
+  delete session.readSequenceStates;
+  try {
+    await assert.rejects(
+      exportSnapshot({ catalog: sourceCatalog, outputDir, session }),
+      (error) => error.code === "sequence_state_set_mismatch",
+    );
+  } finally {
+    await rm(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("reads exact sequence state through the bounded psql JSON-frame protocol", async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "fanmark-sequence-psql-"));
+  const fakePsql = path.join(directory, "fake-psql.sh");
+  await writeFile(fakePsql, `#!/bin/sh
+while IFS= read -r line; do
+  case "$line" in
+    *"'kind', 'sequence-states'"*)
+      token=$(printf '%s\\n' "$line" | sed -n "s/.*'token', '\\([^']*\\)'.*/\\1/p")
+      printf '{"kind":"sequence-states","token":"%s","payload":{"states":[{"schema":"public","name":"fanmark_events_id_seq","ownerSchema":"public","ownerTable":"fanmark_events","ownerColumn":"id","startValue":"1","incrementBy":"1","minValue":"1","maxValue":"9223372036854775807","cacheSize":"1","cycle":false,"lastValue":"812","isCalled":true}]}}\\n' "$token"
+      ;;
+  esac
+done
+`, { mode: 0o700 });
+  await chmod(fakePsql, 0o700);
+  const session = createPsqlSession({ psqlPath: fakePsql, commandTimeoutMs: 5_000 });
+  try {
+    assert.deepEqual(await session.readSequenceStates(sequenceCatalog()), [sequenceState({ lastValue: "812", isCalled: true })]);
+  } finally {
+    await session.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("requires descriptor metadata whenever a credential table is present", async () => {
+  const outputDir = await tempOutput();
+  const sourceCatalog = credentialCatalog();
+  await assert.rejects(
+    exportSnapshot({ catalog: sourceCatalog, outputDir, session: fakeSession({ liveCatalog: sourceCatalog }) }),
+    (error) => error.code === "credential_descriptor_required",
+  );
   await rm(outputDir, { recursive: true, force: true });
 });
 
@@ -191,7 +411,33 @@ test("extracts the checked-in catalog SELECT after leading comments and wrappers
   const sourceSql = await readFile(new URL("./schema-readiness.sql", import.meta.url), "utf8").catch(async () => readFile(path.resolve("scripts/migration/schema-readiness.sql"), "utf8"));
   const inner = extractCatalogSelect(sourceSql);
   assert.match(inner, /^SELECT\s+jsonb_build_object/i);
+  assert.match(inner, /'database_locale'/);
+  assert.match(inner, /datcollate/);
+  assert.match(inner, /datctype/);
   assert.doesNotMatch(inner, /BEGIN\s+READ\s+ONLY|COMMIT\s*;\s*$/i);
+});
+
+test("source database locale affects schema fingerprints without invalidating legacy catalogs", () => {
+  const source = catalog();
+  const legacyFingerprint = catalogFingerprint(source);
+  source.database_locale = { collate: "C", ctype: "C" };
+  const fingerprintWithLocale = catalogFingerprint(source);
+  assert.notEqual(fingerprintWithLocale, legacyFingerprint);
+  assert.equal(catalogFingerprint({ ...source, database_locale: { ctype: "C", collate: "C" } }), fingerprintWithLocale);
+  assert.throws(() => catalogFingerprint({ ...source, database_locale: { collate: "C" } }), (error) => error.code === "invalid_database_locale");
+});
+
+test("behavior object definitions are required and bound into the schema fingerprint", () => {
+  const source = catalog();
+  const baseline = catalogFingerprint(source);
+  for (const section of ["triggers", "rls_policies", "views", "functions"]) {
+    const changed = structuredClone(source);
+    changed[section] = [{ name: `changed_${section}`, definition: "changed" }];
+    assert.notEqual(catalogFingerprint(changed), baseline, `${section} must affect the fingerprint`);
+    const missing = structuredClone(source);
+    delete missing[section];
+    assert.throws(() => catalogFingerprint(missing), (error) => error.code === "missing_catalog_scope");
+  }
 });
 
 test("bounds a failed psql child without opening an interactive credential prompt", async () => {

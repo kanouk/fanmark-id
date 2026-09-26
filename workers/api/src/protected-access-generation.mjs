@@ -32,6 +32,7 @@ export function buildAccessGenerationAdvanceStatement(database, {
   expectedAccessGeneration,
   lifecycleClaimId,
   expectedLicenseLifecycleGeneration,
+  expectedLicenseStatus = "grace",
   updatedAt,
 }) {
   if (!database || typeof database.prepare !== "function") {
@@ -47,6 +48,9 @@ export function buildAccessGenerationAdvanceStatement(database, {
     expectedLicenseLifecycleGeneration > MAX_SAFE_SQL_INTEGER
   ) {
     throw new TypeError("invalid_license_lifecycle_generation");
+  }
+  if (!["grace", "expired"].includes(expectedLicenseStatus)) {
+    throw new TypeError("invalid_license_status");
   }
   if (typeof updatedAt !== "string" || !UTC_MICROSECOND_PATTERN.test(updatedAt)) {
     throw new TypeError("invalid_updated_at");
@@ -70,7 +74,7 @@ export function buildAccessGenerationAdvanceStatement(database, {
         WHERE license.id = fanmark_access_versions.license_id
           AND license.lifecycle_claim_id = ?
           AND license.lifecycle_generation = ?
-          AND license.status = 'grace'
+          AND license.status = ?
       )
   `).bind(
     updatedAt,
@@ -80,5 +84,6 @@ export function buildAccessGenerationAdvanceStatement(database, {
     licenseIncarnation,
     lifecycleClaimId,
     expectedLicenseLifecycleGeneration,
+    expectedLicenseStatus,
   );
 }

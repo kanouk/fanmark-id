@@ -1,4 +1,4 @@
-import type { Env } from "./repository";
+import { selectD1Database, type Env } from "./repository.ts";
 
 const VERSION_RE = /^[0-9a-f]{64}$/;
 const UUID_RE = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/iu;
@@ -55,8 +55,9 @@ function assertDatabase(env: Env): D1Database {
     if (!env.EMOJI_CATALOG_BACKEND?.trim()) throw new EmojiCatalogUnavailableError();
     throw new EmojiCatalogConfigurationError();
   }
-  if (!env.FANMARK_DB) throw new EmojiCatalogConfigurationError();
-  return env.FANMARK_DB;
+  const database = selectD1Database(env, "master");
+  if (!database) throw new EmojiCatalogConfigurationError();
+  return database;
 }
 
 function parseStringArray(value: unknown): string[] {

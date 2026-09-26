@@ -161,13 +161,66 @@ beforeEach(async () => {
 });
 
 describe("D1 recent fanmarks repository", () => {
+  it("supports the generated UUID v4 default in the D1 runtime", async () => {
+    if (!database) throw new Error("FANMARK_DB binding is unavailable");
+    const table = "migration_uuid_default_probe";
+    const defaultExpression = `lower(
+      hex(randomblob(4)) || '-' ||
+      hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2, 3) || '-' ||
+      substr('89ab', (random() & 3) + 1, 1) || substr(hex(randomblob(2)), 2, 3) || '-' ||
+      hex(randomblob(6))
+    )`;
+
+    await database.prepare(`DROP TABLE IF EXISTS ${table}`).run();
+    try {
+      await database.prepare(
+        `CREATE TABLE ${table} (id TEXT PRIMARY KEY NOT NULL DEFAULT (${defaultExpression}))`,
+      ).run();
+      await database.batch(Array.from({ length: 256 }, () =>
+        database.prepare(`INSERT INTO ${table} DEFAULT VALUES`),
+      ));
+
+      const { results = [] } = await database.prepare(`SELECT id FROM ${table}`).all<{ id: string }>();
+      expect(results).toHaveLength(256);
+      const ids = results.map(({ id }) => id);
+      expect(new Set(ids).size).toBe(256);
+      expect(ids.every((id) => /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id))).toBe(true);
+    } finally {
+      await database.prepare(`DROP TABLE IF EXISTS ${table}`).run();
+    }
+  });
+
+  it("preserves monotonic sequence allocation with a D1 AUTOINCREMENT key", async () => {
+    if (!database) throw new Error("FANMARK_DB binding is unavailable");
+    const table = "migration_sequence_default_probe";
+    await database.prepare(`DROP TABLE IF EXISTS ${table}`).run();
+    try {
+      await database.prepare(
+        `CREATE TABLE ${table} (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL)`,
+      ).run();
+      await database.batch([
+        database.prepare(`INSERT INTO ${table} DEFAULT VALUES`),
+        database.prepare(`INSERT INTO ${table} DEFAULT VALUES`),
+        database.prepare(`INSERT INTO ${table} (id) VALUES (50)`),
+        database.prepare(`INSERT INTO ${table} DEFAULT VALUES`),
+        database.prepare(`DELETE FROM ${table} WHERE id = 51`),
+        database.prepare(`INSERT INTO ${table} DEFAULT VALUES`),
+      ]);
+
+      const { results = [] } = await database.prepare(`SELECT id FROM ${table} ORDER BY id`).all<{ id: number }>();
+      expect(results.map(({ id }) => id)).toEqual([1, 2, 50, 52]);
+    } finally {
+      await database.prepare(`DROP TABLE IF EXISTS ${table}`).run();
+    }
+  });
+
   it("serves real local D1 rows with active-license and join semantics", async () => {
     const response = await configuredRequest("?limit=20");
 
     expect(response.status).toBe(200);
     const body = (await response.json()) as {
       schemaVersion: number;
-      items: Array<{ id: string; emoji: string; createdAt: string | null }>;
+      items: Array<{ id: string; emoji: string; createdAt: string | null; shortId: string | null; fanmarkId: string | null }>;
     };
     expect(body.schemaVersion).toBe(1);
     expect(body.items.slice(0, 4)).toEqual([
@@ -175,21 +228,29 @@ describe("D1 recent fanmarks repository", () => {
         id: "99999999-9999-4999-8999-999999999999",
         emoji: "✨-from-license",
         createdAt: "2026-09-21T00:00:00.123457Z",
+        shortId: "precision",
+        fanmarkId: "fanmark-precision",
       },
       {
         id: "11111111-1111-4111-8111-111111111111",
         emoji: "🌿-from-license",
         createdAt: "2026-09-21T00:00:00.123456Z",
+        shortId: "latest",
+        fanmarkId: "fanmark-latest",
       },
       {
         id: "22222222-2222-4222-8222-222222222222",
         emoji: "🧊-from-license",
         createdAt: "2026-09-20T00:00:00.000000Z",
+        shortId: "inactive",
+        fanmarkId: "fanmark-inactive",
       },
       {
         id: "33333333-3333-4333-8333-333333333333",
         emoji: "❓",
         createdAt: "2026-09-19T00:00:00.000000Z",
+        shortId: "null-display",
+        fanmarkId: "fanmark-null-display",
       },
     ]);
     expect(new Set(body.items.slice(4).map((item) => item.id))).toEqual(
@@ -206,18 +267,22 @@ describe("D1 recent fanmarks repository", () => {
 
     expect(response.status).toBe(200);
     const body = (await response.json()) as {
-      items: Array<{ id: string; emoji: string; createdAt: string | null }>;
+      items: Array<{ id: string; emoji: string; createdAt: string | null; shortId: string | null; fanmarkId: string | null }>;
     };
     expect(body.items).toEqual([
       {
         id: "99999999-9999-4999-8999-999999999999",
         emoji: "✨-from-license",
         createdAt: "2026-09-21T00:00:00.123457Z",
+        shortId: "precision",
+        fanmarkId: "fanmark-precision",
       },
       {
         id: "11111111-1111-4111-8111-111111111111",
         emoji: "🌿-from-license",
         createdAt: "2026-09-21T00:00:00.123456Z",
+        shortId: "latest",
+        fanmarkId: "fanmark-latest",
       },
     ]);
   });

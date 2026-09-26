@@ -9,6 +9,10 @@ import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatInTimeZone } from 'date-fns-tz';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  fetchExtensionPriceMaster,
+  getExtensionPricingBackend,
+} from '@/lib/reference-master-api';
 import { CreditCard, Loader2, Info, Ticket, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
@@ -81,17 +85,24 @@ export const ExtendLicenseDialog = ({
 
       setLoadingPlans(true);
       try {
-        const { data, error } = await supabase
-          .from('fanmark_tier_extension_prices' as any)
-          .select('months, price_yen')
-          .eq('tier_level', target.tierLevel)
-          .eq('is_active', true)
-          .order('months', { ascending: true });
+        const pricingBackend = getExtensionPricingBackend();
+        let options: ExtendPlanOption[];
+        if (pricingBackend === 'worker') {
+          const prices = await fetchExtensionPriceMaster();
+          options = prices
+            .filter(item => item.tierLevel === target.tierLevel && item.isActive)
+            .map(item => ({ months: item.months, price: item.priceYen }));
+        } else {
+          const { data, error } = await supabase
+            .from('fanmark_tier_extension_prices')
+            .select('months, price_yen')
+            .eq('tier_level', target.tierLevel)
+            .eq('is_active', true)
+            .order('months', { ascending: true });
 
-        if (error) throw error;
-
-        const typedData = (data ?? []) as unknown as Array<{ months: number; price_yen: number }>;
-        const options = typedData.map(item => ({ months: item.months, price: item.price_yen }));
+          if (error) throw error;
+          options = (data ?? []).map(item => ({ months: item.months, price: item.price_yen }));
+        }
         setPlans(options);
 
         if (!selectedPlanRef.current) {
@@ -206,7 +217,7 @@ export const ExtendLicenseDialog = ({
           const parsed = JSON.parse(value) as { error?: string };
           if (parsed?.error && knownCodes.has(parsed.error)) return parsed.error;
         } catch {
-          const match = value.match(/\"error\"\s*:\s*\"([^\"]+)\"/);
+          const match = value.match(/"error"\s*:\s*"([^"]+)"/);
           if (match?.[1] && knownCodes.has(match[1])) return match[1];
         }
         return null;
@@ -224,16 +235,15 @@ export const ExtendLicenseDialog = ({
 
     // Check error object structure (for supabase.functions.invoke errors)
     if (err && typeof err === 'object') {
-      const anyErr = err as any;
-      
       // Direct error property
-      const direct = parseErrorCode(anyErr?.error);
+      const errorObject = err as { error?: unknown; context?: unknown };
+      const direct = parseErrorCode(errorObject.error);
       if (direct) {
         return formatCouponError(direct);
       }
 
       // Check context.response (Response object)
-      const context = anyErr?.context;
+      const context = errorObject.context;
       if (context) {
         if (context instanceof Response) {
           try {
@@ -255,8 +265,8 @@ export const ExtendLicenseDialog = ({
         }
 
         // Check context.response (object with response property)
-        if (typeof context === 'object' && context.response) {
-          const response: Response | undefined = context.response;
+        if (typeof context === 'object' && context !== null && 'response' in context && context.response instanceof Response) {
+          const response = context.response;
           if (response) {
             try {
               const clone = response.clone ? response.clone() : response;
@@ -306,7 +316,6 @@ export const ExtendLicenseDialog = ({
       if (data?.error) {
         // Create error object with error code for proper parsing
         const errorObj = new Error(data.error);
-        (errorObj as any).error = data.error;
         throw errorObj;
       }
 
@@ -317,7 +326,7 @@ export const ExtendLicenseDialog = ({
       setCouponCode('');
       onOpenChange(false);
       onCouponApplied?.();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Coupon application failed:', err);
       const errorDescription = await getCouponErrorDescription(err);
       toast.error(t('dashboard.extendDialog.couponErrorTitle'), {

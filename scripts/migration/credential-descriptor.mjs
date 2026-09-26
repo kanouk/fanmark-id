@@ -58,6 +58,7 @@ const SET_OPTION_KEYS = new Set(["catalog", "destinationCatalog", "descriptors"]
 const CATALOG_KEYS = new Set([
   "columns",
   "constraints",
+  "database_locale",
   "enums",
   "indexes",
   "observed_at",
@@ -244,6 +245,11 @@ function validateCatalogShape(catalog) {
   }
   for (const key of ["triggers", "rls_policies", "views", "functions"]) {
     if (catalog[key] !== undefined && !Array.isArray(catalog[key])) fail("credential_catalog_scope");
+  }
+  if (catalog.database_locale !== undefined) {
+    assertAllowedKeys(catalog.database_locale, new Set(["collate", "ctype"]), "credential_catalog_database_locale");
+    assertNonEmptyString(catalog.database_locale.collate, "credential_catalog_database_locale");
+    assertNonEmptyString(catalog.database_locale.ctype, "credential_catalog_database_locale");
   }
   if (catalog.observed_at !== undefined && catalog.observed_at !== null && typeof catalog.observed_at !== "string") fail("credential_catalog_observed_at");
 

@@ -1,15 +1,22 @@
 # Stripe receipt, application ledger, and outbox design (#32)
 
-Status: proposal for the remaining application ledger, outbox, intent/fence,
-and business-worker work. This file does not add tables, change a function,
-write to Supabase, change a Stripe endpoint, deploy, or claim that the design
-is live. The receipt/dispatch foundation, signed ingress adapter, and
-claim/renew/retry lease RPCs now have bounded offline implementations for
-review; their validation records are [here](stripe-receipt-validation.md),
+Status: partial local implementation for paid license-extension webhook
+receipt, intent, effect deduplication, and atomic PostgreSQL and D1
+application. D1 migrations `0006` and `0007`, the signature-verifying ingress,
+lease primitives, positive-priced Checkout creator, scheduled extension
+dispatcher, and application transaction now have local Miniflare validation.
+No Stripe migration is applied to a remote database; the D1 route and Cron
+remain disabled. Subscription and invoice D1 projections, broader command and
+reconciliation operations, and non-extension effect handling remain open. The
+PostgreSQL receipt/dispatch foundation,
+signed ingress adapter, and claim/renew/retry lease RPCs have bounded offline
+implementations for review; their validation records are [here](stripe-receipt-validation.md),
 [here](stripe-ingress-validation.md), and
 [here](stripe-dispatch-validation.md). The non-granting invoice projection
-slice is recorded [here](stripe-invoice-projection-validation.md). This is the
-implementation boundary for issue #32 under parent issue #28.
+slice is recorded [here](stripe-invoice-projection-validation.md), and the
+local D1 ingress and extension application proofs are recorded
+[here](stripe-d1-ingress-validation.md).
+This is the implementation boundary for issue #32 under parent issue #28.
 
 The design starts with the current Supabase/Postgres system and keeps the
 same logical tables and invariants portable to D1. A Stripe webhook is treated
@@ -57,9 +64,9 @@ production has the same handler, endpoint configuration, or data.
 8. An external send is made only after the database transaction commits. Every
    retry uses a stable outbox idempotency key and records the provider result.
 9. An unpaid, failed, expired, or unapproved delayed extension Checkout
-   Session never grants license time. A paid Session or an explicitly
-   authorized zero-total Session may grant only after the current Session is
-   verified and its intent still belongs to the same license owner.
+   Session never grants license time. The current paid flow requires a
+   positive JPY total equal to the server-selected expected amount; a
+   zero-total Session cannot grant time under the current product policy.
 10. A stale license owner cannot resurrect a license. The application
     transaction rechecks the current owner and allowed status while locking the
     license row.
@@ -75,20 +82,19 @@ and [Checkout Session payment status](https://docs.stripe.com/api/checkout/sessi
 
 ## What the current code does
 
-The following is the checked-in behavior observed at the design date. The
-listed gaps are reasons for the ledger, not statements about unverified live
-behavior.
+The following is the current checked-in behavior. It does not establish that
+the same handler or endpoint configuration is live in production.
 
 | Current path | Current side effects | Durable workflow consequence |
 | --- | --- | --- |
-| handle-stripe-webhook, signature and client setup ([source](../../supabase/functions/handle-stripe-webhook/index.ts#L183-L224)) | Reads the raw body, verifies Stripe-Signature with Stripe's library, then creates a service-role Supabase client. The Stripe client is pinned to Basil. | Keep signature verification first. Add a receipt plus dispatch insert after verification and before any business work. |
-| checkout.session.completed for metadata type license_extension ([source](../../supabase/functions/handle-stripe-webhook/index.ts#L228-L334)) | Reads fanmark_id, license_id, user_id, and months from metadata; reads the license; computes a month-safe end; sets active, clears grace/return/exclusion fields; cancels pending lottery entries by fanmark_id; inserts LICENSE_EXTENDED audit data without checking the insert error. It does not check payment_status or dedupe event/session. | Apply once per Checkout Session ID in a transaction. Confirm the Session is paid; lock and recheck the license owner/status; add time from the latest committed end; record the lottery and audit effects before committing. |
+| handle-stripe-webhook, signature and client setup ([source](../../supabase/functions/handle-stripe-webhook/index.ts)) | Reads raw request bytes under a 256 KiB limit, verifies Stripe-Signature, then creates a service-role Supabase client. The Stripe client is pinned to Basil. | Keep signature verification first and return 2xx only after the durable application reaches a checked terminal state. |
+| extension Checkout Session events ([source](../../supabase/functions/handle-stripe-webhook/index.ts), [application migration](../../supabase/migrations/20260925120000_add_stripe_extension_application.sql)) | Persists a redacted receipt, then calls a service-only transaction for completed, asynchronous success/failure, and expired sessions. The effect is unique by live/test mode plus Checkout Session ID. The transaction checks paid amount/currency and current license/fanmark/transfer state, then updates the license, cancels pending lottery rows, writes both audits, enqueues one notification per applicant, and terminalizes its application/receipt/dispatch. | Offline PGlite and local Miniflare tests cover the SQL and D1 application. The D1 Checkout creator and scheduled extension dispatcher exist locally, but remain disabled and unconnected in staging. Add subscription/invoice projection, independent Postgres concurrency tests, monitored late-payment reconciliation, and staging rehearsal before treating this as complete. |
 | subscription.created and subscription.updated ([source](../../supabase/functions/handle-stripe-webhook/index.ts#L336-L456)) | Resolves the user from stripe_customer_id and then has an exact-email Auth fallback; maps the first subscription item to a configured plan; upserts user_subscriptions; for active status sets user_settings.plan_type and clears payment failure fields. | Use immutable customer linkage, retrieve current Stripe state, serialize by customer, and fence the commit. Do not let a stale event or a stale worker overwrite a newer subscription state. |
 | subscription.deleted ([source](../../supabase/functions/handle-stripe-webhook/index.ts#L458-L526)) | Reads the local user, deletes user_subscriptions, lists one active Stripe subscription, sets free only when none remains, then calls enforceFreePlanLimit. The helper orders license_start descending and slices the first excess rows, so the checked-in behavior returns the newest excess licenses one at a time; each return performs separate writes. | Keep a subscription tombstone and reconcile all relevant customer subscriptions. If the customer has no qualifying subscription, set free and perform deterministic limit returns, audit, and notification queue inserts in one retryable application transaction. Preserve the current newest-excess policy unless Product explicitly changes it. |
 | invoice.payment_failed and invoice.payment_action_required ([source](../../supabase/functions/handle-stripe-webhook/index.ts#L528-L570)) | Resolves a user, then writes payment_failure_at, next_payment_attempt, and payment_failure_type. An update error is logged and the handler still returns 200. | A failed application remains retryable. Preserve the three fields, fence them against a newer invoice state, and do not acknowledge a persistence failure. |
 | invoice.payment_succeeded ([source](../../supabase/functions/handle-stripe-webhook/index.ts#L572-L606)) | Resolves a user and clears payment failure fields. An update error is logged while the outer handler still returns 200. | Clear failure state only when the current invoice/subscription reconciliation says this success is authoritative. A stale success must not erase a newer failure. |
 | all other event types ([source](../../supabase/functions/handle-stripe-webhook/index.ts#L608-L624)) | Logs an unhandled type and returns 200. | Persist unknown or currently ignored event metadata as a receipt. Mark it ignored only after the receipt is durable, so event selection can be audited without accidentally granting state. |
-| paid checkout creation ([source](../../supabase/functions/create-extension-checkout/index.ts#L58-L145)) | Checks current owner and active/grace status, reads a tier/month price, then creates a payment Checkout Session containing license metadata. No local intent/session row or Stripe idempotency key is recorded. | Create a local intent before the Stripe call, include its ID in metadata, use a stable Stripe idempotency key, and attach the returned Session ID under a unique constraint. Recovery must not require a second Session. |
+| paid checkout creation ([source](../../supabase/functions/create-extension-checkout/index.ts), [local intent migration](../../supabase/migrations/20260925120000_add_stripe_extension_application.sql)) | A browser request ID maps to a service-only local intent before Stripe is called. The intent snapshots the owner, license, tier, months, Price ID, and positive JPY amount. Checkout metadata carries the intent and Price IDs; a key derived from the intent ID is passed to Stripe. The returned Session ID is attached under a live/test unique key and reused on retry. A parallel Worker/D1 endpoint and frontend client are now implemented behind unset selectors. | PGlite verifies same-request replay, payload conflict, immutable price snapshot, one-Session binding, webhook-to-intent matching, stale-owner rejection, and client ACLs. Four Miniflare D1 and five client tests cover the new Worker path with a fake Stripe client. A missing Session after the conservative 20-hour retry window enters reconciliation instead of creating another Session. This remains local-only; independent Postgres concurrency coverage and monitored reconciliation remain open. |
 | plan checkout creation ([source](../../supabase/functions/create-checkout/index.ts#L65-L154)) | Looks up or creates a Stripe customer, including an email search fallback, and creates a subscription Checkout Session with client_reference_id. There is no explicit idempotency key or local command row. | Link by stored customer ID or explicit metadata mapping; remove email-only merge; record the command and use a stable idempotency key for customer/session creation. Subscription entitlement still comes from reconciled subscription events. |
 | plan change ([source](../../supabase/functions/change-subscription/index.ts#L49-L334)) | Lists a customer by stored ID or email fallback, updates/cancels Stripe subscriptions, creates Portal sessions for required action, and relies on webhooks for the durable mirror. There are no visible idempotency keys. | Give each user command a local command ID and stable Stripe idempotency key. Treat the webhook reconciliation as the source of the local plan state; do not mark the requested plan as applied from the HTTP response alone. |
 | direct extend-fanmark-license ([source](../../supabase/functions/extend-fanmark-license/index.ts#L233-L360)) | A separate license-extension operation updates the license and also writes an audit row, cancels pending lottery entries by license_id, creates lottery-cancel notifications, and writes a cancellation audit through separate calls. | Treat it as a separately authorized product command with an explicit billing source, identity, and idempotency boundary. It must use the same locked license transition and command ledger, but must not be confused with paid Checkout fulfillment. |
@@ -102,11 +108,13 @@ transfer-in-progress blocked; Admin's extension is a separate free path).
 The intent/application boundary must recheck finite-license and active-transfer
 constraints at fulfillment, even if an earlier request check ran. A payment
 that arrives after a plan-limit or transfer change needs an explicit policy
-rather than silently charging and discarding the grant. PRODUCT also expects lottery cancellation notifications
-([PRODUCT.md](../PRODUCT.md#L501-L507)); the current paid webhook cancels
-entries and audits but does not enqueue those notifications, while the direct
-extension path does. Preserve the observed behavior until this parity
-decision is made, and add it to the implementation review.
+rather than silently charging and discarding the grant. PRODUCT expects
+lottery cancellation notifications
+([PRODUCT.md](../PRODUCT.md#L501-L507)). The local paid-checkout transaction
+now enqueues one notification per canceled applicant and writes a separate
+lottery-cancellation audit, matching the product contract and direct extension
+path. The earlier webhook omitted these effects; this local change is not
+deployed.
 
 The current schema supports the related business rows: fanmark_licenses
 contains owner, status, end, grace, returned, and exclusion fields
@@ -125,8 +133,10 @@ row on cancellation.
 
 ## Durable Supabase-first model
 
-These are proposed private billing tables. The names are implementation
-guidance, not a migration already applied. They should be inaccessible to
+The receipt/dispatch foundation and Checkout Session extension effect table
+are defined in local-only migrations. They have not been applied remotely.
+The broader ledger, command, intent, and customer-fence tables below remain
+design guidance. All billing-private tables should be inaccessible to
 anonymous and ordinary authenticated clients; webhook and worker paths use a
 narrow internal operation. The event payload may contain customer data, so if
 the raw body is retained it must be encrypted/private with a separately
@@ -244,7 +254,7 @@ A local intent is required before creating an extension Checkout Session.
 
 | Field | Requirement |
 | --- | --- |
-| intent_id, request_id | Local IDs; request_id is unique for one user command. |
+| intent_id, request_id | Local IDs; `(user_id, request_id)` is unique for one user command. |
 | user_id, license_id, fanmark_id, owner_snapshot | Identity and target captured from the authenticated request. |
 | months, tier_level, price_id, currency, expected_subtotal, expected_total, discount_policy, allow_zero_total, livemode | Server-side price and discount decision used to create the Session. |
 | stripe_checkout_session_id | Nullable until Stripe returns; unique when present. |
@@ -253,12 +263,17 @@ A local intent is required before creating an extension Checkout Session.
 | created_at, updated_at, failure_code | Retry and review metadata. |
 
 The intent is committed before calling Stripe. The Checkout metadata contains
-intent_id and the immutable target IDs. Stripe checkout.sessions.create uses
-a stable key derived from request_id. A retry first reads the intent and
-reuses the same key; if Stripe succeeded but the response was lost, it
-retrieves/backfills the same Session instead of creating another one. The
-Session ID is then stored under its unique constraint. This closes the
-current gap where no local row relates an event to the authenticated request.
+the intent ID, Price ID, and immutable target IDs. Stripe
+checkout.sessions.create uses a stable key derived from the intent ID, which
+is unique per authenticated user request. A retry first reads the intent and
+reuses its snapshotted Price ID and amount; if a Session ID is already bound,
+the creator retrieves and returns that same open Session. The webhook can bind
+the Session from signed metadata if it arrives before the creator stores the
+response. Stripe may prune keys after they are at least 24 hours old, so the
+intent stops automatic creation after 20 hours if no Session ID was recorded
+and requires reconciliation instead of risking a second payment Session.
+The Checkout Session ID is unique per live/test mode. [Stripe documents the
+key retention behavior](https://docs.stripe.com/api/idempotent_requests).
 
 The plan Checkout flow should use an analogous billing command row even though
 it does not itself grant an extension. The subscription event remains the
@@ -341,9 +356,7 @@ The application handler accepts an extension only when:
 
 - the intent and Session metadata agree on intent, license, fanmark, user, tier,
   and allowed month count;
-- mode is payment, the Session status is complete, and payment_status is paid,
-  or the Session is a verified authorized zero-total checkout as described
-  below;
+- mode is payment, the Session status is complete, and payment_status is paid;
 - the payment is in the same live/test mode as the intent;
 - the current license row is still owned by the intent user and is active or
   grace, subject to the existing product rules;
@@ -355,21 +368,21 @@ checkout.session.completed with unpaid remains awaiting_payment_confirmation.
 The async payment success event rechecks the current Session
 and may then apply the same effect key; async payment failure and
 checkout.session.expired close the intent without any grant. Stripe also
-defines no_payment_required as a legitimate Checkout state: it can represent
-a zero-total authorized purchase or a delayed payment/setup state. It is not
-automatically paid and it is not automatically rejected.
+defines no_payment_required as a legitimate Checkout state, but the current
+product specification routes free Admin extensions outside Stripe. The paid
+extension Checkout therefore requires a positive integer JPY price and rejects
+zero-total Sessions. A future zero-total Stripe path needs an explicit product
+rule and a server-side intent that records that authorization.
 
 At intent creation, persist the expected price, currency, subtotal/total,
 discount or coupon authorization, and an explicit allow_zero_total flag
 derived from server-side pricing rules. At fulfillment, retrieve the current
 Session and verify metadata, mode, currency, amount_total, discount
-identifiers, and the allow_zero_total policy. Apply a no_payment_required
-Session only when the intent explicitly permits zero total and the verified
-Session total is zero. A positive-total or unexplained no_payment_required
-Session enters a bounded awaiting-payment/reconciliation state with a
-deadline and then requires review or expiry; it must not remain indefinitely
-pending. The policy for authorized zero-total extensions remains a product
-decision. See the [Checkout Session payment_status reference](https://docs.stripe.com/api/checkout/sessions).
+identifiers, and the allow_zero_total policy. The current paid extension route
+stores a positive expected JPY total and sets allow_zero_total=false; a
+no_payment_required Session cannot fulfill it. A future zero-total path must
+record explicit authorization in the intent and use a bounded reconciliation
+deadline. See the [Checkout Session payment_status reference](https://docs.stripe.com/api/checkout/sessions).
 
 Within the committed application transaction:
 
@@ -531,11 +544,11 @@ The current live endpoint selection remains unverified.
 
 | Unit | Implementation boundary | Required tests |
 | --- | --- | --- |
-| Application-ledger migration | Add the remaining private application, outbox, intent, and fence tables; unique indexes; internal access path; retention fields. The receipt/dispatch tables and their event-ID boundary are covered by the [receipt foundation](stripe-receipt-validation.md). | Event ID uniqueness; checkout Session uniqueness by extension effect; concurrent insert leaves one receipt/dispatch row. |
-| Signed ingress (offline adapter complete; endpoint wiring remains) | Keep raw-body verification first; normalize envelope; transactionally insert receipt plus dispatch outbox; return 5xx on commit/enqueue failure. | Invalid signature leaves no receipt; valid event with DB failure returns retryable 5xx; duplicate terminal/nonterminal delivery does not apply twice; unknown type is durable. See the [offline ingress validation](stripe-ingress-validation.md). |
-| Worker lease (claim/renew/retry offline RPCs complete; application terminal transitions remain) | Atomic claim, lease expiry, attempt count, bounded error, retry/dead-letter policy. | Crash before commit retries; active lease prevents double worker; expired lease can be reclaimed; receipt is not terminal until application commit. See the [dispatch lease validation](stripe-dispatch-validation.md). |
-| Extension intent and command | Persist intent before Stripe call; metadata intent ID; stable Checkout idempotency key; attach/recover Session ID. | Lost Stripe response recovers one Session; repeated request ID does not create a second Session; unrelated requests create distinct Sessions. |
-| Paid extension application | Current Session retrieval/payment/zero-total gating; locked owner/status check; additive end date; audit and lottery transaction. | completed plus async success for one Session grants once; authorized zero-total Session grants once; unpaid/positive-total unexplained no_payment_required/async failure/expired grants zero; two distinct Sessions both add months; stale owner/NULL owner cannot resurrect; duplicate audit/lottery cancellation is impossible. |
+| Remaining application ledger and intent | Add the general private application/outbox/intent/customer-fence model beyond the local extension-session effect table; unique indexes and internal access path. The receipt/dispatch tables and event-ID boundary are covered by the [receipt foundation](stripe-receipt-validation.md). | Event ID and effect uniqueness; concurrent insert leaves one receipt/dispatch row; intent/session recovery. |
+| Signed ingress (extension route wired locally) | Keep raw-body verification first; normalize envelope; transactionally insert receipt plus dispatch outbox; return 5xx on commit/application failure. Other billing event paths and unknown-event receipt policy remain open. | Invalid signature leaves no receipt; valid event with DB failure returns retryable 5xx; duplicate terminal/nonterminal delivery does not apply twice. See the [offline ingress validation](stripe-ingress-validation.md) and [extension application validation](stripe-extension-application-validation.md). |
+| Worker lease (PostgreSQL and D1 claim/renew/retry primitives are local) | The D1 scheduled dispatcher now applies extension events, retries transient failures, and dead-letters unsupported billing events for review. Staging Cron/selectors remain off; operator recovery runbook remains open. | Crash before commit retries; active lease prevents double worker; expired lease can be reclaimed; receipt is not terminal until application commit. See the [dispatch lease validation](stripe-dispatch-validation.md) and [D1 validation](stripe-d1-ingress-validation.md). |
+| Extension intent and command (local PostgreSQL and D1 implementations) | Persist intent before Stripe call; pin active master price; attach/recover Session ID using an intent-derived idempotency key. The local D1 API requires Better Auth and matching D1 webhook/dispatch configuration. | PGlite and four Miniflare cases cover replay, changed-request rejection, immutable pricing, one-Session binding, grace plan limit, and owner checks. Five client contract tests cover the opt-in Worker client. A lost Stripe response with no Session ID remains reconciliation-only after 20 hours. No real Stripe request or staging selector is enabled. |
+| Paid extension application (local PostgreSQL transaction and D1 application slice implemented) | D1 checkout creation snapshots a matching private intent; the scheduler connects signed extension receipts to the application transaction. | PostgreSQL covers session-keyed idempotency and atomic business effects. D1 local Miniflare covers positive JPY payment, same-session replay and competing receipts, unpaid then async success, expired/failed sessions, stale owner, transfer lock, and injected audit rollback. Remote staging, subscription/non-extension events, and manual reconciliation remain open. See [D1 validation](stripe-d1-ingress-validation.md). |
 | Subscription reconciliation | Customer queue, current Stripe retrieval, generation fence, tombstone upsert, authoritative plan derivation. | Updated then deleted and deleted then updated converge to current Stripe state; an old fence cannot overwrite a new one; multiple subscriptions prevent premature free; no mapping never merges by email. |
 | Invoice projection (offline non-granting transaction complete; worker wiring remains) | Basil relationship normalizer and current invoice/subscription check. | Same event ID is applied once; a later attempt for the same invoice is reconciled rather than suppressed; Basil parent-path, rejected mixed-version provider relationships, conflicting-path, and missing-path fixtures are covered; failure/action-required fields persist; database failure remains retryable; stale success cannot clear a newer failure; missing/null subscription is reviewable and non-mutating. See the [offline validation](stripe-invoice-projection-validation.md). |
 | Free-plan return transaction | Current license_start-descending order and first-excess selection, conditional active-to-grace transition, audit and existing notification-event dedupe. | No qualifying subscription sets free and returns the newest excess licenses under current behavior; one transaction failure leaves no partial return; retry returns no license twice; owner/favorite dedupe keys remain stable. |
@@ -588,9 +601,10 @@ Before implementation:
   enabled events, live/test mode, and whether a second endpoint is active.
 - Decide the qualifying subscription statuses for plan entitlement, including
   trialing, past_due, unpaid, paused, and cancellation-at-period-end.
-- Decide the trusted intent/total/discount policy for
-  payment_status=no_payment_required, including whether zero-total coupon
-  extensions are valid and what deadline applies to delayed positive totals.
+- The current product rule says free Admin extensions bypass Stripe. Keep the
+  paid extension route positive-priced and reject
+  payment_status=no_payment_required; any future zero-total coupon path needs
+  an explicit product decision and intent policy.
 - Confirm whether the current fanmark-wide lottery cancellation in the webhook
   and license-scoped cancellation in the user extension operation are
   intentional; define one parity rule.
@@ -626,10 +640,11 @@ alone does not undo a committed grant.
 
 Offline implementation evidence already exists for the receipt/dispatch
 foundation and RPC, the signed ingress/normalizer adapter, the dispatch
-claim/renew/retry lease RPCs, and the non-granting invoice projection
-transaction; see the validation records linked at the top. They are not
-applied to Supabase, connected to the current webhook, scheduled, or
-deployed. Paid Checkout fulfillment, subscription reconciliation and
-free-limit returns, the remaining outbox/intent work, external-send
+claim/renew/retry leases, the non-granting invoice projection, and one D1
+paid-extension transaction; see the validation records linked at the top.
+These changes are not applied to Supabase or remote D1, connected to a
+scheduled dispatcher, or deployed. Paid Checkout fulfillment remains disabled
+until D1 intent creation and dispatch processing are complete. Subscription
+reconciliation and free-limit returns, the remaining outbox/intent work, external-send
 idempotency, live-settings verification, and production rollout remain
 unimplemented and require separate review.

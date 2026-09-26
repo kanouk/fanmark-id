@@ -82,7 +82,11 @@ node scripts/migration/row-conversion.mjs \
   --sql-out /private/fanmark_tiers-row.sql
 ```
 
-It rejects unsafe identifiers and an output path equal to the catalog path.
+It rejects unsafe identifiers and output paths that collide with the catalog
+or optional credential descriptor. When planning
+`fanmark_password_configs`, also pass `--credential-descriptor` with the
+private value-free policy file; the ordinary `text` codec is prohibited for
+`access_password`.
 The generated SQL is preparation material and does not claim source snapshot
 consistency or deployment readiness.
 

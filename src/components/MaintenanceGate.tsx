@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
-import { useSystemSettings } from "@/hooks/useSystemSettings";
+import { useMaintenanceSettings } from "@/hooks/useMaintenanceSettings";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { betterAuthClient, isBetterAuthEnabled } from "@/lib/auth-backend";
 import Maintenance from "@/pages/Maintenance";
 
 const MaintenanceGate = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
-  const { settings, loading } = useSystemSettings();
+  const { settings, loading, error } = useMaintenanceSettings();
   const { user } = useAuth();
+  const userId = user?.id;
   const [isAdmin, setIsAdmin] = useState(false);
   const [checkingAdmin, setCheckingAdmin] = useState(false);
 
@@ -19,7 +21,7 @@ const MaintenanceGate = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     let isMounted = true;
 
-    if (!settings.maintenance_mode || isAdminPath) {
+    if ((!settings.maintenance_mode && !error) || isAdminPath) {
       setIsAdmin(false);
       setCheckingAdmin(false);
       return () => {
@@ -27,7 +29,7 @@ const MaintenanceGate = ({ children }: { children: React.ReactNode }) => {
       };
     }
 
-    if (!user) {
+    if (!userId) {
       setIsAdmin(false);
       setCheckingAdmin(false);
       return () => {
@@ -38,13 +40,19 @@ const MaintenanceGate = ({ children }: { children: React.ReactNode }) => {
     const verifyAdmin = async () => {
       setCheckingAdmin(true);
       try {
-        const { data, error } = await supabase.rpc("is_admin");
-        if (!isMounted) return;
-        if (error) {
-          console.error("Failed to verify admin role for maintenance gate:", error);
-          setIsAdmin(false);
+        if (isBetterAuthEnabled()) {
+          const result = await betterAuthClient.getAdminSession();
+          if (!isMounted) return;
+          setIsAdmin(result.authorized);
         } else {
-          setIsAdmin(Boolean(data));
+          const { data, error: authError } = await supabase.rpc("is_admin");
+          if (!isMounted) return;
+          if (authError) {
+            console.error("Failed to verify admin role for maintenance gate:", authError);
+            setIsAdmin(false);
+          } else {
+            setIsAdmin(Boolean(data));
+          }
         }
       } catch (err) {
         if (!isMounted) return;
@@ -62,7 +70,7 @@ const MaintenanceGate = ({ children }: { children: React.ReactNode }) => {
     return () => {
       isMounted = false;
     };
-  }, [settings.maintenance_mode, isAdminPath, user?.id]);
+  }, [settings.maintenance_mode, error, isAdminPath, userId]);
 
   const shouldBypass = isAdminPath || isMaintenancePreview || isAdmin;
 
@@ -74,7 +82,7 @@ const MaintenanceGate = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (settings.maintenance_mode && !shouldBypass) {
+  if ((settings.maintenance_mode || error) && !shouldBypass) {
     return <Maintenance />;
   }
 

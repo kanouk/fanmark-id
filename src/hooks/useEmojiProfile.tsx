@@ -2,26 +2,41 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from './useTranslation';
+import {
+  fetchPublicEmojiProfile,
+  getPublicAccessReadBackend,
+  type PublicProfileThemeSettings,
+} from '@/lib/public-access-api';
+import {
+  getFanmarkProfileBackend,
+  getOwnerFanmarkProfileContext,
+  updateOwnerFanmarkProfile,
+} from '@/lib/fanmark-profile-api';
 
 export interface EmojiProfile {
   id: string;
   license_id: string;
-  display_name?: string;
-  bio?: string;
-  social_links?: Record<string, any>;
-  theme_settings?: Record<string, any>;
+  display_name?: string | null;
+  bio?: string | null;
+  social_links?: Record<string, string>;
+  theme_settings?: PublicProfileThemeSettings;
   is_public?: boolean;
   created_at: string;
   updated_at: string;
 }
 
+export type EmojiProfileUpdates = Partial<Pick<
+  EmojiProfile,
+  'display_name' | 'bio' | 'social_links' | 'theme_settings' | 'is_public'
+>>;
+
 // Public interface for emoji profile (without user_id and id for security)
 export interface PublicEmojiProfile {
   license_id: string;
-  display_name?: string;
-  bio?: string;
-  social_links?: any;
-  theme_settings?: any;
+  display_name?: string | null;
+  bio?: string | null;
+  social_links?: Record<string, string>;
+  theme_settings?: PublicProfileThemeSettings;
   created_at: string;
   updated_at: string;
 }
@@ -29,6 +44,10 @@ export interface PublicEmojiProfile {
 // Function to get public emoji profile data securely
 export const getPublicEmojiProfile = async (licenseId: string): Promise<PublicEmojiProfile | null> => {
   try {
+    if (getPublicAccessReadBackend() === 'worker') {
+      return await fetchPublicEmojiProfile(licenseId);
+    }
+
     const { data, error } = await supabase.rpc('get_public_emoji_profile', {
       profile_license_id: licenseId
     });
@@ -65,20 +84,34 @@ export const getOwnerEmojiProfile = async (licenseId: string): Promise<EmojiProf
   }
 };
 
-export const useEmojiProfile = (licenseId: string | null) => {
+export const useEmojiProfile = (licenseId: string | null, fanmarkId?: string | null) => {
   const { user } = useAuth();
   const { t } = useTranslation();
   const [profile, setProfile] = useState<EmojiProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async () => {
-    if (!user || !licenseId) {
+  const fetchProfile = useCallback(async () => {
+    let backend: 'supabase' | 'worker';
+    try {
+      backend = getFanmarkProfileBackend();
+    } catch (error) {
+      console.error('Invalid fanmark profile backend configuration:', error);
+      setLoading(false);
+      return;
+    }
+    if (!user || (backend === 'worker' ? !fanmarkId : !licenseId)) {
       setLoading(false);
       return;
     }
     
     setLoading(true);
     try {
+      if (backend === 'worker') {
+        const context = await getOwnerFanmarkProfileContext(fanmarkId!);
+        setProfile(context.profile);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('fanmark_profiles')
         .select('*')
@@ -96,12 +129,20 @@ export const useEmojiProfile = (licenseId: string | null) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, licenseId, fanmarkId]);
 
-  const updateProfile = useCallback(async (updates: Partial<Omit<EmojiProfile, 'id' | 'license_id' | 'created_at' | 'updated_at'>>) => {
-    if (!user || !licenseId) throw new Error(t('common.userNotAuthenticated'));
+  const updateProfile = useCallback(async (updates: EmojiProfileUpdates) => {
+    const backend = getFanmarkProfileBackend();
+    if (!user || (backend === 'worker' ? !fanmarkId : !licenseId)) throw new Error(t('common.userNotAuthenticated'));
 
     try {
+      if (backend === 'worker') {
+        const context = await updateOwnerFanmarkProfile(fanmarkId!, updates);
+        if (!context.profile) throw new Error('fanmark profile was not returned');
+        setProfile(context.profile);
+        return context.profile;
+      }
+
       const profileData = {
         license_id: licenseId,
         ...updates,
@@ -131,11 +172,11 @@ export const useEmojiProfile = (licenseId: string | null) => {
       console.error('Error updating emoji profile:', error);
       throw error;
     }
-  }, [user, licenseId, t]);
+  }, [user, licenseId, fanmarkId, t]);
 
   useEffect(() => {
-    fetchProfile();
-  }, [user, licenseId]);
+    void fetchProfile();
+  }, [fetchProfile]);
 
   return {
     profile,

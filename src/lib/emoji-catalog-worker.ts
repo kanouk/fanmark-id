@@ -212,6 +212,7 @@ export async function loadEmojiCatalogFromWorker(
     fetcher?: typeof fetch;
     pageSize?: number;
     timeoutMs?: number;
+    version?: string;
   } = {},
 ): Promise<EmojiCatalogApiRelease> {
   const pageSize = options.pageSize ?? EMOJI_CATALOG_PAGE_SIZE;
@@ -222,7 +223,7 @@ export async function loadEmojiCatalogFromWorker(
     throw new EmojiCatalogApiError("configuration");
   }
 
-  let version: string | undefined;
+  let version = options.version;
   let total: number | undefined;
   let offset = 0;
   const items: EmojiCatalogApiItem[] = [];

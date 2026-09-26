@@ -32,8 +32,16 @@ const SUPPORTED_CODECS = new Set([
   "money-cents-int64",
   "decimal-canonical-text",
   "enum-text-check",
+  "credential-to-bcrypt",
 ]);
 const ARRAY_TYPES = new Set(["text[]", "uuid[]", "smallint[]"]);
+const SEQUENCE_UUID_ARRAY_TABLES = new Set([
+  "fanmark_discoveries",
+  "fanmark_events",
+  "fanmark_favorites",
+  "fanmarks",
+]);
+const UUID_TEXT_RE = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/iu;
 const EXACT_ENVELOPE_KEYS = ["schemaVersion", "table", "columns", "values", "arrayMetadata"];
 const EXACT_ARRAY_METADATA_KEYS = ["isNull", "ndims", "lowerBound"];
 
@@ -185,6 +193,10 @@ function codecConverterType(column, codec) {
     // it as a reviewed cents column. Other fixed-scale decimals stay gated.
     ["money-cents-int64", new Set(["numeric(10,2)"])],
     ["decimal-canonical-text", new Set(["numeric"])],
+    // Snapshot export still validates the source value as text. The codec
+    // names the required future D1 transform; it does not hash or authorize a
+    // generic D1 binding.
+    ["credential-to-bcrypt", new Set(["text"])],
   ]);
   if (codec === "enum-text-check") {
     return column.type_kind === "e" ? "text" : null;
@@ -200,7 +212,10 @@ function createPlan(catalogInput, tableName, options = {}) {
 
   let structural;
   try {
-    structural = convertSchema(catalogInput);
+    structural = convertSchema(
+      catalogInput,
+      options.credentialDescriptor === undefined ? {} : { credentialDescriptor: options.credentialDescriptor },
+    );
   } catch (error) {
     throw fail("invalid_catalog", error);
   }
@@ -288,6 +303,19 @@ function validateArrayMetadata(column, value, converted, metadata) {
   }
 }
 
+function validateSequenceUuidArray(column, converted) {
+  if (column.column_name !== "normalized_emoji_ids" || !SEQUENCE_UUID_ARRAY_TABLES.has(column.table_name)) return;
+  let ids;
+  try {
+    ids = JSON.parse(converted);
+  } catch {
+    throw fail("invalid_sequence_uuid_array");
+  }
+  if (!Array.isArray(ids) || ids.length === 0 || ids.some((id) => typeof id !== "string" || !UUID_TEXT_RE.test(id))) {
+    throw fail("invalid_sequence_uuid_array");
+  }
+}
+
 function convertDescriptor(descriptor, rawValue, metadata) {
   const { column, codec, converterType } = descriptor;
   if (rawValue !== null && typeof rawValue !== "string") throw fail("invalid_source_value");
@@ -302,7 +330,10 @@ function convertDescriptor(descriptor, rawValue, metadata) {
   } catch (error) {
     throw fail("invalid_column_value", error);
   }
-  if (ARRAY_TYPES.has(column.postgres_type)) validateArrayMetadata(column, rawValue, converted, metadata);
+  if (ARRAY_TYPES.has(column.postgres_type)) {
+    validateArrayMetadata(column, rawValue, converted, metadata);
+    validateSequenceUuidArray(column, converted);
+  }
   return converted;
 }
 
@@ -359,10 +390,11 @@ async function writeAtomic(filePath, content) {
   }
 }
 
-export const USAGE = `Usage: row-conversion.mjs --catalog PATH --table TABLE --sql-out PATH [--schema NAME]
+export const USAGE = `Usage: row-conversion.mjs --catalog PATH --table TABLE --sql-out PATH [--schema NAME] [--credential-descriptor PATH]
 
 Generates a catalog-driven PostgreSQL exact-text row projection. It never
 connects to PostgreSQL, reads rows, or applies D1 SQL.
+Credential-bearing catalogs require the explicit, value-free transform descriptor.
 `;
 
 async function main() {
@@ -381,19 +413,32 @@ async function main() {
     else if (name === "--table") values.table = value;
     else if (name === "--schema") values.schema = value;
     else if (name === "--sql-out") values.sqlOut = value;
+    else if (name === "--credential-descriptor") values.credentialDescriptorPath = value;
     else throw fail("invalid_arguments");
   }
   if (!values.catalog || !values.table || !values.sqlOut) throw fail("missing_argument");
   const catalogPath = path.resolve(values.catalog);
   const sqlPath = path.resolve(values.sqlOut);
-  if (catalogPath === sqlPath) throw fail("output_paths_must_differ");
+  const descriptorPath = values.credentialDescriptorPath ? path.resolve(values.credentialDescriptorPath) : null;
+  if (new Set([catalogPath, sqlPath, ...(descriptorPath ? [descriptorPath] : [])]).size !== 2 + (descriptorPath ? 1 : 0)) throw fail("output_paths_must_differ");
   let catalog;
   try {
     catalog = JSON.parse(await fs.readFile(catalogPath, "utf8"));
   } catch (error) {
     throw fail("invalid_catalog_file", error);
   }
-  const plan = buildRowPlan(catalog, values.table, { schema: values.schema });
+  let credentialDescriptor;
+  if (descriptorPath) {
+    try {
+      credentialDescriptor = JSON.parse(await fs.readFile(descriptorPath, "utf8"));
+    } catch (error) {
+      throw fail("credential_descriptor_file_invalid", error);
+    }
+  }
+  const plan = buildRowPlan(catalog, values.table, {
+    schema: values.schema,
+    ...(credentialDescriptor === undefined ? {} : { credentialDescriptor }),
+  });
   await writeAtomic(sqlPath, `${plan.sql}`);
   console.log(`Row projection generated for ${plan.table} (${plan.columns.length} columns).`);
 }

@@ -1,0 +1,210 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import {
+  BetterAuthClientError,
+  createBetterAuthClient,
+} from './better-auth-client.ts';
+
+test('Better Auth session requests include cookies and disable caching', async () => {
+  let request: { url: string; init?: RequestInit } | undefined;
+  const client = createBetterAuthClient({
+    baseUrl: 'https://fanmark-app-staging.example.workers.dev/',
+    fetchImpl: async (input, init) => {
+      request = { url: String(input), init };
+      return new Response(JSON.stringify({ user: { id: 'synthetic-user', email: 'test@example.invalid' } }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    },
+  });
+
+  const session = await client.getSession();
+
+  assert.equal(session?.user.id, 'synthetic-user');
+  assert.equal(request?.url, 'https://fanmark-app-staging.example.workers.dev/api/auth/get-session');
+  assert.equal(request?.init?.credentials, 'include');
+  assert.equal(request?.init?.cache, 'no-store');
+});
+
+test('Better Auth email sign-in posts only the entered credentials and includes cookies', async () => {
+  let request: { url: string; init?: RequestInit } | undefined;
+  const client = createBetterAuthClient({
+    baseUrl: 'https://fanmark-app-staging.example.workers.dev',
+    fetchImpl: async (input, init) => {
+      request = { url: String(input), init };
+      return new Response(JSON.stringify({ user: { id: 'synthetic-user', email: 'test@example.invalid' } }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    },
+  });
+
+  await client.signInWithEmail('test@example.invalid', 'synthetic-password');
+
+  assert.equal(request?.url, 'https://fanmark-app-staging.example.workers.dev/api/auth/sign-in/email');
+  assert.equal(request?.init?.method, 'POST');
+  assert.equal(request?.init?.credentials, 'include');
+  assert.deepEqual(JSON.parse(String(request?.init?.body)), {
+    email: 'test@example.invalid',
+    password: 'synthetic-password',
+  });
+});
+
+test('Better Auth two-factor sign-in challenge is returned without requiring a session', async () => {
+  const client = createBetterAuthClient({
+    baseUrl: 'https://fanmark-app-staging.example.workers.dev',
+    fetchImpl: async () => new Response(JSON.stringify({
+      twoFactorRedirect: true,
+      twoFactorMethods: ['totp'],
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    }),
+  });
+
+  assert.deepEqual(
+    await client.signInWithEmail('admin@example.invalid', 'synthetic-password'),
+    { twoFactorRedirect: true, twoFactorMethods: ['totp'] },
+  );
+});
+
+test('Better Auth TOTP enrollment validates the URI and backup-code response', async () => {
+  let request: { url: string; init?: RequestInit } | undefined;
+  const client = createBetterAuthClient({
+    baseUrl: 'https://fanmark-app-staging.example.workers.dev',
+    fetchImpl: async (input, init) => {
+      request = { url: String(input), init };
+      return new Response(JSON.stringify({
+        method: 'totp',
+        totpURI: 'otpauth://totp/fanmark.id:admin?secret=SYNTHETIC',
+        backupCodes: ['synthetic-backup-code'],
+      }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    },
+  });
+
+  assert.deepEqual(await client.enableTotp('synthetic-password'), {
+    method: 'totp',
+    totpURI: 'otpauth://totp/fanmark.id:admin?secret=SYNTHETIC',
+    backupCodes: ['synthetic-backup-code'],
+  });
+  assert.equal(request?.url, 'https://fanmark-app-staging.example.workers.dev/api/auth/two-factor/enable');
+  assert.equal(request?.init?.credentials, 'include');
+  assert.deepEqual(JSON.parse(String(request?.init?.body)), {
+    method: 'totp',
+    password: 'synthetic-password',
+  });
+});
+
+test('Better Auth TOTP verification requires a positive response and sends only the code', async () => {
+  let request: { url: string; init?: RequestInit } | undefined;
+  const client = createBetterAuthClient({
+    baseUrl: 'https://fanmark-app-staging.example.workers.dev',
+    fetchImpl: async (input, init) => {
+      request = { url: String(input), init };
+      return new Response(JSON.stringify({ status: true }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    },
+  });
+
+  await client.verifyTotp('123456');
+
+  assert.equal(request?.url, 'https://fanmark-app-staging.example.workers.dev/api/auth/two-factor/verify-totp');
+  assert.equal(request?.init?.credentials, 'include');
+  assert.deepEqual(JSON.parse(String(request?.init?.body)), { code: '123456' });
+});
+
+test('Better Auth TOTP verification accepts the session response returned by its Worker endpoint', async () => {
+  const client = createBetterAuthClient({
+    baseUrl: 'https://fanmark-app-staging.example.workers.dev',
+    fetchImpl: async () => new Response(JSON.stringify({
+      token: 'synthetic-session-token',
+      user: { id: 'synthetic-user', email: 'admin@example.invalid' },
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    }),
+  });
+
+  assert.deepEqual(await client.verifyTotp('123456'), {
+    token: 'synthetic-session-token',
+    user: { id: 'synthetic-user', email: 'admin@example.invalid' },
+  });
+});
+
+test('admin session maps only known authorization states and fails closed on malformed responses', async () => {
+  const resultClient = createBetterAuthClient({
+    baseUrl: 'https://fanmark-app-staging.example.workers.dev',
+    fetchImpl: async (input, init) => {
+      assert.equal(String(input), 'https://fanmark-app-staging.example.workers.dev/api/admin/session');
+      assert.equal(init?.credentials, 'include');
+      assert.equal(init?.cache, 'no-store');
+      return new Response(JSON.stringify({ error: 'mfa_enrollment_required' }), {
+        status: 403,
+        headers: { 'content-type': 'application/json' },
+      });
+    },
+  });
+  assert.deepEqual(await resultClient.getAdminSession(), {
+    authorized: false,
+    reason: 'mfa_enrollment_required',
+  });
+
+  const malformedClient = createBetterAuthClient({
+    baseUrl: 'https://fanmark-app-staging.example.workers.dev',
+    fetchImpl: async () => new Response(JSON.stringify({ error: 'unknown_state' }), {
+      status: 403,
+      headers: { 'content-type': 'application/json' },
+    }),
+  });
+  await assert.rejects(malformedClient.getAdminSession());
+});
+
+test('Better Auth errors retain HTTP status for safe UI handling', async () => {
+  const client = createBetterAuthClient({
+    baseUrl: 'https://fanmark-app-staging.example.workers.dev',
+    fetchImpl: async () => new Response(JSON.stringify({ message: 'Invalid credentials' }), {
+      status: 401,
+      headers: { 'content-type': 'application/json' },
+    }),
+  });
+
+  await assert.rejects(
+    client.signInWithEmail('test@example.invalid', 'wrong-password'),
+    (error: unknown) => error instanceof BetterAuthClientError && error.status === 401,
+  );
+});
+
+test('Better Auth sign-out revokes the server cookie session', async () => {
+  let request: { url: string; init?: RequestInit } | undefined;
+  const client = createBetterAuthClient({
+    baseUrl: 'https://fanmark-app-staging.example.workers.dev',
+    fetchImpl: async (input, init) => {
+      request = { url: String(input), init };
+      return new Response(null, { status: 204 });
+    },
+  });
+
+  await client.signOut();
+
+  assert.equal(request?.url, 'https://fanmark-app-staging.example.workers.dev/api/auth/sign-out');
+  assert.equal(request?.init?.method, 'POST');
+  assert.equal(request?.init?.credentials, 'include');
+  assert.equal(request?.init?.cache, 'no-store');
+});
+
+test('an empty Better Auth session remains unauthenticated', async () => {
+  const client = createBetterAuthClient({
+    baseUrl: 'https://fanmark-app-staging.example.workers.dev',
+    fetchImpl: async () => new Response('null', {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    }),
+  });
+
+  assert.equal(await client.getSession(), null);
+});

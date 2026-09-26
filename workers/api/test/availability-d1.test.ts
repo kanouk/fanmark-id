@@ -1,11 +1,13 @@
 import { env, exports as workerExports } from "cloudflare:workers";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import schemaSql from "./fixtures/d1-availability-contract.sql?raw";
+import businessSchemaSql from "./fixtures/d1-availability-business-contract.sql?raw";
+import masterSchemaSql from "./fixtures/d1-availability-master-contract.sql?raw";
 import worker, { handleRequest } from "../src";
 import type { Env } from "../src/repository";
 
 const runtimeEnv = env as unknown as Env;
 const database = runtimeEnv.FANMARK_DB;
+const masterDatabase = runtimeEnv.MASTER_DB;
 const API_URL = "https://api.example.test/api/fanmarks/availability";
 const FIXED_NOW = new Date("2026-09-21T12:00:00.500Z");
 
@@ -16,6 +18,7 @@ const TONE = "00000000-0000-4000-8000-000000000004";
 const ZWJ = "00000000-0000-4000-8000-000000000005";
 const VS = "00000000-0000-4000-8000-000000000006";
 const MISSING = "00000000-0000-4000-8000-000000000099";
+const EMOJI_RELEASE_VERSION = "a".repeat(64);
 
 const FANMARK_A = "10000000-0000-4000-8000-000000000001";
 const FANMARK_TONE = "10000000-0000-4000-8000-000000000002";
@@ -36,7 +39,9 @@ function statementsFrom(sql: string): string[] {
 function d1Environment(overrides: Partial<Env> = {}): Env {
   return {
     ...runtimeEnv,
+    D1_TOPOLOGY: "split",
     FANMARK_DB: database,
+    MASTER_DB: masterDatabase,
     AVAILABILITY_BACKEND: "d1",
     ...overrides,
   };
@@ -68,40 +73,58 @@ async function bodyOf(response: Response): Promise<{ schemaVersion: number; resu
 
 async function executeFixtureSchema(): Promise<void> {
   if (!database) throw new Error("FANMARK_DB binding is unavailable");
-  await database.batch(statementsFrom(schemaSql).map((statement) => database.prepare(statement)));
+  if (!masterDatabase) throw new Error("MASTER_DB binding is unavailable");
+  await Promise.all([
+    database.batch(statementsFrom(businessSchemaSql).map((statement) => database.prepare(statement))),
+    masterDatabase.batch(statementsFrom(masterSchemaSql).map((statement) => masterDatabase.prepare(statement))),
+  ]);
 }
 
 async function resetFixture(): Promise<void> {
   if (!database) throw new Error("FANMARK_DB binding is unavailable");
+  if (!masterDatabase) throw new Error("MASTER_DB binding is unavailable");
   await database.batch([
     database.prepare("DELETE FROM fanmark_licenses"),
     database.prepare("DELETE FROM fanmarks"),
-    database.prepare("DELETE FROM fanmark_tiers"),
-    database.prepare("DELETE FROM emoji_master"),
   ]);
-  await database.batch([
-    database.prepare("INSERT INTO emoji_master (id, emoji) VALUES (?, ?)").bind(A, "😀"),
-    database.prepare("INSERT INTO emoji_master (id, emoji) VALUES (?, ?)").bind(B, "🎵"),
-    database.prepare("INSERT INTO emoji_master (id, emoji) VALUES (?, ?)").bind(C, "🌿"),
-    database.prepare("INSERT INTO emoji_master (id, emoji) VALUES (?, ?)").bind(TONE, "👍🏽"),
-    database.prepare("INSERT INTO emoji_master (id, emoji) VALUES (?, ?)").bind(ZWJ, "👩‍💻"),
-    database.prepare("INSERT INTO emoji_master (id, emoji) VALUES (?, ?)").bind(VS, "✈️"),
-    database
+  await masterDatabase.batch([
+    masterDatabase.prepare("DELETE FROM fanmark_emoji_master_active_release"),
+    masterDatabase.prepare("DELETE FROM fanmark_emoji_master_release_staging"),
+    masterDatabase.prepare("DELETE FROM fanmark_emoji_master_release_imports"),
+    masterDatabase.prepare("DELETE FROM fanmark_tiers"),
+    masterDatabase.prepare("DELETE FROM emoji_master"),
+    masterDatabase.prepare("INSERT INTO emoji_master (id, emoji) VALUES (?, ?)").bind(A, "😎"),
+    masterDatabase.prepare("INSERT INTO emoji_master (id, emoji) VALUES (?, ?)").bind(B, "🎵"),
+    masterDatabase.prepare("INSERT INTO emoji_master (id, emoji) VALUES (?, ?)").bind(C, "🌿"),
+    masterDatabase.prepare("INSERT INTO emoji_master (id, emoji) VALUES (?, ?)").bind(TONE, "👍🏽"),
+    masterDatabase.prepare("INSERT INTO emoji_master (id, emoji) VALUES (?, ?)").bind(ZWJ, "👩‍💻"),
+    masterDatabase.prepare("INSERT INTO emoji_master (id, emoji) VALUES (?, ?)").bind(VS, "✈️"),
+    masterDatabase.prepare("INSERT INTO emoji_master (id, emoji) VALUES (?, ?)").bind(MISSING, "🧪"),
+    masterDatabase.prepare("INSERT INTO fanmark_emoji_master_release_imports (release_version, manifest_json, row_count, status) VALUES (?, ?, ?, 'loading')").bind(EMOJI_RELEASE_VERSION, "{}", 6),
+    masterDatabase.prepare("INSERT INTO fanmark_emoji_master_release_staging (release_version, id, emoji) VALUES (?, ?, ?)").bind(EMOJI_RELEASE_VERSION, A, "😀"),
+    masterDatabase.prepare("INSERT INTO fanmark_emoji_master_release_staging (release_version, id, emoji) VALUES (?, ?, ?)").bind(EMOJI_RELEASE_VERSION, B, "🎵"),
+    masterDatabase.prepare("INSERT INTO fanmark_emoji_master_release_staging (release_version, id, emoji) VALUES (?, ?, ?)").bind(EMOJI_RELEASE_VERSION, C, "🌿"),
+    masterDatabase.prepare("INSERT INTO fanmark_emoji_master_release_staging (release_version, id, emoji) VALUES (?, ?, ?)").bind(EMOJI_RELEASE_VERSION, TONE, "👍🏽"),
+    masterDatabase.prepare("INSERT INTO fanmark_emoji_master_release_staging (release_version, id, emoji) VALUES (?, ?, ?)").bind(EMOJI_RELEASE_VERSION, ZWJ, "👩‍💻"),
+    masterDatabase.prepare("INSERT INTO fanmark_emoji_master_release_staging (release_version, id, emoji) VALUES (?, ?, ?)").bind(EMOJI_RELEASE_VERSION, VS, "✈️"),
+    masterDatabase.prepare("UPDATE fanmark_emoji_master_release_imports SET status = 'ready' WHERE release_version = ?").bind(EMOJI_RELEASE_VERSION),
+    masterDatabase.prepare("INSERT INTO fanmark_emoji_master_active_release (singleton_id, release_version) VALUES (1, ?)").bind(EMOJI_RELEASE_VERSION),
+    masterDatabase
       .prepare(
         "INSERT INTO fanmark_tiers (tier_level, display_name, initial_license_days, monthly_price_usd, is_active) VALUES (?, ?, ?, ?, ?)",
       )
       .bind(1, "Five", null, 125, 1),
-    database
+    masterDatabase
       .prepare(
         "INSERT INTO fanmark_tiers (tier_level, display_name, initial_license_days, monthly_price_usd, is_active) VALUES (?, ?, ?, ?, ?)",
       )
       .bind(2, "Three", 30, 250, 1),
-    database
+    masterDatabase
       .prepare(
         "INSERT INTO fanmark_tiers (tier_level, display_name, initial_license_days, monthly_price_usd, is_active) VALUES (?, ?, ?, ?, ?)",
       )
       .bind(3, "Repeated or two", 14, 375, 1),
-    database
+    masterDatabase
       .prepare(
         "INSERT INTO fanmark_tiers (tier_level, display_name, initial_license_days, monthly_price_usd, is_active) VALUES (?, ?, ?, ?, ?)",
       )
@@ -190,6 +213,36 @@ describe("D1 availability repository", () => {
     });
   });
 
+  it("resolves IDs and emoji identity only from the active immutable release", async () => {
+    await insertFanmark(FANMARK_A, "😎");
+
+    const active = await bodyOf(await request([A]));
+    expect(active.result).toMatchObject({ available: true, tier_level: 4 });
+    expect(active.result).not.toHaveProperty("fanmark_id");
+
+    const retired = await bodyOf(await request([MISSING]));
+    expect(retired.result).toEqual({ available: false, reason: "invalid_emoji_ids" });
+  });
+
+  it("fails closed when no ready release is active", async () => {
+    if (!masterDatabase) throw new Error("MASTER_DB binding is unavailable");
+    await masterDatabase.prepare("DELETE FROM fanmark_emoji_master_active_release").run();
+
+    const response = await request([A]);
+    expect(response.status).toBe(502);
+    expect(await response.json()).toEqual({ error: "upstream_unavailable" });
+  });
+
+  it("fails closed when either split D1 role is missing", async () => {
+    const missingMaster = await request([A], d1Environment({ MASTER_DB: undefined }));
+    expect(missingMaster.status).toBe(500);
+    expect(await missingMaster.json()).toEqual({ error: "server_misconfigured" });
+
+    const missingBusiness = await request([A], d1Environment({ FANMARK_DB: undefined }));
+    expect(missingBusiness.status).toBe(500);
+    expect(await missingBusiness.json()).toEqual({ error: "server_misconfigured" });
+  });
+
   it("removes only skin tones and preserves ZWJ and variation-selector identity", async () => {
     await insertFanmark(FANMARK_TONE, "👍");
     await insertFanmark(FANMARK_ZWJ, "👩‍💻");
@@ -206,8 +259,8 @@ describe("D1 availability repository", () => {
   });
 
   it("returns invalid_length when the selected tier is inactive", async () => {
-    if (!database) throw new Error("FANMARK_DB binding is unavailable");
-    await database.prepare("UPDATE fanmark_tiers SET is_active = 0 WHERE tier_level = 4").run();
+    if (!masterDatabase) throw new Error("MASTER_DB binding is unavailable");
+    await masterDatabase.prepare("UPDATE fanmark_tiers SET is_active = 0 WHERE tier_level = 4").run();
 
     const response = await request([A]);
     expect(response.status).toBe(200);

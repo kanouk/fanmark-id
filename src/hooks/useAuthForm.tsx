@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/integrations/supabase/client';
+import { betterAuthClient, isBetterAuthEnabled } from '@/lib/auth-backend';
+import { BetterAuthClientError } from '@/lib/better-auth-client';
+import { useAuth } from '@/hooks/useAuth';
 import { AuthFormData, AuthState } from '@/types/auth';
 import { isActiveLanguage, type ActiveLanguageCode } from '@/lib/language';
 
@@ -26,6 +29,7 @@ export const useAuthForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useTranslation();
+  const { refreshSession } = useAuth();
   
   const [formData, setFormData] = useState<AuthFormData>({
     email: '',
@@ -204,6 +208,13 @@ export const useAuthForm = () => {
     setError('');
 
     try {
+      if (isBetterAuthEnabled()) {
+        await betterAuthClient.signInWithEmail(formData.email, formData.password);
+        await refreshSession();
+        navigate('/dashboard');
+        return;
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
@@ -222,8 +233,14 @@ export const useAuthForm = () => {
 
       navigate('/dashboard');
     } catch (error) {
-      const message = error instanceof Error ? error.message : undefined;
-      setError(message || 'ログインに失敗しました');
+      if (error instanceof BetterAuthClientError && error.status === 401) {
+        setError('メールアドレスまたはパスワードが正しくありません');
+      } else if (error instanceof BetterAuthClientError && error.status === 403) {
+        setError('メールアドレスの確認が完了していません。確認メールをご確認ください。');
+      } else {
+        const message = error instanceof Error ? error.message : undefined;
+        setError(message || 'ログインに失敗しました');
+      }
     } finally {
       setLoading(false);
     }

@@ -5,7 +5,7 @@
  *
  * The default CLI uses one persistent psql process and standard libpq
  * environment variables. Tests can inject a session implementing the small
- * begin/readCatalog/streamTable/countTable/commit/rollback/close interface;
+ * begin/readCatalog/readSequenceStates/streamTable/countTable/commit/rollback/close interface;
  * the artifact and verification paths remain identical.
  */
 
@@ -17,6 +17,7 @@ import process from "node:process";
 import { pathToFileURL } from "node:url";
 
 import { compileRowConverter } from "./row-conversion.mjs";
+import { compileCredentialDescriptor, CREDENTIAL_SOURCE_RELATION } from "./credential-descriptor.mjs";
 import { convertSchema } from "./schema-convert.mjs";
 import { verifyPreparedArtifacts, verifySnapshot } from "./snapshot-verify.mjs";
 import {
@@ -34,6 +35,7 @@ import {
   catalogFingerprint,
   compareUtf8Tuple,
   frameSqlForCursor,
+  expectedSequenceTargets,
   getPrimaryKeyInfo,
   getTableNames,
   quoteIdentifier,
@@ -43,6 +45,7 @@ import {
   schemaReportFingerprint,
   sha256Hex,
   tableFileName,
+  validateSequenceStates,
 } from "./snapshot-format.mjs";
 
 export class SnapshotExportError extends Error {
@@ -139,14 +142,14 @@ async function assertFreshOutputDirectory(outputDir) {
   return absolute;
 }
 
-function buildPlans(catalog) {
+function buildPlans(catalog, credentialDescriptor) {
   const tables = getTableNames(catalog);
   const plans = new Map();
   for (const table of tables) {
     let plan;
     let primaryKey;
     try {
-      plan = compileRowConverter(catalog, table);
+      plan = compileRowConverter(catalog, table, credentialDescriptor == null ? {} : { credentialDescriptor });
       primaryKey = getPrimaryKeyInfo(catalog, table);
       // Build the complete query during preflight so unsupported PK/source
       // shapes fail before any table artifact is created.
@@ -204,6 +207,7 @@ class PsqlSession {
     this.#maxQueuedBytes = Math.max(4 * maxLineBytes, 64 * 1024 * 1024);
     this.#commandTimeoutMs = commandTimeoutMs;
     const env = { ...process.env, PGCLIENTENCODING: "UTF8" };
+    delete env.FANMARK_SNAPSHOT_KEY_B64;
     // psql has no --role option (pg_dump does); role selection is performed by
     // SET LOCAL ROLE after the read-only transaction starts. -w prevents an
     // unattended run from opening an interactive password prompt.
@@ -389,6 +393,48 @@ class PsqlSession {
     return payload;
   }
 
+  async readSequenceStates(catalog) {
+    const targets = expectedSequenceTargets(catalog);
+    if (targets.length === 0) return [];
+    if (targets.length !== 1) throw fail("sequence_target_unsupported");
+    const token = randomToken("sequence");
+    const payload = await this.#exec(`WITH sequence_metadata AS (
+      SELECT sn.nspname AS schema_name, sequence.relname AS sequence_name,
+        owner_namespace.nspname AS owner_schema, owner_table.relname AS owner_table,
+        owner_column.attname AS owner_column, sequence_definition.seqstart::text AS start_value,
+        sequence_definition.seqincrement::text AS increment_by, sequence_definition.seqmin::text AS min_value,
+        sequence_definition.seqmax::text AS max_value, sequence_definition.seqcache::text AS cache_size,
+        sequence_definition.seqcycle AS cycle
+      FROM pg_sequence sequence_definition
+      JOIN pg_class seq_rel ON seq_rel.oid = sequence_definition.seqrelid AND seq_rel.relkind = 'S'
+      JOIN pg_namespace sn ON sn.oid = seq_rel.relnamespace
+      LEFT JOIN pg_depend dependency ON dependency.classid = 'pg_class'::regclass
+        AND dependency.objid = seq_rel.oid AND dependency.refclassid = 'pg_class'::regclass
+        AND dependency.deptype IN ('a', 'i')
+      LEFT JOIN pg_class owner_table ON owner_table.oid = dependency.refobjid
+      LEFT JOIN pg_namespace owner_namespace ON owner_namespace.oid = owner_table.relnamespace
+      LEFT JOIN pg_attribute owner_column ON owner_column.attrelid = owner_table.oid
+        AND owner_column.attnum = dependency.refobjsubid AND NOT owner_column.attisdropped
+      WHERE sn.nspname = 'public' AND seq_rel.relname = 'fanmark_events_id_seq'
+    ), sequence_value AS (
+      SELECT last_value::text AS last_value, is_called FROM public.fanmark_events_id_seq
+    )
+    SELECT jsonb_build_object(
+      'kind', 'sequence-states', 'token', ${quoteLiteral(token)},
+      'payload', jsonb_build_object(
+        'states', COALESCE((SELECT jsonb_agg(jsonb_build_object(
+          'schema', schema_name, 'name', sequence_name,
+          'ownerSchema', owner_schema, 'ownerTable', owner_table, 'ownerColumn', owner_column,
+          'startValue', start_value, 'incrementBy', increment_by,
+          'minValue', min_value, 'maxValue', max_value, 'cacheSize', cache_size, 'cycle', cycle,
+          'lastValue', (SELECT last_value FROM sequence_value), 'isCalled', (SELECT is_called FROM sequence_value)
+        )) FROM sequence_metadata), '[]'::jsonb)
+      )
+    )::text;`, "sequence-states", token);
+    if (!isPlainObject(payload) || !Array.isArray(payload.states)) throw fail("source_sequence_state_invalid");
+    return payload.states;
+  }
+
   async *streamTable({ table, plan, primaryKey, fetchSize = 100, runToken }) {
     const cursor = `snapshot_${randomBytes(10).toString("hex")}`;
     const token = runToken ?? randomToken("table");
@@ -567,9 +613,33 @@ function validateBeginMetadata(metadata) {
   if (!isPlainObject(metadata) || metadata.currentUser !== "postgres" || metadata.isolation !== "repeatable read" || metadata.readOnly !== true) throw fail("source_transaction_boundary_invalid");
 }
 
+function compileSnapshotCredentialBinding(catalog, descriptor) {
+  const hasCredentialRelation = catalog.columns.some((column) => column?.table_name === CREDENTIAL_SOURCE_RELATION);
+  if (!hasCredentialRelation) {
+    if (descriptor !== undefined) throw fail("credential_descriptor_without_source_relation");
+    return { version: null, digest: null, descriptor: null };
+  }
+  if (descriptor === undefined || descriptor === null) throw fail("credential_descriptor_required");
+  try {
+    const plan = compileCredentialDescriptor({ catalog, descriptor });
+    return {
+      version: plan.descriptorVersion,
+      digest: plan.descriptorDigest,
+      descriptor: plan.descriptor,
+    };
+  } catch (error) {
+    if (error instanceof SnapshotExportError) throw error;
+    const code = typeof error?.code === "string" && /^[a-z0-9_]+$/.test(error.code)
+      ? error.code
+      : "credential_descriptor_invalid";
+    throw fail(code, error);
+  }
+}
+
 export async function exportSnapshot({
   catalog,
   outputDir,
+  credentialDescriptor,
   session = null,
   sessionFactory = null,
   role = "postgres",
@@ -604,9 +674,13 @@ export async function exportSnapshot({
   let tables;
   let plans;
   let reportHash;
+  let credentialBinding;
+  let sequenceTargets;
   try {
-    schema = convertSchema(catalog);
-    ({ tables, plans } = buildPlans(catalog));
+    credentialBinding = compileSnapshotCredentialBinding(catalog, credentialDescriptor);
+    schema = convertSchema(catalog, credentialBinding.descriptor === null ? {} : { credentialDescriptor: credentialBinding.descriptor });
+    ({ tables, plans } = buildPlans(catalog, credentialBinding.descriptor));
+    sequenceTargets = expectedSequenceTargets(catalog);
     reportHash = schemaReportFingerprint(schema.report);
     statusBase.tableCount = tables.length;
   } catch (error) {
@@ -634,6 +708,10 @@ export async function exportSnapshot({
     const catalogSql = schemaReadinessSql ?? await fs.readFile(new URL("./schema-readiness.sql", import.meta.url), "utf8");
     const liveCatalog = source.readCatalog ? await source.readCatalog(catalogSql) : null;
     if (!liveCatalog || catalogFingerprint(liveCatalog) !== catalogHash) throw fail("source_catalog_fingerprint_mismatch");
+    const sequenceStates = validateSequenceStates(
+      liveCatalog,
+      sequenceTargets.length === 0 ? [] : source.readSequenceStates ? await source.readSequenceStates(liveCatalog) : [],
+    );
     const entries = [];
     for (const table of tables) {
       const plan = plans.get(table);
@@ -657,6 +735,9 @@ export async function exportSnapshot({
       state: "prepared",
       runId,
       catalogFingerprint: catalogHash,
+      credentialDescriptorVersion: credentialBinding.version,
+      credentialDescriptorDigest: credentialBinding.digest,
+      credentialDescriptor: credentialBinding.descriptor,
       schemaConversionVersion: schema.report.schemaVersion,
       rowEnvelopeVersion: ROW_ENVELOPE_VERSION,
       schemaReportFingerprint: reportHash,
@@ -666,6 +747,7 @@ export async function exportSnapshot({
       isolation: "repeatable read",
       readOnly: true,
       tableCount: tables.length,
+      sequenceStates,
       reconciliation: {
         primaryKeys: "verified",
         uniqueConstraints: "not_checked",
@@ -699,30 +781,10 @@ export async function exportSnapshot({
   }
 }
 
-export const USAGE = `Usage: snapshot-export.mjs --catalog PATH --output-dir PATH --role postgres [--fetch-size N] [--timeout-ms N]
-
-Reads a private schema-readiness catalog and exports all public tables through
-one read-only repeatable-read PostgreSQL session. Credentials come only from
-the standard libpq environment; no source rows or secrets are printed.
+export const USAGE = `The plaintext snapshot exporter is available only as a library
+for isolated synthetic tests. Use snapshot-export-encrypted.mjs for source
+exports; it requires FANMARK_SNAPSHOT_KEY_B64 and removes its plaintext scratch.
 `;
-
-function parseArgs(args) {
-  const values = {};
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
-    const equals = arg.indexOf("=");
-    const name = equals >= 0 ? arg.slice(0, equals) : arg;
-    const value = equals >= 0 ? arg.slice(equals + 1) : args[++index];
-    if (name === "--catalog") values.catalog = value;
-    else if (name === "--output-dir") values.outputDir = value;
-    else if (name === "--role") values.role = value;
-    else if (name === "--fetch-size") values.fetchSize = Number(value);
-    else if (name === "--timeout-ms") values.timeoutMs = Number(value);
-    else if (name === "--psql") values.psqlPath = value;
-    else throw fail("invalid_arguments");
-  }
-  return values;
-}
 
 async function main() {
   const args = process.argv.slice(2);
@@ -730,21 +792,7 @@ async function main() {
     console.log(USAGE);
     return;
   }
-  const values = parseArgs(args);
-  if (!values.catalog || !values.outputDir || values.role !== "postgres") throw fail("missing_or_invalid_argument");
-  if (values.fetchSize !== undefined && (!Number.isSafeInteger(values.fetchSize) || values.fetchSize < 1 || values.fetchSize > 10_000)) throw fail("invalid_fetch_size");
-  if (values.timeoutMs !== undefined && (!Number.isSafeInteger(values.timeoutMs) || values.timeoutMs < 1_000 || values.timeoutMs > 300_000)) throw fail("invalid_timeout");
-  let catalog;
-  try {
-    catalog = JSON.parse(await fs.readFile(path.resolve(values.catalog), "utf8"));
-  } catch (error) {
-    throw fail("invalid_catalog_file", error);
-  }
-  // The CLI reads the exact SQL text shipped with this repository. Keeping it
-  // out of argv also prevents shell quoting and credential leakage surprises.
-  const schemaReadinessSql = await fs.readFile(new URL("./schema-readiness.sql", import.meta.url), "utf8");
-  const result = await exportSnapshot({ ...values, catalog, schemaReadinessSql });
-  console.log(`Snapshot exported to ${result.outputDir}.`);
+  throw fail("encrypted_snapshot_export_required");
 }
 
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {

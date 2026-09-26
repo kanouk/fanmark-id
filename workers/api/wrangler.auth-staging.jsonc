@@ -1,0 +1,17 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "fanmark-auth-staging-schema",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-18",
+  "account_id": "bfc2890741f0b3fb236e2d755b6c9adc",
+  "d1_databases": [
+    {
+      "binding": "AUTH_DB",
+      "database_name": "fanmark-auth-staging",
+      "database_id": "2116bc43-32ab-4e3e-b762-9378df88b95f",
+      "migrations_dir": "migrations",
+      "migrations_pattern": "migrations/0003_better_auth_core.sql",
+      "remote": true
+    }
+  ]
+}

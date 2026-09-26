@@ -5,9 +5,10 @@ import {
   type PublicAccessRawRow,
   type PublicAccessRepository,
   type PublicProfileRawRow,
+  parsePublicAccessPathValue,
 } from "./public-access";
 import { isUuid } from "./availability";
-import type { Env } from "./repository";
+import { selectD1Database, type Env } from "./repository";
 
 const SKIN_TONE_CODEPOINTS = new Set(["1F3FB", "1F3FC", "1F3FD", "1F3FE", "1F3FF"]);
 const ISO_UTC_MICROSECOND_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u;
@@ -561,12 +562,35 @@ function mapProfileProjectionRow(row: PublicProfileProjectionRow): PublicProfile
   };
 }
 
+/** Resolve the legacy emoji URL to one active short ID, then let the shared
+ * public projection select the license and redacted access fields. */
+export async function getActiveShortIdByEmojiPath(env: Env, emojiPath: string): Promise<string | null> {
+  const database = selectD1Database(env, "business");
+  if (!database) throw new PublicAccessConfigurationError();
+  const rows = await allRows<{ id?: unknown; shortId?: unknown }>(
+    database,
+    `SELECT id, short_id AS shortId
+       FROM fanmarks
+      WHERE status = 'active' AND user_input_fanmark = ?
+      ORDER BY id ASC
+      LIMIT 2`,
+    emojiPath,
+  );
+  const row = oneOrNone(rows);
+  if (!row) return null;
+  assertUuid(row.id);
+  const shortId = assertText(row.shortId);
+  if (!parsePublicAccessPathValue(shortId)) throw new PublicAccessUpstreamError();
+  return shortId;
+}
+
 export function createD1PublicAccessRepository(
   env: Env,
   _clock: () => Date = () => new Date(),
 ): PublicAccessRepository {
-  const database = env.FANMARK_DB;
-  if (!database) throw new PublicAccessConfigurationError();
+  const database = selectD1Database(env, "business");
+  const masterDatabase = selectD1Database(env, "master");
+  if (!database || !masterDatabase) throw new PublicAccessConfigurationError();
 
   return {
     async getByShortId(shortId) {
@@ -582,7 +606,7 @@ export function createD1PublicAccessRepository(
 
     async getByEmojiIds(emojiIds, now) {
       try {
-        const normalizedIds = await normalizeEmojiIds(database, emojiIds);
+        const normalizedIds = await normalizeEmojiIds(masterDatabase, emojiIds);
         if (!normalizedIds) return null;
         const rows = await allRows<PublicAccessProjectionRow>(
           database,

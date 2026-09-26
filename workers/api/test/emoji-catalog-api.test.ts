@@ -5,7 +5,7 @@ import { handleRequest } from "../src";
 import type { Env } from "../src/repository";
 
 const runtimeEnv = env as unknown as Env;
-const database = runtimeEnv.FANMARK_DB;
+const database = runtimeEnv.MASTER_DB;
 const API_URL = "https://api.example.test/api/emoji/catalog";
 const ALLOWED_ORIGIN = "https://app.example.test";
 const VERSION = "a".repeat(64);
@@ -47,7 +47,8 @@ function statementsFrom(sql: string): string[] {
 function d1Environment(overrides: Partial<Env> = {}): Env {
   return {
     ...runtimeEnv,
-    FANMARK_DB: database,
+    D1_TOPOLOGY: "split",
+    MASTER_DB: database,
     EMOJI_CATALOG_BACKEND: "d1",
     ...overrides,
   };
@@ -64,12 +65,12 @@ function request(path = "", requestEnv = d1Environment(), method = "GET"): Promi
 }
 
 async function executeFixtureSchema(): Promise<void> {
-  if (!database) throw new Error("FANMARK_DB binding is unavailable");
+  if (!database) throw new Error("MASTER_DB binding is unavailable");
   await database.batch(statementsFrom(schemaSql).map((statement) => database.prepare(statement)));
 }
 
 async function resetFixture(): Promise<void> {
-  if (!database) throw new Error("FANMARK_DB binding is unavailable");
+  if (!database) throw new Error("MASTER_DB binding is unavailable");
   await database.batch([
     database.prepare("DELETE FROM fanmark_emoji_master_active_release"),
     database.prepare("DELETE FROM fanmark_emoji_master_release_staging"),
@@ -78,7 +79,7 @@ async function resetFixture(): Promise<void> {
 }
 
 async function seedActiveRelease(): Promise<void> {
-  if (!database) throw new Error("FANMARK_DB binding is unavailable");
+  if (!database) throw new Error("MASTER_DB binding is unavailable");
   await database.batch([
     database
       .prepare(

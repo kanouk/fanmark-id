@@ -145,6 +145,11 @@ test("mapping keeps the six source columns and isolates only the credential inpu
 
 test("descriptor is explicit and raw-value-shaped options fail closed", () => {
   assertCode(() => compileCredentialDescriptor({ catalog: catalog() }), "credential_descriptor_missing");
+  const localeCatalog = catalog();
+  localeCatalog.database_locale = { collate: "C", ctype: "C" };
+  assert.doesNotThrow(() => compileCredentialDescriptor({ catalog: localeCatalog, descriptor: descriptor() }));
+  localeCatalog.database_locale.ctype = null;
+  assertCode(() => compileCredentialDescriptor({ catalog: localeCatalog, descriptor: descriptor() }), "credential_catalog_database_locale");
   assertCode(() => compileCredentialDescriptor({ catalog: catalog(), descriptor: { ...descriptor(), rawPassword: "secret" } }), "credential_descriptor_fields");
   assertCode(() => compileCredentialDescriptor({ catalog: catalog(), descriptor: descriptor(), sourceRow: { access_password: "secret" } }), "credential_descriptor_options");
   const oddPrototype = descriptor();

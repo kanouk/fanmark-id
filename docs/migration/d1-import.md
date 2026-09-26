@@ -6,6 +6,12 @@ remote database, or production storage. The importer accepts an explicitly
 injected D1-compatible binding and a snapshot manifest that has already passed
 the private snapshot verifier.
 
+For encrypted backups, `importEncryptedD1Snapshot()` first authenticates and
+opens the bundle under a fresh mode-0700 OS temporary directory, verifies the
+normal snapshot contract, runs this same importer, and removes the plaintext
+restore directory on success or failure. It accepts only an explicitly
+injected local D1 binding; no remote transport is added.
+
 ## Contract
 
 The entry point is `importD1Snapshot({ manifestPath, database,
@@ -65,37 +71,49 @@ the final status. A successful local run reports
 `public_rows_reconciled`; this is a scoped row result, not a full migration or
 production-readiness claim.
 
-## Credential fail-closed boundary
+Before row reconciliation, the importer seeds the reviewed
+`fanmark_events.id` AUTOINCREMENT state from the manifest's PostgreSQL
+`lastValue` and `isCalled`, then independently reads `sqlite_sequence` back as
+exact decimal text. It preserves the greater of the imported maximum ID, the
+source sequence watermark, and any existing target watermark, so retries never
+move allocation backward. The report records those source and target values.
+For `isCalled: false`, the next D1-generated event ID remains the sequence
+start value. Final production capture still requires the PostgreSQL event
+writer to be frozen because sequence advancement is not part of an MVCC
+snapshot.
 
-The generic importer does not yet own the credential descriptor, protected
-codec, or transform ledger. After the manifest has passed the private snapshot
-verifier, it inspects the verified catalog. If the catalog contains
-`fanmark_password_configs.access_password`, it raises
-`credential_transform_required` before report-parent creation,
-importer-ledger creation, checkpoints, or any target row mutation. By default
-this rejection happens before target-schema inspection. A caller may pass
-`expectedTargetProfile` with the generated lifecycle, generation, and
-credential schema plans plus the descriptor; in that mode the importer first
-performs a read-only exact profile/schema check bound to the verified snapshot
-and then rejects the generic credential import. The profile preflight does not
-enable credential transformation or row import.
+## Credential transform boundary
 
-`allowUnresolvedGates: true` and `mode: "local"` cannot bypass this boundary;
-that option only admits explicitly reviewed external identity gates. The
-snapshot exporter, verifier, and row converter continue to retain and verify
-the complete source envelope, including the credential column, so this guard
-does not authorize dropping source evidence. It only prevents the current
-generic text codec from copying an untransformed credential into D1.
+Credential-bearing snapshots use the specialized writer only when the caller
+provides the exact `expectedTargetProfile` composed from the verified source
+catalog, descriptor, lifecycle schema, generation schema, and credential
+schema. The importer first checks that complete target profile read-only. A
+call without the profile still fails closed with
+`credential_transform_required`; `mode: "local"` and
+`allowUnresolvedGates: true` do not bypass the guard.
 
-The existing 40-table synthetic rehearsal therefore intentionally stops when
-the catalog includes this source table until the descriptor-integrated
-transform path is implemented and independently reconciled. A five-table
-source-shaped Miniflare test now verifies the composed lifecycle, generation,
-and credential DDL, checks the profile through the importer preflight, and
-confirms that the rejection still leaves report and ledger state untouched.
-The next slice must bind the descriptor and codec before generating generic
-bindings, then write the transformed value and source-row coverage in one
-reviewed D1 transaction.
+The specialized path keeps the complete source envelope bound to the verified
+manifest, projects the five ordinary columns separately, and passes the
+credential to the dedicated preparation path rather than a generic INSERT.
+For an enabled credential on an active, non-returned license, the prepared
+bcrypt hash, target row, artifact transition, transformed-coverage row,
+checkpoint advance, and stale-state guards commit in one D1 batch. Typed
+readback checks the target row, artifact, coverage, license incarnation and
+generations, and checkpoint before the artifact is marked `reconciled`. An
+acknowledgement-unknown retry reuses the prepared artifact and converges on the
+same row.
+
+Disabled credentials and credentials tied to inactive/returned licenses still
+fail with explicit deferred-row errors. Durable deferred-coverage records are
+not implemented, so these cases cannot be skipped or declared reconciled. The
+current source-shaped proof also remains local and synthetic: the fresh
+40-table catalog rehearsal imported three synthetic rows, completed all 40
+checkpoints, resumed after an injected acknowledgement-unknown result, read
+back all tables, and rejected tampered credential coverage. Its final status
+was `public_rows_reconciled`, with `deployable` and
+`fullMigrationReconciled` false. The catalog still has 18 blocking schema
+gates. No real Auth, business, Storage, or credential rows were read or
+migrated.
 
 The implementation bounds defaults at 50 rows and 512 KiB of source envelope
 bytes per batch. Source envelope lines have a separate 16 MiB local input cap;
@@ -120,11 +138,13 @@ the pinned project Node runtime:
 /Users/kanouk/.anyenv/envs/nodenv/versions/22.6.0/bin/node workers/api/test/d1-import.integration.mjs
 ```
 
-The first command runs the synthetic suite, including the parent/child import
-and the failure/restart/concurrency/schema identity cases. The second command
-is an explicit local Miniflare integration entry point and is outside the
-default Vitest glob. Fixtures contain no application rows, credentials, or
-remote calls; each temporary D1 and report directory is removed in `finally`.
+The first command runs the synthetic suite, including parent/child and
+sequence-state imports plus failure/restart/concurrency/schema identity cases.
+It is also part of `npm run test:migration-data`, which CI runs. The second
+command is an explicit local Miniflare integration entry point and is outside
+the default Vitest glob. Fixtures contain no application rows, credentials,
+or remote calls; each temporary D1 and report directory is removed in
+`finally`.
 
 ## Remaining gates
 

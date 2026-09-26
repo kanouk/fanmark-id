@@ -1,14 +1,17 @@
 # Public fanmark access and OGP contract
 
-This document is the bounded design record for the public fanmark access slice
-under migration issues #33 and #34. It describes the next read-only Worker/D1
-boundary and the data that may cross it. It does not add a Worker route, create
-a D1 database, copy production rows, or change the existing Supabase RPCs.
+This document records the public fanmark access slice under migration issues
+#33 and #34. The read-only Worker/D1 routes and explicit frontend selector are
+implemented and locally tested. On 2026-09-25 the selector was enabled on the
+workers.dev staging app and its short-ID, emoji, and published-profile reads
+were verified with a temporary synthetic business record. The record was
+deleted and all four involved business tables read back zero. This did not
+copy production rows, change production traffic, or modify the existing
+Supabase RPCs.
 
-## Proposed next slice
+## Implemented read routes
 
-Implement one shared, read-only public projection and expose it through these
-routes:
+One shared, read-only public projection is exposed through these routes:
 
 | Route | Input | Result |
 | --- | --- | --- |
@@ -19,10 +22,40 @@ routes:
 The emoji request accepts one through five UUIDs, preserves their order and
 repetition until the canonical normalization step, and rejects malformed or
 oversized JSON. The short-id input is decoded once, bounded, and rejected when
-empty or containing controls, a slash, or a backslash. The final short-id
-maximum must be checked against the live column constraint before the route is
-implemented; the checked-in history proves a minimum length of six but does not
-prove a maximum. The profile route accepts only a canonical UUID.
+empty or containing controls, a slash, or a backslash. The route currently
+enforces a 256-byte input bound. The maximum length in the authoritative source
+column still needs reconciliation before remote business data or production
+traffic is switched; checked-in migration history proves a minimum length of
+six but not a maximum. The profile route accepts only a canonical UUID.
+
+## Frontend read selection
+
+`VITE_PUBLIC_ACCESS_READ_BACKEND=worker` selects these public read routes for
+short-ID access, emoji-path lookup, the public QR lookup, and published-profile
+reads. The base origin comes from `VITE_FANMARK_API_BASE_URL`. An unset or
+explicit `supabase` value preserves the current Supabase path. An invalid
+backend value, HTTP failure, timeout, malformed response, or network error
+does not fall back to Supabase. Worker requests omit cookies and authorization,
+use `Cache-Control: no-store`, and have a five-second client timeout and a
+64-KiB response bound.
+
+This selector covers anonymous reads only. Worker responses mark protected
+records as locked and redact their contents. Until a guarded Worker verifier
+and post-verification content read exist, the Worker-selected `/a/:shortId`
+flow fails closed on locked records; it does not call the legacy Supabase
+password RPC or render empty content. The default Supabase path retains the
+existing protected flow. Production/default access analytics still call the
+Supabase `record-fanmark-access` function; workers.dev staging selects the
+paired D1 write and owner-read APIs described below. The owner/history
+`/f/:shortId` details view remains on Supabase. The staging frontend sets the
+public-read selector and its Worker sets `PUBLIC_ACCESS_BACKEND=d1`. Fanmark/license/config
+and profile projections use the business `FANMARK_DB`; emoji ID and codepoint
+normalization uses the separate `MASTER_DB`. The live synthetic canary
+returned 200/no-store for all three routes while the business D1 had zero
+emoji-master rows, proving the lookup uses the split master binding. Business
+staging otherwise contains only the 40-table structural baseline and no
+imported rows. Production remains on Supabase; this staging proof is not
+evidence of real-data parity or a production cutover.
 
 The access routes return a strict versioned object so both lookup methods use
 one mapper:
@@ -166,24 +199,32 @@ The following data is deliberately outside this slice:
 - `get_fanmark_complete_data` and `get_fanmark_details_by_short_id` as
   anonymous replacements. Those functions combine public preview with
   user-aware or owner/history fields and require a separate authorization
-  contract.
+  contract. The separate whois contract now lives in
+  [`fanmark-details-api.md`](fanmark-details-api.md): its anonymous query uses
+  only the public overview fields, while Better Auth session presence gates
+  history, account names, and caller-derived favorite/lottery state.
 
-`isPasswordProtected` is a hint for the existing password gate, not proof that
-the caller is authorized. Password verification remains a separate operation
-until hash compatibility, rate limiting, failure logging, and a timing-safe
-Worker implementation are proven. The D1 public projection must not make
-password configuration rows readable merely because the flag is needed by the
-UI.
+`isPasswordProtected` is a hint for the password gate, not proof that the
+caller is authorized. The separate guarded Worker verification and protected
+read routes are implemented behind `VERIFIED_ACCESS_BACKEND=d1`; the frontend
+has a matching opt-in client behind `VITE_VERIFIED_ACCESS_BACKEND=worker`.
+Both selectors are now active on the workers.dev staging app after the live
+synthetic verification/read canary passed. Real source-hash compatibility,
+rate-limit abuse behavior, failure auditing, Cloudflare CPU fit, and broader
+browser/security checks remain open; production stays on Supabase. The D1
+public projection must not make password configuration rows readable merely
+because the flag is needed by the UI.
 
-The future guarded path must be a separate, short-lived proof operation bound
-to the exact `fanmark_id`, selected `license_id`, and a factor/configuration
-version. A successful check may then authorize a bounded read of the protected
-redirect, message, or profile projection. It must not accept a client-supplied
-`isPasswordProtected` value, user ID, role, or permanent bearer flag, and it
-must be invalidated when the license, password configuration, or profile
-visibility changes. The existing Supabase password path requires a separate
-compatibility, rate-limit, and failure-audit review before it can be used as
-that proof. No guarded Worker endpoint is added by this document.
+The guarded path is a separate, short-lived proof operation bound to the exact
+selector, selected `fanmark_id`, `license_id`, and lifecycle/configuration
+generations. A successful check authorizes a bounded read of the protected
+redirect, message, or published profile projection. It accepts no
+client-supplied `isPasswordProtected` value, user ID, role, or permanent bearer
+flag, and invalidates proof when the license, password configuration, or
+protected content changes. Its current implementation and remaining source
+compatibility gates are documented in
+[`verified-access-design.md`](verified-access-design.md); this public read
+contract does not change those gates or enable the route.
 
 Private profiles remain owner/authenticated data. A future owner route must
 derive the owner from the server-side session and enforce the license relation;
@@ -195,20 +236,23 @@ details RPC.
 
 ## OGP boundary
 
-The current `fanmark-ogp` function is public and uses a service-role client.
-For a later OGP Worker route, crawler and non-crawler requests must use the
-same public projection above:
+The current production `fanmark-ogp` function is public and uses a service-role
+client. The workers.dev staging Cloudflare implementation handles crawler
+requests at the canonical `/a/:shortId` route and the legacy `/:emojiPath`
+route, using the same D1 public projection above. The emoji route resolves an
+exact active `user_input_fanmark` to one short ID before reading the public
+projection; if the lookup is ambiguous it returns generic metadata. The
+crawler's canonical URL always uses `/a/:shortId`. Non-crawlers continue to
+Static Assets and the SPA for either route. URLs use the incoming host; a
+workers.dev preview therefore does not point at the production domain.
+Production OGP remains on Supabase until a later application cutover.
 
-1. accept exactly one bounded `short_id` or `emoji_path` selector;
-2. validate and canonicalize the selector before building a redirect or page
-   URL;
-3. serve crawler HTML from public fanmark/profile fields only;
-4. redirect non-crawlers to the canonical `https://fanmark.id/a/{shortId}` or
-   emoji route without interpolating unchecked query text;
-5. escape all HTML and URL attributes, avoid logging full query values or
-   user-agent details, and return a generic bounded fallback for misses;
-6. use cache headers only after the license and profile invalidation policy is
-   defined.
+The Worker validates the single bounded short-ID segment, serves crawler HTML
+from public fanmark/profile fields only, escapes HTML and URL attributes, and
+returns a generic bounded fallback for misses. It does not log query values or
+user-agent details. Because browser and crawler representations share the same
+URL, HTML is `no-store` with `Vary: user-agent`; the independent SVG image route
+uses bounded parameters, XML escaping, and its own cache policy.
 
 For a password-protected license, OGP may use only safe metadata such as the
 emoji spelling, canonical short ID, and a generic locked/access description. It
@@ -217,18 +261,24 @@ URL or message text, or imply that a password-protected profile is public. OGP
 does not perform password verification; a verified-access operation is required
 before protected content can be rendered.
 
-The current emoji branch reads `fanmarks` directly and does not filter
-`status = 'active'`; the proposed route must not repeat that behavior. The
-current short-id branch calls `get_fanmark_by_short_id` and then
-`get_public_emoji_profile`, so OGP should reuse the same mapper rather than
-constructing a second projection. `generate-ogp-image` is also a separate
-public surface; its URL and display-name input need independent bounds and
-cache review.
+The current production emoji branch reads `fanmarks` directly and does not
+filter `status = 'active'`; the staging route must not repeat that behavior.
+The current short-id branch calls `get_fanmark_by_short_id` and then
+`get_public_emoji_profile`, so OGP reuses the staging public-access mapper
+rather than constructing a second projection. `generate-ogp-image` remains a
+separate production public surface. The Worker SVG route bounds emoji and
+display-name inputs and escapes XML. Details are in
+[fanmark OGP API](fanmark-ogp-api.md).
 
-OGP is therefore a second stage of this slice. Do not switch the existing edge
-function to D1 until the read projection has passed its authorization and
-escaping tests. `record-fanmark-access` is a separate public-ingress/internal
-write operation and must not be coupled to an anonymous read request.
+The workers.dev OGP slice now has local projection, privacy, escaping,
+ambiguity, and browser/crawler tests. This does not authorize switching the
+existing production edge function to D1. `record-fanmark-access` is a separate
+public-ingress/internal write operation and must not be coupled to an
+anonymous read request. The paired synthetic D1 implementation exposes
+`POST /api/fanmarks/access` plus session-scoped owner reads under
+`/api/me/analytics/*`; both selectors are active on workers.dev staging and a
+synthetic end-to-end canary passed with cleanup. Historical analytics remain
+in Supabase. See [fanmark access analytics API](fanmark-access-analytics-api.md).
 
 ## Evidence and unresolved source drift
 
@@ -317,8 +367,8 @@ projection and exercise:
   `no-store` headers, and the no-fallback behavior when D1 is explicitly
   selected.
 
-The OGP stage additionally needs crawler and non-crawler cases, canonical
-redirect validation, HTML attribute escaping, generic miss behavior, bounded
+The OGP stage additionally needs crawler and non-crawler cases, canonical URL
+construction, HTML attribute escaping, generic miss behavior, bounded
 responses, and cache-header assertions. A separate negative test must prove
 that owner/history/lottery fields cannot appear in either public response.
 

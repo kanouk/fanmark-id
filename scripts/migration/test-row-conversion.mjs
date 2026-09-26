@@ -244,6 +244,42 @@ test("extra or missing fields, enum values, bigint range, and array shape fail c
   }
 });
 
+test("sequence-key UUID arrays reject empty arrays and NULL elements before import", () => {
+  const ids = [
+    "33333333-3333-4333-8333-333333333333",
+    "44444444-4444-4444-8444-444444444444",
+  ];
+  for (const table of ["fanmark_discoveries", "fanmark_events", "fanmark_favorites", "fanmarks"]) {
+    const input = catalog();
+    input.columns = [
+      column(table, "id", 1, "uuid", { not_null: true }),
+      column(table, "normalized_emoji_ids", 2, "uuid[]", { not_null: true }),
+    ];
+    input.constraints = [];
+    input.indexes = [];
+    const base = {
+      schemaVersion: 1,
+      table,
+      columns: ["id", "normalized_emoji_ids"],
+      values: { id: "55555555-5555-4555-8555-555555555555", normalized_emoji_ids: JSON.stringify(ids) },
+      arrayMetadata: { normalized_emoji_ids: { isNull: false, ndims: 1, lowerBound: 1 } },
+    };
+    assert.deepEqual(convertRowEnvelope(input, table, base).bindings, [
+      "55555555-5555-4555-8555-555555555555",
+      JSON.stringify(ids),
+    ]);
+
+    const withNull = structuredClone(base);
+    withNull.values.normalized_emoji_ids = JSON.stringify([ids[0], null]);
+    assert.throws(() => convertRowEnvelope(input, table, withNull), (error) => error.code === "invalid_sequence_uuid_array");
+
+    const empty = structuredClone(base);
+    empty.values.normalized_emoji_ids = "[]";
+    empty.arrayMetadata.normalized_emoji_ids = { isNull: false, ndims: 0, lowerBound: null };
+    assert.throws(() => convertRowEnvelope(input, table, empty), (error) => error.code === "invalid_sequence_uuid_array");
+  }
+});
+
 test("unknown catalog codecs fail before a partial row plan is emitted", () => {
   const source = catalog();
   source.columns.push(column("unsupported", "raw", 1, "bytea"));

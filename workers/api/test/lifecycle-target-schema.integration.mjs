@@ -98,6 +98,13 @@ function fixtureCatalog() {
     column("notification_events", "retry_count", 10, "integer", { not_null: true }),
     column("notification_events", "created_at", 11, "timestamp with time zone", { not_null: true }),
     column("notification_events", "updated_at", 12, "timestamp with time zone", { not_null: true }),
+    column("fanmark_basic_configs", "license_id", 1, "uuid", { not_null: true }),
+    column("fanmark_redirect_configs", "license_id", 1, "uuid", { not_null: true }),
+    column("fanmark_messageboard_configs", "license_id", 1, "uuid", { not_null: true }),
+    column("fanmark_password_configs", "license_id", 1, "uuid", { not_null: true }),
+    column("fanmark_lottery_entries", "id", 1, "uuid", { not_null: true }),
+    column("fanmark_lottery_entries", "license_id", 2, "uuid", { not_null: true }),
+    column("fanmark_lottery_entries", "entry_status", 3, "text", { not_null: true }),
   ];
   return {
     observed_at: "2026-09-21T00:00:00Z",
@@ -107,6 +114,7 @@ function fixtureCatalog() {
       primary("fanmark_licenses"),
       primary("audit_logs"),
       primary("notification_events"),
+      primary("fanmark_lottery_entries"),
       foreign("fanmark_licenses", "fanmark_licenses_fanmark_id_fkey", "fanmark_id", "fanmarks"),
       {
         table_name: "fanmarks",
@@ -238,8 +246,8 @@ test("applies the source-shaped extension, preserves source columns, and re-runs
     assert.equal(fixture.plan.sql.includes("IF NOT EXISTS"), false);
     assert.match(fixture.plan.sourceFingerprint, /^[0-9a-f]{64}$/);
     assert.match(fixture.plan.extensionDigest, /^[0-9a-f]{64}$/);
-    assert.equal(fixture.plan.objectInventory.tables.length, 5);
-    assert.equal(fixture.plan.objectInventory.indexes.length, 4);
+    assert.equal(fixture.plan.objectInventory.tables.length, 7);
+    assert.equal(fixture.plan.objectInventory.indexes.length, 6);
 
     const applied = await applyLifecycleTargetSchema({
       database: fixture.database,
@@ -256,6 +264,14 @@ test("applies the source-shaped extension, preserves source columns, and re-runs
     });
     assert.equal(repeated.status, "already_applied");
     assert.equal(repeated.extensionDigest, applied.extensionDigest);
+
+    const finalizationItemColumns = await fixture.database.prepare(
+      'PRAGMA table_info("license_grace_finalization_items")',
+    ).all();
+    const lotteryJournalNames = new Set(finalizationItemColumns.results.map((row) => row.name));
+    for (const name of ["lottery_seed", "lottery_inputs_json", "lottery_plan_json"]) {
+      assert.equal(lotteryJournalNames.has(name), true, `missing ${name}`);
+    }
 
     const columns = await fixture.database.prepare('PRAGMA table_info("fanmark_licenses")').all();
     const names = new Set(columns.results.map((row) => row.name));

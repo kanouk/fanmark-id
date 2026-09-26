@@ -4,6 +4,7 @@ import {
   RecentFanmarksConfigurationError,
   RecentFanmarksTimeoutError,
   RecentFanmarksUpstreamError,
+  selectD1Database,
   type Env,
 } from "./repository";
 import { createD1RecentFanmarksRepository } from "./d1-repository";
@@ -19,6 +20,54 @@ import {
 import { createD1AvailabilityRepository } from "./availability-d1-repository";
 import { createSupabaseAvailabilityRepository } from "./availability-repository";
 import { createD1PublicAccessRepository } from "./public-access-d1-repository";
+import { handleVerifiedAccessRequest, isVerifiedAccessPath } from "./verified-access.mjs";
+import { handleStorageRequest, type StorageAuthResult } from "./storage-r2";
+import { handleOwnedFanmarksRequest, isOwnedFanmarksPath } from "./owned-fanmarks-d1-repository";
+import { handleProfileRequest, isProfilePath } from "./profile-d1-repository";
+import { handleFanmarkProfileRequest, isFanmarkProfilePath } from "./fanmark-profile-d1-api";
+import { handleFanmarkSettingsRequest, isFanmarkSettingsPath } from "./fanmark-settings-d1-api";
+import {
+  handleFanmarkBulkReturnRequest,
+  handleFanmarkReturnRequest,
+  isFanmarkBulkReturnPath,
+  isFanmarkReturnPath,
+} from "./fanmark-return-d1-api";
+import { handleFanmarkRegistrationRequest, isFanmarkRegistrationPath } from "./fanmark-registration-d1-api";
+import { handleFanmarkLotteryRequest, isFanmarkLotteryPath } from "./fanmark-lottery-d1-api";
+import { handleFanmarkTransferRequest, isFanmarkTransferPath } from "./fanmark-transfer-d1-api";
+import { handleFanmarkSearchDetailsRequest, isFanmarkSearchDetailsPath } from "./fanmark-search-d1-api";
+import { handleFanmarkDetailsRequest, isFanmarkDetailsPath } from "./fanmark-details-d1-api";
+import { handleNotificationsRequest, isNotificationsPath } from "./notifications-d1-api";
+import {
+  handleNotificationMasterRequest,
+  isNotificationMasterPath,
+} from "./notification-master-d1-api";
+import {
+  handleAvailabilityRulesAdminRequest,
+  isAvailabilityRulesAdminPath,
+} from "./availability-rules-admin-d1-api";
+import {
+  handleInvitationAdminRequest,
+  isInvitationAdminPath,
+} from "./invitation-admin-d1-api";
+import { handleStripeWebhookD1Request, isStripeWebhookPath } from "./stripe-webhook-d1-api";
+import { runScheduledStripeWebhookDispatches } from "./stripe-webhook-d1-scheduled";
+import {
+  handleStripeExtensionCheckoutD1Request,
+  isStripeExtensionCheckoutPath,
+} from "./stripe-extension-checkout-d1-api";
+import { handleMaintenanceSettingsRequest, isMaintenanceSettingsPath } from "./maintenance-settings-d1-api";
+import { handleLifecycleSettingsRequest, isLifecycleSettingsPath } from "./lifecycle-settings-d1-api";
+import { handleFavoritesRequest, isFavoritesPath } from "./favorites-d1-api";
+import { handleOgpRequest } from "./ogp";
+import { handleFanmarkAccessAnalyticsRequest } from "./fanmark-access-analytics-d1-api";
+import { handleFanmarkAnalyticsRequest } from "./fanmark-analytics-d1-api";
+import {
+  runScheduledLicenseExpiry,
+  ScheduledLicenseExpiryError,
+} from "./license-expiry-scheduled.mjs";
+import { runScheduledNotificationEvents } from "./notifications-scheduled";
+import { selectScheduledJobs } from "./scheduled-dispatch";
 import {
   createEmojiMasterD1Repository,
   EmojiCatalogConfigurationError,
@@ -26,6 +75,26 @@ import {
   EmojiCatalogUpstreamError,
   parseEmojiCatalogPageRequest,
 } from "./emoji-master-d1-repository";
+import {
+  createReferenceMasterD1Repository,
+  isReferenceMasterPath,
+  parseReferenceMasterRoute,
+  ReferenceMasterConfigurationError,
+  ReferenceMasterUnavailableError,
+  ReferenceMasterUpstreamError,
+} from "./reference-master-d1-repository";
+import {
+  createReferenceMasterAdminD1Repository,
+  ReferenceMasterAdminError,
+  type ReferenceMasterAdminPatch,
+} from "./reference-master-admin-d1-repository";
+import { handleReferenceMasterServiceRequest } from "./reference-master-service-api";
+import {
+  createEmojiMasterAdminD1Repository,
+  EmojiMasterAdminError,
+  isEmojiMasterAdminPath,
+  parseEmojiMasterAdminRoute,
+} from "./emoji-master-admin-d1-repository";
 import {
   mapPublicAccessRow,
   mapPublicProfileRow,
@@ -45,6 +114,7 @@ import {
 const RECENT_ALLOWED_METHODS = "GET, OPTIONS";
 const AVAILABILITY_ALLOWED_METHODS = "POST, OPTIONS";
 const EMOJI_CATALOG_ALLOWED_METHODS = "GET, OPTIONS";
+const REFERENCE_MASTER_ALLOWED_METHODS = "GET, OPTIONS";
 const AVAILABILITY_ALLOWED_HEADERS = "content-type";
 const JSON_CONTENT_TYPE = "application/json; charset=utf-8";
 
@@ -86,6 +156,7 @@ function corsHeaders(
   env: Env,
   allowedMethods: string,
   allowedHeaders?: string,
+  allowCredentials = false,
 ): { allowed: boolean; headers: Headers } {
   const headers = new Headers();
   const origin = request.headers.get("Origin");
@@ -98,6 +169,7 @@ function corsHeaders(
   headers.set("access-control-allow-origin", origin);
   headers.set("access-control-allow-methods", allowedMethods);
   if (allowedHeaders) headers.set("access-control-allow-headers", allowedHeaders);
+  if (allowCredentials) headers.set("access-control-allow-credentials", "true");
   headers.set("vary", "Origin");
   return { allowed: true, headers };
 }
@@ -206,10 +278,20 @@ interface ConfiguredAuth {
   trustedOrigins: string[];
 }
 
+interface CachedApplicationAuth {
+  secret: string;
+  url: string;
+  trustedOrigins: string[];
+  auth: ReturnType<typeof createAuth>;
+}
+
+const applicationAuthByDatabase = new WeakMap<D1Database, CachedApplicationAuth>();
+
 function configuredAuth(env: Env): ConfiguredAuth | null {
   const authUrl = env.BETTER_AUTH_URL?.trim();
   const secret = env.BETTER_AUTH_SECRET?.trim();
-  if (!authUrl || !secret || secret.length < 32 || !env.FANMARK_DB) return null;
+  const database = selectD1Database(env, "auth");
+  if (!authUrl || !secret || secret.length < 32 || !database) return null;
 
   try {
     const base = new URL(authUrl);
@@ -234,13 +316,349 @@ function configuredAuth(env: Env): ConfiguredAuth | null {
       origins.add(origin.origin);
     }
     return {
-      database: env.FANMARK_DB,
+      database,
       secret,
       url: base.origin,
       trustedOrigins: [...origins],
     };
   } catch {
     return null;
+  }
+}
+
+function createApplicationAuth(config: ConfiguredAuth, requestState: number | null = null) {
+  const cached = applicationAuthByDatabase.get(config.database);
+  const sameTrustedOrigins = cached?.trustedOrigins.length === config.trustedOrigins.length &&
+    cached.trustedOrigins.every((origin, index) => origin === config.trustedOrigins[index]);
+  if (
+    requestState === null && cached &&
+    cached.secret === config.secret &&
+    cached.url === config.url &&
+    sameTrustedOrigins
+  ) return cached.auth;
+
+  const auth = createAuth(
+    {
+      AUTH_DB: config.database,
+      BETTER_AUTH_SECRET: config.secret,
+      BETTER_AUTH_URL: config.url,
+    },
+    [],
+    requestState,
+    null,
+    {
+      appName: "fanmark.id",
+      issuer: "fanmark.id",
+      trustedOrigins: config.trustedOrigins,
+    },
+  );
+
+  // MFA verification captures a request-specific generation before Better
+  // Auth runs. Never cache that instance; ordinary handlers are immutable
+  // for one D1 binding/configuration and can be reused by the isolate.
+  if (requestState === null) {
+    applicationAuthByDatabase.set(config.database, {
+      secret: config.secret,
+      url: config.url,
+      trustedOrigins: [...config.trustedOrigins],
+      auth,
+    });
+  }
+  return auth;
+}
+
+type AdminAuthorization = { userId: string; sessionId: string } | Response;
+
+async function authorizeAdminRequest(
+  request: Request,
+  authConfig: NonNullable<ReturnType<typeof configuredAuth>>,
+  responseHeaders: Headers,
+): Promise<AdminAuthorization> {
+  try {
+    const auth = createApplicationAuth(authConfig);
+    const current = await auth.api.getSession({
+      headers: request.headers,
+      query: { disableCookieCache: true },
+    });
+    if (!current?.session?.id || !current.user?.id) {
+      return errorResponse("unauthenticated", 401, responseHeaders);
+    }
+
+    const role = await authConfig.database
+      .prepare('SELECT "role" FROM "adminRole" WHERE "userId" = ? LIMIT 1')
+      .bind(current.user.id)
+      .first<{ role?: unknown }>();
+    if (role?.role !== "admin") {
+      return errorResponse("admin_required", 403, responseHeaders);
+    }
+
+    const user = await authConfig.database
+      .prepare('SELECT "twoFactorEnabled" FROM "user" WHERE "id" = ? LIMIT 1')
+      .bind(current.user.id)
+      .first<{ twoFactorEnabled?: unknown }>();
+    const factor = await authConfig.database
+      .prepare('SELECT "id", "verified" FROM "twoFactor" WHERE "userId" = ? AND "verified" = 1 LIMIT 2')
+      .bind(current.user.id)
+      .all<{ id?: unknown; verified?: unknown }>();
+    if (factor.success !== true || !Array.isArray(factor.results)) {
+      return errorResponse("auth_unavailable", 503, responseHeaders);
+    }
+    const verifiedFactors = factor.results;
+    const currentFactorId = verifiedFactors.length === 1 &&
+      typeof verifiedFactors[0]?.id === "string" &&
+      Number(verifiedFactors[0]?.verified) === 1
+      ? verifiedFactors[0].id
+      : null;
+    if (Number(user?.twoFactorEnabled) !== 1 || currentFactorId === null) {
+      return errorResponse("mfa_enrollment_required", 403, responseHeaders);
+    }
+
+    const assurance = await authConfig.database
+      .prepare(`SELECT "userId", "sessionId", "factorId", "expiresAt"
+                FROM "mfaAssurance"
+                WHERE "userId" = ? AND "sessionId" = ? LIMIT 1`)
+      .bind(current.user.id, current.session.id)
+      .first<{
+        userId?: unknown;
+        sessionId?: unknown;
+        factorId?: unknown;
+        expiresAt?: unknown;
+      }>();
+    const expiresAt = typeof assurance?.expiresAt === "string"
+      ? Date.parse(assurance.expiresAt)
+      : NaN;
+    if (
+      assurance?.userId !== current.user.id ||
+      assurance?.sessionId !== current.session.id ||
+      assurance?.factorId !== currentFactorId ||
+      !Number.isFinite(expiresAt) ||
+      expiresAt <= Date.now()
+    ) {
+      return errorResponse("mfa_required", 403, responseHeaders);
+    }
+
+    return { userId: current.user.id, sessionId: current.session.id };
+  } catch {
+    return errorResponse("auth_unavailable", 503, responseHeaders);
+  }
+}
+
+async function handleAdminSessionRequest(request: Request, env: Env): Promise<Response> {
+  const responseHeaders = baseHeaders();
+  if (env.AUTH_BACKEND !== "better-auth") {
+    return errorResponse("auth_unavailable", 503, responseHeaders);
+  }
+  const authConfig = configuredAuth(env);
+  if (!authConfig) return errorResponse("auth_unavailable", 503, responseHeaders);
+
+  const cors = corsHeaders(request, env, "GET, OPTIONS", undefined, true);
+  if (!cors.allowed) return errorResponse("forbidden_origin", 403, responseHeaders);
+  cors.headers.forEach((value, key) => responseHeaders.set(key, value));
+
+  const method = request.method.toUpperCase();
+  if (method === "OPTIONS") {
+    responseHeaders.set("allow", "GET, OPTIONS");
+    return emptyResponse(204, responseHeaders);
+  }
+  if (method !== "GET") {
+    responseHeaders.set("allow", "GET, OPTIONS");
+    return errorResponse("method_not_allowed", 405, responseHeaders);
+  }
+
+  const authorization = await authorizeAdminRequest(request, authConfig, responseHeaders);
+  if (authorization instanceof Response) return authorization;
+  return jsonResponse({ authorized: true }, 200, responseHeaders);
+}
+
+const MAX_ADMIN_JSON_BYTES = 256 * 1024;
+
+async function readAdminJson(request: Request): Promise<unknown> {
+  const contentType = request.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase();
+  if (contentType !== "application/json") {
+    throw new EmojiMasterAdminError("json_content_type_required", 415);
+  }
+  const contentLength = request.headers.get("content-length");
+  if (contentLength !== null && (!/^\d+$/u.test(contentLength) || Number(contentLength) > MAX_ADMIN_JSON_BYTES)) {
+    throw new EmojiMasterAdminError("request_too_large", 413);
+  }
+  const reader = request.body?.getReader();
+  if (!reader) throw new EmojiMasterAdminError("invalid_request", 400);
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > MAX_ADMIN_JSON_BYTES) {
+        void reader.cancel();
+        throw new EmojiMasterAdminError("request_too_large", 413);
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  try {
+    return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)) as unknown;
+  } catch {
+    throw new EmojiMasterAdminError("invalid_json", 400);
+  }
+}
+
+function isJsonRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function rejectUnexpectedQuery(url: URL): void {
+  let hasQuery = false;
+  url.searchParams.forEach(() => { hasQuery = true; });
+  if (hasQuery) throw new EmojiMasterAdminError("invalid_request", 400);
+}
+
+async function handleEmojiMasterAdminRequest(request: Request, env: Env, url: URL): Promise<Response> {
+  const route = parseEmojiMasterAdminRoute(url);
+  if (!route) return errorResponse("not_found", 404, baseHeaders());
+  const allowedMethods = route.kind === "list"
+    ? "GET, POST, OPTIONS"
+    : route.kind === "import"
+      ? "POST, OPTIONS"
+      : "GET, PUT, DELETE, OPTIONS";
+  const responseHeaders = baseHeaders();
+  if (env.AUTH_BACKEND !== "better-auth") {
+    return errorResponse("auth_unavailable", 503, responseHeaders);
+  }
+  const authConfig = configuredAuth(env);
+  if (!authConfig) return errorResponse("auth_unavailable", 503, responseHeaders);
+  const cors = corsHeaders(request, env, allowedMethods, "content-type", true);
+  if (!cors.allowed) return errorResponse("forbidden_origin", 403, responseHeaders);
+  cors.headers.forEach((value, key) => responseHeaders.set(key, value));
+
+  const method = request.method.toUpperCase();
+  if (method === "OPTIONS") {
+    responseHeaders.set("allow", allowedMethods);
+    return emptyResponse(204, responseHeaders);
+  }
+  if (!allowedMethods.split(", ").includes(method)) {
+    responseHeaders.set("allow", allowedMethods);
+    return errorResponse("method_not_allowed", 405, responseHeaders);
+  }
+
+  const authorization = await authorizeAdminRequest(request, authConfig, responseHeaders);
+  if (authorization instanceof Response) return authorization;
+
+  try {
+    const repository = createEmojiMasterAdminD1Repository(env);
+    if (route.kind === "list" && method === "GET") {
+      return jsonResponse(await repository.list(url), 200, responseHeaders);
+    }
+    if (route.kind === "item" && method === "GET") {
+      rejectUnexpectedQuery(url);
+      return jsonResponse(await repository.getById(route.id), 200, responseHeaders);
+    }
+    if (route.kind === "item" && method === "DELETE") {
+      rejectUnexpectedQuery(url);
+      await repository.delete(route.id);
+    }
+    const body = await readAdminJson(request);
+    if (route.kind === "import" && method === "POST") {
+      rejectUnexpectedQuery(url);
+      if (!isJsonRecord(body) || Object.keys(body).length !== 1 || !Object.hasOwn(body, "records")) {
+        throw new EmojiMasterAdminError("invalid_request", 400);
+      }
+      return jsonResponse(await repository.import(body.records), 200, responseHeaders);
+    }
+    if (route.kind === "list" && method === "POST") {
+      rejectUnexpectedQuery(url);
+      return jsonResponse(await repository.create(body), 201, responseHeaders);
+    }
+    if (route.kind === "item" && method === "PUT") {
+      rejectUnexpectedQuery(url);
+      if (!isJsonRecord(body) || !Object.hasOwn(body, "updatedAt")) {
+        throw new EmojiMasterAdminError("invalid_request", 400);
+      }
+      const { updatedAt, ...input } = body;
+      return jsonResponse(await repository.update(route.id, updatedAt, input), 200, responseHeaders);
+    }
+    throw new EmojiMasterAdminError("method_not_allowed", 405);
+  } catch (error) {
+    if (error instanceof EmojiMasterAdminError) {
+      return errorResponse(error.code, error.status, responseHeaders);
+    }
+    return errorResponse("emoji_master_unavailable", 503, responseHeaders);
+  }
+}
+
+async function handleReferenceMasterAdminRequest(request: Request, env: Env, url: URL): Promise<Response> {
+  const allowedMethods = "GET, PUT, OPTIONS";
+  const responseHeaders = baseHeaders();
+  if (env.REFERENCE_MASTER_ADMIN_BACKEND?.trim() !== "d1" || env.AUTH_BACKEND !== "better-auth") {
+    return errorResponse("reference_master_admin_unavailable", 503, responseHeaders);
+  }
+  const authConfig = configuredAuth(env);
+  if (!authConfig) return errorResponse("auth_unavailable", 503, responseHeaders);
+  const cors = corsHeaders(request, env, allowedMethods, "content-type", true);
+  if (!cors.allowed) return errorResponse("forbidden_origin", 403, responseHeaders);
+  cors.headers.forEach((value, key) => responseHeaders.set(key, value));
+
+  const method = request.method.toUpperCase();
+  if (method === "OPTIONS") {
+    responseHeaders.set("allow", allowedMethods);
+    return emptyResponse(204, responseHeaders);
+  }
+  if (method !== "GET" && method !== "PUT") {
+    responseHeaders.set("allow", allowedMethods);
+    return errorResponse("method_not_allowed", 405, responseHeaders);
+  }
+  const authorization = await authorizeAdminRequest(request, authConfig, responseHeaders);
+  if (authorization instanceof Response) return authorization;
+
+  try {
+    rejectUnexpectedQuery(url);
+    const repository = createReferenceMasterAdminD1Repository(env);
+    if (method === "GET") return jsonResponse(await repository.getPricing(), 200, responseHeaders);
+
+    const body = await readAdminJson(request);
+    if (!isJsonRecord(body) || Object.keys(body).length !== 4 ||
+        typeof body.expectedReleaseVersion !== "string" ||
+        (body.type !== "tier" && body.type !== "extension_price") ||
+        typeof body.id !== "string" || !isJsonRecord(body.changes)) {
+      throw new EmojiMasterAdminError("invalid_request", 400);
+    }
+    const { expectedReleaseVersion, type, id, changes } = body;
+    return jsonResponse(await repository.updatePricing(expectedReleaseVersion,
+      { type, id, changes } as ReferenceMasterAdminPatch), 200, responseHeaders);
+  } catch (error) {
+    if (error instanceof EmojiMasterAdminError) {
+      return errorResponse(error.code, error.status, responseHeaders);
+    }
+    if (error instanceof ReferenceMasterAdminError) {
+      return errorResponse(error.message, error.status, responseHeaders);
+    }
+    return errorResponse("reference_master_admin_unavailable", 503, responseHeaders);
+  }
+}
+
+async function resolveStorageAuth(request: Request, env: Env): Promise<StorageAuthResult> {
+  if (env.AUTH_BACKEND !== "better-auth") return { available: false };
+  const config = configuredAuth(env);
+  if (!config) return { available: false };
+  try {
+    const auth = createApplicationAuth(config);
+    const session = await auth.api.getSession({ headers: request.headers });
+    const userId = session?.user?.id;
+    return {
+      available: true,
+      userId: typeof userId === "string" && userId.length > 0 ? userId : null,
+    };
+  } catch {
+    return { available: false };
   }
 }
 
@@ -294,6 +712,10 @@ async function handleBetterAuthRequest(request: Request, env: Env, url: URL): Pr
     return emptyResponse(204, corsHeaders);
   }
 
+  if (authPath === "/ok" && request.method.toUpperCase() === "GET") {
+    return jsonResponse({ ok: true }, 200, corsHeaders);
+  }
+
   if (AUTH_CLOSED_ENDPOINTS.has(authPath) || isOAuthCallback || isResetTokenRoute) {
     return errorResponse("auth_flow_unavailable", 403, corsHeaders);
   }
@@ -302,21 +724,7 @@ async function handleBetterAuthRequest(request: Request, env: Env, url: URL): Pr
     const requestState = authPath === "/two-factor/verify-totp"
       ? await captureMfaGeneration({ AUTH_DB: authConfig.database })
       : null;
-    const auth = createAuth(
-      {
-        AUTH_DB: authConfig.database,
-        BETTER_AUTH_SECRET: authConfig.secret,
-        BETTER_AUTH_URL: authConfig.url,
-      },
-      [],
-      requestState,
-      null,
-      {
-        appName: "fanmark.id",
-        issuer: "fanmark.id",
-        trustedOrigins: authConfig.trustedOrigins,
-      },
-    );
+    const auth = createApplicationAuth(authConfig, requestState);
     return authResponseHeaders(await auth.handler(request), requestOrigin);
   } catch {
     return jsonResponse({ error: "auth_unavailable" }, 503, corsHeaders);
@@ -345,6 +753,27 @@ async function fetchStaticAsset(request: Request, assets: Fetcher): Promise<Resp
   return response;
 }
 
+function addNoIndexHeader(response: Response): Response {
+  const headers = new Headers(response.headers);
+  headers.set("x-robots-tag", "noindex, nofollow");
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
+function stagingRobotsResponse(method: string): Response {
+  return new Response(method === "HEAD" ? null : "User-agent: *\nDisallow: /\n", {
+    status: 200,
+    headers: {
+      "cache-control": "no-store",
+      "content-type": "text/plain; charset=utf-8",
+      "x-robots-tag": "noindex, nofollow",
+    },
+  });
+}
+
 export async function handleRequest(
   request: Request,
   env: Env,
@@ -355,23 +784,190 @@ export async function handleRequest(
   const url = new URL(request.url);
   const routeHeaders = baseHeaders();
 
+  const ogpResponse = await handleOgpRequest(request, env, publicAccessClock);
+  if (ogpResponse) return ogpResponse;
+
   // Static Assets owns files and the Worker applies the navigation fallback.
   // API paths stay in this Worker so an unknown API error can never be
   // rewritten to index.html.
   if (!url.pathname.startsWith("/api/") && url.pathname !== "/api" && env.ASSETS) {
-    return fetchStaticAsset(request, env.ASSETS);
+    const stagingNoIndex = env.STAGING_NO_INDEX?.trim().toLowerCase() === "true";
+    if (stagingNoIndex && (request.method === "GET" || request.method === "HEAD")) {
+      if (url.pathname === "/robots.txt") return stagingRobotsResponse(request.method);
+      if (url.pathname === "/sitemap.xml") {
+        return emptyResponse(404, { "x-robots-tag": "noindex, nofollow" });
+      }
+    }
+    const response = await fetchStaticAsset(request, env.ASSETS);
+    return stagingNoIndex ? addNoIndexHeader(response) : response;
   }
 
   if (url.pathname.startsWith("/api/auth/")) {
     return handleBetterAuthRequest(request, env, url);
   }
 
+  const accessAnalyticsResponse = await handleFanmarkAccessAnalyticsRequest(request, env);
+  if (accessAnalyticsResponse) return accessAnalyticsResponse;
+
+  if (isStripeWebhookPath(url.pathname)) {
+    return (await handleStripeWebhookD1Request(request, env)) ?? errorResponse("not_found", 404, routeHeaders);
+  }
+
+  if (isStripeExtensionCheckoutPath(url.pathname)) {
+    return (await handleStripeExtensionCheckoutD1Request(request, env, {
+      resolveUser: async (checkoutRequest) => {
+        if (env.AUTH_BACKEND?.trim() !== "better-auth") throw new Error("auth_unavailable");
+        const config = configuredAuth(env);
+        if (!config) throw new Error("auth_unavailable");
+        const current = await createApplicationAuth(config).api.getSession({
+          headers: checkoutRequest.headers,
+          query: { disableCookieCache: true },
+        });
+        const userId = current?.user?.id;
+        return typeof userId === "string" ? userId : null;
+      },
+    })) ?? errorResponse("not_found", 404, routeHeaders);
+  }
+
+  if (url.pathname === "/api/admin/session") {
+    return handleAdminSessionRequest(request, env);
+  }
+  if (isMaintenanceSettingsPath(url.pathname)) {
+    return handleMaintenanceSettingsRequest(request, env, async (adminRequest, responseHeaders) => {
+      if (env.AUTH_BACKEND?.trim() !== "better-auth") {
+        return errorResponse("auth_unavailable", 503, responseHeaders);
+      }
+      const authConfig = configuredAuth(env);
+      if (!authConfig) return errorResponse("auth_unavailable", 503, responseHeaders);
+      return authorizeAdminRequest(adminRequest, authConfig, responseHeaders);
+    });
+  }
+  if (isLifecycleSettingsPath(url.pathname)) {
+    return handleLifecycleSettingsRequest(request, env, async (adminRequest, responseHeaders) => {
+      if (env.AUTH_BACKEND?.trim() !== "better-auth") {
+        return errorResponse("auth_unavailable", 503, responseHeaders);
+      }
+      const authConfig = configuredAuth(env);
+      if (!authConfig) return errorResponse("auth_unavailable", 503, responseHeaders);
+      return authorizeAdminRequest(adminRequest, authConfig, responseHeaders);
+    });
+  }
+  if (isAvailabilityRulesAdminPath(url.pathname)) {
+    return (await handleAvailabilityRulesAdminRequest(request, env, async (adminRequest, responseHeaders) => {
+      if (env.AUTH_BACKEND?.trim() !== "better-auth") {
+        return errorResponse("auth_unavailable", 503, responseHeaders);
+      }
+      const authConfig = configuredAuth(env);
+      if (!authConfig) return errorResponse("auth_unavailable", 503, responseHeaders);
+      return authorizeAdminRequest(adminRequest, authConfig, responseHeaders);
+    })) ?? errorResponse("not_found", 404, routeHeaders);
+  }
+  if (url.pathname === "/api/admin/reference-masters/pricing") {
+    return handleReferenceMasterAdminRequest(request, env, url);
+  }
+  if (isNotificationMasterPath(url.pathname)) {
+    return (await handleNotificationMasterRequest(request, env, async (adminRequest, responseHeaders) => {
+      if (env.AUTH_BACKEND?.trim() !== "better-auth") {
+        return errorResponse("auth_unavailable", 503, responseHeaders);
+      }
+      const authConfig = configuredAuth(env);
+      if (!authConfig) return errorResponse("auth_unavailable", 503, responseHeaders);
+      return authorizeAdminRequest(adminRequest, authConfig, responseHeaders);
+    })) ?? errorResponse("not_found", 404, routeHeaders);
+  }
+  if (isInvitationAdminPath(url.pathname)) {
+    return (await handleInvitationAdminRequest(request, env, async (adminRequest, responseHeaders) => {
+      if (env.AUTH_BACKEND?.trim() !== "better-auth") {
+        return errorResponse("auth_unavailable", 503, responseHeaders);
+      }
+      const authConfig = configuredAuth(env);
+      if (!authConfig) return errorResponse("auth_unavailable", 503, responseHeaders);
+      return authorizeAdminRequest(adminRequest, authConfig, responseHeaders);
+    })) ?? errorResponse("not_found", 404, routeHeaders);
+  }
+  const referenceMasterServiceResponse = await handleReferenceMasterServiceRequest(request, env);
+  if (referenceMasterServiceResponse) return referenceMasterServiceResponse;
+  if (isOwnedFanmarksPath(url.pathname)) {
+    return handleOwnedFanmarksRequest(request, env, resolveStorageAuth);
+  }
+  if (isFanmarkProfilePath(url.pathname)) {
+    return handleFanmarkProfileRequest(request, env, resolveStorageAuth);
+  }
+  if (isFanmarkSettingsPath(url.pathname)) {
+    return handleFanmarkSettingsRequest(request, env, resolveStorageAuth);
+  }
+  if (isFanmarkReturnPath(url.pathname)) {
+    return handleFanmarkReturnRequest(request, env, resolveStorageAuth);
+  }
+  if (isFanmarkBulkReturnPath(url.pathname)) {
+    return handleFanmarkBulkReturnRequest(request, env, resolveStorageAuth);
+  }
+  if (isFanmarkRegistrationPath(url.pathname)) {
+    return handleFanmarkRegistrationRequest(request, env, resolveStorageAuth);
+  }
+  if (isFanmarkLotteryPath(url.pathname)) {
+    return handleFanmarkLotteryRequest(request, env, resolveStorageAuth);
+  }
+  if (isFanmarkTransferPath(url.pathname)) {
+    return handleFanmarkTransferRequest(request, env, resolveStorageAuth);
+  }
+  if (isFanmarkSearchDetailsPath(url.pathname)) {
+    return (await handleFanmarkSearchDetailsRequest(request, env, resolveStorageAuth, availabilityClock)) ??
+      errorResponse("not_found", 404, routeHeaders);
+  }
+  if (isFanmarkDetailsPath(url.pathname)) {
+    return (await handleFanmarkDetailsRequest(request, env, resolveStorageAuth, availabilityClock)) ??
+      errorResponse("not_found", 404, routeHeaders);
+  }
+  if (isProfilePath(url.pathname)) {
+    return handleProfileRequest(request, env, resolveStorageAuth);
+  }
+  const fanmarkAnalyticsResponse = await handleFanmarkAnalyticsRequest(request, env, resolveStorageAuth, availabilityClock);
+  if (fanmarkAnalyticsResponse) return fanmarkAnalyticsResponse;
+  if (isNotificationsPath(url.pathname)) {
+    return handleNotificationsRequest(request, env, resolveStorageAuth);
+  }
+  if (isFavoritesPath(url.pathname)) {
+    return handleFavoritesRequest(request, env, resolveStorageAuth);
+  }
+  if (isEmojiMasterAdminPath(url)) {
+    return handleEmojiMasterAdminRequest(request, env, url);
+  }
+  if (url.pathname === "/api/admin" || url.pathname.startsWith("/api/admin/")) {
+    return errorResponse("not_found", 404, baseHeaders());
+  }
+
+  if (isVerifiedAccessPath(url.pathname)) {
+    if (env.VERIFIED_ACCESS_BACKEND?.trim() !== "d1") {
+      return errorResponse("verified_access_unavailable", 503, routeHeaders);
+    }
+    const businessDatabase = selectD1Database(env, "business");
+    if (!businessDatabase || !env.VERIFIED_ACCESS_SECRET) {
+      return errorResponse("server_misconfigured", 500, routeHeaders);
+    }
+    return handleVerifiedAccessRequest(request, {
+      ...env,
+      ACCESS_DB: businessDatabase,
+      MASTER_DB: selectD1Database(env, "master"),
+      VERIFIED_ACCESS_ORIGINS: env.CORS_ALLOWED_ORIGINS,
+    });
+  }
+
+  const storageResponse = await handleStorageRequest(request, env, resolveStorageAuth);
+  if (storageResponse) return storageResponse;
+
   const publicAccessRoute = parsePublicAccessRoute(url);
   const isEmojiCatalogRoute = url.pathname === "/api/emoji/catalog";
+  const isReferenceMasterApiRoute = isReferenceMasterPath(url);
+  const referenceMasterRoute = parseReferenceMasterRoute(url);
+  if (isReferenceMasterApiRoute && referenceMasterRoute === null) {
+    return errorResponse("not_found", 404, routeHeaders);
+  }
   if (
     url.pathname !== "/api/fanmarks/recent" &&
     url.pathname !== "/api/fanmarks/availability" &&
     !isEmojiCatalogRoute &&
+    !isReferenceMasterApiRoute &&
     !publicAccessRoute
   ) {
     return errorResponse("not_found", 404, routeHeaders);
@@ -383,9 +979,11 @@ export async function handleRequest(
     ? publicAccessAllowedMethods(publicAccessRoute)
     : isEmojiCatalogRoute
       ? EMOJI_CATALOG_ALLOWED_METHODS
-      : isAvailabilityRoute
-        ? AVAILABILITY_ALLOWED_METHODS
-        : RECENT_ALLOWED_METHODS;
+      : isReferenceMasterApiRoute
+        ? REFERENCE_MASTER_ALLOWED_METHODS
+        : isAvailabilityRoute
+          ? AVAILABILITY_ALLOWED_METHODS
+          : RECENT_ALLOWED_METHODS;
   const cors = corsHeaders(
     request,
     env,
@@ -497,6 +1095,28 @@ export async function handleRequest(
     }
   }
 
+  if (isReferenceMasterApiRoute && referenceMasterRoute) {
+    if (method !== "GET") {
+      responseHeaders.set("allow", allowedMethods);
+      return errorResponse("method_not_allowed", 405, responseHeaders);
+    }
+    try {
+      const repository = createReferenceMasterD1Repository(env);
+      return jsonResponse(await repository.readMaster(referenceMasterRoute), 200, responseHeaders);
+    } catch (error) {
+      if (error instanceof ReferenceMasterUnavailableError) {
+        return errorResponse("reference_master_unavailable", 503, responseHeaders);
+      }
+      if (error instanceof ReferenceMasterConfigurationError) {
+        return errorResponse("server_misconfigured", 500, responseHeaders);
+      }
+      if (error instanceof ReferenceMasterUpstreamError) {
+        return errorResponse("upstream_unavailable", 502, responseHeaders);
+      }
+      return errorResponse("upstream_unavailable", 502, responseHeaders);
+    }
+  }
+
   if (isAvailabilityRoute) {
     if (method !== "POST") {
       responseHeaders.set("allow", allowedMethods);
@@ -557,6 +1177,69 @@ export async function handleRequest(
 const worker = {
   fetch(request: Request, env: Env): Promise<Response> {
     return handleRequest(request, env);
+  },
+  async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    const selectedJobs = new Set(selectScheduledJobs(controller.cron, env));
+    const jobs: Promise<unknown>[] = [];
+    if (selectedJobs.has("license-expiry")) {
+      jobs.push(runScheduledLicenseExpiry({
+        scheduledTime: controller.scheduledTime,
+        env,
+        database: selectD1Database(env, "business"),
+      }).then((summary) => {
+        const finalization = "graceFinalization" in summary ? summary.graceFinalization : undefined;
+        console.log(JSON.stringify({
+          job: "license-expiry-lifecycle",
+          status: summary.status,
+          runId: "runId" in summary ? summary.runId : undefined,
+          candidateCount: "candidateCount" in summary ? summary.candidateCount : undefined,
+          processed: "processed" in summary ? summary.processed : undefined,
+          conflicts: "conflicts" in summary ? summary.conflicts : undefined,
+          pagesProcessed: "pagesProcessed" in summary ? summary.pagesProcessed : undefined,
+          graceFinalizationStatus: finalization?.status,
+          graceFinalizationRunId: finalization && "runId" in finalization ? finalization.runId : undefined,
+          graceFinalizationCandidates: finalization && "candidateCount" in finalization
+            ? finalization.candidateCount
+            : undefined,
+          graceFinalizationProcessed: finalization && "processed" in finalization
+            ? finalization.processed
+            : undefined,
+          graceFinalizationConflicts: finalization && "conflicts" in finalization
+            ? finalization.conflicts
+            : undefined,
+          graceFinalizationPagesProcessed: finalization && "pagesProcessed" in finalization
+            ? finalization.pagesProcessed
+            : undefined,
+        }));
+      }).catch((error: unknown) => {
+        const code = error instanceof ScheduledLicenseExpiryError
+          ? error.code
+          : "unexpected_error";
+        console.error(JSON.stringify({ job: "license-expiry-lifecycle", status: "failed", code }));
+        throw error;
+      }));
+    }
+    if (selectedJobs.has("notification-events")) {
+      jobs.push(runScheduledNotificationEvents({ env, scheduledTime: controller.scheduledTime })
+        .then((summary) => {
+          console.log(JSON.stringify({ job: "notification-events", ...summary }));
+        }).catch((error: unknown) => {
+          console.error(JSON.stringify({ job: "notification-events", status: "failed", code: "notification_processor_failed" }));
+          throw error;
+        }));
+    }
+    if (selectedJobs.has("stripe-webhook-dispatch")) {
+      jobs.push(runScheduledStripeWebhookDispatches({ env, scheduledTime: controller.scheduledTime })
+        .then((summary) => {
+          console.log(JSON.stringify({ job: "stripe-webhook-dispatch", ...summary }));
+        }).catch((error: unknown) => {
+          console.error(JSON.stringify({ job: "stripe-webhook-dispatch", status: "failed", code: "stripe_dispatch_failed" }));
+          throw error;
+        }));
+    }
+    const completion = Promise.all(jobs);
+    ctx.waitUntil(completion);
+    await completion;
   },
 } satisfies ExportedHandler<Env>;
 

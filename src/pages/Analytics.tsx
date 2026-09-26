@@ -15,6 +15,12 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { BarChart3, TrendingUp, Users, Lock, ArrowUpRight, ArrowDownRight, Repeat, Trophy } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { cn } from '@/lib/utils';
+import {
+  fetchFanmarkAnalyticsFanmarksWorker,
+  fetchFanmarkAnalyticsWorker,
+  getFanmarkAnalyticsBackend,
+  type FanmarkAnalyticsMetrics,
+} from '@/lib/fanmark-analytics-api';
 
 type Period = '7d' | '30d' | '90d';
 
@@ -44,6 +50,12 @@ interface Fanmark {
   fanmark_name?: string;
 }
 
+interface AnalyticsQueryData {
+  summary: FanmarkAnalyticsMetrics;
+  dailyStats: Array<{ stat_date: string; access_count: number; unique_visitors: number }>;
+  fanmarkTotals: Array<{ fanmark_id: string; access_count: number }>;
+}
+
 const COLORS = {
   primary: 'hsl(var(--primary))',
   accent: 'hsl(var(--accent))',
@@ -56,6 +68,42 @@ const COLORS = {
 
 const PIE_COLORS = ['#65C3C8', '#F472B6', '#FBBF24', '#94A3B8'];
 const RANKING_COLORS = ['#65C3C8', '#F472B6', '#FBBF24', '#A78BFA', '#34D399', '#FB923C', '#60A5FA', '#F87171', '#A3E635', '#94A3B8'];
+
+function summarizeDailyStats(rows: DailyStats[]): AnalyticsQueryData {
+  const summary: FanmarkAnalyticsMetrics = {
+    accessCount: 0, uniqueVisitors: 0,
+    referrerDirect: 0, referrerSearch: 0, referrerSocial: 0, referrerOther: 0,
+    deviceMobile: 0, deviceTablet: 0, deviceDesktop: 0,
+    accessTypeProfile: 0, accessTypeRedirect: 0, accessTypeText: 0, accessTypeInactive: 0,
+  };
+  const byDate = new Map<string, { access_count: number; unique_visitors: number }>();
+  const byFanmark = new Map<string, number>();
+  for (const row of rows) {
+    summary.accessCount += row.access_count;
+    summary.uniqueVisitors += row.unique_visitors;
+    summary.referrerDirect += row.referrer_direct;
+    summary.referrerSearch += row.referrer_search;
+    summary.referrerSocial += row.referrer_social;
+    summary.referrerOther += row.referrer_other;
+    summary.deviceMobile += row.device_mobile;
+    summary.deviceTablet += row.device_tablet;
+    summary.deviceDesktop += row.device_desktop;
+    summary.accessTypeProfile += row.access_type_profile;
+    summary.accessTypeRedirect += row.access_type_redirect;
+    summary.accessTypeText += row.access_type_text;
+    summary.accessTypeInactive += row.access_type_inactive;
+    const daily = byDate.get(row.stat_date) ?? { access_count: 0, unique_visitors: 0 };
+    daily.access_count += row.access_count;
+    daily.unique_visitors += row.unique_visitors;
+    byDate.set(row.stat_date, daily);
+    byFanmark.set(row.fanmark_id, (byFanmark.get(row.fanmark_id) ?? 0) + row.access_count);
+  }
+  return {
+    summary,
+    dailyStats: [...byDate.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([stat_date, stats]) => ({ stat_date, ...stats })),
+    fanmarkTotals: [...byFanmark.entries()].map(([fanmark_id, access_count]) => ({ fanmark_id, access_count })),
+  };
+}
 
 const Analytics = () => {
   const { user, loading: authLoading } = useAuth();
@@ -77,6 +125,9 @@ const Analytics = () => {
     queryKey: ['user-fanmarks-for-analytics', user?.id],
     enabled: !!user && canAccessAnalytics,
     queryFn: async () => {
+      if (getFanmarkAnalyticsBackend() === 'worker') {
+        return fetchFanmarkAnalyticsFanmarksWorker();
+      }
       // Get fanmarks with license_id
       const { data: licensesData, error: licensesError } = await supabase
         .from('fanmark_licenses')
@@ -156,6 +207,18 @@ const Analytics = () => {
     queryKey: ['fanmark-analytics', selectedFanmarkId, period, user?.id, activeFanmarkIds],
     enabled: !!user && canAccessAnalytics && activeFanmarkIds.length > 0,
     queryFn: async () => {
+      if (getFanmarkAnalyticsBackend() === 'worker') {
+        const result = await fetchFanmarkAnalyticsWorker({
+          startDate: format(dateRange.startDate, 'yyyy-MM-dd'),
+          endDate: format(dateRange.endDate, 'yyyy-MM-dd'),
+          fanmarkId: selectedFanmarkId,
+        });
+        return {
+          summary: result.summary,
+          dailyStats: result.dailyStats,
+          fanmarkTotals: result.fanmarkTotals,
+        } satisfies AnalyticsQueryData;
+      }
       let query = supabase
         .from('fanmark_access_daily_stats')
         .select('*')
@@ -172,7 +235,7 @@ const Analytics = () => {
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data || []).map(row => ({
+      const rows = (data || []).map(row => ({
         fanmark_id: row.fanmark_id,
         stat_date: row.stat_date,
         access_count: row.access_count ?? 0,
@@ -189,12 +252,13 @@ const Analytics = () => {
         access_type_text: row.access_type_text ?? 0,
         access_type_inactive: row.access_type_inactive ?? 0,
       })) as DailyStats[];
+      return summarizeDailyStats(rows);
     },
   });
 
   // Calculate aggregated stats
   const aggregatedStats = useMemo(() => {
-    if (!analyticsData || analyticsData.length === 0) {
+    if (!analyticsData || analyticsData.dailyStats.length === 0) {
       return {
         totalAccess: 0,
         uniqueVisitors: 0,
@@ -208,34 +272,32 @@ const Analytics = () => {
       };
     }
 
-    const totalAccess = analyticsData.reduce((sum, d) => sum + (d.access_count || 0), 0);
-    const uniqueVisitors = analyticsData.reduce((sum, d) => sum + (d.unique_visitors || 0), 0);
+    const { summary } = analyticsData;
+    const totalAccess = summary.accessCount;
+    const uniqueVisitors = summary.uniqueVisitors;
 
-    const referrerDirect = analyticsData.reduce((sum, d) => sum + (d.referrer_direct || 0), 0);
-    const referrerSearch = analyticsData.reduce((sum, d) => sum + (d.referrer_search || 0), 0);
-    const referrerSocial = analyticsData.reduce((sum, d) => sum + (d.referrer_social || 0), 0);
-    const referrerOther = analyticsData.reduce((sum, d) => sum + (d.referrer_other || 0), 0);
+    const referrerDirect = summary.referrerDirect;
+    const referrerSearch = summary.referrerSearch;
+    const referrerSocial = summary.referrerSocial;
+    const referrerOther = summary.referrerOther;
     const totalReferrer = referrerDirect + referrerSearch + referrerSocial + referrerOther;
 
-    const deviceMobile = analyticsData.reduce((sum, d) => sum + (d.device_mobile || 0), 0);
-    const deviceTablet = analyticsData.reduce((sum, d) => sum + (d.device_tablet || 0), 0);
-    const deviceDesktop = analyticsData.reduce((sum, d) => sum + (d.device_desktop || 0), 0);
+    const deviceMobile = summary.deviceMobile;
+    const deviceTablet = summary.deviceTablet;
+    const deviceDesktop = summary.deviceDesktop;
     const totalDevice = deviceMobile + deviceTablet + deviceDesktop;
 
     // Access type breakdown
-    const accessTypeProfile = analyticsData.reduce((sum, d) => sum + (d.access_type_profile || 0), 0);
-    const accessTypeRedirect = analyticsData.reduce((sum, d) => sum + (d.access_type_redirect || 0), 0);
-    const accessTypeText = analyticsData.reduce((sum, d) => sum + (d.access_type_text || 0), 0);
-    const accessTypeInactive = analyticsData.reduce((sum, d) => sum + (d.access_type_inactive || 0), 0);
+    const accessTypeProfile = summary.accessTypeProfile;
+    const accessTypeRedirect = summary.accessTypeRedirect;
+    const accessTypeText = summary.accessTypeText;
+    const accessTypeInactive = summary.accessTypeInactive;
     const totalAccessType = accessTypeProfile + accessTypeRedirect + accessTypeText + accessTypeInactive;
 
     // Fanmark ranking (aggregate by fanmark_id)
     const fanmarkAccessMap = new Map<string, number>();
-    analyticsData.forEach((d) => {
-      if (d.fanmark_id) {
-        const current = fanmarkAccessMap.get(d.fanmark_id) || 0;
-        fanmarkAccessMap.set(d.fanmark_id, current + (d.access_count || 0));
-      }
+    analyticsData.fanmarkTotals.forEach((item) => {
+      fanmarkAccessMap.set(item.fanmark_id, item.access_count);
     });
 
     // Left join: all owned fanmarks with access data (0 if no access)
@@ -279,22 +341,11 @@ const Analytics = () => {
     ].filter((item) => item.value > 0);
 
     // Aggregate daily stats by date (sum across all fanmarks)
-    const dailyStatsMap = new Map<string, { access_count: number; unique_visitors: number }>();
-    analyticsData.forEach((d) => {
-      const existing = dailyStatsMap.get(d.stat_date) || { access_count: 0, unique_visitors: 0 };
-      dailyStatsMap.set(d.stat_date, {
-        access_count: existing.access_count + (d.access_count || 0),
-        unique_visitors: existing.unique_visitors + (d.unique_visitors || 0),
-      });
-    });
-
-    const dailyStats = Array.from(dailyStatsMap.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, stats]) => ({
-        date: format(new Date(date), 'MM/dd'),
-        access_count: stats.access_count,
-        unique_visitors: stats.unique_visitors,
-      }));
+    const dailyStats = analyticsData.dailyStats.map((stats) => ({
+      date: format(new Date(stats.stat_date), 'MM/dd'),
+      access_count: stats.access_count,
+      unique_visitors: stats.unique_visitors,
+    }));
 
     return {
       totalAccess,

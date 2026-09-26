@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { loadFavoriteFanmarkRows } from '@/lib/favorites-backend';
 
 export const FAVORITE_FANMARKS_QUERY_KEY = ['favoriteFanmarks'];
 
@@ -12,7 +12,6 @@ export interface FavoriteFanmark {
   emojiIds: string[];
   fanmark: string;
   normalizedEmojiIds: string[];
-  sequenceKey: string;
   availabilityStatus: string;
   searchCount: number;
   favoriteCount: number;
@@ -30,12 +29,7 @@ export interface FavoriteFanmark {
 }
 
 const fetchFavoriteFanmarks = async (): Promise<FavoriteFanmark[]> => {
-  const { data, error } = await supabase.rpc('get_favorite_fanmarks');
-
-  if (error) {
-    console.error('Failed to load favorite fanmarks:', error);
-    throw error;
-  }
+  const data = await loadFavoriteFanmarkRows();
 
   if (!data) {
     return [];
@@ -58,7 +52,6 @@ const fetchFavoriteFanmarks = async (): Promise<FavoriteFanmark[]> => {
       emojiIds: rawEmojiIds,
       fanmark: displayFanmark,
       normalizedEmojiIds: normalizedIds,
-      sequenceKey: item.sequence_key,
       availabilityStatus: item.availability_status,
       searchCount: item.search_count,
       favoriteCount: item.favorite_count,

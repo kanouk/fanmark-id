@@ -1,7 +1,7 @@
 /** Pure, private snapshot-record projection. No SQL, hashing of passwords, or IO. */
 import { compileCredentialDescriptor } from './credential-descriptor.mjs';
 import { compileRowConverter } from './row-conversion.mjs';
-import { canonicalJson, getPrimaryKeyInfo, rowRecordForEnvelope } from './snapshot-format.mjs';
+import { canonicalJson, getPrimaryKeyInfo, rowRecordForEnvelope, sha256Hex } from './snapshot-format.mjs';
 
 const transformInputs = new WeakMap();
 
@@ -51,7 +51,7 @@ export function compileCredentialImportProjection(options = {}) {
     // changing the existing converter's captured column descriptors.
     mapping = compileCredentialDescriptor(options);
     const catalog = structuredClone(options.catalog);
-    converter = compileRowConverter(catalog, mapping.source.relation);
+    converter = compileRowConverter(catalog, mapping.source.relation, { credentialDescriptor: mapping.descriptor });
     primaryKey = getPrimaryKeyInfo(catalog, mapping.source.relation);
   } catch {
     // Never attach parser/converter causes: they can contain raw source text.
@@ -79,6 +79,10 @@ export function compileCredentialImportProjection(options = {}) {
       fail('credential_source_record_invalid');
     }
     const handle = Object.freeze(Object.create(null));
+    const sourceRowIdentityDigest = sha256Hex({
+      sourceRelation: mapping.source.relation,
+      sourcePrimaryKey: expected.primaryKey,
+    });
     // Exact canonical envelope is embedded unchanged in the canonical record.
     // No target metadata is inserted into that envelope.
     const input = freeze({
@@ -86,6 +90,7 @@ export function compileCredentialImportProjection(options = {}) {
       sourceRelation: mapping.source.relation,
       sourcePrimaryKey: [...expected.primaryKey],
       sourceOrdinal: expected.ordinal,
+      sourceRowIdentityDigest,
       sourceEnvelopeDigest: expected.rowHash,
       descriptor: mapping.descriptor,
       descriptorDigest: mapping.descriptorDigest,
@@ -96,6 +101,8 @@ export function compileCredentialImportProjection(options = {}) {
       ordinal: expected.ordinal,
       primaryKey: [...expected.primaryKey],
       rowHash: expected.rowHash,
+      sourceEnvelopeDigest: expected.rowHash,
+      sourceRowIdentityDigest,
       columns: [...mapping.ordinarySourceColumns],
       bindings: ordinaryIndexes.map(index => converted.bindings[index]),
       credentialDescriptorDigest: mapping.descriptorDigest,

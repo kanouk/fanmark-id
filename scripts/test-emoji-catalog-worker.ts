@@ -87,6 +87,44 @@ test("loads every page pinned to the first release version without credentials o
   assert.equal(calls[1].url.searchParams.get("offset"), "1");
 });
 
+test("can pin the first page to an explicitly selected immutable release", async () => {
+  let requestedUrl: URL | undefined;
+  const fetcher: typeof fetch = async (input) => {
+    requestedUrl = new URL(String(input));
+    return response({
+      schemaVersion: 1,
+      version: VERSION,
+      total: 1,
+      offset: 0,
+      limit: 1,
+      nextOffset: null,
+      items: [FIRST_ITEM],
+    });
+  };
+
+  const release = await loadEmojiCatalogFromWorker(BASE_URL, {
+    fetcher,
+    pageSize: 1,
+    version: VERSION,
+  });
+  assert.equal(release.version, VERSION);
+  assert.equal(requestedUrl?.searchParams.get("version"), VERSION);
+});
+
+test("rejects an invalid configured release before fetching", async () => {
+  let fetchCount = 0;
+  const fetcher: typeof fetch = async () => {
+    fetchCount += 1;
+    return response({});
+  };
+
+  await assert.rejects(
+    loadEmojiCatalogFromWorker(BASE_URL, { fetcher, version: "not-a-release" }),
+    (error: unknown) => error instanceof EmojiCatalogApiError && error.kind === "configuration",
+  );
+  assert.equal(fetchCount, 0);
+});
+
 test("rejects an active-version switch during pagination", async () => {
   let callCount = 0;
   const fetcher: typeof fetch = async () => {

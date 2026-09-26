@@ -1,6 +1,6 @@
 # fanmark.id repository inventory (offline)
 
-Base commit: `b307dd41fe7f151821730c24044a93f4ee5c54fe`
+Base commit: `f359c3fae0934f425839f34a5166860f33a1640e`
 
 This report is generated from the checked-out repository only. It makes no network calls, reads no credentials, and does not claim that local generated types, migrations, or SQL snapshots equal the current production state.
 
@@ -221,8 +221,8 @@ Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of t
 | `src/components/auth/MFAEnrollment.tsx:148` | auth_mfa | `auth` | `auth.mfa.verify` |  |
 | `src/components/ExtendLicenseDialog.tsx:84` | table | `fanmark_tier_extension_prices` | `table.select` |  |
 | `src/components/ExtendLicenseDialog.tsx:298` | edge | `apply-extension-coupon` | `edge_function_invoke` |  |
-| `src/components/FanmarkAccess.tsx:118` | rpc | `get_fanmark_by_emoji` | `rpc` |  |
-| `src/components/FanmarkAccessByShortId.tsx:75` | rpc | `get_fanmark_by_short_id` | `rpc` |  |
+| `src/components/FanmarkAccess.tsx:126` | rpc | `get_fanmark_by_emoji` | `rpc` | Supabase fallback when `VITE_PUBLIC_ACCESS_READ_BACKEND=worker` is unset |
+| `src/components/FanmarkAccessByShortId.tsx:82` | rpc | `get_fanmark_by_short_id` | `rpc` | Supabase fallback when the public-read Worker selector is unset |
 | `src/components/FanmarkAccessByShortId.tsx:108` | edge | `record-fanmark-access` | `edge_function_invoke` |  |
 | `src/components/FanmarkAcquisition.tsx:218` | edge | `register-fanmark` | `edge_function_invoke` |  |
 | `src/components/FanmarkAcquisition.tsx:279` | rpc | `remove_fanmark_favorite` | `rpc` |  |
@@ -249,16 +249,16 @@ Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of t
 | `src/components/layout/AppHeader.tsx:139` | rpc | `mark_notification_read` | `rpc` |  |
 | `src/components/MaintenanceGate.tsx:41` | rpc | `is_admin` | `rpc` |  |
 | `src/components/PasswordProtection.tsx:32` | rpc | `verify_fanmark_password` | `rpc` |  |
-| `src/components/RecentFanmarksScroll.tsx:23` | rpc | `list_recent_fanmarks` | `rpc` |  |
+| `src/components/RecentFanmarksScroll.tsx:25` | rpc | `list_recent_fanmarks` | `rpc` |  |
 | `src/components/SecureWaitlistAdmin.tsx:48` | rpc | `is_super_admin` | `rpc` |  |
 | `src/components/SecureWaitlistAdmin.tsx:76` | rpc | `get_waitlist_secure` | `rpc` |  |
 | `src/components/SecureWaitlistAdmin.tsx:91` | table | `audit_logs` | `table.select` |  |
 | `src/components/SecureWaitlistAdmin.tsx:107` | rpc | `get_waitlist_email_by_id` | `rpc` |  |
 | `src/components/UserProfileForm.tsx:138` | edge | `bulk-return-fanmarks` | `edge_function_invoke` |  |
 | `src/hooks/useAuth.tsx:39` | table | `user_settings` | `table.select` |  |
-| `src/hooks/useAuth.tsx:90` | auth | `auth` | `auth.onAuthStateChange` |  |
-| `src/hooks/useAuth.tsx:97` | auth | `auth` | `auth.getSession` |  |
-| `src/hooks/useAuth.tsx:127` | auth | `auth` | `auth.signOut` |  |
+| `src/hooks/useAuth.tsx:77` | auth | `auth` | `auth.onAuthStateChange` |  |
+| `src/hooks/useAuth.tsx:84` | auth | `auth` | `auth.getSession` |  |
+| `src/hooks/useAuth.tsx:113` | auth | `auth` | `auth.signOut` |  |
 | `src/hooks/useAuthForm.tsx:88` | edge | `check-email-exists` | `edge_function_invoke` |  |
 | `src/hooks/useAuthForm.tsx:126` | rpc | `validate_invitation_code` | `rpc` |  |
 | `src/hooks/useAuthForm.tsx:156` | auth | `auth` | `auth.signUp` |  |
@@ -277,7 +277,7 @@ Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of t
 | `src/hooks/useCoverImageUpload.tsx:28` | storage | `cover-images` | `storage.upload` |  |
 | `src/hooks/useCoverImageUpload.tsx:38` | storage | `cover-images` | `storage.getPublicUrl` |  |
 | `src/hooks/useCoverImageUpload.tsx:107` | storage | `cover-images` | `storage.remove` |  |
-| `src/hooks/useEmojiProfile.tsx:32` | rpc | `get_public_emoji_profile` | `rpc` |  |
+| `src/hooks/useEmojiProfile.tsx:41` | rpc | `get_public_emoji_profile` | `rpc` | Supabase fallback when the public-read Worker selector is unset |
 | `src/hooks/useEmojiProfile.tsx:54` | table | `fanmark_profiles` | `table.select` |  |
 | `src/hooks/useEmojiProfile.tsx:82` | table | `fanmark_profiles` | `table.select` |  |
 | `src/hooks/useEmojiProfile.tsx:113` | table | `fanmark_profiles` | `table.upsert` |  |
@@ -288,18 +288,18 @@ Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of t
 | `src/hooks/useExtensionCouponAdmin.ts:129` | table | `extension_coupon_usages` | `table.select` |  |
 | `src/hooks/useExtensionCouponAdmin.ts:153` | table | `fanmark_licenses` | `table.select` |  |
 | `src/hooks/useExtensionCouponAdmin.ts:164` | table | `user_settings` | `table.select` |  |
-| `src/hooks/useFanmarkByShortId.ts:49` | rpc | `get_fanmark_by_short_id` | `rpc` |  |
+| `src/hooks/useFanmarkByShortId.ts:57` | rpc | `get_fanmark_by_short_id` | `rpc` | Supabase fallback when the public-read Worker selector is unset |
 | `src/hooks/useFanmarkDetails.tsx:66` | rpc | `get_fanmark_details_by_short_id` | `rpc` |  |
 | `src/hooks/useFanmarkDetails.tsx:132` | rpc | `remove_fanmark_favorite` | `rpc` |  |
 | `src/hooks/useFanmarkDetails.tsx:142` | rpc | `add_fanmark_favorite` | `rpc` |  |
-| `src/hooks/useFanmarkSearch.tsx:165` | rpc | `list_recent_fanmarks` | `rpc` |  |
-| `src/hooks/useFanmarkSearch.tsx:252` | auth | `auth` | `auth.getUser` |  |
-| `src/hooks/useFanmarkSearch.tsx:281` | rpc | `check_fanmark_availability` | `rpc` |  |
-| `src/hooks/useFanmarkSearch.tsx:301` | rpc | `record_fanmark_search` | `rpc` |  |
-| `src/hooks/useFanmarkSearch.tsx:327` | rpc | `get_fanmark_complete_data` | `rpc` |  |
-| `src/hooks/useFanmarkSearch.tsx:501` | edge | `register-fanmark` | `edge_function_invoke` |  |
-| `src/hooks/useFanmarkSearch.tsx:547` | rpc | `check_fanmark_availability` | `rpc` |  |
-| `src/hooks/useFanmarkSearch.tsx:560` | rpc | `get_fanmark_complete_data` | `rpc` |  |
+| `src/hooks/useFanmarkSearch.tsx:152` | rpc | `list_recent_fanmarks` | `rpc` | Supabase RPC fallback through `src/lib/recent-fanmarks.ts`; configured Worker origin selects the Worker loader instead |
+| `src/hooks/useFanmarkSearch.tsx:239` | auth | `auth` | `auth.getUser` |  |
+| `src/hooks/useFanmarkSearch.tsx:270` | rpc | `check_fanmark_availability` | `rpc` |  |
+| `src/hooks/useFanmarkSearch.tsx:282` | rpc | `record_fanmark_search` | `rpc` |  |
+| `src/hooks/useFanmarkSearch.tsx:309` | rpc | `get_fanmark_complete_data` | `rpc` |  |
+| `src/hooks/useFanmarkSearch.tsx:483` | edge | `register-fanmark` | `edge_function_invoke` |  |
+| `src/hooks/useFanmarkSearch.tsx:531` | rpc | `check_fanmark_availability` | `rpc` |  |
+| `src/hooks/useFanmarkSearch.tsx:539` | rpc | `get_fanmark_complete_data` | `rpc` |  |
 | `src/hooks/useFavoriteFanmarks.ts:33` | rpc | `get_favorite_fanmarks` | `rpc` |  |
 | `src/hooks/useInvitationAdmin.ts:26` | table | `invitation_codes` | `table.select` |  |
 | `src/hooks/useInvitationAdmin.ts:57` | table | `invitation_codes` | `table.insert` |  |
@@ -422,13 +422,13 @@ _none detected in frontend source._
 
 The following references are grouped from current checkout migrations, the two checked-in schema snapshots, and `supabase/config.toml`. Locations are compressed by file and line range. These are evidence references, not a declaration of live state.
 
-Evidence files (24): `supabase/migrations/20251231070109_remote_schema.sql`, `supabase/migrations/20251231072222_restore_rls_policies.sql`, `supabase/migrations/20251231201348_add_display_fanmark.sql`, `supabase/migrations/20251231222000_fix_password_config_license_check.sql`, `supabase/migrations/20260101090000_add_payment_failure_fields_to_user_subscriptions.sql`, `supabase/migrations/20260102102233_e5e3404a-2341-4bbf-80ea-b67d62e3423a.sql`, `supabase/migrations/20260102123300_a3d9ffa4-0b8d-4730-84f4-8a5eb680b3f1.sql`, `supabase/migrations/20260102125523_547b82b2-018b-4be4-adac-6b9d9fe3d491.sql`, `supabase/migrations/20260102125748_7bb11f5c-8252-49e2-a6db-42d9db393b30.sql`, `supabase/migrations/20260102215623_653e4d11-8e5c-4a5c-9abd-1d952afffa3a.sql`, `supabase/migrations/20260102221550_3bcc9909-4952-431c-b45c-7b39dc1d5db8.sql`, `supabase/migrations/20260102235155_0efff4a2-63a7-497b-b2c5-b54425604749.sql`, `supabase/migrations/20260103011437_remote_schema.sql`, `supabase/migrations/20260103120000_fix_oauth_password_setup.sql`, `supabase/migrations/20260103123000_add_maintenance_settings.sql`, `supabase/migrations/20260104025602_remote_schema.sql`, `supabase/migrations/20260104032906_cf240bf8-d8e2-448d-9194-ac6ce70a3096.sql`, `supabase/migrations/20260104091448_remote_schema.sql`, `supabase/migrations/20260104120000_update_public_access_grace.sql`, `supabase/migrations/20260706154554_20260706154550_32813e3f-4473-4046-beb2-ec66ba8580e1.sql`, `supabase/migrations/20260725044303_make_notification_cron_on_demand.sql`, `supabase/remote_schema.sql`, `supabase/remote_schema_before_rls_push.sql`, `supabase/config.toml`
+Evidence files (27): `supabase/migrations/20251231070109_remote_schema.sql`, `supabase/migrations/20251231072222_restore_rls_policies.sql`, `supabase/migrations/20251231201348_add_display_fanmark.sql`, `supabase/migrations/20251231222000_fix_password_config_license_check.sql`, `supabase/migrations/20260101090000_add_payment_failure_fields_to_user_subscriptions.sql`, `supabase/migrations/20260102102233_e5e3404a-2341-4bbf-80ea-b67d62e3423a.sql`, `supabase/migrations/20260102123300_a3d9ffa4-0b8d-4730-84f4-8a5eb680b3f1.sql`, `supabase/migrations/20260102125523_547b82b2-018b-4be4-adac-6b9d9fe3d491.sql`, `supabase/migrations/20260102125748_7bb11f5c-8252-49e2-a6db-42d9db393b30.sql`, `supabase/migrations/20260102215623_653e4d11-8e5c-4a5c-9abd-1d952afffa3a.sql`, `supabase/migrations/20260102221550_3bcc9909-4952-431c-b45c-7b39dc1d5db8.sql`, `supabase/migrations/20260102235155_0efff4a2-63a7-497b-b2c5-b54425604749.sql`, `supabase/migrations/20260103011437_remote_schema.sql`, `supabase/migrations/20260103120000_fix_oauth_password_setup.sql`, `supabase/migrations/20260103123000_add_maintenance_settings.sql`, `supabase/migrations/20260104025602_remote_schema.sql`, `supabase/migrations/20260104032906_cf240bf8-d8e2-448d-9194-ac6ce70a3096.sql`, `supabase/migrations/20260104091448_remote_schema.sql`, `supabase/migrations/20260104120000_update_public_access_grace.sql`, `supabase/migrations/20260706154554_20260706154550_32813e3f-4473-4046-beb2-ec66ba8580e1.sql`, `supabase/migrations/20260725044303_make_notification_cron_on_demand.sql`, `supabase/migrations/20260921090000_add_stripe_receipt_foundation.sql`, `supabase/migrations/20260921100000_add_stripe_dispatch_leases.sql`, `supabase/migrations/20260921110000_add_stripe_invoice_projection.sql`, `supabase/remote_schema.sql`, `supabase/remote_schema_before_rls_push.sql`, `supabase/config.toml`
 
 ### Auth references
 
 | Reference | Locations |
 | --- | --- |
-| `auth.role` | supabase/migrations/20260102123300_a3d9ffa4-0b8d-4730-84f4-8a5eb680b3f1.sql:29; supabase/migrations/20260104091448_remote_schema.sql:2130,2200,2258,2266; supabase/migrations/20260706154554_20260706154550_32813e3f-4473-4046-beb2-ec66ba8580e1.sql:24,53 |
+| `auth.role` | supabase/migrations/20260102123300_a3d9ffa4-0b8d-4730-84f4-8a5eb680b3f1.sql:29; supabase/migrations/20260104091448_remote_schema.sql:2130,2200,2258,2266; supabase/migrations/20260706154554_20260706154550_32813e3f-4473-4046-beb2-ec66ba8580e1.sql:24,53; supabase/migrations/20260921090000_add_stripe_receipt_foundation.sql:181,186; supabase/migrations/20260921100000_add_stripe_dispatch_leases.sql:94,226,335; supabase/migrations/20260921110000_add_stripe_invoice_projection.sql:183,308,417 |
 | `auth.sessions` | supabase/migrations/20251231070109_remote_schema.sql:1327; supabase/remote_schema_before_rls_push.sql:1327; supabase/remote_schema.sql:1328 |
 | `auth.uid` | supabase/migrations/20251231070109_remote_schema.sql:79,649,759,906,1016,1054,1081,1112,1131,1244,1307,1443,1458,1473,1553,1583,1590,1609,1646,1764,1784,1897,2087,2190; supabase/migrations/20251231201348_add_display_fanmark.sql:36,119,336,474; supabase/migrations/20251231222000_fix_password_config_license_check.sql:19; supabase/migrations/20260103011437_remote_schema.sql:1699,2256,2366,2513,2621,2658,2685,2715,2734,2948,2963,2978,3056,3085,3092,3110,3146,3260,3279,3390,3577,3676,3834,3843,3852,3861,3870,3879; supabase/migrations/20260104025602_remote_schema.sql:21,578,688,835,943,980,1007,1037,1056,1270,1285,1300,1378,1407,1414,1432,1468,1582,1601,1712,1899,1998; supabase/migrations/20260104091448_remote_schema.sql:17,574,684,831,939,976,1003,1033,1052,1266,1281,1296,1374,1403,1410,1428,1464,1578,1597,1708,1895,1994; supabase/remote_schema_before_rls_push.sql:79,649,759,906,1016,1054,1081,1112,1131,1244,1307,1443,1458,1473,1553,1583,1590,1609,1646,1764,1784,1897,2087,2190; supabase/remote_schema.sql:79,650,760,907,1017,1055,1082,1113,1132,1245,1308,1444,1459,1474,1554,1584,1591,1610,1647,1765,1785,1898,2088,2191 |
 | `auth.users` | supabase/migrations/20260102221550_3bcc9909-4952-431c-b45c-7b39dc1d5db8.sql:12; supabase/migrations/20260103011437_remote_schema.sql:3808; supabase/migrations/20260103120000_fix_oauth_password_setup.sql:6 |
@@ -473,6 +473,15 @@ Evidence files (24): `supabase/migrations/20251231070109_remote_schema.sql`, `su
 - No live-only names are knowable from this offline scan. See the coordinator-owned [live observations](live-observations.md) for separately captured read-only observations; those observations are not imported into these local counts.
 
 Reconcile the live observations with this checkout report before treating any mapping as complete.
+
+## Staging selector update (2026-09-26)
+
+The `AdminPatternRules` callsites above still describe the non-staging
+Supabase path. The Cloudflare staging build explicitly selects the MFA-gated
+Worker/D1 adapter described in [availability rules admin API](availability-rules-admin-api.md).
+Only the allowlisted public `max_emoji_characters` setting was added to the
+staging registration configuration; default builds retain their Supabase
+behavior and the remaining `system_settings` callsites have not moved.
 
 ## Remaining mapping work
 

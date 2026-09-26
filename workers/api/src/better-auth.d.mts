@@ -12,6 +12,15 @@ interface BetterAuthOptions {
 
 interface BetterAuthHandler {
   handler(request: Request): Promise<Response>;
+  api: {
+    getSession(input: {
+      headers: Headers;
+      query?: { disableCookieCache?: boolean };
+    }): Promise<{
+      user: { id: string };
+      session: { id: string; expiresAt: string | Date };
+    } | null>;
+  };
 }
 
 export function captureMfaGeneration(env: Pick<AuthEnvironment, "AUTH_DB">): Promise<number | null>;

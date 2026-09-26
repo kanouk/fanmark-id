@@ -1,18 +1,19 @@
-# Local public-access validation
+# Public-access validation
 
-This note records the bounded local proof for the opt-in D1 public-read slice.
-It is a local Worker/D1 fixture result, not a deployment or a claim that the
-complete production D1 schema has been imported.
+This note records the bounded local and workers.dev proof for the opt-in D1
+public-read slice. It is not a claim that production business rows or the full
+application have been migrated.
 
 ## Implementation boundary
 
 `PUBLIC_ACCESS_BACKEND=d1` is required for the route to use D1. An unset flag
-returns `503 public_access_unavailable`; an unknown flag or a missing
-`FANMARK_DB` binding fails closed. The default Worker configuration does not
-select this backend or add the fixture binding.
+returns `503 public_access_unavailable`; an unknown flag or a missing required
+business/master binding fails closed. The staging Worker explicitly selects
+this backend; other environments must opt in separately.
 
-Short-ID and emoji lookups use one D1 projection statement after emoji-master
-normalization. The projection selects only the active public columns. CTE
+Short-ID and emoji lookups use one business-D1 projection statement after
+emoji-master normalization through the selected master D1 role. The projection
+selects only the active public columns. CTE
 counts reject duplicate base/config rows and license ties; the emoji path
 rejects more than one eligible finite license, while the short-ID path keeps
 the observed latest-active selection and its indefinite-license behavior.
@@ -37,7 +38,8 @@ omitted from the public object.
 ## Fixture and checks
 
 The fixture is `workers/api/test/fixtures/d1-public-access-contract.sql` and
-contains only the columns needed by these projections. It covers active,
+contains only the columns needed by these projections. The local suite now
+binds distinct business and master D1 databases. It covers active,
 grace, expired, indefinite, returned/unlicensed, multiple and tied licenses;
 display spelling; tone normalization; repeated and long ZWJ emoji input;
 protected redirect/text/profile rows; private and expired profiles; stale
@@ -50,6 +52,15 @@ the locked redacted result. The profile repository likewise performs one
 projection prepare. The proof uses the real local D1 binding and the Worker
 request handler; it does not monkeypatch Better Auth, create a remote D1
 database, use OAuth credentials, or forward cookies and authorization headers.
+
+The frontend adapter is separately selected with
+`VITE_PUBLIC_ACCESS_READ_BACKEND=worker`. Its seven tests cover origin
+validation, short-ID/emoji/profile mappings, credential omission, response
+bounds, fail-closed HTTP/invalid-response handling, and timeout behavior. The
+the staging build selects this flag, so these client tests remain separate
+from the live route proof. The default production Supabase path retains
+password verification and access analytics; Worker-selected protected
+records fail closed while the separate verification selector remains off.
 
 Run from `workers/api` with the declared Node 22.6 runtime:
 

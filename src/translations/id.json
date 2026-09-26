@@ -1236,6 +1236,7 @@
     "started": "Diperoleh Pada",
     "expires": "Kedaluwarsa (direncanakan)",
     "noHistory": "Tidak ada riwayat lisensi yang tersedia",
+    "historySignInPrompt": "Masuk untuk melihat riwayat kepemilikan dan status favorit Anda.",
     "initial": "Awal",
     "favorite": "Tambah ke Favorit",
     "unfavorite": "Hapus dari Favorit",

@@ -5,6 +5,7 @@ import { canonicalJson, getPrimaryKeyInfo, rowRecordForEnvelope } from './snapsh
 import { compileRowConverter } from './row-conversion.mjs';
 import { CREDENTIAL_CODEC_COST, CREDENTIAL_CODEC_ID, CREDENTIAL_SOURCE_COLUMNS } from './credential-descriptor.mjs';
 import { compileCredentialImportProjection, consumeCredentialTransformInput } from './credential-import-projection.mjs';
+import { buildCredentialTargetInsert } from './credential-import-row.mjs';
 function column(table_name, column_name, ordinal, postgres_type, not_null = true) {
   return {
     table_name,
@@ -114,7 +115,7 @@ test('source-shaped projection preserves ordinary values, source hash and exact 
   const r = record(source);
   const projected = compile()(canonicalJson(r));
   assert.deepEqual(projected.columns, ['id', 'license_id', 'is_enabled', 'created_at', 'updated_at']);
-  const original = compileRowConverter(catalog(), 'fanmark_password_configs')(source);
+  const original = compileRowConverter(catalog(), 'fanmark_password_configs', { credentialDescriptor: descriptor() })(source);
   assert.deepEqual(projected.bindings, original.bindings.filter((_v, i) => i !== 2));
   assert.equal(original.bindings[2], source.values.access_password);
   assert.equal(projected.rowHash, r.rowHash);
@@ -178,4 +179,52 @@ test('opaque handles reject forged copies and cannot cross-contaminate or replay
   assert.equal(JSON.parse(consumeCredentialTransformInput(a.transformInput).sourceEnvelopeBytes).values.access_password, 'first-secret');
   assert.throws(() => consumeCredentialTransformInput(a.transformInput));
   assert.throws(() => consumeCredentialTransformInput(b.transformInput));
+});
+
+test('prepared hash is the only credential binding in the six-column source-shaped INSERT', () => {
+  const source = envelope('SYNTHETIC_SOURCE_PASSWORD');
+  const projected = compile()(canonicalJson(record(source)));
+  const destinationHash = `$2b$10$${'a'.repeat(53)}`;
+  const artifact = {
+    artifactId: 'artifact-synthetic-1',
+    state: 'prepared',
+    descriptorDigest: projected.credentialDescriptorDigest,
+    sourceRowIdentityDigest: projected.sourceRowIdentityDigest,
+    sourceEnvelopeDigest: projected.sourceEnvelopeDigest,
+    sourceRevision: `${projected.ordinal}:${projected.rowHash}`,
+    sourcePrimaryKeyJson: JSON.stringify(projected.primaryKey),
+    destinationTransformDigest: 'c'.repeat(64),
+    destinationRelation: 'fanmark_password_configs',
+    destinationColumn: 'access_password',
+    destinationLicenseId: projected.bindings[1],
+    enabled: projected.bindings[2],
+    codecId: CREDENTIAL_CODEC_ID,
+    codecCost: CREDENTIAL_CODEC_COST,
+    destinationHash,
+  };
+  const insert = buildCredentialTargetInsert({
+    projection: projected,
+    preparedArtifact: artifact,
+    descriptorDigest: projected.credentialDescriptorDigest,
+  });
+  assert.deepEqual(insert.columns, CREDENTIAL_SOURCE_COLUMNS);
+  assert.equal(insert.destinationTransformDigest, artifact.destinationTransformDigest);
+  assert.deepEqual(insert.bindings, [
+    projected.bindings[0], projected.bindings[1], destinationHash,
+    projected.bindings[2], projected.bindings[3], projected.bindings[4],
+  ]);
+  assert.equal(insert.bindings.includes('SYNTHETIC_SOURCE_PASSWORD'), false);
+  assert.equal(JSON.stringify(insert).includes('SYNTHETIC_SOURCE_PASSWORD'), false);
+  assert.match(insert.sql, /"access_password"/u);
+
+  const rawProjection = { ...projected, bindings: [...projected.bindings] };
+  rawProjection.bindings[2] = 'SYNTHETIC_SOURCE_PASSWORD';
+  assert.throws(
+    () => buildCredentialTargetInsert({ projection: rawProjection, preparedArtifact: artifact, descriptorDigest: projected.credentialDescriptorDigest }),
+    (error) => error.code === 'raw_credential_binding',
+  );
+  assert.throws(
+    () => buildCredentialTargetInsert({ projection: projected, preparedArtifact: { ...artifact, descriptorDigest: '0'.repeat(64) }, descriptorDigest: projected.credentialDescriptorDigest }),
+    (error) => error.code === 'credential_artifact_not_prepared',
+  );
 });

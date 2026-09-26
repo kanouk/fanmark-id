@@ -6,6 +6,7 @@ import { createD1PublicAccessRepository } from "../src/public-access-d1-reposito
 import type { Env } from "../src/repository";
 
 const database = (env as unknown as Env).FANMARK_DB;
+const masterDatabase = (env as unknown as Env).MASTER_DB;
 const NOW = "2026-09-21T00:00:00.000000Z";
 const CLOCK = () => new Date("2026-09-21T00:00:00.000Z");
 const API_ORIGIN = "https://api.example.test";
@@ -67,7 +68,9 @@ function statementsFrom(sql: string): string[] {
 function d1Environment(overrides: Partial<Env> = {}): Env {
   return {
     ...(env as unknown as Env),
+    D1_TOPOLOGY: "split",
     FANMARK_DB: database,
+    MASTER_DB: masterDatabase,
     PUBLIC_ACCESS_BACKEND: "d1",
     CORS_ALLOWED_ORIGINS: ALLOWED_ORIGIN,
     ...overrides,
@@ -108,6 +111,11 @@ async function run(statement: string, ...bindings: unknown[]): Promise<void> {
   await database.prepare(statement).bind(...bindings).run();
 }
 
+async function runMaster(statement: string, ...bindings: unknown[]): Promise<void> {
+  if (!masterDatabase) throw new Error("MASTER_DB binding is unavailable");
+  await masterDatabase.prepare(statement).bind(...bindings).run();
+}
+
 async function batch(statements: Array<{ sql: string; bindings: unknown[] }>): Promise<void> {
   if (!database) throw new Error("FANMARK_DB binding is unavailable");
   await database.batch(statements.map(({ sql, bindings }) => database.prepare(sql).bind(...bindings)));
@@ -141,6 +149,8 @@ async function seedFixture(): Promise<void> {
     [IDS.emojiPair, "🧪", ["1F9EA"]],
     [IDS.emojiLong, "👩‍❤️‍💋‍👩", ["1F469", "200D", "2764", "FE0F", "200D", "1F48B", "200D", "1F469"]],
   ];
+  if (!masterDatabase) throw new Error("MASTER_DB binding is unavailable");
+  await masterDatabase.prepare("DELETE FROM emoji_master").run();
   const fanmarks = [
     [IDS.fanmarkEmoji, "emoji-short", "😀🏻", [IDS.emojiTone], [IDS.emojiBase]],
     [IDS.fanmarkText, "text-short", "🚀", [IDS.emojiRocket], [IDS.emojiRocket]],
@@ -168,11 +178,10 @@ async function seedFixture(): Promise<void> {
     [LICENSE.invalidUrl, IDS.fanmarkInvalidUrl, "❤️-display", "active", "2026-09-22T00:00:00.000000Z", null, 0],
     [LICENSE.oversize, IDS.fanmarkOversize, "✅-display", "active", "2026-09-22T00:00:00.000000Z", null, 0],
   ];
+  await masterDatabase.batch(masters.map(([id, emoji, codepoints]) =>
+    masterDatabase.prepare("INSERT INTO emoji_master (id, emoji, codepoints) VALUES (?, ?, ?)")
+      .bind(id, emoji, JSON.stringify(codepoints))));
   await batch([
-    ...masters.map(([id, emoji, codepoints]) => ({
-      sql: "INSERT INTO emoji_master (id, emoji, codepoints) VALUES (?, ?, ?)",
-      bindings: [id, emoji, JSON.stringify(codepoints)],
-    })),
     ...fanmarks.map(([id, shortId, input, emojiIds, normalizedIds]) => ({
       sql: "INSERT INTO fanmarks (id, short_id, user_input_fanmark, normalized_emoji, emoji_ids, normalized_emoji_ids, status) VALUES (?, ?, ?, ?, ?, ?, 'active')",
       bindings: [id, shortId, input, input, JSON.stringify(emojiIds), JSON.stringify(normalizedIds)],
@@ -207,8 +216,15 @@ async function seedFixture(): Promise<void> {
 }
 
 beforeAll(async () => {
-  if (!database) throw new Error("FANMARK_DB binding is unavailable");
+  if (!database || !masterDatabase) throw new Error("split D1 bindings are unavailable");
   await database.batch(statementsFrom(schemaSql).map((statement) => database.prepare(statement)));
+  await masterDatabase.prepare(`
+    CREATE TABLE IF NOT EXISTS emoji_master (
+      id TEXT PRIMARY KEY,
+      emoji TEXT NOT NULL,
+      codepoints TEXT NOT NULL
+    )
+  `).run();
 });
 
 beforeEach(async () => {
@@ -216,6 +232,117 @@ beforeEach(async () => {
 });
 
 describe("public fanmark access D1 contract", () => {
+  it("serves crawler OGP from public D1 projections and hides protected profile metadata", async () => {
+    const crawlerEnv = d1Environment({ ASSETS: undefined, STAGING_NO_INDEX: "true" });
+    await run(
+      "UPDATE fanmark_profiles SET display_name = ? WHERE license_id = ?",
+      'Open <Name & Friends> "preview"',
+      LICENSE.emoji,
+    );
+    const open = await request("/a/emoji-short", {
+      headers: { "user-agent": "Twitterbot/1.0" },
+    }, crawlerEnv);
+    const openHtml = await open.text();
+    expect(open.status).toBe(200);
+    expect(open.headers.get("content-type")).toContain("text/html");
+    expect(open.headers.get("cache-control")).toBe("no-store");
+    expect(open.headers.get("vary")).toBe("user-agent");
+    expect(open.headers.get("x-robots-tag")).toBe("noindex, nofollow");
+    expect(openHtml).toContain("😀🏻 | fanmark.id");
+    expect(openHtml).toContain("Open &lt;Name &amp; Friends&gt; &quot;preview&quot;");
+    expect(openHtml).not.toContain('Open <Name & Friends> "preview"');
+    expect(openHtml).toContain("https://api.example.test/a/emoji-short");
+    expect(openHtml).toContain("https://api.example.test/api/ogp-image?");
+
+    const browserAssets = {
+      fetch: async (assetRequest: Request) => new URL(assetRequest.url).pathname === "/index.html"
+        ? new Response("spa app shell", { status: 200 })
+        : new Response(null, { status: 404 }),
+    } as unknown as NonNullable<Env["ASSETS"]>;
+    const emojiPath = `/${encodeURIComponent("😀🏻")}`;
+    const emojiCrawler = await request(emojiPath, {
+      headers: { "user-agent": "Twitterbot/1.0" },
+    }, crawlerEnv);
+    const emojiHtml = await emojiCrawler.text();
+    expect(emojiCrawler.status).toBe(200);
+    expect(emojiHtml).toContain("😀🏻 | fanmark.id");
+    expect(emojiHtml).toContain("https://api.example.test/a/emoji-short");
+
+    const emojiBrowser = await request(emojiPath, {
+      headers: {
+        "user-agent": "Mozilla/5.0",
+        accept: "text/html,application/xhtml+xml",
+        "sec-fetch-mode": "navigate",
+      },
+    }, d1Environment({ ASSETS: browserAssets }));
+    expect(emojiBrowser.status).toBe(200);
+    expect(await emojiBrowser.text()).toBe("spa app shell");
+
+    await run(
+      "INSERT INTO fanmarks (id, short_id, user_input_fanmark, normalized_emoji, emoji_ids, normalized_emoji_ids, status) VALUES (?, ?, ?, ?, ?, ?, 'active')",
+      "2e2e2e2e-2e2e-4e2e-8e2e-2e2e2e2e2e2e",
+      "emoji-duplicate",
+      "😀🏻",
+      "😀🏻",
+      JSON.stringify([IDS.emojiTone]),
+      JSON.stringify([IDS.emojiBase]),
+    );
+    const duplicateEmoji = await request(emojiPath, {
+      headers: { "user-agent": "Twitterbot/1.0" },
+    }, crawlerEnv);
+    const duplicateHtml = await duplicateEmoji.text();
+    expect(duplicateEmoji.status).toBe(200);
+    expect(duplicateHtml).toContain("<title>fanmark.id</title>");
+    expect(duplicateHtml).not.toContain("/a/emoji-short");
+    expect(duplicateHtml).not.toContain("/a/emoji-duplicate");
+
+    const protectedProfile = await request("/a/protected-profile", {
+      headers: { "user-agent": "facebookexternalhit/1.1" },
+    }, crawlerEnv);
+    const protectedHtml = await protectedProfile.text();
+    expect(protectedProfile.status).toBe(200);
+    expect(protectedHtml).toContain("☀️ | fanmark.id");
+    expect(protectedHtml).not.toContain("Secret Name");
+    expect(protectedHtml).not.toContain("Secret Bio");
+
+    const missing = await request("/a/absent-ogp-test", {
+      headers: { "user-agent": "Googlebot/2.1" },
+    }, crawlerEnv);
+    expect(missing.status).toBe(200);
+    expect(missing.headers.get("cache-control")).toBe("no-store");
+    expect(await missing.text()).toContain("fanmark.id");
+
+    const browser = await request("/a/emoji-short", {
+      headers: {
+        "user-agent": "Mozilla/5.0",
+        accept: "text/html,application/xhtml+xml",
+        "sec-fetch-mode": "navigate",
+      },
+    }, d1Environment({ ASSETS: browserAssets }));
+    expect(browser.status).toBe(200);
+    expect(await browser.text()).toBe("spa app shell");
+  });
+
+  it("generates bounded, escaped SVG OGP images without a database read", async () => {
+    const imageUrl = new URL("/api/ogp-image", API_ORIGIN);
+    imageUrl.searchParams.set("emoji", "🌸&");
+    imageUrl.searchParams.set("display_name", "<img src=x onerror=alert(1)>");
+    const response = await request(`${imageUrl.pathname}${imageUrl.search}`, { method: "GET" });
+    const svg = await response.text();
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("image/svg+xml");
+    expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(svg).toContain("🌸&amp;");
+    expect(svg).toContain("&lt;img src=x onerror=alert(1)&gt;");
+    expect(svg).not.toContain("<img src=x");
+
+    const tooMany = new URL("/api/ogp-image", API_ORIGIN);
+    tooMany.searchParams.set("emoji", "123456");
+    const rejected = await request(`${tooMany.pathname}${tooMany.search}`);
+    expect(rejected.status).toBe(400);
+    expect(rejected.headers.get("cache-control")).toBe("no-store");
+  });
+
   it("serves the actual D1 entrypoint with CORS, no-store, and no auth forwarding", async () => {
     const response = await configuredWorker.default.fetch(new Request(`${API_ORIGIN}/api/fanmarks/access/short/short-latest`, {
       headers: {
@@ -452,7 +579,7 @@ describe("public fanmark access D1 contract", () => {
   it("fails closed for malformed or ambiguous emoji master mappings", async () => {
     const missing = await jsonRequest("/api/fanmarks/access/emoji", { emojiIds: ["deadbeef-dead-4eef-8eef-deadbeefdead"] });
     expect(missing.status).toBe(404);
-    await run(
+    await runMaster(
       "INSERT INTO emoji_master (id, emoji, codepoints) VALUES (?, ?, ?)",
       "1a1a1a1a-1a1a-41a1-81a1-1a1a1a1a1a1a",
       "duplicate base",

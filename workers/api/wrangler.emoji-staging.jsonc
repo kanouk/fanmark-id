@@ -1,0 +1,15 @@
+{
+  "name": "fanmark-emoji-master-staging",
+  "compatibility_date": "2026-09-18",
+  "account_id": "bfc2890741f0b3fb236e2d755b6c9adc",
+  "d1_databases": [
+    {
+      "binding": "FANMARK_DB",
+      "database_name": "fanmark-emoji-master-staging",
+      "database_id": "160376b0-bde6-4d5f-8969-96deb5ae1183",
+      "migrations_dir": "migrations",
+      "migrations_pattern": "migrations/000[0-6]_*.sql"
+    }
+  ],
+  "$schema": "./node_modules/wrangler/config-schema.json"
+}

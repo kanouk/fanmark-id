@@ -13,7 +13,8 @@ import process from "node:process";
 import { pathToFileURL } from "node:url";
 
 import { compileRowConverter } from "./row-conversion.mjs";
-import { convertSchema } from "./schema-convert.mjs";
+import { compileCredentialDescriptor, CREDENTIAL_SOURCE_RELATION } from "./credential-descriptor.mjs";
+import { convertSchema, SCHEMA_CONVERSION_VERSION } from "./schema-convert.mjs";
 import {
   SNAPSHOT_FORMAT_VERSION,
   ROW_ENVELOPE_VERSION,
@@ -30,6 +31,7 @@ import {
   catalogFingerprint,
   compareUtf8,
   compareUtf8Tuple,
+  validateSequenceStates,
   getPrimaryKeyInfo,
   getTableNames,
   rowRecordForEnvelope,
@@ -95,17 +97,30 @@ async function readPrivateJson(filePath, expectedMode = 0o600) {
 function assertManifestShape(manifest, expectedState) {
   if (!isPlainObject(manifest)) throw fail("invalid_manifest");
   const keys = [
-    "formatVersion", "state", "runId", "catalogFingerprint", "schemaConversionVersion",
+    "formatVersion", "state", "runId", "catalogFingerprint", "credentialDescriptorVersion",
+    "credentialDescriptorDigest", "credentialDescriptor", "schemaConversionVersion",
     "rowEnvelopeVersion", "schemaReportFingerprint", "schemaDeployable",
     "unresolvedGateCount", "sourceRole", "isolation", "readOnly", "tableCount", "tables", "reconciliation",
+    "sequenceStates",
   ];
   exactKeys(manifest, keys, "manifest_keys_invalid");
   if (manifest.formatVersion !== SNAPSHOT_FORMAT_VERSION) throw fail("manifest_format_invalid");
   if (manifest.state !== expectedState) throw fail("manifest_state_invalid", { actual: manifest.state, expected: expectedState });
   if (typeof manifest.runId !== "string" || manifest.runId.length < 8) throw fail("manifest_run_id_invalid");
   if (!/^[0-9a-f]{64}$/.test(manifest.catalogFingerprint) || !/^[0-9a-f]{64}$/.test(manifest.schemaReportFingerprint)) throw fail("manifest_fingerprint_invalid");
-  if (manifest.schemaConversionVersion !== 1 || manifest.rowEnvelopeVersion !== ROW_ENVELOPE_VERSION || typeof manifest.schemaDeployable !== "boolean" || !Number.isSafeInteger(manifest.unresolvedGateCount) || manifest.unresolvedGateCount < 0 || manifest.sourceRole !== "postgres" || manifest.isolation !== "repeatable read" || manifest.readOnly !== true || !Number.isSafeInteger(manifest.tableCount) || manifest.tableCount < 0 || !Array.isArray(manifest.tables)) throw fail("manifest_metadata_invalid");
+  if (manifest.schemaConversionVersion !== SCHEMA_CONVERSION_VERSION || manifest.rowEnvelopeVersion !== ROW_ENVELOPE_VERSION || typeof manifest.schemaDeployable !== "boolean" || !Number.isSafeInteger(manifest.unresolvedGateCount) || manifest.unresolvedGateCount < 0 || manifest.sourceRole !== "postgres" || manifest.isolation !== "repeatable read" || manifest.readOnly !== true || !Number.isSafeInteger(manifest.tableCount) || manifest.tableCount < 0 || !Array.isArray(manifest.tables)) throw fail("manifest_metadata_invalid");
   if (manifest.tableCount !== manifest.tables.length) throw fail("manifest_table_count_mismatch");
+  if (!Array.isArray(manifest.sequenceStates)) throw fail("manifest_sequence_states_invalid");
+  const credentialFields = [manifest.credentialDescriptorVersion, manifest.credentialDescriptorDigest, manifest.credentialDescriptor];
+  if (credentialFields.every((value) => value === null)) {
+    // Catalogs without the credential-bearing relation have no transform policy.
+  } else if (
+    !Number.isSafeInteger(manifest.credentialDescriptorVersion)
+    || !/^[0-9a-f]{64}$/.test(manifest.credentialDescriptorDigest ?? "")
+    || !isPlainObject(manifest.credentialDescriptor)
+  ) {
+    throw fail("manifest_credential_metadata_invalid");
+  }
   if (!isPlainObject(manifest.reconciliation)) throw fail("manifest_reconciliation_invalid");
   exactKeys(manifest.reconciliation, ["primaryKeys", "uniqueConstraints", "foreignKeys", "gates"], "manifest_reconciliation_keys_invalid");
   if (manifest.reconciliation.primaryKeys !== "verified" || manifest.reconciliation.uniqueConstraints !== "not_checked" || manifest.reconciliation.foreignKeys !== "not_checked" || !Array.isArray(manifest.reconciliation.gates) || manifest.reconciliation.gates.length === 0) throw fail("manifest_reconciliation_claim_invalid");
@@ -126,6 +141,27 @@ function validateTableManifest(entry, catalog, tableNames) {
   const expectedColumns = catalog.columns.filter((column) => column.table_name === entry.table).sort((left, right) => left.ordinal - right.ordinal).map((column) => column.column_name);
   if (JSON.stringify(entry.columns) !== JSON.stringify(expectedColumns) || JSON.stringify(entry.primaryKey) !== JSON.stringify(primaryKey.columns.map(({ name }) => name))) throw fail("table_manifest_columns_mismatch");
   return primaryKey;
+}
+
+function verifyCredentialBinding(manifest, catalog) {
+  const hasCredentialRelation = catalog.columns.some((column) => column?.table_name === CREDENTIAL_SOURCE_RELATION);
+  if (!hasCredentialRelation) {
+    if (manifest.credentialDescriptor !== null) throw fail("credential_descriptor_orphaned");
+    return null;
+  }
+  if (!isPlainObject(manifest.credentialDescriptor)) throw fail("credential_descriptor_missing");
+  let plan;
+  try {
+    plan = compileCredentialDescriptor({ catalog, descriptor: manifest.credentialDescriptor });
+  } catch (error) {
+    const code = typeof error?.code === "string" && /^[a-z0-9_]+$/.test(error.code)
+      ? error.code
+      : "credential_descriptor_invalid";
+    throw fail(code, error);
+  }
+  if (manifest.credentialDescriptorVersion !== plan.descriptorVersion) throw fail("credential_descriptor_version_mismatch");
+  if (manifest.credentialDescriptorDigest !== plan.descriptorDigest) throw fail("credential_descriptor_digest_mismatch");
+  return plan.descriptorDigest;
 }
 
 async function listDirectoryNames(directory) {
@@ -224,8 +260,11 @@ async function verifyArtifacts({ manifestPath, requireComplete }) {
   if (status.runId !== manifest.runId || status.catalogFingerprint !== manifest.catalogFingerprint || status.tableCount !== manifest.tableCount || status.completedTables !== manifest.tableCount) throw fail("status_manifest_mismatch");
   const catalog = await readPrivateJson(path.join(outputDir, SNAPSHOT_CATALOG_FILE));
   const schemaReport = await readPrivateJson(path.join(outputDir, SNAPSHOT_SCHEMA_REPORT_FILE));
+  validateSequenceStates(catalog, manifest.sequenceStates);
+  const credentialDescriptorDigest = verifyCredentialBinding(manifest, catalog);
   if (catalogFingerprint(catalog) !== manifest.catalogFingerprint || schemaReportFingerprint(schemaReport) !== manifest.schemaReportFingerprint) throw fail("catalog_or_report_digest_mismatch");
-  const convertedSchema = convertSchema(catalog);
+  const credentialDescriptor = manifest.credentialDescriptor ?? undefined;
+  const convertedSchema = convertSchema(catalog, credentialDescriptor === undefined ? {} : { credentialDescriptor });
   if (schemaReportFingerprint(convertedSchema.report) !== manifest.schemaReportFingerprint || convertedSchema.report.deployable !== manifest.schemaDeployable || convertedSchema.report.unresolvedGateCount !== manifest.unresolvedGateCount) throw fail("schema_report_claim_mismatch");
   const tableNames = getTableNames(catalog);
   if (tableNames.length !== manifest.tableCount || new Set(manifest.tables.map((entry) => entry.table)).size !== tableNames.length || [...new Set(manifest.tables.map((entry) => entry.table))].some((table) => !tableNames.includes(table))) throw fail("manifest_table_set_mismatch");
@@ -236,7 +275,7 @@ async function verifyArtifacts({ manifestPath, requireComplete }) {
   const seenFiles = new Set();
   for (const entry of tableEntries) {
     const primaryKey = validateTableManifest(entry, catalog, tableNames);
-    const converter = compileRowConverter(catalog, entry.table);
+    const converter = compileRowConverter(catalog, entry.table, credentialDescriptor === undefined ? {} : { credentialDescriptor });
     const result = await verifyRows({ outputDir, entry, converter, primaryKey });
     if (result.streamHash !== entry.streamHash || String(result.byteCount) !== entry.byteCount) throw fail("table_digest_mismatch");
     const claim = { table: entry.table, file: entry.file, columns: entry.columns, primaryKey: entry.primaryKey, rowCount: entry.rowCount, byteCount: entry.byteCount, streamHash: entry.streamHash };
@@ -256,6 +295,7 @@ async function verifyArtifacts({ manifestPath, requireComplete }) {
     tableCount: manifest.tableCount,
     schemaDeployable: manifest.schemaDeployable,
     unresolvedGateCount: manifest.unresolvedGateCount,
+    credentialDescriptorDigest,
   };
 }
 

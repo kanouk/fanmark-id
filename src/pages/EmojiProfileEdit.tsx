@@ -3,12 +3,14 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useEmojiProfile } from '@/hooks/useEmojiProfile';
+import type { EmojiProfileUpdates } from '@/hooks/useEmojiProfile';
 import { EmojiProfileForm } from '@/components/EmojiProfileForm';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, ArrowLeft, PenLine } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { LanguageToggle } from '@/components/LanguageToggle';
+import { getFanmarkProfileBackend } from '@/lib/fanmark-profile-api';
 
 export default function EmojiProfileEdit() {
   const { fanmarkId } = useParams<{ fanmarkId: string }>();
@@ -20,7 +22,7 @@ export default function EmojiProfileEdit() {
   const [licenseId, setLicenseId] = useState<string | null>(null);
   const [licenseLoading, setLicenseLoading] = useState(true);
 
-  const { profile, loading, updateProfile } = useEmojiProfile(licenseId!);
+  const { profile, loading, updateProfile } = useEmojiProfile(licenseId, fanmarkId);
 
   // Fetch license_id from fanmarkId
   useEffect(() => {
@@ -29,6 +31,11 @@ export default function EmojiProfileEdit() {
     const fetchLicenseId = async () => {
       setLicenseLoading(true);
       try {
+        if (getFanmarkProfileBackend() === 'worker') {
+          setLicenseId(fanmarkId);
+          return;
+        }
+
         const { data, error } = await supabase
           .from('fanmark_licenses')
           .select('id')
@@ -75,7 +82,7 @@ export default function EmojiProfileEdit() {
     }
   }, [user, navigate, location]);
 
-  const handleSave = async (data: any) => {
+  const handleSave = async (data: EmojiProfileUpdates) => {
     setIsSubmitting(true);
     try {
       await updateProfile(data);

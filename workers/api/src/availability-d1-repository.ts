@@ -8,7 +8,7 @@ import {
   type AvailabilityRepository,
   type AvailabilityResult,
 } from "./availability";
-import type { Env } from "./repository";
+import { selectD1Database, type Env } from "./repository";
 
 const MAX_IDS = 5;
 const SKIN_TONE_MODIFIERS = /[\u{1f3fb}-\u{1f3ff}]/gu;
@@ -16,6 +16,12 @@ const SKIN_TONE_MODIFIERS = /[\u{1f3fb}-\u{1f3ff}]/gu;
 interface EmojiMasterRow {
   id?: unknown;
   emoji?: unknown;
+}
+
+interface ActiveEmojiReleaseRow {
+  release_version?: unknown;
+  row_count?: unknown;
+  status?: unknown;
 }
 
 interface FanmarkRow {
@@ -36,7 +42,7 @@ interface BlockingLicenseRow {
 
 function assertSuccessfulD1Rows<T>(result: unknown): T[] {
   const runtimeResult = result as { success?: unknown; results?: unknown };
-  if (runtimeResult.success === false || !Array.isArray(runtimeResult.results)) {
+  if (runtimeResult.success !== true || !Array.isArray(runtimeResult.results)) {
     throw new AvailabilityUpstreamError();
   }
   return runtimeResult.results as T[];
@@ -91,8 +97,15 @@ function isValidIdList(emojiIds: string[]): boolean {
   );
 }
 
+export const AVAILABILITY_ACTIVE_RELEASE_SQL = `
+  SELECT i.release_version, i.row_count, i.status
+  FROM fanmark_emoji_master_active_release AS a
+  JOIN fanmark_emoji_master_release_imports AS i
+    ON i.release_version = a.release_version
+  WHERE a.singleton_id = 1
+`;
 export const AVAILABILITY_MASTER_SQL =
-  "SELECT id, emoji FROM emoji_master WHERE id IN (__ID_PLACEHOLDERS__)";
+  "SELECT id, emoji FROM fanmark_emoji_master_release_staging WHERE release_version = ? AND id IN (__ID_PLACEHOLDERS__)";
 export const AVAILABILITY_FANMARK_SQL =
   "SELECT id FROM fanmarks WHERE normalized_emoji = ? LIMIT 1";
 export const AVAILABILITY_TIER_SQL =
@@ -129,8 +142,9 @@ export function createD1AvailabilityRepository(
   env: Env,
   clock: AvailabilityClock = () => new Date(),
 ): AvailabilityRepository {
-  const database = env.FANMARK_DB;
-  if (!database) throw new AvailabilityConfigurationError();
+  const database = selectD1Database(env, "business");
+  const masterDatabase = selectD1Database(env, "master");
+  if (!database || !masterDatabase) throw new AvailabilityConfigurationError();
 
   return {
     async checkAvailability(emojiIds) {
@@ -138,15 +152,32 @@ export function createD1AvailabilityRepository(
       const normalizedIds = emojiIds.map((emojiId) => emojiId.toLowerCase());
 
       try {
+        const activeRelease = await masterDatabase
+          .prepare(AVAILABILITY_ACTIVE_RELEASE_SQL)
+          .first<ActiveEmojiReleaseRow>();
+        if (
+          !activeRelease ||
+          typeof activeRelease.release_version !== "string" ||
+          !/^[0-9a-f]{64}$/u.test(activeRelease.release_version) ||
+          activeRelease.status !== "ready" ||
+          typeof activeRelease.row_count !== "number" ||
+          !Number.isSafeInteger(activeRelease.row_count) ||
+          activeRelease.row_count < 1 ||
+          activeRelease.row_count > 10_000
+        ) {
+          throw new AvailabilityUpstreamError();
+        }
+
         const placeholders = normalizedIds.map(() => "?").join(", ");
-        const masterResult = await database
+        const masterResult = await masterDatabase
           .prepare(AVAILABILITY_MASTER_SQL.replace("__ID_PLACEHOLDERS__", placeholders))
-          .bind(...normalizedIds)
+          .bind(activeRelease.release_version, ...normalizedIds)
           .all<EmojiMasterRow>();
         const masterRows = assertSuccessfulD1Rows<EmojiMasterRow>(masterResult);
         const masterById = new Map<string, string>();
         for (const row of masterRows) {
           const id = assertUuid(row.id).toLowerCase();
+          if (masterById.has(id)) throw new AvailabilityUpstreamError();
           masterById.set(id, assertText(row.emoji));
         }
 
@@ -168,7 +199,7 @@ export function createD1AvailabilityRepository(
           .first<FanmarkRow>();
 
         if (!fanmark) {
-          const tierResult = await database
+          const tierResult = await masterDatabase
             .prepare(AVAILABILITY_TIER_SQL)
             .bind(classifyTier(normalizedIds))
             .first<TierRow>();

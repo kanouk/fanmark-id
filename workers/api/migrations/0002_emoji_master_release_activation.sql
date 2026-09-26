@@ -85,51 +85,54 @@ END;
 CREATE TRIGGER fanmark_emoji_active_release_insert_guard
 BEFORE INSERT ON fanmark_emoji_master_active_release
 BEGIN
-  SELECT CASE WHEN NEW.generation <> 1
-    THEN RAISE(ABORT, 'emoji_release_generation_conflict') END;
-  SELECT CASE WHEN COALESCE((
+  SELECT RAISE(ABORT, 'emoji_release_generation_conflict')
+    WHERE NEW.generation <> 1;
+  SELECT RAISE(ABORT, 'emoji_release_not_ready')
+    WHERE COALESCE((
     SELECT status FROM fanmark_emoji_master_release_imports
     WHERE release_version = NEW.release_version
-  ), '') <> 'ready'
-    THEN RAISE(ABORT, 'emoji_release_not_ready') END;
-  SELECT CASE WHEN (
+  ), '') <> 'ready';
+  SELECT RAISE(ABORT, 'emoji_release_row_count_mismatch')
+    WHERE (
     SELECT row_count FROM fanmark_emoji_master_release_imports
     WHERE release_version = NEW.release_version
   ) <> (
     SELECT count(*) FROM fanmark_emoji_master_release_staging
     WHERE release_version = NEW.release_version
-  ) THEN RAISE(ABORT, 'emoji_release_row_count_mismatch') END;
-  SELECT CASE WHEN NEW.action <> 'promotion' OR NEW.previous_release_version IS NOT NULL
-    THEN RAISE(ABORT, 'emoji_release_initial_activation_invalid') END;
+  );
+  SELECT RAISE(ABORT, 'emoji_release_initial_activation_invalid')
+    WHERE NEW.action <> 'promotion' OR NEW.previous_release_version IS NOT NULL;
 END;
 
 CREATE TRIGGER fanmark_emoji_active_release_update_guard
 BEFORE UPDATE ON fanmark_emoji_master_active_release
 BEGIN
-  SELECT CASE WHEN NEW.singleton_id <> OLD.singleton_id
-    THEN RAISE(ABORT, 'emoji_release_singleton_conflict') END;
-  SELECT CASE WHEN NEW.release_version = OLD.release_version
-    THEN RAISE(ABORT, 'emoji_release_same_version') END;
-  SELECT CASE WHEN NEW.previous_release_version IS NOT OLD.release_version
-    THEN RAISE(ABORT, 'emoji_release_previous_version_conflict') END;
-  SELECT CASE WHEN NEW.generation <> OLD.generation + 1
-    THEN RAISE(ABORT, 'emoji_release_generation_conflict') END;
-  SELECT CASE WHEN COALESCE((
+  SELECT RAISE(ABORT, 'emoji_release_singleton_conflict')
+    WHERE NEW.singleton_id <> OLD.singleton_id;
+  SELECT RAISE(ABORT, 'emoji_release_same_version')
+    WHERE NEW.release_version = OLD.release_version;
+  SELECT RAISE(ABORT, 'emoji_release_previous_version_conflict')
+    WHERE NEW.previous_release_version IS NOT OLD.release_version;
+  SELECT RAISE(ABORT, 'emoji_release_generation_conflict')
+    WHERE NEW.generation <> OLD.generation + 1;
+  SELECT RAISE(ABORT, 'emoji_release_not_ready')
+    WHERE COALESCE((
     SELECT status FROM fanmark_emoji_master_release_imports
     WHERE release_version = NEW.release_version
-  ), '') <> 'ready'
-    THEN RAISE(ABORT, 'emoji_release_not_ready') END;
-  SELECT CASE WHEN (
+  ), '') <> 'ready';
+  SELECT RAISE(ABORT, 'emoji_release_row_count_mismatch')
+    WHERE (
     SELECT row_count FROM fanmark_emoji_master_release_imports
     WHERE release_version = NEW.release_version
   ) <> (
     SELECT count(*) FROM fanmark_emoji_master_release_staging
     WHERE release_version = NEW.release_version
-  ) THEN RAISE(ABORT, 'emoji_release_row_count_mismatch') END;
-  SELECT CASE WHEN NEW.action = 'rollback' AND NOT EXISTS (
+  );
+  SELECT RAISE(ABORT, 'emoji_release_rollback_target_unknown')
+    WHERE NEW.action = 'rollback' AND NOT EXISTS (
     SELECT 1 FROM fanmark_emoji_master_release_activations
     WHERE to_version = NEW.release_version
-  ) THEN RAISE(ABORT, 'emoji_release_rollback_target_unknown') END;
+  );
 END;
 
 CREATE TRIGGER fanmark_emoji_active_release_no_delete

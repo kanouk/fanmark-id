@@ -44,6 +44,67 @@ through the generic importer, transform credentials, implement
 grace-to-expired, lottery, notification delivery, cron/Worker wiring, or
 remote D1 operation. Those remain separate #34 and #37 acceptance work.
 
+## Current full-catalog local rehearsal (2026-09-24)
+
+The source-shaped suite can now load a private, mode-`0600` readiness catalog
+outside the repository through `FANMARK_PRIVATE_SCHEMA_READINESS_CATALOG`. On
+the refreshed 2026-09-24 catalog, it regenerated the complete 40-table source
+DDL and 63 safe indexes in Miniflare, applied lifecycle, generation, and
+credential-transform extensions, then passed 14 Node checks (10 top-level,
+including four mandatory-effect failure subtests) using synthetic rows only.
+The successful run covers active-to-grace, independent lifecycle and
+access-generation updates, password-generation preservation, atomic rollback
+of required effects, lost-ACK recovery, stale candidate conflict, strict
+deadline boundary, and exact target-profile rejection of generic credential
+import. It also verifies and reads protected text before expiry, transitions
+that same license to grace, confirms the previous cookie and a new password
+verification both return 401, and reads back one access-generation increment
+with the password hash and password generation unchanged.
+
+This advances the full-catalog active-to-grace and local protected-access
+invalidation gates; it does not make the catalog deployable or complete the
+importer. Source RLS, views, functions, remaining constraints/indexes,
+transformed source rows, grace-to-expired/lottery, job delivery, deployed
+origin security, and remote business-D1 checks remain open. No remote DDL was
+applied.
+
+## Current bounded expiry extension (2026-09-25)
+
+The source-shaped finalizer now handles overdue `grace` licenses only when no
+lottery entry is pending. It claims each license against its incarnation and
+state/access generations, removes basic, redirect, messageboard, and password
+config projections, advances the access generation once, and commits the
+expired state, audit, outbox event, and durable run item in one D1 batch.
+Required-effect suppression rolls back the state and projection cleanup, and
+retry resumes without duplicate effects. Pending lottery entries are left in
+grace. The scheduled entrypoint shares its four-page invocation budget between
+active-to-grace and finalization. When a delayed cron creates a grace deadline
+already in the past, same-tick finalization is deferred to the next scheduled
+timestamp, matching the source operation order.
+
+The full 40-table synthetic source-profile suite passed 20 checks, including
+rollback when a config projection delete is suppressed and the two-tick
+delayed-cron case; `test:lifecycle-schema` passed 9/9,
+`test:license-expiry-scheduled` passed 8/8, Worker typecheck, targeted ESLint,
+and `git diff --check` passed. This remains a local proof. Lottery selection
+and winner issuance, transfer cleanup, notification delivery, live Cron,
+business-D1 schema application, and production cutover remain open. No remote
+business DDL or Cron setting was applied.
+
+## Full-profile rerun (2026-09-25)
+
+Re-ran `test:license-expiry-source` with the current private mode-0600
+readiness catalog explicitly selected. The 40-table source-shaped profile,
+lifecycle/generation/credential extensions, and synthetic expiry rows passed
+all 15 Node checks, including the full-profile import gate and protected-access
+readback. The rerun found one fixture-only collision: its 65 synthetic
+fanmarks reused the same empty `normalized_emoji_ids` value against the real
+source UNIQUE constraint. Each fixture fanmark now receives its own synthetic
+UUID array; the full-profile rerun then passed without skips. No source rows
+were read, no remote schema changed, and the generic importer still refuses
+credential-bearing snapshots. Grace-to-expired, lottery, transfer cleanup,
+notification delivery, and business-D1 operation remain open.
+
 ## Evidence and current mismatch
 
 The catalog converter translates the source `public.fanmark_licenses`,
@@ -508,10 +569,11 @@ all of the following against the catalog-shaped tables:
   outbox state is pending for delivery, and the source schema/import report
   remains bound to the target extension digest.
 
-This still does not prove grace-to-expired/lottery, notification delivery,
-source/Auth/Storage consistency, remote D1 limits, cron scheduling, or
-production cutover. Those remain separate gates with their own read-only or
-synthetic evidence.
+The current local proof covers grace-to-expired only when no pending lottery
+entry exists. It does not prove lottery selection and winner issuance,
+notification delivery, source/Auth/Storage consistency, remote D1 limits, live
+cron scheduling, or production cutover. Those remain separate gates with their
+own read-only or synthetic evidence.
 
 ## References
 

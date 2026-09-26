@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { loadFanmarkAvailability } from '@/lib/fanmark-availability';
+import { loadRecentFanmarks, mapRecentFanmarkRpcRows } from '@/lib/recent-fanmarks';
 import { useTranslation } from './useTranslation';
 import {
   canonicalizeEmojiString,
@@ -8,6 +9,10 @@ import {
   segmentEmojiSequence,
   stripSkinToneModifiers,
 } from '@/lib/emojiConversion';
+import { invokeFanmarkRegistration } from '@/lib/fanmark-registration-api';
+import { loadFanmarkSearchDetails } from '@/lib/fanmark-search-api';
+import { betterAuthClient, isBetterAuthEnabled } from '@/lib/auth-backend';
+import { useAuth } from './useAuth';
 
 export interface FanmarkSearchResult {
   id: string;
@@ -123,6 +128,7 @@ type UseFanmarkSearchOptions = {
 
 export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkSearchOptions) {
   const { t } = useTranslation();
+  const { user, loading: authLoading } = useAuth();
   const [result, setResult] = useState<FanmarkSearchResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [recentFanmarks, setRecentFanmarks] = useState<FanmarkSearchResult[]>([]);
@@ -133,10 +139,46 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
     return limited.trim();
   }, [searchQuery]);
 
-  // Fetch recent fanmarks on mount
-  useEffect(() => {
-    fetchRecentFanmarks();
+  const fetchRecentFanmarks = useCallback(async (signal?: AbortSignal) => {
+    try {
+      const recent = await loadRecentFanmarks({
+        limit: 6,
+        signal,
+        fallback: async () => {
+          const { data, error } = await supabase
+            .rpc('list_recent_fanmarks', { p_limit: 6 })
+            .abortSignal(signal ?? new AbortController().signal);
+          if (error) throw error;
+          return mapRecentFanmarkRpcRows(data);
+        },
+      });
+
+      if (signal?.aborted) return;
+      setRecentFanmarks(recent.map((fanmark) => ({
+        id: fanmark.fanmark_id ?? fanmark.id,
+        user_input_fanmark: fanmark.emoji,
+        display_fanmark: fanmark.emoji,
+        fanmark: fanmark.emoji,
+        emoji_ids: [],
+        normalized_emoji_ids: [],
+        normalized_emoji: '',
+        short_id: fanmark.short_id ?? '',
+        tier_level: 1,
+        status: 'not_available',
+      })));
+    } catch (error) {
+      if (signal?.aborted) return;
+      console.error('Error fetching recent fanmarks:', error);
+      setRecentFanmarks([]);
+    }
   }, []);
+
+  // Fetch recent fanmarks on mount and cancel the request when this screen unmounts.
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetchRecentFanmarks(controller.signal);
+    return () => controller.abort();
+  }, [fetchRecentFanmarks]);
 
   // Search when query changes
   useEffect(() => {
@@ -146,40 +188,6 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
       setResult(null);
     }
   }, [normalizedQuery, searchQuery]);
-
-  const fetchRecentFanmarks = async () => {
-    try {
-      const { data, error } = await supabase.rpc('list_recent_fanmarks', { p_limit: 6 });
-
-      if (error) {
-        console.error('Supabase error fetching recent fanmarks:', error);
-        throw error;
-      }
-      if (data) {
-        const fanmarksWithStatus: FanmarkSearchResult[] = (data as any[]).map((fanmark: any) => ({
-          id: fanmark.fanmark_id,
-          user_input_fanmark: fanmark.display_emoji,
-          display_fanmark: fanmark.display_emoji,
-          fanmark: fanmark.display_emoji,
-          emoji_ids: [],
-          normalized_emoji_ids: [],
-          normalized_emoji: '',
-          short_id: fanmark.fanmark_short_id,
-          tier_level: 1, // Default value since removed from schema
-          status: 'not_available', // All recent fanmarks are already taken
-          price_yen: undefined,
-          price_usd: undefined,
-          emoji_count: undefined,
-          error: undefined,
-          owner: undefined,
-        }));
-        setRecentFanmarks(fanmarksWithStatus);
-      }
-    } catch (error) {
-      console.error('Error fetching recent fanmarks:', error);
-      setRecentFanmarks([]);
-    }
-  };
 
   // Normalize emoji by removing skin tone modifiers
   const normalizeEmoji = (emoji: string): string => stripSkinToneModifiers(emoji);
@@ -235,9 +243,18 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
   const searchFanmarks = async (query: string, rawQuery: string) => {
     setLoading(true);
     try {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      let currentUserId = user?.id ?? null;
+      if (isBetterAuthEnabled() && authLoading) {
+        try {
+          currentUserId = (await betterAuthClient.getSession())?.user.id ?? null;
+        } catch {
+          // The detail API independently fails closed if Better Auth is unavailable.
+        }
+      } else if (!isBetterAuthEnabled()) {
+        const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+        currentUserId = supabaseUser?.id ?? null;
+      }
+
       const validation = validateEmojiInput(rawQuery);
       if (!validation.valid) {
         setResult({
@@ -306,23 +323,26 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
         return;
       }
 
-      const { data: fanmarkDetails, error: fanmarkDetailsError } = await supabase
-        .rpc('get_fanmark_complete_data', { fanmark_id_param: availability.fanmark_id } as { fanmark_id_param: string });
-
-      if (fanmarkDetailsError) {
-        console.error('Error fetching fanmark details:', fanmarkDetailsError);
-        throw fanmarkDetailsError;
-      }
-
-      const fanmarkData = Array.isArray(fanmarkDetails) && fanmarkDetails.length > 0
-        ? (fanmarkDetails[0] as unknown as FanmarkCompleteDataRow)
-        : null;
+      const fanmarkDetails = await loadFanmarkSearchDetails(availability.fanmark_id, {
+        fallback: async () => {
+          const { data, error } = await supabase.rpc(
+            'get_fanmark_complete_data',
+            { fanmark_id_param: availability.fanmark_id } as { fanmark_id_param: string },
+          );
+          if (error) throw error;
+          return data;
+        },
+      });
+      const fanmarkData = Array.isArray(fanmarkDetails)
+        ? (fanmarkDetails[0] as FanmarkCompleteDataRow | undefined) ?? null
+        : fanmarkDetails && typeof fanmarkDetails === 'object'
+          ? fanmarkDetails as FanmarkCompleteDataRow
+          : null;
 
       if (!fanmarkData) {
         throw new Error('Failed to load fanmark details');
       }
 
-      const currentUserId = user?.id || null;
       const isOwnedByCurrentUser = !!(currentUserId && fanmarkData.current_owner_id === currentUserId);
       const ownerInfo = fanmarkData.current_owner_id
         ? {
@@ -480,14 +500,16 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
         };
       }
 
-      const response = await supabase.functions.invoke<RegisterFanmarkResponse>('register-fanmark', {
-        body: { 
+      const registrationBody = {
           user_input_fanmark: emoji, 
           emoji_ids: emojiIds, 
           normalized_emoji_ids: normalizedEmojiIds,
           defaultFanmarkName: t('fanmarkSettings.summary.defaultName'),
-        }
-      });
+      };
+      const response = await invokeFanmarkRegistration(
+        registrationBody,
+        () => supabase.functions.invoke<RegisterFanmarkResponse>('register-fanmark', { body: registrationBody }),
+      );
 
       if (response.error) {
         return { success: false, error: response.error.message };
@@ -536,12 +558,21 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
 
       if (!availability.available && availability.fanmark_id) {
         // 詳細を参照して status を確認し、非アクティブ状態の場合は取得不可とする
-        const { data: fanmarkDetails } = await supabase
-          .rpc('get_fanmark_complete_data', { fanmark_id_param: availability.fanmark_id } as { fanmark_id_param: string });
-
-        const fanmarkData = Array.isArray(fanmarkDetails) && fanmarkDetails.length > 0
-          ? (fanmarkDetails[0] as unknown as FanmarkCompleteDataRow)
-          : null;
+        const fanmarkDetails = await loadFanmarkSearchDetails(availability.fanmark_id, {
+          fallback: async () => {
+            const { data, error } = await supabase.rpc(
+              'get_fanmark_complete_data',
+              { fanmark_id_param: availability.fanmark_id } as { fanmark_id_param: string },
+            );
+            if (error) throw error;
+            return data;
+          },
+        });
+        const fanmarkData = Array.isArray(fanmarkDetails)
+          ? (fanmarkDetails[0] as FanmarkCompleteDataRow | undefined) ?? null
+          : fanmarkDetails && typeof fanmarkDetails === 'object'
+            ? fanmarkDetails as FanmarkCompleteDataRow
+            : null;
 
         if (fanmarkData && fanmarkData.status !== 'active') {
           return false;
