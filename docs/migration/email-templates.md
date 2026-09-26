@@ -36,11 +36,15 @@ content digest and the seed SQL digest, compares every selected field after
 remote readback, and confirms the principal user-owned business tables remain
 empty. It prints row counts and hashes, never template text.
 
-Local Worker/client tests and typechecks pass. As of this checkpoint, the
-staging D1 seed and Worker deployment have not been applied: Wrangler rejected
-its saved credential with Cloudflare authentication error 10000, and the
-available browser consent session belonged to a different Cloudflare account.
-No email was sent. The next live step is to authenticate Wrangler as the
-Cloudflare account `bfc2890741f0b3fb236e2d755b6c9adc`, re-check the target D1
-baseline, apply the master seed, verify exact readback, and deploy the staging
-Worker/SPA.
+Local Worker/client tests and typechecks pass. On 2026-09-26, the checked-in
+seed rows were reconstructed in an isolated SQLite database and their
+normalized content matched the pinned source digest. After Wrangler identity
+matched the intended Cloudflare account and a remote baseline confirmed zero
+allowlisted template rows and zero core user-owned rows, the 16-row seed was
+applied to `fanmark-business-staging`. The verifier confirmed exact field
+readback, the source-content digest, the seed SQL digest, and zero user-owned
+rows. Staging Worker version `9b1f777e-76e1-4721-8408-1fd44145b4b0` now selects
+the D1 editor/template reader; root, robots, Auth health, and Auth capabilities
+return 200, while anonymous admin-session/template requests return 401. Signup,
+OAuth, and email delivery remain disabled; no message was sent and no user data,
+production route, or domain/DNS state changed.

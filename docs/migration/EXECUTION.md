@@ -1771,21 +1771,29 @@ Plan mutation, suspension, password-reset, and immediate-license-expiry
 controls remain disabled in Worker mode; migrate those routes and run an
 authenticated staging canary before calling user management complete.
 
-## Local auth email-template D1 slice (2026-09-26 JST)
+## Auth email-template D1 seed and staging rollout (2026-09-26 JST)
 
 Added the same-origin SPA adapter and MFA-gated D1 list/CAS editor for the four
 auth template types, plus Better Auth D1 lookup for verification and password
 reset. The runtime selects the user locale from `user_settings`, escapes D1
 copy for HTML, and fails closed when the selected D1 template is missing or
-inactive. The checked-in staging seed contains the 16 source master rows; the
-readback verifier compares every field against an allowlisted Supabase source
-snapshot and confirms core user-owned business tables are empty.
+inactive. The checked-in staging seed contains 16 allowlisted source master
+rows; the readback verifier compares every field with a private row manifest
+and confirms core user-owned business tables are empty.
 
 Auth email tests pass 7/7, email-admin D1 tests 4/4 including a concurrent CAS
-race, frontend contracts 3/3, and root/Worker typechecks pass. The seed passed
-an isolated SQLite execution check. Wrangler authentication currently fails
-with Cloudflare error 10000; its default browser session belonged to a
-different account, so no auth email rows were read from or written to remote
-D1, and no Worker deployment or email send occurred. Reauthenticate against
-the fanmark staging account before the remote baseline/seed/readback and paired
-Worker/SPA rollout.
+race, frontend contracts 3/3, and root/Worker typechecks pass. Wrangler identity
+matched the intended Cloudflare account. The remote baseline had zero rows in
+the four allowlisted template types and zero rows in the checked user-owned
+tables. Reconstructing the seed in isolated SQLite reproduced the pinned source
+content digest; the seed SQL digest also matched. Applying the seed wrote 16
+templates, and the remote verifier confirmed every selected field, all four
+types across four locales, and zero user-owned rows.
+
+The Cloudflare staging SPA build and Wrangler dry-run passed. Worker version
+`9b1f777e-76e1-4721-8408-1fd44145b4b0` is active at 100%. Read-only probes
+returned 200 for `/`, `/robots.txt`, `/api/auth/ok`, and
+`/api/auth/capabilities`; anonymous `/api/admin/session` and
+`/api/admin/email-templates` returned 401. The capability response keeps
+signup, email delivery, and social providers disabled. No email was sent, no
+user row was copied, and no production route or domain/DNS setting changed.

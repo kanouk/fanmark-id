@@ -1428,3 +1428,24 @@ the Stripe backend selector is unset. Read-only D1 metadata reported
 API or signing secret. This confirms staging schema and code deployment only;
 no Stripe API call, user data, production route, or custom domain/DNS setting
 was touched.
+
+## Auth email-template master seed and staging deployment (2026-09-26 JST)
+
+Wrangler identity matched Cloudflare account
+`bfc2890741f0b3fb236e2d755b6c9adc`. Read-only queries against
+`fanmark-business-staging` confirmed zero rows for the four allowlisted auth
+email-template types and zero rows in the checked user-owned tables. The
+checked-in 16-row seed was executed in isolated SQLite; its normalized content
+matched the pinned source digest. The seed SQL digest matched its pinned value.
+Applying the seed wrote 16 non-user master rows. The remote verifier compared
+every selected field and confirmed zero user settings, fanmarks, licenses,
+favorites, notifications, and notification events.
+
+Built and deployed Worker/Static Assets version
+`9b1f777e-76e1-4721-8408-1fd44145b4b0` to
+`https://fanmark-app-staging.fanmark-id.workers.dev`. Read-only probes returned
+200 for the root, robots, Better Auth health, and auth capabilities; anonymous
+admin-session and email-template requests returned 401. The capability
+response keeps signup, password reset, verification email, and social providers
+disabled. No email was sent; no user data, production routing, or domain/DNS
+setting changed.

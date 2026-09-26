@@ -39,7 +39,7 @@ cannot be recovered. The old/new systems must not dual-write business rows.
 ## Current staging state (2026-09-26 JST)
 
 `fanmark-app-staging` is deployed at 100% as version
-`bc5ad53e-5f08-492b-81fb-8046c9be9600` at
+`9b1f777e-76e1-4721-8408-1fd44145b4b0` at
 `https://fanmark-app-staging.fanmark-id.workers.dev`. The split business/Auth/
 master D1 bindings and two R2 buckets remain isolated to this workers.dev app.
 Recent, availability, public-access, auth, profile, owned-fanmark,
@@ -61,13 +61,14 @@ D1, not the complete application, full notification-source/channel parity, or
 business operation/security parity. No real user data, production routing, Stripe
 transaction, or domain/DNS setting was changed. Schema conversion remains
 `deployable: false` with 18 unresolved gates; real user-data and domain work
-stay in the final phases. The remote structural ledger is `0000` through
-`0007`; staging business D1 now also has the six Stripe ingress/extension
+stay in the final phases. The remote business migration ledger is `0000`
+through `0015`; staging business D1 also has the six Stripe ingress/extension
 tables, all empty, while Stripe selectors and secrets remain disabled. A
 workers.dev Cron is enabled every minute for the D1 notification processor;
 the lifecycle and Stripe handlers remain disabled by their unset selectors.
-The business baseline has 10 global notification rules and 40 localized
-in-app templates, four disabled availability rules, and two explicitly
+The business baseline has 10 global notification rules, 40 localized in-app
+templates, and 16 localized auth email templates (`signup`, `recovery`,
+`magiclink`, and `email_change`), four disabled availability rules, and two explicitly
 allowlisted public settings (`grace_period_days=1` and
 `max_emoji_characters=5`). User-owned
 business tables and Auth tables read back empty after the latest synthetic
@@ -89,9 +90,9 @@ Supabase public setting before deploy; no user data was written. It remains
 staging-only. Later deployed synthetic Cron canaries confirmed delivery for all
 10 migrated in-app rules plus the exercised return and transfer event paths;
 all generated canary rows were removed. Remaining unexercised notification
-event sources/channels, Stripe,
-signup/email/OAuth, recurring production fit, production routing, user-data
-import, and custom-domain/DNS migration are still open.
+event sources/channels, Stripe, signup and OAuth, email delivery, recurring
+production fit, production routing, user-data import, and custom-domain/DNS
+migration are still open.
 
 On 2026-09-26, a deployed workers.dev Cron canary completed the scheduled
 grace-expiry lottery against synthetic D1 rows. It verified the expired
@@ -138,7 +139,7 @@ See `docs/migration/license-expiry-proof.md` and
 | D1 role separation | Current worktree + APAC staging | `D1_TOPOLOGY=split` selects business `FANMARK_DB`, Better Auth `AUTH_DB`, and emoji/reference `MASTER_DB`, failing closed for missing bindings. Business staging has 40 source-shaped tables plus applied lifecycle/credential/access extensions; its application baseline contains 10/40 global notification masters, four disabled availability rules, and the two explicitly allowlisted public settings `grace_period_days=1` and `max_emoji_characters=5`. User-owned business/Auth rows are empty. The separate protected-access tables retain documented synthetic canary telemetry and license-incarnation tombstones. Master D1 has 3,944 canonical emoji rows and active release, with reference-master generation 2. The source refresh has 40 tables, 406 columns, 144 constraints, 139 indexes, 15 enum labels, 36 triggers, 77 policies, 58 functions, and one view. Snapshot format 4 fingerprints eight scopes and validates the reviewed event sequence state; conversion v4 still has 18 blocking gates and `deployable: false`. No real rows or live event sequence state were migrated. |
 | Lifecycle settings API | Current worktree + staging Worker/SPA | Public `GET /api/system/lifecycle` reads only the public `grace_period_days` row through split business D1; `PATCH /api/admin/system-settings/lifecycle` requires administrator role and current-session MFA. Supabase public value `1` was read-only verified and copied as one staging config row. Client 4/4, combined settings D1 9/9, full standard suites 30/30 and 10/10 pass. Live GET returns 200/no-store; anonymous PATCH returns 401. The shared staging Cron is active for notifications; `LICENSE_EXPIRY_BACKEND` remains unset, so the lifecycle handler is disabled. Authenticated admin browser flow remains unverified. See `docs/migration/lifecycle-settings-api.md`. |
 | Availability-rule administration | Current worktree + workers.dev staging | `AdminPatternRules` selects the MFA-protected D1 API only in staging. Four explicit source rules were seeded with `created_by=NULL`, remained disabled, and were read/edit/CAS-restored by the deployed TOTP canary. Worker tests 4/4 and frontend tests 5/5 pass. This does not move Stripe enforcement or other admin CRUD. See `docs/migration/availability-rules-admin-api.md`. |
-| Current app staging deployment | APAC `fanmark-app-staging` Worker + Static Assets | Current version `1b8c2bbe-c95d-4037-846a-9a7d67ba932b` at 100%; split D1 and both R2 bindings remain. Business migrations `0008`–`0013` are applied with no pending migration. `0013` adds only the owner-bound paid-plan change command table/indexes; the command table is empty. The staging SPA selects the plan-change Worker client; the server Stripe selector and all Stripe secrets remain absent, so `/api/billing/plan-change` returns 404. Read-only probes returned 200 for root, robots, and Better Auth health; `x-robots-tag` remains `noindex, nofollow`. The every-minute Cron remains for notification/Stripe dispatch; the separate daily lifecycle trigger is configured with its execution selector unset. No real user data, production routing, or domain/DNS changed. Signup/email/OAuth, remaining admin routes/event sources, Stripe sandbox/integrated acceptance, real user/Auth/object import, production routing, and domain/DNS remain open. |
+| Current app staging deployment | APAC `fanmark-app-staging` Worker + Static Assets | Current version `9b1f777e-76e1-4721-8408-1fd44145b4b0` at 100%; split D1 and both R2 bindings remain. Business migrations through `0015` are applied; the auth email-template change adds no DDL. The 16 localized auth email master rows are seeded in business D1 and readback-verified against the pinned content/seed digests. The staging SPA selects the D1 email-template editor and the Better Auth template reader. Read-only probes returned 200 for root, robots, Better Auth health, and auth capabilities; anonymous admin session/template requests return 401; `x-robots-tag` remains `noindex, nofollow`. Signup and email delivery remain disabled because delivery is not configured; OAuth providers remain unset. The every-minute Cron remains for notification/Stripe dispatch; the separate daily lifecycle trigger is configured with its execution selector unset. No real user data, production routing, or domain/DNS changed. Remaining admin routes/event sources, Stripe sandbox/integrated acceptance, real user/Auth/object import, production routing, and domain/DNS remain open. |
 | Lifecycle target schema | `01a1507`, `8034735` | Exact source/extension DDL and fingerprint consistency; actual 40-table catalog applied to empty local D1. No production rows. |
 | Credential incarnation authority | `7cf0fe6` | Missing retained authority is rejected by reads and final SQL; credential suite 19 passed. Isolated proof schema. |
 | Lifecycle/access-generation and protected-access integration | Current worktree + workers.dev staging | 24 triggers invalidate proofs on license/password and source-backed fanmark selector, basic/redirect/messageboard/profile changes. The Worker verifier reads the same 40-table source profile and checks descriptor-bound credential provenance. Dedicated D1 and full source-profile tests pass; the frontend contract is covered. Deployed synthetic settings/protected-access canary passed and cleaned all rows. The selectors are active on staging only. Real source password-format compatibility, Cloudflare CPU and multi-instance checks, deployed-origin security review, and full browser acceptance remain open. |
