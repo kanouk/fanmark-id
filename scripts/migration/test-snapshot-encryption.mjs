@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -95,6 +96,53 @@ test("seals every snapshot artifact and opens only after AES-GCM and snapshot ve
     const restoredManifest = JSON.parse(await fs.readFile(opened.manifestPath, "utf8"));
     const restoredRowFile = path.join(restoredDir, restoredManifest.tables.find((entry) => entry.file.startsWith("tables/")).file);
     assert.equal((await fs.readFile(restoredRowFile, "utf8")).includes(SYNTHETIC_SECRET), true);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test("restores a persisted encrypted snapshot in a fresh process and removes plaintext", async () => {
+  const root = await tempRoot();
+  const bundleDir = path.join(root, "persisted-bundle");
+  const restoredDir = path.join(root, "fresh-process-restore");
+  const encryptionKey = Buffer.from("687abf420c0a394a27044567499d6f8266c9370af28fd4a1f1c687eb72e6c5a9", "hex");
+  const catalog = testCatalog();
+  try {
+    await exportEncryptedSnapshot({ catalog, bundleDir, encryptionKey, session: testSession(catalog) });
+    const encryptionModule = new URL("./snapshot-encryption.mjs", import.meta.url).href;
+    const verifierModule = new URL("./snapshot-verify.mjs", import.meta.url).href;
+    const childScript = [
+      `import { openSnapshotBundle, readSnapshotEncryptionKey } from ${JSON.stringify(encryptionModule)};`,
+      `import { verifySnapshot } from ${JSON.stringify(verifierModule)};`,
+      `import { promises as fs } from "node:fs";`,
+      `import path from "node:path";`,
+      `const outputDir = process.env.SNAPSHOT_OUTPUT_DIR;`,
+      `const opened = await openSnapshotBundle({ bundleDir: process.env.SNAPSHOT_BUNDLE_DIR, outputDir, encryptionKey: readSnapshotEncryptionKey() });`,
+      `const verification = await verifySnapshot(opened.manifestPath);`,
+      `if (verification.valid !== true) throw new Error("restored_snapshot_invalid");`,
+      `const manifest = JSON.parse(await fs.readFile(opened.manifestPath, "utf8"));`,
+      `const rowFile = manifest.tables.find((entry) => entry.file.startsWith("tables/"))?.file;`,
+      `if (!rowFile) throw new Error("restored_snapshot_row_missing");`,
+      `const rowBytes = await fs.readFile(path.join(outputDir, rowFile));`,
+      `if (!rowBytes.includes(Buffer.from(${JSON.stringify(SYNTHETIC_SECRET)}))) throw new Error("restored_synthetic_marker_missing");`,
+      `console.log(JSON.stringify({ valid: true, fileCount: opened.fileCount, markerVerified: true }));`,
+      `await fs.rm(outputDir, { recursive: true, force: true });`,
+    ].join("\n");
+    const child = spawnSync(process.execPath, ["--input-type=module", "--eval", childScript], {
+      env: {
+        ...process.env,
+        FANMARK_SNAPSHOT_KEY_B64: encryptionKey.toString("base64"),
+        SNAPSHOT_BUNDLE_DIR: bundleDir,
+        SNAPSHOT_OUTPUT_DIR: restoredDir,
+      },
+      encoding: "utf8",
+      maxBuffer: 64 * 1024,
+    });
+    assert.equal(child.error, undefined, "fresh-process restore could not start");
+    assert.equal(child.status, 0, `fresh-process restore failed: ${child.stderr}`);
+    assert.deepEqual(JSON.parse(child.stdout), { valid: true, fileCount: 5, markerVerified: true });
+    await assert.rejects(fs.lstat(restoredDir), (error) => error.code === "ENOENT");
+    assert.deepEqual((await fs.readdir(bundleDir)).sort(), ["bundle.header.json", "snapshot.aesgcm"]);
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }

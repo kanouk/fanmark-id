@@ -395,12 +395,18 @@ identity export, and a separately verified Storage export. Until those are
 bound to a reviewed operational freeze, the snapshot is a complete public-table
 database artifact only and must not be described as a complete system backup.
 
-The encrypted archive and synthetic restore mechanism now exist, but this does
-not yet prove an operational backup destination, independent key custody,
-authenticated access controls, retention/deletion policy, or restore from a
-persisted external artifact. No live export, real-user backup, Auth identity
-artifact, Storage artifact, or production restore is claimed by these local
-tests.
+The encrypted archive and synthetic restore mechanism now exist. A regression
+test persists a synthetic encrypted bundle to disk, restores and verifies it
+in a fresh Node process, checks the synthetic row marker, and removes the
+plaintext restore tree. A separate opt-in canary round-tripped the ciphertext
+through a dedicated APAC Standard staging R2 bucket, verified exact object
+hashes after download, restored the snapshot, then deleted both objects and
+read the bucket back as empty. That bucket is not bound to the app Worker and
+has neither r2.dev public access nor custom domains. These checks do not prove
+independent key custody, least-privilege destination credentials, retention or
+deletion policy, or a production backup destination. No live export, real-user
+backup, Auth identity artifact, Storage artifact, or production restore is
+claimed.
 
 ## Implementation and acceptance scope
 

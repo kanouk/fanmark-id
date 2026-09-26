@@ -2148,3 +2148,46 @@ preserved. The run used
 The focused notification-master D1 suite passes 6/6 and the smoke script
 passes `node --check`. No real user data, production resource, or domain/DNS
 setting was touched.
+
+## Persisted encrypted snapshot restore across processes (2026-09-27 JST)
+
+Added a synthetic migration-data regression that writes a valid encrypted
+snapshot bundle to a private on-disk directory, then starts a separate Node
+22.6 process with the test-only key supplied through its environment. The fresh
+process authenticates the ciphertext, verifies the snapshot manifest and row
+hashes, reads back the synthetic row marker, and deletes the plaintext restore
+directory before exiting. The parent verifies that the bundle still contains
+only `bundle.header.json` and `snapshot.aesgcm` and that the restored directory
+is gone. This proves local process-boundary recovery from persisted files; it
+does not prove external backup storage, independent key custody, destination
+ACLs, retention/deletion, or production restoration.
+
+`node --test scripts/migration/test-snapshot-encryption.mjs` passes 4/4. The
+full `npm run test:migration-data` suite passes 125/125 with no skips. No live
+Supabase rows, remote D1, R2 objects, production resource, or domain/DNS state
+was read or changed.
+
+## Private R2 destination round-trip for synthetic encrypted backup (2026-09-27 JST)
+
+Created the dedicated `fanmark-migration-backups-staging` R2 bucket in APAC
+with Standard storage class. Wrangler identity matched the migration account;
+the bucket was absent before creation. Readback confirms `r2.dev` public access
+is disabled, no custom domain is attached, the bucket is not bound to the app
+Worker, and object count/size returned to zero after the canary.
+
+Added the opt-in
+`scripts/migration/test-snapshot-r2-staging.mjs` round-trip. It refuses remote
+writes without the exact bucket and explicit staging flags, verifies account,
+bucket location/emptiness/privacy, builds a one-row synthetic snapshot, and
+uploads only the encrypted header and ciphertext. It downloads both objects,
+compares SHA-256, authenticates and verifies the restored snapshot, checks the
+synthetic row marker, removes the plaintext restore tree, deletes each R2
+object, and confirms missing-object reads plus a zero-byte bucket. The successful
+run reported two encrypted objects uploaded/read back and deleted, with one
+synthetic source row restored. No real source data was read or copied.
+
+This closes a synthetic staging destination round-trip only. Independent key
+custody, least-privilege destination credentials, retention/deletion policy,
+production backup destination, and real-user/Auth/Storage backup remain open.
+The R2 bucket is intentionally left empty and unbound. No Worker deployment,
+production resource, or domain/DNS setting changed.
