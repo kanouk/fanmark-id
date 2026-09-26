@@ -313,6 +313,7 @@ interface ConfiguredAuth {
   url: string;
   trustedOrigins: string[];
   emailBackend: string;
+  userStatusBackend: string;
   resendApiKey: string;
   resendFromEmail: string;
   socialProviders: ConfiguredSocialProviders;
@@ -323,6 +324,7 @@ interface CachedApplicationAuth {
   url: string;
   trustedOrigins: string[];
   emailBackend: string;
+  userStatusBackend: string;
   resendApiKey: string;
   resendFromEmail: string;
   socialProviders: ConfiguredSocialProviders;
@@ -365,6 +367,7 @@ function configuredAuth(env: Env): ConfiguredAuth | null {
       url: base.origin,
       trustedOrigins: [...origins],
       emailBackend: env.AUTH_EMAIL_BACKEND?.trim() ?? "",
+      userStatusBackend: env.AUTH_USER_STATUS_BACKEND?.trim() ?? "",
       resendApiKey: env.RESEND_API_KEY?.trim() ?? "",
       resendFromEmail: env.RESEND_FROM_EMAIL?.trim() ?? "",
       socialProviders: configuredSocialProviders(env),
@@ -385,6 +388,7 @@ function createApplicationAuth(
   const sameEmailConfiguration = cached?.emailBackend === config.emailBackend &&
     cached.resendApiKey === config.resendApiKey &&
     cached.resendFromEmail === config.resendFromEmail;
+  const sameUserStatusConfiguration = cached?.userStatusBackend === config.userStatusBackend;
   const sameSocialProviders = JSON.stringify(cached?.socialProviders) === JSON.stringify(config.socialProviders);
   if (
     requestState === null && signupCommandId === null && cached &&
@@ -392,6 +396,7 @@ function createApplicationAuth(
     cached.url === config.url &&
     sameTrustedOrigins &&
     sameEmailConfiguration &&
+    sameUserStatusConfiguration &&
     sameSocialProviders
   ) return cached.auth;
 
@@ -401,6 +406,7 @@ function createApplicationAuth(
       BETTER_AUTH_SECRET: config.secret,
       BETTER_AUTH_URL: config.url,
       AUTH_EMAIL_BACKEND: config.emailBackend,
+      AUTH_USER_STATUS_BACKEND: config.userStatusBackend,
       RESEND_API_KEY: config.resendApiKey,
       RESEND_FROM_EMAIL: config.resendFromEmail,
     },
@@ -431,6 +437,7 @@ function createApplicationAuth(
       url: config.url,
       trustedOrigins: [...config.trustedOrigins],
       emailBackend: config.emailBackend,
+      userStatusBackend: config.userStatusBackend,
       resendApiKey: config.resendApiKey,
       resendFromEmail: config.resendFromEmail,
       socialProviders: config.socialProviders,

@@ -10,7 +10,7 @@
       "database_name": "fanmark-auth-staging",
       "database_id": "2116bc43-32ab-4e3e-b762-9378df88b95f",
       "migrations_dir": "migrations",
-      "migrations_pattern": "migrations/0003_better_auth_core.sql",
+      "migrations_pattern": "migrations/000[378]_*.sql",
       "remote": true
     }
   ]

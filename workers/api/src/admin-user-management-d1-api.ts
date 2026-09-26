@@ -77,7 +77,8 @@ function cors(request: Request, env: Env, headers: Headers): boolean {
 }
 
 function selectedDatabases(env: Env): { business: D1Database; auth: D1Database } {
-  if (env.ADMIN_USER_MANAGEMENT_BACKEND?.trim() !== "d1" || env.D1_TOPOLOGY?.trim() !== "split") {
+  if (env.ADMIN_USER_MANAGEMENT_BACKEND?.trim() !== "d1" || env.D1_TOPOLOGY?.trim() !== "split" ||
+      env.AUTH_USER_STATUS_BACKEND?.trim() !== "d1") {
     fail("admin_user_management_unavailable", env.ADMIN_USER_MANAGEMENT_BACKEND ? 500 : 503);
   }
   const business = selectD1Database(env, "business");
@@ -248,14 +249,9 @@ async function readProfilesCore(
 
   if (request.search) {
     setStage("search_auth_emails");
-    let emailMatches;
-    try {
-      emailMatches = await auth.prepare(`
-        SELECT id FROM "user" WHERE instr(lower(email), ?) > 0 ORDER BY id ASC LIMIT ?
-      `).bind(request.search.toLocaleLowerCase(), MAX_FETCH + 1).all<{ id?: unknown }>();
-    } catch (error) {
-      throw error;
-    }
+    const emailMatches = await auth.prepare(`
+      SELECT id FROM "user" WHERE instr(lower(email), ?) > 0 ORDER BY id ASC LIMIT ?
+    `).bind(request.search.toLocaleLowerCase(), MAX_FETCH + 1).all<{ id?: unknown }>();
     if (!emailMatches.success || !Array.isArray(emailMatches.results) || emailMatches.results.length > MAX_FETCH) {
       fail("admin_user_dataset_too_large", 413);
     }
@@ -269,14 +265,9 @@ async function readProfilesCore(
     setStage("lookup_email_profiles");
     for (let index = 0; index < emailUserIds.length; index += 100) {
       const chunk = emailUserIds.slice(index, index + 100);
-      let byEmail;
-      try {
-        byEmail = await business.prepare(`SELECT user_id, username, display_name, plan_type, preferred_language, updated_at, created_at
-          FROM user_settings WHERE user_id IN (${chunk.map(() => "?").join(",")})${planSql}`)
-          .bind(...chunk, ...(request.plans ?? [])).all<Record<string, unknown>>();
-      } catch (error) {
-        throw error;
-      }
+      const byEmail = await business.prepare(`SELECT user_id, username, display_name, plan_type, preferred_language, updated_at, created_at
+        FROM user_settings WHERE user_id IN (${chunk.map(() => "?").join(",")})${planSql}`)
+        .bind(...chunk, ...(request.plans ?? [])).all<Record<string, unknown>>();
       if (!byEmail.success || !Array.isArray(byEmail.results)) {
         fail("admin_user_management_unavailable");
       }
@@ -314,6 +305,8 @@ interface AuthUserRow extends Record<string, unknown> {
   name: string;
   email: string;
   emailVerified: number;
+  banned: number;
+  banExpires: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -355,9 +348,17 @@ function validTimestamp(value: unknown): value is string {
   return typeof value === "string" && Number.isFinite(Date.parse(value));
 }
 
+function effectiveUserStatus(user: Pick<AuthUserRow, "banned" | "banExpires">, now: Date): "active" | "suspended" {
+  if ((user.banned !== 0 && user.banned !== 1) || !(user.banExpires === null || validTimestamp(user.banExpires))) {
+    fail("admin_user_management_unavailable");
+  }
+  if (user.banned === 0) return "active";
+  return user.banExpires === null || Date.parse(user.banExpires) > now.getTime() ? "suspended" : "active";
+}
+
 async function readAuthUsers(db: D1Database, ids: string[]): Promise<AuthUserRow[]> {
   return rowsByUserIds<AuthUserRow>(db, (placeholders) => `
-    SELECT id, name, email, emailVerified, createdAt, updatedAt
+    SELECT id, name, email, emailVerified, banned, banExpires, createdAt, updatedAt
     FROM "user" WHERE id IN (${placeholders})
   `, ids);
 }
@@ -431,13 +432,13 @@ function profilesToListedUsers(
   enterprise: Map<string, ListedUser["enterpriseSettings"]>,
   lastSignIns: Map<string, string>,
   request: ListRequest,
+  now: Date,
 ): ListedUser[] {
   const authById = new Map(authUsers.map((user) => [user.id, user]));
   return profiles.flatMap((profile) => {
     validateProfile(profile);
     const authUser = authById.get(profile.user_id as string);
     if (!authUser) return [];
-    if (request.status === "suspended") return [];
     const search = request.search?.toLocaleLowerCase();
     if (search && !(authUser.email ?? "").toLocaleLowerCase().includes(search) &&
         !(String(profile.display_name ?? "")).toLocaleLowerCase().includes(search) &&
@@ -445,7 +446,11 @@ function profilesToListedUsers(
     if (typeof authUser.id !== "string" || authUser.id !== profile.user_id ||
         !validNullableText(authUser.email, 320) || !validNullableText(authUser.name, 256) ||
         (authUser.emailVerified !== 0 && authUser.emailVerified !== 1) ||
+        (authUser.banned !== 0 && authUser.banned !== 1) ||
+        !(authUser.banExpires === null || validTimestamp(authUser.banExpires)) ||
         !validTimestamp(authUser.createdAt) || !validTimestamp(authUser.updatedAt)) fail("admin_user_management_unavailable");
+    const status = effectiveUserStatus(authUser, now);
+    if (request.status && request.status !== status) return [];
     return [{
       userId: authUser.id,
       email: authUser.email,
@@ -453,8 +458,8 @@ function profilesToListedUsers(
       emailVerified: authUser.emailVerified === 1,
       createdAt: authUser.createdAt,
       lastSignInAt: lastSignIns.get(authUser.id) ?? null,
-      status: "active" as const,
-      bannedUntil: null,
+      status,
+      bannedUntil: status === "suspended" ? authUser.banExpires : null,
       displayName: profile.display_name as string | null,
       username: profile.username as string,
       planType: profile.plan_type as string,
@@ -488,7 +493,7 @@ async function listUsers(
   ]);
   let assembled: ListedUser[];
   try {
-    assembled = profilesToListedUsers(profiles, authUsers, licenseCounts, enterprise, lastSignIns, input);
+    assembled = profilesToListedUsers(profiles, authUsers, licenseCounts, enterprise, lastSignIns, input, now);
   } catch (error) {
     logAdminUserManagementStageFailure("assemble_user_list", error);
     throw error;
@@ -575,6 +580,85 @@ async function updateUserPlan(
   }, 200, headers);
 }
 
+interface UpdateUserStatusRequest {
+  userId: string;
+  suspend: boolean;
+  reason: string | null;
+  bannedUntil: string | null;
+}
+
+function parseUpdateUserStatusRequest(value: unknown, pathUserId: string, now: Date): UpdateUserStatusRequest {
+  if (!isRecord(value) || Object.keys(value).some((key) =>
+    !["userId", "suspend", "reason", "bannedUntil"].includes(key)) ||
+      value.userId !== pathUserId || typeof value.suspend !== "boolean") {
+    fail("invalid_request", 400);
+  }
+  const reason = value.reason === undefined || value.reason === null ? null : value.reason;
+  if (!(reason === null || (typeof reason === "string" && reason.length <= 2000))) fail("invalid_request", 400);
+  let bannedUntil: string | null = null;
+  if (value.suspend) {
+    if (value.bannedUntil === undefined || value.bannedUntil === null) {
+      const defaultEnd = new Date(now);
+      defaultEnd.setFullYear(defaultEnd.getFullYear() + 5);
+      bannedUntil = defaultEnd.toISOString();
+    } else if (typeof value.bannedUntil === "string" && validTimestamp(value.bannedUntil) &&
+        Date.parse(value.bannedUntil) > now.getTime()) {
+      bannedUntil = new Date(value.bannedUntil).toISOString();
+    } else {
+      fail("invalid_request", 400);
+    }
+  } else if (value.bannedUntil !== undefined && value.bannedUntil !== null) {
+    fail("invalid_request", 400);
+  }
+  return { userId: pathUserId, suspend: value.suspend, reason, bannedUntil };
+}
+
+async function updateUserStatus(
+  input: UpdateUserStatusRequest,
+  auth: D1Database,
+  authorization: { userId: string; sessionId: string },
+  now: Date,
+  headers: Headers,
+): Promise<Response> {
+  if (input.suspend && input.userId === authorization.userId) fail("cannot_suspend_self", 400);
+  const existing = await auth.prepare('SELECT id, banned, banExpires FROM "user" WHERE id = ? LIMIT 1')
+    .bind(input.userId).first<Record<string, unknown>>();
+  if (!existing || existing.id !== input.userId) fail("user_not_found", 404);
+  const nextBanned = input.suspend ? 1 : 0;
+  const nextReason = input.suspend ? input.reason : null;
+  const nextExpires = input.suspend ? input.bannedUntil : null;
+  const updatedAt = now.toISOString();
+  const auditId = crypto.randomUUID();
+  const action = input.suspend ? "ADMIN_SUSPEND_USER" : "ADMIN_RESTORE_USER";
+  const statements = [
+    auth.prepare(`UPDATE "user" SET "banned" = ?, "banReason" = ?, "banExpires" = ?, "updatedAt" = ?
+      WHERE "id" = ? AND ("banned" IS NOT ? OR "banReason" IS NOT ? OR "banExpires" IS NOT ?)`)
+      .bind(nextBanned, nextReason, nextExpires, updatedAt, input.userId, nextBanned, nextReason, nextExpires),
+    auth.prepare(`INSERT INTO "adminUserStatusAudit"
+        ("id", "actorUserId", "targetUserId", "action", "reason", "banExpires", "createdAt")
+      SELECT ?, ?, ?, ?, ?, ?, ? WHERE changes() = 1`)
+      .bind(auditId, authorization.userId, input.userId, action, input.reason, input.bannedUntil, updatedAt),
+    auth.prepare(`DELETE FROM "session" WHERE "userId" = ? AND ? = 1
+      AND EXISTS (SELECT 1 FROM "adminUserStatusAudit" WHERE "id" = ?)`)
+      .bind(input.userId, input.suspend ? 1 : 0, auditId),
+  ];
+  const results = await auth.batch(statements);
+  if (results.length !== statements.length || results.some((result) => !result.success)) fail("admin_user_management_unavailable");
+  const updated = results[0]?.meta.changes === 1;
+  const current = await auth.prepare('SELECT "banned", "banExpires" FROM "user" WHERE "id" = ? LIMIT 1')
+    .bind(input.userId).first<Record<string, unknown>>();
+  if (!current) fail("user_not_found", 404);
+  const status = effectiveUserStatus({ banned: current.banned as number, banExpires: current.banExpires as string | null }, now);
+  return json({
+    success: true,
+    updated,
+    userId: input.userId,
+    status,
+    bannedUntil: status === "suspended" ? current.banExpires : null,
+    updatedAt,
+  }, 200, headers);
+}
+
 function safeMetadata(value: unknown): Record<string, unknown> {
   if (value === null || value === undefined) return {};
   if (typeof value !== "string" || value.length > 16 * 1024) fail("admin_user_management_unavailable");
@@ -601,7 +685,7 @@ async function getUserDetail(
   headers: Headers,
 ): Promise<Response> {
   const [authUser, profile] = await Promise.all([
-    auth.prepare(`SELECT id, name, email, emailVerified, createdAt, updatedAt, twoFactorEnabled
+    auth.prepare(`SELECT id, name, email, emailVerified, createdAt, updatedAt, twoFactorEnabled, banned, banExpires
       FROM "user" WHERE id = ? LIMIT 1`).bind(userId).first<Record<string, unknown>>(),
     business.prepare(`SELECT user_id, username, display_name, avatar_url, plan_type, preferred_language, created_at, updated_at
       FROM user_settings WHERE user_id = ? LIMIT 1`).bind(userId).first<Record<string, unknown>>(),
@@ -610,10 +694,12 @@ async function getUserDetail(
   validateProfile({ ...profile, user_id: profile.user_id, plan_type: profile.plan_type });
   if (authUser.id !== userId || !validNullableText(authUser.email, 320) || !validNullableText(authUser.name, 256) ||
       (authUser.emailVerified !== 0 && authUser.emailVerified !== 1) || !validTimestamp(authUser.createdAt) ||
-      !validTimestamp(authUser.updatedAt) || (authUser.twoFactorEnabled !== 0 && authUser.twoFactorEnabled !== 1)) {
+      !validTimestamp(authUser.updatedAt) || (authUser.twoFactorEnabled !== 0 && authUser.twoFactorEnabled !== 1) ||
+      (authUser.banned !== 0 && authUser.banned !== 1) || !(authUser.banExpires === null || validTimestamp(authUser.banExpires))) {
     fail("admin_user_management_unavailable");
   }
-  const [lastSignIns, factorsResult, enterprise, summaryRows, fanmarkRows, auditRows] = await Promise.all([
+  const status = effectiveUserStatus({ banned: authUser.banned, banExpires: authUser.banExpires }, now);
+  const [lastSignIns, factorsResult, enterprise, summaryRows, fanmarkRows, auditRows, statusAuditRows] = await Promise.all([
     readLastSignIns(auth, [userId]),
     auth.prepare(`SELECT "verified" FROM "twoFactor" WHERE "userId" = ? LIMIT 3`).bind(userId).all<Record<string, unknown>>(),
     business.prepare(`SELECT custom_fanmarks_limit, custom_pricing, notes, updated_at
@@ -629,11 +715,18 @@ async function getUserDetail(
     business.prepare(`SELECT id, user_id, action, resource_type, resource_id, metadata, created_at
       FROM audit_logs WHERE user_id = ? OR resource_id = ?
       ORDER BY created_at DESC, id ASC LIMIT 20`).bind(userId, userId).all<Record<string, unknown>>(),
+    auth.prepare(`SELECT "id", "actorUserId" AS user_id, "action", 'user' AS resource_type,
+        "targetUserId" AS resource_id,
+        json_object('reason', "reason", 'bannedUntil', "banExpires") AS metadata,
+        "createdAt" AS created_at
+      FROM "adminUserStatusAudit" WHERE "targetUserId" = ?
+      ORDER BY "createdAt" DESC, "id" ASC LIMIT 20`).bind(userId).all<Record<string, unknown>>(),
   ]);
   if (!factorsResult.success || !Array.isArray(factorsResult.results) || factorsResult.results.length > 2 ||
       !summaryRows.success || !Array.isArray(summaryRows.results) ||
       !fanmarkRows.success || !Array.isArray(fanmarkRows.results) || fanmarkRows.results.length > 25 ||
-      !auditRows.success || !Array.isArray(auditRows.results) || auditRows.results.length > 20) fail("admin_user_management_unavailable");
+      !auditRows.success || !Array.isArray(auditRows.results) || auditRows.results.length > 20 ||
+      !statusAuditRows.success || !Array.isArray(statusAuditRows.results) || statusAuditRows.results.length > 20) fail("admin_user_management_unavailable");
 
   const licenseSummary = { active: 0, grace: 0, expired: 0, total: 0 };
   for (const row of summaryRows.results) {
@@ -661,7 +754,7 @@ async function getUserDetail(
       accessType: row.access_type,
     };
   });
-  const recentAuditLogs = auditRows.results.map((row) => {
+  const recentAuditLogs = [...auditRows.results, ...statusAuditRows.results].map((row) => {
     if (typeof row.id !== "string" || !UUID.test(row.id) || !(row.user_id === null || typeof row.user_id === "string") ||
         typeof row.action !== "string" || row.action.length > 256 || typeof row.resource_type !== "string" || row.resource_type.length > 128 ||
         !validNullableText(row.resource_id, 128) || !validTimestamp(row.created_at)) fail("admin_user_management_unavailable");
@@ -674,7 +767,7 @@ async function getUserDetail(
       metadata: safeMetadata(row.metadata),
       createdAt: row.created_at,
     };
-  });
+  }).sort((left, right) => right.createdAt.localeCompare(left.createdAt) || left.id.localeCompare(right.id)).slice(0, 20);
   let enterpriseSettings: Record<string, unknown> | null = null;
   if (enterprise) {
     if (!(enterprise.custom_fanmarks_limit === null || (typeof enterprise.custom_fanmarks_limit === "number" && Number.isSafeInteger(enterprise.custom_fanmarks_limit))) ||
@@ -697,8 +790,8 @@ async function getUserDetail(
       createdAt: authUser.createdAt,
       lastSignInAt: lastSignIns.get(userId) ?? null,
       phone: null,
-      status: "active",
-      bannedUntil: null,
+      status,
+      bannedUntil: status === "suspended" ? authUser.banExpires : null,
       factors,
     },
     profile: {
@@ -730,8 +823,9 @@ export async function handleAdminUserManagementRequest(
   const headers = new Headers();
   if (!cors(request, env, headers)) return json({ error: "forbidden_origin" }, 403);
   const planMatch = /^\/api\/admin\/users\/([^/]+)\/plan$/u.exec(url.pathname);
+  const statusMatch = /^\/api\/admin\/users\/([^/]+)\/status$/u.exec(url.pathname);
   const detailMatch = /^\/api\/admin\/users\/([^/]+)$/u.exec(url.pathname);
-  const userId = planMatch?.[1] ?? detailMatch?.[1] ?? null;
+  const userId = planMatch?.[1] ?? statusMatch?.[1] ?? detailMatch?.[1] ?? null;
   if (url.pathname !== API_PATH && userId === null) return json({ error: "not_found" }, 404, headers);
   if (userId !== null && (!userId || userId.length > 128 || !/^[A-Za-z0-9_-]+$/u.test(userId))) return json({ error: "not_found" }, 404, headers);
   if (request.method === "OPTIONS") { headers.set("allow", "POST, OPTIONS"); return new Response(null, { status: 204, headers }); }
@@ -747,6 +841,11 @@ export async function handleAdminUserManagementRequest(
       return await updateUserPlan(
         parseUpdatePlanRequest(body, userId), business, auth, authorization, dependencies.now?.() ?? new Date(), headers,
       );
+    }
+    if (statusMatch && userId !== null) {
+      const now = dependencies.now?.() ?? new Date();
+      const body = await readBody(request);
+      return await updateUserStatus(parseUpdateUserStatusRequest(body, userId, now), auth, authorization, now, headers);
     }
     if (userId !== null) {
       const body = await readBody(request);

@@ -7,6 +7,7 @@ export interface Env {
   AVATARS_BUCKET?: R2Bucket;
   COVER_IMAGES_BUCKET?: R2Bucket;
   AUTH_BACKEND?: string;
+  AUTH_USER_STATUS_BACKEND?: string;
   AUTH_SOCIAL_BACKEND?: string;
   GOOGLE_OAUTH_CLIENT_ID?: string;
   GOOGLE_OAUTH_CLIENT_SECRET?: string;

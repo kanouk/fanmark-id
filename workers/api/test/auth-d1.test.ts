@@ -5,6 +5,7 @@ import emojiMasterSchemaSql from "../migrations/0000_emoji_master.sql?raw";
 import emojiReleaseSchemaSql from "../migrations/0001_emoji_master_release_staging.sql?raw";
 import emojiActivationSchemaSql from "../migrations/0002_emoji_master_release_activation.sql?raw";
 import schemaSql from "../migrations/0003_better_auth_core.sql?raw";
+import suspensionSchemaSql from "../migrations/0008_auth_user_suspension.sql?raw";
 import referenceMasterSchemaSql from "../migrations/0004_reference_master_releases.sql?raw";
 import emojiAdminGuardsSchemaSql from "../migrations/0005_emoji_master_admin_guards.sql?raw";
 import { handleRequest } from "../src";
@@ -251,6 +252,8 @@ async function grantSyntheticAdminRoleAndMfa(sessionId: string): Promise<void> {
 
 async function resetFixture(): Promise<void> {
   if (!database) throw new Error("AUTH_DB binding is unavailable");
+  await database.prepare('DELETE FROM "adminUserStatusAudit" WHERE "targetUserId" IN (?, ?)')
+    .bind(verifiedUserId, unverifiedUserId).run();
   await database.batch([
     database.prepare('DELETE FROM "user" WHERE "id" IN (?, ?)').bind(verifiedUserId, unverifiedUserId),
   ]);
@@ -284,6 +287,10 @@ beforeAll(async () => {
   if (!database) throw new Error("AUTH_DB binding is unavailable");
   await database.batch(
     splitMigrationStatements(schemaSql).map((statement) => database.prepare(statement)),
+  );
+  await database.batch(
+    splitMigrationStatements(suspensionSchemaSql.replace(/^--.*(?:\r?\n|$)/gmu, ""))
+      .map((statement) => database.prepare(statement)),
   );
   if (!masterDatabase) throw new Error("MASTER_DB binding is unavailable");
   const masterMigrations = [
@@ -359,6 +366,43 @@ describe("Better Auth through the application Worker", () => {
     expect(unverified.status).toBe(403);
     expect(await sessionCount(verifiedUserId)).toBe(0);
     expect(await sessionCount(unverifiedUserId)).toBe(0);
+  });
+
+  it("rejects new sign-ins while suspended and does not create a session", async () => {
+    await database!.prepare('UPDATE "user" SET "banned" = 1, "banReason" = ?, "banExpires" = ? WHERE "id" = ?')
+      .bind("synthetic suspension", new Date(Date.now() + 60_000).toISOString(), verifiedUserId).run();
+    const response = await authRequest("/sign-in/email", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: verifiedEmail, password }),
+    });
+    expect(response.status).toBe(403);
+    expect((await response.json() as { code?: string }).code).toBe("BANNED_USER");
+    expect(await sessionCount(verifiedUserId)).toBe(0);
+  });
+
+  it("clears an expired suspension before allowing sign-in", async () => {
+    await database!.prepare('UPDATE "user" SET "banned" = 1, "banReason" = ?, "banExpires" = ? WHERE "id" = ?')
+      .bind("expired synthetic suspension", "2020-01-01T00:00:00.000Z", verifiedUserId).run();
+    const response = await authRequest("/sign-in/email", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: verifiedEmail, password }),
+    });
+    expect(response.status).toBe(200);
+    expect(await sessionCount(verifiedUserId)).toBe(1);
+    expect(await database!.prepare('SELECT "banned", "banReason", "banExpires" FROM "user" WHERE "id" = ?')
+      .bind(verifiedUserId).first()).toEqual({ banned: 0, banReason: null, banExpires: null });
+  });
+
+  it("uses the Auth D1 session trigger to close the sign-in/suspension race", async () => {
+    await database!.prepare('UPDATE "user" SET "banned" = 1, "banExpires" = ? WHERE "id" = ?')
+      .bind(new Date(Date.now() + 60_000).toISOString(), verifiedUserId).run();
+    await expect(database!.prepare(`INSERT INTO "session" ("id", "token", "userId", "expiresAt", "createdAt", "updatedAt")
+      VALUES (?, ?, ?, ?, ?, ?)`)
+      .bind("race-session", "race-token", verifiedUserId, new Date(Date.now() + 60_000).toISOString(),
+        new Date().toISOString(), new Date().toISOString()).run()).rejects.toThrow(/BANNED_USER/u);
+    expect(await sessionCount(verifiedUserId)).toBe(0);
   });
 
   it("keeps invitation, email-delivery, and OAuth entry points closed", async () => {

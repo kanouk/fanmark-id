@@ -87,6 +87,15 @@ export interface AdminPlanUpdateResult {
   updatedAt: string;
 }
 
+export interface AdminUserStatusUpdateResult {
+  success: true;
+  updated: boolean;
+  userId: string;
+  status: "active" | "suspended";
+  bannedUntil: string | null;
+  updatedAt: string;
+}
+
 export class AdminUserManagementApiError extends Error {
   readonly kind: "configuration" | "http" | "invalid_response" | "network" | "timeout";
   readonly status?: number;
@@ -245,6 +254,17 @@ function parsePlanUpdate(value: unknown): AdminPlanUpdateResult {
   return value as unknown as AdminPlanUpdateResult;
 }
 
+function parseStatusUpdate(value: unknown): AdminUserStatusUpdateResult {
+  if (!isRecord(value) || !exactKeys(value, ["success", "updated", "userId", "status", "bannedUntil", "updatedAt"]) ||
+      value.success !== true || typeof value.updated !== "boolean" || typeof value.userId !== "string" ||
+      value.userId.length > 128 || (value.status !== "active" && value.status !== "suspended") ||
+      !nullableText(value.bannedUntil, 64) || !(value.bannedUntil === null || validTime(value.bannedUntil)) ||
+      !validTime(value.updatedAt) || (value.status === "active" && value.bannedUntil !== null)) {
+    throw new AdminUserManagementApiError("invalid_response");
+  }
+  return value as unknown as AdminUserStatusUpdateResult;
+}
+
 function endpoint(baseUrl: string, suffix = ""): URL {
   try {
     const url = buildRecentFanmarksApiUrl(baseUrl);
@@ -333,6 +353,13 @@ export function createAdminUserManagementApi(options: RequestOptions = {}) {
         throw new AdminUserManagementApiError("configuration");
       }
       return parsePlanUpdate(await request(`/${encodeURIComponent(input.userId)}/plan`, { ...input }, options));
+    },
+    async updateStatus(input: { userId: string; suspend: boolean; reason?: string | null }): Promise<AdminUserStatusUpdateResult> {
+      if (!input.userId || input.userId.length > 128 || !/^[A-Za-z0-9_-]+$/u.test(input.userId) ||
+          typeof input.suspend !== "boolean" || (input.reason !== undefined && input.reason !== null && input.reason.length > 2000)) {
+        throw new AdminUserManagementApiError("configuration");
+      }
+      return parseStatusUpdate(await request(`/${encodeURIComponent(input.userId)}/status`, { ...input }, options));
     },
   };
 }

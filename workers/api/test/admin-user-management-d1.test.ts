@@ -68,6 +68,7 @@ async function resetRows(): Promise<void> {
     business.prepare("DELETE FROM user_settings"),
   ]);
   await auth.batch([auth.prepare('DELETE FROM "twoFactor"'), auth.prepare('DELETE FROM "session"'), auth.prepare('DELETE FROM "user"')]);
+  await auth.prepare('DELETE FROM "adminUserStatusAudit"').run();
 
   await business.batch([
     business.prepare(`INSERT INTO user_settings
@@ -201,6 +202,89 @@ describe("D1 administrator user directory", () => {
     expect(audit?.count).toBe(2);
   });
 
+  it("suspends and restores an account atomically with session revocation and Auth audit", async () => {
+    const route = `/api/admin/users/${userA}/status`;
+    const suspended = await request(route, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ userId: userA, suspend: true, reason: "synthetic review" }),
+    });
+    expect(suspended.status).toBe(200);
+    expect(await suspended.json()).toMatchObject({
+      success: true,
+      updated: true,
+      userId: userA,
+      status: "suspended",
+      bannedUntil: "2031-09-26T12:34:56.000Z",
+    });
+    expect(await auth!.prepare('SELECT "banned", "banReason", "banExpires" FROM "user" WHERE id = ?')
+      .bind(userA).first()).toEqual({ banned: 1, banReason: "synthetic review", banExpires: "2031-09-26T12:34:56.000Z" });
+    expect(await auth!.prepare('SELECT id FROM "session" WHERE "userId" = ?').bind(userA).all()).toMatchObject({ results: [] });
+    expect(await auth!.prepare('SELECT "actorUserId", "targetUserId", "action", "reason" FROM "adminUserStatusAudit" WHERE "targetUserId" = ?')
+      .bind(userA).first()).toEqual({ actorUserId: "49999999-9999-4999-8999-999999999999", targetUserId: userA, action: "ADMIN_SUSPEND_USER", reason: "synthetic review" });
+
+    const suspendedList = await request("/api/admin/users", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ status: "suspended", page: 1, pageSize: 10 }),
+    });
+    expect((await suspendedList.json() as { data: Array<{ userId: string }> }).data.map((row) => row.userId)).toEqual([userA]);
+
+    const restored = await request(route, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ userId: userA, suspend: false, reason: "review complete" }),
+    });
+    expect(restored.status).toBe(200);
+    expect(await restored.json()).toMatchObject({ success: true, updated: true, status: "active", bannedUntil: null });
+    expect(await auth!.prepare('SELECT "banned", "banReason", "banExpires" FROM "user" WHERE id = ?')
+      .bind(userA).first()).toEqual({ banned: 0, banReason: null, banExpires: null });
+    expect(await auth!.prepare('SELECT COUNT(*) AS count FROM "adminUserStatusAudit" WHERE "targetUserId" = ?')
+      .bind(userA).first()).toEqual({ count: 2 });
+
+    const detail = await request(`/api/admin/users/${userA}`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: userA }),
+    });
+    expect((await detail.json() as { recentAuditLogs: Array<{ action: string }> }).recentAuditLogs.map((row) => row.action))
+      .toContain("ADMIN_SUSPEND_USER");
+  });
+
+  it("rolls back suspension and session revocation if the Auth audit insert fails", async () => {
+    await auth!.prepare(`CREATE TRIGGER reject_admin_user_status_audit BEFORE INSERT ON "adminUserStatusAudit"
+      BEGIN SELECT RAISE(ABORT, 'synthetic audit failure'); END`).run();
+    try {
+      const response = await request(`/api/admin/users/${userA}/status`, {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ userId: userA, suspend: true, reason: "synthetic failure" }),
+      });
+      expect(response.status).toBe(503);
+      expect(await auth!.prepare('SELECT "banned" FROM "user" WHERE id = ?').bind(userA).first())
+        .toEqual({ banned: 0 });
+      expect(Number((await auth!.prepare('SELECT COUNT(*) AS count FROM "session" WHERE "userId" = ?')
+        .bind(userA).first<{ count: number }>())?.count)).toBe(2);
+      expect(await auth!.prepare('SELECT id FROM "adminUserStatusAudit" WHERE "targetUserId" = ?').bind(userA).first())
+        .toBeNull();
+    } finally {
+      await auth!.prepare('DROP TRIGGER reject_admin_user_status_audit').run();
+    }
+  });
+
+  it("rejects self-suspension and malformed status transitions", async () => {
+    const self = await request(`/api/admin/users/49999999-9999-4999-8999-999999999999/status`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ userId: "49999999-9999-4999-8999-999999999999", suspend: true }),
+    });
+    expect(self.status).toBe(400);
+    const invalidDate = await request(`/api/admin/users/${userA}/status`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ userId: userA, suspend: true, bannedUntil: "not-a-date" }),
+    });
+    expect(invalidDate.status).toBe(400);
+    const futureRestore = await request(`/api/admin/users/${userA}/status`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ userId: userA, suspend: false, bannedUntil: "2030-01-01T00:00:00.000Z" }),
+    });
+    expect(futureRestore.status).toBe(400);
+  });
+
   it("rejects invalid plan changes and rolls back when the audit effect fails", async () => {
     const denied = await request(`/api/admin/users/${userA}/plan`, {
       method: "POST", headers: { "content-type": "application/json" },
@@ -248,7 +332,13 @@ describe("D1 administrator user directory", () => {
       method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: userA }),
     });
     expect(response.status).toBe(200);
-    const payload = await response.json() as Record<string, any>;
+    const payload = await response.json() as {
+      auth: Record<string, unknown>;
+      profile: Record<string, unknown>;
+      licenseSummary: Record<string, unknown>;
+      recentFanmarks: Array<Record<string, unknown>>;
+      recentAuditLogs: Array<{ metadata: unknown }>;
+    };
     expect(payload.auth).toMatchObject({
       email: "alpha@example.test", emailConfirmedAt: null, emailVerified: true,
       lastSignInAt: "2026-09-26T00:00:00.000Z", status: "active", phone: null,

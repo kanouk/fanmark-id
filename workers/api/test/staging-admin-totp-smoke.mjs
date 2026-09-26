@@ -29,6 +29,7 @@ const userOwnedTables = [
   "twoFactor",
   "adminRole",
   "mfaAssurance",
+  "adminUserStatusAudit",
 ];
 
 function requireExplicitStagingConsent() {
@@ -37,13 +38,14 @@ function requireExplicitStagingConsent() {
   const referenceMasterPricingReadback = args.has("--reference-master-pricing-readback");
   const adminUserManagementReadback = args.has("--admin-user-management-readback");
   const adminUserPlanReadback = args.has("--admin-user-plan-readback");
+  const adminUserStatusReadback = args.has("--admin-user-status-readback");
   if (!args.has("--run-live-staging-write") || !args.has(`--database=${expectedDatabase}`) ||
-      (!emojiMasterRoundtrip && !referenceMasterPricingReadback && !adminUserManagementReadback && !adminUserPlanReadback)) {
+      (!emojiMasterRoundtrip && !referenceMasterPricingReadback && !adminUserManagementReadback && !adminUserPlanReadback && !adminUserStatusReadback)) {
     throw new Error(
       `Refusing remote staging writes. Pass --run-live-staging-write --database=${expectedDatabase} and an explicit smoke flag.`,
     );
   }
-  return { emojiMasterRoundtrip, referenceMasterPricingReadback, adminUserManagementReadback, adminUserPlanReadback };
+  return { emojiMasterRoundtrip, referenceMasterPricingReadback, adminUserManagementReadback, adminUserPlanReadback, adminUserStatusReadback };
 }
 
 async function assertStagingTarget() {
@@ -53,6 +55,7 @@ async function assertStagingTarget() {
   const binding = config.d1_databases?.find((database) => database.binding === "AUTH_DB");
   assert.equal(binding?.database_name, expectedDatabase, "unexpected Auth D1 name");
   assert.equal(binding?.database_id, expectedDatabaseId, "unexpected Auth D1 id");
+  assert.equal(binding?.migrations_pattern, "migrations/000[378]_*.sql", "expected the Auth suspension migration in the active D1 migration set");
   const businessBinding = config.d1_databases?.find((database) => database.binding === "FANMARK_DB");
   assert.equal(businessBinding?.database_name, expectedBusinessDatabase, "unexpected business D1 name");
   assert.equal(businessBinding?.database_id, expectedBusinessDatabaseId, "unexpected business D1 id");
@@ -66,6 +69,7 @@ async function assertStagingTarget() {
   assert.equal(config.vars?.STAGING_NO_INDEX, "true", "expected no-index staging Worker");
   assert.equal(config.vars?.REFERENCE_MASTER_ADMIN_BACKEND, "d1", "expected D1-backed reference-master admin API");
   assert.equal(config.vars?.ADMIN_USER_MANAGEMENT_BACKEND, "d1", "expected D1-backed admin user-management API");
+  assert.equal(config.vars?.AUTH_USER_STATUS_BACKEND, "d1", "expected Auth D1 suspension enforcement");
   const masterBinding = config.d1_databases?.find((database) => database.binding === "MASTER_DB");
   assert.equal(masterBinding?.database_name, expectedMasterDatabase, "unexpected Master D1 name");
   assert.equal(masterBinding?.database_id, expectedMasterDatabaseId, "unexpected Master D1 id");
@@ -648,6 +652,74 @@ async function exerciseAdminUserPlanReadback(cookie, target) {
   assert.equal(finalProfile[0]?.plan_type, "free", "synthetic plan baseline was not restored");
 }
 
+async function exerciseAdminUserStatusReadback(cookie, target) {
+  const route = `/api/admin/users/${encodeURIComponent(target.userId)}/status`;
+  const now = new Date();
+  const until = new Date(now.getTime() + 5 * 365 * 24 * 60 * 60 * 1000).toISOString();
+  const sessionId = randomUUID();
+  const sessionToken = randomBytes(32).toString("hex");
+  await executeFile(
+    `INSERT INTO "session" ("id", "expiresAt", "token", "createdAt", "updatedAt", "userId") VALUES (${sqlLiteral(sessionId)}, ${sqlLiteral(new Date(now.getTime() + 60_000).toISOString())}, ${sqlLiteral(sessionToken)}, ${sqlLiteral(now.toISOString())}, ${sqlLiteral(now.toISOString())}, ${sqlLiteral(target.userId)});`,
+    "synthetic target session provision",
+  );
+
+  const anonymous = await request(route, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ userId: target.userId, suspend: true, reason: "synthetic staging verification" }),
+  });
+  assertStatus(anonymous, 401, "anonymous admin user-status update");
+
+  const suspended = await request(route, {
+    method: "POST", headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ userId: target.userId, suspend: true, reason: "synthetic staging verification", bannedUntil: until }),
+  });
+  assertStatus(suspended, 200, "MFA-protected synthetic user suspension");
+  const suspendedBody = await suspended.json();
+  assert.equal(suspendedBody.status, "suspended");
+  assert.equal(suspendedBody.bannedUntil, until);
+  const [suspendedUser, remainingSessions, suspendedAudit] = await Promise.all([
+    query(`SELECT banned, banReason, banExpires FROM "user" WHERE id = ${sqlLiteral(target.userId)}`),
+    query(`SELECT COUNT(*) AS count FROM "session" WHERE "userId" = ${sqlLiteral(target.userId)}`),
+    query(`SELECT actorUserId, action, reason, banExpires FROM "adminUserStatusAudit" WHERE targetUserId = ${sqlLiteral(target.userId)}`),
+  ]);
+  assert.deepEqual(suspendedUser, [{ banned: 1, banReason: "synthetic staging verification", banExpires: until }]);
+  assert.equal(Number(remainingSessions[0]?.count), 0, "suspension left a target session active");
+  assert.deepEqual(suspendedAudit, [{ actorUserId: target.adminUserId, action: "ADMIN_SUSPEND_USER", reason: "synthetic staging verification", banExpires: until }]);
+
+  const suspendedList = await request("/api/admin/users", {
+    method: "POST", headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ search: target.email, status: "suspended", page: 1, pageSize: 10 }),
+  });
+  assertStatus(suspendedList, 200, "MFA-protected suspended-user filter");
+  const suspendedListBody = await suspendedList.json();
+  assert.equal(suspendedListBody.data.length, 1);
+  assert.equal(suspendedListBody.data[0].userId, target.userId);
+  assert.equal(suspendedListBody.data[0].status, "suspended");
+
+  const suspendedDetail = await request(`/api/admin/users/${encodeURIComponent(target.userId)}`, {
+    method: "POST", headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ userId: target.userId }),
+  });
+  assertStatus(suspendedDetail, 200, "MFA-protected suspended-user detail");
+  const detailBody = await suspendedDetail.json();
+  assert.equal(detailBody.auth.status, "suspended");
+  assert.equal(detailBody.auth.bannedUntil, until);
+  assert.ok(detailBody.recentAuditLogs.some((entry) => entry.action === "ADMIN_SUSPEND_USER"));
+
+  const restored = await request(route, {
+    method: "POST", headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ userId: target.userId, suspend: false, reason: "synthetic baseline restore" }),
+  });
+  assertStatus(restored, 200, "MFA-protected synthetic user restoration");
+  assert.equal((await restored.json()).status, "active");
+  const [restoredUser, auditCount] = await Promise.all([
+    query(`SELECT banned, banReason, banExpires FROM "user" WHERE id = ${sqlLiteral(target.userId)}`),
+    query(`SELECT COUNT(*) AS count FROM "adminUserStatusAudit" WHERE targetUserId = ${sqlLiteral(target.userId)}`),
+  ]);
+  assert.deepEqual(restoredUser, [{ banned: 0, banReason: null, banExpires: null }]);
+  assert.equal(Number(auditCount[0]?.count), 2, "suspension and restoration were not both audited");
+}
+
 async function exerciseAvailabilityRulesAdmin(cookie) {
   const route = "/api/admin/availability-rules";
   const initialRows = await queryBusiness(`SELECT id, rule_type, priority, is_available, rule_config
@@ -937,6 +1009,9 @@ async function main() {
     if (actions.adminUserPlanReadback) {
       await exerciseAdminUserPlanReadback(cookie, { userId: targetUserId, adminUserId: userId });
     }
+    if (actions.adminUserStatusReadback) {
+      await exerciseAdminUserStatusReadback(cookie, { userId: targetUserId, email: targetEmail, adminUserId: userId });
+    }
     flowPassed = true;
     console.log("Staging TOTP verification and same-session admin authorization passed.");
   } finally {
@@ -952,7 +1027,7 @@ async function main() {
           `DELETE FROM "user" WHERE "id" = ${sqlLiteral(userId)};`,
           "synthetic identity cleanup",
         );
-        if (actions.adminUserManagementReadback || actions.adminUserPlanReadback) {
+        if (actions.adminUserManagementReadback || actions.adminUserPlanReadback || actions.adminUserStatusReadback) {
           await executeBusiness(
             `DELETE FROM enterprise_user_settings WHERE user_id = ${sqlLiteral(targetUserId)};\n` +
             `DELETE FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL', 'ADMIN_UPDATE_PLAN') AND (resource_id IS NULL OR resource_id = ${sqlLiteral(targetUserId)});\n` +
@@ -960,17 +1035,20 @@ async function main() {
             "synthetic admin user-management cleanup",
           );
           await executeFile(
+            `DELETE FROM "adminUserStatusAudit" WHERE "actorUserId" = ${sqlLiteral(userId)} OR "targetUserId" = ${sqlLiteral(targetUserId)};\n` +
             `DELETE FROM "user" WHERE "id" = ${sqlLiteral(targetUserId)} AND "email" = ${sqlLiteral(targetEmail)};`,
             "synthetic admin target Auth cleanup",
           );
-          const [profileRows, auditRows, authRows] = await Promise.all([
+          const [profileRows, auditRows, authRows, statusAuditRows] = await Promise.all([
             queryBusiness(`SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(targetUserId)}`),
             queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL', 'ADMIN_UPDATE_PLAN') AND (resource_id IS NULL OR resource_id = ${sqlLiteral(targetUserId)})`),
             query(`SELECT COUNT(*) AS count FROM "user" WHERE id = ${sqlLiteral(targetUserId)} AND email = ${sqlLiteral(targetEmail)}`),
+            query(`SELECT COUNT(*) AS count FROM "adminUserStatusAudit" WHERE "actorUserId" = ${sqlLiteral(userId)} OR "targetUserId" = ${sqlLiteral(targetUserId)}`),
           ]);
           assert.equal(Number(profileRows[0]?.count), 0, "synthetic target profile remained in business D1");
           assert.equal(Number(auditRows[0]?.count), 0, "synthetic admin audit rows remained in business D1");
           assert.equal(Number(authRows[0]?.count), 0, "synthetic target identity remained in Auth D1");
+          assert.equal(Number(statusAuditRows[0]?.count), 0, "synthetic user status audit remained in Auth D1");
         }
         await readUserOwnedCounts();
         if (cookie) {
@@ -1001,6 +1079,9 @@ async function main() {
   }
   if (actions.adminUserPlanReadback) {
     console.log("Staging MFA-protected plan mutation changed a synthetic profile to Enterprise, verified exact override D1 fields, changed it to Max and back to Free, then cleaned its audit and D1 rows.");
+  }
+  if (actions.adminUserStatusReadback) {
+    console.log("Staging MFA-protected suspension/restoration, status readback, session revocation, and Auth D1 audit verification passed; all synthetic status rows were removed.");
   }
   console.log("Synthetic Auth rows were deleted; readback found all user-owned Auth tables empty.");
   console.log("The monotonic MFA generation counter was preserved and may have advanced during the synthetic factor lifecycle.");

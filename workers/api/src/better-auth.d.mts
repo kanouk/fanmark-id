@@ -3,6 +3,7 @@ interface AuthEnvironment {
   BETTER_AUTH_SECRET: string;
   BETTER_AUTH_URL: string;
   AUTH_EMAIL_BACKEND?: string;
+  AUTH_USER_STATUS_BACKEND?: string;
   RESEND_API_KEY?: string;
   RESEND_FROM_EMAIL?: string;
 }

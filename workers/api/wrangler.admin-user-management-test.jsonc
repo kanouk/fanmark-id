@@ -6,6 +6,7 @@
   "vars": {
     "D1_TOPOLOGY": "split",
     "ADMIN_USER_MANAGEMENT_BACKEND": "d1",
+    "AUTH_USER_STATUS_BACKEND": "d1",
     "AUTH_BACKEND": "better-auth",
     "CORS_ALLOWED_ORIGINS": "https://app.example.test"
   },

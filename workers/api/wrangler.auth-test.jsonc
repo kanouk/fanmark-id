@@ -6,6 +6,7 @@
   "vars": {
     "D1_TOPOLOGY": "split",
     "AUTH_BACKEND": "better-auth",
+    "AUTH_USER_STATUS_BACKEND": "d1",
     "EMOJI_MASTER_ADMIN_BACKEND": "d1",
     "BETTER_AUTH_SECRET": "local-auth-test-only-secret-not-for-deployment-000000000000000000",
     "BETTER_AUTH_URL": "https://api.example.test",

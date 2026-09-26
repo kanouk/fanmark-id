@@ -58,6 +58,9 @@ CREATE TABLE "user" (
   name TEXT NOT NULL,
   email TEXT NOT NULL,
   emailVerified INTEGER NOT NULL,
+  banned INTEGER NOT NULL DEFAULT 0,
+  banReason TEXT,
+  banExpires TEXT,
   twoFactorEnabled INTEGER NOT NULL DEFAULT 0,
   createdAt TEXT NOT NULL,
   updatedAt TEXT NOT NULL
@@ -71,4 +74,13 @@ CREATE TABLE "twoFactor" (
   id TEXT PRIMARY KEY,
   userId TEXT NOT NULL,
   verified INTEGER NOT NULL DEFAULT 1
+);
+CREATE TABLE "adminUserStatusAudit" (
+  "id" TEXT PRIMARY KEY,
+  "actorUserId" TEXT NOT NULL,
+  "targetUserId" TEXT NOT NULL,
+  "action" TEXT NOT NULL CHECK ("action" IN ('ADMIN_SUSPEND_USER', 'ADMIN_RESTORE_USER')),
+  "reason" TEXT,
+  "banExpires" TEXT,
+  "createdAt" TEXT NOT NULL
 );

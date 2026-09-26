@@ -27,7 +27,7 @@
       "database_name": "fanmark-auth-staging",
       "database_id": "2116bc43-32ab-4e3e-b762-9378df88b95f",
       "migrations_dir": "migrations",
-      "migrations_pattern": "migrations/000[37]_*.sql",
+      "migrations_pattern": "migrations/000[378]_*.sql",
       "remote": true
     },
     {
@@ -70,6 +70,7 @@
     "EXTENSION_COUPON_BACKEND": "d1",
     "EXTENSION_COUPON_ADMIN_BACKEND": "d1",
     "ADMIN_USER_MANAGEMENT_BACKEND": "d1",
+    "AUTH_USER_STATUS_BACKEND": "d1",
     "EMAIL_TEMPLATE_ADMIN_BACKEND": "d1",
     "AUTH_EMAIL_TEMPLATE_BACKEND": "d1",
     "AVAILABILITY_RULES_ADMIN_BACKEND": "d1",

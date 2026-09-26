@@ -1,5 +1,5 @@
 import { betterAuth } from "better-auth";
-import { createAuthMiddleware } from "better-auth/api";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import bcrypt from "bcryptjs";
 import { twoFactor } from "better-auth/plugins";
 import { isResendAuthEmailConfigured, sendResendAuthEmail } from "./auth-email.mjs";
@@ -159,6 +159,40 @@ function createAdminMfaAssurancePlugin(
   };
 }
 
+async function assertUserCanCreateSession(env, userId) {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const user = await env.AUTH_DB.prepare(
+      'select "banned", "banExpires" from "user" where "id" = ? limit 1',
+    ).bind(userId).first();
+    if (!user || (user.banned !== 0 && user.banned !== 1)) {
+      throw APIError.from("INTERNAL_SERVER_ERROR", {
+        message: "Authentication state is unavailable",
+        code: "AUTH_STATE_UNAVAILABLE",
+      });
+    }
+    if (user.banned === 0) return;
+
+    const expiresAt = user.banExpires;
+    const expiresAtMs = typeof expiresAt === "string" ? Date.parse(expiresAt) : Number.NaN;
+    if (expiresAt === null || !Number.isFinite(expiresAtMs) || expiresAtMs > Date.now()) {
+      throw APIError.from("FORBIDDEN", {
+        message: "This account is suspended",
+        code: "BANNED_USER",
+      });
+    }
+
+    const cleared = await env.AUTH_DB.prepare(
+      'update "user" set "banned" = 0, "banReason" = null, "banExpires" = null where "id" = ? and "banned" = 1 and "banExpires" = ?',
+    ).bind(userId, expiresAt).run();
+    if (cleared.meta.changes === 1) return;
+  }
+
+  throw APIError.from("FORBIDDEN", {
+    message: "This account is suspended",
+    code: "BANNED_USER",
+  });
+}
+
 export function createAuth(
   env,
   additionalPlugins = [],
@@ -169,6 +203,26 @@ export function createAuth(
   const appName = authOptions.appName ?? "fanmark-auth-feasibility";
   const issuer = authOptions.issuer ?? appName;
   const resendEmailConfigured = isResendAuthEmailConfigured(env);
+  const userStatusSelected = env.AUTH_USER_STATUS_BACKEND?.trim() === "d1";
+  const additionalUserFields = {
+    ...(userStatusSelected
+      ? {
+          banned: { type: "boolean", defaultValue: false, required: false, input: false, returned: false },
+          banReason: { type: "string", required: false, input: false, returned: false },
+          banExpires: { type: "date", required: false, input: false, returned: false },
+        }
+      : {}),
+    ...(authOptions.signupCommandId
+      ? {
+          signupCommandId: {
+            type: "string",
+            required: false,
+            input: false,
+            returned: false,
+          },
+        }
+      : {}),
+  };
   const plugins = [
     twoFactor({ issuer }),
     createAdminMfaAssurancePlugin(env, requestState, assuranceBarrier),
@@ -218,26 +272,32 @@ export function createAuth(
           },
         }
       : {}),
-    ...(authOptions.signupCommandId
+    ...(Object.keys(additionalUserFields).length > 0
+      ? { user: { additionalFields: additionalUserFields } }
+      : {}),
+    ...(userStatusSelected || authOptions.signupCommandId
       ? {
-          user: {
-            additionalFields: {
-              signupCommandId: {
-                type: "string",
-                required: false,
-                input: false,
-                returned: false,
-              },
-            },
-          },
           databaseHooks: {
-            user: {
-              create: {
-                before: async (user) => ({
-                  data: { ...user, signupCommandId: authOptions.signupCommandId },
-                }),
-              },
-            },
+            ...(userStatusSelected
+              ? {
+                  session: {
+                    create: {
+                      before: async (session) => assertUserCanCreateSession(env, session.userId),
+                    },
+                  },
+                }
+              : {}),
+            ...(authOptions.signupCommandId
+              ? {
+                  user: {
+                    create: {
+                      before: async (user) => ({
+                        data: { ...user, signupCommandId: authOptions.signupCommandId },
+                      }),
+                    },
+                  },
+                }
+              : {}),
           },
         }
       : {}),

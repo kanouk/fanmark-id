@@ -1891,3 +1891,38 @@ singleton remains 1.
 No email, Stripe request, real user data, production route, or domain/DNS
 state was accessed or changed. Suspension, reset-link, and immediate-expiry
 operations remain disabled pending their D1/Auth implementations.
+
+## Admin user suspension and restoration on staging (2026-09-27 JST)
+
+Added Auth D1 migration `0008_auth_user_suspension.sql` with Better Auth
+compatible suspension fields, a status-audit table, and a session-insert guard.
+The Worker activates its suspension hook only when
+`AUTH_USER_STATUS_BACKEND=d1`; the status API also fails closed unless that
+selector is explicit. The MFA-protected admin route can suspend or restore an
+account, revoke its active sessions, validate reason/expiry bounds, and record
+the actor and target in the same D1 batch. The admin user screen now uses this
+route in Worker mode; password reset and immediate license expiry remain
+disabled.
+
+Before applying the schema, a remote read-only preflight confirmed all seven
+existing user-owned Auth tables were empty. Only migration `0008` was pending.
+It applied to `fanmark-auth-staging` (D1
+`2116bc43-32ab-4e3e-b762-9378df88b95f`); remote readback confirmed the three
+user columns, the status-audit table, the session trigger, and no pending
+migrations. The Workers.dev app was deployed at 100% as version
+`2758095a-99fd-4aaf-a1bf-afc441276f05`. The live canary completed synthetic
+sign-in, TOTP enrollment, same-session MFA authorization, suspension,
+session revocation, status readback, restoration, and audit verification.
+Cleanup deleted the synthetic identity and audit rows; independent post-run
+readback found all eight user-owned Auth tables empty. The monotonic MFA
+generation counter was preserved and may have advanced during factor setup.
+
+Worker `npm test` passed in full, including 18 Auth D1 tests and nine admin
+user-management D1 tests. Worker and app typechecks, the five frontend API
+contract tests, targeted ESLint, CI workflow isolation, staging SPA build,
+Wrangler dry-run, and `git diff --check` passed. Workers.dev `/` and
+`/api/auth/ok` returned 200. No Supabase rows, production resources, or
+domain/DNS settings were changed. This verifies one synthetic staging flow;
+password-reset delivery, immediate expiry, populated-user behavior, the 18
+schema gates, integrated rehearsal, production acceptance, user-data import,
+and final DNS cutover remain open.

@@ -127,3 +127,40 @@ test("updates plans through a credentialed same-origin Worker request and valida
     (error: unknown) => error instanceof AdminUserManagementApiError && error.kind === "invalid_response",
   );
 });
+
+test("updates account status through the credentialed Worker API and rejects invalid status DTOs", async () => {
+  let seenRequest: Request | undefined;
+  const api = createAdminUserManagementApi({
+    baseUrl: "https://app.example.test",
+    authBaseUrl: "https://app.example.test",
+    fetchImpl: async (input, init) => {
+      seenRequest = new Request(input, init);
+      return Response.json({
+        success: true,
+        updated: true,
+        userId,
+        status: "suspended",
+        bannedUntil: "2031-09-26T12:00:00.000Z",
+        updatedAt: time,
+      }, { headers: { "cache-control": "no-store" } });
+    },
+  });
+  const result = await api.updateStatus({ userId, suspend: true, reason: "synthetic review" });
+  assert.equal(result.status, "suspended");
+  assert.equal(seenRequest?.url, `https://app.example.test/api/admin/users/${userId}/status`);
+  assert.equal(seenRequest?.credentials, "include");
+  assert.equal(seenRequest?.cache, "no-store");
+  assert.deepEqual(await seenRequest?.json(), { userId, suspend: true, reason: "synthetic review" });
+
+  await assert.rejects(
+    createAdminUserManagementApi({
+      baseUrl: "https://app.example.test",
+      authBaseUrl: "https://app.example.test",
+      fetchImpl: async () => Response.json({
+        success: true, updated: true, userId, status: "active",
+        bannedUntil: "2031-09-26T12:00:00.000Z", updatedAt: time,
+      }),
+    }).updateStatus({ userId, suspend: false }),
+    (error: unknown) => error instanceof AdminUserManagementApiError && error.kind === "invalid_response",
+  );
+});

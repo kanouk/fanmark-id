@@ -263,6 +263,13 @@ export const AdminUserManagement: React.FC = () => {
   const statusMutation = useMutation({
     mutationFn: async () => {
       if (!selectedUserId) throw new Error("No user selected");
+      if (userManagementBackend === "worker") {
+        return workerUserApi.updateStatus({
+          userId: selectedUserId,
+          suspend: statusAction === "suspend",
+          reason: statusReason || null,
+        });
+      }
       const { data, error } = await supabase.functions.invoke("admin-toggle-user-status", {
         body: {
           userId: selectedUserId,
@@ -597,7 +604,9 @@ export const AdminUserManagement: React.FC = () => {
           <SheetHeader>
             <SheetTitle>ユーザー詳細</SheetTitle>
             <SheetDescription>
-              {workerReadOnly ? "Cloudflare stagingの読み取り専用ユーザー情報です。" : "プラン変更、アカウント停止、パスワードリセットなどの操作を実行できます。"}
+              {workerReadOnly
+                ? "Cloudflare stagingではプラン変更とアカウント停止・復旧ができます。パスワードリセットと即時期限切れはまだ利用できません。"
+                : "プラン変更、アカウント停止、パスワードリセットなどの操作を実行できます。"}
             </SheetDescription>
           </SheetHeader>
 
@@ -762,7 +771,7 @@ export const AdminUserManagement: React.FC = () => {
                 プランを変更
               </Button>
               <Button
-                disabled={!selectedDetail || workerReadOnly}
+                disabled={!selectedDetail}
                 onClick={() => {
                   if (!selectedDetail) return;
                   setStatusAction(selectedDetail.auth.status === "active" ? "suspend" : "restore");
