@@ -1,6 +1,6 @@
 # fanmark.id repository inventory (offline)
 
-Base commit: `57d9b277597cbf3017e9bd025237ee5756ffefee`
+Base commit: `947589c5a5bc7d4b3a9c4e3769a7ef789c3944c7`
 
 This report is generated from the checked-out repository only. It makes no network calls, reads no credentials, and does not claim that local generated types, migrations, or SQL snapshots equal the current production state.
 
@@ -158,7 +158,7 @@ Found 34 local directories with `index.ts` (`_shared` excluded). 18 have an expl
 
 ## Frontend Supabase callsites
 
-Scanned `src/**/*.{ts,tsx}`: 213 callsites. Each row records the first line of the call and the extracted operation.
+Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of the call and the extracted operation.
 
 | Location | Kind | Target | Operation | Dynamic expression |
 | --- | --- | --- | --- | --- |
@@ -166,16 +166,16 @@ Scanned `src/**/*.{ts,tsx}`: 213 callsites. Each row records the first line of t
 | `src/components/AdminApp.tsx:88` | auth_mfa | `auth` | `auth.mfa.getAuthenticatorAssuranceLevel` |  |
 | `src/components/AdminApp.tsx:100` | auth_mfa | `auth` | `auth.mfa.listFactors` |  |
 | `src/components/AdminApp.tsx:137` | auth_mfa | `auth` | `auth.mfa.getAuthenticatorAssuranceLevel` |  |
-| `src/components/AdminBroadcastEmail.tsx:144` | table | `broadcast_emails` | `table.select` |  |
-| `src/components/AdminBroadcastEmail.tsx:160` | table | `email_templates` | `table.select` |  |
-| `src/components/AdminBroadcastEmail.tsx:175` | table | `user_settings` | `table.select` |  |
-| `src/components/AdminBroadcastEmail.tsx:220` | auth | `auth` | `auth.getSession` |  |
-| `src/components/AdminBroadcastEmail.tsx:240` | table | `broadcast_emails` | `table.insert` |  |
+| `src/components/AdminBroadcastEmail.tsx:150` | table | `broadcast_emails` | `table.select` |  |
+| `src/components/AdminBroadcastEmail.tsx:151` | table | `email_templates` | `table.select` |  |
+| `src/components/AdminBroadcastEmail.tsx:182` | table | `user_settings` | `table.select` |  |
+| `src/components/AdminBroadcastEmail.tsx:236` | auth | `auth` | `auth.getSession` |  |
+| `src/components/AdminBroadcastEmail.tsx:239` | table | `broadcast_emails` | `table.insert` |  |
 | `src/components/AdminBroadcastEmail.tsx:272` | auth | `auth` | `auth.getSession` |  |
 | `src/components/AdminBroadcastEmail.tsx:275` | edge | `send-broadcast-email` | `edge_function_invoke` |  |
-| `src/components/AdminBroadcastEmail.tsx:296` | auth | `auth` | `auth.getSession` |  |
-| `src/components/AdminBroadcastEmail.tsx:299` | edge | `send-broadcast-email` | `edge_function_invoke` |  |
-| `src/components/AdminDataReset.tsx:35` | edge | `reset-fanmark-data` | `edge_function_invoke` |  |
+| `src/components/AdminBroadcastEmail.tsx:297` | auth | `auth` | `auth.getSession` |  |
+| `src/components/AdminBroadcastEmail.tsx:300` | edge | `send-broadcast-email` | `edge_function_invoke` |  |
+| `src/components/AdminDataReset.tsx:38` | edge | `reset-fanmark-data` | `edge_function_invoke` |  |
 | `src/components/AdminEmailTemplates.tsx:52` | table | `email_templates` | `table.select` |  |
 | `src/components/AdminEmailTemplates.tsx:74` | table | `email_templates` | `table.update` |  |
 | `src/components/AdminEmojiMaster.tsx:89` | table | `emoji_master` | `table.select` |  |
@@ -195,7 +195,6 @@ Scanned `src/**/*.{ts,tsx}`: 213 callsites. Each row records the first line of t
 | `src/components/AdminPatternRules.tsx:31` | table | `fanmark_availability_rules` | `table.select` |  |
 | `src/components/AdminPatternRules.tsx:81` | table | `fanmark_availability_rules` | `table.update` |  |
 | `src/components/AdminPatternRules.tsx:129` | table | `fanmark_availability_rules` | `table.update` |  |
-| `src/components/AdminPlanSettings.tsx:57` | table | `system_settings` | `table.update` |  |
 | `src/components/AdminTierExtensionPrices.tsx:80` | table | `fanmark_tier_extension_prices` | `table.select` |  |
 | `src/components/AdminTierExtensionPrices.tsx:85` | table | `fanmark_tiers` | `table.select` |  |
 | `src/components/AdminTierExtensionPrices.tsx:149` | table | `fanmark_tier_extension_prices` | `table.update` |  |
@@ -203,12 +202,12 @@ Scanned `src/**/*.{ts,tsx}`: 213 callsites. Each row records the first line of t
 | `src/components/AdminTierExtensionPrices.tsx:264` | table | `fanmark_tier_extension_prices` | `table.update` |  |
 | `src/components/AdminTierExtensionPrices.tsx:306` | table | `fanmark_tier_extension_prices` | `table.update` |  |
 | `src/components/AdminTierExtensionPrices.tsx:373` | table | `fanmark_tiers` | `table.update` |  |
-| `src/components/AdminUserManagement.tsx:184` | edge | `admin-list-users` | `edge_function_invoke` |  |
-| `src/components/AdminUserManagement.tsx:202` | edge | `admin-get-user-detail` | `edge_function_invoke` |  |
-| `src/components/AdminUserManagement.tsx:224` | edge | `admin-update-user-plan` | `edge_function_invoke` |  |
-| `src/components/AdminUserManagement.tsx:257` | edge | `admin-toggle-user-status` | `edge_function_invoke` |  |
-| `src/components/AdminUserManagement.tsx:290` | edge | `admin-trigger-password-reset` | `edge_function_invoke` |  |
-| `src/components/AdminUserManagement.tsx:319` | edge | `admin-expire-license` | `edge_function_invoke` |  |
+| `src/components/AdminUserManagement.tsx:185` | edge | `admin-list-users` | `edge_function_invoke` |  |
+| `src/components/AdminUserManagement.tsx:203` | edge | `admin-get-user-detail` | `edge_function_invoke` |  |
+| `src/components/AdminUserManagement.tsx:234` | edge | `admin-update-user-plan` | `edge_function_invoke` |  |
+| `src/components/AdminUserManagement.tsx:274` | edge | `admin-toggle-user-status` | `edge_function_invoke` |  |
+| `src/components/AdminUserManagement.tsx:314` | edge | `admin-trigger-password-reset` | `edge_function_invoke` |  |
+| `src/components/AdminUserManagement.tsx:358` | edge | `admin-expire-license` | `edge_function_invoke` |  |
 | `src/components/auth/MFAChallenge.tsx:43` | auth_mfa | `auth` | `auth.mfa.unenroll` |  |
 | `src/components/auth/MFAChallenge.tsx:73` | auth_mfa | `auth` | `auth.mfa.listFactors` |  |
 | `src/components/auth/MFAChallenge.tsx:108` | auth_mfa | `auth` | `auth.mfa.challenge` |  |
@@ -246,10 +245,10 @@ Scanned `src/**/*.{ts,tsx}`: 213 callsites. Each row records the first line of t
 | `src/components/MaintenanceGate.tsx:48` | rpc | `is_admin` | `rpc` |  |
 | `src/components/PasswordProtection.tsx:59` | rpc | `verify_fanmark_password` | `rpc` |  |
 | `src/components/RecentFanmarksScroll.tsx:25` | rpc | `list_recent_fanmarks` | `rpc` |  |
-| `src/components/SecureWaitlistAdmin.tsx:48` | rpc | `is_super_admin` | `rpc` |  |
-| `src/components/SecureWaitlistAdmin.tsx:76` | rpc | `get_waitlist_secure` | `rpc` |  |
-| `src/components/SecureWaitlistAdmin.tsx:91` | table | `audit_logs` | `table.select` |  |
-| `src/components/SecureWaitlistAdmin.tsx:107` | rpc | `get_waitlist_email_by_id` | `rpc` |  |
+| `src/components/SecureWaitlistAdmin.tsx:54` | rpc | `is_super_admin` | `rpc` |  |
+| `src/components/SecureWaitlistAdmin.tsx:93` | rpc | `get_waitlist_secure` | `rpc` |  |
+| `src/components/SecureWaitlistAdmin.tsx:108` | table | `audit_logs` | `table.select` |  |
+| `src/components/SecureWaitlistAdmin.tsx:137` | rpc | `get_waitlist_email_by_id` | `rpc` |  |
 | `src/components/UserProfileForm.tsx:143` | edge | `bulk-return-fanmarks` | `edge_function_invoke` |  |
 | `src/hooks/useAuth.tsx:51` | table | `user_settings` | `table.select` |  |
 | `src/hooks/useAuth.tsx:115` | auth | `auth` | `auth.getSession` |  |
@@ -298,9 +297,9 @@ Scanned `src/**/*.{ts,tsx}`: 213 callsites. Each row records the first line of t
 | `src/hooks/useInvitationAdmin.ts:81` | table | `invitation_codes` | `table.insert` |  |
 | `src/hooks/useInvitationAdmin.ts:110` | table | `invitation_codes` | `table.update` |  |
 | `src/hooks/useInvitationAdmin.ts:139` | table | `invitation_codes` | `table.delete` |  |
-| `src/hooks/useInvitationCode.tsx:41` | rpc | `validate_invitation_code` | `rpc` |  |
-| `src/hooks/useInvitationCode.tsx:75` | rpc | `use_invitation_code` | `rpc` |  |
-| `src/hooks/useInvitationCode.tsx:103` | table | `waitlist` | `table.insert` |  |
+| `src/hooks/useInvitationCode.tsx:42` | rpc | `validate_invitation_code` | `rpc` |  |
+| `src/hooks/useInvitationCode.tsx:76` | rpc | `use_invitation_code` | `rpc` |  |
+| `src/hooks/useInvitationCode.tsx:120` | table | `waitlist` | `table.insert` |  |
 | `src/hooks/useLanguages.tsx:44` | table | `languages` | `table.select` |  |
 | `src/hooks/useLifecycleSettings.ts:21` | table | `system_settings` | `table.select` |  |
 | `src/hooks/useLifecycleSettings.ts:33` | table | `system_settings` | `table.update` |  |
@@ -316,15 +315,14 @@ Scanned `src/**/*.{ts,tsx}`: 213 callsites. Each row records the first line of t
 | `src/hooks/useProfile.tsx:58` | realtime | `user-settings-updates` | `realtime.channel` |  |
 | `src/hooks/useProfile.tsx:70` | realtime | `<unresolved>` | `realtime.removeChannel` | `channel` |
 | `src/hooks/useProfile.tsx:94` | table | `user_settings` | `table.update` |  |
-| `src/hooks/useProfile.tsx:116` | rpc | `check_username_availability_secure` | `rpc` |  |
-| `src/hooks/useSubscription.tsx:70` | auth | `auth` | `auth.getSession` |  |
-| `src/hooks/useSubscription.tsx:73` | edge | `check-subscription` | `edge_function_invoke` |  |
-| `src/hooks/useSubscription.tsx:86` | table | `user_subscriptions` | `table.select` |  |
-| `src/hooks/useSubscription.tsx:145` | realtime | `user-subscription-updates` | `realtime.channel` |  |
-| `src/hooks/useSubscription.tsx:162` | realtime | `<unresolved>` | `realtime.removeChannel` | `channel` |
-| `src/hooks/useSubscription.tsx:170` | table | `user_subscriptions` | `table.select` |  |
-| `src/hooks/useSystemSettings.tsx:47` | table | `system_settings` | `table.select` |  |
-| `src/hooks/useSystemSettings.tsx:117` | table | `system_settings` | `table.update` |  |
+| `src/hooks/useProfile.tsx:119` | rpc | `check_username_availability_secure` | `rpc` |  |
+| `src/hooks/useSubscription.tsx:82` | auth | `auth` | `auth.getSession` |  |
+| `src/hooks/useSubscription.tsx:84` | edge | `check-subscription` | `edge_function_invoke` |  |
+| `src/hooks/useSubscription.tsx:91` | table | `user_subscriptions` | `table.select` |  |
+| `src/hooks/useSubscription.tsx:118` | realtime | `user-subscription-updates` | `realtime.channel` |  |
+| `src/hooks/useSubscription.tsx:126` | realtime | `<unresolved>` | `realtime.removeChannel` | `channel` |
+| `src/hooks/useSystemSettings.tsx:96` | table | `system_settings` | `table.select` |  |
+| `src/hooks/useSystemSettings.tsx:178` | table | `system_settings` | `table.update` |  |
 | `src/hooks/useTransferCode.ts:61` | table | `fanmark_transfer_codes` | `table.select` |  |
 | `src/hooks/useTransferCode.ts:94` | table | `fanmark_transfer_requests` | `table.select` |  |
 | `src/hooks/useTransferCode.ts:133` | table | `fanmark_transfer_requests` | `table.select` |  |
@@ -339,9 +337,9 @@ Scanned `src/**/*.{ts,tsx}`: 213 callsites. Each row records the first line of t
 | `src/lib/favorites-backend.ts:21` | rpc | `add_fanmark_favorite` | `rpc` |  |
 | `src/lib/favorites-backend.ts:32` | rpc | `remove_fanmark_favorite` | `rpc` |  |
 | `src/lib/plan-utils.ts:58` | table | `fanmark_licenses` | `table.select` |  |
-| `src/lib/profile-utils.ts:21` | auth | `auth` | `auth.getUser` |  |
-| `src/lib/profile-utils.ts:28` | table | `user_settings` | `table.select` |  |
-| `src/lib/profile-utils.ts:48` | rpc | `check_username_availability_secure` | `rpc` |  |
+| `src/lib/profile-utils.ts:27` | auth | `auth` | `auth.getUser` |  |
+| `src/lib/profile-utils.ts:34` | table | `user_settings` | `table.select` |  |
+| `src/lib/profile-utils.ts:59` | rpc | `check_username_availability_secure` | `rpc` |  |
 | `src/pages/AdminAuth.tsx:65` | auth | `auth` | `auth.getSession` |  |
 | `src/pages/AdminAuth.tsx:99` | auth_mfa | `auth` | `auth.mfa.getAuthenticatorAssuranceLevel` |  |
 | `src/pages/AdminAuth.tsx:112` | auth_mfa | `auth` | `auth.mfa.listFactors` |  |
@@ -371,10 +369,10 @@ Scanned `src/**/*.{ts,tsx}`: 213 callsites. Each row records the first line of t
 | `src/pages/PlanSelection.tsx:505` | edge | `change-subscription` | `edge_function_invoke` |  |
 | `src/pages/PlanSelection.tsx:564` | edge | `bulk-return-fanmarks` | `edge_function_invoke` |  |
 | `src/pages/PlanSelection.tsx:589` | edge | `change-subscription` | `edge_function_invoke` |  |
-| `src/pages/Profile.tsx:128` | auth | `auth` | `auth.updateUser` |  |
-| `src/pages/Profile.tsx:132` | table | `user_settings` | `table.update` |  |
-| `src/pages/Profile.tsx:244` | edge | `delete-user-account` | `edge_function_invoke` |  |
-| `src/pages/Profile.tsx:299` | edge | `customer-portal` | `edge_function_invoke` |  |
+| `src/pages/Profile.tsx:130` | auth | `auth` | `auth.updateUser` |  |
+| `src/pages/Profile.tsx:134` | table | `user_settings` | `table.update` |  |
+| `src/pages/Profile.tsx:250` | edge | `delete-user-account` | `edge_function_invoke` |  |
+| `src/pages/Profile.tsx:307` | edge | `customer-portal` | `edge_function_invoke` |  |
 
 Operation summary:
 
@@ -404,8 +402,8 @@ Operation summary:
 - `storage.upload`: 2
 - `table.delete`: 3
 - `table.insert`: 6
-- `table.select`: 49
-- `table.update`: 23
+- `table.select`: 48
+- `table.update`: 22
 - `table.upsert`: 5
 
 ### Unresolved or dynamic call arguments
@@ -413,7 +411,7 @@ Operation summary:
 - `src/components/layout/AppHeader.tsx:115`: realtime (realtime.channel), expression `` `notifications-preview-${user.id}` ``
 - `src/components/layout/AppHeader.tsx:133`: realtime (realtime.removeChannel), expression `channel`
 - `src/hooks/useProfile.tsx:70`: realtime (realtime.removeChannel), expression `channel`
-- `src/hooks/useSubscription.tsx:162`: realtime (realtime.removeChannel), expression `channel`
+- `src/hooks/useSubscription.tsx:126`: realtime (realtime.removeChannel), expression `channel`
 - `src/pages/Notifications.tsx:83`: realtime (realtime.removeChannel), expression `channel`
 
 ### Unsupported or unknown receiver aliases
