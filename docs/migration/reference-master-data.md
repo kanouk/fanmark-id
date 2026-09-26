@@ -133,8 +133,10 @@ authorized admin session. Each single-field edit copies all four active
 masters into a new immutable release, verifies D1 readback, and changes the
 active pointer only if the screen's expected release is still current. Stale
 screens get a conflict response, and API failures never fall back to Supabase.
-The D1 admin implementation is locally tested and its route code is deployed,
-but the Worker and frontend selectors remain unset in staging. The extension
+At this earlier checkpoint the D1 admin implementation was locally tested and
+its route code deployed, but the Worker and frontend selectors were unset in
+staging. The later `Staging app wiring` section records the paired selectors
+now active. The extension
 display has its own opt-in `VITE_EXTENSION_PRICING_BACKEND=worker` selector. The two Supabase
 Edge Functions can read prices from the same D1 release with
 `REFERENCE_MASTER_PRICING_BACKEND=cloudflare`, `CLOUDFLARE_API_URL`, and the
