@@ -2230,3 +2230,23 @@ git diff whitespace validation. The two live action flags were
 --reference-master-extension-price-roundtrip. No Supabase data, production resource, Stripe
 resource, real user-owned row, or domain/DNS setting was changed. The browser
 click path, Stripe checkout, and production selectors remain unverified.
+
+## Auth email-template edit/restore staging canary (2026-09-27 JST)
+
+Added the standalone `--auth-email-template-edit-roundtrip` action to the live
+MFA smoke. Against the deployed staging Worker it read all 16 allowlisted
+templates, rejected an anonymous PATCH (401), changed the Japanese signup
+subject through the admin API, rejected a stale `updated_at` PATCH (409), then
+restored the original subject, body, and button label. Final D1 readback
+confirmed all 16 contents and non-editable fields matched baseline; the
+Japanese signup row's `updated_at` advanced as expected. Both synthetic audit
+rows and the temporary Auth identity/profile were removed and verified absent.
+The staging secret-name list has no Resend key or sender identity, and the
+admin template API does not call mail delivery; no email was sent.
+
+The first live attempt exposed a test-harness omission in the shared target
+cleanup condition. The exact synthetic target rows were manually removed and
+read back at zero, then the harness was fixed and the full live canary passed.
+The Worker D1 API tests passed 4/4; the frontend API client tests passed 3/3;
+Node syntax and `git diff --check` passed. No user data, production route,
+Stripe state, or domain/DNS configuration changed.

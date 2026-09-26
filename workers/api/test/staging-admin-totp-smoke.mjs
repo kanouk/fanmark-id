@@ -41,18 +41,19 @@ function requireExplicitStagingConsent() {
   const referenceMasterPricingReadback = args.has("--reference-master-pricing-readback");
   const referenceMasterTierRoundtrip = args.has("--reference-master-tier-roundtrip");
   const referenceMasterExtensionPriceRoundtrip = args.has("--reference-master-extension-price-roundtrip");
+  const authEmailTemplateEditRoundtrip = args.has("--auth-email-template-edit-roundtrip");
   const adminUserManagementReadback = args.has("--admin-user-management-readback");
   const adminUserPlanReadback = args.has("--admin-user-plan-readback");
   const adminUserStatusReadback = args.has("--admin-user-status-readback");
   const systemSettingsReadback = args.has("--system-settings-readback");
   const notificationManualEvent = args.has("--notification-manual-event");
   if (!args.has("--run-live-staging-write") || !args.has(`--database=${expectedDatabase}`) ||
-      (!emojiMasterRoundtrip && !referenceMasterPricingReadback && !referenceMasterTierRoundtrip && !referenceMasterExtensionPriceRoundtrip && !adminUserManagementReadback && !adminUserPlanReadback && !adminUserStatusReadback && !systemSettingsReadback && !notificationManualEvent)) {
+      (!emojiMasterRoundtrip && !referenceMasterPricingReadback && !referenceMasterTierRoundtrip && !referenceMasterExtensionPriceRoundtrip && !authEmailTemplateEditRoundtrip && !adminUserManagementReadback && !adminUserPlanReadback && !adminUserStatusReadback && !systemSettingsReadback && !notificationManualEvent)) {
     throw new Error(
       `Refusing remote staging writes. Pass --run-live-staging-write --database=${expectedDatabase} and an explicit smoke flag.`,
     );
   }
-  return { emojiMasterRoundtrip, referenceMasterPricingReadback, referenceMasterTierRoundtrip, referenceMasterExtensionPriceRoundtrip, adminUserManagementReadback, adminUserPlanReadback, adminUserStatusReadback, systemSettingsReadback, notificationManualEvent };
+  return { emojiMasterRoundtrip, referenceMasterPricingReadback, referenceMasterTierRoundtrip, referenceMasterExtensionPriceRoundtrip, authEmailTemplateEditRoundtrip, adminUserManagementReadback, adminUserPlanReadback, adminUserStatusReadback, systemSettingsReadback, notificationManualEvent };
 }
 
 async function assertStagingTarget(actions) {
@@ -515,7 +516,7 @@ async function exerciseNotificationManualEvent(cookie, userId) {
   return { eventId };
 }
 
-async function exerciseAuthEmailTemplatesAdmin(cookie) {
+async function exerciseAuthEmailTemplatesAdmin(cookie, { editRoundtrip = false, adminUserId = null } = {}) {
   const route = "/api/admin/email-templates";
   const rowsSql = `SELECT id, email_type, language, subject, body_text, button_text,
       is_active, created_at, updated_at
@@ -549,6 +550,106 @@ async function exerciseAuthEmailTemplatesAdmin(cookie) {
 
   const afterRows = await queryBusiness(rowsSql);
   assert.deepEqual(afterRows, beforeRows, "auth email-template admin read changed D1 data");
+
+  if (!editRoundtrip) return;
+
+  assert.ok(adminUserId, "synthetic admin ID is required for the auth email-template edit canary");
+  const template = beforeRows.find((row) => row.email_type === "signup" && row.language === "ja");
+  assert.ok(template, "Japanese signup template is missing");
+  const templatePath = `${route}/${template.id}`;
+  const temporarySubject = `${template.subject} [staging canary]`;
+  assert.ok(temporarySubject.length <= 256, "Japanese signup template subject is too long for a reversible canary");
+  const originalFields = {
+    subject: template.subject,
+    bodyText: template.body_text,
+    buttonText: template.button_text,
+  };
+  const canaryFields = { ...originalFields, subject: temporarySubject };
+  const staleFields = { ...canaryFields, subject: `${temporarySubject} stale` };
+  const update = (expectedUpdatedAt, fields) => request(templatePath, {
+    method: "PATCH",
+    headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ expectedUpdatedAt, ...fields }),
+  });
+  const matches = (row, fields) => row.subject === fields.subject &&
+    row.body_text === fields.bodyText && row.button_text === fields.buttonText;
+
+  const preflightRows = await queryBusiness(rowsSql);
+  assert.deepEqual(preflightRows, beforeRows, "auth email-template content changed before the edit canary");
+  const preexistingCanaryAudit = await queryBusiness(`SELECT id FROM audit_logs
+    WHERE user_id = ${sqlLiteral(adminUserId)} AND action = 'admin_update_email_template' AND resource_type = 'email_template'
+      AND resource_id = ${sqlLiteral(template.id)}`);
+  assert.equal(preexistingCanaryAudit.length, 0, "email-template canary audit baseline was not empty");
+
+  const anonymousEdit = await request(templatePath, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ expectedUpdatedAt: template.updated_at, ...canaryFields }),
+  });
+  assertStatus(anonymousEdit, 401, "unauthenticated auth email-template edit");
+
+  let updatedAt = null;
+  try {
+    const edited = await update(template.updated_at, canaryFields);
+    assertStatus(edited, 200, "MFA-protected auth email-template edit");
+    const editedBody = await edited.json();
+    assert.equal(editedBody.template.subject, temporarySubject);
+    assert.equal(editedBody.template.body_text, template.body_text);
+    assert.equal(editedBody.template.button_text, template.button_text);
+    assert.notEqual(editedBody.template.updated_at, template.updated_at);
+    updatedAt = editedBody.template.updated_at;
+
+    const stale = await update(template.updated_at, {
+      ...staleFields,
+    });
+    assertStatus(stale, 409, "stale auth email-template edit");
+  } finally {
+    const currentResponse = await request(route, { headers: { cookie } });
+    assertStatus(currentResponse, 200, "MFA-protected auth email-template read before restoration");
+    const currentBody = await currentResponse.json();
+    const current = currentBody.templates.find((row) => row.id === template.id);
+    assert.ok(current, "Japanese signup template disappeared during the edit canary");
+
+    if (matches(current, canaryFields) || matches(current, staleFields)) {
+      const restored = await update(current.updated_at, originalFields);
+      assertStatus(restored, 200, "MFA-protected auth email-template restoration");
+      const restoredBody = await restored.json();
+      assert.ok(matches(restoredBody.template, originalFields), "auth email-template content was not restored");
+      updatedAt = restoredBody.template.updated_at;
+    } else {
+      assert.ok(matches(current, originalFields),
+        "auth email-template changed unexpectedly; refusing to overwrite another admin edit");
+    }
+
+    const finalRows = await queryBusiness(rowsSql);
+    const projectContent = (rows) => rows.map(({ updated_at: _updatedAt, ...row }) => row);
+    assert.deepEqual(projectContent(finalRows), projectContent(beforeRows),
+      "auth email-template content or non-editable fields did not return to baseline");
+    const finalTemplate = finalRows.find((row) => row.id === template.id);
+    assert.ok(finalTemplate, "restored Japanese signup template is missing");
+    if (updatedAt) assert.equal(finalTemplate.updated_at, updatedAt, "D1 restoration timestamp differs from the API response");
+    for (const row of finalRows.filter((candidate) => candidate.id !== template.id)) {
+      const original = beforeRows.find((candidate) => candidate.id === row.id);
+      assert.equal(row.updated_at, original?.updated_at, "an unrelated auth email-template timestamp changed");
+    }
+
+    const canaryAuditRows = await queryBusiness(`SELECT id, user_id, action, resource_type, resource_id
+      FROM audit_logs WHERE user_id = ${sqlLiteral(adminUserId)} AND action = 'admin_update_email_template'
+        AND resource_type = 'email_template' AND resource_id = ${sqlLiteral(template.id)}`);
+    if (canaryAuditRows.length) {
+      assert.ok(canaryAuditRows.every((row) => row.user_id === adminUserId && row.resource_id === template.id),
+        "email-template audit rows were not scoped to this canary admin and template");
+      await executeBusiness(`DELETE FROM audit_logs WHERE user_id = ${sqlLiteral(adminUserId)}
+        AND action = 'admin_update_email_template' AND resource_type = 'email_template'
+        AND resource_id = ${sqlLiteral(template.id)}`, "synthetic auth email-template audit cleanup");
+      const remainingAuditRows = await queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs
+        WHERE user_id = ${sqlLiteral(adminUserId)} AND action = 'admin_update_email_template'
+          AND resource_type = 'email_template' AND resource_id = ${sqlLiteral(template.id)}`);
+      assert.equal(Number(remainingAuditRows[0]?.count), 0, "synthetic auth email-template audit rows remained in business D1");
+    }
+    assert.equal(canaryAuditRows.length, updatedAt === template.updated_at ? 0 : 2,
+      "email-template edit/restore did not create the expected two scoped audit rows");
+  }
 }
 
 function digest(value) {
@@ -1650,6 +1751,9 @@ async function main() {
       await exerciseAvailabilityRulesAdmin(cookie);
       await exerciseInvitationAdmin(cookie);
     }
+    if (actions.authEmailTemplateEditRoundtrip) {
+      await exerciseAuthEmailTemplatesAdmin(cookie, { editRoundtrip: true, adminUserId: userId });
+    }
     if (actions.referenceMasterPricingReadback) {
       await exerciseReferenceMasterPricingReadback(cookie);
     }
@@ -1709,7 +1813,7 @@ async function main() {
           `DELETE FROM "user" WHERE "id" = ${sqlLiteral(userId)};`,
           "synthetic identity cleanup",
         );
-        if (actions.referenceMasterTierRoundtrip || actions.referenceMasterExtensionPriceRoundtrip || actions.adminUserManagementReadback || actions.adminUserPlanReadback || actions.adminUserStatusReadback || actions.systemSettingsReadback || actions.notificationManualEvent) {
+        if (actions.referenceMasterTierRoundtrip || actions.referenceMasterExtensionPriceRoundtrip || actions.authEmailTemplateEditRoundtrip || actions.adminUserManagementReadback || actions.adminUserPlanReadback || actions.adminUserStatusReadback || actions.systemSettingsReadback || actions.notificationManualEvent) {
           if (actions.adminUserStatusReadback) {
             await executeBusiness(
               `DELETE FROM notifications WHERE user_id = ${sqlLiteral(targetUserId)};\n` +
@@ -1771,6 +1875,9 @@ async function main() {
     console.log("Staging MFA-protected availability-rule list/CAS-edit/stale-write rejection/restore passed; all four rules remain disabled and created_by stays NULL.");
     console.log("Staging MFA-protected notification rules/templates and payload-redacted event/delivery log reads passed without changing notification rows.");
     console.log("Staging MFA-protected auth email-template list returned all 16 type/locale pairs; anonymous access was denied without changing D1 rows.");
+  }
+  if (actions.authEmailTemplateEditRoundtrip) {
+    console.log("Staging MFA-protected Japanese signup email-template edit/restore passed; anonymous and stale writes were rejected, all 16 template contents returned to baseline, and synthetic audit rows were removed. No email was sent.");
   }
   if (actions.referenceMasterPricingReadback) {
     console.log("Staging MFA-protected reference-master pricing read matched the active D1 release; anonymous access was denied and both reads left the release pointer unchanged.");

@@ -50,3 +50,15 @@ OAuth, and email delivery remain disabled. A synthetic TOTP admin read all 16
 rows from the protected editor API; each field matched the D1 readback and the
 GET left D1 unchanged. The canary removed its synthetic Auth rows. No message
 was sent and no real user data, production route, or domain/DNS state changed.
+
+On 2026-09-27, an explicit live edit canary used the MFA-protected Worker API to
+append a temporary marker to the Japanese signup subject, rejected anonymous
+and stale writes with 401 and 409, then restored the original subject, body, and
+button text. A final readback confirmed all 16 rows' content and non-editable
+fields matched baseline; only that row's `updated_at` advanced through the two
+audited writes. The canary removed its two synthetic audit rows and temporary
+Auth identity. The first attempt exposed a missing test-harness cleanup guard;
+its exact synthetic Auth/profile rows were removed and verified zero before the
+corrected smoke was rerun successfully. The staging secret-name inventory has
+no Resend key or sender identity, and the admin edit path sends no email. No
+message was sent.

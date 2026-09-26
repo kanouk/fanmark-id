@@ -1175,3 +1175,24 @@ staging build pass. No production route, Stripe operation, real user/Auth row,
 Storage object, or domain/DNS setting was changed. Authenticated admin
 acceptance, Stripe/integrated coverage, production, real user-data import, and
 domain cutover remain open. See `docs/migration/system-settings-api.md`.
+
+## Auth email-template edit/restore on staging (2026-09-27 JST)
+
+The explicit `--auth-email-template-edit-roundtrip` MFA smoke passed against
+`fanmark-app-staging`. It authenticated a synthetic TOTP administrator, read
+the 16 allowlisted auth templates, rejected an anonymous edit (401), changed
+only the Japanese signup subject, rejected a stale write (409), and restored
+the original subject/body/button through the same Worker API. A direct D1
+readback confirmed every template's content and non-editable fields matched
+baseline; only the edited row's `updated_at` advanced. The two canary audit rows
+and synthetic auth identity/profile were removed and read back at zero. No
+Resend API key or sender secret is configured, and this API path does not send
+email; no message was sent.
+
+The first run revealed that the new standalone action was missing from the
+shared synthetic target cleanup condition. The exact `example.invalid` Auth
+row/profile were removed by ID, all user-owned staging tables were read back
+empty, and the cleanup guard was fixed before the successful rerun. Worker
+email-template D1 tests pass 4/4, frontend client tests 3/3, script syntax and
+`git diff --check` pass. This is staging-only API acceptance; browser UI review,
+production, imported users, and domain/DNS cutover remain open.
