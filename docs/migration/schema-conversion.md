@@ -178,6 +178,24 @@ array elements, source export consistency, foreign-key reconciliation, or any
 write path. Those remain required import/rehearsal checks. `value-readiness.sql`
 records the reviewed predicates for a future run with authorized SELECT access.
 
+## 2026-09-26 current-catalog rehearsal
+
+The schema-only catalog was queried again through the linked Supabase CLI and
+kept outside the repository with mode `0600`. The snapshot contains 40 tables,
+406 columns, 144 constraints, 139 indexes, one view, 58 functions, 36 triggers,
+and 77 RLS policies; no application rows were read. Version-4 conversion
+continues to report 18 unresolved gate groups and `deployable: false`.
+
+The exact catalog then passed
+`node scripts/migration/test-d1-import-current-schema.mjs` using three
+synthetic rows in disposable local Miniflare D1: all 40 table checkpoints
+completed, an unknown acknowledgement resumed safely, typed readback and the
+foreign-key check passed, and tampered credential coverage was rejected. The
+final state is `public_rows_reconciled`, while `deployable` and
+`fullMigrationReconciled` remain false. This proves the current catalog can
+drive the synthetic importer rehearsal; it does not resolve the catalog gates,
+establish production readiness, or migrate user data.
+
 ## Source-text codec implementation
 
 The exact source-text conversion helpers and D1 binding evidence are documented

@@ -1600,3 +1600,21 @@ deploy dry-run, and `git diff --check` passed. No Stripe API transaction, user
 data migration, production route, or DNS/domain change occurred. Paid-to-paid
 plan changes and Stripe sandbox acceptance remain incomplete; see the
 [D1 plan Checkout contract](stripe-plan-checkout-api.md).
+
+
+## 2026-09-26 current Supabase catalog / local D1 import rerun
+
+Re-ran the read-only schema catalog query against the linked Supabase project;
+the private catalog contains 40 tables, 406 columns, 144 constraints, 139
+indexes, one view, 58 functions, 36 triggers, and 77 RLS policies. It was
+written outside the repository with mode `0600`; no application rows were
+queried. Version-4 conversion still reports 18 unresolved gate groups and
+`deployable: false`.
+
+`node scripts/migration/test-d1-import-current-schema.mjs` passed against that
+exact catalog using a disposable local D1 and three synthetic rows. All 40
+checkpoints completed after injected acknowledgement loss; exact readback,
+foreign-key check, transformed synthetic credential, and tampered-coverage
+rejection passed. The result remains `public_rows_reconciled`, with
+`deployable` and `fullMigrationReconciled` false. No Cloudflare D1, production,
+user data, or DNS/domain state changed.

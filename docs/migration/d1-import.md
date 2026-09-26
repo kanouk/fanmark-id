@@ -115,6 +115,25 @@ was `public_rows_reconciled`, with `deployable` and
 gates. No real Auth, business, Storage, or credential rows were read or
 migrated.
 
+### Current catalog rerun (2026-09-26)
+
+The read-only `schema-readiness.sql` query was run again against the linked
+Supabase project and stored outside the repository with mode `0600`. It read
+catalog definitions only: 40 tables, 406 columns, 144 constraints, 139
+indexes, one view, 58 functions, 36 triggers, and 77 RLS policies. The fresh
+schema-conversion report still has 18 unresolved gate groups and
+`deployable: false`.
+
+`node scripts/migration/test-d1-import-current-schema.mjs
+/private/path/schema-readiness.json` then exercised that exact catalog against
+a disposable local Miniflare D1 with three synthetic rows. All 40 table
+checkpoints completed; the injected unknown acknowledgement resumed, all rows
+and foreign keys read back, and altered credential coverage was rejected. The
+result was `public_rows_reconciled`; `deployable` and
+`fullMigrationReconciled` remained false. The source query read no application
+rows, and the rehearsal made no Cloudflare, production, user-data, or domain
+changes.
+
 The implementation bounds defaults at 50 rows and 512 KiB of source envelope
 bytes per batch. Source envelope lines have a separate 16 MiB local input cap;
 each converted target row is capped at 1,900,000 encoded value bytes, each
