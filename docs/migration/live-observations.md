@@ -1473,3 +1473,9 @@ read or logged. This confirms public route availability only; it does not
 verify browser behavior, authenticated flows, real-row parity, or production
 routing. The probes were GET-only and changed no D1, R2, production, or
 domain/DNS state.
+
+The four public reference-master GETs also returned HTTP 200: languages
+(494 bytes), tiers (1,067 bytes), reserved patterns (858 bytes), and extension
+prices (1,097 bytes). Their bodies were not read or logged. This is live route
+availability evidence; canonical content and the edit/restore behavior are
+documented in the dedicated reference-master canary record above.

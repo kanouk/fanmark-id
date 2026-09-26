@@ -392,13 +392,15 @@ buckets; this was a read-only check and copied no objects.
    both the dedicated catalog API and app SPA/API Worker are deployed on
    `workers.dev`. The app Worker read back all 3,944 pinned catalog records
    with matching hashes; the dedicated versionless API read back the full
-   active release with matching hashes. Next reconcile
-   user-held references, finish business API wiring, and verify Wrangler
-   plan/CPU fit before #37. Language reads and the read-only tier projection in
-   the extension-coupon admin screen now use Worker APIs in staging; coupon
-   admin CRUD and redemption use the D1 Worker path, with existing coupon and
-   usage rows still excluded from import. Editable tier settings remain on
-   Supabase, and no frontend uses reserved patterns yet. R2 is enabled: staging avatar/cover uploads and
+   active release with matching hashes. Keep user-held references for #38;
+   focus pre-#37 work on browser acceptance, integrated authorization, and
+   Wrangler plan/CPU fit. Language and public tier/price reads, plus editable
+   tier-day and extension-price screens, use versioned Worker/D1 paths on
+   staging. MFA-gated Tier C and extension-price edit/restore canaries passed.
+   Coupon admin CRUD and redemption use the D1 Worker path, with existing
+   coupon and usage rows still excluded from import. Five reserved-pattern rows
+   are in the active release and feed the Worker read/availability path; no
+   dedicated editing UI consumer is present. R2 is enabled: staging avatar/cover uploads and
    profile URLs use the two bound R2 buckets, while existing Supabase objects
    have not been copied and production remains on Supabase.
    Use synthetic
