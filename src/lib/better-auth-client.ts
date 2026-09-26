@@ -41,7 +41,15 @@ export interface BetterAuthCapabilities {
   emailVerification: boolean;
   passwordReset: boolean;
   signUp: boolean;
+  invitationRequired: boolean;
   socialProviders: string[];
+}
+
+export interface BetterAuthInvitationValidation {
+  isValid: boolean;
+  remainingUses: number;
+  perks: Record<string, unknown>;
+  invitationRequired: boolean;
 }
 
 export type BetterAuthTotpVerification =
@@ -154,6 +162,7 @@ export const createBetterAuthClient = ({ baseUrl, fetchImpl = fetch }: BetterAut
         typeof candidate.emailVerification !== 'boolean' ||
         typeof candidate.passwordReset !== 'boolean' ||
         typeof candidate.signUp !== 'boolean' ||
+        typeof candidate.invitationRequired !== 'boolean' ||
         !Array.isArray(candidate.socialProviders) ||
         !candidate.socialProviders.every((provider) => typeof provider === 'string')
       ) throw new Error('Better Auth returned invalid capabilities');
@@ -161,8 +170,52 @@ export const createBetterAuthClient = ({ baseUrl, fetchImpl = fetch }: BetterAut
         emailVerification: candidate.emailVerification,
         passwordReset: candidate.passwordReset,
         signUp: candidate.signUp,
+        invitationRequired: candidate.invitationRequired,
         socialProviders: candidate.socialProviders as string[],
       };
+    },
+
+    async validateInvitationCode(code: string): Promise<BetterAuthInvitationValidation> {
+      const body = await postAuth('invitations/validate', { code });
+      if (!body || typeof body !== 'object') throw new Error('Better Auth returned an invalid invitation response');
+      const candidate = body as Record<string, unknown>;
+      if (
+        typeof candidate.isValid !== 'boolean' ||
+        !Number.isSafeInteger(candidate.remainingUses) ||
+        (candidate.remainingUses as number) < 0 ||
+        typeof candidate.invitationRequired !== 'boolean' ||
+        !candidate.perks || typeof candidate.perks !== 'object' || Array.isArray(candidate.perks)
+      ) throw new Error('Better Auth returned an invalid invitation response');
+      return {
+        isValid: candidate.isValid,
+        remainingUses: candidate.remainingUses as number,
+        perks: candidate.perks as Record<string, unknown>,
+        invitationRequired: candidate.invitationRequired,
+      };
+    },
+
+    async signUpWithEmail(input: {
+      email: string;
+      password: string;
+      commandId: string;
+      invitationCode?: string | null;
+      preferredLanguage: string;
+    }): Promise<{ pending: boolean }> {
+      const body = await postAuth('sign-up/email', {
+        email: input.email,
+        password: input.password,
+        commandId: input.commandId,
+        invitationCode: input.invitationCode ?? null,
+        preferredLanguage: input.preferredLanguage,
+      });
+      if (!body || typeof body !== 'object' || (body as { status?: unknown }).status !== true) {
+        throw new Error('Better Auth did not accept the signup request');
+      }
+      const pending = (body as { pending?: unknown }).pending;
+      if (pending !== undefined && typeof pending !== 'boolean') {
+        throw new Error('Better Auth returned an invalid signup response');
+      }
+      return { pending: pending === true };
     },
 
     async getSession(): Promise<BetterAuthSessionResponse | null> {

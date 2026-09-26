@@ -12,6 +12,13 @@ import { captureMfaGeneration, createAuth } from "./better-auth.mjs";
 import { isResendAuthEmailConfigured } from "./auth-email.mjs";
 import { configuredSocialProviders, type ConfiguredSocialProviders } from "./auth-social.mjs";
 import {
+  handleInvitationCodeValidationRequest,
+  handleInvitationSignupRequest,
+  isInvitationSignupSchemaReady,
+  isInvitationCodeValidationPath,
+  readInvitationSignupMode,
+} from "./invitation-signup-d1-api";
+import {
   AvailabilityConfigurationError,
   AvailabilityTimeoutError,
   AvailabilityUpstreamError,
@@ -269,6 +276,7 @@ const AUTH_KNOWN_ENDPOINTS = new Set([
   "/update-session",
   "/ok",
   "/capabilities",
+  "/invitations/validate",
   "/list-sessions",
   "/revoke-session",
   "/revoke-sessions",
@@ -350,7 +358,11 @@ function configuredAuth(env: Env): ConfiguredAuth | null {
   }
 }
 
-function createApplicationAuth(config: ConfiguredAuth, requestState: number | null = null) {
+function createApplicationAuth(
+  config: ConfiguredAuth,
+  requestState: number | null = null,
+  signupCommandId: string | null = null,
+) {
   const cached = applicationAuthByDatabase.get(config.database);
   const sameTrustedOrigins = cached?.trustedOrigins.length === config.trustedOrigins.length &&
     cached.trustedOrigins.every((origin, index) => origin === config.trustedOrigins[index]);
@@ -359,7 +371,7 @@ function createApplicationAuth(config: ConfiguredAuth, requestState: number | nu
     cached.resendFromEmail === config.resendFromEmail;
   const sameSocialProviders = JSON.stringify(cached?.socialProviders) === JSON.stringify(config.socialProviders);
   if (
-    requestState === null && cached &&
+    requestState === null && signupCommandId === null && cached &&
     cached.secret === config.secret &&
     cached.url === config.url &&
     sameTrustedOrigins &&
@@ -384,13 +396,20 @@ function createApplicationAuth(config: ConfiguredAuth, requestState: number | nu
       issuer: "fanmark.id",
       trustedOrigins: config.trustedOrigins,
       socialProviders: config.socialProviders,
+      ...(signupCommandId
+        ? {
+            allowSignUp: true,
+            sendVerificationOnSignUp: false,
+            signupCommandId,
+          }
+        : {}),
     },
   );
 
   // MFA verification captures a request-specific generation before Better
   // Auth runs. Never cache that instance; ordinary handlers are immutable
   // for one D1 binding/configuration and can be reused by the isolate.
-  if (requestState === null) {
+  if (requestState === null && signupCommandId === null) {
     applicationAuthByDatabase.set(config.database, {
       secret: config.secret,
       url: config.url,
@@ -745,6 +764,11 @@ async function handleBetterAuthRequest(request: Request, env: Env, url: URL): Pr
     corsHeaders.set("access-control-allow-headers", "content-type, authorization, x-requested-with, x-csrf-token");
     corsHeaders.set("vary", "Origin");
   }
+  const emailEnabled = isResendAuthEmailConfigured({
+    AUTH_EMAIL_BACKEND: authConfig.emailBackend,
+    RESEND_API_KEY: authConfig.resendApiKey,
+    RESEND_FROM_EMAIL: authConfig.resendFromEmail,
+  });
   if (request.method.toUpperCase() === "OPTIONS") {
     corsHeaders.set("allow", "GET, POST, OPTIONS");
     return emptyResponse(204, corsHeaders);
@@ -755,24 +779,67 @@ async function handleBetterAuthRequest(request: Request, env: Env, url: URL): Pr
   }
 
   if (authPath === "/capabilities" && request.method.toUpperCase() === "GET") {
-    const emailEnabled = isResendAuthEmailConfigured({
-      AUTH_EMAIL_BACKEND: authConfig.emailBackend,
-      RESEND_API_KEY: authConfig.resendApiKey,
-      RESEND_FROM_EMAIL: authConfig.resendFromEmail,
-    });
+    const businessDb = env.INVITATION_SIGNUP_BACKEND?.trim() === "d1"
+      ? selectD1Database(env, "business")
+      : undefined;
+    const signupSchemaReady = emailEnabled && await isInvitationSignupSchemaReady(businessDb, authConfig.database);
+    const invitationMode = signupSchemaReady
+      ? await readInvitationSignupMode(businessDb)
+      : null;
     return jsonResponse({
       emailVerification: emailEnabled,
       passwordReset: emailEnabled,
-      signUp: false,
+      signUp: invitationMode !== null,
+      invitationRequired: invitationMode === true,
       socialProviders: Object.keys(authConfig.socialProviders).sort(),
     }, 200, corsHeaders);
   }
 
-  const emailEnabled = isResendAuthEmailConfigured({
-    AUTH_EMAIL_BACKEND: authConfig.emailBackend,
-    RESEND_API_KEY: authConfig.resendApiKey,
-    RESEND_FROM_EMAIL: authConfig.resendFromEmail,
-  });
+  if (isInvitationCodeValidationPath(url.pathname)) {
+    const businessDb = env.INVITATION_SIGNUP_BACKEND?.trim() === "d1"
+      ? selectD1Database(env, "business")
+      : undefined;
+    const signupSchemaReady = emailEnabled && await isInvitationSignupSchemaReady(businessDb, authConfig.database);
+    const invitationMode = signupSchemaReady
+      ? await readInvitationSignupMode(businessDb)
+      : null;
+    return handleInvitationCodeValidationRequest(request, businessDb, invitationMode, corsHeaders);
+  }
+
+  if (authPath === "/sign-up/email" && request.method.toUpperCase() === "POST") {
+    if (env.INVITATION_SIGNUP_BACKEND?.trim() !== "d1" || !emailEnabled) {
+      return errorResponse("auth_flow_unavailable", 403, corsHeaders);
+    }
+    const businessDb = env.INVITATION_SIGNUP_BACKEND?.trim() === "d1"
+      ? selectD1Database(env, "business")
+      : undefined;
+    const signupSchemaReady = await isInvitationSignupSchemaReady(businessDb, authConfig.database);
+    const invitationMode = signupSchemaReady
+      ? await readInvitationSignupMode(businessDb)
+      : null;
+    return handleInvitationSignupRequest(
+      request,
+      env,
+      invitationMode,
+      corsHeaders,
+      async (path, body, commandId) => {
+        const auth = createApplicationAuth(authConfig, null, commandId);
+        const headers = new Headers({
+          accept: "application/json",
+          "content-type": "application/json",
+        });
+        for (const name of ["Origin", "cf-connecting-ip", "x-forwarded-for", "user-agent"]) {
+          const value = request.headers.get(name);
+          if (value) headers.set(name, value);
+        }
+        const internalRequest = new Request(
+          new URL(`/api/auth${path}`, `${authConfig.url}/`),
+          { method: "POST", headers, body: JSON.stringify(body) },
+        );
+        return auth.handler(internalRequest);
+      },
+    );
+  }
   let requestedSocialProvider: string | null = null;
   if (authPath === "/sign-in/social" && request.method.toUpperCase() === "POST") {
     try {

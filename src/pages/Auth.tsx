@@ -54,7 +54,12 @@ const Auth = () => {
     };
   }, [betterAuthEnabled]);
 
-  const invitationGateActive = !betterAuthEnabled && !settingsLoading && settings.invitation_mode;
+  const signupAvailable = betterAuthEnabled
+    ? betterAuthCapabilities?.signUp === true
+    : true;
+  const invitationGateActive = betterAuthEnabled
+    ? signupAvailable && Boolean(betterAuthCapabilities?.invitationRequired)
+    : !settingsLoading && settings.invitation_mode;
   const betterAuthSocialProviders = betterAuthEnabled
     ? SOCIAL_PROVIDER_ORDER.filter((provider) => betterAuthCapabilities?.socialProviders.includes(provider))
     : undefined;
@@ -216,7 +221,7 @@ const Auth = () => {
           <div className="rounded-3xl border border-primary/20 bg-background/90 p-6 shadow-[0_22px_55px_rgba(101,195,200,0.16)] backdrop-blur md:p-10">
             <div className="space-y-8">
               <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'login' | 'signup')} className="space-y-6">
-                <TabsList className={`grid w-full ${betterAuthEnabled ? 'grid-cols-1' : 'grid-cols-2'} gap-2 rounded-full border border-primary/20 bg-background/80 p-2 backdrop-blur`}>
+                <TabsList className={`grid w-full ${signupAvailable ? 'grid-cols-2' : 'grid-cols-1'} gap-2 rounded-full border border-primary/20 bg-background/80 p-2 backdrop-blur`}>
                   <TabsTrigger
                     value="login"
                     className="flex items-center justify-center gap-2 rounded-full py-3 text-sm font-semibold tracking-wide transition-colors data-[state=active]:bg-primary/15 data-[state=active]:text-foreground data-[state=active]:shadow-lg"
@@ -224,7 +229,7 @@ const Auth = () => {
                     <Users className="h-4 w-4" />
                     {t('auth.login')}
                   </TabsTrigger>
-                  {!betterAuthEnabled && <TabsTrigger
+                  {signupAvailable && <TabsTrigger
                     value="signup"
                     className="flex items-center justify-center gap-2 rounded-full py-3 text-sm font-semibold tracking-wide transition-colors data-[state=active]:bg-primary/15 data-[state=active]:text-foreground data-[state=active]:shadow-lg"
                   >
@@ -250,7 +255,7 @@ const Auth = () => {
                   />
                 </TabsContent>
 
-                {!betterAuthEnabled && <TabsContent value="signup" className="rounded-2xl border border-primary/15 bg-background/95 p-6 shadow-[0_18px_40px_rgba(101,195,200,0.12)] md:p-8">
+                {signupAvailable && <TabsContent value="signup" className="rounded-2xl border border-primary/15 bg-background/95 p-6 shadow-[0_18px_40px_rgba(101,195,200,0.12)] md:p-8">
                   <div className="space-y-6">
                     {settingsLoading && (
                       <div className="rounded-2xl border border-primary/15 bg-background/95 p-6 text-center">
@@ -268,6 +273,7 @@ const Auth = () => {
                           setInvitationValidated(false);
                           setValidatedInvitationCode(null);
                         }}
+                        allowWaitlist={!betterAuthEnabled}
                       />
                     )}
                     {(!invitationGateActive || invitationValidated) && (

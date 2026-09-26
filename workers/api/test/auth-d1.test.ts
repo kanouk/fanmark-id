@@ -401,6 +401,7 @@ describe("Better Auth through the application Worker", () => {
       emailVerification: false,
       passwordReset: false,
       signUp: false,
+      invitationRequired: false,
       socialProviders: [],
     });
 
@@ -414,6 +415,7 @@ describe("Better Auth through the application Worker", () => {
       emailVerification: true,
       passwordReset: true,
       signUp: false,
+      invitationRequired: false,
       socialProviders: [],
     });
 
@@ -452,6 +454,7 @@ describe("Better Auth through the application Worker", () => {
       emailVerification: false,
       passwordReset: false,
       signUp: false,
+      invitationRequired: false,
       socialProviders: ["google"],
     });
 

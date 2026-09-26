@@ -45,6 +45,8 @@ export const useAuthForm = () => {
 
   const [resendCooldown, setResendCooldown] = useState(0);
   const cooldownTimerRef = useRef<number | null>(null);
+  const signupCommandIdRef = useRef<string | null>(null);
+  const signupTermsRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (resendCooldown > 0) {
@@ -120,71 +122,93 @@ export const useAuthForm = () => {
     setError('');
 
     try {
-      const emailExists = await checkEmailExists(formData.email);
-      if (emailExists) {
-        setError('このメールアドレスは既に登録されています');
-        return;
-      }
-
-      if (invitationRequired && normalizedInvitationCode) {
-        const { data, error } = await supabase.rpc('validate_invitation_code', {
-          code_to_check: normalizedInvitationCode
+      if (isBetterAuthEnabled()) {
+        const preferredLanguage = detectBrowserLanguage();
+        const terms = JSON.stringify([
+          formData.email.trim().toLowerCase(),
+          normalizedInvitationCode,
+          preferredLanguage,
+        ]);
+        if (signupTermsRef.current !== terms) {
+          signupTermsRef.current = terms;
+          signupCommandIdRef.current = crypto.randomUUID();
+        }
+        await betterAuthClient.signUpWithEmail({
+          email: formData.email,
+          password: formData.password,
+          commandId: signupCommandIdRef.current ?? crypto.randomUUID(),
+          invitationCode: normalizedInvitationCode,
+          preferredLanguage,
         });
-
-        if (error) {
-          console.error('Error validating invitation code before signup:', error);
-          setError(t('invitation.errorValidating'));
+        signupCommandIdRef.current = null;
+        signupTermsRef.current = null;
+      } else {
+        const emailExists = await checkEmailExists(formData.email);
+        if (emailExists) {
+          setError('このメールアドレスは既に登録されています');
           return;
         }
 
-        const result = data?.[0];
-        if (!result?.is_valid) {
-          setError(t('invitation.invalidCode'));
-          return;
-        }
-
-        if ((result.remaining_uses ?? 0) <= 0) {
-          setError(t('invitation.codeFullyUsed'));
-          return;
-        }
-      }
-
-      const signUpOptions = {
-        emailRedirectTo: `${window.location.origin}/`,
-        data: {
-          preferred_language: detectBrowserLanguage(),
-          ...(normalizedInvitationCode && { invitation_code: normalizedInvitationCode })
-        }
-      };
-
-      const { data: signUpData, error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: signUpOptions
-      });
-
-      if (error) throw error;
-
-      if (normalizedInvitationCode && !invitationRequired) {
-        const { error: consumeError } = await supabase.rpc('use_invitation_code', {
-          code_to_use: normalizedInvitationCode
-        });
-
-        if (consumeError) {
-          console.error('Error consuming invitation code:', consumeError);
-          toast({
-            title: t('common.error'),
-            description: t('invitation.errorValidating'),
-            variant: 'destructive',
+        if (invitationRequired && normalizedInvitationCode) {
+          const { data, error } = await supabase.rpc('validate_invitation_code', {
+            code_to_check: normalizedInvitationCode
           });
-        } else if (signUpData?.user?.id) {
-          const { error: settingsError } = await supabase
-            .from('user_settings')
-            .update({ invited_by_code: normalizedInvitationCode })
-            .eq('user_id', signUpData.user.id);
 
-          if (settingsError) {
-            console.error('Error updating user settings with invitation code:', settingsError);
+          if (error) {
+            console.error('Error validating invitation code before signup:', error);
+            setError(t('invitation.errorValidating'));
+            return;
+          }
+
+          const result = data?.[0];
+          if (!result?.is_valid) {
+            setError(t('invitation.invalidCode'));
+            return;
+          }
+
+          if ((result.remaining_uses ?? 0) <= 0) {
+            setError(t('invitation.codeFullyUsed'));
+            return;
+          }
+        }
+
+        const signUpOptions = {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            preferred_language: detectBrowserLanguage(),
+            ...(normalizedInvitationCode && { invitation_code: normalizedInvitationCode })
+          }
+        };
+
+        const { data: signUpData, error } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: signUpOptions
+        });
+
+        if (error) throw error;
+
+        if (normalizedInvitationCode && !invitationRequired) {
+          const { error: consumeError } = await supabase.rpc('use_invitation_code', {
+            code_to_use: normalizedInvitationCode
+          });
+
+          if (consumeError) {
+            console.error('Error consuming invitation code:', consumeError);
+            toast({
+              title: t('common.error'),
+              description: t('invitation.errorValidating'),
+              variant: 'destructive',
+            });
+          } else if (signUpData?.user?.id) {
+            const { error: settingsError } = await supabase
+              .from('user_settings')
+              .update({ invited_by_code: normalizedInvitationCode })
+              .eq('user_id', signUpData.user.id);
+
+            if (settingsError) {
+              console.error('Error updating user settings with invitation code:', settingsError);
+            }
           }
         }
       }
@@ -197,7 +221,24 @@ export const useAuthForm = () => {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : undefined;
-      setError(message || 'サインアップに失敗しました');
+      if (message === 'signup_command_expired' || message === 'signup_command_conflict') {
+        signupCommandIdRef.current = null;
+        signupTermsRef.current = null;
+      }
+      const signupError = message === 'invitation_required'
+        ? t('invitation.codeRequired')
+        : message === 'invitation_invalid_or_full'
+          ? t('invitation.invalidCode')
+          : message === 'signup_command_expired'
+            ? '登録手続きの有効時間が過ぎました。もう一度お試しください。'
+            : message === 'signup_command_conflict'
+              ? '入力内容が変わりました。招待コードを確認してもう一度お試しください。'
+              : message === 'verification_email_unavailable'
+                ? '確認メールを送信できませんでした。しばらくしてからもう一度お試しください。'
+                : message === 'signup_email_or_invitation_unavailable'
+                  ? '招待コードを利用できません。残り回数を確認してください。'
+                  : 'サインアップに失敗しました。しばらくしてからもう一度お試しください。';
+      setError(signupError);
     } finally {
       setLoading(false);
     }

@@ -190,7 +190,7 @@ export function createAuth(
     },
     emailAndPassword: {
       enabled: true,
-      disableSignUp: true,
+      disableSignUp: authOptions.allowSignUp !== true,
       autoSignIn: false,
       requireEmailVerification: true,
       password: bcryptPassword,
@@ -207,12 +207,35 @@ export function createAuth(
     ...(resendEmailConfigured
       ? {
           emailVerification: {
-            sendOnSignUp: true,
+            sendOnSignUp: authOptions.sendVerificationOnSignUp ?? true,
             sendVerificationEmail: async ({ user, url }) => sendResendAuthEmail(env, {
               kind: "verification",
               to: user.email,
               url,
             }),
+          },
+        }
+      : {}),
+    ...(authOptions.signupCommandId
+      ? {
+          user: {
+            additionalFields: {
+              signupCommandId: {
+                type: "string",
+                required: false,
+                input: false,
+                returned: false,
+              },
+            },
+          },
+          databaseHooks: {
+            user: {
+              create: {
+                before: async (user) => ({
+                  data: { ...user, signupCommandId: authOptions.signupCommandId },
+                }),
+              },
+            },
           },
         }
       : {}),

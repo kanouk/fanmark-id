@@ -17,6 +17,7 @@ export interface Env {
   APPLE_OAUTH_CLIENT_ID?: string;
   APPLE_OAUTH_CLIENT_SECRET?: string;
   AUTH_EMAIL_BACKEND?: string;
+  INVITATION_SIGNUP_BACKEND?: string;
   RESEND_API_KEY?: string;
   RESEND_FROM_EMAIL?: string;
   STORAGE_BACKEND?: string;

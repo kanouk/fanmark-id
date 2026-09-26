@@ -13,9 +13,9 @@
 - `DELETE /api/admin/invitation-codes/{uuid}`は既存`user_settings.invited_by_code`から参照されるコードを外部キーで保護する。
 - same-origin credentials CORS、`no-store`、5秒client timeout、応答サイズ/DTO検査を適用する。Worker障害時にSupabaseへフォールバックしない。
 
-## 未接続の範囲
+## サインアップとの境界
 
-招待モード設定、公開コード検証、コード消費、Better Auth signup、確認メールはこのAPIの対象外。signupでBetter Auth Auth D1とbusiness D1をまたいで招待残数・`user_settings`を一体処理する仕組みがないため、サインアップは引き続き閉じている。招待コードやユーザー行のremote D1 importはしていない。
+招待モード設定の管理API、招待コードの実データ、ユーザー行のremote D1 importはこのAPIの対象外。公開コード検証、Better Auth signup、確認メールのCoordinatorは `docs/migration/invitation-signup-api.md` に別実装し、両schema migrationとWorkerをstagingへ配備済み。Resend資格情報とsignup selectorは未設定のため、stagingのサインアップは引き続き閉じている。
 
 ## 検証と現在地
 

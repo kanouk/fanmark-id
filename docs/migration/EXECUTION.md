@@ -1687,3 +1687,39 @@ for `/`, `/robots.txt`, and `/api/auth/ok`, and 404 for the plan-change route.
 The remote command table remains empty and Wrangler reports no pending business
 migrations. Stripe secrets/selectors remain absent; no Stripe call, user data,
 production routing, or domain/DNS change occurred.
+
+## Invitation-gated signup staging schema and Worker slice (2026-09-26 JST)
+
+Added a split-D1 signup coordinator for the invitation-required Better Auth
+flow. It reserves invitation capacity in business D1, creates the Better Auth
+identity in auth D1 with a recoverable command marker, then atomically writes
+the required profile and consumes the invitation. Business D1 keeps an HMAC
+email fingerprint and command state, never the submitted email or password.
+The Worker exposes invitation validation and signup capability only when the
+explicit backend selector, Resend configuration, and both schema capabilities
+are ready. The staging selector remains absent, so signup stays closed there;
+the waitlist form is hidden in Worker mode to avoid new Supabase writes.
+
+Nine dedicated synthetic split-D1 tests passed, including last-slot
+competition, email-send retry, lost acknowledgement recovery after auth-D1
+commit, and duplicate-email privacy. The full Worker suite passed, including
+the 15-test Better Auth D1 suite; the frontend client suite passed 14/14.
+Frontend and Worker typechecks, CI workflow isolation, Cloudflare staging
+build, targeted ESLint, and `git diff --check` passed. Wrangler 4.135.0 does
+not support `--dry-run` on `d1 migrations apply`; the migration SQL was
+executed by the local synthetic split-D1 suite, and remote `migrations list`
+identified only these two pending files before application.
+
+Applied `0007_auth_signup_command.sql` to `fanmark-auth-staging` and
+`0014_invitation_signup_attempts.sql` to `fanmark-business-staging`. Remote
+readback confirmed the Auth `user.signupCommandId` column, the business
+attempts table plus its two indexes and four guards/consumption triggers, zero
+signup-attempt rows, and no pending migrations. Deployed app Worker version
+`bd78ddce-b8c4-4a77-ac00-1609bd5f0b04` to
+`https://fanmark-app-staging.fanmark-id.workers.dev`; `/`, `/robots.txt`,
+`/api/auth/ok`, and `/api/auth/capabilities` returned 200, with capabilities
+reporting `signUp: false`. Wrangler secret inventory contains only
+`BETTER_AUTH_SECRET`, `REFERENCE_MASTER_SERVICE_SECRET`, and
+`VERIFIED_ACCESS_SECRET`; no Resend secret or signup selector is configured.
+No invitation records were seeded, no real email was sent, and no user data,
+production, or domain/DNS state changed.

@@ -219,6 +219,7 @@ test('Better Auth capabilities are fetched without caching and validate the feat
         emailVerification: true,
         passwordReset: true,
         signUp: false,
+        invitationRequired: true,
         socialProviders: [],
       }), { status: 200, headers: { 'content-type': 'application/json' } });
     },
@@ -228,11 +229,57 @@ test('Better Auth capabilities are fetched without caching and validate the feat
     emailVerification: true,
     passwordReset: true,
     signUp: false,
+    invitationRequired: true,
     socialProviders: [],
   });
   assert.equal(request?.url, 'https://fanmark-app-staging.example.workers.dev/api/auth/capabilities');
   assert.equal(request?.init?.credentials, 'include');
   assert.equal(request?.init?.cache, 'no-store');
+});
+
+test('Better Auth validates invitation availability and submits signup command terms', async () => {
+  const requests: Array<{ url: string; body: unknown }> = [];
+  const client = createBetterAuthClient({
+    baseUrl: 'https://fanmark-app-staging.example.workers.dev',
+    fetchImpl: async (input, init) => {
+      requests.push({ url: String(input), body: init?.body ? JSON.parse(String(init.body)) : null });
+      return new Response(JSON.stringify(
+        String(input).endsWith('/invitations/validate')
+          ? { isValid: true, remainingUses: 1, perks: {}, invitationRequired: true }
+          : { status: true },
+      ), { status: 200, headers: { 'content-type': 'application/json' } });
+    },
+  });
+
+  assert.deepEqual(await client.validateInvitationCode('welcome'), {
+    isValid: true,
+    remainingUses: 1,
+    perks: {},
+    invitationRequired: true,
+  });
+  assert.deepEqual(await client.signUpWithEmail({
+    email: 'user@example.invalid',
+    password: 'synthetic-password',
+    commandId: 'a8f53c30-f3e6-41f8-9d2e-970ceb5793f1',
+    invitationCode: 'WELCOME',
+    preferredLanguage: 'ja',
+  }), { pending: false });
+  assert.deepEqual(requests, [
+    {
+      url: 'https://fanmark-app-staging.example.workers.dev/api/auth/invitations/validate',
+      body: { code: 'welcome' },
+    },
+    {
+      url: 'https://fanmark-app-staging.example.workers.dev/api/auth/sign-up/email',
+      body: {
+        email: 'user@example.invalid',
+        password: 'synthetic-password',
+        commandId: 'a8f53c30-f3e6-41f8-9d2e-970ceb5793f1',
+        invitationCode: 'WELCOME',
+        preferredLanguage: 'ja',
+      },
+    },
+  ]);
 });
 
 test('Better Auth email verification and password reset use their dedicated endpoints', async () => {
