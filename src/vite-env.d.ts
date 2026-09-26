@@ -27,6 +27,8 @@ interface ImportMetaEnv {
   readonly VITE_REFERENCE_MASTER_READ_BACKEND?: string;
   readonly VITE_REFERENCE_MASTER_ADMIN_BACKEND?: string;
   readonly VITE_STRIPE_EXTENSION_CHECKOUT_BACKEND?: string;
+  readonly VITE_STRIPE_CUSTOMER_PORTAL_BACKEND?: string;
+  readonly VITE_STRIPE_PLAN_CHECKOUT_BACKEND?: string;
   readonly VITE_AUTH_API_BASE_URL?: string;
   readonly VITE_EMOJI_CATALOG_BACKEND?: string;
   readonly VITE_EMOJI_CATALOG_VERSION?: string;

@@ -23,6 +23,13 @@ import { FanmarkSelectionModal } from '@/components/FanmarkSelectionModal';
 import { DowngradeWarningDialog } from '@/components/DowngradeWarningDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { bulkReturnFanmarksThroughWorker, getFanmarkReturnBackend } from '@/lib/fanmark-return-api';
+import {
+  clearStripePlanCheckoutRequestIds,
+  createStripePlanCheckoutThroughWorker,
+  getStripePlanCheckoutBackend,
+  getStripePlanCheckoutRequestId,
+  StripePlanCheckoutApiError,
+} from '@/lib/stripe-plan-checkout-api';
 import { Check, ArrowLeft, Loader2, Sparkle, Crown, Star, ExternalLink, Flame, ShieldCheck, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface PlanCardCopy {
@@ -172,6 +179,7 @@ const PlanSelection = () => {
     };
 
     if (checkoutStatus === 'success') {
+      clearStripePlanCheckoutRequestIds();
       setCheckingSubscription(true);
       setPendingCheckout(true);
       setInitialPlanType((profile?.plan_type || 'free') as PlanType);
@@ -186,6 +194,7 @@ const PlanSelection = () => {
         description: t('planSelection.pleaseWait'),
       });
     } else if (checkoutStatus === 'canceled') {
+      clearStripePlanCheckoutRequestIds();
       clearQuery();
       toast({
         title: t('planSelection.checkoutCanceled'),
@@ -298,6 +307,15 @@ const PlanSelection = () => {
       // Upgrading from free to paid plan
       if (currentPlanType === 'free' && (planType === 'creator' || planType === 'business')) {
         setPlanProcessingMode('stripe');
+
+        if (getStripePlanCheckoutBackend() === 'worker') {
+          const checkout = await createStripePlanCheckoutThroughWorker({
+            planType,
+            requestId: getStripePlanCheckoutRequestId(planType),
+          });
+          window.location.href = checkout.url;
+          return;
+        }
         
         const { data, error } = await supabase.functions.invoke('create-checkout', {
           body: { plan_type: planType }
@@ -402,6 +420,10 @@ const PlanSelection = () => {
       }
     } catch (error) {
       console.error('Plan change error:', error);
+      if (error instanceof StripePlanCheckoutApiError &&
+          ['request_id_conflict', 'request_id_expired', 'checkout_session_not_open'].includes(error.code ?? '')) {
+        clearStripePlanCheckoutRequestIds();
+      }
       setPlanProcessingMode(null);
       toast({
         title: t('planSelection.errorTitle'),

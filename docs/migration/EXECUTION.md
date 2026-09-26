@@ -1563,3 +1563,40 @@ Added an authenticated Worker endpoint for opening Stripe Customer Portal from t
 The endpoint requires STRIPE_CUSTOMER_PORTAL_BACKEND=d1, the D1 webhook/dispatch selectors and signing secret, a matching STRIPE_SECRET_KEY plus test/live dispatcher keys, and a Better Auth session. Those Stripe selectors and secrets remain unset, so POST /api/billing/customer-portal returns 404. Stripe webhook remains 404.
 
 Worker version d895ec75-76fb-457e-a74d-fd8102ff7110 is active at 100% on workers.dev. Post-deploy read-only checks returned 200 for / and /api/auth/ok, 404 for both billing routes. No Stripe call or D1 write occurred. Local verification passed the Stripe Worker suite 59/59, Customer Portal client tests 5/5, both TypeScript checks, staging build, and Wrangler deploy dry-run.
+
+
+## 2026-09-26 Free-to-paid plan Checkout D1 rollout
+
+Added a Better Auth-owned `POST /api/billing/plan-checkout` path for the
+Free-to-paid subscription flow and connected `/plans` to its Worker client in
+the Cloudflare staging build. The request is limited to an allowlisted HTTPS
+origin and `creator`/`max`/`business` plans. The Worker reads the exact owner's
+email from Auth D1, requires one matching free-plan row in business D1, selects
+the mode-specific plan Price, and verifies that Stripe returns an active
+monthly JPY Price in the same mode. It never searches Customers by email and
+does not grant a plan; subscription reconciliation remains authoritative.
+
+Business migration `0012_stripe_plan_checkout_commands.sql` adds a durable
+Customer creation fence and owner/plan/Price/mode-bound Checkout command ledger.
+An unknown Stripe Customer response is retried with the same provider key; if
+the local result remains unresolved past the provider idempotency window, the
+route stops for reconciliation instead of blindly creating another Customer.
+Repeated requests return the same open Checkout Session, and request UUID reuse
+with changed terms fails closed.
+
+The migration was applied only to APAC `fanmark-business-staging` and read back:
+both command tables, `user_settings`, and `user_subscriptions` each contain zero
+rows; Wrangler reports no pending migrations. Worker version
+`a67b6abe-0080-4784-bcf2-87efed59f83a` is active at 100% on workers.dev staging.
+Read-only checks returned 200 for `/`, `/robots.txt`, and `/api/auth/ok`, and
+404 for Stripe webhook, Customer Portal, and plan Checkout routes. Wrangler's
+secret-name list contains no Stripe secret, and no Stripe selector is present
+in the staging Worker config, so these billing paths remain closed.
+
+The full Worker package suite, the 116-case migration-data suite, the 8-case
+plan Checkout D1 suite, the 6-case frontend client suite, both TypeScript
+checks, CI workflow isolation check, targeted ESLint, staging build, Wrangler
+deploy dry-run, and `git diff --check` passed. No Stripe API transaction, user
+data migration, production route, or DNS/domain change occurred. Paid-to-paid
+plan changes and Stripe sandbox acceptance remain incomplete; see the
+[D1 plan Checkout contract](stripe-plan-checkout-api.md).

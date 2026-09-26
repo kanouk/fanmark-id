@@ -62,6 +62,7 @@ import {
   handleStripeCustomerPortalD1Request,
   isStripeCustomerPortalPath,
 } from "./stripe-customer-portal-d1-api";
+import { handleStripePlanCheckoutD1Request, isStripePlanCheckoutPath } from "./stripe-plan-checkout-d1-api";
 import { handleMaintenanceSettingsRequest, isMaintenanceSettingsPath } from "./maintenance-settings-d1-api";
 import { handleLifecycleSettingsRequest, isLifecycleSettingsPath } from "./lifecycle-settings-d1-api";
 import { handleFavoritesRequest, isFavoritesPath } from "./favorites-d1-api";
@@ -898,6 +899,29 @@ export async function handleRequest(
         });
         const userId = current?.user?.id;
         return typeof userId === "string" ? userId : null;
+      },
+    })) ?? errorResponse("not_found", 404, routeHeaders);
+  }
+
+  if (isStripePlanCheckoutPath(url.pathname)) {
+    return (await handleStripePlanCheckoutD1Request(request, env, {
+      resolveUser: async (checkoutRequest) => {
+        if (env.AUTH_BACKEND?.trim() !== "better-auth") throw new Error("auth_unavailable");
+        const config = configuredAuth(env);
+        if (!config) throw new Error("auth_unavailable");
+        const current = await createApplicationAuth(config).api.getSession({
+          headers: checkoutRequest.headers,
+          query: { disableCookieCache: true },
+        });
+        const id = current?.user?.id;
+        if (typeof id !== "string") return null;
+        const authUser = await config.database.prepare(
+          'SELECT email FROM "user" WHERE id = ? LIMIT 2',
+        ).bind(id).all<{ email: unknown }>();
+        if (!authUser.success || authUser.results.length !== 1 || typeof authUser.results[0]?.email !== "string") {
+          return null;
+        }
+        return { id, email: authUser.results[0].email };
       },
     })) ?? errorResponse("not_found", 404, routeHeaders);
   }
