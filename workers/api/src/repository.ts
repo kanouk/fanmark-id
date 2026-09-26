@@ -5,6 +5,7 @@ export interface Env {
   MASTER_DB?: D1Database;
   D1_TOPOLOGY?: string;
   SYSTEM_SETTINGS_BACKEND?: string;
+  SUBSCRIPTION_BACKEND?: string;
   AVATARS_BUCKET?: R2Bucket;
   COVER_IMAGES_BUCKET?: R2Bucket;
   AUTH_BACKEND?: string;

@@ -77,6 +77,7 @@
     "MAINTENANCE_SETTINGS_BACKEND": "d1",
     "LIFECYCLE_SETTINGS_BACKEND": "d1",
     "SYSTEM_SETTINGS_BACKEND": "d1",
+    "SUBSCRIPTION_BACKEND": "d1",
     "VERIFIED_ACCESS_BACKEND": "d1",
     "STORAGE_BACKEND": "r2",
     "BETTER_AUTH_URL": "https://fanmark-app-staging.fanmark-id.workers.dev",

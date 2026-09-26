@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "vitest run --config vitest.config.mjs && vitest run --config vitest.verified-access-d1.config.mjs && npm run test:stripe-webhook-ingress-schema && npm run test:stripe-extension-checkout-d1 && npm run test:extension-coupon-application-d1 && npm run test:extension-coupon-admin-d1 && npm run test:stripe-plan-checkout-d1 && npm run test:stripe-plan-change-d1 && npm run test:notification-master-admin-d1 && npm run test:invitation-admin-d1 && npm run test:invitation-signup-d1 && npm run test:availability-rules-admin-d1 && npm run test:admin-user-management-d1 && npm run test:admin-email-templates-d1 && npm run test:system-settings-d1 && npm run test:api-contracts-d1 && npm run test:auth:d1 && npm run test:auth-email && npm run test:auth-social",
+    "test": "vitest run --config vitest.config.mjs && vitest run --config vitest.verified-access-d1.config.mjs && npm run test:stripe-webhook-ingress-schema && npm run test:stripe-extension-checkout-d1 && npm run test:extension-coupon-application-d1 && npm run test:extension-coupon-admin-d1 && npm run test:stripe-plan-checkout-d1 && npm run test:stripe-plan-change-d1 && npm run test:notification-master-admin-d1 && npm run test:invitation-admin-d1 && npm run test:invitation-signup-d1 && npm run test:availability-rules-admin-d1 && npm run test:admin-user-management-d1 && npm run test:admin-email-templates-d1 && npm run test:system-settings-d1 && npm run test:api-contracts-d1 && npm run test:auth:d1 && npm run test:auth-email && npm run test:auth-social && npm run test:subscription-d1-api",
     "test:verified-access:d1": "vitest run --config vitest.verified-access-d1.config.mjs",
     "test:static-assets": "test -f ../../dist/index.html && vitest run --config vitest.static-assets.config.mjs && node ./test/static-assets-router-smoke.mjs",
     "test:watch": "vitest --config vitest.config.mjs",
@@ -36,6 +36,7 @@
     "test:storage-r2-api": "vitest run --config vitest.storage-r2.config.mjs",
     "test:owned-fanmarks-api": "vitest run --config vitest.owned-fanmarks.config.mjs",
     "test:profile-d1": "vitest run --config vitest.profile-d1.config.mjs",
+    "test:subscription-d1-api": "node --experimental-strip-types --test test/subscription-d1-api.test.mjs",
     "test:fanmark-profile-d1": "vitest run --config vitest.fanmark-profile.config.mjs",
     "test:fanmark-details-d1": "vitest run --config vitest.fanmark-details.config.mjs",
     "test:fanmark-access-analytics-d1": "vitest run --config vitest.fanmark-access-analytics.config.mjs",

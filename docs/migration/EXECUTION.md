@@ -2068,3 +2068,25 @@ integrated #37 coverage, production, user-data import, and domain/DNS remain
 open. Post-canary Auth readback found zero user-owned rows; the monotonic
 `mfaGeneration` singleton reads 60 and remains retained by design. See
 `system-settings-api.md`.
+
+## Authenticated subscription display through D1 on staging (2026-09-27 JST)
+
+Added read-only `GET /api/me/subscription`. It derives the owner ID from the
+Better Auth session and reads only that user's latest `user_subscriptions`
+projection from business D1. The DTO excludes Stripe customer/subscription
+IDs. The Cloudflare staging build selects the Worker path for the subscription
+hook; it no longer calls Supabase `check-subscription`, reads the Supabase
+table, or opens a Supabase Realtime subscription in that mode. It refreshes on
+focus/visibility and explicit refetch. Stripe state is not fetched or mutated
+by this endpoint; the Worker billing projection remains gated on sandbox
+acceptance. Default and production builds retain the existing Supabase path.
+
+Client and Worker API contract suites pass 4/4 and 3/3, respectively. Root and
+Worker TypeScript checks, focused ESLint, CI workflow-isolation check, staging
+SPA build, and Wrangler 4.139 dry-run passed. The new staging deployment is
+Worker version `7da3ee3b-62af-45ca-8c92-be5a5d14b2b5` at 100%. The SPA returned
+200; an anonymous request to the new endpoint returned 401/no-store with the
+allowed staging origin. No subscription row, user/Auth data, Stripe object,
+production route, or domain/DNS setting was written or changed. This validates
+the anonymous boundary and synthetic API contracts, not an authenticated
+browser view or a Stripe sandbox flow.

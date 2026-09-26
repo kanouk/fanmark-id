@@ -91,6 +91,7 @@ import { handleMaintenanceSettingsRequest, isMaintenanceSettingsPath } from "./m
 import { handleLifecycleSettingsRequest, isLifecycleSettingsPath } from "./lifecycle-settings-d1-api";
 import { handleSystemSettingsRequest, isSystemSettingsPath } from "./system-settings-d1-api";
 import { handleFavoritesRequest, isFavoritesPath } from "./favorites-d1-api";
+import { handleSubscriptionRequest, isSubscriptionPath } from "./subscription-d1-api";
 import { handleOgpRequest } from "./ogp";
 import { handleFanmarkAccessAnalyticsRequest } from "./fanmark-access-analytics-d1-api";
 import { handleFanmarkAnalyticsRequest } from "./fanmark-analytics-d1-api";
@@ -1222,6 +1223,9 @@ export async function handleRequest(
   }
   if (isFavoritesPath(url.pathname)) {
     return handleFavoritesRequest(request, env, resolveStorageAuth);
+  }
+  if (isSubscriptionPath(url.pathname)) {
+    return (await handleSubscriptionRequest(request, env, resolveStorageAuth)) ?? errorResponse("not_found", 404, routeHeaders);
   }
   if (isEmojiMasterAdminPath(url)) {
     return handleEmojiMasterAdminRequest(request, env, url);

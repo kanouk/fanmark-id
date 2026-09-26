@@ -24,6 +24,7 @@ interface ImportMetaEnv {
   readonly VITE_MAINTENANCE_SETTINGS_BACKEND?: string;
   readonly VITE_LIFECYCLE_SETTINGS_BACKEND?: string;
   readonly VITE_SYSTEM_SETTINGS_BACKEND?: string;
+  readonly VITE_SUBSCRIPTION_BACKEND?: string;
   readonly VITE_FAVORITES_BACKEND?: string;
   readonly VITE_LANGUAGE_READ_BACKEND?: string;
   readonly VITE_REFERENCE_MASTER_READ_BACKEND?: string;
