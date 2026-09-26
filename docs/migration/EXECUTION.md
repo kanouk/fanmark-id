@@ -1820,3 +1820,23 @@ readback, and preserved disabled state. Node 22.6.0 validation passed:
 (15/15), Worker typecheck, syntax checks, and `git diff --check`. No source
 credentials, remote D1, Worker deployment, production route, or domain/DNS
 setting was changed.
+
+## MFA-protected reference-master pricing readback (2026-09-26 JST)
+
+Extended the staging TOTP smoke with a read-only pricing mode. It provisions a
+synthetic Better Auth administrator, verifies TOTP/session rotation, and reads
+`/api/admin/reference-masters/pricing` under same-session MFA. The returned
+release version, generation, all four tier DTOs, and all 16 extension-price
+DTOs matched the active Master D1 rows by digest. Anonymous access returned
+401; the public price API returned the same release with no Stripe fields.
+Read-before/read-after confirmed the active release pointer was unchanged, and
+the synthetic Auth identity was removed with all user-owned Auth tables back
+at zero. No price master was edited and no Stripe request was made.
+
+Reproduce from `workers/api` with
+`node test/staging-admin-totp-smoke.mjs --run-live-staging-write --database=fanmark-auth-staging --reference-master-pricing-readback`.
+
+Node 22.6.0 validation passed: public price client 7/7, admin price client
+6/6, Worker reference-master D1 6/6, signed reference-master service 5/5,
+Worker typecheck, and syntax/diff checks. The server-side Stripe extension
+checkout remains disabled pending its selectors and secrets.

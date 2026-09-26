@@ -2,7 +2,7 @@
 
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { randomBytes, randomUUID, webcrypto } from "node:crypto";
+import { createHash, randomBytes, randomUUID, webcrypto } from "node:crypto";
 import { access, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -33,12 +33,15 @@ const userOwnedTables = [
 
 function requireExplicitStagingConsent() {
   const args = new Set(process.argv.slice(2));
+  const emojiMasterRoundtrip = args.has("--emoji-master-draft-roundtrip");
+  const referenceMasterPricingReadback = args.has("--reference-master-pricing-readback");
   if (!args.has("--run-live-staging-write") || !args.has(`--database=${expectedDatabase}`) ||
-      !args.has("--emoji-master-draft-roundtrip")) {
+      (!emojiMasterRoundtrip && !referenceMasterPricingReadback)) {
     throw new Error(
-      `Refusing remote staging writes. Pass --run-live-staging-write --database=${expectedDatabase} --emoji-master-draft-roundtrip explicitly.`,
+      `Refusing remote staging writes. Pass --run-live-staging-write --database=${expectedDatabase} and an explicit smoke flag.`,
     );
   }
+  return { emojiMasterRoundtrip, referenceMasterPricingReadback };
 }
 
 async function assertStagingTarget() {
@@ -59,6 +62,7 @@ async function assertStagingTarget() {
   assert.equal(config.vars?.EMAIL_TEMPLATE_ADMIN_BACKEND, "d1", "expected D1-backed auth email-template admin API");
   assert.equal(config.vars?.AUTH_EMAIL_TEMPLATE_BACKEND, "d1", "expected D1-backed Better Auth email templates");
   assert.equal(config.vars?.STAGING_NO_INDEX, "true", "expected no-index staging Worker");
+  assert.equal(config.vars?.REFERENCE_MASTER_ADMIN_BACKEND, "d1", "expected D1-backed reference-master admin API");
   const masterBinding = config.d1_databases?.find((database) => database.binding === "MASTER_DB");
   assert.equal(masterBinding?.database_name, expectedMasterDatabase, "unexpected Master D1 name");
   assert.equal(masterBinding?.database_id, expectedMasterDatabaseId, "unexpected Master D1 id");
@@ -411,6 +415,80 @@ async function exerciseAuthEmailTemplatesAdmin(cookie) {
   assert.deepEqual(afterRows, beforeRows, "auth email-template admin read changed D1 data");
 }
 
+function digest(value) {
+  return createHash("sha256").update(JSON.stringify(value)).digest("hex");
+}
+
+async function exerciseReferenceMasterPricingReadback(cookie) {
+  const route = "/api/admin/reference-masters/pricing";
+  const before = await queryMaster(`SELECT a.release_version, a.generation
+    FROM fanmark_reference_master_active_release AS a
+    JOIN fanmark_reference_master_releases AS r
+      ON r.release_version = a.release_version AND r.status = 'ready'
+    WHERE a.singleton_id = 1`);
+  assert.equal(before.length, 1, "active reference-master release is missing");
+  const version = before[0].release_version;
+  const generation = Number(before[0].generation);
+  const expectedTiers = await queryMaster(`SELECT id, tier_level, display_name, description,
+      initial_license_days, is_active
+    FROM fanmark_tier_release_rows
+    WHERE release_version = ${sqlLiteral(version)}
+    ORDER BY tier_level, id`);
+  const expectedPrices = await queryMaster(`SELECT id, tier_level, months, price_yen,
+      is_active, stripe_price_id, stripe_price_id_live
+    FROM fanmark_extension_price_release_rows
+    WHERE release_version = ${sqlLiteral(version)}
+    ORDER BY tier_level, months`);
+  assert.equal(expectedTiers.length, 4, "expected four tier rows in the active release");
+  assert.equal(expectedPrices.length, 16, "expected sixteen extension-price rows in the active release");
+
+  const anonymous = await request(route);
+  assertStatus(anonymous, 401, "unauthenticated reference-master pricing admin read");
+  const response = await request(route, { headers: { cookie } });
+  assertStatus(response, 200, "MFA-protected reference-master pricing read");
+  assert.match(response.headers.get("cache-control") ?? "", /no-store/iu);
+  const body = await response.json();
+  assert.equal(body.schemaVersion, 1);
+  assert.equal(body.releaseVersion, version);
+  assert.equal(body.generation, generation);
+  assert.equal(body.tiers.length, 4);
+  assert.equal(body.extensionPrices.length, 16);
+
+  const normalizedTiers = (rows) => rows.map((row) => ({
+    id: row.id,
+    tier_level: Number(row.tier_level),
+    display_name: row.display_name,
+    description: row.description,
+    initial_license_days: row.initial_license_days === null ? null : Number(row.initial_license_days),
+    is_active: typeof row.is_active === "boolean" ? row.is_active : Number(row.is_active) === 1,
+  }));
+  const normalizedPrices = (rows) => rows.map((row) => ({
+    id: row.id,
+    tier_level: Number(row.tier_level),
+    months: Number(row.months),
+    price_yen: Number(row.price_yen),
+    is_active: typeof row.is_active === "boolean" ? row.is_active : Number(row.is_active) === 1,
+    stripe_price_id: row.stripe_price_id,
+    stripe_price_id_live: row.stripe_price_id_live,
+  }));
+  assert.equal(digest(normalizedTiers(body.tiers)), digest(normalizedTiers(expectedTiers)),
+    "MFA-protected tier DTO differs from active Master D1");
+  assert.equal(digest(normalizedPrices(body.extensionPrices)), digest(normalizedPrices(expectedPrices)),
+    "MFA-protected extension-price DTO differs from active Master D1");
+
+  const publicResponse = await request("/api/reference-masters/fanmark_tier_extension_prices");
+  assertStatus(publicResponse, 200, "public extension-price release read");
+  assert.match(publicResponse.headers.get("cache-control") ?? "", /no-store/iu);
+  const publicBody = await publicResponse.json();
+  assert.equal(publicBody.releaseVersion, version);
+  assert.equal(publicBody.items.length, 16);
+  assert.ok(publicBody.items.every((item) => !Object.keys(item).some((key) => key.toLowerCase().includes("stripe"))));
+
+  const after = await queryMaster(`SELECT release_version, generation
+    FROM fanmark_reference_master_active_release WHERE singleton_id = 1`);
+  assert.deepEqual(after, before, "reference-master admin read changed the active release pointer");
+}
+
 async function exerciseAvailabilityRulesAdmin(cookie) {
   const route = "/api/admin/availability-rules";
   const initialRows = await queryBusiness(`SELECT id, rule_type, priority, is_available, rule_config
@@ -594,7 +672,7 @@ function assertStatus(response, status, operation) {
 }
 
 async function main() {
-  requireExplicitStagingConsent();
+  const actions = requireExplicitStagingConsent();
   await assertStagingTarget();
   await access(wrangler);
   await readUserOwnedCounts();
@@ -673,11 +751,16 @@ async function main() {
       `SELECT count(*) AS "count" FROM "mfaAssurance" WHERE "userId" = ${sqlLiteral(userId)} AND "sessionId" = ${sqlLiteral(sessionBody.session.id)}`,
     );
     assert.equal(Number(assuranceRows[0]?.count), 1, "MFA assurance was not persisted for this session");
-    await exerciseEmojiMasterDraft(cookie);
-    await exerciseNotificationMasters(cookie);
-    await exerciseAuthEmailTemplatesAdmin(cookie);
-    await exerciseAvailabilityRulesAdmin(cookie);
-    await exerciseInvitationAdmin(cookie);
+    if (actions.emojiMasterRoundtrip) {
+      await exerciseEmojiMasterDraft(cookie);
+      await exerciseNotificationMasters(cookie);
+      await exerciseAuthEmailTemplatesAdmin(cookie);
+      await exerciseAvailabilityRulesAdmin(cookie);
+      await exerciseInvitationAdmin(cookie);
+    }
+    if (actions.referenceMasterPricingReadback) {
+      await exerciseReferenceMasterPricingReadback(cookie);
+    }
     flowPassed = true;
     console.log("Staging TOTP verification and same-session admin authorization passed.");
   } finally {
@@ -708,10 +791,15 @@ async function main() {
   if (cleanupError) throw cleanupError;
   assert.ok(flowPassed, "the staging TOTP flow did not complete");
   console.log("Staging Better Auth sign-in, first-time TOTP enrollment, session rotation, and admin MFA authorization passed.");
-  console.log("Staging MFA-protected invitation-code create/list/CAS-edit/disable/delete round-trip passed and returned business D1 to zero invitation rows.");
-  console.log("Staging MFA-protected availability-rule list/CAS-edit/stale-write rejection/restore passed; all four rules remain disabled and created_by stays NULL.");
-  console.log("Staging MFA-protected notification rules/templates and payload-redacted event/delivery log reads passed without changing notification rows.");
-  console.log("Staging MFA-protected auth email-template list returned all 16 type/locale pairs; anonymous access was denied without changing D1 rows.");
+  if (actions.emojiMasterRoundtrip) {
+    console.log("Staging MFA-protected invitation-code create/list/CAS-edit/disable/delete round-trip passed and returned business D1 to zero invitation rows.");
+    console.log("Staging MFA-protected availability-rule list/CAS-edit/stale-write rejection/restore passed; all four rules remain disabled and created_by stays NULL.");
+    console.log("Staging MFA-protected notification rules/templates and payload-redacted event/delivery log reads passed without changing notification rows.");
+    console.log("Staging MFA-protected auth email-template list returned all 16 type/locale pairs; anonymous access was denied without changing D1 rows.");
+  }
+  if (actions.referenceMasterPricingReadback) {
+    console.log("Staging MFA-protected reference-master pricing read matched the active D1 release; anonymous access was denied and both reads left the release pointer unchanged.");
+  }
   console.log("Synthetic Auth rows were deleted; readback found all user-owned Auth tables empty.");
   console.log("The monotonic MFA generation counter was preserved and may have advanced during the synthetic factor lifecycle.");
 }
