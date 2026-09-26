@@ -1546,3 +1546,11 @@ empty APAC `fanmark-business-staging` database, and Worker version
 staging. Stripe selectors/API secrets remain unset, so the feature stays
 disabled. No Stripe call, user data, production route, or domain/DNS change was
 made.
+
+## 2026-09-26 subscription reconciliation staging deployment
+
+PR #41 commit `0ed264a` added subscription deleted handling and guarded Free-plan license returns. Worker typecheck, Stripe integration tests (54/54), staging frontend build, Wrangler deploy dry-run, and `git diff --check` passed. Business D1 migration `0011_stripe_subscription_free_return.sql` was applied and read back before deploy; Wrangler reports no pending migrations.
+
+Workers.dev staging now runs version `cec31381-d388-492d-906c-879b70d03cf3` at 100%. The staging config retains the existing `* * * * *` notification/Stripe-dispatch trigger and `0 0 * * *` expiry trigger. Notification processing remains selected; expiry is disabled because `LICENSE_EXPIRY_BACKEND` is unset. Stripe selectors and Stripe secrets are absent, so webhook GET returns 404 and dispatch stays disabled.
+
+Read-only canaries after deploy returned 200 for `/`, `/robots.txt`, and `/api/auth/ok`, and 404 for `/api/stripe/webhook`. Remote business-D1 readback found zero users, fanmarks, licenses, return batches/items, and notification events. No Stripe API call, real user data, production route, or DNS/domain setting was changed.

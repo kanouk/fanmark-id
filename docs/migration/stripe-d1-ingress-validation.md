@@ -174,3 +174,9 @@ and all Stripe selectors are unset. Remote D1 verification after applying
 subscription ledgers, subscription return batches/items, fence, receipt,
 dispatch, and subscription tables. The deployed webhook route remains
 unreachable while the selector is unset.
+
+## 2026-09-26 subscription reconciliation staging deployment
+
+The deleted-subscription/Free-return Worker handler from commit `0ed264a` is now included in workers.dev staging version `cec31381-d388-492d-906c-879b70d03cf3` at 100%. It is not enabled for incoming Stripe events: the Stripe backend selectors and signing/API secrets are absent, and read-only `GET /api/stripe/webhook` returns 404. The recurring notification Cron remains configured; the daily expiry Cron is configured but its backend selector remains absent. D1 migrations `0006`–`0011` are applied, with zero user/license/return/event rows.
+
+Post-deploy checks returned 200 for the SPA root, robots, and Auth health; 54/54 Stripe integration tests, Worker typecheck, staging build, Wrangler dry-run, and staging schema readback passed. No Stripe API call or production/user-data/domain change occurred.
