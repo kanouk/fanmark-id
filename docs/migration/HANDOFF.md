@@ -48,10 +48,12 @@ staged and deployed. The profile username-availability lookup is also selected
 through D1 on staging; this narrow addition does not materially change the
 coarse weighted estimate. Self-service account deletion is now also selected
 through Better Auth/D1 on the staging build; its focused live synthetic canary
-passed, without materially changing the coarse estimate.
+passed, without materially changing the coarse estimate. Public waitlist
+submission is now also selected through D1 on staging; its isolated synthetic
+canary passed and does not materially change the coarse estimate.
 
 `fanmark-app-staging` is deployed at 100% as version
-`676be6eb-f0fb-4741-8f84-4880fbb9052f` at
+`9c54ceda-b840-482b-bc43-4c22e9c18923` at
 `https://fanmark-app-staging.fanmark-id.workers.dev`. The split business/Auth/
 master D1 bindings and the two image R2 buckets remain isolated to this
 workers.dev app. A third, dedicated APAC Standard migration-backup bucket is
@@ -1260,6 +1262,33 @@ removed after ID/marker verification, both cleanup conditions were fixed, and
 the repeat canary exited successfully with empty-table readback. Waitlist D1
 route tests pass 6/6 and frontend API client tests pass 5/5; CI run
 `36270707064` passed both Worker and staging-app validation jobs. No real
-waitlist data was imported, public submission still uses Supabase, and no
-production route or domain/DNS was changed. See
+waitlist data was imported; at that checkpoint, public submission still used
+Supabase. No production route or domain/DNS was changed. See
 `docs/migration/waitlist-admin-api.md`.
+
+## Public waitlist signup on staging (2026-09-27 JST)
+
+The staging frontend now selects `POST /api/waitlist` through
+`VITE_WAITLIST_SIGNUP_BACKEND=worker`; the Worker requires its explicit D1
+selector, split business D1, and a 120-per-60-second Rate Limiting binding.
+The route normalizes email casing/whitespace, accepts duplicates with the same
+generic 202 result, and rejects an untrusted Origin. A synthetic
+`example.invalid` canary verified OPTIONS 204, invalid-Origin 403, first and
+duplicate POST 202, exact normalized D1 storage, and deletion of only its own
+marked row. Remote readback returned zero waitlist rows after cleanup. The
+initial smoke harness invocation failed during Wrangler preflight before a
+request; D1 remained empty. The harness now calls the lockfile-installed
+Wrangler CLI and the repeated staging canary passed.
+
+Worker `fanmark-app-staging` version
+`9c54ceda-b840-482b-bc43-4c22e9c18923` is deployed at 100%. The workers.dev
+root returned 200/noindex and its JavaScript asset SHA-256
+`bf8ec6a3534ca8f83f6f43a0fbef12bc66dfc22e83e68c4a26a95d5e80aff953` matched
+local `dist-staging`. The complete Worker CI job, staging-app CI job, Worker
+typecheck, frontend typecheck, migration-data tests (139 assertions), targeted
+lint, standard production build, and staging build passed; CI run
+`36272821613` passed both required jobs. The regular app build still defaults
+to Supabase; no real waitlist entries, production route, email, or domain/DNS
+were used. Rate Limiting is only a coarse staging guard; its IP key may group
+users behind shared networks and its counters are per Cloudflare location.
+See `docs/migration/waitlist-signup-api.md`.

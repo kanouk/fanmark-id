@@ -23,10 +23,10 @@ The D1 waitlist table is structurally present, but real waitlist rows have not
 been imported. Public staging submissions now use the separate
 `POST /api/waitlist` contract documented in
 [`waitlist-signup-api.md`](waitlist-signup-api.md); the regular frontend build
-continues to use Supabase. Staging tests must use synthetic `example.invalid`
-addresses and remove the exact address, admin profile, and audit rows
-afterward. No production selector, user data, or domain/DNS setting is changed
-by this work.
+continues to use Supabase. Admin API canaries must remove the exact address,
+synthetic admin profile, and audit rows; public-signup canaries remove their
+single marked entry. No production selector, user data, or domain/DNS setting
+is changed by this work.
 
 Email retention, deletion, and export policy remain open decisions. The
 current CSV intentionally includes hashes only. Local route tests are

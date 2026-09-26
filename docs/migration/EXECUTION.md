@@ -2250,3 +2250,23 @@ read back at zero, then the harness was fixed and the full live canary passed.
 The Worker D1 API tests passed 4/4; the frontend API client tests passed 3/3;
 Node syntax and `git diff --check` passed. No user data, production route,
 Stripe state, or domain/DNS configuration changed.
+
+## Public waitlist signup on staging (2026-09-27 JST)
+
+The staging SPA now explicitly selects the Worker `POST /api/waitlist` route.
+New and duplicate addresses return the same 202 acceptance payload; the route
+validates/normalizes the address and writes only split business D1. Staging has
+a 120-request/60-second Cloudflare Rate Limiting binding. The production/default
+selector remains Supabase.
+
+The live synthetic canary used a randomized `example.invalid` address and
+marker. It verified the allowed-origin preflight, rejected an untrusted origin,
+accepted the first and duplicate submissions with identical payloads, read
+back the normalized `waiting` row, deleted that exact row, and confirmed the
+staging waitlist returned to zero. The app root returned 200/noindex and the
+deployed JavaScript SHA-256 matched local `dist-staging`. Worker and app CI run
+`36272821613` passed. Full Worker tests, typechecks, staging and standard app
+builds, migration-data tests, and targeted lint passed locally as well. No
+email was sent, real waitlist data was imported, or production/DNS setting was
+changed. The live proof and selector contract are recorded in
+[`waitlist-signup-api.md`](waitlist-signup-api.md).

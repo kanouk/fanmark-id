@@ -5,6 +5,7 @@
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
 const ACCOUNT_ID = "bfc2890741f0b3fb236e2d755b6c9adc";
@@ -13,9 +14,9 @@ const APP_ORIGIN = "https://fanmark-app-staging.fanmark-id.workers.dev";
 const BUSINESS_DATABASE = "fanmark-business-staging";
 const BUSINESS_DATABASE_ID = "d4bb0c48-f24a-491f-8693-fa393ab0b873";
 const APP_CONFIG = "workers/api/wrangler.app-staging.jsonc";
-const WRANGLER_VERSION = "4.140.0";
 const email = `codex-waitlist-${randomBytes(8).toString("hex")}@example.invalid`;
 const referralSource = `codex-staging-smoke:${randomUUID()}`;
+const WRANGLER_CLI = fileURLToPath(new URL("../../workers/api/node_modules/wrangler/bin/wrangler.js", import.meta.url));
 let canaryId;
 
 function fail(code) {
@@ -25,7 +26,7 @@ function fail(code) {
 }
 
 function runWrangler(args) {
-  const result = spawnSync("npx", ["--yes", `wrangler@${WRANGLER_VERSION}`, ...args], {
+  const result = spawnSync(process.execPath, [WRANGLER_CLI, ...args], {
     cwd: process.cwd(),
     encoding: "utf8",
     timeout: 120_000,
