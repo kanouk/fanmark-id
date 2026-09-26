@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "vitest run --config vitest.config.mjs && vitest run --config vitest.verified-access-d1.config.mjs && npm run test:stripe-webhook-ingress-schema && npm run test:stripe-extension-checkout-d1 && npm run test:extension-coupon-application-d1 && npm run test:extension-coupon-admin-d1 && npm run test:stripe-plan-checkout-d1 && npm run test:stripe-plan-change-d1 && npm run test:notification-master-admin-d1 && npm run test:invitation-admin-d1 && npm run test:invitation-signup-d1 && npm run test:availability-rules-admin-d1 && npm run test:admin-user-management-d1 && npm run test:admin-email-templates-d1 && npm run test:system-settings-d1 && npm run test:api-contracts-d1 && npm run test:auth:d1 && npm run test:auth-email && npm run test:auth-social && npm run test:subscription-d1-api && npm run test:account-deletion-d1 && npm run test:stripe-account-deletion",
+    "test": "vitest run --config vitest.config.mjs && vitest run --config vitest.verified-access-d1.config.mjs && npm run test:stripe-webhook-ingress-schema && npm run test:stripe-extension-checkout-d1 && npm run test:extension-coupon-application-d1 && npm run test:extension-coupon-admin-d1 && npm run test:stripe-plan-checkout-d1 && npm run test:stripe-plan-change-d1 && npm run test:notification-master-admin-d1 && npm run test:invitation-admin-d1 && npm run test:waitlist-admin-d1 && npm run test:invitation-signup-d1 && npm run test:availability-rules-admin-d1 && npm run test:admin-user-management-d1 && npm run test:admin-email-templates-d1 && npm run test:system-settings-d1 && npm run test:api-contracts-d1 && npm run test:auth:d1 && npm run test:auth-email && npm run test:auth-social && npm run test:subscription-d1-api && npm run test:account-deletion-d1 && npm run test:stripe-account-deletion",
     "test:verified-access:d1": "vitest run --config vitest.verified-access-d1.config.mjs",
     "test:static-assets": "test -f ../../dist/index.html && vitest run --config vitest.static-assets.config.mjs && node ./test/static-assets-router-smoke.mjs",
     "test:watch": "vitest --config vitest.config.mjs",
@@ -59,7 +59,8 @@
     "test:lifecycle-schema": "node --test test/lifecycle-target-schema.integration.mjs test/lifecycle-generation.integration.mjs test/credential-transform-schema.integration.mjs",
     "test:extension-coupon-admin-d1": "node --experimental-strip-types --test test/extension-coupon-admin-d1.integration.mjs",
     "test:account-deletion-d1": "vitest run --config vitest.account-deletion.config.mjs",
-    "test:stripe-account-deletion": "node --experimental-strip-types --test node-tests/stripe-account-deletion.test.ts"
+    "test:stripe-account-deletion": "node --experimental-strip-types --test node-tests/stripe-account-deletion.test.ts",
+    "test:waitlist-admin-d1": "vitest run --config vitest.waitlist-admin.config.mjs"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "1.1.13",

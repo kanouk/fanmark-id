@@ -45,15 +45,16 @@ function requireExplicitStagingConsent() {
   const adminUserManagementReadback = args.has("--admin-user-management-readback");
   const adminUserPlanReadback = args.has("--admin-user-plan-readback");
   const adminUserStatusReadback = args.has("--admin-user-status-readback");
+  const waitlistAdminReadback = args.has("--waitlist-admin-readback");
   const systemSettingsReadback = args.has("--system-settings-readback");
   const notificationManualEvent = args.has("--notification-manual-event");
   if (!args.has("--run-live-staging-write") || !args.has(`--database=${expectedDatabase}`) ||
-      (!emojiMasterRoundtrip && !referenceMasterPricingReadback && !referenceMasterTierRoundtrip && !referenceMasterExtensionPriceRoundtrip && !authEmailTemplateEditRoundtrip && !adminUserManagementReadback && !adminUserPlanReadback && !adminUserStatusReadback && !systemSettingsReadback && !notificationManualEvent)) {
+      (!emojiMasterRoundtrip && !referenceMasterPricingReadback && !referenceMasterTierRoundtrip && !referenceMasterExtensionPriceRoundtrip && !authEmailTemplateEditRoundtrip && !adminUserManagementReadback && !adminUserPlanReadback && !adminUserStatusReadback && !waitlistAdminReadback && !systemSettingsReadback && !notificationManualEvent)) {
     throw new Error(
       `Refusing remote staging writes. Pass --run-live-staging-write --database=${expectedDatabase} and an explicit smoke flag.`,
     );
   }
-  return { emojiMasterRoundtrip, referenceMasterPricingReadback, referenceMasterTierRoundtrip, referenceMasterExtensionPriceRoundtrip, authEmailTemplateEditRoundtrip, adminUserManagementReadback, adminUserPlanReadback, adminUserStatusReadback, systemSettingsReadback, notificationManualEvent };
+  return { emojiMasterRoundtrip, referenceMasterPricingReadback, referenceMasterTierRoundtrip, referenceMasterExtensionPriceRoundtrip, authEmailTemplateEditRoundtrip, adminUserManagementReadback, adminUserPlanReadback, adminUserStatusReadback, waitlistAdminReadback, systemSettingsReadback, notificationManualEvent };
 }
 
 async function assertStagingTarget(actions) {
@@ -70,6 +71,7 @@ async function assertStagingTarget(actions) {
   assert.equal(businessBinding?.remote, true, "business D1 must be the remote staging database");
   assert.equal(config.vars?.AUTH_BACKEND, "better-auth", "unexpected Auth backend");
   assert.equal(config.vars?.INVITATION_ADMIN_BACKEND, "d1", "expected D1-backed invitation admin API");
+  assert.equal(config.vars?.WAITLIST_ADMIN_BACKEND, "d1", "expected D1-backed waitlist admin API");
   assert.equal(config.vars?.AVAILABILITY_RULES_ADMIN_BACKEND, "d1", "expected D1-backed availability rule admin API");
   assert.equal(config.vars?.NOTIFICATION_MASTER_BACKEND, "d1", "expected D1-backed notification admin API");
   assert.equal(config.vars?.EMAIL_TEMPLATE_ADMIN_BACKEND, "d1", "expected D1-backed auth email-template admin API");
@@ -1640,6 +1642,70 @@ async function exerciseInvitationAdmin(cookie) {
   assert.equal(Number(remainingTotal[0]?.count), 0, "invitation table did not return to its staging baseline");
 }
 
+async function exerciseWaitlistAdmin(cookie, userId) {
+  const route = "/api/admin/waitlist";
+  const baseline = await queryBusiness("SELECT COUNT(*) AS count FROM waitlist");
+  assert.equal(Number(baseline[0]?.count), 0, "staging waitlist must be empty before the synthetic round-trip");
+  const adminProfile = await queryBusiness(`SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(userId)}`);
+  assert.equal(Number(adminProfile[0]?.count), 0, "synthetic waitlist administrator already has a business profile");
+
+  const waitlistId = randomUUID();
+  const email = `codex-waitlist-${randomBytes(8).toString("hex")}@example.invalid`;
+  const username = `codex-waitlist-admin-${randomBytes(5).toString("hex")}`;
+  const timestamp = new Date().toISOString();
+  let seedAttempted = false;
+  try {
+    seedAttempted = true;
+    await executeBusiness(
+      `INSERT INTO user_settings (user_id, username, display_name, avatar_url, plan_type, preferred_language, created_at, updated_at) VALUES (${sqlLiteral(userId)}, ${sqlLiteral(username)}, 'Synthetic waitlist admin', NULL, 'admin', 'en', ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});\n` +
+      `INSERT INTO waitlist (id, email, referral_source, status, created_at) VALUES (${sqlLiteral(waitlistId)}, ${sqlLiteral(email)}, 'synthetic-migration-smoke', 'waiting', ${sqlLiteral(timestamp)});`,
+      "synthetic waitlist canary provision",
+    );
+
+    const anonymous = await request(route);
+    assertStatus(anonymous, 401, "unauthenticated waitlist admin read");
+
+    const listResponse = await request(route, { headers: { cookie } });
+    assertStatus(listResponse, 200, "MFA-protected waitlist listing");
+    const listed = await listResponse.json();
+    const entry = listed.entries.find((candidate) => candidate.id === waitlistId);
+    assert.ok(entry, "synthetic waitlist row was not returned");
+    assert.equal(entry.email_hash, createHash("sha256").update(email, "utf8").digest("hex"));
+    assert.equal(Object.hasOwn(entry, "email"), false, "list route exposed an email address");
+    assert.equal(JSON.stringify(listed).includes(email), false, "list response exposed the synthetic email address");
+    assert.ok(listed.securityLogs.some((row) => row.action === "AUTHORIZED_WAITLIST_ACCESS"));
+
+    const revealResponse = await request(`${route}/${encodeURIComponent(waitlistId)}/email`, { headers: { cookie } });
+    assertStatus(revealResponse, 200, "MFA-protected waitlist email reveal");
+    const revealed = await revealResponse.json();
+    assert.equal(revealed.email, email);
+    assert.ok(revealed.securityLogs.some((row) => row.action === "EMAIL_ACCESS"));
+    const accessAudit = await queryBusiness(`SELECT user_id, resource_id, metadata FROM audit_logs WHERE action = 'EMAIL_ACCESS' AND resource_id = ${sqlLiteral(waitlistId)} LIMIT 2`);
+    assert.equal(accessAudit.length, 1, "email reveal did not produce exactly one audit event");
+    assert.equal(accessAudit[0].user_id, userId);
+    assert.equal(accessAudit[0].resource_id, waitlistId);
+    assert.equal(String(accessAudit[0].metadata).includes(email), false, "email reveal audit copied the email address");
+  } finally {
+    if (seedAttempted) {
+      await executeBusiness(
+        `DELETE FROM audit_logs WHERE (resource_id = ${sqlLiteral(waitlistId)} AND action IN ('AUTHORIZED_WAITLIST_ACCESS', 'EMAIL_ACCESS', 'UNAUTHORIZED_WAITLIST_ACCESS', 'UNAUTHORIZED_EMAIL_ACCESS')) OR (user_id = ${sqlLiteral(userId)} AND resource_type = 'system' AND action = 'ADMIN_CHECK');\n` +
+        `DELETE FROM waitlist WHERE id = ${sqlLiteral(waitlistId)} AND email = ${sqlLiteral(email)};\n` +
+        `DELETE FROM user_settings WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(username)};`,
+        "synthetic waitlist canary cleanup",
+      );
+    }
+  }
+
+  const [waitlistRows, profileRows, auditRows] = await Promise.all([
+    queryBusiness(`SELECT COUNT(*) AS count FROM waitlist WHERE id = ${sqlLiteral(waitlistId)} OR email = ${sqlLiteral(email)}`),
+    queryBusiness(`SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(username)}`),
+    queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE resource_id = ${sqlLiteral(waitlistId)} OR (user_id = ${sqlLiteral(userId)} AND action = 'ADMIN_CHECK')`),
+  ]);
+  assert.equal(Number(waitlistRows[0]?.count), 0, "synthetic waitlist row remained in business D1");
+  assert.equal(Number(profileRows[0]?.count), 0, "synthetic waitlist administrator profile remained in business D1");
+  assert.equal(Number(auditRows[0]?.count), 0, "synthetic waitlist audit remained in business D1");
+}
+
 function assertStatus(response, status, operation) {
   assert.equal(response.status, status, `${operation} returned HTTP ${response.status}; expected ${status}`);
 }
@@ -1750,6 +1816,9 @@ async function main() {
       await exerciseAuthEmailTemplatesAdmin(cookie);
       await exerciseAvailabilityRulesAdmin(cookie);
       await exerciseInvitationAdmin(cookie);
+    }
+    if (actions.waitlistAdminReadback) {
+      await exerciseWaitlistAdmin(cookie, userId);
     }
     if (actions.authEmailTemplateEditRoundtrip) {
       await exerciseAuthEmailTemplatesAdmin(cookie, { editRoundtrip: true, adminUserId: userId });
@@ -1875,6 +1944,9 @@ async function main() {
     console.log("Staging MFA-protected availability-rule list/CAS-edit/stale-write rejection/restore passed; all four rules remain disabled and created_by stays NULL.");
     console.log("Staging MFA-protected notification rules/templates and payload-redacted event/delivery log reads passed without changing notification rows.");
     console.log("Staging MFA-protected auth email-template list returned all 16 type/locale pairs; anonymous access was denied without changing D1 rows.");
+  }
+  if (actions.waitlistAdminReadback) {
+    console.log("Staging waitlist admin list/reveal required same-session MFA and the admin plan, returned only the email hash in the list, audited the explicit reveal, and removed the synthetic address/profile/audit rows.");
   }
   if (actions.authEmailTemplateEditRoundtrip) {
     console.log("Staging MFA-protected Japanese signup email-template edit/restore passed; anonymous and stale writes were rejected, all 16 template contents returned to baseline, and synthetic audit rows were removed. No email was sent.");

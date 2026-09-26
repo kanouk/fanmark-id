@@ -125,7 +125,7 @@ Source shorthand used below:
 | user_roles | RLS; 2/4/0 | T:1740; R:3006; F src/components/AdminApp.tsx:43 | D1 authz table; Worker internal/admin authorization checks, no public row API | High: role source of truth and bootstrap/recovery path require explicit design |
 | user_settings | RLS; 3/5/3 | T:1764; F src/hooks/useProfile.tsx:46,72; P:44-48,81-83 | D1 private user table; Worker user reads/writes own, Worker admin reads only required fields | Medium: PII projection, account deletion, and Auth linkage need a data-classification decision |
 | user_subscriptions | RLS; 3/3/1 | T:1817; F src/hooks/useSubscription.tsx:86,170; P:73-84,453-482 | D1 billing mirror; Worker user reads own status, Worker internal webhook syncs, Worker admin reads; retain Stripe as payment system | High: webhook idempotency and source-of-truth rules are not established by local code alone |
-| waitlist | RLS; 2/4/0 | T:1883; F src/hooks/useInvitationCode.tsx:83; P:44-48 | D1 private table; Worker public/user submits, Worker admin reads through a restricted operation | High: email PII retention and export/deletion behavior require a decision |
+| waitlist | RLS; 2/4/0 | T:1883; F src/hooks/useInvitationCode.tsx:83; P:44-48 | D1 private table; restricted Worker admin hash-list and audited one-row reveal are implemented for staging; public/user submission remains Supabase | High: no real rows imported; email PII retention and export/deletion behavior require a decision |
 
 ## First explicit reference-data allowlist
 

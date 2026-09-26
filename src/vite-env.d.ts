@@ -22,6 +22,7 @@ interface ImportMetaEnv {
   readonly VITE_NOTIFICATION_MASTER_BACKEND?: string;
   readonly VITE_EMAIL_TEMPLATES_BACKEND?: string;
   readonly VITE_INVITATION_ADMIN_BACKEND?: string;
+  readonly VITE_WAITLIST_ADMIN_BACKEND?: string;
   readonly VITE_MAINTENANCE_SETTINGS_BACKEND?: string;
   readonly VITE_LIFECYCLE_SETTINGS_BACKEND?: string;
   readonly VITE_SYSTEM_SETTINGS_BACKEND?: string;
