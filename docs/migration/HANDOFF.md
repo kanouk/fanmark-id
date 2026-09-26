@@ -38,11 +38,18 @@ cannot be recovered. The old/new systems must not dual-write business rows.
 
 ## 2026-09-27 local validation and access retry
 
-The current migration worktree passes `npm run test:migration-data` (147/147),
-the complete `workers/api` `npm test` chain, root and Worker TypeScript checks,
-`npm run build:cloudflare-staging`, the Worker Wrangler deploy dry-run, and
-`npm run check:ci`. These are local/synthetic proofs; this refresh did not
-change remote state.
+Re-ran `npm run test:migration-data` under Node 22.6.0 (147/147) and the full
+`workers/api` `npm test` chain (exit 0). The prior root and Worker TypeScript
+checks, `npm run build:cloudflare-staging`, Worker Wrangler deploy dry-run, and
+`npm run check:ci` remain the latest recorded passes. These are local/synthetic
+proofs; this refresh did not change remote state.
+
+The coordinated cutover and recovery sequence is now captured in
+[`cutover-rehearsal.md`](cutover-rehearsal.md), including the single-writer
+rule, the Stripe receipt/dispatch handoff, and separate recovery behavior before
+and after Cloudflare accepts a write. This is an operator procedure, not a
+completed rehearsal: the old-writer freeze, timed final-copy drill, and both
+recovery drills remain unverified. Issue #37 stays open.
 
 A new read-only `supabase db query --linked --file
 scripts/migration/schema-readiness.sql` attempt failed with
