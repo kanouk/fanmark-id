@@ -72,8 +72,8 @@ const MainApp = () => (
                   <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
                   <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
                   <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-                  <Route path="/plans" element={<PlanSelection />} />
-                  <Route path="/plan" element={<PlanSelection />} />
+                  <Route path="/plans" element={<ProtectedRoute><PlanSelection /></ProtectedRoute>} />
+                  <Route path="/plan" element={<ProtectedRoute><PlanSelection /></ProtectedRoute>} />
                   <Route path="/pwa" element={<PWAApp />} />
                   <Route path="/pwa/search" element={<PWAApp />} />
                   <Route path="/pwa/history" element={<PWAApp />} />

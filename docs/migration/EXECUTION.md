@@ -2296,3 +2296,20 @@ disabled lifecycle baseline. The restored Worker is
 production route, real user data, or DNS setting was touched. This proves only
 one synthetic staging scheduled execution; recurring lifecycle activation and
 production acceptance remain open.
+
+## Plan-route browser review and auth-gate follow-up (2026-09-27 JST)
+
+The deployed workers.dev home and `/auth` pages rendered in a real browser. A
+direct `/plans` visit displayed the generic `errorNoProfile` screen, but the
+embedded browser's auth state was not independently isolated, so this does not
+prove anonymous behavior. Both `/plans` and the `/plan` alias now use
+`ProtectedRoute`, and the route contract is recorded in `docs/ARCHITECTURE.md`.
+Node 22.6.0 frontend typecheck, staging build, targeted ESLint, and Wrangler
+dry-run passed. A local preview in the same browser profile still displayed
+the generic page; the route behavior therefore remains unverified. The route
+change is local only: Wrangler could not read macOS Keychain (exit 51), and the
+OAuth consent page opened in Chrome under a different Cloudflare account than
+the intended staging account. No consent was submitted and no deployment
+occurred. Re-deploy and repeat the route check with a fresh unauthenticated
+browser profile after the intended Cloudflare account is active in Chrome.
+Production, user data, Stripe, and domain/DNS were untouched.

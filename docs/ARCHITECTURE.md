@@ -28,7 +28,7 @@
 - `/dashboard`: ダッシュボード（ファンマ管理+移管/抽選バッジ）: `Dashboard.tsx` + `FanmarkDashboard.tsx`
   - 所有ファンマ一覧は既定でSupabase。`VITE_OWNED_FANMARKS_BACKEND=worker`を明示した場合のみ`GET /api/me/fanmarks`へ切り替え、WorkerがBetter Auth sessionの本人IDでD1行を絞る。認証APIとWorkerのoriginを照合し、実行時エラーではSupabaseに戻らない。
 - `/favorites`: お気に入り一覧: `Favorites.tsx` + `useFavoriteFanmarks.ts`。`VITE_FAVORITES_BACKEND=worker`を明示したビルドはBetter Auth本人sessionの`/api/me/favorites`を使い、一覧・追加・削除を同じbackendへ送り、詳細ページの登録状態も同期する。
-- `/plans`: プラン選択・ダウングレード選択モーダル: `PlanSelection.tsx`, `FanmarkSelectionModal.tsx`。Worker選択時の無料→有料Checkoutは`stripe-plan-checkout-api.ts`、既存契約の有料プラン変更は`stripe-plan-change-api.ts`を使う。計画変更は同じプランの選択済みfanmark返却後にowner-bound commandとして送信し、プラン反映は署名検証済みWebhookを待つ。
+- `/plans` and `/plan`: ログイン後のプラン選択・ダウングレード選択モーダル: `PlanSelection.tsx`, `FanmarkSelectionModal.tsx`。両routeは`ProtectedRoute`で保護する。Worker選択時の無料→有料Checkoutは`stripe-plan-checkout-api.ts`、既存契約の有料プラン変更は`stripe-plan-change-api.ts`を使う。計画変更は同じプランの選択済みfanmark返却後にowner-bound commandとして送信し、プラン反映は署名検証済みWebhookを待つ。
 - `/fanmarks/:fanmarkId/settings`: `FanmarkSettingsPage.tsx` + `FanmarkSettings.tsx`。既定はSupabase。stagingの`VITE_FANMARK_SETTINGS_BACKEND=worker`ではBetter Auth本人sessionの`GET/PATCH /api/me/fanmarks/:fanmarkId/settings`へ切り替え、メッセージボードpreviewも同じ所有者限定APIから設定を読む。
 - `/fanmarks/:fanmarkId/profile/edit|preview`: `EmojiProfileEdit.tsx`, `FanmarkProfilePreview.tsx`。`VITE_FANMARK_PROFILE_BACKEND=worker`で編集とpreviewが所有者限定profile APIを使う。production既定はSupabase。
 - `/fanmarks/:fanmarkId/messageboard/preview`: `FanmarkMessageboardPreview.tsx`

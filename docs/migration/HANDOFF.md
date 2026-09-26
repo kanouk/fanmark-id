@@ -71,6 +71,23 @@ used. The harness now checks the pinned auth-template content digest while
 allowing the expected `updated_at` advance from its edit/restore canary, and
 deletes the exact synthetic notifications before their source events.
 
+Read-only browser QA on the currently deployed Worker returned the public home
+and `/auth` screens. A direct `/plans` visit showed the generic missing-profile
+page, but the embedded browser's authentication state was not independently
+isolated; this is not yet proof of the anonymous route result. Since plan
+selection reads the signed-in user's profile and subscription, the local
+change wraps `/plans` and its `/plan` alias with `ProtectedRoute`;
+frontend typecheck, staging build, lint, and Wrangler dry-run pass. A local
+preview in the same browser profile also showed the generic page, so the route
+change's browser behavior is not yet accepted. It is not deployed. Wrangler's
+local login could not read macOS Keychain (exit 51); retrying OAuth opened
+Chrome under the separate `fragrance.radio@gmail.com` Cloudflare account
+rather than the intended `fanmark.id@gmail.com` staging account. That consent
+was not submitted and no deployment occurred. The current staging version
+above therefore still has the old route behavior; after the intended account
+is available in Chrome, deploy and verify `/plans` using a fresh unauthenticated
+browser session.
+
 On 2026-09-27, the staging build added `POST /api/me/account/delete`, selected
 only by `VITE_ACCOUNT_DELETION_BACKEND=worker` and
 `ACCOUNT_DELETION_BACKEND=d1`. It requires an authenticated same-origin Better
