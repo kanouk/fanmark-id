@@ -1618,3 +1618,25 @@ foreign-key check, transformed synthetic credential, and tampered-coverage
 rejection passed. The result remains `public_rows_reconciled`, with
 `deployable` and `fullMigrationReconciled` false. No Cloudflare D1, production,
 user data, or DNS/domain state changed.
+
+
+## 2026-09-26 staging lifecycle Cron revalidation
+
+Fixed the opt-in canary's stale baseline checks. It now permits only the
+checked-in `* * * * *` notification and `0 0 * * *` lifecycle Cron schedules,
+requires the lifecycle execution selector and run bindings to remain unset,
+and includes all approved system settings, availability rules, and
+notification-master rows in its baseline count. The five configuration tests
+and all 121 migration-data tests passed; targeted ESLint and `git diff --check`
+passed.
+
+The deployed workers.dev Cron canary completed the synthetic lottery path with
+`winner_finalized`, restored the normal staging deployment, and read back the
+original grace-period setting and retained lifecycle state. Post-cleanup
+business baseline counts matched, lifecycle journals and Auth user tables were
+empty, and additional D1 readback found zero plan Checkout command, user,
+license, and fanmark rows. Worker version
+`a358996e-ce86-4410-be53-40e6f355ee9e` is active at 100%. Read-only HTTP checks
+returned 200 for `/`, `/robots.txt`, and `/api/auth/ok`, and 404 for
+`/api/stripe/webhook`. The lifecycle backend remains disabled in the restored
+configuration; no real user, production, or domain data changed.

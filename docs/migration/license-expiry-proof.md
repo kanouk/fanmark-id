@@ -202,3 +202,23 @@ expiry and `* * * * *` to notifications and Stripe dispatch. Staging config
 declares both triggers, but `LICENSE_EXPIRY_BACKEND` remains unset, so the
 daily lifecycle handler exits disabled without querying or changing D1. The
 synthetic lifecycle canary remains the only remote expiry execution.
+
+## 2026-09-26 staging Cron revalidation
+
+The opt-in canary guard now accepts only the checked-in staging Cron baseline
+(`* * * * *` notifications plus `0 0 * * *` lifecycle schedule), requires the
+lifecycle backend/target bindings to stay unset in the restored config, and
+counts all approved system-setting, availability-rule, and notification-master
+baseline rows. A staging canary rerun completed with `winner_finalized`; after
+cleanup, the 40 source-table baseline matched, synthetic business rows and
+lifecycle journals were zero, Auth tables remained empty, and retained
+incarnation/access-version state matched its pre-run snapshot. The restored
+Worker deployment is version `a358996e-ce86-4410-be53-40e6f355ee9e` at 100%.
+Read-only workers.dev probes returned 200 for the app root, robots, and
+Better Auth health, and 404 for Stripe webhook. D1 readback also confirms zero
+plan-checkout commands, users, licenses, fanmarks, and lifecycle runs.
+
+This revalidates the one-shot synthetic scheduled path on the current staging
+Worker; `LICENSE_EXPIRY_BACKEND` remains unset, so recurring lifecycle
+processing is still disabled. No real user rows, production route, or domain
+state changed.

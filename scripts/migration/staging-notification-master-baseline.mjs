@@ -52,3 +52,8 @@ export function stagingNonUserConfigBaselineState(row) {
   if (settings === 2 && grace === 1 && maxEmoji === 1 && rules === 4 && expectedRules === 4) return "seeded";
   return "invalid";
 }
+
+export function stagingBusinessBaselineRowCount(settings, masters) {
+  return Number(settings?.system_settings) + Number(settings?.availability_rules) +
+    Number(masters?.notification_rules) + Number(masters?.notification_templates);
+}

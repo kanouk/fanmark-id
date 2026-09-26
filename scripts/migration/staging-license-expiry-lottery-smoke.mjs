@@ -14,8 +14,10 @@ import {
   NOTIFICATION_MASTER_COUNTS_SQL,
   notificationMasterBaselineState,
   STAGING_NON_USER_CONFIG_BASELINE_SQL,
+  stagingBusinessBaselineRowCount,
   stagingNonUserConfigBaselineState,
 } from "./staging-notification-master-baseline.mjs";
+import { isStagingExpiryCronBaseline } from "./staging-expiry-cron-config.mjs";
 
 const ACCOUNT_ID = "bfc2890741f0b3fb236e2d755b6c9adc";
 const ACCOUNT_EMAIL = "fanmark.id@gmail.com";
@@ -109,7 +111,7 @@ function readGracePeriodSetting() {
 function verifyTarget() {
   const config = JSON.parse(readFileSync(APP_CONFIG, "utf8"));
   if (config.name !== "fanmark-app-staging" || config.workers_dev !== true || config.routes?.length ||
-      config.triggers?.crons?.length || config.vars?.LICENSE_EXPIRY_BACKEND ||
+      !isStagingExpiryCronBaseline(config) ||
       config.d1_databases?.some((entry) => entry.remote !== true)) fail("staging_target_mismatch");
   const businessBinding = config.d1_databases?.find((entry) => entry.binding === "FANMARK_DB");
   if (businessBinding?.database_name !== BUSINESS || businessBinding.database_id !== BUSINESS_ID) {
@@ -133,7 +135,7 @@ function verifyTarget() {
   const nonSettingsTables = businessTablesWithoutStagingBaselines(tables);
   const nonSettingsSum = nonSettingsTables.map((table) => "(SELECT COUNT(*) FROM \"" + table + "\")").join(" + ");
   const gracePeriodSetting = readGracePeriodSetting();
-  const baselineBusinessRows = 1 + Number(masters.notification_rules) + Number(masters.notification_templates);
+  const baselineBusinessRows = stagingBusinessBaselineRowCount(settings, masters);
   if (Number(d1("SELECT " + businessSum + " AS row_count")[0]?.row_count) !== baselineBusinessRows ||
       Number(d1("SELECT " + nonSettingsSum + " AS row_count")[0]?.row_count) !== 0) {
     fail("business_staging_has_unexpected_rows");
@@ -323,7 +325,7 @@ function cleanup({ fanmarkId, ownerId, winnerId, oldLicenseId, gracePeriodSettin
   const nonSettingsSum = businessTablesWithoutStagingBaselines(tables)
     .map((table) => "(SELECT COUNT(*) FROM \"" + table + "\")").join(" + ");
   const remainingSettings = readGracePeriodSetting();
-  const baselineBusinessRows = 1 + Number(masters.notification_rules) + Number(masters.notification_templates);
+  const baselineBusinessRows = stagingBusinessBaselineRowCount(settings, masters);
   if (businessRows !== baselineBusinessRows ||
       Number(d1("SELECT " + nonSettingsSum + " AS row_count")[0]?.row_count) !== 0 ||
       lifecycleRows !== 0 || Number(danglingIds.row_count) !== 0 ||
