@@ -122,9 +122,9 @@ lose form data and recommends a prompt update flow for apps with forms
 
 This was a local two-build browser check, not an update between deployed
 Cloudflare Worker versions. It did not use D1, R2, an authenticated account, or
-the user's browser profile. The deployed staging update transition and native
-install/standalone launch remain open. Changing from automatic reload to a
-user-approved update is a product behavior decision and was not made here.
+the user's browser profile. Native install/standalone launch remains open.
+Changing from automatic reload to a user-approved update is a product behavior
+decision and was not made here.
 
 The staging manifest's `/pwa-192x192.png` and `/pwa-512x512.png` entries were
 then checked directly and both returned 404. Matching icons were derived from
@@ -156,12 +156,33 @@ explicit decision and observed verification:
   no admin hostname, wildcard route, or account setting is inferred here.
 - Supabase Auth callback, cookie, redirect, and session behavior at the chosen
   origin.
-- Native install prompt/standalone launch, service-worker update transitions
-  between deployed Cloudflare versions, custom-domain behavior, caching
-  headers, and security headers at the staging hostname. The local auto-update
-  transition is verified above; the staging-host check remains open.
+- Native install prompt/standalone launch, custom-domain behavior, caching
+  headers, and security headers at the staging hostname. The deployed staging
+  auto-update transition is verified below.
 - Any public routes or redirects outside the routes inspected in the current
   Vite application.
 
 Until those gates are reviewed against a target staging origin, this remains a
 deployable local packaging proof rather than a full frontend cutover.
+
+## Deployed staging service-worker update transition (2026-09-28)
+
+`npm run test:migration:staging-pwa-update` performed a guarded update on the
+isolated `fanmark-app-staging` workers.dev hostname using temporary anonymous
+headless Chrome and a random temporary SVG included in the PWA precache. Worker
+version `f19d38cb-6708-4aa9-87f1-a58a2166337e` installed over the prior staging
+build; `/pwa` reloaded under the new controller, retained a synthetic
+`localStorage` value, discarded an unsaved DOM textarea, and included the
+temporary marker in Workbox's precache contents. The script then removed the
+marker, redeployed the ordinary staging build as
+`c78dbb17-9c9b-42fc-bad5-9dc9ae0cfc65`, and observed a second reload with the
+marker absent from the precache. Direct readback returned 404 for the removed
+asset and the service-worker script no longer referenced it.
+
+The first canary run exposed a test assumption rather than an application
+failure: Workbox keeps its cache name stable across these updates. The check now
+compares precache contents, which showed the canary asset entering and leaving
+as expected. The final browser profile, local marker, and synthetic browser
+storage were removed. This verifies the deployed `autoUpdate` transition only;
+it does not verify native install/standalone launch, authenticated flows,
+custom-domain behavior, offline catalog/search, or a prompt before reload.

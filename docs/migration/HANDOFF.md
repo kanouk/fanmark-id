@@ -38,10 +38,10 @@ currently pending for that fetch.
 
 The 2026-09-28 local PWA update-transition check confirmed that the current
 `autoUpdate` behavior installs a new worker and reloads the page; a synthetic
-unsaved DOM input was lost while `localStorage` remained. This is a local
-two-build browser result only. The deployed Cloudflare update transition and
-native install/standalone launch remain open; see
-[`static-assets.md`](static-assets.md).
+unsaved DOM input was lost while `localStorage` remained. A later guarded
+staging browser canary also verified updates between deployed Worker versions
+and removal of its temporary precache asset. Native install/standalone launch
+remains open; see [`static-assets.md`](static-assets.md).
 
 The 2026-09-28 application-level post-ack restore probe used a temporary
 Worker and a fresh APAC D1 with all 17 business migrations. The actual waitlist
@@ -2385,3 +2385,18 @@ email or payment provider call was made. This closes the admin mutation
 browser subgate only; #37 still needs provider-backed acceptance and the full
 integrated recovery sequence. Real user-data import and domain/DNS cutover
 remain deferred to the final phase.
+
+## Deployed PWA update transition (2026-09-28 JST)
+
+The guarded `npm run test:migration:staging-pwa-update` check deployed a
+temporary precache marker to isolated staging, verified the live service-worker
+update and automatic `/pwa` reload, retained a synthetic `localStorage` value,
+discarded an unsaved DOM field, then removed the marker and restored the normal
+staging build. Worker versions were
+`f19d38cb-6708-4aa9-87f1-a58a2166337e` (canary) and
+`c78dbb17-9c9b-42fc-bad5-9dc9ae0cfc65` (restored). The removed asset returned
+404 and was absent from the restored service worker and Workbox precache. The
+isolated browser profile and synthetic storage were cleaned. Native install
+and standalone launch remain open; no real user, production, or domain/DNS
+resource was involved. Full evidence is in
+[`static-assets.md`](static-assets.md).

@@ -2955,3 +2955,15 @@ email/provider call, real user data, production route, or domain/DNS setting
 was used. This closes the rendered admin user-management mutation subgate;
 provider-backed acceptance and the complete #37 application recovery
 rehearsal remain open.
+
+The guarded staging PWA update browser check also passed. A temporary precache
+asset was deployed and observed in Workbox; the staging Service Worker updated
+and automatically reloaded `/pwa`, preserving synthetic `localStorage` while
+discarding an unsaved DOM field. The marker was removed, the ordinary staging
+build was redeployed, a second update removed the marker from the precache, and
+the asset returned 404. Canary and restored Worker versions were
+`f19d38cb-6708-4aa9-87f1-a58a2166337e` and
+`c78dbb17-9c9b-42fc-bad5-9dc9ae0cfc65`. The temporary browser profile/storage
+were cleaned. This closes only the deployed PWA update-transition subgate;
+native install/standalone launch and complete #37 recovery acceptance remain
+open. See [`static-assets.md`](static-assets.md).
