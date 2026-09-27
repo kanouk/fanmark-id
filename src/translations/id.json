@@ -110,6 +110,7 @@
     "logout": "Keluar",
     "email": "Email",
     "password": "Kata Sandi",
+    "currentPassword": "Kata Sandi Saat Ini",
     "showPassword": "Tampilkan kata sandi",
     "hidePassword": "Sembunyikan kata sandi",
     "confirmPassword": "Konfirmasi Kata Sandi",

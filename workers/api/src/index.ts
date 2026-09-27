@@ -35,6 +35,7 @@ import { handleVerifiedAccessRequest, isVerifiedAccessPath } from "./verified-ac
 import { handleStorageRequest, type StorageAuthResult } from "./storage-r2";
 import { handleOwnedFanmarksRequest, isOwnedFanmarksPath } from "./owned-fanmarks-d1-repository";
 import { handleProfileRequest, isProfilePath } from "./profile-d1-repository";
+import { handlePasswordSetupRequest, isPasswordSetupPath } from "./password-setup-d1-api";
 import { handleFanmarkProfileRequest, isFanmarkProfilePath } from "./fanmark-profile-d1-api";
 import { handleFanmarkSettingsRequest, isFanmarkSettingsPath } from "./fanmark-settings-d1-api";
 import {
@@ -1321,6 +1322,44 @@ export async function handleRequest(
   }
   if (isProfilePath(url.pathname)) {
     return handleProfileRequest(request, env, resolveStorageAuth);
+  }
+  if (isPasswordSetupPath(url.pathname)) {
+    return handlePasswordSetupRequest(request, env, {
+      resolveUser: async (setupRequest) => {
+        if (env.AUTH_BACKEND?.trim() !== "better-auth") throw new Error("auth_unavailable");
+        const config = configuredAuth(env);
+        if (!config) throw new Error("auth_unavailable");
+        const authApi = createApplicationAuth(config).api as unknown as {
+          getSession(input: { headers: Headers; query: { disableCookieCache: true } }): Promise<{ user?: { id?: unknown } } | null>;
+        };
+        const current = await authApi.getSession({
+          headers: setupRequest.headers,
+          query: { disableCookieCache: true },
+        });
+        return typeof current?.user?.id === "string" ? current.user.id : null;
+      },
+      setPassword: async (setupRequest, newPassword) => {
+        const config = configuredAuth(env);
+        if (!config) throw new Error("auth_unavailable");
+        const authApi = createApplicationAuth(config).api as unknown as {
+          setPassword(input: { headers: Headers; body: { newPassword: string } }): Promise<{ status: boolean }>;
+        };
+        const result = await authApi.setPassword({ headers: setupRequest.headers, body: { newPassword } });
+        if (result.status !== true) throw new Error("password_setup_failed");
+      },
+      verifyPassword: async (setupRequest, password) => {
+        const config = configuredAuth(env);
+        if (!config) throw new Error("auth_unavailable");
+        const authApi = createApplicationAuth(config).api as unknown as {
+          verifyPassword(input: { headers: Headers; body: { password: string } }): Promise<{ status: boolean }>;
+        };
+        try {
+          return (await authApi.verifyPassword({ headers: setupRequest.headers, body: { password } })).status === true;
+        } catch {
+          return false;
+        }
+      },
+    });
   }
   if (isUsernameAvailabilityPath(url.pathname)) {
     return (await handleUsernameAvailabilityRequest(request, env, resolveStorageAuth)) ?? errorResponse("not_found", 404, routeHeaders);

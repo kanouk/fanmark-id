@@ -30,6 +30,7 @@ import { usePasswordValidation } from '@/hooks/usePasswordValidation';
 import { PasswordRequirement } from '@/components/PasswordRequirement';
 import { formatStripeAmount } from '@/lib/currency';
 import { supabase } from '@/integrations/supabase/client';
+import { betterAuthClient, isBetterAuthEnabled } from '@/lib/auth-backend';
 import { deleteAccountThroughWorker, getAccountDeletionBackend } from '@/lib/account-deletion-api';
 import {
   createStripeCustomerPortalThroughWorker,
@@ -90,6 +91,7 @@ const Profile = () => {
   );
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
@@ -127,19 +129,24 @@ const Profile = () => {
 
     setIsUpdatingPassword(true);
     try {
-      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
-      if (updateError) throw updateError;
+      if (isBetterAuthEnabled()) {
+        await betterAuthClient.changePassword(currentPassword, newPassword);
+      } else {
+        const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+        if (updateError) throw updateError;
 
-      if (user?.id) {
-        const { error: flagError } = await supabase
-          .from('user_settings')
-          .update({ requires_password_setup: false })
-          .eq('user_id', user.id);
+        if (user?.id) {
+          const { error: flagError } = await supabase
+            .from('user_settings')
+            .update({ requires_password_setup: false })
+            .eq('user_id', user.id);
 
-        if (flagError) throw flagError;
+          if (flagError) throw flagError;
+        }
+        setRequiresPasswordSetup(false);
       }
 
-      setRequiresPasswordSetup(false);
+      setCurrentPassword('');
       setNewPassword('');
       setConfirmNewPassword('');
       toast({
@@ -381,6 +388,23 @@ const Profile = () => {
           </CardHeader>
           <CardContent className="px-6 pb-6">
             <form onSubmit={handlePasswordUpdate} className="space-y-5">
+              {isBetterAuthEnabled() && (
+                <div className="space-y-2">
+                  <Label htmlFor="profile-current-password" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                    <Lock className="h-4 w-4" />
+                    {t('auth.currentPassword')}
+                  </Label>
+                  <Input
+                    id="profile-current-password"
+                    type="password"
+                    value={currentPassword}
+                    onChange={(event) => setCurrentPassword(event.target.value)}
+                    autoComplete="current-password"
+                    className="h-11 rounded-2xl border border-primary/15 bg-background/80 focus-visible:ring-2 focus-visible:ring-primary/40"
+                    required
+                  />
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="profile-new-password" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                   <Lock className="h-4 w-4" />
@@ -457,6 +481,7 @@ const Profile = () => {
                   type="submit"
                   disabled={
                     isUpdatingPassword ||
+                    (isBetterAuthEnabled() && currentPassword.length === 0) ||
                     !isPasswordValid ||
                     newPassword.length === 0 ||
                     newPassword !== confirmNewPassword

@@ -315,6 +315,43 @@ test('Better Auth email verification and password reset use their dedicated endp
   ]);
 });
 
+test('Cloudflare first-password setup and Better Auth password changes use session-authenticated endpoints', async () => {
+  const requests: Array<{ url: string; body: unknown; credentials?: RequestCredentials }> = [];
+  const client = createBetterAuthClient({
+    baseUrl: 'https://fanmark-app-staging.example.workers.dev/',
+    fetchImpl: async (input, init) => {
+      requests.push({
+        url: String(input),
+        body: JSON.parse(String(init?.body)),
+        credentials: init?.credentials,
+      });
+      const path = new URL(String(input)).pathname;
+      return new Response(JSON.stringify(path.endsWith('/password-setup')
+        ? { schemaVersion: 1, status: true }
+        : { token: null, user: { id: 'synthetic-user' } }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    },
+  });
+
+  await client.setupPassword('synthetic-initial-password');
+  await client.changePassword('synthetic-current-password', 'synthetic-new-password');
+
+  assert.deepEqual(requests, [
+    {
+      url: 'https://fanmark-app-staging.example.workers.dev/api/me/password-setup',
+      body: { newPassword: 'synthetic-initial-password' },
+      credentials: 'include',
+    },
+    {
+      url: 'https://fanmark-app-staging.example.workers.dev/api/auth/change-password',
+      body: { currentPassword: 'synthetic-current-password', newPassword: 'synthetic-new-password' },
+      credentials: 'include',
+    },
+  ]);
+});
+
 test('Better Auth social sign-in validates the redirect response before handing it to the browser', async () => {
   let request: { url: string; init?: RequestInit } | undefined;
   const client = createBetterAuthClient({

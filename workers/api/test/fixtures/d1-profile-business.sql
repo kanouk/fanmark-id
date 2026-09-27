@@ -17,7 +17,6 @@ CREATE TRIGGER user_settings_prevent_privilege_escalation
 BEFORE UPDATE ON user_settings
 WHEN NEW.plan_type <> OLD.plan_type
   OR NEW.invited_by_code IS NOT OLD.invited_by_code
-  OR NEW.requires_password_setup <> OLD.requires_password_setup
   OR NEW.stripe_customer_id IS NOT OLD.stripe_customer_id
 BEGIN
   SELECT RAISE(ABORT, 'user_settings_privileged_field');

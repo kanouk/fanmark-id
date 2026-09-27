@@ -110,6 +110,7 @@
     "logout": "Logout",
     "email": "Email",
     "password": "Password",
+    "currentPassword": "Current Password",
     "confirmPassword": "Confirm Password",
     "showPassword": "Show password",
     "hidePassword": "Hide password",

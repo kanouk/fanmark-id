@@ -130,8 +130,24 @@ const responseError = (status: number, body: unknown): BetterAuthClientError => 
 
 export const createBetterAuthClient = ({ baseUrl, fetchImpl = fetch }: BetterAuthClientOptions) => {
   const endpoint = (path: string) => `${baseUrl.replace(/\/$/u, '')}/api/auth/${path}`;
+  const appEndpoint = (path: string) => `${baseUrl.replace(/\/$/u, '')}${path}`;
   const postAuth = async (path: string, body: Record<string, unknown>): Promise<unknown> => {
     const response = await fetchImpl(endpoint(path), {
+      method: 'POST',
+      credentials: 'include',
+      cache: 'no-store',
+      headers: {
+        accept: 'application/json',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+    const responseBody = await readJson(response);
+    if (!response.ok) throw responseError(response.status, responseBody);
+    return responseBody;
+  };
+  const postApp = async (path: string, body: Record<string, unknown>): Promise<unknown> => {
+    const response = await fetchImpl(appEndpoint(path), {
       method: 'POST',
       credentials: 'include',
       cache: 'no-store',
@@ -279,6 +295,22 @@ export const createBetterAuthClient = ({ baseUrl, fetchImpl = fetch }: BetterAut
       const body = await postAuth('reset-password', { token, newPassword });
       if (!body || typeof body !== 'object' || (body as { status?: unknown }).status !== true) {
         throw new Error('Better Auth did not reset the password');
+      }
+    },
+
+    async setupPassword(newPassword: string): Promise<void> {
+      const body = await postApp('/api/me/password-setup', { newPassword });
+      if (
+        !body || typeof body !== 'object' ||
+        (body as { schemaVersion?: unknown }).schemaVersion !== 1 ||
+        (body as { status?: unknown }).status !== true
+      ) throw new Error('Cloudflare did not accept the initial password');
+    },
+
+    async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+      const body = await postAuth('change-password', { currentPassword, newPassword });
+      if (!body || typeof body !== 'object' || !('user' in body)) {
+        throw new Error('Better Auth did not change the password');
       }
     },
 

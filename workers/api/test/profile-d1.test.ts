@@ -71,11 +71,11 @@ async function removeSyntheticAvatar(): Promise<void> {
   } while (cursor);
 }
 
-async function signIn(email: string): Promise<string> {
+async function signIn(email: string, signInPassword = password): Promise<string> {
   const response = await request("/api/auth/sign-in/email", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password: signInPassword }),
   });
   if (response.status !== 200) throw new Error(`Synthetic sign-in failed: ${response.status}`);
   const cookie = response.headers.get("set-cookie")?.split(";")[0];
@@ -298,6 +298,91 @@ describe("Better Auth own-profile API", () => {
     const other = await businessDatabase?.prepare("SELECT display_name FROM user_settings WHERE user_id = ?").bind(otherId).first();
     expect(owner).toEqual({ display_name: "Old Owner Name", plan_type: "creator" });
     expect(other).toEqual({ display_name: "Other Private Name" });
+  });
+
+  it("sets an OAuth user's first password and safely retries after the Auth D1 write", async () => {
+    const cookie = await signIn(ownerEmail);
+    await authDatabase?.prepare('DELETE FROM "account" WHERE "userId" = ?').bind(ownerId).run();
+
+    const setup = async (newPassword: string, sessionCookie = cookie) => request("/api/me/password-setup", {
+      method: "POST",
+      headers: { Cookie: sessionCookie, "content-type": "application/json" },
+      body: JSON.stringify({ newPassword }),
+    });
+
+    const created = await setup("Synthetic-OAuth-Password!2026");
+    expect(created.status, JSON.stringify(await created.clone().json())).toBe(200);
+    expect(await created.json()).toEqual({ schemaVersion: 1, status: true });
+    const setupFlag = await businessDatabase?.prepare(
+      "SELECT requires_password_setup FROM user_settings WHERE user_id = ?",
+    ).bind(ownerId).first<{ requires_password_setup: number }>();
+    expect(setupFlag?.requires_password_setup).toBe(0);
+
+    const credential = await authDatabase?.prepare(
+      'SELECT password FROM "account" WHERE "userId" = ? AND "providerId" = ?',
+    ).bind(ownerId, "credential").first<{ password: string }>();
+    expect(credential?.password).toEqual(expect.any(String));
+    expect(credential?.password).not.toContain("Synthetic-OAuth-Password!2026");
+
+    expect((await signIn(ownerEmail, "Synthetic-OAuth-Password!2026")).length).toBeGreaterThan(0);
+
+    // Model the cross-database partial commit: Auth D1 has the credential but
+    // the profile gate still needs clearing. A retry must verify the exact
+    // password before completing that D1 update.
+    await businessDatabase?.prepare(
+      "UPDATE user_settings SET requires_password_setup = 1 WHERE user_id = ?",
+    ).bind(ownerId).run();
+    expect((await setup("Wrong-Passcode!2026")).status).toBe(409);
+    const retained = await businessDatabase?.prepare(
+      "SELECT requires_password_setup FROM user_settings WHERE user_id = ?",
+    ).bind(ownerId).first<{ requires_password_setup: number }>();
+    expect(retained?.requires_password_setup).toBe(1);
+
+    const retried = await setup("Synthetic-OAuth-Password!2026");
+    expect(retried.status).toBe(200);
+    const cleared = await businessDatabase?.prepare(
+      "SELECT requires_password_setup FROM user_settings WHERE user_id = ?",
+    ).bind(ownerId).first<{ requires_password_setup: number }>();
+    expect(cleared?.requires_password_setup).toBe(0);
+  });
+
+  it("requires the owner session, profile gate, JSON contract and an allowed origin for first-password setup", async () => {
+    expect((await request("/api/me/password-setup", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ newPassword: "Synthetic-OAuth-Password!2026" }),
+    })).status).toBe(401);
+
+    const cookie = await signIn(ownerEmail);
+    expect((await request("/api/me/password-setup", {
+      method: "POST",
+      headers: { Cookie: cookie, "content-type": "application/json" },
+      body: JSON.stringify({ newPassword: "short" }),
+    })).status).toBe(400);
+    expect((await request("/api/me/password-setup", {
+      method: "POST",
+      headers: { Cookie: cookie, "content-type": "application/json" },
+      body: JSON.stringify({ newPassword: "lowercase-password!123" }),
+    })).status).toBe(400);
+    expect((await request("/api/me/password-setup", {
+      method: "POST",
+      headers: { Cookie: cookie, "content-type": "application/json" },
+      body: JSON.stringify({ userId: ownerId, newPassword: "Synthetic-OAuth-Password!2026" }),
+    })).status).toBe(400);
+    expect((await request("/api/me/password-setup", {
+      method: "GET",
+      headers: { Cookie: cookie },
+    })).status).toBe(405);
+    expect((await request("/api/me/password-setup", {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: "https://attacker.example.test", "content-type": "application/json" },
+      body: JSON.stringify({ newPassword: "Synthetic-OAuth-Password!2026" }),
+    })).status).toBe(403);
+    expect((await request("/api/me/password-setup", {
+      method: "POST",
+      headers: { Cookie: cookie, "content-type": "application/json" },
+      body: JSON.stringify({ newPassword: "Synthetic-OAuth-Password!2026" }),
+    }, { PROFILE_BACKEND: undefined })).status).toBe(503);
   });
 
   it("requires a session and enforces backend, CORS, methods, and a single profile row", async () => {

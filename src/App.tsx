@@ -68,7 +68,7 @@ const MainApp = () => (
                   <Route path="/reset-password" element={isBetterAuthEnabled() ? <Navigate to="/auth" replace /> : <ResetPassword />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/password-setup" element={isBetterAuthEnabled() ? <Navigate to="/dashboard" replace /> : <ProtectedRoute><PasswordSetup /></ProtectedRoute>} />
+                  <Route path="/password-setup" element={<ProtectedRoute><PasswordSetup /></ProtectedRoute>} />
                   <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
                   <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
                   <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />

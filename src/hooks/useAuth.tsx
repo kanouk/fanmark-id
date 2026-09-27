@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState, ReactNode 
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { betterAuthClient, isBetterAuthEnabled } from '@/lib/auth-backend';
+import { loadOwnProfile } from '@/lib/profile-api';
 
 interface AuthUser {
   id: string;
@@ -87,7 +88,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }, [loadUserSettings]);
 
-  const applyBetterAuthSession = useCallback((nextSession: Awaited<ReturnType<typeof betterAuthClient.getSession>>) => {
+  const applyBetterAuthSession = useCallback(async (nextSession: Awaited<ReturnType<typeof betterAuthClient.getSession>>) => {
     const betterAuthUser = nextSession?.user;
     const nextUser: AuthUser | null = betterAuthUser ? {
       id: betterAuthUser.id,
@@ -96,17 +97,35 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setSession(nextUser ? { user: nextUser } : null);
     setUser(nextUser);
     setEmailConfirmed(Boolean(betterAuthUser?.emailVerified));
-    setRequiresPasswordSetup(false);
-    setLoading(false);
+    if (!nextUser) {
+      setRequiresPasswordSetup(false);
+      setLoading(false);
+      return;
+    }
+
+    // The Cloudflare profile row is authoritative for the OAuth first-password
+    // gate. Keep protected routes closed if the profile read cannot be proved.
+    setLoading(true);
+    setRequiresPasswordSetup(true);
+    try {
+      const profile = await loadOwnProfile();
+      if (profile.user_id !== nextUser.id) throw new Error('Profile identity did not match the Better Auth session');
+      setRequiresPasswordSetup(profile.requires_password_setup);
+    } catch (error) {
+      console.error('Error loading Better Auth profile gate:', error);
+      setRequiresPasswordSetup(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const refreshSession = useCallback(async () => {
     if (betterAuthEnabled) {
       try {
-        applyBetterAuthSession(await betterAuthClient.getSession());
+        await applyBetterAuthSession(await betterAuthClient.getSession());
       } catch (error) {
         console.error('Error loading Better Auth session:', error);
-        applyBetterAuthSession(null);
+        await applyBetterAuthSession(null);
       }
       return;
     }

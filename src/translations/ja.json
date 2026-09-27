@@ -110,6 +110,7 @@
     "logout": "ログアウト",
     "email": "メールアドレス",
     "password": "パスワード",
+    "currentPassword": "現在のパスワード",
     "showPassword": "パスワードを表示",
     "hidePassword": "パスワードを非表示",
     "confirmPassword": "パスワード確認",
