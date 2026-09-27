@@ -44,6 +44,9 @@ jobs:
       - name: Test migration data boundaries
         run: npm run test:migration-data
 
+      - name: Test admin return URL behavior
+        run: npm run test:admin-auth-url
+
       - name: Type check application
         run: npm run typecheck
 

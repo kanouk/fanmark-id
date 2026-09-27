@@ -72,7 +72,8 @@
     "test:availability": "node --experimental-strip-types --test src/lib/fanmark-availability.test.ts",
     "test:extension-coupon-api": "node --experimental-strip-types --test src/lib/extension-coupon-api.test.ts",
     "test:extension-coupon-admin-api": "node --experimental-strip-types --test src/lib/extension-coupon-admin-api.test.ts",
-    "test:account-deletion-api": "node --experimental-strip-types --test src/lib/account-deletion-api.test.ts"
+    "test:account-deletion-api": "node --experimental-strip-types --test src/lib/account-deletion-api.test.ts",
+    "test:admin-auth-url": "node --experimental-strip-types --test src/lib/main-site-url.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

@@ -13,39 +13,16 @@ import { MFAChallenge } from "@/components/auth/MFAChallenge";
 import { QRCodeSVG } from "qrcode.react";
 import { betterAuthClient, isBetterAuthEnabled } from "@/lib/auth-backend";
 import { useAuth } from "@/hooks/useAuth";
+import { getMainSiteUrl } from "@/lib/main-site-url";
 
 type MFAStep = "login" | "enroll" | "challenge";
-
-// Get the main site URL (user-facing site, not admin subdomain)
-const getMainSiteUrl = (): string => {
-  const hostname = window.location.hostname;
-  const protocol = window.location.protocol;
-  const port = window.location.port;
-
-  // Development environment
-  if (hostname === "localhost" || hostname.includes("127.0.0.1")) {
-    // Remove ?admin=true param and return to main site
-    return `${protocol}//${hostname}${port ? `:${port}` : ""}/`;
-  }
-
-  // Production environment - remove subdomain (e.g., admin.fanmark.id -> fanmark.id)
-  const parts = hostname.split(".");
-  if (parts.length > 2) {
-    // Remove first part (subdomain)
-    const mainDomain = parts.slice(1).join(".");
-    return `${protocol}//${mainDomain}/`;
-  }
-
-  // Fallback
-  return `${protocol}//${hostname}/`;
-};
 
 interface AdminAuthProps {
   onMFAComplete?: () => void;
 }
 
 const SupabaseAdminAuth: React.FC<AdminAuthProps> = ({ onMFAComplete }) => {
-  const mainSiteUrl = useMemo(() => getMainSiteUrl(), []);
+  const mainSiteUrl = useMemo(() => getMainSiteUrl(window.location), []);
   const { toast } = useToast();
 
   const [email, setEmail] = useState("");
@@ -334,6 +311,7 @@ type CloudflareAdminStep = "login" | "enroll" | "verify-enrollment" | "challenge
 
 const CloudflareAdminAuth: React.FC<AdminAuthProps> = ({ onMFAComplete }) => {
   const { user, refreshSession } = useAuth();
+  const mainSiteUrl = useMemo(() => getMainSiteUrl(window.location), []);
   const [step, setStep] = useState<CloudflareAdminStep>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -533,7 +511,7 @@ const CloudflareAdminAuth: React.FC<AdminAuthProps> = ({ onMFAComplete }) => {
             {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
             <div className="flex justify-center">
               <Button variant="outline" className="gap-2 rounded-full" asChild>
-                <a href={getMainSiteUrl()}><Home className="h-4 w-4" />トップに戻る</a>
+                <a href={mainSiteUrl}><Home className="h-4 w-4" />トップに戻る</a>
               </Button>
             </div>
           </CardContent>
