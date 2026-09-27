@@ -139,6 +139,21 @@ unfrozen configuration. No Supabase writer was stopped or tested. The live Cron
 pause log was not captured in that initial rehearsal; the follow-up on
 2026-09-28 captured it below.
 
+A separate 2026-09-28 loopback-only local smoke now covers one component of the
+pre-write path: synthetic email/password sign-in, Auth UUID preservation,
+owner-scoped `user_settings` read/update/readback, and Auth deletion cascading
+the settings row. Its API sequence took 284 ms on the latest run. The
+disposable local project uses the checked-in SQL migrations with a local-only
+`is_admin() = false` shim
+because the historical chain drops that function before later policies refer
+to it; it mirrors the read-only-observed `user_settings` grants only inside the
+local container. The smoke cleaned its container, volumes, network, and
+temporary files. It does not rehearse the Cloudflare first-write boundary,
+source-writer/Cron freeze, full application switch, browser session recovery, or
+the timed pre-write rollback. Issue #37's complete pre-write drill therefore
+remains open. See
+[`prewrite-supabase-resume-smoke.mjs`](../../scripts/migration/prewrite-supabase-resume-smoke.mjs).
+
 The 2026-09-27 read-only Supabase catalog query succeeds through
 `npx supabase@2.118.0`; it reads no application rows and still produces 18
 blocking schema-conversion gates. The earlier post-reauth Wrangler Keychain

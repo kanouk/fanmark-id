@@ -29,6 +29,13 @@ The current migration order is:
 5. Switch public DNS/hostnames only after data and application reconciliation.
    Registrar transfer is a separate decision and is not required for DNS cutover.
 
+An earlier 2026-09-23 status saying latest Supabase schema retrieval was waiting
+for terminal input referred to the choice to enter the DB password in the
+masked terminal or defer. It is historical: a linked-project read-only
+schema-only refresh completed on 2026-09-27, reading no application rows. The
+current schema-conversion checkpoint is recorded below; no terminal input is
+currently pending for that fetch.
+
 The 2026-09-28 local PWA update-transition check confirmed that the current
 `autoUpdate` behavior installs a new worker and reloads the page; a synthetic
 unsaved DOM input was lost while `localStorage` remained. This is a local
@@ -45,6 +52,15 @@ Restore plus exact reconciliation took 4.069 seconds. The Worker/database were
 deleted and account readback returned to the three pre-existing staging D1s.
 This closes only the narrow app-schema post-ack restore probe, not the complete
 pre/post-write drills or issue #37; see
+[`cutover-rehearsal.md`](cutover-rehearsal.md).
+
+The same date, a loopback-only local Supabase smoke passed email/password Auth,
+UUID preservation, owner-scoped settings read/update/readback, and cascade
+cleanup in 284 ms of API calls on the latest run. It uses a disposable local
+project, the checked-in SQL migrations, and a local-only non-admin shim plus
+grants mirrored from read-only-observed metadata. No linked Supabase project or
+Cloudflare resource was used. This verifies an old-path component only; it does
+not close the full pre-write cutover/recovery drill. Details are in
 [`cutover-rehearsal.md`](cutover-rehearsal.md).
 
 ## Browser shell check and current PR validation (2026-09-27 JST)
