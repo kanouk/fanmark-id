@@ -1828,8 +1828,11 @@ made. Detailed evidence is in [`live-observations.md`](live-observations.md).
 
 ## Stripe test CI follow-up (2026-09-27 UTC)
 
-The stalled Stripe receipt test job was traced to TSX being globally preloaded
-for JavaScript-only PGlite tests. Splitting TS-importing and JS-only test files
-now passes all 90 tests on local and Ubuntu Node 22.6, with Stripe typecheck,
-app typecheck, admin auth URL tests (3/3), and staging build also passing.
-A new GitHub Actions run remains required before calling the CI repair verified.
+The initial TSX/plain-JavaScript split passed all 90 tests locally and in an
+Ubuntu Node 22.6 container, but GitHub Actions run `36320827030` remained in the
+Stripe test step for more than four minutes and was canceled; the app job still
+did not verify the change. The runner now launches each suite in its own Node
+process, with a 180-second per-file timeout and TSX loaded only by the four
+TypeScript-importing suites. Local Stripe tests, Stripe typecheck, app
+typecheck, admin auth URL tests (3/3), and staging build pass. Fresh GitHub
+Actions verification is pending.

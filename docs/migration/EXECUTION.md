@@ -2664,14 +2664,17 @@ changed.
 
 GitHub Actions run `36318455207` completed its Worker API job, while the app job
 stalled after 88 Stripe receipt subtests in the PGlite row-conversion/snapshot
-area and was canceled. Reproducing on Node 22.6 showed that globally preloading
-TSX for JavaScript-only PGlite suites caused the hang. The package test command
-now runs the four files that import TypeScript with TSX, then runs the five
-JavaScript-only suites with plain Node.
+area and was canceled. Reproducing on Node 22.6 showed a hang when TSX was
+globally preloaded for JavaScript-only PGlite suites. Splitting TypeScript and
+plain-JavaScript suites passed all 90 tests locally and in an Ubuntu Node 22.6
+container, but the next GitHub Actions run (`36320827030`) still remained in
+the Stripe test step for more than four minutes. Its Worker job passed in 5m2s;
+the run was canceled to avoid another prolonged wait, so the two-batch split is
+not considered a CI fix.
 
-The split passes all 90 tests locally (49 TSX-loaded and 41 plain-Node tests);
-the same split also passed in an Ubuntu Node 22.6 container. Stripe receipt
+The runner now starts each of the nine test files in its own Node process,
+preloading TSX only for the four files that import TypeScript. Each process has
+a 180-second timeout so a stuck suite fails with its file name. Stripe receipt
 typecheck, app typecheck, admin auth URL tests (3/3), and Cloudflare staging
-build pass. These are local checks; a fresh GitHub Actions run is still needed
-to verify the fix on the PR. No production, Supabase, D1, user-data, or
-domain/DNS state changed.
+build pass locally. The per-file runner still needs a fresh GitHub Actions run.
+No production, Supabase, D1, user-data, or domain/DNS state changed.
