@@ -284,3 +284,16 @@ The staging rollback rehearsal remains the operational evidence; this review
 performed no D1 writes or activation. The migration stage is complete for the
 isolated master D1 and workers.dev distribution path. Production API routing,
 custom domains/DNS, and user-data migration remain later stages.
+
+## Current Supabase source parity refresh (2026-09-27 JST)
+
+Using the linked project through `supabase@2.118.0 db query --linked`, a
+read-only query selected only the eight public catalog columns and all 3,944
+rows. The current-source release builder reproduced the active Cloudflare
+release exactly: `recordsSHA256=84a67b361adf96534bc6e564ec7510249758c2b20492e4d0b97acc7fd88309c0`,
+`identitySHA256=dddd7cf13528dd44f2bb1329ed1167f83fb30e63504fdd1c673845467ab402fc`,
+and version `10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed`.
+The independent remote D1 query returned 3,944 active-release rows and matched
+all eight columns; its metadata reported `changed_db=false` and zero rows
+written. The active pointer remains generation 3/action `rollback`. No source
+rows were imported and no activation or D1 mutation occurred.

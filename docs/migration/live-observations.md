@@ -1547,3 +1547,18 @@ contained both the search record path and `credentials: "omit"`, and
 `/api/auth/ok` returned 200. The authenticated search-details request still
 uses credentials. This refresh issued no D1 writes; the synthetic rows from
 the earlier canary remain absent.
+
+## Emoji master source parity refresh (2026-09-27 JST)
+
+A read-only Supabase query through the authenticated Management API selected
+only `id`, `emoji`, `short_name`, `keywords`, `category`, `subcategory`,
+`codepoints`, and `sort_order` from `public.emoji_master`. The release builder
+normalized all 3,944 source rows to
+`recordsSHA256=84a67b361adf96534bc6e564ec7510249758c2b20492e4d0b97acc7fd88309c0`
+and `identitySHA256=dddd7cf13528dd44f2bb1329ed1167f83fb30e63504fdd1c673845467ab402fc`.
+The independent active-release D1 read returned 3,944 rows with exact
+eight-column canonical equality and version
+`10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed`. Its
+active pointer remains generation 3/action `rollback`; Wrangler reports
+`changed_db=false` and zero rows written. No user rows or Supabase writes were
+involved.

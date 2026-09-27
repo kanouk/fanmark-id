@@ -194,8 +194,15 @@ release `10ec42c1…`; the reference-master APIs all returned 200 on release
 `ba598c61…` (4 tiers, 4 languages, 5 reserved patterns, 16 extension-price
 rows). Direct pointer and row-count queries reported `changed_db: false` and
 zero rows written. This verifies the Cloudflare staging master projections
-and Worker routes. The fresh Supabase schema read was catalog-only; master
-source-row parity remains unverified and no source master rows were imported.
+and Worker routes. A fresh, explicit-eight-column, read-only Supabase export
+then matched all 3,944 rows in the active Cloudflare release after canonical
+normalization. `recordsSHA256=84a67b361adf96534bc6e564ec7510249758c2b20492e4d0b97acc7fd88309c0`,
+`identitySHA256=dddd7cf13528dd44f2bb1329ed1167f83fb30e63504fdd1c673845467ab402fc`,
+and version `10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed`
+matched. The active pointer remains generation 3/action `rollback`; readback
+reported `changed_db=false` and zero rows written. This closes current emoji
+master source-row parity for the staging release. No source rows were imported
+or written during comparison; Auth/business user data remains empty.
 
 On 2026-09-27, the staging build added `POST /api/me/account/delete`, selected
 only by `VITE_ACCOUNT_DELETION_BACKEND=worker` and
