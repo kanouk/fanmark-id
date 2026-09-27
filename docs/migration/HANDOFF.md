@@ -2160,3 +2160,22 @@ Git. The proof and DDL were not applied to any remote D1; real user data,
 production routes, and domain/DNS remain untouched. The prior GitHub Actions
 run `36338168509` passed both Cloudflare staging-app and Worker API jobs on
 commit `43b318d`; Supabase Preview was skipped by design.
+
+## Repeat staging authentication and lifecycle canary (2026-09-28 JST)
+
+Read-only `wrangler deployments list` showed `fanmark-app-staging` version
+`708ff90b-abec-405d-9dd0-6a0d14cafe3c` at 100%. The pinned staging smoke
+verified that the Auth-owned tables were empty before provisioning synthetic
+identities. It then passed email/password sign-in, first-time TOTP enrollment,
+TOTP verification with session rotation, same-session administrator
+authorization, and the MFA-protected manual lifecycle endpoint with zero
+candidates. Cron expiry remained disabled. Cleanup removed the synthetic Auth,
+business profile, audit, and lifecycle rows; the smoke's final Auth readback
+found every user-owned table empty. The monotonic MFA generation counter was
+preserved and may have advanced.
+
+The attempt to collect per-request CPU via `wrangler tail` returned no
+invocation records, so this run provides no CPU measurement and does not close
+the Workers plan-fit gate. This was staging-only synthetic activity: no
+Supabase or production resource, real user data, email, Stripe operation,
+R2 object, production route, or domain/DNS setting was changed.

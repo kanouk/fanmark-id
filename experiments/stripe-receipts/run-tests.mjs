@@ -12,6 +12,11 @@ const typeScriptImports = new Set([
 const testFiles = readdirSync(new URL("./test/", import.meta.url))
   .filter((file) => file.endsWith(".test.mjs"))
   .sort();
+const snapshotExportIndex = testFiles.indexOf("snapshot-export.test.mjs");
+if (snapshotExportIndex > 0) {
+  // Run the PGlite snapshot integration before the other database-heavy suites.
+  testFiles.unshift(testFiles.splice(snapshotExportIndex, 1)[0]);
+}
 
 for (const file of testFiles) {
   const args = ["--test", "--test-concurrency=1", `test/${file}`];
