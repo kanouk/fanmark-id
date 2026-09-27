@@ -115,9 +115,15 @@ deploying Worker version `cdeb759e-8e52-4b8a-9d63-6451b871c262` (100% traffic),
 live readback returned 200 for the manifest, service worker, and both PNGs;
 the images have the declared 192x192 and 512x512 dimensions and
 `image/png` content type. Browser-style navigation requests to `/pwa`, `/auth`,
-and `/plans` return the noindex SPA shell. This only verifies static routing;
-it does not prove that the client-side protected route redirects correctly or
-that auth succeeds.
+and `/plans` return the noindex SPA shell. A fresh anonymous headless Chromium
+profile then executed the deployed client: `/plans` and `/plan` redirected to
+`/auth`; `/pwa` was controlled by the active service worker, whose Workbox
+precache contained both icons. With network emulation disabled, reloading
+`/pwa` served the shell and displayed the catalog retry screen. API responses
+were not cached. The temporary browser profile was removed. This verifies only
+the anonymous protected-route redirect and offline shell; it does not establish
+authenticated application flows, offline catalog/search, native install, or
+service-worker update transitions.
 
 ## Remaining parity gates
 

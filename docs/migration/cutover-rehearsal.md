@@ -89,17 +89,20 @@ staging master edit/restore; and current-catalog importer rehearsal over all
 40 source tables. Local migration-data, Worker, typecheck, staging-build, and
 Wrangler dry-run suites are recorded in [HANDOFF.md](HANDOFF.md).
 
-The staging PWA shell now has an anonymous browser offline check: its service
-worker controls `/pwa`, serves the shell from static precache, and does not
-cache API responses. The offline catalog request fails with a retry screen.
-Installation and service-worker update transitions remain unverified.
+The current staging deployment has an isolated anonymous browser check: `/plans`
+and `/plan` redirect to `/auth`; the active service worker controls `/pwa`, its
+precache includes both manifest icons, and offline reload serves the shell
+while the API/catalog request shows the retry screen. Native installation and
+service-worker update transitions remain unverified.
 
 Not verified: a coordinated old-writer freeze with Stripe receipt continuity,
 a timed full final-copy window, both recovery drills, resolved schema gates,
 live Stripe sandbox acceptance, production backup key custody/retention, or
-production operation. The latest CLI recheck also confirms that Supabase
-schema-read commands currently fail before querying because no CLI access token
-is available; Wrangler cannot currently read the macOS Keychain. No remote
-deployment was attempted during that recheck.
+production operation. The 2026-09-27 read-only Supabase catalog query now
+succeeds through `npx supabase@2.118.0`; it reads no application rows and still
+produces 18 blocking schema-conversion gates. Wrangler authentication also
+works again, and staging Worker version `cdeb759e-8e52-4b8a-9d63-6451b871c262`
+is deployed at 100%. These updates do not close the source schema gates or
+constitute a completed integration/cutover rehearsal.
 
 The user-data import and public domain/DNS switch remain explicitly deferred.

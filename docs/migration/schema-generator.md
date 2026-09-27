@@ -72,7 +72,7 @@ boundary differs and is documented in `schema-conversion.md`.
 
 ## What the latest catalog run produces
 
-The private catalog was refreshed on 2026-09-26 from a read-only Supabase
+The private catalog was refreshed on 2026-09-27 from a read-only Supabase
 catalog query and contains 40 tables, 406 columns, 144
 constraints, 139 indexes, and 15 enum labels. The source schema also contains
 one view, 58 functions, 36 triggers, and 77 RLS policies; those behavior and
@@ -103,15 +103,18 @@ binds the source locale so changes cannot be missed
 ([PostgreSQL pattern-matching rules](https://www.postgresql.org/docs/current/functions-matching.html)).
 These are intentional blockers, not ignored source objects.
 
-The 2026-09-26 refresh used `npx supabase@2.118.0 db query --linked` through
+The 2026-09-27 refresh used `npx supabase@2.118.0 db query --linked` through
 the Supabase Management API; it needed no local Docker daemon and read catalog
 metadata only. The `information_schema.columns` total is 411 because it
 includes 406 base-table columns and five columns in the single view. The
 converter's 406-column count is table-only, with the view definition captured
 in its own catalog scope. A fresh v4 conversion still produces 40 tables, 66
 indexes, 18 blocking gate groups, and `deployable: false`. Its table and column
-names match the checked-in staging baseline exactly. The catalog, generated SQL,
-and report remain private files with mode `0600`.
+names match the checked-in staging baseline exactly. The current-catalog
+synthetic importer test also completed all 40 table checkpoints and returned
+`public_rows_reconciled`, while the strict deployment and full-migration flags
+remained false. The catalog, generated SQL, and report remain private files
+with mode `0600`.
 
 ## Readiness by migration stage (2026-09-25 JST)
 

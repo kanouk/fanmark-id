@@ -45,6 +45,21 @@ and `deployable: false`. Its 40 table names and 406 column names match the
 checked-in staging baseline exactly. Catalog and generated artifacts were
 written outside the repository with mode `0600`; no application rows were read.
 
+On 2026-09-27 JST, the same read-only query completed at
+`2026-09-27T00:27:21Z` against the linked `fanmark.id` project. The current
+catalog still has 40 public tables, 406 table columns, 144 constraints, 139
+indexes, 15 enum labels, one view, 58 functions, 36 non-internal triggers, and
+77 RLS policies. It records the same `en_US.UTF-8` locale. The explicit
+credential descriptor compiled for this catalog with digest
+`c187430387bdc5208457a1d24a82cebc8b4de17487c7f1c77c7dd18cbeb3c41d`; a fresh
+schema-conversion v4 report still has 18 blocking groups (10 row-conversion, 8
+schema/operation) and `deployable: false`. The private catalog, generated SQL,
+descriptor, and report each have mode `0600` outside the repository. Running
+`test-d1-import-current-schema.mjs` on this fresh catalog completed all 40
+synthetic source-table checkpoints with `public_rows_reconciled`, but left
+`fullMigrationReconciled: false`. No application rows were queried, no Cloudflare
+D1 was written, and no schema/import readiness is inferred from that rehearsal.
+
 The same private catalog was reprocessed with schema converter version 4 on
 2026-09-25. The source locale is `en_US.UTF-8`, so the three PostgreSQL regex
 CHECKs remain unresolved: the converter's exact ASCII/GLOB equivalents are

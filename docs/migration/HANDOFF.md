@@ -36,7 +36,7 @@ support are acceptable. That can avoid overengineering for zero downtime; it is
 not acceptance of account/entitlement mislinks, secret exposure, or data that
 cannot be recovered. The old/new systems must not dual-write business rows.
 
-## 2026-09-27 local validation and access retry
+## 2026-09-27 local validation, staging deploy, and schema refresh
 
 Re-ran `npm run test:migration-data` under Node 22.6.0 (147/147) and the full
 `workers/api` `npm test` chain (exit 0). The prior root and Worker TypeScript
@@ -51,17 +51,27 @@ and after Cloudflare accepts a write. This is an operator procedure, not a
 completed rehearsal: the old-writer freeze, timed final-copy drill, and both
 recovery drills remain unverified. Issue #37 stays open.
 
-A new read-only `supabase db query --linked --file
-scripts/migration/schema-readiness.sql` attempt failed with
-`AccessTokenRequiredError`. It returned no catalog, and no application rows
-were queried. The last successful catalog refresh remains 2026-09-26, documented
-in `schema-conversion.md`; the earlier terminal-input wait was not a live
-process. `wrangler whoami` also failed to read the macOS Keychain (exit 51), so
-no staging deployment was attempted. A `git push` failed because GitHub HTTPS
-credentials were unavailable; PR #41 is unchanged and the migration commits
-remain local. Preserve the unrelated modified `supabase/.temp/cli-latest` file.
+The linked project is `ppqgtbjykitqtiaisyji` (`fanmark.id`). The installed
+Supabase CLI 2.67.1 can list the linked project but lacks `db query`; the
+ephemeral `npx supabase@2.118.0` CLI successfully ran the reviewed
+`schema-readiness.sql` in its read-only transaction. The 2026-09-27T00:27:21Z
+catalog has 40 tables, 406 columns, 144 constraints, 139 indexes, 15 enum
+labels, one view, 58 functions, 36 triggers, and 77 RLS policies. No
+application rows were read. The private catalog and generated artifacts have
+mode 0600. Schema conversion v4 still reports 18 unresolved gates and
+`deployable: false`; a fresh synthetic current-catalog importer rehearsal
+passed all 40 checkpoints with `public_rows_reconciled`, while
+`fullMigrationReconciled` remains false. Details are in
+`schema-conversion.md` and `d1-import.md`.
 
-## Current staging state (2026-09-27 JST)
+The earlier Wrangler Keychain failure was resolved. Wrangler now authenticates
+to the intended account; staging deployment
+`cdeb759e-8e52-4b8a-9d63-6451b871c262` is active at 100%, and the isolated PWA
+and master-route checks are recorded below. PR #41 received commit `538a293`;
+both required GitHub CI jobs passed. Preserve the unrelated modified
+`supabase/.temp/cli-latest` file.
+
+## Prior staging checkpoint (2026-09-27 JST, before PWA icon deployment)
 
 Weighted progress estimate at this checkpoint: about 70% of the prioritized
 basic-app/infrastructure/master-data stage and about 55–60% of the full
@@ -77,7 +87,7 @@ passed, without materially changing the coarse estimate. Public waitlist
 submission is now also selected through D1 on staging; its isolated synthetic
 canary passed and does not materially change the coarse estimate.
 
-`fanmark-app-staging` is deployed at 100% as version
+At this checkpoint, `fanmark-app-staging` was deployed at 100% as version
 `243e68a0-df6a-4e7c-b290-1ec20bdd2005` at
 `https://fanmark-app-staging.fanmark-id.workers.dev`. The split business/Auth/
 master D1 bindings and the two image R2 buckets remain isolated to this
@@ -104,8 +114,9 @@ isolated, so it did not prove the anonymous result. The local source wraps
 preview with synthetic `maintenance_mode=false` and Better Auth session `null`
 redirected both to `/auth`. Deployment `cdeb759e-8e52-4b8a-9d63-6451b871c262`
 now contains the current source bundle. Live browser-style requests return the
-noindex SPA shell for `/plans`, `/plan`, `/auth`, and `/pwa`; executing the
-current deployed client-side guard in an isolated browser remains to be done.
+noindex SPA shell for `/plans`, `/plan`, `/auth`, and `/pwa`. A fresh anonymous
+headless Chromium profile executed the deployed client: both `/plans` and
+`/plan` redirected to `/auth`, where the login form rendered.
 
 The earlier Wrangler Keychain failure was resolved. Current `wrangler whoami`
 reports `fanmark.id@gmail.com` and the intended account ID. The lockfile-pinned
@@ -115,19 +126,13 @@ assets. Deployment `cdeb759e-8e52-4b8a-9d63-6451b871c262` is now active at
 assets. D1 and R2 bindings still point to the staging resources, and no D1
 migration, user-data import, or R2 object import was run by this deployment.
 
-A fresh anonymous headless Chromium profile previously verified service-worker
-control and offline `/pwa` shell from the static precache. Offline catalog/API
-requests remained unavailable, as expected; this does not establish offline
-catalog/search support. The deployed manifest's two declared install icons had
-returned 404. Derived 192px and 512px icons from the existing repository
-favicon are now in both builds; local Wrangler HTTP tests verify dimensions,
-manifest purpose, and precache inclusion. Live staging readback now returns
-200 for both icons with PNG MIME type and correct dimensions, and for the
-manifest and service worker. Browser-navigation requests to `/pwa`, `/auth`,
-and `/plans` return the noindex SPA shell. This confirms the shell routing, not
-client-side auth/ProtectedRoute behavior. Native install/standalone launch,
-service-worker update behavior, and authenticated/anonymous protected-route
-acceptance remain unverified.
+A fresh anonymous headless Chromium profile also verified that the deployed
+service worker is active and controls `/pwa`; its Workbox precache contains
+both install icons. With network emulation disabled, reloading `/pwa` served
+the app shell and showed the expected catalog-network retry screen. API routes
+remain uncached, so this does not establish offline catalog/search support.
+Native install/standalone launch, service-worker update transitions, and
+authenticated flows remain unverified.
 
 Read-only master-D1 verification on 2026-09-27 used the staging config and the
 remote `fanmark-emoji-master-staging` database. Wrangler reported no pending
@@ -136,8 +141,8 @@ release `10ec42c1…`; the reference-master APIs all returned 200 on release
 `ba598c61…` (4 tiers, 4 languages, 5 reserved patterns, 16 extension-price
 rows). Direct pointer and row-count queries reported `changed_db: false` and
 zero rows written. This verifies the Cloudflare staging master projections
-and Worker routes; Supabase-to-D1 source parity remains unverified because the
-Supabase CLI still needs its own login and a fresh source snapshot.
+and Worker routes. The fresh Supabase schema read was catalog-only; master
+source-row parity remains unverified and no source master rows were imported.
 
 On 2026-09-27, the staging build added `POST /api/me/account/delete`, selected
 only by `VITE_ACCOUNT_DELETION_BACKEND=worker` and
@@ -1390,17 +1395,16 @@ exit 0. The latest root migration-data suite passes 147/147 tests.
 Frontend API contract tests pass 4/4, frontend and Worker typechecks pass,
 staging build passes, selector coverage passes, and targeted ESLint plus
 `git diff --check` pass. The source migration contains twelve static broadcast
-templates, but the current live Supabase rows were not read: `supabase db query
---linked` returned `AccessTokenRequiredError`. Do not seed from the old static
-copy as if it were current source truth. Exact source export/digest, staging
-template seed/readback, live Worker deploy, and browser canary remain open.
+templates, but the live Supabase template rows were not queried by the
+schema-only read above. Do not seed from the old static copy as if it were
+current source truth. Exact source export/digest, staging template seed/readback,
+and a browser canary remain open.
 
-No email, user data, production routing, D1 remote write, R2 object, or domain/
-DNS setting changed in this slice. Current deployment could not be attempted:
-Wrangler `whoami` fails reading the macOS Keychain (exit 51). The draft PR also
-cannot be updated from this checkout while `gh auth status` reports its saved
-token invalid. The unrelated `supabase/.temp/cli-latest` change remains
-unstaged.
+This draft-only API slice made no email, user-data, production-routing, remote
+D1, R2-object, or domain/DNS change. A later staging Worker deployment and PR
+update are recorded in the current checkpoint above; they still did not perform
+a D1 migration, user-data import, or R2 object import. The unrelated
+`supabase/.temp/cli-latest` change remains unstaged.
 
 The Cloudflare staging build now explicitly disables the legacy
 `AdminDataReset` control with `VITE_ADMIN_DATA_RESET_BACKEND=disabled`. That
