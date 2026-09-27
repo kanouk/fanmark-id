@@ -8,7 +8,11 @@ export default defineConfig({
     }),
   ],
   test: {
-    include: ["./test/maintenance-settings-d1.test.ts", "./test/lifecycle-settings-d1.test.ts"],
+    include: [
+      "./test/maintenance-settings-d1.test.ts",
+      "./test/lifecycle-settings-d1.test.ts",
+      "./test/cutover-write-freeze.test.ts",
+    ],
     fileParallelism: false,
     setupFiles: ["./test/setup.ts"],
   },

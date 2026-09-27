@@ -34,6 +34,16 @@ applies each event to business state; the previous dispatcher is stopped before
 the new dispatcher is enabled. Receipt continuity does not mean both systems
 may apply the same event.
 
+The Cloudflare Worker has a separate `CUTOVER_WRITE_FREEZE` switch. The staging
+config defaults it to `false`; setting it to `true` blocks non-read API
+operations (including admin mutations and signup), while preserving only
+administrator sign-in/session/TOTP verification and the Stripe webhook receipt
+endpoint. It also skips all Worker scheduled jobs. An unknown non-empty value
+fails closed in the same way. This switch does not pause Supabase writes or
+Supabase Cron jobs; those source-side writers must be frozen and drained
+separately at the authorized final operation. The regular user-facing
+`maintenance_mode` remains a page gate and is not a substitute for this switch.
+
 The latest read-only source inventory (2026-09-27 JST) found Supabase
 `check-expired-licenses-daily` active at `0 0 * * *` with direct target
 `check-expired-licenses`; its `cron.timezone` is `GMT`. The old
@@ -56,7 +66,7 @@ public report.
 | --- | --- | --- |
 | 0. Preflight | Confirm staging account and exact Worker, split D1, R2, Cron, selectors, and backup bucket. Confirm default/production selectors still use Supabase. Pin the current master-release digests and synthetic test identities. | Account/resource readback; no production hostname or production binding; synthetic-only preflight. |
 | 1. Prepare | Build and test the Worker/SPA. Apply the reviewed D1 migration chain to an empty disposable rehearsal target. Verify master release pointers and required allowlisted configuration. Keep signup, business mutation, lifecycle, and Stripe dispatch closed until the rehearsal enables them explicitly. | Clean migration ledger; schema and master digests; route/selector inventory; synthetic canary cleanup preflight. |
-| 2. Quiesce old writers | In staging, enable maintenance and stop all old application mutation paths and scheduled business writers. Drain or account for in-flight writes. Keep the old Stripe receiver durably recording receipts while its business dispatcher is paused. Confirm only one receiver/ledger owns each event ID and no event is lost or applied twice. | Anonymous and synthetic old-path writes are rejected; Cron/business writers are stopped; receipt IDs are durable; in-flight count is zero or reconciled. |
+| 2. Quiesce old writers | In staging, enable maintenance and `CUTOVER_WRITE_FREEZE=true`; stop all old application mutation paths and scheduled business writers. Drain or account for in-flight writes. Keep the old Stripe receiver durably recording receipts while its business dispatcher is paused. Confirm only one receiver/ledger owns each event ID and no event is lost or applied twice. | Mutating Worker API requests return 503, scheduled jobs do not run, sign-in/TOTP still work, and the Stripe receipt endpoint remains reachable. Anonymous and synthetic old-path writes are rejected; receipt IDs are durable; in-flight count is zero or reconciled. |
 | 3. Final synthetic copy | Capture a catalog-fingerprinted repeatable-read snapshot and a separate Storage inventory. Import the synthetic business snapshot into the disposable D1 target, seed only reviewed masters, and apply the reviewed credential transform to synthetic credentials. | Snapshot verification; row/key/hash and FK reconciliation; sequence state; Storage object hash/readback; no unresolved import acknowledgement. |
 | 4. Resume new writer | Enable only the staging Worker selectors. Enable the single chosen Stripe dispatcher after receipt-ledger handoff. Exercise registration, owner updates, return/transfer/lottery, notification processing, R2 upload/delete, one duplicate/replayed synthetic event, and the PWA shell while offline. | Synthetic end-to-end results; exact event-once behavior; D1/R2 readback; offline navigation serves only the static shell while API requests remain uncached; old write paths remain closed; cleanup leaves only documented master and anti-replay state. |
 | 5. Recover | Run two explicit failure drills: fail before the first Cloudflare business write and fail after one acknowledged Cloudflare write. Prove the pre-write path can resume Supabase, and prove the post-write path stays on Cloudflare under maintenance and restores/reconciles from its verified backup. | Timestamped recovery record, measured interruption for each drill, restored digests, and exact synthetic row/ledger reconciliation. |

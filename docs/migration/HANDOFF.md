@@ -1569,3 +1569,22 @@ typechecks, targeted ESLint, Cloudflare staging build, app-staging Wrangler
 dry-run, and `git diff --check` passed. The staging build does not set the
 test-send frontend selector, and the deployed Worker config omits the
 test-send selector. Wrangler's staging secret list contains no Resend API key.
+
+## Local cutover write-freeze guard (2026-09-27 JST)
+
+The Worker now has a separate `CUTOVER_WRITE_FREEZE` guard for the synthetic
+writer-handoff rehearsal. Staging defaults it to `false`. When enabled, the
+guard blocks mutating API requests before route dispatch and pauses all Worker
+scheduled jobs; unknown non-empty selector values fail closed. It permits only
+the explicitly listed administrator email sign-in/session/TOTP/logout routes
+and Stripe webhook receipt intake. Unlisted Better Auth routes, including GET
+OAuth callbacks, remain blocked because those requests can create sessions.
+The guard does not stop Supabase application writes or Supabase Cron; source
+writers still need their separately authorized final-operation freeze.
+
+Under Node 22.6.0, the focused Worker suite passed 15/15 tests, Worker
+TypeScript checking and app-staging Wrangler `--dry-run` passed, and
+`git diff --check` passed. This implementation is local and not yet deployed
+or exercised against staging; it does not close the staging recovery rehearsal
+or any live cutover gate. No production data, routes, scheduled jobs, email, or
+domain/DNS were changed.

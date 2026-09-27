@@ -104,6 +104,11 @@ import {
 import { handleStripePlanCheckoutD1Request, isStripePlanCheckoutPath } from "./stripe-plan-checkout-d1-api";
 import { handleStripePlanChangeD1Request, isStripePlanChangePath } from "./stripe-plan-change-d1-api";
 import { handleMaintenanceSettingsRequest, isMaintenanceSettingsPath } from "./maintenance-settings-d1-api";
+import {
+  blocksRequestDuringCutoverFreeze,
+  cutoverWriteFreezeState,
+  shouldPauseScheduledJobsForCutover,
+} from "./cutover-write-freeze";
 import { handleLifecycleSettingsRequest, isLifecycleSettingsPath } from "./lifecycle-settings-d1-api";
 import { handleSystemSettingsRequest, isSystemSettingsPath } from "./system-settings-d1-api";
 import { handleFavoritesRequest, isFavoritesPath } from "./favorites-d1-api";
@@ -968,6 +973,10 @@ export async function handleRequest(
   const url = new URL(request.url);
   const routeHeaders = baseHeaders();
 
+  if (blocksRequestDuringCutoverFreeze(request.method, url.pathname, env.CUTOVER_WRITE_FREEZE)) {
+    return jsonResponse({ error: "cutover_write_freeze" }, 503, { "retry-after": "60" });
+  }
+
   const waitlistSignupResponse = await handleWaitlistSignupRequest(request, env);
   if (waitlistSignupResponse) return waitlistSignupResponse;
 
@@ -1576,6 +1585,15 @@ const worker = {
     return handleRequest(request, env);
   },
   async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    const freezeState = cutoverWriteFreezeState(env.CUTOVER_WRITE_FREEZE);
+    if (shouldPauseScheduledJobsForCutover(env.CUTOVER_WRITE_FREEZE)) {
+      console.log(JSON.stringify({
+        job: "scheduled-dispatch",
+        status: "paused",
+        reason: freezeState === "invalid" ? "invalid_cutover_write_freeze" : "cutover_write_freeze",
+      }));
+      return;
+    }
     const selectedJobs = new Set(selectScheduledJobs(controller.cron, env));
     const jobs: Promise<unknown>[] = [];
     if (selectedJobs.has("license-expiry")) {
