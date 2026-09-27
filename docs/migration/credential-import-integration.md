@@ -7,9 +7,10 @@ active licenses, plus durable `deferred_inactive` coverage for credentials
 attached to inactive or returned licenses. Both paths atomically advance the
 coverage/checkpoint state and have typed readback.
 A fresh current-catalog rehearsal has completed all 40 table checkpoints and
-whole-target readback using three synthetic rows, including ACK-unknown resume
-and tampered-coverage rejection. A separate synthetic full-import case now
-proves inactive-license deferral, ACK-unknown resume, and explicit report
+whole-target readback using four synthetic rows, including an event ID above
+JavaScript's safe-integer range, exact D1 text/sequence readback, ACK-unknown
+resume, and tampered-coverage rejection. A separate synthetic full-import case
+now proves inactive-license deferral, ACK-unknown resume, and explicit report
 counts. Real user-data migration remains incomplete and out of the current
 cutover stage. These local components do not create remote D1 resources.
 
@@ -556,16 +557,18 @@ was completed later as recorded below. No live source rows, user credentials,
 Auth data, Storage objects, remote D1, Worker deployment, or domain/DNS was
 changed by these local tests.
 
-## Fresh current-catalog 40-table rehearsal (2026-09-26)
+## Fresh current-catalog 40-table rehearsal (2026-09-27)
 
 The linked public schema catalog was read with a read-only metadata query and
 contains 40 tables and 406 columns. The one-off harness generated the exact
 current source DDL, applied the reviewed lifecycle/generation/credential
-extensions to disposable Miniflare D1, and exported three synthetic source rows
-(`fanmarks`, `fanmark_licenses`, and an enabled credential row). It injected an
-ACK-unknown result after the credential batch, resumed the same import, and
-completed all 40 checkpoints and per-table typed/hash readbacks. The final
-status was `public_rows_reconciled`; `deployable` and
+extensions to disposable Miniflare D1, and exported four synthetic source
+rows (`fanmarks`, `fanmark_licenses`, `fanmark_events`, and an enabled credential
+row). The event ID was `9007199254740993`, beyond JavaScript's exact safe
+integer range; D1 text readback and `sqlite_sequence` both preserved it exactly.
+It injected an ACK-unknown result after the credential batch, resumed the same
+import, and completed all 40 checkpoints and per-table typed/hash readbacks.
+The final status was `public_rows_reconciled`; `deployable` and
 `fullMigrationReconciled` stayed false. A modified coverage destination digest
 was rejected on a subsequent readback.
 

@@ -39,6 +39,7 @@ const syntheticFanmarkId = "90000000-0000-4000-8000-000000000001";
 const syntheticLicenseId = "90000000-0000-4000-8000-000000000002";
 const syntheticPasswordConfigId = "90000000-0000-4000-8000-000000000003";
 const syntheticEmojiId = "90000000-0000-4000-8000-000000000004";
+const syntheticEventId = "9007199254740993";
 
 function failUsage() {
   throw new Error("usage: node scripts/migration/test-d1-import-current-schema.mjs /private/path/source-catalog.json");
@@ -165,6 +166,25 @@ function buildRows(catalog) {
       updated_at: "2026-09-26T12:00:00.000000Z",
     },
     arrayMetadata: {},
+  }];
+  const eventColumns = requireColumns(catalog, "fanmark_events", [
+    "id", "event_type", "user_id", "discovery_id", "normalized_emoji_ids", "created_at",
+  ]);
+  rows.fanmark_events = [{
+    schemaVersion: 1,
+    table: "fanmark_events",
+    columns: eventColumns,
+    values: {
+      id: syntheticEventId,
+      event_type: "synthetic_migration_probe",
+      user_id: null,
+      discovery_id: null,
+      normalized_emoji_ids: JSON.stringify([syntheticEmojiId]),
+      created_at: "2026-09-26T12:00:00.000000Z",
+    },
+    arrayMetadata: {
+      normalized_emoji_ids: { isNull: false, ndims: 1, lowerBound: 1 },
+    },
   }];
   return { tableNames, rows };
 }
@@ -437,12 +457,26 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath) {
       'SELECT "password_generation", "access_generation" FROM "fanmark_access_versions" WHERE "license_id" = ?',
     ).bind(syntheticLicenseId).first();
     assert.deepEqual(generation, { password_generation: 1, access_generation: 1 });
+    const event = await database.prepare(
+      'SELECT CAST("id" AS TEXT) AS "id", typeof("id") AS "id_type", "event_type", "normalized_emoji_ids" FROM "fanmark_events" WHERE "id" = CAST(? AS INTEGER)',
+    ).bind(syntheticEventId).first();
+    assert.deepEqual(event, {
+      id: syntheticEventId,
+      id_type: "integer",
+      event_type: "synthetic_migration_probe",
+      normalized_emoji_ids: JSON.stringify([syntheticEmojiId]),
+    });
+    const sequence = await database.prepare(
+      'SELECT CAST("seq" AS TEXT) AS "seq" FROM "sqlite_sequence" WHERE "name" = ?',
+    ).bind("fanmark_events").first();
+    assert.deepEqual(sequence, { seq: syntheticEventId });
     const rowCounts = await Promise.all([
       database.prepare('SELECT COUNT(*) AS "count" FROM "fanmarks"').first(),
       database.prepare('SELECT COUNT(*) AS "count" FROM "fanmark_licenses"').first(),
       database.prepare('SELECT COUNT(*) AS "count" FROM "fanmark_password_configs"').first(),
+      database.prepare('SELECT COUNT(*) AS "count" FROM "fanmark_events"').first(),
     ]);
-    assert.deepEqual(rowCounts.map((row) => row.count), [1, 1, 1]);
+    assert.deepEqual(rowCounts.map((row) => row.count), [1, 1, 1, 1]);
     assert.deepEqual(await database.prepare("PRAGMA foreign_key_check").all().then((result) => result.results), []);
     // Miniflare's D1 authorizer rejects PRAGMA integrity_check with SQLITE_AUTH.
     // The importer has already streamed and read back every table/hash above.
@@ -458,7 +492,7 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath) {
     );
     return {
       tableCount: tableNames.length,
-      sourceRowCount: 3,
+      sourceRowCount: 4,
       checkpointCount: checkpoints.count,
       completedCheckpointCount: checkpoints.complete,
       status: resumed.status,
