@@ -221,6 +221,19 @@ assets. Deployment `cdeb759e-8e52-4b8a-9d63-6451b871c262` is now active at
 assets. D1 and R2 bindings still point to the staging resources, and no D1
 migration, user-data import, or R2 object import was run by this deployment.
 
+Later on 2026-09-27 JST, a fresh Wrangler device-auth flow was approved for
+`fanmark.id@gmail.com` after the default Chrome profile proved to be the
+separate `fragrance.radio@gmail.com` account; that wrong-account consent was
+cancelled. The approved grant was limited to required User Read/Background
+Access plus Workers Write, Workers Scripts Write, and D1 Write. Wrangler 4.139.0
+then failed reading the macOS Keychain key (exit 51); 4.141.0 `whoami` failed
+the same way. `default.enc` was updated and no plaintext `default.toml` exists,
+but a secret-value read of the `wrangler/default` Keychain item also exits 51.
+No staging deployment, D1 write, production change, or domain/DNS action
+followed this auth attempt. Keep the keyring-backed credential path; do not
+switch this login to plaintext. Wrangler access is currently blocked on
+resolving the local Keychain read failure.
+
 A fresh anonymous headless Chromium profile also verified that the deployed
 service worker is active and controls `/pwa`; its Workbox precache contains
 both install icons. With network emulation disabled, reloading `/pwa` served

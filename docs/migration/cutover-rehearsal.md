@@ -110,9 +110,12 @@ a timed full final-copy window, both recovery drills, resolved schema gates,
 live Stripe sandbox acceptance, production backup key custody/retention, or
 production operation. The 2026-09-27 read-only Supabase catalog query now
 succeeds through `npx supabase@2.118.0`; it reads no application rows and still
-produces 18 blocking schema-conversion gates. Wrangler authentication also
-works again, and staging Worker version `cdeb759e-8e52-4b8a-9d63-6451b871c262`
-is deployed at 100%. These updates do not close the source schema gates or
-constitute a completed integration/cutover rehearsal.
+produces 18 blocking schema-conversion gates. Earlier on 2026-09-27, Wrangler
+authentication worked and staging Worker version
+`cdeb759e-8e52-4b8a-9d63-6451b871c262` was deployed at 100%. A later device
+reauth was approved for the intended account with limited Workers and D1
+scopes, but Wrangler could not read its local macOS Keychain key (exit 51); see
+the current state in [HANDOFF.md](HANDOFF.md). These updates do not close the
+source schema gates or constitute a completed integration/cutover rehearsal.
 
 The user-data import and public domain/DNS switch remain explicitly deferred.
