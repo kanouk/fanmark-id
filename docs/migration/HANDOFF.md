@@ -221,37 +221,28 @@ enabling Cloudflare's daily lifecycle trigger. See
 [`live-observations.md`](live-observations.md) and
 [`cutover-rehearsal.md`](cutover-rehearsal.md).
 
-Current weighted progress estimate (2026-09-27): about 60% of the full
-migration, or about 75% of the prioritized app/infrastructure/master-data
-scope that excludes real user-data import and public domain/DNS cutover. The
-estimate is coarse: broadcast templates and four verified-unused extension
-coupon definitions are seeded and verified in business staging, and synthetic
-notification, analytics, registration, return/bulk-return/transfer,
-owner-settings/password, and R2 profile/storage canaries pass with reviewed
-cleanup. The authenticated admin user-management browser canary now also
-passed list and detail reads. A separate synthetic TOTP staging API canary
-has now passed plan change, suspension/restoration, and immediate license
-expiry; it removed and read back all synthetic Auth/profile/license/config/
-notification/audit rows. Browser UI mutation review remains open. This narrow
-API proof does not materially change the estimate. A static audit now confirms all
-43 typed staging backend selectors are explicit, referenced by frontend code,
-and avoid Supabase; the three exceptions are the disabled destructive reset
-screen and native D1/R2 adapters. This guard does not substitute for runtime
-acceptance. The manual license-expiry UI now has a Better Auth/MFA-protected
-Worker route that returns aggregate results only. The staging frontend selects
-the Worker client, and the server's independent `LIFECYCLE_RUN_BACKEND=d1`
-selector is active. Its separate scheduled-execution selector,
-`LICENSE_EXPIRY_BACKEND`, remains unset. On Worker version
-`1ae4ffb0-5af5-4b19-8759-f79cc201b45a`, the synthetic TOTP/MFA manual-run
-canary returned aggregate-only zero-candidate results; Cron stayed disabled,
-both empty lifecycle journals were read back and removed, and user-owned Auth
-tables read back empty. The monotonic MFA generation counter was preserved and
-may have advanced. Browser UI mutation review remains open.
-The latest schema-converter-v6 report has 16 row-conversion and
-schema/operation gate groups (10 and 6 respectively); integrated synthetic
-rehearsal, broader UI acceptance, mail delivery, and production acceptance are
-still open. User-data import and domain cutover are intentionally deferred final phases, not missing work in
-the current staging slice. See [`EXECUTION.md`](EXECUTION.md).
+Current coarse weighted estimate (2026-09-28): about 53% of the full migration,
+or about 73% of the prioritized app/infrastructure/non-user master-data scope
+with synthetic staging acceptance. The latter excludes real user-data import
+and public domain/DNS cutover; this is a scope estimate, not an issue-count or
+go-live-readiness score. Synthetic registration, notification, analytics,
+return/transfer, owner settings/password, R2 profile/storage, authenticated
+administration, and staging PWA update/install checks have passed bounded
+canaries. The lifecycle settings API and rendered `AdminSettings` form now
+also pass an MFA-protected change/readback/restore canary; cleanup returned
+synthetic Auth/profile records to zero. The static audit covers 43 typed
+staging backend selectors, but runtime acceptance is still required. The
+manual expiry Worker route is active only for explicit admin runs; scheduled
+expiry remains disabled because `LICENSE_EXPIRY_BACKEND` is unset.
+
+The fresh schema-converter-v8 report has 14 unresolved gate groups across 227
+locations and remains `deployable: false`. Issue #37's full writer-freeze,
+timed final-copy, and pre/post-write recovery rehearsal remains open, as do
+provider-backed Resend/Stripe acceptance, broad authenticated UI coverage, and
+Workers CPU/plan fit. Issue #38's real user-data import and public domain/DNS
+cutover are intentionally deferred final phases. No production Worker, real
+user-data import, or public domain/DNS cutover has occurred. See
+[`EXECUTION.md`](EXECUTION.md).
 
 ## Unused extension coupon master seed (2026-09-27 JST)
 
@@ -606,7 +597,7 @@ unperformed.
 | WhoIs owner/history details | Current worktree + workers.dev staging | `VITE_FANMARK_DETAILS_BACKEND=worker` and `FANMARK_DETAILS_BACKEND=d1` select `/api/fanmarks/details`. Local Worker D1 tests pass 3/3, including a two-owner history fixture, and frontend contract tests pass 4/4. A synthetic staging canary verified authenticated one-row owner/lottery state; today's anonymous live read returned the versioned not-found DTO. User IDs, email, and license IDs are omitted. Browser acceptance, imported-row parity, and production routing remain open; no real user data was read. See `docs/migration/fanmark-details-api.md`. |
 | Public access and owner analytics APIs | Current worktree + workers.dev staging | The staging SPA and Worker select D1 for `POST /api/fanmarks/access` and the session-scoped `/api/me/analytics/*` reads. The synthetic canary recorded one event, suppressed four duplicates, verified owner metrics and summary, received 401 anonymously, then removed its Auth/business rows. Worker D1 tests pass 8/8 and frontend client tests pass 3/3 for each adapter. Historical analytics remain in Supabase; user data, production traffic, and domain/DNS were untouched. Abuse controls, retention, populated-user authorization, and production CPU/plan fit remain open. See `docs/migration/fanmark-access-analytics-api.md`. |
 | D1 role separation | Current worktree + APAC staging | `D1_TOPOLOGY=split` selects business `FANMARK_DB`, Better Auth `AUTH_DB`, and emoji/reference `MASTER_DB`, failing closed for missing bindings. Business staging has 40 source-shaped tables plus applied lifecycle/credential/access extensions; its application baseline contains 10/40 global notification masters, four disabled availability rules, and the two explicitly allowlisted public settings `grace_period_days=1` and `max_emoji_characters=5`. User-owned business/Auth rows are empty. The separate protected-access tables retain documented synthetic canary telemetry and license-incarnation tombstones. Master D1 has 3,944 canonical emoji rows and active release, with reference-master generation 8. The source refresh has 40 tables, 406 columns, 144 constraints, 139 indexes, 15 enum labels, 36 triggers, 77 policies, 58 functions, and one view. Snapshot format 4 fingerprints eight scopes and validates the reviewed event sequence state; current conversion v5 has 17 blocking groups (10 row-conversion, 7 schema/operation) and `deployable: false`; four exact GIN definitions have reviewed query-contract dispositions. No real rows or live event sequence state were migrated. |
-| Lifecycle settings API | Current worktree + staging Worker/SPA | Public `GET /api/system/lifecycle` reads only the public `grace_period_days` row through split business D1; `PATCH /api/admin/system-settings/lifecycle` requires administrator role and current-session MFA. Supabase public value `1` was read-only verified and copied as one staging config row. Client 4/4, combined settings D1 9/9, full standard suites 30/30 and 10/10 pass. A new synthetic staging TOTP canary verified anonymous 401, authenticated temporary update, invalid value 400, public no-store readback, restoration to `1`, and empty user-owned Auth tables after cleanup. The write and restore advanced only the setting's `updated_at`; the value is at baseline. The AdminSettings browser form remains unverified. The shared staging Cron is active for notifications; `LICENSE_EXPIRY_BACKEND` remains unset, so lifecycle execution is disabled. See `docs/migration/lifecycle-settings-api.md`. |
+| Lifecycle settings API | Current worktree + staging Worker/SPA | Public `GET /api/system/lifecycle` reads only the public `grace_period_days` row through split business D1; `PATCH /api/admin/system-settings/lifecycle` requires administrator role and current-session MFA. Supabase public value `1` was read-only verified and copied as one staging config row. Client 4/4, combined settings D1 9/9, full standard suites 30/30 and 10/10 pass. A new synthetic staging TOTP canary verified anonymous 401, authenticated temporary update, invalid value 400, public no-store readback, restoration to `1`, and empty user-owned Auth tables after cleanup. The API canary and rendered AdminSettings browser form both updated the setting from `1` to synthetic `2`, read it back through D1, restored `1`, and removed synthetic Auth/profile rows. The value is at baseline; `updated_at` advanced and the MFA generation counter may have advanced during factor enrollment/removal. The shared staging Cron is active for notifications; `LICENSE_EXPIRY_BACKEND` remains unset, so lifecycle execution is disabled. See `docs/migration/lifecycle-settings-api.md`. |
 | Plan and general system settings | Current worktree + workers.dev staging | An exact allowlist of 18 non-user Supabase settings was added to the two existing settings (20 total). Source and D1 canonical digests match `d1f809c44dcc26152acb3432907e1cad81a599d495fd9f3e48b75ea1e3beb16f`; the public GET returns exactly 17 public keys and omits both private Enterprise settings. Public GET and SPA returned 200/no-store; anonymous admin GET returned 401/no-store. A synthetic Better Auth administrator passed TOTP/MFA read/update, exact D1 readback, stale-write rejection, baseline restoration, audit-value minimization, and audit cleanup. Worker tests 5/5, client tests 4/4, migration-data 124/124, typechecks, staging build, and dry-run pass. Deployed at 100% as version `3310b139-f639-4cf2-8a15-ad2b63f9fbd6`. Browser UI acceptance and payment behavior remain open; production stays on Supabase. See `docs/migration/system-settings-api.md`. |
 | Availability-rule administration | Current worktree + workers.dev staging | `AdminPatternRules` selects the MFA-protected D1 API only in staging. Four explicit source rules were seeded with `created_by=NULL`, remained disabled, and were read/edit/CAS-restored by the deployed TOTP canary. Worker tests 4/4 and frontend tests 5/5 pass. This does not move Stripe enforcement or other admin CRUD. See `docs/migration/availability-rules-admin-api.md`. |
 | Current app staging deployment | APAC `fanmark-app-staging` Worker + Static Assets | Current version `708ff90b-abec-405d-9dd0-6a0d14cafe3c` at 100%; split D1 and both image R2 bindings remain. PR #41 commit `2ecbb25` adds a 30-second foreground refresh to the Worker-backed subscription view while keeping focus/visibility refresh and Supabase Realtime behavior. The served JavaScript SHA-256 `a1c1588560062c017d59377a60f537aedef080ae6e5ca7c4dbda738040fe8bc9` matches local `dist-staging`; SPA and Auth health returned 200, and unauthenticated `/api/me/subscription` returned 401. Earlier staging versions added the notification-preview foreground refresh and same-tab/focus/visibility own-profile synchronization. The deployment readback itself made no D1 writes; a later isolated subscription canary wrote two temporary synthetic rows and removed them. No real user-data imports, production routing, or domain/DNS changes occurred. The separate `fanmark-migration-backups-staging` bucket is APAC Standard, private, has no custom domain or r2.dev access, and is not bound to the app; its encrypted synthetic upload/download/restore/delete canary returned it to zero objects. Business migrations through `0015` and Auth migration `0008_auth_user_suspension.sql` are applied; all eight user-owned Auth tables, including status audit, read back empty after the latest TOTP canary. The 16 localized auth email master rows remain readback-verified against their pinned content/seed digests. MFA-gated user list/detail, plan, suspension/restoration, immediate license expiry, password-reset mutation, system settings, subscription display, profile username availability, and account deletion use split D1/Better Auth. Subscription display reads only the signed-in user's row and omits Stripe IDs; the user-owned subscription table remains empty and no Stripe or user data was copied. Resend secrets remain absent, so password-reset delivery is closed with 503 before audit; no email was attempted. Prior live canary verified suspension, current-session revocation, restoration, immediate expiry, four config deletions, two audit rows, one notification event, and repeat safety, then cleaned synthetic rows. Post-run readback found zero user settings/licenses/favorites/notifications/user events/expiry audits/four config types and zero Auth user-owned rows; 45 license-incarnation tombstones remain as retained synthetic anti-reuse state. Signup and email delivery remain disabled because delivery is not configured; OAuth providers remain unset. The every-minute Cron remains for notification/Stripe dispatch; the separate daily lifecycle trigger is configured with its execution selector unset. A separate synthetic account-deletion canary passed and was cleaned; the expiry/lottery Cron canary also restored its exact baseline. No real user data, production routing, or domain/DNS changed. Authenticated subscription browser refresh, reset-mail acceptance, remaining app/API inventory, Stripe sandbox/integrated acceptance, key custody/retention policy, real user/Auth/object import, production routing, and domain/DNS remain open. |

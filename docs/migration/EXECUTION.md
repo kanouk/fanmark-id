@@ -2980,3 +2980,20 @@ domain/DNS setting was involved. This closes only native install/standalone
 launch at the staging workers.dev origin; authenticated flows, other browsers
 and operating systems, custom-domain behavior, and complete #37 recovery remain
 open. See [`static-assets.md`](static-assets.md).
+
+## Lifecycle settings AdminSettings browser acceptance (2026-09-28 JST)
+
+The guarded staging canary signed in a synthetic Better Auth administrator,
+completed TOTP/MFA, and used an isolated headless Chrome profile to operate the
+rendered `AdminSettings` lifecycle form. It read baseline `grace_period_days=1`,
+saved synthetic value `2` through the staging Worker, confirmed it through the
+public D1-backed endpoint, then restored and reread `1`. The test observed both
+successful API responses and the form's saved state. Cleanup removed the
+synthetic profile and Auth identity; readback found the user-owned Auth tables
+empty. The public setting is at baseline, though `updated_at` advanced and the
+MFA generation counter may have advanced during factor enrollment/removal. No
+user data, email, Stripe, production route, or domain/DNS was used. The browser
+form subgate is closed; complete #37 recovery, broader authenticated UI
+acceptance, provider-backed checks, and operational fit remain open. Reproduce
+with `npm run test:migration:staging-lifecycle-settings-ui` and see
+[`lifecycle-settings-api.md`](lifecycle-settings-api.md).

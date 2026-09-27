@@ -52,6 +52,19 @@ is back at the baseline. No user data, email, Stripe, production, or DNS was
 used. Reproduce with the guarded `--lifecycle-settings-readback` mode of
 `workers/api/test/staging-admin-totp-smoke.mjs`.
 
+On 2026-09-28, the same synthetic MFA administrator exercised the rendered
+`AdminSettings` lifecycle form in an isolated headless Chrome profile. The form
+loaded the baseline `1`, saved a temporary value of `2` through the deployed
+Worker, and independently read it back through the public D1-backed endpoint;
+the form then restored `1` and read it back again. The harness observed both
+successful PATCH responses and confirmed the form returned to its saved state.
+Cleanup removed the synthetic profile and Auth identity, and readback found
+the user-owned Auth tables empty. The setting's public value is at baseline;
+`updated_at` advanced with the two writes. The staging MFA generation counter
+may have advanced during factor enrollment/removal. No user data, email, Stripe,
+production, or DNS was used. Reproduce with
+`npm run test:migration:staging-lifecycle-settings-ui`.
+
 ## Local validation
 
 The frontend client tests cover backend selection, payload validation,

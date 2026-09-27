@@ -46,12 +46,13 @@ function requireExplicitStagingConsent() {
   const adminUserManagementReadback = args.has("--admin-user-management-readback") || adminUserManagementBrowser;
   const adminUserPlanReadback = args.has("--admin-user-plan-readback") || adminUserManagementBrowser;
   const adminUserStatusReadback = args.has("--admin-user-status-readback") || adminUserManagementBrowser;
+  const lifecycleSettingsBrowser = args.has("--lifecycle-settings-browser");
   const lifecycleRunReadback = args.has("--lifecycle-run-readback");
   const waitlistAdminReadback = args.has("--waitlist-admin-readback");
   const broadcastEmailBrowser = args.has("--broadcast-email-browser");
   const broadcastEmailReadback = args.has("--broadcast-email-readback") || broadcastEmailBrowser;
   const systemSettingsReadback = args.has("--system-settings-readback");
-  const lifecycleSettingsReadback = args.has("--lifecycle-settings-readback");
+  const lifecycleSettingsReadback = args.has("--lifecycle-settings-readback") || lifecycleSettingsBrowser;
   const notificationManualEvent = args.has("--notification-manual-event");
   const hasExplicitSmokeAction = [
     emojiMasterRoundtrip,
@@ -62,6 +63,7 @@ function requireExplicitStagingConsent() {
     adminUserManagementReadback,
     adminUserPlanReadback,
     adminUserStatusReadback,
+    lifecycleSettingsBrowser,
     lifecycleRunReadback,
     waitlistAdminReadback,
     broadcastEmailReadback,
@@ -86,6 +88,7 @@ function requireExplicitStagingConsent() {
     adminUserManagementReadback,
     adminUserPlanReadback,
     adminUserStatusReadback,
+    lifecycleSettingsBrowser,
     lifecycleRunReadback,
     waitlistAdminReadback,
     broadcastEmailReadback,
@@ -2104,11 +2107,15 @@ async function withStagingAdminBrowser(cookie, profilePrefix, review) {
     await cdp.send("Network.enable");
     await cdp.send("Page.enable");
     cdp.adminApiResponses = [];
+    cdp.lifecycleApiResponses = [];
     cdp.on("Network.responseReceived", ({ response }) => {
       if (!response?.url) return;
       const url = new URL(response.url);
       if (/^\/api\/admin\/users\/[^/]+\/plan$/u.test(url.pathname)) {
         cdp.adminApiResponses.push({ status: response.status, statusText: response.statusText });
+      }
+      if (url.pathname === "/api/admin/system-settings/lifecycle") {
+        cdp.lifecycleApiResponses.push({ status: response.status, statusText: response.statusText });
       }
     });
     await cdp.send("Emulation.setDeviceMetricsOverride", {
@@ -2502,6 +2509,81 @@ async function reviewAdminUserManagementMutationsInBrowser(cookie, targetEmail, 
   console.log("Authenticated staging browser changed the synthetic user Free→Max→Free and suspended/restored it; rendered states matched D1/Auth readback. No email or real user was involved.");
 }
 
+async function reviewLifecycleSettingsInBrowser(cookie, state) {
+  const fieldStateExpression = `(() => {
+    const input = document.querySelector('#grace-period');
+    const button = input?.parentElement?.querySelector('button');
+    if (!input || !button) return null;
+    const rect = button.getBoundingClientRect();
+    return {
+      value: input.value,
+      buttonText: button.innerText.trim(),
+      disabled: button.disabled,
+      x: rect.x + rect.width / 2,
+      y: rect.y + rect.height / 2,
+      width: rect.width,
+      height: rect.height,
+    };
+  })()`;
+  const setFieldExpression = (value) => `(() => {
+    const input = document.querySelector('#grace-period');
+    if (!input) return null;
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    if (!setter) return null;
+    setter.call(input, ${JSON.stringify(String(value))});
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    return input.value;
+  })()`;
+
+  await withStagingAdminBrowser(cookie, "fanmark-lifecycle-settings-ui-", async (cdp) => {
+    await clickAdminTab(cdp, "システム設定");
+    const initial = await waitForBrowserValue(
+      cdp,
+      fieldStateExpression,
+      (value) => value?.buttonText === "更新",
+      "lifecycle_settings_form_missing",
+    );
+    assert.equal(initial.value, String(state.originalValue), "AdminSettings did not render the staging baseline");
+    assert.equal(initial.disabled, true, "unchanged lifecycle settings should not allow an update");
+
+    const saveThroughForm = async (value, expectedApiStatus) => {
+      assert.equal(await browserValue(cdp, setFieldExpression(value)), String(value), "lifecycle input did not accept the synthetic value");
+      const ready = await waitForBrowserValue(
+        cdp,
+        fieldStateExpression,
+        (current) => current?.value === String(value) && current.disabled === false,
+        "lifecycle_update_button_not_enabled",
+      );
+      await clickBrowserTarget(cdp, fieldStateExpression, "lifecycle_update_button");
+      const deadline = Date.now() + 15_000;
+      let actual;
+      while (Date.now() < deadline) {
+        actual = await readPublicLifecycleDays();
+        if (actual === value) break;
+        await delay(250);
+      }
+      assert.equal(actual, value, "AdminSettings update did not reach the public D1-backed lifecycle setting");
+      const saved = await waitForBrowserValue(
+        cdp,
+        fieldStateExpression,
+        (current) => current?.value === String(value) && current.disabled === true,
+        "lifecycle_update_not_rendered_as_saved",
+      );
+      assert.equal(saved.buttonText, "更新");
+      assert.equal(cdp.lifecycleApiResponses.at(-1)?.status, expectedApiStatus, "AdminSettings used an unexpected lifecycle API result");
+      await dismissStagingToastInBrowser(cdp);
+      return ready;
+    };
+
+    await saveThroughForm(state.temporaryValue, 200);
+    assert.equal(await readPublicLifecycleDays(), state.temporaryValue, "temporary lifecycle value was not independently readable");
+    await saveThroughForm(state.originalValue, 200);
+    assert.equal(await readPublicLifecycleDays(), state.originalValue, "AdminSettings did not restore the lifecycle baseline");
+    assert.ok(cdp.lifecycleApiResponses.length >= 2, "expected update and restore API calls from the rendered form");
+  });
+}
+
 async function exerciseBroadcastEmailAdmin(cookie, userId, targetUserId, targetUsername, { browserReview = false } = {}) {
   const route = "/api/admin/broadcast-emails";
   const username = `codex-broadcast-admin-${randomBytes(6).toString("hex")}`;
@@ -2706,7 +2788,7 @@ async function main() {
     await executeBusiness(`INSERT INTO user_settings (user_id, username, display_name, avatar_url, plan_type, preferred_language, created_at, updated_at)
       VALUES (${sqlLiteral(targetUserId)}, ${sqlLiteral(targetUsername)}, ${sqlLiteral(targetEmail)}, NULL, 'free', 'ja', ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});`,
     "synthetic admin target profile provision");
-    if (actions.adminUserManagementBrowser) {
+    if (actions.adminUserManagementBrowser || actions.lifecycleSettingsBrowser) {
       await executeBusiness(`INSERT INTO user_settings (user_id, username, display_name, avatar_url, plan_type, preferred_language, created_at, updated_at, requires_password_setup)
         VALUES (${sqlLiteral(userId)}, ${sqlLiteral(adminUsername)}, 'Synthetic staging MFA', NULL, 'free', 'ja', ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)}, 0);`,
       "synthetic admin browser-session profile provision");
@@ -2818,6 +2900,9 @@ async function main() {
     if (actions.lifecycleSettingsReadback) {
       await exerciseLifecycleSettingsReadback(cookie, lifecycleSettingState);
     }
+    if (actions.lifecycleSettingsBrowser) {
+      await reviewLifecycleSettingsInBrowser(cookie, lifecycleSettingState);
+    }
     if (actions.notificationManualEvent) {
       await exerciseNotificationManualEvent(cookie, targetUserId);
     }
@@ -2884,7 +2969,9 @@ async function main() {
             `DELETE FROM audit_logs WHERE (user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL', 'ADMIN_UPDATE_PLAN', 'admin_expire_license') AND (resource_id IS NULL OR resource_id IN (${sqlLiteral(targetUserId)}, ${sqlLiteral(expiryLicenseId)}))) OR (resource_id = ${sqlLiteral(expiryLicenseId)} AND action = 'license_expired');\n` +
             (actions.systemSettingsReadback ? `DELETE FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND action = 'ADMIN_UPDATE_SYSTEM_SETTING' AND resource_type = 'system_setting' AND resource_id = ${sqlLiteral(systemSettingState.key)};\n` : "") +
             `DELETE FROM user_settings WHERE user_id = ${sqlLiteral(targetUserId)};\n` +
-            (actions.adminUserManagementBrowser ? `DELETE FROM user_settings WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(adminUsername)};` : ""),
+            (actions.adminUserManagementBrowser || actions.lifecycleSettingsBrowser
+              ? `DELETE FROM user_settings WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(adminUsername)};`
+              : ""),
             "synthetic admin user-management cleanup",
           );
           await executeFile(
@@ -2894,7 +2981,7 @@ async function main() {
           );
           const [profileRows, adminProfileRows, auditRows, authRows, statusAuditRows, settingsAuditRows] = await Promise.all([
             queryBusiness(`SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(targetUserId)}`),
-            queryBusiness(actions.adminUserManagementBrowser
+            queryBusiness(actions.adminUserManagementBrowser || actions.lifecycleSettingsBrowser
               ? `SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(adminUsername)}`
               : "SELECT 0 AS count"),
             queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE (user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL', 'ADMIN_UPDATE_PLAN', 'admin_expire_license') AND (resource_id IS NULL OR resource_id IN (${sqlLiteral(targetUserId)}, ${sqlLiteral(expiryLicenseId)}))) OR (resource_id = ${sqlLiteral(expiryLicenseId)} AND action = 'license_expired')`),
@@ -2967,6 +3054,9 @@ async function main() {
   }
   if (actions.lifecycleSettingsReadback) {
     console.log("Staging lifecycle settings read/update passed. Anonymous and invalid writes were rejected; the MFA-protected update was read back, restored to baseline, and the public endpoint remained no-store.");
+  }
+  if (actions.lifecycleSettingsBrowser) {
+    console.log("The rendered AdminSettings lifecycle form updated and restored the synthetic grace-period setting through the staging Worker; D1-backed public readback confirmed both values.");
   }
   if (actions.notificationManualEvent) {
     console.log("Staging MFA-protected manual notification-event creation passed; the deployed Cron produced one delivered Japanese in-app notification, and event, notification, profile, and Auth rows were removed.");
