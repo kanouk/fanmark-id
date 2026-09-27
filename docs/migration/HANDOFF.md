@@ -1767,8 +1767,31 @@ The manual API proof does not materially change the coarse weighted estimate
 of about 60% of the full migration and about 75% of the prioritized
 app/infrastructure/master-data stage. User/Auth/object import and domain/DNS
 cutover remain deferred. Latest migration-data boundaries pass 160/160. In CI
-run `36314149517`, the Worker job passed its API/D1 suite, typecheck, and bundle
-dry-run; the app job's Stripe receipt/billing contract step is still in
-progress. Local lifecycle API tests pass 5/5 with Worker typecheck and staging
-dry-run. No real user data, production route, email, or domain/DNS state was
-changed.
+run `36314570636`, both the Worker API and staging application jobs passed,
+including Worker API/D1 tests, Worker typecheck/bundle dry-run, migration data
+boundaries, Stripe receipt/billing tests, app typecheck, and staging build.
+Local lifecycle API tests pass 5/5 with Worker typecheck and staging dry-run.
+No real user data, production route, email, or domain/DNS state was changed.
+
+## Workers Free CPU fit measurement (2026-09-27 UTC)
+
+Using `wrangler tail` without changing deployment configuration, staging
+version `4988d9d0-b4ec-44d1-9ccc-00ac501aac36` reported CPU time for requests
+to `fanmark-app-staging`. Read-only public requests measured 2 ms for
+`GET /api/auth/ok`, 2 ms for `GET /api/fanmarks/recent?limit=1`, and 5–11 ms
+across five `GET /api/emoji/catalog` requests (all HTTP 200). An unauthenticated
+`GET /api/me/subscription` returned 401 at 0 ms.
+
+The synthetic admin/TOTP/lifecycle canary passed and cleaned its synthetic
+Auth, profile, audit, and business rows. Tail samples included 164 ms for
+first-time `POST /api/auth/two-factor/enable`, 30 ms for
+`POST /api/auth/two-factor/verify-totp`, 29 ms for the empty manual lifecycle
+run, and 8–47 ms for successful admin user/status/plan operations. These were
+HTTP-successful staging requests; a successful occasional overage does not
+prove the Free plan will tolerate recurring production traffic. Cloudflare's
+current published Free limit is 10 ms/request and documents only occasional
+over-limit flexibility. The plan was not changed. Production CPU fit remains a
+release gate: reduce consistently expensive paths and repeat the sample, or
+have the account owner enable a suitable Workers plan before production
+acceptance. No billing, production, user-data, email, or domain/DNS change was
+made. Detailed evidence is in [`live-observations.md`](live-observations.md).

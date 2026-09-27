@@ -1642,3 +1642,37 @@ matching local `dist-staging`. The cookie-less manual-run POST returned 401
 `unauthenticated` before reaching its disabled-selector branch. No authenticated
 button click or lifecycle data write occurred. `supabase/.temp/cli-latest`
 remains an unrelated modified checkout file and was preserved.
+
+## Workers Free CPU fit sample (2026-09-27 11:09 UTC)
+
+Started `npx wrangler tail fanmark-app-staging --config
+wrangler.app-staging.jsonc --format json` from `workers/api` and sent only
+bounded staging requests. No Worker configuration or deployment changed.
+Staging Worker version was
+`4988d9d0-b4ec-44d1-9ccc-00ac501aac36`.
+
+Read-only requests returned 200/2 ms for `/api/auth/ok`, 200/2 ms for
+`/api/fanmarks/recent?limit=1`, and 200 with CPU samples of 11, 6, 5, 6, and
+6 ms for five `/api/emoji/catalog` reads. `/api/me/subscription` returned
+401/0 ms without a session. No response bodies were retained.
+
+During the guarded synthetic TOTP/admin canary, staging Tail events measured
+200/0 ms for email sign-in, 200/164 ms for first-time TOTP enable, 200/30 ms
+for TOTP verification, 200/29 ms for the empty-candidate manual lifecycle
+run, and 8–47 ms for successful administrator list/detail/plan/status/license
+operations. The canary completed sign-in, same-session MFA, list/detail,
+plan-change-and-restore, suspension/restore, immediate expiry, lifecycle
+execution, and exact cleanup. It read back all user-owned Auth tables empty;
+the only intentionally retained monotonic state was the MFA generation
+counter. The scheduled lifecycle selector and Cron execution remain disabled.
+
+Cloudflare's [published Workers limits](https://developers.cloudflare.com/workers/platform/limits/)
+list 10 ms CPU per HTTP request on Free and explain that an isolate may
+occasionally run over its configured limit, with termination if it does so
+consistently. These low-count successful samples therefore prove that the
+staging features ran, but not that recurring production traffic fits Free.
+In particular, the admin/TOTP and manual-lifecycle paths exceeded 10 ms in
+this sample. No plan change was made; production CPU fit remains a release
+gate to resolve by optimization plus a repeat measurement or by selecting a
+paid Workers plan. No production route, real user row, email, Stripe operation,
+or domain/DNS setting changed.
