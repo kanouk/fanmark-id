@@ -20,6 +20,7 @@ const businessId = "d4bb0c48-f24a-491f-8693-fa393ab0b873";
 const workerName = "fanmark-app-staging";
 const origin = "https://fanmark-app-staging.fanmark-id.workers.dev";
 const webhookSecretName = "STRIPE_WEBHOOK_SECRET";
+const localResumeSmoke = path.join(repoRoot, "scripts/migration/prewrite-supabase-resume-smoke.mjs");
 
 function fail(code) {
   throw new Error(code);
@@ -32,9 +33,23 @@ function requireExplicitStagingWrite() {
     `--database=${businessName}`,
     `--account-id=${accountId}`,
     "--confirm-no-stripe-api",
+    "--verify-loopback-supabase-resume",
   ];
   if (flags.size !== expected.length || expected.some((flag) => !flags.has(flag))) {
     fail(`refusing_remote_staging_write; pass ${expected.join(" ")}`);
+  }
+}
+
+function assertLoopbackSupabasePrerequisites() {
+  const supabase = spawnSync("supabase", ["--version"], { encoding: "utf8", windowsHide: true });
+  const docker = spawnSync("docker", ["info", "--format", "{{.ServerVersion}}"], {
+    encoding: "utf8",
+    windowsHide: true,
+    timeout: 15_000,
+  });
+  const resumeSource = readFileSync(localResumeSmoke, "utf8");
+  if (supabase.error || supabase.status !== 0 || docker.error || docker.status !== 0 || !resumeSource.trim()) {
+    fail("loopback_supabase_resume_prerequisite_failed");
   }
 }
 
@@ -87,13 +102,42 @@ function query(sql) {
   return response[0].results;
 }
 
+function assertWaitlistMarkerAbsent(email, code) {
+  const rows = query(`SELECT COUNT(*) AS count FROM waitlist WHERE email = ${quoteSql(email)}`);
+  if (Number(rows[0]?.count) !== 0) fail(code);
+}
+
+function cleanupWaitlistMarker(email) {
+  const literal = quoteSql(email);
+  const existing = query(`SELECT COUNT(*) AS count FROM waitlist WHERE email = ${literal}`);
+  if (Number(existing[0]?.count) > 1) fail("synthetic_waitlist_cleanup_ambiguous");
+  if (Number(existing[0]?.count) === 1) query(`DELETE FROM waitlist WHERE email = ${literal}`);
+  assertWaitlistMarkerAbsent(email, "synthetic_waitlist_cleanup_failed");
+}
+
+function runLoopbackSupabaseResume(rejectedAt) {
+  const result = spawnSync(process.execPath, [localResumeSmoke], {
+    cwd: repoRoot,
+    encoding: "utf8",
+    env: { ...process.env, FANMARK_CUTOVER_REJECTED_AT: String(rejectedAt) },
+    timeout: 420_000,
+    maxBuffer: 4 * 1024 * 1024,
+    windowsHide: true,
+  });
+  if (result.error || result.status !== 0) fail("loopback_supabase_resume_failed");
+  const elapsed = result.stdout.match(/First owner-scoped user_settings update after the frozen Cloudflare rejection: (\d+) ms\./u)?.[1];
+  if (!elapsed || !Number.isSafeInteger(Number(elapsed))) fail("loopback_supabase_resume_timing_missing");
+  return Number(elapsed);
+}
+
 function inspectTarget() {
   const config = JSON.parse(readFileSync(configPath, "utf8"));
   const businessBinding = config.d1_databases?.find((database) => database.binding === "FANMARK_DB");
   if (config.name !== workerName || config.account_id !== accountId || config.workers_dev !== true ||
       (config.routes?.length ?? 0) !== 0 || businessBinding?.database_name !== businessName ||
       businessBinding?.database_id !== businessId || businessBinding?.remote !== true ||
-      config.vars?.CUTOVER_WRITE_FREEZE !== "false" || config.vars?.STRIPE_WEBHOOK_BACKEND ||
+      config.vars?.CUTOVER_WRITE_FREEZE !== "false" || config.vars?.WAITLIST_SIGNUP_BACKEND !== "d1" ||
+      config.vars?.STRIPE_WEBHOOK_BACKEND ||
       config.vars?.STRIPE_DISPATCH_BACKEND || config.vars?.STRIPE_EXTENSION_CHECKOUT_BACKEND) {
     fail("staging_worker_config_mismatch");
   }
@@ -168,6 +212,29 @@ async function postSyntheticReceipt(rawBody, signature) {
   return body;
 }
 
+async function waitForFrozenWorker() {
+  // An invalid body is rejected before the waitlist limiter or D1 insert when
+  // the old version is still serving; under the freeze it gets the freeze code.
+  // This probes rollout readiness without accepting a synthetic business write.
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const response = await fetch(`${origin}/api/waitlist`, {
+      method: "POST",
+      headers: { "content-type": "text/plain" },
+      body: "cutover-freeze-readiness-probe",
+    });
+    let body = null;
+    try {
+      body = await response.json();
+    } catch {
+      // Unexpected or stale responses are handled by status/code below.
+    }
+    if (response.status === 503 && body?.error === "cutover_write_freeze") return;
+    if (response.status !== 415) fail(`freeze_readiness_probe_unexpected_${response.status}`);
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+  }
+  fail("freeze_deployment_not_ready_after_30s");
+}
+
 async function cleanupEvent(eventId) {
   if (!eventId) return;
   const literal = quoteSql(eventId);
@@ -195,33 +262,47 @@ function deleteWebhookSecret() {
   if (result.error || result.status !== 0) fail("staging_secret_cleanup_failed");
 }
 
-async function verifyRestoredState() {
-  const [home, health, webhook, protectedRoute] = await Promise.all([
-    fetch(origin),
-    fetch(`${origin}/api/auth/ok`),
-    fetch(`${origin}/api/stripe/webhook`),
-    fetch(`${origin}/api/admin/broadcast-emails`, { method: "POST", body: "{}" }),
-  ]);
-  assert.equal(home.status, 200, "staging SPA did not recover");
-  assert.equal(health.status, 200, "staging Auth health did not recover");
-  assert.equal(webhook.status, 404, "Stripe webhook selector remained enabled");
-  assert.equal(protectedRoute.status, 401, "write freeze remained enabled after restore");
-  const secrets = parseJsonArray(runWrangler(["secret", "list"]));
-  assert.equal(secrets.some((secret) => secret?.name === webhookSecretName), false,
-    "temporary Stripe webhook secret remained configured");
-  const counts = query(`SELECT
-    (SELECT COUNT(*) FROM stripe_webhook_receipts) AS receipts,
-    (SELECT COUNT(*) FROM stripe_webhook_dispatches) AS dispatches`)[0];
-  assert.equal(Number(counts?.receipts), 0, "Stripe receipt ledger did not return to baseline");
-  assert.equal(Number(counts?.dispatches), 0, "Stripe dispatch ledger did not return to baseline");
+async function verifyRestoredState(waitlistEmail) {
+  let lastError = null;
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    try {
+      const [home, health, webhook, protectedRoute] = await Promise.all([
+        fetch(origin),
+        fetch(`${origin}/api/auth/ok`),
+        fetch(`${origin}/api/stripe/webhook`),
+        fetch(`${origin}/api/admin/broadcast-emails`, { method: "POST", body: "{}" }),
+      ]);
+      assert.equal(home.status, 200, "staging SPA did not recover");
+      assert.equal(health.status, 200, "staging Auth health did not recover");
+      assert.equal(webhook.status, 404, "Stripe webhook selector remained enabled");
+      assert.equal(protectedRoute.status, 401, "write freeze remained enabled after restore");
+      const secrets = parseJsonArray(runWrangler(["secret", "list"]));
+      assert.equal(secrets.some((secret) => secret?.name === webhookSecretName), false,
+        "temporary Stripe webhook secret remained configured");
+      const counts = query(`SELECT
+        (SELECT COUNT(*) FROM stripe_webhook_receipts) AS receipts,
+        (SELECT COUNT(*) FROM stripe_webhook_dispatches) AS dispatches`)[0];
+      assert.equal(Number(counts?.receipts), 0, "Stripe receipt ledger did not return to baseline");
+      assert.equal(Number(counts?.dispatches), 0, "Stripe dispatch ledger did not return to baseline");
+      assertWaitlistMarkerAbsent(waitlistEmail, "synthetic_waitlist_marker_remained_after_restore");
+      return;
+    } catch (error) {
+      lastError = error;
+      if (attempt < 5) await new Promise((resolve) => setTimeout(resolve, 2_000));
+    }
+  }
+  throw new Error("staging_restore_readback_failed", { cause: lastError });
 }
 
 async function main() {
   requireExplicitStagingWrite();
   inspectTarget();
+  assertLoopbackSupabasePrerequisites();
 
   const eventId = `evt_synthetic_cutover_${randomUUID().replaceAll("-", "")}`;
   const objectId = `cus_synthetic_cutover_${randomUUID().replaceAll("-", "")}`;
+  const waitlistEmail = `synthetic-cutover-${randomUUID().replaceAll("-", "")}@example.invalid`;
+  assertWaitlistMarkerAbsent(waitlistEmail, "synthetic_waitlist_marker_collision");
   const secret = `whsec_${randomBytes(32).toString("base64")}`;
   const startedAt = Date.now();
   let secretMayExist = false;
@@ -231,27 +312,47 @@ async function main() {
   let duplicateOutcome = null;
   let temporaryVersion = null;
   let restoredVersion = null;
+  let firstOwnerSettingsUpdateAfterFreezeMs = null;
+  let phase = "temporary_secret";
 
   try {
     secretMayExist = true;
     runWrangler(["secret", "put", webhookSecretName], { input: `${secret}\n`, sensitive: true });
 
+    phase = "deploy_freeze";
     temporaryDeployAttempted = true;
     const deployment = deployTemporaryFreeze();
     temporaryVersion = deployment.match(/Current Version ID:\s*([0-9a-f-]{36})/iu)?.[1] ?? null;
+    if (!temporaryVersion) fail("freeze_deployment_version_missing");
+    await waitForFrozenWorker();
 
+    phase = "reject_frozen_write";
+    let frozenWriteRejectedAt = null;
     const [frozenWrite, signInPreflight] = await Promise.all([
-      fetch(`${origin}/api/admin/broadcast-emails`, {
+      fetch(`${origin}/api/waitlist`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: "{}",
+        body: JSON.stringify({ email: waitlistEmail, referral_source: "synthetic cutover rehearsal" }),
+      }).then((response) => {
+        frozenWriteRejectedAt = Date.now();
+        return response;
       }),
       fetch(`${origin}/api/auth/sign-in/email`, { method: "OPTIONS" }),
     ]);
-    assert.equal(frozenWrite.status, 503, "write freeze did not reject application mutation");
-    assert.equal((await frozenWrite.json()).error, "cutover_write_freeze");
+    if (frozenWrite.status !== 503) fail(`frozen_write_status_${frozenWrite.status}`);
+    const frozenWriteBody = await frozenWrite.json();
+    if (frozenWriteBody?.error !== "cutover_write_freeze") fail("frozen_write_response_mismatch");
+    assertWaitlistMarkerAbsent(waitlistEmail, "frozen_waitlist_write_reached_d1");
     assert.equal(signInPreflight.status, 204, "login preflight was blocked during cutover freeze");
 
+    phase = "resume_loopback_supabase";
+    // Prove the source-shaped fallback remains writable while the isolated
+    // Cloudflare staging Worker is frozen. This child starts only loopback
+    // Supabase services and cleans its synthetic identity before returning.
+    firstOwnerSettingsUpdateAfterFreezeMs = runLoopbackSupabaseResume(frozenWriteRejectedAt);
+    assertWaitlistMarkerAbsent(waitlistEmail, "cloudflare_waitlist_changed_during_supabase_resume");
+
+    phase = "stripe_receipt_continuity";
     const { rawBody, signature } = signedEvent(eventId, objectId, secret);
     const accepted = await postSyntheticReceipt(rawBody, signature);
     acceptedOutcome = accepted.outcome;
@@ -276,9 +377,17 @@ async function main() {
     assert.equal(Number(rows[0].delivery_count), 2);
     assert.equal(rows[0].dispatch_status, "pending");
   } catch (error) {
-    failure = error instanceof Error ? error : new Error("staging_stripe_rehearsal_failed");
+    const code = error instanceof Error && /^[a-z0-9_.-]{1,100}$/iu.test(error.message)
+      ? error.message
+      : "assertion_or_runtime_error";
+    failure = new Error(`${phase}_${code}`, { cause: error });
   } finally {
     const cleanupErrors = [];
+    try {
+      cleanupWaitlistMarker(waitlistEmail);
+    } catch {
+      cleanupErrors.push("waitlist_marker");
+    }
     try {
       cleanupEvent(eventId);
     } catch {
@@ -301,13 +410,18 @@ async function main() {
     }
     if (temporaryDeployAttempted && cleanupErrors.length === 0) {
       try {
-        await verifyRestoredState();
-      } catch {
-        cleanupErrors.push("restored_state_readback");
+        await verifyRestoredState(waitlistEmail);
+      } catch (error) {
+        const code = error instanceof Error && /^[a-z0-9_.-]{1,100}$/iu.test(error.message)
+          ? error.message
+          : "assertion_or_runtime_error";
+        cleanupErrors.push(`restored_state_readback_${code}`);
       }
     }
     if (cleanupErrors.length > 0) {
-      const cleanupFailure = new Error(`staging_cleanup_incomplete:${cleanupErrors.join(",")}`);
+      const cleanupFailure = new Error(
+        `staging_cleanup_incomplete_${cleanupErrors.join("_")}${failure ? `_after_${failure.message}` : ""}`,
+      );
       if (failure) cleanupFailure.cause = failure;
       failure = cleanupFailure;
     }
@@ -321,6 +435,7 @@ async function main() {
     duplicateOutcome,
     temporaryVersion,
     restoredVersion,
+    firstOwnerSettingsUpdateAfterFreezeMs,
     elapsedMs: Date.now() - startedAt,
     finalReceiptCount: 0,
     finalDispatchCount: 0,

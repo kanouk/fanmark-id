@@ -298,3 +298,40 @@ decision. The smoke cleaned its
 synthetic Auth/business/lifecycle rows and found all user-owned Auth tables
 empty; Cron expiry stayed disabled. It did not change the Supabase writer,
 production route, real user data, or domain/DNS.
+
+## Integrated synthetic pre-write fallback drill (2026-09-28 JST)
+
+The guarded command `npm run test:migration:staging-prewrite-resume` now
+connects the staging write-freeze check to the source-shaped resume test. It
+requires the exact staging account/database and explicit flags, checks the
+`workers.dev`-only Worker configuration, verifies the Stripe selectors/secrets
+are absent, and confirms the local Supabase CLI and Docker are available before
+deploying anything. It waits for an invalid-content-type `/api/waitlist` probe
+to return `cutover_write_freeze`; before the new version is active, the same
+probe returns 415 without reaching the limiter or D1. Only after that readiness
+signal does it send one valid synthetic `example.invalid` signup request.
+
+The frozen public mutation returned 503 and the exact marker was absent from
+business D1. Sign-in preflight remained 204. While the Worker remained frozen,
+the isolated loopback Supabase project passed synthetic email/password Auth,
+UUID preservation, owner-scoped `user_settings` read/update/readback, and
+cascade cleanup. The first owner-scoped `user_settings` update was acknowledged
+30,472 ms after the Cloudflare rejection. This interval includes local
+Docker/Supabase startup and is only a harness measurement, not a production
+outage or RTO.
+
+The same frozen Worker accepted a locally signed synthetic `customer.updated`
+receipt and deduplicated its replay into one pending dispatch; no Stripe API
+or business effect was invoked. Cleanup removed the marker, receipt, dispatch,
+and temporary webhook secret, then restored the ordinary Worker as version
+`e54b22c6-b19d-4172-be71-445e2a29b52a`. Independent readback found zero
+waitlist, receipt, dispatch, profile, and Auth-owned rows; the expected staging
+secret names remained, `/` and Auth health returned 200, the webhook returned
+404, and unauthenticated admin returned 401. No local rehearsal container,
+volume, or network remained.
+
+This closes the isolated pre-write fallback subgate only. It did not stop a
+linked Supabase writer or Cron, rehearse a real browser session, copy data,
+verify a full outage window, or complete the post-write application restore.
+Issue #37 remains open; no real user data, production route, or domain/DNS
+setting changed.

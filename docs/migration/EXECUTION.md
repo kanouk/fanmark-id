@@ -2841,3 +2841,34 @@ rows. The staging secret-name list contains only Better Auth, reference-master,
 and verified-access secrets; no Resend or Stripe secret was configured. No
 production route, business/Auth row, R2 object, D1 row, user data, or
 domain/DNS setting changed.
+
+## Integrated synthetic pre-write fallback rehearsal (2026-09-28 JST)
+
+Added the guarded `npm run test:migration:staging-prewrite-resume` path. The
+script checks the exact staging account, workers.dev/no-route config, split
+business D1, disabled Stripe selectors/secrets, and local Supabase/Docker
+prerequisites. It waits on a non-writing invalid-body probe until the deployed
+freeze returns `cutover_write_freeze`, then verifies a valid synthetic
+`example.invalid` waitlist request is rejected with 503 and absent from D1.
+Sign-in preflight remains available.
+
+While staging stayed frozen, a disposable loopback Supabase project passed
+synthetic email/password sign-in, UUID preservation, owner-scoped
+`user_settings` read/update/readback, and cascade cleanup. The first owner-scoped
+`user_settings` update was acknowledged 30,472 ms after the frozen Cloudflare
+rejection; this includes local project startup and is not a production
+interruption/RTO. The
+same freeze preserved one locally signed synthetic Stripe receipt and its
+duplicate delivery as one pending dispatch, with no Stripe API or business
+effect.
+
+Cleanup restored ordinary staging Worker version
+`e54b22c6-b19d-4172-be71-445e2a29b52a`. Independent readback found zero
+waitlist/receipt/dispatch/profile rows and zero rows in all seven checked Auth
+user-owned tables. Staging SPA/Auth health returned 200, webhook 404, and
+unauthenticated admin 401; no local Docker resources remained. The first
+attempt exposed that a deploy returning is not by itself a sufficient
+workers.dev readiness signal, so the script now waits using the non-writing
+probe before attempting the mutation. This closes only the synthetic pre-write
+fallback subgate; no linked Supabase writer/Cron was stopped and no live user
+rows, production route, or DNS/domain were changed. Issue #37 remains open.

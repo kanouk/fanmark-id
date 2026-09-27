@@ -2286,3 +2286,30 @@ The canary made no Stripe API request and touched no real user data, production
 resource, or domain/DNS setting. It verifies the authenticated API and its
 read-after-update behavior; the rendered UI's 30-second foreground polling and
 Stripe sandbox acceptance remain open.
+
+## Integrated synthetic pre-write fallback rehearsal (2026-09-28 JST)
+
+Added the explicitly guarded `npm run test:migration:staging-prewrite-resume`
+to keep the workers.dev Worker frozen while a disposable loopback Supabase
+project exercises the source-shaped recovery write. A non-writing invalid-body
+probe waits until the frozen version is active; then a valid unique synthetic
+waitlist request returns 503 and leaves no D1 marker. The isolated Supabase
+flow passed synthetic password sign-in, UUID preservation, owner-scoped
+`user_settings` update/readback, and cleanup. The first acknowledged
+owner-scoped `user_settings` update took 30,472 ms after the frozen Cloudflare
+rejection, including local Docker/Supabase startup; this is not a production
+downtime/RTO measure.
+
+The frozen staging webhook accepted and deduplicated one synthetic receipt,
+leaving one pending dispatch and no Stripe API/business effect. Cleanup removed
+the temporary marker, receipt/dispatch, secret, local containers/volumes/network,
+and restored ordinary staging Worker version
+`e54b22c6-b19d-4172-be71-445e2a29b52a`. Independent readback reported zero
+waitlist, receipt, dispatch, profile, and Auth-owned rows; health and auth routes
+returned 200, webhook 404, and anonymous admin 401. No linked Supabase writer,
+real user data, production route, or domain/DNS was changed.
+
+This verifies only the isolated pre-write fallback subgate. The coordinated
+source-writer/Cron freeze, complete final-copy timing, applied Stripe business
+effect, post-write application restore, recurring CPU-plan fit, and other issue
+#37/#38 gates remain open.

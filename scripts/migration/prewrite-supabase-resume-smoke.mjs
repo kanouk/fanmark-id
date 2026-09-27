@@ -115,6 +115,7 @@ async function main() {
   let startAttempted = false;
   let testPassed = false;
   let apiDurationMs = null;
+  let firstOwnerSettingsUpdateAfterFreezeMs = null;
 
   try {
     await mkdir(migrationDirectory, { recursive: true });
@@ -201,6 +202,10 @@ async function main() {
     if (!Array.isArray(updated.value) || updated.value.length !== 1 || updated.value[0].preferred_language !== nextLanguage) {
       throw new Error("local_owner_rls_update_failed");
     }
+    const freezeRejectedAt = Number(process.env.FANMARK_CUTOVER_REJECTED_AT);
+    if (Number.isSafeInteger(freezeRejectedAt) && freezeRejectedAt > 0) {
+      firstOwnerSettingsUpdateAfterFreezeMs = Math.max(0, Date.now() - freezeRejectedAt);
+    }
     const readback = await request(apiUrl, ownPath, { apiKey: anonKey, bearer: accessToken });
     if (readback.value?.[0]?.preferred_language !== nextLanguage) throw new Error("local_owner_write_readback_mismatch");
     apiDurationMs = Math.round(performance.now() - startedAt);
@@ -233,6 +238,7 @@ async function main() {
   if (!testPassed) throw new Error("local_prewrite_smoke_incomplete");
   process.stdout.write(
     `PASS local-only Supabase pre-write path: email/password Auth, UUID preservation, owner RLS read/update/readback, cascade cleanup (${apiDurationMs} ms API sequence).\n` +
+    (firstOwnerSettingsUpdateAfterFreezeMs === null ? "" : `First owner-scoped user_settings update after the frozen Cloudflare rejection: ${firstOwnerSettingsUpdateAfterFreezeMs} ms.\n`) +
     "No linked project, remote Supabase rows, Cloudflare resource, or email provider was used.\n",
   );
 }
