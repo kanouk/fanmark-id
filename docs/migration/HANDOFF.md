@@ -118,6 +118,12 @@ were read or written.
 The migration-data test suite passed 160/160 under Node 22.6.0. The fake
 `psql` protocol test uses a 15-second finite subprocess limit so parallel test
 load does not cause a false timeout; it passes alone and within the suite.
+GitHub Actions run `36323205817`, attempt 2, passed both required jobs,
+including the Worker API suite, migration boundaries, all 90 Stripe receipt
+tests, both typechecks, staging build, and non-deploying Wrangler validation.
+The first attempt timed out in the Stripe PGlite snapshot test after 180
+seconds; the same file passed alone locally, the full Stripe suite passed
+locally, and an unchanged-code CI retry passed. No deployment occurred.
 
 A read-only comparison of this catalog's generated target profile with remote
 `fanmark-business-staging` found all 40 source tables and 406 source columns,

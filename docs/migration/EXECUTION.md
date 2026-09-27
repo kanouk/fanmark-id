@@ -2710,3 +2710,11 @@ The full root `test:migration-data` suite then passed 160/160 under Node
 startup under parallel test load instead of the previous 5-second ceiling;
 the command remains time-bounded and the protocol test passes both alone and
 inside the full suite.
+
+GitHub Actions run `36323205817`, attempt 2, passed both required jobs,
+including Worker API/D1 tests, migration boundaries, all 90 Stripe receipt
+tests, both typechecks, admin return-URL tests, the staging build, and the
+non-deploying Wrangler validation. The first attempt timed out after 180
+seconds in the Stripe PGlite snapshot test. That test passed alone locally and
+the full Stripe suite passed locally; retrying the same code passed on GitHub,
+so the first failure was not reproduced. The workflow did not deploy.
