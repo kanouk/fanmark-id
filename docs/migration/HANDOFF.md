@@ -2330,3 +2330,13 @@ or email was called, and no real user data, production resource, or domain/DNS
 setting changed. This proves one UI poll transition; it is not worst-case
 latency/load evidence and does not close Stripe sandbox or the remaining #37
 integration/recovery acceptance.
+
+## Anonymous search-record canary (2026-09-28 JST)
+
+The guarded `npm run test:migration:staging-fanmark-search-record` passed
+against the exact workers.dev staging app and split D1 databases. Its
+three-emoji synthetic request produced one discovery and one anonymous search
+event; the exact rows were removed and reread as zero. The event autoincrement
+sequence advanced and remains advanced. This is staging-path proof for new
+anonymous search activity only. Historical searches and attribution remain in
+the deferred user-data stage; issue #37 and integration acceptance stay open.

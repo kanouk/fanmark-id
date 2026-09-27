@@ -1708,3 +1708,14 @@ three reviewed extra columns and 32 operational indexes. Local SQLite parsed
 the export and returned `integrity_check=ok`. Wrangler's remote migration list
 reported no migrations pending. No application rows were exported or written,
 and no remote D1 change occurred.
+
+## Anonymous search-record staging canary (2026-09-28 JST)
+
+The guarded search-record smoke verified the exact staging account and D1
+bindings, then tested CORS preflight, an invalid origin (403, no write), a
+malformed emoji ID (400), and one valid anonymous request (200, no-store).
+The three-ID synthetic aggregate and event were read back with
+`user_id IS NULL`, deleted by exact identity, and reread as zero matching rows.
+The `fanmark_events` SQLite sequence advanced by one and was not decremented.
+No historical search rows, user data, production route, or domain/DNS settings
+were changed.

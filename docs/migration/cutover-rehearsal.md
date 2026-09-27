@@ -335,3 +335,26 @@ linked Supabase writer or Cron, rehearse a real browser session, copy data,
 verify a full outage window, or complete the post-write application restore.
 Issue #37 remains open; no real user data, production route, or domain/DNS
 setting changed.
+
+## Rendered subscription UI poll (2026-09-28 JST)
+
+The guarded `npm run test:migration:staging-subscription-ui-poll` authenticated
+a temporary headless Chrome session against the isolated staging Worker. It
+opened `/profile`'s Plan section and saw the synthetic owner subscription as
+active. After changing only that D1 projection to `canceled`, the UI showed its
+localized inactive state after the next foreground 30-second poll, measured at
+29,440 ms. Cleanup read back zero synthetic subscription, profile, and Auth
+rows. No Stripe API, email, user data, production resource, or domain/DNS
+setting was used. This proves a single rendered transition; it is not
+worst-case latency or load evidence and does not close the broader #37 gate.
+
+## Anonymous search-record write (2026-09-28 JST)
+
+The guarded `npm run test:migration:staging-fanmark-search-record` passed on
+the isolated workers.dev app. It verified CORS preflight, rejection of an
+untrusted origin and malformed emoji ID, then one valid anonymous D1 write.
+Readback found one synthetic discovery and one `search` event with a null user
+ID. Cleanup removed those exact rows and its final readback found zero matches.
+The `fanmark_events` SQLite sequence advanced by one and was left monotonic.
+This proves only the new-search staging path; historical search/user data
+remains deferred, and this does not close the integrated #37 gate.

@@ -2890,3 +2890,20 @@ profile and is terminated by the script. No Stripe API, email, real user data,
 production resource, or domain/DNS setting was used. This verifies one rendered
 poll transition; it does not close Stripe sandbox acceptance, recurring CPU
 plan fit, or the broader issue #37 integration/recovery gates.
+
+## Anonymous search-record staging canary (2026-09-28 JST)
+
+Added the guarded `npm run test:migration:staging-fanmark-search-record`
+acceptance command. It checks the exact Cloudflare account, workers.dev-only
+Worker configuration, split business/master D1 IDs, D1 selector, CORS origin,
+and rate-limit binding before making one anonymous search request with three
+unused synthetic emoji IDs. Staging returned the expected preflight, rejected
+an untrusted origin without writing, rejected a malformed ID, then recorded
+one valid search. D1 readback confirmed exactly one aggregate and one search
+event with `user_id=NULL`; cleanup deleted those exact rows and verified zero
+matching rows remained.
+
+The D1 `sqlite_sequence` for `fanmark_events` advanced by one after insert and
+delete; it is monotonic bookkeeping and was deliberately not rewound. The
+canary does not import historical searches or user attribution. No user data,
+production route, Stripe/email effect, or domain/DNS setting was touched.
