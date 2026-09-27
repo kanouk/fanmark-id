@@ -1,6 +1,6 @@
 # fanmark.id repository inventory (offline)
 
-Base commit: `947589c5a5bc7d4b3a9c4e3769a7ef789c3944c7`
+Base commit: `ad97ae66689957a75f8d7f8e3fd94a3ad2f653cc`
 
 This report is generated from the checked-out repository only. It makes no network calls, reads no credentials, and does not claim that local generated types, migrations, or SQL snapshots equal the current production state.
 
@@ -288,11 +288,11 @@ Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of t
 | `src/hooks/useFanmarkSearch.tsx:148` | rpc | `list_recent_fanmarks` | `rpc` |  |
 | `src/hooks/useFanmarkSearch.tsx:254` | auth | `auth` | `auth.getUser` |  |
 | `src/hooks/useFanmarkSearch.tsx:287` | rpc | `check_fanmark_availability` | `rpc` |  |
-| `src/hooks/useFanmarkSearch.tsx:299` | rpc | `record_fanmark_search` | `rpc` |  |
-| `src/hooks/useFanmarkSearch.tsx:328` | rpc | `get_fanmark_complete_data` | `rpc` |  |
-| `src/hooks/useFanmarkSearch.tsx:511` | edge | `register-fanmark` | `edge_function_invoke` |  |
-| `src/hooks/useFanmarkSearch.tsx:553` | rpc | `check_fanmark_availability` | `rpc` |  |
-| `src/hooks/useFanmarkSearch.tsx:563` | rpc | `get_fanmark_complete_data` | `rpc` |  |
+| `src/hooks/useFanmarkSearch.tsx:301` | rpc | `record_fanmark_search` | `rpc` |  |
+| `src/hooks/useFanmarkSearch.tsx:334` | rpc | `get_fanmark_complete_data` | `rpc` |  |
+| `src/hooks/useFanmarkSearch.tsx:517` | edge | `register-fanmark` | `edge_function_invoke` |  |
+| `src/hooks/useFanmarkSearch.tsx:559` | rpc | `check_fanmark_availability` | `rpc` |  |
+| `src/hooks/useFanmarkSearch.tsx:569` | rpc | `get_fanmark_complete_data` | `rpc` |  |
 | `src/hooks/useInvitationAdmin.ts:37` | table | `invitation_codes` | `table.select` |  |
 | `src/hooks/useInvitationAdmin.ts:81` | table | `invitation_codes` | `table.insert` |  |
 | `src/hooks/useInvitationAdmin.ts:110` | table | `invitation_codes` | `table.update` |  |
