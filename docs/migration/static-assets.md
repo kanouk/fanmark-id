@@ -156,9 +156,9 @@ explicit decision and observed verification:
   no admin hostname, wildcard route, or account setting is inferred here.
 - Supabase Auth callback, cookie, redirect, and session behavior at the chosen
   origin.
-- Native install prompt/standalone launch, custom-domain behavior, caching
-  headers, and security headers at the staging hostname. The deployed staging
-  auto-update transition is verified below.
+- Native installation and standalone launch passed on the staging workers.dev
+  hostname in Chrome on macOS (see the acceptance below). Custom-domain
+  behavior, caching headers, and security headers still need staging review.
 - Any public routes or redirects outside the routes inspected in the current
   Vite application.
 
@@ -184,5 +184,21 @@ failure: Workbox keeps its cache name stable across these updates. The check now
 compares precache contents, which showed the canary asset entering and leaving
 as expected. The final browser profile, local marker, and synthetic browser
 storage were removed. This verifies the deployed `autoUpdate` transition only;
-it does not verify native install/standalone launch, authenticated flows,
-custom-domain behavior, offline catalog/search, or a prompt before reload.
+it does not verify authenticated flows, custom-domain behavior, offline
+catalog/search, or a prompt before reload.
+
+## Native staging PWA install and standalone launch (2026-09-28)
+
+In an isolated temporary Chrome profile on macOS, the browser offered the
+install prompt for
+`https://fanmark-app-staging.fanmark-id.workers.dev/pwa`. Installing created a
+`fanmark.id` Chrome app for that staging origin. Launching the app opened the
+PWA in a standalone window with no browser address bar, and the `/pwa` search
+screen rendered. This was an anonymous local-browser check; it did not exercise
+authenticated flows or verify behavior on a custom domain, another browser, or
+another operating system.
+
+The temporary Chrome profile and the app bundle it created were moved to the
+Trash after verification. No staging resource, application data, production
+route, or domain/DNS setting was changed. This closes the staging workers.dev
+native-install/standalone-launch subgate only.

@@ -121,8 +121,11 @@ Wrangler dry-run suites are recorded in [HANDOFF.md](HANDOFF.md).
 The current staging deployment has an isolated anonymous browser check: `/plans`
 and `/plan` redirect to `/auth`; the active service worker controls `/pwa`, its
 precache includes both manifest icons, and offline reload serves the shell
-while the API/catalog request shows the retry screen. Native installation and
-service-worker updates between deployed Cloudflare versions remain unverified.
+while the API/catalog request shows the retry screen. Native install/standalone
+launch on the staging workers.dev hostname in Chrome on macOS and the deployed
+staging service-worker update transition both passed on 2026-09-28.
+Cross-browser/OS and custom-domain behavior remain open; see
+[`static-assets.md`](static-assets.md).
 
 Not verified: a coordinated freeze of the actual old Supabase writers with
 receipt continuity, a timed full final-copy window, the complete pre/post-write

@@ -40,8 +40,11 @@ The 2026-09-28 local PWA update-transition check confirmed that the current
 `autoUpdate` behavior installs a new worker and reloads the page; a synthetic
 unsaved DOM input was lost while `localStorage` remained. A later guarded
 staging browser canary also verified updates between deployed Worker versions
-and removal of its temporary precache asset. Native install/standalone launch
-remains open; see [`static-assets.md`](static-assets.md).
+and removal of its temporary precache asset. An isolated Chrome profile then
+installed the staging PWA and launched it in a standalone app window. These
+checks close the staging workers.dev PWA update and native-launch subgates;
+authenticated flows, custom-domain behavior, and the remaining integrated
+recovery acceptance stay open. See [`static-assets.md`](static-assets.md).
 
 The 2026-09-28 application-level post-ack restore probe used a temporary
 Worker and a fresh APAC D1 with all 17 business migrations. The actual waitlist
@@ -2397,6 +2400,17 @@ staging build. Worker versions were
 `c78dbb17-9c9b-42fc-bad5-9dc9ae0cfc65` (restored). The removed asset returned
 404 and was absent from the restored service worker and Workbox precache. The
 isolated browser profile and synthetic storage were cleaned. Native install
-and standalone launch remain open; no real user, production, or domain/DNS
-resource was involved. Full evidence is in
+and standalone launch were subsequently verified in an isolated Chrome profile
+and app window, documented in `static-assets.md`. No real user, production, or
+domain/DNS resource was involved. Full evidence is in
 [`static-assets.md`](static-assets.md).
+
+## Native staging PWA install and standalone launch (2026-09-28 JST)
+
+Chrome on macOS offered installation for the staging workers.dev `/pwa` route.
+After installing, launching the `fanmark.id` Chrome app opened the search screen
+in a standalone window without browser address controls. The profile was
+anonymous and temporary. The generated app bundle and profile were moved to the
+Trash after the check. This closes only the staging-origin native install and
+standalone-launch subgate; it does not verify authenticated flows, another
+browser or OS, custom-domain behavior, or the full #37 recovery rehearsal.

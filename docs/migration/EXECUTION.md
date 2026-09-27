@@ -2964,6 +2964,19 @@ build was redeployed, a second update removed the marker from the precache, and
 the asset returned 404. Canary and restored Worker versions were
 `f19d38cb-6708-4aa9-87f1-a58a2166337e` and
 `c78dbb17-9c9b-42fc-bad5-9dc9ae0cfc65`. The temporary browser profile/storage
-were cleaned. This closes only the deployed PWA update-transition subgate;
-native install/standalone launch and complete #37 recovery acceptance remain
+were cleaned. At this checkpoint, native install/standalone launch had not yet
+been checked; the follow-up acceptance is recorded below. Complete #37 recovery
+acceptance remains open. See [`static-assets.md`](static-assets.md).
+
+## Native staging PWA install and standalone launch (2026-09-28 JST)
+
+An isolated temporary Chrome profile on macOS offered the install prompt for
+the staging workers.dev `/pwa` route. Installing produced a `fanmark.id` Chrome
+app, and launching it rendered the search screen in a standalone window without
+browser address controls. The Chrome app's profile path pointed to the isolated
+temporary profile. Both the profile and generated app bundle were moved to the
+Trash after the check. No application/backend change, production route, or
+domain/DNS setting was involved. This closes only native install/standalone
+launch at the staging workers.dev origin; authenticated flows, other browsers
+and operating systems, custom-domain behavior, and complete #37 recovery remain
 open. See [`static-assets.md`](static-assets.md).
