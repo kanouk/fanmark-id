@@ -67,9 +67,11 @@ requires the codec mapping emitted by
 [`schema-convert.mjs`](../../scripts/migration/schema-convert.mjs). In
 particular, only the two reviewed `numeric(10,2)` money columns may use the
 integer-cents codec. A non-money fixed-scale decimal, unknown type, unknown
-enum label, unsafe bigint, invalid JSON, malformed UUID, or unsupported array
-shape fails closed. Bigints outside JavaScript's safe integer range remain a
-blocking gate until an exact D1 binding has been proven.
+enum label, out-of-range int64, invalid JSON, malformed UUID, or unsupported
+array shape fails closed. Bigint values are returned as canonical decimal
+text, not `Number`; the importer applies an integer CAST when binding and
+checks exact text readback. Application-facing D1 reads still need a separate
+safe-range or exact-text proof.
 
 ## CLI and verification
 
@@ -93,7 +95,7 @@ consistency or deployment readiness.
 The focused root test covers exact ordering, all currently supported scalar,
 money, decimal, enum, JSON, timestamp, date, and array representations, real
 SQLite binding/readback, SQL NULL versus JSON/text null and empty arrays,
-nullability, malformed/out-of-range temporal text, enum and bigint rejection,
+nullability, malformed/out-of-range temporal text, enum and int64 rejection,
 array-dimension/lower-bound rejection, and codec/type mismatches. The
 `experiments/stripe-receipts` fixture also has an isolated PGlite test. It
 creates only synthetic PostgreSQL rows, executes the generated projection,

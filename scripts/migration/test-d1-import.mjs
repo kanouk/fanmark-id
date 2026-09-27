@@ -54,10 +54,13 @@ function fixtureCatalog() {
       column("child", "note", 4, "date"),
       column("child", "enabled", 5, "boolean", { not_null: true }),
       column("child", "scores", 6, "smallint[]"),
+      column("int64_values", "id", 1, "bigint", { not_null: true }),
+      column("int64_values", "mirror", 2, "bigint", { not_null: true }),
     ],
     constraints: [
       { table_name: "parent", name: "parent_pkey", kind: "p", definition: "PRIMARY KEY (id)", validated: true, deferrable: false, initially_deferred: false },
       { table_name: "child", name: "child_pkey", kind: "p", definition: "PRIMARY KEY (id)", validated: true, deferrable: false, initially_deferred: false },
+      { table_name: "int64_values", name: "int64_values_pkey", kind: "p", definition: "PRIMARY KEY (id)", validated: true, deferrable: false, initially_deferred: false },
       { table_name: "child", name: "child_parent_fkey", kind: "f", definition: "FOREIGN KEY (parent_id) REFERENCES public.parent (id) ON DELETE RESTRICT ON UPDATE RESTRICT", validated: true, deferrable: false, initially_deferred: false },
     ],
     indexes: [],
@@ -128,6 +131,20 @@ function fixtureRows() {
         arrayMetadata: { scores: { isNull: false, ndims: 1, lowerBound: 1 } },
       },
     ],
+    int64_values: [
+      ["-2", "10"],
+      ["-9223372036854775808", "9223372036854775807"],
+      ["0", "2"],
+      ["10", "-2"],
+      ["2", "0"],
+      ["9223372036854775807", "-9223372036854775808"],
+    ].map(([id, mirror]) => ({
+      schemaVersion: 1,
+      table: "int64_values",
+      columns: ["id", "mirror"],
+      values: { id, mirror },
+      arrayMetadata: {},
+    })),
   };
 }
 
@@ -766,6 +783,33 @@ if (isMain) test("allows only explicitly reviewed Auth identity gates in local m
 if (isMain) {
   test("imports synthetic parent/child rows through local Miniflare D1 and independently reads them back", async () => {
     await runLocalD1Integration();
+  });
+
+  test("imports and reconciles exact signed int64 values across the full range", async () => {
+    const fixture = await openFixture();
+    try {
+      const result = await importD1Snapshot(importOptions(fixture));
+      assert.equal(result.status, "public_rows_reconciled");
+
+      const rows = await fixture.database.prepare(`
+        SELECT CAST("id" AS TEXT) AS "id",
+               CAST("mirror" AS TEXT) AS "mirror",
+               typeof("id") AS "id_type",
+               typeof("mirror") AS "mirror_type"
+          FROM "int64_values"
+         ORDER BY "int64_values"."id"
+      `).all();
+      assert.deepEqual(rows.results, [
+        { id: "-9223372036854775808", mirror: "9223372036854775807", id_type: "integer", mirror_type: "integer" },
+        { id: "-2", mirror: "10", id_type: "integer", mirror_type: "integer" },
+        { id: "0", mirror: "2", id_type: "integer", mirror_type: "integer" },
+        { id: "2", mirror: "0", id_type: "integer", mirror_type: "integer" },
+        { id: "10", mirror: "-2", id_type: "integer", mirror_type: "integer" },
+        { id: "9223372036854775807", mirror: "-9223372036854775808", id_type: "integer", mirror_type: "integer" },
+      ]);
+    } finally {
+      await fixture.close();
+    }
   });
 
   test("seeds the exact called sequence watermark and the next D1 event ID", async () => {

@@ -13,9 +13,12 @@ test('timestamps preserve all microseconds and reject invalid/unconverted calend
  assert.throws(()=>convert('date','2025-02-29'));
 });
 test('integer boundaries fail rather than rounding source values',()=>{
- assert.equal(convert('bigint','9007199254740991'),Number.MAX_SAFE_INTEGER);
- assert.equal(convert('bigint','-9007199254740991'),Number.MIN_SAFE_INTEGER);
- for(const value of ['9007199254740992','9223372036854775807','1.5','1e3'])assert.throws(()=>convert('bigint',value));
+ assert.equal(convert('bigint','9007199254740991'),'9007199254740991');
+ assert.equal(convert('bigint','-9007199254740991'),'-9007199254740991');
+ assert.equal(convert('bigint','9007199254740992'),'9007199254740992');
+ assert.equal(convert('bigint','9223372036854775807'),'9223372036854775807');
+ assert.equal(convert('bigint','-9223372036854775808'),'-9223372036854775808');
+ for(const value of ['9223372036854775808','-9223372036854775809','1.5','1e3'])assert.throws(()=>convert('bigint',value));
  assert.throws(()=>convert('integer','2147483648'));
  assert.throws(()=>convert('smallint','32768'));
  assert.throws(()=>convert('bigint',9007199254740992));

@@ -49,7 +49,7 @@ SQLite affinity. Treat the current report's codec values as the import contract.
 | `uuid` | `TEXT` | `uuid-text` | Validate UUID syntax and canonicalize to the reviewed lowercase form; never generate a replacement for an imported value. |
 | `boolean` | `INTEGER` | `boolean-int01` | Bind only `0` or `1`; generated checks also require SQLite integer storage. |
 | `smallint` / `integer` | `INTEGER` | `smallint-int16` / `integer-int32` | Validate source range and SQLite integer storage. |
-| `bigint` | `INTEGER` | `bigint-int64-exact` | Read exact integer text and reject values outside the currently approved JavaScript safe range until a D1 `BigInt` binding is proven; never round through `Number`. |
+| `bigint` | `INTEGER` | `bigint-int64-exact` | Validate and retain canonical signed 64-bit decimal text; bind with `CAST(? AS INTEGER)` and verify exact text readback plus SQLite integer storage. Application-facing Number precision remains a separate gate. |
 | `timestamptz` | `TEXT` | `timestamptz-utc-microsecond-text` | Convert to fixed-width UTC text while retaining six fractional digits. |
 | `date` | `TEXT` | `date-ymd-text` | Validate the calendar `YYYY-MM-DD` value without timezone conversion. |
 | `jsonb` | `TEXT` | `json-text` | Validate JSON text while preserving SQL `NULL` versus JSON `null`; do not silently reserialize source bytes. |
@@ -61,8 +61,10 @@ SQLite affinity. Treat the current report's codec values as the import contract.
 
 The money column names are deliberately explicit. A different numeric column is
 not silently treated as cents. Array dimensions/lower bounds, JSON numeric
-precision, and bigint range checks remain importer gates even when the target
-SQLite type is syntactically accepted.
+precision and bigint application-read precision remain gates even when the
+target SQLite type is syntactically accepted. The importer now validates the
+full signed 64-bit range without Number conversion; application reads still
+need safe bounds or an exact text projection.
 
 The converter recognizes `seq_key(uuid[])` as an index over the target column's
 canonical JSON text representation. It rejects the translation for any other

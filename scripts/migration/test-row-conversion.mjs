@@ -90,7 +90,7 @@ function envelope() {
       enabled: "t",
       small_value: "-32768",
       integer_value: "2147483647",
-      bigint_value: "9007199254740991",
+      bigint_value: "9223372036854775807",
       monthly_price_usd: "12.30",
       lottery_probability: "0.12345678901234567890123456789",
       happened_at: "2026-09-21T00:00:00.123456Z",
@@ -146,7 +146,7 @@ test("all supported values convert to ordered bindings and survive real SQLite r
     1,
     -32768,
     2147483647,
-    9007199254740991,
+    "9223372036854775807",
     1230,
     "0.12345678901234567890123456789",
     "2026-09-21T00:00:00.123456Z",
@@ -169,7 +169,7 @@ test("all supported values convert to ordered bindings and survive real SQLite r
   ].join("\n");
   const insert = `INSERT INTO "fanmark_tiers" (${names}) VALUES (${converted.bindings.map(sqlLiteral).join(", ")});`;
   const output = execFileSync("sqlite3", ["-json", ":memory:"], {
-    input: `${schema}\n${insert}\nSELECT * FROM "fanmark_tiers";`,
+    input: `${schema}\n${insert}\nSELECT *, CAST("bigint_value" AS TEXT) AS "bigint_text" FROM "fanmark_tiers";`,
     encoding: "utf8",
     stdio: ["pipe", "pipe", "pipe"],
   });
@@ -179,6 +179,7 @@ test("all supported values convert to ordered bindings and survive real SQLite r
   assert.equal(row.nullable_text, null);
   assert.equal(row.enabled, 1);
   assert.equal(row.monthly_price_usd, 1230);
+  assert.equal(row.bigint_text, "9223372036854775807");
   assert.equal(row.lottery_probability, "0.12345678901234567890123456789");
   assert.equal(row.payload, "null");
   assert.equal(row.text_values, "[]");
@@ -204,9 +205,15 @@ test("extra or missing fields, enum values, bigint range, and array shape fail c
   invalidEnum.values.role = "owner";
   assert.throws(() => convertRowEnvelope(source, "fanmark_tiers", invalidEnum), (error) => error.code === "invalid_enum_label");
 
-  const unsafeBigint = structuredClone(envelope());
-  unsafeBigint.values.bigint_value = "9007199254740992";
-  assert.throws(() => convertRowEnvelope(source, "fanmark_tiers", unsafeBigint), (error) => error.code === "invalid_column_value");
+  const nonSafeButValidBigint = structuredClone(envelope());
+  nonSafeButValidBigint.values.bigint_value = "9007199254740992";
+  assert.equal(convertRowEnvelope(source, "fanmark_tiers", nonSafeButValidBigint).bindings[6], "9007199254740992");
+
+  for (const outOfRangeBigint of ["9223372036854775808", "-9223372036854775809"]) {
+    const candidate = structuredClone(envelope());
+    candidate.values.bigint_value = outOfRangeBigint;
+    assert.throws(() => convertRowEnvelope(source, "fanmark_tiers", candidate), (error) => error.code === "invalid_column_value");
+  }
 
   const multidimensional = structuredClone(envelope());
   multidimensional.values.small_values = "[[1],[2]]";

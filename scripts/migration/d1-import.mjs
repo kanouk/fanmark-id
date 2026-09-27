@@ -340,6 +340,7 @@ function buildImportPlan(catalog, convertedSchema, { allowUnresolvedGates, crede
         name: column.column_name,
         sourceType: column.postgres_type,
         targetType: expectedTargetType(codec),
+        codec: codec.codec,
         notNull: column.not_null === true,
       };
     });
@@ -898,11 +899,27 @@ function columnBindingMap(tablePlan, converted) {
   return new Map(tablePlan.columns.map((column, index) => [column.name, converted.bindings[index]]));
 }
 
+function isExactInt64(column) {
+  return column.codec === "bigint-int64-exact";
+}
+
+function targetReadExpression(column) {
+  const name = quoteIdentifier(column.name);
+  return isExactInt64(column) ? `CAST(${name} AS TEXT) AS ${name}` : name;
+}
+
+function targetKeyBindingExpression(column) {
+  return isExactInt64(column) ? "CAST(? AS INTEGER)" : "?";
+}
+
 async function readTargetRow(database, tablePlan, converted) {
   const columns = tablePlan.columns
-    .map((column, index) => `${quoteIdentifier(column.name)}, typeof(${quoteIdentifier(column.name)}) AS ${quoteIdentifier(`__d1_storage_type_${index}`)}`)
+    .map((column, index) => `${targetReadExpression(column)}, typeof(${quoteIdentifier(column.name)}) AS ${quoteIdentifier(`__d1_storage_type_${index}`)}`)
     .join(", ");
-  const predicates = tablePlan.primaryNames.map((name) => `${quoteIdentifier(name)} = ?`).join(" AND ");
+  const predicates = tablePlan.primaryNames.map((name) => {
+    const column = tablePlan.columns.find((candidate) => candidate.name === name);
+    return `${quoteIdentifier(name)} = ${targetKeyBindingExpression(column)}`;
+  }).join(" AND ");
   const bindings = tablePlan.primaryNames.map((name) => columnBindingMap(tablePlan, converted).get(name));
   const row = await oneRow(
     database,
@@ -921,7 +938,7 @@ async function readTargetRow(database, tablePlan, converted) {
 
 function buildInsertStatement(tablePlan) {
   const columns = tablePlan.columns.map((column) => quoteIdentifier(column.name)).join(", ");
-  const placeholders = tablePlan.columns.map(() => "?").join(", ");
+  const placeholders = tablePlan.columns.map((column) => isExactInt64(column) ? "CAST(? AS INTEGER)" : "?").join(", ");
   const sql = `INSERT INTO ${quoteIdentifier(tablePlan.table)} (${columns}) VALUES (${placeholders})`;
   if (Buffer.byteLength(sql, "utf8") > MAX_SQL_STATEMENT_BYTES) throw fail("insert_sql_too_large");
   return sql;
@@ -1055,9 +1072,11 @@ async function* scanTargetRows(database, tablePlan, batchRows) {
   while (true) {
     const predicate = keysetPredicate(tablePlan, cursor);
     const columns = tablePlan.columns
-      .map((column, index) => `${quoteIdentifier(column.name)}, typeof(${quoteIdentifier(column.name)}) AS ${quoteIdentifier(`__d1_storage_type_${index}`)}`)
+      .map((column, index) => `${targetReadExpression(column)}, typeof(${quoteIdentifier(column.name)}) AS ${quoteIdentifier(`__d1_storage_type_${index}`)}`)
       .join(", ");
-    const order = tablePlan.primaryNames.map((name) => expectedScanExpression(tablePlan.columns.find((column) => column.name === name))).join(", ");
+    const order = tablePlan.primaryNames
+      .map((name) => expectedScanExpression(tablePlan.columns.find((column) => column.name === name)))
+      .join(", ");
     const rows = await allRows(
       database,
       `SELECT ${columns} FROM ${quoteIdentifier(tablePlan.table)} ${predicate.sql} ORDER BY ${order} LIMIT ${batchRows}`,

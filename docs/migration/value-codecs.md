@@ -18,7 +18,7 @@ export projection. Use bound/quoted identifiers from the reviewed catalog.
 | `uuid` | Validated lowercase UUID string |
 | `boolean` | Integer 0 or 1 |
 | `smallint`, `integer` | Number after exact BigInt range validation |
-| `bigint` | Number only within JavaScript's exact safe-integer range; larger values stop import |
+| `bigint` | Canonical signed 64-bit decimal text; the D1 importer binds it as text with `CAST(? AS INTEGER)` and verifies `CAST(column AS TEXT)` plus SQLite `typeof(...) = 'integer'` |
 | `numeric(10,2)` | Exact integer cents; no float multiplication or rounding |
 | unbounded `numeric` | Exact finite plain decimal text, not REAL |
 | `timestamp with time zone` | Fixed-width UTC text with six fractional digits |
@@ -47,12 +47,19 @@ Queries using such fields require their own explicit representation and tests.
 Unbounded numeric text likewise must not be numerically compared using plain
 lexical string order.
 
+The importer keeps bigint values as decimal text through D1 binding and
+readback, so values across the signed 64-bit range do not pass through
+JavaScript `Number`. Application-facing D1 reads still return SQLite INTEGER
+values through APIs that may use JavaScript `Number`; those call sites must
+prove safe bounds or explicitly select exact text before the bigint gate can
+close.
+
 Run `npm run test:migration-data`. Value tests cover numeric limits, exact
 cents, positive/negative bigint boundaries, leap dates, microseconds and years
 1/9999, array order/duplicates/NULLs, JSON numeric rejection, and SQL NULL versus
 JSON/text null. They run alongside the Storage export tests in CI. The companion `experiments/cloudflare-d1-concurrency/test/value-codecs.test.mjs`
 binds converted values into a real local D1 runtime and reads them back. It
-checks INTEGER storage for cents/safe bigint, exact decimal/JSON/array TEXT,
+checks INTEGER storage for cents and full-range bigint, exact decimal/JSON/array TEXT,
 SQL NULL, and microsecond timestamp ordering. That package passes 9 tests
 including its existing concurrency cases. Full export/import, row
 reconciliation, and production schema constraints remain separate work; these

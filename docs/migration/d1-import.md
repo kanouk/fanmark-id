@@ -71,6 +71,14 @@ the final status. A successful local run reports
 `public_rows_reconciled`; this is a scoped row result, not a full migration or
 production-readiness claim.
 
+For `bigint`, the row converter retains canonical signed 64-bit decimal text.
+The INSERT casts its bound text with `CAST(? AS INTEGER)`; independent readback
+selects `CAST(column AS TEXT)` and verifies `typeof(column) = 'integer'`. The
+bounded target scan keeps the snapshot's canonical text-key order, including
+bigint keys, so pagination and source reconciliation use the same ordering.
+This proves exact synthetic import/readback on local Miniflare D1. It does not
+prove application-facing reads safe from JavaScript `Number` precision loss.
+
 Before row reconciliation, the importer seeds the reviewed
 `fanmark_events.id` AUTOINCREMENT state from the manifest's PostgreSQL
 `lastValue` and `isCalled`, then independently reads `sqlite_sequence` back as

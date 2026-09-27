@@ -690,7 +690,7 @@ function typeInfo(column, enumLabels, gates, typeCounts, credentialDescriptorPla
     targetType = "INTEGER";
     codec = "bigint-int64-exact";
     checks.push(integerStorageCheck(column, `typeof(${quoteIdentifier(column.column_name)}) = 'integer' AND ${quoteIdentifier(column.column_name)} BETWEEN -9223372036854775808 AND 9223372036854775807`));
-    gates.add("bigint_import_range_validation", "Bigint values must be imported from exact integer text without JavaScript Number rounding; the current approved binding rejects values outside the safe JavaScript range until a D1 BigInt binding is proven.", location);
+    gates.add("bigint_import_range_validation", "The importer preserves bigint values through decimal-text CAST and exact text readback, but application-facing D1 INTEGER reads can become imprecise JavaScript Numbers; prove safe ranges or use exact text reads before enabling those paths.", location);
   } else if (sourceType === "date") {
     targetType = "TEXT";
     codec = "date-ymd-text";

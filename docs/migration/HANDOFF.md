@@ -72,7 +72,7 @@ cannot be recovered. The old/new systems must not dual-write business rows.
 
 ## 2026-09-27 local validation, staging deploy, and schema refresh
 
-Re-ran `npm run test:migration-data` under Node 22.6.0 (147/147) and the full
+Re-ran `npm run test:migration-data` under Node 22.6.0 (149/149) and the full
 `workers/api` `npm test` chain (exit 0). The prior root and Worker TypeScript
 checks, `npm run build:cloudflare-staging`, Worker Wrangler deploy dry-run, and
 `npm run check:ci` remain the latest recorded passes. These are local/synthetic
@@ -106,6 +106,20 @@ indexes; all 66 indexes emitted from the source profile are present. The
 introspection queries wrote zero rows and reported `changed_db: false`; no
 business row values were read. This narrows the open D1 parity work to the
 remaining 18 gates and behavior verification rather than missing base columns.
+
+The local D1 importer now preserves signed int64 values as canonical decimal
+text, binds them with `CAST(? AS INTEGER)`, and independently verifies exact
+text readback plus SQLite integer storage. The Miniflare fixture imports both
+signed boundaries and values beyond JavaScript's safe-integer range while
+reconciling the snapshot's bytewise primary-key order; the focused row-converter
+tests pass 6/6 and the Cloudflare D1 codec package passes 9/9. The schema gate
+remains open for application-facing D1 reads that may expose INTEGER as an
+imprecise JavaScript Number. This is synthetic importer proof, not a live-data
+import or production cutover.
+
+A read-only Workers plan-page check showed the account on the Free plan ($0)
+with a 10 ms maximum CPU time per request. No plan change was made; production
+CPU headroom and paid-plan need remain unverified.
 
 A fresh read-only Supabase scheduler query found the daily
 `check-expired-licenses` Edge Function job active at `0 0 * * *` in `GMT`; the

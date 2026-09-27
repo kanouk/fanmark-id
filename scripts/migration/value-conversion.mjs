@@ -12,6 +12,14 @@ function integer(value, min, max) {
   return Number(exact);
 }
 
+function int64(value) {
+  if (!integerPattern.test(value)) return invalid('integer');
+  const exact = BigInt(value);
+  if (exact < -9223372036854775808n || exact > 9223372036854775807n) return invalid('integer_range');
+  // Keep the exact decimal text through JSON, D1 binding, and verification.
+  return exact.toString();
+}
+
 export function moneyCents(value) {
   if (typeof value !== 'string') return invalid('money_source');
   const match = /^(-?)(\d{1,8})(?:\.(\d{1,2}))?$/.exec(value);
@@ -85,7 +93,7 @@ export function convertPgText(type, value) {
       return invalid('boolean');
     case 'smallint': return integer(value,-32768n,32767n);
     case 'integer': return integer(value,-2147483648n,2147483647n);
-    case 'bigint': return integer(value,-9223372036854775808n,9223372036854775807n);
+    case 'bigint': return int64(value);
     case 'numeric(10,2)': return moneyCents(value);
     case 'numeric':
       if (!/^-?(?:0|[1-9]\d*)(?:\.\d+)?$/.test(value)) return invalid('numeric');
