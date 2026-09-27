@@ -62,10 +62,24 @@ const CATALOG_KEYS = new Set([
   "enums",
   "indexes",
   "observed_at",
+  "regex_range_probe",
   "triggers",
   "rls_policies",
   "views",
   "functions",
+]);
+const REGEX_RANGE_PROBE_FIELDS = Object.freeze([
+  "email_domain_extra_matches",
+  "email_local_extra_matches",
+  "email_tld_extra_matches",
+  "invitation_extra_matches",
+  "setting_extra_matches",
+]);
+const REGEX_RANGE_PROBE_KEYS = Object.freeze([
+  "collate",
+  "ctype",
+  "unicode_scalar_count",
+  ...REGEX_RANGE_PROBE_FIELDS,
 ]);
 const COLUMN_KEYS = new Set([
   "table_name",
@@ -238,6 +252,18 @@ function validateDescriptorPolicy(descriptor) {
   if (descriptor.inactiveLicensePolicy !== CREDENTIAL_INACTIVE_LICENSE_POLICY) fail("unsupported_inactive_license_policy");
 }
 
+function validateRegexRangeProbe(probe) {
+  assertExactKeys(probe, REGEX_RANGE_PROBE_KEYS, "credential_catalog_regex_range_probe");
+  assertNonEmptyString(probe.collate, "credential_catalog_regex_range_probe");
+  assertNonEmptyString(probe.ctype, "credential_catalog_regex_range_probe");
+  assertSafeInteger(probe.unicode_scalar_count, "credential_catalog_regex_range_probe");
+  if (probe.unicode_scalar_count < 1) fail("credential_catalog_regex_range_probe");
+  for (const field of REGEX_RANGE_PROBE_FIELDS) {
+    assertSafeInteger(probe[field], "credential_catalog_regex_range_probe");
+    if (probe[field] < 0) fail("credential_catalog_regex_range_probe");
+  }
+}
+
 function validateCatalogShape(catalog) {
   assertAllowedKeys(catalog, CATALOG_KEYS, "credential_catalog_fields");
   for (const key of ["columns", "constraints", "enums", "indexes"]) {
@@ -251,6 +277,7 @@ function validateCatalogShape(catalog) {
     assertNonEmptyString(catalog.database_locale.collate, "credential_catalog_database_locale");
     assertNonEmptyString(catalog.database_locale.ctype, "credential_catalog_database_locale");
   }
+  if (catalog.regex_range_probe !== undefined) validateRegexRangeProbe(catalog.regex_range_probe);
   if (catalog.observed_at !== undefined && catalog.observed_at !== null && typeof catalog.observed_at !== "string") fail("credential_catalog_observed_at");
 
   const columns = [];

@@ -239,4 +239,30 @@ test("catalog metadata rejects unknown fields and non-finite values", () => {
   const badEnum = catalog();
   badEnum.enums = [{ type_name: "x", value: "x", sort_order: Number.POSITIVE_INFINITY }];
   assertCode(() => compile({}, { catalog: badEnum }), "credential_catalog_enum");
+
+  const probed = catalog();
+  probed.database_locale = { collate: "en_US.UTF-8", ctype: "en_US.UTF-8" };
+  probed.regex_range_probe = {
+    collate: "en_US.UTF-8",
+    ctype: "en_US.UTF-8",
+    unicode_scalar_count: 1_112_063,
+    email_domain_extra_matches: 0,
+    email_local_extra_matches: 0,
+    email_tld_extra_matches: 0,
+    invitation_extra_matches: 0,
+    setting_extra_matches: 0,
+  };
+  assert.doesNotThrow(() => compile({}, { catalog: probed }));
+
+  const incompleteProbe = structuredClone(probed);
+  delete incompleteProbe.regex_range_probe.setting_extra_matches;
+  assertCode(() => compile({}, { catalog: incompleteProbe }), "credential_catalog_regex_range_probe");
+
+  const unknownProbeField = structuredClone(probed);
+  unknownProbeField.regex_range_probe.unreviewed = 0;
+  assertCode(() => compile({}, { catalog: unknownProbeField }), "credential_catalog_regex_range_probe");
+
+  const invalidProbeCount = structuredClone(probed);
+  invalidProbeCount.regex_range_probe.email_tld_extra_matches = -1;
+  assertCode(() => compile({}, { catalog: invalidProbeCount }), "credential_catalog_regex_range_probe");
 });

@@ -337,3 +337,21 @@ DDL loads in local SQLite with 66 indexes, a clean `foreign_key_check`, and
 `integrity_check=ok`. Catalog, SQL, and report remain mode `0600` outside Git;
 the read-only refresh and probe read no application rows, and no remote D1,
 user data, production route, or domain/DNS setting changed.
+
+## Version 7 current-catalog synthetic import (2026-09-28 JST)
+
+The fresh private v7 catalog adds `regex_range_probe` to the schema metadata.
+The first current-catalog import attempt exposed that the credential descriptor
+validator still rejected this new top-level field; it stopped during schema
+preflight before creating the temporary local D1. The validator now accepts the
+optional probe only with its exact reviewed keys, nonempty locale names, a
+positive safe Unicode-scalar count, and nonnegative safe mismatch counts.
+Unknown, missing, negative, or unsafe fields still fail closed.
+
+After the fix, `test-d1-import-current-schema.mjs` completed the v7 synthetic
+rehearsal: 10 synthetic source rows, 2 transformed credentials, 1 deferred
+inactive credential, all 40 table checkpoints, and conflict rejection. The
+result is `public_rows_reconciled`; `deployable` and
+`fullMigrationReconciled` remain false. This used no application rows, remote
+D1, production route, or domain/DNS setting and does not close the remaining
+schema/import or operational-equivalence gates.

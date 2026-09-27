@@ -608,3 +608,15 @@ restarts, completes all table reconciliation, and confirms one source row,
 zero destination credential rows, and one deferred row. The focused
 credential schema/import suite passes 11/11. No real source credential or
 remote D1 was used.
+
+## Latest v7 catalog compatibility check (2026-09-28)
+
+The schema-only v7 catalog adds the locale-bound `regex_range_probe` metadata.
+The credential descriptor's strict catalog validator now accepts that optional
+field only after checking its exact keys, locale strings, Unicode-scalar count,
+and all mismatch counts. Unknown or malformed probe fields remain rejected.
+The current-catalog synthetic import now completes 40 table checkpoints with
+10 synthetic source rows, 2 bcrypt-transformed credentials, 1 durably deferred
+inactive credential, exact target readback, and conflicting-coverage rejection.
+It reports `public_rows_reconciled`, not full migration readiness. No source
+application rows or remote D1 were used.
