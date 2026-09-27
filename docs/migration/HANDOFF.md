@@ -2158,5 +2158,5 @@ Converter tests pass 13/13, snapshot-export tests 19/19, and
 and `integrity_check=ok`. The catalog, SQL, and report are mode `0600` outside
 Git. The proof and DDL were not applied to any remote D1; real user data,
 production routes, and domain/DNS remain untouched. The prior GitHub Actions
-run `36336701736` passed both jobs on commit `518fb16`; the v7 working changes
-still need their own PR validation.
+run `36338168509` passed both Cloudflare staging-app and Worker API jobs on
+commit `43b318d`; Supabase Preview was skipped by design.
