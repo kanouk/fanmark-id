@@ -10,7 +10,7 @@ import {
   stripSkinToneModifiers,
 } from '@/lib/emojiConversion';
 import { invokeFanmarkRegistration } from '@/lib/fanmark-registration-api';
-import { loadFanmarkSearchDetails } from '@/lib/fanmark-search-api';
+import { loadFanmarkSearchDetails, recordFanmarkSearch } from '@/lib/fanmark-search-api';
 import { betterAuthClient, isBetterAuthEnabled } from '@/lib/auth-backend';
 import { useAuth } from './useAuth';
 
@@ -296,7 +296,13 @@ export function useFanmarkSearch({ searchQuery, onSearchCompleted }: UseFanmarkS
       onSearchCompleted?.(compactQuery);
 
       try {
-        await supabase.rpc('record_fanmark_search', { input_emoji_ids: emojiIds });
+        await recordFanmarkSearch(emojiIds, {
+          fallback: async () => {
+            const { data, error } = await supabase.rpc('record_fanmark_search', { input_emoji_ids: emojiIds });
+            if (error) throw error;
+            return data;
+          },
+        });
       } catch (searchRecordError) {
         console.warn('Failed to record fanmark search:', searchRecordError);
       }

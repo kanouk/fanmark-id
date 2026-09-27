@@ -46,7 +46,12 @@ import {
 import { handleFanmarkRegistrationRequest, isFanmarkRegistrationPath } from "./fanmark-registration-d1-api";
 import { handleFanmarkLotteryRequest, isFanmarkLotteryPath } from "./fanmark-lottery-d1-api";
 import { handleFanmarkTransferRequest, isFanmarkTransferPath } from "./fanmark-transfer-d1-api";
-import { handleFanmarkSearchDetailsRequest, isFanmarkSearchDetailsPath } from "./fanmark-search-d1-api";
+import {
+  handleFanmarkSearchDetailsRequest,
+  handleFanmarkSearchRecordRequest,
+  isFanmarkSearchDetailsPath,
+  isFanmarkSearchRecordPath,
+} from "./fanmark-search-d1-api";
 import { handleFanmarkDetailsRequest, isFanmarkDetailsPath } from "./fanmark-details-d1-api";
 import { handleNotificationsRequest, isNotificationsPath } from "./notifications-d1-api";
 import {
@@ -1295,6 +1300,10 @@ export async function handleRequest(
   }
   if (isFanmarkSearchDetailsPath(url.pathname)) {
     return (await handleFanmarkSearchDetailsRequest(request, env, resolveStorageAuth, availabilityClock)) ??
+      errorResponse("not_found", 404, routeHeaders);
+  }
+  if (isFanmarkSearchRecordPath(url.pathname)) {
+    return (await handleFanmarkSearchRecordRequest(request, env, availabilityClock)) ??
       errorResponse("not_found", 404, routeHeaders);
   }
   if (isFanmarkDetailsPath(url.pathname)) {

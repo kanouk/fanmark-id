@@ -1518,3 +1518,32 @@ verified the same rows without writing. The query and seed did not read or
 write user rows or draft recipients and did not send email. No production,
 Worker routing, R2 object, or domain/DNS state changed. An authenticated
 broadcast-admin browser canary and delivery-provider migration remain open.
+
+## Staging search aggregate write canary (2026-09-27 JST)
+
+`fanmark-app-staging` version
+`34779025-2fdd-47f2-8ac4-37e2dde02b8b` adds the staging-selected
+`POST /api/fanmarks/search/record` route and a dedicated 120-per-60-second
+Rate Limiting binding. A synthetic five-emoji request with the exact staging
+Origin returned HTTP 200. Business-D1 readback showed one discovery with
+`search_count=1`, normalized IDs from the active emoji release, and one
+`search` event with `user_id=NULL`. The exact event row was deleted first;
+then the discovery was deleted only when it had no favorites or remaining
+events. Final readback showed zero discovery and event rows for that synthetic
+combination. No real user identity or production route was involved.
+
+The frontend defaults to Supabase outside the staging selector. Existing
+user-attributed Supabase search events were not copied. Local frontend contract
+tests passed 6/6, the Worker favorites/search D1 suite passed 6/6, both app and
+Worker typechecks passed, the staging build and Wrangler dry-run passed, and
+`test:migration-data` passed 147/147. The changed-file ESLint run had no errors
+and reported only the pre-existing missing-dependency warning in
+`useFanmarkSearch.tsx:190`.
+
+The final staging asset-only refresh is version
+`47dd045f-ae0c-4b46-8138-bdd59037f7ab`. A fresh read confirmed root 200 with
+`noindex, nofollow`, the served hashed JavaScript asset returned 200 and
+contained both the search record path and `credentials: "omit"`, and
+`/api/auth/ok` returned 200. The authenticated search-details request still
+uses credentials. This refresh issued no D1 writes; the synthetic rows from
+the earlier canary remain absent.

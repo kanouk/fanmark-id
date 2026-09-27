@@ -1,8 +1,10 @@
 import { formatAvailabilityNow } from "./availability";
 import { selectD1Database, type Env } from "./repository";
+import { FavoritesApiError, normalizeEmojiIdsForActiveMaster } from "./favorites-d1-api";
 import type { StorageAuthResolver } from "./storage-r2";
 
 const PATH = "/api/fanmarks/search/details";
+const RECORD_PATH = "/api/fanmarks/search/record";
 const MAX_BODY_BYTES = 1_024;
 const MAX_RESPONSE_BYTES = 8_192;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
@@ -231,6 +233,117 @@ function mapRow(row: SearchDetailsRow, now: string): Record<string, unknown> {
 
 export function isFanmarkSearchDetailsPath(pathname: string): boolean {
   return pathname === PATH;
+}
+
+export function isFanmarkSearchRecordPath(pathname: string): boolean {
+  return pathname === RECORD_PATH;
+}
+
+function parseEmojiIds(bytes: Uint8Array | null): string[] {
+  if (!bytes) throw new FanmarkSearchApiError("invalid_request", 400);
+  let value: unknown;
+  try {
+    value = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+  } catch {
+    throw new FanmarkSearchApiError("invalid_request", 400);
+  }
+  if (
+    value === null || typeof value !== "object" || Array.isArray(value) ||
+    Object.keys(value).length !== 1 || !Array.isArray((value as { input_emoji_ids?: unknown }).input_emoji_ids)
+  ) throw new FanmarkSearchApiError("invalid_request", 400);
+  const ids = (value as { input_emoji_ids: unknown[] }).input_emoji_ids;
+  if (ids.length < 1 || ids.length > 5 || ids.some((id) => typeof id !== "string" || !UUID_RE.test(id))) {
+    throw new FanmarkSearchApiError("invalid_request", 400);
+  }
+  return ids.map((id) => (id as string).toLowerCase());
+}
+
+async function limiterKey(request: Request): Promise<string> {
+  const address = request.headers.get("cf-connecting-ip")?.trim() || "unknown";
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(address)));
+  const hex = Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `fanmark-search:v1:${hex}`;
+}
+
+function resultRows(value: unknown): Array<Record<string, unknown>> {
+  const result = value as { success?: unknown; results?: unknown };
+  if (result.success !== true || !Array.isArray(result.results)) {
+    throw new FanmarkSearchApiError("fanmark_search_unavailable");
+  }
+  return result.results as Array<Record<string, unknown>>;
+}
+
+export async function handleFanmarkSearchRecordRequest(
+  request: Request,
+  env: Env,
+  clock: () => Date = () => new Date(),
+): Promise<Response | null> {
+  const url = new URL(request.url);
+  if (!isFanmarkSearchRecordPath(url.pathname)) return null;
+  const headers = corsHeaders(request, env);
+  if (!headers) return json({ error: "forbidden" }, 403);
+  if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
+  if (url.search || request.method !== "POST") {
+    headers.set("allow", "POST, OPTIONS");
+    return json({ error: "method_not_allowed" }, 405, headers);
+  }
+
+  try {
+    if (
+      env.FANMARK_SEARCH_BACKEND?.trim() !== "d1" || env.D1_TOPOLOGY?.trim() !== "split" ||
+      !env.FANMARK_SEARCH_LIMITER
+    ) throw new FanmarkSearchApiError("fanmark_search_unavailable");
+    const business = selectD1Database(env, "business");
+    const master = selectD1Database(env, "master");
+    if (!business || !master) throw new FanmarkSearchApiError("fanmark_search_unavailable");
+    const contentType = request.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase();
+    if (contentType !== "application/json") throw new FanmarkSearchApiError("json_content_type_required", 415);
+    const ids = parseEmojiIds(await readBody(request));
+    const limit = await env.FANMARK_SEARCH_LIMITER.limit({ key: await limiterKey(request) });
+    if (!limit.success) throw new FanmarkSearchApiError("rate_limited", 429);
+
+    let normalizedIds: string[];
+    try {
+      normalizedIds = await normalizeEmojiIdsForActiveMaster(master, ids);
+    } catch (error) {
+      if (error instanceof FavoritesApiError && error.code === "invalid_emoji_ids") {
+        throw new FanmarkSearchApiError("invalid_emoji_ids", 400);
+      }
+      throw new FanmarkSearchApiError("fanmark_search_unavailable");
+    }
+
+    const rawJson = JSON.stringify(ids);
+    const normalizedJson = JSON.stringify(normalizedIds);
+    const now = formatAvailabilityNow(clock());
+    const results = await business.batch([
+      business.prepare(`
+        INSERT INTO fanmark_discoveries
+          (id, emoji_ids, normalized_emoji_ids, first_seen_at, last_seen_at, search_count)
+        VALUES (?, ?, ?, ?, ?, 1)
+        ON CONFLICT(normalized_emoji_ids) DO UPDATE SET
+          emoji_ids = excluded.emoji_ids,
+          last_seen_at = excluded.last_seen_at,
+          search_count = fanmark_discoveries.search_count + 1
+        RETURNING id
+      `).bind(crypto.randomUUID(), rawJson, normalizedJson, now, now),
+      business.prepare(`
+        INSERT INTO fanmark_events (event_type, user_id, discovery_id, normalized_emoji_ids, created_at)
+        SELECT 'search', NULL, d.id, ?, ?
+        FROM fanmark_discoveries AS d
+        WHERE d.normalized_emoji_ids = ? AND changes() = 1
+      `).bind(normalizedJson, now, normalizedJson),
+    ]);
+    const discoveryRows = resultRows(results[0]);
+    if (discoveryRows.length !== 1 || typeof discoveryRows[0].id !== "string" || !UUID_RE.test(discoveryRows[0].id)) {
+      throw new FanmarkSearchApiError("fanmark_search_unavailable");
+    }
+    const eventMeta = (results[1] as { meta?: { changes?: unknown } } | undefined)?.meta;
+    if (Number(eventMeta?.changes) !== 1) throw new FanmarkSearchApiError("fanmark_search_unavailable");
+    return json({ schemaVersion: 1, recorded: true }, 200, headers);
+  } catch (error) {
+    const failure = error instanceof FanmarkSearchApiError ? error : new FanmarkSearchApiError("fanmark_search_unavailable");
+    return json({ error: failure.code }, failure.status, headers);
+  }
 }
 
 export async function handleFanmarkSearchDetailsRequest(

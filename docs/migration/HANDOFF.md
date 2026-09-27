@@ -95,6 +95,21 @@ source payload is not checked into Git. The broadcast UI MFA canary and the
 separate send-queue/provider design remain open; see
 `broadcast-email-admin-api.md` and `live-observations.md`.
 
+The staging search hook now writes new search aggregates through
+`POST /api/fanmarks/search/record`; regular builds still use Supabase. The
+staging Worker has a dedicated 120-request/60-second hashed-IP rate-limit
+binding. The live synthetic API canary passed on version
+`34779025-2fdd-47f2-8ac4-37e2dde02b8b`: it returned 200; D1 readback confirmed `search_count=1` and
+`fanmark_events.user_id IS NULL`, then the exact synthetic event and discovery
+rows were deleted and a final readback found zero. The local API tests,
+typechecks, staging build, Wrangler dry-run, and 147 migration-data tests pass.
+The final staging app version `47dd045f-ae0c-4b46-8138-bdd59037f7ab` omits
+session credentials from the anonymous write and was verified to serve the
+matching bundle and Worker health endpoint.
+Historical Supabase search events and user attribution remain for the final
+user-data phase. No production selector, user row, or domain/DNS was changed.
+This narrow route does not materially change the coarse progress estimate.
+
 The earlier Wrangler Keychain failure was resolved. Wrangler now authenticates
 to the intended account; staging deployment
 `cdeb759e-8e52-4b8a-9d63-6451b871c262` is active at 100%, and the isolated PWA

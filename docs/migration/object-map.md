@@ -195,7 +195,7 @@ locations, not proof that the corresponding snapshot is the live definition.
 | mark_all_notifications_read | T:2182; F Notifications.tsx:111 | Worker user | Authenticated inbox mutation | Low/medium: bind user identity to session |
 | mark_notification_read | T:2186; F AppHeader.tsx:139, Notifications.tsx:79 | Worker user | Authenticated inbox mutation | Low/medium: bind notification ownership to session |
 | normalize_emoji_ids | T:2190; M:1483 | Derived artifact / Worker internal | Canonical emoji identity helper | Low/medium: must be shared by search, registration, and uniqueness |
-| record_fanmark_search | T:2191; F useFanmarkSearch.tsx:301 | Worker public | Search-side aggregate update | Medium: public ingress needs rate limits and no user-level tracking |
+| record_fanmark_search | T:2191; F useFanmarkSearch.tsx:301 | Worker public (staging); Supabase default | Search-side aggregate update; D1 event uses `user_id = NULL` | Medium: deployed staging D1 path has a 120/min hashed-IP limiter; historical user-attributed events remain for final user-data migration |
 | remove_fanmark_favorite | T:2195; F FanmarkAcquisition.tsx:279 | Worker user | Authenticated favorite delete | Low/medium: preserve idempotent delete behavior |
 | render_notification_template | T:2199; M:1628; F E:process-notification-events | Worker internal | Notification rendering helper | Medium: template version/locale behavior needs parity fixtures |
 | search_fanmarks_with_lottery | T:2208; M:1685 | Worker public/user | Search result with lottery state | High: no current frontend callsite found; determine whether it is legacy or required API |

@@ -1,6 +1,7 @@
 import { buildRecentFanmarksApiUrl, getRecentFanmarksApiBaseUrl } from "./recent-fanmarks.ts";
 
 const DETAILS_PATH = "/api/fanmarks/search/details";
+const RECORD_PATH = "/api/fanmarks/search/record";
 const MAX_RESPONSE_BYTES = 8 * 1024;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
 const DETAIL_KEYS = [
@@ -182,6 +183,97 @@ export async function fetchFanmarkSearchDetailsFromWorker(
   } finally {
     clearTimeout(timer);
   }
+}
+
+export async function recordFanmarkSearchInWorker(
+  inputEmojiIds: string[],
+  options: {
+    baseUrl?: string;
+    authBaseUrl?: string;
+    fetchImpl?: typeof fetch;
+    timeoutMs?: number;
+  } = {},
+): Promise<void> {
+  if (inputEmojiIds.length < 1 || inputEmojiIds.length > 5 || inputEmojiIds.some((id) => !UUID_RE.test(id))) {
+    throw new FanmarkSearchApiError("configuration");
+  }
+  const baseUrl = options.baseUrl ?? getRecentFanmarksApiBaseUrl() ??
+    (typeof window === "undefined" ? undefined : window.location.origin);
+  const authBaseUrl = options.authBaseUrl ?? import.meta.env?.VITE_AUTH_API_BASE_URL?.trim() ??
+    (typeof window === "undefined" ? undefined : window.location.origin);
+  if (!baseUrl || !authBaseUrl) throw new FanmarkSearchApiError("configuration");
+
+  let endpoint: URL;
+  try {
+    endpoint = buildFanmarkSearchDetailsUrl(baseUrl);
+    endpoint.pathname = RECORD_PATH;
+    if (endpoint.origin !== buildRecentFanmarksApiUrl(authBaseUrl).origin) {
+      throw new FanmarkSearchApiError("configuration");
+    }
+  } catch {
+    throw new FanmarkSearchApiError("configuration");
+  }
+
+  const timeoutMs = options.timeoutMs ?? 5_000;
+  if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 30_000) {
+    throw new FanmarkSearchApiError("configuration");
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    let response: Response;
+    try {
+      response = await (options.fetchImpl ?? fetch)(endpoint, {
+        method: "POST",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify({ input_emoji_ids: inputEmojiIds.map((id) => id.toLowerCase()) }),
+        credentials: "omit",
+        cache: "no-store",
+        redirect: "error",
+        signal: controller.signal,
+      });
+    } catch {
+      throw new FanmarkSearchApiError(controller.signal.aborted ? "timeout" : "network");
+    }
+    if (response.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase() !== "application/json") {
+      await response.body?.cancel();
+      throw new FanmarkSearchApiError("invalid_response");
+    }
+    const declaredLength = response.headers.get("content-length");
+    if (declaredLength && (!/^\d+$/u.test(declaredLength) || Number(declaredLength) > MAX_RESPONSE_BYTES)) {
+      await response.body?.cancel();
+      throw new FanmarkSearchApiError("invalid_response");
+    }
+    const body = await response.text();
+    if (new TextEncoder().encode(body).byteLength > MAX_RESPONSE_BYTES) {
+      throw new FanmarkSearchApiError("invalid_response");
+    }
+    let payload: unknown;
+    try {
+      payload = JSON.parse(body) as unknown;
+    } catch {
+      throw new FanmarkSearchApiError("invalid_response");
+    }
+    if (!response.ok) throw new FanmarkSearchApiError("http", response.status);
+    if (!isRecord(payload) || payload.schemaVersion !== 1 || payload.recorded !== true ||
+      Object.keys(payload).sort().join("\0") !== ["recorded", "schemaVersion"].join("\0")) {
+      throw new FanmarkSearchApiError("invalid_response");
+    }
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export async function recordFanmarkSearch(
+  inputEmojiIds: string[],
+  options: Parameters<typeof recordFanmarkSearchInWorker>[1] & {
+    backend?: string;
+    fallback: () => Promise<unknown>;
+  },
+): Promise<unknown> {
+  if (getFanmarkSearchBackend(options.backend) === "supabase") return options.fallback();
+  await recordFanmarkSearchInWorker(inputEmojiIds, options);
+  return undefined;
 }
 
 export async function loadFanmarkSearchDetails(

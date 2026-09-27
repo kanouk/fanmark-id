@@ -35,6 +35,9 @@ export interface Env {
   FANMARK_LOTTERY_BACKEND?: string;
   FANMARK_TRANSFER_BACKEND?: string;
   FANMARK_SEARCH_BACKEND?: string;
+  FANMARK_SEARCH_LIMITER?: {
+    limit(input: { key: string }): Promise<{ success: boolean }>;
+  };
   FANMARK_DETAILS_BACKEND?: string;
   NOTIFICATIONS_BACKEND?: string;
   NOTIFICATION_MASTER_BACKEND?: string;

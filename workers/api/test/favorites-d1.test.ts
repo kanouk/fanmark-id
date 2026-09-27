@@ -26,6 +26,15 @@ const baseEmojiId = "5bb06a1c-a5d2-4e3f-a31d-58fce75887b3";
 const tonedEmojiId = "d821bc9f-781a-48d5-84e8-b21c54f36627";
 const fanmarkId = "d66106d0-5b1d-4b51-9ba4-7f93e7075d3a";
 const discoveryId = "bc542077-4405-48cd-9ac7-bab2e7dc10d7";
+const searchSyntheticIp = "192.0.2.77";
+let searchLimiterMode: "allowed" | "blocked" = "allowed";
+const searchLimiterKeys: string[] = [];
+const searchLimiter = {
+  async limit({ key }: { key: string }) {
+    searchLimiterKeys.push(key);
+    return { success: searchLimiterMode === "allowed" };
+  },
+};
 
 function splitSqlStatements(sql: string): string[] {
   const statements: string[] = [];
@@ -162,11 +171,90 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
+  searchLimiterMode = "allowed";
+  searchLimiterKeys.length = 0;
   await resetAuthUsers();
   await resetBusinessRows();
 });
 
 describe("Better Auth favorites D1 API", () => {
+  it("records anonymous aggregate searches atomically without storing a user id", async () => {
+    const response = await request("/api/fanmarks/search/record", {
+      method: "POST",
+      headers: { "content-type": "application/json", "cf-connecting-ip": searchSyntheticIp },
+      body: JSON.stringify({ input_emoji_ids: [tonedEmojiId] }),
+    }, {
+      FANMARK_SEARCH_BACKEND: "d1",
+      FANMARK_SEARCH_LIMITER: searchLimiter,
+      CORS_ALLOWED_ORIGINS: appOrigin,
+    });
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(await response.json()).toEqual({ schemaVersion: 1, recorded: true });
+
+    const discovery = await businessDatabase?.prepare(
+      "SELECT emoji_ids AS emojiIds, normalized_emoji_ids AS normalizedIds, search_count AS searchCount FROM fanmark_discoveries WHERE id = ?",
+    ).bind(discoveryId).first<{ emojiIds: string; normalizedIds: string; searchCount: number }>();
+    expect(discovery).toEqual({
+      emojiIds: JSON.stringify([tonedEmojiId]),
+      normalizedIds: JSON.stringify([baseEmojiId]),
+      searchCount: 5,
+    });
+    const events = await businessDatabase?.prepare(
+      "SELECT event_type AS type, user_id AS userId, discovery_id AS discoveryId, normalized_emoji_ids AS normalizedIds FROM fanmark_events ORDER BY id",
+    ).all<{ type: string; userId: string | null; discoveryId: string; normalizedIds: string }>();
+    expect(events?.results).toEqual([{
+      type: "search", userId: null, discoveryId,
+      normalizedIds: JSON.stringify([baseEmojiId]),
+    }]);
+    expect(searchLimiterKeys).toHaveLength(1);
+    expect(searchLimiterKeys[0]).toMatch(/^fanmark-search:v1:[0-9a-f]{64}$/u);
+    expect(searchLimiterKeys[0]).not.toContain(searchSyntheticIp);
+  });
+
+  it("fails closed on rate limiting and malformed search writes", async () => {
+    searchLimiterMode = "blocked";
+    const blocked = await request("/api/fanmarks/search/record", {
+      method: "POST",
+      headers: { "content-type": "application/json", "cf-connecting-ip": searchSyntheticIp },
+      body: JSON.stringify({ input_emoji_ids: [baseEmojiId] }),
+    }, { FANMARK_SEARCH_BACKEND: "d1", FANMARK_SEARCH_LIMITER: searchLimiter, CORS_ALLOWED_ORIGINS: appOrigin });
+    expect(blocked.status).toBe(429);
+    expect(await businessDatabase?.prepare("SELECT search_count FROM fanmark_discoveries WHERE id = ?")
+      .bind(discoveryId).first<{ search_count: number }>()).toMatchObject({ search_count: 4 });
+
+    searchLimiterMode = "allowed";
+    const invalid = await request("/api/fanmarks/search/record", {
+      method: "POST",
+      headers: { "content-type": "application/json", "cf-connecting-ip": searchSyntheticIp },
+      body: JSON.stringify({ input_emoji_ids: ["not-a-uuid"] }),
+    }, { FANMARK_SEARCH_BACKEND: "d1", FANMARK_SEARCH_LIMITER: searchLimiter, CORS_ALLOWED_ORIGINS: appOrigin });
+    expect(invalid.status).toBe(400);
+
+    const missingLimiter = await request("/api/fanmarks/search/record", {
+      method: "POST",
+      headers: { "content-type": "application/json", "cf-connecting-ip": searchSyntheticIp },
+      body: JSON.stringify({ input_emoji_ids: [baseEmojiId] }),
+    }, { FANMARK_SEARCH_BACKEND: "d1", FANMARK_SEARCH_LIMITER: undefined, CORS_ALLOWED_ORIGINS: appOrigin });
+    expect(missingLimiter.status).toBe(503);
+
+    const untrustedOrigin = await request("/api/fanmarks/search/record", {
+      method: "POST",
+      headers: { Origin: "https://attacker.example.test", "content-type": "application/json" },
+      body: JSON.stringify({ input_emoji_ids: [baseEmojiId] }),
+    }, { FANMARK_SEARCH_BACKEND: "d1", FANMARK_SEARCH_LIMITER: searchLimiter, CORS_ALLOWED_ORIGINS: appOrigin });
+    expect(untrustedOrigin.status).toBe(403);
+
+    const wrongMethod = await request("/api/fanmarks/search/record", { method: "GET" }, {
+      FANMARK_SEARCH_BACKEND: "d1", FANMARK_SEARCH_LIMITER: searchLimiter, CORS_ALLOWED_ORIGINS: appOrigin,
+    });
+    expect(wrongMethod.status).toBe(405);
+    expect(wrongMethod.headers.get("allow")).toBe("POST, OPTIONS");
+
+    expect(await businessDatabase?.prepare("SELECT COUNT(*) AS count FROM fanmark_events").first<{ count: number }>())
+      .toMatchObject({ count: 0 });
+  });
+
   it("normalizes skin tones through the active emoji release and makes add idempotent", async () => {
     const cookie = await signIn(ownerEmail);
     const body = JSON.stringify({ input_emoji_ids: [tonedEmojiId], input_display_fanmark: "👋🏽" });

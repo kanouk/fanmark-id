@@ -154,7 +154,7 @@ function codepoints(value: unknown): string[] {
   return parsed;
 }
 
-async function normalizeEmojiIds(master: D1Database, inputIds: string[]): Promise<string[]> {
+export async function normalizeEmojiIdsForActiveMaster(master: D1Database, inputIds: string[]): Promise<string[]> {
   const release = await activeRelease(master);
   const uniqueInputIds = [...new Set(inputIds)];
   const inputRows = await master.prepare(
@@ -434,7 +434,7 @@ export async function handleFavoritesRequest(request: Request, env: Env, resolve
       if (!exactKeys(value, ["input_emoji_ids"])) throw new FavoritesApiError("invalid_request", 400);
       rawIds = parseEmojiIds(value.input_emoji_ids);
     }
-    const normalizedIds = await normalizeEmojiIds(masterDatabase(env), rawIds);
+    const normalizedIds = await normalizeEmojiIdsForActiveMaster(masterDatabase(env), rawIds);
     const changed = await mutateFavorite(db, auth.userId, rawIds, normalizedIds, displayFanmark, add);
     return json(add ? { added: changed } : { removed: changed }, 200, headers);
   } catch (error) {
