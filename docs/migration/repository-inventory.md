@@ -1,6 +1,6 @@
 # fanmark.id repository inventory (offline)
 
-Base commit: `497626c0ca035066843244128f60e6758677de9c`
+Base commit: `2bde8cf64ba8e228c1118afb216d781fe5e0d016`
 
 This report is generated from the checked-out repository only. It makes no network calls, reads no credentials, and does not claim that local generated types, migrations, or SQL snapshots equal the current production state.
 
@@ -316,11 +316,11 @@ Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of t
 | `src/hooks/useProfile.tsx:70` | realtime | `<unresolved>` | `realtime.removeChannel` | `channel` |
 | `src/hooks/useProfile.tsx:120` | table | `user_settings` | `table.update` |  |
 | `src/hooks/useProfile.tsx:145` | rpc | `check_username_availability_secure` | `rpc` |  |
-| `src/hooks/useSubscription.tsx:82` | auth | `auth` | `auth.getSession` |  |
-| `src/hooks/useSubscription.tsx:84` | edge | `check-subscription` | `edge_function_invoke` |  |
-| `src/hooks/useSubscription.tsx:91` | table | `user_subscriptions` | `table.select` |  |
-| `src/hooks/useSubscription.tsx:118` | realtime | `user-subscription-updates` | `realtime.channel` |  |
-| `src/hooks/useSubscription.tsx:126` | realtime | `<unresolved>` | `realtime.removeChannel` | `channel` |
+| `src/hooks/useSubscription.tsx:84` | auth | `auth` | `auth.getSession` |  |
+| `src/hooks/useSubscription.tsx:86` | edge | `check-subscription` | `edge_function_invoke` |  |
+| `src/hooks/useSubscription.tsx:93` | table | `user_subscriptions` | `table.select` |  |
+| `src/hooks/useSubscription.tsx:124` | realtime | `user-subscription-updates` | `realtime.channel` |  |
+| `src/hooks/useSubscription.tsx:132` | realtime | `<unresolved>` | `realtime.removeChannel` | `channel` |
 | `src/hooks/useSystemSettings.tsx:96` | table | `system_settings` | `table.select` |  |
 | `src/hooks/useSystemSettings.tsx:178` | table | `system_settings` | `table.update` |  |
 | `src/hooks/useTransferCode.ts:61` | table | `fanmark_transfer_codes` | `table.select` |  |
@@ -411,7 +411,7 @@ Operation summary:
 - `src/components/layout/AppHeader.tsx:117`: realtime (realtime.channel), expression `` `notifications-preview-${user.id}` ``
 - `src/components/layout/AppHeader.tsx:135`: realtime (realtime.removeChannel), expression `channel`
 - `src/hooks/useProfile.tsx:70`: realtime (realtime.removeChannel), expression `channel`
-- `src/hooks/useSubscription.tsx:126`: realtime (realtime.removeChannel), expression `channel`
+- `src/hooks/useSubscription.tsx:132`: realtime (realtime.removeChannel), expression `channel`
 - `src/pages/Notifications.tsx:83`: realtime (realtime.removeChannel), expression `channel`
 
 ### Unsupported or unknown receiver aliases
