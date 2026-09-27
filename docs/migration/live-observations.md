@@ -1500,3 +1500,21 @@ is classified as a retirement candidate rather than a public Worker endpoint;
 keep the Supabase function unchanged until its external callers are checked in
 the final operational phase. No function call, deployment, production change,
 user-data read, or DNS/domain change occurred during this review.
+
+## Broadcast templates read-only source and staging seed (2026-09-27 JST)
+
+Using a `BEGIN READ ONLY` Supabase query, only the three supported broadcast
+template types were selected from `public.email_templates`. The query returned
+12 active rows (four supported locales per type). Their normalized full-row
+SHA-256 is
+`770459e45e66f1c81ba58ea507b518f00c67004d289f5919d8c16c0f2c279f14`.
+The row payload remained in a permission-restricted temporary artifact and was
+not added to Git.
+
+A guarded script inserted those exact rows into the isolated
+`fanmark-business-staging` D1 database and verified every field on remote
+readback. The 16 existing auth-email templates were unchanged. A second run
+verified the same rows without writing. The query and seed did not read or
+write user rows or draft recipients and did not send email. No production,
+Worker routing, R2 object, or domain/DNS state changed. An authenticated
+broadcast-admin browser canary and delivery-provider migration remain open.

@@ -24,13 +24,29 @@ allowlisted plan, language, and date filters; it never returns user IDs or
 addresses. In current staging, user-owned tables contain synthetic or zero
 rows. This work did not copy or change user data.
 
-The source Supabase CLI currently has no access token in this checkout, so the
-latest live broadcast-template rows could not be read or pinned. The 12 static
-templates in the original Supabase migration are not treated as proof of the
-current source content. Before staging acceptance, read and digest the exact
-allowlisted `broadcast_%` template rows, seed/read them back in D1, and run an
-MFA-authenticated UI canary that creates and removes only its own synthetic
-draft.
+## Current-source broadcast template seed (2026-09-27 JST)
+
+The exact three supported template types were read in a Supabase
+`BEGIN READ ONLY` transaction using
+[`broadcast-email-templates-readonly.sql`](../../scripts/migration/broadcast-email-templates-readonly.sql).
+The source contains 12 active rows: three types across `en`, `id`, `ja`, and
+`ko`. Their normalized full-row SHA-256 is
+`770459e45e66f1c81ba58ea507b518f00c67004d289f5919d8c16c0f2c279f14`.
+
+[`stage-staging-broadcast-email-templates.mjs`](../../scripts/migration/stage-staging-broadcast-email-templates.mjs)
+seeds only those rows into `fanmark-business-staging`. It requires the private
+Supabase result file to have restrictive permissions, verifies the pinned
+source digest and exact staging D1 ID, and fails on a partial or changed
+target. It never overwrites a row. Remote readback matched all fields and the
+same digest; the existing 16 authentication templates remained unchanged. A
+second run was a no-op and passed exact readback. No broadcast drafts, user
+rows, or recipient addresses were read or copied, and no email was sent. The
+template body values remain in the private CLI artifact and staging D1 rather
+than being checked into the repository.
+
+An authenticated browser canary for the broadcast screen and draft create/
+cleanup remains open. The existing API and frontend contract tests are not a
+substitute for that acceptance.
 
 ## Delivery work still open
 
@@ -47,6 +63,6 @@ The isolated Worker suite covers the MFA/admin gate, D1 list projection,
 template allowlist, recipient filters, server-derived creator ID, draft-only
 write/audit batch, invalid Origin, request validation, and disabled dispatch
 routes. The frontend contract tests cover same-origin credentialed requests,
-bounded DTO parsing, count estimation, and draft creation. Live staging
-deployment, current-source template comparison, and browser acceptance have
-not yet been performed.
+bounded DTO parsing, count estimation, and draft creation. The staging Worker
+and current-source template comparison are in place; authenticated browser
+acceptance and all delivery/provider work remain open.

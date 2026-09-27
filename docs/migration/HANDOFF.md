@@ -73,6 +73,28 @@ introspection queries wrote zero rows and reported `changed_db: false`; no
 business row values were read. This narrows the open D1 parity work to the
 remaining 18 gates and behavior verification rather than missing base columns.
 
+Current weighted progress estimate (2026-09-27): about 60% of the full
+migration, or about 70–75% of the prioritized app/infrastructure/master-data
+scope that excludes real user-data import and public domain/DNS cutover. The
+estimate is coarse: the current-source broadcast templates have now been
+seeded and verified in business staging, while the 18 schema gates, integrated
+synthetic rehearsal, remaining authenticated UI canaries, mail delivery, and
+production acceptance are still open. User-data import and domain cutover are
+intentionally deferred final phases, not missing work in the current staging
+slice.
+
+The latest Supabase read-only query selected only the three supported
+broadcast template types and returned 12 active rows across `en`, `id`, `ja`,
+`ko`; the normalized full-row digest is
+`770459e45e66f1c81ba58ea507b518f00c67004d289f5919d8c16c0f2c279f14`. A
+guarded staging-only seed wrote those rows to `fanmark-business-staging` and
+verified exact full-row readback. The 16 authentication templates were
+unchanged; a second run was a no-op. No drafts, user rows, recipient addresses,
+email sends, production routing, or domain settings were touched. The private
+source payload is not checked into Git. The broadcast UI MFA canary and the
+separate send-queue/provider design remain open; see
+`broadcast-email-admin-api.md` and `live-observations.md`.
+
 The earlier Wrangler Keychain failure was resolved. Wrangler now authenticates
 to the intended account; staging deployment
 `cdeb759e-8e52-4b8a-9d63-6451b871c262` is active at 100%, and the isolated PWA
@@ -1410,11 +1432,10 @@ The isolated Worker API tests pass 6/6 and the full Worker chain completed with
 exit 0. The latest root migration-data suite passes 147/147 tests.
 Frontend API contract tests pass 4/4, frontend and Worker typechecks pass,
 staging build passes, selector coverage passes, and targeted ESLint plus
-`git diff --check` pass. The source migration contains twelve static broadcast
-templates, but the live Supabase template rows were not queried by the
-schema-only read above. Do not seed from the old static copy as if it were
-current source truth. Exact source export/digest, staging template seed/readback,
-and a browser canary remain open.
+`git diff --check` pass. The live Supabase template rows were subsequently
+queried in a read-only transaction and exactly seeded/read back in business
+staging; see the current checkpoint above. An authenticated browser canary
+remains open.
 
 This draft-only API slice made no email, user-data, production-routing, remote
 D1, R2-object, or domain/DNS change. A later staging Worker deployment and PR
