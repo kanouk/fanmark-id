@@ -2872,3 +2872,21 @@ workers.dev readiness signal, so the script now waits using the non-writing
 probe before attempting the mutation. This closes only the synthetic pre-write
 fallback subgate; no linked Supabase writer/Cron was stopped and no live user
 rows, production route, or DNS/domain were changed. Issue #37 remains open.
+
+## Rendered subscription foreground-poll canary (2026-09-28 JST)
+
+The opt-in `npm run test:migration:staging-subscription-ui-poll` extends the
+staging subscription projection smoke into a disposable headless Chrome
+session. It seeds a synthetic Better Auth identity, its minimum D1 profile,
+and owner/decoy subscription rows; signs in through the staging API; then loads
+`/profile`, opens the Plan section, and confirms the active subscription is
+rendered. After changing only the synthetic owner row from `active` to
+`canceled`, the visible status changed to inactive on the next 30-second
+foreground poll in 29,440 ms.
+
+The API canary and browser run both completed their cleanup readbacks with zero
+synthetic subscription/profile/Auth rows. The browser uses a temporary Chrome
+profile and is terminated by the script. No Stripe API, email, real user data,
+production resource, or domain/DNS setting was used. This verifies one rendered
+poll transition; it does not close Stripe sandbox acceptance, recurring CPU
+plan fit, or the broader issue #37 integration/recovery gates.

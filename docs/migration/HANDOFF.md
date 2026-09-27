@@ -2313,3 +2313,20 @@ This verifies only the isolated pre-write fallback subgate. The coordinated
 source-writer/Cron freeze, complete final-copy timing, applied Stripe business
 effect, post-write application restore, recurring CPU-plan fit, and other issue
 #37/#38 gates remain open.
+
+## Rendered subscription foreground-poll canary (2026-09-28 JST)
+
+The opt-in `npm run test:migration:staging-subscription-ui-poll` passed on the
+isolated workers.dev staging app. It creates a random synthetic Better Auth
+user, profile, owner subscription, and decoy subscription; authenticates a
+temporary headless Chrome profile; opens `/profile`'s Plan section; and checks
+the rendered active state. After only the synthetic owner row changed to
+`canceled`, the page showed the localized inactive state after the next
+foreground 30-second poll (29,440 ms).
+
+Script cleanup verified zero synthetic subscription, profile, Auth user,
+account, session, verification, factor, role, and assurance rows. No Stripe API
+or email was called, and no real user data, production resource, or domain/DNS
+setting changed. This proves one UI poll transition; it is not worst-case
+latency/load evidence and does not close Stripe sandbox or the remaining #37
+integration/recovery acceptance.
