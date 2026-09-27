@@ -1597,3 +1597,21 @@ read back all user-owned Auth tables as empty. No real user data, email,
 payment, production route, lifecycle Cron execution, or DNS/domain setting was
 used. This is API authorization and data-path evidence; the AdminSettings
 browser form remains unverified.
+
+## Notification header refresh staging deployment (2026-09-27 JST)
+
+The staging build now gives the Worker-backed notification preview in
+`AppHeader` a 30-second React Query refresh interval while the browser tab is
+foregrounded; it pauses in background tabs and refreshes on focus. The
+Supabase-selected branch keeps its existing Realtime subscription. Root
+typecheck and `build:cloudflare-staging` passed, and Wrangler 4.139.0 dry-run
+listed the intended split D1, staging R2, and static-assets bindings.
+
+Worker version `65db3989-2283-41f1-8775-19cb76f13cac` is deployed at 100% to
+the existing workers.dev staging origin. A GET-only readback returned HTTP 200
+for the SPA shell, its referenced JavaScript asset, Better Auth health, and the
+public lifecycle settings endpoint. The remote JS SHA-256 exactly matched
+`dist-staging`; the lifecycle endpoint returned only the baseline
+`grace_period_days=1` with `no-store`. No D1 migration or row write, Auth
+operation, email, Stripe call, R2 object, production route, or DNS/domain
+change occurred.
