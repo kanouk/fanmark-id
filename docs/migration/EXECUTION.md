@@ -2510,3 +2510,10 @@ package and runs its tests and typecheck. The workflow-isolation check passed
 locally. The existing Supabase Webhook still applies subscription and invoice
 events outside the full durable reconciliation path; this validation does not
 complete issue #32, deploy or apply any Supabase migration, or call Stripe.
+
+The GitHub run `36311114955` completed the Worker job, but its Stripe test step
+remained in progress for more than 13 minutes. Running the same 90-test suite
+with Node's default file parallelism had completed locally, while an explicit
+`--test-concurrency=1` run completed 90/90 in about 16 seconds. The package test
+script now serializes test files to reduce resource contention on hosted
+runners without skipping coverage. The follow-up hosted CI result is pending.
