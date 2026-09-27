@@ -145,9 +145,11 @@ coupon definitions are seeded and verified in business staging, and synthetic
 notification, analytics, registration, return/bulk-return/transfer,
 owner-settings/password, and R2 profile/storage canaries pass with reviewed
 cleanup. The authenticated admin user-management browser canary now also
-passed list and detail reads; the mutation controls were not used, and all
-synthetic Auth/business rows were removed and read back at zero. This narrow UI
-proof does not materially change the estimate. A static audit now confirms all
+passed list and detail reads. A separate synthetic TOTP staging API canary
+has now passed plan change, suspension/restoration, and immediate license
+expiry; it removed and read back all synthetic Auth/profile/license/config/
+notification/audit rows. Browser UI mutation review remains open. This narrow
+API proof does not materially change the estimate. A static audit now confirms all
 43 typed staging backend selectors are explicit, referenced by frontend code,
 and avoid Supabase; the three exceptions are the disabled destructive reset
 screen and native D1/R2 adapters. This guard does not substitute for runtime
@@ -1457,9 +1459,14 @@ checks, staging build, and Wrangler deploy passed. No authenticated admin
 session or user-row mutation was used, and this deployment did not change
 production or domain/DNS.
 
-Plan mutation, suspension, password-reset, and immediate-license-expiry
-controls remain disabled in Worker mode. Continue by porting those routes and
-run an authenticated staging canary before calling user management complete.
+An authenticated synthetic staging TOTP canary has since passed the D1
+user-list/detail, plan-mutation, suspension/restoration, and immediate-license-
+expiry routes, including anonymous denial, session revocation, exact D1
+readback, lifecycle/audit/notification effects, repeat safety, and cleanup.
+These API paths are covered in
+[`EXECUTION.md`](EXECUTION.md). Browser UI acceptance remains open. Password-
+reset delivery remains closed until Resend is configured; no email was sent.
+Production and imported-user acceptance remain open.
 
 ## 2026-09-26 local checkpoint: auth email template D1 path
 
@@ -1726,9 +1733,11 @@ with credentials retained in the encrypted/keyring-backed store.
 The isolated `experiments/stripe-receipts` suite now passes 90/90 on Node
 22.6.0, with its TypeScript contract check and the workflow-isolation check
 passing. The Cloudflare migration validation workflow now runs that suite and
-typecheck. A stale bigint assertion was aligned with the exact decimal-text
-import codec; the JavaScript read-precision gate remains open. A transfer-lock
-test now uses a future fixture date. Issue #32 remains open: the current
+typecheck. The suite test files run serially to avoid the hosted-runner stall;
+commit `2348670` passed both migration CI jobs in run `36311897378`. A stale
+bigint assertion was aligned with the exact decimal-text import codec; the
+JavaScript read-precision gate remains open. A transfer-lock test now uses a
+future fixture date. Issue #32 remains open: the current
 Supabase Webhook still handles subscription and invoice events outside the full
 durable reconciliation path. No Stripe API call, Supabase migration, staging
 write, real user data, production routing, or domain/DNS change was made.

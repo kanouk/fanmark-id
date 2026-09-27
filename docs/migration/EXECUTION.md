@@ -2516,4 +2516,40 @@ remained in progress for more than 13 minutes. Running the same 90-test suite
 with Node's default file parallelism had completed locally, while an explicit
 `--test-concurrency=1` run completed 90/90 in about 16 seconds. The package test
 script now serializes test files to reduce resource contention on hosted
-runners without skipping coverage. The follow-up hosted CI result is pending.
+runners without skipping coverage. Follow-up GitHub Actions run
+`36311897378` passed both `Validate Cloudflare Worker API` and
+`Validate Cloudflare staging application` jobs.
+
+## Admin user-management synthetic staging acceptance (2026-09-27 JST)
+
+With Wrangler authenticated to account `bfc2890741f0b3fb236e2d755b6c9adc`,
+ran from `workers/api` under Node 22.6.0:
+
+```sh
+nodenv exec node test/staging-admin-totp-smoke.mjs \
+  --run-live-staging-write \
+  --database=fanmark-auth-staging \
+  --admin-user-management-readback \
+  --admin-user-plan-readback \
+  --admin-user-status-readback
+```
+
+The script verified the staging target and empty Auth user-owned tables, then
+created one synthetic MFA administrator and one synthetic target. The deployed
+Worker passed same-session TOTP authorization, cross-D1 list/detail reads,
+anonymous denial, Enterprise → Max → Free plan changes with exact override
+readback, suspension/restoration with session revocation, and immediate license
+expiry with configuration removal, lifecycle/admin audit, notification enqueue,
+and repeat safety. Cleanup removed both synthetic identities, sessions,
+profiles, license/config rows, notification, and canary audits; final readback
+found all user-owned Auth tables empty and the deleted administrator session
+unusable. A separate remote read-only aggregate query then returned zero
+profiles, Enterprise overrides, fanmarks, licenses, four license config types,
+notifications, and admin-expiry notification events (`changed_db=false`,
+`rows_written=0`). The monotonic MFA generation marker was preserved and may
+have advanced.
+
+This was staging API acceptance only. No real user row, production route,
+Resend/email, Stripe request, or domain/DNS state was touched. Admin browser UI
+review, password-reset delivery, broader issue #34 acceptance, and integrated
+issue #37 recovery drills remain open.
