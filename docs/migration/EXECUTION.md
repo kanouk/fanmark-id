@@ -2646,3 +2646,15 @@ disposable local Miniflare database; no application rows were read from
 Supabase and no remote D1, production, or domain/DNS state changed. The
 catalog, descriptor, generated SQL, and report remain private mode-0600 files
 outside the repository.
+
+## Business staging D1 schema-only parity readback (2026-09-27 12:22 UTC)
+
+Used Wrangler `d1 export --remote --no-data` for `fanmark-business-staging` and
+parsed the private schema export in local SQLite. The schema has 73 tables,
+98 indexes, and 34 triggers. All 40 source tables and 406 columns match the
+fresh catalog's converted SQLite types and nullability; all 66 generated
+source-profile indexes are present. The three extra reviewed columns and 32
+additional operational indexes are staging extensions. Local `integrity_check`
+returned `ok`, and Wrangler's remote migration list showed no pending business
+migrations. No table rows were exported, and no remote D1 schema or data was
+changed.

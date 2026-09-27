@@ -1695,3 +1695,16 @@ current-catalog rehearsal imported four generated rows across all 40 table
 checkpoints, reconciled the synthetic public rows, and rejected a conflicting
 replay. This wrote only to disposable local Miniflare D1; it did not write to
 Cloudflare D1 or Supabase and did not import user data.
+
+## Business staging D1 schema-only readback (2026-09-27 12:22 UTC)
+
+Exported `fanmark-business-staging` through Wrangler with `--remote --no-data`.
+The mode-0600 SQL artifact contains schema only and no `INSERT`, `REPLACE`, or
+`COPY` statements. Parsed locally, it contains 73 tables, 98 indexes, and 34
+triggers. Against the 2026-09-27 source catalog, all 40 source tables and 406
+columns are present with zero converted-type or nullability mismatches. All 66
+indexes emitted by the converter are present; the staging schema also contains
+three reviewed extra columns and 32 operational indexes. Local SQLite parsed
+the export and returned `integrity_check=ok`. Wrangler's remote migration list
+reported no migrations pending. No application rows were exported or written,
+and no remote D1 change occurred.

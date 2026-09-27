@@ -114,6 +114,13 @@ introspection queries wrote zero rows and reported `changed_db: false`; no
 business row values were read. This narrows the open D1 parity work to the
 remaining 18 gates and behavior verification rather than missing base columns.
 
+A fresh Wrangler `--no-data` export and local comparison at 2026-09-27 12:22
+UTC reconfirmed the target profile: 73 staging tables, 98 indexes, and 34
+triggers; all 40 source tables and 406 columns have matching converted types
+and nullability. All 66 generated source indexes are present, along with the
+three reviewed extra columns and 32 operational indexes. Wrangler reports no
+business migrations pending. No application rows were exported or written.
+
 The local D1 importer now preserves signed int64 values as canonical decimal
 text, binds them with `CAST(? AS INTEGER)`, and independently verifies exact
 text readback plus SQLite integer storage. The Miniflare fixture imports both
