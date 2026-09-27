@@ -28,8 +28,10 @@ remains open, so retrying after an uncertain provider response reuses the same
 request identity.
 
 The test-send code has only been checked with an injected provider mock. The
-staging selector, allowlisted recipient, Resend key, and sender are not
-configured, and no email was sent. Before enabling it, configure one controlled
+Worker route has been deployed with its selector off; the frontend selector,
+allowlisted recipient, Resend key, and sender are not configured, and no email
+was sent. Read-only smoke returned 401/no-store for the unauthenticated draft
+list and test-send request. Before enabling it, configure one controlled
 recipient and run an authenticated staging canary. Bulk delivery still needs a
 separate queue/retry design, recipient snapshot semantics, opt-out and bounce
 handling, and delivery-state reconciliation. The draft write and its minimized

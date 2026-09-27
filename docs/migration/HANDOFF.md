@@ -1497,14 +1497,18 @@ test-send selector defaults off. The open dialog preserves its idempotency key
 for a retry after an uncertain provider response.
 
 The Resend adapter was exercised only with injected fetch/provider mocks. The
-staging test-send selector and provider settings are unset, the route has not
-been deployed or browser-accepted, and no email was sent. This change does not
-touch user rows, production routes, R2 objects, or domain/DNS. The existing
-unrelated `supabase/.temp/cli-latest` modification remains outside the commit.
+Worker and SPA were deployed to `fanmark-app-staging`, version
+`0ef26792-edb2-4d66-9b94-7a208d4d7f4a`, with the test-send selectors off; the
+fixed recipient and Resend key/from are unset, and no email was sent. Read-only
+smoke returned SPA 200/noindex, Better Auth health 200/no-store, and 401/no-store
+for both unauthenticated broadcast listing and test-send POST. Authenticated
+browser acceptance remains open. This change does not touch user rows,
+production routes, R2 objects, or domain/DNS. The unrelated
+`supabase/.temp/cli-latest` modification remains outside the commit.
 
 Validation on this worktree: broadcast Worker tests 10/10; the complete Worker
 test chain exited 0; frontend broadcast API tests 5/5; frontend and Worker
 typechecks, targeted ESLint, Cloudflare staging build, app-staging Wrangler
 dry-run, and `git diff --check` passed. The staging build does not set the
-test-send frontend selector, and the dry-run does not include a test-send
-Worker selector.
+test-send frontend selector, and the deployed Worker config omits the
+test-send selector. Wrangler's staging secret list contains no Resend API key.
