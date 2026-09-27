@@ -2340,3 +2340,29 @@ event; the exact rows were removed and reread as zero. The event autoincrement
 sequence advanced and remains advanced. This is staging-path proof for new
 anonymous search activity only. Historical searches and attribution remain in
 the deferred user-data stage; issue #37 and integration acceptance stay open.
+
+## Broadcast send-control browser review (2026-09-28 JST)
+
+The guarded `npm run test:migration:staging-broadcast-email-ui` passed on the
+deployed workers.dev staging app. A synthetic MFA administrator opened the
+broadcast tab in a temporary headless Chrome profile; the exact synthetic draft
+appeared, both test-send and send-start controls were visibly disabled, and the
+Cloudflare-mode notice explained that state. No send control was clicked.
+Selector-disabled API checks and the synthetic paused-delivery projection also
+passed. Cleanup and independent readback confirmed zero synthetic Auth rows,
+profiles, drafts, audits, delivery runs, or recipients. No email/provider call,
+real user data, production route, or domain/DNS setting was touched. This closes
+the browser-review gap for disabled controls, not provider-backed delivery or
+the full #37 integration/recovery rehearsal.
+
+## Fresh schema descriptor replay (2026-09-28 JST)
+
+A separate private linked-project query completed at
+`2026-09-27T20:56:46.804464Z` and read schema catalogs only. The catalog retained
+40 tables and the same counts recorded in `schema-conversion.md`. Converter v8
+reported 14 unresolved gates after applying the value-free credential
+descriptor. The synthetic 40-table local D1 replay passed with 10 synthetic
+rows, two transformed credentials, one deferred inactive credential, and all
+checkpoints. `public_rows_reconciled` is the limited result; deployability and
+full migration reconciliation remain false. All temporary files were removed.
+No source rows or remote D1/R2 were touched.

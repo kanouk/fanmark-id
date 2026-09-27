@@ -47,7 +47,8 @@ function requireExplicitStagingConsent() {
   const adminUserStatusReadback = args.has("--admin-user-status-readback");
   const lifecycleRunReadback = args.has("--lifecycle-run-readback");
   const waitlistAdminReadback = args.has("--waitlist-admin-readback");
-  const broadcastEmailReadback = args.has("--broadcast-email-readback");
+  const broadcastEmailBrowser = args.has("--broadcast-email-browser");
+  const broadcastEmailReadback = args.has("--broadcast-email-readback") || broadcastEmailBrowser;
   const systemSettingsReadback = args.has("--system-settings-readback");
   const lifecycleSettingsReadback = args.has("--lifecycle-settings-readback");
   const notificationManualEvent = args.has("--notification-manual-event");
@@ -66,6 +67,7 @@ function requireExplicitStagingConsent() {
     systemSettingsReadback,
     lifecycleSettingsReadback,
     notificationManualEvent,
+    broadcastEmailBrowser,
   ].some(Boolean);
   if (!args.has("--run-live-staging-write") || !args.has(`--database=${expectedDatabase}`) ||
       !hasExplicitSmokeAction) {
@@ -88,6 +90,7 @@ function requireExplicitStagingConsent() {
     systemSettingsReadback,
     lifecycleSettingsReadback,
     notificationManualEvent,
+    broadcastEmailBrowser,
   };
 }
 
@@ -1921,7 +1924,246 @@ async function exerciseWaitlistAdmin(cookie, userId) {
   assert.equal(Number(auditRows[0]?.count), 0, "synthetic waitlist audit remained in business D1");
 }
 
-async function exerciseBroadcastEmailAdmin(cookie, userId, targetUserId, targetUsername) {
+function cdpConnection(webSocketUrl) {
+  const socket = new WebSocket(webSocketUrl);
+  const pending = new Map();
+  let nextId = 0;
+  const opened = new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error("browser_cdp_connect_timeout")), 15_000);
+    socket.addEventListener("open", () => {
+      clearTimeout(timeout);
+      resolve();
+    }, { once: true });
+    socket.addEventListener("error", () => {
+      clearTimeout(timeout);
+      reject(new Error("browser_cdp_connect_failed"));
+    }, { once: true });
+  });
+  socket.addEventListener("message", (event) => {
+    let message;
+    try {
+      message = JSON.parse(String(event.data));
+    } catch {
+      return;
+    }
+    if (!Number.isInteger(message.id)) return;
+    const operation = pending.get(message.id);
+    if (!operation) return;
+    pending.delete(message.id);
+    clearTimeout(operation.timeout);
+    if (message.error) operation.reject(new Error("browser_cdp_command_failed"));
+    else operation.resolve(message.result ?? {});
+  });
+  socket.addEventListener("close", () => {
+    for (const operation of pending.values()) {
+      clearTimeout(operation.timeout);
+      operation.reject(new Error("browser_cdp_closed"));
+    }
+    pending.clear();
+  });
+
+  return {
+    opened,
+    send(method, params = {}) {
+      const id = ++nextId;
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          pending.delete(id);
+          reject(new Error("browser_cdp_timeout"));
+        }, 15_000);
+        pending.set(id, { resolve, reject, timeout });
+        socket.send(JSON.stringify({ id, method, params }));
+      });
+    },
+    close() {
+      if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) socket.close();
+    },
+  };
+}
+
+async function reviewBroadcastControlsInBrowser(cookie, subject) {
+  const chromeCandidates = [
+    process.env.FANMARK_STAGING_CHROME,
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/usr/bin/google-chrome",
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+  ].filter(Boolean);
+  const chromePath = chromeCandidates.find((candidate) => existsSync(candidate));
+  assert.ok(chromePath, "headless Chrome is required for the authenticated browser review");
+
+  const profileDirectory = await mkdtemp(path.join(os.tmpdir(), "fanmark-broadcast-ui-"));
+  const chrome = spawn(chromePath, [
+    "--headless=new", "--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu",
+    "--disable-background-networking", "--disable-component-update", "--disable-default-apps",
+    "--metrics-recording-only", "--no-first-run", "--no-default-browser-check",
+    `--user-data-dir=${profileDirectory}`, "--remote-debugging-port=0", "about:blank",
+  ], { stdio: "ignore" });
+  let cdp;
+  let chromeFailed = false;
+  let chromeExit;
+  const exited = new Promise((resolve) => { chromeExit = resolve; });
+  chrome.once("exit", chromeExit);
+  chrome.once("error", () => {
+    chromeFailed = true;
+    chromeExit();
+  });
+  const chromeRunning = () => !chromeFailed && chrome.exitCode === null && chrome.signalCode === null;
+
+  try {
+    const activePortPath = path.join(profileDirectory, "DevToolsActivePort");
+    const startupDeadline = Date.now() + 15_000;
+    let port;
+    while (Date.now() < startupDeadline) {
+      if (!chromeRunning()) throw new Error("headless_chrome_exited");
+      try {
+        const [value] = (await readFile(activePortPath, "utf8")).split(/\r?\n/u);
+        if (/^\d+$/u.test(value ?? "")) {
+          port = value;
+          break;
+        }
+      } catch {
+        // Chrome creates the remote-debugging endpoint after its profile starts.
+      }
+      await delay(100);
+    }
+    assert.ok(port, "Chrome DevTools did not start");
+    const targetsResponse = await fetch(`http://127.0.0.1:${port}/json/list`, { signal: AbortSignal.timeout(5_000) });
+    assert.equal(targetsResponse.ok, true, "Chrome target list was unavailable");
+    const targets = await targetsResponse.json();
+    const page = targets.find((target) => target.type === "page" && target.webSocketDebuggerUrl);
+    assert.ok(page, "Chrome page target was unavailable");
+    cdp = cdpConnection(page.webSocketDebuggerUrl);
+    await cdp.opened;
+    await cdp.send("Network.enable");
+    await cdp.send("Page.enable");
+    await cdp.send("Emulation.setDeviceMetricsOverride", {
+      width: 1280, height: 900, deviceScaleFactor: 1, mobile: false,
+    });
+    const separator = cookie.indexOf("=");
+    assert.ok(separator > 0, "session cookie was malformed");
+    const cookieResult = await cdp.send("Network.setCookie", {
+      name: cookie.slice(0, separator),
+      value: cookie.slice(separator + 1),
+      url: expectedOrigin,
+      path: "/",
+      secure: true,
+      httpOnly: true,
+      sameSite: "Lax",
+    });
+    assert.equal(cookieResult.success, true, "Chrome rejected the synthetic admin session cookie");
+    await cdp.send("Page.navigate", { url: `${expectedOrigin}/admin` });
+
+    const readPage = async () => {
+      const result = await cdp.send("Runtime.evaluate", {
+        expression: `(() => {
+          const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
+          return { path: location.pathname, bodyText: document.body?.innerText ?? "", hasBroadcastTab: tabs.some((tab) => tab.innerText.trim() === "一括メール") };
+        })()`,
+        returnByValue: true,
+      });
+      return result.result?.value ?? {};
+    };
+    const deadline = Date.now() + 30_000;
+    let pageState = {};
+    while (Date.now() < deadline) {
+      pageState = await readPage();
+      if (pageState.path === "/admin" && pageState.hasBroadcastTab) break;
+      await delay(250);
+    }
+    assert.equal(pageState.path, "/admin", "synthetic admin session did not open the staging admin page");
+    assert.equal(pageState.hasBroadcastTab, true, "broadcast email tab did not render");
+
+    const tabPosition = await cdp.send("Runtime.evaluate", {
+      expression: `(() => {
+        const tab = Array.from(document.querySelectorAll('[role="tab"]')).find((item) => item.innerText.trim() === "一括メール");
+        tab?.scrollIntoView({ block: "center" });
+        if (!tab) return null;
+        const rect = tab.getBoundingClientRect();
+        return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, width: rect.width, height: rect.height };
+      })()`,
+      returnByValue: true,
+    });
+    const position = tabPosition.result?.value;
+    assert.ok(position?.width > 0 && position?.height > 0, "broadcast email tab had no clickable area");
+    await cdp.send("Input.dispatchMouseEvent", {
+      type: "mouseMoved", x: position.x, y: position.y,
+    });
+    await cdp.send("Input.dispatchMouseEvent", {
+      type: "mousePressed", x: position.x, y: position.y, button: "left", clickCount: 1,
+    });
+    await cdp.send("Input.dispatchMouseEvent", {
+      type: "mouseReleased", x: position.x, y: position.y, button: "left", clickCount: 1,
+    });
+    const expectedSubject = JSON.stringify(subject);
+    const detailDeadline = Date.now() + 15_000;
+    let review = {};
+    while (Date.now() < detailDeadline) {
+      const result = await cdp.send("Runtime.evaluate", {
+        expression: `(() => {
+          const subject = ${expectedSubject};
+          const cell = Array.from(document.querySelectorAll('td')).find((element) => element.textContent.trim() === subject);
+          const row = cell?.closest('tr');
+          const testSend = row?.querySelector('button[title="テスト送信"]');
+          const bulkSend = row?.querySelector('button[title="送信開始"]');
+          const bodyText = document.body?.innerText ?? "";
+          const tab = Array.from(document.querySelectorAll('[role="tab"]')).find((item) => item.innerText.trim() === "一括メール");
+          return {
+            path: location.pathname,
+            tabSelected: tab?.getAttribute("data-state") === "active",
+            historyVisible: bodyText.includes("送信履歴"),
+            emptyHistory: bodyText.includes("送信履歴がありません"),
+            loading: Boolean(document.querySelector(".animate-spin")),
+            subjectVisible: Boolean(cell),
+            testSendDisabled: testSend?.disabled ?? null,
+            bulkSendDisabled: bulkSend?.disabled ?? null,
+            workerDisabledWarning: bodyText.includes("Cloudflare mode は各送信操作を既定で無効にしています。"),
+          };
+        })()`,
+        returnByValue: true,
+      });
+      review = result.result?.value ?? {};
+      if (review.subjectVisible && review.testSendDisabled !== null && review.bulkSendDisabled !== null) break;
+      await delay(500);
+    }
+    const apiResult = await cdp.send("Runtime.evaluate", {
+      expression: `(async () => {
+        const response = await fetch("/api/admin/broadcast-emails", { credentials: "include" });
+        let body = {};
+        try { body = await response.json(); } catch {}
+        return {
+          apiStatus: response.status,
+          apiHasSyntheticDraft: Array.isArray(body.broadcasts) && body.broadcasts.some((draft) => draft.subject === ${expectedSubject}),
+        };
+      })()`,
+      awaitPromise: true,
+      returnByValue: true,
+    });
+    review = { ...review, ...(apiResult.result?.value ?? {}) };
+    assert.equal(review.path, "/admin", `unexpected browser route: ${JSON.stringify(review)}`);
+    assert.equal(review.apiStatus, 200, `browser broadcast API did not return 200: ${JSON.stringify(review)}`);
+    assert.equal(review.apiHasSyntheticDraft, true, `browser broadcast API did not return the synthetic draft: ${JSON.stringify(review)}`);
+    assert.equal(review.tabSelected, true, `broadcast email tab was not selected: ${JSON.stringify(review)}`);
+    assert.equal(review.subjectVisible, true, `synthetic draft did not appear in browser history: ${JSON.stringify(review)}`);
+    assert.equal(review.testSendDisabled, true, `test-send control was not visibly disabled: ${JSON.stringify(review)}`);
+    assert.equal(review.bulkSendDisabled, true, `bulk-send control was not visibly disabled: ${JSON.stringify(review)}`);
+    assert.equal(review.workerDisabledWarning, true, `Cloudflare send-disabled notice was not visible: ${JSON.stringify(review)}`);
+  } finally {
+    cdp?.close();
+    if (chromeRunning()) {
+      chrome.kill("SIGTERM");
+      await Promise.race([exited, delay(2_000)]);
+    }
+    if (chromeRunning()) {
+      chrome.kill("SIGKILL");
+      await Promise.race([exited, delay(2_000)]);
+    }
+    await rm(profileDirectory, { recursive: true, force: true });
+  }
+  console.log("Authenticated staging browser review found the synthetic draft; both test-send and bulk-send controls were visibly disabled. No send control was clicked.");
+}
+
+async function exerciseBroadcastEmailAdmin(cookie, userId, targetUserId, targetUsername, { browserReview = false } = {}) {
   const route = "/api/admin/broadcast-emails";
   const username = `codex-broadcast-admin-${randomBytes(6).toString("hex")}`;
   const subject = `Synthetic staging broadcast ${randomUUID()}`;
@@ -2002,6 +2244,8 @@ async function exerciseBroadcastEmailAdmin(cookie, userId, targetUserId, targetU
     assert.equal(exactDrafts.length, 1);
     assert.equal(exactDrafts[0].subject, subject);
     assert.equal(exactDrafts[0].status, "draft");
+
+    if (browserReview) await reviewBroadcastControlsInBrowser(cookie, subject);
 
     const disabledTestSend = await request(`${route}/test-send`, {
       method: "POST",
@@ -2188,7 +2432,9 @@ async function main() {
       await exerciseWaitlistAdmin(cookie, userId);
     }
     if (actions.broadcastEmailReadback) {
-      await exerciseBroadcastEmailAdmin(cookie, userId, targetUserId, targetUsername);
+      await exerciseBroadcastEmailAdmin(cookie, userId, targetUserId, targetUsername, {
+        browserReview: actions.broadcastEmailBrowser,
+      });
     }
     if (actions.authEmailTemplateEditRoundtrip) {
       await exerciseAuthEmailTemplatesAdmin(cookie, { editRoundtrip: true, adminUserId: userId });

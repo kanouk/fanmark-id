@@ -2907,3 +2907,29 @@ The D1 `sqlite_sequence` for `fanmark_events` advanced by one after insert and
 delete; it is monotonic bookkeeping and was deliberately not rewound. The
 canary does not import historical searches or user attribution. No user data,
 production route, Stripe/email effect, or domain/DNS setting was touched.
+
+## Fresh descriptor-aware schema rehearsal (2026-09-28 JST)
+
+Fetched a new linked Supabase schema catalog read-only in a separate private
+work directory. Converter v8 retained 14 unresolved gates across nine
+row-conversion groups and five schema/operation groups; a value-free credential
+descriptor made the active credential transform requirement explicit without
+making the catalog deployable. The local synthetic D1 rehearsal passed with 10
+synthetic rows, two transformed active credentials, one deferred inactive
+credential, all 40 checkpoints, and conflict rejection. The report remains
+`public_rows_reconciled`, with deployability and full migration reconciliation
+false. No source rows or remote D1/R2 were touched. Full details are in
+[`schema-conversion.md`](schema-conversion.md).
+
+## Broadcast send-control browser acceptance (2026-09-28 JST)
+
+Added the guarded `npm run test:migration:staging-broadcast-email-ui` command.
+The synthetic MFA admin browser session opened the deployed staging broadcast
+tab, read the exact synthetic draft, and confirmed both test-send and send-start
+buttons were disabled with the Cloudflare-mode warning visible. The browser
+clicked neither button. Existing API canary checks then confirmed both send
+routes remain selector-disabled and the paused-run projection redacts private
+details. All synthetic Auth, profile, draft, audit, delivery-run, and recipient
+rows were cleaned and read back as zero. No provider, real-user, production, or
+domain/DNS effect occurred. Provider-backed acceptance and the broader #37
+integrated recovery rehearsal remain open.

@@ -149,6 +149,24 @@ No real audience snapshot, provider request, email, public route, or domain/DNS
 change occurred. The test-send, bulk-send, and provider selectors remain off;
 the authenticated browser review of the updated send control is still open.
 
+## Updated send-control browser review (2026-09-28 JST)
+
+Added the opt-in `npm run test:migration:staging-broadcast-email-ui` check to
+the guarded staging administrator canary. In a temporary headless Chrome
+profile, a synthetic MFA administrator opened `/admin`, selected 一括メール,
+and saw the exact synthetic draft created by the API canary. The test-send and
+send-start buttons were both disabled and the Cloudflare-mode disabled-send
+notice was visible. The browser did not click either send control; a same-origin
+read confirmed the synthetic draft was returned by the authenticated API.
+
+The canary then completed the selector-disabled API checks and synthetic
+`needs_review` projection. Cleanup removed the synthetic Auth identities,
+profile, draft, audit records, delivery run, and recipient; follow-up remote D1
+readbacks found zero rows in the covered Auth and broadcast tables. No provider
+request, email, real user data, production route, or domain/DNS setting was
+used. This closes the authenticated browser-review gap for disabled controls;
+provider-backed delivery and its operator policy remain open.
+
 ## Delivery work still open
 
 The standard build continues to use the existing Supabase Edge Function for
@@ -181,5 +199,5 @@ admin API passes 10/10, scheduled routing passes 4/4, and both Worker and app
 typechecks pass. Lost acknowledgement after a committed page resumes at its D1
 cursor without duplicates, and retry past Resend's 24-hour idempotency boundary
 pauses without a provider call. Authenticated browser review of the updated
-send control, deployment, queue policy, and provider-backed acceptance remain
-open.
+disabled controls now passes; production release, queue-retention/operator
+policy, and provider-backed acceptance remain open.

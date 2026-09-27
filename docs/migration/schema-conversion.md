@@ -373,3 +373,24 @@ The catalog was held in a mode-0600 temporary file outside Git and removed
 after the rehearsal. No application rows were queried; no remote D1, R2,
 production route, or domain/DNS setting was changed. This refresh verifies the
 current synthetic import path, not source-row parity or production readiness.
+
+## Version 8 descriptor-aware fresh-catalog replay (2026-09-28 JST)
+
+A second read-only linked-project catalog query completed at
+`2026-09-27T20:56:46.804464Z` from a separate private work directory, leaving
+the repository's CLI state untouched. It returned the same 40 tables, 406
+columns, 144 constraints, 139 indexes, 15 enum labels, 58 functions, 36
+non-internal triggers, and 77 RLS policies. Converter v8 still reports 14
+unresolved gates: nine row-conversion groups and five schema/operation groups.
+The value-free credential descriptor now resolves the generic missing-descriptor
+gate into the explicit `credential_transform_import_required` gate; it does not
+make the catalog deployable.
+
+The current-catalog synthetic D1 rehearsal passed with 10 synthetic rows, two
+transformed active credentials, one explicitly deferred inactive credential,
+all 40 table checkpoints, and rejection of conflicting coverage. Its status is
+`public_rows_reconciled`; `deployable` and `fullMigrationReconciled` remain
+false. The mode-0600 catalog, descriptor, generated SQL, and reports were held
+outside Git and removed after the rehearsal. No source application rows or
+remote D1/R2 were written, and no production route or domain/DNS setting was
+changed.
