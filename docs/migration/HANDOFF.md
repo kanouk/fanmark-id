@@ -29,6 +29,16 @@ The current migration order is:
 5. Switch public DNS/hostnames only after data and application reconciliation.
    Registrar transfer is a separate decision and is not required for DNS cutover.
 
+Fresh anonymous HTTP verification on 2026-09-27 confirmed that browser-style
+navigation requests (`Accept: text/html,...`) return the noindex SPA shell with
+HTTP 200 for `/`, `/auth`, `/pwa`, `/plans`, and `/plan`. `/api/auth/ok` returned
+200 with `{ "ok": true }`, and the public `/api/emoji/catalog` page returned
+200 for active release `10ec42c1…`. A generic fetch request with only
+`Accept: */*` returns 404 for nested SPA routes; this is the expected static
+asset fallback boundary, not a browser-navigation failure. This readback did
+not execute client JavaScript or authenticate, and it made no writes or
+user-row reads.
+
 Staging enables the public D1 extension-price reader and Better Auth/MFA-gated D1 reference-master editor together. A complete synthetic TOTP admin Tier C edit/restore canary passed, and a separate one-month extension-price edit/restore canary passed through the deployed API. Tier C is null again; the tier-1 one-month price read back at ¥500, its pre-canary value. Anonymous writes returned 401, stale-version writes returned 409 without changing the active release, and canonical values for all four reference masters matched after each restore, including both Stripe IDs. Only the expected active-release metadata and edited-row updated_at changed. The active pointer is generation 8; the append-only history retains the canary edit/restore activations. An initial Tier canary exposed a test-harness cleanup omission; its exact synthetic rows were removed, the guard was fixed, and the repeat run completed with Auth and business canary rows at zero. The Stripe extension-checkout route remains deliberately disabled and returns 404 because server/webhook/dispatch selectors and Stripe secrets are absent; no payment was attempted. Production/default builds remain on Supabase.
 
 The user says the user base is small and planned maintenance plus individual
