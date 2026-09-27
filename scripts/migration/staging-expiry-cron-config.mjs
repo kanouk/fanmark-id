@@ -1,9 +1,5 @@
 const BASELINE_CRONS = Object.freeze(["* * * * *", "0 0 * * *"]);
-const DISABLED_LIFECYCLE_VARS = Object.freeze([
-  "LICENSE_EXPIRY_BACKEND",
-  "LICENSE_EXPIRY_TARGET_INCARNATION",
-  "LICENSE_EXPIRY_SCHEMA_EXTENSION_DIGEST",
-]);
+const DISABLED_SCHEDULED_LIFECYCLE_SELECTOR = "LICENSE_EXPIRY_BACKEND";
 
 export function isStagingExpiryCronBaseline(config) {
   const crons = config?.triggers?.crons;
@@ -11,5 +7,7 @@ export function isStagingExpiryCronBaseline(config) {
   if (new Set(crons).size !== crons.length) return false;
   if ([...crons].sort().some((cron, index) => cron !== [...BASELINE_CRONS].sort()[index])) return false;
   if (config?.vars?.LICENSE_EXPIRY_CRON !== "0 0 * * *") return false;
-  return DISABLED_LIFECYCLE_VARS.every((name) => config?.vars?.[name] === undefined);
+  // The staging admin's manual lifecycle route has its own selector and
+  // needs a target profile. Only the scheduled runner selector controls Cron.
+  return config?.vars?.[DISABLED_SCHEDULED_LIFECYCLE_SELECTOR] === undefined;
 }

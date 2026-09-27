@@ -17,17 +17,16 @@ test("rejects missing, duplicate, or unexpected Cron triggers", () => {
   assert.equal(isStagingExpiryCronBaseline({ ...config, triggers: { crons: ["* * * * *", "*/5 * * * *"] } }), false);
 });
 
-test("requires lifecycle execution selector and run bindings to remain disabled", () => {
-  for (const name of [
-    "LICENSE_EXPIRY_BACKEND",
-    "LICENSE_EXPIRY_TARGET_INCARNATION",
-    "LICENSE_EXPIRY_SCHEMA_EXTENSION_DIGEST",
-  ]) {
-    assert.equal(isStagingExpiryCronBaseline({
-      ...config,
-      vars: { ...config.vars, [name]: "enabled" },
-    }), false, name);
-  }
+test("keeps the scheduled selector disabled while allowing the independent MFA-protected manual route", () => {
+  assert.equal(config.vars.LIFECYCLE_RUN_BACKEND, "d1");
+  assert.equal(typeof config.vars.LICENSE_EXPIRY_TARGET_INCARNATION, "string");
+  assert.match(config.vars.LICENSE_EXPIRY_SCHEMA_EXTENSION_DIGEST, /^[0-9a-f]{64}$/u);
+  assert.equal(config.vars.LICENSE_EXPIRY_BACKEND, undefined);
+  assert.equal(isStagingExpiryCronBaseline(config), true);
+  assert.equal(isStagingExpiryCronBaseline({
+    ...config,
+    vars: { ...config.vars, LICENSE_EXPIRY_BACKEND: "d1" },
+  }), false);
 });
 
 test("rejects a changed lifecycle schedule even when its handler remains disabled", () => {
