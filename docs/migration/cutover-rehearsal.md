@@ -48,7 +48,7 @@ public report.
 | 1. Prepare | Build and test the Worker/SPA. Apply the reviewed D1 migration chain to an empty disposable rehearsal target. Verify master release pointers and required allowlisted configuration. Keep signup, business mutation, lifecycle, and Stripe dispatch closed until the rehearsal enables them explicitly. | Clean migration ledger; schema and master digests; route/selector inventory; synthetic canary cleanup preflight. |
 | 2. Quiesce old writers | In staging, enable maintenance and stop all old application mutation paths and scheduled business writers. Drain or account for in-flight writes. Keep the old Stripe receiver durably recording receipts while its business dispatcher is paused. Confirm only one receiver/ledger owns each event ID and no event is lost or applied twice. | Anonymous and synthetic old-path writes are rejected; Cron/business writers are stopped; receipt IDs are durable; in-flight count is zero or reconciled. |
 | 3. Final synthetic copy | Capture a catalog-fingerprinted repeatable-read snapshot and a separate Storage inventory. Import the synthetic business snapshot into the disposable D1 target, seed only reviewed masters, and apply the reviewed credential transform to synthetic credentials. | Snapshot verification; row/key/hash and FK reconciliation; sequence state; Storage object hash/readback; no unresolved import acknowledgement. |
-| 4. Resume new writer | Enable only the staging Worker selectors. Enable the single chosen Stripe dispatcher after receipt-ledger handoff. Exercise registration, owner updates, return/transfer/lottery, notification processing, R2 upload/delete, and one duplicate/replayed synthetic event. | Synthetic end-to-end results; exact event-once behavior; D1/R2 readback; old write paths remain closed; cleanup leaves only documented master and anti-replay state. |
+| 4. Resume new writer | Enable only the staging Worker selectors. Enable the single chosen Stripe dispatcher after receipt-ledger handoff. Exercise registration, owner updates, return/transfer/lottery, notification processing, R2 upload/delete, one duplicate/replayed synthetic event, and the PWA shell while offline. | Synthetic end-to-end results; exact event-once behavior; D1/R2 readback; offline navigation serves only the static shell while API requests remain uncached; old write paths remain closed; cleanup leaves only documented master and anti-replay state. |
 | 5. Recover | Run two explicit failure drills: fail before the first Cloudflare business write and fail after one acknowledged Cloudflare write. Prove the pre-write path can resume Supabase, and prove the post-write path stays on Cloudflare under maintenance and restores/reconciles from its verified backup. | Timestamped recovery record, measured interruption for each drill, restored digests, and exact synthetic row/ledger reconciliation. |
 
 Measure the user-visible interruption from the first old-path rejection through
@@ -88,6 +88,11 @@ restore across processes; private staging R2 encrypted-object round-trip;
 staging master edit/restore; and current-catalog importer rehearsal over all
 40 source tables. Local migration-data, Worker, typecheck, staging-build, and
 Wrangler dry-run suites are recorded in [HANDOFF.md](HANDOFF.md).
+
+The staging PWA shell now has an anonymous browser offline check: its service
+worker controls `/pwa`, serves the shell from static precache, and does not
+cache API responses. The offline catalog request fails with a retry screen.
+Installation and service-worker update transitions remain unverified.
 
 Not verified: a coordinated old-writer freeze with Stripe receipt continuity,
 a timed full final-copy window, both recovery drills, resolved schema gates,

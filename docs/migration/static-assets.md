@@ -87,6 +87,38 @@ Workers asset router and `run_worker_first` behavior; the Vitest entrypoint
 test alone would bypass that outer router. It does not contact a remote
 account or Supabase.
 
+## Staging PWA and offline shell check (2026-09-27)
+
+A fresh, isolated headless Chromium profile opened
+`https://fanmark-app-staging.fanmark-id.workers.dev/pwa`. The route completed
+with the app title, referenced `/manifest.webmanifest`, and loaded `/sw.js`.
+The manifest returned 200 as `application/manifest+json`, with
+`start_url: /pwa`, `display: standalone`, and two icons. The service worker
+controlled the page. Workbox held one precache containing the HTML shell,
+hashed JS/CSS, and static images/fonts; it contained no API responses.
+
+With the browser network disabled, reloading `/pwa` returned the application
+shell from precache. The app then showed its Japanese catalog-load error and
+retry action, while `/api/auth/ok` failed with a network `TypeError`. This
+confirms offline shell availability and the intended no-API-cache boundary; it
+does not establish offline catalog/search functionality. The browser profile
+was anonymous and temporary, and was removed after the check.
+
+This did not exercise the native install prompt, a real installed standalone
+launch, or an update from one deployed service-worker version to another.
+
+The staging manifest's `/pwa-192x192.png` and `/pwa-512x512.png` entries were
+then checked directly and both returned 404. Matching icons were derived from
+the existing `public/favicon.png`, included in the standard and staging builds,
+and verified through local asset tests and the Wrangler HTTP router. After
+deploying Worker version `cdeb759e-8e52-4b8a-9d63-6451b871c262` (100% traffic),
+live readback returned 200 for the manifest, service worker, and both PNGs;
+the images have the declared 192x192 and 512x512 dimensions and
+`image/png` content type. Browser-style navigation requests to `/pwa`, `/auth`,
+and `/plans` return the noindex SPA shell. This only verifies static routing;
+it does not prove that the client-side protected route redirects correctly or
+that auth succeeds.
+
 ## Remaining parity gates
 
 The Vite build and local Workers binding do not establish production parity.
@@ -99,8 +131,9 @@ explicit decision and observed verification:
   no admin hostname, wildcard route, or account setting is inferred here.
 - Supabase Auth callback, cookie, redirect, and session behavior at the chosen
   origin.
-- Custom-domain, cache, security-header, service-worker, and PWA update
-  behavior at the actual staging hostname.
+- Native install prompt/standalone launch, service-worker update transitions,
+  custom-domain behavior, caching headers, and security headers at the staging
+  hostname.
 - Any public routes or redirects outside the routes inspected in the current
   Vite application.
 

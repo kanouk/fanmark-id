@@ -172,6 +172,25 @@ try {
   assert.equal(favicon.status, 200);
   assert.match(favicon.headers.get("content-type") ?? "", /image\/(?:x-icon|vnd\.microsoft\.icon)/i);
 
+  const manifestResponse = await fetchBounded(`${baseUrl}/manifest.webmanifest`, undefined, ASSERTION_TIMEOUT_MS);
+  assert.equal(manifestResponse.status, 200);
+  assert.match(manifestResponse.headers.get("content-type") ?? "", /application\/manifest\+json/i);
+  const manifest = await manifestResponse.json();
+  assert.equal(manifest.start_url, "/pwa");
+  assert.equal(manifest.display, "standalone");
+  for (const [size, dimension] of [["192x192", 192], ["512x512", 512]]) {
+    const icon = manifest.icons.find((entry) => entry.sizes.split(/\s+/).includes(size));
+    assert.ok(icon, `manifest must provide a ${size} PWA icon`);
+    assert.ok(icon.purpose.split(/\s+/).includes("any"));
+    assert.ok(icon.purpose.split(/\s+/).includes("maskable"));
+    const response = await fetchBounded(new URL(icon.src, baseUrl).href, undefined, ASSERTION_TIMEOUT_MS);
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("content-type") ?? "", /image\/png/i);
+    const bytes = Buffer.from(await response.arrayBuffer());
+    assert.equal(bytes.readUInt32BE(16), dimension);
+    assert.equal(bytes.readUInt32BE(20), dimension);
+  }
+
   for (const path of ["/api", "/api?x=1", "/api/unknown", "/api/auth/session"]) {
     await assertJsonApi404(baseUrl, path);
   }

@@ -96,26 +96,48 @@ used. The harness now checks the pinned auth-template content digest while
 allowing the expected `updated_at` advance from its edit/restore canary, and
 deletes the exact synthetic notifications before their source events.
 
-Read-only browser QA on the deployed Worker rendered the public home, `/auth`,
-and the PWA search screen at `/pwa`; the manifest declares `/pwa` as its
-standalone start URL. A direct `/plans` visit still showed the generic
-missing-profile page. The embedded browser's auth state was not independently
-isolated, so this is not proof of the anonymous live result. The local source
-wraps `/plans` and its `/plan` alias with `ProtectedRoute`. I verified both
-routes in a separate Cloudflare-staging-mode browser preview using only local
-synthetic responses (`maintenance_mode=false`, Better Auth session `null`):
-each redirected to `/auth`. This does not prove the deployed Worker contains
-that fix. The public staging asset remains the earlier hash
-`bf8ec6a3534ca8f83f6f43a0fbef12bc66dfc22e83e68c4a26a95d5e80aff953`; its
-current `/plans` behavior still needs verification after deployment.
+Read-only browser QA before the current deployment rendered the public home,
+`/auth`, and PWA search screen at `/pwa`; a direct `/plans` visit showed the
+generic missing-profile page. That browser's auth state was not independently
+isolated, so it did not prove the anonymous result. The local source wraps
+`/plans` and `/plan` with `ProtectedRoute`; a separate local staging-mode
+preview with synthetic `maintenance_mode=false` and Better Auth session `null`
+redirected both to `/auth`. Deployment `cdeb759e-8e52-4b8a-9d63-6451b871c262`
+now contains the current source bundle. Live browser-style requests return the
+noindex SPA shell for `/plans`, `/plan`, `/auth`, and `/pwa`; executing the
+current deployed client-side guard in an isolated browser remains to be done.
 
-The staging build, typecheck, lint, and Wrangler dry-run pass. Deployment is
-currently unavailable because Wrangler cannot read the macOS Keychain
-(exit 51). OAuth consent opened Chrome under the separate
-`fragrance.radio@gmail.com` Cloudflare account rather than the intended
-`fanmark.id@gmail.com` account; that consent was not submitted. No deployment
-occurred. PWA installation/offline behavior and a clean, independently isolated
-anonymous session also remain unverified.
+The earlier Wrangler Keychain failure was resolved. Current `wrangler whoami`
+reports `fanmark.id@gmail.com` and the intended account ID. The lockfile-pinned
+Wrangler dry-run read only the staging Worker configuration and `dist-staging`
+assets. Deployment `cdeb759e-8e52-4b8a-9d63-6451b871c262` is now active at
+100% on `fanmark-app-staging`; it uploaded the new PWA icons and built app
+assets. D1 and R2 bindings still point to the staging resources, and no D1
+migration, user-data import, or R2 object import was run by this deployment.
+
+A fresh anonymous headless Chromium profile previously verified service-worker
+control and offline `/pwa` shell from the static precache. Offline catalog/API
+requests remained unavailable, as expected; this does not establish offline
+catalog/search support. The deployed manifest's two declared install icons had
+returned 404. Derived 192px and 512px icons from the existing repository
+favicon are now in both builds; local Wrangler HTTP tests verify dimensions,
+manifest purpose, and precache inclusion. Live staging readback now returns
+200 for both icons with PNG MIME type and correct dimensions, and for the
+manifest and service worker. Browser-navigation requests to `/pwa`, `/auth`,
+and `/plans` return the noindex SPA shell. This confirms the shell routing, not
+client-side auth/ProtectedRoute behavior. Native install/standalone launch,
+service-worker update behavior, and authenticated/anonymous protected-route
+acceptance remain unverified.
+
+Read-only master-D1 verification on 2026-09-27 used the staging config and the
+remote `fanmark-emoji-master-staging` database. Wrangler reported no pending
+migrations. The active emoji catalog API returned 200 with 3,944 records and
+release `10ec42c1…`; the reference-master APIs all returned 200 on release
+`ba598c61…` (4 tiers, 4 languages, 5 reserved patterns, 16 extension-price
+rows). Direct pointer and row-count queries reported `changed_db: false` and
+zero rows written. This verifies the Cloudflare staging master projections
+and Worker routes; Supabase-to-D1 source parity remains unverified because the
+Supabase CLI still needs its own login and a fresh source snapshot.
 
 On 2026-09-27, the staging build added `POST /api/me/account/delete`, selected
 only by `VITE_ACCOUNT_DELETION_BACKEND=worker` and
@@ -1134,13 +1156,13 @@ false. Miniflare D1 rejects the extra `PRAGMA integrity_check` diagnostic with
 readback and the supported foreign-key check. No real source rows or remote D1
 were used.
 
-The latest observed workers.dev deployment is version
-`7a2a780d-3fed-476b-a84e-905fc6d29aad` at 100%. Read-only migration checks show
-no pending migrations on business, Auth, or master D1. The current local
-staging build's HTML-referenced JavaScript and CSS match the deployed assets
-byte-for-byte. Anonymous session/profile/admin guards, public lifecycle
-settings, emoji catalog, and missing R2-object responses returned the expected
-status codes.
+At the 2026-09-26 check, the workers.dev deployment was version
+`7a2a780d-3fed-476b-a84e-905fc6d29aad` at 100%. At that checkpoint,
+read-only migration checks showed no pending migrations on business, Auth, or
+master D1. The local staging build's HTML-referenced JavaScript and CSS matched
+the deployed assets byte-for-byte. Anonymous session/profile/admin guards,
+public lifecycle settings, emoji catalog, and missing R2-object responses
+returned the expected status codes.
 
 Live synthetic registration rehearsal passed on that staging app: tier-4
 registration, five-emoji limit, duplicate/anonymous denial, lottery apply,

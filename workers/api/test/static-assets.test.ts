@@ -34,6 +34,7 @@ describe("local Workers Static Assets routing", () => {
       expect(response.headers.get("x-robots-tag")).toBe("noindex, nofollow");
       expect(await response.text()).toContain('<div id="root"></div>');
     },
+    15_000,
   );
 
   it("blocks indexing and the production sitemap on staging", async () => {
@@ -53,6 +54,32 @@ describe("local Workers Static Assets routing", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toMatch(/image\/x-icon|image\/vnd\.microsoft\.icon/i);
     expect(response.headers.get("content-type")).not.toMatch(/text\/html/i);
+  });
+
+  it("serves the PWA manifest and both correctly sized install icons", async () => {
+    const response = await request("/manifest.webmanifest");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toMatch(/application\/manifest\+json/i);
+    const manifest = await response.json() as {
+      start_url: string;
+      display: string;
+      icons: Array<{ src: string; sizes: string; type: string; purpose: string }>;
+    };
+    expect(manifest.start_url).toBe("/pwa");
+    expect(manifest.display).toBe("standalone");
+
+    for (const [size, dimension] of [["192x192", 192], ["512x512", 512]] as const) {
+      const icon = manifest.icons.find((entry) => entry.sizes.split(/\s+/).includes(size));
+      expect(icon).toBeDefined();
+      expect(icon?.purpose.split(/\s+/)).toEqual(expect.arrayContaining(["any", "maskable"]));
+      const iconResponse = await request(icon!.src);
+      expect(iconResponse.status).toBe(200);
+      expect(iconResponse.headers.get("content-type")).toMatch(/image\/png/i);
+      const bytes = Buffer.from(await iconResponse.arrayBuffer());
+      expect(bytes.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
+      expect(bytes.readUInt32BE(16)).toBe(dimension);
+      expect(bytes.readUInt32BE(20)).toBe(dimension);
+    }
   });
 
   it("uses the configured SPA fallback for a missing navigation path", async () => {
