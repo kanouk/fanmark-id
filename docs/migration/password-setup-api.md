@@ -13,4 +13,4 @@ npm --prefix workers/api run test:profile-d1
 npm run test:better-auth-client
 ```
 
-These tests do not migrate real user credentials or prove live OAuth provider configuration. Staging deployment and a real-provider acceptance test remain separate gates.
+These tests do not migrate real user credentials or prove live OAuth provider configuration. Staging version `8619222a-dba4-44b4-b085-685c69455c4f` was deployed on 2026-09-27; the unauthenticated setup POST returned `401` with `no-store`, and the `/password-setup` navigation returned `200` with `X-Robots-Tag: noindex, nofollow`. Live OAuth-provider acceptance remains unverified because provider credentials are not configured.
