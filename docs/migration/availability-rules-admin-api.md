@@ -49,5 +49,19 @@ still `NULL`.
 
 The staging D1 also contains the explicitly allowlisted public registration
 setting `max_emoji_characters=5`, alongside `grace_period_days=1`. No other
-`system_settings` row was copied by this slice. User data, production routes,
-Stripe operations, and domain/DNS state are outside its scope.
+`system_settings` row was copied by this slice.
+
+This rule table is not currently an effective registration or availability
+policy. The Supabase `register-fanmark` function selects only rows with
+`is_available=true`, then checks only the returned `isAvailable` field; it
+does not enforce the computed `requiresPayment` or `priceUsd`. With the four
+source rules disabled, the query returns no rules and the helper allows
+registration. The Worker availability repository also does not read this
+table. The 2026-09-27 read-only source check confirmed all four remain
+disabled. The Cloudflare staging feature therefore migrates the protected
+admin editor and configuration state, not runtime pricing/blocking semantics.
+Any decision to add those semantics needs an explicit product rule and a
+separate integration test before routing registration through it.
+
+User data, production routes, Stripe operations, and domain/DNS state are
+outside this slice.
