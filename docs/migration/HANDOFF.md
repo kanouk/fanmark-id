@@ -167,13 +167,15 @@ API proof does not materially change the estimate. A static audit now confirms a
 and avoid Supabase; the three exceptions are the disabled destructive reset
 screen and native D1/R2 adapters. This guard does not substitute for runtime
 acceptance. The manual license-expiry UI now has a Better Auth/MFA-protected
-Worker route that returns aggregate results only. Staging selects the Worker
-client, but its separate server execution selector remains unset, so the route
-fails closed and cannot call the Supabase production function. Version
-`28e7ca3c-f610-47a4-aea9-f876bd8c3f11` is deployed to the noindex staging app;
-the served JS matches the local build byte-for-byte, and an unauthenticated
-POST to the new route returned 401. Wrangler's deployed variable/secret list
-contains no manual lifecycle selector. No authenticated execution was run.
+Worker route that returns aggregate results only. The staging frontend selects
+the Worker client, and the server's independent `LIFECYCLE_RUN_BACKEND=d1`
+selector is active. Its separate scheduled-execution selector,
+`LICENSE_EXPIRY_BACKEND`, remains unset. On Worker version
+`1ae4ffb0-5af5-4b19-8759-f79cc201b45a`, the synthetic TOTP/MFA manual-run
+canary returned aggregate-only zero-candidate results; Cron stayed disabled,
+both empty lifecycle journals were read back and removed, and user-owned Auth
+tables read back empty. The monotonic MFA generation counter was preserved and
+may have advanced. Browser UI mutation review remains open.
 The 18 schema gates, integrated synthetic rehearsal, broader UI acceptance,
 mail delivery, and production acceptance are still open. User-data import and
 domain cutover are intentionally deferred final phases, not missing work in

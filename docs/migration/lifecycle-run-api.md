@@ -26,8 +26,8 @@ Cron execution. For a manual request only, the route passes a cloned Worker
 environment to the lifecycle engine with `LICENSE_EXPIRY_BACKEND=d1`; it does
 not change the live Worker environment or turn on Cron.
 
-The staging frontend selects the Worker route. Staging version
-`4988d9d0-b4ec-44d1-9ccc-00ac501aac36` now has `LIFECYCLE_RUN_BACKEND=d1`, an
+The staging frontend selects the Worker route. Current staging version
+`1ae4ffb0-5af5-4b19-8759-f79cc201b45a` has `LIFECYCLE_RUN_BACKEND=d1`, an
 explicit lifecycle target/schema digest, and a four-page cap. The scheduled
 `LICENSE_EXPIRY_BACKEND` selector remains absent; the daily Cron schedule is
 still configured but its handler exits before opening D1.
@@ -36,12 +36,13 @@ The first deployment of the manual selector returned 400 for an empty POST
 because the edge runtime exposed its zero-byte body as a readable stream. The
 handler now drains only until EOF or the first byte, with a one-second bound;
 non-empty bodies remain rejected. Version `4988d9d0-b4ec-44d1-9ccc-00ac501aac36`
-passed the authenticated synthetic TOTP/MFA canary. The endpoint returned 200
-with aggregate-only zero-candidate results; both completed run journals were
-read back against the configured target and digest, then removed. A separate
-readback found zero profiles, fanmarks, licenses, lifecycle items/journals,
-effect guards, and user-owned Auth rows. No real user data was present or
-changed.
+first passed the authenticated synthetic TOTP/MFA canary. The same canary was
+rerun on current version `1ae4ffb0-5af5-4b19-8759-f79cc201b45a`: the endpoint
+returned 200 with aggregate-only zero-candidate results; both completed run
+journals were read back against the configured target and digest, then removed.
+Cron stayed disabled and a separate readback found zero profiles, fanmarks,
+licenses, lifecycle items/journals, effect guards, and user-owned Auth rows. No
+real user data was present or changed.
 
 ## Validation
 

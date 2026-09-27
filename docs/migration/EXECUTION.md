@@ -2606,3 +2606,25 @@ anonymous admin-session request (401). TOTP enable and verification sampled
 93 ms and 13 ms CPU on the same version. These narrow staging samples do not
 prove recurring or production CPU fit; the Free-plan 10 ms CPU gate remains
 open.
+
+## Reverified manual lifecycle route on the current staging Worker (2026-09-27 JST)
+
+Reconciled a stale handoff statement against the current code and deployed
+configuration. `LIFECYCLE_RUN_BACKEND=d1` enables only the authenticated manual
+route; the route supplies `LICENSE_EXPIRY_BACKEND=d1` to a cloned invocation
+environment. The deployed `LICENSE_EXPIRY_BACKEND` selector remains absent, so
+the configured daily Cron still exits before opening D1.
+
+Ran the guarded `staging-admin-totp-smoke.mjs` with
+`--lifecycle-run-readback` against Worker version
+`1ae4ffb0-5af5-4b19-8759-f79cc201b45a`. Synthetic Better Auth sign-in, first
+TOTP enrollment, session rotation, same-session MFA, and the manual lifecycle
+route passed. It returned aggregate-only zero-candidate results. Both empty
+lifecycle journals were read back against the configured target/digest and
+removed; the synthetic Auth identity was removed, and user-owned Auth tables
+read back empty. The monotonic MFA generation counter was preserved and may
+have advanced.
+
+This corrects the earlier handoff claim that the manual server selector was
+unset. No Supabase schedule, production route, real user data, email, Stripe,
+or domain/DNS state changed.
