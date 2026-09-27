@@ -64,11 +64,20 @@ passed all 40 checkpoints with `public_rows_reconciled`, while
 `fullMigrationReconciled` remains false. Details are in
 `schema-conversion.md` and `d1-import.md`.
 
+A read-only comparison of this catalog's generated target profile with remote
+`fanmark-business-staging` found all 40 source tables and 406 source columns,
+with all converted SQLite types and nullability matching. The staging schema
+has three extra reviewed lifecycle/coupon columns and 32 extra operational
+indexes; all 66 indexes emitted from the source profile are present. The
+introspection queries wrote zero rows and reported `changed_db: false`; no
+business row values were read. This narrows the open D1 parity work to the
+remaining 18 gates and behavior verification rather than missing base columns.
+
 The earlier Wrangler Keychain failure was resolved. Wrangler now authenticates
 to the intended account; staging deployment
 `cdeb759e-8e52-4b8a-9d63-6451b871c262` is active at 100%, and the isolated PWA
-and master-route checks are recorded below. PR #41 received commit `538a293`;
-both required GitHub CI jobs passed. Preserve the unrelated modified
+and master-route checks are recorded below. PR #41 includes the PWA fix and
+refreshed evidence. Preserve the unrelated modified
 `supabase/.temp/cli-latest` file.
 
 ## Prior staging checkpoint (2026-09-27 JST, before PWA icon deployment)

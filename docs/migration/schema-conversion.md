@@ -60,6 +60,15 @@ synthetic source-table checkpoints with `public_rows_reconciled`, but left
 `fullMigrationReconciled: false`. No application rows were queried, no Cloudflare
 D1 was written, and no schema/import readiness is inferred from that rehearsal.
 
+A separate read-only comparison against `fanmark-business-staging` used the
+same fresh catalog. All 40 source tables and all 406 source columns exist in
+business D1; their SQLite types match the current converter profile and all
+source nullability agrees. The target has three additional reviewed staging
+extension columns and 32 additional operational indexes; all 66 indexes
+emitted by the source converter are present. D1 reported zero rows written and
+`changed_db: false`. This does not verify constraints beyond the checked
+metadata, triggers, RLS/function behavior, or any source business rows.
+
 The same private catalog was reprocessed with schema converter version 4 on
 2026-09-25. The source locale is `en_US.UTF-8`, so the three PostgreSQL regex
 CHECKs remain unresolved: the converter's exact ASCII/GLOB equivalents are

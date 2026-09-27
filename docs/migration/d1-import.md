@@ -122,7 +122,7 @@ full-import fixture verifies durable deferral and ACK-unknown resume. The
 catalog still has 18 blocking schema gates. No real Auth, business, Storage,
 or credential rows were read or migrated.
 
-### Current catalog rerun (2026-09-26)
+### Current catalog and staging structure rerun (2026-09-27)
 
 The read-only `schema-readiness.sql` query was run again against the linked
 Supabase project and stored outside the repository with mode `0600`. It read
@@ -140,6 +140,18 @@ result was `public_rows_reconciled`; `deployable` and
 `fullMigrationReconciled` remained false. The source query read no application
 rows, and the rehearsal made no Cloudflare, production, user-data, or domain
 changes.
+
+The same catalog's generated target profile was then compared with the remote
+`fanmark-business-staging` schema using only `sqlite_master` and per-table
+`pragma_table_info` metadata. All 40 source tables and all 406 source columns
+are present. All 406 SQLite target types match the converter's target profile,
+and no source `NOT NULL` definition is weakened or strengthened. Three
+additional columns are the reviewed lifecycle and coupon-extension staging
+extensions. All 66 source-converter indexes are present; 32 additional indexes
+belong to the staging application schema. Every remote query reported
+`changed_db: false` and zero rows written. These are schema-only checks: they do
+not close the 18 constraint, behavior, policy, or row-conversion gates and do
+not establish full migration readiness.
 
 The implementation bounds defaults at 50 rows and 512 KiB of source envelope
 bytes per batch. Source envelope lines have a separate 16 MiB local input cap;
