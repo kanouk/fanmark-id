@@ -121,6 +121,7 @@ export const AdminUserManagement: React.FC = () => {
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [statusAction, setStatusAction] = useState<"suspend" | "restore">("suspend");
   const [statusReason, setStatusReason] = useState("");
+  const statusActionButtonRef = React.useRef<HTMLButtonElement>(null);
 
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [passwordResetReason, setPasswordResetReason] = useState("");
@@ -794,6 +795,7 @@ export const AdminUserManagement: React.FC = () => {
                 プランを変更
               </Button>
               <Button
+                ref={statusActionButtonRef}
                 disabled={!selectedDetail}
                 onClick={() => {
                   if (!selectedDetail) return;
@@ -834,7 +836,7 @@ export const AdminUserManagement: React.FC = () => {
       </Sheet>
 
       <Dialog open={isPlanDialogOpen} onOpenChange={setIsPlanDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="z-[60] sm:max-w-lg" style={{ pointerEvents: "auto" }}>
           <DialogHeader>
             <DialogTitle>プランを変更</DialogTitle>
           </DialogHeader>
@@ -843,7 +845,7 @@ export const AdminUserManagement: React.FC = () => {
               <SelectTrigger>
                 <SelectValue placeholder="プランを選択" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent position="item-aligned" className="z-[70]" style={{ pointerEvents: "auto" }}>
                 <SelectItem value="free">Free</SelectItem>
                 <SelectItem value="creator">Creator</SelectItem>
                 <SelectItem value="max">Max</SelectItem>
@@ -904,7 +906,14 @@ export const AdminUserManagement: React.FC = () => {
       </Dialog>
 
       <AlertDialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent
+          className="z-[60]"
+          style={{ pointerEvents: "auto" }}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            statusActionButtonRef.current?.focus();
+          }}
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>
               {statusAction === "suspend" ? "アカウントを停止します" : "アカウント停止を解除しますか？"}
@@ -937,7 +946,7 @@ export const AdminUserManagement: React.FC = () => {
       </AlertDialog>
 
       <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="z-[60] sm:max-w-lg" style={{ pointerEvents: "auto" }}>
           <DialogHeader>
             <DialogTitle>{workerBackend ? "パスワード再設定メールを送信" : "パスワードリセットリンクを生成"}</DialogTitle>
           </DialogHeader>
@@ -966,7 +975,7 @@ export const AdminUserManagement: React.FC = () => {
       </Dialog>
 
       <AlertDialog open={isExpireDialogOpen} onOpenChange={setIsExpireDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="z-[60]" style={{ pointerEvents: "auto" }}>
           <AlertDialogHeader>
             <AlertDialogTitle>ライセンスを即時失効しますか？</AlertDialogTitle>
             <AlertDialogDescription>

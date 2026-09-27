@@ -42,9 +42,10 @@ function requireExplicitStagingConsent() {
   const referenceMasterTierRoundtrip = args.has("--reference-master-tier-roundtrip");
   const referenceMasterExtensionPriceRoundtrip = args.has("--reference-master-extension-price-roundtrip");
   const authEmailTemplateEditRoundtrip = args.has("--auth-email-template-edit-roundtrip");
-  const adminUserManagementReadback = args.has("--admin-user-management-readback");
-  const adminUserPlanReadback = args.has("--admin-user-plan-readback");
-  const adminUserStatusReadback = args.has("--admin-user-status-readback");
+  const adminUserManagementBrowser = args.has("--admin-user-management-browser");
+  const adminUserManagementReadback = args.has("--admin-user-management-readback") || adminUserManagementBrowser;
+  const adminUserPlanReadback = args.has("--admin-user-plan-readback") || adminUserManagementBrowser;
+  const adminUserStatusReadback = args.has("--admin-user-status-readback") || adminUserManagementBrowser;
   const lifecycleRunReadback = args.has("--lifecycle-run-readback");
   const waitlistAdminReadback = args.has("--waitlist-admin-readback");
   const broadcastEmailBrowser = args.has("--broadcast-email-browser");
@@ -68,6 +69,7 @@ function requireExplicitStagingConsent() {
     lifecycleSettingsReadback,
     notificationManualEvent,
     broadcastEmailBrowser,
+    adminUserManagementBrowser,
   ].some(Boolean);
   if (!args.has("--run-live-staging-write") || !args.has(`--database=${expectedDatabase}`) ||
       !hasExplicitSmokeAction) {
@@ -91,6 +93,7 @@ function requireExplicitStagingConsent() {
     lifecycleSettingsReadback,
     notificationManualEvent,
     broadcastEmailBrowser,
+    adminUserManagementBrowser,
   };
 }
 
@@ -1927,6 +1930,7 @@ async function exerciseWaitlistAdmin(cookie, userId) {
 function cdpConnection(webSocketUrl) {
   const socket = new WebSocket(webSocketUrl);
   const pending = new Map();
+  const listeners = new Map();
   let nextId = 0;
   const opened = new Promise((resolve, reject) => {
     const timeout = setTimeout(() => reject(new Error("browser_cdp_connect_timeout")), 15_000);
@@ -1946,13 +1950,16 @@ function cdpConnection(webSocketUrl) {
     } catch {
       return;
     }
-    if (!Number.isInteger(message.id)) return;
-    const operation = pending.get(message.id);
-    if (!operation) return;
-    pending.delete(message.id);
-    clearTimeout(operation.timeout);
-    if (message.error) operation.reject(new Error("browser_cdp_command_failed"));
-    else operation.resolve(message.result ?? {});
+    if (Number.isInteger(message.id)) {
+      const operation = pending.get(message.id);
+      if (!operation) return;
+      pending.delete(message.id);
+      clearTimeout(operation.timeout);
+      if (message.error) operation.reject(new Error("browser_cdp_command_failed"));
+      else operation.resolve(message.result ?? {});
+      return;
+    }
+    for (const listener of listeners.get(message.method) ?? []) listener(message.params ?? {});
   });
   socket.addEventListener("close", () => {
     for (const operation of pending.values()) {
@@ -1964,6 +1971,12 @@ function cdpConnection(webSocketUrl) {
 
   return {
     opened,
+    on(method, listener) {
+      const entries = listeners.get(method) ?? new Set();
+      entries.add(listener);
+      listeners.set(method, entries);
+      return () => entries.delete(listener);
+    },
     send(method, params = {}) {
       const id = ++nextId;
       return new Promise((resolve, reject) => {
@@ -1982,6 +1995,59 @@ function cdpConnection(webSocketUrl) {
 }
 
 async function reviewBroadcastControlsInBrowser(cookie, subject) {
+  await withStagingAdminBrowser(cookie, "fanmark-broadcast-ui-", async (cdp) => {
+    await clickAdminTab(cdp, "一括メール");
+    const expectedSubject = JSON.stringify(subject);
+    const browserReviewExpression = `(() => {
+      const subject = ${expectedSubject};
+      const cell = Array.from(document.querySelectorAll('td')).find((element) => element.textContent.trim() === subject);
+      const row = cell?.closest('tr');
+      const testSend = row?.querySelector('button[title="テスト送信"]');
+      const bulkSend = row?.querySelector('button[title="送信開始"]');
+      const bodyText = document.body?.innerText ?? "";
+      const tab = Array.from(document.querySelectorAll('[role="tab"]')).find((item) => item.innerText.trim() === "一括メール");
+      return {
+        path: location.pathname,
+        tabSelected: tab?.getAttribute('data-state') === "active",
+        subjectVisible: Boolean(cell),
+        testSendDisabled: testSend?.disabled ?? null,
+        bulkSendDisabled: bulkSend?.disabled ?? null,
+        workerDisabledWarning: bodyText.includes("Cloudflare mode は各送信操作を既定で無効にしています。"),
+      };
+    })()`;
+    const review = await waitForBrowserValue(
+      cdp,
+      browserReviewExpression,
+      (state) => state?.subjectVisible && state.testSendDisabled !== null && state.bulkSendDisabled !== null,
+      "broadcast_draft_not_rendered",
+    );
+    const apiResult = await cdp.send("Runtime.evaluate", {
+      expression: `(async () => {
+        const response = await fetch("/api/admin/broadcast-emails", { credentials: "include" });
+        let body = {};
+        try { body = await response.json(); } catch {}
+        return {
+          apiStatus: response.status,
+          apiHasSyntheticDraft: Array.isArray(body.broadcasts) && body.broadcasts.some((draft) => draft.subject === ${expectedSubject}),
+        };
+      })()`,
+      awaitPromise: true,
+      returnByValue: true,
+    });
+    const result = { ...review, ...(apiResult.result?.value ?? {}) };
+    assert.equal(result.path, "/admin", `unexpected browser route: ${JSON.stringify(result)}`);
+    assert.equal(result.apiStatus, 200, `browser broadcast API did not return 200: ${JSON.stringify(result)}`);
+    assert.equal(result.apiHasSyntheticDraft, true, `browser broadcast API did not return the synthetic draft: ${JSON.stringify(result)}`);
+    assert.equal(result.tabSelected, true, `broadcast email tab was not selected: ${JSON.stringify(result)}`);
+    assert.equal(result.subjectVisible, true, `synthetic draft did not appear in browser history: ${JSON.stringify(result)}`);
+    assert.equal(result.testSendDisabled, true, `test-send control was not visibly disabled: ${JSON.stringify(result)}`);
+    assert.equal(result.bulkSendDisabled, true, `bulk-send control was not visibly disabled: ${JSON.stringify(result)}`);
+    assert.equal(result.workerDisabledWarning, true, `Cloudflare send-disabled notice was not visible: ${JSON.stringify(result)}`);
+  });
+  console.log("Authenticated staging browser review found the synthetic draft; both test-send and bulk-send controls were visibly disabled. No send control was clicked.");
+}
+
+async function withStagingAdminBrowser(cookie, profilePrefix, review) {
   const chromeCandidates = [
     process.env.FANMARK_STAGING_CHROME,
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -1992,7 +2058,7 @@ async function reviewBroadcastControlsInBrowser(cookie, subject) {
   const chromePath = chromeCandidates.find((candidate) => existsSync(candidate));
   assert.ok(chromePath, "headless Chrome is required for the authenticated browser review");
 
-  const profileDirectory = await mkdtemp(path.join(os.tmpdir(), "fanmark-broadcast-ui-"));
+  const profileDirectory = await mkdtemp(path.join(os.tmpdir(), profilePrefix));
   const chrome = spawn(chromePath, [
     "--headless=new", "--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu",
     "--disable-background-networking", "--disable-component-update", "--disable-default-apps",
@@ -2037,6 +2103,14 @@ async function reviewBroadcastControlsInBrowser(cookie, subject) {
     await cdp.opened;
     await cdp.send("Network.enable");
     await cdp.send("Page.enable");
+    cdp.adminApiResponses = [];
+    cdp.on("Network.responseReceived", ({ response }) => {
+      if (!response?.url) return;
+      const url = new URL(response.url);
+      if (/^\/api\/admin\/users\/[^/]+\/plan$/u.test(url.pathname)) {
+        cdp.adminApiResponses.push({ status: response.status, statusText: response.statusText });
+      }
+    });
     await cdp.send("Emulation.setDeviceMetricsOverride", {
       width: 1280, height: 900, deviceScaleFactor: 1, mobile: false,
     });
@@ -2053,101 +2127,20 @@ async function reviewBroadcastControlsInBrowser(cookie, subject) {
     });
     assert.equal(cookieResult.success, true, "Chrome rejected the synthetic admin session cookie");
     await cdp.send("Page.navigate", { url: `${expectedOrigin}/admin` });
-
-    const readPage = async () => {
+    const deadline = Date.now() + 30_000;
+    let state = {};
+    while (Date.now() < deadline) {
       const result = await cdp.send("Runtime.evaluate", {
-        expression: `(() => {
-          const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
-          return { path: location.pathname, bodyText: document.body?.innerText ?? "", hasBroadcastTab: tabs.some((tab) => tab.innerText.trim() === "一括メール") };
-        })()`,
+        expression: `(() => ({ path: location.pathname, hasAdminTabs: document.querySelectorAll('[role="tab"]').length > 0 }))()`,
         returnByValue: true,
       });
-      return result.result?.value ?? {};
-    };
-    const deadline = Date.now() + 30_000;
-    let pageState = {};
-    while (Date.now() < deadline) {
-      pageState = await readPage();
-      if (pageState.path === "/admin" && pageState.hasBroadcastTab) break;
+      state = result.result?.value ?? {};
+      if (state.path === "/admin" && state.hasAdminTabs) break;
       await delay(250);
     }
-    assert.equal(pageState.path, "/admin", "synthetic admin session did not open the staging admin page");
-    assert.equal(pageState.hasBroadcastTab, true, "broadcast email tab did not render");
-
-    const tabPosition = await cdp.send("Runtime.evaluate", {
-      expression: `(() => {
-        const tab = Array.from(document.querySelectorAll('[role="tab"]')).find((item) => item.innerText.trim() === "一括メール");
-        tab?.scrollIntoView({ block: "center" });
-        if (!tab) return null;
-        const rect = tab.getBoundingClientRect();
-        return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, width: rect.width, height: rect.height };
-      })()`,
-      returnByValue: true,
-    });
-    const position = tabPosition.result?.value;
-    assert.ok(position?.width > 0 && position?.height > 0, "broadcast email tab had no clickable area");
-    await cdp.send("Input.dispatchMouseEvent", {
-      type: "mouseMoved", x: position.x, y: position.y,
-    });
-    await cdp.send("Input.dispatchMouseEvent", {
-      type: "mousePressed", x: position.x, y: position.y, button: "left", clickCount: 1,
-    });
-    await cdp.send("Input.dispatchMouseEvent", {
-      type: "mouseReleased", x: position.x, y: position.y, button: "left", clickCount: 1,
-    });
-    const expectedSubject = JSON.stringify(subject);
-    const detailDeadline = Date.now() + 15_000;
-    let review = {};
-    while (Date.now() < detailDeadline) {
-      const result = await cdp.send("Runtime.evaluate", {
-        expression: `(() => {
-          const subject = ${expectedSubject};
-          const cell = Array.from(document.querySelectorAll('td')).find((element) => element.textContent.trim() === subject);
-          const row = cell?.closest('tr');
-          const testSend = row?.querySelector('button[title="テスト送信"]');
-          const bulkSend = row?.querySelector('button[title="送信開始"]');
-          const bodyText = document.body?.innerText ?? "";
-          const tab = Array.from(document.querySelectorAll('[role="tab"]')).find((item) => item.innerText.trim() === "一括メール");
-          return {
-            path: location.pathname,
-            tabSelected: tab?.getAttribute("data-state") === "active",
-            historyVisible: bodyText.includes("送信履歴"),
-            emptyHistory: bodyText.includes("送信履歴がありません"),
-            loading: Boolean(document.querySelector(".animate-spin")),
-            subjectVisible: Boolean(cell),
-            testSendDisabled: testSend?.disabled ?? null,
-            bulkSendDisabled: bulkSend?.disabled ?? null,
-            workerDisabledWarning: bodyText.includes("Cloudflare mode は各送信操作を既定で無効にしています。"),
-          };
-        })()`,
-        returnByValue: true,
-      });
-      review = result.result?.value ?? {};
-      if (review.subjectVisible && review.testSendDisabled !== null && review.bulkSendDisabled !== null) break;
-      await delay(500);
-    }
-    const apiResult = await cdp.send("Runtime.evaluate", {
-      expression: `(async () => {
-        const response = await fetch("/api/admin/broadcast-emails", { credentials: "include" });
-        let body = {};
-        try { body = await response.json(); } catch {}
-        return {
-          apiStatus: response.status,
-          apiHasSyntheticDraft: Array.isArray(body.broadcasts) && body.broadcasts.some((draft) => draft.subject === ${expectedSubject}),
-        };
-      })()`,
-      awaitPromise: true,
-      returnByValue: true,
-    });
-    review = { ...review, ...(apiResult.result?.value ?? {}) };
-    assert.equal(review.path, "/admin", `unexpected browser route: ${JSON.stringify(review)}`);
-    assert.equal(review.apiStatus, 200, `browser broadcast API did not return 200: ${JSON.stringify(review)}`);
-    assert.equal(review.apiHasSyntheticDraft, true, `browser broadcast API did not return the synthetic draft: ${JSON.stringify(review)}`);
-    assert.equal(review.tabSelected, true, `broadcast email tab was not selected: ${JSON.stringify(review)}`);
-    assert.equal(review.subjectVisible, true, `synthetic draft did not appear in browser history: ${JSON.stringify(review)}`);
-    assert.equal(review.testSendDisabled, true, `test-send control was not visibly disabled: ${JSON.stringify(review)}`);
-    assert.equal(review.bulkSendDisabled, true, `bulk-send control was not visibly disabled: ${JSON.stringify(review)}`);
-    assert.equal(review.workerDisabledWarning, true, `Cloudflare send-disabled notice was not visible: ${JSON.stringify(review)}`);
+    assert.equal(state.path, "/admin", "synthetic admin session did not open the staging admin page");
+    assert.equal(state.hasAdminTabs, true, "admin tabs did not render");
+    return await review(cdp);
   } finally {
     cdp?.close();
     if (chromeRunning()) {
@@ -2160,7 +2153,353 @@ async function reviewBroadcastControlsInBrowser(cookie, subject) {
     }
     await rm(profileDirectory, { recursive: true, force: true });
   }
-  console.log("Authenticated staging browser review found the synthetic draft; both test-send and bulk-send controls were visibly disabled. No send control was clicked.");
+}
+
+async function browserValue(cdp, expression) {
+  const result = await cdp.send("Runtime.evaluate", { expression, returnByValue: true });
+  if (result.exceptionDetails) throw new Error("browser_script_evaluation_failed");
+  return result.result?.value ?? null;
+}
+
+async function waitForBrowserValue(cdp, expression, predicate, failureCode, timeoutMs = 15_000) {
+  const deadline = Date.now() + timeoutMs;
+  let value = null;
+  while (Date.now() < deadline) {
+    value = await browserValue(cdp, expression);
+    if (predicate(value)) return value;
+    await delay(250);
+  }
+  throw new Error(`${failureCode}: ${JSON.stringify(value)}`);
+}
+
+async function clickBrowserTarget(cdp, expression, failureCode) {
+  const position = await browserValue(cdp, expression);
+  assert.ok(position?.width > 0 && position?.height > 0, `${failureCode}_not_clickable`);
+  assert.notEqual(position.disabled, true, `${failureCode}_disabled`);
+  assert.notEqual(position.buttonContainsHit, false, `${failureCode}_covered: ${JSON.stringify(position)}`);
+  await cdp.send("Input.dispatchMouseEvent", {
+    type: "mouseMoved", x: position.x, y: position.y,
+  });
+  await cdp.send("Input.dispatchMouseEvent", {
+    type: "mousePressed", x: position.x, y: position.y, button: "left", clickCount: 1,
+  });
+  await cdp.send("Input.dispatchMouseEvent", {
+    type: "mouseReleased", x: position.x, y: position.y, button: "left", clickCount: 1,
+  });
+  return position;
+}
+
+async function dismissStagingToastInBrowser(cdp) {
+  const dismissToastExpression = `(() => {
+    const button = document.querySelector('button[toast-close]');
+    if (!button) return false;
+    button.click();
+    return true;
+  })()`;
+  if (!await browserValue(cdp, `Boolean(document.querySelector('li[role="status"][data-state="open"]'))`)) return;
+  assert.equal(await browserValue(cdp, dismissToastExpression), true, "staging status toast could not be dismissed");
+  await waitForBrowserValue(cdp, `Boolean(document.querySelector('li[role="status"][data-state="open"]'))`, (visible) => visible === false, "staging_toast_did_not_close");
+}
+
+async function clickAdminTab(cdp, label) {
+  const labelLiteral = JSON.stringify(label);
+  await clickBrowserTarget(cdp, `(() => {
+    const tab = Array.from(document.querySelectorAll('[role="tab"]')).find((item) => item.innerText.trim() === ${labelLiteral});
+    tab?.scrollIntoView({ block: "center" });
+    if (!tab) return null;
+    const rect = tab.getBoundingClientRect();
+    return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, width: rect.width, height: rect.height };
+  })()`, "admin_tab");
+  await waitForBrowserValue(cdp, `(() => Array.from(document.querySelectorAll('[role="tab"]')).some((tab) => tab.innerText.trim() === ${labelLiteral} && tab.getAttribute("data-state") === "active"))()`, Boolean, "admin_tab_not_selected");
+}
+
+async function reviewAdminUserManagementMutationsInBrowser(cookie, targetEmail, targetUserId) {
+  const emailLiteral = JSON.stringify(targetEmail);
+  const detailStateExpression = `(() => {
+    const detail = Array.from(document.querySelectorAll('[role="dialog"]')).find((dialog) =>
+      Array.from(dialog.querySelectorAll('h2,[role="heading"]')).some((heading) => heading.textContent.trim() === "ユーザー詳細"));
+    if (!detail) return { open: false };
+    const valueFor = (label) => {
+      const element = Array.from(detail.querySelectorAll('span')).find((item) => item.textContent.trim() === label);
+      return element?.parentElement?.innerText.replace(/\\s+/gu, " ").trim().split(" ").at(-1) ?? null;
+    };
+    return {
+      open: true,
+      subjectVisible: detail.innerText.includes(${emailLiteral}),
+      plan: valueFor("プラン"),
+      status: valueFor("ステータス"),
+    };
+  })()`;
+
+  await withStagingAdminBrowser(cookie, "fanmark-admin-user-ui-", async (cdp) => {
+    await clickAdminTab(cdp, "ユーザー管理");
+    const rowExpression = `(() => {
+      const email = ${emailLiteral};
+      const marker = Array.from(document.querySelectorAll('span')).find((item) => item.textContent.trim() === email);
+      const row = marker?.closest('tr');
+      if (!row) return { visible: false };
+      const rect = row.getBoundingClientRect();
+      return { visible: true, x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, width: rect.width, height: rect.height };
+    })()`;
+    const row = await waitForBrowserValue(cdp, rowExpression, (state) => state?.visible, "synthetic_user_row_missing");
+    await clickBrowserTarget(cdp, rowExpression, "synthetic_user_row");
+    assert.ok(row.visible);
+    const opened = await waitForBrowserValue(cdp, detailStateExpression, (state) => state?.open && state.subjectVisible, "synthetic_user_detail_missing");
+    assert.equal(opened.plan, "Free", "synthetic target did not start on Free");
+    assert.equal(opened.status, "有効", "synthetic target did not start active");
+
+    const planDialogHeading = "プランを変更";
+    const planDialogExpression = `(() => Array.from(document.querySelectorAll('[role="dialog"]')).find((dialog) =>
+      Array.from(dialog.querySelectorAll('h2,[role="heading"]')).some((heading) => heading.textContent.trim() === ${JSON.stringify(planDialogHeading)})) ?? null)()`;
+    const ensureSyntheticDetail = async (plan, status) => {
+      await delay(300);
+      const current = await browserValue(cdp, detailStateExpression);
+      if (!current?.open) {
+        await waitForBrowserValue(cdp, rowExpression, (state) => state?.visible, "synthetic_user_row_missing_after_mutation");
+        await clickBrowserTarget(cdp, rowExpression, "synthetic_user_row_after_mutation");
+      }
+      return await waitForBrowserValue(cdp, detailStateExpression, (state) => state?.open && state.plan === plan && state.status === status, "synthetic_user_detail_not_refreshed");
+    };
+    const setPlanThroughUi = async (plan) => {
+      await clickBrowserTarget(cdp, `(() => {
+        const detail = Array.from(document.querySelectorAll('[role="dialog"]')).find((dialog) =>
+          Array.from(dialog.querySelectorAll('h2,[role="heading"]')).some((heading) => heading.textContent.trim() === "ユーザー詳細"));
+        const button = Array.from(detail?.querySelectorAll('button') ?? []).find((item) => item.innerText.trim() === "プランを変更");
+        button?.scrollIntoView({ block: "center" });
+        if (!button) return null;
+        const rect = button.getBoundingClientRect();
+        return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, width: rect.width, height: rect.height };
+      })()`, "plan_change_button");
+      await waitForBrowserValue(cdp, `Boolean(${planDialogExpression})`, Boolean, "plan_dialog_not_open");
+      await clickBrowserTarget(cdp, `(() => {
+        const dialog = ${planDialogExpression};
+        const select = dialog?.querySelector('[role="combobox"]');
+        select?.scrollIntoView({ block: "center" });
+        if (!select) return null;
+        const rect = select.getBoundingClientRect();
+        const x = rect.x + rect.width / 2;
+        const y = rect.y + rect.height / 2;
+        const hit = document.elementFromPoint(x, y);
+        return { x, y, width: rect.width, height: rect.height, buttonContainsHit: Boolean(hit && select.contains(hit)), hitTag: hit?.tagName ?? null, hitClass: typeof hit?.className === "string" ? hit.className.slice(0, 120) : null, pointerEvents: getComputedStyle(select).pointerEvents };
+      })()`, "plan_selector");
+      const planOptionExpression = `(() => {
+        const options = Array.from(document.querySelectorAll('[role="option"]'));
+        const option = options.find((item) => item.textContent.trim() === ${JSON.stringify(plan)});
+        const rect = option?.getBoundingClientRect();
+        const dialog = ${planDialogExpression};
+        const select = dialog?.querySelector('[role="combobox"]');
+        const x = rect ? rect.x + rect.width / 2 : 0;
+        const y = rect ? rect.y + rect.height / 2 : 0;
+        const hit = document.elementFromPoint(x, y);
+        return {
+          x, y,
+          width: rect?.width ?? 0,
+          height: rect?.height ?? 0,
+          buttonContainsHit: Boolean(option && hit && option.contains(hit)),
+          hitTag: hit?.tagName ?? null,
+          hitClass: typeof hit?.className === "string" ? hit.className.slice(0, 120) : null,
+          pointerEvents: option ? getComputedStyle(option).pointerEvents : null,
+          optionTexts: options.map((item) => item.textContent.trim()),
+          dialogText: dialog?.innerText ?? null,
+          selectText: select?.innerText.trim() ?? null,
+          selectExpanded: select?.getAttribute('aria-expanded') ?? null,
+        };
+      })()`;
+      await waitForBrowserValue(cdp, planOptionExpression, (position) => position?.width > 0 && position?.height > 0, "plan_option_not_open");
+      await clickBrowserTarget(cdp, planOptionExpression, "plan_option");
+      await waitForBrowserValue(cdp, `(() => {
+        const dialog = ${planDialogExpression};
+        return dialog?.querySelector('[role="combobox"]')?.innerText.trim() ?? null;
+      })()`, (value) => value === plan, "plan_option_not_selected");
+      const planUpdateButtonExpression = `(() => {
+        const dialog = ${planDialogExpression};
+        const button = Array.from(dialog?.querySelectorAll('button') ?? []).find((item) => item.innerText.trim() === "プランを更新");
+        button?.scrollIntoView({ block: "center" });
+        if (!button) return null;
+        const rect = button.getBoundingClientRect();
+        const x = rect.x + rect.width / 2;
+        const y = rect.y + rect.height / 2;
+        const hit = document.elementFromPoint(x, y);
+        return {
+          x, y, width: rect.width, height: rect.height,
+          disabled: button.disabled,
+          buttonContainsHit: Boolean(hit && button.contains(hit)),
+          hitText: hit?.innerText?.trim().slice(0, 80) ?? null,
+          hitTag: hit?.tagName ?? null,
+          hitHtml: hit?.outerHTML?.slice(0, 240) ?? null,
+          buttonHtml: button.outerHTML.slice(0, 240),
+          dialogClass: dialog?.className ?? null,
+          dialogZIndex: dialog ? getComputedStyle(dialog).zIndex : null,
+          dialogPointerEvents: dialog ? getComputedStyle(dialog).pointerEvents : null,
+          hitLayers: document.elementsFromPoint(x, y).slice(0, 5).map((item) => ({
+            tag: item.tagName,
+            id: item.id || null,
+            className: typeof item.className === "string" ? item.className.slice(0, 120) : null,
+            zIndex: getComputedStyle(item).zIndex,
+            pointerEvents: getComputedStyle(item).pointerEvents,
+            text: item.innerText?.trim().slice(0, 50) ?? null,
+          })),
+        };
+      })()`;
+      const updateTarget = await clickBrowserTarget(cdp, planUpdateButtonExpression, "plan_update_button");
+      const planDialogStateExpression = `(() => {
+        const dialog = ${planDialogExpression};
+        if (!dialog) return { open: false };
+        const select = dialog.querySelector('[role="combobox"]');
+        const updateButton = Array.from(dialog.querySelectorAll('button')).find((item) => item.innerText.trim() === "プランを更新");
+        return {
+          open: true,
+          text: dialog.innerText,
+          selectedPlan: select?.innerText.trim() ?? null,
+          updateDisabled: updateButton?.disabled ?? null,
+          alerts: Array.from(document.querySelectorAll('[role="alert"], [data-sonner-toast]')).map((item) => item.innerText.trim()).filter(Boolean),
+        };
+      })()`;
+      try {
+        await waitForBrowserValue(cdp, planDialogStateExpression, (state) => state?.open === false, "plan_dialog_did_not_close");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "plan_dialog_did_not_close";
+        throw new Error(`${message}; click_target=${JSON.stringify(updateTarget)}; plan_api_responses=${JSON.stringify(cdp.adminApiResponses)}`);
+      }
+      const updated = await ensureSyntheticDetail(plan, "有効");
+      assert.equal(updated.plan, plan);
+      await dismissStagingToastInBrowser(cdp);
+    };
+
+    await setPlanThroughUi("Max");
+    await setPlanThroughUi("Free");
+
+    const alertDialogExpression = (heading) => `(() => Array.from(document.querySelectorAll('[role="alertdialog"]')).find((dialog) =>
+      Array.from(dialog.querySelectorAll('h2,[role="heading"]')).some((item) => item.textContent.trim() === ${JSON.stringify(heading)})) ?? null)()`;
+    const suspendButtonExpression = `(() => {
+      const detail = Array.from(document.querySelectorAll('[role="dialog"]')).find((dialog) =>
+        Array.from(dialog.querySelectorAll('h2,[role="heading"]')).some((heading) => heading.textContent.trim() === "ユーザー詳細"));
+      const button = Array.from(detail?.querySelectorAll('button') ?? []).find((item) => item.innerText.trim() === "アカウントを停止");
+      button?.scrollIntoView({ block: "center" });
+      if (!button) return null;
+      const rect = button.getBoundingClientRect();
+      const x = rect.x + rect.width / 2;
+      const y = rect.y + rect.height / 2;
+      const hit = document.elementFromPoint(x, y);
+      return {
+        x, y, width: rect.width, height: rect.height, disabled: button.disabled,
+        buttonContainsHit: Boolean(hit && button.contains(hit)),
+        hitTag: hit?.tagName ?? null,
+        hitClass: typeof hit?.className === "string" ? hit.className.slice(0, 160) : null,
+        buttonPointerEvents: getComputedStyle(button).pointerEvents,
+      };
+    })()`;
+    await waitForBrowserValue(cdp, suspendButtonExpression, (position) => position?.width > 0 && position?.height > 0 && !position.disabled && position.buttonContainsHit, "suspend_button_not_interactable");
+    await clickBrowserTarget(cdp, suspendButtonExpression, "suspend_button");
+    const suspendDialog = alertDialogExpression("アカウントを停止します");
+    const alertDialogSnapshotExpression = `(() => ({
+      dialogs: Array.from(document.querySelectorAll('[role="alertdialog"]')).map((dialog) => dialog.innerText.trim()),
+      headings: Array.from(document.querySelectorAll('[role="dialog"] h2,[role="alertdialog"] h2')).map((heading) => heading.innerText.trim()),
+      detailVisible: Array.from(document.querySelectorAll('[role="dialog"] h2')).some((heading) => heading.innerText.trim() === "ユーザー詳細"),
+      statusButtons: Array.from(document.querySelectorAll('[role="dialog"] button')).map((button) => ({ text: button.innerText.trim(), disabled: button.disabled })).filter((button) => button.text),
+    }))()`;
+    await waitForBrowserValue(cdp, alertDialogSnapshotExpression, (state) => state?.dialogs?.some((text) => text.includes("アカウントを停止します")), "suspend_confirmation_missing");
+    const suspendConfirmExpression = `(() => {
+      const dialog = ${suspendDialog};
+      const button = Array.from(dialog?.querySelectorAll('button') ?? []).find((item) => item.innerText.trim() === "停止する");
+      if (!button) return null;
+      const rect = button.getBoundingClientRect();
+      const x = rect.x + rect.width / 2;
+      const y = rect.y + rect.height / 2;
+      const hit = document.elementFromPoint(x, y);
+      return { x, y, width: rect.width, height: rect.height, disabled: button.disabled, buttonContainsHit: Boolean(hit && button.contains(hit)), hitClass: typeof hit?.className === "string" ? hit.className.slice(0, 120) : null };
+    })()`;
+    await waitForBrowserValue(cdp, suspendConfirmExpression, (position) => position?.width > 0 && position?.height > 0 && !position.disabled && position.buttonContainsHit, "suspend_confirm_not_interactable");
+    await clickBrowserTarget(cdp, suspendConfirmExpression, "suspend_confirm_button");
+    try {
+      await waitForBrowserValue(cdp, detailStateExpression, (state) => state?.status === "停止中", "suspension_not_rendered");
+    } catch (error) {
+      const [authState, auditState, browserState] = await Promise.all([
+        query(`SELECT banned FROM "user" WHERE id = ${sqlLiteral(targetUserId)}`),
+        query(`SELECT action FROM "adminUserStatusAudit" WHERE "targetUserId" = ${sqlLiteral(targetUserId)}`),
+        browserValue(cdp, `(() => ({ path: location.pathname, headings: Array.from(document.querySelectorAll('h1,h2,[role="heading"]')).map((item) => item.innerText.trim()).slice(-8), dialogs: Array.from(document.querySelectorAll('[role="dialog"],[role="alertdialog"]')).map((item) => item.innerText.trim().slice(0, 100)) }))()`),
+      ]);
+      const message = error instanceof Error ? error.message : "suspension_not_rendered";
+      throw new Error(`${message}; auth=${JSON.stringify(authState)}; status_audits=${JSON.stringify(auditState)}; browser=${JSON.stringify(browserState)}`);
+    }
+    await dismissStagingToastInBrowser(cdp);
+
+    const restoreButtonExpression = `(() => {
+      const detail = Array.from(document.querySelectorAll('[role="dialog"]')).find((dialog) =>
+        Array.from(dialog.querySelectorAll('h2,[role="heading"]')).some((heading) => heading.textContent.trim() === "ユーザー詳細"));
+      const button = Array.from(detail?.querySelectorAll('button') ?? []).find((item) => item.innerText.trim() === "アカウント停止を解除");
+      button?.scrollIntoView({ block: "center" });
+      if (!button) return null;
+      const rect = button.getBoundingClientRect();
+      const x = rect.x + rect.width / 2;
+      const y = rect.y + rect.height / 2;
+      const hit = document.elementFromPoint(x, y);
+      return {
+        x, y, width: rect.width, height: rect.height, disabled: button.disabled,
+        buttonContainsHit: Boolean(hit && button.contains(hit)),
+        hitTag: hit?.tagName ?? null,
+        hitClass: typeof hit?.className === "string" ? hit.className.slice(0, 160) : null,
+      };
+    })()`;
+    await waitForBrowserValue(cdp, restoreButtonExpression, (position) => position?.width > 0 && position?.height > 0 && !position.disabled && position.buttonContainsHit, "restore_button_not_interactable");
+    await clickBrowserTarget(cdp, restoreButtonExpression, "restore_button");
+    const restoreDialog = alertDialogExpression("アカウント停止を解除しますか？");
+    await waitForBrowserValue(cdp, alertDialogSnapshotExpression, (state) => state?.dialogs?.some((text) => text.includes("アカウント停止を解除しますか？")), "restore_confirmation_missing");
+    const restoreConfirmExpression = `(() => {
+      const dialog = ${restoreDialog};
+      const button = Array.from(dialog?.querySelectorAll('button') ?? []).find((item) => item.innerText.trim() === "停止を解除する");
+      if (!button) return null;
+      const rect = button.getBoundingClientRect();
+      const x = rect.x + rect.width / 2;
+      const y = rect.y + rect.height / 2;
+      const hit = document.elementFromPoint(x, y);
+      return { x, y, width: rect.width, height: rect.height, disabled: button.disabled, buttonContainsHit: Boolean(hit && button.contains(hit)), hitClass: typeof hit?.className === "string" ? hit.className.slice(0, 120) : null };
+    })()`;
+    await waitForBrowserValue(cdp, restoreConfirmExpression, (position) => position?.width > 0 && position?.height > 0 && !position.disabled && position.buttonContainsHit, "restore_confirm_not_interactable");
+    await clickBrowserTarget(cdp, restoreConfirmExpression, "restore_confirm_button");
+    let restored;
+    try {
+      await dismissStagingToastInBrowser(cdp);
+      const restoredRowExpression = `(() => {
+        const email = ${emailLiteral};
+        const marker = Array.from(document.querySelectorAll('span')).find((item) => item.textContent.trim() === email);
+        const row = marker?.closest('tr');
+        if (!row) return null;
+        const cells = Array.from(row.querySelectorAll('td')).map((cell) => cell.innerText.trim());
+        return { plan: cells[1] ?? null, status: cells[2] ?? null, text: row.innerText.trim() };
+      })()`;
+      restored = await waitForBrowserValue(
+        cdp,
+        restoredRowExpression,
+        (state) => state?.plan === "Free" && state.status?.includes("有効"),
+        "restoration_not_rendered_in_user_list",
+      );
+      assert.equal(restored.plan, "Free");
+      assert.ok(restored.status.includes("有効"));
+    } catch (error) {
+      const [authState, statusAudits, browserState] = await Promise.all([
+        query(`SELECT banned FROM "user" WHERE id = ${sqlLiteral(targetUserId)}`),
+        query(`SELECT action FROM "adminUserStatusAudit" WHERE "targetUserId" = ${sqlLiteral(targetUserId)}`),
+        browserValue(cdp, `(() => ({ path: location.pathname, headings: Array.from(document.querySelectorAll('h1,h2,[role="heading"]')).map((item) => item.innerText.trim()).slice(-8), dialogs: Array.from(document.querySelectorAll('[role="dialog"],[role="alertdialog"]')).map((item) => item.innerText.trim().slice(0, 100)), targetRow: Array.from(document.querySelectorAll('span')).find((item) => item.textContent.trim() === ${emailLiteral})?.closest('tr')?.innerText.trim() ?? null }))()`),
+      ]);
+      const message = error instanceof Error ? error.message : "restoration_not_rendered";
+      throw new Error(`${message}; auth=${JSON.stringify(authState)}; status_audits=${JSON.stringify(statusAudits)}; browser=${JSON.stringify(browserState)}`);
+    }
+  });
+
+  const [profileRows, enterpriseRows, authRows, statusAudits] = await Promise.all([
+    queryBusiness(`SELECT plan_type FROM user_settings WHERE user_id = ${sqlLiteral(targetUserId)}`),
+    queryBusiness(`SELECT COUNT(*) AS count FROM enterprise_user_settings WHERE user_id = ${sqlLiteral(targetUserId)}`),
+    query(`SELECT banned, banReason, banExpires FROM "user" WHERE id = ${sqlLiteral(targetUserId)}`),
+    query(`SELECT action FROM "adminUserStatusAudit" WHERE "targetUserId" = ${sqlLiteral(targetUserId)}`),
+  ]);
+  assert.deepEqual(profileRows, [{ plan_type: "free" }], "browser plan round-trip did not restore the synthetic profile");
+  assert.equal(Number(enterpriseRows[0]?.count), 0, "browser plan round-trip left an Enterprise override");
+  assert.deepEqual(authRows, [{ banned: 0, banReason: null, banExpires: null }], "browser status round-trip did not restore the synthetic Auth user");
+  assert.equal(statusAudits.length, 4, "API and browser suspension/restoration were not all audited");
+  assert.equal(statusAudits.filter((row) => row.action === "ADMIN_SUSPEND_USER").length, 2);
+  assert.equal(statusAudits.filter((row) => row.action === "ADMIN_RESTORE_USER").length, 2);
+  console.log("Authenticated staging browser changed the synthetic user Free→Max→Free and suspended/restored it; rendered states matched D1/Auth readback. No email or real user was involved.");
 }
 
 async function exerciseBroadcastEmailAdmin(cookie, userId, targetUserId, targetUsername, { browserReview = false } = {}) {
@@ -2338,6 +2677,7 @@ async function main() {
   const targetUserId = randomUUID();
   const targetEmail = `codex-admin-target-${targetUserId}@example.invalid`;
   const targetUsername = `codex-${targetUserId.slice(0, 8)}`;
+  const adminUsername = `codex-admin-${userId.slice(0, 8)}`;
   const expiryLicenseId = randomUUID();
   const expiryFanmarkId = randomUUID();
   const expiryFanmark = `synthetic-${randomBytes(8).toString("hex")}`;
@@ -2366,6 +2706,11 @@ async function main() {
     await executeBusiness(`INSERT INTO user_settings (user_id, username, display_name, avatar_url, plan_type, preferred_language, created_at, updated_at)
       VALUES (${sqlLiteral(targetUserId)}, ${sqlLiteral(targetUsername)}, ${sqlLiteral(targetEmail)}, NULL, 'free', 'ja', ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});`,
     "synthetic admin target profile provision");
+    if (actions.adminUserManagementBrowser) {
+      await executeBusiness(`INSERT INTO user_settings (user_id, username, display_name, avatar_url, plan_type, preferred_language, created_at, updated_at, requires_password_setup)
+        VALUES (${sqlLiteral(userId)}, ${sqlLiteral(adminUsername)}, 'Synthetic staging MFA', NULL, 'free', 'ja', ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)}, 0);`,
+      "synthetic admin browser-session profile provision");
+    }
     console.log("Synthetic account provisioned; exercising the deployed sign-in and TOTP routes.");
 
     const signIn = await request("/api/auth/sign-in/email", {
@@ -2464,6 +2809,9 @@ async function main() {
         expiryLicenseId, expiryFanmarkId, expiryFanmark, expiryShortId,
       });
     }
+    if (actions.adminUserManagementBrowser) {
+      await reviewAdminUserManagementMutationsInBrowser(cookie, targetEmail, targetUserId);
+    }
     if (actions.systemSettingsReadback) {
       await exerciseSystemSettingsReadback(cookie, userId, systemSettingState);
     }
@@ -2535,7 +2883,8 @@ async function main() {
             `DELETE FROM enterprise_user_settings WHERE user_id = ${sqlLiteral(targetUserId)};\n` +
             `DELETE FROM audit_logs WHERE (user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL', 'ADMIN_UPDATE_PLAN', 'admin_expire_license') AND (resource_id IS NULL OR resource_id IN (${sqlLiteral(targetUserId)}, ${sqlLiteral(expiryLicenseId)}))) OR (resource_id = ${sqlLiteral(expiryLicenseId)} AND action = 'license_expired');\n` +
             (actions.systemSettingsReadback ? `DELETE FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND action = 'ADMIN_UPDATE_SYSTEM_SETTING' AND resource_type = 'system_setting' AND resource_id = ${sqlLiteral(systemSettingState.key)};\n` : "") +
-            `DELETE FROM user_settings WHERE user_id = ${sqlLiteral(targetUserId)};`,
+            `DELETE FROM user_settings WHERE user_id = ${sqlLiteral(targetUserId)};\n` +
+            (actions.adminUserManagementBrowser ? `DELETE FROM user_settings WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(adminUsername)};` : ""),
             "synthetic admin user-management cleanup",
           );
           await executeFile(
@@ -2543,8 +2892,11 @@ async function main() {
             `DELETE FROM "user" WHERE "id" = ${sqlLiteral(targetUserId)} AND "email" = ${sqlLiteral(targetEmail)};`,
             "synthetic admin target Auth cleanup",
           );
-          const [profileRows, auditRows, authRows, statusAuditRows, settingsAuditRows] = await Promise.all([
+          const [profileRows, adminProfileRows, auditRows, authRows, statusAuditRows, settingsAuditRows] = await Promise.all([
             queryBusiness(`SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(targetUserId)}`),
+            queryBusiness(actions.adminUserManagementBrowser
+              ? `SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(adminUsername)}`
+              : "SELECT 0 AS count"),
             queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE (user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL', 'ADMIN_UPDATE_PLAN', 'admin_expire_license') AND (resource_id IS NULL OR resource_id IN (${sqlLiteral(targetUserId)}, ${sqlLiteral(expiryLicenseId)}))) OR (resource_id = ${sqlLiteral(expiryLicenseId)} AND action = 'license_expired')`),
             query(`SELECT COUNT(*) AS count FROM "user" WHERE id = ${sqlLiteral(targetUserId)} AND email = ${sqlLiteral(targetEmail)}`),
             query(`SELECT COUNT(*) AS count FROM "adminUserStatusAudit" WHERE "actorUserId" = ${sqlLiteral(userId)} OR "targetUserId" = ${sqlLiteral(targetUserId)}`),
@@ -2553,6 +2905,7 @@ async function main() {
               : "SELECT 0 AS count"),
           ]);
           assert.equal(Number(profileRows[0]?.count), 0, "synthetic target profile remained in business D1");
+          assert.equal(Number(adminProfileRows[0]?.count), 0, "synthetic admin browser-session profile remained in business D1");
           assert.equal(Number(auditRows[0]?.count), 0, "synthetic admin audit rows remained in business D1");
           assert.equal(Number(authRows[0]?.count), 0, "synthetic target identity remained in Auth D1");
           assert.equal(Number(statusAuditRows[0]?.count), 0, "synthetic user status audit remained in Auth D1");

@@ -2933,3 +2933,25 @@ details. All synthetic Auth, profile, draft, audit, delivery-run, and recipient
 rows were cleaned and read back as zero. No provider, real-user, production, or
 domain/DNS effect occurred. Provider-backed acceptance and the broader #37
 integrated recovery rehearsal remain open.
+
+## Admin user-management mutation browser acceptance (2026-09-28 JST)
+
+Added the guarded `npm run test:migration:staging-admin-user-ui` acceptance
+path and deployed the admin-dialog focus fix to the isolated
+`fanmark-app-staging` Worker (version
+`92b30cf6-1432-4e02-a790-956f193799dc`). A temporary headless Chrome session
+authenticated as a synthetic MFA administrator, opened the deployed user
+management screen, and changed one synthetic profile Free→Max→Free. It then
+suspended and restored that identity through the rendered confirmation
+dialogs. The restored row rendered `Free / 有効`; D1 readback confirmed the
+Free plan and no Enterprise override, Auth readback confirmed `banned=0` with
+null ban metadata, and the two UI status actions were present in the audit log.
+
+The complete TOTP/admin canary passed, including its API plan/status and
+immediate-expiry checks. Script cleanup plus its final readback returned the
+synthetic Auth-owned tables, target/admin profiles, user-management audits,
+license/configuration rows, and expiry notification artifacts to zero. No
+email/provider call, real user data, production route, or domain/DNS setting
+was used. This closes the rendered admin user-management mutation subgate;
+provider-backed acceptance and the complete #37 application recovery
+rehearsal remain open.

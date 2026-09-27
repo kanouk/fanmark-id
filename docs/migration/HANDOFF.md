@@ -2366,3 +2366,22 @@ rows, two transformed credentials, one deferred inactive credential, and all
 checkpoints. `public_rows_reconciled` is the limited result; deployability and
 full migration reconciliation remain false. All temporary files were removed.
 No source rows or remote D1/R2 were touched.
+
+## Admin user-management mutation browser acceptance (2026-09-28 JST)
+
+`npm run test:migration:staging-admin-user-ui` passed against the isolated
+workers.dev app after deploying Worker version
+`92b30cf6-1432-4e02-a790-956f193799dc`. A synthetic MFA administrator used the
+rendered management screen to change a profile Free→Max→Free and suspend then
+restore it. The restored list row showed `Free / 有効`; business D1 contained
+Free with no Enterprise override, Auth D1 showed `banned=0` and null ban
+metadata, and the UI suspend/restore audit entries were present.
+
+The same complete canary passed its TOTP, MFA-gated admin API, immediate
+license-expiry, and cleanup checks. Its final readback returned all synthetic
+Auth user-owned tables, both temporary profiles, admin audit records, test
+license/configuration rows, and expiry notification artifacts to zero. No
+email or payment provider call was made. This closes the admin mutation
+browser subgate only; #37 still needs provider-backed acceptance and the full
+integrated recovery sequence. Real user-data import and domain/DNS cutover
+remain deferred to the final phase.

@@ -310,7 +310,10 @@ caller/schedule review.
    lifecycle, lottery, transfer, coupon, and notification paths. The coordinated
    integrated rehearsal in [#37](https://github.com/kanouk/fanmark-id/issues/37)
    still needs its full synthetic write/recovery sequence; individual canaries
-   do not close that gate.
+   do not close that gate. The authenticated admin user-management UI has now
+   passed a synthetic Free→Max→Free and suspend/restore browser round-trip with
+   D1/Auth/audit readback and cleanup (2026-09-28); this closes that UI subgate
+   only.
 5. User-owned tables and non-user allowlists are classified in the migration
    plan. Real user/Auth/object export is deferred to #38. Product-level audit,
    notification-history, and waitlist retention decisions remain open where
