@@ -2076,3 +2076,22 @@ are mode 0600 outside Git. No live application rows, remote D1, production
 state, or domain/DNS were changed. The prior coarse estimate remains about 60% for the
 full migration and 75% for the prioritized scope; this narrow gate closure
 does not materially change it.
+
+## Current staging Worker rollout (2026-09-28 JST)
+
+The tested branch is deployed to the isolated `fanmark-app-staging` Worker as
+version `708ff90b-abec-405d-9dd0-6a0d14cafe3c`. The exact staging config keeps
+split business/Auth/master D1 bindings, R2 buckets, noindex, and the workers.dev
+hostname. Wrangler reported no migrations pending. The SPA and Better Auth
+health routes returned 200; `GET /api/fanmarks/recent?limit=50` returned 200
+with zero items; an anonymous broadcast-admin read returned 401; the disabled
+Stripe webhook returned 404.
+
+The delivery migration's four remote tables exist and all have zero rows. The
+staging secret-name inventory has no Resend or Stripe credentials, and the
+broadcast send selector remains unset. The staging deployment therefore adds
+the tested code without enabling email or billing effects. No real user data,
+production route, D1 row, R2 object, or domain/DNS setting was read or changed.
+GitHub Actions run `36333552417` passed the staging-app job; its Worker API job
+was still running at this checkpoint. The same Worker and migration suites
+passed locally before deployment.

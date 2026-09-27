@@ -2810,3 +2810,22 @@ Supabase-backed recent API 15/15, D1 repository 6/6, the complete Worker
 staging build, Worker deploy dry-run, and `git diff --check`. Catalog, generated
 SQL, and report are mode 0600 outside Git. No application rows, remote D1,
 production, user data, or domain/DNS settings changed.
+
+## Staging rollout of the current Worker and recent-list contract (2026-09-28 JST)
+
+After Node 22.6.0 local validation and the app CI job passed, deployed the
+current branch to the isolated `fanmark-app-staging` workers.dev Worker as
+version `708ff90b-abec-405d-9dd0-6a0d14cafe3c`. Wrangler confirmed the split
+business/Auth/master D1 bindings and staging R2 buckets; it found no D1
+migrations pending. No asset upload was needed because the built staging SPA
+assets were unchanged.
+
+Anonymous readback returned 200 for `/` and `/api/auth/ok`; D1-backed
+`/api/fanmarks/recent?limit=50` returned 200 with zero items. The
+MFA-protected broadcast admin list returned 401 without a session, and the
+Stripe webhook returned 404 with selectors absent. A read-only schema/count
+check confirmed the four `broadcast_delivery_*` tables exist and contain zero
+rows. The staging secret-name list contains only Better Auth, reference-master,
+and verified-access secrets; no Resend or Stripe secret was configured. No
+production route, business/Auth row, R2 object, D1 row, user data, or
+domain/DNS setting changed.
