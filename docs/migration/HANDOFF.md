@@ -1483,3 +1483,28 @@ to its existing Supabase behavior. The staging mode contract test, frontend
 typecheck, staging build, Wrangler dry-run, and targeted lint pass. This keeps
 the staging admin page from crossing into the live Supabase data plane while
 user-data migration is deferred.
+
+## Broadcast email fixed-recipient test-send implementation (2026-09-27 JST)
+
+The Worker now has a separately gated test-send route for broadcast drafts.
+It requires the explicit `BROADCAST_TEST_SEND_BACKEND=resend` selector, a
+server-configured fixed recipient, Resend credentials, Better Auth
+administrator MFA, and the business-D1 admin plan. It accepts only draft IDs,
+language, and a UUID request ID; it never accepts a recipient address from the
+browser. Subject and body text are HTML-escaped, and the minimized audit record
+omits the recipient. Bulk delivery remains disabled, and the frontend
+test-send selector defaults off. The open dialog preserves its idempotency key
+for a retry after an uncertain provider response.
+
+The Resend adapter was exercised only with injected fetch/provider mocks. The
+staging test-send selector and provider settings are unset, the route has not
+been deployed or browser-accepted, and no email was sent. This change does not
+touch user rows, production routes, R2 objects, or domain/DNS. The existing
+unrelated `supabase/.temp/cli-latest` modification remains outside the commit.
+
+Validation on this worktree: broadcast Worker tests 10/10; the complete Worker
+test chain exited 0; frontend broadcast API tests 5/5; frontend and Worker
+typechecks, targeted ESLint, Cloudflare staging build, app-staging Wrangler
+dry-run, and `git diff --check` passed. The staging build does not set the
+test-send frontend selector, and the dry-run does not include a test-send
+Worker selector.

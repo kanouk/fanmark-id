@@ -66,6 +66,15 @@ export function getAdminBroadcastEmailBackend(
   throw new AdminBroadcastEmailApiError("configuration");
 }
 
+export function getAdminBroadcastTestSendBackend(
+  value: string | undefined = import.meta.env?.VITE_BROADCAST_TEST_SEND_BACKEND,
+): "disabled" | "worker" {
+  const backend = value?.trim();
+  if (!backend || backend === "disabled") return "disabled";
+  if (backend === "worker") return "worker";
+  throw new AdminBroadcastEmailApiError("configuration");
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -247,6 +256,16 @@ export function createAdminBroadcastEmailApi(options: RequestOptions = {}) {
         throw new AdminBroadcastEmailApiError("invalid_response");
       }
       return broadcast;
+    },
+    async sendTest(input: { broadcastId: string; language: string; requestId: string }): Promise<{ success: true; message: string }> {
+      if (!UUID.test(input.broadcastId) || !LANGUAGES.has(input.language) || !UUID.test(input.requestId)) {
+        throw new AdminBroadcastEmailApiError("configuration");
+      }
+      const value = await request("/test-send", "POST", input, options);
+      if (!isRecord(value) || !exactKeys(value, ["success"]) || value.success !== true) {
+        throw new AdminBroadcastEmailApiError("invalid_response");
+      }
+      return { success: true, message: "テストメールを送信しました" };
     },
   };
 }

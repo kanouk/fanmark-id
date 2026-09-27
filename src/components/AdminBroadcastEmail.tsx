@@ -55,7 +55,11 @@ import {
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { useLanguages } from "@/hooks/useLanguages";
-import { createAdminBroadcastEmailApi, getAdminBroadcastEmailBackend } from "@/lib/admin-broadcast-email-api";
+import {
+  createAdminBroadcastEmailApi,
+  getAdminBroadcastEmailBackend,
+  getAdminBroadcastTestSendBackend,
+} from "@/lib/admin-broadcast-email-api";
 
 type BroadcastStatus = "draft" | "scheduled" | "sending" | "completed" | "failed" | "cancelled";
 
@@ -119,10 +123,12 @@ export function AdminBroadcastEmail() {
   const queryClient = useQueryClient();
   const { activeLanguages } = useLanguages();
   const useWorkerBackend = getAdminBroadcastEmailBackend() === "worker";
+  const workerTestSendEnabled = useWorkerBackend && getAdminBroadcastTestSendBackend() === "worker";
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isTestSendOpen, setIsTestSendOpen] = useState(false);
+  const [testSendRequestId, setTestSendRequestId] = useState<string | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedBroadcast, setSelectedBroadcast] = useState<BroadcastEmail | null>(null);
   const [estimatedCount, setEstimatedCount] = useState<number | null>(null);
@@ -292,8 +298,14 @@ export function AdminBroadcastEmail() {
 
   // Test send mutation
   const testSendMutation = useMutation({
-    mutationFn: async ({ broadcastId, email, language }: { broadcastId: string; email: string; language: string }) => {
-      if (useWorkerBackend) throw new Error("Cloudflare staging supports draft-only mode; test email is disabled");
+    mutationFn: async ({ broadcastId, email, language }: { broadcastId: string; email?: string; language: string }) => {
+      if (useWorkerBackend) {
+        if (!workerTestSendEnabled) throw new Error("Cloudflare test email is disabled");
+        const requestId = testSendRequestId ?? crypto.randomUUID();
+        if (!testSendRequestId) setTestSendRequestId(requestId);
+        return broadcastApi.sendTest({ broadcastId, language, requestId });
+      }
+      if (!email) throw new Error("Not authenticated");
       const { data: session } = await supabase.auth.getSession();
       if (!session.session?.access_token) throw new Error("Not authenticated");
 
@@ -307,6 +319,7 @@ export function AdminBroadcastEmail() {
     onSuccess: (data) => {
       setIsTestSendOpen(false);
       setTestEmail("");
+      setTestSendRequestId(null);
       toast.success(data.message || "テストメールを送信しました");
     },
     onError: (error) => {
@@ -340,14 +353,20 @@ export function AdminBroadcastEmail() {
   };
 
   const openTestSendDialog = (broadcast: BroadcastEmail) => {
-    if (useWorkerBackend) return;
+    if (useWorkerBackend && !workerTestSendEnabled) return;
     setSelectedBroadcast(broadcast);
+    setTestSendRequestId(useWorkerBackend ? crypto.randomUUID() : null);
     setIsTestSendOpen(true);
   };
 
   const handleTestSend = () => {
-    if (useWorkerBackend) return;
-    if (!selectedBroadcast || !testEmail.trim()) {
+    if (!selectedBroadcast) return;
+    if (useWorkerBackend) {
+      if (!workerTestSendEnabled) return;
+      testSendMutation.mutate({ broadcastId: selectedBroadcast.id, language: testLanguage });
+      return;
+    }
+    if (!testEmail.trim()) {
       toast.error("テスト送信先のメールアドレスを入力してください");
       return;
     }
@@ -612,7 +631,7 @@ export function AdminBroadcastEmail() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => openTestSendDialog(broadcast)}
-                                disabled={useWorkerBackend}
+                                disabled={useWorkerBackend && !workerTestSendEnabled}
                                 title="テスト送信"
                               >
                                 <TestTube className="h-4 w-4" />
@@ -1006,7 +1025,9 @@ export function AdminBroadcastEmail() {
               テスト送信
             </DialogTitle>
             <DialogDescription>
-              指定したメールアドレスにテストメールを送信します。実際の送信前に内容を確認できます。
+              {useWorkerBackend
+                ? "Cloudflare側に設定された許可済みテスト宛先だけに送信します。実ユーザーへの一括配信は行いません。"
+                : "指定したメールアドレスにテストメールを送信します。実際の送信前に内容を確認できます。"}
             </DialogDescription>
           </DialogHeader>
 
@@ -1023,16 +1044,22 @@ export function AdminBroadcastEmail() {
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="test-email">送信先メールアドレス</Label>
-                <Input
-                  id="test-email"
-                  type="email"
-                  placeholder="test@example.com"
-                  value={testEmail}
-                  onChange={(e) => setTestEmail(e.target.value)}
-                />
-              </div>
+              {useWorkerBackend ? (
+                <div className="rounded-lg border bg-muted/50 p-3 text-sm text-muted-foreground">
+                  送信先はWorkerの固定allowlistで制御され、画面から変更できません。
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="test-email">送信先メールアドレス</Label>
+                  <Input
+                    id="test-email"
+                    type="email"
+                    placeholder="test@example.com"
+                    value={testEmail}
+                    onChange={(e) => setTestEmail(e.target.value)}
+                  />
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label>テンプレート言語</Label>
@@ -1061,7 +1088,7 @@ export function AdminBroadcastEmail() {
             </Button>
             <Button
               onClick={handleTestSend}
-              disabled={useWorkerBackend || testSendMutation.isPending || !testEmail.trim()}
+              disabled={(useWorkerBackend ? !workerTestSendEnabled : !testEmail.trim()) || testSendMutation.isPending}
             >
               {testSendMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

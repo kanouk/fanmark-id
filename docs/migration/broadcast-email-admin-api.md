@@ -10,12 +10,32 @@ selected by `BROADCAST_EMAIL_BACKEND=d1` and the staging frontend by
 `VITE_BROADCAST_EMAIL_BACKEND=worker`; production/default builds still use
 Supabase.
 
-Cloudflare mode is draft-only. The Worker has no send or test-send route, and
-the staging UI disables both actions. It does not call the Supabase Edge
-Function as a fallback. No email is sent by these routes. The draft write and
-its minimized `BROADCAST_DRAFT_CREATE` audit record are one D1 batch; the audit
-contains the type and whether filters were present, not recipient addresses or
-filter values.
+Bulk delivery stays disabled in Cloudflare mode. A separate, default-off test
+send route is implemented for drafts: it requires the explicit
+`BROADCAST_TEST_SEND_BACKEND=resend` selector, a server-configured single
+`BROADCAST_TEST_RECIPIENT`, and the Resend key/from settings. The caller cannot
+choose a recipient. It requires the same Better Auth administrator session/MFA
+and D1 admin-plan checks, accepts only a draft, and escapes the subject/body
+before constructing HTML. Provider errors are bounded and redacted; a
+successful send writes an audit record containing the language, broadcast
+type, and provider message ID, but no recipient address. Test delivery also
+has a separate frontend selector, `VITE_BROADCAST_TEST_SEND_BACKEND=worker`,
+which defaults off. Neither test nor bulk delivery falls back to the Supabase
+Edge Function from Worker mode.
+
+The UI keeps the same provider idempotency key while a failed test-send dialog
+remains open, so retrying after an uncertain provider response reuses the same
+request identity.
+
+The test-send code has only been checked with an injected provider mock. The
+staging selector, allowlisted recipient, Resend key, and sender are not
+configured, and no email was sent. Before enabling it, configure one controlled
+recipient and run an authenticated staging canary. Bulk delivery still needs a
+separate queue/retry design, recipient snapshot semantics, opt-out and bounce
+handling, and delivery-state reconciliation. The draft write and its minimized
+`BROADCAST_DRAFT_CREATE` audit record are one D1 batch; the audit contains the
+type and whether filters were present, not recipient addresses or filter
+values.
 
 The authenticated list DTO omits `created_by` and `error_details`, returns at
 most 50 rows, and includes only active templates for the three supported
@@ -50,10 +70,8 @@ substitute for that acceptance.
 
 ## Delivery work still open
 
-Bulk and test delivery remain on the existing Supabase Edge Function in the
-standard build. Moving delivery needs a separate queue/retry decision, recipient
-snapshot semantics, opt-out and bounce handling, sender configuration, bounded
-provider errors, and HTML-safe rendering. Do not enable delivery against
+The standard build continues to use the existing Supabase Edge Function for
+bulk and user-addressed test delivery. Do not enable bulk delivery against
 real-user data in staging. The explicit real Auth/business/object import and
 public DNS cutover remain in the final phases tracked by #38.
 
@@ -61,8 +79,9 @@ public DNS cutover remain in the final phases tracked by #38.
 
 The isolated Worker suite covers the MFA/admin gate, D1 list projection,
 template allowlist, recipient filters, server-derived creator ID, draft-only
-write/audit batch, invalid Origin, request validation, and disabled dispatch
-routes. The frontend contract tests cover same-origin credentialed requests,
-bounded DTO parsing, count estimation, and draft creation. The staging Worker
-and current-source template comparison are in place; authenticated browser
-acceptance and all delivery/provider work remain open.
+write/audit batch, invalid Origin, request validation, disabled bulk dispatch,
+and the mock-only fixed-recipient test-send route. The frontend contract tests
+cover same-origin credentialed requests, bounded DTO parsing, count estimation,
+draft creation, and the test-send request contract. The staging Worker and
+current-source template comparison are in place; authenticated browser
+acceptance and real-provider delivery validation remain open.

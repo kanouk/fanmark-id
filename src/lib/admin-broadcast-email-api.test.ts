@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createAdminBroadcastEmailApi, getAdminBroadcastEmailBackend } from "./admin-broadcast-email-api.ts";
+import {
+  createAdminBroadcastEmailApi,
+  getAdminBroadcastEmailBackend,
+  getAdminBroadcastTestSendBackend,
+} from "./admin-broadcast-email-api.ts";
 
 const id = "81111111-1111-4111-8111-111111111111";
 const timestamp = "2026-09-25T12:00:00.000Z";
@@ -31,6 +35,9 @@ test("broadcast email selector defaults to Supabase and rejects unknown values",
   assert.equal(getAdminBroadcastEmailBackend(undefined), "supabase");
   assert.equal(getAdminBroadcastEmailBackend(" worker "), "worker");
   assert.throws(() => getAdminBroadcastEmailBackend("other"), /configuration/u);
+  assert.equal(getAdminBroadcastTestSendBackend(undefined), "disabled");
+  assert.equal(getAdminBroadcastTestSendBackend(" worker "), "worker");
+  assert.throws(() => getAdminBroadcastTestSendBackend("supabase"), /configuration/u);
 });
 
 test("list uses a credentialed same-origin no-store request and validates the snapshot", async () => {
@@ -94,6 +101,46 @@ test("recipient estimates and draft creation use bounded POST contracts", async 
   assert.deepEqual(JSON.parse(calls[1].init.body as string), {
     emailType: "broadcast_announcement", subject: " お知らせ ", bodyText: "本文", recipientFilter: { languages: ["ja"] },
   });
+});
+
+test("test send uses a credentialed Worker route without sending a recipient address", async () => {
+  const requestId = "91111111-1111-4111-8111-111111111111";
+  let actualUrl = "";
+  let actualInit: RequestInit | undefined;
+  const api = createAdminBroadcastEmailApi({
+    baseUrl: "https://staging.example.test",
+    authBaseUrl: "https://staging.example.test",
+    fetchImpl: async (url, init) => {
+      actualUrl = String(url);
+      actualInit = init;
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    },
+  });
+  assert.deepEqual(await api.sendTest({ broadcastId: id, language: "ja", requestId }), {
+    success: true,
+    message: "テストメールを送信しました",
+  });
+  assert.equal(actualUrl, "https://staging.example.test/api/admin/broadcast-emails/test-send");
+  assert.equal(actualInit?.method, "POST");
+  assert.equal(actualInit?.credentials, "include");
+  assert.equal(actualInit?.cache, "no-store");
+  assert.equal(actualInit?.redirect, "error");
+  assert.deepEqual(JSON.parse(actualInit?.body as string), { broadcastId: id, language: "ja", requestId });
+  assert.equal((actualInit?.body as string).includes("@example"), false);
+
+  const malformed = createAdminBroadcastEmailApi({
+    baseUrl: "https://staging.example.test",
+    authBaseUrl: "https://staging.example.test",
+    fetchImpl: async () => new Response(JSON.stringify({ success: true, recipient: "leak@example.test" }), {
+      status: 200, headers: { "content-type": "application/json" },
+    }),
+  });
+  await assert.rejects(malformed.sendTest({ broadcastId: id, language: "ja", requestId }), /invalid_response/u);
+  await assert.rejects(api.sendTest({ broadcastId: "not-a-uuid", language: "ja", requestId }), /configuration/u);
+  await assert.rejects(api.sendTest({ broadcastId: id, language: "ja", requestId: "bad" }), /configuration/u);
 });
 
 test("refuses cross-origin authentication and invalid status DTOs", async () => {

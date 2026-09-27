@@ -3,10 +3,23 @@ import { selectD1Database, type Env } from "./repository.ts";
 const API_PATH = "/api/admin/broadcast-emails";
 const MAX_BROADCASTS = 50;
 const MAX_BODY_BYTES = 32 * 1024;
+const MAX_PROVIDER_RESPONSE_BYTES = 8 * 1024;
+const PROVIDER_TIMEOUT_MS = 8_000;
 const EMAIL_TYPES = new Set(["broadcast_announcement", "broadcast_maintenance", "broadcast_security"]);
 const PLAN_TYPES = new Set(["free", "creator", "max", "business", "enterprise", "admin"]);
 const LANGUAGES = new Set(["en", "ja", "ko", "id"]);
 const STATUSES = new Set(["draft", "scheduled", "sending", "completed", "failed", "cancelled"]);
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+
+export interface BroadcastTestEmail {
+  from: string;
+  to: string;
+  subject: string;
+  html: string;
+  idempotencyKey: string;
+}
+
+export type BroadcastTestEmailSender = (message: BroadcastTestEmail, apiKey: string) => Promise<string>;
 
 type RecipientFilter = {
   plan_types?: string[];
@@ -67,6 +80,91 @@ export function isBroadcastEmailAdminPath(pathname: string): boolean {
 
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/gu, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[character] ?? character);
+}
+
+function buildTestEmailHtml(subject: string, body: string): string {
+  const safeSubject = escapeHtml(subject);
+  const safeBody = escapeHtml(body).replace(/\r\n|\r|\n/gu, "<br>");
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${safeSubject}</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.6;color:#333;background:#f5f5f5;margin:0}.container{max-width:600px;margin:0 auto;padding:32px 16px}.card{background:#fff;border-radius:12px;padding:24px}.content{white-space:pre-wrap}</style></head><body><main class="container"><section class="card"><strong>Fanmark</strong><h1>${safeSubject}</h1><div class="content">${safeBody}</div></section></main></body></html>`;
+}
+
+async function readProviderResponse(response: Response): Promise<Record<string, unknown>> {
+  const declared = response.headers.get("content-length");
+  if (declared && /^\d+$/u.test(declared) && Number(declared) > MAX_PROVIDER_RESPONSE_BYTES) {
+    throw new Error("email_provider_response_invalid");
+  }
+  if (!response.body) throw new Error("email_provider_response_invalid");
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > MAX_PROVIDER_RESPONSE_BYTES) {
+        await reader.cancel();
+        throw new Error("email_provider_response_invalid");
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  try {
+    const value: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+    if (!record(value)) throw new Error("email_provider_response_invalid");
+    return value;
+  } catch {
+    throw new Error("email_provider_response_invalid");
+  }
+}
+
+export async function sendBroadcastTestEmailViaResend(
+  message: BroadcastTestEmail,
+  apiKey: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<string> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS);
+  try {
+    const response = await fetchImpl("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${apiKey}`,
+        "content-type": "application/json",
+        "idempotency-key": message.idempotencyKey,
+      },
+      body: JSON.stringify({ from: message.from, to: [message.to], subject: message.subject, html: message.html }),
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new Error("email_provider_rejected");
+    const payload = await readProviderResponse(response);
+    if (typeof payload.id !== "string" || payload.id.length < 1 || payload.id.length > 256) {
+      throw new Error("email_provider_response_invalid");
+    }
+    return payload.id;
+  } catch {
+    throw new Error("email_provider_failed");
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function isDate(value: unknown): value is string {
@@ -290,27 +388,102 @@ async function handleCreateDraft(db: D1Database, userId: string, body: unknown, 
   return json({ broadcast: parseBroadcast(row) }, 201, headers);
 }
 
+async function handleTestSend(
+  db: D1Database,
+  env: Env,
+  userId: string,
+  body: unknown,
+  now: string,
+  headers: Headers,
+  sender: BroadcastTestEmailSender,
+): Promise<Response> {
+  if (!record(body) || Object.keys(body).length !== 3 ||
+      typeof body.broadcastId !== "string" || !UUID.test(body.broadcastId) ||
+      typeof body.language !== "string" || !LANGUAGES.has(body.language) ||
+      typeof body.requestId !== "string" || !UUID.test(body.requestId)) {
+    fail("invalid_request", 400);
+  }
+  await requireAdminPlan(db, userId, "test_send", now);
+
+  const recipient = env.BROADCAST_TEST_RECIPIENT?.trim();
+  const from = env.RESEND_FROM_EMAIL?.trim();
+  const apiKey = env.RESEND_API_KEY?.trim();
+  if (env.BROADCAST_TEST_SEND_BACKEND?.trim() !== "resend" ||
+      !recipient || recipient.length > 320 || !/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/u.test(recipient) ||
+      !from || from.length > 320 || /[\r\n]/u.test(from) || !from.includes("@") ||
+      !apiKey || apiKey.length > 512) {
+    fail("test_send_unavailable", 503);
+  }
+
+  const row = await db.prepare(`SELECT id, subject, body_text, email_type, total_recipients, sent_count,
+      failed_count, status, recipient_filter, created_at, started_at, completed_at
+    FROM broadcast_emails WHERE id = ? LIMIT 1`).bind(body.broadcastId).first<Record<string, unknown>>();
+  if (!row) fail("broadcast_not_found", 404);
+  const broadcast = parseBroadcast(row);
+  if (broadcast.status !== "draft") fail("broadcast_not_draft", 409);
+
+  let templateRow = await db.prepare(`SELECT id, email_type, language, subject, body_text, button_text
+      FROM email_templates WHERE email_type = ? AND language = ? AND is_active = 1 LIMIT 1`)
+    .bind(broadcast.email_type, body.language).first<Record<string, unknown>>();
+  if (!templateRow && body.language !== "ja") {
+    templateRow = await db.prepare(`SELECT id, email_type, language, subject, body_text, button_text
+        FROM email_templates WHERE email_type = ? AND language = 'ja' AND is_active = 1 LIMIT 1`)
+      .bind(broadcast.email_type).first<Record<string, unknown>>();
+  }
+  if (!templateRow) fail("broadcast_template_unavailable", 409);
+  const template = parseTemplate(templateRow);
+  const subject = String(broadcast.subject).trim() || String(template.subject);
+  const bodyText = String(broadcast.body_text).trim() || String(template.body_text);
+  const message: BroadcastTestEmail = {
+    from,
+    to: recipient,
+    subject: `[テスト] ${subject}`,
+    html: buildTestEmailHtml(subject, bodyText),
+    idempotencyKey: `broadcast-test/${body.broadcastId}/${body.requestId}`,
+  };
+
+  let providerMessageId: string;
+  try {
+    providerMessageId = await sender(message, apiKey);
+  } catch {
+    fail("email_delivery_failed", 502);
+  }
+  if (typeof providerMessageId !== "string" || providerMessageId.length < 1 || providerMessageId.length > 256) {
+    fail("email_delivery_failed", 502);
+  }
+
+  const audit = await db.prepare(`INSERT INTO audit_logs (id, user_id, action, resource_type, resource_id, metadata, created_at)
+    VALUES (?, ?, 'BROADCAST_EMAIL_TEST_SENT', 'broadcast_email', ?, ?, ?)`)
+    .bind(crypto.randomUUID(), userId, broadcast.id,
+      JSON.stringify({ email_type: broadcast.email_type, language: template.language, provider_message_id: providerMessageId }), now)
+    .run();
+  if (!audit.success || audit.meta?.changes !== 1) fail("test_send_unavailable", 503);
+  return json({ success: true }, 200, headers);
+}
+
 export async function handleBroadcastEmailAdminRequest(
   request: Request,
   env: Env,
   authorizeAdmin: BroadcastEmailAdminAuthorizer,
   clock: () => Date = () => new Date(),
+  sendTestEmail: BroadcastTestEmailSender = sendBroadcastTestEmailViaResend,
 ): Promise<Response | null> {
   const url = new URL(request.url);
   if (!isBroadcastEmailAdminPath(url.pathname)) return null;
   const isRoot = url.pathname === API_PATH;
   const isEstimate = url.pathname === `${API_PATH}/estimate`;
-  if (!isRoot && !isEstimate) return json({ error: "not_found" }, 404);
+  const isTestSend = url.pathname === `${API_PATH}/test-send`;
+  if (!isRoot && !isEstimate && !isTestSend) return json({ error: "not_found" }, 404);
   if (url.search || url.hash) return json({ error: "not_found" }, 404);
   const headers = new Headers();
   if (!cors(request, env, headers)) return json({ error: "forbidden_origin" }, 403);
-  const allowed = isEstimate ? "POST, OPTIONS" : "GET, POST, OPTIONS";
+  const allowed = isEstimate || isTestSend ? "POST, OPTIONS" : "GET, POST, OPTIONS";
   if (request.method.toUpperCase() === "OPTIONS") {
     headers.set("allow", allowed);
     return new Response(null, { status: 204, headers });
   }
   const method = request.method.toUpperCase();
-  if ((isEstimate && method !== "POST") || (isRoot && method !== "GET" && method !== "POST")) {
+  if (((isEstimate || isTestSend) && method !== "POST") || (isRoot && method !== "GET" && method !== "POST")) {
     headers.set("allow", allowed);
     return json({ error: "method_not_allowed" }, 405, headers);
   }
@@ -322,6 +495,7 @@ export async function handleBroadcastEmailAdminRequest(
     const db = database(env);
     const now = clock().toISOString();
     if (isEstimate) return await handleEstimate(db, authorization.userId, await readJson(request), now, headers);
+    if (isTestSend) return await handleTestSend(db, env, authorization.userId, await readJson(request), now, headers, sendTestEmail);
     if (method === "POST") return await handleCreateDraft(db, authorization.userId, await readJson(request), now, headers);
     await requireAdminPlan(db, authorization.userId, "list", now);
     return json({ broadcasts: await listBroadcasts(db), templates: await listTemplates(db) }, 200, headers);
