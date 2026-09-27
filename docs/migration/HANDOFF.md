@@ -142,11 +142,12 @@ migration, or about 75% of the prioritized app/infrastructure/master-data
 scope that excludes real user-data import and public domain/DNS cutover. The
 estimate is coarse: broadcast templates and four verified-unused extension
 coupon definitions are seeded and verified in business staging, and synthetic
-notification, registration, owner-settings/password, and R2 profile/storage
-canaries pass with exact cleanup. The 18 schema gates, integrated synthetic
-rehearsal, remaining authenticated UI canaries, mail delivery, and production
-acceptance are still open. User-data import and domain cutover are intentionally
-deferred final phases, not missing work in the current staging slice.
+notification, analytics, registration, return/bulk-return/transfer,
+owner-settings/password, and R2 profile/storage canaries pass with reviewed
+cleanup. The 18 schema gates, integrated synthetic rehearsal, remaining
+authenticated UI canaries, mail delivery, and production acceptance are still
+open. User-data import and domain cutover are intentionally deferred final
+phases, not missing work in the current staging slice.
 
 ## Unused extension coupon master seed (2026-09-27 JST)
 
@@ -172,10 +173,14 @@ repair does not materially change the coarse weighted progress estimate.
 The staging baseline checks now verify both localized email-template groups
 using a single read query and their pinned content digests. Live D1 readback
 confirmed 16 auth templates plus 12 broadcast templates; the full migration
-data suite passes 154/154. Notification processing, owner registration/lottery,
-owner-settings/password, and avatar/cover R2 profile canaries passed and removed
-their exact synthetic rows and objects. These checks add staging evidence only;
-mail delivery, the integrated rehearsal, and production acceptance remain open.
+data suite passes 154/154. Notification processing, analytics concurrency,
+owner registration/lottery, owner-settings/password, single and bulk license
+return, transfer lifecycle, and avatar/cover R2 profile canaries passed. Their
+synthetic Auth rows and transient Business rows were removed; the bulk-return
+canary intentionally retains two synthetic license-incarnation tombstones,
+with access-version and MFA-generation state verified. These checks add
+staging evidence only; mail delivery, the integrated rehearsal, and production
+acceptance remain open.
 
 The latest Supabase read-only query selected only the three supported
 broadcast template types and returned 12 active rows across `en`, `id`, `ja`,

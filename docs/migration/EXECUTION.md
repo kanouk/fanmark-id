@@ -2395,7 +2395,15 @@ The staging notification processor, registration/lottery, owner-settings and
 password, and R2 profile/storage canaries passed. The R2 run verified anonymous
 upload rejection, owner upload and deletion, public object reads, avatar and
 cover-image paths, then confirmed Auth/business synthetic rows were zero and
-both objects returned 404. No email was sent, and no production routing,
-real-user data, or domain/DNS state changed. Remaining schema gates, integrated
-rehearsal, mail delivery, production acceptance, user-data migration, and
-domain cutover are still open.
+both objects returned 404. The analytics canary suppressed four concurrent
+duplicate events, rejected anonymous reads, returned owner-only aggregates,
+and cleaned all synthetic rows. The license-return canaries verified transfer
+blocking, grace transition, owner/favorite notifications, full transfer
+approval, partial bulk return (207), and complete bulk return (200). The bulk
+canary removed transient rows and restored access/MFA state; two synthetic
+license-incarnation tombstones remain intentionally as security history. The
+transfer and single-return notification canaries delivered localized Japanese
+notifications. No email was sent, and no production routing, real-user data,
+or domain/DNS state changed. Remaining schema gates, integrated rehearsal,
+mail delivery, production acceptance, user-data migration, and domain cutover
+are still open.
