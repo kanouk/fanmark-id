@@ -1824,3 +1824,12 @@ release gate: reduce consistently expensive paths and repeat the sample, or
 have the account owner enable a suitable Workers plan before production
 acceptance. No billing, production, user-data, email, or domain/DNS change was
 made. Detailed evidence is in [`live-observations.md`](live-observations.md).
+
+
+## Stripe test CI follow-up (2026-09-27 UTC)
+
+The stalled Stripe receipt test job was traced to TSX being globally preloaded
+for JavaScript-only PGlite tests. Splitting TS-importing and JS-only test files
+now passes all 90 tests on local and Ubuntu Node 22.6, with Stripe typecheck,
+app typecheck, admin auth URL tests (3/3), and staging build also passing.
+A new GitHub Actions run remains required before calling the CI repair verified.

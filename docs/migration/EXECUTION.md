@@ -2658,3 +2658,20 @@ additional operational indexes are staging extensions. Local `integrity_check`
 returned `ok`, and Wrangler's remote migration list showed no pending business
 migrations. No table rows were exported, and no remote D1 schema or data was
 changed.
+
+
+## Stripe receipt test runner isolation (2026-09-27 JST)
+
+GitHub Actions run `36318455207` completed its Worker API job, while the app job
+stalled after 88 Stripe receipt subtests in the PGlite row-conversion/snapshot
+area and was canceled. Reproducing on Node 22.6 showed that globally preloading
+TSX for JavaScript-only PGlite suites caused the hang. The package test command
+now runs the four files that import TypeScript with TSX, then runs the five
+JavaScript-only suites with plain Node.
+
+The split passes all 90 tests locally (49 TSX-loaded and 41 plain-Node tests);
+the same split also passed in an Ubuntu Node 22.6 container. Stripe receipt
+typecheck, app typecheck, admin auth URL tests (3/3), and Cloudflare staging
+build pass. These are local checks; a fresh GitHub Actions run is still needed
+to verify the fix on the PR. No production, Supabase, D1, user-data, or
+domain/DNS state changed.

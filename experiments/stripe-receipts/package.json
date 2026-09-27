@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "PostgreSQL-backed Stripe receipt foundation checks",
   "scripts": {
-    "test": "node --import tsx --test --test-concurrency=1 test/*.test.mjs",
+    "test": "node --import tsx --test --test-concurrency=1 test/checkout-payment-assessment.test.mjs test/extension-application-result.test.mjs test/ingress.test.mjs test/invoice-projection.test.mjs && node --test --test-concurrency=1 test/dispatch-leases.test.mjs test/extension-application.test.mjs test/receipt-foundation.test.mjs test/row-conversion.test.mjs test/snapshot-export.test.mjs",
     "typecheck": "tsc --noEmit --target ES2022 --module ESNext --moduleResolution Bundler --lib ES2022,DOM --allowImportingTsExtensions --skipLibCheck test/compatibility-types.ts test/invoice-projection-compatibility.ts ../../supabase/functions/_shared/stripe-receipt-ingress/index.ts ../../supabase/functions/_shared/stripe-invoice-projection/index.ts"
   },
   "keywords": [],
