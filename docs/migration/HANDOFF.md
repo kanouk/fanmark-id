@@ -2135,3 +2135,28 @@ domain/DNS setting was changed. This proves the D1 restore primitive only; the
 pre-write path and end-to-end application recovery/ledger reconciliation in
 issue #37 remain open. Cloudflare documents D1 Time Travel restore as an
 in-place overwrite of the target database: https://developers.cloudflare.com/d1/reference/time-travel/.
+
+## Schema converter v7: source-locale regex proof (2026-09-28 JST)
+
+The read-only `schema-readiness.sql` catalog now records a locale-bound probe
+for the exact invitation-code, settings-key, and waitlist-email CHECKs. The
+linked Supabase refresh observed 40 tables / 406 columns and
+`en_US.UTF-8`; the probe tested all 1,112,063 valid Unicode scalar values with
+zero matches outside each expected ASCII class. It read no application rows.
+Converter v7 embeds that proof in its private report and emits equivalent D1
+CHECKs only when the proof matches the catalog locale. Its email expression
+also rejects non-letter characters after the final TLD dot, closing a synthetic
+false-positive in the prior GLOB expression. A read-only PostgreSQL sample
+matched the SQLite cases for valid addresses, dotted subdomains, invalid TLD
+characters, and trailing newlines.
+
+The fresh private report now has 15 unresolved gate groups (10 row-conversion,
+5 schema/operation) across 320 locations; `deployable` remains `false`.
+Converter tests pass 13/13, snapshot-export tests 19/19, and
+`npm run test:migration-data` passes 163/163 on Node 22.6.0. The generated
+40-table DDL loads in local SQLite with 66 indexes, no foreign-key violations,
+and `integrity_check=ok`. The catalog, SQL, and report are mode `0600` outside
+Git. The proof and DDL were not applied to any remote D1; real user data,
+production routes, and domain/DNS remain untouched. The prior GitHub Actions
+run `36336701736` passed both jobs on commit `518fb16`; the v7 working changes
+still need their own PR validation.

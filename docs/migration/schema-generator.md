@@ -6,6 +6,16 @@ SQLite/D1 table and index SQL plus a machine-readable report of unresolved
 parity gates. It does not read application rows, contact Supabase, apply SQL,
 or declare a production migration ready.
 
+The private catalog also carries `regex_range_probe`. It tests the three exact
+ASCII-format CHECK expressions against every valid Unicode scalar value using
+the linked PostgreSQL locale and records only mismatch counts. Converter v7
+uses the `en_US.UTF-8` locale only when this same catalog records all 1,112,063
+scalar values and zero extra matches; a missing, changed, or nonzero probe
+keeps those constraints gated. The query reads no application rows. PostgreSQL
+documents that regex ranges depend on the active collating sequence, so this
+probe is required instead of assuming ASCII equivalence:
+[PostgreSQL pattern matching](https://www.postgresql.org/docs/current/functions-matching.html).
+
 ## Run locally
 
 Keep the catalog and generated files in a private directory. The CLI writes

@@ -313,3 +313,27 @@ the fresh v5 report has 17 groups (10 row-conversion, 7 schema/operation), and
 credential descriptor, so it retains `credential_descriptor_required`; it
 does not permit generic credential copying. Catalog, generated SQL, and report
 are mode `0600` and outside Git. No target D1 migration or data write occurred.
+
+## Version 7 locale-proven regex checks (2026-09-28 JST)
+
+The refreshed schema-only catalog now includes a private `regex_range_probe`
+alongside its `en_US.UTF-8` locale. The probe tested the exact invitation-code,
+settings-key, and waitlist-email regex character ranges over all 1,112,063
+valid Unicode scalar values; all five extra-match counts were zero. This proves
+that those source expressions accept only the ASCII characters mirrored by
+the D1 checks under the observed source collation. PostgreSQL documents that
+regex ranges depend on collating sequence; v7 therefore requires the matching,
+complete proof in the same catalog, and retains the gate for a missing or
+changed proof or any other locale.
+
+The waitlist D1 check now validates the terminal top-level domain precisely;
+synthetic SQLite cases and a read-only PostgreSQL sample confirm it rejects
+values such as `x@y.co1` that the prior glob accepted, while retaining
+source-valid dotted subdomains. The fresh v7 report has 15 groups: 10
+row-conversion groups and 5 schema/operation
+groups across 93 locations. `deployable` remains `false`. The schema converter
+tests pass 13/13, snapshot-export tests pass 19/19, and the generated 40-table
+DDL loads in local SQLite with 66 indexes, a clean `foreign_key_check`, and
+`integrity_check=ok`. Catalog, SQL, and report remain mode `0600` outside Git;
+the read-only refresh and probe read no application rows, and no remote D1,
+user data, production route, or domain/DNS setting changed.

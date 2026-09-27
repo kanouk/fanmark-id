@@ -1,7 +1,8 @@
 -- Read-only source schema evidence for D1 conversion; never reads table rows.
 -- Defaults, function bodies, view definitions, and policy expressions can
 -- contain deployment-specific constants: keep the result private and review
--- before extracting public documentation.
+-- before extracting public documentation. The Unicode regex-range probe
+-- records whether these exact ASCII checks can be represented by SQLite GLOB.
 BEGIN READ ONLY;
 SELECT jsonb_build_object(
   'observed_at', statement_timestamp(),
@@ -9,6 +10,47 @@ SELECT jsonb_build_object(
     SELECT jsonb_build_object('collate', d.datcollate, 'ctype', d.datctype)
     FROM pg_database d
     WHERE d.datname = current_database()
+  ),
+  'regex_range_probe', (
+    SELECT jsonb_build_object(
+      'collate', d.datcollate,
+      'ctype', d.datctype,
+      'unicode_scalar_count', count(*),
+      'invitation_extra_matches', count(*) FILTER (
+        WHERE (c.character || 'BC123') ~ '^[A-Z0-9]{6,12}$'
+          AND NOT (c.codepoint BETWEEN 48 AND 57 OR c.codepoint BETWEEN 65 AND 90)
+      ),
+      'setting_extra_matches', count(*) FILTER (
+        WHERE c.character ~ '^[a-z_]+$'
+          AND NOT (c.codepoint BETWEEN 97 AND 122 OR c.codepoint = 95)
+      ),
+      'email_local_extra_matches', count(*) FILTER (
+        WHERE ('x' || c.character || '@domain.com') ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
+          AND NOT (
+            c.codepoint BETWEEN 48 AND 57 OR c.codepoint BETWEEN 65 AND 90 OR
+            c.codepoint BETWEEN 97 AND 122 OR c.codepoint IN (45, 46, 37, 43, 95)
+          )
+      ),
+      'email_domain_extra_matches', count(*) FILTER (
+        WHERE ('x@' || c.character || '.com') ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
+          AND NOT (
+            c.codepoint BETWEEN 48 AND 57 OR c.codepoint BETWEEN 65 AND 90 OR
+            c.codepoint BETWEEN 97 AND 122 OR c.codepoint IN (45, 46)
+          )
+      ),
+      'email_tld_extra_matches', count(*) FILTER (
+        WHERE ('x@domain.' || c.character || 'a') ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
+          AND NOT (c.codepoint BETWEEN 65 AND 90 OR c.codepoint BETWEEN 97 AND 122)
+      )
+    )
+    FROM (
+      SELECT n AS codepoint, chr(n) AS character
+      FROM generate_series(1, 1114111) AS n
+      WHERE n NOT BETWEEN 55296 AND 57343
+    ) c
+    CROSS JOIN pg_database d
+    WHERE d.datname = current_database()
+    GROUP BY d.datcollate, d.datctype
   ),
   'columns', (
     SELECT jsonb_agg(jsonb_build_object(

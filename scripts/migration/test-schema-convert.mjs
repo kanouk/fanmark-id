@@ -66,6 +66,19 @@ function regexSchemaFixture() {
   return input;
 }
 
+function reviewedEnUsRegexProbe() {
+  return {
+    collate: "en_US.UTF-8",
+    ctype: "en_US.UTF-8",
+    unicode_scalar_count: 1_112_063,
+    invitation_extra_matches: 0,
+    setting_extra_matches: 0,
+    email_local_extra_matches: 0,
+    email_domain_extra_matches: 0,
+    email_tld_extra_matches: 0,
+  };
+}
+
 function sqliteInsertPasses(sql, table, columnName, value) {
   const sqlValue = `'${value.replaceAll("'", "''")}'`;
   try {
@@ -189,7 +202,7 @@ test("conversion is deterministic and exposes exact target codecs", () => {
 
   assert.equal(first.report.target.tableCount, 4);
   assert.equal(first.report.target.columnCount, 15);
-  assert.equal(first.report.schemaVersion, 6);
+  assert.equal(first.report.schemaVersion, 7);
   assert.deepEqual(first.report.target.translatedConstraints, { p: 4, u: 0, f: 1, c: 3 });
   assert.equal(first.report.target.translatedIndexCount, 4);
   assert.deepEqual(
@@ -343,7 +356,7 @@ test("the four reviewed live GIN indexes have explicit D1 query-contract disposi
   );
 
   const result = convertSchema(input);
-  assert.equal(result.report.schemaVersion, 6);
+  assert.equal(result.report.schemaVersion, 7);
   assert.deepEqual(result.report.target.indexAdaptations.map((entry) => entry.sourceIndex), [
     "idx_emoji_master_keywords",
     "idx_emoji_master_short_name",
@@ -374,7 +387,7 @@ test("the four reviewed live GIN indexes have explicit D1 query-contract disposi
   assert.ok(!changedResult.report.target.indexAdaptations.some((entry) => entry.sourceIndex === "idx_emoji_master_keywords"));
 });
 
-test("known ASCII PostgreSQL regex checks translate only with the source C locale", () => {
+test("known ASCII PostgreSQL regex checks require a reviewed locale proof", () => {
   const input = regexSchemaFixture();
   const result = convertSchema(input);
   const sourceCheckNames = new Set([
@@ -387,7 +400,7 @@ test("known ASCII PostgreSQL regex checks translate only with the source C local
     .flatMap((gate) => gate.locations)
     .filter((location) => sourceCheckNames.has(location.name));
   assert.deepEqual(untranslatedSourceChecks, []);
-  assert.equal(result.report.schemaVersion, 6);
+  assert.equal(result.report.schemaVersion, 7);
 
   const cases = [
     ["invitation_codes", "code", "ABC123", true],
@@ -408,6 +421,10 @@ test("known ASCII PostgreSQL regex checks translate only with the source C local
     ["waitlist", "email", "x@@example.com", false],
     ["waitlist", "email", "x@example.c", false],
     ["waitlist", "email", "x@.com", false],
+    ["waitlist", "email", "x@y.co1", false],
+    ["waitlist", "email", "x@y.co_", false],
+    ["waitlist", "email", "x@y.c9", false],
+    ["waitlist", "email", "x@..com", true],
     ["waitlist", "email", "x@domain.com\n", false],
     ["waitlist", "email", "a b@domain.com", false],
   ];
@@ -419,15 +436,42 @@ test("known ASCII PostgreSQL regex checks translate only with the source C local
     );
   }
 
-  const nonCLocale = regexSchemaFixture();
-  nonCLocale.database_locale = { collate: "en_US.UTF-8", ctype: "en_US.UTF-8" };
-  const conservative = convertSchema(nonCLocale);
+  const enUsLocale = regexSchemaFixture();
+  enUsLocale.database_locale = { collate: "en_US.UTF-8", ctype: "en_US.UTF-8" };
+  enUsLocale.regex_range_probe = reviewedEnUsRegexProbe();
+  const enUsResult = convertSchema(enUsLocale);
+  const enUsUntranslated = enUsResult.report.gates
+    .filter((gate) => gate.code === "unsupported_check_constraint")
+    .flatMap((gate) => gate.locations)
+    .filter((location) => sourceCheckNames.has(location.name));
+  assert.deepEqual(enUsUntranslated, []);
+
+  const unprobedLocale = structuredClone(enUsLocale);
+  delete unprobedLocale.regex_range_probe;
+  const conservative = convertSchema(unprobedLocale);
   const remaining = conservative.report.gates
     .filter((gate) => gate.code === "unsupported_check_constraint")
     .flatMap((gate) => gate.locations)
     .filter((location) => sourceCheckNames.has(location.name));
   assert.deepEqual(new Set(remaining.map((location) => location.name)), sourceCheckNames);
   assert.doesNotMatch(conservative.sql, /invitation_codes_code_format" CHECK \(length\(/);
+
+  assert.equal(enUsResult.report.source.regexRangeProbe.unicode_scalar_count, 1_112_063);
+  assert.equal(sqliteInsertPasses(enUsResult.sql, "waitlist", "email", "x@y.co1"), false);
+  assert.equal(sqliteInsertPasses(enUsResult.sql, "waitlist", "email", "First.Last+tag@sub-domain.example.jp"), true);
+
+  const unknownProbeField = structuredClone(enUsLocale);
+  unknownProbeField.regex_range_probe.unreviewed = 0;
+  assert.throws(() => convertSchema(unknownProbeField), (error) => error.code === "invalid_catalog_regex_range_probe");
+
+  const changedProbe = structuredClone(enUsLocale);
+  changedProbe.regex_range_probe.email_tld_extra_matches = 1;
+  const changedProbeResult = convertSchema(changedProbe);
+  const changedProbeGates = changedProbeResult.report.gates
+    .filter((gate) => gate.code === "unsupported_check_constraint")
+    .flatMap((gate) => gate.locations)
+    .filter((location) => sourceCheckNames.has(location.name));
+  assert.deepEqual(new Set(changedProbeGates.map((location) => location.name)), sourceCheckNames);
 });
 
 test("positive unconstrained numeric checks use exact canonical decimal text", () => {
@@ -572,7 +616,7 @@ test("the exact recent-active view is adapted only to the reviewed D1 query", ()
   input.views = [{ kind: "view", name: "recent_active_fanmarks", definition }];
 
   const result = convertSchema(input);
-  assert.equal(result.report.schemaVersion, 6);
+  assert.equal(result.report.schemaVersion, 7);
   assert.equal(result.report.deployable, false);
   assert.deepEqual(result.report.target.catalogScopeAdaptations, [{
     scope: "views",

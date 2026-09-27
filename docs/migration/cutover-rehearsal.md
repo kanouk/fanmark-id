@@ -83,7 +83,7 @@ The rehearsal is not complete until each applicable gate has evidence. A green
 unit suite or an empty-table readback alone is insufficient.
 
 - The refreshed source catalog fingerprint matches the conversion and import
-  artifacts. Converter v6 currently reports 16 unresolved row-conversion and
+  artifacts. Converter v7 currently reports 15 unresolved row-conversion and
   schema/operation gate groups and `deployable: false`; the full schema/import
   gate is therefore still open.
 - The current schema's synthetic import/restart rehearsal passes, including

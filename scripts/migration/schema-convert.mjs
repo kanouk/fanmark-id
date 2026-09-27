@@ -14,7 +14,7 @@ import { pathToFileURL } from "node:url";
 
 import { compileCredentialDescriptor, CREDENTIAL_COLUMN, CREDENTIAL_SOURCE_RELATION } from "./credential-descriptor.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 6;
+export const SCHEMA_CONVERSION_VERSION = 7;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -24,6 +24,21 @@ const MONEY_COLUMNS = new Set([
   "fanmark_tiers.monthly_price_usd",
 ]);
 const SUPPORTED_INDEX_METHOD = "btree";
+const REVIEWED_EN_US_REGEX_LOCALE = "en_US.UTF-8";
+const UNICODE_SCALAR_COUNT = 1_112_063;
+const REGEX_RANGE_PROBE_FIELDS = [
+  "invitation_extra_matches",
+  "setting_extra_matches",
+  "email_local_extra_matches",
+  "email_domain_extra_matches",
+  "email_tld_extra_matches",
+];
+const REGEX_RANGE_PROBE_KEYS = new Set([
+  "collate",
+  "ctype",
+  "unicode_scalar_count",
+  ...REGEX_RANGE_PROBE_FIELDS,
+]);
 const REVIEWED_RECENT_VIEW = {
   name: "recent_active_fanmarks",
   definitionSha256: "edb14241ebabddc6167bf07eee51ad24843f564e0a925bac4eedb1d44bdb3a3c",
@@ -175,6 +190,26 @@ function normalizeCatalog(catalog) {
       ctype: catalog.database_locale.ctype,
     };
   }
+  let regexRangeProbe;
+  if (Object.hasOwn(catalog, "regex_range_probe")) {
+    const probe = catalog.regex_range_probe;
+    if (
+      !isPlainObject(probe) ||
+      Object.keys(probe).some((key) => !REGEX_RANGE_PROBE_KEYS.has(key)) ||
+      typeof probe.collate !== "string" ||
+      typeof probe.ctype !== "string" ||
+      !Number.isSafeInteger(probe.unicode_scalar_count) ||
+      REGEX_RANGE_PROBE_FIELDS.some((field) => !Number.isSafeInteger(probe[field]) || probe[field] < 0)
+    ) {
+      throw fail("invalid_catalog_regex_range_probe");
+    }
+    regexRangeProbe = {
+      collate: probe.collate,
+      ctype: probe.ctype,
+      unicode_scalar_count: probe.unicode_scalar_count,
+      ...Object.fromEntries(REGEX_RANGE_PROBE_FIELDS.map((field) => [field, probe[field]])),
+    };
+  }
   const columns = requireArray(catalog, "columns").map((column) => {
     if (
       !isPlainObject(column) ||
@@ -264,6 +299,7 @@ function normalizeCatalog(catalog) {
   return {
     observed_at: catalog.observed_at ?? null,
     ...(databaseLocale ? { database_locale: databaseLocale } : {}),
+    ...(regexRangeProbe ? { regex_range_probe: regexRangeProbe } : {}),
     columns: [...columns].sort((left, right) => left.table_name.localeCompare(right.table_name) || left.ordinal - right.ordinal),
     constraints: [...constraints].sort((left, right) => left.table_name.localeCompare(right.table_name) || left.kind.localeCompare(right.kind) || left.name.localeCompare(right.name)),
     indexes: [...indexes].sort((left, right) => left.table_name.localeCompare(right.table_name) || left.name.localeCompare(right.name)),
@@ -594,12 +630,22 @@ function translatePositiveCanonicalDecimalCheck(definition, tableColumns) {
   ].join(" AND ");
 }
 
+function hasReviewedRegexLocale(databaseLocale, regexRangeProbe) {
+  if (databaseLocale?.collate === "C" && databaseLocale?.ctype === "C") return true;
+  return databaseLocale?.collate === REVIEWED_EN_US_REGEX_LOCALE &&
+    databaseLocale?.ctype === REVIEWED_EN_US_REGEX_LOCALE &&
+    regexRangeProbe?.collate === databaseLocale.collate &&
+    regexRangeProbe?.ctype === databaseLocale.ctype &&
+    regexRangeProbe?.unicode_scalar_count === UNICODE_SCALAR_COUNT &&
+    REGEX_RANGE_PROBE_FIELDS.every((field) => regexRangeProbe[field] === 0);
+}
+
 // Translate only the three exact ASCII validation expressions present in the
-// source schema, and only when PostgreSQL's active database locale is C/C.
-// SQLite GLOB's ASCII ranges then preserve the source ranges; unknown locale,
-// expression, operator, collation, or column shape keeps the existing gate.
-function translateKnownPostgresRegexCheck(definition, tableName, tableColumns, databaseLocale) {
-  if (databaseLocale?.collate !== "C" || databaseLocale?.ctype !== "C") return null;
+// source schema. Non-C locales require the exhaustive, same-catalog Unicode
+// range probe; unknown locale, expression, operator, collation, or column
+// shape keeps the existing gate.
+function translateKnownPostgresRegexCheck(definition, tableName, tableColumns, databaseLocale, regexRangeProbe) {
+  if (!hasReviewedRegexLocale(databaseLocale, regexRangeProbe)) return null;
   const unwrapped = unwrapCheckDefinition(definition);
   if (unwrapped === null) return null;
   const expression = unwrapSingleOuterParentheses(unwrapped);
@@ -638,6 +684,8 @@ function translateKnownPostgresRegexCheck(definition, tableName, tableColumns, d
     const at = `instr(${name}, '@')`;
     const local = `substr(${name}, 1, ${at} - 1)`;
     const domain = `substr(${name}, ${at} + 1)`;
+    const domainBeforeTld = `rtrim(${domain}, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz')`;
+    const tldLength = `(length(${domain}) - length(${domainBeforeTld}))`;
     return [
       `instr(${name}, char(0)) = 0`,
       `(length(${name}) - length(replace(${name}, '@', ''))) = 1`,
@@ -645,7 +693,9 @@ function translateKnownPostgresRegexCheck(definition, tableName, tableColumns, d
       `${local} NOT GLOB '*[^A-Za-z0-9._%+-]*'`,
       `length(${domain}) > 0`,
       `${domain} NOT GLOB '*[^A-Za-z0-9.-]*'`,
-      `${domain} GLOB '?*.[A-Za-z][A-Za-z]*'`,
+      `${tldLength} >= 2`,
+      `length(${domainBeforeTld}) >= 2`,
+      `substr(${domainBeforeTld}, -1, 1) = '.'`,
     ].join(" AND ");
   }
   return null;
@@ -1156,6 +1206,7 @@ function renderTable(tableName, tableColumns, sourceConstraints, context) {
         tableName,
         tableColumns,
         context.databaseLocale,
+        context.regexRangeProbe,
       );
       if (regexCheck !== null) {
         definitions.push({ order: 40_000, sql: `CONSTRAINT ${quoteIdentifier(constraint.name)} CHECK (${regexCheck})` });
@@ -1225,6 +1276,7 @@ export function convertSchema(catalogInput, options = {}) {
     columnCodecs,
     credentialDescriptorPlan,
     databaseLocale: catalog.database_locale,
+    regexRangeProbe: catalog.regex_range_probe,
     indexAdaptations: [],
     catalogScopeAdaptations: [],
   };
@@ -1280,6 +1332,8 @@ export function convertSchema(catalogInput, options = {}) {
 
   const sourceSummary = {
     observedAt: catalog.observed_at,
+    ...(catalog.database_locale ? { databaseLocale: catalog.database_locale } : {}),
+    ...(catalog.regex_range_probe ? { regexRangeProbe: catalog.regex_range_probe } : {}),
     tableCount: tableNames.size,
     columnCount: catalog.columns.length,
     constraintCount: catalog.constraints.length,
