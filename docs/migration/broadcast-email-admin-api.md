@@ -30,9 +30,11 @@ request identity.
 The test-send code has only been checked with an injected provider mock. The
 Worker route has been deployed with its selector off; the frontend selector,
 allowlisted recipient, Resend key, and sender are not configured, and no email
-was sent. Read-only smoke returned 401/no-store for the unauthenticated draft
-list and test-send request. Before enabling it, configure one controlled
-recipient and run an authenticated staging canary. Bulk delivery still needs a
+was sent. An authenticated staging API canary on the deployed Worker verified
+the 12-template list, a zero-result future-date estimate, synthetic draft
+create/readback, test-send 503, and bulk-send 404. It removed its synthetic
+Auth/profile/draft/audit rows and direct D1 readback returned the canary tables
+to zero. Authenticated browser review remains open. Bulk delivery still needs a
 separate queue/retry design, recipient snapshot semantics, opt-out and bounce
 handling, and delivery-state reconciliation. The draft write and its minimized
 `BROADCAST_DRAFT_CREATE` audit record are one D1 batch; the audit contains the

@@ -46,15 +46,16 @@ function requireExplicitStagingConsent() {
   const adminUserPlanReadback = args.has("--admin-user-plan-readback");
   const adminUserStatusReadback = args.has("--admin-user-status-readback");
   const waitlistAdminReadback = args.has("--waitlist-admin-readback");
+  const broadcastEmailReadback = args.has("--broadcast-email-readback");
   const systemSettingsReadback = args.has("--system-settings-readback");
   const notificationManualEvent = args.has("--notification-manual-event");
   if (!args.has("--run-live-staging-write") || !args.has(`--database=${expectedDatabase}`) ||
-      (!emojiMasterRoundtrip && !referenceMasterPricingReadback && !referenceMasterTierRoundtrip && !referenceMasterExtensionPriceRoundtrip && !authEmailTemplateEditRoundtrip && !adminUserManagementReadback && !adminUserPlanReadback && !adminUserStatusReadback && !waitlistAdminReadback && !systemSettingsReadback && !notificationManualEvent)) {
+      (!emojiMasterRoundtrip && !referenceMasterPricingReadback && !referenceMasterTierRoundtrip && !referenceMasterExtensionPriceRoundtrip && !authEmailTemplateEditRoundtrip && !adminUserManagementReadback && !adminUserPlanReadback && !adminUserStatusReadback && !waitlistAdminReadback && !broadcastEmailReadback && !systemSettingsReadback && !notificationManualEvent)) {
     throw new Error(
       `Refusing remote staging writes. Pass --run-live-staging-write --database=${expectedDatabase} and an explicit smoke flag.`,
     );
   }
-  return { emojiMasterRoundtrip, referenceMasterPricingReadback, referenceMasterTierRoundtrip, referenceMasterExtensionPriceRoundtrip, authEmailTemplateEditRoundtrip, adminUserManagementReadback, adminUserPlanReadback, adminUserStatusReadback, waitlistAdminReadback, systemSettingsReadback, notificationManualEvent };
+  return { emojiMasterRoundtrip, referenceMasterPricingReadback, referenceMasterTierRoundtrip, referenceMasterExtensionPriceRoundtrip, authEmailTemplateEditRoundtrip, adminUserManagementReadback, adminUserPlanReadback, adminUserStatusReadback, waitlistAdminReadback, broadcastEmailReadback, systemSettingsReadback, notificationManualEvent };
 }
 
 async function assertStagingTarget(actions) {
@@ -81,6 +82,10 @@ async function assertStagingTarget(actions) {
   assert.equal(config.vars?.ADMIN_USER_MANAGEMENT_BACKEND, "d1", "expected D1-backed admin user-management API");
   assert.equal(config.vars?.AUTH_USER_STATUS_BACKEND, "d1", "expected Auth D1 suspension enforcement");
   assert.equal(config.vars?.SYSTEM_SETTINGS_BACKEND, "d1", "expected D1-backed system settings API");
+  if (actions.broadcastEmailReadback) {
+    assert.equal(config.vars?.BROADCAST_EMAIL_BACKEND, "d1", "expected D1-backed broadcast admin API");
+    assert.notEqual(config.vars?.BROADCAST_TEST_SEND_BACKEND, "resend", "broadcast test delivery must remain disabled");
+  }
   if (actions.notificationManualEvent) {
     assert.equal(config.vars?.NOTIFICATION_PROCESSOR_BACKEND, "d1", "expected D1-backed notification processor");
     assert.ok(config.triggers?.crons?.includes("* * * * *"), "expected the one-minute staging notification Cron");
@@ -1706,6 +1711,120 @@ async function exerciseWaitlistAdmin(cookie, userId) {
   assert.equal(Number(auditRows[0]?.count), 0, "synthetic waitlist audit remained in business D1");
 }
 
+async function exerciseBroadcastEmailAdmin(cookie, userId, targetUserId, targetUsername) {
+  const route = "/api/admin/broadcast-emails";
+  const username = `codex-broadcast-admin-${randomBytes(6).toString("hex")}`;
+  const subject = `Synthetic staging broadcast ${randomUUID()}`;
+  const timestamp = new Date().toISOString();
+  let seedAttempted = false;
+  let initialDraftIds = new Set();
+  try {
+    const baseline = await queryBusiness(`SELECT (SELECT COUNT(*) FROM user_settings) AS profiles, (SELECT COUNT(*) FROM broadcast_emails) AS drafts`);
+    assert.equal(Number(baseline[0]?.profiles), 1, "broadcast admin canary requires only its synthetic target profile");
+    assert.equal(Number(baseline[0]?.drafts), 0, "broadcast admin canary requires no pre-existing broadcast drafts");
+    const targetProfile = await queryBusiness(`SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(targetUserId)} AND username = ${sqlLiteral(targetUsername)}`);
+    assert.equal(Number(targetProfile[0]?.count), 1, "broadcast canary target profile is missing");
+    const adminProfile = await queryBusiness(`SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(userId)}`);
+    assert.equal(Number(adminProfile[0]?.count), 0, "synthetic broadcast administrator already has a business profile");
+    seedAttempted = true;
+    await executeBusiness(
+      `INSERT INTO user_settings (user_id, username, display_name, avatar_url, plan_type, preferred_language, created_at, updated_at) VALUES (${sqlLiteral(userId)}, ${sqlLiteral(username)}, 'Synthetic broadcast admin', NULL, 'admin', 'ja', ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});`,
+      "synthetic broadcast administrator profile provision",
+    );
+
+    const anonymous = await request(route);
+    assertStatus(anonymous, 401, "unauthenticated broadcast list");
+
+    const initialList = await request(route, { headers: { cookie } });
+    assertStatus(initialList, 200, "MFA-protected broadcast list");
+    const initial = await initialList.json();
+    assert.ok(Array.isArray(initial.broadcasts) && Array.isArray(initial.templates));
+    assert.equal(initial.templates.length, 12, "expected the three broadcast types across four locales");
+    assert.equal(new Set(initial.templates.map((item) => `${item.email_type}/${item.language}`)).size, 12);
+    assert.ok(initial.broadcasts.every((draft) => !Object.hasOwn(draft, "created_by") && !Object.hasOwn(draft, "error_details")));
+    initialDraftIds = new Set(initial.broadcasts.map((draft) => draft.id));
+
+    const estimate = await request(`${route}/estimate`, {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ recipientFilter: { registered_after: "2099-01-01" } }),
+    });
+    assertStatus(estimate, 200, "broadcast recipient estimate");
+    assert.deepEqual(await estimate.json(), { count: 0 });
+
+    const create = await request(route, {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        emailType: "broadcast_announcement",
+        subject,
+        bodyText: "Synthetic staging-only content; no user address or personal data.",
+        recipientFilter: { languages: ["ja"] },
+      }),
+    });
+    assertStatus(create, 201, "synthetic broadcast draft create");
+    const created = (await create.json()).broadcast;
+    assert.ok(created && /^[0-9a-f-]{36}$/iu.test(created.id));
+    assert.equal(created.subject, subject);
+    assert.equal(created.status, "draft");
+    assert.deepEqual(created.recipient_filter, { languages: ["ja"] });
+    assert.equal(Object.hasOwn(created, "created_by"), false);
+    assert.equal(initialDraftIds.has(created.id), false, "draft create reused an existing ID");
+    const draftAudit = await queryBusiness(`SELECT user_id, resource_id, metadata FROM audit_logs WHERE action = 'BROADCAST_DRAFT_CREATE' AND resource_id = ${sqlLiteral(created.id)} LIMIT 2`);
+    assert.equal(draftAudit.length, 1, "draft creation did not write exactly one audit row");
+    assert.equal(draftAudit[0].user_id, userId);
+    assert.equal(draftAudit[0].resource_id, created.id);
+    assert.deepEqual(JSON.parse(draftAudit[0].metadata), { email_type: "broadcast_announcement", recipient_filter_present: true });
+
+    const listedAgain = await request(route, { headers: { cookie } });
+    assertStatus(listedAgain, 200, "broadcast draft readback");
+    const readback = await listedAgain.json();
+    const exactDrafts = readback.broadcasts.filter((draft) => draft.id === created.id);
+    assert.equal(exactDrafts.length, 1);
+    assert.equal(exactDrafts[0].subject, subject);
+    assert.equal(exactDrafts[0].status, "draft");
+
+    const disabledTestSend = await request(`${route}/test-send`, {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ broadcastId: created.id, language: "ja", requestId: randomUUID() }),
+    });
+    assertStatus(disabledTestSend, 503, "disabled broadcast test send");
+    assert.deepEqual(await disabledTestSend.json(), { error: "test_send_unavailable" });
+    const testSendAudit = await queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE action = 'BROADCAST_EMAIL_TEST_SENT' AND resource_id = ${sqlLiteral(created.id)}`);
+    assert.equal(Number(testSendAudit[0]?.count), 0, "disabled test-send route wrote a sent audit");
+
+    const bulkSend = await request(`${route}/send`, {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ broadcastId: created.id }),
+    });
+    assertStatus(bulkSend, 404, "disabled bulk broadcast send route");
+  } finally {
+    if (seedAttempted) {
+      const drafts = await queryBusiness(`SELECT id FROM broadcast_emails WHERE created_by = ${sqlLiteral(userId)} AND subject = ${sqlLiteral(subject)} AND status = 'draft'`);
+      const draftIds = drafts.map((row) => row.id).filter((id) => typeof id === "string" && /^[0-9a-f-]{36}$/iu.test(id));
+      assert.equal(draftIds.length, drafts.length, "synthetic draft readback returned an invalid ID");
+      const draftIdSql = draftIds.length ? `(${draftIds.map(sqlLiteral).join(", ")})` : "(NULL)";
+      await executeBusiness(
+        `DELETE FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND (action = 'UNAUTHORIZED_BROADCAST_EMAIL_ACCESS' OR (action = 'ADMIN_CHECK' AND resource_type = 'system' AND json_extract(metadata, '$.attempted_action') IN ('list', 'estimate_recipients', 'create_draft', 'test_send')) OR (action IN ('BROADCAST_DRAFT_CREATE', 'BROADCAST_EMAIL_TEST_SENT') AND resource_id IN ${draftIdSql}));\n` +
+        `DELETE FROM broadcast_emails WHERE id IN ${draftIdSql} AND created_by = ${sqlLiteral(userId)} AND subject = ${sqlLiteral(subject)} AND status = 'draft';\n` +
+        `DELETE FROM user_settings WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(username)};`,
+        "synthetic broadcast admin/draft cleanup",
+      );
+      const [profileRows, draftRows, auditRows] = await Promise.all([
+        queryBusiness(`SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(username)}`),
+        queryBusiness(`SELECT COUNT(*) AS count FROM broadcast_emails WHERE created_by = ${sqlLiteral(userId)} AND subject = ${sqlLiteral(subject)}`),
+        queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND (action = 'UNAUTHORIZED_BROADCAST_EMAIL_ACCESS' OR (action = 'ADMIN_CHECK' AND resource_type = 'system' AND json_extract(metadata, '$.attempted_action') IN ('list', 'estimate_recipients', 'create_draft', 'test_send')) OR (action IN ('BROADCAST_DRAFT_CREATE', 'BROADCAST_EMAIL_TEST_SENT') AND resource_id IN ${draftIdSql}))`),
+      ]);
+      assert.equal(Number(profileRows[0]?.count), 0, "synthetic broadcast admin profile remained in business D1");
+      assert.equal(Number(draftRows[0]?.count), 0, "synthetic broadcast draft remained in business D1");
+      assert.equal(Number(auditRows[0]?.count), 0, "synthetic broadcast audit remained in business D1");
+    }
+  }
+  console.log("Staging MFA-protected broadcast list/estimate/draft readback passed; the test-send and bulk-send routes stayed disabled, and synthetic rows/audits were removed.");
+}
+
 function assertStatus(response, status, operation) {
   assert.equal(response.status, status, `${operation} returned HTTP ${response.status}; expected ${status}`);
 }
@@ -1820,6 +1939,9 @@ async function main() {
     if (actions.waitlistAdminReadback) {
       await exerciseWaitlistAdmin(cookie, userId);
     }
+    if (actions.broadcastEmailReadback) {
+      await exerciseBroadcastEmailAdmin(cookie, userId, targetUserId, targetUsername);
+    }
     if (actions.authEmailTemplateEditRoundtrip) {
       await exerciseAuthEmailTemplatesAdmin(cookie, { editRoundtrip: true, adminUserId: userId });
     }
@@ -1882,7 +2004,7 @@ async function main() {
           `DELETE FROM "user" WHERE "id" = ${sqlLiteral(userId)};`,
           "synthetic identity cleanup",
         );
-        if (actions.waitlistAdminReadback || actions.referenceMasterTierRoundtrip || actions.referenceMasterExtensionPriceRoundtrip || actions.authEmailTemplateEditRoundtrip || actions.adminUserManagementReadback || actions.adminUserPlanReadback || actions.adminUserStatusReadback || actions.systemSettingsReadback || actions.notificationManualEvent) {
+        if (actions.waitlistAdminReadback || actions.broadcastEmailReadback || actions.referenceMasterTierRoundtrip || actions.referenceMasterExtensionPriceRoundtrip || actions.authEmailTemplateEditRoundtrip || actions.adminUserManagementReadback || actions.adminUserPlanReadback || actions.adminUserStatusReadback || actions.systemSettingsReadback || actions.notificationManualEvent) {
           if (actions.adminUserStatusReadback) {
             await executeBusiness(
               `DELETE FROM notifications WHERE user_id = ${sqlLiteral(targetUserId)};\n` +
@@ -1947,6 +2069,9 @@ async function main() {
   }
   if (actions.waitlistAdminReadback) {
     console.log("Staging waitlist admin list/reveal required same-session MFA and the admin plan, returned only the email hash in the list, audited the explicit reveal, and removed the synthetic address/profile/audit rows.");
+  }
+  if (actions.broadcastEmailReadback) {
+    console.log("Staging broadcast email admin read/estimate/draft create-readback passed with the seeded 12 templates. Test-send remained selector-disabled, bulk-send remained 404, and synthetic profile/draft/audit rows were removed.");
   }
   if (actions.authEmailTemplateEditRoundtrip) {
     console.log("Staging MFA-protected Japanese signup email-template edit/restore passed; anonymous and stale writes were rejected, all 16 template contents returned to baseline, and synthetic audit rows were removed. No email was sent.");

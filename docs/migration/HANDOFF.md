@@ -1501,10 +1501,22 @@ Worker and SPA were deployed to `fanmark-app-staging`, version
 `0ef26792-edb2-4d66-9b94-7a208d4d7f4a`, with the test-send selectors off; the
 fixed recipient and Resend key/from are unset, and no email was sent. Read-only
 smoke returned SPA 200/noindex, Better Auth health 200/no-store, and 401/no-store
-for both unauthenticated broadcast listing and test-send POST. Authenticated
-browser acceptance remains open. This change does not touch user rows,
-production routes, R2 objects, or domain/DNS. The unrelated
-`supabase/.temp/cli-latest` modification remains outside the commit.
+for unauthenticated broadcast listing and test-send POST.
+
+An authenticated staging canary then provisioned a synthetic Better Auth
+administrator, completed sign-in and same-session TOTP/MFA, read the 12 active
+broadcast templates, checked a future-date recipient estimate of zero, and
+created/read back one marked draft. Test-send returned 503 with the provider
+selector absent; the bulk-send route returned 404. The canary removed its
+synthetic Auth identity, target/profile, draft, and audit rows; direct final
+readback returned all Auth user-owned tables and business `user_settings`,
+`broadcast_emails`, and `audit_logs` to zero. The first harness attempt stopped
+at an incorrect empty-profile precondition; its exact synthetic target rows
+were cleaned by ID, the target-profile baseline and cleanup guard were fixed,
+and the repeated canary passed. No email was sent. Authenticated browser UI
+review remains open. Production routes, R2 objects, and domain/DNS were not
+changed. The unrelated `supabase/.temp/cli-latest` modification remains outside
+the commit.
 
 Validation on this worktree: broadcast Worker tests 10/10; the complete Worker
 test chain exited 0; frontend broadcast API tests 5/5; frontend and Worker
