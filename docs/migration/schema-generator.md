@@ -1,6 +1,6 @@
 # Full schema conversion generator
 
-`schema-convert.mjs` is a private, catalog-only preparation tool. It converts
+`schema-convert.mjs` v8 is a private, catalog-only preparation tool. It converts
 the JSON emitted by `scripts/migration/schema-readiness.sql` into deterministic
 SQLite/D1 table and index SQL plus a machine-readable report of unresolved
 parity gates. It does not read application rows, contact Supabase, apply SQL,
@@ -8,8 +8,8 @@ or declare a production migration ready.
 
 The private catalog also carries `regex_range_probe`. It tests the three exact
 ASCII-format CHECK expressions against every valid Unicode scalar value using
-the linked PostgreSQL locale and records only mismatch counts. Converter v7
-uses the `en_US.UTF-8` locale only when this same catalog records all 1,112,063
+the linked PostgreSQL locale and records only mismatch counts. Converter v8
+retains the v7 locale proof and uses `en_US.UTF-8` only when this same catalog records all 1,112,063
 scalar values and zero extra matches; a missing, changed, or nonzero probe
 keeps those constraints gated. The query reads no application rows. PostgreSQL
 documents that regex ranges depend on the active collating sequence, so this
@@ -56,7 +56,7 @@ SQLite affinity. Treat the current report's codec values as the import contract.
 
 | PostgreSQL source | D1 column | Report codec | Import boundary |
 | --- | --- | --- | --- |
-| `uuid` | `TEXT` | `uuid-text` | Validate UUID syntax and canonicalize to the reviewed lowercase form; never generate a replacement for an imported value. |
+| `uuid` | `TEXT` | `uuid-text` | Validate exact UUID syntax and canonicalize to lowercase before binding; never generate a replacement for an imported value. Malformed values fail the row converter. |
 | `boolean` | `INTEGER` | `boolean-int01` | Bind only `0` or `1`; generated checks also require SQLite integer storage. |
 | `smallint` / `integer` | `INTEGER` | `smallint-int16` / `integer-int32` | Validate source range and SQLite integer storage. |
 | `bigint` | `INTEGER` | `bigint-int64-exact` | Validate and retain canonical signed 64-bit decimal text; bind with `CAST(? AS INTEGER)` and verify exact text readback plus SQLite integer storage. Application-facing Number precision remains a separate gate. |
@@ -75,6 +75,13 @@ precision and bigint application-read precision remain gates even when the
 target SQLite type is syntactically accepted. The importer now validates the
 full signed 64-bit range without Number conversion; application reads still
 need safe bounds or an exact text projection.
+
+UUID syntax validation is enforced by the shared row converter used by snapshot
+verification and D1 import, including credential-bearing rows' non-credential
+columns. It requires exactly 36 characters, rejects malformed strings before a
+binding is produced, and lowercases valid IDs without replacing them. A codec
+version change prevents an older partially imported run from resuming under
+the updated validation contract.
 
 The converter recognizes `seq_key(uuid[])` as an index over the target column's
 canonical JSON text representation. It rejects the translation for any other

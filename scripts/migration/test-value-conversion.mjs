@@ -6,6 +6,13 @@ test('money uses exact cents and rejects rounding or non-text input',()=>{
  for(const [text,cents] of [['0',0],['0.01',1],['12.30',1230],['-0.29',-29],['99999999.99',9999999999]])assert.equal(moneyCents(text),cents);
  for(const input of ['0.001','100000000','NaN','Infinity','1e2',0.29])assert.throws(()=>moneyCents(input));
 });
+test('UUID codec canonicalizes exact-width IDs and rejects malformed text including trailing newlines',()=>{
+ const canonical='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+ assert.equal(convert('uuid',canonical.toUpperCase()),canonical);
+ assert.equal(convert('uuid','00000000-0000-0000-0000-000000000000'),'00000000-0000-0000-0000-000000000000');
+ for(const value of ['not-a-uuid',`${canonical}\n`,canonical.slice(1),`${canonical}x`]) assert.throws(()=>convert('uuid',value));
+ assert.throws(()=>convert('uuid[]',JSON.stringify([`${canonical}\n`])));
+});
 test('timestamps preserve all microseconds and reject invalid/unconverted calendar representations',()=>{
  for(const value of ['2026-09-21T00:00:00.123456Z','0001-01-01T00:00:00.000001Z','2024-02-29T23:59:59.999999Z','9999-12-31T23:59:59.999999Z'])assert.equal(utcMicroseconds(value),value);
  for(const value of ['2025-02-29T00:00:00.000000Z','2026-09-21T24:00:00.000000Z','0000-01-01T00:00:00.000000Z','2026-09-21T00:00:00.123Z','2026-09-21T00:00:00.123456+00:00','infinity'])assert.throws(()=>utcMicroseconds(value));

@@ -53,7 +53,7 @@ import {
 } from "./credential-import-transform.mjs";
 
 export const D1_IMPORT_SCHEMA_VERSION = 2;
-export const D1_IMPORT_CODEC_VERSION = 2;
+export const D1_IMPORT_CODEC_VERSION = 3;
 export const DEFAULT_MAX_ROWS_PER_BATCH = 50;
 export const DEFAULT_MAX_BATCH_BYTES = 512 * 1024;
 export const DEFAULT_MAX_BINDINGS_PER_BATCH = 500;

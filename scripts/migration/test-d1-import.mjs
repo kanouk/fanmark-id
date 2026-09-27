@@ -15,7 +15,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { test } from "node:test";
 
 import { convertSchema } from "./schema-convert.mjs";
-import { createTargetIncarnation, importD1Snapshot, importEncryptedD1Snapshot } from "./d1-import.mjs";
+import { D1_IMPORT_CODEC_VERSION, createTargetIncarnation, importD1Snapshot, importEncryptedD1Snapshot } from "./d1-import.mjs";
 import { exportSnapshot } from "./snapshot-export.mjs";
 import { sealSnapshotDirectory } from "./snapshot-encryption.mjs";
 
@@ -719,6 +719,29 @@ if (isMain) test("rejects a changed manifest against the existing target incarna
       importD1Snapshot(importOptions(fixture)),
       (error) => error.code === "report_identity_mismatch",
     );
+  } finally {
+    await fixture.close();
+  }
+});
+
+if (isMain) test("refuses to resume an import ledger created by a different row codec version", async () => {
+  const fixture = await openFixture();
+  try {
+    await importD1Snapshot(importOptions(fixture));
+    const version = await fixture.database.prepare(
+      'SELECT "codec_version" FROM "__fanmark_d1_import_runs" WHERE "run_id" = ?',
+    ).bind(fixture.runId).all();
+    assert.deepEqual(version.results, [{ codec_version: D1_IMPORT_CODEC_VERSION }]);
+
+    await fixture.database.prepare(
+      'UPDATE "__fanmark_d1_import_runs" SET "codec_version" = ? WHERE "run_id" = ?',
+    ).bind(D1_IMPORT_CODEC_VERSION - 1, fixture.runId).run();
+    await assert.rejects(
+      importD1Snapshot(importOptions(fixture)),
+      (error) => error.code === "destination_run_identity_mismatch",
+    );
+    const rows = await fixture.database.prepare('SELECT COUNT(*) AS "count" FROM "parent"').all();
+    assert.deepEqual(rows.results, [{ count: 1 }]);
   } finally {
     await fixture.close();
   }

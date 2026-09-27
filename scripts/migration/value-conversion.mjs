@@ -45,7 +45,7 @@ export function calendarDate(value) {
 }
 
 function uuid(value) {
-  if (!uuidPattern.test(value)) return invalid('uuid');
+  if (value.length !== 36 || !uuidPattern.test(value)) return invalid('uuid');
   return value.toLowerCase();
 }
 

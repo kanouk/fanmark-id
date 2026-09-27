@@ -251,6 +251,18 @@ test("extra or missing fields, enum values, bigint range, and array shape fail c
   }
 });
 
+test("scalar UUID columns reject malformed source text before it can become a D1 binding", () => {
+  const source = catalog();
+  for (const id of ["not-a-uuid", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\n", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa"]) {
+    const candidate = envelope();
+    candidate.values.id = id;
+    assert.throws(() => convertRowEnvelope(source, "fanmark_tiers", candidate), (error) => error.code === "invalid_column_value");
+  }
+  const uppercase = envelope();
+  uppercase.values.id = "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA";
+  assert.equal(convertRowEnvelope(source, "fanmark_tiers", uppercase).bindings[0], "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+});
+
 test("sequence-key UUID arrays reject empty arrays and NULL elements before import", () => {
   const ids = [
     "33333333-3333-4333-8333-333333333333",

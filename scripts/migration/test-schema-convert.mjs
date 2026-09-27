@@ -202,7 +202,7 @@ test("conversion is deterministic and exposes exact target codecs", () => {
 
   assert.equal(first.report.target.tableCount, 4);
   assert.equal(first.report.target.columnCount, 15);
-  assert.equal(first.report.schemaVersion, 7);
+  assert.equal(first.report.schemaVersion, 8);
   assert.deepEqual(first.report.target.translatedConstraints, { p: 4, u: 0, f: 1, c: 3 });
   assert.equal(first.report.target.translatedIndexCount, 4);
   assert.deepEqual(
@@ -249,6 +249,8 @@ test("conversion is deterministic and exposes exact target codecs", () => {
   ]) {
     assert.ok(codes.has(expected), `missing gate ${expected}`);
   }
+  assert.equal(codes.has("uuid_import_validation"), false);
+  assert.ok(first.report.target.columnCodecs.some((entry) => entry.codec === "uuid-text"));
   assert.ok(!codes.has("uuid_default_requires_operation"));
   assert.match(first.sql, /"id" TEXT NOT NULL DEFAULT \(lower\([\s\S]*randomblob\(6\)[\s\S]*\)\)/);
   assert.equal(first.report.deployable, false);
@@ -356,7 +358,7 @@ test("the four reviewed live GIN indexes have explicit D1 query-contract disposi
   );
 
   const result = convertSchema(input);
-  assert.equal(result.report.schemaVersion, 7);
+  assert.equal(result.report.schemaVersion, 8);
   assert.deepEqual(result.report.target.indexAdaptations.map((entry) => entry.sourceIndex), [
     "idx_emoji_master_keywords",
     "idx_emoji_master_short_name",
@@ -400,7 +402,7 @@ test("known ASCII PostgreSQL regex checks require a reviewed locale proof", () =
     .flatMap((gate) => gate.locations)
     .filter((location) => sourceCheckNames.has(location.name));
   assert.deepEqual(untranslatedSourceChecks, []);
-  assert.equal(result.report.schemaVersion, 7);
+  assert.equal(result.report.schemaVersion, 8);
 
   const cases = [
     ["invitation_codes", "code", "ABC123", true],
@@ -616,7 +618,7 @@ test("the exact recent-active view is adapted only to the reviewed D1 query", ()
   input.views = [{ kind: "view", name: "recent_active_fanmarks", definition }];
 
   const result = convertSchema(input);
-  assert.equal(result.report.schemaVersion, 7);
+  assert.equal(result.report.schemaVersion, 8);
   assert.equal(result.report.deployable, false);
   assert.deepEqual(result.report.target.catalogScopeAdaptations, [{
     scope: "views",

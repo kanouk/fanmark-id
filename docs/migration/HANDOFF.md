@@ -2177,6 +2177,28 @@ production routes, and domain/DNS remain untouched. The prior GitHub Actions
 run `36338168509` passed both Cloudflare staging-app and Worker API jobs on
 commit `43b318d`; Supabase Preview was skipped by design.
 
+## Schema converter v8: UUID import validation (2026-09-28 JST)
+
+Snapshot verification and the D1 importer both use the catalog-bound row
+converter for UUID columns. It now requires exact-width UUID text, canonicalizes
+valid uppercase values to lowercase, and rejects malformed input (including a
+trailing newline) before a D1 binding is produced. A local D1 test confirms an
+import ledger created with an older row-codec version cannot resume under the
+updated contract. The schema-conversion version is now 8 and the import codec
+version is 3.
+
+Regenerating from the current private 2026-09-28 schema-only catalog produces
+14 unresolved groups (9 row-conversion and 5 schema/operation) across 227
+locations; `deployable` remains `false`. The 40-table generated SQL is byte-for-
+byte identical to v7, so this change affects only validation/readiness metadata
+and import fencing. The catalog/report/SQL remain mode `0600` outside Git, and
+the DDL was not applied to remote D1. No source application rows were read;
+real user-data import and domain/DNS cutover remain deferred.
+
+Focused Node 22.6.0 tests pass: value/row/schema-converter 26/26 and local D1
+importer 18/18. The complete `npm run test:migration-data` suite passes 166/166
+on Node 22.6.0. PR CI for this v8 change remains to be run.
+
 ## Repeat staging authentication and lifecycle canary (2026-09-28 JST)
 
 Read-only `wrangler deployments list` showed `fanmark-app-staging` version

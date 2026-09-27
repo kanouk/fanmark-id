@@ -14,7 +14,7 @@ import { pathToFileURL } from "node:url";
 
 import { compileCredentialDescriptor, CREDENTIAL_COLUMN, CREDENTIAL_SOURCE_RELATION } from "./credential-descriptor.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 7;
+export const SCHEMA_CONVERSION_VERSION = 8;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -72,7 +72,6 @@ const REVIEWED_GIN_INDEX_ADAPTATIONS = new Map([
   }],
 ]);
 const ROW_CONVERSION_GATE_CODES = new Set([
-  "uuid_import_validation",
   "bigint_import_range_validation",
   "date_import_validation",
   "timestamp_import_precision",
@@ -752,7 +751,6 @@ function typeInfo(column, enumLabels, gates, typeCounts, credentialDescriptorPla
   } else if (sourceType === "uuid") {
     targetType = "TEXT";
     codec = "uuid-text";
-    gates.add("uuid_import_validation", "UUID text must be validated and malformed values rejected during import.", location);
   } else if (sourceType === "text") {
     targetType = "TEXT";
     codec = "text";
