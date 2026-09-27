@@ -498,45 +498,51 @@ async function authorizeAdminRequest(
       return errorResponse("admin_required", 403, responseHeaders);
     }
 
-    const user = await authConfig.database
-      .prepare('SELECT "twoFactorEnabled" FROM "user" WHERE "id" = ? LIMIT 1')
-      .bind(current.user.id)
-      .first<{ twoFactorEnabled?: unknown }>();
-    const factor = await authConfig.database
-      .prepare('SELECT "id", "verified" FROM "twoFactor" WHERE "userId" = ? AND "verified" = 1 LIMIT 2')
-      .bind(current.user.id)
-      .all<{ id?: unknown; verified?: unknown }>();
-    if (factor.success !== true || !Array.isArray(factor.results)) {
-      return errorResponse("auth_unavailable", 503, responseHeaders);
-    }
-    const verifiedFactors = factor.results;
-    const currentFactorId = verifiedFactors.length === 1 &&
-      typeof verifiedFactors[0]?.id === "string" &&
-      Number(verifiedFactors[0]?.verified) === 1
-      ? verifiedFactors[0].id
+    const assuranceState = await authConfig.database
+      .prepare(`WITH "verifiedFactors" AS (
+                  SELECT "id"
+                  FROM "twoFactor"
+                  WHERE "userId" = ? AND "verified" = 1
+                  LIMIT 2
+                )
+                SELECT
+                  authUser."twoFactorEnabled" AS "twoFactorEnabled",
+                  (SELECT COUNT(*) FROM "verifiedFactors") AS "verifiedFactorCount",
+                  (SELECT "id" FROM "verifiedFactors" LIMIT 1) AS "verifiedFactorId",
+                  assurance."userId" AS "assuranceUserId",
+                  assurance."sessionId" AS "assuranceSessionId",
+                  assurance."factorId" AS "assuranceFactorId",
+                  assurance."expiresAt" AS "assuranceExpiresAt"
+                FROM "user" AS "authUser"
+                LEFT JOIN "mfaAssurance" AS assurance
+                  ON assurance."userId" = authUser."id" AND assurance."sessionId" = ?
+                WHERE authUser."id" = ?
+                LIMIT 1`)
+      .bind(current.user.id, current.session.id, current.user.id)
+      .first<{
+        twoFactorEnabled?: unknown;
+        verifiedFactorCount?: unknown;
+        verifiedFactorId?: unknown;
+        assuranceUserId?: unknown;
+        assuranceSessionId?: unknown;
+        assuranceFactorId?: unknown;
+        assuranceExpiresAt?: unknown;
+      }>();
+    const currentFactorId = Number(assuranceState?.verifiedFactorCount) === 1 &&
+      typeof assuranceState?.verifiedFactorId === "string"
+      ? assuranceState.verifiedFactorId
       : null;
-    if (Number(user?.twoFactorEnabled) !== 1 || currentFactorId === null) {
+    if (Number(assuranceState?.twoFactorEnabled) !== 1 || currentFactorId === null) {
       return errorResponse("mfa_enrollment_required", 403, responseHeaders);
     }
 
-    const assurance = await authConfig.database
-      .prepare(`SELECT "userId", "sessionId", "factorId", "expiresAt"
-                FROM "mfaAssurance"
-                WHERE "userId" = ? AND "sessionId" = ? LIMIT 1`)
-      .bind(current.user.id, current.session.id)
-      .first<{
-        userId?: unknown;
-        sessionId?: unknown;
-        factorId?: unknown;
-        expiresAt?: unknown;
-      }>();
-    const expiresAt = typeof assurance?.expiresAt === "string"
-      ? Date.parse(assurance.expiresAt)
+    const expiresAt = typeof assuranceState?.assuranceExpiresAt === "string"
+      ? Date.parse(assuranceState.assuranceExpiresAt)
       : NaN;
     if (
-      assurance?.userId !== current.user.id ||
-      assurance?.sessionId !== current.session.id ||
-      assurance?.factorId !== currentFactorId ||
+      assuranceState?.assuranceUserId !== current.user.id ||
+      assuranceState?.assuranceSessionId !== current.session.id ||
+      assuranceState?.assuranceFactorId !== currentFactorId ||
       !Number.isFinite(expiresAt) ||
       expiresAt <= Date.now()
     ) {

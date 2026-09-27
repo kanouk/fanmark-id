@@ -651,6 +651,18 @@ describe("admin session authorization through the application Worker", () => {
     expect(await expired.json()).toEqual({ error: "mfa_required" });
   });
 
+  it("rejects ambiguous multiple verified MFA factors", async () => {
+    const { cookie, sessionId } = await signInAndGetSession();
+    await grantSyntheticAdminRoleAndMfa(sessionId);
+    await database?.prepare(
+      'INSERT INTO "twoFactor" ("id", "secret", "backupCodes", "userId", "verified") VALUES (?, ?, ?, ?, 1)',
+    ).bind("80000000-0000-4000-8000-000000000002", "synthetic-second-factor", "[]", verifiedUserId).run();
+
+    const response = await adminSessionRequest({ headers: { cookie } });
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: "mfa_enrollment_required" });
+  });
+
   it("completes Better Auth TOTP enrollment through the Worker before granting admin access", async () => {
     const { cookie } = await signInAndGetSession();
     await database?.prepare('INSERT INTO "adminRole" ("userId", "role") VALUES (?, ?)')
