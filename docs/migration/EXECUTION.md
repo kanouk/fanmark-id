@@ -2461,11 +2461,12 @@ route with the exact D1 target/schema profile and a four-page cap while leaving
 `LICENSE_EXPIRY_BACKEND` unset. The ordinary frontend build still calls the
 existing Supabase function.
 
-Client contract tests pass 4/4 and Worker handler tests pass 4/4, including MFA
-denial, origin/method/body checks, unset-selector behavior, split-D1 selection,
-identifier stripping, sanitized failures, and continuation status. Frontend
-and Worker typechecks, focused ESLint, all 159 migration-data tests, the full
-Worker test command, CI workflow-isolation check, and staging build pass. The
+Client contract tests pass 4/4 and Worker handler tests pass 5/5, including MFA
+denial, origin/method/body checks, zero-byte request-stream handling,
+unset-selector behavior, split-D1 selection, identifier stripping, sanitized
+failures, and continuation status. Frontend and Worker typechecks, focused
+ESLint, all 160 migration-data tests, the full Worker test command, CI
+workflow-isolation check, and staging build pass. The
 staging Worker was deployed as version
 `28e7ca3c-f610-47a4-aea9-f876bd8c3f11` while leaving both lifecycle selectors
 unset. Wrangler's secret-name readback also showed no manual lifecycle
@@ -2474,15 +2475,26 @@ selector. The served JavaScript asset is byte-for-byte identical to local
 `13582571ce98753679585bef629f57ec03d96534d3095f2ec3d60de70ed97778`). Root
 returned 200/noindex and a cookie-less POST to the new route returned 401
 `unauthenticated`; no authenticated request or lifecycle execution was sent.
-The new staging selector guard (3/3), Worker lifecycle-run API handler suite
-(4/4), license-expiry integration/source suite (25/25), scheduled lifecycle
-suite (8/8), lifecycle schema suite (16/16), Worker typecheck, and Wrangler
-staging dry-run pass. The first local source-suite attempt exposed a test call
-that accidentally reused the target-profile import options while asserting the
-generic credential guard; the test now explicitly exercises the generic path.
-The server-selector config is not yet deployed, and the authenticated
-zero-candidate staging API canary has not yet run. No D1 lifecycle data was
-changed.
+The new staging selector guard (3/3), license-expiry integration/source suite
+(25/25), scheduled lifecycle suite (8/8), lifecycle schema suite (16/16),
+Worker typecheck, and Wrangler staging dry-run pass. The first local
+source-suite attempt exposed a test call that accidentally reused the
+target-profile import options while asserting the generic credential guard;
+the test now explicitly exercises the generic path.
+
+Staging deployment `4988d9d0-b4ec-44d1-9ccc-00ac501aac36` enables only the
+MFA-protected manual lifecycle route. The scheduled `LICENSE_EXPIRY_BACKEND`
+selector remains absent while both Cron schedules stay configured. The first
+live call exposed that the edge runtime can represent an empty POST as a
+zero-byte stream; the handler now reads only until EOF or the first byte with
+a one-second bound. Its synthetic authenticated canary then returned HTTP 200
+with zero candidates in both phases and aggregate-only results. Exact target,
+digest, status, and counters were read back from both run journals before
+cleanup. Post-cleanup D1 reads found zero profiles, fanmarks, licenses,
+lifecycle journals/items/guards, and user-owned Auth rows (`changed_db=false`,
+`rows_written=0`). No user data, email, Stripe call, production route, or
+domain/DNS setting was changed. The first 400 response performed no lifecycle
+writes.
 
 ## Fresh schema refresh and descriptor-aware synthetic rehearsal (2026-09-27 JST)
 

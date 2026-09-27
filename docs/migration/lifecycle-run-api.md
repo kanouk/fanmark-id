@@ -26,24 +26,30 @@ Cron execution. For a manual request only, the route passes a cloned Worker
 environment to the lifecycle engine with `LICENSE_EXPIRY_BACKEND=d1`; it does
 not change the live Worker environment or turn on Cron.
 
-The staging frontend currently selects the Worker route. The deployed Worker
-version `28e7ca3c-f610-47a4-aea9-f876bd8c3f11` still has its manual selector
-unset; a cookie-less request returned 401 before reaching the disabled-selector
-branch, and its deployed variable readback showed no `LIFECYCLE_RUN_BACKEND`.
-The current staging configuration now enables only the manual route with
-`LIFECYCLE_RUN_BACKEND=d1`, an explicit lifecycle target/schema digest, and a
-four-page cap. `LICENSE_EXPIRY_BACKEND` remains absent, so the daily Cron stays
-disabled. The configuration passed its selector test and Wrangler dry-run,
-but the updated Worker has not yet been deployed and the authenticated
-zero-candidate staging canary remains pending. Until deployment, the running
-Worker continues to fail closed with 503 and cannot fall back to Supabase.
+The staging frontend selects the Worker route. Staging version
+`4988d9d0-b4ec-44d1-9ccc-00ac501aac36` now has `LIFECYCLE_RUN_BACKEND=d1`, an
+explicit lifecycle target/schema digest, and a four-page cap. The scheduled
+`LICENSE_EXPIRY_BACKEND` selector remains absent; the daily Cron schedule is
+still configured but its handler exits before opening D1.
+
+The first deployment of the manual selector returned 400 for an empty POST
+because the edge runtime exposed its zero-byte body as a readable stream. The
+handler now drains only until EOF or the first byte, with a one-second bound;
+non-empty bodies remain rejected. Version `4988d9d0-b4ec-44d1-9ccc-00ac501aac36`
+passed the authenticated synthetic TOTP/MFA canary. The endpoint returned 200
+with aggregate-only zero-candidate results; both completed run journals were
+read back against the configured target and digest, then removed. A separate
+readback found zero profiles, fanmarks, licenses, lifecycle items/journals,
+effect guards, and user-owned Auth rows. No real user data was present or
+changed.
 
 ## Validation
 
 The frontend client suite validates selector defaults, same-origin
 credentialed requests, strict aggregate response shape, and no fallback. The
 Worker handler suite validates administrator/MFA authorization, origin,
-method, query and body rejection, split business D1 selection, disabled
-selector behavior, identifier stripping, sanitized errors, and bounded
-continuation status. Live authenticated browser acceptance remains open; no
-request has executed the lifecycle engine against staging D1.
+method, query and body rejection, zero-byte stream handling, split business D1
+selection, disabled selector behavior, identifier stripping, sanitized errors,
+and bounded continuation status (5 tests). Live authenticated browser
+acceptance remains open; the synthetic API canary has executed and cleaned its
+zero-candidate staging journals.

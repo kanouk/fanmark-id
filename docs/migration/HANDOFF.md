@@ -1741,3 +1741,34 @@ future fixture date. Issue #32 remains open: the current
 Supabase Webhook still handles subscription and invoice events outside the full
 durable reconciliation path. No Stripe API call, Supabase migration, staging
 write, real user data, production routing, or domain/DNS change was made.
+
+## Manual lifecycle API staging acceptance (2026-09-27 JST)
+
+PR #41 now contains the separate manual lifecycle selector, its staging
+zero-candidate canary, and the edge empty-body fix through commit `713cccc`.
+Workers.dev staging version `4988d9d0-b4ec-44d1-9ccc-00ac501aac36` selects
+`LIFECYCLE_RUN_BACKEND=d1` with the explicit staging target, schema digest, and
+four-page bound. `LICENSE_EXPIRY_BACKEND` remains unset; both Cron schedules
+remain configured, and scheduled lifecycle execution stays disabled.
+
+The authenticated synthetic TOTP/admin canary returned HTTP 200 with
+aggregate-only zero candidates in both lifecycle phases. It read back exactly
+one completed zero-count run journal per phase with the expected target and
+schema digest, then removed both. Independent APAC-primary D1 readbacks found
+zero profiles, fanmarks, licenses, lifecycle journals/items/effect guards, and
+all seven user-owned Auth tables; both readbacks reported `changed_db=false`
+and `rows_written=0`. The temporary synthetic administrator was removed. The
+MFA generation counter is retained and may have advanced as intended. The first
+staging call returned 400 because the runtime surfaced an empty POST as a
+zero-byte stream; the handler now accepts only an EOF zero-byte stream within
+one second and retains rejection for any payload.
+
+The manual API proof does not materially change the coarse weighted estimate
+of about 60% of the full migration and about 75% of the prioritized
+app/infrastructure/master-data stage. User/Auth/object import and domain/DNS
+cutover remain deferred. Latest migration-data boundaries pass 160/160. In CI
+run `36314149517`, the Worker job passed its API/D1 suite, typecheck, and bundle
+dry-run; the app job's Stripe receipt/billing contract step is still in
+progress. Local lifecycle API tests pass 5/5 with Worker typecheck and staging
+dry-run. No real user data, production route, email, or domain/DNS state was
+changed.
