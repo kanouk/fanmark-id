@@ -34,7 +34,7 @@ upstream response contains more rows.
 
 ```text
 GET /api/fanmarks/recent
-GET /api/fanmarks/recent?limit=1..20
+GET /api/fanmarks/recent?limit=1..50
 ```
 
 The default limit is `20`. The response is always an explicit versioned object:
@@ -221,8 +221,9 @@ before enabling the Worker setting in a release.
 Direct read-only catalog inspection confirms that the source view selects active
 licenses joined to fanmarks, uses the license display_fanmark and created_at,
 and adds no separate expiry or fanmark-status filter. The security-definer RPC
-orders created_at descending with a 1..50 limit; this API narrows the supported
-public limit to 1..20. Equal timestamps have no specified tie order. Future D1
+orders created_at descending with a 1..50 limit, and the Worker exposes the
+same range for both Supabase and D1 backends. The landing-page client continues
+to request 20 rows. Equal timestamps have no specified tie order. Future D1
 parity tests must retain these source semantics or record an explicit product
 change. No user rows were needed for this inspection. See the
 [object map](object-map.md) and

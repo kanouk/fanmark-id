@@ -271,3 +271,45 @@ four generated rows, 40 completed table checkpoints, exact public-row
 reconciliation, and conflicting replay rejection. This proves the synthetic
 import path against the current schema shape, not production deployability or
 real-data migration readiness.
+
+## Version 6 recent-view query adaptation (2026-09-28 JST)
+
+A read-only schema refresh completed at `2026-09-27T16:14:11Z`; its catalog
+still contains one view, `recent_active_fanmarks`. Converter v6 adapts that
+scope only when the input has exactly that single view, its catalog kind and
+name match, and its exact definition SHA-256 is
+`edb14241ebabddc6167bf07eee51ad24843f564e0a925bac4eedb1d44bdb3a3c`. The
+replacement is the already-tested D1 recent-list query and its documented API
+contract. A changed definition, extra view, or changed catalog shape retains
+the blocking `unsupported_catalog_scope` gate.
+
+The private v6 conversion generated the same 40-table/406-column profile and
+now has 16 gate groups: 10 row-conversion groups and 6 schema/operation groups
+across 96 locations. `deployable` remains `false`; the private credential
+descriptor was not supplied, and the remaining function, trigger, and RLS
+scopes remain blocking. The public recent API and D1 repository now accept the
+source RPC's full 1..50 limit; the landing-page client still requests 20. The
+converter suite passed 13/13, recent Worker API tests 15/15, D1 repository
+tests 6/6, and Worker typecheck passed under Node 22.6.0. The catalog, DDL, and
+report are mode `0600` outside Git. No user rows, production state, remote D1
+schema/data, or domain/DNS settings changed.
+
+## Version 5 GIN index query-contract review (2026-09-28 JST)
+
+A new read-only refresh at `2026-09-27T16:02:02Z` confirmed the same 40-table
+source catalog: 406 columns, 144 constraints, and 139 indexes. It read
+catalogs only. Converter v5 recognizes four GIN indexes only when each live
+definition exactly matches its reviewed table/index definition. The checked-in
+source and Worker queries contain no array containment/overlap predicates or
+full-text `tsvector` query. Normalized fanmark-ID equality remains backed by a
+D1 UNIQUE constraint; emoji admin substring search continues through the
+Worker's `instr(lower(...))` predicate. The report records each omission and
+its query replacement/reason under `target.indexAdaptations`. Any unreviewed or
+changed GIN index remains a blocking `unsupported_index_method` gate.
+
+This removes the four index-method locations from the schema/operation gates:
+the fresh v5 report has 17 groups (10 row-conversion, 7 schema/operation), and
+`deployable` correctly remains `false`. The conversion used no private
+credential descriptor, so it retains `credential_descriptor_required`; it
+does not permit generic credential copying. Catalog, generated SQL, and report
+are mode `0600` and outside Git. No target D1 migration or data write occurred.

@@ -21,7 +21,7 @@ export const D1_RECENT_FANMARKS_SQL = `
 `;
 
 const MIN_RECENT_LIMIT = 1;
-const MAX_RECENT_LIMIT = 20;
+const MAX_RECENT_LIMIT = 50;
 
 function isRecentLimit(value: number): boolean {
   return Number.isInteger(value) && value >= MIN_RECENT_LIMIT && value <= MAX_RECENT_LIMIT;

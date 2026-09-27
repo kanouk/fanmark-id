@@ -187,3 +187,23 @@ Post-deploy checks returned 200 for the SPA root, robots, and Auth health; 54/54
 The Better Auth profile client and Worker endpoint for Stripe Customer Portal are deployed in workers.dev version d895ec75-76fb-457e-a74d-fd8102ff7110. The endpoint uses the authenticated owner’s exact user_settings.stripe_customer_id and a same-origin /plans return URL; it never searches Stripe by email. Its backend selector and all required Stripe secrets are absent, so POST /api/billing/customer-portal remains 404. The Stripe webhook remains 404 as well.
 
 The combined Worker Stripe suite passes 59/59 and the client contract suite 5/5. Worker and frontend typechecks, the Cloudflare staging build, Wrangler dry-run, and post-deploy HTTP checks pass. No Stripe request, user-data write, production route, or DNS/domain change occurred.
+
+## Frozen synthetic receipt continuity (2026-09-28 JST)
+
+The guarded [`staging-stripe-receipt-freeze-smoke.mjs`](../../scripts/migration/staging-stripe-receipt-freeze-smoke.mjs)
+canary enabled only `STRIPE_WEBHOOK_BACKEND=d1` for a temporary workers.dev
+version while `CUTOVER_WRITE_FREEZE=true`. A random one-use signing secret
+verified a synthetic `customer.updated` event through the deployed Stripe SDK
+signature verifier. The first request returned `accepted`; an exact replay
+returned `duplicate_nonterminal`. Remote Business D1 contained exactly one
+receipt with delivery count 2 and one pending dispatch. No Stripe API key or
+dispatcher was configured, and the global scheduled freeze prevented event
+application.
+
+The canary deleted both rows and the temporary secret, restored normal Worker
+version `4c23f796-fa12-419d-85fb-9a905a5f7ceb`, and independently read back zero
+receipts/dispatches. The disabled webhook returned 404 again; the only remaining
+secrets were the pre-existing Better Auth/reference/verified-access secrets.
+The 29.13-second script duration covers temporary deployment, two requests,
+cleanup, and restore; it is not a measured production cutover window. The Stripe
+sandbox business-effect and full recovery acceptance remain open.

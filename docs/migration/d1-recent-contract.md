@@ -49,7 +49,7 @@ checked-in schema snapshot contains an older projection using fanmark
 normalized/input fields; that drift is recorded as a full-schema migration gate
 and is not silently resolved by this fixture.
 
-The limit is validated by the API as an integer from `1` through `20` and is
+The limit is validated by the API as an integer from `1` through `50` and is
 bound to the final `?`. The adapter repeats this range check as a defensive
 boundary. The projection preserves the license UUID, the license's
 `display_fanmark` value, and the stored timestamp string. The API maps these

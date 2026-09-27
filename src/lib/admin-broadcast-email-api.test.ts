@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   createAdminBroadcastEmailApi,
   getAdminBroadcastEmailBackend,
+  getAdminBroadcastSendBackend,
   getAdminBroadcastTestSendBackend,
 } from "./admin-broadcast-email-api.ts";
 
@@ -17,6 +18,7 @@ const draft = {
   sent_count: 0,
   failed_count: 0,
   status: "draft",
+  delivery_status: null,
   recipient_filter: { languages: ["ja"] },
   created_at: timestamp,
   started_at: null,
@@ -38,6 +40,10 @@ test("broadcast email selector defaults to Supabase and rejects unknown values",
   assert.equal(getAdminBroadcastTestSendBackend(undefined), "disabled");
   assert.equal(getAdminBroadcastTestSendBackend(" worker "), "worker");
   assert.throws(() => getAdminBroadcastTestSendBackend("supabase"), /configuration/u);
+  assert.equal(getAdminBroadcastSendBackend(undefined), "disabled");
+  assert.equal(getAdminBroadcastSendBackend(" worker ", "cloudflare-staging"), "worker");
+  assert.equal(getAdminBroadcastSendBackend("worker", "production"), "disabled");
+  assert.throws(() => getAdminBroadcastSendBackend("resend"), /configuration/u);
 });
 
 test("list uses a credentialed same-origin no-store request and validates the snapshot", async () => {
@@ -62,6 +68,16 @@ test("list uses a credentialed same-origin no-store request and validates the sn
   assert.equal(actualInit?.cache, "no-store");
   assert.equal(actualInit?.redirect, "error");
 
+  const paused = createAdminBroadcastEmailApi({
+    baseUrl: "https://staging.example.test",
+    authBaseUrl: "https://staging.example.test",
+    fetchImpl: async () => new Response(JSON.stringify({
+      broadcasts: [{ ...draft, status: "sending", delivery_status: "needs_review" }],
+      templates: [template],
+    }), { status: 200, headers: { "content-type": "application/json" } }),
+  });
+  assert.equal((await paused.list()).broadcasts[0]?.delivery_status, "needs_review");
+
   const malformed = createAdminBroadcastEmailApi({
     baseUrl: "https://staging.example.test",
     authBaseUrl: "https://staging.example.test",
@@ -70,6 +86,15 @@ test("list uses a credentialed same-origin no-store request and validates the sn
     }),
   });
   await assert.rejects(malformed.list(), /invalid_response/u);
+
+  const unknownDeliveryState = createAdminBroadcastEmailApi({
+    baseUrl: "https://staging.example.test",
+    authBaseUrl: "https://staging.example.test",
+    fetchImpl: async () => new Response(JSON.stringify({
+      broadcasts: [{ ...draft, delivery_status: "retry_now" }], templates: [template],
+    }), { status: 200, headers: { "content-type": "application/json" } }),
+  });
+  await assert.rejects(unknownDeliveryState.list(), /invalid_response/u);
 });
 
 test("recipient estimates and draft creation use bounded POST contracts", async () => {
@@ -141,6 +166,41 @@ test("test send uses a credentialed Worker route without sending a recipient add
   await assert.rejects(malformed.sendTest({ broadcastId: id, language: "ja", requestId }), /invalid_response/u);
   await assert.rejects(api.sendTest({ broadcastId: "not-a-uuid", language: "ja", requestId }), /configuration/u);
   await assert.rejects(api.sendTest({ broadcastId: id, language: "ja", requestId: "bad" }), /configuration/u);
+});
+
+test("bulk send start uses a stable idempotency identity and validates aggregate-only response", async () => {
+  const requestId = "82222222-2222-4222-8222-222222222222";
+  const runId = "83333333-3333-4333-8333-333333333333";
+  let actualUrl = "";
+  let actualInit: RequestInit | undefined;
+  const api = createAdminBroadcastEmailApi({
+    baseUrl: "https://staging.example.test",
+    authBaseUrl: "https://staging.example.test",
+    fetchImpl: async (url, init) => {
+      actualUrl = String(url);
+      actualInit = init;
+      return new Response(JSON.stringify({ accepted: true, runId, status: "snapshotting", recipientCount: 0, sentCount: 0, failedCount: 0 }), {
+        status: 202, headers: { "content-type": "application/json" },
+      });
+    },
+  });
+  assert.deepEqual(await api.startSend({ broadcastId: id, requestId }), {
+    accepted: true, runId, status: "snapshotting", recipientCount: 0, sentCount: 0, failedCount: 0,
+  });
+  assert.equal(actualUrl, "https://staging.example.test/api/admin/broadcast-emails/send");
+  assert.equal(actualInit?.method, "POST");
+  assert.deepEqual(JSON.parse(String(actualInit?.body)), { broadcastId: id, requestId });
+  assert.equal(actualInit?.credentials, "include");
+  assert.equal(actualInit?.cache, "no-store");
+
+  await assert.rejects(api.startSend({ broadcastId: "bad", requestId }), /configuration/u);
+  const malformed = createAdminBroadcastEmailApi({
+    baseUrl: "https://staging.example.test",
+    authBaseUrl: "https://staging.example.test",
+    fetchImpl: async () => new Response(JSON.stringify({ accepted: true, runId, status: "sending", recipientCount: 1,
+      sentCount: 0, failedCount: 0, recipients: ["leak"] }), { status: 200, headers: { "content-type": "application/json" } }),
+  });
+  await assert.rejects(malformed.startSend({ broadcastId: id, requestId }), /invalid_response/u);
 });
 
 test("refuses cross-origin authentication and invalid status DTOs", async () => {

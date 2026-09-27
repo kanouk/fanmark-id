@@ -8,6 +8,7 @@ const EMAIL_TYPES = new Set(["broadcast_announcement", "broadcast_maintenance", 
 const PLAN_TYPES = new Set(["free", "creator", "max", "business", "enterprise", "admin"]);
 const LANGUAGES = new Set(["en", "ja", "ko", "id"]);
 const STATUSES = new Set(["draft", "scheduled", "sending", "completed", "failed", "cancelled"]);
+const DELIVERY_RUN_STATUSES = new Set(["snapshotting", "sending", "needs_review", "completed", "failed"]);
 
 export interface BroadcastRecipientFilter {
   plan_types?: string[];
@@ -25,6 +26,7 @@ export interface AdminBroadcastEmail {
   sent_count: number;
   failed_count: number;
   status: "draft" | "scheduled" | "sending" | "completed" | "failed" | "cancelled";
+  delivery_status: "needs_review" | null;
   recipient_filter: BroadcastRecipientFilter | null;
   created_at: string;
   started_at: string | null;
@@ -75,6 +77,16 @@ export function getAdminBroadcastTestSendBackend(
   throw new AdminBroadcastEmailApiError("configuration");
 }
 
+export function getAdminBroadcastSendBackend(
+  value: string | undefined = import.meta.env?.VITE_BROADCAST_SEND_BACKEND,
+  mode: string | undefined = import.meta.env?.MODE,
+): "disabled" | "worker" {
+  const backend = value?.trim();
+  if (!backend || backend === "disabled") return "disabled";
+  if (backend === "worker") return mode === "cloudflare-staging" ? "worker" : "disabled";
+  throw new AdminBroadcastEmailApiError("configuration");
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -115,7 +127,7 @@ function parseFilter(value: unknown): BroadcastRecipientFilter | null {
 }
 
 function parseBroadcast(value: unknown): AdminBroadcastEmail {
-  const keys = ["id", "subject", "body_text", "email_type", "total_recipients", "sent_count", "failed_count", "status", "recipient_filter", "created_at", "started_at", "completed_at"];
+  const keys = ["id", "subject", "body_text", "email_type", "total_recipients", "sent_count", "failed_count", "status", "delivery_status", "recipient_filter", "created_at", "started_at", "completed_at"];
   if (!isRecord(value) || !exactKeys(value, keys) || typeof value.id !== "string" || !UUID.test(value.id) ||
       typeof value.subject !== "string" || value.subject.length > 256 || typeof value.body_text !== "string" || value.body_text.length > 10_000 ||
       typeof value.email_type !== "string" || !EMAIL_TYPES.has(value.email_type) ||
@@ -123,6 +135,7 @@ function parseBroadcast(value: unknown): AdminBroadcastEmail {
       !Number.isSafeInteger(value.sent_count) || Number(value.sent_count) < 0 ||
       !Number.isSafeInteger(value.failed_count) || Number(value.failed_count) < 0 ||
       typeof value.status !== "string" || !STATUSES.has(value.status) ||
+      (value.delivery_status !== null && value.delivery_status !== "needs_review") ||
       !validTime(value.created_at) || !validTime(value.started_at, true) || !validTime(value.completed_at, true)) {
     throw new AdminBroadcastEmailApiError("invalid_response");
   }
@@ -266,6 +279,35 @@ export function createAdminBroadcastEmailApi(options: RequestOptions = {}) {
         throw new AdminBroadcastEmailApiError("invalid_response");
       }
       return { success: true, message: "テストメールを送信しました" };
+    },
+    async startSend(input: { broadcastId: string; requestId: string }): Promise<{
+      accepted: true;
+      runId: string;
+      status: string;
+      recipientCount: number;
+      sentCount: number;
+      failedCount: number;
+    }> {
+      if (!UUID.test(input.broadcastId) || !UUID.test(input.requestId)) {
+        throw new AdminBroadcastEmailApiError("configuration");
+      }
+      const value = await request("/send", "POST", input, options);
+      if (!isRecord(value) || !exactKeys(value, ["accepted", "runId", "status", "recipientCount", "sentCount", "failedCount"]) ||
+          value.accepted !== true || typeof value.runId !== "string" || !UUID.test(value.runId) ||
+          typeof value.status !== "string" || !DELIVERY_RUN_STATUSES.has(value.status) ||
+          !Number.isSafeInteger(value.recipientCount) || Number(value.recipientCount) < 0 ||
+          !Number.isSafeInteger(value.sentCount) || Number(value.sentCount) < 0 ||
+          !Number.isSafeInteger(value.failedCount) || Number(value.failedCount) < 0) {
+        throw new AdminBroadcastEmailApiError("invalid_response");
+      }
+      return value as {
+        accepted: true;
+        runId: string;
+        status: string;
+        recipientCount: number;
+        sentCount: number;
+        failedCount: number;
+      };
     },
   };
 }

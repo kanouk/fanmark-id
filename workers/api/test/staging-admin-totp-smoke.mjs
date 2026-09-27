@@ -124,6 +124,7 @@ async function assertStagingTarget(actions) {
   }
   if (actions.broadcastEmailReadback) {
     assert.equal(config.vars?.BROADCAST_EMAIL_BACKEND, "d1", "expected D1-backed broadcast admin API");
+    assert.equal(config.vars?.BROADCAST_SEND_BACKEND, undefined, "bulk delivery selector must remain disabled");
     assert.notEqual(config.vars?.BROADCAST_TEST_SEND_BACKEND, "resend", "broadcast test delivery must remain disabled");
   }
   if (actions.notificationManualEvent) {
@@ -1924,13 +1925,22 @@ async function exerciseBroadcastEmailAdmin(cookie, userId, targetUserId, targetU
   const route = "/api/admin/broadcast-emails";
   const username = `codex-broadcast-admin-${randomBytes(6).toString("hex")}`;
   const subject = `Synthetic staging broadcast ${randomUUID()}`;
+  const sendRequestId = randomUUID();
+  const reviewRunId = randomUUID();
+  const reviewUserId = targetUserId;
   const timestamp = new Date().toISOString();
   let seedAttempted = false;
   let initialDraftIds = new Set();
   try {
-    const baseline = await queryBusiness(`SELECT (SELECT COUNT(*) FROM user_settings) AS profiles, (SELECT COUNT(*) FROM broadcast_emails) AS drafts`);
+    const baseline = await queryBusiness(`SELECT
+      (SELECT COUNT(*) FROM user_settings) AS profiles,
+      (SELECT COUNT(*) FROM broadcast_emails) AS drafts,
+      (SELECT COUNT(*) FROM broadcast_delivery_runs) AS delivery_runs,
+      (SELECT COUNT(*) FROM broadcast_delivery_recipients) AS delivery_recipients`);
     assert.equal(Number(baseline[0]?.profiles), 1, "broadcast admin canary requires only its synthetic target profile");
     assert.equal(Number(baseline[0]?.drafts), 0, "broadcast admin canary requires no pre-existing broadcast drafts");
+    assert.equal(Number(baseline[0]?.delivery_runs), 0, "broadcast admin canary requires an empty delivery-run baseline");
+    assert.equal(Number(baseline[0]?.delivery_recipients), 0, "broadcast admin canary requires an empty delivery-recipient baseline");
     const targetProfile = await queryBusiness(`SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(targetUserId)} AND username = ${sqlLiteral(targetUsername)}`);
     assert.equal(Number(targetProfile[0]?.count), 1, "broadcast canary target profile is missing");
     const adminProfile = await queryBusiness(`SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(userId)}`);
@@ -2006,32 +2016,59 @@ async function exerciseBroadcastEmailAdmin(cookie, userId, targetUserId, targetU
     const bulkSend = await request(`${route}/send`, {
       method: "POST",
       headers: { cookie, "content-type": "application/json" },
-      body: JSON.stringify({ broadcastId: created.id }),
+      body: JSON.stringify({ broadcastId: created.id, requestId: sendRequestId }),
     });
-    assertStatus(bulkSend, 404, "disabled bulk broadcast send route");
+    assertStatus(bulkSend, 503, "selector-disabled bulk broadcast send route");
+    assert.deepEqual(await bulkSend.json(), { error: "broadcast_send_unavailable" });
+    const [deliveryRuns, deliveryRecipients] = await Promise.all([
+      queryBusiness(`SELECT COUNT(*) AS count FROM broadcast_delivery_runs WHERE broadcast_id = ${sqlLiteral(created.id)} OR (requested_by = ${sqlLiteral(userId)} AND request_id = ${sqlLiteral(sendRequestId)})`),
+      queryBusiness(`SELECT COUNT(*) AS count FROM broadcast_delivery_recipients WHERE run_id IN (SELECT id FROM broadcast_delivery_runs WHERE broadcast_id = ${sqlLiteral(created.id)} OR (requested_by = ${sqlLiteral(userId)} AND request_id = ${sqlLiteral(sendRequestId)}))`),
+    ]);
+    assert.equal(Number(deliveryRuns[0]?.count), 0, "selector-disabled send created a delivery run");
+    assert.equal(Number(deliveryRecipients[0]?.count), 0, "selector-disabled send created delivery recipients");
+
+    await executeBusiness(
+      `INSERT INTO broadcast_delivery_runs (id, broadcast_id, request_id, requested_by, status, recipient_count, created_at) VALUES (${sqlLiteral(reviewRunId)}, ${sqlLiteral(created.id)}, ${sqlLiteral(randomUUID())}, ${sqlLiteral(userId)}, 'needs_review', 1, ${sqlLiteral(timestamp)});\n` +
+      `INSERT INTO broadcast_delivery_recipients (run_id, user_id, language, status, attempt_count, next_attempt_at, last_error_code, created_at, updated_at) VALUES (${sqlLiteral(reviewRunId)}, ${sqlLiteral(reviewUserId)}, 'ja', 'needs_review', 5, ${sqlLiteral(timestamp)}, 'attempt_limit_uncertain', ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});\n` +
+      `UPDATE broadcast_emails SET status = 'sending', total_recipients = 1, error_details = ${sqlLiteral(JSON.stringify({ code: "needs_review", recipient: "private@example.invalid", provider_body: "synthetic-private-response" }))} WHERE id = ${sqlLiteral(created.id)} AND created_by = ${sqlLiteral(userId)};`,
+      "synthetic paused broadcast run provision",
+    );
+    const pausedList = await request(route, { headers: { cookie } });
+    assertStatus(pausedList, 200, "MFA-protected paused broadcast status");
+    const paused = (await pausedList.json()).broadcasts.find((draft) => draft.id === created.id);
+    assert.equal(paused?.status, "sending");
+    assert.equal(paused?.delivery_status, "needs_review");
+    const pausedPayload = JSON.stringify(paused);
+    assert.equal(pausedPayload.includes("private@example.invalid"), false, "paused delivery DTO exposed an address-like detail");
+    assert.equal(pausedPayload.includes("synthetic-private-response"), false, "paused delivery DTO exposed a raw provider response");
+    assert.equal(Object.hasOwn(paused ?? {}, "error_details"), false, "paused delivery DTO exposed raw error details");
   } finally {
     if (seedAttempted) {
-      const drafts = await queryBusiness(`SELECT id FROM broadcast_emails WHERE created_by = ${sqlLiteral(userId)} AND subject = ${sqlLiteral(subject)} AND status = 'draft'`);
+      const drafts = await queryBusiness(`SELECT id FROM broadcast_emails WHERE created_by = ${sqlLiteral(userId)} AND subject = ${sqlLiteral(subject)} AND status IN ('draft', 'sending')`);
       const draftIds = drafts.map((row) => row.id).filter((id) => typeof id === "string" && /^[0-9a-f-]{36}$/iu.test(id));
       assert.equal(draftIds.length, drafts.length, "synthetic draft readback returned an invalid ID");
       const draftIdSql = draftIds.length ? `(${draftIds.map(sqlLiteral).join(", ")})` : "(NULL)";
       await executeBusiness(
-        `DELETE FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND (action = 'UNAUTHORIZED_BROADCAST_EMAIL_ACCESS' OR (action = 'ADMIN_CHECK' AND resource_type = 'system' AND json_extract(metadata, '$.attempted_action') IN ('list', 'estimate_recipients', 'create_draft', 'test_send')) OR (action IN ('BROADCAST_DRAFT_CREATE', 'BROADCAST_EMAIL_TEST_SENT') AND resource_id IN ${draftIdSql}));\n` +
-        `DELETE FROM broadcast_emails WHERE id IN ${draftIdSql} AND created_by = ${sqlLiteral(userId)} AND subject = ${sqlLiteral(subject)} AND status = 'draft';\n` +
+        `DELETE FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND (action = 'UNAUTHORIZED_BROADCAST_EMAIL_ACCESS' OR (action = 'ADMIN_CHECK' AND resource_type = 'system' AND json_extract(metadata, '$.attempted_action') IN ('list', 'estimate_recipients', 'create_draft', 'test_send', 'send_broadcast')) OR (action IN ('BROADCAST_DRAFT_CREATE', 'BROADCAST_EMAIL_TEST_SENT', 'BROADCAST_EMAIL_SEND_QUEUED') AND resource_id IN ${draftIdSql}));\n` +
+        `DELETE FROM broadcast_emails WHERE id IN ${draftIdSql} AND created_by = ${sqlLiteral(userId)} AND subject = ${sqlLiteral(subject)} AND status IN ('draft', 'sending');\n` +
         `DELETE FROM user_settings WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(username)};`,
         "synthetic broadcast admin/draft cleanup",
       );
-      const [profileRows, draftRows, auditRows] = await Promise.all([
+      const [profileRows, draftRows, auditRows, runRows, recipientRows] = await Promise.all([
         queryBusiness(`SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(username)}`),
         queryBusiness(`SELECT COUNT(*) AS count FROM broadcast_emails WHERE created_by = ${sqlLiteral(userId)} AND subject = ${sqlLiteral(subject)}`),
-        queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND (action = 'UNAUTHORIZED_BROADCAST_EMAIL_ACCESS' OR (action = 'ADMIN_CHECK' AND resource_type = 'system' AND json_extract(metadata, '$.attempted_action') IN ('list', 'estimate_recipients', 'create_draft', 'test_send')) OR (action IN ('BROADCAST_DRAFT_CREATE', 'BROADCAST_EMAIL_TEST_SENT') AND resource_id IN ${draftIdSql}))`),
+        queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND (action = 'UNAUTHORIZED_BROADCAST_EMAIL_ACCESS' OR (action = 'ADMIN_CHECK' AND resource_type = 'system' AND json_extract(metadata, '$.attempted_action') IN ('list', 'estimate_recipients', 'create_draft', 'test_send', 'send_broadcast')) OR (action IN ('BROADCAST_DRAFT_CREATE', 'BROADCAST_EMAIL_TEST_SENT', 'BROADCAST_EMAIL_SEND_QUEUED') AND resource_id IN ${draftIdSql}))`),
+        queryBusiness(`SELECT COUNT(*) AS count FROM broadcast_delivery_runs WHERE id = ${sqlLiteral(reviewRunId)}`),
+        queryBusiness(`SELECT COUNT(*) AS count FROM broadcast_delivery_recipients WHERE run_id = ${sqlLiteral(reviewRunId)}`),
       ]);
       assert.equal(Number(profileRows[0]?.count), 0, "synthetic broadcast admin profile remained in business D1");
       assert.equal(Number(draftRows[0]?.count), 0, "synthetic broadcast draft remained in business D1");
       assert.equal(Number(auditRows[0]?.count), 0, "synthetic broadcast audit remained in business D1");
+      assert.equal(Number(runRows[0]?.count), 0, "synthetic paused broadcast run remained in business D1");
+      assert.equal(Number(recipientRows[0]?.count), 0, "synthetic paused broadcast recipient remained in business D1");
     }
   }
-  console.log("Staging MFA-protected broadcast list/estimate/draft readback passed; the test-send and bulk-send routes stayed disabled, and synthetic rows/audits were removed.");
+  console.log("Staging MFA-protected broadcast list/estimate/draft readback passed; test-send and bulk-send remained disabled; a synthetic needs_review run was shown without raw details; all synthetic rows and audits were removed.");
 }
 
 function assertStatus(response, status, operation) {
@@ -2300,7 +2337,7 @@ async function main() {
     console.log("Staging waitlist admin list/reveal required same-session MFA and the admin plan, returned only the email hash in the list, audited the explicit reveal, and removed the synthetic address/profile/audit rows.");
   }
   if (actions.broadcastEmailReadback) {
-    console.log("Staging broadcast email admin read/estimate/draft create-readback passed with the seeded 12 templates. Test-send remained selector-disabled, bulk-send remained 404, and synthetic profile/draft/audit rows were removed.");
+    console.log("Staging broadcast email admin read/estimate/draft create-readback passed with the seeded 12 templates. Test-send and bulk-send remained selector-disabled; a synthetic needs_review run was projected without error details and all synthetic delivery/admin/profile rows were removed.");
   }
   if (actions.authEmailTemplateEditRoundtrip) {
     console.log("Staging MFA-protected Japanese signup email-template edit/restore passed; anonymous and stale writes were rejected, all 16 template contents returned to baseline, and synthetic audit rows were removed. No email was sent.");

@@ -1,6 +1,6 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-09-27. The migration is **not complete**. PR #41 is open and
+Checkpoint: 2026-09-28. The migration is **not complete**. PR #41 is open and
 draft. Isolated Cloudflare staging D1 and Workers deployments are present; no
 production Worker deployment, user-data import, or public DNS/domain cutover
 has been performed.
@@ -210,9 +210,10 @@ canary returned aggregate-only zero-candidate results; Cron stayed disabled,
 both empty lifecycle journals were read back and removed, and user-owned Auth
 tables read back empty. The monotonic MFA generation counter was preserved and
 may have advanced. Browser UI mutation review remains open.
-The 18 schema gates, integrated synthetic rehearsal, broader UI acceptance,
-mail delivery, and production acceptance are still open. User-data import and
-domain cutover are intentionally deferred final phases, not missing work in
+The latest schema-converter-v6 report has 16 row-conversion and
+schema/operation gate groups (10 and 6 respectively); integrated synthetic
+rehearsal, broader UI acceptance, mail delivery, and production acceptance are
+still open. User-data import and domain cutover are intentionally deferred final phases, not missing work in
 the current staging slice. See [`EXECUTION.md`](EXECUTION.md).
 
 ## Unused extension coupon master seed (2026-09-27 JST)
@@ -567,7 +568,7 @@ unperformed.
 | Public access reads | Current worktree + staging Worker/SPA | `PUBLIC_ACCESS_BACKEND=d1` and `VITE_PUBLIC_ACCESS_READ_BACKEND=worker` are active on workers.dev staging. Emoji normalization uses `MASTER_DB`; fanmark/license/config/profile projections use `FANMARK_DB`. Local split-D1 tests pass 11/11. Live synthetic routes returned 200/no-store and their canary rows were removed. `VERIFIED_ACCESS_BACKEND=d1` and its frontend selector are also active on staging; the synthetic protected-read smoke passed, but real imported hash compatibility and CPU fit remain unverified. Paired analytics write/read APIs are active in staging; historical analytics remain in Supabase. Owner/history details use the separate staging endpoint recorded below. No production traffic was switched. See `docs/migration/public-access-contract.md`. |
 | WhoIs owner/history details | Current worktree + workers.dev staging | `VITE_FANMARK_DETAILS_BACKEND=worker` and `FANMARK_DETAILS_BACKEND=d1` select `/api/fanmarks/details`. Local Worker D1 tests pass 3/3, including a two-owner history fixture, and frontend contract tests pass 4/4. A synthetic staging canary verified authenticated one-row owner/lottery state; today's anonymous live read returned the versioned not-found DTO. User IDs, email, and license IDs are omitted. Browser acceptance, imported-row parity, and production routing remain open; no real user data was read. See `docs/migration/fanmark-details-api.md`. |
 | Public access and owner analytics APIs | Current worktree + workers.dev staging | The staging SPA and Worker select D1 for `POST /api/fanmarks/access` and the session-scoped `/api/me/analytics/*` reads. The synthetic canary recorded one event, suppressed four duplicates, verified owner metrics and summary, received 401 anonymously, then removed its Auth/business rows. Worker D1 tests pass 8/8 and frontend client tests pass 3/3 for each adapter. Historical analytics remain in Supabase; user data, production traffic, and domain/DNS were untouched. Abuse controls, retention, populated-user authorization, and production CPU/plan fit remain open. See `docs/migration/fanmark-access-analytics-api.md`. |
-| D1 role separation | Current worktree + APAC staging | `D1_TOPOLOGY=split` selects business `FANMARK_DB`, Better Auth `AUTH_DB`, and emoji/reference `MASTER_DB`, failing closed for missing bindings. Business staging has 40 source-shaped tables plus applied lifecycle/credential/access extensions; its application baseline contains 10/40 global notification masters, four disabled availability rules, and the two explicitly allowlisted public settings `grace_period_days=1` and `max_emoji_characters=5`. User-owned business/Auth rows are empty. The separate protected-access tables retain documented synthetic canary telemetry and license-incarnation tombstones. Master D1 has 3,944 canonical emoji rows and active release, with reference-master generation 8. The source refresh has 40 tables, 406 columns, 144 constraints, 139 indexes, 15 enum labels, 36 triggers, 77 policies, 58 functions, and one view. Snapshot format 4 fingerprints eight scopes and validates the reviewed event sequence state; conversion v4 still has 18 blocking gates and `deployable: false`. No real rows or live event sequence state were migrated. |
+| D1 role separation | Current worktree + APAC staging | `D1_TOPOLOGY=split` selects business `FANMARK_DB`, Better Auth `AUTH_DB`, and emoji/reference `MASTER_DB`, failing closed for missing bindings. Business staging has 40 source-shaped tables plus applied lifecycle/credential/access extensions; its application baseline contains 10/40 global notification masters, four disabled availability rules, and the two explicitly allowlisted public settings `grace_period_days=1` and `max_emoji_characters=5`. User-owned business/Auth rows are empty. The separate protected-access tables retain documented synthetic canary telemetry and license-incarnation tombstones. Master D1 has 3,944 canonical emoji rows and active release, with reference-master generation 8. The source refresh has 40 tables, 406 columns, 144 constraints, 139 indexes, 15 enum labels, 36 triggers, 77 policies, 58 functions, and one view. Snapshot format 4 fingerprints eight scopes and validates the reviewed event sequence state; current conversion v5 has 17 blocking groups (10 row-conversion, 7 schema/operation) and `deployable: false`; four exact GIN definitions have reviewed query-contract dispositions. No real rows or live event sequence state were migrated. |
 | Lifecycle settings API | Current worktree + staging Worker/SPA | Public `GET /api/system/lifecycle` reads only the public `grace_period_days` row through split business D1; `PATCH /api/admin/system-settings/lifecycle` requires administrator role and current-session MFA. Supabase public value `1` was read-only verified and copied as one staging config row. Client 4/4, combined settings D1 9/9, full standard suites 30/30 and 10/10 pass. A new synthetic staging TOTP canary verified anonymous 401, authenticated temporary update, invalid value 400, public no-store readback, restoration to `1`, and empty user-owned Auth tables after cleanup. The write and restore advanced only the setting's `updated_at`; the value is at baseline. The AdminSettings browser form remains unverified. The shared staging Cron is active for notifications; `LICENSE_EXPIRY_BACKEND` remains unset, so lifecycle execution is disabled. See `docs/migration/lifecycle-settings-api.md`. |
 | Plan and general system settings | Current worktree + workers.dev staging | An exact allowlist of 18 non-user Supabase settings was added to the two existing settings (20 total). Source and D1 canonical digests match `d1f809c44dcc26152acb3432907e1cad81a599d495fd9f3e48b75ea1e3beb16f`; the public GET returns exactly 17 public keys and omits both private Enterprise settings. Public GET and SPA returned 200/no-store; anonymous admin GET returned 401/no-store. A synthetic Better Auth administrator passed TOTP/MFA read/update, exact D1 readback, stale-write rejection, baseline restoration, audit-value minimization, and audit cleanup. Worker tests 5/5, client tests 4/4, migration-data 124/124, typechecks, staging build, and dry-run pass. Deployed at 100% as version `3310b139-f639-4cf2-8a15-ad2b63f9fbd6`. Browser UI acceptance and payment behavior remain open; production stays on Supabase. See `docs/migration/system-settings-api.md`. |
 | Availability-rule administration | Current worktree + workers.dev staging | `AdminPatternRules` selects the MFA-protected D1 API only in staging. Four explicit source rules were seeded with `created_by=NULL`, remained disabled, and were read/edit/CAS-restored by the deployed TOTP canary. Worker tests 4/4 and frontend tests 5/5 pass. This does not move Stripe enforcement or other admin CRUD. See `docs/migration/availability-rules-admin-api.md`. |
@@ -1748,10 +1749,11 @@ and Auth health; an invalid empty waitlist request returned its ordinary 400,
 and the disabled Stripe endpoint returned 404. All three staging D1
 configurations still report no migrations to apply.
 
-The scheduled-handler unit test verifies that freeze skips scheduled work, but
-the expected Cron pause log was not captured during the brief remote window.
-Treat live Cron pause as unverified. The pause deployment did not change the
-Cron schedules, production routes, user rows, email, or domain/DNS.
+The scheduled-handler unit test verifies that freeze skips scheduled work. The
+Cron pause log was not captured during this initial rehearsal; the live Cron
+pause was verified in a follow-up staging observation below. The pause
+deployment did not change the Cron schedules, production routes, user rows,
+email, or domain/DNS.
 
 The latest read-only source catalog refresh completed at
 `2026-09-27T09:40:27Z` and read catalog metadata only: 40 tables, 406 columns,
@@ -1863,3 +1865,214 @@ Commit 14bebed passed GitHub Actions run 36321290841. Both the Cloudflare Worker
 API job and the staging application job succeeded, including the per-file
 Stripe test runner, migration-data boundaries, typechecks, and staging build.
 The workflow performed no deployment.
+
+## Broadcast email delivery design checkpoint (2026-09-27 JST)
+
+Reviewed the remaining Supabase `send-broadcast-email` contract and the current
+Worker draft/test-send API. The Cloudflare bulk-send architecture is now
+recorded in [`broadcast-email-delivery-design.md`](broadcast-email-delivery-design.md):
+an immutable Auth-user/language snapshot with no email-address copy into
+Business D1, an MFA-authorized send command, a durable leased recipient queue,
+stable per-recipient Resend idempotency, verified delivery events, and
+aggregate-only admin responses. It preserves the existing service-notice
+contract and keeps all bulk-send selectors off. Resend's documented 24-hour
+idempotency window sets a hard boundary for automatic retries; an uncertain
+send after that window requires operator reconciliation.
+
+This is a design checkpoint only: no queue migration, send route, scheduler,
+webhook, provider secret, recipient snapshot, or email was created or changed.
+Implementation and synthetic crash/replay tests remain open. Queue-record
+retention and production activation still require an operator policy. This
+does not change the coarse weighted progress estimate of about 60% for the
+full migration and 75% for the prioritized app/infrastructure/master-data
+stage.
+
+## Broadcast queue implementation checkpoint (2026-09-27 JST)
+
+The local branch now adds Business D1 migration `0016_broadcast_email_delivery.sql`,
+an MFA/admin-plan-gated idempotent `POST /api/admin/broadcast-emails/send`, and
+a default-off minute-Cron snapshot processor. The API freezes the draft filter
+and active language templates, queues a run without invoking Resend, and returns
+aggregate status only. The snapshot processor reads Auth IDs (not email fields),
+applies Business D1 filter/settings page by page, stores only user ID and
+language, defaults missing unfiltered language settings to Japanese, and uses a
+lease plus cursor compare-and-swap to resume. More than 10,000 matching
+recipients fails closed. Permanent bounces and complaints create address-free
+suppression rows; transient bounces do not. Integration tests apply the
+migration to Miniflare and cover these boundaries. No migration was deployed,
+no real Auth audience was queried, and no provider request was made.
+
+Evidence in the local worktree: `npm run test:broadcast-email-delivery-d1`
+(3/3), `npm run test:broadcast-email-admin-d1` (10/10), scheduler routing
+(4/4), and Worker TypeScript typecheck pass. Remaining broadcast work is actual
+Resend dispatch with bounded retries/idempotency, verified webhook ingestion,
+end-to-end crash/replay tests, and UI activation. All bulk selectors remain
+disabled; queue retention and uncertain-send operator policy remain open.
+
+## Broadcast delivery implementation and UI checkpoint (2026-09-28 JST)
+
+This checkpoint supersedes the earlier implementation checkpoint above. The
+local migration worktree now includes the Resend dispatcher, signed webhook
+handler, address-free Auth-ID queue, and a default-off bulk-send control in the
+Cloudflare admin UI. The UI requires `VITE_BROADCAST_SEND_BACKEND=worker`; the
+Worker independently requires the D1 selectors, split topology, and provider
+configuration. The retry path retains one idempotency key and HMAC fingerprint
+per recipient; changed Auth email or payload stops in `needs_review` instead of
+retrying different content. Terminal completion audit and webhook deduplication
+are idempotent.
+
+Focused verification passes: broadcast delivery Miniflare integration 8/8,
+admin API 10/10, scheduled routing 4/4, frontend broadcast API contract 6/6,
+Worker typecheck, app typecheck, migration-data suite 161/161, Cloudflare
+staging build, and Wrangler Worker dry-run. The complete Worker `npm test` chain
+also passed after the final 8/8 delivery integration was added.
+The tests include stable-payload retry, changed-email pause, lost acknowledgement
+after committed page state, the 24-hour idempotency stop, lease exclusion,
+signature/tamper/staleness rejection, event replay, permanent suppression, and
+one-time completion audit.
+
+Business staging D1 migration `0016_broadcast_email_delivery.sql` was applied
+as a structure-only change. Readback found no pending migration, no foreign-key
+errors, no email/address column in the recipient queue, and zero profile,
+broadcast, delivery-run, recipient, suppression, or webhook-event rows. The
+staging Worker was deployed to workers.dev as version
+`4cf9657f-bee3-42bb-aa89-802e9ed0aa89`; its Resend and bulk/test-send selectors
+remain disabled, and no provider secrets are configured. Anonymous smoke
+returned 200 for `/` and `/api/auth/ok`, and 401 for the protected list/send
+routes. No real Auth audience was read and no email was sent.
+
+The authenticated synthetic staging canary then verified the deployed send
+route: test-send and bulk-send both returned the expected selector-disabled
+503s, and direct readback found zero profiles, drafts, delivery runs, recipients,
+suppressions, webhook events, or broadcast audits after cleanup. The synthetic
+Auth identity/session/TOTP rows were removed and all user-owned Auth tables
+returned to empty; the monotonic MFA generation counter was preserved. No
+recipient snapshot or provider request occurred.
+
+Still open are authenticated browser review of the new send control, queue
+retention and uncertain-send operator policy, full staging recovery/cutover
+drills, Stripe business-effect/sandbox reconciliation, and the deferred real
+user/Auth/object import and domain/DNS cutover.
+
+## Staging write-freeze scheduled pause verification (2026-09-28 JST)
+
+Deployed a brief workers.dev-only staging version
+`68f3a92a-ebc7-4de6-a364-5e675f37b561` with `CUTOVER_WRITE_FREEZE=true` to close
+the earlier missing Cron evidence. Read-only Auth health remained 200, an
+administrator API POST returned 503 `cutover_write_freeze` before route
+validation, and the sign-in OPTIONS preflight remained 204. `wrangler tail`
+captured the `* * * * *` event and the log
+`{"job":"scheduled-dispatch","status":"paused","reason":"cutover_write_freeze"}`.
+
+Restored the ordinary config immediately in version
+`e61343d4-fc5d-41d0-9630-c8394d882039`; it reports `CUTOVER_WRITE_FREEZE=false`.
+Post-restore reads returned 200 for the SPA and Auth health, and 401 for the
+unauthenticated admin route, proving the freeze response no longer applies.
+Business staging still has zero profiles, broadcast drafts, delivery runs,
+recipients, suppressions, or webhook events; only the three pre-existing
+Better Auth/reference/verified-access secrets are present. No source freeze,
+real user row, Stripe call, email, production route, or public domain/DNS was
+changed.
+
+## Frozen Stripe receipt continuity staging canary (2026-09-28 JST)
+
+Added guarded script
+[`staging-stripe-receipt-freeze-smoke.mjs`](../../scripts/migration/staging-stripe-receipt-freeze-smoke.mjs)
+and ran it with its explicit staging-write, exact-account, exact-D1, and no-Stripe-API
+flags. The script uses a random temporary signing secret and never configures a
+Stripe API key or dispatcher. Temporary workers.dev version
+`625895a0-931c-4c12-8f18-8ee54d063223` enabled only the D1 webhook receipt
+selector while `CUTOVER_WRITE_FREEZE=true`.
+
+A mutation request returned 503 `cutover_write_freeze`, sign-in OPTIONS returned
+204, and the synthetic signed `customer.updated` webhook returned `accepted`.
+Replaying the same bytes returned `duplicate_nonterminal`. Readback showed one
+receipt (`delivery_count=2`, status `received`) and one pending dispatch. The
+freeze kept scheduled dispatch paused, so the event had no billing effect and
+made no Stripe API request. The full script sequence measured 29,130 ms; this
+is not a cutover RTO because source writers were not stopped and no business
+write authority changed.
+
+Cleanup deleted the synthetic receipt/dispatch and temporary webhook secret,
+then restored normal staging as Worker version
+`4c23f796-fa12-419d-85fb-9a905a5f7ceb`. Independent readback found zero Stripe
+receipts/dispatches, user profiles, broadcast runs, or recipients; the only
+secrets are the three pre-existing Better Auth/reference/verified-access
+secrets. `/`, Auth health, the disabled webhook, and an unauthenticated admin
+mutation returned 200, 200, 404, and 401 respectively. Stripe sandbox business
+effects, coordinated source-writer freeze, and both recovery drills remain
+unverified.
+
+## Broadcast delivery pause visibility (2026-09-28 JST)
+
+The D1 admin list now projects only the fixed `needs_review` delivery state
+from a broadcast's stored error marker. This change is deployed to staging
+Worker version `30ce0b27-fb72-4400-a8b6-6d86b46b5167`. The Cloudflare admin UI displays
+“要確認・送信停止中” and explains that automatic retry has stopped. The API
+does not return raw provider/error details; tests include a synthetic
+address-like value and provider body and assert that both remain hidden. The
+focused admin API tests pass 11/11, delivery integration tests pass 8/8, both
+app/Worker typechecks and the Cloudflare staging build pass. Targeted ESLint
+and `git diff --check` pass. Manual visual browser review could not run because
+the host Mac was locked. The authenticated synthetic staging canary confirmed
+bulk/test send return selector-disabled 503s, the paused delivery state is
+visible without raw details, and all synthetic Auth/business rows are removed.
+Independent APAC-primary D1 readbacks found zero profiles, drafts, delivery
+runs, recipients, suppressions, webhook events, Auth users, accounts, sessions,
+TOTP factors, roles, and MFA assurances. The SPA and Auth health returned 200;
+the static staging bundle contains the pause warning. No Resend secret or email
+was used. Provider-backed delivery, queue retention/reconciliation policy, and
+production acceptance remain open.
+
+## Schema converter v5 query-contract review (2026-09-28 JST)
+
+The reviewed Supabase schema-only query completed against the linked project;
+the catalog timestamp is `2026-09-27T16:02:02Z`. It returned the same 40 tables,
+406 columns, 144 constraints, 139 indexes, 15 enum labels, one view, 58
+functions, 36 non-internal triggers, and 77 RLS policies. No application rows
+were read. The CLI envelope was unwrapped into mode-0600 files outside Git.
+
+The fresh schema-converter-v5 report now has 17 unresolved gate groups: 10
+row-conversion groups and 7 schema/operation groups. It records the four exact
+live GIN definitions as `omitted_after_query_contract_review`. The source and
+Worker query audit found no array containment/overlap or full-text query; exact
+normalized-ID equality is covered by a D1 UNIQUE constraint, and emoji admin
+search remains substring matching. An unknown or changed GIN definition is
+still blocked. The report remains `deployable: false`; this conversion run did
+not receive the private credential descriptor and still requires the explicit
+descriptor before the dedicated password transform can proceed.
+
+The focused schema-converter suite passes 12/12 under Node 22.6.0. Converter
+v5 did not modify the existing staging D1 schema or data. No Supabase
+application rows, real user data, production routes, provider, or domain/DNS
+were changed. Full schema/operation gates and synthetic cutover recovery drills
+remain open.
+
+A follow-up attempt to complete the pending authenticated browser review used
+the Computer Use path. macOS reports Accessibility and Screenshots permissions
+as granted, but Orca still returns `permission_denied` when reading the Codex
+window's accessibility tree. No browser content or staging UI was changed by
+that attempt; the visual review remains open.
+
+## Schema converter v6 and recent-list parity (2026-09-28 JST)
+
+The current read-only schema catalog was refreshed at `2026-09-27T16:14:11Z`;
+it retains the same 40 tables, 406 columns, 144 constraints, 139 indexes, 15
+enum labels, one view, 58 functions, 36 triggers, and 77 RLS policies. No
+application rows were read. Converter v6 fingerprints the single
+`recent_active_fanmarks` definition and records its replacement by the tested
+D1 recent-list query. Changed, malformed, or additional views stay gated. The
+fresh private report has 16 gate groups (10 row-conversion and 6
+schema/operation), 96 schema/operation locations, and `deployable: false`.
+The credential descriptor remains intentionally absent from this run.
+
+The Supabase RPC and D1 Worker now share the source-supported 1..50 recent-list
+limit; the landing-page UI continues to request 20. Converter tests passed
+13/13, migration-data 163/163, recent Worker API tests 15/15, D1 repository
+tests 6/6, the full Worker `npm test` chain, both typechecks, CI
+workflow-isolation check, staging build, Worker deploy dry-run, and
+`git diff --check` passed on Node 22.6.0. The private catalog, SQL, and report
+are mode 0600 outside Git. No live application rows, remote D1, production
+state, or domain/DNS were changed. The prior coarse estimate remains about 60% for the
+full migration and 75% for the prioritized scope; this narrow gate closure
+does not materially change it.

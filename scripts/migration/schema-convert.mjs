@@ -6,7 +6,7 @@
  * report. This tool never reads application rows and never applies SQL.
  */
 
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import process from "node:process";
@@ -14,7 +14,7 @@ import { pathToFileURL } from "node:url";
 
 import { compileCredentialDescriptor, CREDENTIAL_COLUMN, CREDENTIAL_SOURCE_RELATION } from "./credential-descriptor.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 4;
+export const SCHEMA_CONVERSION_VERSION = 6;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -24,6 +24,38 @@ const MONEY_COLUMNS = new Set([
   "fanmark_tiers.monthly_price_usd",
 ]);
 const SUPPORTED_INDEX_METHOD = "btree";
+const REVIEWED_RECENT_VIEW = {
+  name: "recent_active_fanmarks",
+  definitionSha256: "edb14241ebabddc6167bf07eee51ad24843f564e0a925bac4eedb1d44bdb3a3c",
+  replacement: "GET /api/fanmarks/recent via D1_RECENT_FANMARKS_SQL",
+  evidence: [
+    "workers/api/src/d1-repository.ts",
+    "workers/api/test/d1-repository.test.ts",
+    "docs/migration/d1-recent-contract.md",
+  ],
+};
+const REVIEWED_GIN_INDEX_ADAPTATIONS = new Map([
+  ["emoji_master.idx_emoji_master_keywords", {
+    definition: "CREATE INDEX idx_emoji_master_keywords ON public.emoji_master USING gin (keywords)",
+    replacement: null,
+    reason: "The D1 catalog contract reads and serializes keywords but has no keyword-array database predicate; no GIN equivalent is needed.",
+  }],
+  ["emoji_master.idx_emoji_master_short_name", {
+    definition: "CREATE INDEX idx_emoji_master_short_name ON public.emoji_master USING gin (to_tsvector('simple'::regconfig, short_name))",
+    replacement: "D1 substring search via instr(lower(short_name), lower(?)); no full-text query uses this index.",
+    reason: "The source admin query is substring ILIKE, not tsvector matching; the Worker preserves substring behavior and does not need an FTS index.",
+  }],
+  ["fanmarks.idx_fanmarks_emoji_ids", {
+    definition: "CREATE INDEX idx_fanmarks_emoji_ids ON public.fanmarks USING gin (emoji_ids)",
+    replacement: null,
+    reason: "The D1 contract returns emoji_ids but does not filter with array containment or overlap operators.",
+  }],
+  ["fanmarks.idx_fanmarks_normalized_emoji_ids", {
+    definition: "CREATE INDEX idx_fanmarks_normalized_emoji_ids ON public.fanmarks USING gin (normalized_emoji_ids)",
+    replacement: "D1 UNIQUE constraint fanmarks_normalized_emoji_ids_unique on canonical JSON text",
+    reason: "The source and D1 paths compare the canonical normalized ID array by exact equality; the D1 UNIQUE B-tree index covers that predicate.",
+  }],
+]);
 const ROW_CONVERSION_GATE_CODES = new Set([
   "uuid_import_validation",
   "bigint_import_range_validation",
@@ -900,7 +932,7 @@ function parseIndexDefinition(definition) {
   };
 }
 
-function translateIndex(index, constraintNames, tableNames, columnsByTable, gates) {
+function translateIndex(index, constraintNames, tableNames, columnsByTable, gates, indexAdaptations) {
   const location = { kind: "index", table: index.table_name, name: index.name };
   if (!index.valid) {
     gates.add("invalid_source_index", "The source index is marked invalid and cannot be treated as a target index.", location);
@@ -913,6 +945,24 @@ function translateIndex(index, constraintNames, tableNames, columnsByTable, gate
     return null;
   }
   if (parsed.method !== SUPPORTED_INDEX_METHOD) {
+    const adaptation = REVIEWED_GIN_INDEX_ADAPTATIONS.get(`${index.table_name}.${index.name}`);
+    if (
+      parsed.method === "gin" &&
+      adaptation &&
+      index.definition.trim() === adaptation.definition &&
+      index.unique === false &&
+      index.primary === false
+    ) {
+      indexAdaptations.push({
+        table: index.table_name,
+        sourceIndex: index.name,
+        sourceMethod: parsed.method,
+        disposition: "omitted_after_query_contract_review",
+        replacement: adaptation.replacement,
+        reason: adaptation.reason,
+      });
+      return null;
+    }
     gates.add("unsupported_index_method", `The source ${parsed.method.toUpperCase()} index needs a deliberate D1 query replacement.`, location);
     return null;
   }
@@ -963,6 +1013,28 @@ function translateIndex(index, constraintNames, tableNames, columnsByTable, gate
     where = ` WHERE ${translated}`;
   }
   return `CREATE ${parsed.unique ? "UNIQUE " : ""}INDEX ${quoteIdentifier(parsed.name)} ON ${quoteIdentifier(parsed.table)} (${columns.join(", ")})${where};`;
+}
+
+function reviewedRecentViewAdaptation(catalogInput) {
+  if (!Array.isArray(catalogInput.views) || catalogInput.views.length !== 1) return null;
+  const [view] = catalogInput.views;
+  if (
+    !isPlainObject(view) ||
+    Object.keys(view).sort().join(",") !== "definition,kind,name" ||
+    view.kind !== "view" ||
+    view.name !== REVIEWED_RECENT_VIEW.name ||
+    typeof view.definition !== "string"
+  ) return null;
+  const definitionSha256 = createHash("sha256").update(view.definition, "utf8").digest("hex");
+  if (definitionSha256 !== REVIEWED_RECENT_VIEW.definitionSha256) return null;
+  return {
+    scope: "views",
+    sourceObject: REVIEWED_RECENT_VIEW.name,
+    sourceDefinitionSha256: definitionSha256,
+    disposition: "replaced_by_d1_worker_query",
+    replacement: REVIEWED_RECENT_VIEW.replacement,
+    evidence: [...REVIEWED_RECENT_VIEW.evidence],
+  };
 }
 
 function buildEnumLabels(enums) {
@@ -1143,11 +1215,26 @@ export function convertSchema(catalogInput, options = {}) {
   const typeCounts = new Map();
   const translatedConstraints = { p: 0, u: 0, f: 0, c: 0 };
   const columnCodecs = [];
-  const context = { gates, tableNames, columnsByTable, enumLabels, typeCounts, translatedConstraints, columnCodecs, credentialDescriptorPlan, databaseLocale: catalog.database_locale };
+  const context = {
+    gates,
+    tableNames,
+    columnsByTable,
+    enumLabels,
+    typeCounts,
+    translatedConstraints,
+    columnCodecs,
+    credentialDescriptorPlan,
+    databaseLocale: catalog.database_locale,
+    indexAdaptations: [],
+    catalogScopeAdaptations: [],
+  };
 
   for (const section of ["triggers", "rls_policies", "views", "functions"]) {
+    const viewAdaptation = section === "views" ? reviewedRecentViewAdaptation(catalogInput) : null;
     if (!Object.hasOwn(catalogInput, section)) {
       gates.add("missing_catalog_scope", `The catalog input does not include ${section}; D1 parity cannot be claimed from this artifact.`, { kind: "catalog", name: section });
+    } else if (viewAdaptation) {
+      context.catalogScopeAdaptations.push(viewAdaptation);
     } else {
       gates.add("unsupported_catalog_scope", `The catalog input includes ${section}, but this converter does not translate or verify that scope.`, { kind: "catalog", name: section });
     }
@@ -1184,7 +1271,7 @@ export function convertSchema(catalogInput, options = {}) {
       gates.add("orphan_catalog_index", "The index names a table absent from the catalog columns; no target DDL is emitted for it.", { kind: "index", table: index.table_name, name: index.name });
       continue;
     }
-    const translated = translateIndex(index, constraintNames, tableNames, columnsByTable, gates);
+    const translated = translateIndex(index, constraintNames, tableNames, columnsByTable, gates, context.indexAdaptations);
     if (translated) {
       indexSql.push(translated);
       context.translatedIndexes = (context.translatedIndexes ?? 0) + 1;
@@ -1211,6 +1298,10 @@ export function convertSchema(catalogInput, options = {}) {
       columnCount: catalog.columns.length,
       translatedConstraints,
       translatedIndexCount: context.translatedIndexes ?? 0,
+      indexAdaptations: context.indexAdaptations.sort((left, right) => (
+        left.table.localeCompare(right.table) || left.sourceIndex.localeCompare(right.sourceIndex)
+      )),
+      catalogScopeAdaptations: context.catalogScopeAdaptations,
       typeMappings: Object.fromEntries([...typeCounts.entries()].sort(([left], [right]) => left.localeCompare(right))),
       columnCodecs: columnCodecs.sort((left, right) => left.table.localeCompare(right.table) || left.column.localeCompare(right.column)),
     },

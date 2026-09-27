@@ -158,6 +158,22 @@ describe("recent fanmarks API contract on a local Worker", () => {
     expect(new URL(upstreamCalls[0].url).searchParams.get("p_limit")).toBe("20");
   });
 
+  it("accepts the source RPC maximum limit", async () => {
+    mockRpc(({ request }) => {
+      upstreamCalls.push({
+        url: request.url,
+        headers: new Headers(request.headers as unknown as HeadersInit),
+        signal: request.signal,
+      });
+      return upstreamJson([]);
+    });
+
+    const response = await request("/api/fanmarks/recent?limit=50");
+
+    expect(response.status).toBe(200);
+    expect(new URL(upstreamCalls[0].url).searchParams.get("p_limit")).toBe("50");
+  });
+
   it("bounds the public response when an upstream returns more rows than requested", async () => {
     mockRpc(({ request }) => {
       upstreamCalls.push({
@@ -183,7 +199,7 @@ describe("recent fanmarks API contract on a local Worker", () => {
   });
 
   it("rejects invalid limits without calling Supabase", async () => {
-    for (const limit of ["0", "21", "1.5", "abc", ""]) {
+    for (const limit of ["0", "51", "1.5", "abc", ""]) {
       const response = await request(`/api/fanmarks/recent?limit=${encodeURIComponent(limit)}`);
       expect(response.status).toBe(400);
       expect(await response.json()).toEqual({ error: "invalid_limit" });

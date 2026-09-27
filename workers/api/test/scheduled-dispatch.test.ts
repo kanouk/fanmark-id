@@ -24,4 +24,17 @@ describe("scheduled Worker job routing", () => {
     })).toEqual(["license-expiry", "notification-events", "stripe-webhook-dispatch"]);
     expect(selectScheduledJobs("15 * * * *", {})).toEqual([]);
   });
+
+  it("selects broadcast snapshots only when both D1 delivery selectors are explicit", () => {
+    expect(selectScheduledJobs(NOTIFICATION_PROCESSOR_CRON, {
+      BROADCAST_EMAIL_BACKEND: "d1",
+    })).not.toContain("broadcast-email-delivery");
+    expect(selectScheduledJobs(NOTIFICATION_PROCESSOR_CRON, {
+      BROADCAST_SEND_BACKEND: "d1",
+    })).not.toContain("broadcast-email-delivery");
+    expect(selectScheduledJobs(NOTIFICATION_PROCESSOR_CRON, {
+      BROADCAST_EMAIL_BACKEND: "d1",
+      BROADCAST_SEND_BACKEND: "d1",
+    })).toContain("broadcast-email-delivery");
+  });
 });

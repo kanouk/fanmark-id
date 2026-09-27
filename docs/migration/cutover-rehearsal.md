@@ -83,8 +83,9 @@ The rehearsal is not complete until each applicable gate has evidence. A green
 unit suite or an empty-table readback alone is insufficient.
 
 - The refreshed source catalog fingerprint matches the conversion and import
-  artifacts. The latest checked-in status reports 18 unresolved schema gates
-  and `deployable: false`; the full schema/import gate is therefore still open.
+  artifacts. Converter v6 currently reports 16 unresolved row-conversion and
+  schema/operation gate groups and `deployable: false`; the full schema/import
+  gate is therefore still open.
 - The current schema's synthetic import/restart rehearsal passes, including
   constraints, sequence state, exact codecs, credential transform, and
   typed readback. This does not imply that real user rows have been exported.
@@ -132,17 +133,65 @@ sign-in preflight, and accepted then deduplicated one locally signed synthetic
 Stripe receipt while leaving its dispatch pending. The synthetic receipt and
 dispatch were removed, the temporary webhook secret was deleted, and staging
 was restored to the default unfrozen configuration. No Supabase writer was
-stopped or tested. The live Cron pause log was not captured; the local
-scheduled-handler test does pass.
+stopped or tested. The live Cron pause log was not captured in that initial
+rehearsal; the follow-up on 2026-09-28 captured it below.
 
 The 2026-09-27 read-only Supabase catalog query succeeds through
 `npx supabase@2.118.0`; it reads no application rows and still produces 18
 blocking schema-conversion gates. The earlier post-reauth Wrangler Keychain
 failure is resolved: current `wrangler whoami` succeeds for
-`fanmark.id@gmail.com` and the intended account. Current staging Worker version
-`21f0be9e-2099-49d8-b975-a3a61604c12e` has the freeze selector set to `false`;
-see the evidence and exact test outcomes in [HANDOFF.md](HANDOFF.md). These
-updates do not close the source schema gates or constitute a completed
+`fanmark.id@gmail.com` and the intended account. At the end of the 2026-09-27
+rehearsal, Worker version `21f0be9e-2099-49d8-b975-a3a61604c12e` had the freeze
+selector set to `false`; subsequent staging deployments are recorded below.
+These updates do not close the source schema gates or constitute a completed
 integration/cutover rehearsal.
 
 The user-data import and public domain/DNS switch remain explicitly deferred.
+
+## Frozen receipt continuity and Cron-pause follow-up (2026-09-28 JST)
+
+The guarded
+[`staging-stripe-receipt-freeze-smoke.mjs`](../../scripts/migration/staging-stripe-receipt-freeze-smoke.mjs)
+canary used only `fanmark-app-staging`, the pinned business staging D1, and a
+random temporary Stripe-signature secret. It deployed version
+`625895a0-931c-4c12-8f18-8ee54d063223` with `CUTOVER_WRITE_FREEZE=true` and
+`STRIPE_WEBHOOK_BACKEND=d1`; Stripe dispatch, API keys, checkout, and Resend
+remained disabled. While frozen, an admin mutation was rejected with 503 and
+sign-in OPTIONS returned 204. A locally signed synthetic `customer.updated`
+receipt was accepted, then replayed as `duplicate_nonterminal`. D1 held one
+receipt with delivery count 2 and one pending dispatch; the event was not
+dispatched or applied to billing. No Stripe API request was made.
+
+During the same freeze configuration, `wrangler tail` captured the scheduled
+`* * * * *` invocation logging `status=paused` and
+`reason=cutover_write_freeze`. The measured canary sequence took 29.13 seconds;
+that duration is not a production cutover RTO because no Supabase writer was
+stopped and no business write was switched.
+
+The canary deleted its receipt, dispatch, and temporary signing secret, then
+restored ordinary staging Worker version
+`4c23f796-fa12-419d-85fb-9a905a5f7ceb`. Independent readback found zero Stripe
+receipts/dispatches, zero profiles, and zero broadcast delivery rows. The SPA
+and Auth health returned 200, unauthenticated admin returned 401, and Stripe
+webhook returned 404. The only secrets remaining were the three pre-existing
+Better Auth/reference/verified-access secrets.
+
+This closes the staging-only webhook receipt continuity and scheduled-pause
+check. Coordinated Supabase-writer freeze, final copy, both pre/post-write
+recovery drills, full schema gates, Stripe sandbox business-effect acceptance,
+and production backup policy remain open. User-data import and domain/DNS
+cutover remain outside this rehearsal.
+
+## Latest schema/API parity checkpoint (2026-09-28 JST)
+
+The private v6 conversion recognizes the single
+`recent_active_fanmarks` source view only by its exact catalog shape and
+definition fingerprint, then records its replacement by the tested D1 Worker
+query. Unknown or changed views remain gated. This leaves 16 unresolved gate
+groups (10 row-conversion, 6 schema/operation) and does not establish full
+schema readiness. The public recent-list endpoint now accepts the source RPC's
+1..50 limit on both Supabase and D1; the landing page still requests 20.
+Converter 13/13, recent Worker API 15/15, D1 recent repository 6/6, the full
+migration-data suite 163/163, and Worker typecheck passed on Node 22.6.0. These
+local proofs do not satisfy the freeze, Stripe handoff, recovery, or full-schema
+gates above.

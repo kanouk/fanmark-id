@@ -124,6 +124,11 @@ import {
   ScheduledLicenseExpiryError,
 } from "./license-expiry-scheduled.mjs";
 import { runScheduledNotificationEvents } from "./notifications-scheduled";
+import {
+  dispatchBroadcastEmailDeliveryBatch,
+  snapshotBroadcastEmailDeliveryPage,
+} from "./broadcast-email-delivery-d1";
+import { handleBroadcastEmailWebhookRequest } from "./broadcast-email-webhook-d1";
 import { selectScheduledJobs } from "./scheduled-dispatch";
 import {
   createEmojiMasterD1Repository,
@@ -234,7 +239,7 @@ function corsHeaders(
 function parseLimit(url: URL): number | null {
   const values = url.searchParams.getAll("limit");
   if (values.length === 0) return 20;
-  if (values.length !== 1 || !/^(?:[1-9]|1[0-9]|20)$/.test(values[0])) return null;
+  if (values.length !== 1 || !/^(?:[1-9]|[1-4][0-9]|50)$/.test(values[0])) return null;
   return Number(values[0]);
 }
 
@@ -1066,6 +1071,9 @@ export async function handleRequest(
   const accessAnalyticsResponse = await handleFanmarkAccessAnalyticsRequest(request, env);
   if (accessAnalyticsResponse) return accessAnalyticsResponse;
 
+  const broadcastWebhookResponse = await handleBroadcastEmailWebhookRequest(request, env);
+  if (broadcastWebhookResponse) return broadcastWebhookResponse;
+
   if (isStripeWebhookPath(url.pathname)) {
     return (await handleStripeWebhookD1Request(request, env)) ?? errorResponse("not_found", 404, routeHeaders);
   }
@@ -1705,6 +1713,17 @@ const worker = {
           console.log(JSON.stringify({ job: "stripe-webhook-dispatch", ...summary }));
         }).catch((error: unknown) => {
           console.error(JSON.stringify({ job: "stripe-webhook-dispatch", status: "failed", code: "stripe_dispatch_failed" }));
+          throw error;
+        }));
+    }
+    if (selectedJobs.has("broadcast-email-delivery")) {
+      jobs.push((async () => {
+        const snapshot = await snapshotBroadcastEmailDeliveryPage(env, () => new Date(controller.scheduledTime));
+        console.log(JSON.stringify({ job: "broadcast-email-snapshot", ...snapshot }));
+        const delivery = await dispatchBroadcastEmailDeliveryBatch(env, () => new Date(controller.scheduledTime));
+        console.log(JSON.stringify({ job: "broadcast-email-delivery", ...delivery }));
+      })().catch((error: unknown) => {
+          console.error(JSON.stringify({ job: "broadcast-email-delivery", status: "failed", code: "broadcast_delivery_failed" }));
           throw error;
         }));
     }

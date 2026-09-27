@@ -58,6 +58,7 @@ import { useLanguages } from "@/hooks/useLanguages";
 import {
   createAdminBroadcastEmailApi,
   getAdminBroadcastEmailBackend,
+  getAdminBroadcastSendBackend,
   getAdminBroadcastTestSendBackend,
 } from "@/lib/admin-broadcast-email-api";
 
@@ -79,6 +80,7 @@ interface BroadcastEmail {
   sent_count: number;
   failed_count: number;
   status: BroadcastStatus;
+  delivery_status?: "needs_review" | null;
   recipient_filter: RecipientFilter | null;
   created_at: string;
   started_at: string | null;
@@ -123,11 +125,13 @@ export function AdminBroadcastEmail() {
   const queryClient = useQueryClient();
   const { activeLanguages } = useLanguages();
   const useWorkerBackend = getAdminBroadcastEmailBackend() === "worker";
+  const workerBulkSendEnabled = useWorkerBackend && getAdminBroadcastSendBackend() === "worker";
   const workerTestSendEnabled = useWorkerBackend && getAdminBroadcastTestSendBackend() === "worker";
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isTestSendOpen, setIsTestSendOpen] = useState(false);
+  const [sendRequest, setSendRequest] = useState<{ broadcastId: string; requestId: string } | null>(null);
   const [testSendRequestId, setTestSendRequestId] = useState<string | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedBroadcast, setSelectedBroadcast] = useState<BroadcastEmail | null>(null);
@@ -273,8 +277,11 @@ export function AdminBroadcastEmail() {
 
   // Send broadcast mutation
   const sendMutation = useMutation({
-    mutationFn: async (broadcastId: string) => {
-      if (useWorkerBackend) throw new Error("Cloudflare staging supports draft-only mode; email delivery is disabled");
+    mutationFn: async ({ broadcastId, requestId }: { broadcastId: string; requestId: string }) => {
+      if (useWorkerBackend) {
+        if (!workerBulkSendEnabled) throw new Error("Cloudflare bulk email delivery is disabled");
+        return broadcastApi.startSend({ broadcastId, requestId });
+      }
       const { data: session } = await supabase.auth.getSession();
       if (!session.session?.access_token) throw new Error("Not authenticated");
 
@@ -289,7 +296,10 @@ export function AdminBroadcastEmail() {
       queryClient.invalidateQueries({ queryKey: ["broadcast-emails"] });
       setIsConfirmOpen(false);
       setSelectedBroadcast(null);
-      toast.success(data.message || "送信を開始しました");
+      setSendRequest(null);
+      toast.success("accepted" in data
+        ? "配信キューを作成しました。対象確定後、Worker Cronが処理します。"
+        : data.message || "送信を開始しました");
     },
     onError: (error) => {
       toast.error(`送信失敗: ${error.message}`);
@@ -336,14 +346,23 @@ export function AdminBroadcastEmail() {
   };
 
   const handleSend = () => {
-    if (useWorkerBackend) return;
     if (!selectedBroadcast) return;
-    sendMutation.mutate(selectedBroadcast.id);
+    if (useWorkerBackend && !workerBulkSendEnabled) return;
+    const requestId = sendRequest?.broadcastId === selectedBroadcast.id
+      ? sendRequest.requestId
+      : crypto.randomUUID();
+    if (useWorkerBackend && sendRequest?.broadcastId !== selectedBroadcast.id) {
+      setSendRequest({ broadcastId: selectedBroadcast.id, requestId });
+    }
+    sendMutation.mutate({ broadcastId: selectedBroadcast.id, requestId });
   };
 
   const openConfirmDialog = (broadcast: BroadcastEmail) => {
-    if (useWorkerBackend) return;
+    if (useWorkerBackend && !workerBulkSendEnabled) return;
     setSelectedBroadcast(broadcast);
+    if (useWorkerBackend && sendRequest?.broadcastId !== broadcast.id) {
+      setSendRequest({ broadcastId: broadcast.id, requestId: crypto.randomUUID() });
+    }
     setIsConfirmOpen(true);
   };
 
@@ -450,7 +469,12 @@ export function AdminBroadcastEmail() {
 
       {useWorkerBackend && (
         <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-100">
-          Cloudflare staging は下書き専用です。実ユーザーへの本送信・テスト送信は無効にしています。
+          Cloudflare mode は各送信操作を既定で無効にしています。一括配信は VITE_BROADCAST_SEND_BACKEND=worker、テスト送信は VITE_BROADCAST_TEST_SEND_BACKEND=worker に加え、Worker 側の独立した設定が必要です。
+        </div>
+      )}
+      {workerBulkSendEnabled && (
+        <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          Cloudflare 一括配信操作が有効です。開始すると対象者を固定し、Worker Cron と Resend の設定が有効な環境では対象ユーザーへのメール配信が始まります。
         </div>
       )}
 
@@ -584,13 +608,22 @@ export function AdminBroadcastEmail() {
                         {broadcast.subject || "(テンプレート使用)"}
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant={statusConfig?.variant}
-                          className="gap-1"
-                        >
-                          {statusConfig?.icon}
-                          {statusConfig?.label}
-                        </Badge>
+                        <div className="space-y-1">
+                          <Badge
+                            variant={broadcast.delivery_status === "needs_review" ? "destructive" : statusConfig?.variant}
+                            className="gap-1"
+                          >
+                            {broadcast.delivery_status === "needs_review"
+                              ? <AlertTriangle className="h-3 w-3" />
+                              : statusConfig?.icon}
+                            {broadcast.delivery_status === "needs_review" ? "要確認・送信停止中" : statusConfig?.label}
+                          </Badge>
+                          {broadcast.delivery_status === "needs_review" && (
+                            <p className="max-w-56 text-xs text-destructive">
+                              配信結果の確認が必要です。自動再試行は停止しています。
+                            </p>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         {broadcast.status === "sending" ? (
@@ -636,12 +669,12 @@ export function AdminBroadcastEmail() {
                               >
                                 <TestTube className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="default"
-                                size="sm"
-                                onClick={() => openConfirmDialog(broadcast)}
-                                disabled={useWorkerBackend}
-                                title="送信開始"
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => openConfirmDialog(broadcast)}
+                            disabled={useWorkerBackend && !workerBulkSendEnabled}
+                            title="送信開始"
                               >
                                 <Send className="h-4 w-4" />
                               </Button>
@@ -884,7 +917,9 @@ export function AdminBroadcastEmail() {
               送信確認
             </DialogTitle>
             <DialogDescription>
-              この操作は取り消せません。全ユーザーにメールが送信されます。
+              {useWorkerBackend
+                ? "送信を開始すると対象者とテンプレートを固定し、Worker Cron が配信処理を進めます。"
+                : "この操作は取り消せません。対象ユーザーにメールが送信されます。"}
             </DialogDescription>
           </DialogHeader>
 
@@ -932,7 +967,7 @@ export function AdminBroadcastEmail() {
             <Button
               variant="destructive"
               onClick={handleSend}
-              disabled={useWorkerBackend || sendMutation.isPending}
+              disabled={(useWorkerBackend && !workerBulkSendEnabled) || sendMutation.isPending}
             >
               {sendMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

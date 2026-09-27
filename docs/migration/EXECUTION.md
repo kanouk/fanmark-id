@@ -2718,3 +2718,95 @@ non-deploying Wrangler validation. The first attempt timed out after 180
 seconds in the Stripe PGlite snapshot test. That test passed alone locally and
 the full Stripe suite passed locally; retrying the same code passed on GitHub,
 so the first failure was not reproduced. The workflow did not deploy.
+
+## Synthetic Stripe receipt continuity during staging freeze (2026-09-28 JST)
+
+Added and ran the guarded
+[`staging-stripe-receipt-freeze-smoke.mjs`](../../scripts/migration/staging-stripe-receipt-freeze-smoke.mjs)
+with the exact account, Business D1, live-staging-write, and no-Stripe-API
+flags. It installed a random temporary webhook signing secret and deployed
+`625895a0-931c-4c12-8f18-8ee54d063223` with `CUTOVER_WRITE_FREEZE=true` and only
+`STRIPE_WEBHOOK_BACKEND=d1`; it did not configure a Stripe API key, dispatch
+selector, Checkout, or Resend.
+
+During freeze, an unauthenticated mutation received 503 `cutover_write_freeze`
+and sign-in OPTIONS returned 204. The locally signed synthetic
+`customer.updated` event returned `accepted`, and an exact replay returned
+`duplicate_nonterminal`. Remote D1 readback found one receipt with
+`delivery_count=2`, status `received`, and one `pending` dispatch. No business
+handler ran, Stripe API request was made, or email sent. The canary took
+29,130 ms from secret setup through cleanup and restore; it is not a measured
+production cutover RTO.
+
+Cleanup removed the receipt, dispatch, and one-use secret, then restored the
+ordinary staging config as Worker `4c23f796-fa12-419d-85fb-9a905a5f7ceb`.
+Independent final readback found zero Stripe receipts/dispatches, zero business
+profiles, and zero broadcast delivery rows. `/` and `/api/auth/ok` returned 200,
+the unauthenticated admin mutation returned 401, and the disabled Stripe webhook
+returned 404. The secret inventory returned to the three pre-existing
+Better Auth/reference/verified-access secrets. No Supabase writers, production,
+real user data, or domain/DNS settings changed. Stripe sandbox business-effect
+acceptance and full pre/post-write recovery drills remain open.
+
+## Staging visibility for a paused broadcast delivery (2026-09-28 JST)
+
+Updated the D1 broadcast list DTO to project only `delivery_status=needs_review`
+from the internal error marker, and added a warning in the admin UI stating
+that sending is stopped and automatic retries are off. Raw `error_details`,
+provider response bodies, and address-like data remain excluded from the DTO.
+Focused admin API tests passed 11/11, delivery integration tests 8/8, both
+typechecks, targeted ESLint, the Cloudflare staging build, and Wrangler staging
+dry-run.
+
+Deployed the ordinary isolated `fanmark-app-staging` configuration as Worker
+`30ce0b27-fb72-4400-a8b6-6d86b46b5167`. The business D1 migration list had no
+pending work; `BROADCAST_SEND_BACKEND`, test-send selectors, and Resend secrets
+were absent. The authenticated synthetic TOTP canary confirmed the test-send
+and bulk-send endpoints each returned the expected selector-disabled 503. A
+synthetic `needs_review` run and recipient were then inserted temporarily; the
+MFA-protected list returned `status=sending` plus `delivery_status=needs_review`
+without the synthetic address/provider body. Cleanup removed the run, recipient,
+draft, synthetic profiles, audits, Auth identity/session/TOTP rows, and target
+identity. Independent APAC-primary D1 reads reported `changed_db=false`, zero
+profiles/drafts/runs/recipients/suppressions/webhook events, and zero Auth
+users/accounts/sessions/factors/roles/MFA assurances. `/` and `/api/auth/ok`
+returned 200, and the deployed asset contains the warning text. No email or
+provider request was made. Visual browser review remains open because the host
+Mac was locked. Queue retention/reconciliation policy and provider-backed
+acceptance remain open.
+
+## スキーマ変換 v5: GIN index のクエリ契約判定 (2026-09-28 JST)
+
+Supabase の `schema-readiness.sql` をリンク先へ read-only で再実行し、
+2026-09-27T16:02:02Z 時点のcatalogを取得。40表・406列・144制約・139 index・
+15 enum・1 view・58 function・36 trigger・77 RLS policyで、業務データ行は
+読んでいない。schema-converter v5は、現在存在する4つのGIN indexを正確な
+定義との一致に限り `omitted_after_query_contract_review` として記録する。
+配列contains/overlapおよび全文検索の呼び出しはなく、正規化IDはD1のUNIQUE
+制約で完全一致検索し、絵文字管理検索は部分一致であることを確認した。
+未知または変更されたGIN定義は引き続きblockingにする。
+
+最新変換レポートは17 gate groups (row変換10、schema/operation 7)、
+`deployable=false`。今回のreport生成には非公開credential descriptorを
+渡していないため、専用password transformは引き続き停止条件となる。
+変換器テストはNode 22.6.0で12/12。catalog・DDL・reportはGit外、mode 0600。
+既存staging D1へはDDL/dataとも適用していない。
+
+## Schema converter v6 and recent-list limit parity (2026-09-28 JST)
+
+The read-only Supabase catalog refresh at `2026-09-27T16:14:11Z` still has one
+`recent_active_fanmarks` view. Converter v6 recognizes it only by exact
+single-view scope, kind/name, and definition SHA-256, then records its
+replacement by the D1 Worker recent-list query with code/test/document evidence.
+Unknown, changed, or additional views remain blocking. The private report has
+16 groups (10 row-conversion and 6 schema/operation) and remains
+`deployable: false`; the private credential descriptor was not supplied.
+
+The recent Worker API and D1 repository now accept limits through 50 to match
+the source RPC, while the landing page continues to request 20. Node 22.6.0
+verification passed: schema converter 13/13, migration-data 163/163,
+Supabase-backed recent API 15/15, D1 repository 6/6, the complete Worker
+`npm test` chain, both typechecks, CI workflow-isolation check, Cloudflare
+staging build, Worker deploy dry-run, and `git diff --check`. Catalog, generated
+SQL, and report are mode 0600 outside Git. No application rows, remote D1,
+production, user data, or domain/DNS settings changed.

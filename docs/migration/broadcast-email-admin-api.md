@@ -10,8 +10,38 @@ selected by `BROADCAST_EMAIL_BACKEND=d1` and the staging frontend by
 `VITE_BROADCAST_EMAIL_BACKEND=worker`; production/default builds still use
 Supabase.
 
-Bulk delivery stays disabled in Cloudflare mode. A separate, default-off test
-send route is implemented for drafts: it requires the explicit
+The browser bulk-send control is default-off in Cloudflare mode and requires
+`VITE_BROADCAST_SEND_BACKEND=worker` in `cloudflare-staging` mode. The migration
+worktree adds a separate send-start endpoint,
+`POST /api/admin/broadcast-emails/send`, guarded by the same administrator
+session/MFA and D1 admin-plan checks. It accepts a draft ID and UUID request ID,
+freezes the broadcast filter and active per-language template selection,
+creates one durable run per broadcast, and marks the draft scheduled. Replays
+with the same administrator/request ID return aggregate run status without
+creating another run; reusing that key for another broadcast is a conflict.
+The route itself does not call Resend.
+
+The minute Cron snapshots up to 50 Auth D1 user IDs at a time and stores only
+the ID and effective language in Business D1. It excludes Auth users created
+after the send command, applies the existing plan/language/registration-date
+filters through `user_settings`, defaults missing language settings to
+Japanese for an unfiltered audience, and will fail the run if the audience
+exceeds 10,000. A short D1 lease and cursor compare-and-swap allow another
+invocation to resume after a crash. The queue has no recipient-address column.
+Snapshot selectors are default-off and require split D1 plus both explicit D1
+backend selectors.
+
+Resend delivery and the signed webhook route are implemented in the migration
+worktree and included in the deployed staging Worker bundle. The staging
+selectors and provider secrets remain unset, so neither path has been exercised
+remotely or verified against Resend. The dispatcher uses bounded batches,
+leases and retries, a stable provider idempotency key, and a keyed payload fingerprint; a changed Auth email or
+payload after an uncertain attempt pauses the recipient for review. Signed
+webhook events are deduplicated and retain only message ID, event type, bounce
+class, and time. Permanent bounces and complaints suppress the matching Auth
+ID; transient bounces do not. These paths have synthetic Miniflare tests. Keep
+their runtime selectors and secrets unset. A separate, default-off test-send route is
+implemented for drafts: it requires the explicit
 `BROADCAST_TEST_SEND_BACKEND=resend` selector, a server-configured single
 `BROADCAST_TEST_RECIPIENT`, and the Resend key/from settings. The caller cannot
 choose a recipient. It requires the same Better Auth administrator session/MFA
@@ -28,15 +58,28 @@ remains open, so retrying after an uncertain provider response reuses the same
 request identity.
 
 The test-send code has only been checked with an injected provider mock. The
-Worker route has been deployed with its selector off; the frontend selector,
-allowlisted recipient, Resend key, and sender are not configured, and no email
-was sent. An authenticated staging API canary on the deployed Worker verified
-the 12-template list, a zero-result future-date estimate, synthetic draft
-create/readback, test-send 503, and bulk-send 404. It removed its synthetic
-Auth/profile/draft/audit rows and direct D1 readback returned the canary tables
-to zero. Authenticated browser review remains open. Bulk delivery still needs a
-separate queue/retry design, recipient snapshot semantics, opt-out and bounce
-handling, and delivery-state reconciliation. The draft write and its minimized
+send-start API canary ran on Worker version
+`4cf9657f-bee3-42bb-aa89-802e9ed0aa89`; after the temporary write-freeze
+and Stripe receipt-continuity rehearsals, the ordinary staging config was
+restored as version `4c23f796-fa12-419d-85fb-9a905a5f7ceb`. The frontend/backend send selectors,
+allowlisted recipient, Resend key, and webhook secret are not configured, and no
+email was sent. The earlier authenticated staging API canary on Worker version
+`21f0be9e-2099-49d8-b975-a3a61604c12e` verified the list, estimate, and draft
+routes; the bulk-send route did not yet exist then. The current deployed
+send-start route has now passed a separate selector-disabled API canary, which
+confirmed a 503 response and no delivery queue rows; details are below.
+
+The send-start, Auth-ID snapshot, dispatch, and webhook flows are also covered
+locally with a synthetic Miniflare D1/Auth pair: schema creation, idempotent
+start, frozen templates/filtering, bounded page continuation, fixed-payload
+retries, changed-email pause, competing lease exclusion, event
+signature/deduplication, and permanent-bounce/complaint suppression pass.
+Completion audit is idempotent. No real audience snapshot or provider request
+occurred. Authenticated browser review of the updated send control remains open.
+The current queue design preserves the service-notice/no-unsubscribe contract
+and leaves queue-record retention and post-window reconciliation for operator
+policy decisions.
+The draft write and its minimized
 `BROADCAST_DRAFT_CREATE` audit record are one D1 batch; the audit contains the
 type and whether filters were present, not recipient addresses or filter
 values.
@@ -84,24 +127,59 @@ admin-role/MFA-assurance rows and zero profile/draft/audit rows. The test used
 an `example.invalid` identity and synthetic text only; its local password/TOTP
 state was removed. No real user data, production routing, or domain/DNS changed.
 This proves the authenticated screen and draft path only. Recipient estimate
-was previously covered by the API canary; real-provider delivery, bulk queue
-and retry semantics, recipient snapshots, opt-out/bounce handling, and
-delivery-state reconciliation remain open.
+was previously covered by the API canary. The current local UI now has a
+default-off bulk-send selector and idempotent request identity, but this updated
+send-start UI has not had authenticated browser review. Deployed schema/Worker
+acceptance, real-provider delivery, and operational policy remain open.
+
+## Selector-disabled send-start staging canary (2026-09-28 JST)
+
+On deployed Worker version `4cf9657f-bee3-42bb-aa89-802e9ed0aa89`, an
+authenticated synthetic administrator passed sign-in, TOTP enrollment, and the
+MFA/admin-plan checks. The canary verified template list, zero-result estimate,
+draft creation/readback, and selector-disabled test-send response. It then sent
+a valid synthetic request ID to the new bulk-send route and received exactly
+HTTP 503 `{ "error": "broadcast_send_unavailable" }`. Direct D1 readback found
+no delivery run or recipient row for the draft/request.
+
+Cleanup removed the synthetic identity, session, TOTP factor, business profile,
+draft, and audit rows; all user-owned Auth tables and the broadcast/profile
+tables returned to zero. The monotonic MFA generation counter was preserved.
+No real audience snapshot, provider request, email, public route, or domain/DNS
+change occurred. The test-send, bulk-send, and provider selectors remain off;
+the authenticated browser review of the updated send control is still open.
 
 ## Delivery work still open
 
 The standard build continues to use the existing Supabase Edge Function for
-bulk and user-addressed test delivery. Do not enable bulk delivery against
-real-user data in staging. The explicit real Auth/business/object import and
-public DNS cutover remain in the final phases tracked by #38.
+bulk and user-addressed test delivery. Do not enable the audience snapshot or
+provider selectors against real-user data in staging. The explicit real
+Auth/business/object import and public DNS cutover remain in the final phases
+tracked by #38.
+
+The Cloudflare bulk-send implementation and synthetic replay tests do not
+authorize a real recipient snapshot, provider call, or email. Before any
+provider-backed acceptance, record queue retention and the operator workflow
+for uncertain sends, then verify the Resend webhook and test recipient in an
+isolated synthetic staging environment. Production activation remains a
+separate final-cutover decision.
 
 ## Validation
 
 The isolated Worker suite covers the MFA/admin gate, D1 list projection,
 template allowlist, recipient filters, server-derived creator ID, draft-only
-write/audit batch, invalid Origin, request validation, disabled bulk dispatch,
-and the mock-only fixed-recipient test-send route. The frontend contract tests
-cover same-origin credentialed requests, bounded DTO parsing, count estimation,
-draft creation, and the test-send request contract. The staging Worker,
-current-source template comparison, and authenticated draft-screen browser
-canary are in place; real-provider delivery validation remains open.
+write/audit batch, invalid Origin, request validation, send-start, idempotency
+conflicts, and the mock-only fixed-recipient test-send route. The Miniflare
+integration applies `0016_broadcast_email_delivery.sql` and checks address-free
+queue schema, send-command replay, snapshot paging, template/filter freezing,
+same-payload idempotent retry, changed-email pause, competing-send exclusion,
+signed webhook validation/deduplication, suppression, and idempotent completion
+audit. Frontend API tests cover same-origin credentialed requests, bounded DTO
+parsing, estimates, draft creation, fixed-recipient test-send, and aggregate-only
+bulk send-start (6/6). The focused delivery integration passes 8/8, the Worker
+admin API passes 10/10, scheduled routing passes 4/4, and both Worker and app
+typechecks pass. Lost acknowledgement after a committed page resumes at its D1
+cursor without duplicates, and retry past Resend's 24-hour idempotency boundary
+pauses without a provider call. Authenticated browser review of the updated
+send control, deployment, queue policy, and provider-backed acceptance remain
+open.

@@ -189,7 +189,7 @@ test("conversion is deterministic and exposes exact target codecs", () => {
 
   assert.equal(first.report.target.tableCount, 4);
   assert.equal(first.report.target.columnCount, 15);
-  assert.equal(first.report.schemaVersion, 4);
+  assert.equal(first.report.schemaVersion, 6);
   assert.deepEqual(first.report.target.translatedConstraints, { p: 4, u: 0, f: 1, c: 3 });
   assert.equal(first.report.target.translatedIndexCount, 4);
   assert.deepEqual(
@@ -320,6 +320,60 @@ test("database locale metadata must include both source locale settings", () => 
   assert.throws(() => convertSchema(input), (error) => error.code === "invalid_catalog_database_locale");
 });
 
+test("the four reviewed live GIN indexes have explicit D1 query-contract dispositions", () => {
+  const input = fixture();
+  input.columns.push(
+    column("emoji_master", "id", 1, "uuid", { not_null: true }),
+    column("emoji_master", "short_name", 2, "text", { not_null: true }),
+    column("emoji_master", "keywords", 3, "text[]", { not_null: true }),
+    column("fanmarks", "id", 1, "uuid", { not_null: true }),
+    column("fanmarks", "emoji_ids", 2, "uuid[]", { not_null: true }),
+    column("fanmarks", "normalized_emoji_ids", 3, "uuid[]", { not_null: true }),
+  );
+  input.constraints.push(
+    constraint("emoji_master", "emoji_master_pkey", "p", "PRIMARY KEY (id)"),
+    constraint("fanmarks", "fanmarks_pkey", "p", "PRIMARY KEY (id)"),
+    constraint("fanmarks", "fanmarks_normalized_emoji_ids_unique", "u", "UNIQUE (normalized_emoji_ids)"),
+  );
+  input.indexes.push(
+    index("emoji_master", "idx_emoji_master_keywords", "CREATE INDEX idx_emoji_master_keywords ON public.emoji_master USING gin (keywords)"),
+    index("emoji_master", "idx_emoji_master_short_name", "CREATE INDEX idx_emoji_master_short_name ON public.emoji_master USING gin (to_tsvector('simple'::regconfig, short_name))"),
+    index("fanmarks", "idx_fanmarks_emoji_ids", "CREATE INDEX idx_fanmarks_emoji_ids ON public.fanmarks USING gin (emoji_ids)"),
+    index("fanmarks", "idx_fanmarks_normalized_emoji_ids", "CREATE INDEX idx_fanmarks_normalized_emoji_ids ON public.fanmarks USING gin (normalized_emoji_ids)"),
+  );
+
+  const result = convertSchema(input);
+  assert.equal(result.report.schemaVersion, 6);
+  assert.deepEqual(result.report.target.indexAdaptations.map((entry) => entry.sourceIndex), [
+    "idx_emoji_master_keywords",
+    "idx_emoji_master_short_name",
+    "idx_fanmarks_emoji_ids",
+    "idx_fanmarks_normalized_emoji_ids",
+  ]);
+  assert.ok(result.report.target.indexAdaptations.every((entry) => entry.disposition === "omitted_after_query_contract_review"));
+  assert.match(result.report.target.indexAdaptations[3].replacement, /UNIQUE constraint fanmarks_normalized_emoji_ids_unique/);
+  assert.match(result.sql, /CONSTRAINT "fanmarks_normalized_emoji_ids_unique" UNIQUE \("normalized_emoji_ids"\)/);
+  assert.doesNotMatch(result.sql, /USING gin|idx_emoji_master_keywords|idx_emoji_master_short_name|idx_fanmarks_emoji_ids|idx_fanmarks_normalized_emoji_ids/);
+
+  const unknown = structuredClone(input);
+  unknown.indexes.push(index("emoji_master", "idx_emoji_master_unknown", "CREATE INDEX idx_emoji_master_unknown ON public.emoji_master USING gin (category)"));
+  const unknownResult = convertSchema(unknown);
+  assert.ok(unknownResult.report.gates.some((gate) => (
+    gate.code === "unsupported_index_method" &&
+    gate.locations.some((location) => location.name === "idx_emoji_master_unknown")
+  )));
+
+  const changed = structuredClone(input);
+  changed.indexes.find((entry) => entry.name === "idx_emoji_master_keywords").definition =
+    "CREATE INDEX idx_emoji_master_keywords ON public.emoji_master USING gin (keywords, category)";
+  const changedResult = convertSchema(changed);
+  assert.ok(changedResult.report.gates.some((gate) => (
+    gate.code === "unsupported_index_method" &&
+    gate.locations.some((location) => location.name === "idx_emoji_master_keywords")
+  )));
+  assert.ok(!changedResult.report.target.indexAdaptations.some((entry) => entry.sourceIndex === "idx_emoji_master_keywords"));
+});
+
 test("known ASCII PostgreSQL regex checks translate only with the source C locale", () => {
   const input = regexSchemaFixture();
   const result = convertSchema(input);
@@ -333,7 +387,7 @@ test("known ASCII PostgreSQL regex checks translate only with the source C local
     .flatMap((gate) => gate.locations)
     .filter((location) => sourceCheckNames.has(location.name));
   assert.deepEqual(untranslatedSourceChecks, []);
-  assert.equal(result.report.schemaVersion, 4);
+  assert.equal(result.report.schemaVersion, 6);
 
   const cases = [
     ["invitation_codes", "code", "ABC123", true],
@@ -510,4 +564,52 @@ test("present catalog scopes and parenthesized enum comparisons cannot imply par
   assert.ok(result.report.gates.some(gate => gate.code === "representation_sensitive_check" && gate.locations.some(location => location.name === "role_order")));
   assert.doesNotMatch(result.sql, /CONSTRAINT "role_order"/);
   assert.match(result.sql, /"role" IN \('admin', 'user'\)/);
+});
+
+test("the exact recent-active view is adapted only to the reviewed D1 query", () => {
+  const definition = " SELECT fl.id AS license_id,\n    fl.fanmark_id,\n    f.short_id AS fanmark_short_id,\n    fl.display_fanmark AS display_emoji,\n    fl.created_at AS license_created_at\n   FROM fanmark_licenses fl\n     JOIN fanmarks f ON f.id = fl.fanmark_id\n  WHERE fl.status = 'active'::text;";
+  const input = fixture();
+  input.views = [{ kind: "view", name: "recent_active_fanmarks", definition }];
+
+  const result = convertSchema(input);
+  assert.equal(result.report.schemaVersion, 6);
+  assert.equal(result.report.deployable, false);
+  assert.deepEqual(result.report.target.catalogScopeAdaptations, [{
+    scope: "views",
+    sourceObject: "recent_active_fanmarks",
+    sourceDefinitionSha256: "edb14241ebabddc6167bf07eee51ad24843f564e0a925bac4eedb1d44bdb3a3c",
+    disposition: "replaced_by_d1_worker_query",
+    replacement: "GET /api/fanmarks/recent via D1_RECENT_FANMARKS_SQL",
+    evidence: [
+      "workers/api/src/d1-repository.ts",
+      "workers/api/test/d1-repository.test.ts",
+      "docs/migration/d1-recent-contract.md",
+    ],
+  }]);
+  assert.equal(result.report.gates.some((gate) => (
+    gate.code === "unsupported_catalog_scope" && gate.locations.some((location) => location.name === "views")
+  )), false);
+  for (const scope of ["triggers", "rls_policies", "functions"]) {
+    assert.ok(result.report.gates.some((gate) => (
+      gate.code === "unsupported_catalog_scope" && gate.locations.some((location) => location.name === scope)
+    )));
+  }
+
+  const changedDefinition = convertSchema({
+    ...input,
+    views: [{ ...input.views[0], definition: `${definition}\n` }],
+  });
+  assert.deepEqual(changedDefinition.report.target.catalogScopeAdaptations, []);
+  assert.ok(changedDefinition.report.gates.some((gate) => (
+    gate.code === "unsupported_catalog_scope" && gate.locations.some((location) => location.name === "views")
+  )));
+
+  const additionalView = convertSchema({
+    ...input,
+    views: [...input.views, { kind: "view", name: "unreviewed_view", definition }],
+  });
+  assert.deepEqual(additionalView.report.target.catalogScopeAdaptations, []);
+  assert.ok(additionalView.report.gates.some((gate) => (
+    gate.code === "unsupported_catalog_scope" && gate.locations.some((location) => location.name === "views")
+  )));
 });

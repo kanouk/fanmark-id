@@ -258,3 +258,50 @@ violations and `integrity_check=ok`. This regenerated private report does not
 contact Supabase, read application rows, modify Cloudflare, or change the
 existing staged DDL. Its 18 groups remain the import/operation boundary for
 the final stages.
+
+## Schema converter version 5: reviewed GIN query adaptations (2026-09-28 JST)
+
+The linked catalog was refreshed again through the reviewed read-only query at
+`2026-09-27T16:02:02Z`. It still contains 40 tables, 406 columns, 144
+constraints, 139 indexes, 15 enum labels, one view, 58 functions, 36
+non-internal triggers, and 77 RLS policies. No application rows were read.
+
+Converter v5 records four exact-definition GIN adaptations in
+`target.indexAdaptations`. The emoji keyword array and both fanmark ID arrays
+have no containment/overlap query in the checked-in application or Worker
+paths; normalized fanmark IDs use exact equality and are covered by the D1
+`fanmarks_normalized_emoji_ids_unique` constraint. Emoji admin search is
+substring matching (`ILIKE '%…%'` in the source and `instr(lower(...))` in the
+Worker), not full-text search. These four GIN indexes are therefore omitted as
+query-contract adaptations, not silently translated to a different SQLite
+index. Each decision is pinned to the exact live definition. An unknown GIN
+index or a changed definition remains blocked by `unsupported_index_method`.
+
+The fresh report now has 17 gate groups (10 row-conversion and 7
+schema/operation) and remains `deployable: false`. This invocation omitted the
+private credential descriptor, so the credential column remains blocked as
+`credential_descriptor_required`; no generic text import is permitted. The
+mode-0600 catalog, generated SQL, and report remain outside Git. Converter v5
+does not alter the already-applied v4 staging schema, and no remote D1 schema
+or data was changed. The focused converter suite passes 12/12 under Node
+22.6.0.
+
+## Schema converter version 6: exact recent-view replacement (2026-09-28 JST)
+
+Converter v6 records `recent_active_fanmarks` as replaced by the D1 recent-list
+Worker query only when the private catalog contains exactly one view with the
+reviewed kind/name and definition SHA-256. The converter records that fingerprint,
+replacement, and test/document evidence under `target.catalogScopeAdaptations`.
+Changed definitions, additional views, and malformed view metadata remain
+blocking. The 1..50 public API limit is now shared by Supabase and D1; the
+landing-page caller still requests 20.
+
+The fresh private report has 16 groups (10 row-conversion and 6
+schema/operation) and remains `deployable: false`. Its generated base profile
+still contains 40 tables and 406 columns. The function, trigger, RLS, and other
+operation/import gates remain explicit. Converter tests pass 13/13; recent API
+tests pass 15/15; D1 recent tests pass 6/6; Worker typecheck passes. The private
+catalog, generated SQL, and report remain mode 0600 outside Git, and no remote
+D1 schema or data was changed. The full migration-data suite passed 163/163;
+the complete Worker `npm test` chain, app typecheck, Cloudflare staging build,
+Worker deploy dry-run, workflow-isolation check, and `git diff --check` passed.

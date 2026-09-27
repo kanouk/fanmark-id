@@ -215,7 +215,7 @@ describe("D1 recent fanmarks repository", () => {
   });
 
   it("serves real local D1 rows with active-license and join semantics", async () => {
-    const response = await configuredRequest("?limit=20");
+    const response = await configuredRequest("?limit=50");
 
     expect(response.status).toBe(200);
     const body = (await response.json()) as {

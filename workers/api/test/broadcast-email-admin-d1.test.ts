@@ -103,6 +103,23 @@ describe("D1 broadcast email admin API", () => {
     expect(JSON.stringify(payload)).not.toContain("error_details");
   });
 
+  it("exposes a safe paused-delivery state without returning raw error details", async () => {
+    if (!database) throw new Error("FANMARK_DB binding is unavailable");
+    await database.prepare(`UPDATE broadcast_emails SET status = 'sending', error_details = ? WHERE id = ?`)
+      .bind(JSON.stringify({ code: "needs_review", recipient: "private@example.test", detail: "provider response body" }), draftId)
+      .run();
+    const response = await request("/api/admin/broadcast-emails");
+    expect(response.status).toBe(200);
+    const payload = await response.json() as { broadcasts: Array<Record<string, unknown>> };
+    expect(payload.broadcasts[0]).toEqual(expect.objectContaining({
+      status: "sending",
+      delivery_status: "needs_review",
+    }));
+    expect(JSON.stringify(payload)).not.toContain("private@example.test");
+    expect(JSON.stringify(payload)).not.toContain("provider response body");
+    expect(JSON.stringify(payload)).not.toContain("error_details");
+  });
+
   it("estimates recipient counts using only validated filters", async () => {
     const response = await request("/api/admin/broadcast-emails/estimate", {
       method: "POST",
@@ -155,8 +172,9 @@ describe("D1 broadcast email admin API", () => {
     expect(await database!.prepare("SELECT COUNT(*) AS count FROM broadcast_emails WHERE status != 'draft'").first<{ count: number }>()).toMatchObject({ count: 0 });
   });
 
-  it("rejects email dispatch actions and unknown routes", async () => {
-    expect((await request("/api/admin/broadcast-emails/send")).status).toBe(404);
+  it("allows only POST for send-start and rejects unknown routes", async () => {
+    expect((await request("/api/admin/broadcast-emails/send")).status).toBe(405);
+    expect((await request("/api/admin/broadcast-emails/send-now")).status).toBe(404);
     expect((await request("/api/admin/broadcast-emails", { method: "DELETE" })).status).toBe(405);
   });
 
