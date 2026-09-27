@@ -2494,3 +2494,19 @@ rejected a conflicting replay. The output correctly keeps `deployable` and
 generated DDL, and conversion report were stored as mode-0600 `/tmp` artifacts
 and are not part of the repository. No Cloudflare D1, source rows, user data,
 production route, or domain/DNS state was changed.
+
+## Stripe migration contract validation in CI (2026-09-27 JST)
+
+The isolated `experiments/stripe-receipts` suite passed 90/90 under Node
+22.6.0, including PGlite execution of the PostgreSQL receipt, invoice, and
+extension transactions; its TypeScript contract check also passed. Two stale
+assertions were corrected: a bigint beyond JavaScript's safe integer range is
+expected to remain exact decimal text through import, and the transfer-lock
+fixture now uses a future timestamp instead of depending on the current date.
+These changes do not relax the application-facing bigint gate.
+
+The Cloudflare migration validation workflow now installs this isolated test
+package and runs its tests and typecheck. The workflow-isolation check passed
+locally. The existing Supabase Webhook still applies subscription and invoice
+events outside the full durable reconciliation path; this validation does not
+complete issue #32, deploy or apply any Supabase migration, or call Stripe.

@@ -223,6 +223,10 @@ test("PGlite executes the generated projection and preserves row envelope semant
   assert.throws(() => convert(byLabel.get("bc-date")), (error) => error.code === "invalid_column_value");
   assert.throws(() => convert(byLabel.get("lower-bound-zero")), (error) => error.code === "array_shape_unsupported");
   assert.throws(() => convert(byLabel.get("multidimensional")), (error) => error.code === "invalid_column_value");
-  assert.throws(() => convert(byLabel.get("unsafe-bigint")), (error) => error.code === "invalid_column_value");
+  assert.equal(
+    convert(byLabel.get("unsafe-bigint")).bindings[6],
+    "9007199254740992",
+    "bigint imports remain exact decimal text beyond JavaScript's safe integer range",
+  );
   assert.throws(() => convert(byLabel.get("unsafe-json")), (error) => error.code === "invalid_column_value");
 });

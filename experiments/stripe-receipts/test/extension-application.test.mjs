@@ -527,7 +527,7 @@ test("a stale owner or transfer lock cannot be extended", async () => {
   assert.equal((await apply(staleOwner.receipt_id)).outcome, "dead_letter");
 
   await execute("truncate billing_ingress.stripe_extension_applications, billing_ingress.stripe_webhook_dispatches, billing_ingress.stripe_webhook_receipts, public.audit_logs, public.fanmark_lottery_entries, public.fanmark_licenses, public.fanmarks cascade");
-  await seedLicense({ transferLock: "2026-09-26T00:00:00.000Z" });
+  await seedLicense({ transferLock: "2099-01-01T00:00:00.000Z" });
   const locked = await accept();
   assert.equal((await apply(locked.receipt_id)).outcome, "dead_letter");
   assert.equal((await execute("select count(*)::int as n from public.audit_logs")).rows[0].n, 0);

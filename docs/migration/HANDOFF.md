@@ -1720,3 +1720,15 @@ stage; the complete old-writer freeze and both recovery drills remain open.
 The earlier macOS Keychain error is no longer the current blocker: fresh
 `wrangler whoami` succeeds for `fanmark.id@gmail.com` and the intended account,
 with credentials retained in the encrypted/keyring-backed store.
+
+## Stripe migration validation checkpoint (2026-09-27 JST)
+
+The isolated `experiments/stripe-receipts` suite now passes 90/90 on Node
+22.6.0, with its TypeScript contract check and the workflow-isolation check
+passing. The Cloudflare migration validation workflow now runs that suite and
+typecheck. A stale bigint assertion was aligned with the exact decimal-text
+import codec; the JavaScript read-precision gate remains open. A transfer-lock
+test now uses a future fixture date. Issue #32 remains open: the current
+Supabase Webhook still handles subscription and invoice events outside the full
+durable reconciliation path. No Stripe API call, Supabase migration, staging
+write, real user data, production routing, or domain/DNS change was made.
