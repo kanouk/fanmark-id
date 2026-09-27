@@ -94,6 +94,14 @@ unit suite or an empty-table readback alone is insufficient.
 - Stripe receipt intake, dispatch ownership, and replay behavior are explicit.
   The current staging selectors/secrets keep payment routes closed, so the
   Stripe handoff drill has not passed.
+- The selected Workers plan can run the measured authentication, authorization,
+  lifecycle, and scheduled workloads with adequate CPU headroom. The latest
+  staging sample includes successful requests above the Free plan's 10 ms
+  limit; occasional over-limit success is not a recurring-traffic guarantee.
+  Either optimize the auth/admin/lifecycle paths that exceeded the limit and
+  repeat representative staging measurements, or have the account owner select
+  a plan with sufficient CPU limits before production acceptance. See the CPU sample in
+  [HANDOFF.md](HANDOFF.md) and Cloudflare's [Workers limits](https://developers.cloudflare.com/workers/platform/limits/).
 - Each recovery drill records elapsed time and exact reconciliation. Until the
   post-write forward-recovery drill passes, returning traffic to Supabase after
   a Cloudflare write remains prohibited.
