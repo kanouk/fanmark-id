@@ -29,6 +29,19 @@ The current migration order is:
 5. Switch public DNS/hostnames only after data and application reconciliation.
    Registrar transfer is a separate decision and is not required for DNS cutover.
 
+## Browser shell check and current PR validation (2026-09-27 JST)
+
+The in-app browser loaded the deployed staging SPA root and its Japanese home
+screen, including the search controls and navigation. A separate `/auth` route
+rendered the login form. This verifies client rendering for those anonymous
+routes only; no sign-in, authenticated admin screen, draft operation, or email
+send was performed. Authenticated browser acceptance remains open.
+
+GitHub Actions run `36288746894` for commit `3c75e5a` passed both required
+checks: Cloudflare Worker API tests/typecheck/deploy dry-run and Cloudflare
+staging application migration-data tests/typecheck/build. Supabase Preview was
+skipped by design under CI isolation.
+
 Fresh anonymous HTTP verification on 2026-09-27 confirmed that browser-style
 navigation requests (`Accept: text/html,...`) return the noindex SPA shell with
 HTTP 200 for `/`, `/auth`, `/pwa`, `/plans`, and `/plan`. `/api/auth/ok` returned
