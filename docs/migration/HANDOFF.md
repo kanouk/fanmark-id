@@ -36,6 +36,17 @@ two-build browser result only. The deployed Cloudflare update transition and
 native install/standalone launch remain open; see
 [`static-assets.md`](static-assets.md).
 
+The 2026-09-28 application-level post-ack restore probe used a temporary
+Worker and a fresh APAC D1 with all 17 business migrations. The actual waitlist
+API wrote one synthetic business row, and Stripe webhook ingress created one
+receipt/dispatch pair; after a bookmark, later synthetic writes were removed by
+Time Travel while the acknowledged row and pending ledger pair remained.
+Restore plus exact reconciliation took 4.069 seconds. The Worker/database were
+deleted and account readback returned to the three pre-existing staging D1s.
+This closes only the narrow app-schema post-ack restore probe, not the complete
+pre/post-write drills or issue #37; see
+[`cutover-rehearsal.md`](cutover-rehearsal.md).
+
 ## Browser shell check and current PR validation (2026-09-27 JST)
 
 The in-app browser loaded the deployed staging SPA root and its Japanese home

@@ -122,19 +122,22 @@ The current staging deployment has an isolated anonymous browser check: `/plans`
 and `/plan` redirect to `/auth`; the active service worker controls `/pwa`, its
 precache includes both manifest icons, and offline reload serves the shell
 while the API/catalog request shows the retry screen. Native installation and
-service-worker update transitions remain unverified.
+service-worker updates between deployed Cloudflare versions remain unverified.
 
 Not verified: a coordinated freeze of the actual old Supabase writers with
-receipt continuity, a timed full final-copy window, both recovery drills,
-resolved schema gates, live Stripe sandbox acceptance, production backup key
-custody/retention, or production operation. A short Worker-only staging drill
-is now verified: its freeze rejected a synthetic mutation, preserved the
-sign-in preflight, and accepted then deduplicated one locally signed synthetic
-Stripe receipt while leaving its dispatch pending. The synthetic receipt and
-dispatch were removed, the temporary webhook secret was deleted, and staging
-was restored to the default unfrozen configuration. No Supabase writer was
-stopped or tested. The live Cron pause log was not captured in that initial
-rehearsal; the follow-up on 2026-09-28 captured it below.
+receipt continuity, a timed full final-copy window, the complete pre/post-write
+recovery drills, resolved schema gates, live Stripe sandbox acceptance,
+production backup key custody/retention, or production operation. The staging
+write-freeze receipt canary and the isolated application-schema post-ack restore
+below are narrower proofs; neither stops a Supabase writer or applies a Stripe
+business effect. A short Worker-only staging drill is also verified: its freeze
+rejected a synthetic mutation, preserved the sign-in preflight, and accepted
+then deduplicated one locally signed synthetic Stripe receipt while leaving its
+dispatch pending. The synthetic receipt and dispatch were removed, the
+temporary webhook secret was deleted, and staging was restored to the default
+unfrozen configuration. No Supabase writer was stopped or tested. The live Cron
+pause log was not captured in that initial rehearsal; the follow-up on
+2026-09-28 captured it below.
 
 The 2026-09-27 read-only Supabase catalog query succeeds through
 `npx supabase@2.118.0`; it reads no application rows and still produces 18
@@ -226,3 +229,38 @@ later state. It is not an application-level restore: it did not use the actual
 business schema or Worker, reconcile all operational tables, verify a complete
 backup, or exercise the pre-write recovery path. Issue #37 and the post-write
 application recovery gate remain open.
+
+## Temporary Worker and business-schema post-ack restore (2026-09-28 JST)
+
+Created disposable APAC D1 `fanmark-recovery-app-20260928-x7p4`
+(`73c4fe01-4950-438c-9b61-bd0d67a7c01c`) and applied all 17 checked-in
+business migrations (`0000` through `0016`). An isolated temporary Worker
+`fanmark-recovery-worker-20260928-x7p4` (version
+`ff87f3c8-8d47-4223-af21-1045b4c7673e`) ran the actual `workers/api/src/index.ts`
+with only that D1 business binding, a temporary Rate Limit binding, and a
+synthetic-only Stripe signing secret. It had no Auth, master, R2,
+production, or custom-domain binding.
+
+The Worker accepted one synthetic `/api/waitlist` write (`202`) and one signed
+`customer.updated` event through `/api/stripe/webhook` (`200`). Replaying the
+same event left one receipt/dispatch pair and raised the receipt's delivery
+count to 2; dispatch remained pending, with no Stripe API key or business
+dispatcher enabled. A Time Travel bookmark was captured after these
+acknowledged writes. Two later synthetic writes—one waitlist row and a second
+signed event—were accepted. Before restore, readback found two target waitlist
+rows, two receipts, and two dispatches. Restore to the post-ack bookmark kept
+the first waitlist row and its single receipt/dispatch pair (`received` /
+`pending`, delivery count 2) and removed both later writes. Independent
+post-restore reads reported `changed_db=false` and `rows_written=0`; restore
+plus reconciliation readback took 4.069 seconds. This is a narrow D1 restore
+measurement, not a complete cutover RTO.
+
+The temporary Worker and D1 were deleted. A final account list showed only the
+three pre-existing staging databases, and Wrangler confirmed the temporary
+Worker no longer exists. The short-lived config and synthetic marker file were
+removed. No existing staging database, real user/Auth data, Supabase writer,
+Stripe API, R2 object, production route, or domain/DNS setting was changed.
+This proves an actual application write plus a pending Stripe receipt/dispatch
+can be reconciled after restoring the app's business schema. It does not prove
+the pre-write Supabase-resume path, an applied Stripe business effect, a
+complete verified backup, or all application tables; issue #37 remains open.
