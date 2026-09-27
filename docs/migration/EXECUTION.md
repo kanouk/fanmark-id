@@ -1,6 +1,29 @@
 # Cloudflare移行の実行・再開手順
 
-## 2026-09-27 staging公開GETとローカル再検証
+## 2026-09-27 Workerサブスクリプション表示の前景更新をstaging反映
+
+Worker版の`useSubscription`を、フォーカス/可視化復帰に加えて30秒ごとに
+表示中だけ再検証するようにした。間隔更新は既存表示を保ち、読込スピナーを
+出さず、フォーカス・可視化イベントとの同時要求をhook内で1つにまとめる。
+Supabase版は既存のRealtime更新を維持する。D1 APIは引き続き読み取り専用。
+
+PR #41の`2ecbb25`でstaging Worker version
+`c8fce1a1-1c46-4764-b3d9-6042c5930774`を100%配信した。公開GETはSPAとAuth
+healthが200、未認証`/api/me/subscription`が401。配信JSのSHA-256
+`73d52d0a641ece74d21ebb9763b3d000441e662d8c7cfc16883d04492a02adf3`は
+ローカル`dist-staging`と一致する。
+
+ローカルでfrontend typecheck、対象hookのESLint、subscription client/API契約
+4/4、Cloudflare staging build（3,722 modules）、Wrangler dry-runが成功した。
+PR CI run `36298845071`はstaging applicationとWorker APIの両方が成功。
+この確認では認証済みブラウザでの30秒反映やStripe sandboxは試していない。
+D1への書込み、Stripe/email送信、実ユーザーデータ、本番route、ドメイン/DNS
+変更はない。
+
+## 2026-09-27 staging公開GETとローカル再検証（先行時点の記録）
+
+以下は今回のstaging deploymentより前のスナップショットであり、push/deployと
+Cloudflare認証についての記述は現在の状態を表さない。
 
 現在の移行worktreeでNode 22.6.0を使い、frontend typecheck、Cloudflare
 staging build、`src/App.tsx`のESLint、Workerの全`npm test`チェーンを再実行し、
