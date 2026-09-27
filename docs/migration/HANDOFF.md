@@ -105,6 +105,20 @@ the current-catalog synthetic run reconciled four generated rows across 40
 checkpoints while rejecting a conflicting replay. No source rows or remote D1
 rows were read or written.
 
+The full-catalog fixture now also combines enabled and disabled active-license
+credentials with an inactive-license credential. Its 10 synthetic source rows
+reconciled through 40/40 table checkpoints: two credential hashes were
+transformed and the inactive credential was recorded as deferred; typed
+readback verified 3 source / 2 target / 1 deferred credential rows. Whole-
+target reconciliation, acknowledgement-loss resume, and conflicting-coverage
+rejection passed. This remains a disposable local D1 rehearsal using
+schema-only source metadata; no Supabase application rows or remote D1 rows
+were read or written.
+
+The migration-data test suite passed 160/160 under Node 22.6.0. The fake
+`psql` protocol test uses a 15-second finite subprocess limit so parallel test
+load does not cause a false timeout; it passes alone and within the suite.
+
 A read-only comparison of this catalog's generated target profile with remote
 `fanmark-business-staging` found all 40 source tables and 406 source columns,
 with all converted SQLite types and nullability matching. The staging schema

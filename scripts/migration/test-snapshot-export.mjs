@@ -327,7 +327,7 @@ while IFS= read -r line; do
 done
 `, { mode: 0o700 });
   await chmod(fakePsql, 0o700);
-  const session = createPsqlSession({ psqlPath: fakePsql, commandTimeoutMs: 5_000 });
+  const session = createPsqlSession({ psqlPath: fakePsql, commandTimeoutMs: 15_000 });
   try {
     assert.deepEqual(await session.readSequenceStates(sequenceCatalog()), [sequenceState({ lastValue: "812", isCalled: true })]);
   } finally {

@@ -10,8 +10,13 @@ A fresh current-catalog rehearsal has completed all 40 table checkpoints and
 whole-target readback using four synthetic rows, including an event ID above
 JavaScript's safe-integer range, exact D1 text/sequence readback, ACK-unknown
 resume, and tampered-coverage rejection. A separate synthetic full-import case
-now proves inactive-license deferral, ACK-unknown resume, and explicit report
-counts. Real user-data migration remains incomplete and out of the current
+proves inactive-license deferral, ACK-unknown resume, and explicit report
+counts. The latest full-catalog run now combines enabled and disabled active
+credentials with one inactive-license credential: 10 synthetic source rows
+were reconciled through all 40 checkpoints; two credentials were bcrypt
+transformed and one was safely deferred, with the exact source/target/deferred
+counts verified. Whole-target readback and conflicting-coverage rejection
+also passed. Real user-data migration remains incomplete and out of the current
 cutover stage. These local components do not create remote D1 resources.
 
 The existing local transform proof is deliberately narrower: it proves one

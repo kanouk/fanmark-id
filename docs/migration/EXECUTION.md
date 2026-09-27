@@ -2687,3 +2687,26 @@ passed migration data boundaries, Stripe receipt/billing/invoice tests, both
 typechecks, admin return URL tests, and the Cloudflare staging build; the Worker
 job passed its API/D1 tests, typecheck, and no-deployment bundle validation.
 This workflow performed no deployment.
+
+## Combined credential-state current-catalog rehearsal (2026-09-27 JST)
+
+The private schema-only catalog was used to run the 40-table synthetic D1
+importer rehearsal with one enabled active credential, one disabled active
+credential, and one credential attached to an inactive (`grace`) license.
+All 40 checkpoints completed and whole-target reconciliation passed for 10
+synthetic source rows: two active credentials were bcrypt-transformed and
+read back with their enabled states, while the inactive row was recorded as
+`deferred_inactive` with no target credential row. Exact source/target/deferred
+counts (3/2/1), access generations, foreign keys, and the event sequence were
+checked. An injected acknowledgement loss resumed successfully; a conflicting
+coverage digest was rejected. The result remains
+`public_rows_reconciled`, `deployable: false`, and
+`fullMigrationReconciled: false`. This was local Miniflare only: no Supabase
+application rows or remote D1 rows were read or written, and no deployment,
+user-data import, or domain/DNS change occurred.
+
+The full root `test:migration-data` suite then passed 160/160 under Node
+22.6.0. Its bounded fake-`psql` protocol test now allows 15 seconds for process
+startup under parallel test load instead of the previous 5-second ceiling;
+the command remains time-bounded and the protocol test passes both alone and
+inside the full suite.

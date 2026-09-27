@@ -39,6 +39,14 @@ const syntheticFanmarkId = "90000000-0000-4000-8000-000000000001";
 const syntheticLicenseId = "90000000-0000-4000-8000-000000000002";
 const syntheticPasswordConfigId = "90000000-0000-4000-8000-000000000003";
 const syntheticEmojiId = "90000000-0000-4000-8000-000000000004";
+const syntheticDisabledEmojiId = "90000000-0000-4000-8000-00000000000b";
+const syntheticInactiveEmojiId = "90000000-0000-4000-8000-00000000000c";
+const syntheticDisabledFanmarkId = "90000000-0000-4000-8000-000000000005";
+const syntheticDisabledLicenseId = "90000000-0000-4000-8000-000000000006";
+const syntheticDisabledPasswordConfigId = "90000000-0000-4000-8000-000000000007";
+const syntheticInactiveFanmarkId = "90000000-0000-4000-8000-000000000008";
+const syntheticInactiveLicenseId = "90000000-0000-4000-8000-000000000009";
+const syntheticInactivePasswordConfigId = "90000000-0000-4000-8000-00000000000a";
 const syntheticEventId = "9007199254740993";
 
 function failUsage() {
@@ -107,66 +115,86 @@ function buildRows(catalog) {
   const credentialColumns = requireColumns(catalog, passwordTable, [
     "id", "license_id", "access_password", "is_enabled", "created_at", "updated_at",
   ]);
-  rows.fanmarks = [{
+  const timestamp = "2026-09-26T12:00:00.000000Z";
+  const makeFanmark = (id, emoji, shortId, emojiId) => ({
     schemaVersion: 1,
     table: "fanmarks",
     columns: fanmarkColumns,
     values: {
-      id: syntheticFanmarkId,
-      user_input_fanmark: "😀",
-      normalized_emoji: "😀",
-      short_id: "synthetic-current-schema",
+      id,
+      user_input_fanmark: emoji,
+      normalized_emoji: emoji,
+      short_id: shortId,
       status: "active",
-      created_at: "2026-09-26T12:00:00.000000Z",
-      updated_at: "2026-09-26T12:00:00.000000Z",
+      created_at: timestamp,
+      updated_at: timestamp,
       emoji_ids: "[]",
-      normalized_emoji_ids: JSON.stringify([syntheticEmojiId]),
+      normalized_emoji_ids: JSON.stringify([emojiId]),
       tier_level: "1",
     },
     arrayMetadata: {
       emoji_ids: { isNull: false, ndims: 0, lowerBound: null },
       normalized_emoji_ids: { isNull: false, ndims: 1, lowerBound: 1 },
     },
-  }];
-  rows.fanmark_licenses = [{
-    schemaVersion: 1,
-    table: "fanmark_licenses",
-    columns: licenseColumns,
-    values: {
-      id: syntheticLicenseId,
-      fanmark_id: syntheticFanmarkId,
-      user_id: null,
-      license_start: "2026-09-26T12:00:00.000000Z",
-      license_end: "2030-09-26T12:00:00.000000Z",
-      status: "active",
-      is_initial_license: "t",
-      created_at: "2026-09-26T12:00:00.000000Z",
-      updated_at: "2026-09-26T12:00:00.000000Z",
-      plan_excluded: "f",
-      excluded_at: null,
-      excluded_from_plan: null,
-      grace_expires_at: null,
-      is_returned: "f",
-      is_transferred: "f",
-      transfer_locked_until: null,
-      display_fanmark: null,
-    },
-    arrayMetadata: {},
-  }];
-  rows[passwordTable] = [{
+  });
+  const makeLicense = (id, fanmarkId, status = "active") => {
+    const active = status === "active";
+    return {
+      schemaVersion: 1,
+      table: "fanmark_licenses",
+      columns: licenseColumns,
+      values: {
+        id,
+        fanmark_id: fanmarkId,
+        user_id: null,
+        license_start: "2026-09-01T12:00:00.000000Z",
+        license_end: active ? "2030-09-26T12:00:00.000000Z" : "2026-09-25T12:00:00.000000Z",
+        status,
+        is_initial_license: "t",
+        created_at: timestamp,
+        updated_at: timestamp,
+        plan_excluded: "f",
+        excluded_at: null,
+        excluded_from_plan: null,
+        grace_expires_at: active ? null : "2026-10-25T12:00:00.000000Z",
+        is_returned: "f",
+        is_transferred: "f",
+        transfer_locked_until: null,
+        display_fanmark: null,
+      },
+      arrayMetadata: {},
+    };
+  };
+  const makeCredential = (id, licenseId, password, enabled) => ({
     schemaVersion: 1,
     table: passwordTable,
     columns: credentialColumns,
     values: {
-      id: syntheticPasswordConfigId,
-      license_id: syntheticLicenseId,
-      access_password: "Synthetic-current-catalog-credential-42",
-      is_enabled: "t",
-      created_at: "2026-09-26T12:00:00.000000Z",
-      updated_at: "2026-09-26T12:00:00.000000Z",
+      id,
+      license_id: licenseId,
+      access_password: password,
+      is_enabled: enabled ? "t" : "f",
+      created_at: timestamp,
+      updated_at: timestamp,
     },
     arrayMetadata: {},
-  }];
+  });
+
+  rows.fanmarks = [
+    makeFanmark(syntheticFanmarkId, "😀", "synthetic-current-schema", syntheticEmojiId),
+    makeFanmark(syntheticDisabledFanmarkId, "🧴", "synthetic-disabled-schema", syntheticDisabledEmojiId),
+    makeFanmark(syntheticInactiveFanmarkId, "🥀", "synthetic-inactive-schema", syntheticInactiveEmojiId),
+  ];
+  rows.fanmark_licenses = [
+    makeLicense(syntheticLicenseId, syntheticFanmarkId),
+    makeLicense(syntheticDisabledLicenseId, syntheticDisabledFanmarkId),
+    makeLicense(syntheticInactiveLicenseId, syntheticInactiveFanmarkId, "grace"),
+  ];
+  rows[passwordTable] = [
+    makeCredential(syntheticPasswordConfigId, syntheticLicenseId, "Synthetic-current-catalog-enabled-credential-42", true),
+    makeCredential(syntheticDisabledPasswordConfigId, syntheticDisabledLicenseId, "Synthetic-current-catalog-disabled-credential-42", false),
+    makeCredential(syntheticInactivePasswordConfigId, syntheticInactiveLicenseId, "Synthetic-current-catalog-inactive-credential-42", true),
+  ];
   const eventColumns = requireColumns(catalog, "fanmark_events", [
     "id", "event_type", "user_id", "discovery_id", "normalized_emoji_ids", "created_at",
   ]);
@@ -453,10 +481,38 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath) {
     assert.match(password.access_password, /^\$2[ab]\$10\$/u);
     assert.notEqual(password.access_password, "Synthetic-current-catalog-credential-42");
     assert.equal(password.is_enabled, 1);
+    const disabledPassword = await database.prepare(
+      'SELECT "id", "license_id", "access_password", "is_enabled" FROM "fanmark_password_configs" WHERE "id" = ?',
+    ).bind(syntheticDisabledPasswordConfigId).first();
+    assert.equal(disabledPassword.id, syntheticDisabledPasswordConfigId);
+    assert.equal(disabledPassword.license_id, syntheticDisabledLicenseId);
+    assert.match(disabledPassword.access_password, /^\$2[ab]\$10\$/u);
+    assert.notEqual(disabledPassword.access_password, "Synthetic-current-catalog-disabled-credential-42");
+    assert.equal(disabledPassword.is_enabled, 0);
+    const inactivePassword = await database.prepare(
+      'SELECT COUNT(*) AS "count" FROM "fanmark_password_configs" WHERE "id" = ? OR "license_id" = ?',
+    ).bind(syntheticInactivePasswordConfigId, syntheticInactiveLicenseId).first();
+    assert.equal(inactivePassword.count, 0);
+    const credentialCoverage = await database.prepare(
+      'SELECT "coverage_state", COUNT(*) AS "count" FROM "credential_transform_coverage" GROUP BY "coverage_state" ORDER BY "coverage_state"',
+    ).all();
+    assert.deepEqual(credentialCoverage.results, [
+      { coverage_state: "deferred_inactive", count: 1 },
+      { coverage_state: "disabled", count: 1 },
+      { coverage_state: "transformed", count: 1 },
+    ]);
     const generation = await database.prepare(
       'SELECT "password_generation", "access_generation" FROM "fanmark_access_versions" WHERE "license_id" = ?',
     ).bind(syntheticLicenseId).first();
     assert.deepEqual(generation, { password_generation: 1, access_generation: 1 });
+    const disabledGeneration = await database.prepare(
+      'SELECT "password_generation", "access_generation" FROM "fanmark_access_versions" WHERE "license_id" = ?',
+    ).bind(syntheticDisabledLicenseId).first();
+    assert.deepEqual(disabledGeneration, { password_generation: 1, access_generation: 1 });
+    const inactiveGeneration = await database.prepare(
+      'SELECT "password_generation", "access_generation" FROM "fanmark_access_versions" WHERE "license_id" = ?',
+    ).bind(syntheticInactiveLicenseId).first();
+    assert.deepEqual(inactiveGeneration, { password_generation: 0, access_generation: 0 });
     const event = await database.prepare(
       'SELECT CAST("id" AS TEXT) AS "id", typeof("id") AS "id_type", "event_type", "normalized_emoji_ids" FROM "fanmark_events" WHERE "id" = CAST(? AS INTEGER)',
     ).bind(syntheticEventId).first();
@@ -476,7 +532,12 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath) {
       database.prepare('SELECT COUNT(*) AS "count" FROM "fanmark_password_configs"').first(),
       database.prepare('SELECT COUNT(*) AS "count" FROM "fanmark_events"').first(),
     ]);
-    assert.deepEqual(rowCounts.map((row) => row.count), [1, 1, 1, 1]);
+    assert.deepEqual(rowCounts.map((row) => row.count), [3, 3, 2, 1]);
+    const resumedReport = JSON.parse(await fs.readFile(reportPath, "utf8"));
+    const reconciliation = resumedReport.reconciledTables.find((table) => table.table === passwordTable);
+    assert.equal(reconciliation.rowCount, 3);
+    assert.equal(reconciliation.targetRowCount, 2);
+    assert.equal(reconciliation.deferredRows, 1);
     assert.deepEqual(await database.prepare("PRAGMA foreign_key_check").all().then((result) => result.results), []);
     // Miniflare's D1 authorizer rejects PRAGMA integrity_check with SQLITE_AUTH.
     // The importer has already streamed and read back every table/hash above.
@@ -484,7 +545,7 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath) {
     phase = "conflict-rejection";
     const completedReport = JSON.parse(await fs.readFile(reportPath, "utf8"));
     await database.prepare(
-      'UPDATE "credential_transform_coverage" SET "destination_digest" = ? WHERE "run_id" = ?',
+      'UPDATE "credential_transform_coverage" SET "destination_digest" = ? WHERE "run_id" = ? AND "coverage_state" = \'transformed\'',
     ).bind("0".repeat(64), completedReport.runId).run();
     await assert.rejects(
       importD1Snapshot(options),
@@ -492,7 +553,9 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath) {
     );
     return {
       tableCount: tableNames.length,
-      sourceRowCount: 4,
+      sourceRowCount: 10,
+      transformedCredentialCount: 2,
+      deferredCredentialCount: 1,
       checkpointCount: checkpoints.count,
       completedCheckpointCount: checkpoints.complete,
       status: resumed.status,
