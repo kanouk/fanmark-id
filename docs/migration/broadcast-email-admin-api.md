@@ -68,9 +68,25 @@ rows, or recipient addresses were read or copied, and no email was sent. The
 template body values remain in the private CLI artifact and staging D1 rather
 than being checked into the repository.
 
-An authenticated browser canary for the broadcast screen and draft create/
-cleanup remains open. The existing API and frontend contract tests are not a
-substitute for that acceptance.
+## Authenticated browser canary (2026-09-27 JST)
+
+On active staging Worker version
+`21f0be9e-2099-49d8-b975-a3a61604c12e`, a short-lived synthetic administrator
+signed in through the deployed Better Auth form, enrolled and verified TOTP,
+and opened the `/admin` broadcast screen. The UI loaded in D1 mode and showed
+the staging-only draft banner with zero initial drafts. A synthetic draft was
+created through the form, appeared in history as `draft`, and its preview
+displayed the exact synthetic subject and body. The test-send and send-start
+buttons remained disabled; neither route was invoked and no email was sent.
+
+After logout, exact D1 readback found zero canary user/account/session/factor/
+admin-role/MFA-assurance rows and zero profile/draft/audit rows. The test used
+an `example.invalid` identity and synthetic text only; its local password/TOTP
+state was removed. No real user data, production routing, or domain/DNS changed.
+This proves the authenticated screen and draft path only. Recipient estimate
+was previously covered by the API canary; real-provider delivery, bulk queue
+and retry semantics, recipient snapshots, opt-out/bounce handling, and
+delivery-state reconciliation remain open.
 
 ## Delivery work still open
 
@@ -86,6 +102,6 @@ template allowlist, recipient filters, server-derived creator ID, draft-only
 write/audit batch, invalid Origin, request validation, disabled bulk dispatch,
 and the mock-only fixed-recipient test-send route. The frontend contract tests
 cover same-origin credentialed requests, bounded DTO parsing, count estimation,
-draft creation, and the test-send request contract. The staging Worker and
-current-source template comparison are in place; authenticated browser
-acceptance and real-provider delivery validation remain open.
+draft creation, and the test-send request contract. The staging Worker,
+current-source template comparison, and authenticated draft-screen browser
+canary are in place; real-provider delivery validation remains open.
