@@ -2197,7 +2197,9 @@ real user-data import and domain/DNS cutover remain deferred.
 
 Focused Node 22.6.0 tests pass: value/row/schema-converter 26/26 and local D1
 importer 18/18. The complete `npm run test:migration-data` suite passes 166/166
-on Node 22.6.0. PR CI for this v8 change remains to be run.
+on Node 22.6.0. GitHub Actions run `36344541475` on commit `6a78e02` passed both
+required Cloudflare Worker API and staging-application jobs; Supabase Preview
+was skipped by the workflow-isolation design.
 
 ## Repeat staging authentication and lifecycle canary (2026-09-28 JST)
 
