@@ -1154,6 +1154,14 @@ the 2026-09-25 public-schema artifact recorded above. The dump contains schema
 DDL only; no row export or database write occurred. The old “terminal input
 waiting” checkpoint is therefore stale, not a current blocker.
 
+On 2026-09-27 JST, the same schema-only command was repeated from the current
+migration worktree using the installed Supabase CLI with `CI=1` and `--yes`.
+It completed after “Initialising login role...” and “Dumping schemas from
+remote database...” without requesting terminal input. The mode-0600 output
+was 180,288 bytes and had the same SHA-256; this confirms the linked project's
+public DDL still matches the 2026-09-25 artifact. No application rows were
+exported and no database was written.
+
 ## Deployed notification processor Cron canary (2026-09-26 JST)
 
 Deployed `fanmark-app-staging` version
@@ -1615,3 +1623,22 @@ public lifecycle settings endpoint. The remote JS SHA-256 exactly matched
 `grace_period_days=1` with `no-store`. No D1 migration or row write, Auth
 operation, email, Stripe call, R2 object, production route, or DNS/domain
 change occurred.
+
+## Manual license-expiry route staging deployment (2026-09-27 JST)
+
+Deployed `fanmark-app-staging` version
+`28e7ca3c-f610-47a4-aea9-f876bd8c3f11` with the new same-origin
+`POST /api/admin/license-expiry/run` route and its Worker-selected frontend
+button. Wrangler's deployed variable list omitted both `LIFECYCLE_RUN_BACKEND`
+and `LICENSE_EXPIRY_BACKEND`; the remote secret-name list contained no manual
+lifecycle selector. The existing daily Cron schedule remains configured, but
+its execution selector remains absent. No scheduled or manual expiry job was
+run.
+
+Read-only HTTP verification returned root 200 with `noindex, nofollow`, and
+the served JS asset returned 200 at 2,493,527 bytes with SHA-256
+`13582571ce98753679585bef629f57ec03d96534d3095f2ec3d60de70ed97778`, exactly
+matching local `dist-staging`. The cookie-less manual-run POST returned 401
+`unauthenticated` before reaching its disabled-selector branch. No authenticated
+button click or lifecycle data write occurred. `supabase/.temp/cli-latest`
+remains an unrelated modified checkout file and was preserved.

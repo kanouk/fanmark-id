@@ -111,6 +111,7 @@ import {
   shouldPauseScheduledJobsForCutover,
 } from "./cutover-write-freeze";
 import { handleLifecycleSettingsRequest, isLifecycleSettingsPath } from "./lifecycle-settings-d1-api";
+import { handleLifecycleRunRequest, isLifecycleRunPath } from "./lifecycle-run-d1-api";
 import { handleSystemSettingsRequest, isSystemSettingsPath } from "./system-settings-d1-api";
 import { handleFavoritesRequest, isFavoritesPath } from "./favorites-d1-api";
 import { handleSubscriptionRequest, isSubscriptionPath } from "./subscription-d1-api";
@@ -1150,6 +1151,16 @@ export async function handleRequest(
 
   if (url.pathname === "/api/admin/session") {
     return handleAdminSessionRequest(request, env);
+  }
+  if (isLifecycleRunPath(url.pathname)) {
+    return (await handleLifecycleRunRequest(request, env, async (adminRequest, responseHeaders) => {
+      if (env.AUTH_BACKEND?.trim() !== "better-auth") {
+        return errorResponse("auth_unavailable", 503, responseHeaders);
+      }
+      const authConfig = configuredAuth(env);
+      if (!authConfig) return errorResponse("auth_unavailable", 503, responseHeaders);
+      return authorizeAdminRequest(adminRequest, authConfig, responseHeaders);
+    })) ?? errorResponse("not_found", 404, routeHeaders);
   }
   if (isSystemSettingsPath(url.pathname)) {
     return (await handleSystemSettingsRequest(request, env, async (adminRequest, responseHeaders) => {

@@ -144,10 +144,25 @@ estimate is coarse: broadcast templates and four verified-unused extension
 coupon definitions are seeded and verified in business staging, and synthetic
 notification, analytics, registration, return/bulk-return/transfer,
 owner-settings/password, and R2 profile/storage canaries pass with reviewed
-cleanup. The 18 schema gates, integrated synthetic rehearsal, remaining
-authenticated UI canaries, mail delivery, and production acceptance are still
-open. User-data import and domain cutover are intentionally deferred final
-phases, not missing work in the current staging slice.
+cleanup. The authenticated admin user-management browser canary now also
+passed list and detail reads; the mutation controls were not used, and all
+synthetic Auth/business rows were removed and read back at zero. This narrow UI
+proof does not materially change the estimate. A static audit now confirms all
+43 typed staging backend selectors are explicit, referenced by frontend code,
+and avoid Supabase; the three exceptions are the disabled destructive reset
+screen and native D1/R2 adapters. This guard does not substitute for runtime
+acceptance. The manual license-expiry UI now has a Better Auth/MFA-protected
+Worker route that returns aggregate results only. Staging selects the Worker
+client, but its separate server execution selector remains unset, so the route
+fails closed and cannot call the Supabase production function. Version
+`28e7ca3c-f610-47a4-aea9-f876bd8c3f11` is deployed to the noindex staging app;
+the served JS matches the local build byte-for-byte, and an unauthenticated
+POST to the new route returned 401. Wrangler's deployed variable/secret list
+contains no manual lifecycle selector. No authenticated execution was run.
+The 18 schema gates, integrated synthetic rehearsal, broader UI acceptance,
+mail delivery, and production acceptance are still open. User-data import and
+domain cutover are intentionally deferred final phases, not missing work in
+the current staging slice. See [`EXECUTION.md`](EXECUTION.md).
 
 ## Unused extension coupon master seed (2026-09-27 JST)
 

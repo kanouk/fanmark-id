@@ -270,16 +270,17 @@ authorization decision; the target boundary below is the proposed contract.
 | return-fanmark | E: supabase/functions/return-fanmark/index.ts | Worker user | Medium: grace transition and notification side effects |
 | send-auth-email | E: supabase/functions/send-auth-email/index.ts | Worker internal + retain Auth/email provider | High: provider lifecycle and template ownership |
 | send-broadcast-email | E: supabase/functions/send-broadcast-email/index.ts | Worker admin/internal + retain Resend | High: recipient selection, retries, and opt-out behavior |
-| manual-expire-grace-licenses | Live-only function reviewed read-only; no local callsite found; see [live observations](live-observations.md) | The D1 lifecycle Cron implements scheduled grace finalization; the MFA-protected per-license admin route covers individual corrections. No on-demand bulk Worker route exists. | High: verify external callers/schedules and whether on-demand bulk action is still required before retiring or implementing a scoped replacement; no production invocation/change was made |
+| manual-expire-grace-licenses | Live-only function reviewed read-only; no local callsite found; see [live observations](live-observations.md) | A separate MFA-protected `/api/admin/license-expiry/run` route now gives the existing admin UI a bounded on-demand D1 lifecycle run. It shares the scheduled D1 engine but does not establish exact parity with this unreferenced live-only function. | High: verify external callers/schedules and compare exact behavior before retiring this live-only function; no production invocation/change was made |
 
 The live-only entrypoint is not counted as a local route and is not folded into
 the offline scanner's counts. It must be classified, migrated, or retired
 after a read-only production review.
 
-The read-only review maps the scheduled behavior to the D1 lifecycle Cron but
-does not establish an equivalent on-demand bulk operation. External invocations
-remain unknown, so retirement still requires an operator-side caller/schedule
-review and a decision about any remaining manual bulk need.
+The read-only review maps scheduled behavior to the D1 lifecycle Cron. The new
+on-demand route is a replacement for the app's existing manual batch button,
+not proof of behavioral equivalence with the live-only function. External
+invocations remain unknown, so retirement still requires an operator-side
+caller/schedule review.
 
 ## Non-table dependencies
 

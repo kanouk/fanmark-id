@@ -1,6 +1,6 @@
 # fanmark.id repository inventory (offline)
 
-Base commit: `2bde8cf64ba8e228c1118afb216d781fe5e0d016`
+Base commit: `d94651314ea536ab1b1cbf459b2f9beb924c6496`
 
 This report is generated from the checked-out repository only. It makes no network calls, reads no credentials, and does not claim that local generated types, migrations, or SQL snapshots equal the current production state.
 
@@ -183,7 +183,7 @@ Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of t
 | `src/components/AdminEmojiMaster.tsx:184` | table | `emoji_master` | `table.insert` |  |
 | `src/components/AdminEmojiMaster.tsx:192` | table | `emoji_master` | `table.delete` |  |
 | `src/components/AdminEmojiMaster.tsx:229` | table | `emoji_master` | `table.upsert` |  |
-| `src/components/AdminExpirationTest.tsx:18` | edge | `check-expired-licenses` | `edge_function_invoke` |  |
+| `src/components/AdminExpirationTest.tsx:66` | edge | `check-expired-licenses` | `edge_function_invoke` |  |
 | `src/components/AdminExtensionCoupons.tsx:99` | table | `fanmark_tiers` | `table.select` |  |
 | `src/components/AdminNotificationManager.tsx:64` | rpc | `create_notification_event` | `rpc` |  |
 | `src/components/AdminNotificationManager.tsx:89` | table | `notification_events` | `table.select` |  |
@@ -250,10 +250,10 @@ Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of t
 | `src/components/SecureWaitlistAdmin.tsx:108` | table | `audit_logs` | `table.select` |  |
 | `src/components/SecureWaitlistAdmin.tsx:137` | rpc | `get_waitlist_email_by_id` | `rpc` |  |
 | `src/components/UserProfileForm.tsx:143` | edge | `bulk-return-fanmarks` | `edge_function_invoke` |  |
-| `src/hooks/useAuth.tsx:51` | table | `user_settings` | `table.select` |  |
-| `src/hooks/useAuth.tsx:115` | auth | `auth` | `auth.getSession` |  |
-| `src/hooks/useAuth.tsx:130` | auth | `auth` | `auth.onAuthStateChange` |  |
-| `src/hooks/useAuth.tsx:167` | auth | `auth` | `auth.signOut` |  |
+| `src/hooks/useAuth.tsx:52` | table | `user_settings` | `table.select` |  |
+| `src/hooks/useAuth.tsx:134` | auth | `auth` | `auth.getSession` |  |
+| `src/hooks/useAuth.tsx:149` | auth | `auth` | `auth.onAuthStateChange` |  |
+| `src/hooks/useAuth.tsx:186` | auth | `auth` | `auth.signOut` |  |
 | `src/hooks/useAuthForm.tsx:94` | edge | `check-email-exists` | `edge_function_invoke` |  |
 | `src/hooks/useAuthForm.tsx:153` | rpc | `validate_invitation_code` | `rpc` |  |
 | `src/hooks/useAuthForm.tsx:183` | auth | `auth` | `auth.signUp` |  |
@@ -361,18 +361,18 @@ Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of t
 | `src/pages/Notifications.tsx:92` | rpc | `mark_notification_read` | `rpc` |  |
 | `src/pages/Notifications.tsx:128` | rpc | `mark_all_notifications_read` | `rpc` |  |
 | `src/pages/Notifications.tsx:139` | table | `notifications` | `table.select` |  |
-| `src/pages/PasswordSetup.tsx:85` | auth | `auth` | `auth.updateUser` |  |
-| `src/pages/PasswordSetup.tsx:88` | table | `user_settings` | `table.update` |  |
+| `src/pages/PasswordSetup.tsx:89` | auth | `auth` | `auth.updateUser` |  |
+| `src/pages/PasswordSetup.tsx:92` | table | `user_settings` | `table.update` |  |
 | `src/pages/PlanSelection.tsx:194` | edge | `customer-portal` | `edge_function_invoke` |  |
 | `src/pages/PlanSelection.tsx:372` | edge | `create-checkout` | `edge_function_invoke` |  |
 | `src/pages/PlanSelection.tsx:425` | edge | `change-subscription` | `edge_function_invoke` |  |
 | `src/pages/PlanSelection.tsx:505` | edge | `change-subscription` | `edge_function_invoke` |  |
 | `src/pages/PlanSelection.tsx:564` | edge | `bulk-return-fanmarks` | `edge_function_invoke` |  |
 | `src/pages/PlanSelection.tsx:589` | edge | `change-subscription` | `edge_function_invoke` |  |
-| `src/pages/Profile.tsx:130` | auth | `auth` | `auth.updateUser` |  |
-| `src/pages/Profile.tsx:134` | table | `user_settings` | `table.update` |  |
-| `src/pages/Profile.tsx:250` | edge | `delete-user-account` | `edge_function_invoke` |  |
-| `src/pages/Profile.tsx:307` | edge | `customer-portal` | `edge_function_invoke` |  |
+| `src/pages/Profile.tsx:135` | auth | `auth` | `auth.updateUser` |  |
+| `src/pages/Profile.tsx:139` | table | `user_settings` | `table.update` |  |
+| `src/pages/Profile.tsx:257` | edge | `delete-user-account` | `edge_function_invoke` |  |
+| `src/pages/Profile.tsx:314` | edge | `customer-portal` | `edge_function_invoke` |  |
 
 Operation summary:
 

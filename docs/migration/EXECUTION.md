@@ -2407,3 +2407,69 @@ notifications. No email was sent, and no production routing, real-user data,
 or domain/DNS state changed. Remaining schema gates, integrated rehearsal,
 mail delivery, production acceptance, user-data migration, and domain cutover
 are still open.
+
+## Authenticated admin user-management browser read canary (2026-09-27 JST)
+
+On staging Worker version `8619222a-dba4-44b4-b085-685c69455c4f`, an isolated
+synthetic Better Auth administrator completed the same-session TOTP/MFA flow,
+opened `/admin` → user management, and read a synthetic target's directory row
+and detail drawer. The browser rendered the target's Free plan, active status,
+registration time, and zero license counts. No plan, suspension, or password
+reset action was invoked; the reset screen explains that a staging Resend
+configuration is required. This verifies the authenticated browser read path
+end to end, not broad admin acceptance.
+
+After the browser check, exact synthetic rows were removed from the split
+staging databases. Before cleanup, Auth D1 held two synthetic users, one
+credential account, two sessions, one TOTP factor, one admin role, and two MFA
+assurance rows; the verification and suspension-audit tables had no matching
+rows. Business D1 held two synthetic profiles and two audit rows, with no
+Enterprise override. Final readback showed zero rows across the Auth user,
+account, session, verification, two-factor, admin-role, MFA-assurance, and
+suspension-audit tables, and zero matching business profile, Enterprise, and
+audit rows. The monotonic `mfaGeneration` marker was retained and may have
+advanced when the test factor was removed. Temporary synthetic credentials and
+scripts were deleted. No real user data, production route, email, Stripe action,
+or domain/DNS setting was used or changed.
+
+## Cloudflare staging frontend selector audit (2026-09-27 JST)
+
+Strengthened `scripts/migration/test-staging-selector-coverage.mjs` to verify
+all 43 typed frontend backend selectors are explicitly assigned by the
+Cloudflare staging build, referenced by frontend implementation code, and do
+not select Supabase. The only non-Worker modes are the disabled destructive
+data-reset screen, the D1-native reference-master editor, and the R2-native
+Storage client. The two selector tests, CI workflow-isolation check, frontend
+typecheck, and Cloudflare staging build passed under Node 22.6.0. The build
+completed locally; this guard change was not deployed and does not replace
+runtime UI acceptance or resolve the remaining migration gates.
+
+## Manual lifecycle batch route (2026-09-27 JST)
+
+The staging admin expiration button now selects a same-origin Cloudflare API
+instead of calling Supabase when `VITE_LIFECYCLE_RUN_BACKEND=worker`. The new
+`POST /api/admin/license-expiry/run` requires Better Auth administrator access
+with the existing same-session MFA assurance, accepts no body or query, uses
+the business D1 binding, and returns bounded aggregate counters without run,
+license, or user identifiers. It invokes the same D1 lifecycle engine as the
+scheduled job under a request-local `LICENSE_EXPIRY_BACKEND=d1` override; the
+manual server selector `LIFECYCLE_RUN_BACKEND=d1` is separate from and does not
+enable the Cron selector. Staging's frontend selects Worker, but the server
+selector remains unset, so requests fail closed with 503 and never fall back to
+Supabase. The ordinary frontend build still calls the existing Supabase
+function.
+
+Client contract tests pass 4/4 and Worker handler tests pass 4/4, including MFA
+denial, origin/method/body checks, unset-selector behavior, split-D1 selection,
+identifier stripping, sanitized failures, and continuation status. Frontend
+and Worker typechecks, focused ESLint, all 159 migration-data tests, the full
+Worker test command, CI workflow-isolation check, and staging build pass. The
+staging Worker was deployed as version
+`28e7ca3c-f610-47a4-aea9-f876bd8c3f11` while leaving both lifecycle selectors
+unset. Wrangler's secret-name readback also showed no manual lifecycle
+selector. The served JavaScript asset is byte-for-byte identical to local
+`dist-staging` (2,493,527 bytes, SHA-256
+`13582571ce98753679585bef629f57ec03d96534d3095f2ec3d60de70ed97778`). Root
+returned 200/noindex and a cookie-less POST to the new route returned 401
+`unauthenticated`; no authenticated request or lifecycle execution was sent.
+No D1 lifecycle data was changed.
