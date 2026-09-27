@@ -26,6 +26,7 @@ export function blocksRequestDuringCutoverFreeze(
 ): boolean {
   if (!pathname.startsWith("/api/")) return false;
   if (cutoverWriteFreezeState(selector) === "disabled") return false;
+  if (method === "OPTIONS") return false;
   if (method === "POST" && pathname === "/api/stripe/webhook") return false;
   if (AUTH_METHODS_ALLOWED_DURING_FREEZE.has(`${method} ${pathname}`)) return false;
   // Better Auth OAuth callbacks use GET while creating a session. Keep auth

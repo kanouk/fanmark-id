@@ -26,6 +26,7 @@ describe("cutover write freeze", () => {
     expect(blocksRequestDuringCutoverFreeze("POST", "/api/auth/sign-up/email", "true")).toBe(true);
     expect(blocksRequestDuringCutoverFreeze("GET", "/api/auth/callback/google", "true")).toBe(true);
 
+    expect(blocksRequestDuringCutoverFreeze("OPTIONS", "/api/auth/sign-in/email", "true")).toBe(false);
     expect(blocksRequestDuringCutoverFreeze("GET", "/api/auth/get-session", "true")).toBe(false);
     expect(blocksRequestDuringCutoverFreeze("POST", "/api/auth/sign-in/email", "true")).toBe(false);
     expect(blocksRequestDuringCutoverFreeze("POST", "/api/auth/two-factor/verify-totp", "true")).toBe(false);
