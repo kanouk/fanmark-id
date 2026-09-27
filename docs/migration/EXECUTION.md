@@ -2132,6 +2132,18 @@ production route, or domain/DNS setting was written or changed. This validates
 the anonymous boundary and synthetic API contracts, not an authenticated
 browser view or a Stripe sandbox flow.
 
+### Authenticated projection recheck (2026-09-28 JST)
+
+The new `scripts/migration/staging-subscription-display-smoke.mjs` exercised
+the deployed endpoint with a synthetic Better Auth user, an owner subscription,
+and a decoy subscription under another synthetic user ID. The endpoint first
+returned an empty result, then returned only the signed-in owner's projection
+without Stripe IDs. A second authenticated GET reflected a D1 period/amount
+update, and the `no-store` header remained present. Cleanup independently read
+back zero synthetic Auth and subscription rows. This is live API evidence, not
+a browser proof of the 30-second foreground poll; no Stripe API, real user,
+production, or DNS/domain state was involved.
+
 ## Profile username availability on D1 staging (2026-09-27 JST)
 
 Added `GET /api/me/username-availability?username=...`. The Worker requires a

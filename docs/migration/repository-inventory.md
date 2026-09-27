@@ -1,6 +1,6 @@
 # fanmark.id repository inventory (offline)
 
-Base commit: `d94651314ea536ab1b1cbf459b2f9beb924c6496`
+Base commit: `1f9d10eb902fa2d79ee64e37382d7460e954d278`
 
 This report is generated from the checked-out repository only. It makes no network calls, reads no credentials, and does not claim that local generated types, migrations, or SQL snapshots equal the current production state.
 
@@ -166,15 +166,15 @@ Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of t
 | `src/components/AdminApp.tsx:88` | auth_mfa | `auth` | `auth.mfa.getAuthenticatorAssuranceLevel` |  |
 | `src/components/AdminApp.tsx:100` | auth_mfa | `auth` | `auth.mfa.listFactors` |  |
 | `src/components/AdminApp.tsx:137` | auth_mfa | `auth` | `auth.mfa.getAuthenticatorAssuranceLevel` |  |
-| `src/components/AdminBroadcastEmail.tsx:156` | table | `broadcast_emails` | `table.select` |  |
-| `src/components/AdminBroadcastEmail.tsx:157` | table | `email_templates` | `table.select` |  |
-| `src/components/AdminBroadcastEmail.tsx:188` | table | `user_settings` | `table.select` |  |
-| `src/components/AdminBroadcastEmail.tsx:242` | auth | `auth` | `auth.getSession` |  |
-| `src/components/AdminBroadcastEmail.tsx:245` | table | `broadcast_emails` | `table.insert` |  |
-| `src/components/AdminBroadcastEmail.tsx:278` | auth | `auth` | `auth.getSession` |  |
-| `src/components/AdminBroadcastEmail.tsx:281` | edge | `send-broadcast-email` | `edge_function_invoke` |  |
-| `src/components/AdminBroadcastEmail.tsx:309` | auth | `auth` | `auth.getSession` |  |
-| `src/components/AdminBroadcastEmail.tsx:312` | edge | `send-broadcast-email` | `edge_function_invoke` |  |
+| `src/components/AdminBroadcastEmail.tsx:160` | table | `broadcast_emails` | `table.select` |  |
+| `src/components/AdminBroadcastEmail.tsx:161` | table | `email_templates` | `table.select` |  |
+| `src/components/AdminBroadcastEmail.tsx:192` | table | `user_settings` | `table.select` |  |
+| `src/components/AdminBroadcastEmail.tsx:246` | auth | `auth` | `auth.getSession` |  |
+| `src/components/AdminBroadcastEmail.tsx:249` | table | `broadcast_emails` | `table.insert` |  |
+| `src/components/AdminBroadcastEmail.tsx:285` | auth | `auth` | `auth.getSession` |  |
+| `src/components/AdminBroadcastEmail.tsx:288` | edge | `send-broadcast-email` | `edge_function_invoke` |  |
+| `src/components/AdminBroadcastEmail.tsx:319` | auth | `auth` | `auth.getSession` |  |
+| `src/components/AdminBroadcastEmail.tsx:322` | edge | `send-broadcast-email` | `edge_function_invoke` |  |
 | `src/components/AdminDataReset.tsx:38` | edge | `reset-fanmark-data` | `edge_function_invoke` |  |
 | `src/components/AdminEmailTemplates.tsx:52` | table | `email_templates` | `table.select` |  |
 | `src/components/AdminEmailTemplates.tsx:74` | table | `email_templates` | `table.update` |  |
