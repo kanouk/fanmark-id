@@ -355,3 +355,21 @@ result is `public_rows_reconciled`; `deployable` and
 `fullMigrationReconciled` remain false. This used no application rows, remote
 D1, production route, or domain/DNS setting and does not close the remaining
 schema/import or operational-equivalence gates.
+
+## Version 8 current-catalog replay (2026-09-28 JST)
+
+A fresh linked-project run of `schema-readiness.sql` completed at
+`2026-09-27T19:52:51Z`. It read PostgreSQL catalogs only and returned 40
+tables, 406 columns, 144 constraints, 139 indexes, 58 functions, 36
+non-internal triggers, and 77 RLS policies. Under Node 22.6.0, the exact
+result passed `test-d1-import-current-schema.mjs` after the UUID row-codec v8
+change: 10 synthetic source rows, 2 transformed credentials, 1
+`deferred_inactive` credential, and all 40 table checkpoints reconciled.
+The injected acknowledgement-unknown retry converged, and a conflicting
+coverage replay was rejected. The result remains `public_rows_reconciled`,
+with `deployable: false` and `fullMigrationReconciled: false`.
+
+The catalog was held in a mode-0600 temporary file outside Git and removed
+after the rehearsal. No application rows were queried; no remote D1, R2,
+production route, or domain/DNS setting was changed. This refresh verifies the
+current synthetic import path, not source-row parity or production readiness.

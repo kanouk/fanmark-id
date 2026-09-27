@@ -2249,3 +2249,22 @@ staging-application and Worker API jobs succeeded. The app job includes the
 full migration-data, Stripe receipt/billing, typecheck, admin URL, and staging
 build checks. The PGlite snapshot export test now runs before the other
 database-heavy Stripe suites; the CI run verifies the reordered full suite.
+
+## Current-schema v8 synthetic import replay (2026-09-28 JST)
+
+The linked Supabase `schema-readiness.sql` query completed at
+`2026-09-27T19:52:51Z` without a terminal prompt and read catalogs only. The
+40-table/406-column source shape, 144 constraints, 139 indexes, 58 functions,
+36 non-internal triggers, and 77 RLS policies remain present. Under Node
+22.6.0, the refreshed catalog passed the source-shaped D1 rehearsal after
+converter v8: 10 synthetic rows traversed all 40 table checkpoints; 2 active
+credentials were transformed, 1 inactive credential was explicitly deferred,
+the injected acknowledgement-unknown restart converged, and tampered coverage
+was rejected. Status is `public_rows_reconciled`; `deployable` and
+`fullMigrationReconciled` remain false. This closes a fresh-schema replay check
+only; it does not import source application rows or close the remaining
+schema/operation gates.
+
+The catalog lived in a mode-0600 temporary file outside Git and was removed
+after the local Miniflare rehearsal. No remote D1/R2, production route, or
+domain/DNS setting was changed.
