@@ -289,27 +289,36 @@ review and a decision about any remaining manual bulk need.
 | Storage buckets avatars, cover-images | Retain as R2 or selected object storage; Worker issues the public or signed URL boundary | src/hooks/useAvatarUpload.tsx:28,38,101; src/hooks/useCoverImageUpload.tsx:28,38,107; SQL storage refs in repository-inventory.md |
 | Stripe checkout, customer portal, and webhooks | Retain Stripe; Worker owns authenticated initiation and idempotent webhook projection into user_subscriptions | PRODUCT:73-84,453-482; D1 webhook/reconciliation and owner-bound Free-to-paid/paid-plan commands are implemented and staged behind disabled Stripe selectors; sandbox acceptance and remaining billing effects/operations remain |
 | Resend/auth and broadcast email delivery | Retain delivery provider; Worker internal queue and template projection | TECH email guidance; send-auth-email, send-broadcast-email, notification pipeline |
-| pg_cron, pg_net, and Realtime channels | Replace with Worker Cron/Queues and explicit polling or WebSocket design | supabase/config.toml:60-84; repository-inventory.md cron and unresolved Realtime callsites |
+| pg_cron, pg_net, and Realtime channels | Worker Cron handles staging notification processing; lifecycle scheduling is deployed but its execution selector remains unset. Worker-backed notification views use foreground polling, own-profile views use same-tab events plus foreground refresh, and subscription views refresh on focus/visibility. Supabase-selected builds retain Realtime. | `supabase/config.toml:60-84`; `notifications-api.md`; `own-profile-api.md`; `HANDOFF.md`. Source scheduler shutdown/drain and production scale/latency acceptance remain for the final rehearsal/cutover. |
 
-## Decisions required before implementation
+## Current unresolved design and acceptance gates (2026-09-27)
 
-1. Exercise recent_active_fanmarks and list_recent_fanmarks against the
-   source-shaped synthetic business D1 schema and verify the deployed Worker
-   route; business staging has the empty 40-table structural baseline, while
-   the feature selector remains disabled and the route is unverified live.
-2. Reconcile the 58 live function names with the 45 generated types and
-   decide which of the 13 trigger/auth/audit helpers become D1 triggers,
-   explicit Worker writes, derived artifacts, or retirements.
-3. Define public projections for fanmarks, fanmark_licenses, profile/config
-   tables, and notifications before creating public Worker routes.
-4. Define D1 transaction boundaries for registration, license lifecycle,
-   lottery selection, transfer finalization, coupon redemption, and
-   notification enqueue/dequeue.
-5. Confirm the private-table data classification and deletion/retention rules
-   for user_settings, user_subscriptions, waitlist, audit_logs, and
-   password configuration.
-6. Verify Auth providers, Storage buckets/policies, Cron schedules, Realtime
-   usage, Stripe/Resend webhooks, and the live-only route before any cutover.
+1. `recent_active_fanmarks` and `list_recent_fanmarks` have a source-shaped D1
+   query, staging Worker route, and Worker-backed SPA selector. Synthetic
+   route/contract checks pass. Imported-row parity remains in the final
+   user-data phase; it is no longer an unimplemented staging route.
+2. The live catalog has 58 function names while generated types expose 45
+   frontend RPC names. This map now lists the function/helper dispositions;
+   the remaining review is to confirm caller and schedule ownership for
+   trigger/auth/audit helpers, especially live-only
+   `manual-expire-grace-licenses`, before production retirement or activation.
+3. Public projections for fanmarks, licenses, profile/configuration, and
+   notifications are implemented for the documented staging routes. Imported
+   source-row parity and the remaining browser acceptance are still open.
+4. D1 transaction boundaries and synthetic tests exist for registration,
+   lifecycle, lottery, transfer, coupon, and notification paths. The coordinated
+   integrated rehearsal in [#37](https://github.com/kanouk/fanmark-id/issues/37)
+   still needs its full synthetic write/recovery sequence; individual canaries
+   do not close that gate.
+5. User-owned tables and non-user allowlists are classified in the migration
+   plan. Real user/Auth/object export is deferred to #38. Product-level audit,
+   notification-history, and waitlist retention decisions remain open where
+   the source behavior does not define a retention period.
+6. Better Auth, R2, D1 selectors, Cron paths, and Worker replacements for the
+   frontend Realtime channels are staged. Resend and Stripe acceptance still
+   require test-provider configuration; production writer/schedule handoff
+   stays in the final cutover phase. No production schedule or provider was
+   changed by the staging work.
 
 This map is intentionally a design input. It does not claim that local
 snapshots, current policies, or the observed live metadata are sufficient to

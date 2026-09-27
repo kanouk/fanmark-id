@@ -192,7 +192,7 @@ protected-access proofにもlicense incarnationを独立して保存・照合す
 
 続けて`fanmark-app-staging` Workerをversion `c45c7085-387b-44e6-9038-b1d52382dc7f`へ更新。remote D1にpending migrationなしを確認してから配備し、Better Auth health 200、版固定emoji catalog 200、root `X-Robots-Tag: noindex, nofollow`を確認した。Storage upload/public readはいずれも503 `storage_unavailable`でfail closed。配備bindingsにR2はなく、Cloudflare R2は引き続きerror 10042、remote bucket/objectは未作成。Supabase production、user data、public domain/DNSは変更なし。
 
-移行作業中の変更を反映し、オフラインrepository inventoryをHEAD `f359c3fae0934f425839f34a5166860f33a1640e`基準で再生成した。現checkoutのfrontend scanは211 callsites（35 Edge invoke、40 RPCを含む）。`node scripts/migration/test-inventory.mjs`が成功。これは静的checkout inventoryであり、live schema/production inventoryの代わりではない。
+2026-09-27、オフラインrepository inventoryをHEAD `497626c0ca035066843244128f60e6758677de9c`基準で再生成した。現checkoutのfrontend scanは211 callsites（36 Edge invoke、37 RPC、4 Realtime channelを含む）。`node scripts/migration/test-inventory.mjs`が成功。これは静的checkout inventoryであり、live schema/production inventoryの代わりではない。
 
 続けてremote activation CLIを追加。現在版の明示指定を必須にし、今回は`none`をpreconditionとして初回promote。coreに楽観的な版一致guardを追加し、7件のrelease integration testsが全て成功。隔離APAC D1で版`10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed`をgeneration 1として有効化、activation historyは1行。専用`workers.dev` catalog APIは版なしGETが503から200へ遷移し、全8ページ・3,944行のreadbackでversion、`recordsSHA256=84a67b361adf96534bc6e564ec7510249758c2b20492e4d0b97acc7fd88309c0`、`identitySHA256=dddd7cf13528dd44f2bb1329ed1167f83fb30e63504fdd1c673845467ab402fc`が成果物と一致。再実行時はchanged=falseで履歴を増やさない。Better Auth user-owned行は引き続き0。production app/DB、Supabase write、R2、user data、custom domain/DNSは変更していない。
 
