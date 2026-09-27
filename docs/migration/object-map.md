@@ -270,11 +270,16 @@ authorization decision; the target boundary below is the proposed contract.
 | return-fanmark | E: supabase/functions/return-fanmark/index.ts | Worker user | Medium: grace transition and notification side effects |
 | send-auth-email | E: supabase/functions/send-auth-email/index.ts | Worker internal + retain Auth/email provider | High: provider lifecycle and template ownership |
 | send-broadcast-email | E: supabase/functions/send-broadcast-email/index.ts | Worker admin/internal + retain Resend | High: recipient selection, retries, and opt-out behavior |
-| manual-expire-grace-licenses | Live-only name in [live observations](live-observations.md):10; no local source | Worker admin/internal candidate | High: purpose, invocation, and permission mapping remain open; keep as an explicit live-only reconciliation item |
+| manual-expire-grace-licenses | Live-only function reviewed read-only; no local callsite found; see [live observations](live-observations.md) | The D1 lifecycle Cron implements scheduled grace finalization; the MFA-protected per-license admin route covers individual corrections. No on-demand bulk Worker route exists. | High: verify external callers/schedules and whether on-demand bulk action is still required before retiring or implementing a scoped replacement; no production invocation/change was made |
 
 The live-only entrypoint is not counted as a local route and is not folded into
 the offline scanner's counts. It must be classified, migrated, or retired
 after a read-only production review.
+
+The read-only review maps the scheduled behavior to the D1 lifecycle Cron but
+does not establish an equivalent on-demand bulk operation. External invocations
+remain unknown, so retirement still requires an operator-side caller/schedule
+review and a decision about any remaining manual bulk need.
 
 ## Non-table dependencies
 

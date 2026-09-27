@@ -80,6 +80,13 @@ and master-route checks are recorded below. PR #41 includes the PWA fix and
 refreshed evidence. Preserve the unrelated modified
 `supabase/.temp/cli-latest` file.
 
+The production-only `manual-expire-grace-licenses` function was downloaded and
+reviewed read-only: it remains active in Supabase and has no local callsite.
+The D1 lifecycle Cron covers scheduled finalization, but there is no on-demand
+bulk Worker route. The function was not invoked or changed. External
+callers/schedules and any remaining manual bulk need are unverified; see
+`live-observations.md`.
+
 ## Prior staging checkpoint (2026-09-27 JST, before PWA icon deployment)
 
 Weighted progress estimate at this checkpoint: about 70% of the prioritized

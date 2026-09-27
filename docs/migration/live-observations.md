@@ -1479,3 +1479,24 @@ The four public reference-master GETs also returned HTTP 200: languages
 prices (1,097 bytes). Their bodies were not read or logged. This is live route
 availability evidence; canonical content and the edit/restore behavior are
 documented in the dedicated reference-master canary record above.
+
+## Live-only manual grace-expiry function review (2026-09-27 JST)
+
+The linked Supabase project still lists `manual-expire-grace-licenses` as
+ACTIVE, version 14, with platform JWT verification enabled. Its source was
+downloaded read-only into a permission-restricted temporary directory and
+reviewed without invoking it; no source rows were read and no repository
+function was added. The entrypoint iterates expired grace licenses, updates
+each row, then attempts configuration deletion and audit writes. Those
+per-license effects are not one transaction. The staged D1 daily lifecycle
+path covers scheduled grace finalization and lottery handling; the staged
+single-license admin route is a separate manual correction path and requires
+current-session MFA. There is no on-demand bulk Worker route, so this is not a
+full one-to-one match.
+
+No local application caller was found. Supabase invocation history and any
+external schedule/caller have not been verified. Therefore the live function
+is classified as a retirement candidate rather than a public Worker endpoint;
+keep the Supabase function unchanged until its external callers are checked in
+the final operational phase. No function call, deployment, production change,
+user-data read, or DNS/domain change occurred during this review.
