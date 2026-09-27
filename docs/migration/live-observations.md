@@ -1579,3 +1579,21 @@ calls or external callers, which remain unverified. Re-read job IDs, active
 state, targets, and timezone immediately before any final writer freeze because
 job IDs and schedules can change. This observation did not change a schedule,
 invoke a function, or read application rows.
+
+## Lifecycle settings authenticated staging canary (2026-09-27 JST)
+
+The guarded TOTP smoke provisioned a temporary synthetic Better Auth admin in
+the isolated staging Auth D1, signed in through the deployed Workers API, and
+completed first-time TOTP enrollment/session rotation. Anonymous
+`PATCH /api/admin/system-settings/lifecycle` returned 401. The authenticated
+canary changed the public `grace_period_days` value from 1 to 2; a public
+`GET /api/system/lifecycle` read back 2 with `Cache-Control: no-store`. A
+zero-day update returned 400 and left 2 unchanged. The authenticated restore
+returned the value to 1 and the public GET read back 1. The API write and
+restore advanced the setting row's `updated_at`, which is the expected behavior
+of the current endpoint. The temporary Auth user, password account, TOTP
+factor, session, profile, and related synthetic records were removed; the smoke
+read back all user-owned Auth tables as empty. No real user data, email,
+payment, production route, lifecycle Cron execution, or DNS/domain setting was
+used. This is API authorization and data-path evidence; the AdminSettings
+browser form remains unverified.

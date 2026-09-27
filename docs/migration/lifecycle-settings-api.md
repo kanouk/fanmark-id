@@ -35,9 +35,22 @@ The staging frontend and API were deployed as app Worker version
 read-only checks returned root 200/noindex, Better Auth health 200, and public
 lifecycle GET 200/no-store with only `{grace_period_days:1}`. The admin PATCH
 returned 401 `unauthenticated` without a session. Authenticated admin updates
-and browser MFA have not yet been tested. The staged
+and browser MFA had not yet been tested at that checkpoint. The staged
 `LICENSE_EXPIRY_BACKEND` selector and Cron trigger remain disabled pending the
 bounded scheduled-event smoke.
+
+On 2026-09-27, a synthetic staging canary provisioned a temporary Better Auth
+admin, completed first-time TOTP enrollment and same-session MFA, and exercised
+the deployed lifecycle API. Anonymous PATCH returned 401; a valid update was
+read back through the public no-store GET; `grace_period_days: 0` returned 400
+without changing the temporary value; and the original value `1` was restored
+and read back. The script then removed the synthetic Auth identity/factor/session
+and verified the user-owned Auth tables were empty. This verifies the
+authenticated API contract, not the AdminSettings browser form. The update and
+restore naturally advanced the staging setting's `updated_at`; its public value
+is back at the baseline. No user data, email, Stripe, production, or DNS was
+used. Reproduce with the guarded `--lifecycle-settings-readback` mode of
+`workers/api/test/staging-admin-totp-smoke.mjs`.
 
 ## Local validation
 

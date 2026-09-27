@@ -48,14 +48,44 @@ function requireExplicitStagingConsent() {
   const waitlistAdminReadback = args.has("--waitlist-admin-readback");
   const broadcastEmailReadback = args.has("--broadcast-email-readback");
   const systemSettingsReadback = args.has("--system-settings-readback");
+  const lifecycleSettingsReadback = args.has("--lifecycle-settings-readback");
   const notificationManualEvent = args.has("--notification-manual-event");
+  const hasExplicitSmokeAction = [
+    emojiMasterRoundtrip,
+    referenceMasterPricingReadback,
+    referenceMasterTierRoundtrip,
+    referenceMasterExtensionPriceRoundtrip,
+    authEmailTemplateEditRoundtrip,
+    adminUserManagementReadback,
+    adminUserPlanReadback,
+    adminUserStatusReadback,
+    waitlistAdminReadback,
+    broadcastEmailReadback,
+    systemSettingsReadback,
+    lifecycleSettingsReadback,
+    notificationManualEvent,
+  ].some(Boolean);
   if (!args.has("--run-live-staging-write") || !args.has(`--database=${expectedDatabase}`) ||
-      (!emojiMasterRoundtrip && !referenceMasterPricingReadback && !referenceMasterTierRoundtrip && !referenceMasterExtensionPriceRoundtrip && !authEmailTemplateEditRoundtrip && !adminUserManagementReadback && !adminUserPlanReadback && !adminUserStatusReadback && !waitlistAdminReadback && !broadcastEmailReadback && !systemSettingsReadback && !notificationManualEvent)) {
+      !hasExplicitSmokeAction) {
     throw new Error(
       `Refusing remote staging writes. Pass --run-live-staging-write --database=${expectedDatabase} and an explicit smoke flag.`,
     );
   }
-  return { emojiMasterRoundtrip, referenceMasterPricingReadback, referenceMasterTierRoundtrip, referenceMasterExtensionPriceRoundtrip, authEmailTemplateEditRoundtrip, adminUserManagementReadback, adminUserPlanReadback, adminUserStatusReadback, waitlistAdminReadback, broadcastEmailReadback, systemSettingsReadback, notificationManualEvent };
+  return {
+    emojiMasterRoundtrip,
+    referenceMasterPricingReadback,
+    referenceMasterTierRoundtrip,
+    referenceMasterExtensionPriceRoundtrip,
+    authEmailTemplateEditRoundtrip,
+    adminUserManagementReadback,
+    adminUserPlanReadback,
+    adminUserStatusReadback,
+    waitlistAdminReadback,
+    broadcastEmailReadback,
+    systemSettingsReadback,
+    lifecycleSettingsReadback,
+    notificationManualEvent,
+  };
 }
 
 async function assertStagingTarget(actions) {
@@ -1326,6 +1356,75 @@ async function exerciseSystemSettingsReadback(cookie, adminUserId, state) {
   }
 }
 
+async function readPublicLifecycleDays() {
+  const response = await request("/api/system/lifecycle");
+  assertStatus(response, 200, "public lifecycle settings read");
+  assert.equal(response.headers.get("cache-control"), "no-store");
+  const body = await response.json();
+  assert.equal(body.schemaVersion, 1);
+  assert.deepEqual(Object.keys(body.settings ?? {}), ["grace_period_days"]);
+  assert.ok(Number.isSafeInteger(body.settings.grace_period_days));
+  assert.ok(body.settings.grace_period_days >= 1 && body.settings.grace_period_days <= 365);
+  return body.settings.grace_period_days;
+}
+
+async function restoreLifecycleSetting(cookie, state) {
+  if (state.originalValue === null || state.temporaryValue === null) return;
+  const current = await readPublicLifecycleDays();
+  if (current === state.originalValue) return;
+  assert.equal(current, state.temporaryValue, "lifecycle setting changed to an unexpected value during canary");
+  const restore = await request("/api/admin/system-settings/lifecycle", {
+    method: "PATCH",
+    headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({ grace_period_days: state.originalValue }),
+  });
+  assertStatus(restore, 200, "lifecycle setting baseline restoration");
+  assert.deepEqual(await restore.json(), {
+    schemaVersion: 1,
+    settings: { grace_period_days: state.originalValue },
+  });
+  assert.equal(await readPublicLifecycleDays(), state.originalValue, "lifecycle setting baseline was not restored");
+}
+
+async function exerciseLifecycleSettingsReadback(cookie, state) {
+  const route = "/api/admin/system-settings/lifecycle";
+  state.originalValue = await readPublicLifecycleDays();
+  assert.equal(await readSystemSettingValue("grace_period_days"), String(state.originalValue));
+  state.temporaryValue = state.originalValue === 365 ? 364 : state.originalValue + 1;
+
+  try {
+    const anonymous = await request(route, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ grace_period_days: state.temporaryValue }),
+    });
+    assertStatus(anonymous, 401, "anonymous lifecycle setting update");
+    assert.equal(await readPublicLifecycleDays(), state.originalValue, "anonymous lifecycle update changed D1");
+
+    const update = await request(route, {
+      method: "PATCH",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ grace_period_days: state.temporaryValue }),
+    });
+    assertStatus(update, 200, "MFA-protected lifecycle setting update");
+    assert.deepEqual(await update.json(), {
+      schemaVersion: 1,
+      settings: { grace_period_days: state.temporaryValue },
+    });
+    assert.equal(await readPublicLifecycleDays(), state.temporaryValue, "lifecycle setting did not reach public D1 readback");
+
+    const invalid = await request(route, {
+      method: "PATCH",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ grace_period_days: 0 }),
+    });
+    assertStatus(invalid, 400, "invalid lifecycle setting update");
+    assert.equal(await readPublicLifecycleDays(), state.temporaryValue, "invalid lifecycle update changed D1");
+  } finally {
+    await restoreLifecycleSetting(cookie, state);
+  }
+}
+
 async function exerciseAdminUserStatusReadback(cookie, target) {
   const route = `/api/admin/users/${encodeURIComponent(target.userId)}/status`;
   const now = new Date();
@@ -1862,6 +1961,7 @@ async function main() {
   let cleanupError = null;
   let cookie = "";
   const systemSettingState = { key: "", originalValue: null, temporaryValue: null };
+  const lifecycleSettingState = { originalValue: null, temporaryValue: null };
 
   try {
     seedAttempted = true;
@@ -1973,6 +2073,9 @@ async function main() {
     if (actions.systemSettingsReadback) {
       await exerciseSystemSettingsReadback(cookie, userId, systemSettingState);
     }
+    if (actions.lifecycleSettingsReadback) {
+      await exerciseLifecycleSettingsReadback(cookie, lifecycleSettingState);
+    }
     if (actions.notificationManualEvent) {
       await exerciseNotificationManualEvent(cookie, targetUserId);
     }
@@ -1982,6 +2085,7 @@ async function main() {
     if (seedAttempted) {
       try {
         if (actions.systemSettingsReadback) await restoreSystemSetting(cookie, systemSettingState);
+        if (actions.lifecycleSettingsReadback) await restoreLifecycleSetting(cookie, lifecycleSettingState);
         if (actions.notificationManualEvent) {
           await executeBusiness([
             "DELETE FROM notifications WHERE event_id IN (SELECT id FROM notification_events WHERE source = 'admin_manual' AND json_extract(payload, '$.user_id') = " + sqlLiteral(targetUserId) + ")",
@@ -2004,7 +2108,20 @@ async function main() {
           `DELETE FROM "user" WHERE "id" = ${sqlLiteral(userId)};`,
           "synthetic identity cleanup",
         );
-        if (actions.waitlistAdminReadback || actions.broadcastEmailReadback || actions.referenceMasterTierRoundtrip || actions.referenceMasterExtensionPriceRoundtrip || actions.authEmailTemplateEditRoundtrip || actions.adminUserManagementReadback || actions.adminUserPlanReadback || actions.adminUserStatusReadback || actions.systemSettingsReadback || actions.notificationManualEvent) {
+        const needsTargetCleanup = [
+          actions.waitlistAdminReadback,
+          actions.broadcastEmailReadback,
+          actions.referenceMasterTierRoundtrip,
+          actions.referenceMasterExtensionPriceRoundtrip,
+          actions.authEmailTemplateEditRoundtrip,
+          actions.adminUserManagementReadback,
+          actions.adminUserPlanReadback,
+          actions.adminUserStatusReadback,
+          actions.systemSettingsReadback,
+          actions.lifecycleSettingsReadback,
+          actions.notificationManualEvent,
+        ].some(Boolean);
+        if (needsTargetCleanup) {
           if (actions.adminUserStatusReadback) {
             await executeBusiness(
               `DELETE FROM notifications WHERE user_id = ${sqlLiteral(targetUserId)};\n` +
@@ -2096,6 +2213,9 @@ async function main() {
   }
   if (actions.systemSettingsReadback) {
     console.log("Staging MFA-protected system settings read/update passed. The API exposed the exact admin projection, rejected anonymous access and a stale write, restored the original value, and cleaned the synthetic audit rows.");
+  }
+  if (actions.lifecycleSettingsReadback) {
+    console.log("Staging lifecycle settings read/update passed. Anonymous and invalid writes were rejected; the MFA-protected update was read back, restored to baseline, and the public endpoint remained no-store.");
   }
   if (actions.notificationManualEvent) {
     console.log("Staging MFA-protected manual notification-event creation passed; the deployed Cron produced one delivered Japanese in-app notification, and event, notification, profile, and Auth rows were removed.");
