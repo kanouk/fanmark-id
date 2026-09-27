@@ -12,8 +12,14 @@ import {
   hasStagingNotificationMasterBaseline,
   hasStagingNonUserConfigBaseline,
   notificationMasterBaselineState,
+  readStagingExtensionCouponMasterBaseline,
   stagingNonUserConfigBaselineState,
 } from "./staging-notification-master-baseline.mjs";
+import {
+  STAGING_EXTENSION_COUPON_READBACK_SQL,
+  canonicalizeExtensionCouponTargetRows,
+  extensionCouponMasterDigest,
+} from "./extension-coupon-master.mjs";
 
 test("staging notification seed baseline accepts only the reviewed counts", () => {
   assert.equal(notificationMasterBaselineState({ notification_rules: 0, notification_templates: 0 }), "empty");
@@ -49,13 +55,48 @@ test("business row-empty checks exclude only reviewed staging baseline tables", 
     ["fanmarks", "notifications"],
   );
   assert.deepEqual(
-    businessTablesWithoutStagingBaselines(["email_templates", "fanmarks"], { authEmailTemplates: true }),
+    businessTablesWithoutStagingBaselines(["email_templates", "fanmarks"], { verifiedEmailTemplateMasters: true }),
     ["fanmarks"],
   );
   assert.deepEqual(
     businessTablesWithoutStagingBaselines(["email_templates", "fanmarks"]),
     ["email_templates", "fanmarks"],
   );
+  assert.deepEqual(
+    businessTablesWithoutStagingBaselines(
+      ["extension_coupons", "extension_coupon_usages", "fanmarks"],
+      { verifiedExtensionCouponMaster: true },
+    ),
+    ["extension_coupon_usages", "fanmarks"],
+  );
+});
+
+test("coupon masters are a staging baseline only after exact row and usage readback", () => {
+  const rows = Array.from({ length: 4 }, (_, index) => ({
+    id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+    code: `BASELINE${index + 1}`,
+    months: [1, 2, 3, 6][index],
+    allowed_tier_levels: null,
+    max_uses: index + 1,
+    used_count: 0,
+    expires_at: null,
+    is_active: 1,
+    created_at: "2026-09-27T00:00:00Z",
+    updated_at: "2026-09-27T00:00:00Z",
+    created_by: null,
+  }));
+  const digest = extensionCouponMasterDigest(canonicalizeExtensionCouponTargetRows(rows));
+  const readRows = (sql) => sql === STAGING_EXTENSION_COUPON_READBACK_SQL ? rows : [{ usage_rows: 0 }];
+  assert.equal(readStagingExtensionCouponMasterBaseline(readRows, { expectedDigest: digest }), "seeded");
+  assert.equal(readStagingExtensionCouponMasterBaseline(() => [], { expectedDigest: digest }), "invalid");
+  assert.equal(readStagingExtensionCouponMasterBaseline((sql) =>
+    sql === STAGING_EXTENSION_COUPON_READBACK_SQL ? [] : [{ usage_rows: 0 }], { expectedDigest: digest }), "empty");
+  assert.equal(readStagingExtensionCouponMasterBaseline((sql) =>
+    sql === STAGING_EXTENSION_COUPON_READBACK_SQL ? rows : [{ usage_rows: 1 }], { expectedDigest: digest }), "invalid");
+  assert.equal(readStagingExtensionCouponMasterBaseline((sql) =>
+    sql === STAGING_EXTENSION_COUPON_READBACK_SQL
+      ? rows.map((row, index) => index === 0 ? { ...row, code: "TAMPERED" } : row)
+      : [{ usage_rows: 0 }], { expectedDigest: digest }), "invalid");
 });
 
 test("auth email templates count as a baseline only with the exact reviewed content digest", () => {

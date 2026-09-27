@@ -27,10 +27,12 @@ import { createWranglerD1Database } from "./wrangler-d1-database.mjs";
 import {
   businessTablesWithoutStagingBaselines,
   notificationMasterBaselineState,
+  readStagingExtensionCouponMasterBaseline,
   NOTIFICATION_MASTER_COUNTS_SQL,
   STAGING_NON_USER_CONFIG_BASELINE_SQL,
   stagingNonUserConfigBaselineState,
 } from "./staging-notification-master-baseline.mjs";
+import { readStagingEmailTemplateMasterBaseline } from "./staging-email-template-master-baseline.mjs";
 
 const ACCOUNT_ID = "bfc2890741f0b3fb236e2d755b6c9adc";
 const ACCOUNT_EMAIL = "fanmark.id@gmail.com";
@@ -162,7 +164,16 @@ async function assertStagingTarget(catalog) {
   const settingCounts = runD1(STAGING_NON_USER_CONFIG_BASELINE_SQL)[0]?.results?.[0];
   if (notificationMasterBaselineState(masterCounts) === "invalid") fail("notification_master_baseline_invalid");
   if (stagingNonUserConfigBaselineState(settingCounts) === "invalid") fail("system_setting_baseline_invalid");
-  const sourceDataTables = businessTablesWithoutStagingBaselines(sourceTables);
+  const emailTemplateBaseline = readStagingEmailTemplateMasterBaseline((sql) =>
+    runD1(sql)[0]?.results);
+  if (emailTemplateBaseline === "invalid") fail("email_template_master_baseline_invalid");
+  const extensionCouponBaseline = readStagingExtensionCouponMasterBaseline((sql) =>
+    runD1(sql)[0]?.results);
+  if (extensionCouponBaseline === "invalid") fail("extension_coupon_master_baseline_invalid");
+  const sourceDataTables = businessTablesWithoutStagingBaselines(sourceTables, {
+    verifiedEmailTemplateMasters: true,
+    verifiedExtensionCouponMaster: extensionCouponBaseline === "seeded",
+  });
   const totalRowsSql = `SELECT ${sourceDataTables.map((name) => `(SELECT COUNT(*) FROM "${name.replaceAll('"', '""')}")`).join(" + ")} AS total_rows`;
   const totalRows = Number(runD1(totalRowsSql)[0]?.results?.[0]?.total_rows);
   if (totalRows !== 0) fail("business_staging_not_empty");

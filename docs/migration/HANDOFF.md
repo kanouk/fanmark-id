@@ -138,19 +138,44 @@ enabling Cloudflare's daily lifecycle trigger. See
 [`cutover-rehearsal.md`](cutover-rehearsal.md).
 
 Current weighted progress estimate (2026-09-27): about 60% of the full
-migration, or about 70–75% of the prioritized app/infrastructure/master-data
+migration, or about 75% of the prioritized app/infrastructure/master-data
 scope that excludes real user-data import and public domain/DNS cutover. The
-estimate is coarse: the current-source broadcast templates have now been
-seeded and verified in business staging, while the 18 schema gates, integrated
-synthetic rehearsal, remaining authenticated UI canaries, mail delivery, and
-production acceptance are still open. User-data import and domain cutover are
-intentionally deferred final phases, not missing work in the current staging
-slice.
+estimate is coarse: broadcast templates and four verified-unused extension
+coupon definitions are seeded and verified in business staging, and synthetic
+notification, registration, owner-settings/password, and R2 profile/storage
+canaries pass with exact cleanup. The 18 schema gates, integrated synthetic
+rehearsal, remaining authenticated UI canaries, mail delivery, and production
+acceptance are still open. User-data import and domain cutover are intentionally
+deferred final phases, not missing work in the current staging slice.
+
+## Unused extension coupon master seed (2026-09-27 JST)
+
+A fresh read-only Supabase projection confirmed four active coupon definitions
+with `used_count = 0` and no usage rows. Only their definition fields were
+staged into `fanmark-business-staging`; all four read back exactly with the
+pinned source content digest
+`6472e758c2896f8f83bf5a48da5a3c038b24651e5278866b177231412dda3d79`,
+`created_by` was set to NULL, and staging usage count remains zero. The source
+aggregate also reports four consumed definitions, 20 usage rows, and two
+definition/use-count mismatches; those records remain excluded for the final
+user-data reconciliation. The private export and SQL were mode 0600 and are not
+in the repository. No production setting, license, user, domain, or DNS state
+was changed. Existing staging baseline checks now accept the coupon rows only
+after this exact content and zero-usage verification. See
+[`extension-coupon-api.md`](extension-coupon-api.md).
 
 The Worker-backed own-profile hook now synchronizes successful profile changes
 across same-tab consumers and quietly revalidates on focus/visibility, replacing
 the former Supabase Realtime path without periodic D1 reads. This app-consistency
 repair does not materially change the coarse weighted progress estimate.
+
+The staging baseline checks now verify both localized email-template groups
+using a single read query and their pinned content digests. Live D1 readback
+confirmed 16 auth templates plus 12 broadcast templates; the full migration
+data suite passes 154/154. Notification processing, owner registration/lottery,
+owner-settings/password, and avatar/cover R2 profile canaries passed and removed
+their exact synthetic rows and objects. These checks add staging evidence only;
+mail delivery, the integrated rehearsal, and production acceptance remain open.
 
 The latest Supabase read-only query selected only the three supported
 broadcast template types and returned 12 active rows across `en`, `id`, `ja`,
@@ -597,8 +622,9 @@ buckets; this was a read-only check and copied no objects.
    Wrangler plan/CPU fit. Language and public tier/price reads, plus editable
    tier-day and extension-price screens, use versioned Worker/D1 paths on
    staging. MFA-gated Tier C and extension-price edit/restore canaries passed.
-   Coupon admin CRUD and redemption use the D1 Worker path, with existing
-   coupon and usage rows still excluded from import. Five reserved-pattern rows
+   Coupon admin CRUD and redemption use the D1 Worker path, with four verified
+   unused definitions staged; consumed definitions and usage history remain
+   excluded for user-data reconciliation. Five reserved-pattern rows
    are in the active release and feed the Worker read/availability path; no
    dedicated editing UI consumer is present. R2 is enabled: staging avatar/cover uploads and
    profile URLs use the two bound R2 buckets, while existing Supabase objects
@@ -1371,7 +1397,8 @@ billing, and Stripe operational rehearsal remain open.
 Business migration `0015_extension_coupon_application.sql` is applied to
 `fanmark-business-staging`; Wrangler reports no pending migrations. Readback
 confirmed the command table, guard/apply triggers, unique usage index, and
-lottery-entry index. Coupon, usage, and command tables remain at zero rows.
+lottery-entry index. At this checkpoint, coupon, usage, and command tables were
+all empty.
 
 The staging app uses Better Auth for the owner redemption API and the
 admin-role/MFA-protected coupon CRUD and usage API. Worker version

@@ -12,9 +12,15 @@ import {
   businessTablesWithoutStagingBaselines,
   NOTIFICATION_MASTER_COUNTS_SQL,
   notificationMasterBaselineState,
+  readStagingExtensionCouponMasterBaseline,
   STAGING_NON_USER_CONFIG_BASELINE_SQL,
+  stagingBusinessBaselineRowCount,
   stagingNonUserConfigBaselineState,
 } from "./staging-notification-master-baseline.mjs";
+import {
+  readStagingEmailTemplateMasterBaseline,
+  stagingEmailTemplateMasterRowCount,
+} from "./staging-email-template-master-baseline.mjs";
 
 const ACCOUNT_ID = "bfc2890741f0b3fb236e2d755b6c9adc";
 const ACCOUNT_EMAIL = "fanmark.id@gmail.com";
@@ -104,12 +110,23 @@ function sumQuery(tables) {
 function readBaseline(businessTables) {
   const masters = d1(BUSINESS, APP_CONFIG, NOTIFICATION_MASTER_COUNTS_SQL)[0];
   const settings = d1(BUSINESS, APP_CONFIG, STAGING_NON_USER_CONFIG_BASELINE_SQL)[0];
+  const emailTemplateBaseline = readStagingEmailTemplateMasterBaseline((sql) => d1(BUSINESS, APP_CONFIG, sql));
+  const extensionCouponBaseline = readStagingExtensionCouponMasterBaseline((sql) =>
+    d1(BUSINESS, APP_CONFIG, sql));
   if (notificationMasterBaselineState(masters) !== "seeded" ||
-      stagingNonUserConfigBaselineState(settings) !== "seeded") fail("notification_staging_master_baseline_invalid");
+      stagingNonUserConfigBaselineState(settings) !== "seeded" || emailTemplateBaseline === "invalid" ||
+      extensionCouponBaseline === "invalid") {
+    fail("notification_staging_master_baseline_invalid");
+  }
   const rowTotal = Number(d1(BUSINESS, APP_CONFIG,
     `SELECT ${sumQuery(businessTables)} AS row_count`)[0]?.row_count);
-  if (rowTotal !== 51) fail("notification_staging_business_baseline_invalid");
-  const nonBaselineTables = businessTablesWithoutStagingBaselines(businessTables);
+  const expectedRowTotal = stagingBusinessBaselineRowCount(settings, masters) +
+    stagingEmailTemplateMasterRowCount(emailTemplateBaseline) + (extensionCouponBaseline === "seeded" ? 4 : 0);
+  if (rowTotal !== expectedRowTotal) fail("notification_staging_business_baseline_invalid");
+  const nonBaselineTables = businessTablesWithoutStagingBaselines(businessTables, {
+    verifiedEmailTemplateMasters: true,
+    verifiedExtensionCouponMaster: extensionCouponBaseline === "seeded",
+  });
   const nonBaselineTotal = Number(d1(BUSINESS, APP_CONFIG,
     `SELECT ${sumQuery(nonBaselineTables)} AS row_count`)[0]?.row_count);
   if (nonBaselineTotal !== 0) fail("notification_staging_business_rows_present");
@@ -122,7 +139,7 @@ function readBaseline(businessTables) {
   const authTotal = Number(d1(AUTH, AUTH_CONFIG,
     `SELECT ${sumQuery(AUTH_TABLES)} AS row_count`)[0]?.row_count);
   if (authTotal !== 0) fail("notification_staging_auth_rows_present");
-  return { rowTotal, accessState };
+  return { rowTotal, accessState, extensionCouponBaseline, emailTemplateBaseline };
 }
 
 async function freePort() {
@@ -186,13 +203,13 @@ async function stopWorker(child) {
   }
 }
 
-function verifyTarget({ deployedCron }) {
+function verifyTarget() {
   const config = JSON.parse(readFileSync(APP_CONFIG_PATH, "utf8"));
   const crons = config.triggers?.crons ?? [];
   const processor = config.vars?.NOTIFICATION_PROCESSOR_BACKEND;
-  const schedulerConfigInvalid = deployedCron
-    ? crons.length !== 1 || crons[0] !== "* * * * *" || processor !== "d1"
-    : crons.length !== 0 || processor !== undefined;
+  const expectedCrons = ["* * * * *", "0 0 * * *"];
+  const schedulerConfigInvalid = crons.length !== expectedCrons.length ||
+    crons.some((cron, index) => cron !== expectedCrons[index]) || processor !== "d1";
   if (config.name !== "fanmark-app-staging" || config.account_id !== ACCOUNT_ID || config.workers_dev !== true ||
       config.routes?.length || schedulerConfigInvalid || config.vars?.LICENSE_EXPIRY_BACKEND ||
       config.vars?.STRIPE_DISPATCH_BACKEND || config.vars?.STRIPE_WEBHOOK_BACKEND) {
@@ -263,7 +280,7 @@ async function main() {
   const args = process.argv.slice(2);
   const deployedCron = args.length === 1 && args[0] === "--deployed-cron";
   if (args.length > 0 && !deployedCron) fail("notification_staging_arguments_invalid");
-  const businessTables = verifyTarget({ deployedCron });
+  const businessTables = verifyTarget();
   const baseline = readBaseline(businessTables);
   const securityState = readSecurityState();
   const applicationRows = d1(BUSINESS, APP_CONFIG, `SELECT

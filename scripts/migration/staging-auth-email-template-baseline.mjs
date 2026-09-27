@@ -44,12 +44,16 @@ export function stableAuthEmailTemplateRows(rows) {
   return normalized;
 }
 
-export function authEmailTemplateBaselineState(rows, tableRowCount = rows?.length) {
+export function authEmailTemplateBaselineState(
+  rows,
+  tableRowCount = rows?.length,
+  expectedContentDigest = AUTH_EMAIL_TEMPLATE_CONTENT_EXPECTED_SHA256,
+) {
   const count = Number(tableRowCount);
   if (Array.isArray(rows) && rows.length === 0 && count === 0) return "empty";
   if (count !== 16) return "invalid";
   try {
-    return authEmailTemplateContentDigest(rows) === AUTH_EMAIL_TEMPLATE_CONTENT_EXPECTED_SHA256 ? "seeded" : "invalid";
+    return authEmailTemplateContentDigest(rows) === expectedContentDigest ? "seeded" : "invalid";
   } catch {
     return "invalid";
   }

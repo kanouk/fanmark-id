@@ -1,3 +1,9 @@
+import {
+  STAGING_EXTENSION_COUPON_READBACK_SQL,
+  STAGING_EXTENSION_COUPON_USAGE_COUNT_SQL,
+  extensionCouponMasterBaselineState,
+} from "./extension-coupon-master.mjs";
+
 export const NOTIFICATION_MASTER_COUNTS_SQL = `SELECT
   (SELECT COUNT(*) FROM "notification_rules") AS notification_rules,
   (SELECT COUNT(*) FROM "notification_templates") AS notification_templates`;
@@ -48,9 +54,21 @@ export const STAGING_SYSTEM_SETTINGS_MANIFEST = [
   "stripe_mode:1",
 ].join(",");
 
-export function businessTablesWithoutStagingBaselines(tables, { authEmailTemplates = false } = {}) {
+export function businessTablesWithoutStagingBaselines(
+  tables,
+  { verifiedEmailTemplateMasters = false, verifiedExtensionCouponMaster = false } = {},
+) {
   return tables.filter((table) => !STAGING_BASELINE_TABLES.has(table) &&
-    !(authEmailTemplates && table === "email_templates"));
+    !(verifiedEmailTemplateMasters && table === "email_templates") &&
+    !(verifiedExtensionCouponMaster && table === "extension_coupons"));
+}
+
+export function readStagingExtensionCouponMasterBaseline(readRows, { expectedDigest } = {}) {
+  if (typeof readRows !== "function") return "invalid";
+  const rows = readRows(STAGING_EXTENSION_COUPON_READBACK_SQL);
+  const usageRows = readRows(STAGING_EXTENSION_COUPON_USAGE_COUNT_SQL);
+  if (!Array.isArray(rows) || !Array.isArray(usageRows) || usageRows.length !== 1) return "invalid";
+  return extensionCouponMasterBaselineState(rows, usageRows[0].usage_rows, expectedDigest);
 }
 
 export function notificationMasterBaselineState(row) {

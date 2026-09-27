@@ -12,9 +12,11 @@ import {
   businessTablesWithoutStagingBaselines,
   NOTIFICATION_MASTER_COUNTS_SQL,
   notificationMasterBaselineState,
+  readStagingExtensionCouponMasterBaseline,
   STAGING_NON_USER_CONFIG_BASELINE_SQL,
   stagingNonUserConfigBaselineState,
 } from "./staging-notification-master-baseline.mjs";
+import { readStagingEmailTemplateMasterBaseline } from "./staging-email-template-master-baseline.mjs";
 
 const ACCOUNT_ID = "bfc2890741f0b3fb236e2d755b6c9adc";
 const ACCOUNT_EMAIL = "fanmark.id@gmail.com";
@@ -87,7 +89,15 @@ function assertTarget() {
   const settings = d1(APP_CONFIG, BUSINESS, STAGING_NON_USER_CONFIG_BASELINE_SQL)[0];
   if (notificationMasterBaselineState(masters) === "invalid") fail("notification_master_baseline_mismatch");
   if (stagingNonUserConfigBaselineState(settings) === "invalid") fail("system_setting_baseline_mismatch");
-  const businessDataTables = businessTablesWithoutStagingBaselines(businessTables);
+  const emailTemplateBaseline = readStagingEmailTemplateMasterBaseline((sql) => d1(APP_CONFIG, BUSINESS, sql));
+  if (emailTemplateBaseline === "invalid") fail("email_template_master_baseline_mismatch");
+  const extensionCouponBaseline = readStagingExtensionCouponMasterBaseline((sql) =>
+    d1(APP_CONFIG, BUSINESS, sql));
+  if (extensionCouponBaseline === "invalid") fail("extension_coupon_master_baseline_mismatch");
+  const businessDataTables = businessTablesWithoutStagingBaselines(businessTables, {
+    verifiedEmailTemplateMasters: true,
+    verifiedExtensionCouponMaster: extensionCouponBaseline === "seeded",
+  });
   const businessSum = businessDataTables.map((table) => "(SELECT COUNT(*) FROM \"" + table + "\")").join(" + ");
   if (Number(d1(APP_CONFIG, BUSINESS, "SELECT " + businessSum + " AS row_count")[0]?.row_count) !== 0) {
     fail("business_staging_has_rows");
@@ -113,6 +123,8 @@ function assertTarget() {
     emojiId: emoji.id,
     tierLevel: Number(tier.tier_level),
     mfaGenerationBaseline: Number(generationRows[0].generation),
+    extensionCouponBaseline,
+    emailTemplateBaseline,
   };
 }
 
@@ -156,7 +168,7 @@ function authInsert(userId, email, hash, now) {
     [randomUUID(), userId, "credential", userId, hash, now, now].map(sql).join(",") + ");";
 }
 
-function cleanup({ ownerId, recipientId, ownerEmail, recipientEmail, fanmarkId, requestIds, mfaGenerationBaseline }) {
+function cleanup({ ownerId, recipientId, ownerEmail, recipientEmail, fanmarkId, requestIds, mfaGenerationBaseline, extensionCouponBaseline, emailTemplateBaseline }) {
   const eventKeys = (requestIds ?? []).flatMap((id) => [
     "transfer_requested_" + id, "transfer_approved_" + id, "transfer_rejected_" + id,
   ]);
@@ -204,6 +216,12 @@ function cleanup({ ownerId, recipientId, ownerEmail, recipientEmail, fanmarkId, 
   const generationAfter = d1(AUTH_CONFIG, AUTH, "SELECT generation FROM mfaGeneration WHERE id = 1")[0];
   if (Number(remainingBusiness.row_count) !== 0 || Number(remainingAuth.row_count) !== 0 ||
       Number(generationAfter?.generation) !== mfaGenerationBaseline) fail("synthetic_canary_cleanup_failed");
+  if (readStagingExtensionCouponMasterBaseline((sql) => d1(APP_CONFIG, BUSINESS, sql)) !== extensionCouponBaseline) {
+    fail("extension_coupon_master_baseline_changed");
+  }
+  if (readStagingEmailTemplateMasterBaseline((sql) => d1(APP_CONFIG, BUSINESS, sql)) !== emailTemplateBaseline) {
+    fail("email_template_master_baseline_changed");
+  }
 }
 
 async function waitForDeliveredTransferNotifications({ rejectedRequestId, approvedRequestId, ownerId, recipientId, fanmarkName, shortId }) {
@@ -261,7 +279,7 @@ async function waitForDeliveredTransferNotifications({ rejectedRequestId, approv
 }
 
 async function main() {
-  const { emojiId, tierLevel, mfaGenerationBaseline } = assertTarget();
+  const { emojiId, tierLevel, mfaGenerationBaseline, extensionCouponBaseline, emailTemplateBaseline } = assertTarget();
   const root = await request("/");
   if (root.status !== 200 || root.headers.get("x-robots-tag")?.includes("noindex") !== true) fail("staging_app_unavailable");
   const html = await root.text();
@@ -420,7 +438,7 @@ async function main() {
     const recipientList = await checked(await request("/api/me/transfers", { headers: { cookie: recipientCookie } }), 200, "recipient_list_failed");
     assert.deepEqual(recipientList, { issuedCodes: [], pendingRequests: [], myRequests: [] });
   } finally {
-    cleanup({ ownerId, recipientId, ownerEmail, recipientEmail, fanmarkId, requestIds, mfaGenerationBaseline });
+    cleanup({ ownerId, recipientId, ownerEmail, recipientEmail, fanmarkId, requestIds, mfaGenerationBaseline, extensionCouponBaseline, emailTemplateBaseline });
   }
   console.log(JSON.stringify({
     staging: ORIGIN, transferLifecycle: "issue_apply_reject_reapply_approve", tierLevel,

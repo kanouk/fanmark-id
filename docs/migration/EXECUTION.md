@@ -2354,3 +2354,48 @@ the intended staging account. No consent was submitted and no deployment
 occurred. Re-deploy and repeat the route check with a fresh unauthenticated
 browser profile after the intended Cloudflare account is active in Chrome.
 Production, user data, Stripe, and domain/DNS were untouched.
+
+## Verified-unused extension coupon master seed (2026-09-27 JST)
+
+A fresh repeatable-read, read-only Supabase projection selected only coupon
+definition fields for rows with `used_count = 0` and no matching usage row. It
+returned four definitions with zero source usage rows. A separate aggregate
+reported eight definitions total, four consumed definitions, 20 usage rows,
+and two definition/use-count mismatches. The consumed records and all usage
+history remain outside this staging operation for later user-data reconciliation.
+
+The guarded seed imported only the four verified-unused definitions to
+`fanmark-business-staging`, omitted `created_by` and stored it as NULL, then
+verified exact D1 readback against source digest
+`6472e758c2896f8f83bf5a48da5a3c038b24651e5278866b177231412dda3d79` and zero
+staging usage rows. The first Wrangler file execution included progress text
+before its JSON result; a read-only check proved the four-row seed had
+completed, the result parser was corrected, and a second apply invocation
+verified the existing baseline without another write. The private export and
+SQL stayed mode 0600 outside Git; no coupon code values were logged.
+
+Staging empty-baseline checks now require this exact coupon digest and zero
+usage rows before excluding the four master rows. The migration-data suite
+passed 153/153 with Node 22.6.0 and serial test execution; the targeted
+coupon/baseline tests passed 7/7, syntax checks and `git diff --check` passed.
+No coupon history, license, user, production route, or domain/DNS state was
+changed. This seeds only unused master definitions; it does not claim coupon
+parity or complete the deferred user-data phase.
+
+## Staging baseline and profile canary follow-up (2026-09-27 JST)
+
+The email-template baseline now verifies both the 16 auth templates and 12
+broadcast templates from one read-only D1 query, checking each pinned content
+digest and total table count. Live staging readback returned `seeded` with
+16 + 12 = 28 rows. The related baseline/coupon unit tests passed 8/8, and the
+complete migration-data suite passed 154/154 with Node 22.6.0 using serial
+execution.
+
+The staging notification processor, registration/lottery, owner-settings and
+password, and R2 profile/storage canaries passed. The R2 run verified anonymous
+upload rejection, owner upload and deletion, public object reads, avatar and
+cover-image paths, then confirmed Auth/business synthetic rows were zero and
+both objects returned 404. No email was sent, and no production routing,
+real-user data, or domain/DNS state changed. Remaining schema gates, integrated
+rehearsal, mail delivery, production acceptance, user-data migration, and
+domain cutover are still open.

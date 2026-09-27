@@ -12,9 +12,11 @@ import {
   businessTablesWithoutStagingBaselines,
   NOTIFICATION_MASTER_COUNTS_SQL,
   notificationMasterBaselineState,
+  readStagingExtensionCouponMasterBaseline,
   STAGING_NON_USER_CONFIG_BASELINE_SQL,
   stagingNonUserConfigBaselineState,
 } from "./staging-notification-master-baseline.mjs";
+import { readStagingEmailTemplateMasterBaseline } from "./staging-email-template-master-baseline.mjs";
 
 const ACCOUNT_ID = "bfc2890741f0b3fb236e2d755b6c9adc";
 const ACCOUNT_EMAIL = "fanmark.id@gmail.com";
@@ -100,11 +102,21 @@ function assertTarget() {
   const settings = d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, STAGING_NON_USER_CONFIG_BASELINE_SQL))[0];
   if (notificationMasterBaselineState(masters) === "invalid") fail("notification_master_baseline_mismatch");
   if (stagingNonUserConfigBaselineState(settings) === "invalid") fail("system_setting_baseline_mismatch");
-  const count = businessTablesWithoutStagingBaselines(tables)
+  const emailTemplateBaseline = readStagingEmailTemplateMasterBaseline((sql) =>
+    d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, sql)));
+  if (emailTemplateBaseline === "invalid") fail("email_template_master_baseline_mismatch");
+  const extensionCouponBaseline = readStagingExtensionCouponMasterBaseline((sql) =>
+    d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, sql)));
+  if (extensionCouponBaseline === "invalid") fail("extension_coupon_master_baseline_mismatch");
+  const count = businessTablesWithoutStagingBaselines(tables, {
+    verifiedEmailTemplateMasters: true,
+    verifiedExtensionCouponMaster: extensionCouponBaseline === "seeded",
+  })
     .map((table) => `(SELECT COUNT(*) FROM "${table}")`).join(" + ");
   if (Number(d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, `SELECT ${count} AS total_rows`))[0]?.total_rows) !== 0) {
     fail("business_staging_has_rows");
   }
+  return { extensionCouponBaseline, emailTemplateBaseline };
 }
 
 async function request(path, init = {}) {
@@ -137,7 +149,7 @@ function expectedGraceExpiry(endedAt, days) {
   return base.toISOString();
 }
 
-async function cleanup({ userId, fanmarkId, licenseId, transferId, favoriteId, discoveryId, favoriteUserId, shortId }) {
+async function cleanup({ userId, fanmarkId, licenseId, transferId, favoriteId, discoveryId, favoriteUserId, shortId, extensionCouponBaseline, emailTemplateBaseline }) {
   runD1(APP_CONFIG, BUSINESS_DATABASE, `
     DELETE FROM notifications
       WHERE event_id IN (
@@ -184,6 +196,14 @@ async function cleanup({ userId, fanmarkId, licenseId, transferId, favoriteId, d
   if ([...Object.values(business), ...Object.values(auth)].some((count) => Number(count) !== 0)) {
     fail("synthetic_canary_cleanup_failed");
   }
+  if (readStagingExtensionCouponMasterBaseline((sql) =>
+    d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, sql))) !== extensionCouponBaseline) {
+    fail("extension_coupon_master_baseline_changed");
+  }
+  if (readStagingEmailTemplateMasterBaseline((sql) =>
+    d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, sql))) !== emailTemplateBaseline) {
+    fail("email_template_master_baseline_changed");
+  }
   return { business, auth };
 }
 
@@ -229,7 +249,7 @@ async function waitForDeliveredNotifications({ fanmarkId, userId, favoriteUserId
 }
 
 async function main() {
-  assertTarget();
+  const { extensionCouponBaseline, emailTemplateBaseline } = assertTarget();
   const userId = randomUUID();
   const fanmarkId = randomUUID();
   const licenseId = randomUUID();
@@ -347,7 +367,7 @@ async function main() {
     };
   } finally {
     if (cleanupNeeded) {
-      const cleanupState = await cleanup({ userId, fanmarkId, licenseId, transferId, favoriteId, discoveryId, favoriteUserId, shortId });
+      const cleanupState = await cleanup({ userId, fanmarkId, licenseId, transferId, favoriteId, discoveryId, favoriteUserId, shortId, extensionCouponBaseline, emailTemplateBaseline });
       process.stdout.write(`${JSON.stringify({ cleanup: cleanupState })}\n`);
     }
   }

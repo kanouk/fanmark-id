@@ -12,9 +12,11 @@ import {
   businessTablesWithoutStagingBaselines,
   NOTIFICATION_MASTER_COUNTS_SQL,
   notificationMasterBaselineState,
+  readStagingExtensionCouponMasterBaseline,
   STAGING_NON_USER_CONFIG_BASELINE_SQL,
   stagingNonUserConfigBaselineState,
 } from "./staging-notification-master-baseline.mjs";
+import { readStagingEmailTemplateMasterBaseline } from "./staging-email-template-master-baseline.mjs";
 
 const ACCOUNT_ID = "bfc2890741f0b3fb236e2d755b6c9adc";
 const ACCOUNT_EMAIL = "fanmark.id@gmail.com";
@@ -106,12 +108,21 @@ function assertTarget() {
   const settings = d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, STAGING_NON_USER_CONFIG_BASELINE_SQL))[0];
   if (notificationMasterBaselineState(masters) === "invalid") fail("notification_master_baseline_mismatch");
   if (stagingNonUserConfigBaselineState(settings) === "invalid") fail("system_setting_baseline_mismatch");
-  const businessTables = businessTablesWithoutStagingBaselines(tables);
+  const emailTemplateBaseline = readStagingEmailTemplateMasterBaseline((sql) =>
+    d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, sql)));
+  if (emailTemplateBaseline === "invalid") fail("email_template_master_baseline_mismatch");
+  const extensionCouponBaseline = readStagingExtensionCouponMasterBaseline((sql) =>
+    d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, sql)));
+  if (extensionCouponBaseline === "invalid") fail("extension_coupon_master_baseline_mismatch");
+  const businessTables = businessTablesWithoutStagingBaselines(tables, {
+    verifiedEmailTemplateMasters: true,
+    verifiedExtensionCouponMaster: extensionCouponBaseline === "seeded",
+  });
   const rowTotalSql = businessTables.map((table) => `(SELECT COUNT(*) FROM "${table}")`).join(" + ");
   if (Number(d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, `SELECT ${rowTotalSql} AS total_rows`))[0]?.total_rows) !== 0) {
     fail("business_staging_has_rows");
   }
-  return businessTables;
+  return { businessTables, extensionCouponBaseline, emailTemplateBaseline };
 }
 
 async function request(path, init = {}) {
@@ -177,7 +188,7 @@ async function cleanup({ userId, email, fanmarkId, licenseId }) {
 }
 
 async function main() {
-  const businessTables = assertTarget();
+  const { businessTables, extensionCouponBaseline, emailTemplateBaseline } = assertTarget();
   const rose = d1Rows(runD1(APP_CONFIG, MASTER_DATABASE, `
     SELECT record.id, record.emoji
     FROM fanmark_emoji_master_active_release AS active
@@ -292,6 +303,13 @@ async function main() {
     const settings = d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, STAGING_NON_USER_CONFIG_BASELINE_SQL))[0];
     if (notificationMasterBaselineState(masters) === "invalid") fail("notification_master_baseline_changed");
     if (stagingNonUserConfigBaselineState(settings) === "invalid") fail("system_setting_baseline_changed");
+    const extensionCouponBaselineAfter = readStagingExtensionCouponMasterBaseline((sql) =>
+      d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, sql)));
+    if (extensionCouponBaselineAfter !== extensionCouponBaseline) fail("extension_coupon_master_baseline_changed");
+    if (readStagingEmailTemplateMasterBaseline((sql) =>
+      d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, sql))) !== emailTemplateBaseline) {
+      fail("email_template_master_baseline_changed");
+    }
     cleanupNeeded = false;
     process.stdout.write(`${JSON.stringify({
       worker: "fanmark-app-staging",

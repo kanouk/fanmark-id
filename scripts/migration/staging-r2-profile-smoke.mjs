@@ -12,10 +12,11 @@ import {
   businessTablesWithoutStagingBaselines,
   NOTIFICATION_MASTER_COUNTS_SQL,
   notificationMasterBaselineState,
+  readStagingExtensionCouponMasterBaseline,
   STAGING_NON_USER_CONFIG_BASELINE_SQL,
   stagingNonUserConfigBaselineState,
 } from "./staging-notification-master-baseline.mjs";
-import { authEmailTemplateBaselineState } from "./staging-auth-email-template-baseline.mjs";
+import { readStagingEmailTemplateMasterBaseline } from "./staging-email-template-master-baseline.mjs";
 
 const require = createRequire(new URL("../../workers/api/package.json", import.meta.url));
 const bcrypt = require("bcryptjs");
@@ -33,9 +34,6 @@ const COVER_BUCKET = "fanmark-cover-images-staging";
 const WRANGLER_VERSION = "4.140.0";
 const APP_CONFIG = "workers/api/wrangler.app-staging.jsonc";
 const AUTH_CONFIG = "workers/api/wrangler.auth-staging.jsonc";
-const AUTH_EMAIL_TEMPLATE_TYPES_SQL = "'signup', 'recovery', 'magiclink', 'email_change'";
-const AUTH_EMAIL_TEMPLATE_CONTENT_SQL = `SELECT id, email_type, language, subject, body_text, button_text, is_active, created_at, updated_at FROM email_templates WHERE email_type IN (${AUTH_EMAIL_TEMPLATE_TYPES_SQL}) ORDER BY email_type, language`;
-const AUTH_EMAIL_TEMPLATE_COUNT_SQL = "SELECT COUNT(*) AS row_count FROM email_templates";
 
 function fail(code) {
   const error = new Error(code);
@@ -118,17 +116,21 @@ function assertTarget() {
   const settings = d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, STAGING_NON_USER_CONFIG_BASELINE_SQL))[0];
   if (notificationMasterBaselineState(masters) === "invalid") fail("notification_master_baseline_mismatch");
   if (stagingNonUserConfigBaselineState(settings) === "invalid") fail("system_setting_baseline_mismatch");
-  const authEmailTemplateRows = d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, AUTH_EMAIL_TEMPLATE_CONTENT_SQL));
-  const authEmailTemplateCount = Number(d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, AUTH_EMAIL_TEMPLATE_COUNT_SQL))[0]?.row_count);
-  const authEmailTemplateBaseline = authEmailTemplateBaselineState(authEmailTemplateRows, authEmailTemplateCount);
-  if (authEmailTemplateBaseline === "invalid") fail("auth_email_template_baseline_mismatch");
+  const emailTemplateBaseline = readStagingEmailTemplateMasterBaseline((sql) =>
+    d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, sql)));
+  if (emailTemplateBaseline === "invalid") fail("email_template_master_baseline_mismatch");
+  const extensionCouponBaseline = readStagingExtensionCouponMasterBaseline((sql) =>
+    d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, sql)));
+  if (extensionCouponBaseline === "invalid") fail("extension_coupon_master_baseline_mismatch");
   const businessDataTables = businessTablesWithoutStagingBaselines(sourceTables, {
-    authEmailTemplates: authEmailTemplateBaseline === "seeded",
+    verifiedEmailTemplateMasters: true,
+    verifiedExtensionCouponMaster: extensionCouponBaseline === "seeded",
   });
   const rowTotalSql = `SELECT ${businessDataTables.map((name) => `(SELECT COUNT(*) FROM "${name}")`).join(" + ")} AS total_rows`;
   if (Number(d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, rowTotalSql))[0]?.total_rows) !== 0) {
     fail("business_staging_has_source_rows");
   }
+  return { extensionCouponBaseline, emailTemplateBaseline };
 }
 
 async function request(path, init = {}) {
@@ -152,7 +154,7 @@ function assertStatus(response, status, code) {
   if (response.status !== status) fail(`${code}_${response.status}`);
 }
 
-async function cleanup({ userId, email, cookie, objectPath, publicUrl, coverObjectPath, coverPublicUrl }) {
+async function cleanup({ userId, email, cookie, objectPath, publicUrl, coverObjectPath, coverPublicUrl, extensionCouponBaseline, emailTemplateBaseline }) {
   const cleanupErrors = [];
   for (const [bucket, key] of [["avatars", objectPath], ["cover-images", coverObjectPath]]) {
     if (!key || !cookie) continue;
@@ -199,6 +201,14 @@ async function cleanup({ userId, email, cookie, objectPath, publicUrl, coverObje
   if ([...Object.values(business), ...Object.values(auth)].some((count) => Number(count) !== 0)) {
     cleanupErrors.push("d1_canary_cleanup_failed");
   }
+  if (readStagingExtensionCouponMasterBaseline((sql) =>
+    d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, sql))) !== extensionCouponBaseline) {
+    cleanupErrors.push("extension_coupon_master_baseline_changed");
+  }
+  if (readStagingEmailTemplateMasterBaseline((sql) =>
+    d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, sql))) !== emailTemplateBaseline) {
+    cleanupErrors.push("email_template_master_baseline_changed");
+  }
   for (const [bucket, url] of [["avatars", publicUrl], ["cover-images", coverPublicUrl]]) {
     if (!url) continue;
     try {
@@ -220,7 +230,7 @@ async function cleanup({ userId, email, cookie, objectPath, publicUrl, coverObje
 }
 
 async function main() {
-  assertTarget();
+  const { extensionCouponBaseline, emailTemplateBaseline } = assertTarget();
   const userId = randomUUID();
   const profileId = randomUUID();
   const nonce = randomBytes(10).toString("hex");
@@ -366,7 +376,7 @@ async function main() {
     assert.equal(stored.length, 1);
     assert.equal(stored[0].avatar_url, null);
 
-    const cleaned = await cleanup({ userId, email, cookie, objectPath, publicUrl, coverObjectPath, coverPublicUrl });
+    const cleaned = await cleanup({ userId, email, cookie, objectPath, publicUrl, coverObjectPath, coverPublicUrl, extensionCouponBaseline, emailTemplateBaseline });
     cleanupNeeded = false;
     return {
       worker: WORKER,
@@ -387,7 +397,7 @@ async function main() {
     };
   } finally {
     if (cleanupNeeded) {
-      const cleaned = await cleanup({ userId, email, cookie, objectPath, publicUrl, coverObjectPath, coverPublicUrl });
+      const cleaned = await cleanup({ userId, email, cookie, objectPath, publicUrl, coverObjectPath, coverPublicUrl, extensionCouponBaseline, emailTemplateBaseline });
       process.stdout.write(`${JSON.stringify({ cleanup: cleaned })}\n`);
     }
   }

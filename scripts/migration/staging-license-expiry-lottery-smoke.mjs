@@ -13,11 +13,15 @@ import {
   businessTablesWithoutStagingBaselines,
   NOTIFICATION_MASTER_COUNTS_SQL,
   notificationMasterBaselineState,
+  readStagingExtensionCouponMasterBaseline,
   STAGING_NON_USER_CONFIG_BASELINE_SQL,
   stagingBusinessBaselineRowCount,
   stagingNonUserConfigBaselineState,
 } from "./staging-notification-master-baseline.mjs";
-import { authEmailTemplateBaselineState } from "./staging-auth-email-template-baseline.mjs";
+import {
+  readStagingEmailTemplateMasterBaseline,
+  stagingEmailTemplateMasterRowCount,
+} from "./staging-email-template-master-baseline.mjs";
 import { isStagingExpiryCronBaseline } from "./staging-expiry-cron-config.mjs";
 
 const ACCOUNT_ID = "bfc2890741f0b3fb236e2d755b6c9adc";
@@ -47,10 +51,6 @@ const LIFECYCLE_RUN_TABLES = [
 const RETAINED_STATE_TABLES = ["fanmark_license_incarnations", "fanmark_access_versions"];
 const GRACE_PERIOD_SETTING_KEY = "grace_period_days";
 const DEPLOYED_CRON_CANARY = process.env.FANMARK_STAGING_CRON_CANARY === "1";
-const AUTH_EMAIL_TEMPLATE_TYPES_SQL = "'signup', 'recovery', 'magiclink', 'email_change'";
-const AUTH_EMAIL_TEMPLATE_CONTENT_SQL = `SELECT id, email_type, language, subject, body_text, button_text, is_active, created_at, updated_at
-  FROM email_templates WHERE email_type IN (${AUTH_EMAIL_TEMPLATE_TYPES_SQL}) ORDER BY email_type, language`;
-const AUTH_EMAIL_TEMPLATE_COUNT_SQL = "SELECT COUNT(*) AS row_count FROM email_templates";
 
 function fingerprint(value) {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
@@ -113,13 +113,11 @@ function readGracePeriodSetting() {
   return rows[0];
 }
 
-function readAuthEmailTemplateBaselineCount() {
-  const rows = d1(AUTH_EMAIL_TEMPLATE_CONTENT_SQL);
-  const count = Number(d1(AUTH_EMAIL_TEMPLATE_COUNT_SQL)[0]?.row_count);
-  if (authEmailTemplateBaselineState(rows, count) !== "seeded") {
-    fail("staging_auth_email_template_baseline_mismatch");
-  }
-  return count;
+function readEmailTemplateMasterBaseline() {
+  const state = readStagingEmailTemplateMasterBaseline((sql) => d1(sql));
+  const rowCount = stagingEmailTemplateMasterRowCount(state);
+  if (rowCount === null) fail("staging_email_template_master_baseline_mismatch");
+  return { state, rowCount };
 }
 
 function verifyTarget() {
@@ -143,14 +141,20 @@ function verifyTarget() {
   if (tables.length !== 40) fail("business_table_inventory_mismatch");
   const masters = d1(NOTIFICATION_MASTER_COUNTS_SQL)[0];
   const settings = d1(STAGING_NON_USER_CONFIG_BASELINE_SQL)[0];
-  const authEmailTemplateCount = readAuthEmailTemplateBaselineCount();
+  const { state: emailTemplateBaseline, rowCount: emailTemplateCount } = readEmailTemplateMasterBaseline();
   if (notificationMasterBaselineState(masters) === "invalid") fail("notification_master_baseline_mismatch");
   if (stagingNonUserConfigBaselineState(settings) === "invalid") fail("system_setting_baseline_mismatch");
+  const extensionCouponBaseline = readStagingExtensionCouponMasterBaseline((sql) => d1(sql));
+  if (extensionCouponBaseline === "invalid") fail("extension_coupon_master_baseline_mismatch");
   const businessSum = tables.map((table) => "(SELECT COUNT(*) FROM \"" + table + "\")").join(" + ");
-  const nonSettingsTables = businessTablesWithoutStagingBaselines(tables, { authEmailTemplates: true });
+  const nonSettingsTables = businessTablesWithoutStagingBaselines(tables, {
+    verifiedEmailTemplateMasters: true,
+    verifiedExtensionCouponMaster: extensionCouponBaseline === "seeded",
+  });
   const nonSettingsSum = nonSettingsTables.map((table) => "(SELECT COUNT(*) FROM \"" + table + "\")").join(" + ");
   const gracePeriodSetting = readGracePeriodSetting();
-  const baselineBusinessRows = stagingBusinessBaselineRowCount(settings, masters) + authEmailTemplateCount;
+  const baselineBusinessRows = stagingBusinessBaselineRowCount(settings, masters) + emailTemplateCount +
+    (extensionCouponBaseline === "seeded" ? 4 : 0);
   if (Number(d1("SELECT " + businessSum + " AS row_count")[0]?.row_count) !== baselineBusinessRows ||
       Number(d1("SELECT " + nonSettingsSum + " AS row_count")[0]?.row_count) !== 0) {
     fail("business_staging_has_unexpected_rows");
@@ -170,7 +174,7 @@ function verifyTarget() {
   ]);
   if (!Array.isArray(authRows) || authRows.some((entry) => entry?.success !== true) ||
       Number(authRows[0]?.results?.[0]?.row_count) !== 0) fail("auth_staging_has_rows");
-  return { tables, lifecycleBaseline, gracePeriodSetting };
+  return { tables, lifecycleBaseline, gracePeriodSetting, extensionCouponBaseline, emailTemplateBaseline };
 }
 
 function utc(value) {
@@ -284,7 +288,7 @@ async function waitForDeployedCron(targetIncarnation, timeoutMs = 17 * 60_000) {
   fail("staging_cron_timeout_" + JSON.stringify(lastState));
 }
 
-function cleanup({ fanmarkId, ownerId, winnerId, oldLicenseId, gracePeriodSetting, targetIncarnation, lifecycleBaseline }) {
+function cleanup({ fanmarkId, ownerId, winnerId, oldLicenseId, gracePeriodSetting, targetIncarnation, lifecycleBaseline, extensionCouponBaseline, emailTemplateBaseline }) {
   const licenseRows = d1("SELECT id FROM fanmark_licenses WHERE fanmark_id=" + sql(fanmarkId));
   const licenseIds = [...new Set([oldLicenseId, ...licenseRows.map((row) => row.id)])].filter(Boolean);
   const licenses = licenseIds.length ? licenseIds.map(sql).join(",") : sql(oldLicenseId);
@@ -329,7 +333,8 @@ function cleanup({ fanmarkId, ownerId, winnerId, oldLicenseId, gracePeriodSettin
   const businessRows = Number(d1("SELECT " + businessSum + " AS row_count")[0]?.row_count);
   const masters = d1(NOTIFICATION_MASTER_COUNTS_SQL)[0];
   const settings = d1(STAGING_NON_USER_CONFIG_BASELINE_SQL)[0];
-  const authEmailTemplateCount = readAuthEmailTemplateBaselineCount();
+  const { state: emailTemplateBaselineAfter, rowCount: emailTemplateCount } = readEmailTemplateMasterBaseline();
+  if (emailTemplateBaselineAfter !== emailTemplateBaseline) fail("email_template_master_baseline_changed");
   if (notificationMasterBaselineState(masters) === "invalid") fail("notification_master_baseline_changed");
   if (stagingNonUserConfigBaselineState(settings) === "invalid") fail("system_setting_baseline_changed");
   const runSum = LIFECYCLE_RUN_TABLES.map((table) => "(SELECT COUNT(*) FROM \"" + table + "\")").join(" + ");
@@ -339,10 +344,16 @@ function cleanup({ fanmarkId, ownerId, winnerId, oldLicenseId, gracePeriodSettin
     d1("SELECT * FROM \"" + table + "\" ORDER BY 1").map((row) => row),
   ]));
   const danglingIds = d1("SELECT COUNT(*) AS row_count FROM fanmark_license_incarnations WHERE license_id IN (" + licenses + ")")[0];
-  const nonSettingsSum = businessTablesWithoutStagingBaselines(tables, { authEmailTemplates: true })
+  const extensionCouponBaselineAfter = readStagingExtensionCouponMasterBaseline((sql) => d1(sql));
+  if (extensionCouponBaselineAfter !== extensionCouponBaseline) fail("extension_coupon_master_baseline_changed");
+  const nonSettingsSum = businessTablesWithoutStagingBaselines(tables, {
+    verifiedEmailTemplateMasters: true,
+    verifiedExtensionCouponMaster: extensionCouponBaseline === "seeded",
+  })
     .map((table) => "(SELECT COUNT(*) FROM \"" + table + "\")").join(" + ");
   const remainingSettings = readGracePeriodSetting();
-  const baselineBusinessRows = stagingBusinessBaselineRowCount(settings, masters) + authEmailTemplateCount;
+  const baselineBusinessRows = stagingBusinessBaselineRowCount(settings, masters) + emailTemplateCount +
+    (extensionCouponBaseline === "seeded" ? 4 : 0);
   if (businessRows !== baselineBusinessRows ||
       Number(d1("SELECT " + nonSettingsSum + " AS row_count")[0]?.row_count) !== 0 ||
       lifecycleRows !== 0 || Number(danglingIds.row_count) !== 0 ||
@@ -354,7 +365,7 @@ function cleanup({ fanmarkId, ownerId, winnerId, oldLicenseId, gracePeriodSettin
 }
 
 async function main() {
-  const { lifecycleBaseline, gracePeriodSetting } = verifyTarget();
+  const { lifecycleBaseline, gracePeriodSetting, extensionCouponBaseline, emailTemplateBaseline } = verifyTarget();
   const now = Date.now();
   const suffix = randomBytes(6).toString("hex");
   const targetIncarnation = "lottery-canary-" + randomUUID();
@@ -377,7 +388,7 @@ async function main() {
   const licenseEnd = utc(now - 30 * 86_400_000);
   const graceExpiresAt = utc(now - 86_400_000);
   const ids = { fanmarkId, oldLicenseId, entryId, ownerId, winnerId, gracePeriodSetting,
-    targetIncarnation, lifecycleBaseline };
+    targetIncarnation, lifecycleBaseline, extensionCouponBaseline, emailTemplateBaseline };
   let seedAttempted = false;
   let cronDeploymentAttempted = false;
   let cronDisabledAgain = false;
@@ -554,6 +565,10 @@ async function main() {
       "grace_period_setting_not_restored");
     assert.equal(fingerprint(restored.lifecycleBaseline), fingerprint(lifecycleBaseline),
       "lifecycle_retained_state_not_restored");
+    assert.equal(restored.extensionCouponBaseline, extensionCouponBaseline,
+      "extension_coupon_master_baseline_changed");
+    assert.equal(restored.emailTemplateBaseline, emailTemplateBaseline,
+      "email_template_master_baseline_changed");
   }
   if (runError) throw runError;
   console.log(JSON.stringify({

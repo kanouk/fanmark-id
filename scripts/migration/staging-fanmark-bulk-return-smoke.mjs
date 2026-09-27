@@ -10,9 +10,11 @@ import {
   businessTablesWithoutStagingBaselines,
   NOTIFICATION_MASTER_COUNTS_SQL,
   notificationMasterBaselineState,
+  readStagingExtensionCouponMasterBaseline,
   STAGING_NON_USER_CONFIG_BASELINE_SQL,
   stagingNonUserConfigBaselineState,
 } from "./staging-notification-master-baseline.mjs";
+import { readStagingEmailTemplateMasterBaseline } from "./staging-email-template-master-baseline.mjs";
 
 const ACCOUNT_ID = "bfc2890741f0b3fb236e2d755b6c9adc";
 const ACCOUNT_EMAIL = "fanmark.id@gmail.com";
@@ -74,13 +76,21 @@ function assertTarget() {
   const settings = d1(APP_CONFIG, BUSINESS, STAGING_NON_USER_CONFIG_BASELINE_SQL)[0];
   if (notificationMasterBaselineState(masters) === "invalid") fail("notification_master_baseline_mismatch");
   if (stagingNonUserConfigBaselineState(settings) === "invalid") fail("system_setting_baseline_mismatch");
-  const businessDataTables = businessTablesWithoutStagingBaselines(businessTables);
+  const emailTemplateBaseline = readStagingEmailTemplateMasterBaseline((sql) => d1(APP_CONFIG, BUSINESS, sql));
+  if (emailTemplateBaseline === "invalid") fail("email_template_master_baseline_mismatch");
+  const extensionCouponBaseline = readStagingExtensionCouponMasterBaseline((sql) => d1(APP_CONFIG, BUSINESS, sql));
+  if (extensionCouponBaseline === "invalid") fail("extension_coupon_master_baseline_mismatch");
+  const businessDataTables = businessTablesWithoutStagingBaselines(businessTables, {
+    verifiedEmailTemplateMasters: true,
+    verifiedExtensionCouponMaster: extensionCouponBaseline === "seeded",
+  });
   const businessTotal = businessDataTables.map((table) => `(SELECT COUNT(*) FROM "${table}")`).join(" + ");
   if (Number(d1(APP_CONFIG, BUSINESS, `SELECT ${businessTotal} AS total_rows`)[0]?.total_rows) !== 0) {
     fail("business_staging_has_rows");
   }
   const authTotal = AUTH_TABLES.map((table) => `(SELECT COUNT(*) FROM "${table}")`).join(" + ");
   if (Number(d1(AUTH_CONFIG, AUTH, `SELECT ${authTotal} AS total_rows`)[0]?.total_rows) !== 0) fail("auth_staging_has_rows");
+  return { extensionCouponBaseline, emailTemplateBaseline };
 }
 
 async function request(path, init = {}) {
@@ -102,7 +112,7 @@ async function expectJson(response, status, code) {
 }
 
 async function main() {
-  assertTarget();
+  const { extensionCouponBaseline, emailTemplateBaseline } = assertTarget();
   const incarnationBaseline = d1(APP_CONFIG, BUSINESS,
     "SELECT license_id, incarnation FROM fanmark_license_incarnations ORDER BY license_id");
   const accessVersionBaseline = d1(APP_CONFIG, BUSINESS,
@@ -209,12 +219,19 @@ async function main() {
       `);
       const businessTables = [...readFileSync("workers/api/migrations-business/0000_business_schema_v4_staging.sql", "utf8").matchAll(/^CREATE TABLE "([A-Za-z_][A-Za-z0-9_]*)"/gmu)]
         .map((match) => match[1]);
+      const couponBaselineAfter = readStagingExtensionCouponMasterBaseline((sql) => d1(APP_CONFIG, BUSINESS, sql));
+      const emailTemplateBaselineAfter = readStagingEmailTemplateMasterBaseline((sql) => d1(APP_CONFIG, BUSINESS, sql));
       const businessCount = d1(APP_CONFIG, BUSINESS,
-        "SELECT " + businessTablesWithoutStagingBaselines(businessTables)
+        "SELECT " + businessTablesWithoutStagingBaselines(businessTables, {
+          verifiedEmailTemplateMasters: true,
+          verifiedExtensionCouponMaster: couponBaselineAfter === "seeded",
+        })
           .map((table) => `(SELECT COUNT(*) FROM "${table}")`).join(" + ") + " AS total_rows")[0]?.total_rows;
       const authCount = d1(AUTH_CONFIG, AUTH,
         `SELECT ${AUTH_TABLES.map((table) => `(SELECT COUNT(*) FROM "${table}")`).join(" + ")} AS total_rows`)[0]?.total_rows;
-      if (Number(businessCount) !== 0 || Number(authCount) !== 0) fail("synthetic_canary_cleanup_failed");
+      if (couponBaselineAfter !== extensionCouponBaseline || couponBaselineAfter === "invalid" ||
+          emailTemplateBaselineAfter !== emailTemplateBaseline || emailTemplateBaselineAfter === "invalid" ||
+          Number(businessCount) !== 0 || Number(authCount) !== 0) fail("synthetic_canary_cleanup_failed");
       if (notificationMasterBaselineState(d1(APP_CONFIG, BUSINESS, NOTIFICATION_MASTER_COUNTS_SQL)[0]) === "invalid" ||
           stagingNonUserConfigBaselineState(d1(APP_CONFIG, BUSINESS, STAGING_NON_USER_CONFIG_BASELINE_SQL)[0]) === "invalid") {
         fail("staging_baseline_changed");

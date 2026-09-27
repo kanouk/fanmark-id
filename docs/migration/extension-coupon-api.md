@@ -2,8 +2,9 @@
 
 Cloudflare staging routes the existing extension-coupon UI to D1 when its
 explicit frontend and Worker selectors are enabled. Production/default builds
-continue to use Supabase. This is runtime/API migration only; no coupon, usage,
-license, or user rows are copied by the staging code or structural migration.
+continue to use Supabase. The staging seed now contains only four verified,
+never-used coupon definitions. Usage history, consumed definitions, creator
+identity, license rows, and user rows remain excluded.
 
 ## User redemption
 
@@ -54,10 +55,19 @@ Staging configuration selects the user route with `EXTENSION_COUPON_BACKEND=d1`
 and the admin route with `EXTENSION_COUPON_ADMIN_BACKEND=d1`. The browser uses
 `VITE_EXTENSION_COUPON_BACKEND=worker` and
 `VITE_EXTENSION_COUPON_ADMIN_BACKEND=worker`. An explicit Worker failure never
-falls back to Supabase. Existing coupon definitions, owner-linked usage rows,
-license rows, and their redemption counts require a separate reviewed data
-reconciliation/import; they are not implied by schema readiness or synthetic
-tests.
+falls back to Supabase. A guarded read-only source projection and staging seed
+selected exactly four definitions with `used_count = 0` and no matching usage
+row. The source creator ID is omitted and `created_by` is NULL in staging. The
+seed binds canonical row content to a pinned digest, refuses any existing
+non-empty or changed target, and verifies exact D1 readback plus zero usage
+rows. Source codes and row values are held only in a mode-0600 temporary file;
+they are not checked into Git or printed by the script.
+
+The live source aggregate also found four consumed definitions, 20 usage rows,
+and two mismatches between definition counts and usage history. Those records
+and all usage history remain in Supabase for the deferred user-data phase;
+the four staged definitions are not evidence of full coupon parity or a
+reconciled redemption history.
 
 ## Verification boundary
 
@@ -66,4 +76,6 @@ entries to check atomic success, response replay, coupon-cap competition,
 duplicate use, transfer and tier rejection, Grace limits, notification/audit
 creation, admin MFA-gated route wiring, and safe coupon deletion. These tests do
 not establish live Supabase parity, imported-record readiness, a successful
-authenticated staging redemption, or production behavior.
+authenticated staging redemption against imported user data, or production
+behavior. The staging definitions are restricted to the four verified unused
+masters described above.

@@ -7,14 +7,15 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import process from "node:process";
-import { authEmailTemplateBaselineState } from "./staging-auth-email-template-baseline.mjs";
 import {
   businessTablesWithoutStagingBaselines,
   NOTIFICATION_MASTER_COUNTS_SQL,
   notificationMasterBaselineState,
+  readStagingExtensionCouponMasterBaseline,
   STAGING_NON_USER_CONFIG_BASELINE_SQL,
   stagingNonUserConfigBaselineState,
 } from "./staging-notification-master-baseline.mjs";
+import { readStagingEmailTemplateMasterBaseline } from "./staging-email-template-master-baseline.mjs";
 
 const ACCOUNT_ID = "bfc2890741f0b3fb236e2d755b6c9adc";
 const ACCOUNT_EMAIL = "fanmark.id@gmail.com";
@@ -29,9 +30,6 @@ const MASTER_DATABASE_ID = "160376b0-bde6-4d5f-8969-96deb5ae1183";
 const WRANGLER_VERSION = "4.139.0";
 const APP_CONFIG = "workers/api/wrangler.app-staging.jsonc";
 const AUTH_CONFIG = "workers/api/wrangler.auth-staging.jsonc";
-const AUTH_EMAIL_TEMPLATE_TYPES_SQL = "'signup', 'recovery', 'magiclink', 'email_change'";
-const AUTH_EMAIL_TEMPLATE_CONTENT_SQL = `SELECT id, email_type, language, subject, body_text, button_text, is_active, created_at, updated_at FROM email_templates WHERE email_type IN (${AUTH_EMAIL_TEMPLATE_TYPES_SQL}) ORDER BY email_type, language`;
-const AUTH_EMAIL_TEMPLATE_COUNT_SQL = "SELECT COUNT(*) AS row_count FROM email_templates";
 
 function fail(code) {
   const error = new Error(code);
@@ -111,18 +109,21 @@ function assertTarget() {
   const settings = d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, STAGING_NON_USER_CONFIG_BASELINE_SQL))[0];
   if (notificationMasterBaselineState(masters) === "invalid") fail("notification_master_baseline_mismatch");
   if (stagingNonUserConfigBaselineState(settings) === "invalid") fail("system_setting_baseline_mismatch");
-  const authEmailTemplateRows = d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, AUTH_EMAIL_TEMPLATE_CONTENT_SQL));
-  const authEmailTemplateCount = Number(d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, AUTH_EMAIL_TEMPLATE_COUNT_SQL))[0]?.row_count);
-  const authEmailTemplateBaseline = authEmailTemplateBaselineState(authEmailTemplateRows, authEmailTemplateCount);
-  if (authEmailTemplateBaseline === "invalid") fail("auth_email_template_baseline_mismatch");
+  const emailTemplateBaseline = readStagingEmailTemplateMasterBaseline((sql) =>
+    d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, sql)));
+  if (emailTemplateBaseline === "invalid") fail("email_template_master_baseline_mismatch");
+  const extensionCouponBaseline = readStagingExtensionCouponMasterBaseline((sql) =>
+    d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, sql)));
+  if (extensionCouponBaseline === "invalid") fail("extension_coupon_master_baseline_mismatch");
   const businessDataTables = businessTablesWithoutStagingBaselines(tables, {
-    authEmailTemplates: authEmailTemplateBaseline === "seeded",
+    verifiedEmailTemplateMasters: true,
+    verifiedExtensionCouponMaster: extensionCouponBaseline === "seeded",
   });
   const totalRows = businessDataTables.map((table) => `(SELECT COUNT(*) FROM "${table}")`).join(" + ");
   if (Number(d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, `SELECT ${totalRows} AS total_rows`))[0]?.total_rows) !== 0) {
     fail("business_staging_has_rows");
   }
-  return { businessDataTables, authEmailTemplateBaseline };
+  return { businessDataTables, emailTemplateBaseline, extensionCouponBaseline };
 }
 
 async function request(path, init = {}) {
@@ -226,7 +227,11 @@ async function cleanup({ userId, fanmarkId, licenseId, entryId, email, cookie, c
 }
 
 async function main() {
-  const { businessDataTables: businessTables, authEmailTemplateBaseline } = assertTarget();
+  const {
+    businessDataTables: businessTables,
+    emailTemplateBaseline,
+    extensionCouponBaseline,
+  } = assertTarget();
   const emoji = d1Rows(runD1(APP_CONFIG, MASTER_DATABASE, `
     SELECT record.id, record.emoji, record.codepoints_json AS codepoints,
       release.row_count AS expected_count,
@@ -485,10 +490,12 @@ async function main() {
     const settingsAfter = d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, STAGING_NON_USER_CONFIG_BASELINE_SQL))[0];
     if (notificationMasterBaselineState(mastersAfter) === "invalid") fail("notification_master_baseline_changed");
     if (stagingNonUserConfigBaselineState(settingsAfter) === "invalid") fail("system_setting_baseline_changed");
-    const authEmailTemplateRowsAfter = d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, AUTH_EMAIL_TEMPLATE_CONTENT_SQL));
-    const authEmailTemplateCountAfter = Number(d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, AUTH_EMAIL_TEMPLATE_COUNT_SQL))[0]?.row_count);
-    if (authEmailTemplateBaselineState(authEmailTemplateRowsAfter, authEmailTemplateCountAfter) !== authEmailTemplateBaseline) {
-      fail("auth_email_template_baseline_changed");
+    const extensionCouponBaselineAfter = readStagingExtensionCouponMasterBaseline((sql) =>
+      d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, sql)));
+    if (extensionCouponBaselineAfter !== extensionCouponBaseline) fail("extension_coupon_master_baseline_changed");
+    if (readStagingEmailTemplateMasterBaseline((sql) =>
+      d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, sql))) !== emailTemplateBaseline) {
+      fail("email_template_master_baseline_changed");
     }
     cleanupNeeded = false;
     process.stdout.write(`${JSON.stringify({
@@ -496,7 +503,7 @@ async function main() {
       endpoint: "/api/fanmarks/register",
       syntheticOwner: true,
       syntheticEmoji: emoji.emoji,
-      authEmailTemplateBaseline,
+      emailTemplateBaseline,
       tier: Number(tier.tier_level),
       maxEmojiCount: { oversizedStatus: 400, errorCode: oversizedRegistration.error_code, max: 5 },
       duplicateStatus: 409,
