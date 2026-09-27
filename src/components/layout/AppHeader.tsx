@@ -89,6 +89,8 @@ export const AppHeader = ({
     queryKey: ['notifications-preview', user?.id],
     enabled: !!user && showNotifications,
     staleTime: 30_000,
+    refetchInterval: notificationsBackend === 'worker' ? 30_000 : false,
+    refetchIntervalInBackground: false,
     queryFn: async () => {
       if (notificationsBackend === 'worker') {
         return loadOwnNotifications(5);

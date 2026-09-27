@@ -15,7 +15,7 @@
 
 ## クライアント選択
 
-既定はSupabase。`VITE_NOTIFICATIONS_BACKEND=worker`を明示すると通知一覧、ヘッダーのpreview、未読数、既読操作がWorkerを使う。Worker選択時はRealtimeを使用せず一覧を30秒間隔で更新する。Supabase選択時は現在のRealtime経路を維持する。一括既読後は実際に更新されたデータを再取得し、pending/期限切れ通知を誤って既読表示しない。
+既定はSupabase。`VITE_NOTIFICATIONS_BACKEND=worker`を明示すると通知一覧、ヘッダーのpreview、未読数、既読操作がWorkerを使う。Worker選択時はRealtimeを使わず、通知一覧とヘッダーpreviewを30秒間隔で更新する。ヘッダーの定期取得は背景タブでは止まり、タブ復帰時に再取得する。Supabase選択時は現在のRealtime経路を維持する。一括既読後は実際に更新されたデータを再取得し、pending/期限切れ通知を誤って既読表示しない。
 
 ## 検証と現在地
 
