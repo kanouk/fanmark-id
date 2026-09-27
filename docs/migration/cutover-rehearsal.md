@@ -203,19 +203,20 @@ recovery drills, full schema gates, Stripe sandbox business-effect acceptance,
 and production backup policy remain open. User-data import and domain/DNS
 cutover remain outside this rehearsal.
 
-## Latest schema/API parity checkpoint (2026-09-28 JST)
+## Earlier schema/API parity checkpoint before converter v8 (2026-09-28 JST)
 
 The private v6 conversion recognizes the single
 `recent_active_fanmarks` source view only by its exact catalog shape and
 definition fingerprint, then records its replacement by the tested D1 Worker
-query. Unknown or changed views remain gated. This leaves 16 unresolved gate
-groups (10 row-conversion, 6 schema/operation) and does not establish full
-schema readiness. The public recent-list endpoint now accepts the source RPC's
-1..50 limit on both Supabase and D1; the landing page still requests 20.
+query. Unknown or changed views remain gated. At that checkpoint, this left 16
+unresolved gate groups (10 row-conversion, 6 schema/operation) and did not
+establish full schema readiness. A later read-only catalog refresh and
+converter-v8 report are recorded in [`schema-conversion.md`](schema-conversion.md).
+The public recent-list endpoint now accepts the source RPC's 1..50 limit on both Supabase and D1; the landing page still requests 20.
 Converter 13/13, recent Worker API 15/15, D1 recent repository 6/6, the full
-migration-data suite 163/163, and Worker typecheck passed on Node 22.6.0. These
-local proofs do not satisfy the freeze, Stripe handoff, recovery, or full-schema
-gates above.
+migration-data suite 163/163, and Worker typecheck passed on Node 22.6.0 at that
+checkpoint. These local proofs do not satisfy the freeze, Stripe handoff,
+recovery, or full-schema gates above.
 
 ## Isolated D1 post-ack Time Travel drill (2026-09-28 JST)
 
@@ -361,3 +362,14 @@ ID. Cleanup removed those exact rows and its final readback found zero matches.
 The `fanmark_events` SQLite sequence advanced by one and was left monotonic.
 This proves only the new-search staging path; historical search/user data
 remains deferred, and this does not close the integrated #37 gate.
+
+## Freshest source catalog and v8 gate count (2026-09-28 JST)
+
+The latest linked-project read-only catalog query completed at
+`2026-09-27T23:31:08.407538Z`. It again returned 40 tables, 406 columns, 144
+constraints, 139 indexes, 15 enum labels, one view, 58 functions, 36
+non-internal triggers, and 77 RLS policies. The locale-bound Unicode regex
+probe tested 1,112,063 scalar values with zero extra matches. Converter v8
+generated the same SQL as v7 and retained 14 unresolved gate groups across
+227 locations; `deployable` remains `false`. This refresh read catalogs only,
+not application rows, and did not write D1 or change production/domain state.
