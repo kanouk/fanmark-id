@@ -1562,3 +1562,20 @@ eight-column canonical equality and version
 active pointer remains generation 3/action `rollback`; Wrangler reports
 `changed_db=false` and zero rows written. No user rows or Supabase writes were
 involved.
+
+## Supabase scheduled-writer inventory refresh (2026-09-27 JST)
+
+A `BEGIN TRANSACTION READ ONLY` query against `cron.job` returned two scheduled
+jobs. Job 9, `check-expired-licenses-daily`, is active at `0 0 * * *` and its
+direct Edge Function target is `check-expired-licenses`. Job 8,
+`process-notification-events-every-minute`, is inactive at `* * * * *`. The
+reported `cron.timezone` is `GMT` (the SQL session reports `UTC`). The command
+bodies were not printed; only the direct function target and a command
+fingerprint were returned.
+
+No active job directly targets the separately deployed
+`manual-expire-grace-licenses` function. This does not exclude indirect database
+calls or external callers, which remain unverified. Re-read job IDs, active
+state, targets, and timezone immediately before any final writer freeze because
+job IDs and schedules can change. This observation did not change a schedule,
+invoke a function, or read application rows.

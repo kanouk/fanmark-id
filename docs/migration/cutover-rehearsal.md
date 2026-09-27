@@ -34,6 +34,16 @@ applies each event to business state; the previous dispatcher is stopped before
 the new dispatcher is enabled. Receipt continuity does not mean both systems
 may apply the same event.
 
+The latest read-only source inventory (2026-09-27 JST) found Supabase
+`check-expired-licenses-daily` active at `0 0 * * *` with direct target
+`check-expired-licenses`; its `cron.timezone` is `GMT`. The old
+`process-notification-events-every-minute` job is inactive. These are current
+production observations, not staging actions. Before the final writer freeze,
+re-read the source jobs and timezone, stop the then-current old expiry schedule,
+and confirm no old invocation remains in flight before enabling the Cloudflare
+daily lifecycle trigger. Do not change the production schedule during the
+staging rehearsal.
+
 ## Rehearsal sequence
 
 Run each phase against the isolated workers.dev app and staging D1/R2 resources,

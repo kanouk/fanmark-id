@@ -106,6 +106,15 @@ introspection queries wrote zero rows and reported `changed_db: false`; no
 business row values were read. This narrows the open D1 parity work to the
 remaining 18 gates and behavior verification rather than missing base columns.
 
+A fresh read-only Supabase scheduler query found the daily
+`check-expired-licenses` Edge Function job active at `0 0 * * *` in `GMT`; the
+old every-minute notification job is inactive. Its command body was not
+recorded, and no schedules were changed. The source job must be re-read and
+stopped with in-flight work reconciled during the final writer freeze, before
+enabling Cloudflare's daily lifecycle trigger. See
+[`live-observations.md`](live-observations.md) and
+[`cutover-rehearsal.md`](cutover-rehearsal.md).
+
 Current weighted progress estimate (2026-09-27): about 60% of the full
 migration, or about 70–75% of the prioritized app/infrastructure/master-data
 scope that excludes real user-data import and public domain/DNS cutover. The
