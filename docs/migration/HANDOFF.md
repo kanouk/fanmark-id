@@ -1584,7 +1584,63 @@ writers still need their separately authorized final-operation freeze.
 
 Under Node 22.6.0, the focused Worker suite passed 15/15 tests, Worker
 TypeScript checking and app-staging Wrangler `--dry-run` passed, and
-`git diff --check` passed. This implementation is local and not yet deployed
-or exercised against staging; it does not close the staging recovery rehearsal
-or any live cutover gate. No production data, routes, scheduled jobs, email, or
-domain/DNS were changed.
+`git diff --check` passed. This was the initial local-only checkpoint; the
+subsequent staging deployment and rehearsal are recorded below. It does not
+close the full staging recovery rehearsal or any live cutover gate.
+
+## Staging write-freeze and receipt rehearsal (2026-09-27 JST)
+
+PR #41 commits `8f7a490` and `2175c82` add the fail-closed, default-off Worker
+freeze guard. Both migration CI jobs passed on run `36292579695`. The ordinary
+staging deployment is version `31d7d859-6ad7-42e7-9e9b-61f7d7792f2c`, with
+`CUTOVER_WRITE_FREEZE=false`. Anonymous post-deploy reads returned 200 for the
+SPA root, Better Auth health, and emoji catalog; the deployed JavaScript bundle
+SHA-256 matched the local staging build exactly.
+
+A short synthetic rehearsal temporarily deployed version
+`1ee62b78-6614-4a25-93b3-ef9d3f443844` with the freeze enabled and only the D1
+Stripe receipt selector enabled. A mutation request was rejected before route
+validation with 503 `cutover_write_freeze`; the login preflight returned 204.
+A locally signed, synthetic `customer.updated` event was durably accepted with
+HTTP 200. Replaying it returned `duplicate_nonterminal`; remote business-D1
+readback found one receipt and one pending dispatch with delivery count 2.
+There was no Stripe API key, external Stripe call, or email-send selector.
+
+The exact synthetic receipt and dispatch were deleted by event ID and their
+final remote counts are both zero. The one-off `STRIPE_WEBHOOK_SECRET` was
+deleted and the Worker was restored to version
+`21f0be9e-2099-49d8-b975-a3a61604c12e`: freeze is `false`, the Stripe webhook
+selector is absent, and only the three pre-existing Better Auth/reference/
+verified-access secrets remain. Post-restore reads returned 200 for the SPA
+and Auth health; an invalid empty waitlist request returned its ordinary 400,
+and the disabled Stripe endpoint returned 404. All three staging D1
+configurations still report no migrations to apply.
+
+The scheduled-handler unit test verifies that freeze skips scheduled work, but
+the expected Cron pause log was not captured during the brief remote window.
+Treat live Cron pause as unverified. The pause deployment did not change the
+Cron schedules, production routes, user rows, email, or domain/DNS.
+
+The latest read-only source catalog refresh completed at
+`2026-09-27T03:51:59Z` and read catalog metadata only: 40 tables, 406 columns,
+144 constraints, and 139 indexes. A mode-0600 local conversion report still
+has 18 gate groups and `deployable=false`: 10 row-conversion groups (227
+locations) and 8 schema/operation groups (101 locations). The row group codes
+cover arrays, bigint, credential transformation, dates, exact decimals, JSON,
+money cents, sequence state, timestamp precision, and UUID validation. The
+schema/operation groups cover external Auth references, timestamp defaults,
+the four untranslated catalog scopes (functions, RLS policies, triggers, and
+views), three CHECK translations, and four unsupported index methods. The
+conversion was run without the private credential descriptor, so its
+credential gate is `credential_descriptor_required`; that does not mean the
+descriptor-aware synthetic transform tests failed. The private catalog and
+generated DDL/report remain outside Git with mode `0600`; the temporary local
+Stripe secret and signed-request files were removed after the drill. This
+narrow API proof does not materially change the coarse weighted estimate of
+about 60% for the full migration and 70–75% for the prioritized app/
+infrastructure/master-data stage; the complete old-writer freeze and both
+recovery drills remain open.
+
+The earlier macOS Keychain error is no longer the current blocker: fresh
+`wrangler whoami` succeeds for `fanmark.id@gmail.com` and the intended account,
+with credentials retained in the encrypted/keyring-backed store.

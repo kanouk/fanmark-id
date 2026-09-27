@@ -115,17 +115,26 @@ precache includes both manifest icons, and offline reload serves the shell
 while the API/catalog request shows the retry screen. Native installation and
 service-worker update transitions remain unverified.
 
-Not verified: a coordinated old-writer freeze with Stripe receipt continuity,
-a timed full final-copy window, both recovery drills, resolved schema gates,
-live Stripe sandbox acceptance, production backup key custody/retention, or
-production operation. The 2026-09-27 read-only Supabase catalog query now
-succeeds through `npx supabase@2.118.0`; it reads no application rows and still
-produces 18 blocking schema-conversion gates. Earlier on 2026-09-27, Wrangler
-authentication worked and staging Worker version
-`cdeb759e-8e52-4b8a-9d63-6451b871c262` was deployed at 100%. A later device
-reauth was approved for the intended account with limited Workers and D1
-scopes, but Wrangler could not read its local macOS Keychain key (exit 51); see
-the current state in [HANDOFF.md](HANDOFF.md). These updates do not close the
-source schema gates or constitute a completed integration/cutover rehearsal.
+Not verified: a coordinated freeze of the actual old Supabase writers with
+receipt continuity, a timed full final-copy window, both recovery drills,
+resolved schema gates, live Stripe sandbox acceptance, production backup key
+custody/retention, or production operation. A short Worker-only staging drill
+is now verified: its freeze rejected a synthetic mutation, preserved the
+sign-in preflight, and accepted then deduplicated one locally signed synthetic
+Stripe receipt while leaving its dispatch pending. The synthetic receipt and
+dispatch were removed, the temporary webhook secret was deleted, and staging
+was restored to the default unfrozen configuration. No Supabase writer was
+stopped or tested. The live Cron pause log was not captured; the local
+scheduled-handler test does pass.
+
+The 2026-09-27 read-only Supabase catalog query succeeds through
+`npx supabase@2.118.0`; it reads no application rows and still produces 18
+blocking schema-conversion gates. The earlier post-reauth Wrangler Keychain
+failure is resolved: current `wrangler whoami` succeeds for
+`fanmark.id@gmail.com` and the intended account. Current staging Worker version
+`21f0be9e-2099-49d8-b975-a3a61604c12e` has the freeze selector set to `false`;
+see the evidence and exact test outcomes in [HANDOFF.md](HANDOFF.md). These
+updates do not close the source schema gates or constitute a completed
+integration/cutover rehearsal.
 
 The user-data import and public domain/DNS switch remain explicitly deferred.

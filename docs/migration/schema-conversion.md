@@ -226,3 +226,29 @@ The exact source-text conversion helpers and D1 binding evidence are documented
 in [value-codecs.md](value-codecs.md). The importer must use reviewed per-column
 codecs and preserve text before JSON parsing; these helpers do not replace the
 full schema, array-dimension preflight, or row reconciliation.
+
+## Later read-only refresh (2026-09-27T03:51:59Z)
+
+The linked `schema-readiness.sql` catalog was refreshed in a read-only
+transaction. It still contains 40 tables, 406 table columns, 144 constraints,
+139 indexes, one view, 58 functions, 36 non-internal triggers, and 77 RLS
+policies. The query read no application rows and changed no source or target
+data.
+
+A private version-4 conversion emitted 18 gate groups and `deployable: false`:
+10 row-conversion groups affecting 227 locations and 8 schema/operation groups
+affecting 101 locations. The row categories are array shape, bigint range,
+credential transform, date, exact decimal, JSON, cents conversion, sequence
+state, timestamp precision, and UUID validation. The schema/operation
+categories are external Auth references, timestamp defaults, four untranslated
+catalog scopes (functions, RLS policies, triggers, and views), CHECK
+translations, and unsupported index methods. This refresh passed no data-value
+checks and does not close the import gates.
+
+The generated report was produced without supplying the private credential
+descriptor, so this particular report names `credential_descriptor_required`.
+The descriptor-aware path instead reaches the dedicated transformed-row
+import requirement; neither report permits generic text insertion of
+`access_password`. The report, catalog, and generated SQL were written with
+mode `0600` outside Git. The fresh metadata does not change the current D1
+schema or any application table data.
