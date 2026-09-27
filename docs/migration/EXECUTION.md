@@ -2473,3 +2473,24 @@ selector. The served JavaScript asset is byte-for-byte identical to local
 returned 200/noindex and a cookie-less POST to the new route returned 401
 `unauthenticated`; no authenticated request or lifecycle execution was sent.
 No D1 lifecycle data was changed.
+
+## Fresh schema refresh and descriptor-aware synthetic rehearsal (2026-09-27 JST)
+
+Re-ran `scripts/migration/schema-readiness.sql` through the linked Supabase
+CLI at `2026-09-27T09:40:27Z`. The query returned schema metadata only; no
+application rows were read. The CLI wraps the catalog under
+`rows[0].jsonb_build_object`, so the private result was unwrapped before
+running the converter with the value-free credential descriptor. The current
+catalog still contains 40 tables, 406 columns, 144 constraints, and 139
+indexes. Conversion remains `deployable=false` with 18 blocking groups: 10
+row-conversion groups (227 locations) and 8 schema/operation groups (101
+locations).
+
+Under Node 22.6.0, `scripts/migration/test-d1-import-current-schema.mjs`
+passed against the refreshed catalog. It imported four generated synthetic
+rows, completed checkpoints for all 40 tables, reconciled public rows, and
+rejected a conflicting replay. The output correctly keeps `deployable` and
+`fullMigrationReconciled` false while schema gates remain. Catalog, descriptor,
+generated DDL, and conversion report were stored as mode-0600 `/tmp` artifacts
+and are not part of the repository. No Cloudflare D1, source rows, user data,
+production route, or domain/DNS state was changed.

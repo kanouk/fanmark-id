@@ -1698,24 +1698,24 @@ Treat live Cron pause as unverified. The pause deployment did not change the
 Cron schedules, production routes, user rows, email, or domain/DNS.
 
 The latest read-only source catalog refresh completed at
-`2026-09-27T03:51:59Z` and read catalog metadata only: 40 tables, 406 columns,
-144 constraints, and 139 indexes. A mode-0600 local conversion report still
-has 18 gate groups and `deployable=false`: 10 row-conversion groups (227
-locations) and 8 schema/operation groups (101 locations). The row group codes
-cover arrays, bigint, credential transformation, dates, exact decimals, JSON,
-money cents, sequence state, timestamp precision, and UUID validation. The
-schema/operation groups cover external Auth references, timestamp defaults,
-the four untranslated catalog scopes (functions, RLS policies, triggers, and
-views), three CHECK translations, and four unsupported index methods. The
-conversion was run without the private credential descriptor, so its
-credential gate is `credential_descriptor_required`; that does not mean the
-descriptor-aware synthetic transform tests failed. The private catalog and
-generated DDL/report remain outside Git with mode `0600`; the temporary local
-Stripe secret and signed-request files were removed after the drill. This
-narrow API proof does not materially change the coarse weighted estimate of
-about 60% for the full migration and 70–75% for the prioritized app/
-infrastructure/master-data stage; the complete old-writer freeze and both
-recovery drills remain open.
+`2026-09-27T09:40:27Z` and read catalog metadata only: 40 tables, 406 columns,
+144 constraints, and 139 indexes. After unwrapping the Supabase CLI's
+`rows[0].jsonb_build_object` envelope and supplying the value-free credential
+descriptor, the mode-0600 conversion report still has 18 gate groups and
+`deployable=false`: 10 row-conversion groups (227 locations) and 8
+schema/operation groups (101 locations). The row groups cover arrays, bigint,
+credential transformation, dates, exact decimals, JSON, money cents, sequence
+state, timestamp precision, and UUID validation. The schema/operation groups
+cover external Auth references, timestamp defaults, the four untranslated
+catalog scopes (functions, RLS policies, triggers, and views), three CHECK
+translations, and four unsupported index methods. The source-shaped synthetic
+D1 import/restart rehearsal passed with four generated rows, all 40 table
+checkpoints completed, public rows reconciled, and conflicting replay rejected;
+`deployable` and `fullMigrationReconciled` correctly remain false. The private
+catalog, generated DDL, and report remain outside Git with mode `0600`. This
+does not materially change the coarse weighted estimate of about 60% for the
+full migration and 70–75% for the prioritized app/infrastructure/master-data
+stage; the complete old-writer freeze and both recovery drills remain open.
 
 The earlier macOS Keychain error is no longer the current blocker: fresh
 `wrangler whoami` succeeds for `fanmark.id@gmail.com` and the intended account,
