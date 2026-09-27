@@ -63,13 +63,15 @@ export function useSubscription() {
   const backend = getSubscriptionBackend();
   const [status, setStatus] = useState<SubscriptionStatus>({ ...EMPTY_STATUS, loading: true });
 
-  const fetchSubscription = useCallback(async (syncSupabase = false) => {
+  const fetchSubscription = useCallback(async (syncSupabase = false, silent = false) => {
     if (!user) {
       setStatus({ ...EMPTY_STATUS });
       return;
     }
 
-    setStatus((previous) => ({ ...previous, loading: true, error: null }));
+    if (!silent) {
+      setStatus((previous) => ({ ...previous, loading: true, error: null }));
+    }
     try {
       if (backend === 'worker') {
         // The Cloudflare read is intentionally read-only. Stripe state is projected by the Worker webhook path.
@@ -98,12 +100,16 @@ export function useSubscription() {
       if (error) throw error;
       setStatus(statusFromSubscription(data));
     } catch (error) {
-      console.error('[useSubscription] Error fetching subscription:', error);
-      setStatus((previous) => ({
-        ...previous,
-        loading: false,
-        error: error instanceof Error ? error.message : 'Unknown error occurred',
-      }));
+      if (silent) {
+        console.warn('[useSubscription] Background refresh failed:', error);
+      } else {
+        console.error('[useSubscription] Error fetching subscription:', error);
+        setStatus((previous) => ({
+          ...previous,
+          loading: false,
+          error: error instanceof Error ? error.message : 'Unknown error occurred',
+        }));
+      }
     }
   }, [backend, user]);
 
@@ -113,8 +119,8 @@ export function useSubscription() {
       return;
     }
 
-    void fetchSubscription(backend === 'supabase');
     if (backend === 'supabase') {
+      void fetchSubscription(true);
       const channel = supabase
         .channel('user-subscription-updates')
         .on(
@@ -126,14 +132,20 @@ export function useSubscription() {
       return () => { void supabase.removeChannel(channel); };
     }
 
+    let refreshPending = true;
+    void fetchSubscription(false).finally(() => { refreshPending = false; });
     const refreshWhenVisible = () => {
-      if (document.visibilityState === 'visible') void fetchSubscription(false);
+      if (document.visibilityState !== 'visible' || refreshPending) return;
+      refreshPending = true;
+      void fetchSubscription(false, true).finally(() => { refreshPending = false; });
     };
     window.addEventListener('focus', refreshWhenVisible);
     document.addEventListener('visibilitychange', refreshWhenVisible);
+    const intervalId = window.setInterval(refreshWhenVisible, 30_000);
     return () => {
       window.removeEventListener('focus', refreshWhenVisible);
       document.removeEventListener('visibilitychange', refreshWhenVisible);
+      window.clearInterval(intervalId);
     };
   }, [backend, fetchSubscription, user]);
 
