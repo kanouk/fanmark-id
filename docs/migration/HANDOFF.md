@@ -1836,3 +1836,10 @@ process, with a 180-second per-file timeout and TSX loaded only by the four
 TypeScript-importing suites. Local Stripe tests, Stripe typecheck, app
 typecheck, admin auth URL tests (3/3), and staging build pass. Fresh GitHub
 Actions verification is pending.
+
+## CI verification follow-up (2026-09-27 13:12 UTC)
+
+Commit 14bebed passed GitHub Actions run 36321290841. Both the Cloudflare Worker
+API job and the staging application job succeeded, including the per-file
+Stripe test runner, migration-data boundaries, typechecks, and staging build.
+The workflow performed no deployment.

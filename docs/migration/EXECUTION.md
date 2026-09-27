@@ -2678,3 +2678,12 @@ a 180-second timeout so a stuck suite fails with its file name. Stripe receipt
 typecheck, app typecheck, admin auth URL tests (3/3), and Cloudflare staging
 build pass locally. The per-file runner still needs a fresh GitHub Actions run.
 No production, Supabase, D1, user-data, or domain/DNS state changed.
+
+## Per-file Stripe test runner CI verification (2026-09-27 13:12 UTC)
+
+Commit 14bebed runs each Stripe receipt test file in a separate Node process.
+GitHub Actions run 36321290841 completed successfully: the application job
+passed migration data boundaries, Stripe receipt/billing/invoice tests, both
+typechecks, admin return URL tests, and the Cloudflare staging build; the Worker
+job passed its API/D1 tests, typecheck, and no-deployment bundle validation.
+This workflow performed no deployment.
