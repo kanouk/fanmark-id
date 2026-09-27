@@ -29,6 +29,13 @@ The current migration order is:
 5. Switch public DNS/hostnames only after data and application reconciliation.
    Registrar transfer is a separate decision and is not required for DNS cutover.
 
+The 2026-09-28 local PWA update-transition check confirmed that the current
+`autoUpdate` behavior installs a new worker and reloads the page; a synthetic
+unsaved DOM input was lost while `localStorage` remained. This is a local
+two-build browser result only. The deployed Cloudflare update transition and
+native install/standalone launch remain open; see
+[`static-assets.md`](static-assets.md).
+
 ## Browser shell check and current PR validation (2026-09-27 JST)
 
 The in-app browser loaded the deployed staging SPA root and its Japanese home

@@ -107,6 +107,25 @@ was anonymous and temporary, and was removed after the check.
 This did not exercise the native install prompt, a real installed standalone
 launch, or an update from one deployed service-worker version to another.
 
+## Local service-worker update transition check (2026-09-28)
+
+A temporary localhost server switched from a fresh default Vite build to a
+second build while an isolated headless Chrome profile kept `/pwa` open.
+Calling `registration.update()` installed the second service worker; the app
+reloaded and changed its entry bundle from `index-byRNuhuw.js` to
+`index-DQhZep5z.js`. A `localStorage` canary survived the reload, while a
+synthetic unsaved textarea value in the current document was lost. This
+confirms the local `registerType: "autoUpdate"` transition and immediate
+reload behavior. The Vite PWA documentation warns that automatic reload can
+lose form data and recommends a prompt update flow for apps with forms
+([automatic reload guidance](https://vite-pwa-org.netlify.app/guide/auto-update)).
+
+This was a local two-build browser check, not an update between deployed
+Cloudflare Worker versions. It did not use D1, R2, an authenticated account, or
+the user's browser profile. The deployed staging update transition and native
+install/standalone launch remain open. Changing from automatic reload to a
+user-approved update is a product behavior decision and was not made here.
+
 The staging manifest's `/pwa-192x192.png` and `/pwa-512x512.png` entries were
 then checked directly and both returned 404. Matching icons were derived from
 the existing `public/favicon.png`, included in the standard and staging builds,
@@ -137,9 +156,10 @@ explicit decision and observed verification:
   no admin hostname, wildcard route, or account setting is inferred here.
 - Supabase Auth callback, cookie, redirect, and session behavior at the chosen
   origin.
-- Native install prompt/standalone launch, service-worker update transitions,
-  custom-domain behavior, caching headers, and security headers at the staging
-  hostname.
+- Native install prompt/standalone launch, service-worker update transitions
+  between deployed Cloudflare versions, custom-domain behavior, caching
+  headers, and security headers at the staging hostname. The local auto-update
+  transition is verified above; the staging-host check remains open.
 - Any public routes or redirects outside the routes inspected in the current
   Vite application.
 
