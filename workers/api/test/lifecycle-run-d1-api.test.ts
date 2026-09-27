@@ -101,6 +101,17 @@ describe("D1 manual lifecycle run API", () => {
     expect(runCount).toBe(0);
   });
 
+  it("accepts a zero-byte POST body stream and still rejects payload bytes", async () => {
+    let runCount = 0;
+    const run = async () => { runCount += 1; return summary; };
+    const emptyStream = await request({ method: "POST", body: new Uint8Array(0) }, baseEnv, allowAdmin, run);
+    expect(emptyStream?.status).toBe(200);
+
+    const payload = await request({ method: "POST", body: "x" }, baseEnv, allowAdmin, run);
+    expect(payload?.status).toBe(400);
+    expect(runCount).toBe(1);
+  });
+
   it("fails closed unless the manual selector, Better Auth, split topology, and business D1 are configured", async () => {
     let runCount = 0;
     const run = async () => { runCount += 1; return summary; };

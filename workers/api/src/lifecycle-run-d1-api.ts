@@ -65,10 +65,35 @@ function cors(request: Request, env: Env, headers: Headers): boolean {
   return true;
 }
 
-function noBody(request: Request): boolean {
+async function noBody(request: Request): Promise<boolean> {
   const declared = request.headers.get("content-length");
   if (declared !== null && (!/^\d+$/u.test(declared) || Number(declared) !== 0)) return false;
-  return request.body === null;
+  if (request.body === null) return true;
+
+  // Cloudflare can expose an empty POST body as a readable stream even when
+  // the caller supplied no bytes. Drain only until the first byte (or EOF),
+  // and bound the wait so a stalled upload cannot hold the admin route open.
+  const reader = request.body.getReader();
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      (async () => {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) return true;
+          if ((value?.byteLength ?? 0) > 0) return false;
+        }
+      })(),
+      new Promise<boolean>((resolve) => {
+        timeoutId = setTimeout(() => resolve(false), 1_000);
+      }),
+    ]);
+  } catch {
+    return false;
+  } finally {
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
+    await reader.cancel().catch(() => {});
+  }
 }
 
 function counter(value: unknown): number {
@@ -152,7 +177,7 @@ export async function handleLifecycleRunRequest(
   if (env.AUTH_BACKEND?.trim() !== "better-auth") return json({ error: "auth_unavailable" }, 503, headers);
   const authorization = await authorizeAdmin(request, headers);
   if (authorization instanceof Response) return authorization;
-  if (!noBody(request)) return json({ error: "invalid_request" }, 400, headers);
+  if (!(await noBody(request))) return json({ error: "invalid_request" }, 400, headers);
 
   const backend = env.LIFECYCLE_RUN_BACKEND?.trim();
   if (!backend) return json({ error: "lifecycle_run_unavailable" }, 503, headers);
