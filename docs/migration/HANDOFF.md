@@ -128,6 +128,19 @@ A read-only Workers plan-page check showed the account on the Free plan ($0)
 with a 10 ms maximum CPU time per request. No plan change was made; production
 CPU headroom and paid-plan need remain unverified.
 
+Commit `4a6dd0a` keeps the admin-role check first and combines the user's
+2FA-enabled state, up-to-two verified-factor cardinality, and exact
+session/factor MFA assurance into one D1 read. Its synthetic staging TOTP and
+admin user list/detail canary passed on Worker version
+`1ae4ffb0-5af5-4b19-8759-f79cc201b45a`; Auth/profile/audit canary rows were
+removed and user-owned Auth tables read back empty. Wrangler tail sampled the
+authorized `GET /api/admin/session` at 4 ms CPU / 83 ms wall time (200), the
+pre-enrollment gate at 50 ms CPU / 161 ms wall time (403), and an anonymous
+request at 2 ms CPU / 2 ms wall time (401). Separate requests on this version
+sampled TOTP enable at 93 ms CPU and verification at 13 ms. These are narrow
+staging samples, not recurring-load or production evidence; the 10 ms CPU-plan
+gate remains open.
+
 A fresh read-only Supabase scheduler query found the daily
 `check-expired-licenses` Edge Function job active at `0 0 * * *` in `GMT`; the
 old every-minute notification job is inactive. Its command body was not

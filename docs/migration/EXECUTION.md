@@ -2575,3 +2575,34 @@ This was staging API acceptance only. No real user row, production route,
 Resend/email, Stripe request, or domain/DNS state was touched. Admin browser UI
 review, password-reset delivery, broader issue #34 acceptance, and integrated
 issue #37 recovery drills remain open.
+
+## Admin authorization D1 read consolidation and CPU sample (2026-09-27 JST)
+
+Commit `4a6dd0a` preserves the admin-role check as the first authorization gate,
+then reads `twoFactorEnabled`, up to two verified factor IDs, and the
+user/session-bound MFA assurance row in one D1 query. It retains the exact
+single-verified-factor, same-session, same-factor, and unexpired-assurance
+requirements. A regression test confirms that multiple verified factors remain
+denied.
+
+Node 22.6.0 verification passed: the focused Auth D1 suite (20/20), complete
+Worker test chain, Worker typecheck, `npm run check:ci`, Cloudflare staging
+build, and staging-config Wrangler dry-run. The non-staging Worker dry-run also
+passed. GitHub Actions run `36316557175` passed its Worker job; the application
+job was still running its isolated Stripe contract step when this entry was
+written.
+
+Worker version `1ae4ffb0-5af5-4b19-8759-f79cc201b45a` was deployed to
+workers.dev staging at 100%. Anonymous `/api/admin/session` returned 401. The
+synthetic TOTP admin canary passed same-session authorization and cross-D1 user
+list/detail reads; cleanup removed its Auth, profile, and audit rows, and final
+readback found the user-owned Auth tables empty. The monotonic MFA generation
+counter was preserved and may have advanced. No D1 schema, production route,
+real user data, email, Stripe, or domain/DNS state changed.
+
+Wrangler tail recorded CPU/wall samples of 4/83 ms for an authorized admin
+session (200), 50/161 ms for its pre-enrollment gate (403), and 2/2 ms for an
+anonymous admin-session request (401). TOTP enable and verification sampled
+93 ms and 13 ms CPU on the same version. These narrow staging samples do not
+prove recurring or production CPU fit; the Free-plan 10 ms CPU gate remains
+open.
