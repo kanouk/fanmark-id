@@ -26,14 +26,17 @@ Cron execution. For a manual request only, the route passes a cloned Worker
 environment to the lifecycle engine with `LICENSE_EXPIRY_BACKEND=d1`; it does
 not change the live Worker environment or turn on Cron.
 
-The staging frontend currently selects the Worker route, while the staging
-Worker's manual selector remains unset. The Worker and frontend were deployed
-as version `28e7ca3c-f610-47a4-aea9-f876bd8c3f11`; a cookie-less request to the
-route returned 401 before reaching the disabled-selector branch. Wrangler's
-deployed variable and secret-name readbacks show no `LIFECYCLE_RUN_BACKEND`.
-The authenticated button therefore fails closed with 503 until the server-side
-gate is deliberately enabled. This prevents the staging admin screen from
-triggering Supabase's production Edge Function.
+The staging frontend currently selects the Worker route. The deployed Worker
+version `28e7ca3c-f610-47a4-aea9-f876bd8c3f11` still has its manual selector
+unset; a cookie-less request returned 401 before reaching the disabled-selector
+branch, and its deployed variable readback showed no `LIFECYCLE_RUN_BACKEND`.
+The current staging configuration now enables only the manual route with
+`LIFECYCLE_RUN_BACKEND=d1`, an explicit lifecycle target/schema digest, and a
+four-page cap. `LICENSE_EXPIRY_BACKEND` remains absent, so the daily Cron stays
+disabled. The configuration passed its selector test and Wrangler dry-run,
+but the updated Worker has not yet been deployed and the authenticated
+zero-candidate staging canary remains pending. Until deployment, the running
+Worker continues to fail closed with 503 and cannot fall back to Supabase.
 
 ## Validation
 

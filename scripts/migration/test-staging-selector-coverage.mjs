@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,6 +9,22 @@ const packageJson = JSON.parse(readFileSync(new URL("../../package.json", import
 const envTypes = readFileSync(new URL("../../src/vite-env.d.ts", import.meta.url), "utf8");
 const stagingBuild = packageJson.scripts["build:cloudflare-staging"];
 const sourceRoot = fileURLToPath(new URL("../../src", import.meta.url));
+const appStagingConfig = JSON.parse(readFileSync(new URL("../../workers/api/wrangler.app-staging.jsonc", import.meta.url), "utf8"));
+const lifecycleProfileMigrations = [
+  "workers/api/migrations-business/0000_business_schema_v4_staging.sql",
+  "workers/api/migrations-business/0001_lifecycle_target_staging.sql",
+  "workers/api/migrations-business/0002_lifecycle_generation_staging.sql",
+  "workers/api/migrations-business/0003_credential_transform_staging.sql",
+  "workers/api/migrations-business/0004_verified_access_staging.sql",
+  "workers/api/migrations-business/0005_lottery_plan_journal_staging.sql",
+];
+
+function lifecycleSchemaDigest() {
+  return createHash("sha256").update(lifecycleProfileMigrations.map((relativePath) => {
+    const bytes = readFileSync(new URL(`../../${relativePath}`, import.meta.url));
+    return `${relativePath}:${createHash("sha256").update(bytes).digest("hex")}`;
+  }).join("\n")).digest("hex");
+}
 
 function listTypeScriptFiles(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -53,4 +70,15 @@ test("every typed frontend backend selector has an implementation reference", ()
   const unused = declaredSelectors.filter((selector) => !sourceText.includes(selector));
 
   assert.deepEqual(unused, [], "declared selectors must be consumed by frontend source, not just named in the build");
+});
+
+test("staging enables only the MFA-protected manual lifecycle API, not the scheduled lifecycle Cron", () => {
+  const vars = appStagingConfig.vars ?? {};
+  assert.equal(vars.LIFECYCLE_RUN_BACKEND, "d1");
+  assert.equal(vars.LICENSE_EXPIRY_TARGET_INCARNATION, "fanmark-business-staging-lifecycle-v1");
+  assert.equal(vars.LICENSE_EXPIRY_SCHEMA_EXTENSION_DIGEST, lifecycleSchemaDigest());
+  assert.equal(vars.LICENSE_EXPIRY_MAX_PAGES, "4");
+  assert.equal(vars.LICENSE_EXPIRY_BACKEND, undefined, "scheduled expiry must remain disabled");
+  assert.equal(vars.LICENSE_EXPIRY_CRON, "0 0 * * *");
+  assert.deepEqual([...appStagingConfig.triggers.crons].sort(), ["* * * * *", "0 0 * * *"]);
 });

@@ -60,6 +60,10 @@
   "vars": {
     "D1_TOPOLOGY": "split",
     "LICENSE_EXPIRY_CRON": "0 0 * * *",
+    "LICENSE_EXPIRY_TARGET_INCARNATION": "fanmark-business-staging-lifecycle-v1",
+    "LICENSE_EXPIRY_SCHEMA_EXTENSION_DIGEST": "fef2b53b0c9b1b280eff2886c4dcd8a85a65d9b20b1bafe106c69aeadea97c47",
+    "LICENSE_EXPIRY_MAX_PAGES": "4",
+    "LIFECYCLE_RUN_BACKEND": "d1",
     "EMOJI_CATALOG_BACKEND": "d1",
     "REFERENCE_MASTER_BACKEND": "d1",
     "EMOJI_MASTER_ADMIN_BACKEND": "d1",

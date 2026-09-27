@@ -1823,7 +1823,7 @@ test("validates the integrated target profile read-only before refusing generic 
     );
     await fixture.database.prepare('DROP VIEW "unexpected_profile_view"').run();
     await assert.rejects(
-      importD1Snapshot(importOptions),
+      importD1Snapshot({ ...importOptions, expectedTargetProfile: null }),
       (error) => error.code === "credential_transform_required",
     );
 

@@ -2454,10 +2454,12 @@ the business D1 binding, and returns bounded aggregate counters without run,
 license, or user identifiers. It invokes the same D1 lifecycle engine as the
 scheduled job under a request-local `LICENSE_EXPIRY_BACKEND=d1` override; the
 manual server selector `LIFECYCLE_RUN_BACKEND=d1` is separate from and does not
-enable the Cron selector. Staging's frontend selects Worker, but the server
-selector remains unset, so requests fail closed with 503 and never fall back to
-Supabase. The ordinary frontend build still calls the existing Supabase
-function.
+enable the Cron selector. Staging's frontend selects Worker, but the currently
+deployed server selector remains unset, so requests still fail closed with 503
+and never fall back to Supabase. The staging config now enables the manual
+route with the exact D1 target/schema profile and a four-page cap while leaving
+`LICENSE_EXPIRY_BACKEND` unset. The ordinary frontend build still calls the
+existing Supabase function.
 
 Client contract tests pass 4/4 and Worker handler tests pass 4/4, including MFA
 denial, origin/method/body checks, unset-selector behavior, split-D1 selection,
@@ -2472,7 +2474,15 @@ selector. The served JavaScript asset is byte-for-byte identical to local
 `13582571ce98753679585bef629f57ec03d96534d3095f2ec3d60de70ed97778`). Root
 returned 200/noindex and a cookie-less POST to the new route returned 401
 `unauthenticated`; no authenticated request or lifecycle execution was sent.
-No D1 lifecycle data was changed.
+The new staging selector guard (3/3), Worker lifecycle-run API handler suite
+(4/4), license-expiry integration/source suite (25/25), scheduled lifecycle
+suite (8/8), lifecycle schema suite (16/16), Worker typecheck, and Wrangler
+staging dry-run pass. The first local source-suite attempt exposed a test call
+that accidentally reused the target-profile import options while asserting the
+generic credential guard; the test now explicitly exercises the generic path.
+The server-selector config is not yet deployed, and the authenticated
+zero-candidate staging API canary has not yet run. No D1 lifecycle data was
+changed.
 
 ## Fresh schema refresh and descriptor-aware synthetic rehearsal (2026-09-27 JST)
 

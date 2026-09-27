@@ -45,6 +45,7 @@ function requireExplicitStagingConsent() {
   const adminUserManagementReadback = args.has("--admin-user-management-readback");
   const adminUserPlanReadback = args.has("--admin-user-plan-readback");
   const adminUserStatusReadback = args.has("--admin-user-status-readback");
+  const lifecycleRunReadback = args.has("--lifecycle-run-readback");
   const waitlistAdminReadback = args.has("--waitlist-admin-readback");
   const broadcastEmailReadback = args.has("--broadcast-email-readback");
   const systemSettingsReadback = args.has("--system-settings-readback");
@@ -59,6 +60,7 @@ function requireExplicitStagingConsent() {
     adminUserManagementReadback,
     adminUserPlanReadback,
     adminUserStatusReadback,
+    lifecycleRunReadback,
     waitlistAdminReadback,
     broadcastEmailReadback,
     systemSettingsReadback,
@@ -80,6 +82,7 @@ function requireExplicitStagingConsent() {
     adminUserManagementReadback,
     adminUserPlanReadback,
     adminUserStatusReadback,
+    lifecycleRunReadback,
     waitlistAdminReadback,
     broadcastEmailReadback,
     systemSettingsReadback,
@@ -112,6 +115,13 @@ async function assertStagingTarget(actions) {
   assert.equal(config.vars?.ADMIN_USER_MANAGEMENT_BACKEND, "d1", "expected D1-backed admin user-management API");
   assert.equal(config.vars?.AUTH_USER_STATUS_BACKEND, "d1", "expected Auth D1 suspension enforcement");
   assert.equal(config.vars?.SYSTEM_SETTINGS_BACKEND, "d1", "expected D1-backed system settings API");
+  if (actions.lifecycleRunReadback) {
+    assert.equal(config.vars?.LIFECYCLE_RUN_BACKEND, "d1", "expected the staging manual lifecycle route to use D1");
+    assert.equal(config.vars?.LICENSE_EXPIRY_BACKEND, undefined, "scheduled license expiry must remain disabled");
+    assert.equal(config.vars?.LICENSE_EXPIRY_TARGET_INCARNATION, "fanmark-business-staging-lifecycle-v1");
+    assert.match(config.vars?.LICENSE_EXPIRY_SCHEMA_EXTENSION_DIGEST ?? "", /^[0-9a-f]{64}$/u);
+    assert.equal(config.vars?.LICENSE_EXPIRY_MAX_PAGES, "4");
+  }
   if (actions.broadcastEmailReadback) {
     assert.equal(config.vars?.BROADCAST_EMAIL_BACKEND, "d1", "expected D1-backed broadcast admin API");
     assert.notEqual(config.vars?.BROADCAST_TEST_SEND_BACKEND, "resend", "broadcast test delivery must remain disabled");
@@ -1425,6 +1435,106 @@ async function exerciseLifecycleSettingsReadback(cookie, state) {
   }
 }
 
+async function cleanupEmptyManualLifecycleJournals(targetIncarnation) {
+  const expiryRuns = await queryBusiness(`SELECT run_id, status, candidate_count, processed_count, conflict_count
+    FROM license_expiry_runs WHERE target_incarnation = ${sqlLiteral(targetIncarnation)}`);
+  const finalizationRuns = await queryBusiness(`SELECT run_id, status, candidate_count, processed_count, conflict_count
+    FROM license_grace_finalization_runs WHERE target_incarnation = ${sqlLiteral(targetIncarnation)}`);
+  if (expiryRuns.length === 0 && finalizationRuns.length === 0) return;
+  assert.equal(expiryRuns.length, 1, "manual lifecycle cleanup found an unexpected number of expiry journals");
+  assert.equal(finalizationRuns.length, 1, "manual lifecycle cleanup found an unexpected number of finalization journals");
+  for (const [row, label] of [[expiryRuns[0], "expiry"], [finalizationRuns[0], "finalization"]]) {
+    assert.equal(row.status, "completed", `${label} lifecycle journal is not safe to remove`);
+    assert.equal(Number(row.candidate_count), 0, `${label} lifecycle journal contains candidates`);
+    assert.equal(Number(row.processed_count), 0, `${label} lifecycle journal contains processed rows`);
+    assert.equal(Number(row.conflict_count), 0, `${label} lifecycle journal contains conflicts`);
+  }
+  const runIds = [expiryRuns[0].run_id, finalizationRuns[0].run_id];
+  const journalDetails = await queryBusiness(`SELECT
+    (SELECT COUNT(*) FROM license_expiry_run_items WHERE run_id = ${sqlLiteral(runIds[0])}) AS expiry_items,
+    (SELECT COUNT(*) FROM license_grace_finalization_items WHERE run_id = ${sqlLiteral(runIds[1])}) AS finalization_items,
+    (SELECT COUNT(*) FROM license_expiry_effect_guards) AS effect_guards,
+    (SELECT COUNT(*) FROM fanmarks) AS fanmarks,
+    (SELECT COUNT(*) FROM fanmark_licenses) AS licenses`);
+  assert.deepEqual(journalDetails, [{ expiry_items: 0, finalization_items: 0, effect_guards: 0, fanmarks: 0, licenses: 0 }],
+    "manual lifecycle cleanup refuses to remove journals with effects or business rows");
+
+  await executeBusiness(
+    `DELETE FROM license_grace_finalization_runs WHERE run_id = ${sqlLiteral(runIds[1])};\n` +
+    `DELETE FROM license_expiry_runs WHERE run_id = ${sqlLiteral(runIds[0])};`,
+    "empty synthetic manual lifecycle journal cleanup",
+  );
+  const finalCounts = await queryBusiness(`SELECT
+    (SELECT COUNT(*) FROM license_expiry_runs WHERE target_incarnation = ${sqlLiteral(targetIncarnation)}) AS expiry_runs,
+    (SELECT COUNT(*) FROM license_expiry_run_items) AS expiry_items,
+    (SELECT COUNT(*) FROM license_grace_finalization_runs WHERE target_incarnation = ${sqlLiteral(targetIncarnation)}) AS finalization_runs,
+    (SELECT COUNT(*) FROM license_grace_finalization_items) AS finalization_items,
+    (SELECT COUNT(*) FROM license_expiry_effect_guards) AS effect_guards`);
+  assert.deepEqual(finalCounts, [{
+    expiry_runs: 0, expiry_items: 0, finalization_runs: 0, finalization_items: 0, effect_guards: 0,
+  }], "manual lifecycle canary left a run journal or effect guard behind");
+}
+
+async function exerciseManualLifecycleRun(cookie) {
+  const config = JSON.parse(await readFile(configPath, "utf8"));
+  const targetIncarnation = config.vars?.LICENSE_EXPIRY_TARGET_INCARNATION;
+  const schemaDigest = config.vars?.LICENSE_EXPIRY_SCHEMA_EXTENSION_DIGEST;
+  assert.equal(config.vars?.LIFECYCLE_RUN_BACKEND, "d1");
+  assert.equal(config.vars?.LICENSE_EXPIRY_BACKEND, undefined, "scheduled expiry must stay disabled during the manual canary");
+  assert.equal(typeof targetIncarnation, "string");
+  assert.match(schemaDigest ?? "", /^[0-9a-f]{64}$/u);
+
+  const baseline = await queryBusiness(`SELECT
+    (SELECT COUNT(*) FROM fanmarks) AS fanmarks,
+    (SELECT COUNT(*) FROM fanmark_licenses) AS licenses,
+    (SELECT COUNT(*) FROM license_expiry_runs) AS expiry_runs,
+    (SELECT COUNT(*) FROM license_expiry_run_items) AS expiry_items,
+    (SELECT COUNT(*) FROM license_grace_finalization_runs) AS finalization_runs,
+    (SELECT COUNT(*) FROM license_grace_finalization_items) AS finalization_items,
+    (SELECT COUNT(*) FROM license_expiry_effect_guards) AS effect_guards`);
+  assert.deepEqual(baseline, [{
+    fanmarks: 0, licenses: 0, expiry_runs: 0, expiry_items: 0,
+    finalization_runs: 0, finalization_items: 0, effect_guards: 0,
+  }], "manual lifecycle canary requires empty synthetic business and journal baselines");
+
+  try {
+    const response = await request("/api/admin/license-expiry/run", {
+      method: "POST",
+      headers: { cookie },
+    });
+    assertStatus(response, 200, "MFA-protected manual lifecycle execution");
+    assert.equal(response.headers.get("cache-control"), "no-store");
+    const result = await response.json();
+    assert.deepEqual(Object.keys(result).sort(), [
+      "activeToGrace", "elapsedMs", "graceFinalization", "pagesLimit", "schemaVersion", "status",
+    ].sort());
+    assert.equal(result.schemaVersion, 1);
+    assert.equal(result.status, "completed");
+    assert.deepEqual(result.activeToGrace, {
+      status: "completed", candidateCount: 0, processed: 0, conflicts: 0, pagesProcessed: 0,
+    });
+    assert.deepEqual(result.graceFinalization, {
+      status: "completed", candidateCount: 0, processed: 0, conflicts: 0, pagesProcessed: 0,
+    });
+    assert.equal(result.pagesLimit, 4);
+    assert.ok(Number.isSafeInteger(result.elapsedMs) && result.elapsedMs >= 0);
+
+    const expiryRuns = await queryBusiness(`SELECT run_id, target_incarnation, schema_extension_digest
+      FROM license_expiry_runs WHERE target_incarnation = ${sqlLiteral(targetIncarnation)}`);
+    const finalizationRuns = await queryBusiness(`SELECT run_id, target_incarnation, schema_extension_digest
+      FROM license_grace_finalization_runs WHERE target_incarnation = ${sqlLiteral(targetIncarnation)}`);
+    assert.equal(expiryRuns.length, 1, "manual API did not create exactly one expiry run journal");
+    assert.equal(finalizationRuns.length, 1, "manual API did not create exactly one finalization journal");
+    for (const [row, label] of [[expiryRuns[0], "expiry"], [finalizationRuns[0], "finalization"]]) {
+      assert.equal(row.target_incarnation, targetIncarnation);
+      assert.equal(row.schema_extension_digest, schemaDigest);
+      assert.match(row.run_id, /^[0-9a-f-]{36}$/iu, `${label} journal ID is invalid`);
+    }
+  } finally {
+    await cleanupEmptyManualLifecycleJournals(targetIncarnation);
+  }
+}
+
 async function exerciseAdminUserStatusReadback(cookie, target) {
   const route = `/api/admin/users/${encodeURIComponent(target.userId)}/status`;
   const now = new Date();
@@ -2029,6 +2139,7 @@ async function main() {
       `SELECT count(*) AS "count" FROM "mfaAssurance" WHERE "userId" = ${sqlLiteral(userId)} AND "sessionId" = ${sqlLiteral(sessionBody.session.id)}`,
     );
     assert.equal(Number(assuranceRows[0]?.count), 1, "MFA assurance was not persisted for this session");
+    if (actions.lifecycleRunReadback) await exerciseManualLifecycleRun(cookie);
     if (actions.emojiMasterRoundtrip) {
       await exerciseEmojiMasterDraft(cookie);
       await exerciseNotificationMasters(cookie);
@@ -2117,6 +2228,7 @@ async function main() {
           actions.adminUserManagementReadback,
           actions.adminUserPlanReadback,
           actions.adminUserStatusReadback,
+          actions.lifecycleRunReadback,
           actions.systemSettingsReadback,
           actions.lifecycleSettingsReadback,
           actions.notificationManualEvent,
@@ -2210,6 +2322,9 @@ async function main() {
   }
   if (actions.adminUserStatusReadback) {
     console.log("Staging MFA-protected suspension/restoration and immediate license expiry passed. Session revocation, license/config changes, lifecycle/admin audits, notification event, repeat safety, and cleanup were verified.");
+  }
+  if (actions.lifecycleRunReadback) {
+    console.log("Staging MFA-protected manual lifecycle execution returned aggregate-only zero-candidate results; Cron stayed disabled and the empty lifecycle journal was removed after exact readback.");
   }
   if (actions.systemSettingsReadback) {
     console.log("Staging MFA-protected system settings read/update passed. The API exposed the exact admin projection, rejected anonymous access and a stale write, restored the original value, and cleaned the synthetic audit rows.");
