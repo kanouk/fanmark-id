@@ -2179,3 +2179,33 @@ invocation records, so this run provides no CPU measurement and does not close
 the Workers plan-fit gate. This was staging-only synthetic activity: no
 Supabase or production resource, real user data, email, Stripe operation,
 R2 object, production route, or domain/DNS setting was changed.
+
+## Staging auth/lifecycle CPU follow-up and PR validation (2026-09-28 JST)
+
+Repeated the same guarded staging TOTP/admin/lifecycle canary while a ready
+`wrangler tail` stream captured only request path, status, and per-invocation
+CPU/wall time. On Worker version
+`708ff90b-abec-405d-9dd0-6a0d14cafe3c`, `/` used 1 ms CPU (200) and
+`/api/auth/ok` used 2 ms (200). Synthetic email/password sign-in used 128 ms
+(200), the first-time TOTP gate used 45 ms (403), TOTP enrollment used 88 ms
+(200), TOTP verification used 17 ms (200), authenticated admin assurance
+used 4 ms (200), and the MFA-protected empty lifecycle run used 32 ms (200).
+Session reads measured 4 and 29 ms in separate requests. These are individual
+staging samples, not a load test or production guarantee. Cloudflare's
+[current Workers limits](https://developers.cloudflare.com/workers/platform/limits/)
+list 10 ms per HTTP request on Free and 30 seconds by default on Paid (up to
+5 minutes); infrequent Free overages may succeed, while consistent over-limit
+work can be terminated. No plan or billing change was made, so CPU-plan fit
+remains an explicit release gate.
+
+The repeat canary passed sign-in, first-time TOTP, session rotation,
+same-session admin authorization, and the manual lifecycle endpoint. Cron
+expiry stayed disabled; cleanup and independent readback found every
+user-owned Auth table empty. The monotonic MFA generation counter may have
+advanced. Only synthetic staging identity/state was used.
+
+PR #41 commit `457ecca` passed GitHub Actions run `36339923139`: both the
+staging-application and Worker API jobs succeeded. The app job includes the
+full migration-data, Stripe receipt/billing, typecheck, admin URL, and staging
+build checks. The PGlite snapshot export test now runs before the other
+database-heavy Stripe suites; the CI run verifies the reordered full suite.

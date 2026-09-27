@@ -264,3 +264,22 @@ This proves an actual application write plus a pending Stripe receipt/dispatch
 can be reconciled after restoring the app's business schema. It does not prove
 the pre-write Supabase-resume path, an applied Stripe business effect, a
 complete verified backup, or all application tables; issue #37 remains open.
+
+## Targeted auth/lifecycle CPU readback (2026-09-28 JST)
+
+A repeat synthetic TOTP/admin/lifecycle canary on the deployed staging Worker
+captured per-request CPU through a ready Wrangler Tail stream. Successful
+email/password sign-in used 128 ms, first-time TOTP enrollment 88 ms, TOTP
+verification 17 ms, and the MFA-protected empty lifecycle run 32 ms. Static
+shell and Auth health reads used 1–2 ms. The detailed statuses and session
+readings are recorded in [HANDOFF.md](HANDOFF.md).
+
+Cloudflare's [current Workers limits](https://developers.cloudflare.com/workers/platform/limits/)
+list 10 ms per request for Free. The sample confirms that auth and lifecycle
+paths exceed that threshold; a few successful overages do not prove recurring
+traffic is supported. No Worker plan or billing change was made. This keeps
+the CPU-plan-fit gate open pending safe optimization or an account-owner plan
+decision. The smoke cleaned its
+synthetic Auth/business/lifecycle rows and found all user-owned Auth tables
+empty; Cron expiry stayed disabled. It did not change the Supabase writer,
+production route, real user data, or domain/DNS.
