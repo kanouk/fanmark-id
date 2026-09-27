@@ -1,6 +1,7 @@
 import { buildRecentFanmarksApiUrl, getRecentFanmarksApiBaseUrl } from "./recent-fanmarks.ts";
 
 const PROFILE_PATH = "/api/me/profile";
+const OWN_PROFILE_UPDATED_EVENT = "fanmark:own-profile-updated";
 const MAX_RESPONSE_BYTES = 16 * 1024;
 const TIMEOUT_MS = 5_000;
 const LANGUAGES = new Set(["en", "ja", "ko", "id"]);
@@ -158,11 +159,35 @@ export function loadOwnProfile(options: Parameters<typeof requestProfile>[1] = {
   return requestProfile(undefined, options);
 }
 
+export function subscribeToOwnProfileUpdates(listener: (profile: OwnProfile) => void): () => void {
+  if (typeof window === "undefined") return () => undefined;
+
+  const handleUpdate = (event: Event) => {
+    const detail = (event as CustomEvent<unknown>).detail;
+    if (!isRecord(detail)) return;
+    let updated: OwnProfile;
+    try {
+      updated = parseProfile(detail);
+    } catch {
+      // Ignore malformed events; profile API responses are validated before dispatch.
+      return;
+    }
+    listener(updated);
+  };
+  window.addEventListener(OWN_PROFILE_UPDATED_EVENT, handleUpdate);
+  return () => window.removeEventListener(OWN_PROFILE_UPDATED_EVENT, handleUpdate);
+}
+
 export function updateOwnProfile(patch: OwnProfilePatch, options: Parameters<typeof requestProfile>[1] = {}): Promise<OwnProfile> {
   if (!isRecord(patch) || Object.keys(patch).length === 0 || Object.keys(patch).some((key) => !["display_name", "avatar_url", "preferred_language"].includes(key))) {
     throw new ProfileApiError("configuration");
   }
-  return requestProfile(patch, options);
+  return requestProfile(patch, options).then((profile) => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent(OWN_PROFILE_UPDATED_EVENT, { detail: profile }));
+    }
+    return profile;
+  });
 }
 
 export async function checkOwnUsernameAvailability(username: string, options: {

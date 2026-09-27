@@ -22,6 +22,13 @@ Supabase when the Worker fails. The default/production selector remains
 Supabase. User profile rows and existing Auth credentials remain outside this
 staging change and the final user-data migration phase.
 
+Successful Worker profile updates publish the validated profile to other
+profile hooks in the same tab, including updates initiated by language
+preferences. Worker-backed hooks quietly reload when the browser tab/window
+becomes visible or focused, replacing the old Supabase Realtime refresh without
+periodic D1 polling. Cross-tab changes are picked up when the tab returns to the
+foreground.
+
 Synthetic split-D1 coverage is in `workers/api/test/profile-d1.test.ts` and
 client contract coverage is in `src/lib/profile-api.test.ts`. Run them with:
 

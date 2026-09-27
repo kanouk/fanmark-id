@@ -147,6 +147,11 @@ production acceptance are still open. User-data import and domain cutover are
 intentionally deferred final phases, not missing work in the current staging
 slice.
 
+The Worker-backed own-profile hook now synchronizes successful profile changes
+across same-tab consumers and quietly revalidates on focus/visibility, replacing
+the former Supabase Realtime path without periodic D1 reads. This app-consistency
+repair does not materially change the coarse weighted progress estimate.
+
 The latest Supabase read-only query selected only the three supported
 broadcast template types and returned 12 active rows across `en`, `id`, `ja`,
 `ko`; the normalized full-row digest is

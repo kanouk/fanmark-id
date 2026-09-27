@@ -6,6 +6,7 @@ import {
   getOwnProfileBackend,
   loadOwnProfile,
   ProfileApiError,
+  subscribeToOwnProfileUpdates,
   updateOwnProfile,
 } from "./profile-api.ts";
 
@@ -54,6 +55,28 @@ test("GET and PATCH send only same-origin credentials and never fall back", asyn
     fetchImpl: async () => { attempts += 1; return new Response("{}", { status: 503 }); },
   }), (error: unknown) => error instanceof ProfileApiError && error.kind === "http");
   assert.equal(attempts, 1);
+});
+
+test("successful profile updates notify other same-tab profile consumers", async () => {
+  const previousWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+  const fakeWindow = Object.assign(new EventTarget(), { location: { origin: "https://api.example.test" } });
+  Object.defineProperty(globalThis, "window", { configurable: true, value: fakeWindow });
+  try {
+    const updates: unknown[] = [];
+    const unsubscribe = subscribeToOwnProfileUpdates((updated) => updates.push(updated));
+    const fetchImpl: typeof fetch = async () => new Response(JSON.stringify({ schemaVersion: 1, profile }), {
+      headers: { "content-type": "application/json" },
+    });
+
+    await updateOwnProfile({ display_name: "Updated" }, { baseUrl: "https://api.example.test", fetchImpl });
+    assert.deepEqual(updates, [profile]);
+    unsubscribe();
+    await updateOwnProfile({ display_name: "Updated again" }, { baseUrl: "https://api.example.test", fetchImpl });
+    assert.deepEqual(updates, [profile]);
+  } finally {
+    if (previousWindow) Object.defineProperty(globalThis, "window", previousWindow);
+    else Reflect.deleteProperty(globalThis, "window");
+  }
 });
 
 test("the client rejects malformed, oversized, and privilege-shaped responses or updates", async () => {

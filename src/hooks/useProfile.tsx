@@ -2,16 +2,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { UserSettings } from '@/lib/profile-utils';
-import { checkOwnUsernameAvailability as checkWorkerUsernameAvailability, getOwnProfileBackend, loadOwnProfile, updateOwnProfile } from '@/lib/profile-api';
+import { checkOwnUsernameAvailability as checkWorkerUsernameAvailability, getOwnProfileBackend, loadOwnProfile, subscribeToOwnProfileUpdates, updateOwnProfile } from '@/lib/profile-api';
 
 export const useProfile = () => {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = useCallback(async () => {
+  const fetchProfile = useCallback(async (options: { silent?: boolean } = {}) => {
     try {
-      setLoading(true);
+      if (!options.silent) setLoading(true);
       if (getOwnProfileBackend() === 'worker') {
         const result = await loadOwnProfile();
         setProfile(result as UserSettings);
@@ -38,7 +38,7 @@ export const useProfile = () => {
         userId: user?.id ?? null,
       });
     } finally {
-      setLoading(false);
+      if (!options.silent) setLoading(false);
     }
   }, [user]);
 
@@ -70,6 +70,32 @@ export const useProfile = () => {
       supabase.removeChannel(channel);
     };
   }, [user]);
+
+  // Worker-backed profiles replace Supabase Realtime with local update events and
+  // a quiet refresh when this tab/window becomes active again.
+  useEffect(() => {
+    if (!user || getOwnProfileBackend() !== 'worker') return;
+
+    const unsubscribe = subscribeToOwnProfileUpdates((updated) => {
+      if (updated.user_id === user.id) setProfile(updated as UserSettings);
+    });
+    let lastRefreshAt = 0;
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'hidden') return;
+      const now = Date.now();
+      if (now - lastRefreshAt < 1_500) return;
+      lastRefreshAt = now;
+      void fetchProfile({ silent: true });
+    };
+
+    window.addEventListener('focus', refreshWhenVisible);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    return () => {
+      unsubscribe();
+      window.removeEventListener('focus', refreshWhenVisible);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, [user, fetchProfile]);
 
   const updateProfile = async (updates: Partial<Omit<UserSettings, 'user_id' | 'id'>>) => {
     if (!user || !profile) return;
