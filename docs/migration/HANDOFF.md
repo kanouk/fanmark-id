@@ -33,14 +33,24 @@ The current migration order is:
 
 The in-app browser loaded the deployed staging SPA root and its Japanese home
 screen, including the search controls and navigation. A separate `/auth` route
-rendered the login form. This verifies client rendering for those anonymous
-routes only; no sign-in, authenticated admin screen, draft operation, or email
-send was performed. Authenticated browser acceptance remains open.
+rendered the login form. After deploying the admin return-link fix, `/admin`
+rendered the Cloudflare Auth/MFA login and its “トップに戻る” link resolved to
+the same `fanmark-app-staging.fanmark-id.workers.dev` origin. The first
+post-deploy browser read still displayed the prior link; a fresh navigation
+after the update displayed the corrected link. No credentials were entered,
+and no authenticated admin operation or email send was performed.
+Authenticated browser acceptance remains open.
 
-GitHub Actions run `36288746894` for commit `3c75e5a` passed both required
-checks: Cloudflare Worker API tests/typecheck/deploy dry-run and Cloudflare
-staging application migration-data tests/typecheck/build. Supabase Preview was
-skipped by design under CI isolation.
+Commit `6219e37` fixes the return URL for `workers.dev` and `pages.dev` preview
+hosts while preserving localhost and production admin-subdomain behavior.
+The focused Node 22.6 test passed 3/3; application typecheck, targeted ESLint,
+staging build, and Wrangler deploy dry-run passed. GitHub Actions run
+`36289627111` passed both required jobs: Worker API tests/typecheck/deploy
+dry-run and staging-app migration-data tests, the new return-URL test,
+typecheck, and build. The fix is deployed to staging Worker version
+`74933bd7-be29-43d0-9c34-d85f865cfc1e`; no production route, user data, R2
+object, or domain/DNS setting changed. Supabase Preview was skipped by design
+under CI isolation.
 
 Fresh anonymous HTTP verification on 2026-09-27 confirmed that browser-style
 navigation requests (`Accept: text/html,...`) return the noindex SPA shell with
