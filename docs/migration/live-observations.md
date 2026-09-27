@@ -1676,3 +1676,22 @@ this sample. No plan change was made; production CPU fit remains a release
 gate to resolve by optimization plus a repeat measurement or by selecting a
 paid Workers plan. No production route, real user row, email, Stripe operation,
 or domain/DNS setting changed.
+
+## Fresh schema-only source refresh and converter rehearsal (2026-09-27T12:13:53Z)
+
+`CI=1 npx --yes supabase@2.118.0 db query --linked --file
+scripts/migration/schema-readiness.sql --output-format json` completed without
+requesting terminal input. The reviewed SQL runs in a read-only transaction
+and reads PostgreSQL catalogs only. The current result contains 406 columns,
+144 constraints, 139 indexes, 15 enum labels, one view, 58 functions, 36
+non-internal triggers, and 77 RLS policies. No application rows were read or
+written. Raw catalog and generated artifacts remain outside Git with mode
+`0600`.
+
+Schema-converter v4 generated 40 tables and remains `deployable: false` with
+18 blocking groups: 10 row-conversion groups affecting 227 locations and 8
+schema/operation groups affecting 101 locations. The Node 22.6.0 synthetic
+current-catalog rehearsal imported four generated rows across all 40 table
+checkpoints, reconciled the synthetic public rows, and rejected a conflicting
+replay. This wrote only to disposable local Miniflare D1; it did not write to
+Cloudflare D1 or Supabase and did not import user data.

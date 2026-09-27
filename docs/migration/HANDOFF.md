@@ -98,6 +98,13 @@ passed all 40 checkpoints with `public_rows_reconciled`, while
 `fullMigrationReconciled` remains false. Details are in
 `schema-conversion.md` and `d1-import.md`.
 
+The source catalog and synthetic rehearsal were refreshed again at
+`2026-09-27T12:13:53Z`; the CLI required no terminal input. The descriptor-aware
+report still has 10 row-conversion groups and 8 schema/operation groups, and
+the current-catalog synthetic run reconciled four generated rows across 40
+checkpoints while rejecting a conflicting replay. No source rows or remote D1
+rows were read or written.
+
 A read-only comparison of this catalog's generated target profile with remote
 `fanmark-business-staging` found all 40 source tables and 406 source columns,
 with all converted SQLite types and nullability matching. The staging schema

@@ -2628,3 +2628,21 @@ have advanced.
 This corrects the earlier handoff claim that the manual server selector was
 unset. No Supabase schedule, production route, real user data, email, Stripe,
 or domain/DNS state changed.
+
+## Fresh Supabase schema-only query and current-catalog rehearsal (2026-09-27T12:13:53Z)
+
+Ran the reviewed `schema-readiness.sql` through `npx supabase@2.118.0
+db query --linked` with `CI=1` and `--yes`; the CLI completed without terminal
+input. The transaction reads schema catalogs only. It returned 406 columns,
+144 constraints, 139 indexes, 15 enum labels, one view, 58 functions, 36
+triggers, and 77 RLS policies. The schema converter emitted the current 40-table
+profile and retained 18 blocking groups (`deployable: false`): 10 import-stage
+groups and 8 schema/operation groups.
+
+Under Node 22.6.0, `scripts/migration/test-d1-import-current-schema.mjs` passed
+against that exact private catalog. It reconciled four generated synthetic rows
+through all 40 checkpoints and rejected a conflicting replay. It ran only on a
+disposable local Miniflare database; no application rows were read from
+Supabase and no remote D1, production, or domain/DNS state changed. The
+catalog, descriptor, generated SQL, and report remain private mode-0600 files
+outside the repository.

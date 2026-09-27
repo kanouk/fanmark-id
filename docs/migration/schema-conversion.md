@@ -252,3 +252,22 @@ import requirement; neither report permits generic text insertion of
 `access_password`. The report, catalog, and generated SQL were written with
 mode `0600` outside Git. The fresh metadata does not change the current D1
 schema or any application table data.
+
+## Latest read-only refresh (2026-09-27T12:13:53Z)
+
+The linked catalog query completed without an interactive prompt and again
+reported 406 columns, 144 constraints, 139 indexes, 15 enums, one view, 58
+functions, 36 triggers, and 77 RLS policies. With the value-free credential
+descriptor, the fresh v4 report still has 18 blocking groups: 10 import-stage
+row-conversion groups (227 locations) and 8 in-scope schema/operation groups
+(101 locations). The latter are external Auth references, timestamp defaults,
+untranslated function/view/trigger/RLS scopes, three locale-sensitive CHECKs,
+and four GIN indexes. The database locale remains `en_US.UTF-8`; the converter
+continues to leave the three PostgreSQL regex CHECKs blocked rather than assume
+ASCII range equivalence. The fresh report stays `deployable: false`.
+
+The exact refreshed catalog passed the synthetic current-catalog D1 rehearsal:
+four generated rows, 40 completed table checkpoints, exact public-row
+reconciliation, and conflicting replay rejection. This proves the synthetic
+import path against the current schema shape, not production deployability or
+real-data migration readiness.
