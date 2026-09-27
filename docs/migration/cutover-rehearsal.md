@@ -195,3 +195,34 @@ Converter 13/13, recent Worker API 15/15, D1 recent repository 6/6, the full
 migration-data suite 163/163, and Worker typecheck passed on Node 22.6.0. These
 local proofs do not satisfy the freeze, Stripe handoff, recovery, or full-schema
 gates above.
+
+## Isolated D1 post-ack Time Travel drill (2026-09-28 JST)
+
+Cloudflare account `fanmark.id@gmail.com` created disposable APAC D1
+`fanmark-recovery-drill-20260928-1` (`56bdf369-3c44-4361-a943-051b6430a0d1`),
+with no Worker binding. It contained only synthetic tables and rows for one
+acknowledged business effect, its applied Stripe receipt, and its completed
+dispatch. The exact post-ack bookmark was
+`00000000-0000000c-000050f3-816afb5b73e504d7008294d01b6f8bfa`. Three later
+synthetic rows were then added to represent state after the verified recovery
+point. Restoring the earlier bookmark succeeded; remote readback found exactly
+one business effect, one applied receipt, and one completed dispatch, with the
+original payload digest intact. The later effect/event/dispatch were absent.
+Explicit relationship queries found zero orphan dispatches and zero missing
+receipts; all readbacks reported `changed_db=false` and `rows_written=0`.
+
+The remote SQL endpoint rejected `PRAGMA foreign_key_check` and
+`PRAGMA integrity_check` with `SQLITE_AUTH`, so this run claims only the exact
+row/hash/relationship readback above, not a full remote integrity check. The
+temporary database was deleted after readback; `wrangler d1 list` then showed
+only the three pre-existing staging databases. No app Worker, existing staging
+database, Supabase resource, real user data, R2 object, provider, production
+route, or domain/DNS was changed. A precise elapsed-time measurement was not
+captured.
+
+This proves that the account's APAC D1 Time Travel restore can preserve one
+acknowledged synthetic effect and its operation-ledger rows while discarding
+later state. It is not an application-level restore: it did not use the actual
+business schema or Worker, reconcile all operational tables, verify a complete
+backup, or exercise the pre-write recovery path. Issue #37 and the post-write
+application recovery gate remain open.

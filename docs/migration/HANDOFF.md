@@ -2092,6 +2092,28 @@ staging secret-name inventory has no Resend or Stripe credentials, and the
 broadcast send selector remains unset. The staging deployment therefore adds
 the tested code without enabling email or billing effects. No real user data,
 production route, D1 row, R2 object, or domain/DNS setting was read or changed.
-GitHub Actions run `36333552417` passed the staging-app job; its Worker API job
-was still running at this checkpoint. The same Worker and migration suites
-passed locally before deployment.
+GitHub Actions run `36333924986` for the docs follow-up passed both Cloudflare
+staging-app and Worker API jobs; Supabase Preview was skipped by the isolation
+rule. The same Worker and migration suites passed locally before deployment.
+
+## Isolated D1 post-ack Time Travel drill (2026-09-28 JST)
+
+Created disposable APAC D1 `fanmark-recovery-drill-20260928-1`
+(`56bdf369-3c44-4361-a943-051b6430a0d1`) with no Worker binding. It contained
+only synthetic rows for one acknowledged business effect and its applied
+Stripe receipt/completed dispatch. After recording the post-ack bookmark, added
+three later synthetic rows and restored the earlier bookmark. Readback found
+exactly the acknowledged effect and ledgers with the original SHA-256; the
+later rows were gone, and explicit queries found zero orphan dispatches or
+missing receipts. The restore was confined to this disposable database.
+
+Wrangler's remote SQL API rejected `PRAGMA foreign_key_check` and
+`PRAGMA integrity_check` with `SQLITE_AUTH`; no full remote integrity check is
+claimed. A precise elapsed-time measurement was not captured. The temporary
+database was deleted after readback, and a new D1 inventory showed only the
+three pre-existing staging databases. No existing staging database, Worker,
+Supabase resource, real user data, R2 object, provider, production route, or
+domain/DNS setting was changed. This proves the D1 restore primitive only; the
+pre-write path and end-to-end application recovery/ledger reconciliation in
+issue #37 remain open. Cloudflare documents D1 Time Travel restore as an
+in-place overwrite of the target database: https://developers.cloudflare.com/d1/reference/time-travel/.
