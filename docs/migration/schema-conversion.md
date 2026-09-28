@@ -438,12 +438,12 @@ audit. No user rows were read and no remote D1 was written.
 Additional operation paths now use that formatter for account deletion,
 profile/password setup, administrator user actions, lifecycle/maintenance/
 system settings, waitlist administration/signup, invitation administration/
-signup, and extension-coupon administration/application. Their focused D1
-suites pass 84/84, bringing the combined focused Worker D1 total to 156/156.
-The coupon administration's SQL-generated monotonic revision timestamp also
-now retains six fractional digits. These tests confirm the stored operation
-values use fixed-width UTC microsecond text. This is additional path coverage
-only: the schema readiness report still has 13 unresolved groups across 226
-locations, and `timestamp_import_precision` remains open until the complete
-writer/default inventory is reconciled. No user rows were read and no remote
-D1 was written.
+signup, extension-coupon administration/application, and admin email-template
+updates. Their focused D1 suites pass 88/88, bringing the combined focused
+Worker D1 total to 160/160. Coupon and email-template administration's
+SQL/application-generated monotonic revision timestamps also retain six
+fractional digits. These tests confirm the stored operation values use
+fixed-width UTC microsecond text. This is additional path coverage only: the
+schema readiness report still has 13 unresolved groups across 226 locations,
+and `timestamp_import_precision` remains open until the complete writer/default
+inventory is reconciled. No user rows were read and no remote D1 was written.

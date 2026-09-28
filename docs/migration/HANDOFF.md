@@ -242,10 +242,10 @@ later writes; the timestamp precision gate remains open for operation-level
 proof. After the core API writes, account deletion, profile/password setup,
 administrator user actions, lifecycle/maintenance/system settings, waitlist
 admin/signup, invitation admin/signup, and extension-coupon admin/application
-writes also use the fixed-width formatter; the combined focused D1 suites pass
-156/156 (with 84 tests covering these added paths). The full writer/default
-inventory remains incomplete, so this does not change the 13-gate report or
-the coarse progress estimate. Issue #37's full writer-freeze,
+writes, plus admin email-template updates, also use the fixed-width formatter;
+the combined focused D1 suites pass 160/160 (with 88 tests covering these added
+paths). The full writer/default inventory remains incomplete, so this does not
+change the 13-gate report or the coarse progress estimate. Issue #37's full writer-freeze,
 timed final-copy, and pre/post-write recovery rehearsal remains open, as do
 provider-backed Resend/Stripe acceptance, broad authenticated UI coverage, and
 Workers CPU/plan fit. Issue #38's real user-data import and public domain/DNS

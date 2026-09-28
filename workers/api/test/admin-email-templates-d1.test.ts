@@ -107,13 +107,15 @@ describe("admin email templates D1 API", () => {
     const result = await response.json() as { template: Record<string, unknown> };
     expect(result.template).toMatchObject({
       id: signupJa, email_type: "signup", language: "ja", subject: "新しい件名",
-      body_text: "新しい本文", button_text: "進む", updated_at: "2026-09-26T12:34:56.000Z",
+      body_text: "新しい本文", button_text: "進む", updated_at: "2026-09-26T12:34:56.000000Z",
     });
     const audit = await business!.prepare("SELECT user_id, action, resource_type, resource_id, request_id, metadata FROM audit_logs").first<Record<string, unknown>>();
     expect(audit).toMatchObject({
       user_id: adminId, action: "admin_update_email_template", resource_type: "email_template", resource_id: signupJa,
     });
     expect(typeof audit?.request_id).toBe("string");
+    const auditTimestamp = await business!.prepare("SELECT created_at FROM audit_logs").first<{ created_at: string }>();
+    expect(auditTimestamp?.created_at).toBe("2026-09-26T12:34:56.000000Z");
     expect(JSON.parse(String(audit?.metadata))).toEqual({
       email_type: "signup", language: "ja", updated_fields: ["subject", "body_text", "button_text"],
     });

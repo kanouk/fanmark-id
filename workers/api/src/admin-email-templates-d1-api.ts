@@ -1,4 +1,5 @@
 import { selectD1Database, type Env } from "./repository.ts";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const API_PATH = "/api/admin/email-templates";
 const METHODS = "GET, PATCH, OPTIONS";
@@ -211,7 +212,7 @@ export async function handleAdminEmailTemplatesRequest(
 
     const currentMillis = Date.parse(existing.updated_at);
     if (!Number.isFinite(currentMillis)) fail("email_templates_unavailable");
-    const updatedAt = new Date(Math.max((options.now?.() ?? new Date()).getTime(), currentMillis + 1)).toISOString();
+    const updatedAt = toUtcMicrosecondTimestamp(new Date(Math.max((options.now?.() ?? new Date()).getTime(), currentMillis + 1)));
     const requestId = crypto.randomUUID();
     const statements = await db.batch([
       db.prepare(`
