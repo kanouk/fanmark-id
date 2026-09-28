@@ -1,5 +1,26 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-09-29 Supabase Stripe non-extension Checkout receipts
+
+The Supabase webhook now persists all supported Checkout Session events before
+acknowledging them. Non-extension sessions claim their exact dispatch and are
+marked `ignored` / `completed` through a service-role-only RPC fenced by the
+current lease token, generation, event type, and normalized Checkout snapshot.
+This path does not change subscription entitlement or grant a license; plan
+state remains sourced from subscription events. Extension Checkout handling is
+unchanged.
+
+The new forward migration is
+`20260929200000_terminalize_stripe_noop_checkout_receipts.sql`. Focused PGlite
+tests pass 13/13, including the new state, extension-rejection, stale-lease,
+and ACL cases; shared TypeScript tests pass 5/5 and the receipt package
+typecheck passes. The full Stripe receipt suite passed, and the final dispatch
+suite rerun after adding lease-expiry coverage passed 13/13. Root app typecheck,
+`deno check` for the webhook, targeted ESLint, CI workflow isolation, and the
+191-test migration-data boundary suite all passed. No Supabase migration,
+webhook invocation, remote write, Stripe API call, or production change was
+made.
+
 ## 2026-09-29 scheduled Stripe timestamp regression closure
 
 Stripe invoice/subscription scheduled dispatch now accepts the canonical

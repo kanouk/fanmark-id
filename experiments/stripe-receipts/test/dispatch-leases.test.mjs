@@ -11,6 +11,14 @@ const leaseSql = await readFile(
   new URL("../../../supabase/migrations/20260921100000_add_stripe_dispatch_leases.sql", import.meta.url),
   "utf8",
 );
+const targetedClaimSql = await readFile(
+  new URL("../../../supabase/migrations/20260929170000_add_targeted_stripe_dispatch_claim.sql", import.meta.url),
+  "utf8",
+);
+const noopCheckoutSql = await readFile(
+  new URL("../../../supabase/migrations/20260929200000_terminalize_stripe_noop_checkout_receipts.sql", import.meta.url),
+  "utf8",
+);
 
 const acceptSql = `
   select * from public.accept_stripe_webhook_receipt(
@@ -25,6 +33,12 @@ const renewSql = `
 `;
 const retrySql = `
   select * from public.retry_stripe_webhook_dispatch($1::uuid, $2::uuid, $3, $4::uuid, $5, $6, $7, $8)
+`;
+const claimExactSql = `
+  select * from public.claim_stripe_webhook_dispatch_by_id($1::uuid, $2, $3)
+`;
+const ignoreNoopCheckoutSql = `
+  select * from public.ignore_stripe_non_extension_checkout_receipt($1::uuid, $2::uuid, $3, $4::uuid, $5::bigint)
 `;
 
 const defaults = {
@@ -153,6 +167,8 @@ before(async () => {
   `);
   await db.exec(foundationSql);
   await db.exec(leaseSql);
+  await db.exec(targetedClaimSql);
+  await db.exec(noopCheckoutSql);
   await setRequestRole("service_role");
 });
 
@@ -196,6 +212,123 @@ test("the migration refuses an unfenced legacy processing row for explicit recon
   } finally {
     await legacyDb.close();
   }
+});
+
+test("non-extension Checkout receipts are durably ignored under the exact live lease", async () => {
+  const receipt = await accept({
+    eventType: "checkout.session.completed",
+    objectType: "checkout.session",
+    objectId: "cs_plan_checkout",
+    payload: {
+      branch: "checkout_session",
+      checkout_session: { id: "cs_plan_checkout", metadata: { type: "plan_subscription" } },
+    },
+  });
+  const claimed = await execute(claimExactSql, [receipt.dispatch_id, true, 300]);
+  assert.equal(claimed.rows.length, 1);
+  const dispatch = claimed.rows[0];
+  const result = await execute(ignoreNoopCheckoutSql, [
+    receipt.receipt_id,
+    receipt.dispatch_id,
+    true,
+    dispatch.lease_token,
+    dispatch.claim_generation,
+  ]);
+
+  assert.deepEqual(result.rows, [{
+    receipt_id: receipt.receipt_id,
+    dispatch_id: receipt.dispatch_id,
+    receipt_status: "ignored",
+    dispatch_status: "completed",
+    finalized: true,
+  }]);
+  const state = await dispatchState(receipt.dispatch_id);
+  assert.equal(state.receipt_status, "ignored");
+  assert.equal(state.dispatch_status, "completed");
+  assert.equal(state.lease_token, null);
+});
+
+test("non-extension Checkout finalization rejects extension receipts and stale lease owners", async () => {
+  const extension = await accept({
+    eventType: "checkout.session.completed",
+    objectType: "checkout.session",
+    objectId: "cs_extension_checkout",
+    payload: {
+      branch: "checkout_session",
+      checkout_session: { id: "cs_extension_checkout", metadata: { type: "license_extension" } },
+    },
+  });
+  const extensionClaim = (await execute(claimExactSql, [extension.dispatch_id, true, 300])).rows[0];
+  await assert.rejects(
+    execute(ignoreNoopCheckoutSql, [
+      extension.receipt_id,
+      extension.dispatch_id,
+      true,
+      extensionClaim.lease_token,
+      extensionClaim.claim_generation,
+    ]),
+    /not an eligible non-extension Checkout event/u,
+  );
+
+  const noop = await accept({
+    eventType: "checkout.session.expired",
+    objectType: "checkout.session",
+    objectId: "cs_stale_owner",
+    payload: {
+      branch: "checkout_session",
+      checkout_session: { id: "cs_stale_owner", metadata: {} },
+    },
+  });
+  const claimed = (await execute(claimExactSql, [noop.dispatch_id, true, 300])).rows[0];
+  const stale = await execute(ignoreNoopCheckoutSql, [
+    noop.receipt_id,
+    noop.dispatch_id,
+    true,
+    "00000000-0000-0000-0000-000000000099",
+    claimed.claim_generation,
+  ]);
+  assert.equal(stale.rows[0].finalized, false);
+  const state = await dispatchState(noop.dispatch_id);
+  assert.equal(state.receipt_status, "processing");
+  assert.equal(state.dispatch_status, "processing");
+  await execute(`
+    update billing_ingress.stripe_webhook_dispatches
+       set lease_until = clock_timestamp() - interval '1 second'
+     where id = $1::uuid
+  `, [noop.dispatch_id]);
+  const expired = await execute(ignoreNoopCheckoutSql, [
+    noop.receipt_id,
+    noop.dispatch_id,
+    true,
+    claimed.lease_token,
+    claimed.claim_generation,
+  ]);
+  assert.equal(expired.rows[0].finalized, false);
+});
+
+test("non-extension Checkout finalization is service-role only", async () => {
+  const receipt = await accept({
+    eventType: "checkout.session.completed",
+    objectType: "checkout.session",
+    objectId: "cs_role_guard",
+    payload: {
+      branch: "checkout_session",
+      checkout_session: { id: "cs_role_guard", metadata: {} },
+    },
+  });
+  const claimed = (await execute(claimExactSql, [receipt.dispatch_id, true, 300])).rows[0];
+  await setRequestRole("anon");
+  await assert.rejects(
+    execute(ignoreNoopCheckoutSql, [
+      receipt.receipt_id,
+      receipt.dispatch_id,
+      true,
+      claimed.lease_token,
+      claimed.claim_generation,
+    ]),
+    /service role required/u,
+  );
+  await setRequestRole("service_role");
 });
 
 test("claims only due nonterminal work in the requested mode and skips active/future/terminal rows", async () => {
@@ -396,7 +529,16 @@ test("terminal receipts and dispatches are never claimable or renewed", async ()
 });
 
 test("service-role ACL and fixed search_path protect all lease RPCs", async () => {
-  const accepted = await accept({ eventId: "evt_lease_acl" });
+  const accepted = await accept({
+    eventId: "evt_lease_acl",
+    eventType: "checkout.session.completed",
+    objectType: "checkout.session",
+    objectId: "cs_lease_acl",
+    payload: {
+      branch: "checkout_session",
+      checkout_session: { id: "cs_lease_acl", metadata: {} },
+    },
+  });
   await execute("set search_path = pg_catalog, pg_temp");
 
   const forgedLease = {
@@ -412,6 +554,16 @@ test("service-role ACL and fixed search_path protect all lease RPCs", async () =
     await assert.rejects(() => claim(true), /permission denied/);
     await assert.rejects(() => renew(forgedLease), /permission denied/);
     await assert.rejects(() => retry(forgedLease), /permission denied/);
+    await assert.rejects(
+      () => execute(ignoreNoopCheckoutSql, [
+        accepted.receipt_id,
+        accepted.dispatch_id,
+        true,
+        forgedLease.lease_token,
+        forgedLease.claim_generation,
+      ]),
+      /permission denied/,
+    );
     await execute("reset role");
     await setRequestRole("service_role");
   }
@@ -421,6 +573,14 @@ test("service-role ACL and fixed search_path protect all lease RPCs", async () =
   const rows = await claim(true, 1, 60);
   assert.equal(rows.length, 1);
   assert.equal(rows[0].dispatch_id, accepted.dispatch_id);
+  const ignored = await execute(ignoreNoopCheckoutSql, [
+    accepted.receipt_id,
+    accepted.dispatch_id,
+    true,
+    rows[0].lease_token,
+    rows[0].claim_generation,
+  ]);
+  assert.equal(ignored.rows[0].finalized, true);
   await assert.rejects(
     () => execute("select count(*) from billing_ingress.stripe_webhook_receipts"),
     /permission denied/,

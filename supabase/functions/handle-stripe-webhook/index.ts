@@ -13,6 +13,7 @@ import {
   createStripeInvoiceProjectionProvider,
   processAcceptedStripeInvoiceReceipt,
 } from "../_shared/stripe-invoice-projection/index.ts";
+import { processAcceptedStripeNoopCheckoutReceipt } from "../_shared/stripe-noop-checkout-receipt.ts";
 import { validateStripeExtensionApplicationResult } from "../_shared/stripe-extension-application.ts";
 
 const corsHeaders = {
@@ -357,6 +358,41 @@ serve(async (req) => {
           receipt_status: applied.receipt_status,
           dispatch_status: applied.dispatch_status,
         });
+      }
+
+      let durable: DurableReceiptResult;
+      try {
+        const input = await buildReceiptPersistenceInput(event, rawBody);
+        durable = await withTimeout(createSupabaseReceiptPersister(supabaseClient)(input));
+      } catch (receiptError) {
+        const kind = receiptError instanceof ReceiptIngressError ? receiptError.kind : "persistence";
+        logStep("Non-extension Checkout receipt was not durably accepted", { kind });
+        return jsonResponse(kind === "invalid_event" ? 400 : 503, {
+          error: kind === "invalid_event" ? "Invalid event" : "Receipt persistence unavailable",
+        });
+      }
+
+      try {
+        const result = await withTimeout(processAcceptedStripeNoopCheckoutReceipt({
+          client: supabaseClient,
+          receipt: durable,
+          livemode: event.livemode,
+        }));
+        if (result.status === "retryable") {
+          logStep("Non-extension Checkout receipt remains retryable", { code: result.code });
+          return jsonResponse(503, { error: "Checkout receipt processing pending" });
+        }
+        const receiptStatus = result.status === "ignored" ? "ignored" : result.receipt_status;
+        const dispatchStatus = result.status === "ignored" ? "completed" : result.dispatch_status;
+        return jsonResponse(200, {
+          received: true,
+          outcome: result.outcome,
+          receipt_status: receiptStatus,
+          dispatch_status: dispatchStatus,
+        });
+      } catch {
+        logStep("Non-extension Checkout receipt could not be finalized");
+        return jsonResponse(503, { error: "Checkout receipt processing pending" });
       }
     }
 
