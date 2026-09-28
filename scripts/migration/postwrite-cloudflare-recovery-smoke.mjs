@@ -4,13 +4,17 @@
 
 import assert from "node:assert/strict";
 import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
-import { mkdir, readdir, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+
+import { exportEncryptedSnapshot } from "./snapshot-export-encrypted.mjs";
+import { openSnapshotBundle, SNAPSHOT_BUNDLE_CIPHERTEXT } from "./snapshot-encryption.mjs";
+import { verifySnapshot } from "./snapshot-verify.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const workerRoot = path.join(repoRoot, "workers/api");
@@ -26,6 +30,7 @@ const migrationDirectory = path.join(workerRoot, "migrations-business");
 const authName = "fanmark-auth-staging";
 const authId = "2116bc43-32ab-4e3e-b762-9378df88b95f";
 const authMigrationDirectory = path.join(workerRoot, "migrations");
+const recoveryBucketName = "fanmark-migration-backups-staging";
 const webhookApiVersion = "2025-08-27.basil";
 const startedAt = new Date().toISOString();
 const suffix = randomBytes(8).toString("hex");
@@ -35,6 +40,8 @@ const workerName = `fanmark-recovery-${Date.now()}-${suffix}`;
 const configName = `.wrangler-recovery-${suffix}.jsonc`;
 const configPath = path.join(workerRoot, configName);
 const tempReportPath = path.join(os.tmpdir(), `fanmark-postwrite-recovery-${suffix}.json`);
+let recoveryArtifactsRoot = null;
+const uploadedR2Keys = [];
 const syntheticSecret = `whsec_${randomBytes(32).toString("base64url")}`;
 const syntheticAuthSecret = randomBytes(32).toString("base64url");
 const syntheticAuthUserId = randomUUID();
@@ -47,6 +54,7 @@ const emailDuringFreeze = `recovery-freeze-${randomUUID()}@example.invalid`;
 const referralBeforeBookmark = `postwrite-recovery:${randomUUID()}`;
 const referralAfterBookmark = `postwrite-recovery:${randomUUID()}`;
 const referralDuringFreeze = `postwrite-recovery:${randomUUID()}`;
+const freezeProbeEntries = [];
 const firstEventId = `evt_recovery_${randomUUID().replaceAll("-", "")}`;
 const firstObjectId = `cus_recovery_${randomUUID().replaceAll("-", "")}`;
 
@@ -67,9 +75,38 @@ let report = {
   failureKind: null,
   database: { name: databaseName, id: null, expectedMigrationCount: null },
   authDatabase: { name: authDatabaseName, id: null, expectedMigrationCount: null },
-  worker: { name: workerName, origin: null, deployedVersion: null, frozenVersion: null },
-  recovery: { bookmark: null, authBookmark: null, acknowledgedDigest: null, reconciliationMs: null },
-  cleanup: { workerDeleted: false, databaseDeleted: false, authDatabaseDeleted: false, configDeleted: false },
+  worker: {
+    name: workerName,
+    origin: null,
+    deployedVersion: null,
+    frozenVersion: null,
+  },
+  recovery: {
+    bookmark: null,
+    authBookmark: null,
+    acknowledgedDigest: null,
+    reconciledDigest: null,
+    reconciliationMs: null,
+    encryptedBundleVerified: false,
+    encryptedBundleSha256: null,
+    r2ObjectCount: 0,
+    frozenMutationStatus: null,
+    frozenMutationError: null,
+    freezeProbeCount: 0,
+    freezeProbeAcceptedWrites: 0,
+    freezeConsecutiveRejectedWrites: 0,
+    authSignInDuringFreezeSucceeded: false,
+    encryptedBundleReplayMs: null,
+    replayedBundleDigest: null,
+  },
+  cleanup: {
+    workerDeleted: false,
+    databaseDeleted: false,
+    authDatabaseDeleted: false,
+    configDeleted: false,
+    r2ObjectsDeleted: false,
+    privateRecoveryArtifactsDeleted: false,
+  },
   lastFailedOperation: null,
   status: "running",
 };
@@ -172,11 +209,27 @@ function assertPrivateStagingTarget() {
       auth?.remote !== true) {
     fail("staging_target_mismatch");
   }
+  if (appConfig.r2_buckets?.some((bucket) => bucket.bucket_name === recoveryBucketName)) {
+    fail("recovery_bucket_must_not_be_bound_to_app_worker");
+  }
 
   const identity = parseJson(runWrangler(["whoami", "--json"], { configRelative: appConfigRelative }), "cloudflare_identity_invalid");
   if (identity.loggedIn !== true || identity.accounts?.some((account) => account.id === accountId) !== true) {
     fail("cloudflare_account_mismatch");
   }
+
+  const bucket = parseJson(
+    runWrangler(["r2", "bucket", "info", recoveryBucketName, "--json"], { configRelative: appConfigRelative }),
+    "recovery_bucket_info_invalid",
+  );
+  if (bucket.name !== recoveryBucketName || bucket.location !== "APAC" ||
+      bucket.object_count !== "0" || bucket.bucket_size !== "0 B") {
+    fail("recovery_bucket_not_empty_private_staging_target");
+  }
+  const devUrl = runWrangler(["r2", "bucket", "dev-url", "get", recoveryBucketName], { configRelative: appConfigRelative });
+  if (!/public access .* disabled/iu.test(devUrl)) fail("recovery_bucket_public_access_enabled");
+  const domains = runWrangler(["r2", "bucket", "domain", "list", recoveryBucketName], { configRelative: appConfigRelative });
+  if (!/no custom domains connected/iu.test(domains)) fail("recovery_bucket_custom_domain_present");
 
   const databases = databaseRows();
   if (!databases.some((database) => databaseNameOf(database) === businessName && databaseIdOf(database) === businessId)) {
@@ -500,16 +553,44 @@ async function postWaitlist(origin, email, referralSource) {
   }
 }
 
-async function postWaitlistDuringFreeze(origin) {
+async function postWaitlistDuringFreeze(origin, { email, referralSource }) {
   const response = await fetch(`${origin}/api/waitlist`, {
     method: "POST",
     headers: { origin, "content-type": "application/json" },
-    body: JSON.stringify({ email: emailDuringFreeze, referral_source: referralDuringFreeze }),
+    body: JSON.stringify({ email, referral_source: referralSource }),
     signal: AbortSignal.timeout(10_000),
   });
   const body = await response.json();
-  assert.equal(response.status, 503);
-  assert.equal(body.error, "cutover_write_freeze");
+  report.recovery.frozenMutationStatus = response.status;
+  report.recovery.frozenMutationError = typeof body?.error === "string" && /^[a-z0-9_-]{1,64}$/iu.test(body.error)
+    ? body.error
+    : null;
+  if (response.status === 503 && body?.error === "cutover_write_freeze") return "blocked";
+  if (response.status !== 202 || body?.schemaVersion !== 1 || body?.accepted !== true || Object.keys(body).length !== 2) {
+    fail(`waitlist_during_freeze_http_${response.status}`);
+  }
+  assertOneWaitingRow(tableRowsForEmail(email), email, referralSource);
+  report.recovery.freezeProbeAcceptedWrites += 1;
+  return "accepted_during_rollout";
+}
+
+async function waitForStableWriteFreeze(origin) {
+  const requiredConsecutiveRejections = 5;
+  const maximumProbes = 30;
+  let blockedStreak = 0;
+  for (let attempt = 0; attempt < maximumProbes; attempt += 1) {
+    const entry = attempt === 0
+      ? { email: emailDuringFreeze, referralSource: referralDuringFreeze }
+      : { email: `recovery-freeze-${randomUUID()}@example.invalid`, referralSource: `postwrite-recovery:${randomUUID()}` };
+    freezeProbeEntries.push(entry);
+    report.recovery.freezeProbeCount += 1;
+    const result = await postWaitlistDuringFreeze(origin, entry);
+    blockedStreak = result === "blocked" ? blockedStreak + 1 : 0;
+    report.recovery.freezeConsecutiveRejectedWrites = blockedStreak;
+    if (blockedStreak >= requiredConsecutiveRejections) return;
+    if (attempt + 1 < maximumProbes) await new Promise((resolve) => setTimeout(resolve, 1_000));
+  }
+  fail("write_freeze_did_not_stabilize");
 }
 
 function assertOneWaitingRow(rows, email, referralSource) {
@@ -522,6 +603,176 @@ function assertOneWaitingRow(rows, email, referralSource) {
 
 function hash(value) {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
+}
+
+const recoveryExportTables = [
+  { name: "waitlist", database: "business", field: "business_waitlist_sql" },
+  { name: "stripe_webhook_receipts", database: "business", field: "business_receipt_sql" },
+  { name: "stripe_webhook_dispatches", database: "business", field: "business_dispatch_sql" },
+  { name: "user", database: "auth", field: "auth_user_sql" },
+  { name: "account", database: "auth", field: "auth_account_sql" },
+  { name: "session", database: "auth", field: "auth_session_sql" },
+];
+
+function recoveryBundleCatalog() {
+  const table = "recovery_bundle_fixture";
+  const columns = [
+    { name: "id", type: "uuid", ordinal: 1, notNull: true },
+    ...recoveryExportTables.map(({ field }, index) => ({ name: field, type: "text", ordinal: index + 2, notNull: true })),
+  ];
+  return {
+    observed_at: startedAt,
+    columns: columns.map((column) => ({
+      table_name: table,
+      column_name: column.name,
+      ordinal: column.ordinal,
+      postgres_type: column.type,
+      type_schema: "pg_catalog",
+      type_name: column.type,
+      type_kind: "b",
+      not_null: column.notNull,
+      default_expression: null,
+      identity: "",
+      generated: "",
+      collation: null,
+    })),
+    constraints: [{
+      table_name: table,
+      name: "recovery_bundle_fixture_pkey",
+      kind: "p",
+      definition: "PRIMARY KEY (id)",
+      validated: true,
+      deferrable: false,
+      initially_deferred: false,
+    }],
+    indexes: [],
+    enums: [],
+    triggers: [],
+    rls_policies: [],
+    views: [],
+    functions: [],
+  };
+}
+
+function recoveryBundleSession(catalog, values) {
+  const table = "recovery_bundle_fixture";
+  const columns = catalog.columns.map((column) => column.column_name);
+  const row = { id: randomUUID(), ...values };
+  return {
+    async begin() { return { currentUser: "postgres", isolation: "repeatable read", readOnly: true }; },
+    async readCatalog() { return catalog; },
+    async readSequenceStates() { return []; },
+    async *streamTable({ table: requestedTable }) {
+      if (requestedTable !== table) fail("recovery_bundle_table_mismatch");
+      yield { schemaVersion: 1, table, columns, values: row, arrayMetadata: {} };
+    },
+    async countTable(requestedTable) {
+      if (requestedTable !== table) fail("recovery_bundle_table_mismatch");
+      return "1";
+    },
+    async commit() {},
+    async rollback() {},
+    async close() {},
+  };
+}
+
+async function exportSyntheticTable(database, table, outputPath) {
+  const targetDatabase = database === "business" ? databaseName : authDatabaseName;
+  runWrangler([
+    "d1", "export", targetDatabase, "--remote", "--no-schema",
+    "--table", table, "--output", outputPath, "--skip-confirmation",
+  ], { timeout: 300_000 });
+  await chmod(outputPath, 0o600);
+  const sql = await readFile(outputPath, "utf8");
+  const inserts = [...sql.matchAll(/\bINSERT\s+(?:OR\s+\w+\s+)?INTO\s+(?:"([^"]+)"|`([^`]+)`|\[([^\]]+)\]|([A-Za-z_][A-Za-z0-9_]*))/giu)];
+  if (inserts.length !== 1 || inserts[0].slice(1).find(Boolean) !== table ||
+      /\b(?:CREATE|DROP|ALTER|ATTACH|DETACH)\s+(?:TABLE|INDEX|DATABASE)\b/iu.test(sql)) {
+    fail("synthetic_d1_export_shape_invalid");
+  }
+  return sql;
+}
+
+async function createEncryptedR2RecoveryBundle(passwordHash) {
+  recoveryArtifactsRoot = await mkdtemp(path.join(os.tmpdir(), "fanmark-postwrite-r2-recovery-"));
+  await chmod(recoveryArtifactsRoot, 0o700);
+  const exportedSql = {};
+  for (const [index, entry] of recoveryExportTables.entries()) {
+    const outputPath = path.join(recoveryArtifactsRoot, `source-${index}.sql`);
+    exportedSql[entry.field] = await exportSyntheticTable(entry.database, entry.name, outputPath);
+  }
+  for (const [field, marker] of Object.entries({
+    business_waitlist_sql: emailBeforeBookmark,
+    business_receipt_sql: firstEventId,
+    business_dispatch_sql: firstEventId,
+    auth_user_sql: syntheticAuthEmail,
+    auth_account_sql: syntheticAuthAccountId,
+    auth_session_sql: syntheticAuthUserId,
+  })) {
+    assert.ok(exportedSql[field].includes(marker), `synthetic ${field} export omitted its unique marker`);
+  }
+  assert.ok(exportedSql.auth_account_sql.includes(passwordHash), "synthetic credential was not in the Auth backup");
+
+  const catalog = recoveryBundleCatalog();
+  const bundleDir = path.join(recoveryArtifactsRoot, "bundle");
+  const downloadedBundleDir = path.join(recoveryArtifactsRoot, "downloaded-bundle");
+  const restoredDir = path.join(recoveryArtifactsRoot, "restored-snapshot");
+  await mkdir(downloadedBundleDir, { mode: 0o700 });
+  const encryptionKey = randomBytes(32);
+  const sealed = await exportEncryptedSnapshot({
+    catalog,
+    bundleDir,
+    encryptionKey,
+    session: recoveryBundleSession(catalog, { id: randomUUID(), ...exportedSql }),
+  });
+  const bundleFiles = [
+    { name: "bundle.header.json", path: sealed.bundleHeaderPath },
+    { name: SNAPSHOT_BUNDLE_CIPHERTEXT, path: path.join(bundleDir, SNAPSHOT_BUNDLE_CIPHERTEXT) },
+  ];
+  const runId = randomUUID();
+  const bundleBytes = [];
+  for (const file of bundleFiles) {
+    const bytes = await readFile(file.path);
+    for (const entry of recoveryExportTables) {
+      assert.equal(bytes.includes(Buffer.from(exportedSql[entry.field])), false, "plaintext D1 export leaked into an R2 object");
+    }
+    const key = `postwrite-recovery/${suffix}/${runId}/${file.name}`;
+    uploadedR2Keys.push(key);
+    runWrangler([
+      "r2", "object", "put", `${recoveryBucketName}/${key}`, "--remote", "--force",
+      "--file", file.path, "--content-type", "application/octet-stream",
+    ], { timeout: 180_000 });
+    const downloadedPath = path.join(downloadedBundleDir, file.name);
+    runWrangler([
+      "r2", "object", "get", `${recoveryBucketName}/${key}`, "--remote", "--file", downloadedPath,
+    ], { timeout: 180_000 });
+    await chmod(downloadedPath, 0o600);
+    const downloaded = await readFile(downloadedPath);
+    assert.deepEqual(downloaded, bytes, `R2 bundle object mismatch: ${file.name}`);
+    bundleBytes.push(downloaded);
+  }
+
+  const opened = await openSnapshotBundle({
+    bundleDir: downloadedBundleDir,
+    outputDir: restoredDir,
+    encryptionKey,
+  });
+  assert.equal((await verifySnapshot(opened.manifestPath)).valid, true, "downloaded R2 bundle did not verify");
+  const manifest = JSON.parse(await readFile(opened.manifestPath, "utf8"));
+  if (manifest.tables.length !== 1 || manifest.tables[0]?.rowCount !== "1") fail("recovery_bundle_snapshot_shape_invalid");
+  const rowFile = path.join(restoredDir, manifest.tables[0].file);
+  const lines = (await readFile(rowFile, "utf8")).trimEnd().split("\n");
+  if (lines.length !== 1) fail("recovery_bundle_snapshot_row_count_invalid");
+  const record = JSON.parse(lines[0]);
+  const restoredSql = record?.envelope?.values;
+  if (!restoredSql || record?.envelope?.table !== "recovery_bundle_fixture") fail("recovery_bundle_snapshot_row_invalid");
+  for (const entry of recoveryExportTables) {
+    assert.equal(restoredSql[entry.field], exportedSql[entry.field], `decrypted ${entry.field} changed`);
+  }
+  await rm(restoredDir, { recursive: true, force: true });
+  report.recovery.encryptedBundleVerified = true;
+  report.recovery.encryptedBundleSha256 = createHash("sha256").update(Buffer.concat(bundleBytes)).digest("hex");
+  report.recovery.r2ObjectCount = bundleFiles.length;
+  return exportedSql;
 }
 
 function applyBusinessMigrations() {
@@ -654,6 +905,7 @@ async function runDrill() {
   assert.equal(acknowledgedState.auth.sessions.length, 1);
   report.recovery.acknowledgedDigest = hash(acknowledgedState);
   report.phase = "capture_business_and_auth_recovery_bookmarks";
+  const encryptedRecoverySql = await createEncryptedR2RecoveryBundle(passwordHash);
   const bookmark = createBookmark(databaseName, "bookmark");
   const authBookmark = createBookmark(authDatabaseName, "authBookmark");
 
@@ -670,9 +922,15 @@ async function runDrill() {
   await changeFreeze(config, true);
   const frozenDeploy = runWrangler(["deploy", "--message", "freeze synthetic Worker for forward recovery"], { timeout: 240_000 });
   report.worker.frozenVersion = frozenDeploy.match(/Version ID:\s*([0-9a-f-]{36})/iu)?.[1] ?? null;
+  if (!report.worker.frozenVersion) fail("freeze_deployment_version_missing");
   await waitForRoute(origin, "frozen");
-  await postWaitlistDuringFreeze(origin);
-  assert.equal(tableRowsForEmail(emailDuringFreeze).length, 0, "frozen mutation must not reach D1");
+  await waitForStableWriteFreeze(origin);
+  report.phase = "verify_authentication_remains_available_during_write_freeze";
+  const frozenSignIn = await signInSyntheticUser(origin);
+  if (frozenSignIn.sessionId === firstAuthSession.sessionId || frozenSignIn.sessionId === secondAuthSession.sessionId) {
+    fail("auth_sign_in_during_freeze_did_not_create_new_session");
+  }
+  report.recovery.authSignInDuringFreezeSucceeded = true;
 
   report.phase = "restore_and_reconcile_bookmark";
   const restoreStarted = restoreToBookmark(databaseName, bookmark);
@@ -690,7 +948,9 @@ async function runDrill() {
     fail("acknowledged_auth_session_failed_after_restore");
   }
   assert.equal(tableRowsForEmail(emailAfterBookmark).length, 0, "post-bookmark synthetic row survived restore");
-  assert.equal(tableRowsForEmail(emailDuringFreeze).length, 0, "frozen synthetic marker reached D1");
+  for (const entry of freezeProbeEntries) {
+    if (tableRowsForEmail(entry.email).length !== 0) fail("post_bookmark_freeze_probe_survived_restore");
+  }
   assert.equal(stripeLedgerRows([firstEventId]).length, 1);
   const orphanDispatches = runD1(`
     SELECT COUNT(*) AS count FROM stripe_webhook_dispatches AS d
@@ -700,6 +960,46 @@ async function runDrill() {
   `);
   assert.equal(Number(orphanDispatches[0]?.count), 0);
   report.recovery.reconciledDigest = hash(restoredState);
+
+  report.phase = "restore_business_and_auth_rows_from_encrypted_r2_bundle";
+  writeD1(databaseName, `DELETE FROM stripe_webhook_dispatches WHERE stripe_event_id = ${sqlLiteral(firstEventId)};`, "recovery_bundle_clear_failed");
+  writeD1(databaseName, `DELETE FROM stripe_webhook_receipts WHERE stripe_event_id = ${sqlLiteral(firstEventId)};`, "recovery_bundle_clear_failed");
+  writeD1(databaseName, `DELETE FROM waitlist WHERE email = ${sqlLiteral(emailBeforeBookmark)};`, "recovery_bundle_clear_failed");
+  writeD1(authDatabaseName, `DELETE FROM session WHERE userId = ${sqlLiteral(syntheticAuthUserId)};`, "recovery_bundle_clear_failed");
+  writeD1(authDatabaseName, `DELETE FROM account WHERE userId = ${sqlLiteral(syntheticAuthUserId)};`, "recovery_bundle_clear_failed");
+  writeD1(authDatabaseName, `DELETE FROM "user" WHERE id = ${sqlLiteral(syntheticAuthUserId)};`, "recovery_bundle_clear_failed");
+  const absentBusiness = [
+    tableRowsForEmail(emailBeforeBookmark).length,
+    stripeLedgerRows([firstEventId]).length,
+    Number(runD1(`SELECT COUNT(*) AS count FROM stripe_webhook_dispatches WHERE stripe_event_id = ${sqlLiteral(firstEventId)}`)[0]?.count),
+  ];
+  const absentAuth = Number(runD1On(authDatabaseName, `SELECT COUNT(*) AS count FROM "user" WHERE id = ${sqlLiteral(syntheticAuthUserId)}`)[0]?.count);
+  if (absentBusiness.some((count) => count !== 0) || absentAuth !== 0) fail("recovery_bundle_clear_readback_failed");
+
+  const replayStarted = performance.now();
+  for (const entry of recoveryExportTables) {
+    const targetDatabase = entry.database === "business" ? databaseName : authDatabaseName;
+    const sql = encryptedRecoverySql[entry.field];
+    if (typeof sql !== "string" || sql.length === 0) fail("recovery_bundle_sql_missing");
+    const sqlPath = path.join(recoveryArtifactsRoot, `replayed-${entry.field}.sql`);
+    await writeFile(sqlPath, sql, { mode: 0o600, flag: "wx" });
+    await chmod(sqlPath, 0o600);
+    runWrangler(["d1", "execute", targetDatabase, "--remote", "--file", sqlPath], { timeout: 180_000 });
+  }
+  const replayedState = {
+    waitlist: tableRowsForEmail(emailBeforeBookmark),
+    stripeLedger: stripeLedgerRows([firstEventId]),
+    auth: syntheticAuthState(passwordHash),
+  };
+  const replayedSession = await readSyntheticSession(origin, firstAuthSession.cookie);
+  report.recovery.encryptedBundleReplayMs = Math.round(performance.now() - replayStarted);
+  report.recovery.replayedBundleDigest = hash(replayedState);
+  assert.deepEqual(replayedState, acknowledgedState, "encrypted R2 recovery bundle did not restore the exact synthetic Business/Auth state");
+  if (replayedSession?.user?.id !== syntheticAuthUserId ||
+      replayedSession?.session?.id !== firstAuthSession.sessionId) {
+    fail("encrypted_r2_recovery_auth_session_failed");
+  }
+
   report.phase = "complete";
   report.status = "passed";
 }
@@ -797,6 +1097,38 @@ async function cleanup() {
       cleanupFailed = true;
     }
   }
+  if (uploadedR2Keys.length > 0) {
+    try {
+      for (const key of uploadedR2Keys) {
+        runCleanup(["r2", "object", "delete", `${recoveryBucketName}/${key}`, "--remote", "--force"], {
+          configRelative: appConfigRelative,
+          input: "",
+        });
+      }
+      const bucket = parseJson(
+        runWrangler(["r2", "bucket", "info", recoveryBucketName, "--json"], { configRelative: appConfigRelative }),
+        "recovery_bucket_cleanup_readback_invalid",
+      );
+      if (bucket.object_count !== "0" || bucket.bucket_size !== "0 B") fail("recovery_bucket_cleanup_readback_failed");
+      report.cleanup.r2ObjectsDeleted = true;
+      uploadedR2Keys.length = 0;
+    } catch {
+      cleanupFailed = true;
+    }
+  }
+  if (recoveryArtifactsRoot) {
+    try {
+      await rm(recoveryArtifactsRoot, { recursive: true, force: true });
+      await readdir(recoveryArtifactsRoot).then(
+        () => fail("private_recovery_artifacts_cleanup_readback_failed"),
+        (error) => { if (error?.code !== "ENOENT") fail("private_recovery_artifacts_cleanup_readback_failed"); },
+      );
+      report.cleanup.privateRecoveryArtifactsDeleted = true;
+      recoveryArtifactsRoot = null;
+    } catch {
+      cleanupFailed = true;
+    }
+  }
   if (cleanupFailed) {
     report.status = "cleanup_failed";
     if (primaryError) process.stderr.write("postwrite_recovery_cleanup_failed_after_test_error\n");
@@ -843,9 +1175,11 @@ if (primaryError) {
   process.stdout.write(
     `PASS synthetic post-write Cloudflare recovery: business/Auth D1 migrations ` +
     `${report.database.expectedMigrationCount}/${report.authDatabase.expectedMigrationCount}, ` +
-    `reconciled bookmark ${report.recovery.reconciliationMs} ms.\n` +
+    `Time Travel reconciliation ${report.recovery.reconciliationMs} ms, encrypted R2 bundle replay ` +
+    `${report.recovery.encryptedBundleReplayMs} ms.\n` +
     `Temporary Worker/business/Auth D1 cleanup: ${report.cleanup.workerDeleted}/` +
     `${report.cleanup.databaseDeleted}/${report.cleanup.authDatabaseDeleted}; ` +
+    `R2/private artifact cleanup: ${report.cleanup.r2ObjectsDeleted}/${report.cleanup.privateRecoveryArtifactsDeleted}; ` +
     `private report: ${tempReportPath}\n`,
   );
 }

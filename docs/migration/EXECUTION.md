@@ -3526,3 +3526,34 @@ The rehearsal still has no R2 restoration, applied Stripe business effect,
 complete encrypted-backup validation, or coordinated Supabase-writer/Cron
 freeze. The coarse estimates remain about 53% end-to-end and 73% for the
 prioritized app/infrastructure/non-user-master scope.
+
+## Business/Auth synthetic recovery through private R2 (2026-09-28 JST)
+
+The guarded post-write command was extended to include an encrypted R2 replay
+slice. A disposable APAC Business D1 and Auth D1 received only synthetic
+state. The command exported six tables from those D1s with table-filtered
+`wrangler d1 export --no-schema`, packaged the SQL exports as a synthetic row
+in the existing AES-256-GCM snapshot format, and uploaded the header and
+ciphertext to the private `fanmark-migration-backups-staging` bucket. R2
+download hashes, bundle authentication, manifest verification, and exact
+decrypted SQL comparisons passed.
+
+The Time Travel bookmarks restored the acknowledged Business/Auth digest
+`a1b36eb8d1a4e488d95314d39bb19b7289bb425a751bb5e0a3a33f884ee67ca3` in
+11.992 seconds. The command then removed the six synthetic table rows and
+replayed them from the decrypted R2 bundle; the same digest and original
+Better Auth session cookie were verified in 28.436 seconds. The Worker freeze
+rejected five consecutive valid waitlist writes with 503, accepted none, and
+still allowed synthetic sign-in. A preliminary rollout attempt observed a 202
+after one readiness probe returned 503, so the gate now requires consecutive
+actual write rejections. Wrangler's deployment-list response did not reconcile
+the temporary freeze version, limiting this evidence to repeated behavior from
+the tested workers.dev origin rather than global rollout completion.
+
+Cleanup verified the temporary Worker, both D1s, local bundle, and two R2
+objects were removed; readback showed only the three pre-existing staging D1s
+and an empty backup bucket. This is a six-table synthetic slice, not a complete
+Business/Auth/Storage backup. It does not apply Stripe business effects, test
+Storage-object recovery, freeze Supabase writers/Cron, or import real user
+data. Issue #37 remains open; the details and exact private artifact digest are
+in [cutover-rehearsal.md](cutover-rehearsal.md).

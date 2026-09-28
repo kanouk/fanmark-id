@@ -518,3 +518,54 @@ synthetic state only. It does not restore R2, apply Stripe effects, validate a
 complete encrypted backup, freeze Supabase writers/Cron, or import real user
 data. Issue #37 remains open, and public DNS/domain changes remain deferred to
 the final migration phase.
+
+## Business/Auth D1 plus encrypted R2 recovery slice (2026-09-28 JST)
+
+The guarded command
+`npm run test:migration:staging-postwrite-recovery` now also exercises the
+private migration-backup bucket. Preflight confirmed the exact APAC staging
+bucket was empty, had no public `r2.dev` access or custom domain, and was not
+bound to the app Worker. The temporary API Worker had no R2 binding.
+
+After the synthetic waitlist row, one pending `customer.updated` receipt and
+dispatch, and one Better Auth session were acknowledged, the rehearsal
+exported only these six synthetic tables: `waitlist`,
+`stripe_webhook_receipts`, `stripe_webhook_dispatches`, Auth `user`, `account`,
+and `session`. It put those table-filtered SQL exports in a synthetic fixture
+row, sealed that row with a fresh in-memory AES-256-GCM key using the existing
+encrypted snapshot format, then uploaded the header and ciphertext to R2.
+Downloaded object bytes matched, bundle authentication and snapshot verification
+passed, and the decrypted SQL exactly matched all six private source exports.
+No real user or source Supabase rows were read.
+
+The run bookmarked Business and Auth D1, created later waitlist/Auth-session
+writes, and redeployed the temporary Worker with `CUTOVER_WRITE_FREEZE=true`.
+Five consecutive valid waitlist POSTs returned 503
+`cutover_write_freeze`; none was accepted. Better Auth sign-in remained
+available and created a synthetic session during the freeze. Time Travel then
+restored the two bookmarks: the initial waitlist/receipt/dispatch/session
+digest matched exactly, later writes disappeared, and the first session cookie
+still resolved to the same UUID. Restore plus reconciliation took 11.992 s.
+
+To exercise archive recovery as well, the command deleted those six synthetic
+rows from the disposable databases and replayed the SQL restored from R2. The
+replayed digest exactly matched the acknowledged and Time Travel-restored
+digest `a1b36eb8d1a4e488d95314d39bb19b7289bb425a751bb5e0a3a33f884ee67ca3`;
+the original session cookie remained valid. R2 upload/readback/decrypt and
+SQL replay took 28.436 s. The private report records bundle digest
+`79ea0580d9b4b9770716217dfc3cfa00fa4757fc7fb4b22d7699f4668dcbb23c`.
+
+An earlier attempt observed a 202 valid mutation after a readiness request had
+returned 503. The smoke now treats readiness as insufficient and requires five
+consecutive actual write rejections. Wrangler's deployment-list read did not
+reconcile the temporary freeze version, so these results prove repeated
+behavior from the tested workers.dev origin, not global or multi-region rollout
+completion.
+
+Cleanup removed the temporary Worker, both D1s, the local private bundle, and
+both R2 objects. Independent readback confirmed only the three pre-existing
+staging D1s and an empty backup bucket. This is a six-table synthetic restore
+slice, not a complete Business/Auth/Storage backup. It does not apply a Stripe
+business effect, exercise Storage-object recovery, coordinate Supabase-writer
+or Cron freeze, or import real user data. No existing staging D1, production
+route, user data, or DNS/domain state was changed. Issue #37 remains open.

@@ -57,9 +57,9 @@ This closes only the narrow app-schema post-ack restore probe, not the complete
 pre/post-write drills or issue #37; see
 [`cutover-rehearsal.md`](cutover-rehearsal.md).
 
-A guarded, repeatable post-write smoke is now available as
-`npm run test:migration:staging-postwrite-recovery`. The latest 2026-09-28 run
-applied all 17 business migrations to disposable APAC D1
+A guarded, repeatable post-write smoke is available as
+`npm run test:migration:staging-postwrite-recovery`. An earlier 2026-09-28
+business-only run applied all 17 business migrations to disposable APAC D1
 `e87563cb-78b4-48d3-8948-b163e3a5bb2c`, deployed the real Worker with only that
 D1 plus a unique Rate Limit binding, accepted one synthetic waitlist write and
 a duplicate synthetic Stripe receipt, then froze writes and restored the
@@ -68,11 +68,42 @@ receipt/dispatch read back with identical digest
 `488b3ecde4c5fa8c0941b839e454e82f1b7207ae0452096355d3dbf84ef8d76a`; one later
 row was absent, and the frozen mutation was rejected. Restore plus readback took
 4.530 s. The temporary Worker, D1, and config were removed; the private result
-report is outside the repository. This proves the narrow
-app-schema recovery path only: no live Stripe delivery during restore, applied
-payment effect, Auth/R2 recovery, full encrypted backup, or coordinated
-Supabase-writer freeze was exercised, so issue #37 remains open. The runbook
-records resource/version IDs and exact digest in
+report is outside the repository. This earlier run proved only the narrow
+app-schema path; it did not exercise Auth/R2 recovery, a complete encrypted
+backup, or a coordinated Supabase-writer freeze. The later integrated run below
+extends this evidence, and issue #37 remains open.
+
+The latest guarded post-write run (2026-09-28) extended the drill across
+Business D1, Better Auth D1, and the private staging R2 archive. It exported
+only six synthetic tables (waitlist, Stripe receipt/dispatch, Auth user,
+account, and session), placed those SQL exports inside the standard encrypted
+snapshot bundle, uploaded and hash-checked both bundle objects, then decrypted
+and verified the snapshot. After Time Travel restored the acknowledged
+Business/Auth bookmarks, the drill removed those synthetic rows and re-applied
+the SQL from R2. The acknowledged, Time Travel-restored, and R2-replayed state
+digests all matched at
+`a1b36eb8d1a4e488d95314d39bb19b7289bb425a751bb5e0a3a33f884ee67ca3`; the
+original session cookie worked after both restore paths. Time Travel restore
+plus reconciliation took 11.992 seconds and encrypted R2 replay took 28.436
+seconds. The report's bundle digest is
+`79ea0580d9b4b9770716217dfc3cfa00fa4757fc7fb4b22d7699f4668dcbb23c`.
+
+The deployed freeze route rejected five consecutive valid synthetic waitlist
+writes with 503 and accepted none; Better Auth sign-in still created a
+synthetic session while writes were frozen. A preliminary run had seen one
+202 after a single readiness probe returned 503, so the smoke now requires
+five consecutive real write rejections. The deployment-list API did not
+reconcile the temporary freeze version reported by Wrangler; this run therefore
+proves repeated behavior from the tested `workers.dev` origin, not global or
+multi-region rollout completion.
+
+Cleanup removed the temporary Worker, both disposable D1 databases, the local
+private bundle, and both R2 objects. Independent readback found the backup
+bucket empty and only the three pre-existing staging D1s. This remains a
+six-table synthetic restore slice: it is not a full Business/Auth/Storage
+backup, does not apply a Stripe business effect, and does not freeze Supabase
+writers or Cron. No production route, real user data, or domain/DNS state was
+changed. Issue #37 remains open; see
 [`cutover-rehearsal.md`](cutover-rehearsal.md).
 
 The same date, a loopback-only local Supabase smoke passed email/password Auth,
