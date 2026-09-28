@@ -254,7 +254,11 @@ async function issueCode(db: D1Database, userId: string, body: JsonObject, now: 
   }, 200);
 }
 
-async function planLimit(db: D1Database, userId: string, now: string): Promise<{ current: number; limit: number }> {
+async function planLimit(
+  db: D1Database,
+  userId: string,
+  now: string,
+): Promise<{ current: number; active: number; pending: number; limit: number }> {
   const settings = await db.prepare("SELECT plan_type FROM user_settings WHERE user_id = ? LIMIT 2")
     .bind(userId).all<{ plan_type: unknown }>();
   if (settings.results?.length !== 1) throw new FanmarkTransferApiError("user_settings_unavailable", 503);
@@ -275,12 +279,22 @@ async function planLimit(db: D1Database, userId: string, now: string): Promise<{
   } else if ((setting.results?.length ?? 0) > 1) {
     throw new FanmarkTransferApiError("plan_limit_unavailable", 503);
   }
-  const count = await db.prepare(`
+  const activeCount = await db.prepare(`
     SELECT COUNT(*) AS count FROM fanmark_licenses
     WHERE user_id = ? AND status = 'active' AND (license_end IS NULL OR license_end > ?)
   `).bind(userId, now).first<{ count: unknown }>();
-  const current = typeof count?.count === "number" && Number.isSafeInteger(count.count) ? count.count : 0;
-  return { current, limit };
+  const pendingCount = await db.prepare(`
+    SELECT COUNT(*) AS count FROM fanmark_transfer_requests AS r
+    JOIN fanmark_transfer_codes AS c ON c.id = r.transfer_code_id
+    WHERE r.requester_user_id = ? AND r.status = 'pending' AND c.status = 'applied'
+  `).bind(userId).first<{ count: unknown }>();
+  const active = typeof activeCount?.count === "number" && Number.isSafeInteger(activeCount.count)
+    ? activeCount.count
+    : 0;
+  const pending = typeof pendingCount?.count === "number" && Number.isSafeInteger(pendingCount.count)
+    ? pendingCount.count
+    : 0;
+  return { current: active + pending, active, pending, limit };
 }
 
 async function applyCode(db: D1Database, userId: string, body: JsonObject, now: Date): Promise<Response> {
@@ -326,9 +340,14 @@ async function applyCode(db: D1Database, userId: string, body: JsonObject, now: 
       UPDATE fanmark_transfer_codes SET status = 'applied', updated_at = ?
       WHERE id = ? AND status = 'active' AND expires_at > ? AND issuer_user_id <> ?
         AND EXISTS (SELECT 1 FROM fanmark_licenses WHERE id = fanmark_transfer_codes.license_id AND status = 'active')
-        AND (SELECT COUNT(*) FROM fanmark_licenses
-             WHERE user_id = ? AND status = 'active' AND (license_end IS NULL OR license_end > ?)) < ?
-    `).bind(nowIso, row.id, nowIso, userId, userId, nowIso, plan.limit),
+        AND (
+          (SELECT COUNT(*) FROM fanmark_licenses
+           WHERE user_id = ? AND status = 'active' AND (license_end IS NULL OR license_end > ?))
+          + (SELECT COUNT(*) FROM fanmark_transfer_requests AS r
+             JOIN fanmark_transfer_codes AS c ON c.id = r.transfer_code_id
+             WHERE r.requester_user_id = ? AND r.status = 'pending' AND c.status = 'applied')
+        ) < ?
+    `).bind(nowIso, row.id, nowIso, userId, userId, nowIso, userId, plan.limit),
     db.prepare(`
       INSERT INTO fanmark_transfer_requests
         (id, transfer_code_id, license_id, fanmark_id, requester_user_id, status,
@@ -363,6 +382,13 @@ async function applyCode(db: D1Database, userId: string, body: JsonObject, now: 
     `).bind(nowIso, nowIso, nowIso, requestId),
   ]);
   if (results[0]?.meta?.changes !== 1 || results[1]?.meta?.changes !== 1) {
+    const currentPlan = await planLimit(db, userId, nowIso);
+    if (currentPlan.current >= currentPlan.limit) {
+      throw new FanmarkTransferApiError("fanmark_limit_exceeded", 409, {
+        current: currentPlan.current,
+        limit: currentPlan.limit,
+      });
+    }
     throw new FanmarkTransferApiError("code_not_active", 409);
   }
   return json({ success: true, request_id: requestId, fanmark_name: row.display_fanmark ?? "", fanmark_short_id: row.short_id }, 200);
@@ -426,6 +452,14 @@ async function approveRequest(
       typeof transfer.transfer_code_id !== "string" || typeof transfer.short_id !== "string") {
     throw new FanmarkTransferApiError("transfer_unavailable", 503);
   }
+  const nowIso = toUtcMicrosecondTimestamp(now);
+  const recipientPlan = await planLimit(db, transfer.requester_user_id, nowIso);
+  if (recipientPlan.current > recipientPlan.limit) {
+    throw new FanmarkTransferApiError("fanmark_limit_exceeded", 409, {
+      current: recipientPlan.current,
+      limit: recipientPlan.limit,
+    });
+  }
   const tier = await master.prepare("SELECT initial_license_days FROM fanmark_tiers WHERE tier_level = ? LIMIT 2")
     .bind(transfer.tier_level).all<{ initial_license_days: unknown }>();
   if (tier.results?.length !== 1) throw new FanmarkTransferApiError("fanmark_tier_unavailable", 503);
@@ -439,7 +473,6 @@ async function approveRequest(
     end.setUTCDate(end.getUTCDate() + days);
     newEnd = toUtcMicrosecondTimestamp(roundUpToUtcMidnight(end));
   }
-  const nowIso = toUtcMicrosecondTimestamp(now);
   const lockUntil = toUtcMicrosecondTimestamp(new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000));
   const newLicenseId = crypto.randomUUID();
   const canonicalDisplay = typeof transfer.normalized_emoji === "string" ? transfer.normalized_emoji : null;
@@ -454,7 +487,17 @@ async function approveRequest(
           WHERE r.id = ? AND r.status = 'pending' AND c.status = 'applied'
             AND c.issuer_user_id = ? AND r.license_id = fanmark_licenses.id
         )
-    `).bind(nowIso, nowIso, nowIso, transfer.license_id, userId, requestId, userId),
+        AND (
+          (SELECT COUNT(*) FROM fanmark_licenses AS current
+           WHERE current.user_id = ? AND current.status = 'active'
+             AND (current.license_end IS NULL OR current.license_end > ?))
+          + (SELECT COUNT(*) FROM fanmark_transfer_requests AS pending
+             JOIN fanmark_transfer_codes AS pending_code ON pending_code.id = pending.transfer_code_id
+             WHERE pending.requester_user_id = ? AND pending.status = 'pending'
+               AND pending_code.status = 'applied')
+        ) <= ?
+    `).bind(nowIso, nowIso, nowIso, transfer.license_id, userId, requestId, userId,
+      transfer.requester_user_id, nowIso, transfer.requester_user_id, recipientPlan.limit),
     db.prepare(`
       INSERT INTO fanmark_licenses
         (id, fanmark_id, user_id, license_start, license_end, display_fanmark, status,
@@ -523,6 +566,13 @@ async function approveRequest(
     transfer.fanmark_id, transfer.requester_user_id, transfer.license_id, transfer.fanmark_id, userId)
     .first<{ completed: number }>();
   if (finalized?.completed !== 1) {
+    const currentPlan = await planLimit(db, transfer.requester_user_id, nowIso);
+    if (currentPlan.current > currentPlan.limit) {
+      throw new FanmarkTransferApiError("fanmark_limit_exceeded", 409, {
+        current: currentPlan.current,
+        limit: currentPlan.limit,
+      });
+    }
     throw new FanmarkTransferApiError("request_not_pending", 409);
   }
   return json({ success: true, new_license_id: newLicenseId, new_license_end: newEnd, fanmark_name: canonicalDisplay }, 200);

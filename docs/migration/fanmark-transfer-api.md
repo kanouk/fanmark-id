@@ -6,9 +6,23 @@ The authenticated routes are `GET /api/me/transfers` and `POST /api/me/transfers
 
 Issue, apply, reject, cancel, and approval state changes use D1 batches. Approval retires the old license, creates a fresh recipient license from the active master-tier duration, sets the 30-day transfer lock, deletes the old access/profile/password configuration, creates an inactive basic config, cancels pending lottery entries, and writes the audit/outbox records. It does not copy the old configuration. The UI may provide the new basic-config display name.
 
+Recipient capacity is reserved while an incoming transfer request is pending.
+The limit check counts active, unexpired licenses plus pending requests whose
+transfer code is applied. The code transition to `applied` repeats this count
+inside its D1 batch, so two simultaneous applications cannot reserve the last
+available slot. Approval checks capacity again inside the first conditional
+statement of its batch before it retires the sender's license. It counts all
+pending reservations, including its own, as the slot that is being converted
+into an active license;
+it is allowed when active licenses plus applied pending requests are at or
+below the current limit. If the recipient plan or active license count changed
+after application and that total is now above the limit, approval fails with
+`fanmark_limit_exceeded` and leaves the request, transfer code, sender license,
+and associated settings unchanged.
+
 The current Supabase schema constrains `fanmark_lottery_entries.cancellation_reason` to `user_request`, `license_extended`, or `system`, while `approve-transfer-request` attempts to write `license_transferred`. The D1 implementation records this transfer-triggered cancellation as `system`, which satisfies the current source DDL and keeps approval atomic. Aligning the source check and event vocabulary remains a separate source-schema correction.
 
-Local proof is provided by `workers/api/test/fanmark-transfer-d1.test.ts` and `src/lib/fanmark-transfer-api.test.ts`. The staging smoke uses only short-lived synthetic Better Auth users and synthetic business rows, then verifies cleanup. It does not import existing Auth/users or touch domain/DNS state.
+Local proof is provided by `workers/api/test/fanmark-transfer-d1.test.ts` and `src/lib/fanmark-transfer-api.test.ts`, including two synthetic transfer requests competing for one recipient slot and a plan-limit change between application and approval. The staging smoke uses only short-lived synthetic Better Auth users and synthetic business rows, then verifies cleanup. It does not import existing Auth/users or touch domain/DNS state.
 
 ## Staging lifecycle canary (2026-09-25 JST)
 

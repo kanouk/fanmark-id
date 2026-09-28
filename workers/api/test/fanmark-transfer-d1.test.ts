@@ -13,6 +13,8 @@ const RECIPIENT = "2a1b9c5f-3c8a-4890-9e04-3768885b6dd8";
 const OTHER = "3520ec30-f70d-433e-a5d5-d33e19406313";
 const FANMARK = "10000000-0000-4000-8000-000000000001";
 const LICENSE = "20000000-0000-4000-8000-000000000001";
+const SECOND_FANMARK = "10000000-0000-4000-8000-000000000002";
+const SECOND_LICENSE = "20000000-0000-4000-8000-000000000002";
 const NOW = "2026-09-25T10:15:23.123000Z";
 const CLOCK = () => new Date("2026-09-25T10:15:23.123Z");
 const ORIGIN = "https://app.example.test";
@@ -81,8 +83,8 @@ async function call(
   return handleFanmarkTransferRequest(request, requestEnv, async () => ({ available: true, userId }), CLOCK);
 }
 
-async function issue(): Promise<Record<string, unknown>> {
-  const response = await call("/issue", { license_id: LICENSE, disclaimer_agreed: true });
+async function issue(licenseId = LICENSE, issuer = OWNER): Promise<Record<string, unknown>> {
+  const response = await call("/issue", { license_id: licenseId, disclaimer_agreed: true }, issuer);
   expect(response.status).toBe(200);
   return await response.json() as Record<string, unknown>;
 }
@@ -91,6 +93,21 @@ async function apply(code: string): Promise<Record<string, unknown>> {
   const response = await call("/apply", { transfer_code: code, disclaimer_agreed: true }, RECIPIENT);
   expect(response.status).toBe(200);
   return await response.json() as Record<string, unknown>;
+}
+
+async function seedRecipientLicenses(): Promise<void> {
+  for (const [index, emoji] of ["🌸", "🌼"].entries()) {
+    const suffix = String(index + 3).padStart(12, "0");
+    const fanmarkId = `10000000-0000-4000-8000-${suffix}`;
+    const licenseId = `20000000-0000-4000-8000-${suffix}`;
+    await run(business, `INSERT INTO fanmarks
+      (id, user_input_fanmark, normalized_emoji, short_id, status, created_at, updated_at, tier_level)
+      VALUES (?, ?, ?, ?, 'active', ?, ?, 1)`, fanmarkId, emoji, emoji, `recipient${index + 1}`, NOW, NOW);
+    await run(business, `INSERT INTO fanmark_licenses
+      (id, fanmark_id, user_id, license_start, license_end, status, is_initial_license, created_at, updated_at, display_fanmark)
+      VALUES (?, ?, ?, ?, '2026-10-15T00:00:00.000000Z', 'active', 1, ?, ?, ?)`,
+    licenseId, fanmarkId, RECIPIENT, NOW, NOW, NOW, emoji);
+  }
 }
 
 beforeAll(async () => {
@@ -206,6 +223,70 @@ describe("D1 fanmark transfer", () => {
     const badOrigin = new Request("https://api.example.test/api/me/transfers", { method: "GET", headers: { Origin: "https://evil.example" } });
     const response = await handleFanmarkTransferRequest(badOrigin, requestEnv, async () => ({ available: true, userId: OWNER }), CLOCK);
     expect(response.status).toBe(403);
+  });
+
+  it("reserves the final recipient plan slot across competing incoming transfers", async () => {
+    await seedRecipientLicenses();
+    await run(business, `INSERT INTO fanmarks
+      (id, user_input_fanmark, normalized_emoji, short_id, status, created_at, updated_at, tier_level)
+      VALUES (?, '🌻', '🌻', 'other0001', 'active', ?, ?, 1)`, SECOND_FANMARK, NOW, NOW);
+    await run(business, `INSERT INTO fanmark_licenses
+      (id, fanmark_id, user_id, license_start, license_end, status, is_initial_license, created_at, updated_at, display_fanmark)
+      VALUES (?, ?, ?, ?, '2026-10-15T00:00:00.000000Z', 'active', 1, ?, ?, '🌻')`,
+    SECOND_LICENSE, SECOND_FANMARK, OTHER, NOW, NOW, NOW);
+
+    const firstCode = await issue();
+    const secondCode = await issue(SECOND_LICENSE, OTHER);
+    const attempts = await Promise.all([
+      call("/apply", { transfer_code: firstCode.transfer_code, disclaimer_agreed: true }, RECIPIENT),
+      call("/apply", { transfer_code: secondCode.transfer_code, disclaimer_agreed: true }, RECIPIENT),
+    ]);
+    expect(attempts.map((response) => response.status).sort()).toEqual([200, 409]);
+    const results = await Promise.all(attempts.map(async (response) => ({
+      status: response.status,
+      body: await response.json() as Record<string, unknown>,
+    })));
+    const winner = results.find((result) => result.status === 200);
+    const loser = results.find((result) => result.status === 409);
+    expect(winner?.body).toMatchObject({ success: true });
+    expect(loser?.body).toMatchObject({ error: "fanmark_limit_exceeded", current: 3, limit: 3 });
+    expect(await count(business, "fanmark_transfer_requests")).toBe(1);
+    expect(await business.prepare("SELECT status FROM fanmark_transfer_codes ORDER BY status")
+      .all<{ status: string }>()).toMatchObject({ results: [{ status: "active" }, { status: "applied" }] });
+    const pending = await business.prepare(
+      "SELECT r.id, r.transfer_code_id FROM fanmark_transfer_requests AS r WHERE r.status = 'pending'",
+    ).first<{ id: string; transfer_code_id: string }>();
+    const issuer = pending?.transfer_code_id === firstCode.transfer_code_id ? OWNER : OTHER;
+    const approved = await call("/approve", { request_id: pending?.id }, issuer);
+    expect(approved.status).toBe(200);
+    const recipientActive = await business.prepare(
+      "SELECT COUNT(*) AS count FROM fanmark_licenses WHERE user_id = ? AND status = 'active' AND (license_end IS NULL OR license_end > ?)",
+    ).bind(RECIPIENT, NOW).first<{ count: number }>();
+    expect(recipientActive?.count).toBe(3);
+  });
+
+  it("rechecks recipient capacity atomically when an incoming transfer is approved", async () => {
+    await seedRecipientLicenses();
+    const issued = await issue();
+    const applied = await call("/apply", {
+      transfer_code: issued.transfer_code, disclaimer_agreed: true,
+    }, RECIPIENT);
+    expect(applied.status).toBe(200);
+    const request = await applied.json() as { request_id: string };
+    await run(business,
+      "INSERT INTO system_settings (id, setting_key, setting_value) VALUES (?, 'free_fanmarks_limit', '2')",
+      crypto.randomUUID());
+
+    const approved = await call("/approve", { request_id: request.request_id });
+    expect(approved.status).toBe(409);
+    expect(await approved.json()).toMatchObject({ error: "fanmark_limit_exceeded", current: 3, limit: 2 });
+    expect(await business.prepare("SELECT status, user_id FROM fanmark_licenses WHERE id = ?")
+      .bind(LICENSE).first<Record<string, unknown>>()).toEqual({ status: "active", user_id: OWNER });
+    expect(await business.prepare("SELECT status FROM fanmark_transfer_codes WHERE id = ?")
+      .bind(issued.transfer_code_id).first<{ status: string }>()).toEqual({ status: "applied" });
+    expect(await business.prepare("SELECT status FROM fanmark_transfer_requests WHERE id = ?")
+      .bind(request.request_id).first<{ status: string }>()).toEqual({ status: "pending" });
+    expect(await count(business, "fanmark_licenses")).toBe(3);
   });
 
   it("cancels only an active code issued by the authenticated owner", async () => {
