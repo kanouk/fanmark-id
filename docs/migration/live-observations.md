@@ -1832,6 +1832,22 @@ inventory were updated to make the observed JWT settings explicit. This list
 does not prove handler-level authentication or authorization behavior; those
 remain operation-level review gates.
 
+## Supabase Edge Function inventory refresh (2026-09-29 JST)
+
+A read-only `CI=1 npx --no-install supabase functions list --project-ref
+<project-ref> --output json` query with the repository-installed Supabase CLI
+2.67.1 returned 35 functions, all `ACTIVE`. A local comparison found exact
+name-set coverage for all 34 checked-in entrypoints plus the same one live-only
+function, `manual-expire-grace-licenses`; all 34 local `verify_jwt` settings
+match `supabase/config.toml`, with no local-only function or JWT mismatch. The
+live-only function remains version 14 with platform JWT verification enabled.
+
+This refresh confirms deployment metadata only. It did not invoke or download
+a function, read application rows, or change Supabase/Cloudflare settings. The
+temporary JSON response was stored outside the repository and contains only
+function deployment metadata. Handler-level authorization and the live-only
+function's external callers remain separate review gates.
+
 ## Cloudflare staging account access check (2026-09-28 JST)
 
 The app-staging Wrangler configuration targets the account represented by the

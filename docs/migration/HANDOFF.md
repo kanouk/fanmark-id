@@ -5,6 +5,14 @@ draft. Isolated Cloudflare staging D1 and Workers deployments are present; no
 production Worker deployment, user-data import, or public DNS/domain cutover
 has been performed.
 
+A fresh read-only Supabase Edge Function inventory with the repository CLI
+2.67.1 returned 35/35 functions active. All 34 local entrypoint names and
+`verify_jwt` settings match live metadata; the only live-only function remains
+`manual-expire-grace-licenses` (v14, platform JWT enabled). No function was
+invoked and no application rows or settings were changed. External callers for
+that live-only function remain unverified; see
+[`live-observations.md`](live-observations.md).
+
 The D1 analytics summary, fanmark-details projection, coupon application,
 Stripe extension checkout, and invitation signup now compare canonical
 fixed-width UTC timestamps without millisecond rounding. Business D1 migration
