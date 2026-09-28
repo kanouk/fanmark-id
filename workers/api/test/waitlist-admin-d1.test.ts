@@ -80,6 +80,10 @@ describe("D1 waitlist admin API", () => {
     ]));
     const audits = await database!.prepare("SELECT COUNT(*) AS count FROM audit_logs WHERE action = 'AUTHORIZED_WAITLIST_ACCESS'").first<{ count: number }>();
     expect(Number(audits?.count)).toBe(1);
+    const auditTimestamp = await database!.prepare(
+      "SELECT created_at FROM audit_logs WHERE action = 'AUTHORIZED_WAITLIST_ACCESS'",
+    ).first<{ created_at: string }>();
+    expect(auditTimestamp?.created_at).toBe("2026-09-27T12:34:56.000000Z");
   });
 
   it("reveals an address only after the access audit is persisted", async () => {

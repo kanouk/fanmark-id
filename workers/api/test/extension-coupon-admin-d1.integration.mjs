@@ -14,7 +14,7 @@ const migrations = [
   "workers/api/migrations-business/0015_extension_coupon_application.sql",
 ];
 const { handleExtensionCouponAdminRequest } = await import(pathToFileURL(modulePath).href);
-const NOW = "2026-09-26T12:00:00.000Z";
+const NOW = "2026-09-26T12:00:00.000000Z";
 const ADMIN = "00000000-0000-4000-8000-000000000001";
 const USER = "00000000-0000-4000-8000-000000000002";
 const LICENSE = "00000000-0000-4000-8000-000000000003";
@@ -137,6 +137,8 @@ async function body(response) { return await response.json(); }
   assert.deepEqual(payload.coupon.allowed_tier_levels, [1, 2]);
   assert.equal(payload.coupon.created_by, ADMIN);
   assert.equal(payload.coupon.used_count, 0);
+  assert.equal(payload.coupon.created_at, NOW);
+  assert.equal(payload.coupon.updated_at, NOW);
 
   const listing = await call();
   assert.equal(listing.status, 200);
@@ -157,6 +159,7 @@ test("updates coupon active state with an optimistic revision and preserves rede
   const payload = await body(updated);
   assert.equal(payload.coupon.is_active, false);
   assert.notEqual(payload.coupon.updated_at, NOW);
+  assert.match(payload.coupon.updated_at, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
 
   const stale = await call(`/${COUPON}`, "PATCH", { is_active: true, expected_updated_at: NOW });
   assert.equal(stale.status, 409);

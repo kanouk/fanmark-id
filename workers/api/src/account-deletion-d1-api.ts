@@ -1,5 +1,6 @@
 import { selectD1Database, type Env } from "./repository";
 import { FanmarkReturnApiError, returnAllActiveFanmarksForAccountDeletion } from "./fanmark-return-d1-api";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
 
 const ACCOUNT_DELETION_PATH = "/api/me/account/delete";
 const METHODS = "POST, OPTIONS";
@@ -308,7 +309,8 @@ export async function handleAccountDeletionRequest(
     if (authoredBroadcast) return json({ error: "account_delete_blocked" }, 409, headers);
 
     const operationNow = clock();
-    await preflightLicenseReturns(database, userId, operationNow.toISOString());
+    const operationNowIso = toUtcMicrosecondTimestamp(operationNow);
+    await preflightLicenseReturns(database, userId, operationNowIso);
 
     const customerIds = await readBillingLinks(database, userId);
     await dependencies.cancelCustomerSubscriptions(customerIds, env);
@@ -322,7 +324,7 @@ export async function handleAccountDeletionRequest(
       return json({ error: "account_delete_unavailable" }, 503, headers);
     }
 
-    await cleanupBusinessRows(database, userId, operationNow.toISOString());
+    await cleanupBusinessRows(database, userId, operationNowIso);
     const deleted = await dependencies.deleteAuthUser(request, password, env);
     if (!deleted.success) return json({ error: "auth_delete_failed" }, 503, headers);
     return json({ success: true, message: "Account deleted successfully" }, 200, headers, deleted.setCookie);

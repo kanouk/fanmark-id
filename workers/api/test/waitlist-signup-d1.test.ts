@@ -79,6 +79,7 @@ describe("D1 waitlist public signup API", () => {
       status: "waiting",
     });
     expect(Number.isFinite(Date.parse(row!.created_at))).toBe(true);
+    expect(row!.created_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
     expect(seenLimiterKeys).toHaveLength(1);
     expect(seenLimiterKeys[0]).toMatch(/^waitlist-signup:v1:[0-9a-f]{64}$/u);
     expect(seenLimiterKeys[0]).not.toContain(syntheticIp);

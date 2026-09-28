@@ -1,4 +1,5 @@
 import { selectD1Database, type Env } from "./repository.ts";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const API_PATH = "/api/admin/extension-coupons";
 const MAX_BODY_BYTES = 8 * 1024;
@@ -262,7 +263,7 @@ export async function handleExtensionCouponAdminRequest(
       return json({ schemaVersion: 1, usages }, 200, headers);
     }
 
-    const now = (dependencies.now?.() ?? new Date()).toISOString();
+    const now = toUtcMicrosecondTimestamp(dependencies.now?.() ?? new Date());
     if (isCollection && method === "POST") {
       const create = parseCreate(await readBody(request));
       let code = create.code;
@@ -297,7 +298,7 @@ export async function handleExtensionCouponAdminRequest(
         UPDATE extension_coupons SET is_active = ?,
           updated_at = CASE
             WHEN julianday(updated_at) >= julianday(?)
-              THEN strftime('%Y-%m-%dT%H:%M:%fZ', julianday(updated_at) + 0.000000011574074)
+              THEN strftime('%Y-%m-%dT%H:%M:%f000Z', julianday(updated_at) + 0.000000011574074)
             ELSE ?
           END
         WHERE id = ? AND updated_at = ?

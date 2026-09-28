@@ -1,4 +1,5 @@
 import { selectD1Database, type Env } from "./repository.ts";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const APPLY_PATH = "/api/me/licenses/extend-with-coupon";
 const METHODS = "POST, OPTIONS";
@@ -411,7 +412,7 @@ export async function handleExtensionCouponApplicationD1Request(
 
     const nowValue = dependencies.now?.() ?? new Date();
     if (!Number.isFinite(nowValue.getTime())) throw new ExtensionCouponApplicationD1Error("invalid_clock", 500);
-    const appliedAt = nowValue.toISOString();
+    const appliedAt = toUtcMicrosecondTimestamp(nowValue);
     const coupon = await findCoupon(database, input.couponCode);
     if (!coupon) throw new ExtensionCouponApplicationD1Error("coupon_not_found", 404);
     const license = await findLicense(database, userId, input.licenseId);
@@ -421,7 +422,7 @@ export async function handleExtensionCouponApplicationD1Request(
     if (!Number.isFinite(oldEnd)) throw new ExtensionCouponApplicationD1Error("no_eligible_license", 404);
     const currentEnd = new Date(oldEnd);
     const base = currentEnd > nowValue ? currentEnd : nowValue;
-    const nextEnd = roundUpToUtcMidnight(addMonthsClamped(base, coupon.months)).toISOString();
+    const nextEnd = toUtcMicrosecondTimestamp(roundUpToUtcMidnight(addMonthsClamped(base, coupon.months)));
     const commandId = (dependencies.createId?.() ?? crypto.randomUUID()).toLowerCase();
     if (!UUID.test(commandId)) throw new ExtensionCouponApplicationD1Error("invalid_command_id", 500);
 

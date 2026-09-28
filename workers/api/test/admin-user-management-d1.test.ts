@@ -6,6 +6,7 @@ import {
   type AdminUserManagementAuthorizer,
 } from "../src/admin-user-management-d1-api";
 import type { Env } from "../src/repository";
+import { toUtcMicrosecondTimestamp } from "../src/utc-timestamp";
 
 const runtimeEnv = env as unknown as Env;
 const business = runtimeEnv.FANMARK_DB;
@@ -13,6 +14,7 @@ const auth = runtimeEnv.AUTH_DB;
 const baseUrl = "https://api.example.test";
 const origin = "https://app.example.test";
 const now = new Date("2026-09-26T12:34:56.000Z");
+const nowIso = toUtcMicrosecondTimestamp(now);
 const userA = "41111111-1111-4111-8111-111111111111";
 const userB = "42222222-2222-4222-8222-222222222222";
 const licenseA1 = "51111111-1111-4111-8111-111111111111";
@@ -188,7 +190,7 @@ describe("D1 administrator user directory", () => {
       previousPlanType: "free",
       newPlanType: "enterprise",
       enterpriseSettings: { customFanmarksLimit: 250, customPricing: 55000, notes: "synthetic plan test" },
-      updatedAt: now.toISOString(),
+      updatedAt: nowIso,
     });
     const enterpriseProfile = await business!.prepare("SELECT plan_type FROM user_settings WHERE user_id = ?")
       .bind(userA).first<{ plan_type: string }>();
@@ -226,10 +228,10 @@ describe("D1 administrator user directory", () => {
       updated: true,
       userId: userA,
       status: "suspended",
-      bannedUntil: "2031-09-26T12:34:56.000Z",
+      bannedUntil: "2031-09-26T12:34:56.000000Z",
     });
     expect(await auth!.prepare('SELECT "banned", "banReason", "banExpires" FROM "user" WHERE id = ?')
-      .bind(userA).first()).toEqual({ banned: 1, banReason: "synthetic review", banExpires: "2031-09-26T12:34:56.000Z" });
+      .bind(userA).first()).toEqual({ banned: 1, banReason: "synthetic review", banExpires: "2031-09-26T12:34:56.000000Z" });
     expect(await auth!.prepare('SELECT id FROM "session" WHERE "userId" = ?').bind(userA).all()).toMatchObject({ results: [] });
     expect(await auth!.prepare('SELECT "actorUserId", "targetUserId", "action", "reason" FROM "adminUserStatusAudit" WHERE "targetUserId" = ?')
       .bind(userA).first()).toEqual({ actorUserId: "49999999-9999-4999-8999-999999999999", targetUserId: userA, action: "ADMIN_SUSPEND_USER", reason: "synthetic review" });
@@ -316,12 +318,12 @@ describe("D1 administrator user directory", () => {
     });
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
-      success: true, licenseId: licenseA1, alreadyExpired: false, updatedAt: now.toISOString(),
+      success: true, licenseId: licenseA1, alreadyExpired: false, updatedAt: nowIso,
     });
     expect(await business!.prepare(`SELECT status, license_end, grace_expires_at, excluded_at, updated_at
       FROM fanmark_licenses WHERE id = ?`).bind(licenseA1).first()).toEqual({
-      status: "expired", license_end: now.toISOString(), grace_expires_at: now.toISOString(),
-      excluded_at: now.toISOString(), updated_at: now.toISOString(),
+      status: "expired", license_end: nowIso, grace_expires_at: nowIso,
+      excluded_at: nowIso, updated_at: nowIso,
     });
     for (const table of ["fanmark_basic_configs", "fanmark_redirect_configs", "fanmark_messageboard_configs", "fanmark_password_configs"]) {
       const remaining = await business!.prepare(`SELECT COUNT(*) AS count FROM ${table} WHERE license_id = ?`)
@@ -333,16 +335,16 @@ describe("D1 administrator user directory", () => {
     expect(lifecycleAudit).toMatchObject({ user_id: userA, action: "license_expired", resource_type: "fanmark_license", resource_id: licenseA1 });
     expect(JSON.parse(String(lifecycleAudit?.metadata))).toMatchObject({
       admin_user_id: "49999999-9999-4999-8999-999999999999", reason: "synthetic immediate expiry",
-      expired_at: now.toISOString(), license_end: "2026-10-01T00:00:00.000Z",
+      expired_at: nowIso, license_end: "2026-10-01T00:00:00.000Z",
     });
     const adminAudit = await business!.prepare(`SELECT user_id, action, resource_type, resource_id, metadata
       FROM audit_logs WHERE action = 'admin_expire_license' AND resource_id = ?`).bind(licenseA1).first<Record<string, unknown>>();
     expect(adminAudit).toMatchObject({ user_id: "49999999-9999-4999-8999-999999999999", resource_id: licenseA1 });
     const event = await business!.prepare(`SELECT event_type, source, payload_schema, trigger_at, payload
       FROM notification_events WHERE event_type = 'license_expired'`).first<Record<string, unknown>>();
-    expect(event).toMatchObject({ event_type: "license_expired", source: "admin_ui", payload_schema: "license_expired.v1", trigger_at: now.toISOString() });
+    expect(event).toMatchObject({ event_type: "license_expired", source: "admin_ui", payload_schema: "license_expired.v1", trigger_at: nowIso });
     expect(JSON.parse(String(event?.payload))).toEqual({
-      user_id: userA, fanmark_id: fanmarkA1, fanmark_name: "🍋", expired_at: now.toISOString(),
+      user_id: userA, fanmark_id: fanmarkA1, fanmark_name: "🍋", expired_at: nowIso,
       license_end: "2026-10-01T00:00:00.000Z",
     });
 
@@ -350,7 +352,7 @@ describe("D1 administrator user directory", () => {
       method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ userId: userA, licenseId: licenseA1, reason: "repeat" }),
     });
-    expect(await repeated.json()).toEqual({ success: true, licenseId: licenseA1, alreadyExpired: true, updatedAt: now.toISOString() });
+    expect(await repeated.json()).toEqual({ success: true, licenseId: licenseA1, alreadyExpired: true, updatedAt: nowIso });
     expect(Number((await business!.prepare("SELECT COUNT(*) AS count FROM notification_events").first<{ count: number }>())?.count)).toBe(1);
     expect(Number((await business!.prepare("SELECT COUNT(*) AS count FROM audit_logs WHERE resource_id = ? AND action IN ('license_expired', 'admin_expire_license')")
       .bind(licenseA1).first<{ count: number }>())?.count)).toBe(2);
@@ -454,7 +456,7 @@ describe("D1 administrator user directory", () => {
     const response = await request(route, init, resend, allowAdmin, deliver);
     expect(response.status).toBe(200);
     const responseText = await response.clone().text();
-    expect(await response.json()).toEqual({ success: true, userId: userA, requestedAt: now.toISOString() });
+    expect(await response.json()).toEqual({ success: true, userId: userA, requestedAt: nowIso });
     expect(deliveries).toEqual([{ email: "alpha@example.test", redirectTo: "/reset-password" }]);
     expect(deliveryOrigins).toEqual([origin]);
 

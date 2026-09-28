@@ -1,4 +1,5 @@
 import { selectD1Database, type Env } from "./repository";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
 
 const PUBLIC_PATH = "/api/system/settings";
 const ADMIN_PATH = "/api/admin/system-settings";
@@ -269,7 +270,7 @@ export async function handleSystemSettingsRequest(
     if (current[update.key] === update.value) {
       return json({ schemaVersion: 1, updatedSetting: update.key }, 200, headers);
     }
-    const now = (options.now?.() ?? new Date()).toISOString();
+    const now = toUtcMicrosecondTimestamp(options.now?.() ?? new Date());
     const metadata = JSON.stringify({ settingKey: update.key });
     const auditId = crypto.randomUUID();
     const results = await db.batch([

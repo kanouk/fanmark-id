@@ -1,4 +1,5 @@
 import { selectD1Database, type Env } from "./repository";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
 
 const API_PATH = "/api/admin/invitation-codes";
 const MAX_BODY_BYTES = 8 * 1024;
@@ -207,7 +208,7 @@ export async function handleInvitationAdminRequest(
       if (!result.success || !Array.isArray(result.results) || result.results.length > MAX_CODES) fail("invitation_admin_unavailable");
       return json({ schemaVersion: 1, codes: result.results.map(parseCode) }, 200, headers);
     }
-    const now = clock().toISOString();
+    const now = toUtcMicrosecondTimestamp(clock());
     if (collection) {
       const create = parseCreate(await readBody(request));
       const generated = create.code ?? Array.from(crypto.getRandomValues(new Uint8Array(8)), (byte) => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[byte % 32]).join("");

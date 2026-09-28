@@ -16,7 +16,7 @@ const migrationPaths = [
 const { handleExtensionCouponApplicationD1Request } = await import(pathToFileURL(modulePath).href);
 
 const NOW = new Date("2026-09-26T12:00:00.000Z");
-const NOW_SQL = NOW.toISOString();
+const NOW_SQL = NOW.toISOString().replace(/\.(\d{3})Z$/u, (_match, fraction) => `.${fraction}000Z`);
 const OWNER = "00000000-0000-4000-8000-000000000001";
 const OTHER_OWNER = "00000000-0000-4000-8000-000000000009";
 const LICENSE = "00000000-0000-4000-8000-000000000002";
@@ -205,7 +205,7 @@ isolated("applies coupon, cancels lottery entries, records notices/audits, and r
     success: true,
     license: {
       id: LICENSE,
-      license_end: "2026-12-01T00:00:00.000Z",
+      license_end: "2026-12-01T00:00:00.000000Z",
       grace_expires_at: null,
       status: "active",
     },
@@ -225,7 +225,7 @@ isolated("applies coupon, cancels lottery entries, records notices/audits, and r
   assert.equal(coupon.used_count, 1);
   assert.deepEqual(license, {
     status: "active",
-    license_end: "2026-12-01T00:00:00.000Z",
+    license_end: "2026-12-01T00:00:00.000000Z",
     grace_expires_at: null,
     excluded_at: null,
     excluded_from_plan: null,

@@ -3041,3 +3041,15 @@ Their focused D1 suites pass 72/72 locally, and corresponding frontend API
 contract tests pass 44/44. The operation-format subgate is partial: the 79
 source `now()` default locations and the other D1 writer paths still need
 reconciliation before enabling the generated schema.
+
+On 2026-09-28, the same formatter was applied to account deletion,
+profile/password setup, admin user management, lifecycle/maintenance/system
+settings, waitlist admin/signup, invitation admin/signup, and extension-coupon
+admin/application writes. Focused tests now assert persisted UTC microsecond
+text and pass 84/84 across these added suites. Together with the core API
+suites, focused Worker D1 verification is 156/156. The coupon administration's
+SQL-generated monotonic revision timestamp also now retains six fractional
+digits. This reduces known writer-format drift but does not close the
+103-column timestamp gate or the 79 `now()` default locations; the full writer
+inventory remains open. No live user rows, remote D1/R2, or production settings
+were accessed.

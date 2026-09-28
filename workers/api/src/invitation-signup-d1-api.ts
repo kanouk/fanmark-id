@@ -1,4 +1,5 @@
 import { selectD1Database, type Env } from "./repository";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
 
 const API_PREFIX = "/api/auth";
 const ATTEMPT_LIFETIME_MS = 15 * 60 * 1000;
@@ -168,7 +169,7 @@ export async function handleInvitationCodeValidationRequest(
   if (!code || code.length > 32) return json({ error: "invalid_request" }, 400, responseHeaders);
 
   try {
-    const now = clock().toISOString();
+    const now = toUtcMicrosecondTimestamp(clock());
     const row = await lookupInvitation(database, code, now);
     const remainingUses = invitationRemaining(row, now);
     let perks: Record<string, unknown> = {};
@@ -222,7 +223,7 @@ async function releaseLease(database: D1Database, attemptId: string, token: stri
     UPDATE invitation_signup_attempts
     SET processing_token = NULL, processing_lease_until = NULL, updated_at = ?
     WHERE attempt_id = ? AND processing_token = ? AND state IN ('reserved', 'auth_created')
-  `).bind(new Date().toISOString(), attemptId, token).run();
+  `).bind(toUtcMicrosecondTimestamp(new Date()), attemptId, token).run();
 }
 
 async function createReservation(
@@ -325,7 +326,7 @@ export async function handleInvitationSignupRequest(
   ) return invitationError(400, invitationRequired && !invitationCode ? "invitation_required" : "invalid_request", responseHeaders);
 
   const nowDate = clock();
-  const now = nowDate.toISOString();
+  const now = toUtcMicrosecondTimestamp(nowDate);
   let fingerprint: string;
   let claimedToken: string | null = null;
   try {
@@ -383,7 +384,7 @@ export async function handleInvitationSignupRequest(
       if (invitationRequired && !invitationCodeId) {
         return invitationError(400, "invitation_invalid_or_full", responseHeaders);
       }
-      const expiresAt = new Date(nowDate.getTime() + ATTEMPT_LIFETIME_MS).toISOString();
+      const expiresAt = toUtcMicrosecondTimestamp(new Date(nowDate.getTime() + ATTEMPT_LIFETIME_MS));
       try {
         await createReservation(businessDb, {
           attemptId: commandId,
@@ -410,7 +411,7 @@ export async function handleInvitationSignupRequest(
 
     const processingToken = crypto.randomUUID();
     claimedToken = processingToken;
-    const leaseUntil = new Date(nowDate.getTime() + PROCESSING_LEASE_MS).toISOString();
+    const leaseUntil = toUtcMicrosecondTimestamp(new Date(nowDate.getTime() + PROCESSING_LEASE_MS));
     const claim = await businessDb.prepare(`UPDATE invitation_signup_attempts
       SET processing_token = ?, processing_lease_until = ?, updated_at = ?
       WHERE attempt_id = ? AND state IN ('reserved', 'auth_created')
@@ -436,13 +437,13 @@ export async function handleInvitationSignupRequest(
           SET state = 'released', invitation_code_id = NULL, processing_token = NULL,
               processing_lease_until = NULL, updated_at = ?
           WHERE attempt_id = ? AND processing_token = ? AND state = 'reserved'`)
-          .bind(clock().toISOString(), commandId, processingToken).run();
+          .bind(toUtcMicrosecondTimestamp(clock()), commandId, processingToken).run();
         return invitationError(409, "signup_command_expired", responseHeaders);
       }
       const recovered = await businessDb.prepare(`UPDATE invitation_signup_attempts
         SET state = 'auth_created', auth_user_id = ?, updated_at = ?
         WHERE attempt_id = ? AND processing_token = ? AND state = 'reserved'`)
-        .bind(authUser.id, clock().toISOString(), commandId, processingToken).run();
+        .bind(authUser.id, toUtcMicrosecondTimestamp(clock()), commandId, processingToken).run();
       if (Number(recovered.meta?.changes) !== 1) {
         await releaseLease(businessDb, commandId, processingToken);
         return invitationError(503, "signup_recovery_unavailable", responseHeaders);
@@ -480,7 +481,7 @@ export async function handleInvitationSignupRequest(
             SET state = 'released', invitation_code_id = NULL, processing_token = NULL,
                 processing_lease_until = NULL, updated_at = ?
             WHERE attempt_id = ? AND processing_token = ? AND state = 'reserved'`)
-            .bind(clock().toISOString(), commandId, processingToken).run();
+            .bind(toUtcMicrosecondTimestamp(clock()), commandId, processingToken).run();
           return invitationError(503, "signup_failed", responseHeaders);
         }
       }
@@ -497,7 +498,7 @@ export async function handleInvitationSignupRequest(
             SET state = 'released', invitation_code_id = NULL, processing_token = NULL,
                 processing_lease_until = NULL, updated_at = ?
             WHERE attempt_id = ? AND processing_token = ? AND state = 'reserved'`)
-            .bind(clock().toISOString(), commandId, processingToken).run();
+            .bind(toUtcMicrosecondTimestamp(clock()), commandId, processingToken).run();
           // Better Auth intentionally returns the same shape for duplicate and
           // new email addresses when email verification is mandatory.
           return signupResponse?.ok === true
@@ -544,12 +545,12 @@ export async function handleInvitationSignupRequest(
       await businessDb.prepare(`UPDATE invitation_signup_attempts
         SET verification_sent_at = ?, updated_at = ?
         WHERE attempt_id = ? AND state = 'auth_created' AND processing_token = ?`)
-        .bind(clock().toISOString(), clock().toISOString(), commandId, processingToken).run();
+        .bind(toUtcMicrosecondTimestamp(clock()), toUtcMicrosecondTimestamp(clock()), commandId, processingToken).run();
     }
 
     const userId = authUser.id;
     const username = `user_${userId.slice(0, 8)}`;
-    const completedAt = clock().toISOString();
+    const completedAt = toUtcMicrosecondTimestamp(clock());
     const result = await businessDb.batch([
       businessDb.prepare(`INSERT INTO user_settings
         (user_id, username, display_name, plan_type, preferred_language, created_at, updated_at,

@@ -1,4 +1,5 @@
 import { selectD1Database, type Env } from "./repository.ts";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const PASSWORD_SETUP_PATH = "/api/me/password-setup";
 const METHODS = "POST, OPTIONS";
@@ -136,7 +137,7 @@ async function credentialHasPassword(authDatabase: D1Database, userId: string): 
 }
 
 async function clearSetupFlag(database: D1Database, userId: string): Promise<void> {
-  const now = new Date().toISOString();
+  const now = toUtcMicrosecondTimestamp(new Date());
   await database.prepare(
     "UPDATE user_settings SET requires_password_setup = 0, updated_at = ? WHERE user_id = ? AND requires_password_setup = 1",
   ).bind(now, userId).run();

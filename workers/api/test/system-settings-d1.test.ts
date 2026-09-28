@@ -112,8 +112,10 @@ describe("D1 system settings API", () => {
     const accepted = await request(adminUrl, { method: "PATCH", headers, body: JSON.stringify(payload) });
     expect(accepted.status).toBe(200);
     expect(await accepted.json()).toEqual({ schemaVersion: 1, updatedSetting: "enterprise_pricing" });
-    expect(await database.prepare("SELECT setting_value, is_public FROM system_settings WHERE setting_key = ?")
-      .bind("enterprise_pricing").first()).toEqual({ setting_value: "75000", is_public: 0 });
+    expect(await database.prepare("SELECT setting_value, is_public, updated_at FROM system_settings WHERE setting_key = ?")
+      .bind("enterprise_pricing").first()).toEqual({
+      setting_value: "75000", is_public: 0, updated_at: "2026-09-27T03:04:05.000000Z",
+    });
     const audit = await database.prepare(`
       SELECT user_id, action, resource_type, resource_id, metadata
       FROM audit_logs WHERE action = 'ADMIN_UPDATE_SYSTEM_SETTING'
@@ -125,6 +127,10 @@ describe("D1 system settings API", () => {
       resource_id: "enterprise_pricing",
       metadata: JSON.stringify({ settingKey: "enterprise_pricing" }),
     });
+    const auditTime = await database.prepare(
+      "SELECT created_at FROM audit_logs WHERE action = 'ADMIN_UPDATE_SYSTEM_SETTING'",
+    ).first<{ created_at: string }>();
+    expect(auditTime?.created_at).toBe("2026-09-27T03:04:05.000000Z");
 
     const unchanged = await request(adminUrl, { method: "PATCH", headers, body: JSON.stringify({ ...payload, expectedValue: "75000" }) });
     expect(unchanged.status).toBe(200);

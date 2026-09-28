@@ -1,4 +1,5 @@
 import { selectD1Database, type Env } from "./repository";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
 
 const PUBLIC_PATH = "/api/system/lifecycle";
 const ADMIN_PATH = "/api/admin/system-settings/lifecycle";
@@ -205,7 +206,7 @@ export async function handleLifecycleSettingsRequest(
     const db = database(env);
     if (publicRoute) return json({ schemaVersion: 1, settings: await readSettings(db) }, 200, headers);
     const days = await readPatchBody(request);
-    const settings = await writeSettings(db, days, clock().toISOString());
+    const settings = await writeSettings(db, days, toUtcMicrosecondTimestamp(clock()));
     return json({ schemaVersion: 1, settings }, 200, headers);
   } catch (error) {
     if (error instanceof LifecycleSettingsError) return json({ error: error.code }, error.status, headers);

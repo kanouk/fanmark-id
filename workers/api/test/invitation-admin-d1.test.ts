@@ -72,6 +72,8 @@ describe("D1 invitation code admin API", () => {
     expect(created.status).toBe(201);
     const payload = await created.json() as { code: Record<string, unknown> };
     expect(payload.code).toMatchObject({ code: "FRIENDS-2026", max_uses: 2, used_count: 0, special_perks: { tier: "creator" } });
+    expect(payload.code.created_at).toBe("2026-09-26T12:34:56.000000Z");
+    expect(payload.code.updated_at).toBe("2026-09-26T12:34:56.000000Z");
   });
 
   it("patches behind an optimistic timestamp and rejects stale or forged fields", async () => {
@@ -81,6 +83,9 @@ describe("D1 invitation code admin API", () => {
     });
     expect(patched.status).toBe(200);
     expect(await patched.json()).toMatchObject({ schemaVersion: 1, code: { max_uses: 5, is_active: false } });
+    const savedTimestamp = await database!.prepare("SELECT updated_at FROM invitation_codes WHERE id = ?")
+      .bind(codeId).first<{ updated_at: string }>();
+    expect(savedTimestamp?.updated_at).toBe("2026-09-26T12:34:56.000000Z");
 
     const stale = await request(`/api/admin/invitation-codes/${codeId}`, {
       method: "PATCH", headers: { "content-type": "application/json" },

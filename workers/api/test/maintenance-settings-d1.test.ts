@@ -118,6 +118,11 @@ describe("D1 maintenance settings API", () => {
     });
     expect(accepted.status).toBe(200);
     expect(await accepted.json()).toEqual({ schemaVersion: 1, settings: body });
+    const saved = await database.prepare(
+      "SELECT setting_key, updated_at FROM system_settings WHERE setting_key IN ('maintenance_mode', 'maintenance_message', 'maintenance_end_time') ORDER BY setting_key",
+    ).all<{ setting_key: string; updated_at: string }>();
+    expect(saved.results).toHaveLength(3);
+    expect(saved.results.every((row) => row.updated_at === "2026-09-25T12:34:56.000000Z")).toBe(true);
     const privateRow = await database.prepare(
       "SELECT setting_value, is_public FROM system_settings WHERE setting_key = ?",
     ).bind("creator_stripe_price_id").first();

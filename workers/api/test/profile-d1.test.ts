@@ -196,6 +196,9 @@ describe("Better Auth own-profile API", () => {
       { user_id: otherId, display_name: "Other Private Name", preferred_language: "ja", plan_type: "free", invited_by_code: null, requires_password_setup: 0, stripe_customer_id: null },
       { user_id: ownerId, display_name: "  New Owner  ", preferred_language: "ja", plan_type: "creator", invited_by_code: "owner-invite-code", requires_password_setup: 1, stripe_customer_id: "cus_synthetic_owner" },
     ]);
+    const timestamp = await businessDatabase?.prepare("SELECT updated_at FROM user_settings WHERE user_id = ?")
+      .bind(ownerId).first<{ updated_at: string }>();
+    expect(timestamp?.updated_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
   });
 
   it("accepts only same-owner R2 avatar URLs and null removal", async () => {
@@ -314,9 +317,10 @@ describe("Better Auth own-profile API", () => {
     expect(created.status, JSON.stringify(await created.clone().json())).toBe(200);
     expect(await created.json()).toEqual({ schemaVersion: 1, status: true });
     const setupFlag = await businessDatabase?.prepare(
-      "SELECT requires_password_setup FROM user_settings WHERE user_id = ?",
-    ).bind(ownerId).first<{ requires_password_setup: number }>();
+      "SELECT requires_password_setup, updated_at FROM user_settings WHERE user_id = ?",
+    ).bind(ownerId).first<{ requires_password_setup: number; updated_at: string }>();
     expect(setupFlag?.requires_password_setup).toBe(0);
+    expect(setupFlag?.updated_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
 
     const credential = await authDatabase?.prepare(
       'SELECT password FROM "account" WHERE "userId" = ? AND "providerId" = ?',

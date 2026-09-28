@@ -195,7 +195,7 @@ describe("invitation signup across split Auth and business D1", () => {
     expect(account?.password).not.toBe(password);
 
     const profile = await businessDb!.prepare(`SELECT user_id, username, display_name, plan_type,
-      preferred_language, invited_by_code, requires_password_setup FROM user_settings WHERE user_id = ?`)
+      preferred_language, invited_by_code, requires_password_setup, created_at, updated_at FROM user_settings WHERE user_id = ?`)
       .bind(authUser?.id).first<Record<string, unknown>>();
     expect(profile).toMatchObject({
       user_id: authUser?.id,
@@ -206,6 +206,13 @@ describe("invitation signup across split Auth and business D1", () => {
       invited_by_code: "WELCOME",
       requires_password_setup: 0,
     });
+    expect(profile?.created_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+    expect(profile?.updated_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+
+    const completedAttempt = await businessDb!.prepare(`SELECT created_at, updated_at
+      FROM invitation_signup_attempts WHERE attempt_id = ?`).bind(commandId).first<Record<string, unknown>>();
+    expect(completedAttempt?.created_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+    expect(completedAttempt?.updated_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
 
     const invite = await businessDb!.prepare("SELECT used_count FROM invitation_codes WHERE id = ?")
       .bind(invitationId).first<{ used_count: number }>();

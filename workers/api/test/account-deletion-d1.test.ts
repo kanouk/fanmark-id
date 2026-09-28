@@ -152,11 +152,12 @@ describe("Better Auth account deletion coordinator", () => {
     expect(authUser).toBeNull();
     expect(authSession).toBeNull();
 
-    const license = await businessDatabase?.prepare("SELECT user_id, status, license_end, grace_expires_at, is_returned FROM fanmark_licenses WHERE id = ?")
+    const license = await businessDatabase?.prepare("SELECT user_id, status, license_end, grace_expires_at, is_returned, updated_at FROM fanmark_licenses WHERE id = ?")
       .bind(licenseId).first<Record<string, unknown>>();
     expect(license).toMatchObject({ user_id: null, status: "grace", is_returned: 1 });
     expect(typeof license?.license_end).toBe("string");
     expect(typeof license?.grace_expires_at).toBe("string");
+    expect(license?.updated_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
 
     const [settings, favorites, notifications, preferences, subscriptions, enterpriseSettings, lottery, history, otherRole, rules] = await Promise.all([
       businessDatabase?.prepare("SELECT COUNT(*) AS total FROM user_settings WHERE user_id = ?").bind(ownerId).first<{ total: number }>(),
@@ -177,6 +178,11 @@ describe("Better Auth account deletion coordinator", () => {
     expect(subscriptions?.total).toBe(0);
     expect(enterpriseSettings?.total).toBe(0);
     expect(lottery).toEqual({ entry_status: "cancelled", cancellation_reason: "user_request" });
+    const cancelledLottery = await businessDatabase?.prepare(
+      "SELECT cancelled_at, updated_at FROM fanmark_lottery_entries WHERE user_id = ?",
+    ).bind(ownerId).first<{ cancelled_at: string; updated_at: string }>();
+    expect(cancelledLottery?.cancelled_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+    expect(cancelledLottery?.updated_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
     expect(history).toEqual({ winner_user_id: null });
     expect(otherRole).toEqual({ created_by: null });
     expect(rules).toEqual({ created_by: null });

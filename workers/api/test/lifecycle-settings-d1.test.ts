@@ -73,8 +73,11 @@ describe("D1 lifecycle settings API", () => {
     const accepted = await request(adminUrl, init);
     expect(accepted.status).toBe(200);
     expect(await accepted.json()).toEqual({ schemaVersion: 1, settings: { grace_period_days: 30 } });
-    expect(await database.prepare("SELECT setting_value, is_public FROM system_settings WHERE setting_key = ?")
-      .bind("grace_period_days").first()).toEqual({ setting_value: "30", is_public: 1 });
+    expect(await database.prepare("SELECT setting_value, is_public, created_at, updated_at FROM system_settings WHERE setting_key = ?")
+      .bind("grace_period_days").first()).toEqual({
+      setting_value: "30", is_public: 1,
+      created_at: "2026-09-25T12:34:56.000000Z", updated_at: "2026-09-25T12:34:56.000000Z",
+    });
   });
 
   it("rejects private collisions, unknown fields, invalid values, and oversized bodies", async () => {

@@ -1,5 +1,6 @@
 import { selectD1Database, type Env } from "./repository";
 import type { StorageAuthResolver } from "./storage-r2";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
 
 const PROFILE_PATH = "/api/me/profile";
 const PROFILE_METHODS = "GET, PATCH, OPTIONS";
@@ -218,7 +219,7 @@ async function applyPatch(db: D1Database, userId: string, patch: ProfilePatch): 
   const assignments = selected.map(([, column]) => `${column} = ?`);
   const values = selected.map(([key]) => patch[key]);
   assignments.push("updated_at = ?");
-  values.push(new Date().toISOString());
+  values.push(toUtcMicrosecondTimestamp(new Date()));
   values.push(userId);
   try {
     const result = await db.prepare(

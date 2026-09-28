@@ -1,4 +1,5 @@
 import { selectD1Database, type Env } from "./repository";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
 
 const PUBLIC_PATH = "/api/system/maintenance";
 const ADMIN_PATH = "/api/admin/system-settings/maintenance";
@@ -284,7 +285,7 @@ export async function handleMaintenanceSettingsRequest(
     const authorization = await authorizeAdmin(request, headers);
     if (authorization instanceof Response) return authorization;
     const patch = parsePatch(await readPatchBody(request));
-    const settings = await updateSettings(db, patch, clock().toISOString());
+    const settings = await updateSettings(db, patch, toUtcMicrosecondTimestamp(clock()));
     return json({ schemaVersion: 1, settings }, 200, headers);
   } catch (error) {
     if (error instanceof MaintenanceSettingsError) return json({ error: error.code }, error.status, headers);

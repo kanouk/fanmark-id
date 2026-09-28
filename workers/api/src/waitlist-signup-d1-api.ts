@@ -1,4 +1,5 @@
 import { selectD1Database, type Env } from "./repository";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
 
 const API_PATH = "/api/waitlist";
 const MAX_BODY_BYTES = 2 * 1024;
@@ -140,7 +141,7 @@ export async function handleWaitlistSignupRequest(request: Request, env: Env): P
       INSERT INTO waitlist (id, email, referral_source, status, created_at)
       VALUES (?, ?, ?, 'waiting', ?)
       ON CONFLICT(email) DO NOTHING
-    `).bind(crypto.randomUUID(), email, referralSource, new Date().toISOString()).run();
+    `).bind(crypto.randomUUID(), email, referralSource, toUtcMicrosecondTimestamp(new Date())).run();
     if (!result.success || ![0, 1].includes(Number(result.meta?.changes))) {
       return json({ error: "waitlist_signup_unavailable" }, 503, headers);
     }

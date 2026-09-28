@@ -1,5 +1,6 @@
 import { selectD1Database, type Env } from "./repository.ts";
 import { isResendAuthEmailConfigured } from "./auth-email.mjs";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const API_PATH = "/api/admin/users";
 const MAX_BODY_BYTES = 16 * 1024;
@@ -419,7 +420,7 @@ async function logAdminRead(db: D1Database, adminId: string, action: string, res
     await db.prepare(`
       INSERT INTO audit_logs (id, user_id, action, resource_type, resource_id, metadata, created_at)
       VALUES (?, ?, ?, 'user', ?, ?, ?)
-    `).bind(id, adminId, action, resourceId, JSON.stringify(metadata), now.toISOString()).run();
+    `).bind(id, adminId, action, resourceId, JSON.stringify(metadata), toUtcMicrosecondTimestamp(now)).run();
   } catch {
     // Listing remains available if its best-effort audit insert is unavailable;
     // the read itself never mutates a user or entitlement.
@@ -539,7 +540,7 @@ async function updateUserPlan(
   if (typeof profile.plan_type !== "string" || !PLANS.has(profile.plan_type)) fail("admin_user_management_unavailable");
 
   const previousPlanType = profile.plan_type;
-  const updatedAt = now.toISOString();
+  const updatedAt = toUtcMicrosecondTimestamp(now);
   const id = crypto.randomUUID();
   const enterprise = input.newPlanType === "enterprise" ? input.enterpriseOverrides : null;
   const metadata = JSON.stringify({
@@ -612,10 +613,10 @@ function parseUpdateUserStatusRequest(value: unknown, pathUserId: string, now: D
     if (value.bannedUntil === undefined || value.bannedUntil === null) {
       const defaultEnd = new Date(now);
       defaultEnd.setFullYear(defaultEnd.getFullYear() + 5);
-      bannedUntil = defaultEnd.toISOString();
+      bannedUntil = toUtcMicrosecondTimestamp(defaultEnd);
     } else if (typeof value.bannedUntil === "string" && validTimestamp(value.bannedUntil) &&
         Date.parse(value.bannedUntil) > now.getTime()) {
-      bannedUntil = new Date(value.bannedUntil).toISOString();
+      bannedUntil = toUtcMicrosecondTimestamp(new Date(value.bannedUntil));
     } else {
       fail("invalid_request", 400);
     }
@@ -660,7 +661,7 @@ async function requestUserPasswordReset(
   // Persist the actor/target before invoking the external mail provider. The
   // audit records an attempted admin action, even if Resend later rejects it.
   const auditId = crypto.randomUUID();
-  const requestedAt = now.toISOString();
+  const requestedAt = toUtcMicrosecondTimestamp(now);
   const metadata = JSON.stringify({ reason: input.reason, status: "attempted" });
   const audit = await business.prepare(`INSERT INTO audit_logs
     (id, user_id, action, resource_type, resource_id, metadata, created_at)
@@ -690,7 +691,7 @@ async function updateUserStatus(
   const nextBanned = input.suspend ? 1 : 0;
   const nextReason = input.suspend ? input.reason : null;
   const nextExpires = input.suspend ? input.bannedUntil : null;
-  const updatedAt = now.toISOString();
+  const updatedAt = toUtcMicrosecondTimestamp(now);
   const auditId = crypto.randomUUID();
   const action = input.suspend ? "ADMIN_SUSPEND_USER" : "ADMIN_RESTORE_USER";
   const statements = [
@@ -753,10 +754,10 @@ async function expireUserLicense(
     fail("admin_user_management_unavailable");
   }
   if (license.status === "expired") {
-    return json({ success: true, licenseId: input.licenseId, alreadyExpired: true, updatedAt: now.toISOString() }, 200, headers);
+    return json({ success: true, licenseId: input.licenseId, alreadyExpired: true, updatedAt: toUtcMicrosecondTimestamp(now) }, 200, headers);
   }
 
-  const nowIso = now.toISOString();
+  const nowIso = toUtcMicrosecondTimestamp(now);
   const auditId = crypto.randomUUID();
   const adminAuditId = crypto.randomUUID();
   const eventId = crypto.randomUUID();

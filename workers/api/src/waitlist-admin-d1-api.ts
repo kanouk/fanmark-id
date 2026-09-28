@@ -1,4 +1,5 @@
 import { selectD1Database, type Env } from "./repository.ts";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const API_PATH = "/api/admin/waitlist";
 const MAX_ENTRIES = 100;
@@ -235,7 +236,7 @@ export async function handleWaitlistAdminRequest(
 
   try {
     const db = database(env);
-    const now = clock().toISOString();
+    const now = toUtcMicrosecondTimestamp(clock());
     return isList
       ? await handleList(db, authorization.userId, now, headers)
       : await handleEmail(db, authorization.userId, emailMatch![1].toLowerCase(), now, headers);
