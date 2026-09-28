@@ -254,6 +254,88 @@ test("paid extension applies license, lottery cancellation, audits, notification
   }
 });
 
+test("restores an applied Stripe extension effect with its pending and completed webhook ledgers", async () => {
+  const { miniflare, database } = await createDatabase();
+  const recoveryTables = [
+    "fanmarks",
+    "fanmark_licenses",
+    "waitlist",
+    "stripe_webhook_receipts",
+    "stripe_webhook_dispatches",
+    "stripe_extension_checkout_intents",
+    "stripe_extension_applications",
+    "stripe_extension_application_effects",
+    "audit_logs",
+  ];
+  try {
+    await seedBusiness(database);
+    const pendingEvent = stripeEvent({
+      eventId: "evt_synthetic_recovery_pending",
+      type: "customer.updated",
+    });
+    await acceptStripeWebhookReceiptIntoD1({ database, event: pendingEvent, now: NOW, createId: nextUuid });
+    await database.prepare(`
+      UPDATE stripe_webhook_dispatches SET available_at = ?, updated_at = ?
+      WHERE stripe_event_id = ? AND livemode = 0 AND status = 'pending'
+    `).bind("9999-12-31T23:59:59.999999Z", NOW, pendingEvent.stripeEventId).run();
+
+    const appliedEvent = stripeEvent({ eventId: "evt_synthetic_recovery_applied" });
+    await acceptStripeWebhookReceiptIntoD1({ database, event: appliedEvent, now: NOW, createId: nextUuid });
+    const dispatch = await dispatchStripeWebhookBatchInD1({ database, livemode: false, now: NOW });
+    assert.deepEqual(dispatch, {
+      claimed: 1, applied: 1, ignored: 0, deadLettered: 0, retryable: 0, leaseLost: 0,
+    });
+    assert.equal(await scalar(database, `
+      SELECT license_end FROM fanmark_licenses WHERE id = ? AND status = 'active'
+    `, [LICENSE_ID]), "2027-01-01T00:00:00.000000Z");
+    assert.equal(await scalar(database, `
+      SELECT status FROM stripe_extension_applications WHERE billing_intent_id = ?
+    `, [INTENT_ID]), "applied");
+    assert.equal(await scalar(database, `
+      SELECT status FROM stripe_webhook_receipts WHERE stripe_event_id = ?
+    `, [appliedEvent.stripeEventId]), "applied");
+    assert.equal(await scalar(database, `
+      SELECT status FROM stripe_webhook_dispatches WHERE stripe_event_id = ?
+    `, [appliedEvent.stripeEventId]), "completed");
+    assert.equal(await scalar(database, `
+      SELECT status FROM stripe_webhook_receipts WHERE stripe_event_id = ?
+    `, [pendingEvent.stripeEventId]), "received");
+    assert.equal(await scalar(database, `
+      SELECT status FROM stripe_webhook_dispatches WHERE stripe_event_id = ?
+    `, [pendingEvent.stripeEventId]), "pending");
+
+    const capture = async () => Object.fromEntries(await Promise.all(recoveryTables.map(async (table) => {
+      const columns = (await database.prepare(`PRAGMA table_info("${table}")`).all()).results.map((column) => column.name);
+      const rows = (await database.prepare(`SELECT * FROM "${table}" ORDER BY rowid`).all()).results;
+      return [table, { columns, rows }];
+    })));
+    const acknowledged = await capture();
+
+    for (const table of [...recoveryTables].reverse()) {
+      const result = await database.prepare(`DELETE FROM "${table}"`).run();
+      assert.equal(result.success, true, `clear failed for ${table}`);
+    }
+    assert.equal(await scalar(database, "SELECT count(*) AS count FROM stripe_extension_applications"), 0);
+    assert.equal(await scalar(database, "SELECT count(*) AS count FROM fanmark_licenses"), 0);
+    assert.equal(await scalar(database, "SELECT count(*) AS count FROM stripe_webhook_receipts"), 0);
+
+    for (const table of recoveryTables) {
+      const snapshot = acknowledged[table];
+      const columns = snapshot.columns.map((column) => `"${column}"`).join(", ");
+      const placeholders = snapshot.columns.map(() => "?").join(", ");
+      for (const rowValue of snapshot.rows) {
+        const result = await database.prepare(`
+          INSERT INTO "${table}" (${columns}) VALUES (${placeholders})
+        `).bind(...snapshot.columns.map((column) => rowValue[column])).run();
+        assert.equal(result.success, true, `restore failed for ${table}`);
+      }
+    }
+    assert.deepEqual(await capture(), acknowledged);
+  } finally {
+    await miniflare.dispose();
+  }
+});
+
 test("same Checkout Session in a different event receipt never grants time twice", async () => {
   const { miniflare, database } = await createDatabase();
   try {

@@ -63,6 +63,17 @@ const referralDuringFreeze = `postwrite-recovery:${randomUUID()}`;
 const freezeProbeEntries = [];
 const firstEventId = `evt_recovery_${randomUUID().replaceAll("-", "")}`;
 const firstObjectId = `cus_recovery_${randomUUID().replaceAll("-", "")}`;
+const extensionEventId = `evt_recovery_extension_${randomUUID().replaceAll("-", "")}`;
+const extensionIntentId = randomUUID();
+const extensionRequestId = randomUUID();
+const extensionFanmarkId = randomUUID();
+const extensionLicenseId = randomUUID();
+const extensionSessionId = `cs_recovery_${randomUUID().replaceAll("-", "")}`;
+const extensionPriceId = `price_recovery_${randomUUID().replaceAll("-", "")}`;
+const extensionTotalYen = 1200;
+const extensionMonths = 3;
+const extensionInitialEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+  .toISOString().replace(/Z$/u, "000Z");
 
 let activeConfigRelative = appConfigRelative;
 let creationMayHaveSucceeded = false;
@@ -73,7 +84,7 @@ let workerMayExist = false;
 let tempConfigWritten = false;
 let primaryError = null;
 let report = {
-  schemaVersion: 3,
+  schemaVersion: 4,
   startedAt,
   accountId,
   phase: "preflight",
@@ -112,6 +123,9 @@ let report = {
     storageObjectRestoredFromEncryptedBundle: false,
     encryptedBundleReplayMs: null,
     replayedBundleDigest: null,
+    stripeBusinessEffectApplied: false,
+    stripeBusinessEffectSurvivedTimeTravel: false,
+    stripeBusinessEffectRestoredFromEncryptedBundle: false,
   },
   cleanup: {
     workerDeleted: false,
@@ -289,6 +303,7 @@ function createTemporaryConfig() {
     ...(appConfig.compatibility_flags ? { compatibility_flags: appConfig.compatibility_flags } : {}),
     account_id: accountId,
     workers_dev: true,
+    triggers: { crons: ["* * * * *"] },
     d1_databases: [{
       binding: "FANMARK_DB",
       database_name: databaseName,
@@ -322,7 +337,8 @@ function createTemporaryConfig() {
       STAGING_NO_INDEX: "true",
     },
   };
-  if (temporaryConfig.routes || temporaryConfig.assets || temporaryConfig.triggers ||
+  if (temporaryConfig.routes || temporaryConfig.assets ||
+      JSON.stringify(temporaryConfig.triggers?.crons) !== JSON.stringify(["* * * * *"]) ||
       temporaryConfig.r2_buckets?.length !== 1 ||
       temporaryConfig.r2_buckets[0]?.binding !== "AVATARS_BUCKET" ||
       temporaryConfig.r2_buckets[0]?.bucket_name !== avatarBucketName) {
@@ -424,7 +440,18 @@ function stripeLedgerRows(eventIds) {
   `);
 }
 
-function signEvent(eventId, objectId) {
+function stripeExtensionState() {
+  return {
+    fanmark: runD1(`SELECT id, normalized_emoji, short_id, status, tier_level FROM fanmarks WHERE id = ${sqlLiteral(extensionFanmarkId)}`),
+    license: runD1(`SELECT id, user_id, fanmark_id, license_start, license_end, status, is_returned, is_transferred FROM fanmark_licenses WHERE id = ${sqlLiteral(extensionLicenseId)}`),
+    intent: runD1(`SELECT id, request_id, user_id, license_id, fanmark_id, tier_level, months, stripe_price_id, expected_total_yen, livemode, stripe_checkout_session_id, stripe_payment_status, status FROM stripe_extension_checkout_intents WHERE id = ${sqlLiteral(extensionIntentId)}`),
+    application: runD1(`SELECT id, billing_intent_id, stripe_checkout_session_id, source_receipt_id, last_receipt_id, applied_receipt_id, user_id, license_id, fanmark_id, status, result_code, previous_license_end, new_license_end, applied_at FROM stripe_extension_applications WHERE billing_intent_id = ${sqlLiteral(extensionIntentId)}`),
+    applicationEffect: runD1(`SELECT application_id, previous_license_end, new_license_end, cancelled_lottery_entries_count, created_at FROM stripe_extension_application_effects WHERE application_id IN (SELECT id FROM stripe_extension_applications WHERE billing_intent_id = ${sqlLiteral(extensionIntentId)})`),
+    audit: runD1(`SELECT id, user_id, action, resource_type, resource_id, metadata, created_at FROM audit_logs WHERE resource_id = ${sqlLiteral(extensionLicenseId)} AND action = 'LICENSE_EXTENDED'`),
+  };
+}
+
+function signEvent(eventId, objectId, { type = "customer.updated", stripeObject = { id: objectId, object: "customer" } } = {}) {
   const timestamp = Math.floor(Date.now() / 1000);
   const rawBody = JSON.stringify({
     id: eventId,
@@ -432,8 +459,8 @@ function signEvent(eventId, objectId) {
     api_version: webhookApiVersion,
     created: timestamp,
     livemode: false,
-    type: "customer.updated",
-    data: { object: { id: objectId, object: "customer" } },
+    type,
+    data: { object: stripeObject },
   });
   const signature = createHmac("sha256", syntheticSecret)
     .update(`${timestamp}.${rawBody}`, "utf8")
@@ -470,6 +497,86 @@ async function seedSyntheticAuthAccount() {
     VALUES (${sqlLiteral(syntheticAuthAccountId)}, ${sqlLiteral(syntheticAuthUserId)}, 'credential', ${sqlLiteral(syntheticAuthUserId)}, ${sqlLiteral(passwordHash)}, ${sqlLiteral(now)}, ${sqlLiteral(now)});
   `, "synthetic_auth_seed_failed");
   return passwordHash;
+}
+
+function currentUtcMicroseconds() {
+  return new Date().toISOString().replace(/Z$/u, "000Z");
+}
+
+function extensionCheckoutSession() {
+  return {
+    id: extensionSessionId,
+    object: "checkout.session",
+    mode: "payment",
+    status: "complete",
+    payment_status: "paid",
+    amount_total: extensionTotalYen,
+    currency: "jpy",
+    customer: `cus_recovery_${randomUUID().replaceAll("-", "")}`,
+    payment_intent: `pi_recovery_${randomUUID().replaceAll("-", "")}`,
+    client_reference_id: syntheticAuthUserId,
+    expires_at: Math.floor(Date.now() / 1000) + 3600,
+    metadata: {
+      type: "license_extension",
+      user_id: syntheticAuthUserId,
+      license_id: extensionLicenseId,
+      fanmark_id: extensionFanmarkId,
+      tier_level: "2",
+      months: String(extensionMonths),
+      billing_intent_id: extensionIntentId,
+      price_id: extensionPriceId,
+      expected_total_yen: String(extensionTotalYen),
+      allow_zero_total: "false",
+    },
+  };
+}
+
+function signExtensionEvent() {
+  const stripeObject = extensionCheckoutSession();
+  const signed = signEvent(extensionEventId, extensionSessionId, {
+    type: "checkout.session.completed",
+    stripeObject,
+  });
+  return signed;
+}
+
+function seedSyntheticStripeExtension() {
+  const now = currentUtcMicroseconds();
+  const licenseStart = "2026-01-01T00:00:00.000000Z";
+  const graceExpiresAt = currentUtcMicroseconds();
+  writeD1(databaseName, `
+    INSERT INTO fanmarks (
+      id, user_input_fanmark, normalized_emoji, short_id, status, created_at, updated_at,
+      emoji_ids, normalized_emoji_ids, tier_level
+    ) VALUES (
+      ${sqlLiteral(extensionFanmarkId)}, '🧪', '🧪', ${sqlLiteral(`recovery${suffix}`)}, 'active',
+      ${sqlLiteral(now)}, ${sqlLiteral(now)}, ${sqlLiteral(JSON.stringify([`recovery-${suffix}`]))},
+      ${sqlLiteral(JSON.stringify([`recovery-${suffix}`]))}, 2
+    );
+  `, "synthetic_extension_fanmark_seed_failed");
+  writeD1(databaseName, `
+    INSERT INTO fanmark_licenses (
+      id, fanmark_id, user_id, license_start, license_end, status, is_initial_license,
+      created_at, updated_at, grace_expires_at, is_returned, is_transferred,
+      transfer_locked_until, display_fanmark
+    ) VALUES (
+      ${sqlLiteral(extensionLicenseId)}, ${sqlLiteral(extensionFanmarkId)}, ${sqlLiteral(syntheticAuthUserId)},
+      ${sqlLiteral(licenseStart)}, ${sqlLiteral(extensionInitialEnd)}, 'grace', 1,
+      ${sqlLiteral(now)}, ${sqlLiteral(now)}, ${sqlLiteral(graceExpiresAt)}, 0, 0, NULL, '🧪'
+    );
+  `, "synthetic_extension_license_seed_failed");
+  writeD1(databaseName, `
+    INSERT INTO stripe_extension_checkout_intents (
+      id, request_id, user_id, license_id, fanmark_id, tier_level, months,
+      stripe_price_id, currency, expected_total_yen, allow_zero_total, livemode,
+      stripe_checkout_session_id, status, idempotency_safe_until, created_at, updated_at
+    ) VALUES (
+      ${sqlLiteral(extensionIntentId)}, ${sqlLiteral(extensionRequestId)}, ${sqlLiteral(syntheticAuthUserId)},
+      ${sqlLiteral(extensionLicenseId)}, ${sqlLiteral(extensionFanmarkId)}, 2, ${extensionMonths},
+      ${sqlLiteral(extensionPriceId)}, 'jpy', ${extensionTotalYen}, 0, 0,
+      NULL, 'created', ${sqlLiteral(extensionInitialEnd)}, ${sqlLiteral(now)}, ${sqlLiteral(now)}
+    );
+  `, "synthetic_extension_intent_seed_failed");
 }
 
 async function signInSyntheticUser(origin) {
@@ -741,12 +848,18 @@ function hash(value) {
 }
 
 const recoveryExportTables = [
-  { name: "waitlist", database: "business", field: "business_waitlist_sql" },
-  { name: "stripe_webhook_receipts", database: "business", field: "business_receipt_sql" },
-  { name: "stripe_webhook_dispatches", database: "business", field: "business_dispatch_sql" },
-  { name: "user", database: "auth", field: "auth_user_sql" },
-  { name: "account", database: "auth", field: "auth_account_sql" },
-  { name: "session", database: "auth", field: "auth_session_sql" },
+  { name: "fanmarks", database: "business", field: "business_fanmark_sql", expectedRows: 1 },
+  { name: "fanmark_licenses", database: "business", field: "business_license_sql", expectedRows: 1 },
+  { name: "waitlist", database: "business", field: "business_waitlist_sql", expectedRows: 1 },
+  { name: "stripe_webhook_receipts", database: "business", field: "business_receipt_sql", expectedRows: 2 },
+  { name: "stripe_webhook_dispatches", database: "business", field: "business_dispatch_sql", expectedRows: 2 },
+  { name: "stripe_extension_checkout_intents", database: "business", field: "business_extension_intent_sql", expectedRows: 1 },
+  { name: "stripe_extension_applications", database: "business", field: "business_extension_application_sql", expectedRows: 1 },
+  { name: "stripe_extension_application_effects", database: "business", field: "business_extension_effect_sql", expectedRows: 1 },
+  { name: "audit_logs", database: "business", field: "business_audit_sql", expectedRows: 1 },
+  { name: "user", database: "auth", field: "auth_user_sql", expectedRows: 1 },
+  { name: "account", database: "auth", field: "auth_account_sql", expectedRows: 1 },
+  { name: "session", database: "auth", field: "auth_session_sql", expectedRows: 1 },
 ];
 
 function recoveryBundleCatalog() {
@@ -812,7 +925,7 @@ function recoveryBundleSession(catalog, values) {
   };
 }
 
-async function exportSyntheticTable(database, table, outputPath) {
+async function exportSyntheticTable(database, table, expectedRows, outputPath) {
   const targetDatabase = database === "business" ? databaseName : authDatabaseName;
   runWrangler([
     "d1", "export", targetDatabase, "--remote", "--no-schema",
@@ -821,7 +934,7 @@ async function exportSyntheticTable(database, table, outputPath) {
   await chmod(outputPath, 0o600);
   const sql = await readFile(outputPath, "utf8");
   const inserts = [...sql.matchAll(/\bINSERT\s+(?:OR\s+\w+\s+)?INTO\s+(?:"([^"]+)"|`([^`]+)`|\[([^\]]+)\]|([A-Za-z_][A-Za-z0-9_]*))/giu)];
-  if (inserts.length !== 1 || inserts[0].slice(1).find(Boolean) !== table ||
+  if (inserts.length !== expectedRows || inserts.some((insert) => insert.slice(1).find(Boolean) !== table) ||
       /\b(?:CREATE|DROP|ALTER|ATTACH|DETACH)\s+(?:TABLE|INDEX|DATABASE)\b/iu.test(sql)) {
     fail("synthetic_d1_export_shape_invalid");
   }
@@ -834,17 +947,25 @@ async function createEncryptedR2RecoveryBundle(passwordHash, syntheticAvatar) {
   const exportedSql = {};
   for (const [index, entry] of recoveryExportTables.entries()) {
     const outputPath = path.join(recoveryArtifactsRoot, `source-${index}.sql`);
-    exportedSql[entry.field] = await exportSyntheticTable(entry.database, entry.name, outputPath);
+    exportedSql[entry.field] = await exportSyntheticTable(entry.database, entry.name, entry.expectedRows, outputPath);
   }
   for (const [field, marker] of Object.entries({
     business_waitlist_sql: emailBeforeBookmark,
-    business_receipt_sql: firstEventId,
-    business_dispatch_sql: firstEventId,
+    business_receipt_sql: [firstEventId, extensionEventId],
+    business_dispatch_sql: [firstEventId, extensionEventId],
+    business_fanmark_sql: extensionFanmarkId,
+    business_license_sql: extensionLicenseId,
+    business_extension_intent_sql: extensionIntentId,
+    business_extension_application_sql: extensionSessionId,
+    business_extension_effect_sql: extensionInitialEnd,
+    business_audit_sql: extensionLicenseId,
     auth_user_sql: syntheticAuthEmail,
     auth_account_sql: syntheticAuthAccountId,
     auth_session_sql: syntheticAuthUserId,
   })) {
-    assert.ok(exportedSql[field].includes(marker), `synthetic ${field} export omitted its unique marker`);
+    for (const uniqueMarker of Array.isArray(marker) ? marker : [marker]) {
+      assert.ok(exportedSql[field].includes(uniqueMarker), `synthetic ${field} export omitted its unique marker`);
+    }
   }
   assert.ok(exportedSql.auth_account_sql.includes(passwordHash), "synthetic credential was not in the Auth backup");
   const syntheticAvatarJson = JSON.stringify(syntheticAvatar);
@@ -982,6 +1103,48 @@ function deployTemporaryWorker(config) {
   return result;
 }
 
+async function enableSyntheticStripeDispatch(config) {
+  config.vars.STRIPE_DISPATCH_BACKEND = "d1";
+  config.vars.STRIPE_SECRET_KEY_TEST = "sk_test_synthetic_recovery_no_network";
+  config.vars.STRIPE_SECRET_KEY_LIVE = "sk_live_synthetic_recovery_no_network";
+  await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 });
+  report.phase = "deploy_synthetic_stripe_dispatcher";
+  deployTemporaryWorker(config);
+}
+
+async function waitForAppliedStripeExtension() {
+  for (let attempt = 0; attempt < 180; attempt += 1) {
+    const rows = stripeLedgerRows([extensionEventId]);
+    if (rows.length === 1 && rows[0]?.receipt_status === "applied" &&
+        rows[0]?.dispatch_status === "completed") {
+      const effect = stripeExtensionState();
+      if (effect.license.length !== 1 || effect.license[0]?.status !== "active" ||
+          effect.license[0]?.license_end === extensionInitialEnd ||
+          effect.intent.length !== 1 || effect.intent[0]?.status !== "applied" ||
+          effect.application.length !== 1 || effect.application[0]?.status !== "applied" ||
+          effect.applicationEffect.length !== 1 || effect.audit.length !== 1) {
+        fail("synthetic_stripe_extension_effect_readback_mismatch");
+      }
+      report.recovery.stripeBusinessEffectApplied = true;
+      return effect;
+    }
+    if (rows.some((row) => row?.receipt_status === "dead_letter" || row?.dispatch_status === "dead_letter")) {
+      fail("synthetic_stripe_extension_dead_lettered");
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+  }
+  fail("synthetic_stripe_extension_dispatch_timeout");
+}
+
+function deferPendingStripeEventUntilAfterRecoveryBookmark(eventId) {
+  const future = "9999-12-31T23:59:59.999999Z";
+  writeD1(databaseName, `
+    UPDATE stripe_webhook_dispatches
+    SET available_at = ${sqlLiteral(future)}, updated_at = ${sqlLiteral(currentUtcMicroseconds())}
+    WHERE stripe_event_id = ${sqlLiteral(eventId)} AND livemode = 0 AND status = 'pending';
+  `, "pending_stripe_dispatch_defer_failed");
+}
+
 function setTemporaryAuthSecret() {
   runWrangler(["secret", "put", "BETTER_AUTH_SECRET"], {
     input: `${syntheticAuthSecret}\n`,
@@ -1032,27 +1195,43 @@ async function runDrill() {
   const firstAuthState = syntheticAuthState(passwordHash);
   assert.equal(firstAuthState.sessions.length, 1);
 
-  report.phase = "acknowledge_synthetic_waitlist_receipt_and_auth_state";
+  report.phase = "seed_synthetic_stripe_extension";
+  seedSyntheticStripeExtension();
+  report.phase = "acknowledge_synthetic_waitlist_and_stripe_extension";
   await postWaitlist(origin, emailBeforeBookmark, referralBeforeBookmark);
   assertOneWaitingRow(tableRowsForEmail(emailBeforeBookmark), emailBeforeBookmark, referralBeforeBookmark);
+  await postEvent(origin, signExtensionEvent());
+  await enableSyntheticStripeDispatch(config);
+  const appliedExtension = await waitForAppliedStripeExtension();
+  report.phase = "acknowledge_pending_synthetic_stripe_receipt";
   const signedFirstEvent = signEvent(firstEventId, firstObjectId);
   await postEvent(origin, signedFirstEvent);
   await postEvent(origin, signedFirstEvent);
-  const firstLedger = stripeLedgerRows([firstEventId]);
-  assert.equal(firstLedger.length, 1);
-  assert.equal(firstLedger[0].receipt_status, "received");
-  assert.equal(Number(firstLedger[0].delivery_count), 2);
-  assert.equal(firstLedger[0].dispatch_status, "pending");
-  assert.ok(/^[0-9a-f]{64}$/u.test(firstLedger[0].normalized_payload_sha256));
-  assert.ok(/^[0-9a-f]{64}$/u.test(firstLedger[0].raw_payload_sha256));
+  deferPendingStripeEventUntilAfterRecoveryBookmark(firstEventId);
+  const stripeLedger = stripeLedgerRows([firstEventId, extensionEventId]);
+  const pendingLedger = stripeLedger.find((row) => row.stripe_event_id === firstEventId);
+  const appliedLedger = stripeLedger.find((row) => row.stripe_event_id === extensionEventId);
+  assert.equal(stripeLedger.length, 2);
+  assert.equal(pendingLedger?.receipt_status, "received");
+  assert.equal(Number(pendingLedger?.delivery_count), 2);
+  assert.equal(pendingLedger?.dispatch_status, "pending");
+  assert.equal(appliedLedger?.receipt_status, "applied");
+  assert.equal(appliedLedger?.dispatch_status, "completed");
+  for (const ledger of stripeLedger) {
+    assert.ok(/^[0-9a-f]{64}$/u.test(ledger.normalized_payload_sha256));
+    assert.ok(/^[0-9a-f]{64}$/u.test(ledger.raw_payload_sha256));
+  }
 
   const acknowledgedState = {
     waitlist: tableRowsForEmail(emailBeforeBookmark),
-    stripeLedger: stripeLedgerRows([firstEventId]),
+    stripeLedger,
+    stripeExtension: appliedExtension,
     auth: syntheticAuthState(passwordHash),
     avatar: { key: syntheticAvatar.key, sha256: syntheticAvatar.sha256, size: syntheticAvatar.size },
   };
   assertOneWaitingRow(acknowledgedState.waitlist, emailBeforeBookmark, referralBeforeBookmark);
+  assert.equal(acknowledgedState.stripeExtension.application[0]?.new_license_end,
+    acknowledgedState.stripeExtension.applicationEffect[0]?.new_license_end);
   assert.equal(acknowledgedState.auth.sessions.length, 1);
   report.recovery.acknowledgedDigest = hash(acknowledgedState);
   report.phase = "capture_business_and_auth_recovery_bookmarks";
@@ -1066,8 +1245,8 @@ async function runDrill() {
   const secondAuthSession = await signInSyntheticUser(origin);
   assert.notEqual(secondAuthSession.sessionId, firstAuthSession.sessionId);
   assert.equal(syntheticAuthState(passwordHash).sessions.length, 2);
-  const laterLedger = stripeLedgerRows([firstEventId]);
-  assert.deepEqual(laterLedger, firstLedger, "no Stripe receipt may be accepted after the recovery bookmark");
+  const laterLedger = stripeLedgerRows([firstEventId, extensionEventId]);
+  assert.deepEqual(laterLedger, stripeLedger, "Stripe state changed after the recovery bookmark");
 
   report.phase = "freeze_temporary_worker";
   await changeFreeze(config, true);
@@ -1090,12 +1269,14 @@ async function runDrill() {
   restoreToBookmark(authDatabaseName, authBookmark);
   const restoredState = {
     waitlist: tableRowsForEmail(emailBeforeBookmark),
-    stripeLedger: stripeLedgerRows([firstEventId]),
+    stripeLedger: stripeLedgerRows([firstEventId, extensionEventId]),
+    stripeExtension: stripeExtensionState(),
     auth: syntheticAuthState(passwordHash),
     avatar: { key: syntheticAvatar.key, sha256: syntheticAvatar.sha256, size: syntheticAvatar.size },
   };
   report.recovery.reconciliationMs = Math.round(performance.now() - restoreStarted);
   assert.deepEqual(restoredState, acknowledgedState, "acknowledged business and Stripe rows changed after restore");
+  report.recovery.stripeBusinessEffectSurvivedTimeTravel = true;
   await assertSyntheticAvatarRead(origin, syntheticAvatar);
   report.recovery.storageObjectSurvivedTimeTravel = true;
   const survivingAuthSession = await readSyntheticSession(origin, firstAuthSession.cookie);
@@ -1107,12 +1288,12 @@ async function runDrill() {
   for (const entry of freezeProbeEntries) {
     if (tableRowsForEmail(entry.email).length !== 0) fail("post_bookmark_freeze_probe_survived_restore");
   }
-  assert.equal(stripeLedgerRows([firstEventId]).length, 1);
+  assert.equal(stripeLedgerRows([firstEventId, extensionEventId]).length, 2);
   const orphanDispatches = runD1(`
     SELECT COUNT(*) AS count FROM stripe_webhook_dispatches AS d
     LEFT JOIN stripe_webhook_receipts AS r
       ON r.id = d.receipt_id AND r.livemode = d.livemode AND r.stripe_event_id = d.stripe_event_id
-    WHERE d.stripe_event_id = ${sqlLiteral(firstEventId)} AND r.id IS NULL
+    WHERE d.stripe_event_id IN (${sqlLiteral(firstEventId)}, ${sqlLiteral(extensionEventId)}) AND r.id IS NULL
   `);
   assert.equal(Number(orphanDispatches[0]?.count), 0);
   report.recovery.reconciledDigest = hash(restoredState);
@@ -1124,16 +1305,28 @@ async function runDrill() {
   if (await readSyntheticAvatar(origin, syntheticAvatar.key) !== null) {
     fail("synthetic_avatar_delete_before_replay_failed");
   }
-  writeD1(databaseName, `DELETE FROM stripe_webhook_dispatches WHERE stripe_event_id = ${sqlLiteral(firstEventId)};`, "recovery_bundle_clear_failed");
-  writeD1(databaseName, `DELETE FROM stripe_webhook_receipts WHERE stripe_event_id = ${sqlLiteral(firstEventId)};`, "recovery_bundle_clear_failed");
+  writeD1(databaseName, `DELETE FROM stripe_extension_application_effects WHERE application_id IN (SELECT id FROM stripe_extension_applications WHERE billing_intent_id = ${sqlLiteral(extensionIntentId)});`, "recovery_bundle_clear_failed");
+  writeD1(databaseName, `DELETE FROM stripe_extension_applications WHERE billing_intent_id = ${sqlLiteral(extensionIntentId)};`, "recovery_bundle_clear_failed");
+  writeD1(databaseName, `DELETE FROM stripe_extension_checkout_intents WHERE id = ${sqlLiteral(extensionIntentId)};`, "recovery_bundle_clear_failed");
+  writeD1(databaseName, `DELETE FROM audit_logs WHERE resource_id = ${sqlLiteral(extensionLicenseId)} AND action = 'LICENSE_EXTENDED';`, "recovery_bundle_clear_failed");
+  writeD1(databaseName, `DELETE FROM fanmark_licenses WHERE id = ${sqlLiteral(extensionLicenseId)};`, "recovery_bundle_clear_failed");
+  writeD1(databaseName, `DELETE FROM fanmarks WHERE id = ${sqlLiteral(extensionFanmarkId)};`, "recovery_bundle_clear_failed");
+  writeD1(databaseName, `DELETE FROM stripe_webhook_dispatches WHERE stripe_event_id IN (${sqlLiteral(firstEventId)}, ${sqlLiteral(extensionEventId)});`, "recovery_bundle_clear_failed");
+  writeD1(databaseName, `DELETE FROM stripe_webhook_receipts WHERE stripe_event_id IN (${sqlLiteral(firstEventId)}, ${sqlLiteral(extensionEventId)});`, "recovery_bundle_clear_failed");
   writeD1(databaseName, `DELETE FROM waitlist WHERE email = ${sqlLiteral(emailBeforeBookmark)};`, "recovery_bundle_clear_failed");
   writeD1(authDatabaseName, `DELETE FROM session WHERE userId = ${sqlLiteral(syntheticAuthUserId)};`, "recovery_bundle_clear_failed");
   writeD1(authDatabaseName, `DELETE FROM account WHERE userId = ${sqlLiteral(syntheticAuthUserId)};`, "recovery_bundle_clear_failed");
   writeD1(authDatabaseName, `DELETE FROM "user" WHERE id = ${sqlLiteral(syntheticAuthUserId)};`, "recovery_bundle_clear_failed");
   const absentBusiness = [
     tableRowsForEmail(emailBeforeBookmark).length,
-    stripeLedgerRows([firstEventId]).length,
-    Number(runD1(`SELECT COUNT(*) AS count FROM stripe_webhook_dispatches WHERE stripe_event_id = ${sqlLiteral(firstEventId)}`)[0]?.count),
+    stripeLedgerRows([firstEventId, extensionEventId]).length,
+    Number(runD1(`SELECT COUNT(*) AS count FROM stripe_webhook_dispatches WHERE stripe_event_id IN (${sqlLiteral(firstEventId)}, ${sqlLiteral(extensionEventId)})`)[0]?.count),
+    stripeExtensionState().fanmark.length,
+    stripeExtensionState().license.length,
+    stripeExtensionState().intent.length,
+    stripeExtensionState().application.length,
+    stripeExtensionState().applicationEffect.length,
+    stripeExtensionState().audit.length,
   ];
   const absentAuth = Number(runD1On(authDatabaseName, `SELECT COUNT(*) AS count FROM "user" WHERE id = ${sqlLiteral(syntheticAuthUserId)}`)[0]?.count);
   if (absentBusiness.some((count) => count !== 0) || absentAuth !== 0) fail("recovery_bundle_clear_readback_failed");
@@ -1151,7 +1344,8 @@ async function runDrill() {
   await restoreSyntheticAvatarFromBackup(origin, JSON.parse(encryptedRecoverySql.storage_avatar_json));
   const replayedState = {
     waitlist: tableRowsForEmail(emailBeforeBookmark),
-    stripeLedger: stripeLedgerRows([firstEventId]),
+    stripeLedger: stripeLedgerRows([firstEventId, extensionEventId]),
+    stripeExtension: stripeExtensionState(),
     auth: syntheticAuthState(passwordHash),
     avatar: { key: syntheticAvatar.key, sha256: syntheticAvatar.sha256, size: syntheticAvatar.size },
   };
@@ -1163,6 +1357,7 @@ async function runDrill() {
       replayedSession?.session?.id !== firstAuthSession.sessionId) {
     fail("encrypted_r2_recovery_auth_session_failed");
   }
+  report.recovery.stripeBusinessEffectRestoredFromEncryptedBundle = true;
 
   report.phase = "complete";
   report.status = "passed";

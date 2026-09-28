@@ -17,6 +17,23 @@ of runtime clock semantics. The active-to-grace prototype now records its
 audit timestamp from the same captured operation time. Migration data tests
 pass 188/188; license-expiry source integration passes 25/25.
 
+The guarded post-write recovery harness is being extended to apply one
+synthetic paid license-extension event through the temporary Worker's scheduled
+Stripe dispatcher. Its acknowledged, Time Travel, and encrypted R2 replay state
+now includes the resulting license, checkout intent, application/effect, audit
+row, and both the pending and applied webhook ledgers. Node 22.6.0 migration
+tests pass 188/188, the Stripe webhook/application integration suite passes
+60/60, including a new local D1 backup/clear/replay test for the applied
+extension effect and both webhook ledger states. Worker typecheck and focused
+ESLint pass. The live rerun stopped at
+preflight because Wrangler's current account does not match the staging
+configuration; it created no resource. The Wrangler OAuth consent page showed
+a different Cloudflare identity, so the flow was canceled before authorization.
+The existing local Wrangler identity is unchanged. Reauthenticate with the
+staging account before retrying. This prepared path has not passed staging and
+does not close #37. A prior canary's separate staging cleanup state remains
+unverified as recorded in `cutover-rehearsal.md`.
+
 ## Resume boundary
 
 Use branch `codex/cloudflare-api-preparation` in the migration worktree. The

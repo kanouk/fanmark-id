@@ -651,3 +651,31 @@ checking and the focused staging-expiry guard suite pass. Before any further
 staging mutation, verify the intended Cloudflare account, active Worker
 version/triggers, and zero canary rows. No real user data, production route,
 or domain/DNS setting was read or changed.
+
+## Applied Stripe effect recovery extension prepared (2026-09-29 JST)
+
+The guarded `test:migration:staging-postwrite-recovery` harness now prepares a
+synthetic paid license-extension event, accepts its signed checkout webhook,
+and enables the temporary Worker's every-minute D1 dispatcher with synthetic
+Stripe keys that cannot access a real account. The rehearsal waits for the
+Worker to apply the license change, then includes the license, intent,
+application/effect, audit record, and applied receipt/dispatch alongside a
+separate pending receipt/dispatch in the encrypted recovery bundle. Its
+Time-Travel and R2 replay comparisons cover the applied business effect as
+well as Auth session, waitlist, and avatar state. The pending receipt is moved
+to a far-future synthetic dispatch time so the periodic dispatcher leaves it
+pending throughout the drill.
+
+Node 22.6.0 migration tests pass 188/188, the Stripe webhook/application
+integration suite passes 60/60, including local D1 backup, clear, and replay of
+the applied license extension with both ledger states. Worker typecheck,
+focused ESLint, and script syntax validation pass. The guarded Cloudflare rerun
+stopped at preflight because the active Wrangler account did not match the
+staging account; no resource was created by this attempt. The OAuth consent
+page showed a different Cloudflare identity and was canceled before
+authorization. Reauthenticate Wrangler with the staging account before any
+retry. Do not run another staging mutation until the
+correct account is verified and the earlier canary's Worker/D1 cleanup state
+is independently read back. This extension is prepared but unverified in
+staging; issue #37 remains open. No production data or domain/DNS state was
+changed.
