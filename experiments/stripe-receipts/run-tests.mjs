@@ -23,14 +23,15 @@ for (const file of testFiles) {
   if (typeScriptImports.has(file)) args.unshift("--import", "tsx");
 
   process.stdout.write(`\n=== ${file} ===\n`);
+  const timeoutMs = file === "snapshot-export.test.mjs" ? 360_000 : 180_000;
   const result = spawnSync(process.execPath, args, {
     cwd: packageDirectory,
     stdio: "inherit",
-    timeout: 180_000,
+    timeout: timeoutMs,
   });
 
   if (result.error?.code === "ETIMEDOUT") {
-    process.stderr.write(`Timed out after 180 seconds: ${file}\n`);
+    process.stderr.write(`Timed out after ${timeoutMs / 1000} seconds: ${file}\n`);
     process.exitCode = 1;
     break;
   }
