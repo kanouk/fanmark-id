@@ -3393,14 +3393,16 @@ no Supabase, D1, R2, production route, or domain/DNS state.
 ## Rendered profile and R2 avatar UI canary (2026-09-28 JST)
 
 Extended `scripts/migration/staging-r2-profile-smoke.mjs` to open the deployed
-workers.dev `/profile` page in an isolated headless Chrome profile at 390x844.
-The canary selects a complete synthetic 1x1 PNG through the page's file input,
-observes the Worker storage and profile requests, and requires Chrome to decode
-the returned image at its expected dimensions. It then clicks the profile's
-own remove control, checks that the Worker profile API returns a null avatar,
-and confirms the removed public R2 URL returns 404. The existing REST portions
-continue to verify anonymous rejection, same-owner URL rules, and both avatar
-and cover-image buckets.
+workers.dev `/auth` and `/profile` pages in an isolated headless Chrome profile
+at 390x844. The canary signs in through the real form with a synthetic
+Better Auth user, observes the Worker email-login request, and verifies the
+HttpOnly/Secure/SameSite=Lax session cookie. It selects a complete synthetic
+1x1 PNG through the page's file input, observes the Worker storage and profile
+requests, and requires Chrome to decode the returned image at its expected
+dimensions. It then clicks the profile's own remove control, checks that the
+Worker profile API returns a null avatar, and confirms the removed public R2
+URL returns 404. The existing REST portions continue to verify anonymous
+rejection, same-owner URL rules, and both avatar and cover-image buckets.
 
 The first attempt revealed the previous API fixture was a truncated PNG header:
 the API signature check accepted it, but Chrome could not decode it. A
@@ -3411,4 +3413,6 @@ the same Auth suspension migration selected by its test configuration; this
 fixed a fixture that otherwise caused synthetic Better Auth sign-in to return
 500. Local Worker/R2 tests pass 5/5. These changes touch only the staging
 smoke and test fixture; no source rows, existing Supabase objects, production
-routes, or domain/DNS settings changed.
+routes, or domain/DNS settings changed. PR #41 CI passes both the staging-app
+and Worker-API jobs. This proves the synthetic email/password staging path
+only; provider-backed login and existing user migration remain separate gates.

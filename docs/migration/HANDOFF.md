@@ -2569,8 +2569,10 @@ acceptance, user-data import, and domain/DNS remain open.
 
 ## Rendered `/profile` R2 avatar UI canary (2026-09-28 JST)
 
-The staging R2 profile smoke now drives `/profile` in an isolated headless
-Chrome profile at 390x844. Using a synthetic Better Auth session, it selects a
+The staging R2 profile smoke now drives `/auth` and `/profile` in an isolated
+headless Chrome profile at 390x844. It signs in through the real form using a
+synthetic Better Auth user, observes the Worker email-login request, and
+verifies the session cookie is HttpOnly, Secure, and SameSite=Lax. It selects a
 CRC-valid 1x1 PNG through the page's file input, verifies Worker upload/public
 read/profile requests, and waits for Chrome to decode the rendered avatar at
 1x1. The page's remove control then clears the profile URL and deletes the R2
@@ -2588,4 +2590,5 @@ broader profile/settings cutover and existing Storage object migration remain
 in their previously assigned stages. The weighted estimates stay about 53%
 end-to-end and 73% for the prioritized app/infrastructure/non-user-master
 scope because the open schema, CPU, provider, recovery, and final migration
-gates are unchanged.
+gates are unchanged. The rerun completed through the `/auth` form, and PR #41
+CI passed both the staging-app and Worker-API jobs.

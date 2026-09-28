@@ -142,16 +142,6 @@ async function request(path, init = {}) {
   });
 }
 
-function responseCookie(response) {
-  const cookies = typeof response.headers.getSetCookie === "function"
-    ? response.headers.getSetCookie()
-    : [response.headers.get("set-cookie") ?? ""];
-  const pair = cookies.map((cookie) => cookie.split(";", 1)[0])
-    .find((cookie) => /session_token=/u.test(cookie));
-  if (!pair) fail("response_cookie_missing");
-  return pair;
-}
-
 function cdpConnection(webSocketUrl) {
   const socket = new WebSocket(webSocketUrl);
   const pending = new Map();
@@ -209,13 +199,7 @@ function cdpConnection(webSocketUrl) {
   };
 }
 
-function cookieParts(cookie) {
-  const separator = cookie.indexOf("=");
-  if (separator < 1) fail("session_cookie_invalid");
-  return { name: cookie.slice(0, separator), value: cookie.slice(separator + 1) };
-}
-
-async function verifyRenderedProfileAvatar(cookie, pngBytes, onUploaded) {
+async function verifyRenderedProfileAvatar(email, password, pngBytes, onAuthenticated, onUploaded) {
   const chromeCandidates = [
     process.env.FANMARK_STAGING_CHROME,
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -245,8 +229,10 @@ async function verifyRenderedProfileAvatar(cookie, pngBytes, onUploaded) {
     chromeExit();
   });
   const chromeRunning = () => !chromeFailed && chrome.exitCode === null && chrome.signalCode === null;
+  let browserCookie;
   const captureCurrentAvatar = async () => {
-    const response = await request("/api/me/profile", { headers: { cookie } });
+    if (!browserCookie) return;
+    const response = await request("/api/me/profile", { headers: { cookie: browserCookie } });
     if (response.status !== 200) return;
     const profile = (await response.json())?.profile;
     if (typeof profile?.avatar_url === "string") await onUploaded(profile.avatar_url);
@@ -283,20 +269,73 @@ async function verifyRenderedProfileAvatar(cookie, pngBytes, onUploaded) {
     await cdp.send("Emulation.setDeviceMetricsOverride", {
       width: 390, height: 844, deviceScaleFactor: 1, mobile: true,
     });
-    const cookieResult = await cdp.send("Network.setCookie", {
-      ...cookieParts(cookie), url: APP_ORIGIN, path: "/", secure: true, httpOnly: true, sameSite: "Lax",
-    });
-    if (cookieResult.success !== true) fail("browser_session_cookie_rejected");
-    await cdp.send("Page.navigate", { url: `${APP_ORIGIN}/profile` });
-
     const evaluate = async (expression) => {
       const result = await cdp.send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true });
       if (result.exceptionDetails) fail("profile_browser_evaluation_failed");
       return result.result?.value;
     };
+
+    await cdp.send("Page.navigate", { url: `${APP_ORIGIN}/auth` });
     const pageDeadline = Date.now() + 30_000;
     let pageState;
     while (Date.now() < pageDeadline) {
+      if (!chromeRunning()) fail("headless_chrome_exited");
+      pageState = await evaluate(`({ path: location.pathname, emailInput: Boolean(document.querySelector('#auth-email')), passwordInput: Boolean(document.querySelector('#auth-password')) })`);
+      if (pageState?.path === "/auth" && pageState.emailInput && pageState.passwordInput) break;
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+    if (pageState?.path !== "/auth" || !pageState.emailInput || !pageState.passwordInput) fail("auth_screen_not_ready");
+
+    let documentRoot = await cdp.send("DOM.getDocument", { depth: -1 });
+    const emailInput = await cdp.send("DOM.querySelector", {
+      nodeId: documentRoot.root.nodeId,
+      selector: "#auth-email",
+    });
+    const passwordInput = await cdp.send("DOM.querySelector", {
+      nodeId: documentRoot.root.nodeId,
+      selector: "#auth-password",
+    });
+    if (!emailInput.nodeId || !passwordInput.nodeId) fail("auth_form_input_missing");
+    await cdp.send("DOM.focus", { nodeId: emailInput.nodeId });
+    await cdp.send("Input.insertText", { text: email });
+    await cdp.send("DOM.focus", { nodeId: passwordInput.nodeId });
+    await cdp.send("Input.insertText", { text: password });
+    const submitted = await evaluate(`(() => {
+      const form = document.querySelector('#auth-email')?.closest('form');
+      const button = form?.querySelector('button[type="submit"]');
+      if (!button || button.disabled) return false;
+      button.click();
+      return true;
+    })()`);
+    if (submitted !== true) fail("auth_form_submit_missing");
+
+    const loginDeadline = Date.now() + 35_000;
+    let loginState;
+    let sessionCookie;
+    while (Date.now() < loginDeadline) {
+      if (!chromeRunning()) fail("headless_chrome_exited");
+      loginState = await evaluate(`({
+        path: location.pathname,
+        errorVisible: Boolean(document.querySelector('#auth-email')?.closest('form')?.querySelector('.text-destructive')),
+        resources: performance.getEntriesByType('resource').map((item) => item.name),
+      })`);
+      const cookieState = await cdp.send("Network.getAllCookies");
+      sessionCookie = cookieState.cookies?.find((item) => item.name.endsWith("session_token") &&
+        item.domain.includes("workers.dev") && item.path === "/");
+      if (loginState?.path === "/dashboard" && sessionCookie) break;
+      if (loginState?.errorVisible) fail("auth_email_password_ui_failed");
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+    if (loginState?.path !== "/dashboard" || !sessionCookie) fail("auth_email_password_ui_timeout");
+    if (!sessionCookie.httpOnly || !sessionCookie.secure) fail("auth_session_cookie_flags_invalid");
+    browserCookie = `${sessionCookie.name}=${sessionCookie.value}`;
+    await onAuthenticated(browserCookie);
+    const authRequestObserved = loginState.resources.some((name) => name.includes("/api/auth/sign-in/email"));
+    if (!authRequestObserved) fail("auth_worker_login_request_missing");
+
+    await cdp.send("Page.navigate", { url: `${APP_ORIGIN}/profile` });
+    const profileDeadline = Date.now() + 30_000;
+    while (Date.now() < profileDeadline) {
       if (!chromeRunning()) fail("headless_chrome_exited");
       pageState = await evaluate(`({ path: location.pathname, profileInput: Boolean(document.querySelector('#display_name')), fileInput: Boolean(document.querySelector('input[type="file"][accept="image/*"]')) })`);
       if (pageState?.path === "/profile" && pageState.profileInput && pageState.fileInput) break;
@@ -304,7 +343,7 @@ async function verifyRenderedProfileAvatar(cookie, pngBytes, onUploaded) {
     }
     if (pageState?.path !== "/profile" || !pageState.profileInput || !pageState.fileInput) fail("profile_screen_not_ready");
 
-    const documentRoot = await cdp.send("DOM.getDocument", { depth: -1 });
+    documentRoot = await cdp.send("DOM.getDocument", { depth: -1 });
     const fileInput = await cdp.send("DOM.querySelector", {
       nodeId: documentRoot.root.nodeId,
       selector: 'input[type="file"][accept="image/*"]',
@@ -364,23 +403,34 @@ async function verifyRenderedProfileAvatar(cookie, pngBytes, onUploaded) {
       await new Promise((resolve) => setTimeout(resolve, 300));
     }
     if (removedState?.imagePresent) fail("profile_avatar_ui_delete_failed");
-    const profileReadback = await request("/api/me/profile", { headers: { cookie } });
+    const profileReadback = await request("/api/me/profile", { headers: { cookie: browserCookie } });
     assertStatus(profileReadback, 200, "profile_avatar_ui_readback_failed");
     if ((await profileReadback.json())?.profile?.avatar_url !== null) fail("profile_avatar_ui_not_cleared");
     const publicReadback = await request(new URL(avatarState.src).pathname);
     assertStatus(publicReadback, 404, "profile_avatar_ui_r2_cleanup_failed");
 
     return {
-      path: "/profile",
-      viewport: "390x844",
-      avatarRendered: true,
-      naturalWidth: avatarState.naturalWidth,
-      naturalHeight: avatarState.naturalHeight,
-      workerUploadRequestObserved,
-      workerPublicReadObserved,
-      workerProfileRequestObserved,
-      removedThroughProfileUI: true,
-      objectReturned404: true,
+      cookie: browserCookie,
+      authentication: {
+        page: "/auth",
+        loggedInPath: "/dashboard",
+        workerLoginRequestObserved: authRequestObserved,
+        sessionCookieHttpOnly: sessionCookie.httpOnly,
+        sessionCookieSecure: sessionCookie.secure,
+        sessionCookieSameSite: sessionCookie.sameSite,
+      },
+      profile: {
+        path: "/profile",
+        viewport: "390x844",
+        avatarRendered: true,
+        naturalWidth: avatarState.naturalWidth,
+        naturalHeight: avatarState.naturalHeight,
+        workerUploadRequestObserved,
+        workerPublicReadObserved,
+        workerProfileRequestObserved,
+        removedThroughProfileUI: true,
+        objectReturned404: true,
+      },
     };
   } catch (error) {
     try {
@@ -528,18 +578,35 @@ async function main() {
       VALUES (${sqlLiteral(profileId)}, ${sqlLiteral(userId)}, ${sqlLiteral(username)}, 'Synthetic R2 profile', NULL, 'free', 'ja', ${sqlLiteral(now)}, ${sqlLiteral(now)}, 0);
     `);
 
-    const signIn = await request("/api/auth/sign-in/email", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    assertStatus(signIn, 200, "better_auth_sign_in_failed");
-    cookie = responseCookie(signIn);
-
     const anonymousProfile = await request("/api/me/profile");
     assertStatus(anonymousProfile, 401, "profile_auth_guard_failed");
     const anonymousUsernameCheck = await request(`/api/me/username-availability?username=${encodeURIComponent(username)}`);
     assertStatus(anonymousUsernameCheck, 401, "username_availability_auth_guard_failed");
+
+    const browserResult = await verifyRenderedProfileAvatar(email, password, pngBytes, async (value) => {
+      cookie = value;
+    }, async (value) => {
+      let parsed;
+      try {
+        parsed = new URL(value);
+      } catch {
+        fail("profile_avatar_ui_url_invalid");
+      }
+      const prefix = "/api/storage/public/avatars/";
+      if (parsed.origin !== APP_ORIGIN || !parsed.pathname.startsWith(prefix)) fail("profile_avatar_ui_url_invalid");
+      const key = decodeURIComponent(parsed.pathname.slice(prefix.length));
+      if (!key.startsWith(`${userId}/`) || key.includes("..")) fail("profile_avatar_ui_owner_path_invalid");
+      if (uiAvatarObjectPath && (uiAvatarObjectPath !== key || uiAvatarPublicUrl !== parsed.href)) {
+        fail("profile_avatar_ui_url_changed");
+      }
+      uiAvatarObjectPath = key;
+      uiAvatarPublicUrl = parsed.href;
+    });
+    const renderedAvatar = {
+      authentication: browserResult.authentication,
+      ...browserResult.profile,
+    };
+
     const before = await request("/api/me/profile", { headers: { cookie } });
     assertStatus(before, 200, "profile_get_failed");
     const initial = await before.json();
@@ -561,24 +628,6 @@ async function main() {
       body: pngBytes,
     });
     assertStatus(unauthenticatedUpload, 401, "storage_auth_guard_failed");
-
-    const renderedAvatar = await verifyRenderedProfileAvatar(cookie, pngBytes, async (value) => {
-      let parsed;
-      try {
-        parsed = new URL(value);
-      } catch {
-        fail("profile_avatar_ui_url_invalid");
-      }
-      const prefix = "/api/storage/public/avatars/";
-      if (parsed.origin !== APP_ORIGIN || !parsed.pathname.startsWith(prefix)) fail("profile_avatar_ui_url_invalid");
-      const key = decodeURIComponent(parsed.pathname.slice(prefix.length));
-      if (!key.startsWith(`${userId}/`) || key.includes("..")) fail("profile_avatar_ui_owner_path_invalid");
-      if (uiAvatarObjectPath && (uiAvatarObjectPath !== key || uiAvatarPublicUrl !== parsed.href)) {
-        fail("profile_avatar_ui_url_changed");
-      }
-      uiAvatarObjectPath = key;
-      uiAvatarPublicUrl = parsed.href;
-    });
 
     const uploaded = await request("/api/storage/object/avatars", {
       method: "POST",

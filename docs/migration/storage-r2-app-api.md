@@ -125,14 +125,15 @@ copy of any existing user object.
 ## Rendered profile and R2 avatar UI canary (2026-09-28)
 
 `npm run test:staging-r2-profile-smoke` now opens the deployed staging
-`/profile` page in an isolated headless Chrome profile at 390x844, with one
-synthetic Better Auth session. It selects a complete 1x1 PNG through the
-profile's file input and verifies that the page uses the Worker upload route,
-the R2 public-read route, and the Worker profile API. Chrome decoded the
-rendered image at 1x1. The profile's own remove button cleared `avatar_url`,
-deleted the R2 object, and the public URL returned 404. Existing API checks
-still cover owner-path validation and uploads to both avatar and cover-image
-buckets.
+`/auth` and `/profile` pages in an isolated headless Chrome profile at 390x844.
+It signs in through the real form with one synthetic Better Auth user, verifies
+the Worker email-login request and its HttpOnly/Secure/SameSite=Lax session
+cookie, then selects a complete 1x1 PNG through the profile's file input. The
+test verifies that the page uses the Worker upload route, the R2 public-read
+route, and the Worker profile API. Chrome decoded the rendered image at 1x1.
+The profile's own remove button cleared `avatar_url`, deleted the R2 object,
+and the public URL returned 404. Existing API checks still cover owner-path
+validation and uploads to both avatar and cover-image buckets.
 
 The final readback returned zero synthetic profile, Auth user/account/session,
 and R2 object rows. The local Worker/R2 contract suite passes 5/5 with the Auth
