@@ -199,7 +199,7 @@ function cdpConnection(webSocketUrl) {
   };
 }
 
-async function verifyRenderedProfileAvatar(email, password, pngBytes, onAuthenticated, onUploaded) {
+async function verifyRenderedProfileAvatar(userId, email, password, pngBytes, onAuthenticated, onUploaded) {
   const chromeCandidates = [
     process.env.FANMARK_STAGING_CHROME,
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -332,6 +332,10 @@ async function verifyRenderedProfileAvatar(email, password, pngBytes, onAuthenti
     await onAuthenticated(browserCookie);
     const authRequestObserved = loginState.resources.some((name) => name.includes("/api/auth/sign-in/email"));
     if (!authRequestObserved) fail("auth_worker_login_request_missing");
+    const sessionReadback = await request("/api/auth/get-session", { headers: { cookie: browserCookie } });
+    assertStatus(sessionReadback, 200, "auth_session_readback_failed");
+    const sessionBody = await sessionReadback.json();
+    if (sessionBody?.user?.id !== userId) fail("auth_session_user_id_mismatch");
 
     await cdp.send("Page.navigate", { url: `${APP_ORIGIN}/profile` });
     const profileDeadline = Date.now() + 30_000;
@@ -415,6 +419,8 @@ async function verifyRenderedProfileAvatar(email, password, pngBytes, onAuthenti
         page: "/auth",
         loggedInPath: "/dashboard",
         workerLoginRequestObserved: authRequestObserved,
+        legacySupabaseBcryptPrefix: "$2a$10$",
+        sessionUserIdPreserved: true,
         sessionCookieHttpOnly: sessionCookie.httpOnly,
         sessionCookieSecure: sessionCookie.secure,
         sessionCookieSameSite: sessionCookie.sameSite,
@@ -550,8 +556,11 @@ async function main() {
   const nonce = randomBytes(10).toString("hex");
   const email = `codex-r2-profile-${nonce}@example.invalid`;
   const username = `codexr2${nonce}`;
-  const password = `Staging-${randomBytes(24).toString("base64url")}a9!`;
-  const passwordHash = await bcrypt.hash(password, 10);
+  const password = `Staging-${randomBytes(24).toString("base64url")}あa9!`;
+  const generatedPasswordHash = await bcrypt.hash(password, 10);
+  if (!generatedPasswordHash.startsWith("$2b$10$")) fail("synthetic_bcrypt_fixture_unexpected_format");
+  const passwordHash = generatedPasswordHash.replace(/^\$2b\$/u, () => "$2a$");
+  if (!(await bcrypt.compare(password, passwordHash))) fail("synthetic_supabase_bcrypt_fixture_invalid");
   const now = new Date().toISOString().replace(/\.(\d{3})Z$/u, ".$1000Z");
   const pngBytes = Uint8Array.from(
     Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==", "base64"),
@@ -583,7 +592,7 @@ async function main() {
     const anonymousUsernameCheck = await request(`/api/me/username-availability?username=${encodeURIComponent(username)}`);
     assertStatus(anonymousUsernameCheck, 401, "username_availability_auth_guard_failed");
 
-    const browserResult = await verifyRenderedProfileAvatar(email, password, pngBytes, async (value) => {
+    const browserResult = await verifyRenderedProfileAvatar(userId, email, password, pngBytes, async (value) => {
       cookie = value;
     }, async (value) => {
       let parsed;

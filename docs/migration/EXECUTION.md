@@ -3459,3 +3459,22 @@ twice in `snapshot-export.test.mjs`. After isolating and routing around the
 PGlite/`node --test` hang, fresh CI run `36394318652` passed both the staging
 application and Worker API jobs, including Worker typecheck and bundle dry-run.
 The synthetic staging Cron canary was deployed and restored independently.
+
+## Supabase-format password sign-in in staging (2026-09-28 JST)
+
+Extended `scripts/migration/staging-r2-profile-smoke.mjs` to seed one synthetic
+Better Auth credential with a `$2a$10$` bcrypt prefix matching the value-free
+format observed in the Supabase Auth aggregate. The synthetic password includes
+a non-ASCII character. The real `/auth` form logged in through the deployed
+Worker, and `GET /api/auth/get-session` returned the exact seeded UUID. The
+session cookie was HttpOnly, Secure, and SameSite=Lax. This does not read or
+copy any existing Auth credential.
+
+The same 390x844 browser canary rendered `/profile`, uploaded and decoded the
+synthetic 1x1 PNG through R2, saved and cleared its owner-scoped profile URL,
+and deleted the object through the UI. Final readback found zero synthetic
+Auth user/account/session rows, zero profile rows, and 404 for all temporary
+avatar/cover objects. `node --check` and a local bcrypt `$2a$10$` Unicode
+fixture check passed. This improves the staging password-compatibility proof;
+it does not establish real-user hash compatibility, MFA/OAuth migration,
+recurring CPU-plan fit, or production readiness.

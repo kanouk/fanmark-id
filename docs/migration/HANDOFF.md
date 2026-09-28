@@ -2618,3 +2618,17 @@ typecheck and Worker bundle dry-run.
 The current weighted estimates remain about 53% end-to-end and 73% for the
 prioritized app/infrastructure/master scope; the outstanding gates remain
 substantial.
+
+## Supabase-format synthetic sign-in follow-up (2026-09-28 JST)
+
+The staging Auth/R2 browser canary now seeds a synthetic `$2a$10$` bcrypt
+credential (including a non-ASCII password) and signs in through the deployed
+`/auth` form. The session endpoint returned the exact synthetic UUID, and the
+cookie retained HttpOnly/Secure/SameSite=Lax. The same run completed the
+profile-avatar R2 upload, decoded render, profile save/clear, UI deletion, and
+public 404 readback. Cleanup left zero synthetic Auth user/account/session and
+profile rows, with no avatar or cover objects remaining. This is evidence for
+the observed Supabase bcrypt prefix on a synthetic account only; no real
+credential or user row was read or moved. MFA/OAuth, real-user reconciliation,
+and CPU-plan fit remain open. Overall progress estimates remain about 53%
+end-to-end and 73% for the prioritized app/infrastructure/master scope.
