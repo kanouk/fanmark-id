@@ -394,3 +394,20 @@ false. The mode-0600 catalog, descriptor, generated SQL, and reports were held
 outside Git and removed after the rehearsal. No source application rows or
 remote D1/R2 were written, and no production route or domain/DNS setting was
 changed.
+
+## Version 9 calendar-date DDL validation (2026-09-28 JST)
+
+Schema conversion v9 moves PostgreSQL `date` validation from an import-only
+gate into generated D1 DDL. The `TEXT` column check requires ten ASCII digits
+in `YYYY-MM-DD` form, years 0001–9999, and an unchanged SQLite calendar-date
+normalization. This enforces the same canonical calendar range as the row
+codec on later D1 writes as well as imported values. The source-shaped
+`fanmark_access_daily_stats.stat_date` remains `NOT NULL`.
+
+SQLite accepted year 0001, leap day 2024-02-29, and year 9999, while rejecting
+year 0000, impossible month/day combinations, non-padded values, and
+`infinity`; NULL remained rejected by the source `NOT NULL` constraint. The
+fresh schema-only catalog now reports 13 unresolved groups across 226
+locations (nine row-conversion and four schema/operation); `deployable` remains
+false. Only this table's generated DDL changed relative to v8. Catalog and
+generated SQL were kept outside Git, and no remote D1 was modified.

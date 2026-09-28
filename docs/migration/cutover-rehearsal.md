@@ -373,3 +373,19 @@ probe tested 1,112,063 scalar values with zero extra matches. Converter v8
 generated the same SQL as v7 and retained 14 unresolved gate groups across
 227 locations; `deployable` remains `false`. This refresh read catalogs only,
 not application rows, and did not write D1 or change production/domain state.
+
+## Converter v9 date constraint and synthetic D1 replay (2026-09-28 JST)
+
+The same current schema-only catalog was processed with converter v9. Its
+generated DDL adds a canonical-calendar `CHECK` for source `date` columns, so
+the former date import-validation gate is closed for both import and later
+writes. The report now has 13 unresolved groups across 226 locations and
+`deployable: false`; generated DDL changed only for
+`fanmark_access_daily_stats`.
+
+Under Node 22.6.0, the local synthetic D1 replay passed with 10 synthetic rows,
+two transformed active credentials, one deferred inactive credential, all 40
+table checkpoints, and conflict rejection. It reports
+`public_rows_reconciled`; `fullMigrationReconciled` remains false. The
+catalog/report/DDL remained private outside Git. No source application rows,
+remote D1/R2 writes, production route, or domain/DNS change occurred.

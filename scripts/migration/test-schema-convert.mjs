@@ -189,6 +189,21 @@ function credentialFixture() {
   return catalog;
 }
 
+function calendarDateFixture() {
+  const catalog = fixture();
+  catalog.columns.push(
+    column("fanmark_access_daily_stats", "id", 1, "uuid", { not_null: true, default_expression: "gen_random_uuid()" }),
+    column("fanmark_access_daily_stats", "stat_date", 2, "date", { not_null: true }),
+  );
+  catalog.constraints.push(constraint(
+    "fanmark_access_daily_stats",
+    "fanmark_access_daily_stats_pkey",
+    "p",
+    "PRIMARY KEY (id)",
+  ));
+  return catalog;
+}
+
 function gateCodes(report) {
   return new Set(report.gates.map((gate) => gate.code));
 }
@@ -202,7 +217,7 @@ test("conversion is deterministic and exposes exact target codecs", () => {
 
   assert.equal(first.report.target.tableCount, 4);
   assert.equal(first.report.target.columnCount, 15);
-  assert.equal(first.report.schemaVersion, 8);
+  assert.equal(first.report.schemaVersion, 9);
   assert.deepEqual(first.report.target.translatedConstraints, { p: 4, u: 0, f: 1, c: 3 });
   assert.equal(first.report.target.translatedIndexCount, 4);
   assert.deepEqual(
@@ -262,6 +277,33 @@ test("conversion is deterministic and exposes exact target codecs", () => {
   assert.equal(first.report.stageReadiness.schemaAndOperations.ready, false);
   assert.ok(first.report.stageReadiness.rowConversion.gateCodes.includes("money_cents_import"));
   assert.ok(first.report.stageReadiness.schemaAndOperations.gateCodes.includes("unsupported_index_method"));
+});
+
+test("DATE schema checks preserve canonical calendar days for imports and later writes", () => {
+  const result = convertSchema(calendarDateFixture());
+  assert.equal(result.report.schemaVersion, 9);
+  assert.equal(gateCodes(result.report).has("date_import_validation"), false);
+  assert.match(result.sql, /"stat_date" IS NULL OR \([\s\S]*length\("stat_date"\) = 10[\s\S]*GLOB '\[0-9\].*-[0-9\].*-[0-9\].*'[\s\S]*substr\("stat_date", 1, 4\) BETWEEN '0001' AND '9999'[\s\S]*date\("stat_date", '\+0 days'\) IS "stat_date"/);
+
+  for (const value of ["0001-01-01", "2024-02-29", "9999-12-31"]) {
+    assert.equal(sqliteInsertPasses(result.sql, "fanmark_access_daily_stats", "stat_date", value), true, `expected ${value} to pass`);
+  }
+  for (const value of [
+    "0000-01-01",
+    "2025-02-29",
+    "2024-04-31",
+    "2024-13-01",
+    "2024-01-00",
+    "2024-2-03",
+    "infinity",
+  ]) {
+    assert.equal(sqliteInsertPasses(result.sql, "fanmark_access_daily_stats", "stat_date", value), false, `expected ${value} to fail`);
+  }
+  assert.throws(() => execFileSync("sqlite3", [":memory:"], {
+    input: `${result.sql}\nINSERT INTO fanmark_access_daily_stats (stat_date) VALUES (NULL);`,
+    encoding: "utf8",
+    stdio: ["pipe", "pipe", "pipe"],
+  }), "the source stat_date column is NOT NULL");
 });
 
 test("PostgreSQL UUID defaults generate distinct canonical RFC 4122 v4 IDs in SQLite", () => {
@@ -358,7 +400,7 @@ test("the four reviewed live GIN indexes have explicit D1 query-contract disposi
   );
 
   const result = convertSchema(input);
-  assert.equal(result.report.schemaVersion, 8);
+  assert.equal(result.report.schemaVersion, 9);
   assert.deepEqual(result.report.target.indexAdaptations.map((entry) => entry.sourceIndex), [
     "idx_emoji_master_keywords",
     "idx_emoji_master_short_name",
@@ -402,7 +444,7 @@ test("known ASCII PostgreSQL regex checks require a reviewed locale proof", () =
     .flatMap((gate) => gate.locations)
     .filter((location) => sourceCheckNames.has(location.name));
   assert.deepEqual(untranslatedSourceChecks, []);
-  assert.equal(result.report.schemaVersion, 8);
+  assert.equal(result.report.schemaVersion, 9);
 
   const cases = [
     ["invitation_codes", "code", "ABC123", true],
@@ -618,7 +660,7 @@ test("the exact recent-active view is adapted only to the reviewed D1 query", ()
   input.views = [{ kind: "view", name: "recent_active_fanmarks", definition }];
 
   const result = convertSchema(input);
-  assert.equal(result.report.schemaVersion, 8);
+  assert.equal(result.report.schemaVersion, 9);
   assert.equal(result.report.deployable, false);
   assert.deepEqual(result.report.target.catalogScopeAdaptations, [{
     scope: "views",

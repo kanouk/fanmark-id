@@ -2997,3 +2997,19 @@ form subgate is closed; complete #37 recovery, broader authenticated UI
 acceptance, provider-backed checks, and operational fit remain open. Reproduce
 with `npm run test:migration:staging-lifecycle-settings-ui` and see
 [`lifecycle-settings-api.md`](lifecycle-settings-api.md).
+
+## Schema converter v9 and current-catalog synthetic replay (2026-09-28 JST)
+
+Converter v9 moves source `date` validation into generated D1 constraints. Its
+canonical-calendar `CHECK` rejects malformed and impossible dates on later
+writes as well as at import. The fresh schema-only catalog now has 13
+unresolved gates across 226 locations (nine row-conversion and four
+schema/operation); `deployable` remains false. The generated SQL changed only
+for `fanmark_access_daily_stats`.
+
+The migration-data suite passed 167/167 under Node 22.6.0. The fresh-catalog
+synthetic local D1 replay passed with 10 synthetic rows, two transformed
+credentials, one deferred credential, all 40 table checkpoints, and conflict
+rejection. Its status is `public_rows_reconciled`, not full migration
+reconciliation. No source application rows were queried; no remote D1/R2,
+production route, real user data, or domain/DNS setting was changed.

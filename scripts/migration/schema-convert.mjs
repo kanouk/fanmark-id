@@ -14,7 +14,7 @@ import { pathToFileURL } from "node:url";
 
 import { compileCredentialDescriptor, CREDENTIAL_COLUMN, CREDENTIAL_SOURCE_RELATION } from "./credential-descriptor.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 8;
+export const SCHEMA_CONVERSION_VERSION = 9;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -73,7 +73,6 @@ const REVIEWED_GIN_INDEX_ADAPTATIONS = new Map([
 ]);
 const ROW_CONVERSION_GATE_CODES = new Set([
   "bigint_import_range_validation",
-  "date_import_validation",
   "timestamp_import_precision",
   "json_import_validation",
   "array_import_validation",
@@ -774,7 +773,12 @@ function typeInfo(column, enumLabels, gates, typeCounts, credentialDescriptorPla
   } else if (sourceType === "date") {
     targetType = "TEXT";
     codec = "date-ymd-text";
-    gates.add("date_import_validation", "Calendar dates must be validated as YYYY-MM-DD without timezone conversion.", location);
+    checks.push(`${quoteIdentifier(column.column_name)} IS NULL OR (
+      length(${quoteIdentifier(column.column_name)}) = 10
+      AND ${quoteIdentifier(column.column_name)} GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
+      AND substr(${quoteIdentifier(column.column_name)}, 1, 4) BETWEEN '0001' AND '9999'
+      AND date(${quoteIdentifier(column.column_name)}, '+0 days') IS ${quoteIdentifier(column.column_name)}
+    )`);
   } else if (sourceType === "timestamp with time zone") {
     targetType = "TEXT";
     codec = "timestamptz-utc-microsecond-text";
