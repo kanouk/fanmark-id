@@ -1,6 +1,6 @@
 # fanmark.id repository inventory (offline)
 
-Base commit: `1f1d0eeed72fb8d0940409fc8cab33f0d1fb9286`
+Base commit: `143196fba8830111d84a2750682930797ee950be`
 
 This report is generated from the checked-out repository only. It makes no network calls, reads no credentials, and does not claim that local generated types, migrations, or SQL snapshots equal the current production state.
 
@@ -117,41 +117,41 @@ Source: `src/integrations/supabase/types.ts` (generated checkout artifact; count
 
 ## Edge entrypoints
 
-Found 34 local directories with `index.ts` (`_shared` excluded). 18 have an explicit `verify_jwt` entry in `supabase/config.toml`; an absent value is reported as unconfigured and requires live verification.
+Found 34 local directories with `index.ts` (`_shared` excluded). 34 have an explicit `verify_jwt` entry in `supabase/config.toml`; an absent value is reported as unconfigured and requires live verification.
 
 | Function | Entrypoint | verify_jwt in config | Handler signal |
 | --- | --- | --- | --- |
-| `admin-expire-license` | `supabase/functions/admin-expire-license/index.ts` | unconfigured | serve:13 |
-| `admin-get-user-detail` | `supabase/functions/admin-get-user-detail/index.ts` | unconfigured | serve:82 |
-| `admin-list-users` | `supabase/functions/admin-list-users/index.ts` | unconfigured | serve:98 |
-| `admin-toggle-user-status` | `supabase/functions/admin-toggle-user-status/index.ts` | unconfigured | serve:22 |
-| `admin-trigger-password-reset` | `supabase/functions/admin-trigger-password-reset/index.ts` | unconfigured | serve:9 |
-| `admin-update-user-plan` | `supabase/functions/admin-update-user-plan/index.ts` | unconfigured | serve:32 |
+| `admin-expire-license` | `supabase/functions/admin-expire-license/index.ts` | false | serve:13 |
+| `admin-get-user-detail` | `supabase/functions/admin-get-user-detail/index.ts` | false | serve:82 |
+| `admin-list-users` | `supabase/functions/admin-list-users/index.ts` | false | serve:98 |
+| `admin-toggle-user-status` | `supabase/functions/admin-toggle-user-status/index.ts` | false | serve:22 |
+| `admin-trigger-password-reset` | `supabase/functions/admin-trigger-password-reset/index.ts` | false | serve:9 |
+| `admin-update-user-plan` | `supabase/functions/admin-update-user-plan/index.ts` | false | serve:32 |
 | `apply-extension-coupon` | `supabase/functions/apply-extension-coupon/index.ts` | true | serve:63 |
 | `apply-fanmark-lottery` | `supabase/functions/apply-fanmark-lottery/index.ts` | true | serve:11 |
 | `apply-transfer-code` | `supabase/functions/apply-transfer-code/index.ts` | true | serve:10 |
 | `approve-transfer-request` | `supabase/functions/approve-transfer-request/index.ts` | true | serve:19 |
-| `bulk-return-fanmarks` | `supabase/functions/bulk-return-fanmarks/index.ts` | unconfigured | serve:26 |
+| `bulk-return-fanmarks` | `supabase/functions/bulk-return-fanmarks/index.ts` | false | serve:26 |
 | `cancel-lottery-entry` | `supabase/functions/cancel-lottery-entry/index.ts` | true | serve:11 |
 | `cancel-transfer-code` | `supabase/functions/cancel-transfer-code/index.ts` | true | serve:9 |
-| `change-subscription` | `supabase/functions/change-subscription/index.ts` | unconfigured | serve:15 |
-| `check-email-exists` | `supabase/functions/check-email-exists/index.ts` | unconfigured | serve:95 |
+| `change-subscription` | `supabase/functions/change-subscription/index.ts` | false | serve:15 |
+| `check-email-exists` | `supabase/functions/check-email-exists/index.ts` | false | serve:95 |
 | `check-expired-licenses` | `supabase/functions/check-expired-licenses/index.ts` | false | serve:10 |
-| `check-subscription` | `supabase/functions/check-subscription/index.ts` | unconfigured | serve:15 |
-| `create-checkout` | `supabase/functions/create-checkout/index.ts` | unconfigured | serve:15 |
+| `check-subscription` | `supabase/functions/check-subscription/index.ts` | false | serve:15 |
+| `create-checkout` | `supabase/functions/create-checkout/index.ts` | false | serve:15 |
 | `create-extension-checkout` | `supabase/functions/create-extension-checkout/index.ts` | true | serve:31 |
-| `customer-portal` | `supabase/functions/customer-portal/index.ts` | unconfigured | serve:15 |
-| `delete-user-account` | `supabase/functions/delete-user-account/index.ts` | unconfigured | serve:251 |
-| `extend-fanmark-license` | `supabase/functions/extend-fanmark-license/index.ts` | unconfigured | serve:56 |
+| `customer-portal` | `supabase/functions/customer-portal/index.ts` | false | serve:15 |
+| `delete-user-account` | `supabase/functions/delete-user-account/index.ts` | false | serve:251 |
+| `extend-fanmark-license` | `supabase/functions/extend-fanmark-license/index.ts` | false | serve:56 |
 | `fanmark-ogp` | `supabase/functions/fanmark-ogp/index.ts` | false | serve:135 |
 | `generate-ogp-image` | `supabase/functions/generate-ogp-image/index.ts` | false | serve:111 |
 | `generate-transfer-code` | `supabase/functions/generate-transfer-code/index.ts` | true | serve:12 |
 | `handle-stripe-webhook` | `supabase/functions/handle-stripe-webhook/index.ts` | false | serve:191 |
 | `process-notification-events` | `supabase/functions/process-notification-events/index.ts` | false | serve:33 |
-| `record-fanmark-access` | `supabase/functions/record-fanmark-access/index.ts` | unconfigured | serve:117 |
+| `record-fanmark-access` | `supabase/functions/record-fanmark-access/index.ts` | false | serve:117 |
 | `register-fanmark` | `supabase/functions/register-fanmark/index.ts` | true | serve:386 |
 | `reject-transfer-request` | `supabase/functions/reject-transfer-request/index.ts` | true | serve:9 |
-| `reset-fanmark-data` | `supabase/functions/reset-fanmark-data/index.ts` | unconfigured | serve:8 |
+| `reset-fanmark-data` | `supabase/functions/reset-fanmark-data/index.ts` | false | serve:8 |
 | `return-fanmark` | `supabase/functions/return-fanmark/index.ts` | true | serve:13 |
 | `send-auth-email` | `supabase/functions/send-auth-email/index.ts` | false | serve:343 |
 | `send-broadcast-email` | `supabase/functions/send-broadcast-email/index.ts` | true | serve:514 |
@@ -447,12 +447,12 @@ Evidence files (28): `supabase/migrations/20251231070109_remote_schema.sql`, `su
 
 | Reference | Locations |
 | --- | --- |
-| `cron.alter_job` | supabase/config.toml:84; supabase/migrations/20260725044303_make_notification_cron_on_demand.sql:32,92 |
+| `cron.alter_job` | supabase/config.toml:134; supabase/migrations/20260725044303_make_notification_cron_on_demand.sql:32,92 |
 | `cron.job` | supabase/migrations/20260725044303_make_notification_cron_on_demand.sql:23,83 |
-| `edge-url:check-expired-licenses` | supabase/config.toml:69 |
-| `edge-url:process-notification-events` | supabase/config.toml:77 |
-| `net.http_post` | supabase/config.toml:68,76 |
-| `pg_cron` | supabase/config.toml:60; supabase/migrations/20260725044303_make_notification_cron_on_demand.sql:2,5 |
+| `edge-url:check-expired-licenses` | supabase/config.toml:119 |
+| `edge-url:process-notification-events` | supabase/config.toml:127 |
+| `net.http_post` | supabase/config.toml:118,126 |
+| `pg_cron` | supabase/config.toml:110; supabase/migrations/20260725044303_make_notification_cron_on_demand.sql:2,5 |
 
 ## Reproduction and tests
 
