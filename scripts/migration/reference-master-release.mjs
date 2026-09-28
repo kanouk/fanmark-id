@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { utcMicroseconds } from "./value-conversion.mjs";
 
 function utcMicrosecondTimestamp(date = new Date()) {
   return date.toISOString().replace(/\.(\d{3})Z$/u, (_match, fraction) => `.${fraction}000Z`);
@@ -66,6 +67,16 @@ function assertString(value, nullable = false) {
   if (typeof value !== "string") fail("reference_master_value_invalid");
 }
 
+function assertTimestampText(value) {
+  assertString(value);
+  const canonicalUtc = value.endsWith("+00:00") ? `${value.slice(0, -6)}Z` : value;
+  try {
+    utcMicroseconds(canonicalUtc);
+  } catch {
+    fail("reference_master_timestamp_invalid");
+  }
+}
+
 function assertInteger(value) {
   if (!Number.isSafeInteger(value)) fail("reference_master_integer_invalid");
 }
@@ -90,7 +101,7 @@ function mapSourceRecord(tableName, record) {
   const definition = TABLES[tableName];
   if (!definition) fail("reference_master_table_not_allowed");
   exactKeys(record, definition.fields, "reference_master_fields_invalid");
-  for (const field of ["created_at", "updated_at"]) assertString(record[field]);
+  for (const field of ["created_at", "updated_at"]) assertTimestampText(record[field]);
 
   if (tableName === "fanmark_tiers") {
     assertString(record.id);

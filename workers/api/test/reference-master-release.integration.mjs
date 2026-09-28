@@ -230,6 +230,28 @@ test("interrupted staging remains loading, and retry replaces partial rows befor
   }
 });
 
+test("invalid master timestamps fail before creating a D1 release", async () => {
+  const { miniflare, database } = await createDatabase();
+  try {
+    for (const invalidTimestamp of [
+      "2026-09-23T01:02:03.123Z",
+      "2025-02-29T01:02:03.123456+00:00",
+      "2026-09-23T01:02:03.123456+01:00",
+    ]) {
+      const snapshot = structuredClone(sourceSnapshot);
+      snapshot[0].records[0].created_at = invalidTimestamp;
+      await assert.rejects(
+        () => stageReferenceMasterRelease({ database, snapshot, snapshotSha256 }),
+        (error) => error.code === "reference_master_timestamp_invalid",
+      );
+      assert.equal(await one(database,
+        "SELECT count(*) AS count FROM fanmark_reference_master_releases").then((row) => row.count), 0);
+    }
+  } finally {
+    await miniflare.dispose();
+  }
+});
+
 test("money conversion preserves cents without floating point and rejects imprecise values", () => {
   assert.equal(moneyUsdTextToCents("300.00"), 30000);
   assert.equal(moneyUsdTextToCents("-0.01"), -1);

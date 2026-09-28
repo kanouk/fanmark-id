@@ -68,6 +68,13 @@ point. The target view exposes that column in cents, matching the D1
 availability repository codec; API boundaries convert cents back to USD.
 Values are preserved; this conversion does not revise the configured prices.
 
+The release importer also validates every source `created_at` and `updated_at`
+before creating a D1 release. It accepts valid six-digit UTC timestamp text
+ending in `Z` or `+00:00`, preserves the original bytes, and rejects
+millisecond-only, invalid-calendar, or non-UTC offset values before any target
+write. This protects the versioned master release from silently importing a
+rounded or shifted timestamp.
+
 Local verification on Node 22.6.0:
 
 ```sh
