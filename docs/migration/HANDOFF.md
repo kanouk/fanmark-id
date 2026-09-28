@@ -5,13 +5,13 @@ draft. Isolated Cloudflare staging D1 and Workers deployments are present; no
 production Worker deployment, user-data import, or public DNS/domain cutover
 has been performed.
 
-The D1 analytics summary, fanmark-details projection, coupon application, and
-Stripe extension checkout now use canonical fixed-width UTC text for license
-expiry and transfer-lock boundaries. This avoids SQLite date-function
-precision loss and millisecond-width comparisons. Regression tests cover a
-license expiry and transfer lock one microsecond after the injected clock; the
-four focused D1 suites pass 27/27 and Worker typecheck passes. These are local
-changes pending PR validation, with no remote state change.
+The D1 analytics summary, fanmark-details projection, coupon application,
+Stripe extension checkout, and invitation signup now compare canonical
+fixed-width UTC timestamps without millisecond rounding. Business D1 migration
+`0018` replaces the invitation-capacity trigger from applied migration `0014`
+using a matching canonical clock expression. Five focused D1 suites pass
+37/37 and Worker typecheck passes. These are local changes pending PR
+validation; `0018` has not been applied remotely and no remote state changed.
 
 A fresh schema-only query completed at 2026-09-29 01:40 JST using Supabase CLI
 2.118.0 in a private temporary project-link directory. It again returned 40

@@ -6,6 +6,7 @@ const ATTEMPT_LIFETIME_MS = 15 * 60 * 1000;
 const PROCESSING_LEASE_MS = 2 * 60 * 1000;
 const MAX_BODY_BYTES = 8 * 1024;
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+const UTC_MICROSECOND_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 const LANGUAGES = new Set(["en", "ja", "ko", "id"]);
 
@@ -132,7 +133,7 @@ async function lookupInvitation(database: D1Database, code: string, now: string)
     SELECT c.id, c.code, c.max_uses, c.used_count, c.expires_at, c.special_perks, c.is_active,
       (SELECT COUNT(*) FROM invitation_signup_attempts a
         WHERE a.invitation_code_id = c.id
-          AND (a.state = 'auth_created' OR (a.state = 'reserved' AND julianday(a.expires_at) > julianday(?)))) AS reserved_count
+          AND (a.state = 'auth_created' OR (a.state = 'reserved' AND a.expires_at > ?))) AS reserved_count
     FROM invitation_codes c
     WHERE c.code = ? COLLATE NOCASE
     LIMIT 1
@@ -142,8 +143,14 @@ async function lookupInvitation(database: D1Database, code: string, now: string)
 function invitationRemaining(row: Record<string, unknown> | null, now: string): number {
   if (!row || Number(row.is_active) !== 1) return 0;
   if (typeof row.expires_at === "string" && row.expires_at.length > 0) {
-    const expiresAt = Date.parse(row.expires_at);
-    if (!Number.isFinite(expiresAt) || expiresAt <= Date.parse(now)) return 0;
+    const expiresAt = row.expires_at;
+    const wholeSeconds = UTC_MICROSECOND_TIMESTAMP.test(expiresAt)
+      ? `${expiresAt.slice(0, 19)}.000Z`
+      : "";
+    const parsed = new Date(wholeSeconds);
+    if (!wholeSeconds || !Number.isFinite(parsed.getTime()) || parsed.toISOString() !== wholeSeconds || expiresAt <= now) {
+      return 0;
+    }
   }
   const maxUses = Number(row.max_uses);
   const usedCount = Number(row.used_count);
@@ -244,11 +251,11 @@ async function createReservation(
         SELECT 1 FROM invitation_codes c
         WHERE c.id = ?
           AND c.is_active = 1
-          AND (c.expires_at IS NULL OR julianday(c.expires_at) > julianday(?))
+          AND (c.expires_at IS NULL OR c.expires_at > ?)
           AND c.used_count + (
             SELECT COUNT(*) FROM invitation_signup_attempts a
             WHERE a.invitation_code_id = c.id
-              AND (a.state = 'auth_created' OR (a.state = 'reserved' AND julianday(a.expires_at) > julianday(?)))
+              AND (a.state = 'auth_created' OR (a.state = 'reserved' AND a.expires_at > ?))
           ) < c.max_uses
       )`;
   const codeBindings = input.invitationCodeId === null
@@ -347,7 +354,7 @@ export async function handleInvitationSignupRequest(
           existingOpenAttempt.preferred_language !== language
         ) return invitationError(409, "signup_command_conflict", responseHeaders);
 
-        if (existingOpenAttempt.state === "reserved" && Date.parse(existingOpenAttempt.expires_at) <= nowDate.getTime()) {
+        if (existingOpenAttempt.state === "reserved" && existingOpenAttempt.expires_at <= now) {
           let priorAuthUser: AuthUserMarker | null;
           try {
             priorAuthUser = await readAuthUser(authDb, existingOpenAttempt.attempt_id);
@@ -357,7 +364,7 @@ export async function handleInvitationSignupRequest(
           if (!priorAuthUser) {
             await businessDb.prepare(`UPDATE invitation_signup_attempts
               SET state = 'released', invitation_code_id = NULL, updated_at = ?
-              WHERE attempt_id = ? AND state = 'reserved' AND julianday(expires_at) <= julianday(?)`)
+              WHERE attempt_id = ? AND state = 'reserved' AND expires_at <= ?`)
               .bind(now, existingOpenAttempt.attempt_id, now).run();
           } else {
             commandId = existingOpenAttempt.attempt_id;
@@ -415,7 +422,7 @@ export async function handleInvitationSignupRequest(
     const claim = await businessDb.prepare(`UPDATE invitation_signup_attempts
       SET processing_token = ?, processing_lease_until = ?, updated_at = ?
       WHERE attempt_id = ? AND state IN ('reserved', 'auth_created')
-        AND (processing_lease_until IS NULL OR julianday(processing_lease_until) <= julianday(?))`)
+        AND (processing_lease_until IS NULL OR processing_lease_until <= ?)`)
       .bind(processingToken, leaseUntil, now, commandId, now).run();
     if (Number(claim.meta?.changes) !== 1) {
       const latest = await readAttempt(businessDb, commandId);
@@ -425,7 +432,7 @@ export async function handleInvitationSignupRequest(
     }
 
     let authUser: AuthUserMarker | null = null;
-    if (attempt.state === "reserved" && Date.parse(attempt.expires_at) <= nowDate.getTime()) {
+    if (attempt.state === "reserved" && attempt.expires_at <= now) {
       try {
         authUser = await readAuthUser(authDb, commandId);
       } catch {

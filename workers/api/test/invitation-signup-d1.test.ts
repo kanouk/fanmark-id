@@ -3,9 +3,11 @@ import { http, HttpResponse } from "msw";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import businessSchemaSql from "../migrations-business/0000_business_schema_v4_staging.sql?raw";
 import signupBusinessMigrationSql from "../migrations-business/0014_invitation_signup_attempts.sql?raw";
+import invitationTimestampMigrationSql from "../migrations-business/0018_invitation_capacity_timestamp_precision.sql?raw";
 import authSchemaSql from "../migrations/0003_better_auth_core.sql?raw";
 import signupAuthMigrationSql from "../migrations/0007_auth_signup_command.sql?raw";
 import { handleRequest } from "../src";
+import { handleInvitationCodeValidationRequest } from "../src/invitation-signup-d1-api";
 import type { Env } from "../src/repository";
 import { network } from "./network";
 
@@ -131,12 +133,43 @@ beforeAll(async () => {
   if (!businessDb || !authDb) throw new Error("D1 test bindings are unavailable");
   await applySql(businessDb, businessSchemaSql);
   await applySql(businessDb, signupBusinessMigrationSql);
+  await applySql(businessDb, invitationTimestampMigrationSql);
   await applySql(authDb, authSchemaSql);
   await applySql(authDb, signupAuthMigrationSql);
 });
 beforeEach(resetRows);
 
 describe("invitation signup across split Auth and business D1", () => {
+  it("keeps an invitation and reservation alive one D1 microsecond past the clock", async () => {
+    const expiresAt = "2026-09-26T12:00:00.000001Z";
+    const fingerprint = await emailFingerprint("reserved-boundary@example.invalid");
+    await businessDb!.prepare("UPDATE invitation_codes SET expires_at = ? WHERE id = ?")
+      .bind(expiresAt, invitationId).run();
+    await businessDb!.prepare(`INSERT INTO invitation_signup_attempts (
+      attempt_id, email_fingerprint, invitation_code_id, preferred_language, state,
+      auth_user_id, created_at, updated_at, expires_at
+    ) VALUES (?, ?, ?, 'ja', 'reserved', NULL, ?, ?, ?)`)
+      .bind("10000000-0000-4000-8000-000000000051", fingerprint, invitationId, timestamp, timestamp, expiresAt).run();
+    const response = await handleInvitationCodeValidationRequest(
+      new Request(`${apiBase}/api/auth/validate-invitation`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ code: "WELCOME" }),
+      }),
+      businessDb,
+      true,
+      new Headers(),
+      () => new Date(timestamp),
+    );
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      isValid: true,
+      remainingUses: 1,
+      perks: { source: "synthetic" },
+      invitationRequired: true,
+    });
+  });
+
   it("exposes signup only when email delivery and the invitation-mode source are configured", async () => {
     const enabled = await authRequest("/capabilities");
     expect(enabled.status).toBe(200);

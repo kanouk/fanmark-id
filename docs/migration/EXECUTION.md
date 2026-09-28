@@ -2,15 +2,16 @@
 
 ## 2026-09-29 D1 license expiry microsecond comparisons
 
-The D1 analytics summary and fanmark details projection could misclassify
-license expiry at a sub-millisecond boundary. Coupon application and Stripe
-extension checkout had the same SQLite `julianday()` precision loss for license
-expiry and transfer locks. These paths now compare fixed-width UTC text using
-the shared formatter, consistent with the canonical D1 timestamp
-representation. Regression tests cover expiry and transfer locks exactly one
-microsecond after the injected clock. The four focused D1 suites pass 27/27 and
-Worker typecheck passes. This is a local app/API correction; it changes no
-deployed Worker, database rows, user data, or domain/DNS state.
+The D1 analytics summary, fanmark details, coupon application, Stripe
+extension checkout, and invitation signup used millisecond-rounded date
+comparisons for values stored at microsecond precision. These paths now use
+fixed-width UTC text ordering. A new forward migration, `0018`, replaces the
+invitation-capacity trigger from already-applied migration `0014`; its clock
+expression emits the same canonical width. Regression tests cover license,
+transfer-lock, invitation, and reservation deadlines one microsecond after the
+injected clock. Five focused D1 suites pass 37/37 and Worker typecheck passes.
+No remote migration or Worker deploy was made; there are no user-data or
+domain/DNS changes.
 
 ## 2026-09-28 Auth D1 migration selector collision
 
