@@ -129,3 +129,24 @@ and its source inventory, rejecting mismatched plan identities. The 2026-09-24
 full-source rehearsal used only schema metadata and synthetic rows in a
 disposable local D1. It made no Supabase row read and no remote database
 change.
+
+## Staging timestamp-precision repair (2026-09-28)
+
+The fresh schema-only staging catalog showed that 22 of the 24 lifecycle
+triggers still used SQLite's three-digit `%f` timestamp output while new D1
+operations use canonical six-digit UTC text. The guarded
+`0017_lifecycle_generation_timestamp_precision.sql` forward migration replaces
+only those 22 trigger definitions; it leaves the already-applied `0002`
+immutable. The generator requires the private mode-0600 catalog outside the
+repository, binds output to the reviewed trigger plan, and fails if the
+expected inventory differs.
+
+The staging apply command verified the account, database, migration ledger,
+and old trigger SQL before applying the migration. It then read back all 24
+canonical trigger definitions and confirmed no migration remains pending. An
+isolated full Wrangler migration replay and a synthetic D1 integration test
+also passed. A live synthetic write confirmed six-digit UTC output. A later
+scheduled-event rerun did not complete because Wrangler returned D1 API error
+7403 during polling; the harness cleaned up the synthetic records and restored
+the staging Worker. This follow-up is schema/write evidence, not completion of
+the full lifecycle scheduler acceptance.

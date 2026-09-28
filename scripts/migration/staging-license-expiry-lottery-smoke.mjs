@@ -39,6 +39,7 @@ const PROFILE_MIGRATIONS = [
   "workers/api/migrations-business/0003_credential_transform_staging.sql",
   "workers/api/migrations-business/0004_verified_access_staging.sql",
   "workers/api/migrations-business/0005_lottery_plan_journal_staging.sql",
+  "workers/api/migrations-business/0017_lifecycle_generation_timestamp_precision.sql",
 ];
 const AUTH_CONFIG = "workers/api/wrangler.auth-staging.jsonc";
 const AUTH = "fanmark-auth-staging";
@@ -208,6 +209,11 @@ function utc(value) {
   return new Date(value).toISOString().replace(/\.(\d{3})Z$/u, ".$1000Z");
 }
 
+function nextTemporaryLifecycleCron(now = Date.now()) {
+  const scheduledAt = new Date(now + 5 * 60_000);
+  return scheduledAt.getUTCMinutes() + " " + scheduledAt.getUTCHours() + " * * *";
+}
+
 function readbackSql({ fanmarkId, ownerId, winnerId, oldLicenseId, targetIncarnation, requestId }) {
   return `SELECT
     (SELECT status FROM fanmark_licenses WHERE id=${sql(oldLicenseId)}) AS old_status,
@@ -254,7 +260,7 @@ async function startDev(port, targetIncarnation, schemaDigest) {
     "--yes", "wrangler@" + WRANGLER, "dev", "--config", "wrangler.app-staging.jsonc",
     "--test-scheduled", "--port", String(port), "--log-level", "info",
     "--var", "LICENSE_EXPIRY_BACKEND:d1",
-    "--var", "LICENSE_EXPIRY_CRON:* * * * *",
+    "--var", "LICENSE_EXPIRY_CRON:0 0 * * *",
     "--var", "LICENSE_EXPIRY_TARGET_INCARNATION:" + targetIncarnation,
     "--var", "LICENSE_EXPIRY_SCHEMA_EXTENSION_DIGEST:" + schemaDigest,
     "--var", "LICENSE_EXPIRY_MAX_PAGES:4",
@@ -478,12 +484,23 @@ async function main() {
       ]),
     ].join("\n"));
 
+    const lifecycleTimestamp = d1(
+      "SELECT updated_at FROM fanmark_access_versions WHERE license_id=" + sql(oldLicenseId),
+    )[0]?.updated_at;
+    if (typeof lifecycleTimestamp !== "string" ||
+        !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u.test(lifecycleTimestamp)) {
+      fail("staging_lifecycle_timestamp_precision_invalid");
+    }
+
     if (DEPLOYED_CRON_CANARY) {
       cronDeploymentAttempted = true;
+      const temporaryCron = nextTemporaryLifecycleCron();
+      const baselineCrons = JSON.parse(readFileSync(APP_CONFIG, "utf8")).triggers.crons;
       wrangler([
-        "deploy", "--config", "wrangler.app-staging.jsonc", "--triggers", "* * * * *",
+        "deploy", "--config", "wrangler.app-staging.jsonc",
+        ...[...new Set([...baselineCrons, temporaryCron])].flatMap((cron) => ["--triggers", cron]),
         "--var", "LICENSE_EXPIRY_BACKEND:d1",
-        "--var", "LICENSE_EXPIRY_CRON:* * * * *",
+        "--var", "LICENSE_EXPIRY_CRON:" + temporaryCron,
         "--var", "LICENSE_EXPIRY_TARGET_INCARNATION:" + targetIncarnation,
         "--var", "LICENSE_EXPIRY_SCHEMA_EXTENSION_DIGEST:" + schemaDigest,
         "--var", "LICENSE_EXPIRY_MAX_PAGES:4",
@@ -497,7 +514,7 @@ async function main() {
     else {
       let scheduled;
       try {
-        scheduled = await fetch(dev.baseUrl + "/__scheduled?cron=*+*+*+*+*", {
+        scheduled = await fetch(dev.baseUrl + "/cdn-cgi/local/scheduled?cron=0+0+*+*+*&format=json", {
           method: "GET", signal: AbortSignal.timeout(120_000),
         });
       } catch (error) {
@@ -639,6 +656,7 @@ async function main() {
     scheduledPath: DEPLOYED_CRON_CANARY ? "deployed workers.dev Cron" : "remote D1 binding via local wrangler dev",
     cronAndBackendRestoredToDisabled: DEPLOYED_CRON_CANARY ? cronDisabledAgain : undefined,
     graceExpiryLottery: PERPETUAL_CAP_CANARY ? "perpetual_plan_cap_enforced" : "winner_finalized", syntheticBusinessRowsAfterCleanup: 0,
+    lifecycleTimestampPrecisionVerified: true,
     gracePeriodSettingPreserved: true,
     lifecycleJournalRowsAfterCleanup: 0, authUserRowsChanged: 0,
     realUserDataMigration: "not performed", productionOrDomainDns: "unchanged",

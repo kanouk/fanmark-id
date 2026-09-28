@@ -3584,3 +3584,24 @@ The canonical implementation now lives in `utc-timestamp.mjs`, with a typed
 TypeScript re-export. Verified-access timestamp creation and scheduled expiry
 run capture use the same implementation; their tests pass 10/10 and 8/8,
 respectively. Typecheck and Worker dry-run pass after adding the declaration.
+
+## Lifecycle trigger timestamp repair (2026-09-28 JST)
+
+A fresh schema-only Supabase catalog showed 22 lifecycle-generation triggers
+still emitting three-digit SQLite `%f` timestamps. Added the guarded forward
+migration `0017_lifecycle_generation_timestamp_precision.sql`, generated from
+the private mode-0600 schema catalog, to replace those 22 definitions without
+rewriting applied migration `0002`. The staging apply verified the expected
+account, database, ledger, and old trigger shape, then read back all 24 exact
+canonical trigger definitions with zero pending migrations. A full isolated
+Wrangler replay and synthetic D1 integration test passed; a live synthetic
+write also returned six-digit UTC text.
+
+A follow-up deployed scheduled-event canary preserved the two configured
+baseline Cron triggers and used a one-off lifecycle schedule. Wrangler's D1
+API returned 7403 while the harness polled for the scheduled result, so that
+run is incomplete. The harness cleaned up its synthetic rows and redeployed
+the staging config; deployment `7f7c79e9-9d12-401c-9466-2518d03b195c` is the
+latest 100% version. The prior successful lifecycle Cron canary remains the
+scheduler evidence; this attempt does not replace it or close final lifecycle
+acceptance. No production data, user data, or domain/DNS was touched.

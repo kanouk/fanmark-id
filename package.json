@@ -28,6 +28,8 @@
     "test:staging-fanmark-bulk-return-smoke": "node scripts/migration/staging-fanmark-bulk-return-smoke.mjs",
     "test:staging-license-expiry-lottery-smoke": "node scripts/migration/staging-license-expiry-lottery-smoke.mjs",
     "migration:apply-stripe-invoice-staging": "node scripts/migration/apply-stripe-invoice-staging.mjs",
+    "migration:check-lifecycle-generation-timestamp-repair": "node scripts/migration/lifecycle-generation-timestamp-repair.mjs --check",
+    "migration:apply-lifecycle-generation-timestamp-repair-staging": "node scripts/migration/apply-lifecycle-generation-timestamp-repair-staging.mjs",
     "test:staging-notification-processor-smoke": "node scripts/migration/staging-notification-processor-smoke.mjs",
     "test:staging-r2-profile-smoke": "node scripts/migration/staging-r2-profile-smoke.mjs",
     "test:staging-waitlist-signup-smoke": "node scripts/migration/staging-waitlist-signup-smoke.mjs",

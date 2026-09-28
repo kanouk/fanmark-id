@@ -483,6 +483,19 @@ used. The harness now checks the pinned auth-template content digest while
 allowing the expected `updated_at` advance from its edit/restore canary, and
 deletes the exact synthetic notifications before their source events.
 
+On 2026-09-28, a fresh schema-only catalog found 22 old three-digit timestamp
+expressions among the lifecycle-generation triggers. Forward migration
+`0017_lifecycle_generation_timestamp_precision.sql` repaired them in staging;
+readback matched all 24 canonical trigger definitions and found no pending
+migrations. A live synthetic D1 write produced six-digit UTC text. A follow-up
+scheduled-event canary did not complete: Wrangler returned D1 API error 7403
+during polling. The harness cleaned the synthetic rows and redeployed the
+staging configuration; version `7f7c79e9-9d12-401c-9466-2518d03b195c` is
+currently at 100%. The successful 2026-09-27 lifecycle canary remains the
+scheduler evidence; the 2026-09-28 retry does not add scheduler acceptance.
+The weighted estimates above remain about 53% end-to-end and 73% for the
+prioritized scope.
+
 Read-only browser QA before the current deployment rendered the public home,
 `/auth`, and PWA search screen at `/pwa`; a direct `/plans` visit showed the
 generic missing-profile page. That browser's auth state was not independently

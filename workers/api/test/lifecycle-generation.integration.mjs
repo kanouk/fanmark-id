@@ -19,6 +19,7 @@ import {
 } from "../../../scripts/migration/lifecycle-target-schema.mjs";
 import {
   applyLifecycleGenerationSchema,
+  buildLifecycleGenerationTimestampRepairStatements,
   generateLifecycleGenerationSchema,
   inspectLifecycleGenerationSchema,
 } from "../../../scripts/migration/lifecycle-generation-schema.mjs";
@@ -349,6 +350,47 @@ test("applies generation triggers exactly once and rejects a changed trigger", a
       }),
       (error) => error.code === "lifecycle_generation_schema_existing_object_mismatch",
     );
+  } finally {
+    await fixture.miniflare.dispose();
+  }
+});
+
+test("repairs legacy lifecycle trigger timestamps with a forward migration", async () => {
+  const fixture = await setup();
+  try {
+    const legacy = fixture.generationPlan.objectInventory.triggers.filter((trigger) =>
+      trigger.sql.includes("strftime('%Y-%m-%dT%H:%M:%f000Z', 'now')"),
+    );
+    assert.equal(legacy.length, 22);
+
+    for (const trigger of legacy) {
+      await fixture.database.prepare('DROP TRIGGER "' + trigger.name + '"').run();
+      await fixture.database.prepare(trigger.sql.replaceAll("%f000Z", "%fZ")).run();
+    }
+    const before = await inspectLifecycleGenerationSchema(
+      fixture.database,
+      fixture.generationPlan,
+      fixture.lifecyclePlan,
+    );
+    assert.equal(before.mismatched.length, 22);
+
+    const repair = buildLifecycleGenerationTimestampRepairStatements(fixture.generationPlan);
+    assert.equal(repair.length, 44);
+    const applied = await fixture.database.batch(repair.map((statement) => fixture.database.prepare(statement)));
+    assert.equal(applied.every((result) => result.success === true), true);
+    const after = await inspectLifecycleGenerationSchema(
+      fixture.database,
+      fixture.generationPlan,
+      fixture.lifecyclePlan,
+    );
+    assert.equal(after.complete, true);
+
+    await insertFanmark(fixture.database, IDS.fanmark1, "legacy-repair");
+    await insertLicense(fixture.database, IDS.license1, IDS.fanmark1);
+    const row = await fixture.database.prepare(
+      'SELECT "updated_at" FROM "fanmark_access_versions" WHERE "license_id" = ?',
+    ).bind(IDS.license1).first();
+    assert.match(row.updated_at, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
   } finally {
     await fixture.miniflare.dispose();
   }

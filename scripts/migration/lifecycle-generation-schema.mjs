@@ -650,6 +650,27 @@ export function generateLifecycleGenerationSchema({ catalog, convertedSchema, li
 
 export const buildLifecycleGenerationSchema = generateLifecycleGenerationSchema;
 
+/**
+ * Build the forward-only repair for lifecycle generation triggers emitted by
+ * migration 0002 before the fixed-width UTC timestamp correction. Migration
+ * 0002 is already recorded on staging, so it must remain immutable; this
+ * migration replaces only the trigger objects whose SQL now uses the
+ * canonical six-digit timestamp formatter.
+ */
+export function buildLifecycleGenerationTimestampRepairStatements(plan) {
+  validateGenerationPlan(plan);
+  const replacements = plan.objectInventory.triggers.filter((trigger) =>
+    trigger.sql.includes("strftime('%Y-%m-%dT%H:%M:%f000Z', 'now')"),
+  );
+  if (replacements.length !== 22) {
+    throw fail("lifecycle_generation_timestamp_repair_unexpected_count");
+  }
+  return replacements.flatMap((trigger) => [
+    `DROP TRIGGER ${quoteIdentifier(trigger.name)}`,
+    trigger.sql,
+  ]);
+}
+
 async function queryAll(database, sql) {
   let result;
   try {

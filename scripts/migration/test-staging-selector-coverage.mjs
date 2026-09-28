@@ -17,6 +17,7 @@ const lifecycleProfileMigrations = [
   "workers/api/migrations-business/0003_credential_transform_staging.sql",
   "workers/api/migrations-business/0004_verified_access_staging.sql",
   "workers/api/migrations-business/0005_lottery_plan_journal_staging.sql",
+  "workers/api/migrations-business/0017_lifecycle_generation_timestamp_precision.sql",
 ];
 
 function lifecycleSchemaDigest() {
