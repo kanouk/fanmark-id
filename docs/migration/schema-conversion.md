@@ -561,3 +561,23 @@ respectively. Full source-column writer/default reconciliation remains open.
 Its JavaScript implementation is also shared by verified-access and scheduled
 license-expiry timestamp creation (tests 10/10 and 8/8); typecheck and Worker
 dry-run pass with the typed TypeScript re-export.
+
+## Current schema-only source refresh (2026-09-28 12:07 UTC)
+
+The reviewed `schema-readiness.sql` was rerun with Supabase CLI 2.118.0 using
+`--linked --yes` and a private temporary project-link directory. Its explicit
+`BEGIN READ ONLY` transaction returned catalog metadata only. The snapshot
+observed at `2026-09-28T12:07:48Z` still has 40 tables, 406 columns, 144
+constraints, 139 indexes, 15 enum labels, 1 view, 58 functions, 36
+non-internal triggers, and 77 RLS policies.
+
+The value-free bcrypt descriptor was applied in memory to schema-converter
+v11. The current report remains `deployable: false` with 13 groups / 226
+locations: row conversion 8 / 133, schema and operations 5 / 93. The gate
+distribution is array 9, bigint range 3, credential transform 1, decimal 1,
+external Auth reference 11, JSON 13, money cents 2, sequence state 1,
+timestamp default operation 79, timestamp import precision 103, and three
+unsupported catalog scopes. No source rows, credential values, remote D1/R2,
+production route, or domain/DNS state was read or changed. The catalog response
+and generated report stayed in memory and the temporary link directory was
+removed.

@@ -1808,3 +1808,10 @@ canary's post-run Worker trigger state and synthetic-row cleanup therefore
 remain unverified. Do not infer them from public workers.dev health probes.
 No account email, credential value, user row, or production data is recorded
 here; no Cloudflare state was changed during this access check.
+
+An unauthenticated public GET check at `2026-09-28T12:13Z` returned 200 for
+`/`, `/robots.txt`, `/api/auth/ok`, and `/api/auth/get-session` (`null`), 401
+for `/api/admin/session`, and 404 for the disabled `/api/stripe/webhook`.
+`/` and `/robots.txt` return `X-Robots-Tag: noindex, nofollow`. This proves
+basic workers.dev route health only; it does not reveal the active Worker
+version, Cron triggers, or synthetic cleanup state.

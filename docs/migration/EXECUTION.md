@@ -3648,3 +3648,28 @@ of credential-like values and emails. Retry the state readback only after the
 Wrangler profile has access to the staging account, then verify the current
 Worker version/triggers and zero canary rows before another scheduled canary.
 No user data, production route, or domain/DNS state was read or changed.
+
+## Current Supabase catalog gate refresh (2026-09-28 12:07 UTC)
+
+The reviewed catalog-only query was rerun non-interactively with
+`npx supabase@2.118.0 db query --linked --file scripts/migration/schema-readiness.sql
+--workdir <private-temp-project> --output-format json --yes` under `CI=1`.
+Its `BEGIN READ ONLY` transaction observed 40 tables, 406 columns, 144
+constraints, 139 indexes, 15 enums, one view, 58 functions, 36 triggers, and
+77 RLS policies at `2026-09-28T12:07:48Z`; no application rows were queried.
+
+Schema-converter v11 with the value-free credential descriptor still reports
+`deployable: false`, 13 unresolved groups / 226 locations (8 row-conversion /
+133 locations, 5 schema-operation / 93 locations). Per-gate counts are array
+9, bigint 3, credential transform 1, decimal 1, external Auth reference 11,
+JSON 13, money cents 2, sequence state 1, timestamp default 79, timestamp
+import 103, and unsupported catalog scope 3. This refresh changed no source or
+target state; the catalog and report were kept in memory and the temporary
+project-link directory was removed.
+
+Unauthenticated public GETs at `2026-09-28T12:13Z` returned 200 for `/`,
+`/robots.txt`, Better Auth health, and a null anonymous session; anonymous
+admin session returned 401 and the disabled Stripe webhook returned 404. The
+root and robots response both include `X-Robots-Tag: noindex, nofollow`. These
+are route-health checks only and do not establish the deployed version, Cron
+configuration, or post-canary cleanup.
