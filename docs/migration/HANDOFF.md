@@ -2979,3 +2979,27 @@ Anonymous admin session returned 401, unauthenticated session returned `null`,
 and the disabled Stripe webhook returned 404. These read-only probes confirm
 public route health and anonymous denial, not authenticated business
 operations or the lifecycle-Cron cleanup state.
+
+## Business D1 staging canary cleanup readback (2026-09-29 JST)
+
+Authenticated Dashboard D1 Studio access to `fanmark-business-staging` is now
+available. The failed synthetic lifecycle-Cron canary left one marked fixture;
+its canary fanmark, license, settings, configs, lottery rows, and linked
+lifecycle records have now been removed. Readback found zero rows for the
+canary fanmark/license IDs and synthetic usernames, zero canary lifecycle
+run/item/guard rows, and `grace_period_days=1` restored. The related lifecycle
+tables now contain 0 access-version rows and 90 retained incarnation rows.
+
+The first manual license-delete attempt was rejected by the lifecycle trigger
+because its required synthetic incarnation row had already been removed; that
+attempt made no license change. The canary incarnation was restored at its
+insert-time default, with a matching synthetic access-version row recreated to
+satisfy the delete guard. The lifecycle trigger removed the access-version row
+and incremented the incarnation during license deletion; that synthetic
+tombstone was removed afterward. Final ID-based readback confirmed cleanup.
+This supersedes the earlier statement that D1 cleanup was unverified, but it
+does not verify the deployed Worker version or
+its active Cron configuration. Wrangler still resolves to the wrong account,
+and direct Dashboard navigation to the Worker list did not load, so no new
+Cron run or deployment was attempted. Real user/Auth/object import and
+domain/DNS cutover remain deferred.

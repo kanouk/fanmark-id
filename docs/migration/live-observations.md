@@ -1876,3 +1876,27 @@ Anonymous `/api/admin/session` returned 401, `/api/auth/get-session` returned
 current public route health and anonymous denial only; it does not verify
 authenticated business operations, Cron state, or cleanup of the earlier
 lifecycle canary.
+
+## Business D1 synthetic-canary cleanup (2026-09-29 JST)
+
+Dashboard D1 Studio read/write access to `fanmark-business-staging` was
+verified under account `bfc2890741f0b3fb236e2d755b6c9adc`. The synthetic
+lottery fixture was identified by its `🧪` fanmark marker, `canary` short ID,
+and `canaryowner` / `canarywinner` test usernames. After cleanup, ID-based
+readback returned zero for the fixture fanmark, license, user settings,
+lottery entries/history, configuration rows, access-version row, and
+incarnation row. Canary lifecycle run/item/guard counts were all zero.
+`grace_period_days` was restored to `1`; the staging database now has 0
+access-version rows and 90 retained incarnation rows.
+
+The license-delete guard requires both registry and access-version rows. After
+the first attempt correctly aborted with `lifecycle_incarnation_missing`, the
+canary incarnation was restored at its insert-time default, with a matching
+synthetic access-version row recreated to satisfy the delete guard. The
+lifecycle trigger removed that access-version row and incremented the
+incarnation during license deletion; the final synthetic incarnation row was
+then removed. The failed statement made no license change. This confirms D1
+fixture cleanup only; the deployed Worker version and active Cron triggers remain
+unverified because the Wrangler profile still points to another account and
+the Dashboard Worker-list route did not render. No user rows, production
+routes, or domain/DNS state were read or changed.
