@@ -14,6 +14,12 @@ does not verify deployment version or D1/R2 state. Wrangler CLI still resolves
 to the fragrance.radio Cloudflare account instead of the configured fanmark.id
 staging account, so no remote migrations or deployment were run.
 
+At 2026-09-29 05:57 JST, PR #41 head `7d17e61` passed validation run
+`36482153913`; both staging application and Worker API jobs succeeded, and the
+draft PR is `CLEAN`. This includes the canonical six-digit scheduled Stripe
+timestamp regression tests. Remote D1 migrations/deployment remain blocked by
+the Wrangler account mismatch above; no remote or production state changed.
+
 A fresh read-only Supabase Edge Function inventory with the repository CLI
 2.67.1 returned 35/35 functions active. All 34 local entrypoint names and
 `verify_jwt` settings match live metadata; the only live-only function remains
@@ -35,9 +41,10 @@ fixed-width UTC timestamps without millisecond rounding. Business D1 migration
 `0018` replaces the invitation-capacity trigger from applied migration `0014`,
 and `0019` replaces the coupon-application guard from applied migration `0015`.
 Five focused D1 suites pass 38/38, including one-microsecond coupon expiry,
-transfer-lock, and active-license boundary checks; Worker typecheck also passes.
-These are local changes pending PR validation; `0018` and `0019` have not been
-applied remotely and no remote state changed.
+transfer-lock, and active-license boundary checks; Worker typecheck and PR
+validation run `36482153913` pass. Migrations `0018` and `0019` have not been
+applied remotely because Wrangler resolves to the wrong account; no remote state
+changed.
 
 The same timestamp audit found the scheduled Stripe webhook dispatcher passing
 its Worker `scheduledTime` as millisecond ISO text. It now uses the shared
@@ -46,8 +53,8 @@ invoice/subscription adapters now accept that fixed-width timestamp without
 rounding; before this fix, both scheduled paths returned `retryable`. Synthetic
 invoice and subscription dispatcher tests now apply the effects and read back
 the exact scheduled timestamp. Shared timestamp tests pass 6/6, the full Stripe
-webhook/D1 integration chain passes 63/63, and Worker typecheck passes. The fix
-is local pending PR validation; no Stripe API call, remote D1 migration, or
+webhook/D1 integration chain passes 63/63, Worker typecheck passes, and PR
+validation run `36482153913` passes. No Stripe API call, remote D1 migration, or
 deployment was attempted.
 
 A fresh schema-only query completed at 2026-09-29 03:27 JST using Supabase CLI

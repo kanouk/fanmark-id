@@ -1,5 +1,15 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-09-29 scheduled Stripe timestamp regression closure
+
+Stripe invoice/subscription scheduled dispatch now accepts the canonical
+six-digit UTC timestamp supplied by the Worker scheduler and preserves its
+microseconds through application and fence-lease arithmetic. Before the fix,
+both paths returned `retryable` on that input. The focused regressions, shared
+timestamp tests (6/6), full Stripe webhook/D1 chain (63/63), Worker typecheck,
+and PR validation run `36482153913` all pass. This remains code/test evidence;
+no Stripe API call or remote deployment/migration was made.
+
 ## 2026-09-29 Stripe plan Checkout event handling
 
 The D1 scheduled Stripe dispatcher previously sent every supported Checkout
