@@ -4016,3 +4016,18 @@ formatter and rejects invalid Worker schedule times before invoking dispatch.
 A focused test verifies exact `.000000Z` and `.123000Z` output and invalid-time
 rejection. The Stripe invoice-projection integration suite passes 12/12 and the
 Worker typecheck passes under Node 22.6.0. No remote state changed.
+
+## Current PR validation and read-only staging smoke (2026-09-29 05:43 JST)
+
+PR #41 at `787036c` passed both GitHub validation jobs in run `36480072183`:
+the Cloudflare staging application and Worker API/D1 contract suites. Its
+Supabase Preview job was skipped by workflow design. The PR remains a draft.
+
+A read-only HTTP smoke against the configured workers.dev URL returned 200 for
+the app root, `/robots.txt`, Better Auth `/api/auth/ok`, and
+`/api/auth/get-session`; anonymous `/api/admin/session` returned 401 and
+`/api/stripe/webhook` returned 404. These checks confirm route health and the
+intended closed Stripe route, but do not identify the deployed version or
+verify D1/R2 state. Wrangler `whoami` still returns the fragrance.radio account
+while the staging config targets the fanmark.id account. No remote D1/R2 write,
+deployment, production route, user data, or domain/DNS change occurred.

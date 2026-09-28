@@ -5,6 +5,15 @@ draft. Isolated Cloudflare staging D1 and Workers deployments are present; no
 production Worker deployment, user-data import, or public DNS/domain cutover
 has been performed.
 
+At 2026-09-29 05:43 JST, PR #41 validation run `36480072183` passed both the
+staging application and Worker API jobs; the draft PR is `CLEAN`. A read-only
+workers.dev smoke returned 200 for `/`, `/robots.txt`, `/api/auth/ok`, and the
+anonymous session endpoint; anonymous `/api/admin/session` returned 401 and
+`/api/stripe/webhook` returned 404, all expected fail-closed behavior. This
+does not verify deployment version or D1/R2 state. Wrangler CLI still resolves
+to the fragrance.radio Cloudflare account instead of the configured fanmark.id
+staging account, so no remote migrations or deployment were run.
+
 A fresh read-only Supabase Edge Function inventory with the repository CLI
 2.67.1 returned 35/35 functions active. All 34 local entrypoint names and
 `verify_jwt` settings match live metadata; the only live-only function remains
