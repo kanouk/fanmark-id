@@ -5,6 +5,7 @@ import { execFileSync } from "node:child_process";
 import { test } from "node:test";
 
 import { buildRowPlan, compileRowConverter, convertRowEnvelope } from "./row-conversion.mjs";
+import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
 function column(table_name, column_name, ordinal, postgres_type, options = {}) {
   return {
@@ -59,6 +60,24 @@ function catalog() {
     views: [],
     functions: [],
   };
+}
+
+function lotteryWeightCatalog() {
+  const input = catalog();
+  input.columns.push(
+    column("fanmark_lottery_entries", "id", 1, "uuid", { not_null: true }),
+    column("fanmark_lottery_entries", "lottery_probability", 2, "numeric", { not_null: true, default_expression: "1.0" }),
+  );
+  input.constraints.push({
+    table_name: "fanmark_lottery_entries",
+    name: "positive_probability",
+    kind: "c",
+    definition: "CHECK (lottery_probability > 0::numeric)",
+    validated: true,
+    deferrable: false,
+    initially_deferred: false,
+  });
+  return input;
 }
 
 function envelope() {
@@ -211,6 +230,52 @@ test("numeric(10,2) values remain exact integer cents across the full source ran
     const input = envelope();
     input.values.monthly_price_usd = invalid;
     assert.throws(() => convert(input), (error) => error.code === "invalid_column_value");
+  }
+});
+
+test("reviewed lottery weight codec preserves exact positive text within the shared selector bound", () => {
+  const source = lotteryWeightCatalog();
+  const plan = buildRowPlan(source, "fanmark_lottery_entries");
+  const weight = plan.columns.find((candidate) => candidate.name === "lottery_probability");
+  assert.deepEqual(weight, {
+    name: "lottery_probability",
+    sourceType: "numeric",
+    codec: "lottery-weight-positive-decimal-text",
+    converterType: "numeric",
+    maxTextLength: MAX_LOTTERY_WEIGHT_TEXT_LENGTH,
+  });
+
+  const row = (lotteryProbability) => ({
+    schemaVersion: 1,
+    table: "fanmark_lottery_entries",
+    columns: ["id", "lottery_probability"],
+    values: {
+      id: "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",
+      lottery_probability: lotteryProbability,
+    },
+    arrayMetadata: {},
+  });
+  const exact = "1.2500000000000000000001";
+  assert.deepEqual(convertRowEnvelope(source, "fanmark_lottery_entries", row(exact)).bindings, [
+    "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    exact,
+  ]);
+  assert.equal(convertRowEnvelope(source, "fanmark_lottery_entries", row("9".repeat(MAX_LOTTERY_WEIGHT_TEXT_LENGTH))).bindings[1], "9".repeat(MAX_LOTTERY_WEIGHT_TEXT_LENGTH));
+
+  for (const invalid of [
+    "9".repeat(MAX_LOTTERY_WEIGHT_TEXT_LENGTH + 1),
+    "0",
+    "0.000",
+    "-0.1",
+    "1e-4",
+    ".1",
+    "1.",
+  ]) {
+    assert.throws(
+      () => convertRowEnvelope(source, "fanmark_lottery_entries", row(invalid)),
+      (error) => error.code === "invalid_lottery_weight",
+      `expected ${invalid.slice(0, 24)} to be rejected`,
+    );
   }
 });
 

@@ -1,6 +1,6 @@
 # Full schema conversion generator
 
-`schema-convert.mjs` v11 is a private, catalog-only preparation tool. It converts
+`schema-convert.mjs` v14 is a private, catalog-only preparation tool. It converts
 the JSON emitted by `scripts/migration/schema-readiness.sql` into deterministic
 SQLite/D1 table and index SQL plus a machine-readable report of unresolved
 parity gates. It does not read application rows, contact Supabase, apply SQL,
@@ -66,7 +66,8 @@ SQLite affinity. Treat the current report's codec values as the import contract.
 | PostgreSQL arrays | `TEXT` | `postgres-array-json-text` | Encode validated one-dimensional arrays as JSON text, preserving order, duplicates, element `NULL`s, and empty versus SQL `NULL`. |
 | enum | `TEXT` | `enum-text-check` | Preserve observed labels through a generated `CHECK`; reject unknown labels during import. |
 | `numeric(10,2)` at `fanmark_availability_rules.price_usd` or `fanmark_tiers.monthly_price_usd` | `INTEGER` | `money-cents-int64` | Store exact integer cents in the existing column name and convert at the API boundary. |
-| unconstrained `numeric` | `TEXT` | `decimal-canonical-text` | Preserve an exact canonical decimal string; binary floating point is not a valid import path. |
+| `fanmark_lottery_entries.lottery_probability` with the reviewed positive CHECK | `TEXT` | `lottery-weight-positive-decimal-text` | Preserve exact positive decimal text up to the shared 256-character selector limit; never convert through binary floating point. |
+| other unconstrained `numeric` | `TEXT` | `decimal-canonical-text` | Preserve an exact canonical decimal string; binary floating point is not a valid import path, and the generic conversion gate remains blocking. |
 | `fanmark_password_configs.access_password` | `TEXT` | `credential-to-bcrypt` with descriptor; `credential-descriptor-required` without it | Validate the source snapshot as text, then admit only the dedicated transformed-row importer. A generic text binding is forbidden. |
 
 The money column names are deliberately explicit. A different numeric column is
@@ -79,7 +80,8 @@ need safe bounds or an exact text projection.
 The two listed money columns use exact integer-cent import and checked reversible
 API boundaries. Their previous `money_cents_import` readiness gate was removed
 after row-conversion, D1 range-check, and API projection tests covered the full
-`numeric(10,2)` range; the separate unconstrained-decimal gate remains.
+`numeric(10,2)` range. The reviewed lottery-weight column has a separate
+exact-text codec; all other unbounded decimal profiles remain gated.
 
 With the explicit credential descriptor, the completed profile-bound
 transformed-row importer likewise satisfies the `credential_transform_import_required`
@@ -188,14 +190,15 @@ operation layer must supply UTC microsecond timestamps. Safe scalar, JSON, and
 empty-array literals are emitted only when their representation is
 unambiguous.
 
-The source `fanmark_lottery_entries.lottery_probability > 0` constraint now has
-a narrow D1 translation for its non-null, unconstrained `numeric` column. The
+The source `fanmark_lottery_entries.lottery_probability > 0` constraint has a
+narrow D1 translation for its non-null, unconstrained `numeric` column. The
 target CHECK validates the canonical decimal-text shape and rejects zero or
 negative values using text operations only; it does not cast through REAL or
-round arbitrary precision. The generic `decimal_import_validation` gate stays
-blocking until the complete importer and weighted-selection operation use this
-encoding. The translation declines nullable columns and other numeric
-expressions.
+round arbitrary precision. Version 14 removes the decimal import gate only
+when that exact validated source check is present: the row converter validates
+positive canonical text and enforces the same 256-character bound used by the
+weighted-selection operation. Other unconstrained numerics, nullable lottery
+weights, and changed/missing constraints retain the generic blocking gate.
 
 ## Empty business-staging schema bootstrap (2026-09-25 JST)
 
@@ -367,3 +370,15 @@ groups / 226 locations, now reported as 8 row-conversion groups / 133
 locations and 5 schema/operation groups / 93 locations. The explicit
 descriptor-aware importer exercised the credential path using synthetic rows;
 `deployable` remains false pending the listed parity and operation gates.
+
+## Version 14 exact lottery-weight profile (2026-09-28 JST)
+
+The current descriptor-aware catalog report has 10 unresolved gate groups / 222
+locations and remains `deployable: false`: five row-conversion groups / 129
+locations and five schema/operation groups / 93. The exact lottery-weight
+column no longer contributes a decimal gate. A linked read-only aggregate
+checked that current source values fit the shared codec contract without
+retaining row IDs or decimal values. The column-specific codec and its
+fail-closed catalog-shape checks are covered by schema, row-conversion, snapshot
+and exact weighted-selector tests. No source rows were migrated or remote D1
+was changed.

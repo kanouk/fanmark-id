@@ -321,10 +321,10 @@ matches the local staging build. Runtime acceptance is still required. The
 manual expiry Worker route is active only for explicit admin runs; scheduled
 expiry remains disabled because `LICENSE_EXPIRY_BACKEND` is unset.
 
-The fresh schema-converter-v13 descriptor-aware catalog report has 11
-unresolved gate groups across 223 locations and remains `deployable: false`.
+The fresh schema-converter-v14 descriptor-aware catalog report has 10
+unresolved gate groups across 222 locations and remains `deployable: false`.
 The private value-free descriptor removes the missing-descriptor gate; array,
-bigint, decimal, JSON, sequence,
+bigint, JSON, sequence,
 timestamp-operation, external identity, and unsupported-catalog-scope gates
 remain. Generated D1 checks enforce
 canonical calendar dates and fixed-width UTC timestamp text. Version 11 emits
@@ -758,7 +758,7 @@ unperformed.
 | Public access reads | Current worktree + staging Worker/SPA | `PUBLIC_ACCESS_BACKEND=d1` and `VITE_PUBLIC_ACCESS_READ_BACKEND=worker` are active on workers.dev staging. Emoji normalization uses `MASTER_DB`; fanmark/license/config/profile projections use `FANMARK_DB`. Local split-D1 tests pass 11/11. Live synthetic routes returned 200/no-store and their canary rows were removed. `VERIFIED_ACCESS_BACKEND=d1` and its frontend selector are also active on staging; the synthetic protected-read smoke passed, but real imported hash compatibility and CPU fit remain unverified. Paired analytics write/read APIs are active in staging; historical analytics remain in Supabase. Owner/history details use the separate staging endpoint recorded below. No production traffic was switched. See `docs/migration/public-access-contract.md`. |
 | WhoIs owner/history details | Current worktree + workers.dev staging | `VITE_FANMARK_DETAILS_BACKEND=worker` and `FANMARK_DETAILS_BACKEND=d1` select `/api/fanmarks/details`. Local Worker D1 tests pass 3/3, including a two-owner history fixture, and frontend contract tests pass 4/4. On version `82413f00-f60e-4a01-aeb0-2a071e01178a`, a synthetic owner browser rendered one history row from the Worker API; after clearing the session cookie, the anonymous view showed the login prompt with no history rows or owner name. Independent cleanup readback found zero synthetic business/Auth rows. User IDs, email, and license IDs are omitted. Imported-row parity and production routing remain open; no real user data was read. See `docs/migration/fanmark-details-api.md`. |
 | Public access and owner analytics APIs | Current worktree + staging Worker/SPA | The staging SPA and Worker select D1 for `POST /api/fanmarks/access` and the session-scoped `/api/me/analytics/*` reads. A dedicated Cloudflare Rate Limiting binding allows 120 requests per client-IP key per 60 seconds; the Worker hashes the key and does not persist the IP. Local tests cover 429 and missing, failing, or malformed limiter responses before writes. On current staging version `82413f00-f60e-4a01-aeb0-2a071e01178a`, the rendered `/analytics` canary recorded one event, suppressed four concurrent duplicates, displayed total access and unique visitors as `1`, verified both Worker reads and anonymous 401, and removed all synthetic Auth/business rows. Historical analytics remain in Supabase; user data, production traffic, and domain/DNS were untouched. Raw referrer/user-agent retention, populated-user authorization, and production CPU/plan fit remain open. See `docs/migration/fanmark-access-analytics-api.md`. |
-| D1 role separation | Current worktree + APAC staging | `D1_TOPOLOGY=split` selects business `FANMARK_DB`, Better Auth `AUTH_DB`, and emoji/reference `MASTER_DB`, failing closed for missing bindings. Business staging has 40 source-shaped tables plus applied lifecycle/credential/access extensions; its application baseline contains 10/40 global notification masters, four disabled availability rules, and the two explicitly allowlisted public settings `grace_period_days=1` and `max_emoji_characters=5`. User-owned business/Auth rows are empty. The separate protected-access tables retain documented synthetic canary telemetry and license-incarnation tombstones. Master D1 has 3,944 canonical emoji rows and active release, with reference-master generation 8. The source refresh has 40 tables, 406 columns, 144 constraints, 139 indexes, 15 enum labels, 36 triggers, 77 policies, 58 functions, and one view. Snapshot format 4 fingerprints eight scopes and validates the reviewed event sequence state; the fresh descriptor-aware v13 schema-only report has 11 blocking groups (6 row-conversion, 5 schema/operation across 223 locations) and `deployable: false`; generated date and timestamp checks preserve canonical values on imports and later writes, while operation-level timestamp precision remains a gate; four exact GIN definitions have reviewed query-contract dispositions. No real rows or live event sequence state were migrated. |
+| D1 role separation | Current worktree + APAC staging | `D1_TOPOLOGY=split` selects business `FANMARK_DB`, Better Auth `AUTH_DB`, and emoji/reference `MASTER_DB`, failing closed for missing bindings. Business staging has 40 source-shaped tables plus applied lifecycle/credential/access extensions; its application baseline contains 10/40 global notification masters, four disabled availability rules, and the two explicitly allowlisted public settings `grace_period_days=1` and `max_emoji_characters=5`. User-owned business/Auth rows are empty. The separate protected-access tables retain documented synthetic canary telemetry and license-incarnation tombstones. Master D1 has 3,944 canonical emoji rows and active release, with reference-master generation 8. The source refresh has 40 tables, 406 columns, 144 constraints, 139 indexes, 15 enum labels, 36 triggers, 77 policies, 58 functions, and one view. Snapshot format 4 fingerprints eight scopes and validates the reviewed event sequence state; the fresh descriptor-aware v14 schema-only report has 10 blocking groups (5 row-conversion, 5 schema/operation across 222 locations) and `deployable: false`; generated date and timestamp checks preserve canonical values on imports and later writes, while operation-level timestamp precision remains a gate; four exact GIN definitions have reviewed query-contract dispositions. No real rows or live event sequence state were migrated. |
 | Lifecycle settings API | Current worktree + staging Worker/SPA | Public `GET /api/system/lifecycle` reads only the public `grace_period_days` row through split business D1; `PATCH /api/admin/system-settings/lifecycle` requires administrator role and current-session MFA. Supabase public value `1` was read-only verified and copied as one staging config row. Client 4/4, combined settings D1 9/9, full standard suites 30/30 and 10/10 pass. A new synthetic staging TOTP canary verified anonymous 401, authenticated temporary update, invalid value 400, public no-store readback, restoration to `1`, and empty user-owned Auth tables after cleanup. The API canary and rendered AdminSettings browser form both updated the setting from `1` to synthetic `2`, read it back through D1, restored `1`, and removed synthetic Auth/profile rows. The value is at baseline; `updated_at` advanced and the MFA generation counter may have advanced during factor enrollment/removal. The shared staging Cron is active for notifications; `LICENSE_EXPIRY_BACKEND` remains unset, so lifecycle execution is disabled. See `docs/migration/lifecycle-settings-api.md`. |
 | Plan and general system settings | Current worktree + workers.dev staging | An exact allowlist of 18 non-user Supabase settings was added to the two existing settings (20 total). Source and D1 canonical digests match `d1f809c44dcc26152acb3432907e1cad81a599d495fd9f3e48b75ea1e3beb16f`; the public GET returns exactly 17 public keys and omits both private Enterprise settings. Public GET and SPA returned 200/no-store; anonymous admin GET returned 401/no-store. A synthetic Better Auth administrator passed TOTP/MFA read/update, exact D1 readback, stale-write rejection, baseline restoration, audit-value minimization, and audit cleanup. Worker tests 5/5, client tests 4/4, migration-data 124/124, typechecks, staging build, and dry-run pass. Deployed at 100% as version `3310b139-f639-4cf2-8a15-ad2b63f9fbd6`. Browser UI acceptance and payment behavior remain open; production stays on Supabase. See `docs/migration/system-settings-api.md`. |
 | Availability-rule administration | Current worktree + workers.dev staging | `AdminPatternRules` selects the MFA-protected D1 API only in staging. Four explicit source rules were seeded with `created_by=NULL`, remained disabled, and were read/edit/CAS-restored by the deployed TOTP canary. Worker tests 4/4 and frontend tests 5/5 pass. This does not move Stripe enforcement or other admin CRUD. See `docs/migration/availability-rules-admin-api.md`. |
@@ -853,8 +853,8 @@ buckets; this was a read-only check and copied no objects.
    master D1 and staging R2 bindings. Synthetic canaries cover selected
    registration, owner, access, notification, admin, and PWA routes, but the
    static audit of 45 backend selectors still requires complete runtime
-   acceptance. The current v13 schema report remains `deployable: false` with
-   11 unresolved groups across 223 locations; function/trigger/RLS parity,
+   acceptance. The current v14 schema report remains `deployable: false` with
+   10 unresolved groups across 222 locations; function/trigger/RLS parity,
    remaining API inventory, operation-level timestamp proof, and representative
    CPU-plan fit remain open. No production route is enabled.
 2. #36, the versioned non-user emoji master path, is closed. Its 3,944-record
@@ -897,8 +897,8 @@ credential compatibility or a complete user-data import.
   rows). Each query returned `changed_db=false` and `rows_written=0`. This
   confirms schema/seed migrations only; it does not prove full function/RLS/
   trigger parity or real user-row reconciliation.
-- The fresh v13 schema report remains `deployable: false`: 11 unresolved gate
-  groups across 223 locations (6 row-conversion / 130, 5 schema/operation / 93). The
+- The fresh v14 schema report remains `deployable: false`: 10 unresolved gate
+  groups across 222 locations (5 row-conversion / 129, 5 schema/operation / 93). The
   descriptor-aware replay is synthetic only. Runtime acceptance for the 45
   frontend selectors, full current API inventory, complete operation-level
   timestamp/default proof, and representative populated-data CPU/load fit
@@ -2822,11 +2822,36 @@ Missing descriptors still block conversion, and the importer still rejects a
 credential-bearing snapshot without its exact target profile before report,
 ledger, or target writes. This does not migrate real credential rows.
 
-The current v13 schema shape has 11 unresolved gates / 223 locations
-(6 row-conversion / 130, 5 schema/operation / 93), still
+The current v14 schema shape has 10 unresolved gates / 222 locations
+(5 row-conversion / 129, 5 schema/operation / 93), still
 `deployable: false`. The 53% end-to-end and 73% prioritized-scope estimates
-remain coarse and unchanged. This only closes the synthetic money conversion
-and credential-import readiness gates; no Supabase application rows, remote
-D1, deployment, production route, or domain/DNS state was changed. The
-schema-conversion version is now 13, so older snapshot manifests must be
-re-exported before verification/import.
+remain coarse. Money, credential-transform, and exact lottery-weight conversion
+now have dedicated tested paths; no Supabase user rows were migrated and no
+production D1, route, or domain/DNS state changed. Schema conversion is now
+version 14 and the D1 import codec version is 4. Old snapshots fail version
+verification; an in-progress old-codec run cannot resume and needs a fresh
+empty rehearsal target. No existing ledger should be edited to bypass the guard.
+
+## Exact lottery-weight decimal conversion (2026-09-28 JST)
+
+The v14 converter assigns `fanmark_lottery_entries.lottery_probability` a
+dedicated `lottery-weight-positive-decimal-text` codec only when the current
+catalog confirms the exact non-null column and validated `positive_probability`
+CHECK. The shared 256-character limit is used by both the migration row codec
+and the exact BigInt weighted-selection engine. The row converter rejects
+zero/negative values, noncanonical text, and over-limit values before a D1
+binding is produced; every other unreviewed unconstrained numeric remains
+blocked. A fresh private v14 report on the current schema has 10 groups / 222
+locations (5 row-conversion / 129, 5 schema/operation / 93) and still reports
+`deployable: false`.
+
+A linked `BEGIN READ ONLY` aggregate over the single probability column found
+no noncanonical/nonpositive or over-limit values. It returned no row IDs or
+probability values and was not saved. The source table's current
+`positive_probability` CHECK remains the import authority; future snapshots
+are independently rejected if a value no longer fits the exact Worker codec.
+No user rows were exported or imported. `npm run test:migration-data` passes
+183/183; the Worker lottery API passes 12/12, lifecycle source integration
+passes 25/25, Worker typecheck passes, and schema/row-conversion/snapshot tests
+pass. The stricter converter schema version and importer codec version prevent
+old snapshots/checkpoints from being resumed under the changed value contract.

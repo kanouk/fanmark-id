@@ -20,7 +20,8 @@ export projection. Use bound/quoted identifiers from the reviewed catalog.
 | `smallint`, `integer` | Number after exact BigInt range validation |
 | `bigint` | Canonical signed 64-bit decimal text; the D1 importer binds it as text with `CAST(? AS INTEGER)` and verifies `CAST(column AS TEXT)` plus SQLite `typeof(...) = 'integer'` |
 | `numeric(10,2)` | Exact integer cents; no float multiplication or rounding |
-| unbounded `numeric` | Exact finite plain decimal text, not REAL |
+| `fanmark_lottery_entries.lottery_probability` with the reviewed positive CHECK | Exact positive plain decimal text, bounded to the shared lottery-selector maximum of 256 characters |
+| other unbounded `numeric` | Exact finite plain decimal text, not REAL; remains a blocking generic schema gate |
 | `timestamp with time zone` | Fixed-width UTC text with six fractional digits |
 | `date` | Validated `YYYY-MM-DD` text |
 | `jsonb` | Validated original JSON text; no parse/stringify round trip |
@@ -46,6 +47,16 @@ not proof that D1 JSON extraction/arithmetic preserves arbitrary precision.
 Queries using such fields require their own explicit representation and tests.
 Unbounded numeric text likewise must not be numerically compared using plain
 lexical string order.
+
+The lottery-weight codec is column-specific. It is emitted only for a
+non-null `numeric` source column with the validated `positive_probability`
+constraint. Snapshot verification and D1 import reject nonpositive,
+noncanonical, or over-256-character text before binding it. The same shared
+limit is enforced by the D1 weighted-selection engine, which parses exact
+integer coefficients and never uses IEEE-754 arithmetic for the draw. The
+current source preflight checked only an aggregate of this column; it did not
+retain row identities or values. A changed catalog shape or a future source
+value outside the supported bound fails closed.
 
 The importer keeps bigint values as decimal text through D1 binding and
 readback, so values across the signed 64-bit range do not pass through

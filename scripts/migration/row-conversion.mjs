@@ -14,6 +14,7 @@ import { pathToFileURL } from "node:url";
 
 import { convertPgText } from "./value-conversion.mjs";
 import { convertSchema } from "./schema-convert.mjs";
+import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
 export const ROW_ENVELOPE_VERSION = 1;
 
@@ -31,6 +32,7 @@ const SUPPORTED_CODECS = new Set([
   "postgres-array-json-text",
   "money-cents-int64",
   "decimal-canonical-text",
+  "lottery-weight-positive-decimal-text",
   "enum-text-check",
   "credential-to-bcrypt",
 ]);
@@ -42,6 +44,7 @@ const SEQUENCE_UUID_ARRAY_TABLES = new Set([
   "fanmarks",
 ]);
 const UUID_TEXT_RE = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/iu;
+const POSITIVE_DECIMAL_TEXT_RE = /^(?:0|[1-9]\d*)(?:\.\d+)?$/u;
 const EXACT_ENVELOPE_KEYS = ["schemaVersion", "table", "columns", "values", "arrayMetadata"];
 const EXACT_ARRAY_METADATA_KEYS = ["isNull", "ndims", "lowerBound"];
 
@@ -193,6 +196,7 @@ function codecConverterType(column, codec) {
     // it as a reviewed cents column. Other fixed-scale decimals stay gated.
     ["money-cents-int64", new Set(["numeric(10,2)"])],
     ["decimal-canonical-text", new Set(["numeric"])],
+    ["lottery-weight-positive-decimal-text", new Set(["numeric"])],
     // Snapshot export still validates the source value as text. The codec
     // names the required future D1 transform; it does not hash or authorize a
     // generic D1 binding.
@@ -229,6 +233,16 @@ function createPlan(catalogInput, tableName, options = {}) {
     const entry = codecs.get(`${column.table_name}\0${column.column_name}`);
     if (!entry || !SUPPORTED_CODECS.has(entry.codec)) throw fail("unsupported_codec");
     if (entry.sourceType !== column.postgres_type) throw fail("codec_source_type_mismatch");
+    if (entry.codec === "lottery-weight-positive-decimal-text") {
+      if (
+        column.table_name !== "fanmark_lottery_entries" ||
+        column.column_name !== "lottery_probability" ||
+        column.not_null !== true ||
+        entry.maxTextLength !== MAX_LOTTERY_WEIGHT_TEXT_LENGTH
+      ) throw fail("lottery_weight_codec_profile_mismatch");
+    } else if (entry.maxTextLength !== undefined) {
+      throw fail("unexpected_codec_parameters");
+    }
     const converterType = codecConverterType(column, entry.codec);
     if (converterType === null) throw fail("unsupported_type");
     if (entry.codec === "enum-text-check") {
@@ -242,6 +256,16 @@ function createPlan(catalogInput, tableName, options = {}) {
     const converterType = codecConverterType(column, entry.codec);
     if (converterType === null) throw fail("unsupported_type");
     if (entry.sourceType !== column.postgres_type) throw fail("codec_source_type_mismatch");
+    if (entry.codec === "lottery-weight-positive-decimal-text") {
+      if (
+        column.table_name !== "fanmark_lottery_entries" ||
+        column.column_name !== "lottery_probability" ||
+        column.not_null !== true ||
+        entry.maxTextLength !== MAX_LOTTERY_WEIGHT_TEXT_LENGTH
+      ) throw fail("lottery_weight_codec_profile_mismatch");
+    } else if (entry.maxTextLength !== undefined) {
+      throw fail("unexpected_codec_parameters");
+    }
     if (entry.codec === "enum-text-check") {
       const labels = enumLabels.get(column.type_name);
       if (!labels || labels.size === 0) throw fail("missing_enum_labels");
@@ -250,6 +274,7 @@ function createPlan(catalogInput, tableName, options = {}) {
       column,
       codec: entry.codec,
       converterType,
+      ...(entry.maxTextLength === undefined ? {} : { maxTextLength: entry.maxTextLength }),
       labels: entry.codec === "enum-text-check" ? enumLabels.get(column.type_name) : null,
     };
   });
@@ -274,11 +299,12 @@ function publicPlan(plan) {
     schemaVersion: plan.schemaVersion,
     table: plan.table,
     schema: plan.schema,
-    columns: plan.columns.map(({ column, codec, converterType }) => ({
+    columns: plan.columns.map(({ column, codec, converterType, maxTextLength }) => ({
       name: column.column_name,
       sourceType: column.postgres_type,
       codec,
       converterType,
+      ...(maxTextLength === undefined ? {} : { maxTextLength }),
     })),
     arrayColumns: plan.columns.filter(({ column }) => ARRAY_TYPES.has(column.postgres_type)).map(({ column }) => column.column_name),
     sql: plan.sql,
@@ -320,6 +346,15 @@ function convertDescriptor(descriptor, rawValue, metadata) {
   const { column, codec, converterType } = descriptor;
   if (rawValue !== null && typeof rawValue !== "string") throw fail("invalid_source_value");
   if (rawValue === null && column.not_null) throw fail("null_forbidden");
+  if (codec === "lottery-weight-positive-decimal-text" && rawValue !== null) {
+    if (
+      typeof descriptor.maxTextLength !== "number" ||
+      rawValue.length === 0 ||
+      rawValue.length > descriptor.maxTextLength ||
+      !POSITIVE_DECIMAL_TEXT_RE.test(rawValue) ||
+      !/[1-9]/u.test(rawValue.replace(".", ""))
+    ) throw fail("invalid_lottery_weight");
+  }
   if (codec === "enum-text-check" && rawValue !== null) {
     const labels = descriptor.labels;
     if (!labels?.has(rawValue)) throw fail("invalid_enum_label");

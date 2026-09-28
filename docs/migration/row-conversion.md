@@ -66,7 +66,9 @@ The converter delegates scalar conversion to
 requires the codec mapping emitted by
 [`schema-convert.mjs`](../../scripts/migration/schema-convert.mjs). In
 particular, only the two reviewed `numeric(10,2)` money columns may use the
-integer-cents codec. A non-money fixed-scale decimal, unknown type, unknown
+integer-cents codec. The reviewed positive lottery-weight column uses its
+dedicated exact-text codec with the same 256-character bound as the D1
+weighted selector. Other unreviewed decimal columns, unknown type, unknown
 enum label, out-of-range int64, invalid JSON, malformed UUID, or unsupported
 array shape fails closed. Bigint values are returned as canonical decimal
 text, not `Number`; the importer applies an integer CAST when binding and

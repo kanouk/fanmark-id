@@ -6,6 +6,7 @@ import { test } from "node:test";
 
 import { convertSchema, validateDistinctPaths } from "./schema-convert.mjs";
 import { CREDENTIAL_CODEC_COST, CREDENTIAL_CODEC_ID } from "./credential-descriptor.mjs";
+import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
 function column(table_name, column_name, ordinal, postgres_type, options = {}) {
   return {
@@ -232,7 +233,7 @@ test("conversion is deterministic and exposes exact target codecs", () => {
 
   assert.equal(first.report.target.tableCount, 4);
   assert.equal(first.report.target.columnCount, 15);
-  assert.equal(first.report.schemaVersion, 13);
+  assert.equal(first.report.schemaVersion, 14);
   assert.deepEqual(first.report.target.translatedConstraints, { p: 4, u: 0, f: 1, c: 3 });
   assert.equal(first.report.target.translatedIndexCount, 4);
   assert.deepEqual(
@@ -252,7 +253,8 @@ test("conversion is deterministic and exposes exact target codecs", () => {
       column: "lottery_probability",
       sourceType: "numeric",
       targetType: "TEXT",
-      codec: "decimal-canonical-text",
+      codec: "lottery-weight-positive-decimal-text",
+      maxTextLength: MAX_LOTTERY_WEIGHT_TEXT_LENGTH,
     },
   );
   assert.match(first.sql, /"monthly_price_usd" INTEGER DEFAULT 0/);
@@ -269,7 +271,6 @@ test("conversion is deterministic and exposes exact target codecs", () => {
   const codes = gateCodes(first.report);
   for (const expected of [
     "external_foreign_key",
-    "decimal_import_validation",
     "representation_sensitive_check",
     "unsupported_check_constraint",
     "unsupported_constraint",
@@ -312,7 +313,7 @@ test("money cents DDL accepts only the exact source numeric(10,2) range", () => 
 
 test("DATE schema checks preserve canonical calendar days for imports and later writes", () => {
   const result = convertSchema(calendarDateFixture());
-  assert.equal(result.report.schemaVersion, 13);
+  assert.equal(result.report.schemaVersion, 14);
   assert.equal(gateCodes(result.report).has("date_import_validation"), false);
   assert.match(result.sql, /"stat_date" IS NULL OR \([\s\S]*length\("stat_date"\) = 10[\s\S]*GLOB '\[0-9\].*-[0-9\].*-[0-9\].*'[\s\S]*substr\("stat_date", 1, 4\) BETWEEN '0001' AND '9999'[\s\S]*date\("stat_date", '\+0 days'\) IS "stat_date"/);
 
@@ -339,7 +340,7 @@ test("DATE schema checks preserve canonical calendar days for imports and later 
 
 test("TIMESTAMPTZ schema checks preserve canonical UTC microsecond text", () => {
   const result = convertSchema(timestampFixture());
-  assert.equal(result.report.schemaVersion, 13);
+  assert.equal(result.report.schemaVersion, 14);
   assert.ok(gateCodes(result.report).has("timestamp_import_precision"));
   assert.ok(gateCodes(result.report).has("timestamp_default_requires_operation"));
   assert.match(result.sql, /"created_at" TEXT NOT NULL DEFAULT \(strftime\('%Y-%m-%dT%H:%M:%f000Z', 'now'\)\)/);
@@ -495,7 +496,7 @@ test("the four reviewed live GIN indexes have explicit D1 query-contract disposi
   );
 
   const result = convertSchema(input);
-  assert.equal(result.report.schemaVersion, 13);
+  assert.equal(result.report.schemaVersion, 14);
   assert.deepEqual(result.report.target.indexAdaptations.map((entry) => entry.sourceIndex), [
     "idx_emoji_master_keywords",
     "idx_emoji_master_short_name",
@@ -539,7 +540,7 @@ test("known ASCII PostgreSQL regex checks require a reviewed locale proof", () =
     .flatMap((gate) => gate.locations)
     .filter((location) => sourceCheckNames.has(location.name));
   assert.deepEqual(untranslatedSourceChecks, []);
-  assert.equal(result.report.schemaVersion, 13);
+  assert.equal(result.report.schemaVersion, 14);
 
   const cases = [
     ["invitation_codes", "code", "ABC123", true],
@@ -616,7 +617,7 @@ test("known ASCII PostgreSQL regex checks require a reviewed locale proof", () =
 test("positive unconstrained numeric checks use exact canonical decimal text", () => {
   const result = convertSchema(fixture());
   assert.match(result.sql, /"lottery_probability" NOT GLOB '\*\[\^0-9\.\]\*'/);
-  assert.ok(gateCodes(result.report).has("decimal_import_validation"));
+  assert.equal(gateCodes(result.report).has("decimal_import_validation"), false);
 
   const insert = (valueSql) => execFileSync("sqlite3", [":memory:"], {
     input: `${result.sql}\nINSERT INTO fanmark_lottery_entries (id, lottery_probability) VALUES ('synthetic', ${valueSql});`,
@@ -637,6 +638,22 @@ test("positive unconstrained numeric checks use exact canonical decimal text", (
   }
   assert.throws(() => insert("'1' || char(0) || '2'"), "embedded NUL must be rejected like PostgreSQL text");
   assert.throws(() => insert("NULL"), "source lottery_probability is NOT NULL");
+
+  const unrelatedNumeric = fixture();
+  unrelatedNumeric.columns.push(column("parent", "custom_weight", 9, "numeric", { not_null: true }));
+  const unrelatedResult = convertSchema(unrelatedNumeric);
+  assert.ok(unrelatedResult.report.gates.some((gate) =>
+    gate.code === "decimal_import_validation" &&
+    gate.locations.some((location) => location.table === "parent" && location.column === "custom_weight"),
+  ), "unreviewed unconstrained numerics must remain gated");
+
+  const missingCheck = fixture();
+  missingCheck.constraints = missingCheck.constraints.filter((entry) => entry.name !== "positive_probability");
+  const missingCheckResult = convertSchema(missingCheck);
+  assert.ok(missingCheckResult.report.gates.some((gate) =>
+    gate.code === "decimal_import_validation" &&
+    gate.locations.some((location) => location.table === "fanmark_lottery_entries" && location.column === "lottery_probability"),
+  ), "the exact codec requires the reviewed validated source check");
 
   const nullableInput = fixture();
   nullableInput.columns.find((entry) => entry.table_name === "fanmark_lottery_entries" && entry.column_name === "lottery_probability").not_null = false;
@@ -755,7 +772,7 @@ test("the exact recent-active view is adapted only to the reviewed D1 query", ()
   input.views = [{ kind: "view", name: "recent_active_fanmarks", definition }];
 
   const result = convertSchema(input);
-  assert.equal(result.report.schemaVersion, 13);
+  assert.equal(result.report.schemaVersion, 14);
   assert.equal(result.report.deployable, false);
   assert.deepEqual(result.report.target.catalogScopeAdaptations, [{
     scope: "views",

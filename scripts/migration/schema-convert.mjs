@@ -13,8 +13,9 @@ import process from "node:process";
 import { pathToFileURL } from "node:url";
 
 import { compileCredentialDescriptor, CREDENTIAL_COLUMN, CREDENTIAL_SOURCE_RELATION } from "./credential-descriptor.mjs";
+import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 13;
+export const SCHEMA_CONVERSION_VERSION = 14;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -23,6 +24,11 @@ const MONEY_COLUMNS = new Set([
   "fanmark_availability_rules.price_usd",
   "fanmark_tiers.monthly_price_usd",
 ]);
+const REVIEWED_LOTTERY_WEIGHT = Object.freeze({
+  table: "fanmark_lottery_entries",
+  column: "lottery_probability",
+  check: "positive_probability",
+});
 const SUPPORTED_INDEX_METHOD = "btree";
 const REVIEWED_EN_US_REGEX_LOCALE = "en_US.UTF-8";
 const UNICODE_SCALAR_COUNT = 1_112_063;
@@ -727,13 +733,14 @@ function integerStorageCheck(column, expression) {
   return column.not_null ? expression : `${name} IS NULL OR (${expression})`;
 }
 
-function typeInfo(column, enumLabels, gates, typeCounts, credentialDescriptorPlan) {
+function typeInfo(column, enumLabels, gates, typeCounts, credentialDescriptorPlan, reviewedLotteryWeightCheck) {
   const sourceType = column.postgres_type;
   const location = { kind: "column", table: column.table_name, column: column.column_name };
   let targetType;
   let targetKind = "scalar";
   let codec = "unsupported";
   let checks = [];
+  let maxTextLength;
 
   if (column.table_name === CREDENTIAL_SOURCE_RELATION && column.column_name === CREDENTIAL_COLUMN) {
     targetType = "TEXT";
@@ -824,6 +831,16 @@ function typeInfo(column, enumLabels, gates, typeCounts, credentialDescriptorPla
     targetKind = "money_cents";
     codec = "money-cents-int64";
     checks.push(integerStorageCheck(column, `typeof(${quoteIdentifier(column.column_name)}) = 'integer' AND ${quoteIdentifier(column.column_name)} BETWEEN -9999999999 AND 9999999999`));
+  } else if (
+    sourceType === "numeric" &&
+    column.table_name === REVIEWED_LOTTERY_WEIGHT.table &&
+    column.column_name === REVIEWED_LOTTERY_WEIGHT.column &&
+    column.not_null &&
+    reviewedLotteryWeightCheck
+  ) {
+    targetType = "TEXT";
+    codec = "lottery-weight-positive-decimal-text";
+    maxTextLength = MAX_LOTTERY_WEIGHT_TEXT_LENGTH;
   } else if (/^numeric\(10,2\)$/i.test(sourceType) || sourceType === "numeric") {
     targetType = "TEXT";
     codec = "decimal-canonical-text";
@@ -845,7 +862,27 @@ function typeInfo(column, enumLabels, gates, typeCounts, credentialDescriptorPla
 
   const key = `${sourceType}->${targetType}`;
   typeCounts.set(key, (typeCounts.get(key) ?? 0) + 1);
-  return { sourceType, targetType, targetKind, codec, checks };
+  return {
+    sourceType,
+    targetType,
+    targetKind,
+    codec,
+    checks,
+    ...(maxTextLength === undefined ? {} : { maxTextLength }),
+  };
+}
+
+function hasReviewedLotteryWeightCheck(tableName, sourceConstraints, tableColumns) {
+  if (tableName !== REVIEWED_LOTTERY_WEIGHT.table) return false;
+  const expectedPrefix = `typeof(${quoteIdentifier(REVIEWED_LOTTERY_WEIGHT.column)}) = 'text'`;
+  return sourceConstraints.some((constraint) =>
+    constraint.name === REVIEWED_LOTTERY_WEIGHT.check &&
+    constraint.kind === "c" &&
+    constraint.validated &&
+    !constraint.deferrable &&
+    !constraint.initially_deferred &&
+    translatePositiveCanonicalDecimalCheck(constraint.definition, tableColumns)?.startsWith(expectedPrefix) === true
+  );
 }
 
 function translateDefault(column, info, gates, sequencePrimaryKey = false) {
@@ -1178,13 +1215,21 @@ function renderTable(tableName, tableColumns, sourceConstraints, context) {
         { kind: "column", table: tableName, column: column.column_name },
       );
     }
-    const info = typeInfo(column, context.enumLabels, context.gates, context.typeCounts, context.credentialDescriptorPlan);
+    const info = typeInfo(
+      column,
+      context.enumLabels,
+      context.gates,
+      context.typeCounts,
+      context.credentialDescriptorPlan,
+      hasReviewedLotteryWeightCheck(tableName, sourceConstraints, tableColumns),
+    );
     context.columnCodecs.push({
       table: tableName,
       column: column.column_name,
       sourceType: info.sourceType,
       targetType: info.targetType,
       codec: info.codec,
+      ...(info.maxTextLength === undefined ? {} : { maxTextLength: info.maxTextLength }),
     });
     const parts = [quoteIdentifier(column.column_name), info.targetType];
     const sequencePrimaryKey = sequencePrimaryKeyColumns.has(column.column_name);

@@ -3719,3 +3719,29 @@ unresolved gates across 223 locations (6 row-conversion / 130 locations, 5
 schema/operation / 93 locations) and remains `deployable: false`. This is
 synthetic/local codec and API evidence only; no Supabase rows, remote D1, Worker
 deployment, production route, or domain/DNS state was changed.
+
+## Exact lottery-weight decimal import contract and schema converter v14 (2026-09-28 JST)
+
+The verified lottery lifecycle already parses stored weights as exact decimal
+text and computes weighted draws with `BigInt`; the migration report had kept a
+generic decimal gate because that complete importer/operation contract was not
+bound to the catalog. Added the dedicated
+`lottery-weight-positive-decimal-text` codec, emitted only for
+`fanmark_lottery_entries.lottery_probability` when the catalog confirms the
+non-null numeric column and validated `positive_probability` CHECK. A shared
+256-character limit now governs both row import validation and the Worker
+selector. Zero/negative, noncanonical, and over-limit source text fails before
+a D1 binding is produced; other generic decimal columns remain gated.
+
+A linked read-only aggregate over only the current probability column returned
+no noncanonical/nonpositive or over-limit values. It contained no row IDs or
+values and was not saved. A fresh descriptor-aware catalog conversion reports
+10 blocking groups / 222 locations (5 row-conversion / 129, 5
+schema/operation / 93) and remains `deployable: false`. Schema converter
+version 14 and D1 import codec version 4 make prior manifests/checkpoints fail
+closed rather than silently resuming with changed validation.
+
+`npm run test:migration-data` passes 183/183, Worker lottery API passes 12/12,
+lifecycle source integration passes 25/25, Worker typecheck passes, and the
+focused converter/snapshot suites pass. No user rows were exported/imported,
+no remote D1 or production state changed, and domain/DNS was untouched.

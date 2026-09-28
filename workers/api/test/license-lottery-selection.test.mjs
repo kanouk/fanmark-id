@@ -6,6 +6,7 @@ import {
   LicenseLotterySelectionError,
   selectLicenseLotteryOutcome,
 } from "../src/license-lottery-selection.mjs";
+import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../src/license-lottery-weight-contract.mjs";
 
 const ZERO_SEED = "0".repeat(64);
 const REROLL_SEED = `${"0".repeat(63)}1`;
@@ -132,7 +133,7 @@ test("an unlimited plan remains eligible above any finite count", async () => {
 });
 
 test("uses HMAC-SHA-256 blocks for exact weights wider than one digest", async () => {
-  const hugeWeight = "9".repeat(256);
+  const hugeWeight = "9".repeat(MAX_LOTTERY_WEIGHT_TEXT_LENGTH);
   const result = await selectLicenseLotteryOutcome({
     entries: [entry("entry-a", "user-a", hugeWeight), entry("entry-b", "user-b", hugeWeight)],
     seed: ZERO_SEED,
@@ -157,7 +158,7 @@ test("rejects invalid weights, duplicate applicants, and incomplete capacity sna
     { entryId: "entry-a", userId: "user-a", lotteryProbability: "1" },
     [entry("entry-a", "user-a", "1"), entry("entry-a", "user-b", "2")],
     [entry("entry-a", "user-a", "1"), entry("entry-b", "user-a", "2")],
-    [entry("entry-a", "user-a", "1".repeat(257))],
+    [entry("entry-a", "user-a", "1".repeat(MAX_LOTTERY_WEIGHT_TEXT_LENGTH + 1))],
   ];
 
   for (const entries of invalidCases) {

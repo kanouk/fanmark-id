@@ -1,5 +1,6 @@
+import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "./license-lottery-weight-contract.mjs";
+
 const MAX_ENTRIES = 5_000;
-const MAX_WEIGHT_LENGTH = 256;
 const MAX_DRAW_ATTEMPTS = 128;
 const SEED_BYTES = 32;
 const SEED_HEX_PATTERN = /^[0-9a-f]{64}$/u;
@@ -21,7 +22,7 @@ function fail(code, cause) {
 
 function parsePositiveDecimal(value) {
   if (
-    typeof value !== "string" || value.length === 0 || value.length > MAX_WEIGHT_LENGTH ||
+    typeof value !== "string" || value.length === 0 || value.length > MAX_LOTTERY_WEIGHT_TEXT_LENGTH ||
     !DECIMAL_PATTERN.test(value)
   ) fail("invalid_lottery_weight");
 

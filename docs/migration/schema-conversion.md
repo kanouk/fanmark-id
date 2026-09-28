@@ -611,3 +611,26 @@ credential-transform location from the latest descriptor-aware catalog shape
 reduces readiness from 13/226 to 11/223 (6 row-conversion groups / 130
 locations; 5 schema/operation groups / 93 locations). No source rows or remote
 D1 state were read or changed by this codec update.
+
+## Exact lottery-weight conversion and v14 schema refresh (2026-09-28 JST)
+
+The exact decimal gate for `fanmark_lottery_entries.lottery_probability` is
+closed only for the current reviewed source shape: PostgreSQL `numeric`,
+`NOT NULL`, and the validated `positive_probability` CHECK. Schema-converter
+v14 emits a dedicated `lottery-weight-positive-decimal-text` codec with a
+256-character maximum shared with the D1 BigInt weighted-selection engine.
+The row converter now rejects nonpositive, noncanonical, and over-limit text
+before D1 bindings are produced. Missing/changed checks or other numeric
+columns keep the generic `decimal_import_validation` gate.
+
+A fresh linked catalog-only refresh confirmed the same 40 tables, 406 columns,
+144 constraints, 139 indexes, 15 enum labels, one view, 58 functions, 36
+non-internal triggers, and 77 RLS policies. A separate linked `BEGIN READ ONLY`
+aggregate over only the lottery probability column found no noncanonical,
+nonpositive, or over-limit values; it returned no IDs or values and was not
+saved. The descriptor-aware v14 report has 10 unresolved gates / 222 locations
+(5 row-conversion / 129, 5 schema/operation / 93), and remains
+`deployable: false`. Schema conversion advanced to v14 and D1 importer codec to
+v4 so an older snapshot or checkpoint cannot reuse the previous codec contract.
+No user rows were exported/imported and no remote D1, production route, or
+domain/DNS state changed.
