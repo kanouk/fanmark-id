@@ -139,11 +139,15 @@ separate exact 18-key plan/pricing/feature projection. Two Enterprise values
 remain private and are served only by the MFA-protected admin API. The source
 projection and staged D1 readback match the pinned canonical digest; see
 [`system-settings-api.md`](system-settings-api.md). Availability rules and
-notification rules/templates use documented row/field allowlists; coupons,
-tier-extension prices, and remaining candidates still require per-table
-allowlists before export. Coupon configuration can move separately from
-owner-bound usage records; do not copy `created_by`, usage rows, or infer
-redemption history during master-data staging.
+notification rules/templates use documented row/field allowlists. The active
+versioned reference release now includes all four public masters, including 16
+tier-extension prices; the staging Worker reads them through the pinned release
+and omits Stripe IDs. Four verified unused extension-coupon definitions are
+also staged with `created_by` removed. Consumed coupon definitions and all 20
+usage rows remain in the deferred user-data reconciliation; no remaining table
+is bulk-exported just because it looks like configuration. See
+[`reference-master-data.md`](reference-master-data.md) and
+[`extension-coupon-api.md`](extension-coupon-api.md).
 
 ## View
 
