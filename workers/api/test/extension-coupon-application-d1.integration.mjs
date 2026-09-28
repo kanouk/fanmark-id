@@ -12,6 +12,7 @@ const modulePath = path.join(repoRoot, "workers/api/src/extension-coupon-applica
 const migrationPaths = [
   "workers/api/migrations-business/0000_business_schema_v4_staging.sql",
   "workers/api/migrations-business/0015_extension_coupon_application.sql",
+  "workers/api/migrations-business/0019_extension_coupon_timestamp_precision.sql",
 ];
 const { handleExtensionCouponApplicationD1Request } = await import(pathToFileURL(modulePath).href);
 
@@ -191,6 +192,34 @@ async function body(response) {
   return await response.json();
 }
 
+async function insertApplicationCommand({
+  id = "00000000-0000-4000-8000-000000000030",
+  requestId = "00000000-0000-4000-8000-000000000031",
+  appliedAt = NOW_SQL,
+  previousStatus = "active",
+  previousLicenseEnd = "2026-09-30T12:00:00.000Z",
+  gracePlanType = null,
+  gracePlanLimitKey = null,
+  gracePlanSettingValue = null,
+  gracePlanLimit = null,
+} = {}) {
+  return database.prepare(`
+    INSERT INTO extension_coupon_application_commands (
+      id, request_id, user_id, license_id, coupon_id, coupon_code, fanmark_id,
+      tier_level, months, previous_status, previous_license_end,
+      grace_plan_type, grace_plan_limit_key, grace_plan_setting_value, grace_plan_limit,
+      new_license_end, applied_at, status, cancelled_lottery_entries
+    ) VALUES (
+      ?, ?, ?, ?, ?, 'TWOMONTHS', ?, 2, 2, ?, ?, ?, ?, ?, ?,
+      '2026-12-01T00:00:00.000000Z', ?, 'processing', 0
+    )
+  `).bind(
+    id, requestId, OWNER, LICENSE, COUPON, FANMARK,
+    previousStatus, previousLicenseEnd, gracePlanType, gracePlanLimitKey,
+    gracePlanSettingValue, gracePlanLimit, appliedAt,
+  ).run();
+}
+
 isolated("applies coupon, cancels lottery entries, records notices/audits, and replays safely", async () => {
   await reset();
   await seedCoupon();
@@ -341,6 +370,52 @@ isolated("checks tier, transfer, grace plan limit, and perpetual-license rules",
   await seedLicense({ licenseEnd: null });
   response = await call({});
   assert.equal((await body(response)).error, "perpetual_license");
+});
+
+isolated("compares coupon, transfer, and active-license cutoffs at microsecond precision", async () => {
+  const appliedAt = "2026-09-26T12:00:00.000001Z";
+  const licenseEnd = "2026-09-30T12:00:00.000000Z";
+
+  await reset();
+  await seedCoupon({ expiresAt: "2026-09-26T12:00:00.000000Z" });
+  await seedLicense({ licenseEnd });
+  await assert.rejects(insertApplicationCommand({ appliedAt, previousLicenseEnd: licenseEnd }), /coupon_expired/u);
+
+  await reset();
+  await seedCoupon();
+  await seedLicense({ licenseEnd });
+  await database.prepare("UPDATE fanmark_licenses SET transfer_locked_until = ? WHERE id = ?")
+    .bind("2026-09-26T12:00:00.000002Z", LICENSE).run();
+  await assert.rejects(insertApplicationCommand({ appliedAt, previousLicenseEnd: licenseEnd }), /transfer_in_progress/u);
+
+  await reset();
+  await seedCoupon();
+  await seedLicense({ status: "grace", licenseEnd, userSettings: true });
+  await seedLicense({
+    licenseId: "00000000-0000-4000-8000-000000000022",
+    fanmarkId: "00000000-0000-4000-8000-000000000024",
+    displayFanmark: "🌹",
+    licenseEnd: "2026-09-26T12:00:00.000002Z",
+  });
+  await database.prepare(`
+    INSERT INTO system_settings (setting_key, setting_value, created_at, updated_at)
+    VALUES ('free_fanmarks_limit', '1', ?, ?)
+  `).bind(NOW_SQL, NOW_SQL).run();
+  await assert.rejects(insertApplicationCommand({
+    id: "00000000-0000-4000-8000-000000000032",
+    requestId: "00000000-0000-4000-8000-000000000033",
+    appliedAt,
+    previousStatus: "grace",
+    previousLicenseEnd: licenseEnd,
+    gracePlanType: "free",
+    gracePlanLimitKey: "free_fanmarks_limit",
+    gracePlanSettingValue: "1",
+    gracePlanLimit: 1,
+  }), /fanmark_limit_exceeded/u);
+  assert.equal((await database.prepare("SELECT used_count FROM extension_coupons WHERE id = ?")
+    .bind(COUPON).first()).used_count, 0);
+  assert.equal((await database.prepare("SELECT status FROM fanmark_licenses WHERE id = ?")
+    .bind(LICENSE).first()).status, "grace");
 });
 
 isolated("rejects a stale grace plan-limit snapshot at the atomic insert", async () => {

@@ -3884,3 +3884,21 @@ so this is not a refreshed live report and the converter remains
 22.6.0. This work changes local conversion code and tests only; no Supabase
 application rows, remote D1, production route, user data, or DNS/domain state
 changed.
+
+## D1 business timestamp comparison repairs (2026-09-29 JST)
+
+The invitation capacity guard from applied migration `0014` and coupon
+application guard from applied migration `0015` compared timestamp text through
+SQLite `julianday()`, which collapses distinct UTC microseconds. Forward
+migrations `0018_invitation_capacity_timestamp_precision.sql` and
+`0019_extension_coupon_timestamp_precision.sql` recreate those guards with
+lexical comparisons on the fixed-width UTC timestamps. The canonical business
+migration sequence and Miniflare integration fixtures include both forward
+migrations. Tests verify that invitation/reservation expiry, coupon expiry,
+transfer locks, and active-license cutoffs retain a one-microsecond difference.
+
+The invitation signup suite passes 10/10, the coupon application suite passes
+8/8, and the analytics, details, and Stripe extension-checkout suites pass
+20/20. The complete migration-data suite passes 190/190 under Node 22.6.0.
+These migrations have not been applied to staging; no source rows, remote D1,
+production route, or DNS/domain state changed.

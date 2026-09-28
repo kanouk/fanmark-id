@@ -30,10 +30,15 @@ test("accepts valid prefixes and recognizes later approved migrations", () => {
   assert.equal(hasBusinessMigrationApplied(ledger, "0005_lottery_plan_journal_staging.sql"), true);
   assert.equal(hasBusinessMigrationApplied(ledger, "0017_lifecycle_generation_timestamp_precision.sql"), true);
   assert.equal(hasBusinessMigrationApplied(ledger, "0018_invitation_capacity_timestamp_precision.sql"), true);
-  assert.equal(hasBusinessMigrationApplied(ledger.slice(0, -1), "0018_invitation_capacity_timestamp_precision.sql"), false);
+  assert.equal(hasBusinessMigrationApplied(ledger, "0019_extension_coupon_timestamp_precision.sql"), true);
+  assert.equal(hasBusinessMigrationApplied(ledger.slice(0, -1), "0019_extension_coupon_timestamp_precision.sql"), false);
+  assert.equal(isBusinessMigrationLedgerImmediatelyBefore(
+    ledger.slice(0, -2),
+    "0018_invitation_capacity_timestamp_precision.sql",
+  ), true);
   assert.equal(isBusinessMigrationLedgerImmediatelyBefore(
     ledger.slice(0, -1),
-    "0018_invitation_capacity_timestamp_precision.sql",
+    "0019_extension_coupon_timestamp_precision.sql",
   ), true);
   assert.equal(hasBusinessMigrationApplied(ledger.slice(0, 8), "0008_stripe_invoice_projection_staging.sql"), false);
   assert.equal(isBusinessMigrationLedgerImmediatelyBefore(
