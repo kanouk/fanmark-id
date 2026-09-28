@@ -1,4 +1,5 @@
 import { selectD1Database, type Env } from "./repository";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
 
 const API_PATH = "/api/admin/availability-rules";
 const MAX_BODY_BYTES = 8 * 1024;
@@ -173,8 +174,7 @@ async function readBody(request: Request): Promise<unknown> {
 function canonicalNow(clock: Date, expectedUpdatedAt: string): string {
   const expectedTime = Date.parse(expectedUpdatedAt);
   if (!Number.isFinite(clock.getTime()) || !Number.isFinite(expectedTime)) fail("invalid_request", 400);
-  return new Date(Math.max(clock.getTime(), expectedTime + 1))
-    .toISOString().replace(/\.(\d{3})Z$/u, (_match, fraction: string) => `.${fraction}000Z`);
+  return toUtcMicrosecondTimestamp(new Date(Math.max(clock.getTime(), expectedTime + 1)));
 }
 
 function parsePatch(value: unknown): { expectedUpdatedAt: string; isAvailable?: boolean; prefixPrice?: { emoji: string; priceUsd: string } } {

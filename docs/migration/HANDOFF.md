@@ -106,6 +106,14 @@ writers or Cron. No production route, real user data, or domain/DNS state was
 changed. Issue #37 remains open; see
 [`cutover-rehearsal.md`](cutover-rehearsal.md).
 
+The current worktree also centralizes D1 operation timestamps through
+`workers/api/src/utc-timestamp.ts` for availability responses, plan/extension
+checkout, availability-rule edits, notification-admin event/master writes,
+and owner fanmark-profile writes. The shared formatter contract and affected
+API suites pass 48/48, and the Worker typecheck passes. This reduces duplicated
+formatting logic but does not close the full 103-column timestamp writer and
+79-default operation inventory; schema conversion remains `deployable: false`.
+
 The same date, a loopback-only local Supabase smoke passed email/password Auth,
 UUID preservation, owner-scoped settings read/update/readback, and cascade
 cleanup in 284 ms of API calls on the latest run. It uses a disposable local

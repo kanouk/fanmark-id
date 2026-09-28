@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 import { buildPaidExtensionPriceMetadata } from "../../../supabase/functions/_shared/stripe-receipt-ingress/index.ts";
 import { selectD1Database, type Env } from "./repository.ts";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const CHECKOUT_PATH = "/api/billing/extension-checkout";
 const METHODS = "POST, OPTIONS";
@@ -171,7 +172,7 @@ function canonicalNow(value: Date): string {
   if (!(value instanceof Date) || !Number.isFinite(value.getTime())) {
     throw new StripeExtensionCheckoutD1Error("invalid_clock", 500);
   }
-  return value.toISOString().replace(/\.(\d{3})Z$/u, (_match, fraction: string) => `.${fraction}000Z`);
+  return toUtcMicrosecondTimestamp(value);
 }
 
 function configuredStripeMode(secret: string): boolean {
@@ -341,8 +342,7 @@ async function beginIntent(
     now: string;
   },
 ): Promise<IntentRow> {
-  const safeUntil = new Date(Date.parse(intent.now) + RECONCILIATION_WINDOW_MS)
-    .toISOString().replace(/\.(\d{3})Z$/u, (_match, fraction: string) => `.${fraction}000Z`);
+  const safeUntil = toUtcMicrosecondTimestamp(new Date(Date.parse(intent.now) + RECONCILIATION_WINDOW_MS));
   await business.prepare(`
     INSERT INTO stripe_extension_checkout_intents (
       id, request_id, user_id, license_id, fanmark_id, tier_level, months,

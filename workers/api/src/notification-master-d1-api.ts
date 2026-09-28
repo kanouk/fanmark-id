@@ -1,4 +1,5 @@
 import { selectD1Database, type Env } from "./repository";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
 
 const API_PATH = "/api/admin/notification-masters";
 const METHODS = "GET, POST, PATCH, OPTIONS";
@@ -287,7 +288,7 @@ async function createManualEvent(
   if (new TextEncoder().encode(payload).byteLength > MAX_BODY_BYTES) fail("request_too_large", 413);
   if (!(clock instanceof Date) || !Number.isFinite(clock.getTime())) fail("notification_master_unavailable");
   const id = crypto.randomUUID();
-  const timestamp = clock.toISOString().replace(/\.(\d{3})Z$/u, (_match, fraction: string) => `.${fraction}000Z`);
+  const timestamp = toUtcMicrosecondTimestamp(clock);
   const result = await db.prepare(`
     INSERT INTO notification_events (
       id, event_type, event_version, source, payload, payload_schema, trigger_at,
@@ -302,8 +303,7 @@ function canonicalNow(value: Date, expectedUpdatedAt: string): string {
   if (!(value instanceof Date) || !Number.isFinite(value.getTime())) fail("notification_master_unavailable");
   const expectedTime = Date.parse(expectedUpdatedAt);
   if (!Number.isFinite(expectedTime)) fail("invalid_request", 400);
-  return new Date(Math.max(value.getTime(), expectedTime + 1))
-    .toISOString().replace(/\.(\d{3})Z$/u, (_match, fraction: string) => `.${fraction}000Z`);
+  return toUtcMicrosecondTimestamp(new Date(Math.max(value.getTime(), expectedTime + 1)));
 }
 
 async function patchRule(db: D1Database, id: string, value: unknown, clock: Date): Promise<NotificationRuleDto> {

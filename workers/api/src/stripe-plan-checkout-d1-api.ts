@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { selectD1Database, type Env } from "./repository.ts";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const PLAN_CHECKOUT_PATH = "/api/billing/plan-checkout";
 const METHODS = "POST, OPTIONS";
@@ -216,7 +217,7 @@ function canonicalNow(date: Date): string {
   if (!(date instanceof Date) || !Number.isFinite(date.getTime())) {
     throw new StripePlanCheckoutD1Error("server_misconfigured", 500);
   }
-  return date.toISOString().replace(/\.(\d{3})Z$/u, (_match, fraction: string) => `.${fraction}000Z`);
+  return toUtcMicrosecondTimestamp(date);
 }
 
 async function readUnique<T extends Record<string, unknown>>(

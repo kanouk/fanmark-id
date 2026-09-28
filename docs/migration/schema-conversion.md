@@ -536,3 +536,17 @@ The generated DDL loaded into an ephemeral in-memory SQLite database with all
 catalog, descriptor, generated DDL, and report were held in a mode-0700
 temporary directory and removed on exit. This refresh queried PostgreSQL
 catalogs only; no source rows or Cloudflare D1/R2 state were read or changed.
+
+## Shared D1 operation timestamp formatter (2026-09-28 JST)
+
+The canonical fixed-width UTC microsecond formatter in
+`workers/api/src/utc-timestamp.ts` now also backs availability timestamps,
+Stripe plan and extension checkout, availability-rule edits, notification
+admin event/master timestamps, and owner fanmark-profile timestamps. Local
+contract coverage passes 48/48 across the affected API suites and the shared
+formatter test; Worker typecheck passes. This aligns these operation paths on
+one formatter without changing their timestamp source or transaction
+boundaries. The complete writer/default inventory is still open, so the
+`timestamp_import_precision` and `timestamp_default_requires_operation` gates
+remain, along with the other v11 gates; no Supabase rows or remote D1 were read
+or written.

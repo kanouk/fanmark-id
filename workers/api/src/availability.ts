@@ -1,3 +1,5 @@
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
+
 export const MAX_AVAILABILITY_BODY_BYTES = 4_096;
 export const MAX_AVAILABILITY_EMOJI_IDS = 5;
 export const MAX_AVAILABILITY_RESPONSE_BYTES = 16_384;
@@ -312,7 +314,6 @@ export async function parseAvailabilityRequest(request: Request): Promise<string
 export function formatAvailabilityNow(date: Date): string {
   if (Number.isNaN(date.getTime())) throw new AvailabilityConfigurationError();
   // Source timestamps are imported as fixed-width UTC microsecond text. Date
-  // supplies milliseconds, so pad rather than parse through a lower-precision
-  // SQLite datetime function.
-  return date.toISOString().replace(/\.(\d{3})Z$/, ".$1000Z");
+  // supplies milliseconds, so the shared formatter pads the final three digits.
+  return toUtcMicrosecondTimestamp(date);
 }

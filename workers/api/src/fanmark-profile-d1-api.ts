@@ -1,5 +1,6 @@
 import { selectD1Database, type Env } from "./repository";
 import type { StorageAuthResolver } from "./storage-r2";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
 
 const PROFILE_PREFIX = "/api/me/fanmarks/";
 const PROFILE_SUFFIX = "/profile";
@@ -303,7 +304,7 @@ function parseEmojiIds(value: unknown): string[] {
 }
 
 function timestampNow(): string {
-  return new Date().toISOString().replace(/\.(\d{3})Z$/u, (_match, millis: string) => `.${millis}000Z`);
+  return toUtcMicrosecondTimestamp(new Date());
 }
 
 function mapContext(row: ContextRow): Record<string, unknown> {

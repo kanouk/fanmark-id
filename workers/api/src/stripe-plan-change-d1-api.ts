@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { selectD1Database, type Env } from "./repository.ts";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const PLAN_CHANGE_PATH = "/api/billing/plan-change";
 const METHODS = "POST, OPTIONS";
@@ -193,7 +194,7 @@ function database(env: Env): D1Database {
 
 function canonicalNow(date: Date): string {
   if (!(date instanceof Date) || !Number.isFinite(date.getTime())) throw new StripePlanChangeD1Error("server_misconfigured", 500);
-  return date.toISOString().replace(/\.(\d{3})Z$/u, (_match, fraction: string) => `.${fraction}000Z`);
+  return toUtcMicrosecondTimestamp(date);
 }
 
 async function readOne<T extends Record<string, unknown>>(

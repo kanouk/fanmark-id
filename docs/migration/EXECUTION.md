@@ -3557,3 +3557,16 @@ Business/Auth/Storage backup. It does not apply Stripe business effects, test
 Storage-object recovery, freeze Supabase writers/Cron, or import real user
 data. Issue #37 remains open; the details and exact private artifact digest are
 in [cutover-rehearsal.md](cutover-rehearsal.md).
+
+## Shared D1 operation timestamp formatter (2026-09-28 JST)
+
+Replaced the duplicated UTC millisecond-padding expression in availability,
+Stripe plan/extension checkout, availability-rule edits, notification-admin
+manual-event/master updates, and owner fanmark-profile writes with the common
+`workers/api/src/utc-timestamp.ts` formatter. Existing caller-specific invalid
+clock checks and monotonic update rules remain in place. The shared formatter
+has direct boundary/invalid-clock tests; all affected focused API suites pass
+48/48 and Worker typecheck passes. This does not close the full writer/default
+inventory behind v11 `timestamp_import_precision` and
+`timestamp_default_requires_operation`. No source rows, remote D1, deployment,
+user data, or domain/DNS state changed.
