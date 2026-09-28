@@ -184,7 +184,8 @@ async function apply(
     limit = limitSetting?.setting_value ? parseLimit(limitSetting.setting_value) : 3;
     const active = await db.prepare(`
       SELECT COUNT(*) AS count FROM fanmark_licenses
-      WHERE user_id = ? AND status = 'active' AND is_returned = 0 AND license_end > ?
+      WHERE user_id = ? AND status = 'active' AND is_returned = 0
+        AND (license_end IS NULL OR license_end > ?)
     `).bind(userId, now).first<{ count: unknown }>();
     if (typeof active?.count !== "number") throw new FanmarkLotteryApiError("Failed to count active fanmarks", 500);
     if (active.count >= limit) {
@@ -217,7 +218,8 @@ async function apply(
     ? "1 = 1"
     : `(
         SELECT COUNT(*) FROM fanmark_licenses
-        WHERE user_id = ? AND status = 'active' AND is_returned = 0 AND license_end > ?
+        WHERE user_id = ? AND status = 'active' AND is_returned = 0
+          AND (license_end IS NULL OR license_end > ?)
       ) < ?`;
   const capacityBindings = limit === null ? [] : [userId, now, limit];
   const licenseGuard = `EXISTS (
@@ -278,7 +280,8 @@ async function apply(
       if (!stillGrace) throw new FanmarkLotteryApiError("Fanmark is not in grace period or not available for lottery", 400);
       const active = limit === null ? null : await db.prepare(`
         SELECT COUNT(*) AS count FROM fanmark_licenses
-        WHERE user_id = ? AND status = 'active' AND is_returned = 0 AND license_end > ?
+        WHERE user_id = ? AND status = 'active' AND is_returned = 0
+          AND (license_end IS NULL OR license_end > ?)
       `).bind(userId, now).first<{ count: unknown }>();
       if (limit !== null && typeof active?.count === "number" && active.count >= limit) {
         return json({

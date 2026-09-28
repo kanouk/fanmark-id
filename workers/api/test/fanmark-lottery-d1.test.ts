@@ -145,11 +145,15 @@ describe("D1 fanmark lottery entry actions", () => {
     expect(await defaultLimited.json()).toMatchObject({ error: "fanmark_limit_reached", current_count: 3, limit: 3 });
   });
 
-  it("does not count perpetual active licenses because the source uses a strict license_end filter", async () => {
+  it("counts a perpetual active license against the plan limit", async () => {
+    await run("INSERT INTO system_settings (id, setting_key, setting_value) VALUES (?, 'free_fanmarks_limit', '1')", crypto.randomUUID());
     await run(`INSERT INTO fanmark_licenses
       (id, fanmark_id, user_id, license_end, status, is_returned, created_at, updated_at)
       VALUES (?, ?, ?, NULL, 'active', 0, ?, ?)`, crypto.randomUUID(), FANMARK, OWNER, NOW, NOW);
-    expect((await post("apply", { fanmark_id: FANMARK })).status).toBe(200);
+    const response = await post("apply", { fanmark_id: FANMARK });
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ error: "fanmark_limit_reached", current_count: 1, limit: 1 });
+    expect(await count("fanmark_lottery_entries")).toBe(0);
   });
 
   it("cancels only the authenticated owner's pending entry", async () => {

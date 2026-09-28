@@ -51,6 +51,8 @@ const LIFECYCLE_RUN_TABLES = [
 const RETAINED_STATE_TABLES = ["fanmark_license_incarnations", "fanmark_access_versions"];
 const GRACE_PERIOD_SETTING_KEY = "grace_period_days";
 const DEPLOYED_CRON_CANARY = process.env.FANMARK_STAGING_CRON_CANARY === "1";
+const PERPETUAL_CAP_CANARY = process.env.FANMARK_STAGING_PERPETUAL_CAP_CANARY === "1";
+let stagingD1CommandIndex = 0;
 
 function fingerprint(value) {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
@@ -82,26 +84,47 @@ function wrangler(args, cwd = process.cwd()) {
   const result = spawnSync("npx", ["--yes", "wrangler@" + WRANGLER, ...args], {
     cwd, encoding: "utf8", timeout: 120_000, maxBuffer: 8 * 1024 * 1024,
   });
-  if (result.error || result.status !== 0) fail("wrangler_failed");
+  if (result.error || result.status !== 0) {
+    const details = process.env.FANMARK_SMOKE_DIAGNOSTICS === "1"
+      ? "_" + JSON.stringify({
+        errorCode: result.error?.code ?? null,
+        status: result.status,
+        stdout: safeWranglerDiagnostics(result.stdout),
+        stderr: safeWranglerDiagnostics(result.stderr),
+      })
+      : "";
+    fail("wrangler_failed" + details);
+  }
   return result;
 }
 
 function json(args, cwd) {
+  let result;
   try {
-    return JSON.parse(wrangler(args, cwd).stdout.trim());
+    result = wrangler(args, cwd);
+    return JSON.parse(result.stdout.trim());
   } catch (error) {
-    if (error instanceof Error && error.message === "wrangler_failed") throw error;
-    fail("wrangler_json_invalid");
+    if (error instanceof Error && error.message.startsWith("wrangler_failed")) throw error;
+    const details = process.env.FANMARK_SMOKE_DIAGNOSTICS === "1"
+      ? "_" + JSON.stringify({
+        stdout: safeWranglerDiagnostics(result?.stdout ?? ""),
+        stderr: safeWranglerDiagnostics(result?.stderr ?? ""),
+      })
+      : "";
+    fail("wrangler_json_invalid" + details);
   }
 }
 
 function d1(command) {
+  const index = ++stagingD1CommandIndex;
+  if (process.env.FANMARK_SMOKE_DIAGNOSTICS === "1") console.error("staging_d1_read_" + index + "_started");
   const result = json([
     "d1", "execute", BUSINESS, "--remote", "--json", "--command", command,
     "--config", APP_CONFIG,
   ]);
   if (!Array.isArray(result) || result.some((entry) => entry?.success !== true)) fail("staging_d1_command_failed");
   if (!Array.isArray(result[0]?.results)) fail("staging_d1_readback_failed");
+  if (process.env.FANMARK_SMOKE_DIAGNOSTICS === "1") console.error("staging_d1_read_" + index + "_completed");
   return result[0].results;
 }
 
@@ -132,9 +155,11 @@ function verifyTarget() {
   const authConfig = JSON.parse(readFileSync(AUTH_CONFIG, "utf8"));
   const authBinding = authConfig.d1_databases?.find((entry) => entry.binding === "AUTH_DB");
   if (authBinding?.database_name !== AUTH || authBinding.database_id !== AUTH_ID) fail("staging_auth_binding_mismatch");
+  if (process.env.FANMARK_SMOKE_DIAGNOSTICS === "1") console.error("cloudflare_identity_check_started");
   const identity = json(["whoami", "--json"]);
   if (!identity.loggedIn || identity.email !== ACCOUNT_EMAIL ||
       !identity.accounts?.some((account) => account.id === ACCOUNT_ID)) fail("cloudflare_account_mismatch");
+  if (process.env.FANMARK_SMOKE_DIAGNOSTICS === "1") console.error("cloudflare_identity_check_completed");
 
   const source = readFileSync(BUSINESS_SCHEMA, "utf8");
   const tables = [...source.matchAll(/^CREATE TABLE "([A-Za-z_][A-Za-z0-9_]*)"/gmu)].map((match) => match[1]);
@@ -168,12 +193,14 @@ function verifyTarget() {
     d1("SELECT * FROM \"" + table + "\" ORDER BY 1").map((row) => row),
   ]));
   const authSum = AUTH_TABLES.map((table) => "(SELECT COUNT(*) FROM \"" + table + "\")").join(" + ");
+  if (process.env.FANMARK_SMOKE_DIAGNOSTICS === "1") console.error("staging_auth_database_check_started");
   const authRows = json([
     "d1", "execute", AUTH, "--remote", "--json", "--command", "SELECT " + authSum + " AS row_count",
     "--config", AUTH_CONFIG,
   ]);
   if (!Array.isArray(authRows) || authRows.some((entry) => entry?.success !== true) ||
       Number(authRows[0]?.results?.[0]?.row_count) !== 0) fail("auth_staging_has_rows");
+  if (process.env.FANMARK_SMOKE_DIAGNOSTICS === "1") console.error("staging_auth_database_check_completed");
   return { tables, lifecycleBaseline, gracePeriodSetting, extensionCouponBaseline, emailTemplateBaseline };
 }
 
@@ -207,6 +234,10 @@ function readbackSql({ fanmarkId, ownerId, winnerId, oldLicenseId, targetIncarna
     (SELECT COUNT(*) FROM notification_events WHERE json_extract(payload,'$.fanmark_id')=${sql(fanmarkId)}) AS event_count,
     (SELECT json_group_array(event_type) FROM (SELECT event_type FROM notification_events
       WHERE json_extract(payload,'$.fanmark_id')=${sql(fanmarkId)} ORDER BY event_type)) AS event_types_json,
+    (SELECT json_extract(payload,'$.current_count') FROM notification_events
+      WHERE event_type='lottery_limit_exceeded' AND json_extract(payload,'$.fanmark_id')=${sql(fanmarkId)}) AS rejected_current_count,
+    (SELECT json_extract(payload,'$.limit') FROM notification_events
+      WHERE event_type='lottery_limit_exceeded' AND json_extract(payload,'$.fanmark_id')=${sql(fanmarkId)}) AS rejected_limit,
     (SELECT COUNT(*) FROM audit_logs WHERE user_id IN (${sql(ownerId)},${sql(winnerId)}) OR resource_id=${sql(oldLicenseId)}) AS audit_count`;
 }
 
@@ -288,8 +319,10 @@ async function waitForDeployedCron(targetIncarnation, timeoutMs = 17 * 60_000) {
   fail("staging_cron_timeout_" + JSON.stringify(lastState));
 }
 
-function cleanup({ fanmarkId, ownerId, winnerId, oldLicenseId, gracePeriodSetting, targetIncarnation, lifecycleBaseline, extensionCouponBaseline, emailTemplateBaseline }) {
-  const licenseRows = d1("SELECT id FROM fanmark_licenses WHERE fanmark_id=" + sql(fanmarkId));
+function cleanup({ fanmarkId, auxiliaryFanmarks = [], ownerId, winnerId, oldLicenseId, gracePeriodSetting, targetIncarnation, lifecycleBaseline, extensionCouponBaseline, emailTemplateBaseline }) {
+  const syntheticFanmarkIds = [fanmarkId, ...auxiliaryFanmarks.map((fanmark) => fanmark.id)];
+  const fanmarkIdList = syntheticFanmarkIds.map(sql).join(",");
+  const licenseRows = d1("SELECT id FROM fanmark_licenses WHERE fanmark_id IN (" + fanmarkIdList + ")");
   const licenseIds = [...new Set([oldLicenseId, ...licenseRows.map((row) => row.id)])].filter(Boolean);
   const licenses = licenseIds.length ? licenseIds.map(sql).join(",") : sql(oldLicenseId);
   d1([
@@ -309,10 +342,10 @@ function cleanup({ fanmarkId, ownerId, winnerId, oldLicenseId, gracePeriodSettin
     "DELETE FROM fanmark_password_configs WHERE license_id IN (" + licenses + ");",
     "DELETE FROM fanmark_profiles WHERE license_id IN (" + licenses + ");",
     "DELETE FROM user_settings WHERE user_id IN (" + sql(ownerId) + "," + sql(winnerId) + ");",
-    "DELETE FROM fanmark_licenses WHERE fanmark_id=" + sql(fanmarkId) + ";",
+    "DELETE FROM fanmark_licenses WHERE fanmark_id IN (" + fanmarkIdList + ");",
     "DELETE FROM fanmark_access_versions WHERE license_id IN (" + licenses + ");",
     "DELETE FROM fanmark_license_incarnations WHERE license_id IN (" + licenses + ");",
-    "DELETE FROM fanmarks WHERE id=" + sql(fanmarkId) + ";",
+    "DELETE FROM fanmarks WHERE id IN (" + fanmarkIdList + ");",
   ].join("\n"));
   const currentSetting = readGracePeriodSetting();
   if (fingerprint(currentSetting) !== fingerprint(gracePeriodSetting)) {
@@ -383,11 +416,18 @@ async function main() {
   const usernameOwner = "canaryowner" + suffix;
   const usernameWinner = "canarywinner" + suffix;
   const shortId = "canary" + suffix;
+  const auxiliaryFanmarks = PERPETUAL_CAP_CANARY
+    ? Array.from({ length: 3 }, (_, index) => ({
+      id: randomUUID(), licenseId: randomUUID(),
+      normalizedEmoji: "canary-cap-" + suffix + "-" + index,
+      shortId: "cap" + suffix + index,
+    }))
+    : [];
   const nowIso = utc(now);
   const licenseStart = utc(now - 60 * 86_400_000);
   const licenseEnd = utc(now - 30 * 86_400_000);
   const graceExpiresAt = utc(now - 86_400_000);
-  const ids = { fanmarkId, oldLicenseId, entryId, ownerId, winnerId, gracePeriodSetting,
+  const ids = { fanmarkId, auxiliaryFanmarks, oldLicenseId, entryId, ownerId, winnerId, gracePeriodSetting,
     targetIncarnation, lifecycleBaseline, extensionCouponBaseline, emailTemplateBaseline };
   let seedAttempted = false;
   let cronDeploymentAttempted = false;
@@ -413,7 +453,7 @@ async function main() {
       "INSERT INTO user_settings (id,user_id,username,display_name,plan_type,preferred_language,created_at,updated_at) VALUES (" +
         [settingsOwnerId, ownerId, usernameOwner, "Synthetic lottery owner", "free", "ja", nowIso, nowIso].map(sql).join(",") + ");",
       "INSERT INTO user_settings (id,user_id,username,display_name,plan_type,preferred_language,created_at,updated_at) VALUES (" +
-        [settingsWinnerId, winnerId, usernameWinner, "Synthetic lottery winner", "free", "ja", nowIso, nowIso].map(sql).join(",") + ");",
+        [settingsWinnerId, winnerId, usernameWinner, "Synthetic lottery winner", PERPETUAL_CAP_CANARY ? "enterprise" : "free", "ja", nowIso, nowIso].map(sql).join(",") + ");",
       "INSERT INTO fanmark_licenses (id,fanmark_id,user_id,license_start,license_end,status,is_initial_license,created_at,updated_at,grace_expires_at,is_returned,display_fanmark) VALUES (" +
         [oldLicenseId, fanmarkId, ownerId, licenseStart, licenseEnd, "grace", 1, nowIso, nowIso, graceExpiresAt, 0, "🧪"].map(sql).join(",") + ");",
       "INSERT INTO fanmark_basic_configs (license_id,fanmark_name,access_type,created_at,updated_at) VALUES (" +
@@ -428,6 +468,14 @@ async function main() {
         [oldLicenseId, "Synthetic lottery profile", "", "{}", "{}", 1, nowIso, nowIso].map(sql).join(",") + ");",
       "INSERT INTO fanmark_lottery_entries (id,fanmark_id,user_id,license_id,lottery_probability,entry_status,applied_at,created_at,updated_at) VALUES (" +
         [entryId, fanmarkId, winnerId, oldLicenseId, "1.0", "pending", nowIso, nowIso, nowIso].map(sql).join(",") + ");",
+      ...auxiliaryFanmarks.flatMap((fanmark, index) => [
+        "INSERT INTO fanmarks (id,user_input_fanmark,normalized_emoji,short_id,status,created_at,updated_at,emoji_ids,normalized_emoji_ids,tier_level) VALUES (" +
+          [fanmark.id, "synthetic-cap-" + index, fanmark.normalizedEmoji, fanmark.shortId, "active", nowIso, nowIso,
+            JSON.stringify(["synthetic-cap", suffix, index]), JSON.stringify(["synthetic-cap", suffix, index]), 4].map(sql).join(",") + ");",
+        "INSERT INTO fanmark_licenses (id,fanmark_id,user_id,license_start,license_end,status,is_initial_license,created_at,updated_at,is_returned,display_fanmark) VALUES (" +
+          [fanmark.licenseId, fanmark.id, winnerId, licenseStart].map(sql).join(",") + ",NULL," +
+          ["active", 0, nowIso, nowIso, 0, "synthetic-cap-" + index].map(sql).join(",") + ");",
+      ]),
     ].join("\n"));
 
     if (DEPLOYED_CRON_CANARY) {
@@ -476,7 +524,7 @@ async function main() {
             auditCreated: Number(row.audit_count) >= 1,
           };
         } catch { /* Resolve the unknown ACK from durable state when possible. */ }
-        const durablyCompleted = observedAfterUnknownAck?.oldStatus === "expired" &&
+        const durablyCompleted = !PERPETUAL_CAP_CANARY && observedAfterUnknownAck?.oldStatus === "expired" &&
           observedAfterUnknownAck.entryStatus === "won" && observedAfterUnknownAck.winnerMatches &&
           observedAfterUnknownAck.expiryRunStatus === "completed" &&
           observedAfterUnknownAck.finalizationStatus === "completed" &&
@@ -519,13 +567,26 @@ async function main() {
       itemOutcome: row.item_outcome,
       persistedSeed: /^[0-9a-f]{64}$/u.test(row.persisted_seed ?? ""),
       persistedPlan: Number(row.persisted_plan),
+      ...(PERPETUAL_CAP_CANARY ? {
+        rejectedCurrentCount: Number(row.rejected_current_count),
+        rejectedLimit: Number(row.rejected_limit),
+      } : {}),
       oldAccessConfigCount: Number(row.old_access_config_count),
       retainedProfileCount: Number(row.retained_profile_count),
       eventCount: Number(row.event_count),
       eventTypes: JSON.parse(row.event_types_json ?? "[]"),
       auditCreated: Number(row.audit_count) >= 1,
     };
-    const expected = {
+    const expected = PERPETUAL_CAP_CANARY ? {
+      oldStatus: "expired", oldGeneration: 1, entryStatus: "lost", winnerMatches: false,
+      totalEntries: 1, randomSeedPresent: true, winnerLicensePresent: false,
+      expiryRunStatus: "completed", expiryCandidates: 0,
+      finalizationStatus: "completed", finalizationCandidates: 1, processed: 1,
+      conflicts: 0, itemOutcome: "processed", persistedSeed: true, persistedPlan: 1,
+      rejectedCurrentCount: 3, rejectedLimit: 3,
+      oldAccessConfigCount: 0, retainedProfileCount: 1, eventCount: 2,
+      eventTypes: ["license_expired", "lottery_limit_exceeded"], auditCreated: true,
+    } : {
       oldStatus: "expired", oldGeneration: 1, entryStatus: "won", winnerMatches: true,
       totalEntries: 1, randomSeedPresent: true, winnerLicensePresent: true,
       expiryRunStatus: "completed", expiryCandidates: 0,
@@ -535,12 +596,14 @@ async function main() {
       eventTypes: ["license_expired", "lottery_won"], auditCreated: true,
     };
     assert.deepEqual(observed, expected, "lottery_state_mismatch " + JSON.stringify(observed));
-    const winner = d1("SELECT status,is_initial_license,is_returned,is_transferred,license_end FROM fanmark_licenses WHERE id=" + sql(row.winner_license_id))[0];
-    assert.equal(winner.status, "active");
-    assert.equal(Number(winner.is_initial_license), 0);
-    assert.equal(Number(winner.is_returned), 0);
-    assert.equal(Number(winner.is_transferred), 0);
-    assert.ok(Date.parse(winner.license_end) > Date.now());
+    if (!PERPETUAL_CAP_CANARY) {
+      const winner = d1("SELECT status,is_initial_license,is_returned,is_transferred,license_end FROM fanmark_licenses WHERE id=" + sql(row.winner_license_id))[0];
+      assert.equal(winner.status, "active");
+      assert.equal(Number(winner.is_initial_license), 0);
+      assert.equal(Number(winner.is_returned), 0);
+      assert.equal(Number(winner.is_transferred), 0);
+      assert.ok(Date.parse(winner.license_end) > Date.now());
+    }
     completed = true;
   } catch (error) {
     runError = error;
@@ -575,7 +638,7 @@ async function main() {
     staging: BUSINESS,
     scheduledPath: DEPLOYED_CRON_CANARY ? "deployed workers.dev Cron" : "remote D1 binding via local wrangler dev",
     cronAndBackendRestoredToDisabled: DEPLOYED_CRON_CANARY ? cronDisabledAgain : undefined,
-    graceExpiryLottery: "winner_finalized", syntheticBusinessRowsAfterCleanup: 0,
+    graceExpiryLottery: PERPETUAL_CAP_CANARY ? "perpetual_plan_cap_enforced" : "winner_finalized", syntheticBusinessRowsAfterCleanup: 0,
     gracePeriodSettingPreserved: true,
     lifecycleJournalRowsAfterCleanup: 0, authUserRowsChanged: 0,
     realUserDataMigration: "not performed", productionOrDomainDns: "unchanged",

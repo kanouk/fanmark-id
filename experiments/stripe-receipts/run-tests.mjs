@@ -28,7 +28,10 @@ if (snapshotExportIndex > 0) {
 }
 
 for (const file of testFiles) {
-  const args = ["--test", "--test-concurrency=1", `test/${file}`];
+  const standalonePglite = file === "snapshot-export.test.mjs";
+  const args = standalonePglite
+    ? [`test/${file}`]
+    : ["--test", "--test-concurrency=1", `test/${file}`];
   if (typeScriptImports.has(file)) args.unshift("--import", "tsx");
 
   const attempts = pgliteTestFiles.has(file) ? 2 : 1;
@@ -41,6 +44,9 @@ for (const file of testFiles) {
     result = spawnSync(process.execPath, args, {
       cwd: packageDirectory,
       stdio: "inherit",
+      env: standalonePglite
+        ? { ...process.env, FANMARK_PGLITE_SNAPSHOT_STANDALONE: "1" }
+        : process.env,
       timeout: timeoutMs,
       killSignal: process.platform === "win32" ? "SIGTERM" : "SIGKILL",
     });

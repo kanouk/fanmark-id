@@ -2592,3 +2592,28 @@ end-to-end and 73% for the prioritized app/infrastructure/non-user-master
 scope because the open schema, CPU, provider, recovery, and final migration
 gates are unchanged. The rerun completed through the `/auth` form, and PR #41
 CI passed both the staging-app and Worker-API jobs.
+
+## Perpetual Tier C plan-capacity correction (2026-09-28 JST)
+
+The D1 lottery-entry API and grace-expiry finalizer now count an unreturned,
+active license with `license_end IS NULL` toward its owner's plan limit. This
+matches the product cap for lifetime Tier C and prevents awarding a new license
+when a perpetual license already fills the final slot. Regression tests cover
+both application-time capacity and a perpetual license appearing after a
+winner plan is prepared. The source Supabase route still uses its older strict
+end-date filter; production remains on Supabase pending final cutover. Local
+lottery tests pass 12/12, lifecycle/finalizer integration passes 25/25, Worker
+typecheck and targeted ESLint pass. A workers.dev staging Cron canary using
+synthetic data verified `current_count=3`, `limit=3`, a lost lottery entry,
+and no winner license. Cleanup restored the staging schedule/backend and
+settings, removed synthetic rows/journals, left Auth rows unchanged, and
+preserved the retained lifecycle snapshot. The local scheduled-test transport
+path reset before execution; its cleanup also returned staging to baseline.
+The prior CI timeout was reproduced only when PGlite ran inside Node's
+`--test` harness (5/15 latest trials). The migration runner now executes that
+integration in a standalone process; it passed 15/15 repetitions and the full
+Stripe receipt suite passed locally on Node 22.6.0. A fresh GitHub Actions run
+is still needed to confirm the fix remotely.
+The current weighted estimates remain about 53% end-to-end and 73% for the
+prioritized app/infrastructure/master scope; the outstanding gates remain
+substantial.

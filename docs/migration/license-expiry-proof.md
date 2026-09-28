@@ -248,3 +248,23 @@ baseline; staging version `243e68a0-df6a-4e7c-b290-1ec20bdd2005` is the restored
 build. No email, Stripe operation, production route, real data, or DNS change
 was involved. This remains a one-shot synthetic staging proof, not recurring
 production acceptance.
+
+## Perpetual-license plan-cap canary (2026-09-28 JST)
+
+Ran the opt-in smoke with `FANMARK_STAGING_PERPETUAL_CAP_CANARY=1` and
+`FANMARK_STAGING_CRON_CANARY=1`. The script seeded three synthetic, unreturned
+active licenses with `license_end IS NULL` for a synthetic enterprise-plan
+entrant. The workers.dev scheduled run completed expiry and finalization;
+readback confirmed `current_count=3`, `limit=3`, an entry status of `lost`, no
+winner in lottery history, no newly issued winner license, and a
+`lottery_limit_exceeded` event. The expired source license and its retained
+profile/access cleanup matched the ordinary lifecycle contract.
+
+The script restored the staging Cron/backend config and `grace_period_days`,
+removed all generated business rows and lifecycle journals, verified the
+retained incarnation/access-version snapshot, and confirmed the Auth tables
+were unchanged. An earlier local `wrangler dev --test-scheduled` attempt reset
+its connection before executing; its cleanup also restored the staging
+baseline. No Supabase user data, production route, R2 object, or domain/DNS
+state changed. This is synthetic staging evidence for the plan-capacity rule,
+not a real-user migration or production rollout.

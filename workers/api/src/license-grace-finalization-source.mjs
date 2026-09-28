@@ -524,7 +524,7 @@ async function lotteryInputsFromD1(database, item, bindings) {
              (SELECT COUNT(*) FROM fanmark_licenses AS active
                WHERE active.user_id = entry.user_id AND active.status = 'active'
                  AND active.is_returned = 0
-                 AND active.license_end > ?) AS active_count
+                 AND (active.license_end IS NULL OR active.license_end > ?)) AS active_count
       FROM fanmark_lottery_entries AS entry
       LEFT JOIN user_settings AS settings ON settings.user_id = entry.user_id
       WHERE entry.license_id = ? AND entry.entry_status = 'pending'
@@ -968,7 +968,7 @@ function lotteryFinalizationBatch(database, item, bindings, input, effects) {
                 AND json_extract(expected.value, '$.lotteryProbability') IS live.lottery_probability))
         AND (? IS NULL OR (SELECT COUNT(*) FROM fanmark_licenses AS active
           WHERE active.user_id = ? AND active.status = 'active' AND active.is_returned = 0
-            AND active.license_end > ?) < ?)
+            AND (active.license_end IS NULL OR active.license_end > ?)) < ?)
     `).bind(
       bindings.capturedNow, item.licenseId, item.fanmarkId, item.userId,
       item.graceExpiresAt, bindings.capturedNow, item.isReturned,
@@ -1155,7 +1155,7 @@ function lotteryFinalizationBatch(database, item, bindings, input, effects) {
               AND winner.is_transferred = 0 AND registry.incarnation = 0))
           AND (SELECT COUNT(*) FROM fanmark_licenses AS active
             WHERE active.user_id = ? AND active.status = 'active' AND active.is_returned = 0
-              AND active.license_end > ?) <= ?)
+              AND (active.license_end IS NULL OR active.license_end > ?)) <= ?)
       THEN 1 ELSE 0 END
       FROM fanmark_licenses AS source WHERE source.id = ?
         AND source.status = 'expired' AND source.lifecycle_generation = ?

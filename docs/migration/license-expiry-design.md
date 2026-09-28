@@ -241,9 +241,15 @@ this design document:
    Confirm which projection is canonical before enabling deletion in D1.
 3. The local lottery path rounds the new license end differently from the
    lifecycle memo. The target needs one approved rule and a boundary test.
-4. The local lottery capacity query omits `NULL` (perpetual) ends when it
-   counts active licenses. The target design above includes them, but this is a
-   source-parity correction that requires an explicit acceptance test.
+4. The original lottery capacity query omitted `NULL` (perpetual) ends when it
+   counted active licenses. The product limit applies to active owned
+   licenses, including lifetime Tier C, so the D1 target now counts
+   `license_end IS NULL OR license_end > captured_now` in applicant planning,
+   the atomic winner-capacity guard, and user-submitted lottery applications.
+   Synthetic tests cover both a perpetual license that fills the plan and a
+   perpetual license that appears after a winner plan is prepared. This is an
+   intentional correction to the old source behavior; production remains on
+   Supabase until its separate cutover stage.
 5. The expiry source and transfer/extension endpoints perform separate writes
    without a shared compare-and-set transaction. Existing behavior therefore
    permits partial audit/notification/configuration state after a failure and

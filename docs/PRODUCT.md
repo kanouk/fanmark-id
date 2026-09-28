@@ -19,7 +19,7 @@
 - Cloudflare staging では `ACCOUNT_DELETION_BACKEND=d1` と `VITE_ACCOUNT_DELETION_BACKEND=worker` を明示した経路を検証する。production の既定は引き続きSupabaseで、実ユーザーに対する削除操作は移行対象に含めない。
 
 ## 料金プランとティア
-- プラン (ユーザー枠): Free=3件, Creator=10件, Business=50件, Admin=無制限。延長は有料（Adminのみ無料延長）。上限超過時は取得不可。
+- プラン (ユーザー枠): Free=3件, Creator=10件, Business=50件, Admin=無制限。延長は有料（Adminのみ無料延長）。上限は有効な所有ライセンス件数で判定し、無期限のTier Cも1件として数える。上限超過時は取得不可。
 - プラン変更: アップグレードは即時適用。ダウングレード時は `FanmarkSelectionModal` で上限数だけ選択し、未選択分は一括返却（`bulk-return-fanmarks`）。選択は一度きりでキャンセル不可。
 - ファンマティア (絵文字数に応じたライセンス初期日数): S=1個/7日, A=2個または2〜5個連続/14日, B=3個/30日, C=4〜5個以上非連続/無期限 (`license_end=null`)。`fanmark_tiers.display_name` に S/A/B/C を保持。
 - AuthCode（移管コード）発行権限: アクティブライセンス保持者は発行可。発行には残期間48h以上が必要で、コード有効期限は発行から48hまたは `license_end` の短い方（Tierに関わらず一定）。承認後の再発行は不可。移管完了後は Transfer Lock 30日間（返却・再移管・再発行不可）。

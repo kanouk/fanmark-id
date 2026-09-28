@@ -3416,3 +3416,46 @@ smoke and test fixture; no source rows, existing Supabase objects, production
 routes, or domain/DNS settings changed. PR #41 CI passes both the staging-app
 and Worker-API jobs. This proves the synthetic email/password staging path
 only; provider-backed login and existing user migration remain separate gates.
+
+## Perpetual Tier C plan-capacity correction (2026-09-28 JST)
+
+Updated the Cloudflare D1 lottery-entry endpoint and source-shaped grace
+finalizer so plan capacity counts an unreturned `active` license when
+`license_end IS NULL` or the end is later than the captured current time. This
+closes a mismatch where lifetime Tier C licenses could be ignored and a winner
+could exceed the documented plan cap. The correction is explicit in
+`docs/PRODUCT.md`; the old Supabase implementation remains unchanged until the
+final cutover stage.
+
+Synthetic tests now cover a perpetual license at the cap, a perpetual license
+that fills the slot after a winner plan is prepared, and the authenticated
+lottery-entry response. `npm --prefix workers/api run test:fanmark-lottery-d1`
+passes 12/12, `npm --prefix workers/api run test:license-expiry-source`
+passes 25/25, Worker typecheck and targeted ESLint pass. No remote deployment
+of the production Worker or user data was changed in this code slice.
+
+The staging lottery smoke now has an opt-in perpetual-cap scenario. A
+workers.dev one-minute-Cron canary completed against only synthetic IDs and
+verified that three unreturned active perpetual licenses fill the synthetic
+enterprise-plan limit of three: the pending entry finished as `lost`, history
+has no winner, and `lottery_limit_exceeded` reports `current_count=3` and
+`limit=3`. The old synthetic license expired normally, with no winner license.
+Cleanup restored `grace_period_days`, removed all synthetic business rows and
+lifecycle journals, left Auth rows unchanged, and matched the retained
+incarnation/access-version snapshot. The script restored the checked-in
+staging Cron/backend baseline. The local `wrangler dev --test-scheduled` path
+reset its connection before execution; that attempt also cleaned up fully.
+
+The earlier CI snapshot-export timeout was isolated to PGlite initialization
+when run inside Node's `--test` harness: the latest 15-run reproduction hung
+five times before its first SQL completed. The same integration now uses
+`PGlite.create()` and runs as a standalone Node process under the migration
+test runner; this path passed 15/15 repetitions, and the complete Stripe
+receipt suite passed locally on Node 22.6.0. Direct `node --test` can still
+reproduce the harness stall, so CI must use the checked-in custom runner path.
+
+The previous PR CI's Worker job passed, while the staging-app job timed out
+twice in `snapshot-export.test.mjs`. That test passes alone; the local receipt
+suite completed successfully after its existing isolated-process retry. The
+latest feature commit still needs a fresh CI run before PR merge; the synthetic
+staging Cron canary has already been deployed and restored independently.

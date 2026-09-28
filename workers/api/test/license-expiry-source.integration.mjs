@@ -1091,7 +1091,7 @@ test("rejects a stale winner-capacity snapshot without expiring the license or c
       fanmarkId: "00000000-0000-4000-8000-000000000a24",
       licenseId: "00000000-0000-4000-8000-000000000a25",
       userId: winnerId,
-      licenseEnd: "2026-09-30T00:00:00.000000Z",
+      licenseEnd: null,
       emoji: "🌱",
     });
 
@@ -1191,7 +1191,7 @@ test("records a capped sole applicant as a rejected draw and returns the fanmark
       fanmarkId: "00000000-0000-4000-8000-000000000a32",
       licenseId: "00000000-0000-4000-8000-000000000a33",
       userId: cappedUser,
-      licenseEnd: "2026-09-30T00:00:00.000000Z",
+      licenseEnd: null,
       emoji: "🌱",
     });
     await insertCatalogRow(fixture.database, fixture.catalog, "fanmark_lottery_entries", {
@@ -1303,7 +1303,7 @@ test("claims a pending lottery and resumes the persisted exact-weight decision w
       fanmarkId: "00000000-0000-4000-8000-000000000a03",
       licenseId: "00000000-0000-4000-8000-000000000a02",
       userId: atLimitUser,
-      licenseEnd: "2026-09-30T00:00:00.000000Z",
+      licenseEnd: null,
       emoji: "🌱",
     });
     await addExpiredLicense(fixture.database, {
@@ -1312,13 +1312,6 @@ test("claims a pending lottery and resumes the persisted exact-weight decision w
       userId: eligibleUser,
       licenseEnd: EXPIRY,
       emoji: "🪴",
-    });
-    await addExpiredLicense(fixture.database, {
-      fanmarkId: "00000000-0000-4000-8000-000000000b05",
-      licenseId: "00000000-0000-4000-8000-000000000b04",
-      userId: eligibleUser,
-      licenseEnd: null,
-      emoji: "🍀",
     });
     await insertCatalogRow(fixture.database, fixture.catalog, "fanmark_lottery_entries", {
       id: "00000000-0000-4000-8000-000000000c01", fanmark_id: IDS.fanmark,

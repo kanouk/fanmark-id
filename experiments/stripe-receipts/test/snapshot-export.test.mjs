@@ -58,8 +58,8 @@ const setupSql = `
   INSERT INTO public.snapshot_numeric VALUES (9, 'nine'), (10, 'ten');
 `;
 
-test("PGlite executes ordered envelope SQL and the full local artifact path", { timeout: 30_000 }, async () => {
-  const db = new PGlite();
+async function runSnapshotExportIntegration() {
+  const db = await PGlite.create();
   let outputDir;
   try {
     await db.exec(setupSql);
@@ -113,4 +113,13 @@ test("PGlite executes ordered envelope SQL and the full local artifact path", { 
     if (outputDir) await rm(outputDir, { recursive: true, force: true });
     await db.close();
   }
-});
+}
+
+if (process.env.FANMARK_PGLITE_SNAPSHOT_STANDALONE === "1") {
+  await runSnapshotExportIntegration();
+  process.stdout.write("PGlite snapshot integration passed\n");
+} else {
+  test("PGlite executes ordered envelope SQL and the full local artifact path", {
+    timeout: 30_000,
+  }, runSnapshotExportIntegration);
+}
