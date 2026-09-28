@@ -632,14 +632,16 @@ coverage rejection. The status remains `public_rows_reconciled`, while
 row-conversion groups / 133 locations and 5 schema/operation groups / 93
 locations. No source application rows or remote D1/R2 state was read or changed.
 
-## Fresh converter-v20 current-catalog replay (2026-09-29 JST)
+## Fresh converter-v21 current-catalog replay (2026-09-29 JST)
 
 The latest linked schema-only catalog completed at `2026-09-28T18:27:23Z` and
-was passed directly to the v20 synthetic rehearsal. All 40 table checkpoints
+was passed directly to the v21 synthetic rehearsal. All 40 table checkpoints
 completed with 10 synthetic source rows. Two active credentials were
 bcrypt-transformed, one inactive-license credential was durably deferred, and
 the importer verified typed/hash readback and rejected conflicting coverage.
 The result is `public_rows_reconciled`; `deployable` and
 `fullMigrationReconciled` remain false because schema/operation and external
-Auth gates remain. No source application rows, actual credentials, or remote
-D1/R2 state were used.
+Auth gates remain. V21 omits the approximate D1 `now()` default at every
+timestamp column, requiring the operation to supply canonical UTC microseconds.
+No source application rows, actual credentials, or remote D1/R2 state were
+used.

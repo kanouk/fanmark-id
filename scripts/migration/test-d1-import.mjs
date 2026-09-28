@@ -822,7 +822,7 @@ if (isMain) {
     await runLocalD1Integration();
   });
 
-  test("emits a canonical-shaped D1 now() default while retaining timestamp parity gates", async () => {
+  test("omits an approximate D1 now() default and retains timestamp parity gates", async () => {
     const catalog = fixtureCatalog();
     catalog.columns.find((entry) => entry.table_name === "child" && entry.column_name === "event_at").default_expression = "now()";
     const schema = convertSchema(catalog);
@@ -835,14 +835,21 @@ if (isMain) {
       await fixture.database.prepare('INSERT INTO "parent" ("id", "label") VALUES (?, ?)')
         .bind(parentId, "timestamp-default-parent")
         .run();
-      await fixture.database.prepare('INSERT INTO "child" ("id", "parent_id", "enabled") VALUES (?, ?, ?)')
-        .bind(childId, parentId, 1)
+      await assert.rejects(
+        fixture.database.prepare('INSERT INTO "child" ("id", "parent_id", "enabled") VALUES (?, ?, ?)')
+          .bind(childId, parentId, 1)
+          .run(),
+        /NOT NULL constraint failed: child.event_at/,
+      );
+      const exactTimestamp = "2026-09-29T12:34:56.123456Z";
+      await fixture.database.prepare('INSERT INTO "child" ("id", "parent_id", "event_at", "enabled") VALUES (?, ?, ?, ?)')
+        .bind(childId, parentId, exactTimestamp, 1)
         .run();
       const inserted = await fixture.database.prepare('SELECT "event_at", length("event_at") AS "timestamp_length" FROM "child" WHERE "id" = ?')
         .bind(childId)
         .first();
       assert.equal(inserted.timestamp_length, 27);
-      assert.match(inserted.event_at, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}000Z$/);
+      assert.equal(inserted.event_at, exactTimestamp);
     } finally {
       await fixture.miniflare.dispose();
     }

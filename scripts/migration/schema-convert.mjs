@@ -17,7 +17,7 @@ import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 20;
+export const SCHEMA_CONVERSION_VERSION = 21;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -931,10 +931,10 @@ function translateDefault(column, info, gates, sequencePrimaryKey = false, seque
     }
     gates.add(
       "timestamp_default_requires_operation",
-      "The D1 clock default can only provide millisecond resolution and does not preserve PostgreSQL transaction-time semantics; parity-sensitive operations must supply canonical UTC microsecond text.",
+      "The PostgreSQL transaction-time default is omitted because D1 cannot preserve its microsecond precision or transaction-time semantics; every target write must provide canonical UTC microsecond text.",
       location,
     );
-    return "(strftime('%Y-%m-%dT%H:%M:%f000Z', 'now'))";
+    return null;
   }
   if (/^nextval\s*\(/i.test(trimmed)) {
     if (sequencePrimaryKey) {

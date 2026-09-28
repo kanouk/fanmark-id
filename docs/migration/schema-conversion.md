@@ -768,7 +768,7 @@ timestamp gate's 103 locations, leaving 5 schema/operation groups / 93
 locations and `deployable: false`. This is a derived report, not a fresh source
 catalog query. No source rows, remote D1, or production state was accessed.
 
-## Fresh v20 catalog and full synthetic replay (2026-09-29 JST)
+## Fresh v21 catalog and full synthetic replay (2026-09-29 JST)
 
 The reviewed read-only `schema-readiness.sql` query completed through Supabase
 CLI 2.118.0 at `2026-09-28T18:27:23Z` in a private temporary project-link
@@ -776,11 +776,13 @@ directory. It returned 40 tables / 406 columns, 144 constraints, 139 indexes,
 15 enum labels, one view, 58 functions, 36 non-internal triggers, and 77 RLS
 policies; no application rows or live sequence values were queried.
 
-The value-free credential descriptor and current converter v20 produce five
+The value-free credential descriptor and current converter v21 produce five
 schema/operation gate groups / 93 locations: 11 external Auth references, 79
 timestamp-default operations, and the functions, RLS policies, and trigger
 catalog scopes. The report remains `deployable: false`. Unlike the preceding
-v20 count, this result is based on the fresh catalog.
+v20 count, this result is based on the fresh catalog. V21 omits the
+millisecond-resolution D1 `now()` fallback at every timestamp column; all 79
+operation gates remain until exact runtime clock ownership is established.
 
 The exact catalog passed `scripts/migration/test-d1-import-current-schema.mjs`
 under Node 22.6.0: 10 synthetic rows, 40/40 checkpoints, two bcrypt
@@ -788,3 +790,11 @@ transformations, one durable inactive-license deferral, typed/hash readback,
 and rejection of conflicting credential coverage. The scoped result is
 `public_rows_reconciled`, not `fullMigrationReconciled`; no live source rows or
 remote D1/R2 state was read or changed.
+
+With converter v21, the same exact-catalog rehearsal again completed all 40
+checkpoints with 10 synthetic rows, two bcrypt transformations, one inactive
+credential deferral, typed/hash readback, and conflicting-coverage rejection.
+The generated schema contains no approximate D1 timestamp defaults and still
+reports five blocking schema/operation gate groups / 93 locations. The
+SQL/report artifacts were written outside the repository with mode `0600`.
+No source rows or remote state were accessed.

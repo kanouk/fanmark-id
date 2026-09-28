@@ -21,13 +21,16 @@ It returned 40 tables / 406 columns, 144 constraints, 139 indexes, 15 enum
 labels, one view, 58 functions, 36 non-internal triggers, and 77 RLS policies.
 No application rows or live sequence values were read.
 
-The value-free descriptor and converter v20 produce five schema/operation gate
+The value-free descriptor and converter v21 produce five schema/operation gate
 groups / 93 locations on this fresh catalog: 11 external Auth references, 79
 timestamp defaults, and the function, RLS policy, and trigger catalog scopes.
-The report remains `deployable: false`; runtime clock semantics and external
-identity references are still open.
+V21 omits approximate millisecond D1 clock defaults; every target operation
+must supply the canonical UTC microsecond timestamp. All 79 timestamp gates
+remain open until per-operation clock coverage is verified. The report remains
+`deployable: false`; external identity references and unsupported catalog
+scopes are also still open.
 
-Under Node 22.6.0, the current-catalog synthetic importer completed all 40
+Under Node 22.6.0, the v21 current-catalog synthetic importer completed all 40
 checkpoints with 10 synthetic rows, transformed two active credentials,
 durably deferred one inactive-license credential, performed typed/hash
 readback, and rejected conflicting credential coverage. It reports

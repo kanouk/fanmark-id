@@ -1,6 +1,6 @@
 # Full schema conversion generator
 
-`schema-convert.mjs` v17 is a private, catalog-only preparation tool. It
+`schema-convert.mjs` v21 is a private, catalog-only preparation tool. It
 converts the JSON emitted by `scripts/migration/schema-readiness.sql` into deterministic
 SQLite/D1 table and index SQL plus a machine-readable report of unresolved
 parity gates. It does not read application rows, contact Supabase, apply SQL,
@@ -418,3 +418,12 @@ A fresh linked, read-only schema catalog conversion at 2026-09-28 14:30 UTC
 reports 9 unresolved groups / 220 locations (4 row-conversion / 127, 5
 schema/operation / 93) and remains `deployable: false`. The query read no
 application rows.
+
+## Schema converter v21: require operation-owned timestamps (2026-09-29 JST)
+
+The current converter no longer emits SQLite `strftime(..., 'now')` defaults
+for PostgreSQL `now()` columns. That expression only provides millisecond
+resolution and does not match PostgreSQL transaction-time semantics. D1 now
+requires inserts to provide the canonical UTC microsecond timestamp explicitly;
+the schema report retains all 79 operation gates until their complete runtime
+coverage is verified.
