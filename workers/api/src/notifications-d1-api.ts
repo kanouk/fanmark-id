@@ -1,5 +1,6 @@
 import { selectD1Database, type Env } from "./repository";
 import type { StorageAuthResolver } from "./storage-r2";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
 
 const NOTIFICATIONS_PATH = "/api/me/notifications";
 const NOTIFICATIONS_METHODS = "GET, POST, PATCH, OPTIONS";
@@ -258,7 +259,7 @@ export async function handleNotificationsRequest(
     }
 
     if (route.kind === "unread_count") {
-      const now = clock().toISOString();
+      const now = toUtcMicrosecondTimestamp(clock());
       const row = await db.prepare(`
         SELECT count(*) AS unread_count
         FROM notifications
@@ -276,7 +277,7 @@ export async function handleNotificationsRequest(
       if (!isRecord(body) || Object.keys(body).length !== 1 || typeof body.readVia !== "string" || !READ_VIA.has(body.readVia)) {
         throw new NotificationsApiError("invalid_request", 400);
       }
-      const now = clock().toISOString();
+      const now = toUtcMicrosecondTimestamp(clock());
       const result = await db.prepare(`
         UPDATE notifications SET read_at = ?, read_via = ?, updated_at = ?
         WHERE id = ? AND user_id = ? AND read_at IS NULL
@@ -285,7 +286,7 @@ export async function handleNotificationsRequest(
     }
 
     if (request.body !== null) throw new NotificationsApiError("invalid_request", 400);
-    const now = clock().toISOString();
+    const now = toUtcMicrosecondTimestamp(clock());
     const result = await db.prepare(`
       UPDATE notifications SET read_at = ?, read_via = 'app', updated_at = ?
       WHERE user_id = ? AND read_at IS NULL AND status = 'delivered'

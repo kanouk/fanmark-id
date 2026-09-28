@@ -1,4 +1,5 @@
 import { selectD1Database, type Env } from "./repository";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
 
 const ACCESS_PATH = "/api/fanmarks/access";
 const ALLOWED_METHODS = "POST, OPTIONS";
@@ -173,10 +174,10 @@ export async function handleFanmarkAccessAnalyticsRequest(
     ).bind(fanmark.id).first<{ id: string }>();
 
     const now = clock();
-    const accessedAt = now.toISOString();
+    const accessedAt = toUtcMicrosecondTimestamp(now);
     const statDate = accessedAt.slice(0, 10);
     const dayStart = `${statDate}T00:00:00.000Z`;
-    const cutoff = new Date(now.getTime() - 5 * 60 * 1000).toISOString();
+    const cutoff = toUtcMicrosecondTimestamp(new Date(now.getTime() - 5 * 60 * 1000));
     const hash = await visitorHash(input.userAgent, fanmark.id, statDate);
     const device = parseUserAgent(input.userAgent);
     const referrer = referrerDetails(input.referrer);

@@ -376,8 +376,8 @@ describe("D1 fanmark return API", () => {
     ).bind(ownerLicenseId).first();
     expect(license).toEqual({
       status: "grace",
-      license_end: nowDate.toISOString(),
-      grace_expires_at: "2026-09-27T00:00:00.000Z",
+      license_end: "2026-09-25T12:34:56.000000Z",
+      grace_expires_at: "2026-09-27T00:00:00.000000Z",
       is_returned: 1,
       excluded_at: null,
     });
@@ -389,8 +389,8 @@ describe("D1 fanmark return API", () => {
     expect(audit?.action).toBe("return_fanmark");
     expect(JSON.parse(audit?.metadata ?? "{}")).toMatchObject({
       user_input_fanmark: "displayed-fanmark",
-      returned_at: nowDate.toISOString(),
-      grace_expires_at: "2026-09-27T00:00:00.000Z",
+      returned_at: "2026-09-25T12:34:56.000000Z",
+      grace_expires_at: "2026-09-27T00:00:00.000000Z",
     });
 
     const events = await businessDatabase?.prepare(
@@ -406,7 +406,7 @@ describe("D1 fanmark return API", () => {
       fanmark_id: ownerFanmarkId,
       fanmark_name: "🌹 saved",
       fanmark_short_id: "rose-owned",
-      grace_expires_at: "2026-09-27T00:00:00.000Z",
+      grace_expires_at: "2026-09-27T00:00:00.000000Z",
     });
     const otherLicense = await businessDatabase?.prepare(
       "SELECT status FROM fanmark_licenses WHERE id = ?",
@@ -499,7 +499,7 @@ describe("D1 bulk fanmark return API", () => {
         fanmarkId: ownerFanmarkId,
         fanmark: "displayed-fanmark",
         fanmarkShortId: "rose-owned",
-        graceExpiresAt: "2026-09-27T00:00:00.000Z",
+        graceExpiresAt: "2026-09-27T00:00:00.000000Z",
       }],
       failed: [{ licenseId: expiredLicenseId, error: "license_not_active" }],
     });
@@ -508,8 +508,8 @@ describe("D1 bulk fanmark return API", () => {
     ).bind(ownerLicenseId).first();
     expect(owner).toEqual({
       status: "grace",
-      license_end: "2026-09-25T12:34:56.000Z",
-      grace_expires_at: "2026-09-27T00:00:00.000Z",
+      license_end: "2026-09-25T12:34:56.000000Z",
+      grace_expires_at: "2026-09-27T00:00:00.000000Z",
       is_returned: 1,
     });
     const expired = await businessDatabase?.prepare(

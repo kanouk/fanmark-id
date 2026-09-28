@@ -1,5 +1,6 @@
 import { selectD1Database, type Env } from "./repository";
 import type { StorageAuthResolver } from "./storage-r2";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
 
 const PREFIX = "/api/me/transfers";
 const METHODS = "GET, POST, OPTIONS";
@@ -97,10 +98,6 @@ function requiredUuid(body: JsonObject, field: string): string {
   return value.toLowerCase();
 }
 
-function timestamp(date: Date): string {
-  return date.toISOString().replace(/\.(\d{3})Z$/u, (_match, millis: string) => "." + millis + "000Z");
-}
-
 function database(env: Env): D1Database {
   if (env.FANMARK_TRANSFER_BACKEND?.trim() !== "d1") {
     throw new FanmarkTransferApiError("transfer_unavailable", 503);
@@ -187,8 +184,8 @@ async function listTransfers(db: D1Database, userId: string): Promise<Response> 
 async function issueCode(db: D1Database, userId: string, body: JsonObject, now: Date): Promise<Response> {
   const licenseId = requiredUuid(body, "license_id");
   if (body.disclaimer_agreed !== true) throw new FanmarkTransferApiError("disclaimer_required", 400);
-  const nowIso = timestamp(now);
-  const minimumEnd = timestamp(new Date(now.getTime() + 48 * 60 * 60 * 1000));
+  const nowIso = toUtcMicrosecondTimestamp(now);
+  const minimumEnd = toUtcMicrosecondTimestamp(new Date(now.getTime() + 48 * 60 * 60 * 1000));
   const expiration = minimumEnd;
   const codeId = crypto.randomUUID();
   const transferCode = makeTransferCode();
@@ -291,7 +288,7 @@ async function applyCode(db: D1Database, userId: string, body: JsonObject, now: 
   if (typeof body.transfer_code !== "string") throw new FanmarkTransferApiError("transfer_code_is_required", 400);
   const transferCode = body.transfer_code.trim().toUpperCase();
   if (!CODE_PATTERN.test(transferCode)) throw new FanmarkTransferApiError("invalid_code", 404);
-  const nowIso = timestamp(now);
+  const nowIso = toUtcMicrosecondTimestamp(now);
   const code = await db.prepare(`
     SELECT c.id, c.license_id, c.fanmark_id, c.issuer_user_id, c.status, c.expires_at,
            l.status AS license_status, l.display_fanmark, f.short_id
@@ -415,7 +412,7 @@ async function approveRequest(
   }
   if (transfer.code_status !== "applied") throw new FanmarkTransferApiError("code_not_active", 409);
   if (transfer.license_status !== "active") {
-    const nowIso = timestamp(now);
+    const nowIso = toUtcMicrosecondTimestamp(now);
     await db.batch([
       db.prepare("UPDATE fanmark_transfer_requests SET status = 'cancelled', resolved_at = ?, updated_at = ? WHERE id = ? AND status = 'pending'")
         .bind(nowIso, nowIso, requestId),
@@ -440,10 +437,10 @@ async function approveRequest(
   if (typeof days === "number") {
     const end = new Date(now);
     end.setUTCDate(end.getUTCDate() + days);
-    newEnd = roundUpToUtcMidnight(end).toISOString();
+    newEnd = toUtcMicrosecondTimestamp(roundUpToUtcMidnight(end));
   }
-  const nowIso = timestamp(now);
-  const lockUntil = timestamp(new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000));
+  const nowIso = toUtcMicrosecondTimestamp(now);
+  const lockUntil = toUtcMicrosecondTimestamp(new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000));
   const newLicenseId = crypto.randomUUID();
   const canonicalDisplay = typeof transfer.normalized_emoji === "string" ? transfer.normalized_emoji : null;
   await db.batch([
@@ -554,7 +551,7 @@ async function rejectRequest(db: D1Database, userId: string, body: JsonObject, n
   const row = rows[0];
   if (row.issuer_user_id !== userId) throw new FanmarkTransferApiError("not_authorized", 403);
   if (row.status !== "pending") throw new FanmarkTransferApiError("request_not_pending", 400, { status: row.status });
-  const nowIso = timestamp(now);
+  const nowIso = toUtcMicrosecondTimestamp(now);
   const results = await db.batch([
     db.prepare(`
       UPDATE fanmark_transfer_requests SET status = 'rejected', resolved_at = ?, updated_at = ?, rejection_reason = ?
@@ -597,7 +594,7 @@ async function cancelCode(db: D1Database, userId: string, body: JsonObject, now:
   const row = rows[0];
   if (row.issuer_user_id !== userId) throw new FanmarkTransferApiError("not_authorized", 403);
   if (row.status !== "active") throw new FanmarkTransferApiError("code_not_active", 400, { status: row.status });
-  const nowIso = timestamp(now);
+  const nowIso = toUtcMicrosecondTimestamp(now);
   const results = await db.batch([
     db.prepare("UPDATE fanmark_transfer_codes SET status = 'cancelled', updated_at = ? WHERE id = ? AND issuer_user_id = ? AND status = 'active'")
       .bind(nowIso, codeId, userId),

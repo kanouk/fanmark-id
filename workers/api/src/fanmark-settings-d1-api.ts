@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { selectD1Database, type Env } from "./repository";
 import type { StorageAuthResolver } from "./storage-r2";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
 
 const SETTINGS_PREFIX = "/api/me/fanmarks/";
 const SETTINGS_SUFFIX = "/settings";
@@ -210,7 +211,7 @@ function parseEmojiIds(value: unknown): string[] {
 }
 
 function timestampNow(): string {
-  return new Date().toISOString().replace(/\.(\d{3})Z$/u, (_match, millis: string) => `.${millis}000Z`);
+  return toUtcMicrosecondTimestamp(new Date());
 }
 
 function hasActiveLicense(row: SettingsRow, now: string): boolean {

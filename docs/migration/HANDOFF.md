@@ -2437,10 +2437,19 @@ application write supplies the correct timestamp.
 
 Schema-converter tests pass 15/15, row-conversion tests 7/7, and the migration
 data suite 168/168 under Node 22.6.0. The Miniflare D1 importer suite passes
-18/18 and confirms that an impossible leap date is rejected on a later D1
-`UPDATE` while the stored canonical timestamp remains unchanged. The fresh
+18/18 and confirms that an impossible leap date and millisecond-only text are
+rejected on later D1 `UPDATE`s while the stored canonical timestamp remains
+unchanged. The fresh
 catalog synthetic D1 replay passes with 10 synthetic rows, two transformed
 credentials, one deferred credential, all 40 checkpoints, and conflict
 rejection. Its status remains `public_rows_reconciled`; `deployable` and
 `fullMigrationReconciled` remain false. No source application rows, remote
 D1/R2, production route, real user data, or domain/DNS setting was changed.
+
+Core Worker write paths for registration, return, transfer, lottery, settings,
+favorites, access analytics, and notification read state now share a
+fixed-width UTC microsecond formatter. Their seven focused D1 suites pass
+72/72 locally, and their frontend API contract tests pass 44/44. This covers
+those APIs' generated timestamps; the 79
+`now()`-default operation gates and the full 103-column timestamp-operation
+gate remain open until the rest of the D1 writers are audited and verified.

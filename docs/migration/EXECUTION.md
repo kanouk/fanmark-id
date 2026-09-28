@@ -3025,10 +3025,19 @@ readiness report remains at 13 unresolved groups across 226 locations because
 
 Node 22.6.0 verification passes: schema-converter 15/15, row-conversion 7/7,
 Miniflare D1 importer 18/18, and the full migration-data suite 168/168. The D1
-integration rejects an impossible leap-date update and confirms the existing
-canonical timestamp remains unchanged. A separate current-catalog local D1
-replay reconciles 10 synthetic rows, two transformed credentials, one deferred
-credential, 40/40 checkpoints, and conflict rejection; its status is
+integration rejects impossible dates and millisecond-only timestamp text on
+updates, confirming the existing canonical timestamp remains unchanged. A
+separate current-catalog local D1 replay reconciles 10 synthetic rows, two
+transformed credentials, one deferred credential, 40/40 checkpoints, and
+conflict rejection; its status is
 `public_rows_reconciled`, with deployment and full migration reconciliation
 false. No application rows, remote D1/R2, production route, real user data, or
 domain/DNS setting was read or changed.
+
+Core Worker writes for registration, return, transfer, lottery, settings,
+favorites, access analytics, and notification read state now use one shared
+UTC microsecond formatter, matching the converter's fixed-width D1 contract.
+Their focused D1 suites pass 72/72 locally, and corresponding frontend API
+contract tests pass 44/44. The operation-format subgate is partial: the 79
+source `now()` default locations and the other D1 writer paths still need
+reconciliation before enabling the generated schema.

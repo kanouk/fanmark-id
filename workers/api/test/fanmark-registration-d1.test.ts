@@ -111,7 +111,7 @@ describe("D1 fanmark registration", () => {
     expect(payload.fanmark.short_id).toMatch(/^[a-z0-9]{8}$/u);
     const license = await business!.prepare("SELECT user_id, license_start, license_end, display_fanmark, is_initial_license FROM fanmark_licenses").first<Record<string, unknown>>();
     expect(license).toEqual({
-      user_id: OWNER, license_start: NOW, license_end: "2026-10-26T00:00:00.000Z",
+      user_id: OWNER, license_start: NOW, license_end: "2026-10-26T00:00:00.000000Z",
       display_fanmark: "🌹", is_initial_license: 1,
     });
     expect(await count(business!, "fanmark_basic_configs")).toBe(1);

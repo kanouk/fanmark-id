@@ -1,5 +1,6 @@
 import { selectD1Database, type Env } from "./repository";
 import type { StorageAuthResolver } from "./storage-r2";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
 
 const FAVORITES_PATH = "/api/me/favorites";
 const FAVORITES_METHODS = "GET, POST, DELETE, OPTIONS";
@@ -326,7 +327,7 @@ async function listFavorites(db: D1Database, userId: string): Promise<Record<str
 async function mutateFavorite(db: D1Database, userId: string, rawIds: string[], normalizedIds: string[], displayFanmark: string | null, add: boolean): Promise<boolean> {
   const rawJson = JSON.stringify(rawIds);
   const normalizedJson = JSON.stringify(normalizedIds);
-  const now = new Date().toISOString();
+  const now = toUtcMicrosecondTimestamp(new Date());
   try {
     if (add) {
       const results = await db.batch([

@@ -1,5 +1,6 @@
 import { selectD1Database, type Env } from "./repository";
 import type { StorageAuthResolver } from "./storage-r2";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
 
 const RETURN_PATH = "/api/me/fanmarks/return";
 const BULK_RETURN_PATH = "/api/me/fanmarks/bulk-return";
@@ -102,7 +103,7 @@ function graceExpiry(now: Date, configuredDays: unknown): string {
     base.setUTCHours(0, 0, 0, 0);
     base.setUTCDate(base.getUTCDate() + 1);
   }
-  return base.toISOString();
+  return toUtcMicrosecondTimestamp(base);
 }
 
 async function enqueueEvent(
@@ -334,7 +335,7 @@ export async function returnAllActiveFanmarksForAccountDeletion(
   userId: string,
   now: Date,
 ): Promise<number> {
-  const nowIso = now.toISOString();
+  const nowIso = toUtcMicrosecondTimestamp(now);
   const candidates = await database.prepare(`
     SELECT id
     FROM fanmark_licenses
@@ -393,7 +394,7 @@ export async function handleFanmarkBulkReturnRequest(
   try {
     const licenseIds = await readLicenseIds(request);
     const now = clock();
-    const nowIso = now.toISOString();
+    const nowIso = toUtcMicrosecondTimestamp(now);
     const results: ReturnSuccess[] = [];
     const failed: Array<{ licenseId: string; error: string }> = [];
     for (const licenseId of licenseIds) {
@@ -452,7 +453,7 @@ export async function handleFanmarkReturnRequest(
   try {
     const fanmarkId = await readFanmarkId(request);
     const now = clock();
-    const nowIso = now.toISOString();
+    const nowIso = toUtcMicrosecondTimestamp(now);
     const candidates = await database.prepare(`
       SELECT l.id AS licenseId, l.fanmark_id AS fanmarkId,
              f.short_id AS shortId, l.display_fanmark AS displayFanmark

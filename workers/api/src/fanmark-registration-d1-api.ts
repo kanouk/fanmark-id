@@ -1,5 +1,6 @@
 import { selectD1Database, type Env } from "./repository";
 import type { StorageAuthResolver } from "./storage-r2";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
 
 const PATH = "/api/fanmarks/register";
 const METHODS = "POST, OPTIONS";
@@ -215,10 +216,6 @@ function compareEmoji(value: string): string {
   return value.normalize("NFC").replace(VARIATION_SELECTORS, "");
 }
 
-function microsecondTimestamp(date: Date): string {
-  return date.toISOString().replace(/\.(\d{3})Z$/u, (_match, millis: string) => `.${millis}000Z`);
-}
-
 function computedLicenseEnd(now: Date, days: number | null): string | null {
   if (days === null) return null;
   if (!Number.isSafeInteger(days)) throw new FanmarkRegistrationError("fanmark_tier_unavailable", 503);
@@ -228,7 +225,7 @@ function computedLicenseEnd(now: Date, days: number | null): string | null {
     raw.setUTCHours(0, 0, 0, 0);
     raw.setUTCDate(raw.getUTCDate() + 1);
   }
-  return raw.toISOString();
+  return toUtcMicrosecondTimestamp(raw);
 }
 
 function classifyTier(emojiIds: string[]): number {
@@ -420,7 +417,7 @@ async function register(
 ): Promise<Response> {
   const validated = await validateCatalog(master, input, db);
   const nowDate = clock();
-  const now = microsecondTimestamp(nowDate);
+  const now = toUtcMicrosecondTimestamp(nowDate);
   const fanmark = await currentFanmark(db, validated.normalizedIds, validated.normalizedEmoji);
   if (fanmark) {
     if (fanmark.status !== "active") throw new FanmarkRegistrationError("fanmark_inactive", 403);

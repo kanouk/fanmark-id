@@ -125,7 +125,7 @@ describe("D1 fanmark transfer", () => {
     const response = await call("/approve", { request_id: requestId, transferredFanmarkName: "Rose" });
     expect(response.status).toBe(200);
     const result = await response.json() as Record<string, unknown>;
-    expect(result).toMatchObject({ success: true, fanmark_name: "🌹", new_license_end: "2026-10-03T00:00:00.000Z" });
+    expect(result).toMatchObject({ success: true, fanmark_name: "🌹", new_license_end: "2026-10-03T00:00:00.000000Z" });
     const oldLicense = await business.prepare("SELECT status, is_returned, license_end FROM fanmark_licenses WHERE id = ?")
       .bind(LICENSE).first<Record<string, unknown>>();
     expect(oldLicense).toEqual({ status: "expired", is_returned: 1, license_end: NOW });
@@ -133,7 +133,7 @@ describe("D1 fanmark transfer", () => {
       .bind(result.new_license_id).first<Record<string, unknown>>();
     expect(nextLicense).toEqual({
       user_id: RECIPIENT, status: "active", is_transferred: 1,
-      transfer_locked_until: "2026-10-25T10:15:23.123000Z", license_end: "2026-10-03T00:00:00.000Z", display_fanmark: "🌹",
+      transfer_locked_until: "2026-10-25T10:15:23.123000Z", license_end: "2026-10-03T00:00:00.000000Z", display_fanmark: "🌹",
     });
     expect(await count(business, "fanmark_basic_configs")).toBe(1);
     expect(await business.prepare("SELECT fanmark_name, access_type FROM fanmark_basic_configs WHERE license_id = ?")

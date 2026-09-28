@@ -1,5 +1,6 @@
 import { selectD1Database, type Env } from "./repository";
 import type { StorageAuthResolver } from "./storage-r2";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
 
 const APPLY_PATH = "/api/fanmarks/lottery/apply";
 const CANCEL_PATH = "/api/fanmarks/lottery/cancel";
@@ -119,7 +120,7 @@ function database(env: Env): D1Database {
 }
 
 function timestampNow(now: Date): string {
-  return now.toISOString().replace(/\.(\d{3})Z$/u, (_match, millis: string) => `.${millis}000Z`);
+  return toUtcMicrosecondTimestamp(now);
 }
 
 function parseLimit(value: unknown): number {
