@@ -3217,3 +3217,29 @@ This updates only the checked-out repository report; it does not close #30's
 live settings/capacity/maintenance inventory or reconcile production-only
 configuration. No network API or database was queried and no rows or secrets
 were read.
+
+## Staging Worker, D1 ledger, and secret-name readback (2026-09-28 JST)
+
+Using Wrangler 4.142.0 against the existing Cloudflare account, the app
+deployment list confirmed `fanmark-app-staging` version
+`6da0dd8d-5da3-46f5-9c7e-86258a50b181` at 100%. Read-only `d1_migrations`
+queries returned business migrations `0000`–`0016` (17), Auth migrations
+`0003`, `0007`, and `0008` (3), and master migrations `0000`–`0007` (8).
+All three query responses reported `changed_db=false` and `rows_written=0`.
+The app Worker secret listing returned only the names
+`BETTER_AUTH_SECRET`, `REFERENCE_MASTER_SERVICE_SECRET`, and
+`VERIFIED_ACCESS_SECRET`; no secret value was read. Thus Stripe, Resend, and
+four OAuth provider credentials are not present in staging. This remains an
+external acceptance prerequisite for checkout/webhooks, actual email
+delivery, and provider callbacks; no provider or billing configuration was
+changed.
+
+The account's current Workers Free plan still needs a CPU-fit decision. The
+existing staging tail samples for Better Auth/password/TOTP and lifecycle
+operations exceed the published Free limit of 10 ms/request. Cloudflare's
+current Workers Paid pricing documents a $5 monthly minimum and a 30-second
+default per-request CPU limit; no paid-plan change was made. References:
+[Workers limits](https://developers.cloudflare.com/workers/platform/limits/)
+and [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/).
+This was metadata and secret-name readback only; no source rows, credentials,
+production route, or domain/DNS were accessed or changed.

@@ -538,10 +538,10 @@ deleted and exact-ID/composite readback returned zero. The owner API client/Work
 pass 12/12 and Worker typecheck passes. This proves those API paths against staging
 D1, not the complete application, full notification-source/channel parity, or
 business operation/security parity. No real user data, production routing, Stripe
-transaction, or domain/DNS setting was changed. Schema conversion remains
-`deployable: false` with 18 unresolved gates; real user-data and domain work
-stay in the final phases. The remote business migration ledger is `0000`
-through `0015`; staging business D1 also has the six Stripe ingress/extension
+transaction, or domain/DNS setting was changed. The fresh schema-converter-v11 report remains `deployable: false` with 13
+unresolved groups across 226 locations; real user-data and domain work stay in
+the final phases. The 2026-09-28 read-only ledger readback confirmed business
+migrations `0000` through `0016`; staging business D1 also has the Stripe ingress/extension
 tables, all empty, while Stripe selectors and secrets remain disabled. A
 workers.dev Cron is enabled every minute for the D1 notification processor;
 the lifecycle and Stripe handlers remain disabled by their unset selectors.
@@ -664,7 +664,7 @@ unperformed.
 | Lifecycle settings API | Current worktree + staging Worker/SPA | Public `GET /api/system/lifecycle` reads only the public `grace_period_days` row through split business D1; `PATCH /api/admin/system-settings/lifecycle` requires administrator role and current-session MFA. Supabase public value `1` was read-only verified and copied as one staging config row. Client 4/4, combined settings D1 9/9, full standard suites 30/30 and 10/10 pass. A new synthetic staging TOTP canary verified anonymous 401, authenticated temporary update, invalid value 400, public no-store readback, restoration to `1`, and empty user-owned Auth tables after cleanup. The API canary and rendered AdminSettings browser form both updated the setting from `1` to synthetic `2`, read it back through D1, restored `1`, and removed synthetic Auth/profile rows. The value is at baseline; `updated_at` advanced and the MFA generation counter may have advanced during factor enrollment/removal. The shared staging Cron is active for notifications; `LICENSE_EXPIRY_BACKEND` remains unset, so lifecycle execution is disabled. See `docs/migration/lifecycle-settings-api.md`. |
 | Plan and general system settings | Current worktree + workers.dev staging | An exact allowlist of 18 non-user Supabase settings was added to the two existing settings (20 total). Source and D1 canonical digests match `d1f809c44dcc26152acb3432907e1cad81a599d495fd9f3e48b75ea1e3beb16f`; the public GET returns exactly 17 public keys and omits both private Enterprise settings. Public GET and SPA returned 200/no-store; anonymous admin GET returned 401/no-store. A synthetic Better Auth administrator passed TOTP/MFA read/update, exact D1 readback, stale-write rejection, baseline restoration, audit-value minimization, and audit cleanup. Worker tests 5/5, client tests 4/4, migration-data 124/124, typechecks, staging build, and dry-run pass. Deployed at 100% as version `3310b139-f639-4cf2-8a15-ad2b63f9fbd6`. Browser UI acceptance and payment behavior remain open; production stays on Supabase. See `docs/migration/system-settings-api.md`. |
 | Availability-rule administration | Current worktree + workers.dev staging | `AdminPatternRules` selects the MFA-protected D1 API only in staging. Four explicit source rules were seeded with `created_by=NULL`, remained disabled, and were read/edit/CAS-restored by the deployed TOTP canary. Worker tests 4/4 and frontend tests 5/5 pass. This does not move Stripe enforcement or other admin CRUD. See `docs/migration/availability-rules-admin-api.md`. |
-| Current app staging deployment | APAC `fanmark-app-staging` Worker + Static Assets | Current version `82413f00-f60e-4a01-aeb0-2a071e01178a` at 100%; split D1, both image R2 bindings, and separate access-analytics rate limiter remain. PR #41 commit `2ecbb25` adds a 30-second foreground refresh to the Worker-backed subscription view while keeping focus/visibility refresh and Supabase Realtime behavior. A synthetic subscription canary on prior version `c78dbb17-9c9b-42fc-bad5-9dc9ae0cfc65` changed the rendered state to inactive after 29,589 ms; its API/browser cleanup returned synthetic subscription/profile/Auth rows to zero. The 2026-09-28 readback verified current version `82413f00-f60e-4a01-aeb0-2a071e01178a` at 100%; its rendered analytics canary showed one event and one unique visitor after suppressing four duplicates, returned anonymous 401, and cleaned synthetic Auth/business rows to zero. Earlier staging versions added the notification-preview foreground refresh and same-tab/focus/visibility own-profile synchronization. No real user-data imports, production routing, or domain/DNS changes occurred. The separate `fanmark-migration-backups-staging` bucket is APAC Standard, private, has no custom domain or r2.dev access, and is not bound to the app; its encrypted synthetic upload/download/restore/delete canary returned it to zero objects. Business migrations through `0015` and Auth migration `0008_auth_user_suspension.sql` are applied; all eight user-owned Auth tables, including status audit, read back empty after the latest TOTP canary. The 16 localized auth email master rows remain readback-verified against their pinned content/seed digests. MFA-gated user list/detail, plan, suspension/restoration, immediate license expiry, password-reset mutation, system settings, subscription display, profile username availability, and account deletion use split D1/Better Auth. Subscription display reads only the signed-in user's row and omits Stripe IDs; the user-owned subscription table is empty after the synthetic canary. Resend secrets remain absent, so password-reset delivery is closed with 503 before audit; no email was attempted. Prior live canary verified suspension, current-session revocation, restoration, immediate expiry, four config deletions, two audit rows, one notification event, and repeat safety, then cleaned synthetic rows. Post-run readback found zero user settings/licenses/favorites/notifications/user events/expiry audits/four config types and zero Auth user-owned rows; 45 license-incarnation tombstones remain as retained synthetic anti-reuse state. Signup and email delivery remain disabled because delivery is not configured; OAuth providers remain unset. The every-minute Cron remains for notification/Stripe dispatch; the separate daily lifecycle trigger is configured with its execution selector unset. A separate synthetic account-deletion canary passed and was cleaned; the expiry/lottery Cron canary also restored its exact baseline. No real user data, production routing, or domain/DNS changed. Reset-mail acceptance, remaining app/API inventory, Stripe sandbox/integrated acceptance, key custody/retention policy, real user/Auth/object import, production routing, and domain/DNS remain open. |
+| Current app staging deployment | APAC `fanmark-app-staging` Worker + Static Assets | Current version `6da0dd8d-5da3-46f5-9c7e-86258a50b181` at 100% after the pre-write freeze drill; split D1, both image R2 bindings, and separate access-analytics rate limiter remain. PR #41 commit `2ecbb25` adds a 30-second foreground refresh to the Worker-backed subscription view while keeping focus/visibility refresh and Supabase Realtime behavior. A synthetic subscription canary on prior version `c78dbb17-9c9b-42fc-bad5-9dc9ae0cfc65` changed the rendered state to inactive after 29,589 ms; its API/browser cleanup returned synthetic subscription/profile/Auth rows to zero. An earlier 2026-09-28 readback verified version `82413f00-f60e-4a01-aeb0-2a071e01178a` at 100%; its rendered analytics canary showed one event and one unique visitor after suppressing four duplicates, returned anonymous 401, and cleaned synthetic Auth/business rows to zero. Earlier staging versions added the notification-preview foreground refresh and same-tab/focus/visibility own-profile synchronization. No real user-data imports, production routing, or domain/DNS changes occurred. The separate `fanmark-migration-backups-staging` bucket is APAC Standard, private, has no custom domain or r2.dev access, and is not bound to the app; its encrypted synthetic upload/download/restore/delete canary returned it to zero objects. Business migrations through `0016` and Auth migration `0008_auth_user_suspension.sql` are applied; all eight user-owned Auth tables, including status audit, read back empty after the latest TOTP canary. The 16 localized auth email master rows remain readback-verified against their pinned content/seed digests. MFA-gated user list/detail, plan, suspension/restoration, immediate license expiry, password-reset mutation, system settings, subscription display, profile username availability, and account deletion use split D1/Better Auth. Subscription display reads only the signed-in user's row and omits Stripe IDs; the user-owned subscription table is empty after the synthetic canary. Resend secrets remain absent, so password-reset delivery is closed with 503 before audit; no email was attempted. Prior live canary verified suspension, current-session revocation, restoration, immediate expiry, four config deletions, two audit rows, one notification event, and repeat safety, then cleaned synthetic rows. Post-run readback found zero user settings/licenses/favorites/notifications/user events/expiry audits/four config types and zero Auth user-owned rows; 45 license-incarnation tombstones remain as retained synthetic anti-reuse state. Signup and email delivery remain disabled because delivery is not configured; OAuth providers remain unset. The every-minute Cron remains for notification/Stripe dispatch; the separate daily lifecycle trigger is configured with its execution selector unset. A separate synthetic account-deletion canary passed and was cleaned; the expiry/lottery Cron canary also restored its exact baseline. No real user data, production routing, or domain/DNS changed. Reset-mail acceptance, remaining app/API inventory, Stripe sandbox/integrated acceptance, key custody/retention policy, real user/Auth/object import, production routing, and domain/DNS remain open. |
 | Broadcast email admin browser acceptance | Current worktree + workers.dev staging, version `21f0be9e-2099-49d8-b975-a3a61604c12e` | A synthetic administrator signed in through the deployed Better Auth UI and completed TOTP/MFA. The D1-backed 一括メール screen rendered its staging-only banner and zero baseline; the UI created a synthetic draft, showed the saved draft in history, and previewed its exact subject/body. Test-send and bulk-send buttons were disabled. After logout, readback found zero canary Auth user/account/session/factor/role/assurance rows and zero profile/draft/audit rows; private credentials and TOTP artifacts were removed. No email or real user data was sent or copied, and production routing/domain/DNS were unchanged. This closes the broadcast-screen browser canary only; provider delivery, bulk queue semantics, and broader authenticated UI acceptance remain open. |
 | Authenticated master-data admin screens | Current worktree + workers.dev staging, version `21f0be9e-2099-49d8-b975-a3a61604c12e` | A synthetic administrator signed in through the deployed Better Auth UI and completed TOTP/MFA. Read-only navigation loaded the emoji master with active release `10ec42c1…` and 79 pages, system settings, plan settings, 10 notification rules and 10 grouped notification templates (4 locale variants each), and the signup-confirmation email template in JA/EN/KO/ID. No controls were saved, no manual notification or email was sent, and no user/event-log screens were opened. After logout, exact D1 readback found zero synthetic Auth users/accounts/sessions/factors/admin roles/MFA assurances and zero profile/audit rows; temporary credentials and helper state were removed. No production routing or domain/DNS changed. This verifies these screens' authenticated rendering and reads only; write flows and broader acceptance remain open. |
 | Lifecycle target schema | `01a1507`, `8034735` | Exact source/extension DDL and fingerprint consistency; actual 40-table catalog applied to empty local D1. No production rows. |
@@ -790,71 +790,53 @@ current-catalog synthetic replay verified that path for two credentials and
 recorded an inactive credential as deferred; this is not evidence for real
 credential compatibility or a complete user-data import.
 
-## Remaining external and release gates
+## Remaining external and release gates (read back 2026-09-28)
 
-- Wrangler identity, target D1 listing, and remote D1 query/write now work. The
-  isolated emoji and app staging Workers are deployed; remote `0004` and the
-  three non-user reference masters are active in D1. Remaining application and
-  business-schema integrations still require their separate rehearsal. The
-  Workers CPU/plan decision remains unresolved; no paid upgrade has been made.
-- At the pre-bootstrap checkpoint, business D1 was empty. A 2026-09-24 `public` schema-only dump succeeded
-  after Docker Desktop was started. The 180,288-byte private DDL artifact has
-  SHA-256 `aac7f38c912b358019a9bb9f282813a10bcd3e20af09e929d1ec41a2705b42cd`;
-  it contains no top-level `COPY` or `INSERT` data statements. The refreshed
-  catalog was converted and parsed in an isolated local SQLite database; that
-  older converter report had 19 unresolved gates and `deployable: false`.
-  Schema conversion v3 translates UUID defaults to D1-native RFC 4122 version-4
-  text and maps `fanmark_events.id` to AUTOINCREMENT; the exact PostgreSQL
-  sequence value remains an import-stage gate. The report has 18 gates (10
-  import and 8 schema/operation). The generated 40-table SQL parses in isolated SQLite with
-  66 indexes, no foreign-key errors, and `integrity_check=ok`. The report still
-  says `deployable: false`; schema-only DDL has since been applied to the
-  previously empty business-staging D1. No source rows were imported and recent/availability/public-access and authenticated owner API selectors are
-  enabled only on workers.dev staging; user rows remain absent.
-  The 2026-09-21 Stripe migrations
-  are local-only, with no remote-only migration IDs. The checked-in TypeScript
-  public schema block matches a fresh CLI type generation, but this does not
-  replace full operation, trigger, view, and authorization parity. See
-  [live observations](live-observations.md) and
-  [schema conversion gates](schema-generator.md).
-- Two APAC Standard image buckets are bound to the staging Worker and R2 image
-  selectors pass synthetic upload/read/delete. A separate APAC Standard
-  `fanmark-migration-backups-staging` bucket is unbound and private: r2.dev access
-  is disabled, there are no custom domains, and a synthetic encrypted snapshot
-  round-trip restored successfully before its objects were deleted. The backup
-  bucket is empty. No source Storage inventory or real object transfer has
-  occurred. Independent key custody, destination ACL design, retention policy,
-  and production backup storage remain open. Standard R2 includes 10 GB-month
-  storage, 1 million Class A, and 10 million Class B operations each month;
-  usage beyond those allowances is billed. The tiny synthetic canary was
-  within the included allowance; the Cloudflare invoice/dashboard was not
-  inspected.
-  See [R2 pricing](https://developers.cloudflare.com/r2/pricing/) and
-  [R2 setup](https://developers.cloudflare.com/r2/get-started/).
-- Real-data compatibility and the final consistent snapshot, source freeze/drain,
-  Auth/OAuth/MFA and Storage capture, independent key custody, retention policy,
-  production restore, and single-writer cutover remain open.
-- Local PostgreSQL and Miniflare results do not prove production parity or
-  remote capacity. Read-only inventories do not implement RLS/trigger/function
-  behavior.
-- No production database, OAuth provider, Stripe, or public DNS change has been
-  made. Staging deployments do not change the current production app. The user's
-  migration request covers the eventual cutover, but it stays at the final gate
-  and begins only after the listed reconciliation and rollback checks pass.
-  Keep PR #41 draft.
+- The `workers.dev` app Worker is version
+  `6da0dd8d-5da3-46f5-9c7e-86258a50b181` at 100%. Wrangler 4.142.0 read-only
+  ledger queries confirmed business migrations `0000`–`0016` (17 rows), Auth
+  migrations `0003`, `0007`, `0008`, and master migrations `0000`–`0007` (8
+  rows). Each query returned `changed_db=false` and `rows_written=0`. This
+  confirms schema/seed migrations only; it does not prove full function/RLS/
+  trigger parity or real user-row reconciliation.
+- The fresh v11 schema report remains `deployable: false`: 13 unresolved gate
+  groups across 226 locations (8 row-conversion, 5 schema/operation). The
+  descriptor-aware replay is synthetic only. Runtime acceptance for the 43
+  frontend selectors, full current API inventory, complete operation-level
+  timestamp/default proof, and representative populated-data CPU/load fit
+  remain open.
+- Workers Free is still the selected plan. Staging CPU samples for sign-in,
+  TOTP, and lifecycle work exceeded its published 10 ms/request limit. A
+  production-safe plan or measured optimization is still required; no account
+  plan or billing setting was changed. Cloudflare documents Workers Paid at a
+  $5/month minimum, so that is an account-owner cost decision rather than an
+  implicit migration step. See [Workers limits](https://developers.cloudflare.com/workers/platform/limits/)
+  and [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/).
+- The staging Worker secret-name readback contained only
+  `BETTER_AUTH_SECRET`, `REFERENCE_MASTER_SERVICE_SECRET`, and
+  `VERIFIED_ACCESS_SECRET`. No secret values were read. Stripe sandbox/live
+  keys and webhook signing secret, Resend API key/sender, and client ID/secret
+  pairs for Apple, Google, GitHub, and Discord are absent. Consequently Stripe
+  checkout/webhook acceptance, real mail delivery, and OAuth callback/provider
+  acceptance remain unverified. Their source integrations and fail-closed
+  staging behavior are implemented; provider setup and exact callback
+  registration are still needed.
+- Avatar/cover R2 upload/read/delete works on staging. The separate encrypted
+  backup bucket is private and empty after synthetic round-trip cleanup.
+  Independent backup-key custody, least-privilege ACL, retention/deletion
+  policy, and complete Auth/Storage backup/restore remain open.
+- The integrated synthetic pre-write fallback passed. The post-write Time
+  Travel drill covers a disposable business D1, one waitlist write, and a
+  pending Stripe receipt; it does not cover Auth, R2, applied Stripe business
+  effects, or a coordinated Supabase writer/Cron freeze. Full integrated
+  recovery remains open.
+- The actual user/Auth/object import and public domain/DNS switch remain in
+  #38's final phase. No production route, production data, OAuth provider,
+  Stripe account, or public DNS was changed. Keep PR #41 draft until the
+  synthetic app/provider/recovery gates are accepted.
 
-The dashboard now has a local-only owner-scoped list path at
-`GET /api/me/fanmarks`. Better Auth supplies the owner ID and D1 applies that
-identity in the license query; the response omits user ID and email. Its four
-synthetic Worker integration tests now run against the same 16-table
-source-shaped fixture used by protected-access verification, with source
-columns for fanmarks, licenses, and basic configs. Four frontend contract tests
-also pass. A staging-mode frontend build forced this selector to `supabase`,
-and the app Worker staging configuration passed Wrangler dry-run with separate
-D1 and both R2 bindings; this route was not deployed. Business D1 has no
-application schema or rows. R2 remains enabled with both staging buckets
-present. No remote D1/R2 writes, real user data, production changes, or
-DNS/domain changes occurred.
+The superseded early local-only owner-list checkpoint below is retained as
+history; current staging D1 and Worker state is recorded in the tables above.
 
 Detailed evidence and limitations are in [EXECUTION.md](EXECUTION.md),
 [credential integration](credential-import-integration.md),
