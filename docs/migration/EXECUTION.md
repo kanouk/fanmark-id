@@ -3513,10 +3513,11 @@ guards those remote-safe formatting requirements. This is SQL-equivalent and
 does not change the schema. See the current [Workers SDK issue #15314](https://github.com/cloudflare/workers-sdk/issues/15314).
 
 The successful rehearsal used only synthetic rows and a low-cost disposable
-bcrypt fixture so the recovery-only sign-in stayed within the Workers Free CPU
-ceiling; the separate `$2a$10$` staging compatibility canary remains the
-evidence for that observed credential format. Cleanup read back zero temporary
-Worker/D1 resources, leaving only the three pre-existing staging databases.
+bcrypt fixture to reduce CPU for this recovery-only sign-in. Its Worker CPU was
+not sampled, so this run does not establish Free-plan fit; the separate
+`$2a$10$` staging compatibility canary remains the evidence for that observed
+credential format. Cleanup read back zero temporary Worker/D1 resources,
+leaving only the three pre-existing staging databases.
 No existing Auth/business/master D1, R2 object, Supabase writer, Stripe API,
 real user data, production route, or domain/DNS setting was changed.
 
