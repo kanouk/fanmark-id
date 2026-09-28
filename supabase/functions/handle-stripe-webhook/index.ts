@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
-import { returnFanmarkByLicenseId, type ReturnContext } from "../_shared/return-helpers.ts";
 import {
   ReceiptIngressError,
   buildReceiptPersistenceInput,
@@ -10,18 +9,19 @@ import {
   type DurableReceiptResult,
 } from "../_shared/stripe-receipt-ingress/index.ts";
 import {
-  resolveStripeCustomerUserMapping,
-  StripeCustomerUserMappingError,
-} from "../_shared/stripe-customer-user-mapping.ts";
-import {
   createStripeInvoiceProjectionProvider,
   processAcceptedStripeInvoiceReceipt,
 } from "../_shared/stripe-invoice-projection/index.ts";
 import {
-  createStripeSubscriptionProjectionProvider,
-  projectStripeSubscriptionSnapshot,
-  type StripePrivatePriceIdsByMode,
-} from "../_shared/stripe-subscription-projection/index.ts";
+  createStripeSubscriptionApplicationProvider,
+  processAcceptedStripeSubscriptionReceipt,
+} from "../_shared/stripe-subscription-application/index.ts";
+import {
+  resolveStripeCustomerUserMapping,
+  StripeCustomerUserMappingError,
+  type StripeCustomerUserMappingRow,
+} from "../_shared/stripe-customer-user-mapping.ts";
+import type { StripePrivatePriceIdsByMode } from "../_shared/stripe-subscription-projection/index.ts";
 import { processAcceptedStripeNoopCheckoutReceipt } from "../_shared/stripe-noop-checkout-receipt.ts";
 import { validateStripeExtensionApplicationResult } from "../_shared/stripe-extension-application.ts";
 
@@ -61,116 +61,21 @@ const INVOICE_EVENT_TYPES = new Set([
   "invoice.payment_succeeded",
 ]);
 
+const SUBSCRIPTION_EVENT_TYPES = new Set([
+  "customer.subscription.created",
+  "customer.subscription.updated",
+  "customer.subscription.deleted",
+]);
+
+const SUBSCRIPTION_PRICE_KEYS = {
+  creator: { test: "creator_stripe_price_id", live: "creator_stripe_price_id_live" },
+  max: { test: "max_stripe_price_id", live: "max_stripe_price_id_live" },
+  business: { test: "business_stripe_price_id", live: "business_stripe_price_id_live" },
+} as const;
+
 const logStep = (step: string, details?: unknown) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[STRIPE-WEBHOOK] ${step}${detailsStr}`);
-};
-
-const resolveUserIdFromCustomer = async (
-  supabaseClient: ReturnContext["supabase"],
-  stripe: Stripe,
-  stripeCustomerId: string,
-  livemode: boolean,
-): Promise<string> => {
-  return await resolveStripeCustomerUserMapping({
-    customerId: stripeCustomerId,
-    livemode,
-    provider: {
-      retrieveCustomer: (customerId) => stripe.customers.retrieve(customerId),
-    },
-    repository: {
-      async findByStripeCustomerId(customerId) {
-        const { data, error } = await supabaseClient
-          .from("user_settings")
-          .select("user_id, stripe_customer_id")
-          .eq("stripe_customer_id", customerId)
-          .limit(2);
-        if (error) throw new StripeCustomerUserMappingError("stripe_customer_mapping_read_failed");
-        return (data ?? []).map((row) => ({
-          userId: row.user_id,
-          stripeCustomerId: row.stripe_customer_id,
-        }));
-      },
-      async findByUserId(userId) {
-        const { data, error } = await supabaseClient
-          .from("user_settings")
-          .select("user_id, stripe_customer_id")
-          .eq("user_id", userId)
-          .limit(2);
-        if (error) throw new StripeCustomerUserMappingError("stripe_customer_mapping_read_failed");
-        return (data ?? []).map((row) => ({
-          userId: row.user_id,
-          stripeCustomerId: row.stripe_customer_id,
-        }));
-      },
-      async linkIfUnbound(userId, customerId) {
-        const { data, error } = await supabaseClient
-          .from("user_settings")
-          .update({ stripe_customer_id: customerId })
-          .eq("user_id", userId)
-          .is("stripe_customer_id", null)
-          .select("user_id, stripe_customer_id")
-          .maybeSingle();
-        if (error) throw new StripeCustomerUserMappingError("stripe_customer_mapping_link_failed");
-        return data?.user_id === userId && data?.stripe_customer_id === customerId;
-      },
-    },
-  });
-};
-
-const fetchFreePlanLimit = async (supabaseClient: ReturnContext["supabase"]) => {
-  const { data, error } = await supabaseClient
-    .from("system_settings")
-    .select("setting_value")
-    .eq("setting_key", "free_fanmarks_limit")
-    .maybeSingle();
-
-  if (error) {
-    logStep("WARNING: Failed to fetch free_fanmarks_limit", { error: error.message });
-    return 3;
-  }
-
-  const value = data?.setting_value ? parseInt(data.setting_value, 10) : NaN;
-  return Number.isFinite(value) && value > 0 ? value : 3;
-};
-
-const enforceFreePlanLimit = async (
-  supabaseClient: ReturnContext["supabase"],
-  userId: string,
-) => {
-  const freeLimit = await fetchFreePlanLimit(supabaseClient);
-  if (freeLimit <= 0) return;
-
-  const nowIso = new Date().toISOString();
-  const { data: licenses, error: licensesError } = await supabaseClient
-    .from("fanmark_licenses")
-    .select("id, license_start, license_end")
-    .eq("user_id", userId)
-    .eq("status", "active")
-    .or(`license_end.is.null,license_end.gt.${nowIso}`)
-    .order("license_start", { ascending: false });
-
-  if (licensesError) {
-    logStep("WARNING: Failed to fetch active licenses for auto-return", { error: licensesError.message });
-    return;
-  }
-
-  const activeLicenses = licenses ?? [];
-  if (activeLicenses.length <= freeLimit) {
-    return;
-  }
-
-  const returnTargets = activeLicenses.slice(0, activeLicenses.length - freeLimit);
-  const ctx: ReturnContext = { supabase: supabaseClient, userId };
-
-  for (const license of returnTargets) {
-    try {
-      await returnFanmarkByLicenseId(ctx, license.id);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      logStep("Auto-return failed for license", { licenseId: license.id, error: message });
-    }
-  }
 };
 
 serve(async (req) => {
@@ -223,6 +128,129 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false } }
     );
+
+    if (SUBSCRIPTION_EVENT_TYPES.has(event.type)) {
+      let durable: DurableReceiptResult;
+      try {
+        const input = await buildReceiptPersistenceInput(event, rawBody);
+        durable = await withTimeout(createSupabaseReceiptPersister(supabaseClient)(input));
+      } catch (receiptError) {
+        const kind = receiptError instanceof ReceiptIngressError ? receiptError.kind : "persistence";
+        logStep("Subscription receipt was not durably accepted", { kind });
+        return jsonResponse(kind === "invalid_event" ? 400 : 503, {
+          error: kind === "invalid_event" ? "Invalid event" : "Receipt persistence unavailable",
+        });
+      }
+
+      if (durable.outcome === "duplicate_terminal") {
+        return jsonResponse(200, {
+          received: true,
+          outcome: durable.outcome,
+          receipt_status: durable.receipt_status,
+          dispatch_status: durable.dispatch_status,
+        });
+      }
+
+      try {
+        const subscriptionProvider = createStripeSubscriptionApplicationProvider(new Stripe(stripeKey, {
+          apiVersion: "2025-08-27.basil",
+          timeout: 10_000,
+          maxNetworkRetries: 0,
+        }));
+        const result = await withTimeout(processAcceptedStripeSubscriptionReceipt({
+          client: supabaseClient,
+          receipt: durable,
+          livemode: event.livemode,
+          provider: subscriptionProvider,
+          async loadPriceIds(): Promise<StripePrivatePriceIdsByMode> {
+            const requiredKeys = Object.values(SUBSCRIPTION_PRICE_KEYS)
+              .flatMap((byMode) => [byMode.test, byMode.live]);
+            const { data, error } = await supabaseClient.from("system_settings")
+              .select("setting_key, setting_value, is_public")
+              .in("setting_key", requiredKeys);
+            if (error || !Array.isArray(data)) {
+              throw new Error("subscription_price_configuration_unavailable");
+            }
+            const readMode = (mode: "test" | "live") => {
+              const result = {} as Record<keyof typeof SUBSCRIPTION_PRICE_KEYS, string>;
+              const used = new Set<string>();
+              for (const plan of Object.keys(SUBSCRIPTION_PRICE_KEYS) as Array<keyof typeof SUBSCRIPTION_PRICE_KEYS>) {
+                const key = SUBSCRIPTION_PRICE_KEYS[plan][mode];
+                const matches = data.filter((row) => row.setting_key === key);
+                const priceId = matches[0]?.setting_value;
+                if (matches.length !== 1 || matches[0].is_public !== false
+                  || typeof priceId !== "string" || !priceId.startsWith("price_") || used.has(priceId)) {
+                  throw new Error("subscription_price_configuration_review_required");
+                }
+                used.add(priceId);
+                result[plan] = priceId;
+              }
+              return result;
+            };
+            const test = readMode("test");
+            const live = readMode("live");
+            if (new Set([...Object.values(test), ...Object.values(live)]).size !== 6) {
+              throw new Error("subscription_price_configuration_conflict");
+            }
+            return { test, live };
+          },
+          async resolveUser(customerId, livemode) {
+            let needsCustomerLink = false;
+            const userId = await resolveStripeCustomerUserMapping({
+              customerId,
+              livemode,
+              persistLink: false,
+              provider: { retrieveCustomer: (id) => subscriptionProvider.retrieveCustomer(id) },
+              repository: {
+                async findByStripeCustomerId(id): Promise<StripeCustomerUserMappingRow[]> {
+                  const { data, error } = await supabaseClient.from("user_settings")
+                    .select("user_id, stripe_customer_id").eq("stripe_customer_id", id).limit(2);
+                  if (error || !Array.isArray(data)) {
+                    throw new StripeCustomerUserMappingError("stripe_customer_mapping_read_failed");
+                  }
+                  return data.map((row) => ({
+                    userId: row.user_id,
+                    stripeCustomerId: row.stripe_customer_id,
+                  }));
+                },
+                async findByUserId(id): Promise<StripeCustomerUserMappingRow[]> {
+                  const { data, error } = await supabaseClient.from("user_settings")
+                    .select("user_id, stripe_customer_id").eq("user_id", id).limit(2);
+                  if (error || !Array.isArray(data)) {
+                    throw new StripeCustomerUserMappingError("stripe_customer_mapping_read_failed");
+                  }
+                  const rows = data.map((row) => ({
+                    userId: row.user_id,
+                    stripeCustomerId: row.stripe_customer_id,
+                  }));
+                  needsCustomerLink = rows.length === 1 && rows[0].stripeCustomerId === null;
+                  return rows;
+                },
+                linkIfUnbound() {
+                  return Promise.resolve(false);
+                },
+              },
+            });
+            return { userId, needsCustomerLink };
+          },
+        }), 20_000);
+        if (result.status !== "applied") {
+          logStep("Subscription receipt remains retryable", { code: result.code });
+          return jsonResponse(503, { error: "Subscription processing pending" });
+        }
+        return jsonResponse(200, {
+          received: true,
+          outcome: result.outcome,
+          effective_plan_type: result.effectivePlanType,
+          active_subscription_count: result.activeSubscriptionCount,
+          receipt_status: "applied",
+          dispatch_status: "completed",
+        });
+      } catch {
+        logStep("Subscription receipt could not be completed");
+        return jsonResponse(503, { error: "Subscription processing pending" });
+      }
+    }
 
     if (INVOICE_EVENT_TYPES.has(event.type)) {
       let durable: DurableReceiptResult;
@@ -370,232 +398,9 @@ serve(async (req) => {
       }
     }
 
-    // Handle subscription and checkout events
+    // Events handled above are receipt-backed transactions; everything else
+    // currently has no billing side effect in this webhook.
     switch (event.type) {
-      case "checkout.session.completed":
-      case "checkout.session.async_payment_succeeded": {
-        logStep("Processing checkout session event", { eventType: event.type });
-        break;
-      }
-
-      case "checkout.session.async_payment_failed":
-      case "checkout.session.expired": {
-        break;
-      }
-
-      case "customer.subscription.created":
-      case "customer.subscription.updated": {
-        const subscription = event.data.object as Stripe.Subscription;
-        logStep(`Processing ${event.type}`, { subscriptionId: subscription.id });
-
-        const stripeCustomerId = typeof subscription.customer === "string"
-          ? subscription.customer
-          : subscription.customer?.id;
-        if (!stripeCustomerId || !subscription.id) {
-          throw new Error("Subscription customer or ID is missing");
-        }
-
-        const requiredKeys = [
-          "creator_stripe_price_id",
-          "max_stripe_price_id",
-          "business_stripe_price_id",
-          "creator_stripe_price_id_live",
-          "max_stripe_price_id_live",
-          "business_stripe_price_id_live",
-        ];
-        const { data: settingsData, error: priceSettingsError } = await supabaseClient
-          .from("system_settings")
-          .select("setting_key, setting_value")
-          .in("setting_key", requiredKeys);
-
-        if (priceSettingsError) {
-          throw priceSettingsError;
-        }
-
-        const settingsEntries = (settingsData ?? []).map((row) => [row.setting_key, row.setting_value] as const);
-        const settingsMap = new Map(settingsEntries);
-        const privatePriceIds: StripePrivatePriceIdsByMode = {
-          test: {
-            creator: settingsMap.get("creator_stripe_price_id") ?? "",
-            max: settingsMap.get("max_stripe_price_id") ?? "",
-            business: settingsMap.get("business_stripe_price_id") ?? "",
-          },
-          live: {
-            creator: settingsMap.get("creator_stripe_price_id_live") ?? "",
-            max: settingsMap.get("max_stripe_price_id_live") ?? "",
-            business: settingsMap.get("business_stripe_price_id_live") ?? "",
-          },
-        };
-        const projection = await projectStripeSubscriptionSnapshot({
-          subscriptionId: subscription.id,
-          customerId: stripeCustomerId,
-          livemode: event.livemode,
-          privatePriceIds,
-          provider: createStripeSubscriptionProjectionProvider(new Stripe(stripeKey, {
-            apiVersion: "2025-08-27.basil",
-            timeout: 10_000,
-            maxNetworkRetries: 0,
-          })),
-        });
-        const current = projection.current;
-        const priceId = current.priceId;
-        const planType = projection.effectivePlanType;
-        if (current.currentPeriodStart === null || current.currentPeriodEnd === null) {
-          throw new Error("Current Stripe subscription periods are missing");
-        }
-        const userId = await resolveUserIdFromCustomer(
-          supabaseClient,
-          stripe,
-          stripeCustomerId,
-          event.livemode,
-        );
-
-        logStep("Current subscription state reconciled", {
-          subscriptionId: current.id,
-          priceId,
-          status: current.status,
-          activeSubscriptionCount: projection.activeSubscriptionCount,
-          effectivePlanType: planType,
-        });
-
-        // Upsert subscription data
-        logStep("Attempting upsert", { 
-          user_id: userId,
-          price_id: priceId,
-          product_id: current.productId,
-          status: current.status,
-        });
-
-        const { error: upsertError } = await supabaseClient
-          .from("user_subscriptions")
-          .upsert({
-            user_id: userId,
-            stripe_customer_id: stripeCustomerId,
-            stripe_subscription_id: current.id,
-            product_id: current.productId,
-            price_id: priceId,
-            status: current.status,
-            current_period_start: current.currentPeriodStart,
-            current_period_end: current.currentPeriodEnd,
-            cancel_at_period_end: current.cancelAtPeriodEnd,
-            amount: current.amount,
-            currency: current.currency,
-            interval: current.interval,
-            interval_count: current.intervalCount,
-            updated_at: new Date().toISOString(),
-          }, {
-            onConflict: "user_id,stripe_subscription_id"
-          });
-
-        if (upsertError) {
-          logStep("Database upsert failed", { error: upsertError });
-          throw upsertError;
-        }
-
-        if (planType !== null) {
-          const { error: profileError } = await supabaseClient
-            .from("user_settings")
-            .update({ plan_type: planType })
-            .eq("user_id", userId);
-
-          if (profileError) {
-            logStep("Profile update failed", { error: profileError });
-            throw profileError;
-          }
-
-          const { error: clearFailureError } = await supabaseClient
-            .from("user_subscriptions")
-            .update({ payment_failure_at: null, next_payment_attempt: null, payment_failure_type: null })
-            .eq("stripe_subscription_id", subscription.id);
-
-          if (clearFailureError) {
-            logStep("Failed to clear payment failure state", { error: clearFailureError.message });
-          }
-
-          logStep("Subscription and effective profile plan updated", {
-            userId,
-            status: current.status,
-            planType,
-          });
-        } else {
-          logStep("Skipping plan_type update for non-active subscription", {
-            userId,
-            status: current.status,
-          });
-        }
-        break;
-      }
-
-      case "customer.subscription.deleted": {
-        const subscription = event.data.object as Stripe.Subscription;
-        logStep("Processing subscription deletion", { subscriptionId: subscription.id });
-
-        // Get user_id before deleting
-        const { data: subData } = await supabaseClient
-          .from("user_subscriptions")
-          .select("user_id")
-          .eq("stripe_subscription_id", subscription.id)
-          .single();
-
-        const { error: deleteError } = await supabaseClient
-          .from("user_subscriptions")
-          .delete()
-          .eq("stripe_subscription_id", subscription.id);
-
-        if (deleteError) {
-          logStep("Database delete failed", { error: deleteError });
-          throw deleteError;
-        }
-
-        const stripeCustomerId = subscription.customer as string;
-        let targetUserId = subData?.user_id ?? null;
-
-        if (!targetUserId && stripeCustomerId) {
-          const { data: settingsRow, error: settingsLookupError } = await supabaseClient
-            .from("user_settings")
-            .select("user_id")
-            .eq("stripe_customer_id", stripeCustomerId)
-            .maybeSingle();
-
-          if (settingsLookupError) {
-            logStep("WARNING: Failed to lookup user by stripe_customer_id", { error: settingsLookupError.message });
-          } else if (settingsRow?.user_id) {
-            targetUserId = settingsRow.user_id;
-          }
-        }
-
-        const activeSubscriptions = stripeCustomerId
-          ? await stripe.subscriptions.list({
-              customer: stripeCustomerId,
-              status: "active",
-              limit: 1,
-            })
-          : { data: [] as Stripe.Subscription[] };
-
-        const hasActiveSubscription = activeSubscriptions.data.length > 0;
-
-        // Update user's plan_type to 'free' only if no active subscriptions remain
-        if (targetUserId && !hasActiveSubscription) {
-          const { error: profileError } = await supabaseClient
-            .from("user_settings")
-            .update({ plan_type: 'free' })
-            .eq("user_id", targetUserId);
-
-          if (profileError) {
-            logStep("Profile update failed", { error: profileError });
-            throw profileError;
-          }
-
-          logStep("Profile updated to free plan", { userId: targetUserId });
-          await enforceFreePlanLimit(supabaseClient, targetUserId);
-        } else if (hasActiveSubscription) {
-          logStep("Active subscription remains; skipping free plan update", { stripeCustomerId });
-        }
-
-        logStep("Subscription deleted from database");
-        break;
-      }
-
       default:
         logStep("Unhandled event type", { type: event.type });
     }

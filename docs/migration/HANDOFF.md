@@ -3180,6 +3180,39 @@ been wired to the subscription projection, and no staging/deployed Stripe path
 was exercised. Issue #32 remained open; no remote database, Worker, or Stripe
 state changed.
 
+## Supabase subscription receipt and fenced application (2026-09-29 JST)
+
+The signed Supabase webhook now sends `customer.subscription.created`,
+`customer.subscription.updated`, and `customer.subscription.deleted` through
+durable receipt acceptance, an exact-ID dispatch lease, the customer
+generation fence, and one PostgreSQL application transaction. The transaction
+binds metadata-mapped customers, writes the current active-subscription set,
+selects the highest active plan, clears failure fields for the active updated
+subscription, and terminalizes the application/receipt/dispatch. Deletion
+keeps a canceled tombstone; when no active paid plan remains, the same
+transaction sets Free and returns the newest excess unexpired licenses with
+the existing audit and owner/favorite notification behavior. Active transfers,
+row-ownership conflicts, and stale fence generations prevent the whole effect
+from committing.
+
+The implementation is in
+[`stripe-subscription-application`](../../supabase/functions/_shared/stripe-subscription-application/index.ts)
+and migration
+[`20260929210000_add_stripe_subscription_projection.sql`](../../supabase/migrations/20260929210000_add_stripe_subscription_projection.sql).
+The subscription application PGlite suite passes 8/8, projection tests pass
+11/11, customer-mapping tests pass 8/8, and the complete Stripe receipt test
+package passes. TypeScript package typecheck, Deno check/lint, and focused
+format checks for new files pass. This is local evidence only: no Supabase
+migration was applied, no webhook was deployed, and no live Stripe event or
+user data was read or changed. Issue #32 and remote staging rehearsal remain
+open. The coarse progress estimates remain about 53% end-to-end and 73% for the
+prioritized app/infrastructure/non-user-master-data scope; user/Auth/object
+import and domain/DNS cutover remain deferred. The Wrangler account mismatch
+still blocks remote writes.
+
+This supersedes the earlier subscription interim-slice notes above: those
+created/updated and deleted branches no longer use separate REST writes.
+
 ## Supabase subscription current-state reconciliation slice (2026-09-29 JST)
 
 The Supabase webhook's `customer.subscription.created/updated` branch now uses

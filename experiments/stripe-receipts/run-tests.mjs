@@ -11,6 +11,7 @@ const typeScriptImports = new Set([
   "invoice-projection.test.mjs",
   "noop-checkout-receipt.test.mjs",
   "subscription-projection.test.mjs",
+  "subscription-application.test.mjs",
 ]);
 const pgliteTestFiles = new Set([
   "dispatch-leases.test.mjs",
@@ -20,6 +21,7 @@ const pgliteTestFiles = new Set([
   "receipt-foundation.test.mjs",
   "row-conversion.test.mjs",
   "snapshot-export.test.mjs",
+  "subscription-application.test.mjs",
 ]);
 const testFiles = readdirSync(new URL("./test/", import.meta.url))
   .filter((file) => file.endsWith(".test.mjs"))

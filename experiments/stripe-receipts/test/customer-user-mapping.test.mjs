@@ -71,6 +71,16 @@ test("uses verified Customer metadata and links only an unbound existing user", 
   assert.deepEqual(state.calls.at(-1), ["linkIfUnbound", USER_ID, CUSTOMER_ID]);
 });
 
+test("can validate metadata identity without persisting the customer link", async () => {
+  const state = setup({
+    customer: { id: CUSTOMER_ID, livemode: false, metadata: { user_id: USER_ID } },
+    userRows: [{ userId: USER_ID, stripeCustomerId: null }],
+  });
+
+  assert.equal(await resolve(state, { persistLink: false }), USER_ID);
+  assert.equal(state.calls.some(([name]) => name === "linkIfUnbound"), false);
+});
+
 test("email-only identity never links a Stripe customer", async () => {
   const state = setup({
     customer: { id: CUSTOMER_ID, livemode: false, email: "person@example.test", metadata: {} },

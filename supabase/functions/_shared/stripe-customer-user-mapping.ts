@@ -65,6 +65,8 @@ export async function resolveStripeCustomerUserMapping(input: {
   provider: StripeCustomerMappingProvider;
   customerId: string;
   livemode: boolean;
+  /** Keep the identity check read-only when the caller binds it in a transaction. */
+  persistLink?: boolean;
 }): Promise<string> {
   const customerId = requireCustomerId(input.customerId);
   if (typeof input.livemode !== "boolean") {
@@ -110,7 +112,7 @@ export async function resolveStripeCustomerUserMapping(input: {
     throw new StripeCustomerUserMappingError("stripe_customer_mapping_conflict");
   }
 
-  if (directId === null) {
+  if (directId === null && input.persistLink !== false) {
     const linked = await input.repository.linkIfUnbound(userId, customerId);
     if (!linked) {
       const concurrentRows = validateRows(

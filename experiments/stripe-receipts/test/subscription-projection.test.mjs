@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
-  PINNED_STRIPE_API_VERSION,
-  StripeSubscriptionProjectionError,
   createStripeSubscriptionProjectionProvider,
+  PINNED_STRIPE_API_VERSION,
   projectStripeSubscriptionSnapshot,
+  StripeSubscriptionProjectionError,
 } from "../../../supabase/functions/_shared/stripe-subscription-projection/index.ts";
+import { createStripeSubscriptionApplicationProvider } from "../../../supabase/functions/_shared/stripe-subscription-application/index.ts";
 
 const CUSTOMER_ID = "cus_projection_adapter";
 const PRICE_IDS = {
@@ -66,7 +67,15 @@ function provider(current, activeSubscriptions) {
   };
 }
 
-async function project({ current, active = [current], livemode = true, privatePriceIds = PRICE_IDS, subscriptionId = current.id } = {}) {
+async function project(
+  {
+    current,
+    active = [current],
+    livemode = true,
+    privatePriceIds = PRICE_IDS,
+    subscriptionId = current.id,
+  } = {},
+) {
   return projectStripeSubscriptionSnapshot({
     subscriptionId,
     customerId: CUSTOMER_ID,
@@ -77,8 +86,11 @@ async function project({ current, active = [current], livemode = true, privatePr
 }
 
 async function rejectsWithCode(operation, code) {
-  await assert.rejects(operation, (error) =>
-    error instanceof StripeSubscriptionProjectionError && error.code === code);
+  await assert.rejects(
+    operation,
+    (error) =>
+      error instanceof StripeSubscriptionProjectionError && error.code === code,
+  );
 }
 
 test("projects current state and chooses the highest active plan deterministically", async () => {
@@ -101,7 +113,11 @@ test("projects current state and chooses the highest active plan deterministical
 });
 
 test("non-active current state has no entitlement while current active plans still determine the effective plan", async () => {
-  const current = subscription({ id: "sub_past_due", status: "past_due", plan: "business" });
+  const current = subscription({
+    id: "sub_past_due",
+    status: "past_due",
+    plan: "business",
+  });
   const creator = subscription({ id: "sub_creator", plan: "creator" });
   const max = subscription({ id: "sub_max", plan: "max" });
   const result = await project({ current, active: [creator, max] });
@@ -123,9 +139,17 @@ test("the injected Stripe adapter pins Basil and expands subscription prices acr
       list: async (...args) => {
         calls.push(["list", ...args]);
         if (args[0].starting_after === undefined) {
-          return { object: "list", data: [subscription({ id: "sub_page_1" })], has_more: true };
+          return {
+            object: "list",
+            data: [subscription({ id: "sub_page_1" })],
+            has_more: true,
+          };
         }
-        return { object: "list", data: [subscription({ id: "sub_page_2" })], has_more: false };
+        return {
+          object: "list",
+          data: [subscription({ id: "sub_page_2" })],
+          has_more: false,
+        };
       },
     },
   });
@@ -135,7 +159,9 @@ test("the injected Stripe adapter pins Basil and expands subscription prices acr
   assert.equal(current.id, "sub_provider");
   assert.deepEqual(active.map(({ id }) => id), ["sub_page_1", "sub_page_2"]);
   assert.deepEqual(calls, [
-    ["retrieve", "sub_provider", { expand: ["items.data.price"] }, { apiVersion: PINNED_STRIPE_API_VERSION }],
+    ["retrieve", "sub_provider", { expand: ["items.data.price"] }, {
+      apiVersion: PINNED_STRIPE_API_VERSION,
+    }],
     ["list", {
       customer: CUSTOMER_ID,
       status: "active",
@@ -152,6 +178,63 @@ test("the injected Stripe adapter pins Basil and expands subscription prices acr
   ]);
 });
 
+test("the receipt-backed Stripe adapter pins Basil for customer and subscription reads", async () => {
+  const calls = [];
+  const adapter = createStripeSubscriptionApplicationProvider({
+    subscriptions: {
+      retrieve: async (...args) => {
+        calls.push(["retrieve", ...args]);
+        return subscription({ id: "sub_receipt_provider" });
+      },
+      list: async (...args) => {
+        calls.push(["list", ...args]);
+        return args[0].starting_after === undefined
+          ? { data: [{ id: "sub_page_1" }], has_more: true }
+          : { data: [{ id: "sub_page_2" }], has_more: false };
+      },
+    },
+    customers: {
+      retrieve: async (...args) => {
+        calls.push(["customer", ...args]);
+        return {
+          id: CUSTOMER_ID,
+          livemode: true,
+          metadata: { user_id: "11111111-1111-4111-8111-111111111111" },
+        };
+      },
+    },
+  });
+
+  await adapter.retrieveSubscription("sub_receipt_provider");
+  assert.deepEqual(
+    (await adapter.listActiveSubscriptions(CUSTOMER_ID)).map((row) => row.id),
+    [
+      "sub_page_1",
+      "sub_page_2",
+    ],
+  );
+  await adapter.retrieveCustomer(CUSTOMER_ID);
+  assert.deepEqual(calls, [
+    ["retrieve", "sub_receipt_provider", {
+      expand: ["items.data.price.product"],
+    }, { apiVersion: PINNED_STRIPE_API_VERSION }],
+    ["list", {
+      customer: CUSTOMER_ID,
+      status: "active",
+      limit: 100,
+      expand: ["data.items.data.price.product"],
+    }, { apiVersion: PINNED_STRIPE_API_VERSION }],
+    ["list", {
+      customer: CUSTOMER_ID,
+      status: "active",
+      limit: 100,
+      expand: ["data.items.data.price.product"],
+      starting_after: "sub_page_1",
+    }, { apiVersion: PINNED_STRIPE_API_VERSION }],
+    ["customer", CUSTOMER_ID, {}, { apiVersion: PINNED_STRIPE_API_VERSION }],
+  ]);
+});
+
 test("rejects a current subscription whose customer or mode does not match", async () => {
   await rejectsWithCode(
     project({ current: subscription({ customerId: "cus_other" }) }),
@@ -162,7 +245,11 @@ test("rejects a current subscription whose customer or mode does not match", asy
     "subscription_mode_mismatch",
   );
   await rejectsWithCode(
-    project({ current: subscription({ id: "sub_other" }), active: [subscription({ id: "sub_other" })], subscriptionId: "sub_requested" }),
+    project({
+      current: subscription({ id: "sub_other" }),
+      active: [subscription({ id: "sub_other" })],
+      subscriptionId: "sub_requested",
+    }),
     "subscription_id_mismatch",
   );
 });
@@ -170,18 +257,27 @@ test("rejects a current subscription whose customer or mode does not match", asy
 test("rejects duplicate active IDs and inconsistent current-active state", async () => {
   const current = subscription({ id: "sub_same", plan: "creator" });
   await rejectsWithCode(
-    project({ current, active: [current, subscription({ id: "sub_same", plan: "max" })] }),
+    project({
+      current,
+      active: [current, subscription({ id: "sub_same", plan: "max" })],
+    }),
     "subscription_active_list_invalid",
   );
 
   await rejectsWithCode(
-    project({ current, active: [subscription({ id: "sub_other", plan: "creator" })] }),
+    project({
+      current,
+      active: [subscription({ id: "sub_other", plan: "creator" })],
+    }),
     "subscription_current_list_changed",
   );
 
   const nonActive = subscription({ id: "sub_nonactive", status: "canceled" });
   await rejectsWithCode(
-    project({ current: nonActive, active: [subscription({ id: "sub_nonactive", status: "active" })] }),
+    project({
+      current: nonActive,
+      active: [subscription({ id: "sub_nonactive", status: "active" })],
+    }),
     "subscription_current_list_changed",
   );
 
@@ -241,27 +337,35 @@ test("rejects multiple billable items instead of silently selecting one", async 
 test("uses exact mode-specific private Price IDs", async () => {
   await rejectsWithCode(
     project({
-      current: subscription({ items: [{
-        current_period_start: 1_750_000_000,
-        current_period_end: 1_752_592_000,
-        price: priceFor("creator", false),
-      }] }),
+      current: subscription({
+        items: [{
+          current_period_start: 1_750_000_000,
+          current_period_end: 1_752_592_000,
+          price: priceFor("creator", false),
+        }],
+      }),
     }),
     "subscription_price_unmapped",
   );
 
   await rejectsWithCode(
     project({
-      current: subscription({ livemode: false, items: [{
-        current_period_start: 1_750_000_000,
-        current_period_end: 1_752_592_000,
-        price: priceFor("creator", true),
-      }] }),
-      active: [subscription({ livemode: false, items: [{
-        current_period_start: 1_750_000_000,
-        current_period_end: 1_752_592_000,
-        price: priceFor("creator", true),
-      }] })],
+      current: subscription({
+        livemode: false,
+        items: [{
+          current_period_start: 1_750_000_000,
+          current_period_end: 1_752_592_000,
+          price: priceFor("creator", true),
+        }],
+      }),
+      active: [subscription({
+        livemode: false,
+        items: [{
+          current_period_start: 1_750_000_000,
+          current_period_end: 1_752_592_000,
+          price: priceFor("creator", true),
+        }],
+      })],
       livemode: false,
     }),
     "subscription_price_unmapped",
@@ -294,12 +398,52 @@ test("validates status, periods, cancellation, amount, currency, and recurring f
   const invalidCases = [
     ["subscription_status_invalid", { status: "unknown" }],
     ["subscription_cancel_state_invalid", { cancel_at_period_end: "false" }],
-    ["subscription_amount_invalid", { items: [{ current_period_start: 1_750_000_000, current_period_end: 1_752_592_000, price: priceFor("creator", true, { unit_amount: -1 }) }] }],
-    ["subscription_amount_invalid", { items: [{ current_period_start: 1_750_000_000, current_period_end: 1_752_592_000, price: priceFor("creator", true, { unit_amount: 1.5 }) }] }],
-    ["subscription_currency_invalid", { items: [{ current_period_start: 1_750_000_000, current_period_end: 1_752_592_000, price: priceFor("creator", true, { currency: "JPY" }) }] }],
-    ["subscription_interval_invalid", { items: [{ current_period_start: 1_750_000_000, current_period_end: 1_752_592_000, price: priceFor("creator", true, { recurring: { interval: "hour", interval_count: 1 } }) }] }],
-    ["subscription_interval_invalid", { items: [{ current_period_start: 1_750_000_000, current_period_end: 1_752_592_000, price: priceFor("creator", true, { recurring: { interval: "month", interval_count: 0 } }) }] }],
-    ["subscription_interval_invalid", { items: [{ current_period_start: 1_750_000_000, current_period_end: 1_752_592_000, price: priceFor("creator", true, { recurring: { interval: "month" } }) }] }],
+    ["subscription_amount_invalid", {
+      items: [{
+        current_period_start: 1_750_000_000,
+        current_period_end: 1_752_592_000,
+        price: priceFor("creator", true, { unit_amount: -1 }),
+      }],
+    }],
+    ["subscription_amount_invalid", {
+      items: [{
+        current_period_start: 1_750_000_000,
+        current_period_end: 1_752_592_000,
+        price: priceFor("creator", true, { unit_amount: 1.5 }),
+      }],
+    }],
+    ["subscription_currency_invalid", {
+      items: [{
+        current_period_start: 1_750_000_000,
+        current_period_end: 1_752_592_000,
+        price: priceFor("creator", true, { currency: "JPY" }),
+      }],
+    }],
+    ["subscription_interval_invalid", {
+      items: [{
+        current_period_start: 1_750_000_000,
+        current_period_end: 1_752_592_000,
+        price: priceFor("creator", true, {
+          recurring: { interval: "hour", interval_count: 1 },
+        }),
+      }],
+    }],
+    ["subscription_interval_invalid", {
+      items: [{
+        current_period_start: 1_750_000_000,
+        current_period_end: 1_752_592_000,
+        price: priceFor("creator", true, {
+          recurring: { interval: "month", interval_count: 0 },
+        }),
+      }],
+    }],
+    ["subscription_interval_invalid", {
+      items: [{
+        current_period_start: 1_750_000_000,
+        current_period_end: 1_752_592_000,
+        price: priceFor("creator", true, { recurring: { interval: "month" } }),
+      }],
+    }],
   ];
   for (const [code, overrides] of invalidCases) {
     const current = subscription(overrides);
@@ -310,11 +454,17 @@ test("validates status, periods, cancellation, amount, currency, and recurring f
 test("rejects malformed active list entries even when the current object is valid", async () => {
   const current = subscription();
   await rejectsWithCode(
-    project({ current, active: [subscription({ id: "sub_other", status: "past_due" })] }),
+    project({
+      current,
+      active: [subscription({ id: "sub_other", status: "past_due" })],
+    }),
     "subscription_active_list_invalid",
   );
   await rejectsWithCode(
-    project({ current, active: [subscription({ id: "sub_other", customerId: "cus_other" })] }),
+    project({
+      current,
+      active: [subscription({ id: "sub_other", customerId: "cus_other" })],
+    }),
     "subscription_customer_mismatch",
   );
 });
