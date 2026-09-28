@@ -347,6 +347,23 @@ test("checkout requires the D1 webhook to be selected and refuses a non-owner", 
   }
 });
 
+test("checkout respects a transfer lock through its exact D1 microsecond deadline", async () => {
+  const { miniflare, business, master } = await createFixture({ transferLock: "2026-09-26T04:05:06.000001Z" });
+  try {
+    const stripe = createFakeStripe();
+    const response = await handleStripeExtensionCheckoutD1Request(
+      request(), envFor(business, master), dependencies(stripe),
+    );
+    assert.equal(response.status, 403);
+    assert.deepEqual(await response.json(), { error: "license_not_eligible" });
+    assert.equal(stripe.calls.create.length, 0);
+    assert.equal(await business.prepare("SELECT COUNT(*) AS count FROM stripe_extension_checkout_intents")
+      .first().then((row) => row.count), 0);
+  } finally {
+    await miniflare.dispose();
+  }
+});
+
 test("grace checkout obeys the user's configured active-fanmark limit", async () => {
   const { miniflare, business, master } = await createFixture({ licenseStatus: "grace" });
   try {
@@ -370,7 +387,7 @@ test("grace checkout obeys the user's configured active-fanmark limit", async ()
         id, fanmark_id, user_id, license_start, license_end, status, is_initial_license,
         created_at, updated_at, is_returned, is_transferred
       ) VALUES ('00000000-0000-4000-8000-000000000021', '00000000-0000-4000-8000-000000000020', ?,
-        '2026-01-01T00:00:00.000000Z', '2026-12-31T00:00:00.000000Z', 'active', 1, ?, ?, 0, 0)
+        '2026-01-01T00:00:00.000000Z', '2026-09-26T04:05:06.000001Z', 'active', 1, ?, ?, 0, 0)
     `).bind(USER_ID, NOW_SQL, NOW_SQL).run();
 
     const stripe = createFakeStripe();

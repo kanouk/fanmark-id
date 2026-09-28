@@ -202,7 +202,7 @@ async function readEligibleLicense(
     JOIN fanmarks AS f ON f.id = l.fanmark_id
     WHERE l.id = ? AND l.user_id = ? AND l.status IN ('active', 'grace')
       AND l.license_end IS NOT NULL AND l.is_returned = 0 AND l.is_transferred = 0
-      AND (l.transfer_locked_until IS NULL OR julianday(l.transfer_locked_until) <= julianday(?))
+      AND (l.transfer_locked_until IS NULL OR l.transfer_locked_until <= ?)
       AND NOT EXISTS (
         SELECT 1 FROM fanmark_transfer_requests AS tr
         WHERE tr.license_id = l.id AND tr.status IN ('pending', 'approved')
@@ -248,7 +248,7 @@ async function enforceGracePlanLimit(
   const count = await business.prepare(`
     SELECT COUNT(*) AS count FROM fanmark_licenses
     WHERE user_id = ? AND status = 'active'
-      AND (license_end IS NULL OR julianday(license_end) > julianday(?))
+      AND (license_end IS NULL OR license_end > ?)
   `).bind(userId, now).first<{ count: number }>();
   if (!count || !Number.isSafeInteger(count.count)) {
     throw new StripeExtensionCheckoutD1Error("active_license_count_unavailable", 503);
@@ -357,7 +357,7 @@ async function beginIntent(
     WHERE license.id = ? AND license.user_id = ? AND license.status IN ('active', 'grace')
       AND license.license_end IS NOT NULL AND license.is_returned = 0 AND license.is_transferred = 0
       AND fanmark.tier_level = ?
-      AND (license.transfer_locked_until IS NULL OR julianday(license.transfer_locked_until) <= julianday(?))
+      AND (license.transfer_locked_until IS NULL OR license.transfer_locked_until <= ?)
       AND NOT EXISTS (
         SELECT 1 FROM fanmark_transfer_requests AS tr
         WHERE tr.license_id = license.id AND tr.status IN ('pending', 'approved')
@@ -378,7 +378,7 @@ async function markReconciliationRequired(business: D1Database, intent: IntentRo
   await business.prepare(`
     UPDATE stripe_extension_checkout_intents SET status = 'reconciliation_required', updated_at = ?
     WHERE id = ? AND status = 'created' AND stripe_checkout_session_id IS NULL
-      AND julianday(idempotency_safe_until) <= julianday(?)
+      AND idempotency_safe_until <= ?
   `).bind(now, intent.id, now).run();
 }
 

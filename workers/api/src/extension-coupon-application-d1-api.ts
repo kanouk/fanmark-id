@@ -324,7 +324,7 @@ async function validateCouponAndLicense(
   const transfer = await database.prepare(`
     SELECT 1 AS found FROM fanmark_licenses l
     WHERE l.id = ? AND (
-      (l.transfer_locked_until IS NOT NULL AND julianday(l.transfer_locked_until) > julianday(?))
+      (l.transfer_locked_until IS NOT NULL AND l.transfer_locked_until > ?)
       OR EXISTS (SELECT 1 FROM fanmark_transfer_codes tc WHERE tc.license_id = l.id AND tc.status IN ('active', 'applied'))
       OR EXISTS (SELECT 1 FROM fanmark_transfer_requests tr WHERE tr.license_id = l.id AND tr.status IN ('pending', 'approved'))
     )
@@ -375,7 +375,7 @@ async function enforceGracePlanLimit(
   const count = await database.prepare(`
     SELECT COUNT(*) AS count FROM fanmark_licenses
     WHERE user_id = ? AND status = 'active'
-      AND (license_end IS NULL OR julianday(license_end) > julianday(?))
+      AND (license_end IS NULL OR license_end > ?)
   `).bind(userId, now).first<{ count: number }>();
   if (!count || !Number.isSafeInteger(count.count)) {
     throw new ExtensionCouponApplicationD1Error("active_license_count_unavailable", 503);

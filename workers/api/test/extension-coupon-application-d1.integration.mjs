@@ -314,6 +314,14 @@ isolated("checks tier, transfer, grace plan limit, and perpetual-license rules",
 
   await reset();
   await seedCoupon();
+  await seedLicense();
+  await database.prepare("UPDATE fanmark_licenses SET transfer_locked_until = ? WHERE id = ?")
+    .bind("2026-09-26T12:00:00.000001Z", LICENSE).run();
+  response = await call({});
+  assert.equal((await body(response)).error, "transfer_in_progress");
+
+  await reset();
+  await seedCoupon();
   await seedLicense({ status: "grace", userSettings: true });
   const extra = [
     ["00000000-0000-4000-8000-000000000021", "00000000-0000-4000-8000-000000000022", "🌹"],
@@ -323,6 +331,8 @@ isolated("checks tier, transfer, grace plan limit, and perpetual-license rules",
   for (const [licenseId, fanmarkId, displayFanmark] of extra) {
     await seedLicense({ userId: OWNER, licenseId, fanmarkId, displayFanmark, userSettings: false });
   }
+  await database.prepare("UPDATE fanmark_licenses SET license_end = ? WHERE id = ?")
+    .bind("2026-09-26T12:00:00.000001Z", extra[2][0]).run();
   response = await call({});
   assert.equal((await body(response)).error, "fanmark_limit_exceeded");
 
