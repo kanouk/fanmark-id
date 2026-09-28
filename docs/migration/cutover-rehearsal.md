@@ -82,12 +82,14 @@ from observed work rather than assumed.
 The rehearsal is not complete until each applicable gate has evidence. A green
 unit suite or an empty-table readback alone is insufficient.
 
-- The refreshed source catalog fingerprint matches the conversion and import
-  artifacts. Converter v11 reports 13 unresolved groups across 226 locations
-  (8 row-conversion groups / 133 locations and 5 schema/operation groups / 93
-  locations) and `deployable: false`. The fresh-catalog synthetic replay passes
-  40/40 table checkpoints, but the full schema/import parity gate remains open;
-  see [schema conversion](schema-conversion.md#version-11-descriptor-aware-fresh-catalog-replay-2026-09-28-jst).
+- The fresh 2026-09-29 catalog fingerprint matches converter v21 and the
+  current-catalog import rehearsal. V21 has no remaining row-conversion gates;
+  five schema/operation groups across 93 locations remain (11 external Auth
+  references, 79 timestamp-default operations, and the function/RLS/trigger
+  catalog scopes). The report is still `deployable: false`. The synthetic
+  replay completes 40/40 table checkpoints with 10 synthetic rows, but does
+  not close the schema/operation or real-row parity gates; see
+  [the v21 schema conversion checkpoint](schema-conversion.md#fresh-v21-catalog-and-full-synthetic-replay-2026-09-29-jst).
 - The current schema's synthetic import/restart rehearsal passes, including
   constraints, sequence state, exact codecs, credential transform, and
   typed readback. This does not imply that real user rows have been exported.
