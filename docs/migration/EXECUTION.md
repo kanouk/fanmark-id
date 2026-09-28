@@ -3851,3 +3851,23 @@ applied, the webhook was not deployed, and no Stripe API call, user-data
 migration, D1 change, or DNS/domain change was made. Issue #32 remains open
 because subscription, checkout, and deletion paths still need to be brought
 under the same dispatch guarantees.
+
+## JSONB snapshot/import gate and schema converter v19 (2026-09-29 JST)
+
+The `jsonb` snapshot projection wraps PostgreSQL text as an outer JSON string;
+the row codec validates the text and preserves it byte-for-byte for the D1
+binding. Generated D1 DDL checks `json_valid()` without conflating SQL `NULL`
+with JSON `null`. Real SQLite tests read back both null forms distinctly and
+retain a nested high-precision decimal unchanged; invalid JSON text is rejected.
+The schema converter no longer emits `json_import_validation` for this reviewed
+codec contract and advances to v19 so older snapshots cannot claim the new
+gate disposition.
+
+Against the last recorded schema shape, this removes 13 JSONB locations and
+reduces the calculated report from 7 groups / 209 locations to 6 / 196 (1
+row-conversion / 103; 5 schema/operation / 93). No fresh schema query was run,
+so this is not a refreshed live report and the converter remains
+`deployable: false`. `npm run test:migration-data` passes 190/190 under Node
+22.6.0. This work changes local conversion code and tests only; no Supabase
+application rows, remote D1, production route, user data, or DNS/domain state
+changed.

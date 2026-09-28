@@ -727,3 +727,25 @@ operation semantics, and unsupported catalog scopes. Focused validation passed:
 favorites client 5/5, favorites D1 6/6, schema converter 19/19, and both app
 and Worker typechecks. No user rows, remote D1 writes, Worker deployment, or
 domain/DNS state changed.
+
+## JSONB text import contract and schema converter v19 (2026-09-29 JST)
+
+The snapshot projection exports each `jsonb` value as PostgreSQL text inside a
+JSON string field, so JSON numbers never pass through the outer JSON numeric
+representation. The row codec parses that text to reject invalid JSON,
+non-finite values, and unsafe integer values, then binds the original text
+unchanged. Generated D1 columns enforce `json_valid()` while allowing SQL
+`NULL`. The source projection preserves the distinction between SQL `NULL` and
+the JSON value `null`; exact D1 readback also retains high-precision decimal
+text.
+
+Schema converter v19 removes the redundant `json_import_validation` gate only
+because these projection, codec, DDL, and readback checks are now covered
+together. Tests verify SQL `NULL`, JSON `null`, nested JSON, a high-precision
+decimal, and rejection of invalid text through real SQLite. Applying this one
+rule change to the last recorded v18 catalog report removes its 13 JSONB
+locations, leaving 6 groups / 196 locations (1 row-conversion / 103; 5
+schema/operation / 93). That is a calculation from the recorded schema shape,
+not a fresh Supabase catalog query. The converter remains `deployable: false`;
+no source application rows, remote D1, production route, or domain/DNS state
+were changed.

@@ -8,9 +8,10 @@ has been performed.
 A fresh schema-only query completed at 2026-09-29 01:40 JST using Supabase CLI
 2.118.0 in a private temporary project-link directory. It again returned 40
 tables, 406 columns, 144 constraints, 139 indexes, 15 enum labels, one view,
-58 functions, 36 non-internal triggers, and 77 RLS policies. Converter v18 with
-the value-free credential descriptor reports 7 groups / 209 locations
-(2 row-conversion / 116, 5 schema/operation / 93) and `deployable: false`.
+58 functions, 36 non-internal triggers, and 77 RLS policies. The recorded
+converter-v18 report with the value-free credential descriptor has 7 groups /
+209 locations (2 row-conversion / 116, 5 schema/operation / 93) and
+`deployable: false`.
 The earlier 00:42 JST current-catalog synthetic Miniflare replay used v17: it
 completed all 40 table checkpoints with 10 synthetic rows, transformed two
 credentials, deferred one inactive credential, and rejected conflicting
@@ -18,6 +19,15 @@ coverage. Its status remains `public_rows_reconciled`;
 `fullMigrationReconciled` remains false. No source application rows or remote
 D1/R2 were read or written. PR #41 validation run `36445109332` passed both
 required jobs.
+
+Local schema converter v19 now removes the JSONB gate because the snapshot text
+projection, exact row codec, generated D1 `json_valid()` check, and SQLite
+readback cover JSON validation and SQL-NULL/JSON-null distinction. On the last
+recorded catalog shape, this rule change calculates 6 groups / 196 locations
+(1 row-conversion / 103, 5 schema/operation / 93); that count is derived from
+the v18 report and is not a fresh Supabase schema query. The migration-data
+suite passes 190/190 under Node 22.6.0. `deployable` remains false, and this
+local code/test change did not access application rows or alter remote state.
 
 A fresh schema-only timestamp-writer audit at 2026-09-29 00:14 JST found 79
 `now()` timestamp defaults across 40 tables. It scanned 98 explicit-column

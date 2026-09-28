@@ -17,7 +17,7 @@ import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 18;
+export const SCHEMA_CONVERSION_VERSION = 19;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -96,7 +96,6 @@ const REVIEWED_GIN_INDEX_ADAPTATIONS = new Map([
 const ROW_CONVERSION_GATE_CODES = new Set([
   "bigint_import_range_validation",
   "timestamp_import_precision",
-  "json_import_validation",
   "array_import_validation",
   "money_cents_import",
   "decimal_import_validation",
@@ -840,7 +839,6 @@ function typeInfo(column, enumLabels, gates, typeCounts, credentialDescriptorPla
     targetType = "TEXT";
     codec = "json-text";
     checks.push(`${quoteIdentifier(column.column_name)} IS NULL OR json_valid(${quoteIdentifier(column.column_name)})`);
-    gates.add("json_import_validation", "JSONB values must be validated as JSON text while preserving JSON null versus SQL NULL.", location);
   } else if (sourceType.endsWith("[]")) {
     targetType = "TEXT";
     targetKind = "array";
