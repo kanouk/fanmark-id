@@ -3951,3 +3951,23 @@ locations and reduces the calculated report from 6 groups / 196 locations to
 `deployable: false`; no fresh Supabase schema fetch or application-row query
 was made. `npm run test:migration-data` verifies the codec, generated DDL, and
 synthetic importer contract.
+
+## Business-to-Auth identity preflight (2026-09-29 JST)
+
+The local D1 importer now supports only the reviewed cross-database edge
+`public.<uuid-column> -> auth.users(id)`. With the local unresolved-gate option
+enabled, it scans and verifies each referencing snapshot stream before creating
+the business D1 import ledger. Every non-null identity is checked in batches
+of at most 100 through an injected read-only `resolveAuthUserIds` callback;
+missing callback results or absent Auth IDs abort before any D1/report write.
+Optional NULL values do not require an Auth lookup. No placeholder identities
+are created, and the schema report remains `deployable: false` because D1
+cannot enforce a foreign key across the separate Auth and business databases.
+
+The local Miniflare tests verify success, missing resolver, absent Auth ID,
+NULL handling, and zero target writes on preflight failure. The focused D1
+import tests pass 20/20 and `npm run test:migration-data` passes 191/191 under
+Node 22.6.0. The 40-table current-catalog synthetic rehearsal reconciles all
+40 checkpoints and 10 synthetic rows, including the two transformed and one
+deferred credentials. No Supabase application rows, real credentials, remote
+D1/R2 state, production route, or domain/DNS state were accessed or changed.

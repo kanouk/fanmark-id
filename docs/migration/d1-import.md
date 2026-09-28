@@ -39,8 +39,17 @@ The importer derives a parent-first order from supported, validated internal
 foreign keys. Cycles, malformed definitions, unsupported internal actions, and
 non-Auth external references are rejected. `auth.*` references are recorded as
 unresolved identity gates and may be admitted only when `mode: "local"` and
-`allowUnresolvedGates: true` are explicit. No placeholder Auth rows are
-created. The resulting report remains `deployable: false` and
+`allowUnresolvedGates: true` are explicit. The supported external edge is a
+single UUID column referencing `auth.users(id)`. Before creating the D1 ledger
+or writing business rows, the importer scans and verifies each referencing
+snapshot table, then calls the read-only `resolveAuthUserIds(userIds)` option
+with batches of at most 100 distinct non-null IDs. The resolver must return an
+array or `Set` containing every ID found in the already-imported Auth D1; a
+missing ID or missing resolver fails before any target write. Null optional
+references need no lookup. No placeholder Auth rows are created. Because the
+Auth and business databases are separate, this is a preflight read rather than
+a cross-database transaction; the Auth target must remain stable through the
+business import. The resulting report remains `deployable: false` and
 `fullMigrationReconciled: false`.
 
 Before the first public row write it verifies the generated application schema

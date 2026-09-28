@@ -27,8 +27,8 @@ timestamp defaults, and the function, RLS policy, and trigger catalog scopes.
 V21 omits approximate millisecond D1 clock defaults; every target operation
 must supply the canonical UTC microsecond timestamp. All 79 timestamp gates
 remain open until per-operation clock coverage is verified. The report remains
-`deployable: false`; external identity references and unsupported catalog
-scopes are also still open.
+`deployable: false`; cross-database Auth foreign keys and unsupported catalog
+scopes are not emitted as D1 constraints.
 
 Under Node 22.6.0, the v21 current-catalog synthetic importer completed all 40
 checkpoints with 10 synthetic rows, transformed two active credentials,
@@ -39,6 +39,15 @@ false. No source application rows, real credentials, or remote D1/R2 state
 were used. The D1 business migrations `0018` and `0019` remain unapplied; the
 local Wrangler CLI is authenticated to a different Cloudflare account than
 the staging config, so no remote migration or deployment was attempted.
+
+The local D1 importer now preflights every non-null `auth.users(id)` reference
+through a caller-supplied, read-only Auth D1 lookup before creating its ledger
+or writing business rows. Missing lookups and missing identities fail closed;
+optional NULL references are allowed. This verifies row-level references for
+the split-database rehearsal but does not close the external-FK schema gate or
+make the report deployable. Auth-reference tests pass 20/20; the full
+migration-data suite passes 191/191. The 40-table current-catalog synthetic
+rehearsal still reconciles all checkpoints with `deployable: false`.
 
 Dashboard read-only verification could not run because Computer Use reported
 that macOS is locked and needs manual unlock. No browser action or Cloudflare

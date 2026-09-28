@@ -110,6 +110,7 @@ function sequenceFixture({ isCalled = true, lastValue = "25", includeRow = true 
 const parentId = "00000000-0000-4000-8000-000000000001";
 const childId = "00000000-0000-4000-8000-000000000002";
 const passwordConfigId = "00000000-0000-4000-8000-000000000010";
+const authUserId = "00000000-0000-4000-8000-000000000099";
 
 function fixtureRows() {
   return {
@@ -178,7 +179,7 @@ function authFixture() {
   });
   const rows = fixtureRows();
   rows.parent[0].columns.push("auth_user_id");
-  rows.parent[0].values.auth_user_id = "00000000-0000-4000-8000-000000000099";
+  rows.parent[0].values.auth_user_id = authUserId;
   return { catalog, rows };
 }
 
@@ -808,10 +809,51 @@ if (isMain) test("allows only explicitly reviewed Auth identity gates in local m
       importD1Snapshot(importOptions(fixture, { allowUnresolvedGates: false })),
       (error) => error.code === "external_identity_gate",
     );
+    await assert.rejects(
+      importD1Snapshot(importOptions(fixture, { allowUnresolvedGates: true })),
+      (error) => error.code === "external_identity_lookup_required",
+    );
+    await assert.rejects(
+      importD1Snapshot(importOptions(fixture, {
+        allowUnresolvedGates: true,
+        resolveAuthUserIds: async () => new Set(),
+      })),
+      (error) => error.code === "external_identity_missing",
+    );
+    const rowsBeforeSuccessfulLookup = await fixture.database.prepare('SELECT COUNT(*) AS "count" FROM "parent"').all();
+    assert.deepEqual(rowsBeforeSuccessfulLookup.results, [{ count: 0 }]);
+    const ledgerBeforeSuccessfulLookup = await fixture.database.prepare(
+      'SELECT "name" FROM "sqlite_master" WHERE "type" = \'table\' AND "name" LIKE \'__fanmark_d1_import_%\' ORDER BY "name"',
+    ).all();
+    assert.deepEqual(ledgerBeforeSuccessfulLookup.results, []);
+    await assert.rejects(fs.stat(fixture.reportPath), (error) => error.code === "ENOENT");
+
+    const lookupCalls = [];
+    const result = await importD1Snapshot(importOptions(fixture, {
+      allowUnresolvedGates: true,
+      resolveAuthUserIds: async (userIds) => {
+        lookupCalls.push(userIds);
+        return new Set(userIds.filter((userId) => userId === authUserId));
+      },
+    }));
+    assert.equal(result.status, "public_rows_reconciled");
+    assert.deepEqual(lookupCalls, [[authUserId]]);
+    const parent = await fixture.database.prepare('SELECT "auth_user_id" FROM "parent"').all();
+    assert.deepEqual(parent.results, [{ auth_user_id: authUserId }]);
+  } finally {
+    await fixture.close();
+  }
+});
+
+if (isMain) test("allows null optional Auth identity references without an Auth D1 lookup", async () => {
+  const input = authFixture();
+  input.rows.parent[0].values.auth_user_id = null;
+  const fixture = await openFixture(input);
+  try {
     const result = await importD1Snapshot(importOptions(fixture, { allowUnresolvedGates: true }));
     assert.equal(result.status, "public_rows_reconciled");
     const parent = await fixture.database.prepare('SELECT "auth_user_id" FROM "parent"').all();
-    assert.deepEqual(parent.results, [{ auth_user_id: "00000000-0000-4000-8000-000000000099" }]);
+    assert.deepEqual(parent.results, [{ auth_user_id: null }]);
   } finally {
     await fixture.close();
   }

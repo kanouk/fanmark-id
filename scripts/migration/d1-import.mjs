@@ -69,6 +69,7 @@ export const MAX_BINDINGS_PER_STATEMENT = 100;
 export const MAX_SQL_STATEMENT_BYTES = 100_000;
 export const MAX_TARGET_ROW_BYTES = 1_900_000;
 export const MAX_SCAN_BATCH_ROWS = 1000;
+const MAX_AUTH_ID_LOOKUP_BATCH = 100;
 
 export const LEDGER_TABLES = Object.freeze({
   runs: "__fanmark_d1_import_runs",
@@ -294,7 +295,20 @@ function buildImportPlan(catalog, convertedSchema, { allowUnresolvedGates, crede
     // target-schema validation merely by enabling the local gate option.
     if (!parsed) throw fail("unsupported_internal_foreign_key");
     if (parsed.referenceSchema === "auth") {
-      externalGates.push({ code: "external_foreign_key", table: constraint.table_name, name: constraint.name });
+      if (
+        parsed.referenceTable !== "users" ||
+        parsed.columns.length !== 1 ||
+        parsed.referenceColumns.length !== 1 ||
+        parsed.referenceColumns[0] !== "id"
+      ) throw fail("unsupported_auth_identity_foreign_key");
+      const identityColumn = columnsByTable.get(constraint.table_name)?.find((column) => column.column_name === parsed.columns[0]);
+      if (!identityColumn || identityColumn.postgres_type !== "uuid") throw fail("unsupported_auth_identity_foreign_key");
+      externalGates.push({
+        code: "external_foreign_key",
+        table: constraint.table_name,
+        name: constraint.name,
+        identityColumn: parsed.columns[0],
+      });
       if (!allowUnresolvedGates) throw fail("external_identity_gate");
       continue;
     }
@@ -847,6 +861,48 @@ async function readTableRecords({ filePath, entry, tablePlan, maxRowBytes, onRec
   const streamHash = hash.digest("hex");
   if (streamHash !== entry.streamHash || String(byteCount) !== entry.byteCount || String(ordinal) !== entry.rowCount) throw fail("source_stream_identity_mismatch");
   return { rowCount: ordinal, byteCount, streamHash };
+}
+
+async function preflightExternalIdentities(snapshot, plan, resolveAuthUserIds, { maxRowBytes }) {
+  if (plan.externalGates.length === 0) return;
+  const pendingIds = new Set();
+  const flush = async () => {
+    if (pendingIds.size === 0) return;
+    if (typeof resolveAuthUserIds !== "function") throw fail("external_identity_lookup_required");
+    const requestedIds = [...pendingIds];
+    pendingIds.clear();
+    let resolved;
+    try {
+      resolved = await resolveAuthUserIds(requestedIds);
+    } catch (error) {
+      throw fail("external_identity_lookup_failed", error);
+    }
+    if (!(resolved instanceof Set) && !Array.isArray(resolved)) throw fail("external_identity_lookup_invalid");
+    const foundIds = new Set(resolved);
+    if ([...foundIds].some((id) => typeof id !== "string" || !requestedIds.includes(id))) throw fail("external_identity_lookup_invalid");
+    if (requestedIds.some((id) => !foundIds.has(id))) throw fail("external_identity_missing");
+  };
+
+  for (const gate of plan.externalGates) {
+    const tablePlan = plan.tables.get(gate.table);
+    const entry = snapshot.tablesByName.get(gate.table);
+    const columnIndex = tablePlan?.columns.findIndex((column) => column.name === gate.identityColumn) ?? -1;
+    if (!tablePlan || !entry || columnIndex < 0) throw fail("external_identity_column_unavailable");
+    await readTableRecords({
+      filePath: path.join(snapshot.outputDir, entry.file),
+      entry,
+      tablePlan,
+      maxRowBytes,
+      onRecord: async (row) => {
+        const userId = row.converted.bindings[columnIndex];
+        if (userId === null) return;
+        if (typeof userId !== "string" || userId.length === 0) throw fail("external_identity_value_invalid");
+        pendingIds.add(userId);
+        if (pendingIds.size >= MAX_AUTH_ID_LOOKUP_BATCH) await flush();
+      },
+    });
+    await flush();
+  }
 }
 
 function bindingValueType(value) {
@@ -2092,6 +2148,7 @@ export async function importD1Snapshot({
   reportPath,
   mode = "local",
   allowUnresolvedGates = false,
+  resolveAuthUserIds = null,
   expectedTargetProfile = null,
   maxRowsPerBatch = DEFAULT_MAX_ROWS_PER_BATCH,
   maxBatchBytes = DEFAULT_MAX_BATCH_BYTES,
@@ -2105,6 +2162,7 @@ export async function importD1Snapshot({
   validateDatabase(database);
   if (mode !== "local") throw fail("unsupported_import_mode");
   if (allowUnresolvedGates !== true && allowUnresolvedGates !== false) throw fail("invalid_gate_option");
+  if (resolveAuthUserIds !== null && typeof resolveAuthUserIds !== "function") throw fail("invalid_auth_identity_resolver");
   validateIdentity(destinationId, "invalid_destination_id");
   validateIdentity(targetIncarnation, "invalid_target_incarnation");
   if (typeof now !== "function") throw fail("invalid_clock");
@@ -2123,6 +2181,7 @@ export async function importD1Snapshot({
   await ensurePrivateReportParent(absoluteReportPath);
   plan ??= buildImportPlan(snapshot.catalog, snapshot.convertedSchema, { allowUnresolvedGates, credentialDescriptor: snapshot.manifest.credentialDescriptor ?? undefined });
   if (snapshot.convertedSchema.report.unresolvedGateCount > 0 && !allowUnresolvedGates) throw fail("schema_gates_unresolved");
+  await preflightExternalIdentities(snapshot, plan, resolveAuthUserIds, { maxRowBytes });
   const existingReport = await readReport(absoluteReportPath);
   if (existingReport) assertReportIdentity(existingReport, snapshot, { mode, destinationId, targetIncarnation }, plan);
   await ensureLedgerSchema(database);
