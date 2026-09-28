@@ -3291,7 +3291,7 @@ staging browser callbacks remain unverified under #31. No provider settings,
 credentials, source rows, production routes, or domain/DNS configuration were
 changed.
 
-## Complete frontend backend-selector declaration and staging assignment (2026-09-28 JST)
+## Complete frontend backend-selector declaration, staging assignment, and deploy (2026-09-28 JST)
 
 Auditing all frontend TypeScript references found 45 distinct
 `VITE_*_BACKEND` selectors, five of which were missing from `ImportMetaEnv`.
@@ -3303,6 +3303,19 @@ build now explicitly sets `VITE_BROADCAST_SEND_BACKEND=disabled` and
 fail-closed by default, and no sender/provider credentials are configured.
 
 Under Node 22.6.0, the focused selector suite passed 3/3, root typecheck passed,
-and `npm run build:cloudflare-staging` passed. This is a local build only; no
-Worker deployment or provider operation occurred. The selector audit is
-stronger, while runtime acceptance of the full API/UI inventory remains open.
+`npm run build:cloudflare-staging` passed, and the full `npm run
+test:migration-data` suite passed 172/172. Wrangler app-config dry-run passed.
+Commit `f54d930` passed both PR #41 validation jobs in GitHub Actions run
+`36381489669` (`Validate Cloudflare staging application` and `Validate
+Cloudflare Worker API`; Supabase Preview was skipped by design).
+
+The app was then deployed to workers.dev staging only. Wrangler recorded
+deployment `e14b597b-74a6-4e1b-a850-0e8403ee86ed`, version
+`f4c99bda-ea79-468e-addd-38b8f1453f47`, and 100% traffic. The deployed static
+asset `/assets/index-DZsrzGFr.js` is 2,498,833 bytes and its SHA-256
+`519bd4f92b7aebcf7b13f903a6e674e75278171a69bef83f396e072e75f71246` matches
+the local staging artifact. Staging `/` returned 200 with `noindex, nofollow`,
+`/api/auth/ok` returned 200 `{ok:true}`, and `/api/emoji/catalog` returned 200
+JSON. No D1 migrations or data operations, provider calls, production routes,
+or domain/DNS changes occurred. The selector audit is complete statically;
+runtime acceptance of the full API/UI inventory remains open.
