@@ -30,6 +30,13 @@ transfer-lock, and active-license boundary checks; Worker typecheck also passes.
 These are local changes pending PR validation; `0018` and `0019` have not been
 applied remotely and no remote state changed.
 
+The same timestamp audit found the scheduled Stripe webhook dispatcher passing
+its Worker `scheduledTime` as millisecond ISO text. It now uses the shared
+six-digit UTC formatter and rejects an invalid schedule timestamp. The focused
+Stripe invoice-projection integration suite passes 12/12 and Worker typecheck
+passes. This remains a local change; no remote D1 migration or deployment was
+attempted.
+
 A fresh schema-only query completed at 2026-09-29 03:27 JST using Supabase CLI
 2.118.0, `CI=1`, and `--yes` in a private temporary project-link directory.
 It returned 40 tables / 406 columns, 144 constraints, 139 indexes, 15 enum

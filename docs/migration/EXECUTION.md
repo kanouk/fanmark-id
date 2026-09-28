@@ -4006,3 +4006,13 @@ Node 22.6.0. The 40-table current-catalog synthetic rehearsal reconciles all
 40 checkpoints and 10 synthetic rows, including the two transformed and one
 deferred credentials. No Supabase application rows, real credentials, remote
 D1/R2 state, production route, or domain/DNS state were accessed or changed.
+
+## Scheduled Stripe timestamp precision (2026-09-29 JST)
+
+The scheduled Stripe webhook dispatcher used `Date#toISOString()` for its
+explicit D1 operation timestamp, yielding three fractional digits while the
+migration contract requires six. It now uses the shared UTC microsecond
+formatter and rejects invalid Worker schedule times before invoking dispatch.
+A focused test verifies exact `.000000Z` and `.123000Z` output and invalid-time
+rejection. The Stripe invoice-projection integration suite passes 12/12 and the
+Worker typecheck passes under Node 22.6.0. No remote state changed.

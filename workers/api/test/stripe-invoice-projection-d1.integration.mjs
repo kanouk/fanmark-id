@@ -24,7 +24,12 @@ const scheduledPath = path.join(repoRoot, "workers/api/src/stripe-webhook-d1-sch
 const { acceptStripeWebhookReceiptIntoD1 } = await import(pathToFileURL(ingressPath).href);
 const { claimStripeWebhookDispatchesFromD1 } = await import(pathToFileURL(dispatchPath).href);
 const { applyStripeInvoiceReceiptInD1, createD1InvoiceProjectionRuntime } = await import(pathToFileURL(invoicePath).href);
-const { dispatchStripeWebhookBatchInD1, runScheduledStripeWebhookDispatches, stripeSecretKeyForMode } = await import(pathToFileURL(scheduledPath).href);
+const {
+  dispatchStripeWebhookBatchInD1,
+  runScheduledStripeWebhookDispatches,
+  stripeSecretKeyForMode,
+  stripeWebhookScheduledTimestamp,
+} = await import(pathToFileURL(scheduledPath).href);
 
 const NOW = "2026-09-26T04:05:06.000Z";
 const USER_ID = "00000000-0000-4000-8000-000000000101";
@@ -471,6 +476,12 @@ test("scheduled dispatcher applies invoice events through an injectable provider
   } finally {
     await miniflare.dispose();
   }
+});
+
+test("scheduled Stripe timestamps use the canonical six-digit UTC representation", () => {
+  assert.equal(stripeWebhookScheduledTimestamp(Date.parse(NOW)), "2026-09-26T04:05:06.000000Z");
+  assert.equal(stripeWebhookScheduledTimestamp(Date.parse(NOW) + 123), "2026-09-26T04:05:06.123000Z");
+  assert.throws(() => stripeWebhookScheduledTimestamp(Number.NaN), /stripe_dispatch_schedule_time_invalid/u);
 });
 
 test("scheduled Worker Stripe handling stays disabled when staging selectors are absent", async () => {

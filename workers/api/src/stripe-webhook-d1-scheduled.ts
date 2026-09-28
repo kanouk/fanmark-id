@@ -22,6 +22,7 @@ import {
   type StripeWebhookD1LeaseIdentity,
 } from "./stripe-webhook-d1-dispatch.ts";
 import { selectD1Database, type Env } from "./repository.ts";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const EXTENSION_EVENTS = new Set([
   "checkout.session.completed",
@@ -91,6 +92,12 @@ export function stripeSecretKeyForMode(value: string | undefined, livemode: bool
     throw new Error("stripe_dispatch_configuration_invalid");
   }
   return key;
+}
+
+export function stripeWebhookScheduledTimestamp(scheduledTime: number): string {
+  const date = new Date(scheduledTime);
+  if (!Number.isFinite(date.getTime())) throw new Error("stripe_dispatch_schedule_time_invalid");
+  return toUtcMicrosecondTimestamp(date);
 }
 
 export async function dispatchStripeWebhookBatchInD1(args: {
@@ -227,7 +234,7 @@ export async function runScheduledStripeWebhookDispatches(args: {
   }
   const batchSize = configuredPositiveInteger(args.env.STRIPE_DISPATCH_BATCH_SIZE, DEFAULT_BATCH_SIZE, 100);
   const maxAttempts = configuredPositiveInteger(args.env.STRIPE_DISPATCH_MAX_ATTEMPTS, DEFAULT_MAX_ATTEMPTS, 100);
-  const now = new Date(args.scheduledTime).toISOString();
+  const now = stripeWebhookScheduledTimestamp(args.scheduledTime);
   const testStripe = new Stripe(stripeSecretKeyForMode(args.env.STRIPE_SECRET_KEY_TEST, false), {
     apiVersion: PINNED_STRIPE_API_VERSION,
     timeout: 10_000,
