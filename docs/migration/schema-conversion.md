@@ -684,3 +684,20 @@ The v17 report removes the array gate's nine locations: 8 unresolved groups /
 `deployable: false`. Focused schema/row tests pass 27/27 and the complete
 migration-data suite passes 185/185 with no skips. No application rows or live
 sequence values were read.
+
+## Fresh schema-only catalog and v17 synthetic replay (2026-09-29 00:42 JST)
+
+The reviewed `schema-readiness.sql` completed through Supabase CLI 2.118.0 in a
+private temporary project-link directory. The catalog-only, read-only query
+again returned 40 tables, 406 columns, 144 constraints, 139 indexes, 15 enum
+labels, one view, 58 functions, 36 non-internal triggers, and 77 RLS policies.
+No application rows or live sequence values were queried.
+
+Schema converter v17 with the value-free `bcryptjs@3.0.3` / cost-10 descriptor
+still reports 8 unresolved groups across 211 locations (3 row-conversion / 118
+and 5 schema/operation / 93) and remains `deployable: false`. The current
+catalog synthetic Miniflare replay completed 40/40 table checkpoints with 10
+synthetic rows, transformed two credentials, deferred one inactive credential,
+and rejected conflicting coverage. Its result is `public_rows_reconciled`, not
+full migration reconciliation. No source application rows or remote D1/R2 were
+read or written.

@@ -5,6 +5,19 @@ draft. Isolated Cloudflare staging D1 and Workers deployments are present; no
 production Worker deployment, user-data import, or public DNS/domain cutover
 has been performed.
 
+A fresh schema-only query completed at 2026-09-29 00:42 JST using Supabase CLI
+2.118.0 in a private temporary project-link directory. It again returned 40
+tables, 406 columns, 144 constraints, 139 indexes, 15 enum labels, one view,
+58 functions, 36 non-internal triggers, and 77 RLS policies. Converter v17 with
+the value-free credential descriptor still reports 8 groups / 211 locations
+(3 row-conversion / 118, 5 schema/operation / 93) and `deployable: false`.
+The current-catalog synthetic Miniflare replay completed all 40 table
+checkpoints with 10 synthetic rows, transformed two credentials, deferred one
+inactive credential, and rejected conflicting coverage. Its status remains
+`public_rows_reconciled`; `fullMigrationReconciled` remains false. No source
+application rows or remote D1/R2 were read or written. PR #41 validation run
+`36445109332` passed both required jobs.
+
 A fresh schema-only timestamp-writer audit at 2026-09-29 00:14 JST found 79
 `now()` timestamp defaults across 40 tables. It scanned 98 explicit-column
 INSERTs in Worker source, both app and business D1 migration SQL, and migration
