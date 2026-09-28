@@ -13,6 +13,19 @@
 - `default_transaction_read_only=on` を指定したカタログ問い合わせで、publicの40テーブル・77 RLS policy・58関数・144制約・36ユーザー定義triggerを確認。全40テーブルでRLS有効。生成型の45 RPCだけをDB関数の全件と扱わない。関数本体の内容は公開記録に保存せずhashで識別する。
 - GitHubの既存Environmentは `Supabase`。観測時のprotection_rulesは空。Environment指定だけで承認保護が有効とは扱わない。
 
+## 読み取り専用の容量再確認（2026-09-28 JST）
+
+Supabase CLI 2.118.0 の分離した一時project-link環境で読み取り専用集計を
+再実行した。PostgreSQL全体は27,708,563 bytes（約26.4 MiB / 27.7 MB）。
+Storage metadata上の合計は109 object、13,285,729 bytes（約12.67 MiB）で、
+サイズ未設定objectはなかった。Storage値は `storage.objects` のsize metadata
+集計であり、この再確認でobject本文を再取得・hash照合した結果ではない。
+
+これは転送容量の目安であり、凍結snapshotのexport/import時間や停止時間の
+計測ではない。公開リポジトリには合計値のみを記録し、table別件数、Auth、
+Stripe、bucket別の内訳や行の内容は含めていない。データ移行、D1/R2書込み、
+production route、domain/DNS変更は行っていない。
+
 ## 本番のみの関数について
 
 本番のみの関数は移行対応表の未解決項目とし、用途・権限制御・既存の期限処理との関係を確認する。稼働していることだけを理由に、そのまま移植または削除しない。

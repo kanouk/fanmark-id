@@ -3374,3 +3374,18 @@ for one synthetic Chrome viewport; imported Supabase password compatibility,
 other browsers, recurring CPU/abuse-control fit, and production behavior remain
 open. No application deployment, real user data, provider call, production
 route, or domain/DNS setting changed.
+
+## Read-only Supabase capacity refresh (2026-09-28 JST)
+
+Refreshed aggregate capacity through Supabase CLI 2.118.0 using an isolated
+temporary project-link directory. PostgreSQL measured 27,708,563 bytes
+(about 26.4 MiB / 27.7 MB). Supabase Storage metadata summed to 13,285,729
+bytes (about 12.67 MiB) across 109 objects, with no missing size metadata.
+The Storage figure comes from object metadata, not a new body download/hash
+pass. Only these aggregate capacity values were added to the public record;
+per-table, Auth, Stripe, and per-bucket breakdowns remain outside Git.
+
+This read-only inventory provides transfer-size context only; it does not
+measure a frozen snapshot, import/reconciliation time, or user-visible
+interruption. No application row values were returned or recorded. It changed
+no Supabase, D1, R2, production route, or domain/DNS state.
