@@ -137,13 +137,15 @@ it as well; the public-access and Stripe webhook D1 suites pass 13/13 and
 The `.mjs` implementation is shared with verified-access timestamp creation
 and scheduled-license-expiry run capture; their suites pass 10/10 and 8/8.
 
-The same date, a loopback-only local Supabase smoke passed email/password Auth,
-UUID preservation, owner-scoped settings read/update/readback, and cascade
-cleanup in 284 ms of API calls on the latest run. It uses a disposable local
-project, the checked-in SQL migrations, and a local-only non-admin shim plus
-grants mirrored from read-only-observed metadata. No linked Supabase project or
-Cloudflare resource was used. This verifies an old-path component only; it does
-not close the full pre-write cutover/recovery drill. Details are in
+The loopback-only local Supabase smoke was rerun on 2026-09-28. It passed
+email/password Auth, UUID preservation, owner-scoped settings
+read/update/readback, and cascade cleanup in 574 ms of API calls (the earlier
+same-day run took 284 ms). It uses a disposable local project, the checked-in
+SQL migrations, and a local-only non-admin shim plus grants mirrored from
+read-only-observed metadata. Post-run Docker readback found no matching
+container, volume, or network. No linked Supabase project or Cloudflare resource
+was used. This verifies an old-path component only; it does not close the full
+pre-write cutover/recovery drill. Details are in
 [`cutover-rehearsal.md`](cutover-rehearsal.md).
 
 ## Browser shell check and current PR validation (2026-09-27 JST)

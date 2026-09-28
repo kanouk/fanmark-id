@@ -418,6 +418,16 @@ time was 75,970 ms. Final receipt and dispatch counts were zero, no Stripe API
 calls occurred, and a separate readback confirmed only the three pre-existing
 staging secrets. This repeat still does not stop a linked writer or Cron.
 
+A fresh loopback-only rerun of
+`node scripts/migration/prewrite-supabase-resume-smoke.mjs` passed on 2026-09-28:
+synthetic email/password Auth, UUID preservation, owner-scoped
+`user_settings` read/update/readback, and Auth-delete cascade cleanup completed
+in 574 ms of API calls. The disposable Supabase project was stopped and removed;
+post-run Docker queries found no matching container, volume, or network. No
+linked Supabase project or Cloudflare resource was used. This refreshes the
+local old-path component only; the staging freeze, source-writer/Cron stop,
+timed interruption, and complete pre-write drill remain open.
+
 ## Rendered subscription UI poll (2026-09-28 JST)
 
 The guarded `npm run test:migration:staging-subscription-ui-poll` authenticated
