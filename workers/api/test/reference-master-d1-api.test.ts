@@ -362,6 +362,65 @@ describe("versioned reference-master Worker API", () => {
     ).bind(afterLiveIdEdit.releaseVersion).run()).rejects.toThrow(/reference_release_rows_immutable/u);
   });
 
+  it("rejects an active master with rounded timestamps before staging an admin edit", async () => {
+    const writes: string[] = [];
+    const validTimestamp = "2026-09-23T01:02:03.123456Z";
+    const rowsFor = (sql: string): Record<string, unknown>[] => {
+      if (sql.includes("FROM fanmark_tier_release_rows")) return [{
+        id: "00000000-0000-4000-8000-000000000001", created_at: "2026-09-23T01:02:03.123Z",
+        description: "Synthetic tier", display_name: "Synthetic", emoji_count_max: 5, emoji_count_min: 1,
+        initial_license_days: 30, is_active: 1, monthly_price_cents: 30_000, tier_level: 4,
+        updated_at: validTimestamp,
+      }];
+      if (sql.includes("FROM fanmark_language_release_rows")) return [{
+        code: "ja", created_at: validTimestamp, id: "00000000-0000-4000-8000-000000000002",
+        is_active: 1, label: "Japanese", native_label: "日本語", sort_order: 1, updated_at: validTimestamp,
+      }];
+      if (sql.includes("FROM fanmark_reserved_emoji_pattern_release_rows")) return [{
+        created_at: validTimestamp, description: null, id: "00000000-0000-4000-8000-000000000003",
+        is_active: 1, pattern: "🧪", price_yen: 1200, updated_at: validTimestamp,
+      }];
+      if (sql.includes("FROM fanmark_extension_price_release_rows")) return [{
+        id: "00000000-0000-4000-8000-000000000004", created_at: validTimestamp, is_active: 1, months: 1,
+        price_yen: 500, stripe_price_id: null, stripe_price_id_live: null, tier_level: 2, updated_at: validTimestamp,
+      }];
+      if (sql.includes("FROM fanmark_reference_master_release_tables")) return [
+        { table_name: "fanmark_tiers", row_count: 1 },
+        { table_name: "languages", row_count: 1 },
+        { table_name: "reserved_emoji_patterns", row_count: 1 },
+      ];
+      return [];
+    };
+    const fakeDatabase = {
+      prepare(sql: string) {
+        const statement = {
+          bind() { return statement; },
+          async all() { return { success: true, results: rowsFor(sql) }; },
+          async first() {
+            if (sql.includes("SELECT a.release_version")) return { release_version: releaseVersion, generation: 1 };
+            if (sql.includes("fanmark_reference_master_extension_price_manifests")) return { row_count: 1 };
+            return null;
+          },
+          async run() { writes.push(sql); return { success: true, meta: { changes: 1 } }; },
+        };
+        return statement;
+      },
+      async batch(statements: unknown[]) { writes.push(...statements.map(() => "batch statement")); return []; },
+    } as unknown as D1Database;
+    const repository = createReferenceMasterAdminD1Repository({
+      D1_TOPOLOGY: "split",
+      MASTER_DB: fakeDatabase,
+      REFERENCE_MASTER_ADMIN_BACKEND: "d1",
+    } as Env);
+
+    await expect(repository.updatePricing(releaseVersion, {
+      type: "tier",
+      id: "00000000-0000-4000-8000-000000000001",
+      changes: { initialLicenseDays: 45 },
+    })).rejects.toMatchObject({ status: 503, message: "reference_master_admin_unavailable" });
+    expect(writes).toEqual([]);
+  });
+
   it("does not let the reference pricing admin repository choose a backend implicitly", async () => {
     expect(() => createReferenceMasterAdminD1Repository({ ...runtimeEnv, REFERENCE_MASTER_ADMIN_BACKEND: undefined }))
       .toThrow(ReferenceMasterAdminError);

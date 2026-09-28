@@ -3903,9 +3903,10 @@ The shared exact-UTC-microsecond validator now protects both reference-master
 release imports and admin edits that restage the active snapshot. It preserves
 valid six-digit timestamp bytes (`Z` or `+00:00`) and rejects rounded,
 impossible-calendar, or non-UTC values before a target release write. Focused
-release/API/service and validator tests pass, and Worker TypeScript typecheck
-passes. No production Worker, real user data, remote D1, or DNS/domain state
-changed.
+release/API/service and validator tests pass; the admin API regression test
+also confirms a malformed active timestamp is rejected before any stage or
+batch write. Worker TypeScript typecheck passes. No production Worker, real
+user data, remote D1, or DNS/domain state changed.
 
 ## Stripe invoice webhook dispatch wiring (2026-09-29 JST)
 
