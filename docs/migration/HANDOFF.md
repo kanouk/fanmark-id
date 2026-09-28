@@ -2429,11 +2429,15 @@ No source rows or remote D1/R2 were touched.
 
 `npm run test:migration:staging-admin-user-ui` passed against the isolated
 workers.dev app after deploying Worker version
-`92b30cf6-1432-4e02-a790-956f193799dc`. A synthetic MFA administrator used the
-rendered management screen to change a profile Free→Max→Free and suspend then
-restore it. The restored list row showed `Free / 有効`; business D1 contained
-Free with no Enterprise override, Auth D1 showed `banned=0` and null ban
-metadata, and the UI suspend/restore audit entries were present.
+`92b30cf6-1432-4e02-a790-956f193799dc`; it was rerun successfully against the
+current version `82413f00-f60e-4a01-aeb0-2a071e01178a` on 2026-09-28. A
+synthetic MFA administrator used the rendered management screen to change a
+profile Free→Max→Free and suspend then restore it. The restored list row showed
+`Free / 有効`; business D1 contained Free with no Enterprise override, Auth D1
+showed `banned=0` and null ban metadata, and the UI suspend/restore audit
+entries were present. The rerun also fixed test readback to compare expiry
+instants rather than exact timestamp strings because D1 returns microsecond
+precision while the submitted ISO value has millisecond precision.
 
 The same complete canary passed its TOTP, MFA-gated admin API, immediate
 license-expiry, and cleanup checks. Its final readback returned all synthetic

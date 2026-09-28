@@ -1571,15 +1571,26 @@ async function exerciseAdminUserStatusReadback(cookie, target) {
   assertStatus(suspended, 200, "MFA-protected synthetic user suspension");
   const suspendedBody = await suspended.json();
   assert.equal(suspendedBody.status, "suspended");
-  assert.equal(suspendedBody.bannedUntil, until);
+  assert.equal(Date.parse(suspendedBody.bannedUntil), Date.parse(until),
+    "suspension response did not preserve the requested expiry instant");
   const [suspendedUser, remainingSessions, suspendedAudit] = await Promise.all([
     query(`SELECT banned, banReason, banExpires FROM "user" WHERE id = ${sqlLiteral(target.userId)}`),
     query(`SELECT COUNT(*) AS count FROM "session" WHERE "userId" = ${sqlLiteral(target.userId)}`),
     query(`SELECT actorUserId, action, reason, banExpires FROM "adminUserStatusAudit" WHERE targetUserId = ${sqlLiteral(target.userId)}`),
   ]);
-  assert.deepEqual(suspendedUser, [{ banned: 1, banReason: "synthetic staging verification", banExpires: until }]);
+  assert.deepEqual(suspendedUser.map(({ banned, banReason }) => ({ banned, banReason })), [
+    { banned: 1, banReason: "synthetic staging verification" },
+  ]);
+  assert.equal(Date.parse(suspendedUser[0]?.banExpires), Date.parse(until),
+    "D1 suspension expiry did not preserve the requested instant");
   assert.equal(Number(remainingSessions[0]?.count), 0, "suspension left a target session active");
-  assert.deepEqual(suspendedAudit, [{ actorUserId: target.adminUserId, action: "ADMIN_SUSPEND_USER", reason: "synthetic staging verification", banExpires: until }]);
+  assert.deepEqual(suspendedAudit.map(({ actorUserId, action, reason }) => ({ actorUserId, action, reason })), [{
+    actorUserId: target.adminUserId,
+    action: "ADMIN_SUSPEND_USER",
+    reason: "synthetic staging verification",
+  }]);
+  assert.equal(Date.parse(suspendedAudit[0]?.banExpires), Date.parse(until),
+    "D1 suspension audit did not preserve the requested instant");
 
   const suspendedList = await request("/api/admin/users", {
     method: "POST", headers: { cookie, "content-type": "application/json" },
@@ -1598,7 +1609,8 @@ async function exerciseAdminUserStatusReadback(cookie, target) {
   assertStatus(suspendedDetail, 200, "MFA-protected suspended-user detail");
   const detailBody = await suspendedDetail.json();
   assert.equal(detailBody.auth.status, "suspended");
-  assert.equal(detailBody.auth.bannedUntil, until);
+  assert.equal(Date.parse(detailBody.auth.bannedUntil), Date.parse(until),
+    "suspended detail did not preserve the requested expiry instant");
   assert.ok(detailBody.recentAuditLogs.some((entry) => entry.action === "ADMIN_SUSPEND_USER"));
 
   const restored = await request(route, {

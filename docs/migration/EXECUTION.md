@@ -3007,6 +3007,12 @@ was used. This closes the rendered admin user-management mutation subgate;
 provider-backed acceptance and the complete #37 application recovery
 rehearsal remain open.
 
+The same guarded canary was rerun successfully on current staging Worker
+`82413f00-f60e-4a01-aeb0-2a071e01178a`. Its timestamp assertions now compare
+the requested expiry instant, allowing D1's microsecond timestamp formatting
+to differ from the submitted millisecond ISO string. Final readback again
+found the synthetic Auth and business-D1 canary rows at zero.
+
 The guarded staging PWA update browser check also passed. A temporary precache
 asset was deployed and observed in Workbox; the staging Service Worker updated
 and automatically reloaded `/pwa`, preserving synthetic `localStorage` while
