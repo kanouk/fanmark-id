@@ -3800,3 +3800,34 @@ gate's nine locations and has 8 groups / 211 locations (3 row-conversion / 118,
 5 schema/operation / 93), still `deployable: false`. Focused schema/row tests
 pass 27/27 and the complete migration-data suite passes 185/185 with no skips.
 No application rows or live sequence values were read.
+
+
+## Timestamp writer coverage inventory across Workers and migration SQL (2026-09-29 JST)
+
+The read-only schema catalog was refreshed at `2026-09-28T15:05:40Z` using the
+reviewed catalog-only query. It still contains 40 tables and 79 columns with
+`timestamptz DEFAULT now()`; no application rows were queried. The static
+writer audit now scans Worker `.ts`/`.mjs`, D1 business-trigger SQL, and
+migration seed SQL. It parsed 98 INSERT column lists with zero timestamp
+columns omitted and zero target INSERTs it could not parse.
+
+Twelve timestamp defaults in seven tables have no direct INSERT in those
+surfaces. Eight columns across `fanmark_tiers`, `languages`,
+`reserved_emoji_patterns`, and `fanmark_tier_extension_prices` are loaded
+through the versioned reference-master row snapshots; those tables are read
+through release views in the Worker. The other four are
+`notification_preferences.created_at/updated_at`, `user_roles.created_at`,
+and `notifications_history.created_at`. These are user-owned or legacy data
+surfaces and remain for the final data/import disposition. The audit reports
+them as unmatched rather than treating the absent direct INSERT as coverage.
+It is a column-list inventory only and does not prove transaction-time clock
+semantics or close the 103-column operation timestamp gate.
+
+The audit found that the active-to-grace prototype in
+`workers/api/src/license-expiry.mjs` omitted `audit_logs.created_at`. It now
+binds the same captured operation timestamp used for that transition, and its
+local D1 fixture requires and reads back that timestamp. `npm run
+test:migration-data` passes 188/188 under Node 22.6.0; the license-expiry D1
+integration passes, as does the source-profile lifecycle integration (25/25).
+This changes only local source and tests: no production Worker, user data, D1,
+or DNS/domain state changed.

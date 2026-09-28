@@ -556,8 +556,8 @@ async function applyActiveToGrace(database, candidate, runId, capturedNow, grace
     database
       .prepare(`
         INSERT INTO audit_logs
-          (id, action, license_id, fanmark_id, user_id, generation, run_id, metadata_json)
-        SELECT ?, ?, l.id, l.fanmark_id, l.user_id, l.generation, ?, ?
+          (id, action, license_id, fanmark_id, user_id, generation, run_id, metadata_json, created_at)
+        SELECT ?, ?, l.id, l.fanmark_id, l.user_id, l.generation, ?, ?, ?
         FROM fanmark_licenses AS l
         WHERE l.id = ?
           AND l.status = 'grace'
@@ -569,6 +569,7 @@ async function applyActiveToGrace(database, candidate, runId, capturedNow, grace
         ACTIVE_TO_GRACE_ACTION,
         runId,
         payload,
+        capturedNow,
         candidate.licenseId,
         nextGeneration,
         operationId,

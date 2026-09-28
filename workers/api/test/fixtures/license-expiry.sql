@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   generation INTEGER NOT NULL,
   run_id TEXT NOT NULL,
   metadata_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
   UNIQUE (license_id, generation, action)
 );
 

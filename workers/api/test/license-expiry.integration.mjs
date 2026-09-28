@@ -221,8 +221,8 @@ async function competingMutation(database, kind, licenseId, capturedNow = NOW) {
     {
       sql: `
         INSERT INTO audit_logs
-          (id, action, license_id, fanmark_id, user_id, generation, run_id, metadata_json)
-        SELECT ?, ?, l.id, l.fanmark_id, l.user_id, l.generation, ?, ?
+          (id, action, license_id, fanmark_id, user_id, generation, run_id, metadata_json, created_at)
+        SELECT ?, ?, l.id, l.fanmark_id, l.user_id, l.generation, ?, ?, ?
         FROM fanmark_licenses AS l
         WHERE l.id = ? AND l.generation = ? AND l.lifecycle_claim_id = ?
       `,
@@ -231,6 +231,7 @@ async function competingMutation(database, kind, licenseId, capturedNow = NOW) {
         target.action,
         operationId,
         payload,
+        capturedNow,
         licenseId,
         generation + 1,
         operationId,
@@ -319,6 +320,10 @@ async function testCanonicalAndBasicTransition(database) {
   }
   assert.equal(await countRows(database, "audit_logs", "action = 'license_grace_started'"), 2);
   assert.equal(await countRows(database, "lifecycle_outbox", "event_type = 'license_grace_started'"), 2);
+  const audits = await database.prepare(`
+    SELECT created_at FROM audit_logs WHERE action = 'license_grace_started' ORDER BY id
+  `).all();
+  assert.deepEqual(audits.results.map(({ created_at }) => created_at), [NOW, NOW]);
 }
 
 async function testTimeBoundaries(database) {
@@ -337,6 +342,10 @@ async function testTimeBoundaries(database) {
     assert.equal(result.processed, 1, id);
     const license = await readLicense(database, id);
     assert.equal(license.grace_expires_at, cases.find((entry) => entry[0] === id)[3], id);
+    const audit = await database.prepare(`
+      SELECT created_at FROM audit_logs WHERE license_id = ? AND action = 'license_grace_started'
+    `).bind(id).first();
+    assert.equal(audit.created_at, capturedNow, id);
   }
   assert.equal(roundUpToNextUtcMidnight("2026-12-31T00:00:00.000001Z", 1), "2027-01-02T00:00:00.000000Z");
 }
