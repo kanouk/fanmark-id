@@ -32,7 +32,9 @@ for (const file of testFiles) {
   if (typeScriptImports.has(file)) args.unshift("--import", "tsx");
 
   const attempts = pgliteTestFiles.has(file) ? 2 : 1;
-  const timeoutMs = file === "snapshot-export.test.mjs" ? 360_000 : 180_000;
+  // PGlite can leave a timed-out node:test child alive; bound the outer process
+  // and start a clean retry only for ETIMEDOUT.
+  const timeoutMs = file === "snapshot-export.test.mjs" ? 120_000 : 60_000;
   let result;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     process.stdout.write(`\n=== ${file} (attempt ${attempt}/${attempts}) ===\n`);
@@ -40,6 +42,7 @@ for (const file of testFiles) {
       cwd: packageDirectory,
       stdio: "inherit",
       timeout: timeoutMs,
+      killSignal: process.platform === "win32" ? "SIGTERM" : "SIGKILL",
     });
 
     if (result.error?.code !== "ETIMEDOUT" || attempt === attempts) break;
