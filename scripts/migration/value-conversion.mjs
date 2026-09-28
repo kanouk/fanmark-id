@@ -22,9 +22,9 @@ function int64(value) {
 
 export function moneyCents(value) {
   if (typeof value !== 'string') return invalid('money_source');
-  const match = /^(-?)(\d{1,8})(?:\.(\d{1,2}))?$/.exec(value);
+  const match = /^(-?)(0|[1-9]\d{0,7})\.(\d{2})$/.exec(value);
   if (!match) return invalid('numeric_10_2');
-  const magnitude = BigInt(match[2])*100n + BigInt((match[3] ?? '').padEnd(2,'0'));
+  const magnitude = BigInt(match[2])*100n + BigInt(match[3]);
   return Number(match[1] === '-' ? -magnitude : magnitude);
 }
 

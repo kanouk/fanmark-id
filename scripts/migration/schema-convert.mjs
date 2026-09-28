@@ -14,7 +14,7 @@ import { pathToFileURL } from "node:url";
 
 import { compileCredentialDescriptor, CREDENTIAL_COLUMN, CREDENTIAL_SOURCE_RELATION } from "./credential-descriptor.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 11;
+export const SCHEMA_CONVERSION_VERSION = 12;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -822,7 +822,6 @@ function typeInfo(column, enumLabels, gates, typeCounts, credentialDescriptorPla
     targetKind = "money_cents";
     codec = "money-cents-int64";
     checks.push(integerStorageCheck(column, `typeof(${quoteIdentifier(column.column_name)}) = 'integer' AND ${quoteIdentifier(column.column_name)} BETWEEN -9999999999 AND 9999999999`));
-    gates.add("money_cents_import", "numeric(10,2) must be imported as exact integer cents and exposed through a reversible money boundary.", location);
   } else if (/^numeric\(10,2\)$/i.test(sourceType) || sourceType === "numeric") {
     targetType = "TEXT";
     codec = "decimal-canonical-text";

@@ -581,3 +581,25 @@ unsupported catalog scopes. No source rows, credential values, remote D1/R2,
 production route, or domain/DNS state was read or changed. The catalog response
 and generated report stayed in memory and the temporary link directory was
 removed.
+
+## Exact money-cents import and API boundary (2026-09-28 JST)
+
+The two explicitly mapped `numeric(10,2)` columns now retain their reviewed
+`money-cents-int64` codec without a blocking schema-conversion gate. The
+PostgreSQL text codec uses integer arithmetic, accepts the full source range
+`-99999999.99` through `99999999.99`, and produces safe integer-cent bindings.
+Generated D1 checks accept only integer cents in the matching range. The
+availability-rule Worker reads cents as canonical two-decimal USD text, while
+the reference-master importer and admin API convert between canonical USD text
+and integer cents with checked bounds. Existing API integration tests verify
+the read/write projections; new row-conversion and generated-DDL tests cover
+both extrema, one-cent values, SQL NULL, non-cent precision, and overflow.
+
+This resolves only the two explicit money columns; unconstrained `numeric`
+remains gated and the full v12 report remains `deployable: false`. The
+schema-conversion version is now 12, so v11 snapshot manifests are rejected and
+must be freshly exported before verification/import. Removing
+this single two-location gate from the latest descriptor-aware catalog shape
+reduces its readiness report from 13/226 to 12/224 (8 row-conversion groups /
+133 locations; 4 schema/operation groups / 91 locations). No source rows or
+remote D1 state were read or changed by this codec change.

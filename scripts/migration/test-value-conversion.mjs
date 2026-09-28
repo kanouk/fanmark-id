@@ -3,8 +3,8 @@ import {test} from 'node:test';
 import {convertPgText as convert,utcMicroseconds,moneyCents} from './value-conversion.mjs';
 
 test('money uses exact cents and rejects rounding or non-text input',()=>{
- for(const [text,cents] of [['0',0],['0.01',1],['12.30',1230],['-0.29',-29],['99999999.99',9999999999]])assert.equal(moneyCents(text),cents);
- for(const input of ['0.001','100000000','NaN','Infinity','1e2',0.29])assert.throws(()=>moneyCents(input));
+ for(const [text,cents] of [['0.00',0],['0.01',1],['12.30',1230],['-0.29',-29],['99999999.99',9999999999],['-99999999.99',-9999999999]])assert.equal(moneyCents(text),cents);
+ for(const input of ['0','0.001','01.00','100000000.00','NaN','Infinity','1e2',0.29])assert.throws(()=>moneyCents(input));
 });
 test('UUID codec canonicalizes exact-width IDs and rejects malformed text including trailing newlines',()=>{
  const canonical='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';

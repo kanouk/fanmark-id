@@ -187,6 +187,33 @@ test("all supported values convert to ordered bindings and survive real SQLite r
   assert.equal(row.small_values, "[1,null,-32768,32767]");
 });
 
+test("numeric(10,2) values remain exact integer cents across the full source range", () => {
+  const convert = compileRowConverter(catalog(), "fanmark_tiers");
+  for (const [source, expectedCents] of [
+    ["0.00", 0],
+    ["0.01", 1],
+    ["-0.01", -1],
+    ["99999999.99", 9999999999],
+    ["-99999999.99", -9999999999],
+  ]) {
+    const input = envelope();
+    input.values.monthly_price_usd = source;
+    const cents = convert(input).bindings[7];
+    assert.equal(cents, expectedCents);
+    assert.equal(Number.isSafeInteger(cents), true);
+  }
+
+  const nullable = envelope();
+  nullable.values.monthly_price_usd = null;
+  assert.equal(convert(nullable).bindings[7], null);
+
+  for (const invalid of ["+1.00", "01.00", "1.001", "100000000.00", "-100000000.00"]) {
+    const input = envelope();
+    input.values.monthly_price_usd = invalid;
+    assert.throws(() => convert(input), (error) => error.code === "invalid_column_value");
+  }
+});
+
 test("extra or missing fields, enum values, bigint range, and array shape fail closed", () => {
   const source = catalog();
   const missing = structuredClone(envelope());

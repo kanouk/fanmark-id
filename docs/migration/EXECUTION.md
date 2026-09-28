@@ -3695,3 +3695,23 @@ focused ESLint, and `git diff --check` pass. Only synthetic credentials and
 provider responses were used; there were no real OAuth requests, remote D1
 writes, deployments, user-data operations, or domain/DNS changes. This is
 local callback-contract evidence, not provider-backed staging acceptance.
+
+## Exact `numeric(10,2)` money import boundary (2026-09-28 JST)
+
+Removed the blocking `money_cents_import` schema gate for the two explicitly
+mapped source columns, `fanmark_tiers.monthly_price_usd` and
+`fanmark_availability_rules.price_usd`. The migration codec now requires the
+canonical PostgreSQL `numeric(10,2)` text form, converts with integer
+arithmetic, and bounds the result to the exact signed cent range. Generated
+D1 DDL rejects non-integer and out-of-range cents. Existing Worker integrations
+cover the corresponding reversible read/write API projections.
+
+The full migration-data suite passes 181/181; focused availability-rule admin,
+availability/reference-master, reference-master release, and reference-master
+API suites pass 4/4, 4/4, 5/5, and 6/6. Root and Worker typechecks, focused
+ESLint, and `git diff --check` pass. Schema-conversion version 12 rejects v11
+snapshot manifests, which must be re-exported. The same catalog shape now has 12
+unresolved gates across 224 locations (8 row-conversion / 133 locations, 4
+schema/operation / 91 locations) and remains `deployable: false`. This is
+synthetic/local codec and API evidence only; no Supabase rows, remote D1, Worker
+deployment, production route, or domain/DNS state was changed.

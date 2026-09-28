@@ -76,6 +76,11 @@ target SQLite type is syntactically accepted. The importer now validates the
 full signed 64-bit range without Number conversion; application reads still
 need safe bounds or an exact text projection.
 
+The two listed money columns use exact integer-cent import and checked reversible
+API boundaries. Their previous `money_cents_import` readiness gate was removed
+after row-conversion, D1 range-check, and API projection tests covered the full
+`numeric(10,2)` range; the separate unconstrained-decimal gate remains.
+
 UUID syntax validation is enforced by the shared row converter used by snapshot
 verification and D1 import, including credential-bearing rows' non-credential
 columns. It requires exactly 36 characters, rejects malformed strings before a

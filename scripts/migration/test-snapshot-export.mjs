@@ -228,6 +228,20 @@ test("exports every catalog table and verifies bounded canonical streams", async
   await rm(outputDir, { recursive: true, force: true });
 });
 
+test("rejects a snapshot produced by the prior schema-conversion version", async () => {
+  const outputDir = await tempOutput();
+  try {
+    const result = await exportSnapshot({ catalog: catalog(), outputDir, session: fakeSession() });
+    const manifest = JSON.parse(await readFile(result.manifestPath, "utf8"));
+    assert.equal(manifest.schemaConversionVersion, 12);
+    manifest.schemaConversionVersion -= 1;
+    await writeFile(result.manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, { mode: 0o600 });
+    await assert.rejects(verifySnapshot(result.manifestPath), (error) => error.code === "manifest_metadata_invalid");
+  } finally {
+    await rm(outputDir, { recursive: true, force: true });
+  }
+});
+
 test("binds an explicit credential descriptor to the v4 manifest without copying credential data", async () => {
   const outputDir = await tempOutput();
   const sourceCatalog = credentialCatalog();
