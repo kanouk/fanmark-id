@@ -9,8 +9,9 @@ acknowledges plan Checkout events without granting entitlement. The dispatcher
 now atomically terminates Checkout receipts without
 `metadata.type = license_extension` as `ignored` / `completed`; subscription
 created/updated/deleted events remain responsible for plan state. The focused
-webhook/application integration suite passes 12/12 under Node 22.6.0. No Stripe
-selectors or secrets were enabled, and no remote state changed.
+webhook/application integration suite passes 13/13 under Node 22.6.0, including
+stale-lease rejection. No Stripe selectors or secrets were enabled, and no
+remote state changed.
 
 ## Fresh Supabase v21 catalog and current-schema synthetic replay (2026-09-29 JST)
 

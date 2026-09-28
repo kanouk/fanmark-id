@@ -18,7 +18,7 @@ const dispatchModulePath = path.join(repoRoot, "workers/api/src/stripe-webhook-d
 const applicationModulePath = path.join(repoRoot, "workers/api/src/stripe-webhook-d1-application.ts");
 const scheduledModulePath = path.join(repoRoot, "workers/api/src/stripe-webhook-d1-scheduled.ts");
 const { acceptStripeWebhookReceiptIntoD1 } = await import(pathToFileURL(ingressModulePath).href);
-const { claimStripeWebhookDispatchesFromD1 } = await import(pathToFileURL(dispatchModulePath).href);
+const { claimStripeWebhookDispatchesFromD1, ignoreStripeWebhookDispatchInD1 } = await import(pathToFileURL(dispatchModulePath).href);
 const { applyStripeExtensionReceiptInD1 } = await import(pathToFileURL(applicationModulePath).href);
 const { dispatchStripeWebhookBatchInD1 } = await import(pathToFileURL(scheduledModulePath).href);
 
@@ -535,6 +535,38 @@ test("scheduled D1 dispatch terminally ignores non-extension Checkout events", a
     assert.equal(await scalar(database, "SELECT count(*) AS count FROM stripe_webhook_dispatches WHERE status = 'completed' AND completed_at IS NOT NULL"), 4);
     assert.equal(await scalar(database, "SELECT count(*) AS count FROM stripe_extension_applications"), 0);
     assert.equal(await scalar(database, "SELECT count(*) AS count FROM fanmark_licenses"), 0);
+  } finally {
+    await miniflare.dispose();
+  }
+});
+
+test("ignoring a non-extension Checkout receipt requires its current dispatch lease", async () => {
+  const { miniflare, database } = await createDatabase();
+  try {
+    const { claim } = await acceptAndClaim(database, stripeEvent({
+      eventId: "evt_synthetic_plan_checkout_lease",
+      sessionId: "cs_synthetic_plan_checkout_lease",
+      mode: "subscription",
+      meta: {},
+    }));
+    const stale = await ignoreStripeWebhookDispatchInD1({
+      database,
+      identity: { ...claim, leaseToken: "00000000-0000-4000-8000-000000000099" },
+      now: NOW,
+    });
+    assert.equal(stale, null);
+    assert.equal(await scalar(database, "SELECT status FROM stripe_webhook_receipts"), "processing");
+    assert.equal(await scalar(database, "SELECT status FROM stripe_webhook_dispatches"), "processing");
+
+    const ignored = await ignoreStripeWebhookDispatchInD1({
+      database,
+      identity: claim,
+      now: NOW,
+    });
+    assert.equal(ignored?.receiptStatus, "ignored");
+    assert.equal(ignored?.dispatchStatus, "completed");
+    assert.equal(await scalar(database, "SELECT status FROM stripe_webhook_receipts"), "ignored");
+    assert.equal(await scalar(database, "SELECT status FROM stripe_webhook_dispatches"), "completed");
   } finally {
     await miniflare.dispose();
   }
