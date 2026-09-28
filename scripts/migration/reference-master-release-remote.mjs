@@ -28,7 +28,7 @@ const EXPECTED_MIGRATIONS = [
   "0006_reference_master_extension_prices.sql",
   "0007_release_audit_timestamps.sql",
 ];
-const EXPECTED_PATTERN = "migrations/000[0-7]_*.sql";
+const EXPECTED_PATTERN = "migrations/{000[0-6]_*.sql,0007_release_audit_timestamps.sql}";
 const REQUIRED_TABLES = ["fanmark_tiers", "languages", "reserved_emoji_patterns", "fanmark_tier_extension_prices"];
 
 function fail(code) {

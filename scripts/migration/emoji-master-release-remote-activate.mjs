@@ -74,7 +74,7 @@ function assertConfig(options, config) {
   const binding = config.d1_databases.find((entry) => entry.binding === EXPECTED_BINDING);
   if (!binding || binding.database_id !== options.database_id ||
       binding.database_name !== options.database_name || binding.migrations_dir !== "migrations" ||
-      binding.migrations_pattern !== "migrations/000[0-7]_*.sql") {
+      binding.migrations_pattern !== "migrations/{000[0-6]_*.sql,0007_release_audit_timestamps.sql}") {
     fail("wrangler_config_database_mismatch");
   }
 }

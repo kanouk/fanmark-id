@@ -3089,7 +3089,10 @@ tests pass 16/16, Worker typecheck and the full `workers/api` test chain pass.
 The staging Vite build and Wrangler `--dry-run` pass; the dry-run read the
 built assets and exited without deployment. The full migrations 0000–0007
 were applied only to disposable local D1 in these tests. Staging configs and
-remote migration guards now expect 0007, but no remote migration was applied.
+remote migration guards select the exact release-audit filename so they exclude
+the Auth-only migration with the same 0007 prefix. A read-only Wrangler remote
+list reports only `0007_release_audit_timestamps.sql` as pending; it has not
+been applied remotely.
 
 Synthetic staging smoke scripts that seed or update business D1 now also write
 six-digit UTC values for subscription/profile/notification timestamps, license

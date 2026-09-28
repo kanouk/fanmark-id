@@ -257,9 +257,11 @@ local release suites now read back six-digit `created_at`, `verified_at`,
 `updated_at`, and activation-audit timestamps (emoji release 7/7, reference
 release 5/5). Migration `0007_release_audit_timestamps.sql` binds derived audit
 times to the active pointer's canonical `updated_at`; staging migration
-selectors and remote guards include it, but the migration has not yet been
-applied remotely. D1-writing synthetic staging smoke scripts were also aligned
-to six-digit UTC. Worker typecheck and lifecycle/schema tests pass (16/16).
+selectors include that exact filename while excluding the Auth-only 0007
+migration; Wrangler's read-only remote list shows only the release-audit
+migration pending. It has not yet been applied remotely. D1-writing synthetic
+staging smoke scripts were also aligned to six-digit UTC. Worker typecheck and
+lifecycle/schema tests pass (16/16).
 The full `workers/api` test chain, staging Vite build, and Worker Wrangler
 dry-run also pass; the dry-run read the built assets and exited without deploy.
 The latest CI run for the previous commit `cf52be8` passed; these current
