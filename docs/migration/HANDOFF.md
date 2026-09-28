@@ -2970,3 +2970,12 @@ different account, and the lifecycle-Cron retry's cleanup/deployment state
 remains unverified. The coarse weighted estimates remain about 53% end-to-end
 and 73% for the prioritized app/infrastructure/non-user-master-data scope.
 No user rows, production routes, or domain/DNS state were read or changed.
+
+The current workers.dev app probes also returned 200 for `/` and
+`/api/auth/ok`; the emoji catalog returned 200/no-store with 3,944 entries and
+the same release hash. All three public reference-master routes returned
+200/no-store at release `ba598c61b719d84c03c10ccaee9e5308d1829fd66b1f48abba6a0e5cde9b9c0c`.
+Anonymous admin session returned 401, unauthenticated session returned `null`,
+and the disabled Stripe webhook returned 404. These read-only probes confirm
+public route health and anonymous denial, not authenticated business
+operations or the lifecycle-Cron cleanup state.

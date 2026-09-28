@@ -1865,3 +1865,14 @@ does not re-hash every current D1 row or verify the business/Auth databases,
 Worker deployment, Cron state, or lifecycle-canary cleanup. The saved Wrangler
 CLI profile still resolves to a different account. No writes, user rows, or
 domain/DNS changes were made.
+
+Unauthenticated GET probes to the workers.dev app returned 200 for `/` and
+`/api/auth/ok`; the emoji catalog returned 200/no-store with total 3,944 and
+the same release version. The `fanmark_tiers`, `languages`, and
+`reserved_emoji_patterns` reference-master endpoints each returned 200/no-store
+with release version `ba598c61b719d84c03c10ccaee9e5308d1829fd66b1f48abba6a0e5cde9b9c0c`.
+Anonymous `/api/admin/session` returned 401, `/api/auth/get-session` returned
+`null`, and the disabled `/api/stripe/webhook` returned 404. This verifies
+current public route health and anonymous denial only; it does not verify
+authenticated business operations, Cron state, or cleanup of the earlier
+lifecycle canary.
