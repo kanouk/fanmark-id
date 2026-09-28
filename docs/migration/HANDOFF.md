@@ -41,10 +41,14 @@ applied remotely and no remote state changed.
 
 The same timestamp audit found the scheduled Stripe webhook dispatcher passing
 its Worker `scheduledTime` as millisecond ISO text. It now uses the shared
-six-digit UTC formatter and rejects an invalid schedule timestamp. The focused
-Stripe invoice-projection integration suite passes 12/12 and Worker typecheck
-passes. This remains a local change; no remote D1 migration or deployment was
-attempted.
+six-digit UTC formatter and rejects an invalid schedule timestamp. The
+invoice/subscription adapters now accept that fixed-width timestamp without
+rounding; before this fix, both scheduled paths returned `retryable`. Synthetic
+invoice and subscription dispatcher tests now apply the effects and read back
+the exact scheduled timestamp. Shared timestamp tests pass 6/6, the full Stripe
+webhook/D1 integration chain passes 63/63, and Worker typecheck passes. The fix
+is local pending PR validation; no Stripe API call, remote D1 migration, or
+deployment was attempted.
 
 A fresh schema-only query completed at 2026-09-29 03:27 JST using Supabase CLI
 2.118.0, `CI=1`, and `--yes` in a private temporary project-link directory.

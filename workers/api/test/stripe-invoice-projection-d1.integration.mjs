@@ -462,17 +462,19 @@ test("scheduled dispatcher applies invoice events through an injectable provider
   try {
     await seedMapping(database);
     const event = invoiceEvent({ type: "invoice.payment_succeeded" });
+    const scheduledNow = stripeWebhookScheduledTimestamp(Date.parse(NOW) + 123);
     await acceptStripeWebhookReceiptIntoD1({ database, event, now: NOW, createId: nextUuid });
     const invoice = paymentIntentInvoice({ invoiceId: SOURCE_INVOICE_ID, status: "paid" });
     const summary = await dispatchStripeWebhookBatchInD1({
-      database: checkedDatabase(database), livemode: false, now: NOW,
+      database: checkedDatabase(database), livemode: false, now: scheduledNow,
       invoiceProvider: provider({ sourceInvoice: invoice }),
-      getNow: () => NOW,
+      getNow: () => scheduledNow,
     });
     assert.deepEqual(summary, {
       claimed: 1, applied: 1, ignored: 0, deadLettered: 0, retryable: 0, leaseLost: 0,
     });
     assert.equal(await database.prepare("SELECT status FROM stripe_webhook_receipts WHERE stripe_event_id = ?").bind(event.stripeEventId).first("status"), "applied");
+    assert.equal(await database.prepare("SELECT created_at FROM stripe_application_ledger WHERE status = 'applied'").first("created_at"), scheduledNow);
   } finally {
     await miniflare.dispose();
   }

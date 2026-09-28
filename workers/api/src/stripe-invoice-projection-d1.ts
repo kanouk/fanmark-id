@@ -8,7 +8,7 @@ import {
 } from "../../../supabase/functions/_shared/stripe-invoice-projection/index.ts";
 import type { StripeWebhookD1Claim } from "./stripe-webhook-d1-dispatch.ts";
 import { retryStripeWebhookDispatchInD1 } from "./stripe-webhook-d1-dispatch.ts";
-import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
+import { addUtcMilliseconds, normalizeUtcMicrosecondTimestamp, toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const FENCE_LEASE_SECONDS = 300;
 const RETRY_AFTER_SECONDS = 60;
@@ -29,6 +29,14 @@ function isoTimestamp(value: string): number {
     throw new Error("invoice_projection_timestamp_invalid");
   }
   return parsed;
+}
+
+function operationTimestamp(value: string): string {
+  try {
+    return normalizeUtcMicrosecondTimestamp(value);
+  } catch {
+    throw new Error("invoice_projection_timestamp_invalid");
+  }
 }
 
 function requireText(value: unknown, code: string, maxLength = 512): string {
@@ -75,10 +83,10 @@ export function createD1InvoiceProjectionRuntime(args: {
   createId?: () => string;
   createFenceToken?: () => string;
 }): InvoiceProjectionRuntime {
-  isoTimestamp(args.now);
+  operationTimestamp(args.now);
   const currentNow = () => {
-    const value = args.getNow?.() ?? new Date().toISOString();
-    return toUtcMicrosecondTimestamp(new Date(isoTimestamp(value)));
+    const value = args.getNow?.() ?? toUtcMicrosecondTimestamp(new Date());
+    return operationTimestamp(value);
   };
   const createId = args.createId ?? (() => crypto.randomUUID());
   const createFenceToken = args.createFenceToken ?? (() => crypto.randomUUID());
@@ -88,7 +96,7 @@ export function createD1InvoiceProjectionRuntime(args: {
       const customerId = requireText(stripeCustomerId, "invoice_customer_mapping_review_required", 255);
       const leaseToken = requireText(createFenceToken(), "invoice_projection_fence_token_invalid", 64);
       const now = currentNow();
-      const leaseUntil = toUtcMicrosecondTimestamp(new Date(Date.parse(now) + FENCE_LEASE_SECONDS * 1000));
+      const leaseUntil = addUtcMilliseconds(now, FENCE_LEASE_SECONDS * 1000);
       const row = await args.database.prepare(`
         INSERT INTO stripe_sync_fences (
           livemode, stripe_customer_id, owner_token, generation, lease_until,

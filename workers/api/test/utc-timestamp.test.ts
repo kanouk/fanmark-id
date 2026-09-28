@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { assertUtcMicrosecondTimestamp, toUtcMicrosecondTimestamp } from "../src/utc-timestamp";
+import {
+  addUtcMilliseconds,
+  assertUtcMicrosecondTimestamp,
+  normalizeUtcMicrosecondTimestamp,
+  toUtcMicrosecondTimestamp,
+} from "../src/utc-timestamp";
 
 describe("shared D1 timestamp format", () => {
   it("pads the JavaScript millisecond clock to the fixed-width UTC representation", () => {
@@ -32,5 +37,22 @@ describe("shared D1 timestamp format", () => {
     ]) {
       expect(() => assertUtcMicrosecondTimestamp(value)).toThrow(RangeError);
     }
+  });
+
+  it("normalizes scheduled millisecond timestamps and preserves exact microseconds", () => {
+    expect(normalizeUtcMicrosecondTimestamp("2026-09-23T01:02:03.123Z"))
+      .toBe("2026-09-23T01:02:03.123000Z");
+    expect(normalizeUtcMicrosecondTimestamp("2026-09-23T01:02:03.123456Z"))
+      .toBe("2026-09-23T01:02:03.123456Z");
+    expect(normalizeUtcMicrosecondTimestamp("2026-09-23T01:02:03.123456+00:00"))
+      .toBe("2026-09-23T01:02:03.123456Z");
+  });
+
+  it("adds milliseconds while preserving sub-millisecond digits", () => {
+    expect(addUtcMilliseconds("2026-09-23T23:59:59.999123Z", 1))
+      .toBe("2026-09-24T00:00:00.000123Z");
+    expect(addUtcMilliseconds("2026-09-23T01:02:03.123456Z", 300_000))
+      .toBe("2026-09-23T01:07:03.123456Z");
+    expect(() => addUtcMilliseconds("2026-09-23T01:02:03.123456Z", 0.5)).toThrow(RangeError);
   });
 });

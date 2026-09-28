@@ -613,12 +613,13 @@ test("scheduled D1 dispatcher routes created/updated subscription events to reco
   try {
     await seedConfiguration(database);
     const current = subscriptionSnapshot();
+    const scheduledNow = "2026-09-26T05:06:07.123000Z";
     await acceptEvent(database, subscriptionEvent({ subscription: current }));
     const summary = await dispatchStripeWebhookBatchInD1({
       database: checkedDatabase(database),
       livemode: false,
-      now: NOW,
-      getNow: () => NOW,
+      now: scheduledNow,
+      getNow: () => scheduledNow,
       subscriptionProvider: provider({ current, active: [current] }),
     });
     assert.deepEqual(summary, {
@@ -626,6 +627,7 @@ test("scheduled D1 dispatcher routes created/updated subscription events to reco
     });
     assert.equal(await scalar(database, "SELECT status AS value FROM stripe_webhook_receipts"), "applied");
     assert.equal(await scalar(database, "SELECT plan_type AS value FROM user_settings WHERE user_id = ?", [USER_ID]), "creator");
+    assert.equal(await scalar(database, "SELECT created_at AS value FROM stripe_subscription_applications"), scheduledNow);
   } finally {
     await miniflare.dispose();
   }

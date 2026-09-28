@@ -1,7 +1,7 @@
 import { PINNED_STRIPE_API_VERSION } from "../../../supabase/functions/_shared/stripe-invoice-projection/index.ts";
 import { StripeWebhookD1ApplicationError } from "./stripe-webhook-d1-application.ts";
 import type { StripeWebhookD1Claim } from "./stripe-webhook-d1-dispatch.ts";
-import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
+import { addUtcMilliseconds, normalizeUtcMicrosecondTimestamp, toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const FENCE_LEASE_SECONDS = 300;
 const MAX_ACTIVE_SUBSCRIPTIONS = 100;
@@ -94,12 +94,12 @@ function requireUuid(value: unknown, code: string): string {
   return result;
 }
 
-function requireIso(value: string, code: string): string {
-  const parsed = Date.parse(value);
-  if (!Number.isFinite(parsed) || new Date(parsed).toISOString() !== value) {
+function requireD1Timestamp(value: string, code: string): string {
+  try {
+    return normalizeUtcMicrosecondTimestamp(value);
+  } catch {
     throw new StripeWebhookD1ApplicationError(code);
   }
-  return value;
 }
 
 function timestampFromSeconds(value: unknown, code: string): string | null {
@@ -231,7 +231,7 @@ async function acquireFence(args: {
   now: string;
   createFenceToken: () => string;
 }): Promise<{ token: string; generation: number; leaseUntil: string } | null> {
-  const leaseUntil = toUtcMicrosecondTimestamp(new Date(Date.parse(args.now) + FENCE_LEASE_SECONDS * 1000));
+  const leaseUntil = addUtcMilliseconds(args.now, FENCE_LEASE_SECONDS * 1000);
   const token = requireText(args.createFenceToken(), "subscription_fence_token_invalid", 64);
   const row = await args.database.prepare(`
     INSERT INTO stripe_sync_fences (
@@ -714,7 +714,7 @@ export async function applyStripeSubscriptionReceiptInD1(args: {
   createId?: () => string;
   createFenceToken?: () => string;
 }): Promise<StripeSubscriptionD1ReconciliationResult> {
-  const initialNow = toUtcMicrosecondTimestamp(new Date(Date.parse(requireIso(args.now, "subscription_timestamp_invalid"))));
+  const initialNow = requireD1Timestamp(args.now, "subscription_timestamp_invalid");
   if (args.claim.eventType !== "customer.subscription.created" &&
       args.claim.eventType !== "customer.subscription.updated" &&
       args.claim.eventType !== "customer.subscription.deleted") {
@@ -775,9 +775,10 @@ export async function applyStripeSubscriptionReceiptInD1(args: {
     const transitionsToFree = args.claim.eventType === "customer.subscription.deleted" && paidPlanType === null;
     const effectivePlanType = paidPlanType ?? (transitionsToFree ? "free" : null);
     const ledgerPlanType = effectivePlanType === "free" ? null : effectivePlanType;
-    const now = toUtcMicrosecondTimestamp(new Date(Date.parse(
-      requireIso(args.getNow?.() ?? new Date().toISOString(), "subscription_timestamp_invalid"),
-    )));
+    const now = requireD1Timestamp(
+      args.getNow?.() ?? toUtcMicrosecondTimestamp(new Date()),
+      "subscription_timestamp_invalid",
+    );
     const freeReturnPolicy = transitionsToFree ? await loadFreeReturnPolicy(args.database, now) : null;
     const applicationId = requireUuid((args.createId ?? (() => crypto.randomUUID()))(), "subscription_application_id_invalid");
     const guardId = `subscription-guard:${applicationId}`;
@@ -972,9 +973,10 @@ export async function applyStripeSubscriptionReceiptInD1(args: {
     };
   } catch (error) {
     if (!released) {
-      const now = toUtcMicrosecondTimestamp(new Date(Date.parse(
-        requireIso(args.getNow?.() ?? new Date().toISOString(), "subscription_timestamp_invalid"),
-      )));
+      const now = requireD1Timestamp(
+        args.getNow?.() ?? toUtcMicrosecondTimestamp(new Date()),
+        "subscription_timestamp_invalid",
+      );
       await releaseFence({
         database: args.database,
         claim: args.claim,

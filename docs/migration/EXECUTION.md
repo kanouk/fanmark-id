@@ -4031,3 +4031,17 @@ intended closed Stripe route, but do not identify the deployed version or
 verify D1/R2 state. Wrangler `whoami` still returns the fragrance.radio account
 while the staging config targets the fanmark.id account. No remote D1/R2 write,
 deployment, production route, user data, or domain/DNS change occurred.
+
+## Scheduled Stripe dispatcher microsecond compatibility (2026-09-29 JST)
+
+The dispatcher converts Workers `scheduledTime` into fixed-width UTC
+microseconds. The invoice and subscription projection entrypoints previously
+validated only JavaScript's three-digit `Date#toISOString()` form, so both
+scheduled paths returned `retryable` before application. They now normalize
+millisecond clock strings and exact microsecond strings, and lease-duration
+arithmetic preserves the final three fractional digits. Regression tests run
+the synthetic D1 dispatcher with a six-digit scheduled timestamp and read back
+the exact application timestamp. Shared timestamp tests pass 6/6; the full
+Stripe webhook/receipt/dispatch/invoice/subscription suite passes 63/63, and
+Worker TypeScript checking passes. No Stripe API call, user data, remote D1,
+production deployment, or domain/DNS change occurred.
