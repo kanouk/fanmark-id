@@ -8,6 +8,7 @@ import {
 } from "../../../supabase/functions/_shared/stripe-invoice-projection/index.ts";
 import type { StripeWebhookD1Claim } from "./stripe-webhook-d1-dispatch.ts";
 import { retryStripeWebhookDispatchInD1 } from "./stripe-webhook-d1-dispatch.ts";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const FENCE_LEASE_SECONDS = 300;
 const RETRY_AFTER_SECONDS = 60;
@@ -77,8 +78,7 @@ export function createD1InvoiceProjectionRuntime(args: {
   isoTimestamp(args.now);
   const currentNow = () => {
     const value = args.getNow?.() ?? new Date().toISOString();
-    isoTimestamp(value);
-    return value;
+    return toUtcMicrosecondTimestamp(new Date(isoTimestamp(value)));
   };
   const createId = args.createId ?? (() => crypto.randomUUID());
   const createFenceToken = args.createFenceToken ?? (() => crypto.randomUUID());
@@ -88,7 +88,7 @@ export function createD1InvoiceProjectionRuntime(args: {
       const customerId = requireText(stripeCustomerId, "invoice_customer_mapping_review_required", 255);
       const leaseToken = requireText(createFenceToken(), "invoice_projection_fence_token_invalid", 64);
       const now = currentNow();
-      const leaseUntil = new Date(Date.parse(now) + FENCE_LEASE_SECONDS * 1000).toISOString();
+      const leaseUntil = toUtcMicrosecondTimestamp(new Date(Date.parse(now) + FENCE_LEASE_SECONDS * 1000));
       const row = await args.database.prepare(`
         INSERT INTO stripe_sync_fences (
           livemode, stripe_customer_id, owner_token, generation, lease_until,
@@ -145,8 +145,11 @@ export function createD1InvoiceProjectionRuntime(args: {
     async apply(input) {
       const { dispatch, stripeCustomerId, stripeSubscriptionId, sourceInvoiceId,
         currentInvoiceId, invoiceAttemptKey, fence, currentOutcome, currentInvoiceStatus,
-        paymentIntentStatus, nextPaymentAttempt } = input;
+        paymentIntentStatus, nextPaymentAttempt: rawNextPaymentAttempt } = input;
       const now = currentNow();
+      const nextPaymentAttempt = rawNextPaymentAttempt === null
+        ? null
+        : toUtcMicrosecondTimestamp(new Date(isoTimestamp(rawNextPaymentAttempt)));
       const applicationId = requireText(createId(), "invoice_projection_application_id_invalid", 64).toLowerCase();
       const livemode = dispatch.livemode ? 1 : 0;
       const effectKey = `invoice-projection:${dispatch.stripe_event_id}`;

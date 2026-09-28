@@ -445,7 +445,9 @@ bringing the combined focused Worker D1 total to 179/179. Coupon and
 email-template administration's SQL/application-generated monotonic revision
 timestamps also retain six fractional digits. Tests read back the stored
 operation values as fixed-width UTC microsecond text. This is additional path
-coverage only: the schema readiness report still has 13 unresolved groups
-across 226 locations, and `timestamp_import_precision` remains open until the
-complete writer/default inventory is reconciled. No user rows were read and no
-remote D1 was written.
+coverage only: Stripe webhook receipt/dispatch, invoice projection, and
+subscription reconciliation writes now use the same format, with their
+synthetic D1 integration suite passing 59/59. The schema readiness report
+still has 13 unresolved groups across 226 locations, and
+`timestamp_import_precision` remains open until the complete writer/default
+inventory is reconciled. No user rows were read and no remote D1 was written.

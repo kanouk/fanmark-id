@@ -165,6 +165,14 @@ test("verified event acceptance is idempotent and records each matching delivery
     assert.equal(duplicate.dispatchStatus, "pending");
     assert.equal(await tableCount(database, "stripe_webhook_receipts"), 1);
     assert.equal(await tableCount(database, "stripe_webhook_dispatches"), 1);
+    assert.deepEqual(await row(database,
+      "SELECT first_received_at, last_received_at, created_at, updated_at FROM stripe_webhook_receipts WHERE id = ?",
+      [first.receiptId]), {
+      first_received_at: "2026-09-26T04:05:06.000000Z",
+      last_received_at: "2026-09-26T04:05:06.000000Z",
+      created_at: "2026-09-26T04:05:06.000000Z",
+      updated_at: "2026-09-26T04:05:06.000000Z",
+    });
   } finally {
     await miniflare.dispose();
   }
@@ -362,7 +370,7 @@ test("D1 claims only due nonterminal dispatches in the requested live/test mode"
     const terminal = await accept(database, event({ stripeEventId: "evt_claim_terminal" }), [34, 35]);
     await accept(database, event({ stripeEventId: "evt_claim_test_mode", livemode: true }), [36, 37]);
     await database.prepare("UPDATE stripe_webhook_dispatches SET available_at = ? WHERE stripe_event_id = ?")
-      .bind("2026-09-26T05:05:06.000Z", "evt_claim_future").run();
+      .bind("2026-09-26T05:05:06.000000Z", "evt_claim_future").run();
     await database.prepare("UPDATE stripe_webhook_receipts SET status = 'applied', terminal_at = ? WHERE id = ?")
       .bind(now, terminal.receiptId).run();
     await database.prepare("UPDATE stripe_webhook_dispatches SET status = 'completed', completed_at = ? WHERE id = ?")
@@ -381,7 +389,9 @@ test("D1 claims only due nonterminal dispatches in the requested live/test mode"
     assert.equal(claim.attemptCount, 1);
     assert.equal(claim.claimGeneration, 1);
     assert.equal(claim.leaseToken, ids(40)());
-    assert.equal(claim.leaseUntil, "2026-09-26T04:06:06.000Z");
+    assert.equal(claim.leaseUntil, "2026-09-26T04:06:06.000000Z");
+    assert.equal((await row(database, "SELECT lease_until FROM stripe_webhook_dispatches WHERE id = ?", [claim.dispatchId])).lease_until,
+      "2026-09-26T04:06:06.000000Z");
     assert.deepEqual(claim.normalizedPayload, event({ stripeEventId: "evt_claim_due" }).normalizedPayload);
     assert.equal(await claimStripeWebhookDispatchesFromD1({ database, livemode: false, now }).then((rows) => rows.length), 0);
     const [testModeClaim] = await claimStripeWebhookDispatchesFromD1({ database, livemode: true, now, createLeaseToken: ids(42) });
@@ -404,7 +414,7 @@ test("concurrent D1 claims converge and expired leases receive a new fence", asy
     assert.equal(first.dispatchId, accepted.dispatchId);
 
     await database.prepare("UPDATE stripe_webhook_dispatches SET lease_until = ? WHERE id = ?")
-      .bind("2026-09-26T04:05:05.000Z", first.dispatchId).run();
+      .bind("2026-09-26T04:05:05.000000Z", first.dispatchId).run();
     const [reclaimed] = await claimStripeWebhookDispatchesFromD1({ database, livemode: false, now, createLeaseToken: ids(54) });
     assert.equal(reclaimed.claimGeneration, 2);
     assert.equal(reclaimed.attemptCount, 2);
@@ -433,10 +443,10 @@ test("D1 lease renewal requires the current live lease and never shortens it", a
     assert.equal(unchanged.leaseUntil, claim.leaseUntil);
     const extended = await renewStripeWebhookDispatchLeaseInD1({ database, identity: claim, leaseSeconds: 120, now });
     assert.ok(extended);
-    assert.equal(extended.leaseUntil, "2026-09-26T04:07:06.000Z");
+    assert.equal(extended.leaseUntil, "2026-09-26T04:07:06.000000Z");
 
     await database.prepare("UPDATE stripe_webhook_dispatches SET lease_until = ? WHERE id = ?")
-      .bind(now, claim.dispatchId).run();
+      .bind("2026-09-26T04:05:06.000000Z", claim.dispatchId).run();
     assert.equal(await renewStripeWebhookDispatchLeaseInD1({ database, identity: claim, leaseSeconds: 60, now }), null);
   } finally {
     await miniflare.dispose();
@@ -459,7 +469,9 @@ test("D1 retry clears the lease, updates receipt and dispatch atomically, and re
     assert.ok(retried);
     assert.equal(retried.receiptStatus, "retryable");
     assert.equal(retried.dispatchStatus, "retryable");
-    assert.equal(retried.availableAt, "2026-09-26T04:15:06.000Z");
+    assert.equal(retried.availableAt, "2026-09-26T04:15:06.000000Z");
+    assert.equal((await row(database, "SELECT available_at FROM stripe_webhook_dispatches WHERE id = ?", [claim.dispatchId])).available_at,
+      "2026-09-26T04:15:06.000000Z");
     assert.equal(retried.leaseToken, null);
     assert.equal(retried.leaseUntil, null);
     assert.equal(await claimStripeWebhookDispatchesFromD1({ database, livemode: false, now }).then((rows) => rows.length), 0);
@@ -483,7 +495,7 @@ test("D1 retry clears the lease, updates receipt and dispatch atomically, and re
       lease_token: null,
     });
     await database.prepare("UPDATE stripe_webhook_dispatches SET available_at = ? WHERE id = ?")
-      .bind(now, accepted.dispatchId).run();
+      .bind("2026-09-26T04:05:06.000000Z", accepted.dispatchId).run();
     const [reclaimed] = await claimStripeWebhookDispatchesFromD1({ database, livemode: false, now, createLeaseToken: ids(73) });
     assert.equal(reclaimed.claimGeneration, 2);
     assert.equal(reclaimed.attemptCount, 2);

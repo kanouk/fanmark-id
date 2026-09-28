@@ -459,7 +459,7 @@ test("scheduled D1 dispatch backs off a transient failure and applies it on retr
     });
     assert.equal(first.retryable, 1);
     const availableAt = await scalar(database, "SELECT available_at FROM stripe_webhook_dispatches");
-    assert.equal(availableAt, "2026-09-26T04:05:36.000Z");
+    assert.equal(availableAt, "2026-09-26T04:05:36.000000Z");
     assert.equal(await scalar(database, "SELECT status FROM stripe_webhook_receipts"), "retryable");
 
     const second = await dispatchStripeWebhookBatchInD1({

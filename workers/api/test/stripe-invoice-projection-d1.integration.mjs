@@ -294,8 +294,8 @@ test("stale success cannot clear a newer current payment failure", async () => {
     assert.equal(result.outcome, "requires_action");
     assert.equal(result.currentInvoiceId, LATEST_INVOICE_ID);
     assert.deepEqual(await getRow(database, `SELECT payment_failure_at, next_payment_attempt, payment_failure_type FROM user_subscriptions WHERE id = ?`, [SUBSCRIPTION_ROW_ID]), {
-      payment_failure_at: NOW,
-      next_payment_attempt: new Date(1790400000 * 1000).toISOString(),
+      payment_failure_at: "2026-09-26T04:05:06.000000Z",
+      next_payment_attempt: "2026-09-26T05:20:00.000000Z",
       payment_failure_type: "invoice.payment_action_required",
     });
   } finally {
@@ -320,8 +320,8 @@ test("failed and action-required current attempts store bounded payment state on
       assert.equal(result.status, "applied");
       assert.equal(result.outcome, intentStatus === "requires_action" ? "requires_action" : "payment_failed");
       assert.deepEqual(await getRow(database, `SELECT payment_failure_at, next_payment_attempt, payment_failure_type FROM user_subscriptions WHERE id = ?`, [SUBSCRIPTION_ROW_ID]), {
-        payment_failure_at: NOW,
-        next_payment_attempt: new Date(1790400000 * 1000).toISOString(),
+        payment_failure_at: "2026-09-26T04:05:06.000000Z",
+        next_payment_attempt: "2026-09-26T05:20:00.000000Z",
         payment_failure_type: expectedFailureType,
       });
     } finally {

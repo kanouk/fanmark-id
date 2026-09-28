@@ -1,3 +1,5 @@
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
+
 export class StripeWebhookD1DispatchError extends Error {
   readonly code: string;
 
@@ -77,10 +79,14 @@ const MAX_CLAIM_GENERATION = Number.MAX_SAFE_INTEGER;
 function timestamp(value: string | undefined): string {
   const normalized = value ?? new Date().toISOString();
   const parsed = Date.parse(normalized);
-  if (!Number.isFinite(parsed) || new Date(parsed).toISOString() !== normalized) {
+  const microsecondValue = normalized.match(/^(.*)\.(\d{6})Z$/u);
+  const millisecondValue = microsecondValue
+    ? `${microsecondValue[1]}.${microsecondValue[2].slice(0, 3)}Z`
+    : normalized;
+  if (!Number.isFinite(parsed) || new Date(parsed).toISOString() !== millisecondValue) {
     throw new StripeWebhookD1DispatchError("invalid_timestamp");
   }
-  return normalized;
+  return microsecondValue ? normalized : toUtcMicrosecondTimestamp(new Date(parsed));
 }
 
 function requireMode(value: unknown): number {
@@ -166,7 +172,7 @@ export async function claimStripeWebhookDispatchesFromD1(args: {
   const leaseSeconds = safeInteger(args.leaseSeconds ?? 300, "invalid_lease_duration", 1, 3600);
   const now = timestamp(args.now);
   const nowMs = Date.parse(now);
-  const leaseUntil = new Date(nowMs + leaseSeconds * 1000).toISOString();
+  const leaseUntil = toUtcMicrosecondTimestamp(new Date(nowMs + leaseSeconds * 1000));
   const createLeaseToken = args.createLeaseToken ?? (() => crypto.randomUUID());
   const candidates = await args.database.prepare(`
     SELECT r.id AS receipt_id, d.id AS dispatch_id, r.stripe_event_id, r.livemode,
@@ -283,7 +289,7 @@ export async function renewStripeWebhookDispatchLeaseInD1(args: {
   const livemode = requireMode(args.identity.livemode);
   const leaseSeconds = safeInteger(args.leaseSeconds ?? 300, "invalid_lease_duration", 1, 3600);
   const now = timestamp(args.now);
-  const proposedUntil = new Date(Date.parse(now) + leaseSeconds * 1000).toISOString();
+  const proposedUntil = toUtcMicrosecondTimestamp(new Date(Date.parse(now) + leaseSeconds * 1000));
   const results = await args.database.batch([
     args.database.prepare(`
       UPDATE stripe_webhook_dispatches
@@ -355,7 +361,7 @@ export async function retryStripeWebhookDispatchInD1(args: {
   const errorCode = errorText(args.errorCode, "invalid_error_code", 128);
   const errorMessage = errorText(args.errorMessage, "invalid_error_message", 1000);
   const now = timestamp(args.now);
-  const availableAt = new Date(Date.parse(now) + retryAfterSeconds * 1000).toISOString();
+  const availableAt = toUtcMicrosecondTimestamp(new Date(Date.parse(now) + retryAfterSeconds * 1000));
   const results = await args.database.batch([
     args.database.prepare(`
       UPDATE stripe_webhook_dispatches

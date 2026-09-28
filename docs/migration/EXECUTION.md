@@ -3055,3 +3055,14 @@ digits. This reduces known writer-format drift but does not close the 103-column
 timestamp gate or the 79 `now()` default locations; the full writer inventory
 remains open. No live user rows, remote D1/R2, or production settings were
 accessed.
+
+## Stripe D1 timestamp normalization (2026-09-28 JST)
+
+Stripe webhook receipt times, dispatch leases/retries, invoice projection
+timestamps, and subscription reconciliation fences and grace dates now use
+fixed-width UTC microsecond text when written to D1. The Stripe webhook,
+invoice, and subscription synthetic integration suite passes 59/59, including
+readback of receipt and dispatch timestamps. Tests use isolated local D1 and
+injected providers; no live Stripe provider or user data was accessed. The
+timestamp writer/default inventory remains incomplete, so the schema gate and
+deployment readiness remain open.

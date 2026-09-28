@@ -20,6 +20,8 @@ export interface StripeWebhookD1ReceiptResult {
   deliveryCount: number;
 }
 
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
+
 export class StripeWebhookD1IngressError extends Error {
   readonly code: string;
 
@@ -84,7 +86,7 @@ function normalizeInput(input: VerifiedStripeEventForD1) {
 
 function terminalDispatchState(receiptStatus: string, terminalAt: string | null) {
   if (receiptStatus === "applied" || receiptStatus === "ignored") {
-    return { status: "completed", completedAt: terminalAt ?? new Date().toISOString() };
+    return { status: "completed", completedAt: terminalAt ?? toUtcMicrosecondTimestamp(new Date()) };
   }
   if (receiptStatus === "dead_letter") return { status: "dead_letter", completedAt: null };
   return { status: "pending", completedAt: null };
@@ -97,8 +99,10 @@ export async function acceptStripeWebhookReceiptIntoD1(args: {
   createId?: () => string;
 }): Promise<StripeWebhookD1ReceiptResult> {
   const event = normalizeInput(args.event);
-  const now = args.now ?? new Date().toISOString();
-  if (!Number.isFinite(Date.parse(now))) throw new StripeWebhookD1IngressError("invalid_received_at");
+  const inputNow = args.now ?? new Date().toISOString();
+  const parsedNow = Date.parse(inputNow);
+  if (!Number.isFinite(parsedNow)) throw new StripeWebhookD1IngressError("invalid_received_at");
+  const now = toUtcMicrosecondTimestamp(new Date(parsedNow));
   const createId = args.createId ?? (() => crypto.randomUUID());
   const proposedReceiptId = createId().toLowerCase();
   const proposedDispatchId = createId().toLowerCase();

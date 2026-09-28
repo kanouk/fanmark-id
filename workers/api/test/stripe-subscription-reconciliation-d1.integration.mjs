@@ -446,7 +446,7 @@ test("deleted final subscription sets Free and atomically returns newest excess 
     assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM notification_events WHERE event_type = 'favorite_fanmark_available'"), 1);
     assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM fanmark_licenses WHERE user_id = ? AND status = 'active'", [USER_ID]), 3);
     assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM fanmark_licenses WHERE user_id = ? AND status = 'grace' AND license_start >= '2026-01-04T00:00:00.000Z'", [USER_ID]), 2);
-    assert.equal(await scalar(database, "SELECT grace_expires_at AS value FROM fanmark_licenses WHERE id = ?", [licenses[4].licenseId]), "2026-09-29T00:00:00.000Z");
+    assert.equal(await scalar(database, "SELECT grace_expires_at AS value FROM fanmark_licenses WHERE id = ?", [licenses[4].licenseId]), "2026-09-29T00:00:00.000000Z");
     assert.equal(await scalar(database, "SELECT excluded_at AS value FROM fanmark_licenses WHERE id = ?", [licenses[4].licenseId]), null);
     assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM stripe_subscription_transaction_guards"), 0);
     assert.equal(await scalar(database, "SELECT status AS value FROM stripe_webhook_receipts"), "applied");

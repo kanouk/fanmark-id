@@ -246,13 +246,16 @@ writes, admin email-template updates, broadcast administration/delivery
 leases/retries, and Resend webhook event persistence also use the fixed-width
 formatter; the combined focused D1 suites pass 179/179 (with 107 tests covering
 these added paths). The full writer/default inventory remains incomplete, so
-this does not change the 13-gate report or the coarse progress estimate. Issue
-#37's full writer-freeze, timed final-copy, and pre/post-write recovery rehearsal
-remains open, as do provider-backed Resend/Stripe acceptance, broad
-authenticated UI coverage, and Workers CPU/plan fit. Issue #38's real user-data
-import and public domain/DNS cutover are intentionally deferred final phases.
-No production Worker, real user-data import, or public domain/DNS cutover has
-occurred. See
+Stripe webhook receipt/dispatch, invoice projection, and subscription
+reconciliation writes now use the same format; their synthetic D1 integration
+suite passes 59/59. These bounded suites do not close the complete timestamp
+writer/default inventory, so the 13-gate report and coarse progress estimate
+remain unchanged. Issue #37's full writer-freeze, timed final-copy, and
+pre/post-write recovery rehearsal remains open, as do provider-backed
+Resend/Stripe acceptance, broad authenticated UI coverage, and Workers CPU/plan
+fit. Issue #38's real user-data import and public domain/DNS cutover are
+intentionally deferred final phases. No production Worker, real user-data
+import, or public domain/DNS cutover has occurred. See
 [`EXECUTION.md`](EXECUTION.md).
 
 ## Unused extension coupon master seed (2026-09-27 JST)
