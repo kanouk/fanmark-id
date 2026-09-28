@@ -1,6 +1,6 @@
 # fanmark.id repository inventory (offline)
 
-Base commit: `143196fba8830111d84a2750682930797ee950be`
+Base commit: `5a394b4c5d7ec2625613d3e42b44c4b8a0d1e359`
 
 This report is generated from the checked-out repository only. It makes no network calls, reads no credentials, and does not claim that local generated types, migrations, or SQL snapshots equal the current production state.
 
