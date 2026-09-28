@@ -10,6 +10,10 @@ import {
   type DurableReceiptResult,
 } from "../_shared/stripe-receipt-ingress/index.ts";
 import {
+  resolveStripeCustomerUserMapping,
+  StripeCustomerUserMappingError,
+} from "../_shared/stripe-customer-user-mapping.ts";
+import {
   createStripeInvoiceProjectionProvider,
   processAcceptedStripeInvoiceReceipt,
 } from "../_shared/stripe-invoice-projection/index.ts";
@@ -76,72 +80,52 @@ const resolveUserIdFromCustomer = async (
   supabaseClient: ReturnContext["supabase"],
   stripe: Stripe,
   stripeCustomerId: string,
+  livemode: boolean,
 ): Promise<string> => {
-  const { data: settingsRow, error: settingsLookupError } = await supabaseClient
-    .from("user_settings")
-    .select("user_id, stripe_customer_id")
-    .eq("stripe_customer_id", stripeCustomerId)
-    .maybeSingle();
-
-  if (settingsLookupError) {
-    logStep("WARNING: Failed to lookup user by stripe_customer_id", { error: settingsLookupError.message });
-  }
-
-  if (settingsRow?.user_id) {
-    logStep("Matched user by stripe_customer_id", { userId: settingsRow.user_id, stripeCustomerId });
-    return settingsRow.user_id;
-  }
-
-  const customer = await stripe.customers.retrieve(stripeCustomerId);
-  if (customer.deleted) {
-    throw new Error("Customer has been deleted");
-  }
-
-  const customerEmail = customer.email;
-  if (!customerEmail) {
-    throw new Error("Customer has no email");
-  }
-
-  const perPage = 200;
-  let page = 1;
-  let matchedUserId: string | null = null;
-
-  while (!matchedUserId) {
-    const { data: userData, error: userError } = await supabaseClient.auth.admin.listUsers({
-      page,
-      perPage,
-    });
-
-    if (userError) throw userError;
-
-    const foundUser = userData.users.find(u => u.email === customerEmail);
-    if (foundUser) {
-      matchedUserId = foundUser.id;
-      break;
-    }
-
-    if (userData.users.length < perPage) {
-      break;
-    }
-
-    page += 1;
-  }
-
-  if (!matchedUserId) {
-    logStep("User not found for email", { email: customerEmail });
-    throw new Error("User not found");
-  }
-
-  const { error: settingsUpdateError } = await supabaseClient
-    .from("user_settings")
-    .update({ stripe_customer_id: stripeCustomerId })
-    .eq("user_id", matchedUserId);
-
-  if (settingsUpdateError) {
-    logStep("WARNING: Failed to store stripe_customer_id", { error: settingsUpdateError.message });
-  }
-
-  return matchedUserId;
+  return await resolveStripeCustomerUserMapping({
+    customerId: stripeCustomerId,
+    livemode,
+    provider: {
+      retrieveCustomer: (customerId) => stripe.customers.retrieve(customerId),
+    },
+    repository: {
+      async findByStripeCustomerId(customerId) {
+        const { data, error } = await supabaseClient
+          .from("user_settings")
+          .select("user_id, stripe_customer_id")
+          .eq("stripe_customer_id", customerId)
+          .limit(2);
+        if (error) throw new StripeCustomerUserMappingError("stripe_customer_mapping_read_failed");
+        return (data ?? []).map((row) => ({
+          userId: row.user_id,
+          stripeCustomerId: row.stripe_customer_id,
+        }));
+      },
+      async findByUserId(userId) {
+        const { data, error } = await supabaseClient
+          .from("user_settings")
+          .select("user_id, stripe_customer_id")
+          .eq("user_id", userId)
+          .limit(2);
+        if (error) throw new StripeCustomerUserMappingError("stripe_customer_mapping_read_failed");
+        return (data ?? []).map((row) => ({
+          userId: row.user_id,
+          stripeCustomerId: row.stripe_customer_id,
+        }));
+      },
+      async linkIfUnbound(userId, customerId) {
+        const { data, error } = await supabaseClient
+          .from("user_settings")
+          .update({ stripe_customer_id: customerId })
+          .eq("user_id", userId)
+          .is("stripe_customer_id", null)
+          .select("user_id, stripe_customer_id")
+          .maybeSingle();
+        if (error) throw new StripeCustomerUserMappingError("stripe_customer_mapping_link_failed");
+        return data?.user_id === userId && data?.stripe_customer_id === customerId;
+      },
+    },
+  });
 };
 
 const fetchFreePlanLimit = async (supabaseClient: ReturnContext["supabase"]) => {
@@ -415,7 +399,7 @@ serve(async (req) => {
         logStep(`Processing ${event.type}`, { subscriptionId: subscription.id });
 
         const stripeCustomerId = subscription.customer as string;
-        const userId = await resolveUserIdFromCustomer(supabaseClient, stripe, stripeCustomerId);
+        const userId = await resolveUserIdFromCustomer(supabaseClient, stripe, stripeCustomerId, event.livemode);
 
         const firstItem = subscription.items?.data?.[0];
         const priceId = typeof firstItem?.price?.id === "string" ? firstItem.price.id : null;

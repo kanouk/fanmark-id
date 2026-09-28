@@ -483,6 +483,14 @@ a canonical-shaped fallback for all 79 source timestamptz `now()` defaults,
 while clock precision and transaction-time semantics remain gated for
 operation-level proof. All 40 generated tables loaded in SQLite with
 `integrity_check=ok` and no foreign-key violations.
+
+The Supabase Stripe subscription webhook now resolves customer ownership only
+from an exact stored Stripe customer mapping or checked `Customer.metadata.user_id`
+on an existing unbound account. Email-only account linking has been removed;
+live/test mode, conflicts, ambiguous mappings, and concurrent linking are
+validated by seven shared TypeScript tests. Local receipt tests and typecheck
+pass. This is a source safety fix only; the Stripe provider selectors remain
+disabled pending sandbox credentials and integrated staging acceptance.
 After the core API writes, account deletion, profile/password setup,
 administrator user actions, lifecycle/maintenance/system settings, waitlist
 admin/signup, invitation admin/signup, and extension-coupon admin/application

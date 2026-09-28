@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 const packageDirectory = fileURLToPath(new URL(".", import.meta.url));
 const typeScriptImports = new Set([
   "checkout-payment-assessment.test.mjs",
+  "customer-user-mapping.test.mjs",
   "extension-application-result.test.mjs",
   "ingress.test.mjs",
   "invoice-projection.test.mjs",
