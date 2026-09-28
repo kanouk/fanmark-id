@@ -3,6 +3,7 @@ import {
   addWorkerFavoriteFanmark,
   getFavoritesBackend,
   loadWorkerFavoriteFanmarkRows,
+  normalizeSupabaseFavoriteFanmarkRows,
   removeWorkerFavoriteFanmark,
 } from "./favorites-api.ts";
 import type { FavoriteFanmarkRow } from "./favorites-api.ts";
@@ -13,7 +14,7 @@ export async function loadFavoriteFanmarkRows(): Promise<FavoriteFanmarkRow[]> {
   if (error) throw error;
   if (data === null) return [];
   if (!Array.isArray(data)) throw new Error("Invalid favorites response");
-  return data as unknown as FavoriteFanmarkRow[];
+  return normalizeSupabaseFavoriteFanmarkRows(data);
 }
 
 export async function addFavoriteFanmark(emojiIds: string[], displayFanmark: string): Promise<boolean> {

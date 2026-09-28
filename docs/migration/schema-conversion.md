@@ -701,3 +701,29 @@ synthetic rows, transformed two credentials, deferred one inactive credential,
 and rejected conflicting coverage. Its result is `public_rows_reconciled`, not
 full migration reconciliation. No source application rows or remote D1/R2 were
 read or written.
+
+## Exact bigint API reads and schema converter v18 (2026-09-29 JST)
+
+`fanmark_discoveries.search_count` and `favorite_count` are PostgreSQL `bigint`
+values exposed by the favorites list API. The D1 query now casts both values to
+text before the Worker runtime can represent them as JavaScript numbers. The
+version-2 DTO accepts only canonical nonnegative signed-int64 decimal strings;
+the browser keeps those strings intact. The Supabase default adapter converts
+safe integers to the same form and rejects unsafe number values rather than
+passing through a rounded count. A Miniflare D1 integration case reads back
+`9007199254740993` and `9223372036854775807` exactly through the API.
+
+The schema converter records this exact read disposition for only those two
+catalog columns and removes their bigint application-read gate. Other bigint
+columns remain gated unless their exact sequence or read contract is reviewed.
+Schema conversion version is now 18 so old manifests cannot claim the newly
+reviewed projection. A fresh linked, read-only `schema-readiness.sql` query at
+`2026-09-28T16:40:24Z` observed the existing 40-table / 406-column catalog and
+read no application rows. The descriptor-aware v18 report has 7 unresolved
+gate groups / 209 locations (2 row-conversion / 116; 5 schema/operation / 93)
+and remains `deployable: false`. Remaining gates are JSON import validation,
+timestamp import precision, external Auth references, timestamp-default
+operation semantics, and unsupported catalog scopes. Focused validation passed:
+favorites client 5/5, favorites D1 6/6, schema converter 19/19, and both app
+and Worker typechecks. No user rows, remote D1 writes, Worker deployment, or
+domain/DNS state changed.

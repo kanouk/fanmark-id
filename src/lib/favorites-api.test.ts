@@ -5,6 +5,7 @@ import {
   FavoritesApiError,
   getFavoritesBackend,
   loadWorkerFavoriteFanmarkRows,
+  normalizeSupabaseFavoriteFanmarkRows,
   parseFavoriteFanmarksPayload,
   removeWorkerFavoriteFanmark,
 } from "./favorites-api.ts";
@@ -18,8 +19,8 @@ const favorite = {
   normalized_emoji_ids: ["beed0003-0c4f-4ae7-9aa9-7b969f0d9d03"],
   emoji_ids: ["beed0004-0c4f-4ae7-9aa9-7b969f0d9d04"],
   availability_status: "unknown",
-  search_count: 0,
-  favorite_count: 1,
+  search_count: "0",
+  favorite_count: "1",
   short_id: null,
   fanmark_name: null,
   access_type: null,
@@ -44,13 +45,28 @@ test("favorites backend defaults to Supabase and rejects unknown selectors", () 
 });
 
 test("parses the strict favorites DTO and rejects malformed response shapes", () => {
-  assert.deepEqual(parseFavoriteFanmarksPayload({ schemaVersion: 1, items: [favorite] }), [favorite]);
+  assert.deepEqual(parseFavoriteFanmarksPayload({ schemaVersion: 2, items: [favorite] }), [favorite]);
   for (const payload of [
-    { schemaVersion: 2, items: [favorite] },
-    { schemaVersion: 1, items: [{ ...favorite, user_id: "another-user" }] },
-    { schemaVersion: 1, items: [{ ...favorite, emoji_ids: "not-json" }] },
-    { schemaVersion: 1, items: [{ ...favorite, is_password_protected: 1 }] },
+    { schemaVersion: 1, items: [favorite] },
+    { schemaVersion: 2, items: [{ ...favorite, user_id: "another-user" }] },
+    { schemaVersion: 2, items: [{ ...favorite, emoji_ids: "not-json" }] },
+    { schemaVersion: 2, items: [{ ...favorite, is_password_protected: 1 }] },
+    { schemaVersion: 2, items: [{ ...favorite, search_count: 9007199254740992 }] },
+    { schemaVersion: 2, items: [{ ...favorite, favorite_count: "092" }] },
+    { schemaVersion: 2, items: [{ ...favorite, favorite_count: "9223372036854775808" }] },
   ]) assert.throws(() => parseFavoriteFanmarksPayload(payload), FavoritesApiError);
+});
+
+test("normalizes source bigint counts without accepting rounded numbers", () => {
+  assert.deepEqual(normalizeSupabaseFavoriteFanmarkRows([{
+    ...favorite, search_count: 4, favorite_count: 0,
+  }]), [{ ...favorite, search_count: "4", favorite_count: "0" }]);
+  assert.deepEqual(normalizeSupabaseFavoriteFanmarkRows([{
+    ...favorite, search_count: "9007199254740993", favorite_count: "9223372036854775807",
+  }]), [{ ...favorite, search_count: "9007199254740993", favorite_count: "9223372036854775807" }]);
+  assert.throws(() => normalizeSupabaseFavoriteFanmarkRows([{
+    ...favorite, search_count: 9007199254740992,
+  }]), FavoritesApiError);
 });
 
 test("Worker list uses same-origin credentials, no-store, and a strict payload", async () => {
@@ -61,7 +77,7 @@ test("Worker list uses same-origin credentials, no-store, and a strict payload",
     authBaseUrl: "https://api.example.test",
     fetchImpl: async (input, init) => {
       call = { url: new URL(String(input)), init: init ?? {} };
-      return jsonResponse({ schemaVersion: 1, items: [favorite] });
+      return jsonResponse({ schemaVersion: 2, items: [favorite] });
     },
   });
   assert.deepEqual(rows, [favorite]);

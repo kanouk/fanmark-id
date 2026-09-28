@@ -222,10 +222,12 @@ function jsonArray(value: unknown): string[] {
   return parsed.map((id) => (id as string).toLowerCase());
 }
 
-function integer(value: unknown): number {
-  const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
-  if (!Number.isSafeInteger(parsed) || parsed < 0) throw new FavoritesApiError("favorites_unavailable");
-  return parsed;
+function nonnegativeInt64Text(value: unknown): string {
+  if (typeof value !== "string" || !/^(?:0|[1-9]\d{0,18})$/u.test(value) ||
+      (value.length === 19 && value > "9223372036854775807")) {
+    throw new FavoritesApiError("favorites_unavailable");
+  }
+  return value;
 }
 
 function booleanValue(value: unknown): boolean {
@@ -246,8 +248,8 @@ function mapFavorite(row: FavoriteRow): Record<string, unknown> {
     normalized_emoji_ids: normalizedIds,
     emoji_ids: emojiIds,
     availability_status: text(row.availabilityStatus, 64),
-    search_count: integer(row.searchCount),
-    favorite_count: integer(row.favoriteCount),
+    search_count: nonnegativeInt64Text(row.searchCount),
+    favorite_count: nonnegativeInt64Text(row.favoriteCount),
     short_id: nullableText(row.shortId),
     fanmark_name: nullableText(row.fanmarkName),
     access_type: nullableText(row.accessType),
@@ -278,8 +280,8 @@ SELECT
   d.normalized_emoji_ids AS normalizedEmojiIds,
   d.emoji_ids AS emojiIds,
   d.availability_status AS availabilityStatus,
-  d.search_count AS searchCount,
-  d.favorite_count AS favoriteCount,
+  CAST(d.search_count AS TEXT) AS searchCount,
+  CAST(d.favorite_count AS TEXT) AS favoriteCount,
   f.short_id AS shortId,
   bc.fanmark_name AS fanmarkName,
   bc.access_type AS accessType,
@@ -417,7 +419,7 @@ export async function handleFavoritesRequest(request: Request, env: Env, resolve
 
   try {
     if (request.method === "GET") {
-      return json({ schemaVersion: 1, items: await listFavorites(db, auth.userId) }, 200, headers);
+      return json({ schemaVersion: 2, items: await listFavorites(db, auth.userId) }, 200, headers);
     }
     const value = await readJson(request);
     if (!isRecord(value)) throw new FavoritesApiError("invalid_request", 400);

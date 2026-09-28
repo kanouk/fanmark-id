@@ -345,7 +345,7 @@ enabling Cloudflare's daily lifecycle trigger. See
 [`live-observations.md`](live-observations.md) and
 [`cutover-rehearsal.md`](cutover-rehearsal.md).
 
-Current coarse weighted estimate (2026-09-28): about 53% of the full migration,
+Current coarse weighted estimate (2026-09-29): about 53% of the full migration,
 or about 73% of the prioritized app/infrastructure/non-user master-data scope
 with synthetic staging acceptance. The latter excludes real user-data import
 and public domain/DNS cutover; this is a scope estimate, not an issue-count or
@@ -363,12 +363,13 @@ matches the local staging build. Runtime acceptance is still required. The
 manual expiry Worker route is active only for explicit admin runs; scheduled
 expiry remains disabled because `LICENSE_EXPIRY_BACKEND` is unset.
 
-The fresh schema-converter-v17 descriptor-aware catalog report has 8
-unresolved gate groups across 211 locations and remains `deployable: false`.
+The fresh schema-converter-v18 descriptor-aware catalog report has 7
+unresolved gate groups across 209 locations and remains `deployable: false`.
 The private value-free descriptor removes the missing-descriptor gate. Array
 shape and element checks now run per snapshot row for the three supported types;
-bigint, JSON, timestamp-operation, external identity, and unsupported-catalog-
-scope gates remain. The exact event sequence now uses the verified snapshot
+the two discovery bigint counters now use exact decimal-text API reads. JSON,
+timestamp-operation, external identity, and unsupported-catalog-scope gates
+remain. The exact event sequence now uses the verified snapshot
 and D1 watermark-import path; the final writer-freeze operation remains open.
 Generated D1 checks enforce canonical calendar dates and fixed-width UTC text. Version 11 emits
 a canonical-shaped fallback for all 79 source timestamptz `now()` defaults,

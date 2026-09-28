@@ -8,6 +8,15 @@ require `FAVORITES_BACKEND=d1`. Errors never switch the request to another
 backend. The list response is capped at 500 rows and 1 MiB; larger accounts fail
 closed rather than returning a partial list.
 
+The list DTO is schema version 2. PostgreSQL `bigint` discovery counters are
+returned as canonical nonnegative decimal strings, and the Worker reads them
+with `CAST(... AS TEXT)` so D1 never exposes them as imprecise JavaScript
+numbers. The browser validates the signed 64-bit upper bound and retains the
+strings; the existing UI does not perform arithmetic on these aggregate
+counters. The Supabase default adapter normalizes safe integer responses to
+the same string form and rejects unsafe numeric responses that may already
+have lost precision during JSON parsing.
+
 The Worker derives ownership only from the Better Auth session. Writes require
 an allowed `Origin`, JSON input is bounded, responses are `no-store`, and the
 browser checks that the favorites API and Better Auth use the same origin. The

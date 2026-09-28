@@ -13,8 +13,8 @@ export interface FavoriteFanmark {
   fanmark: string;
   normalizedEmojiIds: string[];
   availabilityStatus: string;
-  searchCount: number;
-  favoriteCount: number;
+  searchCount: string;
+  favoriteCount: string;
   shortId: string | null;
   fanmarkName: string | null;
   accessType: string | null;

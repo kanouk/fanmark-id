@@ -285,12 +285,15 @@ describe("Better Auth favorites D1 API", () => {
     });
     expect(add.status).toBe(200);
     await insertOtherOwnerFavorite();
+    await businessDatabase?.prepare(
+      "UPDATE fanmark_discoveries SET search_count = ?, favorite_count = ? WHERE id = ?",
+    ).bind("9007199254740993", "9223372036854775807", discoveryId).run();
 
     const response = await request("/api/me/favorites", { headers: { Cookie: cookie } });
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
     const payload = await response.json() as { schemaVersion: number; items: Array<Record<string, unknown>> };
-    expect(payload.schemaVersion).toBe(1);
+    expect(payload.schemaVersion).toBe(2);
     expect(payload.items).toHaveLength(1);
     expect(payload.items[0]).toMatchObject({
       favorite_id: expect.any(String),
@@ -298,7 +301,8 @@ describe("Better Auth favorites D1 API", () => {
       display_fanmark: "👋",
       normalized_emoji_ids: [baseEmojiId],
       emoji_ids: [baseEmojiId],
-      favorite_count: 2,
+      search_count: "9007199254740993",
+      favorite_count: "9223372036854775807",
       short_id: "leaf-42",
       fanmark_name: "Synthetic Leaf",
       access_type: "redirect",

@@ -5,6 +5,7 @@ const MAX_RESPONSE_BYTES = 1024 * 1024;
 const TIMEOUT_MS = 5_000;
 const MAX_FAVORITES = 500;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
+const MAX_INT64_TEXT = "9223372036854775807";
 
 export interface FavoriteFanmarkRow {
   favorite_id: string;
@@ -15,8 +16,8 @@ export interface FavoriteFanmarkRow {
   normalized_emoji_ids: (string | null)[];
   emoji_ids: (string | null)[];
   availability_status: string;
-  search_count: number;
-  favorite_count: number;
+  search_count: string;
+  favorite_count: string;
   short_id: string | null;
   fanmark_name: string | null;
   access_type: string | null;
@@ -91,6 +92,29 @@ function isNullableText(value: unknown, maximum = 512): value is string | null {
   return value === null || isText(value, maximum);
 }
 
+function isNonnegativeInt64Text(value: unknown): value is string {
+  return typeof value === "string" && /^(?:0|[1-9]\d{0,18})$/u.test(value) &&
+    (value.length < 19 || value <= MAX_INT64_TEXT);
+}
+
+function normalizeSupabaseInt64(value: unknown): string {
+  if (isNonnegativeInt64Text(value)) return value;
+  if (typeof value === "number" && Number.isSafeInteger(value) && value >= 0) return String(value);
+  throw new FavoritesApiError("invalid_response");
+}
+
+export function normalizeSupabaseFavoriteFanmarkRows(value: unknown): FavoriteFanmarkRow[] {
+  if (!Array.isArray(value) || value.length > MAX_FAVORITES) throw new FavoritesApiError("invalid_response");
+  return value.map((item) => {
+    if (!isRecord(item)) throw new FavoritesApiError("invalid_response");
+    return {
+      ...item,
+      search_count: normalizeSupabaseInt64(item.search_count),
+      favorite_count: normalizeSupabaseInt64(item.favorite_count),
+    } as unknown as FavoriteFanmarkRow;
+  });
+}
+
 const FAVORITE_FIELDS = [
   "favorite_id", "discovery_id", "favorited_at", "fanmark_id", "display_fanmark",
   "normalized_emoji_ids", "emoji_ids", "availability_status", "search_count", "favorite_count",
@@ -111,8 +135,7 @@ function parseFavoriteRow(value: unknown): FavoriteFanmarkRow {
     (value.fanmark_id !== null && !UUID_RE.test(value.fanmark_id)) || !isNullableText(value.display_fanmark) ||
     !validArray(value.normalized_emoji_ids) || !validArray(value.emoji_ids) ||
     !isText(value.availability_status, 64) ||
-    typeof value.search_count !== "number" || !Number.isSafeInteger(value.search_count) || value.search_count < 0 ||
-    typeof value.favorite_count !== "number" || !Number.isSafeInteger(value.favorite_count) || value.favorite_count < 0 ||
+    !isNonnegativeInt64Text(value.search_count) || !isNonnegativeInt64Text(value.favorite_count) ||
     !isNullableText(value.short_id, 128) || !isNullableText(value.fanmark_name) ||
     !isNullableText(value.access_type, 64) || !isNullableText(value.target_url, 8192) ||
     !isNullableText(value.text_content, 32 * 1024) || !isNullableText(value.current_owner_username, 128) ||
@@ -124,7 +147,7 @@ function parseFavoriteRow(value: unknown): FavoriteFanmarkRow {
 }
 
 export function parseFavoriteFanmarksPayload(payload: unknown): FavoriteFanmarkRow[] {
-  if (!isRecord(payload) || !exactKeys(payload, ["schemaVersion", "items"]) || payload.schemaVersion !== 1 ||
+  if (!isRecord(payload) || !exactKeys(payload, ["schemaVersion", "items"]) || payload.schemaVersion !== 2 ||
       !Array.isArray(payload.items) || payload.items.length > MAX_FAVORITES) {
     throw new FavoritesApiError("invalid_response");
   }
