@@ -749,76 +749,46 @@ preparation/application, coverage write, and checkpoint atomicity remain open.
 R2 bucket enumeration after user activation confirmed the two expected staging
 buckets; this was a read-only check and copied no objects.
 
-1. Continue the basic local/staging application and infrastructure slice
-   under #34: the latest schema-converter-v4 private report covers the
-   2026-09-25 catalog, parses 40 tables and 66 indexes, and passes isolated
-   SQLite foreign-key/integrity checks. It still has 18 unresolved gate groups
-   (10 row-conversion and 8 schema/operation), so `deployable: false`; schema-
-   only DDL is now applied to the previously empty business-staging D1 (40
-  tested. Next connect and validate business routes, authorization, and the
-   application tables, 66 indexes), with no imported user rows. Recent,
-   availability, public access, analytics, and most owner API selectors are
-   now enabled in staging after synthetic canaries were cleaned up. The
-   active-to-grace lifecycle repository, guarded password verifier, and
-   scheduled entrypoint have source-shaped synthetic coverage. Next resolve
-   the remaining schema-conversion/importer gates, complete required Worker +
-   Static Assets routes/jobs, finish integrated business authorization across
-   the synthetic Auth boundary, and run focused permission/parallel-operation
-   checks plus the broader synthetic rehearsal. No production rows or secrets
-   enter these local proofs. The refreshed catalog is structurally the same size as the
-   prior one (40 tables, 406 columns, 144 constraints, 139 indexes, 15 enum
-   labels), while the source also has 58 functions, 36 triggers, 77 RLS
-   policies, and one view that are not yet translated to Worker/D1 behavior.
-   Remote migration history confirms the three 2026-09-21 Stripe migrations
-   in this repository are not applied to Supabase; do not silently add them to
-   the current-source D1 profile.
-2. Continue #36's emoji-master path: the verified UUID-bearing release was
-   built from two matching read-only exports of the authoritative public master
-   and all 3,944 rows passed isolated local D1 staging/readback on 2026-09-23.
-   A local private pointer and read-only API/frontend selector now support the
-   release path with identity guards. The verified master is staged and active
-   in an isolated APAC remote D1. Auth schema is applied with empty user tables, and
-   both the dedicated catalog API and app SPA/API Worker are deployed on
-   `workers.dev`. The app Worker read back all 3,944 pinned catalog records
-   with matching hashes; the dedicated versionless API read back the full
-   active release with matching hashes. Keep user-held references for #38;
-   focus pre-#37 work on browser acceptance, integrated authorization, and
-   Wrangler plan/CPU fit. Language and public tier/price reads, plus editable
-   tier-day and extension-price screens, use versioned Worker/D1 paths on
-   staging. MFA-gated Tier C and extension-price edit/restore canaries passed.
-   Coupon admin CRUD and redemption use the D1 Worker path, with four verified
-   unused definitions staged; consumed definitions and usage history remain
-   excluded for user-data reconciliation. Five reserved-pattern rows
-   are in the active release and feed the Worker read/availability path; no
-   dedicated editing UI consumer is present. R2 is enabled: staging avatar/cover uploads and
-   profile URLs use the two bound R2 buckets, while existing Supabase objects
-   have not been copied and production remains on Supabase.
-   Use synthetic
-   users only; do not attach the production domain or import real user data.
-   Production application routing remains part of #38.
-3. Complete the synthetic end-to-end rehearsal in #37 across the app, explicit
-   masters, auth, storage, and billing sandbox. Exercise planned maintenance
-   and individual support steps where that is simpler than zero-downtime
-   machinery.
-4. The #35 encrypted snapshot exporter and local synthetic D1 restore path now
-   exist, including a single authenticated ciphertext archive with hidden file
-   names/counts and 64 KiB-rounded size metadata. A synthetic bundle now
-   restores and verifies in a fresh Node process from persisted local files; a
-   second canary uploaded its ciphertext to the dedicated private APAC staging
-   R2 bucket, downloaded and restored it, then confirmed both remote objects
-   were deleted and the bucket returned to zero bytes. Both plaintext restore
-   trees were removed. After #37 acceptance, complete independent key custody,
-   destination ACL design, retention/deletion policy, and production backup
-   destination. Run the real snapshot only in #38's final user-data operation:
-   source freeze, Auth/business/Storage import, independent reconciliation,
-   and documented handling for MFA/session and credential outcomes.
-5. Switch public DNS/hostnames after reconciliation succeeds, then monitor the
-   new single-writer environment. Keep registrar transfer separate.
+1. Continue the #33/#34 application and infrastructure stage. The current
+   `fanmark-app-staging` workers.dev deployment is version
+   `6da0dd8d-5da3-46f5-9c7e-86258a50b181` at 100%, with split Auth/business/
+   master D1 and staging R2 bindings. Synthetic canaries cover selected
+   registration, owner, access, notification, admin, and PWA routes, but the
+   static audit of 43 backend selectors still requires complete runtime
+   acceptance. The current v11 schema report remains `deployable: false` with
+   13 unresolved groups across 226 locations; function/trigger/RLS parity,
+   remaining API inventory, operation-level timestamp proof, and representative
+   CPU-plan fit remain open. No production route is enabled.
+2. #36, the versioned non-user emoji master path, is closed. Its 3,944-record
+   release is active in the separate APAC master D1; the other reference
+   masters, notification rules/templates, localized auth email templates, and
+   the reviewed settings allowlist also have staging readback. Production
+   selectors remain on Supabase; no user-owned master/history rows were copied.
+3. Continue #37's integrated synthetic rehearsal. The pre-write fallback canary
+   keeps only the workers.dev app frozen while a disposable loopback Supabase
+   accepts a synthetic owner-settings write; its latest measured acknowledgement
+   was 31,937 ms after Cloudflare rejected the write. Narrow app-schema
+   post-write restore probes also passed. These do not stop a linked Supabase
+   writer/Cron, restore Auth or R2, apply a Stripe business effect, or prove the
+   full sequence. Stripe sandbox, Resend delivery, four OAuth callbacks, and
+   complete auth/storage recovery remain unverified.
+4. Continue #35's migration tooling with synthetic artifacts only. The
+   descriptor-aware v11 replay completed all 40 table checkpoints, transformed
+   two synthetic credentials, durably deferred one inactive-license credential,
+   and verified typed/hash readback. The encrypted public snapshot and private
+   APAC R2 round-trip passed with synthetic data. Actual Auth/business/Storage
+   export/import remains deferred to #38; source-value compatibility gates,
+   independent key custody, least-privilege backup access, and retention policy
+   remain open.
+5. Keep #38's real user/Auth/object import and public domain/DNS switch in the
+   final phase, after the synthetic application and recovery gates pass. The
+   current task does not import real rows or switch public hostnames.
 
-The generic importer still rejects any snapshot containing the credential
-column with `credential_transform_required` before target mutation. Earlier
-successful 40-table nonzero imports preceded this guard. Do not remove it
-until the integrated transformed-row path and its failure tests are ready.
+The generic importer fails closed for credential-bearing snapshots unless the
+exact private descriptor selects the dedicated transformed-row path. The
+current-catalog synthetic replay verified that path for two credentials and
+recorded an inactive credential as deferred; this is not evidence for real
+credential compatibility or a complete user-data import.
 
 ## Remaining external and release gates
 

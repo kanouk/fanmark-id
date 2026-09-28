@@ -3202,3 +3202,18 @@ readback matched, and conflicting coverage was rejected. The report remains
 `deployable: false` with 8 row-conversion groups / 133 locations and 5
 schema/operation groups / 93 locations. No source application rows or remote
 D1/R2 state was read or changed.
+
+## Current offline source inventory refresh (2026-09-28 JST)
+
+Regenerated `docs/migration/repository-inventory.md` from checkout commit
+`1f1d0eeed72fb8d0940409fc8cab33f0d1fb9286` using the offline AST inventory
+script. It still reports 40 generated-type tables, one view, 45 typed RPCs,
+34 local Edge directories, 18 explicit local `verify_jwt` entries, and 211
+frontend Supabase callsites. The current source scan therefore confirms the
+previous counts while refreshing line locations changed by the admin
+user-management browser acceptance. `node --check scripts/migration/inventory.mjs`,
+`node scripts/migration/test-inventory.mjs`, and `git diff --check` passed.
+This updates only the checked-out repository report; it does not close #30's
+live settings/capacity/maintenance inventory or reconcile production-only
+configuration. No network API or database was queried and no rows or secrets
+were read.

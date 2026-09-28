@@ -1,6 +1,6 @@
 # fanmark.id repository inventory (offline)
 
-Base commit: `1f9d10eb902fa2d79ee64e37382d7460e954d278`
+Base commit: `1f1d0eeed72fb8d0940409fc8cab33f0d1fb9286`
 
 This report is generated from the checked-out repository only. It makes no network calls, reads no credentials, and does not claim that local generated types, migrations, or SQL snapshots equal the current production state.
 
@@ -202,12 +202,12 @@ Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of t
 | `src/components/AdminTierExtensionPrices.tsx:264` | table | `fanmark_tier_extension_prices` | `table.update` |  |
 | `src/components/AdminTierExtensionPrices.tsx:306` | table | `fanmark_tier_extension_prices` | `table.update` |  |
 | `src/components/AdminTierExtensionPrices.tsx:373` | table | `fanmark_tiers` | `table.update` |  |
-| `src/components/AdminUserManagement.tsx:185` | edge | `admin-list-users` | `edge_function_invoke` |  |
-| `src/components/AdminUserManagement.tsx:203` | edge | `admin-get-user-detail` | `edge_function_invoke` |  |
-| `src/components/AdminUserManagement.tsx:234` | edge | `admin-update-user-plan` | `edge_function_invoke` |  |
-| `src/components/AdminUserManagement.tsx:274` | edge | `admin-toggle-user-status` | `edge_function_invoke` |  |
-| `src/components/AdminUserManagement.tsx:314` | edge | `admin-trigger-password-reset` | `edge_function_invoke` |  |
-| `src/components/AdminUserManagement.tsx:358` | edge | `admin-expire-license` | `edge_function_invoke` |  |
+| `src/components/AdminUserManagement.tsx:186` | edge | `admin-list-users` | `edge_function_invoke` |  |
+| `src/components/AdminUserManagement.tsx:204` | edge | `admin-get-user-detail` | `edge_function_invoke` |  |
+| `src/components/AdminUserManagement.tsx:235` | edge | `admin-update-user-plan` | `edge_function_invoke` |  |
+| `src/components/AdminUserManagement.tsx:275` | edge | `admin-toggle-user-status` | `edge_function_invoke` |  |
+| `src/components/AdminUserManagement.tsx:315` | edge | `admin-trigger-password-reset` | `edge_function_invoke` |  |
+| `src/components/AdminUserManagement.tsx:359` | edge | `admin-expire-license` | `edge_function_invoke` |  |
 | `src/components/auth/MFAChallenge.tsx:43` | auth_mfa | `auth` | `auth.mfa.unenroll` |  |
 | `src/components/auth/MFAChallenge.tsx:73` | auth_mfa | `auth` | `auth.mfa.listFactors` |  |
 | `src/components/auth/MFAChallenge.tsx:108` | auth_mfa | `auth` | `auth.mfa.challenge` |  |
