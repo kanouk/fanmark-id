@@ -553,6 +553,7 @@ describe("Better Auth through the application Worker", () => {
       const start = await authRequest("/sign-in/social", jsonBody({
         provider,
         callbackURL: `${appOrigin}/auth`,
+        errorCallbackURL: `${appOrigin}/auth`,
       }), providerEnv);
       expect(start.status, `${provider} authorization start`).toBe(200);
       const response = await start.json() as { url?: unknown; redirect?: unknown };
@@ -570,6 +571,28 @@ describe("Better Auth through the application Worker", () => {
       expect(JSON.stringify(response)).not.toContain(
         providerEnv[`${provider.toUpperCase()}_OAUTH_CLIENT_SECRET` as keyof typeof providerEnv],
       );
+
+      const callbackCookies = (start.headers.get("set-cookie") ?? "")
+        .split(/,(?=[^;,]+=)/u)
+        .map((cookie) => cookie.trim().split(";", 1)[0])
+        .filter(Boolean)
+        .join("; ");
+      expect(callbackCookies, `${provider} OAuth state cookies`).not.toBe("");
+      const deniedCallback = await authRequest(
+        `/callback/${provider}?${new URLSearchParams({
+          error: "access_denied",
+          state: authorizationURL.searchParams.get("state") ?? "",
+        })}`,
+        { headers: { cookie: callbackCookies } },
+        providerEnv,
+      );
+      expect(deniedCallback.status, `${provider} denied callback`).toBe(302);
+      const callbackLocation = deniedCallback.headers.get("location");
+      expect(callbackLocation, `${provider} callback destination`).toBeTruthy();
+      const callbackDestination = new URL(callbackLocation as string);
+      expect(`${callbackDestination.origin}${callbackDestination.pathname}`)
+        .toBe(`${appOrigin}/auth`);
+      expect(callbackDestination.searchParams.get("error")).toBe("access_denied");
     }
 
     const unconfiguredProvider = await authRequest("/sign-in/social", jsonBody({
@@ -578,6 +601,11 @@ describe("Better Auth through the application Worker", () => {
     }), providerEnv);
     expect(unconfiguredProvider.status).toBe(403);
     expect(await unconfiguredProvider.json()).toEqual({ error: "auth_flow_unavailable" });
+    expect(await sessionCount(verifiedUserId)).toBe(0);
+    const accountCount = await database?.prepare('SELECT COUNT(*) AS "count" FROM "account" WHERE "userId" = ?')
+      .bind(verifiedUserId)
+      .first<{ count: number }>();
+    expect(accountCount?.count).toBe(1);
   });
 
   it("handles concurrent sign-ins through the same Worker route", async () => {

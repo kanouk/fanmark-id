@@ -404,15 +404,19 @@ authorization endpoint, configured client ID, exact
 `/api/auth/callback/{provider}` redirect URI, non-empty OAuth state, and that
 the response does not reveal the client secret. The capability response lists
 all four providers while email/social signup remains disabled, and an
-unsupported provider is rejected. `npm --prefix workers/api run test:auth:d1`
-passed 21/21 and `npm --prefix workers/api run typecheck` passed.
+unsupported provider is rejected. The test then returns an `access_denied`
+callback for each provider with the issued state cookies, verifies the error
+redirect returns to the explicitly supplied error callback URL, and confirms
+no session or social account was created. `npm --prefix workers/api run
+test:auth:d1` passed 21/21 and `npm --prefix workers/api run typecheck`
+passed.
 
-This closes only the local authorization-start contract. It does not exchange
-codes, validate provider tokens/profiles, create/link a user or account, or
-prove a browser callback. Real callback acceptance still requires provider
-credentials and redirect URI registration in isolated staging; no provider
-secrets, external provider requests, remote D1, or deployment were used by this
-test.
+This closes only the local authorization-start and state-bound denial-callback
+contracts. It does not exchange a successful authorization code, validate
+provider tokens/profiles, create/link a user or account, or prove a successful
+browser callback. Real callback acceptance still requires provider credentials
+and redirect URI registration in isolated staging; no provider secrets,
+external provider requests, remote D1, or deployment were used by this test.
 
 ## 公式一次資料
 
