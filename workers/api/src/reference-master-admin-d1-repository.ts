@@ -1,4 +1,5 @@
 import { selectD1Database, type Env } from "./repository";
+import { assertUtcMicrosecondTimestamp } from "./utc-timestamp.mjs";
 import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const HASH_RE = /^[0-9a-f]{64}$/u;
@@ -96,6 +97,14 @@ function integer(value: unknown, min = 0, max = Number.MAX_SAFE_INTEGER): number
 function requiredText(value: unknown, max = 2048): string {
   if (typeof value !== "string" || value.length < 1 || value.length > max) fail("reference_master_admin_unavailable");
   return value;
+}
+
+function requiredTimestamp(value: unknown): string {
+  try {
+    return assertUtcMicrosecondTimestamp(value);
+  } catch {
+    fail("reference_master_admin_unavailable");
+  }
 }
 
 function nullableText(value: unknown, max = 2048): string | null {
@@ -231,28 +240,28 @@ async function snapshotFromActive(database: D1Database): Promise<{
 
   const recordsByTable: Record<SourceTable, Record<string, unknown>[]> = {
     fanmark_tiers: tierRows.map((row) => ({
-      id: requiredText(row.id), created_at: requiredText(row.created_at), description: nullableText(row.description, 1024),
+      id: requiredText(row.id), created_at: requiredTimestamp(row.created_at), description: nullableText(row.description, 1024),
       display_name: requiredText(row.display_name, 128), emoji_count_max: integer(row.emoji_count_max, 1, 5),
       emoji_count_min: integer(row.emoji_count_min, 1, 5),
       initial_license_days: row.initial_license_days === null ? null : integer(row.initial_license_days, 0, 36_500),
       is_active: storedBoolean(row.is_active), monthly_price_usd: centsToUsdText(row.monthly_price_cents),
-      tier_level: integer(row.tier_level, 1, 4), updated_at: requiredText(row.updated_at),
+      tier_level: integer(row.tier_level, 1, 4), updated_at: requiredTimestamp(row.updated_at),
     })),
     languages: languageRows.map((row) => ({
-      code: requiredText(row.code, 16), created_at: requiredText(row.created_at), id: requiredText(row.id),
+      code: requiredText(row.code, 16), created_at: requiredTimestamp(row.created_at), id: requiredText(row.id),
       is_active: storedBoolean(row.is_active), label: requiredText(row.label, 128), native_label: requiredText(row.native_label, 128),
-      sort_order: integer(row.sort_order), updated_at: requiredText(row.updated_at),
+      sort_order: integer(row.sort_order), updated_at: requiredTimestamp(row.updated_at),
     })),
     reserved_emoji_patterns: patternRows.map((row) => ({
-      created_at: requiredText(row.created_at), description: nullableText(row.description, 1024), id: requiredText(row.id),
+      created_at: requiredTimestamp(row.created_at), description: nullableText(row.description, 1024), id: requiredText(row.id),
       is_active: storedBoolean(row.is_active), pattern: requiredText(row.pattern, 256),
-      price_yen: integer(row.price_yen, 0, 2_147_483_647), updated_at: requiredText(row.updated_at),
+      price_yen: integer(row.price_yen, 0, 2_147_483_647), updated_at: requiredTimestamp(row.updated_at),
     })),
     fanmark_tier_extension_prices: priceRows.map((row) => ({
-      created_at: requiredText(row.created_at), id: requiredText(row.id), is_active: storedBoolean(row.is_active),
+      created_at: requiredTimestamp(row.created_at), id: requiredText(row.id), is_active: storedBoolean(row.is_active),
       months: integer(row.months, 1, 120), price_yen: integer(row.price_yen, 0, 2_147_483_647),
       stripe_price_id: nullableText(row.stripe_price_id, 134), stripe_price_id_live: nullableText(row.stripe_price_id_live, 134),
-      tier_level: integer(row.tier_level, 1, 4), updated_at: requiredText(row.updated_at),
+      tier_level: integer(row.tier_level, 1, 4), updated_at: requiredTimestamp(row.updated_at),
     })),
   };
   const snapshot: SnapshotEntry[] = [];

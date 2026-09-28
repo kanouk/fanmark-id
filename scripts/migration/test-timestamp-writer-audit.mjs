@@ -34,6 +34,10 @@ test("requires every Worker INSERT into a now-default table to name each timesta
   assert.equal(result.targetTableCount, 2);
   assert.equal(result.insertStatementCount, 2);
   assert.deepEqual(result.uncoveredTimestampDefaults, []);
+  assert.deepEqual(result.timestampColumnWriters, [
+    { table: "audit_logs", file: "workers/api/src/audit.ts", line: 1, columns: ["created_at"] },
+    { table: "notification_events", file: "workers/api/src/audit.ts", line: 2, columns: ["created_at", "updated_at"] },
+  ]);
   assert.equal(result.columnListCoverageComplete, true);
 });
 

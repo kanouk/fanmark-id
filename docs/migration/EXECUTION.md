@@ -3886,6 +3886,27 @@ integration passes, as does the source-profile lifecycle integration (25/25).
 This changes only local source and tests: no production Worker, user data, D1,
 or DNS/domain state changed.
 
+## Timestamp writer audit detail and reference-master precision (2026-09-29 JST)
+
+A read-only refresh of the schema catalog completed at
+`2026-09-28T19:48:21.174176+00:00` and still found 40 tables with 79 timestamp
+defaults. The static audit parsed 98 target INSERTs with none unparsed; its
+report now records each writer's source file, line, table, and timestamp-default
+columns so the next step can trace bound values per operation. The 12 defaults
+without a direct INSERT are the eight timestamps on the four versioned master
+tables and four final data/import fields: `notification_preferences.created_at`,
+`notification_preferences.updated_at`, `notifications_history.archived_at`,
+and `user_roles.created_at`. This remains column-list evidence only; it does not
+prove runtime clock semantics, and coverage remains incomplete.
+
+The shared exact-UTC-microsecond validator now protects both reference-master
+release imports and admin edits that restage the active snapshot. It preserves
+valid six-digit timestamp bytes (`Z` or `+00:00`) and rejects rounded,
+impossible-calendar, or non-UTC values before a target release write. Focused
+release/API/service and validator tests pass, and Worker TypeScript typecheck
+passes. No production Worker, real user data, remote D1, or DNS/domain state
+changed.
+
 ## Stripe invoice webhook dispatch wiring (2026-09-29 JST)
 
 The existing signed Supabase webhook now routes `invoice.payment_failed`,

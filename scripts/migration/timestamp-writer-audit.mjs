@@ -114,6 +114,14 @@ export function auditTimestampWriterCoverage(catalog, sources) {
     timestampDefaultCount: timestampColumns.length,
     targetTableCount: columnsByTable.size,
     insertStatementCount: inserts.length,
+    timestampColumnWriters: inserts.map((insert) => ({
+      table: insert.table,
+      file: insert.file,
+      line: insert.line,
+      columns: (columnsByTable.get(insert.table) ?? []).filter((column) => insert.columns.has(column)),
+    })).sort((left, right) => (
+      left.file.localeCompare(right.file) || left.line - right.line || left.table.localeCompare(right.table)
+    )),
     uncoveredTimestampDefaults,
     unparsedTargetInserts: unparsedTargetInserts.sort((left, right) => (
       left.file.localeCompare(right.file) || left.line - right.line || left.table.localeCompare(right.table)

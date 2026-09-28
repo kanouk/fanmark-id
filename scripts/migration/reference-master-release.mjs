@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { utcMicroseconds } from "./value-conversion.mjs";
+import { assertUtcMicrosecondTimestamp } from "../../workers/api/src/utc-timestamp.mjs";
 
 function utcMicrosecondTimestamp(date = new Date()) {
   return date.toISOString().replace(/\.(\d{3})Z$/u, (_match, fraction) => `.${fraction}000Z`);
@@ -69,9 +69,8 @@ function assertString(value, nullable = false) {
 
 function assertTimestampText(value) {
   assertString(value);
-  const canonicalUtc = value.endsWith("+00:00") ? `${value.slice(0, -6)}Z` : value;
   try {
-    utcMicroseconds(canonicalUtc);
+    assertUtcMicrosecondTimestamp(value);
   } catch {
     fail("reference_master_timestamp_invalid");
   }
