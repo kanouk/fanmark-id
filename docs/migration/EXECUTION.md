@@ -3091,14 +3091,19 @@ built assets and exited without deployment. The full migrations 0000–0007
 were applied only to disposable local D1 in these tests. Staging configs and
 remote migration guards select the exact release-audit filename so they exclude
 the Auth-only migration with the same 0007 prefix. A read-only Wrangler remote
-list reports only `0007_release_audit_timestamps.sql` as pending; it has not
-been applied remotely.
+list confirmed only `0007_release_audit_timestamps.sql` pending before apply.
+After Actions run `36368026109` passed both jobs, Wrangler applied it to
+staging Master D1. The follow-up list reported no pending migrations. Readback
+confirmed all four emoji/reference audit triggers use `NEW.updated_at`; the
+read query reported `changed_db=false` and zero rows written.
 
 Synthetic staging smoke scripts that seed or update business D1 now also write
 six-digit UTC values for subscription/profile/notification timestamps, license
 period ends, grace expiry, and expected return expiry. This keeps future
 canaries compatible with the timestamp checks without touching their staging
-data. `git diff --check` passed; the current commit's CI still needs to run.
+data. `git diff --check` passed; CI run `36368026109` passed both required jobs.
 The converter still reports 13 open groups / 226 locations and the complete
-timestamp writer/default inventory is not reconciled. No source rows, remote
-D1/R2, production routes, or domain/DNS settings were accessed or changed.
+timestamp writer/default inventory is not reconciled. No source rows or real
+user data were accessed. The only remote D1 change was the Master audit-trigger
+migration above; no Worker deployment, R2 change, production route, or
+domain/DNS setting changed.

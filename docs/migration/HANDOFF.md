@@ -258,14 +258,14 @@ local release suites now read back six-digit `created_at`, `verified_at`,
 release 5/5). Migration `0007_release_audit_timestamps.sql` binds derived audit
 times to the active pointer's canonical `updated_at`; staging migration
 selectors include that exact filename while excluding the Auth-only 0007
-migration; Wrangler's read-only remote list shows only the release-audit
-migration pending. It has not yet been applied remotely. D1-writing synthetic
-staging smoke scripts were also aligned to six-digit UTC. Worker typecheck and
-lifecycle/schema tests pass (16/16).
+migration. Wrangler applied it to staging Master D1; the follow-up list shows
+no migrations pending. A readback confirmed all four emoji/reference audit
+triggers use `NEW.updated_at`; the SELECT reported `changed_db=false` and zero
+rows written. D1-writing synthetic staging smoke scripts were also aligned to
+six-digit UTC. Worker typecheck and lifecycle/schema tests pass (16/16).
 The full `workers/api` test chain, staging Vite build, and Worker Wrangler
 dry-run also pass; the dry-run read the built assets and exited without deploy.
-The latest CI run for the previous commit `cf52be8` passed; these current
-uncommitted changes still need commit and CI validation. The
+GitHub Actions run `36368026109` for `f241a89` passed both required jobs. The
 13-gate report and coarse progress estimate remain unchanged. Issue #37's full writer-freeze, timed
 final-copy, and pre/post-write recovery rehearsal remains open, as do
 provider-backed Resend/Stripe acceptance, broad authenticated UI coverage, and

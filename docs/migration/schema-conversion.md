@@ -459,9 +459,12 @@ activation-audit readback (7/7 and 5/5). Migration
 `0007_release_audit_timestamps.sql` makes each audit timestamp equal its
 canonical active-pointer `updated_at`; staging configs and remote guards include
 the exact filename and exclude the Auth-only `0007` migration. Wrangler's
-read-only remote list reports only this migration pending; it has not been
-applied to remote D1. D1-writing synthetic
+read-only remote list showed only this migration pending. After Actions run
+`36368026109` passed, Wrangler applied it to staging Master D1; readback found
+no migrations pending and confirmed all four audit triggers use
+`NEW.updated_at`. The read query reported `changed_db=false` and zero rows
+written. D1-writing synthetic
 staging smoke scripts also use six-digit UTC values. Lifecycle/schema tests
 pass 16/16 and Worker typecheck passes; the complete writer/default inventory
 remains open. The full Worker test chain, staging Vite build, and Wrangler
-deployment dry-run pass; no deployment or remote D1 migration was performed.
+deployment dry-run pass; no Worker deployment was performed.
