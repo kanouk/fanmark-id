@@ -2956,3 +2956,17 @@ locations (3 row-conversion / 118, 5 schema/operation / 93), still
 `deployable: false`. Focused schema/row tests pass 27/27, and the complete
 migration-data suite passes 185/185 with no skips. No source application rows
 or live sequence values were read.
+
+## Current master D1 console readback (2026-09-29 JST)
+
+Authenticated Dashboard D1 Studio read-only queries against
+`fanmark-emoji-master-staging` returned 3,944 `emoji_master` rows, one active
+release pointer, and release version
+`10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed`, matching
+the previously recorded master release. This is a count and pointer readback,
+not a fresh full-row hash comparison. It confirms Dashboard access to this
+master database only; the stored Wrangler CLI profile still resolves to a
+different account, and the lifecycle-Cron retry's cleanup/deployment state
+remains unverified. The coarse weighted estimates remain about 53% end-to-end
+and 73% for the prioritized app/infrastructure/non-user-master-data scope.
+No user rows, production routes, or domain/DNS state were read or changed.

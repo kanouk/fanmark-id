@@ -1851,3 +1851,17 @@ for `/api/admin/session`, and 404 for the disabled `/api/stripe/webhook`.
 `/` and `/robots.txt` return `X-Robots-Tag: noindex, nofollow`. This proves
 basic workers.dev route health only; it does not reveal the active Worker
 version, Cron triggers, or synthetic cleanup state.
+
+## Cloudflare master D1 Studio read-only checkpoint (2026-09-29 JST)
+
+The authenticated Cloudflare Dashboard D1 Studio opened the configured
+`fanmark-emoji-master-staging` database under account ID
+`bfc2890741f0b3fb236e2d755b6c9adc`. Read-only queries returned 3,944 rows in
+`emoji_master`, one row in `fanmark_emoji_master_active_release`, and active
+release version
+`10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed`. This
+matches the previously documented release pointer and count. This checkpoint
+does not re-hash every current D1 row or verify the business/Auth databases,
+Worker deployment, Cron state, or lifecycle-canary cleanup. The saved Wrangler
+CLI profile still resolves to a different account. No writes, user rows, or
+domain/DNS changes were made.
