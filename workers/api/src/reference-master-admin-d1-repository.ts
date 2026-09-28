@@ -274,6 +274,7 @@ function equalRows(left: Record<string, unknown>[], right: Record<string, unknow
 }
 
 async function stageSnapshot(database: D1Database, snapshot: SnapshotEntry[]): Promise<string> {
+  const createdAt = toUtcMicrosecondTimestamp(new Date());
   const sourceSnapshotSha256 = await sha256(JSON.stringify(snapshot));
   const releaseVersion = sourceSnapshotSha256;
   const baseManifests = snapshot.filter((entry) => entry.table_name !== EXTENSION_PRICES)
@@ -307,8 +308,8 @@ async function stageSnapshot(database: D1Database, snapshot: SnapshotEntry[]): P
   }
 
   const statements: D1PreparedStatement[] = [database.prepare(
-    "INSERT INTO fanmark_reference_master_releases (release_version, source_snapshot_sha256, manifest_json, status) VALUES (?, ?, ?, 'loading')",
-  ).bind(releaseVersion, sourceSnapshotSha256, manifestJson)];
+    "INSERT INTO fanmark_reference_master_releases (release_version, source_snapshot_sha256, manifest_json, status, created_at) VALUES (?, ?, ?, 'loading', ?)",
+  ).bind(releaseVersion, sourceSnapshotSha256, manifestJson, createdAt)];
   for (const entry of baseManifests) {
     statements.push(database.prepare(
       "INSERT INTO fanmark_reference_master_release_tables (release_version, table_name, row_count, source_sha256) VALUES (?, ?, ?, ?)",
@@ -352,9 +353,10 @@ async function stageSnapshot(database: D1Database, snapshot: SnapshotEntry[]): P
     if (!equalRows(actual, stagedRows(entry))) fail("reference_master_admin_stage_verification_failed");
   }
 
+  const verifiedAt = toUtcMicrosecondTimestamp(new Date());
   const ready = await database.prepare(
-    "UPDATE fanmark_reference_master_releases SET status = 'ready', verified_at = CURRENT_TIMESTAMP WHERE release_version = ? AND status = 'loading'",
-  ).bind(releaseVersion).run();
+    "UPDATE fanmark_reference_master_releases SET status = 'ready', verified_at = ? WHERE release_version = ? AND status = 'loading'",
+  ).bind(verifiedAt, releaseVersion).run();
   if (ready?.success !== true || ready.meta?.changes !== 1) fail("reference_master_admin_stage_failed");
   return releaseVersion;
 }

@@ -3058,8 +3058,9 @@ accessed.
 
 ## Master and scheduled notification D1 timestamps (2026-09-28 JST)
 
-Emoji master create/update/import operations and reference-master release
-activation now persist fixed-width UTC microsecond timestamps. Emoji admin
+Emoji master create/update/import operations explicitly persist both
+`created_at` and `updated_at`; reference-master release creation, verification,
+and activation timestamps use fixed-width UTC microsecond text too. Emoji admin
 write readback is covered in the Auth D1 suite (21/21); reference-master API
 coverage passes 6/6. Scheduled notification processing now formats due times,
 cooldown cutoffs, generated trigger times, and operation timestamps the same

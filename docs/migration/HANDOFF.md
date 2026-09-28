@@ -250,10 +250,10 @@ Stripe webhook receipt/dispatch, invoice projection, and subscription
 reconciliation writes now use the same format; their synthetic D1 integration
 suite passes 59/59. These bounded suites do not close the complete timestamp
 writer/default inventory. Emoji master create/update/import, reference-master
-release activation, and scheduled notification event/lease/retry timestamps
-also use the fixed-width formatter; the Auth D1 suite passes 21/21, reference
-master API 6/6, and notification D1 12/12. The 13-gate report and coarse
-progress estimate remain unchanged. Issue #37's full writer-freeze, timed
+release creation/verification/activation, and scheduled notification
+event/lease/retry timestamps also use the fixed-width formatter; the Auth D1
+suite passes 21/21, reference-master API 6/6, and notification D1 12/12. The
+13-gate report and coarse progress estimate remain unchanged. Issue #37's full writer-freeze, timed
 final-copy, and pre/post-write recovery rehearsal remains open, as do
 provider-backed Resend/Stripe acceptance, broad authenticated UI coverage, and
 Workers CPU/plan fit. Issue #38's real user-data import and public domain/DNS

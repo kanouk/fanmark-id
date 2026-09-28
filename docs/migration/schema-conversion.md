@@ -448,8 +448,8 @@ operation values as fixed-width UTC microsecond text. This is additional path
 coverage only: Stripe webhook receipt/dispatch, invoice projection, and
 subscription reconciliation writes now use the same format, with their
 synthetic D1 integration suite passing 59/59. Emoji master admin, reference
-master release activation, and scheduled notification writes use the format
-too; their respective suites pass 21/21, 6/6, and 12/12. The schema readiness
+master release creation/verification/activation, and scheduled notification
+writes use the format too; their respective suites pass 21/21, 6/6, and 12/12. The schema readiness
 report still has 13 unresolved groups across 226 locations, and
 `timestamp_import_precision` remains open until the complete writer/default
 inventory is reconciled. No user rows were read and no remote D1 was written.

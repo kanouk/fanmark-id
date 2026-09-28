@@ -986,12 +986,16 @@ describe("emoji master D1 timestamp contract", () => {
     try {
       const created = await repository.create(input);
       expect(created.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+      const createdRow = await masterDatabase.prepare("SELECT created_at, updated_at FROM emoji_master WHERE id = ?")
+        .bind(created.id).first<{ created_at: string; updated_at: string }>();
+      expect(createdRow?.created_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
       const updated = await repository.update(created.id, created.updatedAt, { ...input, shortName: "test_tube_updated" });
       expect(updated.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
 
       await repository.import([{ ...input, emoji: "🧬", shortName: "dna", codepoints: ["1F9EC"] }]);
-      const imported = await masterDatabase.prepare("SELECT updated_at FROM emoji_master WHERE emoji = ?")
-        .bind("🧬").first<{ updated_at: string }>();
+      const imported = await masterDatabase.prepare("SELECT created_at, updated_at FROM emoji_master WHERE emoji = ?")
+        .bind("🧬").first<{ created_at: string; updated_at: string }>();
+      expect(imported?.created_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
       expect(imported?.updated_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
     } finally {
       await masterDatabase.prepare("DELETE FROM emoji_master WHERE emoji IN (?, ?)").bind("🧪", "🧬").run();

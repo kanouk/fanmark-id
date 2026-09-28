@@ -296,6 +296,11 @@ describe("versioned reference-master Worker API", () => {
       "SELECT updated_at FROM fanmark_reference_master_active_release WHERE singleton_id = 1",
     ).first<{ updated_at: string }>();
     expect(activeReleaseTimestamp?.updated_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+    const stagedReleaseTimestamps = await database!.prepare(
+      "SELECT created_at, verified_at FROM fanmark_reference_master_releases WHERE release_version = ?",
+    ).bind(afterTierEdit.releaseVersion).first<{ created_at: string; verified_at: string }>();
+    expect(stagedReleaseTimestamps?.created_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+    expect(stagedReleaseTimestamps?.verified_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
     expect((await request("/api/reference-masters/fanmark_tiers").then((response) => response.json()) as { items: Array<Record<string, unknown>> }).items[0])
       .toMatchObject({ initialLicenseDays: 45 });
 

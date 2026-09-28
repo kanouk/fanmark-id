@@ -278,10 +278,10 @@ export function createEmojiMasterAdminD1Repository(env: Env) {
       const now = toUtcMicrosecondTimestamp(new Date());
       try {
         const result = await database.prepare(
-          `INSERT INTO emoji_master (id, emoji, short_name, keywords, category, subcategory, codepoints, sort_order, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO emoji_master (id, emoji, short_name, keywords, category, subcategory, codepoints, sort_order, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         ).bind(id, input.emoji, input.shortName, JSON.stringify(input.keywords), input.category,
-          input.subcategory, JSON.stringify(input.codepoints), input.sortOrder, now).run();
+          input.subcategory, JSON.stringify(input.codepoints), input.sortOrder, now, now).run();
         if (result?.success !== true || result.meta?.changes !== 1) fail("emoji_master_write_failed", 503);
         return await getById(id);
       } catch (error) {
@@ -326,8 +326,8 @@ export function createEmojiMasterAdminD1Repository(env: Env) {
       const records = recordsValue.map(parseInput);
       if (new Set(records.map((record) => record.emoji)).size !== records.length) fail("duplicate_import_emoji");
       const now = toUtcMicrosecondTimestamp(new Date());
-      const sql = `INSERT INTO emoji_master (id, emoji, short_name, keywords, category, subcategory, codepoints, sort_order, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      const sql = `INSERT INTO emoji_master (id, emoji, short_name, keywords, category, subcategory, codepoints, sort_order, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(emoji) DO UPDATE SET
           short_name = excluded.short_name,
           keywords = excluded.keywords,
@@ -342,7 +342,7 @@ export function createEmojiMasterAdminD1Repository(env: Env) {
       try {
         const results = await database.batch(records.map((record) => database.prepare(sql).bind(
           crypto.randomUUID(), record.emoji, record.shortName, JSON.stringify(record.keywords), record.category,
-          record.subcategory, JSON.stringify(record.codepoints), record.sortOrder, now,
+          record.subcategory, JSON.stringify(record.codepoints), record.sortOrder, now, now,
         )));
         if (results.some((result) => result?.success !== true)) fail("emoji_master_write_failed", 503);
         return { importedCount: records.length };
