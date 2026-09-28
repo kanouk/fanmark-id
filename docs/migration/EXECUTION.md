@@ -1,5 +1,17 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-09-29 Stripe plan Checkout event handling
+
+The D1 scheduled Stripe dispatcher previously sent every supported Checkout
+Session event into the license-extension application. That diverged from the
+Supabase webhook, which only persists/applies extension sessions and otherwise
+acknowledges plan Checkout events without granting entitlement. The dispatcher
+now atomically terminates Checkout receipts without
+`metadata.type = license_extension` as `ignored` / `completed`; subscription
+created/updated/deleted events remain responsible for plan state. The focused
+webhook/application integration suite passes 12/12 under Node 22.6.0. No Stripe
+selectors or secrets were enabled, and no remote state changed.
+
 ## Fresh Supabase v21 catalog and current-schema synthetic replay (2026-09-29 JST)
 
 Ran the reviewed `schema-readiness.sql` through Supabase CLI 2.118.0 with

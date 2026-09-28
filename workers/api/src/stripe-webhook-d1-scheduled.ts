@@ -16,6 +16,7 @@ import {
 import {
   claimStripeWebhookDispatchesFromD1,
   deadLetterStripeWebhookDispatchInD1,
+  ignoreStripeWebhookDispatchInD1,
   retryStripeWebhookDispatchInD1,
   type StripeWebhookD1Claim,
   type StripeWebhookD1LeaseIdentity,
@@ -71,6 +72,16 @@ function identity(claim: StripeWebhookD1Claim): StripeWebhookD1LeaseIdentity {
 
 function retryDelaySeconds(attemptCount: number): number {
   return Math.min(3600, 30 * (2 ** Math.min(Math.max(0, attemptCount - 1), 7)));
+}
+
+function isLicenseExtensionCheckout(claim: StripeWebhookD1Claim): boolean {
+  const checkoutSession = claim.normalizedPayload.checkout_session;
+  if (typeof checkoutSession !== "object" || checkoutSession === null || Array.isArray(checkoutSession)) {
+    return false;
+  }
+  const metadata = (checkoutSession as Record<string, unknown>).metadata;
+  if (typeof metadata !== "object" || metadata === null || Array.isArray(metadata)) return false;
+  return (metadata as Record<string, unknown>).type === "license_extension";
 }
 
 export function stripeSecretKeyForMode(value: string | undefined, livemode: boolean): string {
@@ -153,6 +164,16 @@ export async function dispatchStripeWebhookBatchInD1(args: {
         });
         if (result.status === "applied") summary.applied += 1;
         else if (result.status === "retryable") summary.retryable += 1;
+        else summary.leaseLost += 1;
+        continue;
+      }
+      if (EXTENSION_EVENTS.has(claim.eventType) && !isLicenseExtensionCheckout(claim)) {
+        const result = await ignoreStripeWebhookDispatchInD1({
+          database: args.database,
+          identity: lease,
+          now: args.now,
+        });
+        if (result) summary.ignored += 1;
         else summary.leaseLost += 1;
         continue;
       }

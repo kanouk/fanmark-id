@@ -49,6 +49,15 @@ make the report deployable. Auth-reference tests pass 20/20; the full
 migration-data suite passes 191/191. The 40-table current-catalog synthetic
 rehearsal still reconciles all checkpoints with `deployable: false`.
 
+The D1 Stripe dispatcher now preserves Supabase's no-op behavior for the four
+Checkout Session events whose metadata is not `license_extension`. It atomically
+marks those receipts `ignored` and dispatches `completed`; subscription
+created/updated/deleted events remain the source of plan entitlement. The
+focused webhook/application integration suite passes 12/12, including all four
+Checkout event types and proof that none creates an extension application or
+license effect. This is local code only; Stripe selectors/secrets remain off,
+and no remote state changed.
+
 Dashboard read-only verification could not run because Computer Use reported
 that macOS is locked and needs manual unlock. No browser action or Cloudflare
 write occurred. The Browser Dashboard session does not update Wrangler's

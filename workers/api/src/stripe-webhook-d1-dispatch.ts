@@ -435,6 +435,85 @@ export async function retryStripeWebhookDispatchInD1(args: {
   };
 }
 
+export async function ignoreStripeWebhookDispatchInD1(args: {
+  database: D1Database;
+  identity: StripeWebhookD1LeaseIdentity;
+  now?: string;
+}): Promise<StripeWebhookD1LeaseResult | null> {
+  const receiptId = requireUuid(args.identity.receiptId, "invalid_receipt_id");
+  const dispatchId = requireUuid(args.identity.dispatchId, "invalid_dispatch_id");
+  const leaseToken = requireUuid(args.identity.leaseToken, "invalid_lease_token");
+  const claimGeneration = safeInteger(args.identity.claimGeneration, "invalid_claim_generation", 1, MAX_CLAIM_GENERATION);
+  const livemode = requireMode(args.identity.livemode);
+  const now = timestamp(args.now);
+  const results = await args.database.batch([
+    args.database.prepare(`
+      UPDATE stripe_webhook_dispatches
+      SET status = 'completed', claimed_at = NULL, lease_until = NULL, lease_token = NULL,
+          completed_at = ?, last_error_code = NULL, last_error_message = NULL, updated_at = ?
+      WHERE id = ? AND receipt_id = ? AND livemode = ? AND status = 'processing'
+        AND lease_token = ? AND claim_generation = ? AND lease_until IS NOT NULL AND lease_until > ?
+        AND EXISTS (
+          SELECT 1 FROM stripe_webhook_receipts AS r
+          WHERE r.id = stripe_webhook_dispatches.receipt_id
+            AND r.livemode = stripe_webhook_dispatches.livemode
+            AND r.stripe_event_id = stripe_webhook_dispatches.stripe_event_id
+            AND r.status = 'processing'
+        )
+      RETURNING id
+    `).bind(now, now, dispatchId, receiptId, livemode, leaseToken, claimGeneration, now),
+    args.database.prepare(`
+      UPDATE stripe_webhook_receipts
+      SET status = 'ignored', terminal_at = ?, last_error_code = NULL,
+          last_error_message = NULL, updated_at = ?
+      WHERE id = ? AND livemode = ? AND status = 'processing' AND changes() = 1
+        AND EXISTS (
+          SELECT 1 FROM stripe_webhook_dispatches AS d
+          WHERE d.id = ? AND d.receipt_id = stripe_webhook_receipts.id
+            AND d.status = 'completed' AND d.claim_generation = ?
+            AND d.completed_at = ? AND d.updated_at = ?
+        )
+      RETURNING id
+    `).bind(now, now, receiptId, livemode, dispatchId, claimGeneration, now, now),
+  ]);
+  if (results[0]?.meta?.changes !== 1) return null;
+  if (results[1]?.meta?.changes !== 1) {
+    throw new StripeWebhookD1DispatchError("ignore_state_not_atomic");
+  }
+  const row = await args.database.prepare(`
+    SELECT r.id AS receipt_id, d.id AS dispatch_id, r.stripe_event_id,
+      r.livemode, r.status AS receipt_status, d.status AS dispatch_status,
+      d.claim_generation, d.attempt_count
+    FROM stripe_webhook_receipts AS r
+    JOIN stripe_webhook_dispatches AS d
+      ON d.receipt_id = r.id AND d.livemode = r.livemode AND d.stripe_event_id = r.stripe_event_id
+    WHERE r.id = ? AND d.id = ? AND r.status = 'ignored' AND d.status = 'completed'
+      AND d.claim_generation = ? AND r.terminal_at = ? AND d.completed_at = ?
+  `).bind(receiptId, dispatchId, claimGeneration, now, now).first<{
+    receipt_id: string;
+    dispatch_id: string;
+    stripe_event_id: string;
+    livemode: number;
+    receipt_status: string;
+    dispatch_status: string;
+    claim_generation: number;
+    attempt_count: number;
+  }>();
+  if (!row) return null;
+  return {
+    receiptId: row.receipt_id,
+    dispatchId: row.dispatch_id,
+    stripeEventId: row.stripe_event_id,
+    livemode: row.livemode === 1,
+    receiptStatus: row.receipt_status,
+    dispatchStatus: row.dispatch_status,
+    claimGeneration: row.claim_generation,
+    leaseToken: null,
+    leaseUntil: null,
+    attemptCount: row.attempt_count,
+  };
+}
+
 export async function deadLetterStripeWebhookDispatchInD1(args: {
   database: D1Database;
   identity: StripeWebhookD1LeaseIdentity;

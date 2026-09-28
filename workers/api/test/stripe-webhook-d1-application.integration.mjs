@@ -99,7 +99,7 @@ function metadata(overrides = {}) {
   };
 }
 
-function stripeEvent({ eventId, type = "checkout.session.completed", paymentStatus = "paid", status = "complete", amountTotal = EXPECTED_TOTAL, currency = "jpy", meta = metadata(), sessionId = SESSION_ID } = {}) {
+function stripeEvent({ eventId, type = "checkout.session.completed", paymentStatus = "paid", status = "complete", amountTotal = EXPECTED_TOTAL, currency = "jpy", mode = "payment", meta = metadata(), sessionId = SESSION_ID } = {}) {
   return {
     stripeEventId: eventId,
     livemode: false,
@@ -115,7 +115,7 @@ function stripeEvent({ eventId, type = "checkout.session.completed", paymentStat
       branch: "checkout_session",
       reference: { object_type: "checkout.session", object_id: sessionId },
       checkout_session: {
-        id: sessionId, mode: "payment", status, payment_status: paymentStatus,
+        id: sessionId, mode, status, payment_status: paymentStatus,
         amount_total: amountTotal, currency, customer_id: "cus_synthetic_extension",
         subscription_id: null, payment_intent_id: "pi_synthetic_extension",
         client_reference_id: USER_ID, expires_at: 1790400000, metadata: meta,
@@ -496,6 +496,45 @@ test("scheduled D1 dispatch claims and applies a paid extension receipt", async 
     assert.equal(await scalar(database, "SELECT status FROM stripe_webhook_receipts"), "applied");
     assert.equal(await scalar(database, "SELECT status FROM stripe_webhook_dispatches"), "completed");
     assert.equal(await scalar(database, "SELECT count(*) AS count FROM audit_logs WHERE action = 'LICENSE_EXTENDED'"), 1);
+  } finally {
+    await miniflare.dispose();
+  }
+});
+
+test("scheduled D1 dispatch terminally ignores non-extension Checkout events", async () => {
+  const { miniflare, database } = await createDatabase();
+  try {
+    const events = [
+      { type: "checkout.session.completed", status: "complete", paymentStatus: "paid" },
+      { type: "checkout.session.async_payment_succeeded", status: "complete", paymentStatus: "paid" },
+      { type: "checkout.session.async_payment_failed", status: "complete", paymentStatus: "unpaid" },
+      { type: "checkout.session.expired", status: "expired", paymentStatus: "unpaid" },
+    ];
+    for (const [index, fields] of events.entries()) {
+      await acceptStripeWebhookReceiptIntoD1({
+        database,
+        event: stripeEvent({
+          eventId: `evt_synthetic_plan_checkout_${index}`,
+          sessionId: `cs_synthetic_plan_checkout_${index}`,
+          mode: "subscription",
+          meta: {},
+          ...fields,
+        }),
+        now: NOW,
+        createId: nextUuid,
+      });
+    }
+
+    const summary = await dispatchStripeWebhookBatchInD1({
+      database, livemode: false, now: NOW, batchSize: 10,
+    });
+    assert.deepEqual(summary, {
+      claimed: 4, applied: 0, ignored: 4, deadLettered: 0, retryable: 0, leaseLost: 0,
+    });
+    assert.equal(await scalar(database, "SELECT count(*) AS count FROM stripe_webhook_receipts WHERE status = 'ignored' AND terminal_at IS NOT NULL"), 4);
+    assert.equal(await scalar(database, "SELECT count(*) AS count FROM stripe_webhook_dispatches WHERE status = 'completed' AND completed_at IS NOT NULL"), 4);
+    assert.equal(await scalar(database, "SELECT count(*) AS count FROM stripe_extension_applications"), 0);
+    assert.equal(await scalar(database, "SELECT count(*) AS count FROM fanmark_licenses"), 0);
   } finally {
     await miniflare.dispose();
   }

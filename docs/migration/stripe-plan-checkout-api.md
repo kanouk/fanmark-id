@@ -52,7 +52,11 @@ metadata. Success and cancellation return to the allowlisted `/plans` page. The
 Worker never writes the requested plan to D1: `user_settings.plan_type` and
 `user_subscriptions` change only through verified subscription reconciliation.
 The browser persists the request UUID for retries and clears it after Stripe
-returns to the app.
+returns to the app. Checkout Session events for these plan purchases are
+acknowledged as ignored by the webhook dispatcher; verified
+`customer.subscription.created`, `updated`, and `deleted` events are the source
+of plan state. The same dispatcher continues to apply Checkout events explicitly
+marked with `metadata.type = license_extension` through the extension ledger.
 
 ## Verification and deployment boundary
 
