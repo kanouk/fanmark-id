@@ -343,8 +343,7 @@ async function persistNewCommand(
     livemode: boolean; now: string;
   },
 ): Promise<PlanChangeCommand> {
-  const safeUntil = new Date(Date.parse(input.now) + COMMAND_WINDOW_MS).toISOString()
-    .replace(/\.(\d{3})Z$/u, (_match, fraction: string) => `.${fraction}000Z`);
+  const safeUntil = toUtcMicrosecondTimestamp(new Date(Date.parse(input.now) + COMMAND_WINDOW_MS));
   let insertFailed = false;
   let ownerSlotConflict = false;
   try {

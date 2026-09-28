@@ -266,8 +266,7 @@ async function createOrReadCommand(
   business: D1Database,
   input: { requestId: string; userId: string; planType: PaidPlanType; priceId: string; livemode: boolean; now: string },
 ): Promise<PlanCheckoutCommand> {
-  const safeUntil = new Date(Date.parse(input.now) + COMMAND_WINDOW_MS).toISOString()
-    .replace(/\.(\d{3})Z$/u, (_match, fraction: string) => `.${fraction}000Z`);
+  const safeUntil = toUtcMicrosecondTimestamp(new Date(Date.parse(input.now) + COMMAND_WINDOW_MS));
   const insertion = await business.prepare(`
     INSERT INTO stripe_plan_checkout_commands (
       request_id, user_id, plan_type, stripe_price_id, livemode,
@@ -363,8 +362,7 @@ async function ensureStripeCustomer(
     throw new StripePlanCheckoutD1Error("stripe_customer_mapping_invalid", 503);
   }
 
-  const safeUntil = new Date(Date.parse(now) + COMMAND_WINDOW_MS).toISOString()
-    .replace(/\.(\d{3})Z$/u, (_match, fraction: string) => `.${fraction}000Z`);
+  const safeUntil = toUtcMicrosecondTimestamp(new Date(Date.parse(now) + COMMAND_WINDOW_MS));
   const inserted = await business.prepare(`
     INSERT INTO stripe_plan_customer_commands (
       user_id, stripe_customer_id, status, idempotency_safe_until, created_at, updated_at

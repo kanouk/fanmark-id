@@ -550,3 +550,8 @@ boundaries. The complete writer/default inventory is still open, so the
 `timestamp_import_precision` and `timestamp_default_requires_operation` gates
 remain, along with the other v11 gates; no Supabase rows or remote D1 were read
 or written.
+
+Stripe plan-checkout, Stripe customer-creation, and plan-change idempotency
+deadlines also use the shared formatter now. Their integration suites pass
+17/17 after the change; this is operation-path coverage, not completion of the
+full timestamp inventory.

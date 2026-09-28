@@ -3570,3 +3570,8 @@ has direct boundary/invalid-clock tests; all affected focused API suites pass
 inventory behind v11 `timestamp_import_precision` and
 `timestamp_default_requires_operation`. No source rows, remote D1, deployment,
 user data, or domain/DNS state changed.
+
+The same pass also replaced the remaining three local timestamp-padding
+expressions for Stripe plan-checkout, customer-creation, and plan-change
+idempotency deadlines with the shared formatter. Their D1 integration suites
+were rerun successfully (17/17); Worker typecheck remains clean.
