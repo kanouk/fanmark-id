@@ -3139,3 +3139,28 @@ migration was applied and no webhook deployed. This does not close Issue #32:
 subscription, checkout, and deletion event paths remain to be migrated. User
 data/Auth/object import and domain/DNS cutover remain deferred. The Wrangler
 account mismatch still blocks remote staging verification.
+
+## 2026-09-29 PR validation and current staging readback
+
+PR #41 head `7b887151cb8ebe5c19f04813339bbcfa95a3088e` passed both required
+jobs in GitHub Actions run `36488068517`: Cloudflare staging application and
+Worker API. Supabase Preview was skipped by design. This validates the checked-in
+build and tests; it does not deploy the PR.
+
+Unauthenticated GET checks at `2026-09-28T21:53Z` returned 200 for `/`,
+`/api/auth/ok`, `/api/emoji/catalog`, and the four public reference-master
+routes (tiers, languages, reserved patterns, extension prices). Each public
+reference-master response included `Cache-Control: no-store`; response bodies
+were discarded after header and size checks. No user data or business operation
+was accessed. This confirms route health only, not authenticated operations,
+active Worker version, or Cron configuration.
+
+The attempted named Wrangler profile creation (`fanmark-staging`) timed out
+waiting for the OAuth authorization code. Read-only `wrangler auth list` now
+shows only `default` and `koan-client-room`; the named profile was not created.
+The Cloudflare consent screen showed one selected Fanmark account and the
+requested User Read, Background Access, Account Read, Workers Write, Workers
+Scripts Write, and D1 Write permissions; it was not authorized. Do not reuse
+that expired consent flow. A fresh flow needs action-time confirmation, and its
+account ID must be checked before any remote write. No D1, R2, Worker, Stripe,
+production, user-data, or domain/DNS state was changed by this attempt.

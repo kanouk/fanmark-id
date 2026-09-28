@@ -1918,3 +1918,16 @@ fixture cleanup only; the deployed Worker version and active Cron triggers remai
 unverified because the Wrangler profile still points to another account and
 the Dashboard Worker-list route did not render. No user rows, production
 routes, or domain/DNS state were read or changed.
+
+## Current workers.dev public-route readback (2026-09-29 JST)
+
+At `2026-09-28T21:53Z`, unauthenticated GETs returned HTTP 200 for `/`,
+`/api/auth/ok`, `/api/emoji/catalog`, and the public reference-master routes
+for tiers, languages, reserved emoji patterns, and extension prices. The four
+reference-master endpoints returned `Cache-Control: no-store`; their response
+bodies were discarded after status/header/size checks. The emoji catalog
+response was 133,363 bytes. No authenticated endpoint, user-owned row, business
+operation, D1 write, production route, or domain/DNS setting was accessed or
+changed. These checks confirm current public route health only; they do not
+verify the active Worker version, Cron configuration, or authenticated
+operations.
