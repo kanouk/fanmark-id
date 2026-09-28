@@ -1931,3 +1931,14 @@ operation, D1 write, production route, or domain/DNS setting was accessed or
 changed. These checks confirm current public route health only; they do not
 verify the active Worker version, Cron configuration, or authenticated
 operations.
+
+## Wrangler staging-account profile check (2026-09-29 JST)
+
+Read-only `wrangler auth list` still shows only `default` and
+`koan-client-room`; a fresh attempt to create the named `fanmark-staging`
+profile did not complete. `wrangler whoami` resolves the default profile to
+account ID `3ed61145d70e5e8bd639970082b79fa5`, while
+`workers/api/wrangler.app-staging.jsonc` targets
+`bfc2890741f0b3fb236e2d755b6c9adc`. Do not perform Wrangler writes through the
+default profile. No D1, R2, Worker, production, user-data, or domain/DNS state
+was changed by this check.
