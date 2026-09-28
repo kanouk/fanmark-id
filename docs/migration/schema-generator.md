@@ -1,6 +1,6 @@
 # Full schema conversion generator
 
-`schema-convert.mjs` v15 is a private, catalog-only preparation tool. It
+`schema-convert.mjs` v16 is a private, catalog-only preparation tool. It
 converts the JSON emitted by `scripts/migration/schema-readiness.sql` into deterministic
 SQLite/D1 table and index SQL plus a machine-readable report of unresolved
 parity gates. It does not read application rows, contact Supabase, apply SQL,
@@ -400,3 +400,19 @@ A fresh linked, read-only schema catalog conversion at 2026-09-28 14:25 UTC
 reports 9 unresolved groups / 221 locations (4 row-conversion / 128, 5
 schema/operation / 93) and remains `deployable: false`. The query returned no
 application rows. No live sequence values were read or imported for this change.
+
+
+## Version 16 internal bigint event key (2026-09-28 JST)
+
+The converter suppresses `bigint_import_range_validation` for
+`fanmark_events.id` only when it is the exact supported sequence-backed primary
+key. The current Worker code inserts these events but does not select or return
+the generated key; imported key text and its sequence watermark are both
+verified exactly. The two bigint discovery counters remain gated because their
+values are projected to application-facing JavaScript numbers. Unsupported
+sequence shapes and every other bigint stay gated.
+
+A fresh linked, read-only schema catalog conversion at 2026-09-28 14:30 UTC
+reports 9 unresolved groups / 220 locations (4 row-conversion / 127, 5
+schema/operation / 93) and remains `deployable: false`. The query read no
+application rows.

@@ -60,10 +60,12 @@ value outside the supported bound fails closed.
 
 The importer keeps bigint values as decimal text through D1 binding and
 readback, so values across the signed 64-bit range do not pass through
-JavaScript `Number`. Application-facing D1 reads still return SQLite INTEGER
-values through APIs that may use JavaScript `Number`; those call sites must
-prove safe bounds or explicitly select exact text before the bigint gate can
-close.
+JavaScript `Number`. The internal `fanmark_events.id` key is excluded from the
+read-precision gate because Worker code does not select or return it and the
+exact sequence import path is verified. Application-facing D1 reads of the two
+`fanmark_discoveries` counters still use JavaScript `Number`; their call sites
+must prove safe bounds or select exact text before those remaining bigint gates
+can close.
 
 Run `npm run test:migration-data`. Value tests cover numeric limits, exact
 cents, positive/negative bigint boundaries, leap dates, microseconds and years

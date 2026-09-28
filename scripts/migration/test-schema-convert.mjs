@@ -233,7 +233,7 @@ test("conversion is deterministic and exposes exact target codecs", () => {
 
   assert.equal(first.report.target.tableCount, 4);
   assert.equal(first.report.target.columnCount, 15);
-  assert.equal(first.report.schemaVersion, 15);
+  assert.equal(first.report.schemaVersion, 16);
   assert.deepEqual(first.report.target.translatedConstraints, { p: 4, u: 0, f: 1, c: 3 });
   assert.equal(first.report.target.translatedIndexCount, 4);
   assert.deepEqual(
@@ -313,7 +313,7 @@ test("money cents DDL accepts only the exact source numeric(10,2) range", () => 
 
 test("DATE schema checks preserve canonical calendar days for imports and later writes", () => {
   const result = convertSchema(calendarDateFixture());
-  assert.equal(result.report.schemaVersion, 15);
+  assert.equal(result.report.schemaVersion, 16);
   assert.equal(gateCodes(result.report).has("date_import_validation"), false);
   assert.match(result.sql, /"stat_date" IS NULL OR \([\s\S]*length\("stat_date"\) = 10[\s\S]*GLOB '\[0-9\].*-[0-9\].*-[0-9\].*'[\s\S]*substr\("stat_date", 1, 4\) BETWEEN '0001' AND '9999'[\s\S]*date\("stat_date", '\+0 days'\) IS "stat_date"/);
 
@@ -340,7 +340,7 @@ test("DATE schema checks preserve canonical calendar days for imports and later 
 
 test("TIMESTAMPTZ schema checks preserve canonical UTC microsecond text", () => {
   const result = convertSchema(timestampFixture());
-  assert.equal(result.report.schemaVersion, 15);
+  assert.equal(result.report.schemaVersion, 16);
   assert.ok(gateCodes(result.report).has("timestamp_import_precision"));
   assert.ok(gateCodes(result.report).has("timestamp_default_requires_operation"));
   assert.match(result.sql, /"created_at" TEXT NOT NULL DEFAULT \(strftime\('%Y-%m-%dT%H:%M:%f000Z', 'now'\)\)/);
@@ -430,6 +430,11 @@ test("the reviewed event sequence uses AUTOINCREMENT and the exact snapshot sequ
   assert.match(result.sql, /CREATE TABLE "fanmark_events" \(\s*"id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,/);
   assert.doesNotMatch(result.sql, /CONSTRAINT "fanmark_events_pkey" PRIMARY KEY/);
   assert.ok(!gateCodes(result.report).has("sequence_state_import_required"));
+  const supportedBigintGate = result.report.gates.find((gate) => gate.code === "bigint_import_range_validation");
+  assert.ok(supportedBigintGate);
+  assert.ok(supportedBigintGate.locations.some((location) => location.table === "parent" && location.column === "optional_bigint"));
+  assert.ok(!supportedBigintGate.locations.some((location) => location.table === "fanmark_events" && location.column === "id"),
+    "the exact event sequence ID is not projected to application-facing JavaScript reads");
   assert.ok(!gateCodes(result.report).has("sequence_default_requires_operation"));
 
   const rows = execFileSync("sqlite3", [":memory:"], {
@@ -449,6 +454,9 @@ test("the reviewed event sequence uses AUTOINCREMENT and the exact snapshot sequ
   const sequenceGate = unsafeResult.report.gates.find((gate) => gate.code === "sequence_state_import_required");
   assert.ok(sequenceGate);
   assert.ok(sequenceGate.locations.some((location) => location.table === "custom_events" && location.column === "id"));
+  const bigintGate = unsafeResult.report.gates.find((gate) => gate.code === "bigint_import_range_validation");
+  assert.ok(bigintGate);
+  assert.ok(bigintGate.locations.some((location) => location.table === "custom_events" && location.column === "id"));
 });
 
 test("credential source never receives the ordinary text codec and needs its exact policy descriptor", () => {
@@ -499,7 +507,7 @@ test("the four reviewed live GIN indexes have explicit D1 query-contract disposi
   );
 
   const result = convertSchema(input);
-  assert.equal(result.report.schemaVersion, 15);
+  assert.equal(result.report.schemaVersion, 16);
   assert.deepEqual(result.report.target.indexAdaptations.map((entry) => entry.sourceIndex), [
     "idx_emoji_master_keywords",
     "idx_emoji_master_short_name",
@@ -543,7 +551,7 @@ test("known ASCII PostgreSQL regex checks require a reviewed locale proof", () =
     .flatMap((gate) => gate.locations)
     .filter((location) => sourceCheckNames.has(location.name));
   assert.deepEqual(untranslatedSourceChecks, []);
-  assert.equal(result.report.schemaVersion, 15);
+  assert.equal(result.report.schemaVersion, 16);
 
   const cases = [
     ["invitation_codes", "code", "ABC123", true],
@@ -775,7 +783,7 @@ test("the exact recent-active view is adapted only to the reviewed D1 query", ()
   input.views = [{ kind: "view", name: "recent_active_fanmarks", definition }];
 
   const result = convertSchema(input);
-  assert.equal(result.report.schemaVersion, 15);
+  assert.equal(result.report.schemaVersion, 16);
   assert.equal(result.report.deployable, false);
   assert.deepEqual(result.report.target.catalogScopeAdaptations, [{
     scope: "views",

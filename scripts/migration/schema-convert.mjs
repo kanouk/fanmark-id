@@ -16,7 +16,7 @@ import { compileCredentialDescriptor, CREDENTIAL_COLUMN, CREDENTIAL_SOURCE_RELAT
 import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 15;
+export const SCHEMA_CONVERSION_VERSION = 16;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -734,7 +734,7 @@ function integerStorageCheck(column, expression) {
   return column.not_null ? expression : `${name} IS NULL OR (${expression})`;
 }
 
-function typeInfo(column, enumLabels, gates, typeCounts, credentialDescriptorPlan, reviewedLotteryWeightCheck) {
+function typeInfo(column, enumLabels, gates, typeCounts, credentialDescriptorPlan, reviewedLotteryWeightCheck, reviewedSequenceStateImport) {
   const sourceType = column.postgres_type;
   const location = { kind: "column", table: column.table_name, column: column.column_name };
   let targetType;
@@ -779,7 +779,9 @@ function typeInfo(column, enumLabels, gates, typeCounts, credentialDescriptorPla
     targetType = "INTEGER";
     codec = "bigint-int64-exact";
     checks.push(integerStorageCheck(column, `typeof(${quoteIdentifier(column.column_name)}) = 'integer' AND ${quoteIdentifier(column.column_name)} BETWEEN -9223372036854775808 AND 9223372036854775807`));
-    gates.add("bigint_import_range_validation", "The importer preserves bigint values through decimal-text CAST and exact text readback, but application-facing D1 INTEGER reads can become imprecise JavaScript Numbers; prove safe ranges or use exact text reads before enabling those paths.", location);
+    if (!reviewedSequenceStateImport) {
+      gates.add("bigint_import_range_validation", "The importer preserves bigint values through decimal-text CAST and exact text readback, but application-facing D1 INTEGER reads can become imprecise JavaScript Numbers; prove safe ranges or use exact text reads before enabling those paths.", location);
+    }
   } else if (sourceType === "date") {
     targetType = "TEXT";
     codec = "date-ymd-text";
@@ -1197,6 +1199,7 @@ function renderTable(tableName, tableColumns, sourceConstraints, context) {
   }
   for (const column of tableColumns) {
     columnByName.set(column.column_name, column);
+    const sequenceStateImportSupported = context.sequenceStateColumns.has(`${tableName}.${column.column_name}`);
     if (column.identity) {
       context.gates.add(
         "identity_column_requires_operation",
@@ -1225,6 +1228,7 @@ function renderTable(tableName, tableColumns, sourceConstraints, context) {
       context.typeCounts,
       context.credentialDescriptorPlan,
       hasReviewedLotteryWeightCheck(tableName, sourceConstraints, tableColumns),
+      sequenceStateImportSupported,
     );
     context.columnCodecs.push({
       table: tableName,
@@ -1238,7 +1242,6 @@ function renderTable(tableName, tableColumns, sourceConstraints, context) {
     const sequencePrimaryKey = sequencePrimaryKeyColumns.has(column.column_name);
     if (sequencePrimaryKey) parts.push("PRIMARY KEY AUTOINCREMENT");
     if (column.not_null) parts.push("NOT NULL");
-    const sequenceStateImportSupported = context.sequenceStateColumns.has(`${tableName}.${column.column_name}`);
     const defaultSql = translateDefault(column, info, context.gates, sequencePrimaryKey, sequenceStateImportSupported);
     if (defaultSql !== null) parts.push(`DEFAULT ${defaultSql}`);
     definitions.push({ order: column.ordinal, sql: parts.join(" ") });

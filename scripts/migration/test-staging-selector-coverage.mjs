@@ -9,6 +9,7 @@ const packageJson = JSON.parse(readFileSync(new URL("../../package.json", import
 const envTypes = readFileSync(new URL("../../src/vite-env.d.ts", import.meta.url), "utf8");
 const stagingBuild = packageJson.scripts["build:cloudflare-staging"];
 const sourceRoot = fileURLToPath(new URL("../../src", import.meta.url));
+const workerSourceRoot = fileURLToPath(new URL("../../workers/api/src", import.meta.url));
 const appStagingConfig = JSON.parse(readFileSync(new URL("../../workers/api/wrangler.app-staging.jsonc", import.meta.url), "utf8"));
 const lifecycleProfileMigrations = [
   "workers/api/migrations-business/0000_business_schema_v4_staging.sql",
@@ -32,6 +33,14 @@ function listTypeScriptFiles(directory) {
     const entryPath = path.join(directory, entry.name);
     if (entry.isDirectory()) return listTypeScriptFiles(entryPath);
     return /\.tsx?$/.test(entry.name) ? [entryPath] : [];
+  });
+}
+
+function listWorkerSourceFiles(directory) {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const entryPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) return listWorkerSourceFiles(entryPath);
+    return /\.(?:mjs|ts)$/u.test(entry.name) ? [entryPath] : [];
   });
 }
 
@@ -84,6 +93,30 @@ test("every typed frontend backend selector has an implementation reference", ()
   const unused = declaredSelectors.filter((selector) => !sourceText.includes(selector));
 
   assert.deepEqual(unused, [], "declared selectors must be consumed by frontend source, not just named in the build");
+});
+
+test("the exact sequence-backed fanmark event bigint key stays internal to SQL", () => {
+  const workerSources = listWorkerSourceFiles(workerSourceRoot).map((filePath) => ({
+    filePath,
+    text: readFileSync(filePath, "utf8"),
+  }));
+  const readPattern = /\b(?:FROM|JOIN|UPDATE|DELETE\s+FROM)\s+(?:(?:"public"|public)\s*\.\s*)?["`]?fanmark_events["`]?(?![A-Za-z0-9_])/giu;
+  const insertPattern = /\bINSERT\s+INTO\s+(?:(?:"public"|public)\s*\.\s*)?["`]?fanmark_events["`]?(?![A-Za-z0-9_])/giu;
+  const insertStatements = [];
+
+  for (const { filePath, text } of workerSources) {
+    assert.doesNotMatch(text, readPattern, `${path.basename(filePath)} must not read the bigint event key into JavaScript`);
+    for (const match of text.matchAll(insertPattern)) {
+      const templateStart = text.lastIndexOf("`", match.index);
+      const templateEnd = text.indexOf("`", match.index);
+      assert.ok(templateStart >= 0 && templateEnd > match.index, "event inserts must remain inspectable SQL templates");
+      const sql = text.slice(match.index, templateEnd);
+      assert.doesNotMatch(sql, /\bRETURNING\b/iu, "event inserts must not return the generated bigint ID");
+      insertStatements.push(filePath);
+    }
+  }
+
+  assert.ok(insertStatements.length > 0, "the Worker still records fanmark events through D1");
 });
 
 test("staging enables only the MFA-protected manual lifecycle API, not the scheduled lifecycle Cron", () => {

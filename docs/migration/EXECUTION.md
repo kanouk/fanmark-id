@@ -3764,3 +3764,20 @@ PostgreSQL sequence state was not queried; it remains a final-freeze requirement
 because sequence advancement is outside MVCC. Schema conversion, snapshot-format validation, D1-import tests, and
 `npm run test:migration-data` cover the contract. No user rows, live sequence
 values, remote D1, production route, or domain/DNS state changed.
+
+
+## Internal bigint event key and schema converter v16 (2026-09-28 JST)
+
+The linked schema catalog has three bigint columns. The Worker projects the two
+discovery counters as numbers, so those import/read-precision gates remain. A
+source-code audit found that `fanmark_events.id` is not selected or returned by
+Worker code; the table is insert-only at that boundary. The exact importer stores
+the signed 64-bit ID without Number conversion, and the snapshot contract
+restores the sequence watermark. Schema converter v16 removes the bigint gate
+for this column only when the exact supported sequence contract is present.
+
+A fresh linked, read-only schema catalog conversion at 2026-09-28 14:30 UTC
+reports 9 groups / 220 locations (4 row-conversion / 127, 5 schema/operation /
+93) and remains `deployable: false`. It returned no application rows or live
+sequence values. Focused schema/snapshot tests pass 37/37, and the complete
+migration-data suite passes 184/184 with no skips.

@@ -650,3 +650,18 @@ A fresh linked, read-only schema catalog conversion at 2026-09-28 14:25 UTC
 reports 9 unresolved groups / 221 locations (4 row-conversion / 128, 5
 schema/operation / 93) and remains `deployable: false`. The query returned no
 application rows or live sequence values.
+
+
+## Internal bigint event key and v16 report (2026-09-28 JST)
+
+The source schema has two bigint discovery counters that reach the Worker API,
+so `bigint_import_range_validation` remains for those columns. The other bigint
+column, `fanmark_events.id`, is an internal sequence-backed key: application
+code only inserts into that table and does not select or return the generated
+ID. Snapshot import binds exact decimal text, then restores and verifies the
+sequence watermark. Converter v16 suppresses the read-precision gate only for
+that exact sequence profile; other bigint and sequence shapes remain blocked.
+
+A fresh linked, read-only schema catalog conversion at 2026-09-28 14:30 UTC
+reports 9 groups / 220 locations (4 row-conversion / 127, 5 schema/operation /
+93) and remains `deployable: false`. No application rows were read.
