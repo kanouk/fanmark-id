@@ -295,6 +295,7 @@ async function createSyntheticIdToken(
   audience: string,
   subject: string,
   email: string,
+  emailVerified = true,
 ): Promise<string> {
   const keyPair = await crypto.subtle.generateKey({
     name: "RSASSA-PKCS1-v1_5",
@@ -307,7 +308,7 @@ async function createSyntheticIdToken(
     aud: audience,
     sub: subject,
     email,
-    email_verified: true,
+    email_verified: emailVerified,
     iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + 3600,
   };
@@ -969,6 +970,59 @@ describe("Better Auth through the application Worker", () => {
       const errorLocation = new URL(callback.headers.get("location") ?? "");
       expect(`${errorLocation.origin}${errorLocation.pathname}`).toBe(`${appOrigin}/auth`);
       expect(errorLocation.searchParams.get("error")).toBe("signup_disabled");
+      expect(await database!.prepare('SELECT count(*) AS "count" FROM "user"')
+        .first<{ count: number }>()).toEqual({ count: 2 });
+      expect(await database!.prepare('SELECT count(*) AS "count" FROM "account"')
+        .first<{ count: number }>()).toEqual({ count: 2 });
+      expect(await sessionCount(verifiedUserId)).toBe(0);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("does not link an existing UUID when the provider does not verify the matching email", async () => {
+    const clientId = "synthetic-google-client-id";
+    const providerEnv = {
+      AUTH_SOCIAL_BACKEND: "better-auth",
+      GOOGLE_OAUTH_CLIENT_ID: clientId,
+      GOOGLE_OAUTH_CLIENT_SECRET: "synthetic-google-client-secret",
+    };
+    const idToken = await createSyntheticIdToken(
+      "https://accounts.google.com", clientId, "unverified-google-subject", verifiedEmail, false,
+    );
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("https://oauth2.googleapis.com/token");
+      expect(init?.method).toBe("POST");
+      return Response.json({
+        access_token: "synthetic-unverified-google-access-token",
+        token_type: "bearer",
+        scope: "openid email profile",
+        expires_in: 3600,
+        id_token: idToken,
+      });
+    });
+
+    try {
+      const start = await authRequest("/sign-in/social", jsonBody({
+        provider: "google",
+        callbackURL: `${appOrigin}/auth`,
+        errorCallbackURL: `${appOrigin}/auth`,
+      }), providerEnv);
+      const startBody = await start.json() as { url: string };
+      const state = new URL(startBody.url).searchParams.get("state") ?? "";
+      const callbackCookies = (start.headers.get("set-cookie") ?? "")
+        .split(/,(?=[^;,]+=)/u)
+        .map((cookie) => cookie.trim().split(";", 1)[0])
+        .filter(Boolean)
+        .join("; ");
+      const callback = await authRequest(`/callback/google?${new URLSearchParams({
+        code: "synthetic-unverified-google-authorization-code",
+        state,
+      })}`, { headers: { cookie: callbackCookies } }, providerEnv);
+
+      expect(callback.status).toBe(302);
+      const errorLocation = new URL(callback.headers.get("location") ?? "");
+      expect(errorLocation.searchParams.get("error")).toBe("account_not_linked");
       expect(await database!.prepare('SELECT count(*) AS "count" FROM "user"')
         .first<{ count: number }>()).toEqual({ count: 2 });
       expect(await database!.prepare('SELECT count(*) AS "count" FROM "account"')

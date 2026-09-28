@@ -430,8 +430,11 @@ callback is also checked through Better Auth’s intermediate GET redirect.
 
 A separate Google callback with a verified but unknown email is rejected with
 `signup_disabled`; no user, social account, or session is created. The
-four-provider denial and tampered-state tests confirm state-cookie binding and
-no session/account side effects. Current local results are 26/26 for
+callback also rejects a Google identity whose email matches an existing user
+but is not provider-verified, returning `account_not_linked` without creating
+an account or session. The four-provider denial and tampered-state tests
+confirm state-cookie binding and no session/account side effects. Current
+local results are 27/27 for
 `npm --prefix workers/api run test:auth:d1`, 3/3 for
 `npm --prefix workers/api run test:auth-social`, plus Worker typecheck and
 focused ESLint.

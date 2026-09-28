@@ -3685,9 +3685,11 @@ identity persistence, session issuance, and no new user row. Apple’s
 Google callback for a verified but unlinked email returns `signup_disabled`
 without creating a user, account, or session. Existing start/state-denial
 coverage still tests all four providers, including rejection of a tampered
-state with `state_mismatch`.
+state with `state_mismatch`. A Google identity with the existing email but
+without a provider-verified email returns `account_not_linked` and adds no
+account or session.
 
-`npm --prefix workers/api run test:auth:d1` passes 26/26;
+`npm --prefix workers/api run test:auth:d1` passes 27/27;
 `npm --prefix workers/api run test:auth-social` passes 3/3; Worker typecheck,
 focused ESLint, and `git diff --check` pass. Only synthetic credentials and
 provider responses were used; there were no real OAuth requests, remote D1
