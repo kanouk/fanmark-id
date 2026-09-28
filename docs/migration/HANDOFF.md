@@ -2555,3 +2555,14 @@ read-only 35-function live inventory. The only unmatched entry remains the
 live-only `manual-expire-grace-licenses`. The standalone check and the full
 migration-data suite pass (173/173); this validates gateway-config parity, not
 handler authorization or external callers. The estimate above is unchanged.
+
+A subsequent synthetic protected-access browser canary passed on the
+workers.dev staging SPA at 390x844: locked text was withheld, the wrong
+four-digit password returned 401, the correct password returned 204, and the
+page rendered the protected text only after a `no-store` read. The proof cookie
+was HttpOnly/Secure/SameSite=Lax, and cleanup returned canary Auth, business,
+proof, reservation, and access-audit rows to zero. The API-only owner-settings
+canary passed again as well. This closes one rendered text-password subgate;
+the approximate 53% full-migration / 73% prioritized-scope estimates are
+unchanged because credential compatibility, CPU fit, recovery, provider-backed
+acceptance, user-data import, and domain/DNS remain open.

@@ -7,9 +7,11 @@
 
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
-import { readFileSync } from "node:fs";
-import { spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import process from "node:process";
 import {
   businessTablesWithoutStagingBaselines,
@@ -32,6 +34,7 @@ const AUTH_DATABASE_ID = "2116bc43-32ab-4e3e-b762-9378df88b95f";
 const WRANGLER_VERSION = "4.139.0";
 const APP_CONFIG = "workers/api/wrangler.app-staging.jsonc";
 const AUTH_CONFIG = "workers/api/wrangler.auth-staging.jsonc";
+const VERIFY_RENDERED_BROWSER = process.argv.includes("--verify-rendered-browser");
 const require = createRequire(new URL("../../workers/api/package.json", import.meta.url));
 const bcrypt = require("bcryptjs");
 
@@ -77,7 +80,9 @@ function runD1(config, database, sql) {
 
 function assertTarget() {
   const config = JSON.parse(readFileSync(APP_CONFIG, "utf8"));
-  if (config.name !== WORKER || config.workers_dev !== true || config.routes?.length) {
+  if (config.name !== WORKER || config.workers_dev !== true || config.routes?.length ||
+      config.vars?.D1_TOPOLOGY !== "split" || config.vars?.AUTH_BACKEND !== "better-auth" ||
+      config.vars?.PUBLIC_ACCESS_BACKEND !== "d1" || config.vars?.VERIFIED_ACCESS_BACKEND !== "d1") {
     fail("staging_worker_target_mismatch");
   }
   const business = config.d1_databases?.find((entry) => entry.binding === "FANMARK_DB");
@@ -156,6 +161,228 @@ function responseCookie(response, matcher) {
     .find((cookie) => matcher.test(cookie));
   if (!pair) fail("response_cookie_missing");
   return pair;
+}
+
+function cdpConnection(webSocketUrl, onEvent) {
+  const socket = new WebSocket(webSocketUrl);
+  const pending = new Map();
+  let nextId = 0;
+  let rejectOpen;
+  const opened = new Promise((resolve, reject) => {
+    rejectOpen = reject;
+    const timeout = setTimeout(() => reject(new Error("browser_cdp_connect_timeout")), 15_000);
+    socket.addEventListener("open", () => {
+      clearTimeout(timeout);
+      resolve();
+    }, { once: true });
+    socket.addEventListener("error", () => {
+      clearTimeout(timeout);
+      reject(new Error("browser_cdp_connect_failed"));
+    }, { once: true });
+  });
+  socket.addEventListener("message", (event) => {
+    let message;
+    try {
+      message = JSON.parse(String(event.data));
+    } catch {
+      return;
+    }
+    if (typeof message.method === "string") {
+      onEvent?.(message);
+      return;
+    }
+    if (!Number.isInteger(message.id)) return;
+    const operation = pending.get(message.id);
+    if (!operation) return;
+    pending.delete(message.id);
+    clearTimeout(operation.timeout);
+    if (message.error) operation.reject(new Error("browser_cdp_command_failed"));
+    else operation.resolve(message.result ?? {});
+  });
+  socket.addEventListener("close", () => {
+    rejectOpen?.(new Error("browser_cdp_closed"));
+    for (const operation of pending.values()) {
+      clearTimeout(operation.timeout);
+      operation.reject(new Error("browser_cdp_closed"));
+    }
+    pending.clear();
+  });
+
+  return {
+    opened,
+    send(method, params = {}) {
+      const id = ++nextId;
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          pending.delete(id);
+          reject(new Error("browser_cdp_timeout"));
+        }, 15_000);
+        pending.set(id, { resolve, reject, timeout });
+        socket.send(JSON.stringify({ id, method, params }));
+      });
+    },
+    close() {
+      if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) socket.close();
+    },
+  };
+}
+
+async function verifyRenderedProtectedAccess(shortId, expectedContent) {
+  const chromeCandidates = [
+    process.env.FANMARK_STAGING_CHROME,
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/usr/bin/google-chrome",
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+  ].filter(Boolean);
+  const chromePath = chromeCandidates.find((candidate) => existsSync(candidate));
+  if (!chromePath) fail("headless_chrome_unavailable");
+
+  const profileDirectory = mkdtempSync(join(tmpdir(), "fanmark-protected-access-ui-"));
+  const chrome = spawn(chromePath, [
+    "--headless=new", "--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu",
+    "--disable-background-networking", "--disable-component-update", "--disable-default-apps",
+    "--metrics-recording-only", "--no-first-run", "--no-default-browser-check",
+    `--user-data-dir=${profileDirectory}`, "--remote-debugging-port=0", "about:blank",
+  ], { stdio: "ignore" });
+  let cdp;
+  let chromeFailed = false;
+  let chromeExit;
+  const exited = new Promise((resolve) => { chromeExit = resolve; });
+  chrome.once("exit", chromeExit);
+  chrome.once("error", () => {
+    chromeFailed = true;
+    chromeExit();
+  });
+  const chromeRunning = () => !chromeFailed && chrome.exitCode === null && chrome.signalCode === null;
+  const responses = [];
+
+  try {
+    const activePortPath = join(profileDirectory, "DevToolsActivePort");
+    const startupDeadline = Date.now() + 15_000;
+    let port;
+    while (Date.now() < startupDeadline) {
+      if (!chromeRunning()) fail("headless_chrome_exited");
+      try {
+        const [value] = readFileSync(activePortPath, "utf8").split(/\r?\n/u);
+        if (/^\d+$/u.test(value ?? "")) {
+          port = value;
+          break;
+        }
+      } catch {
+        // Chrome creates the DevTools endpoint after its temporary profile starts.
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    if (!port) fail("browser_devtools_start_timeout");
+
+    const targetsResponse = await fetch(`http://127.0.0.1:${port}/json/list`, { signal: AbortSignal.timeout(5_000) });
+    if (!targetsResponse.ok) fail("browser_target_list_failed");
+    const targets = await targetsResponse.json();
+    const page = targets.find((target) => target.type === "page" && target.webSocketDebuggerUrl);
+    if (!page) fail("browser_page_target_missing");
+
+    cdp = cdpConnection(page.webSocketDebuggerUrl, (message) => {
+      if (message.method !== "Network.responseReceived") return;
+      const response = message.params?.response;
+      if (!response?.url) return;
+      const url = new URL(response.url);
+      if (url.pathname.includes("/verify-password") || url.pathname.endsWith("/protected")) {
+        responses.push({
+          path: url.pathname,
+          status: response.status,
+          cacheControl: response.headers?.["cache-control"] ?? response.headers?.["Cache-Control"] ?? "",
+        });
+      }
+    });
+    await cdp.opened;
+    await cdp.send("Network.enable");
+    await cdp.send("Page.enable");
+    await cdp.send("Emulation.setDeviceMetricsOverride", {
+      width: 390, height: 844, deviceScaleFactor: 1, mobile: true,
+    });
+    await cdp.send("Page.navigate", { url: `${APP_ORIGIN}/a/${encodeURIComponent(shortId)}` });
+
+    const readState = async () => {
+      const result = await cdp.send("Runtime.evaluate", {
+        expression: `(() => {
+          const otp = [...document.querySelectorAll('input')].find((input) => input.maxLength === 4);
+          return {
+            path: location.pathname,
+            body: document.body?.innerText ?? '',
+            otpValue: otp?.value ?? null,
+            otpReady: Boolean(otp),
+          };
+        })()`,
+        returnByValue: true,
+      });
+      if (result.exceptionDetails) fail("browser_state_read_failed");
+      return result.result?.value ?? {};
+    };
+    const waitForState = async (predicate, failureCode, timeoutMs = 20_000) => {
+      const deadline = Date.now() + timeoutMs;
+      let state = {};
+      while (Date.now() < deadline) {
+        state = await readState();
+        if (predicate(state)) return state;
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+      fail(failureCode);
+    };
+    const fillOtp = async (value) => {
+      const focused = await cdp.send("Runtime.evaluate", {
+        expression: `(() => { const input = [...document.querySelectorAll('input')].find((entry) => entry.maxLength === 4); input?.focus(); return Boolean(input); })()`,
+        returnByValue: true,
+      });
+      if (focused.result?.value !== true) fail("browser_otp_input_missing");
+      await cdp.send("Input.insertText", { text: value });
+    };
+
+    const locked = await waitForState((state) => state.path === `/a/${shortId}` && state.otpReady,
+      "rendered_password_gate_timeout");
+    if (locked.body.includes(expectedContent)) fail("protected_content_leaked_before_verification");
+
+    await fillOtp("0000");
+    await waitForState((state) => responses.some((entry) => entry.path.endsWith("/verify-password") && entry.status === 401) &&
+      state.otpReady && state.otpValue === "" && !state.body.includes(expectedContent),
+    "rendered_wrong_password_not_rejected");
+
+    await fillOtp("2468");
+    const unlocked = await waitForState((state) => state.body.includes(expectedContent) && !state.otpReady &&
+      responses.some((entry) => entry.path.endsWith("/verify-password") && entry.status === 204) &&
+      responses.some((entry) => entry.path.endsWith("/protected") && entry.status === 200),
+    "rendered_protected_content_timeout");
+    const protectedRead = responses.findLast((entry) => entry.path.endsWith("/protected") && entry.status === 200);
+    if (!protectedRead?.cacheControl.toLowerCase().includes("no-store")) fail("protected_read_cache_policy_missing");
+
+    const cookies = await cdp.send("Network.getCookies", { urls: [APP_ORIGIN] });
+    const proofCookie = cookies.cookies?.find((cookie) => cookie.name === "__Host-fanmark_access");
+    if (!proofCookie?.httpOnly || !proofCookie.secure || proofCookie.sameSite !== "Lax") {
+      fail("protected_proof_cookie_policy_mismatch");
+    }
+
+    return {
+      viewport: "390x844",
+      wrongPasswordStatus: 401,
+      successfulVerificationStatus: 204,
+      protectedReadStatus: 200,
+      protectedReadNoStore: true,
+      proofCookieHttpOnlySecureSameSiteLax: true,
+      lockedContentWithheld: true,
+      protectedContentRendered: unlocked.body.includes(expectedContent),
+    };
+  } finally {
+    cdp?.close();
+    if (chromeRunning()) {
+      chrome.kill("SIGTERM");
+      await Promise.race([exited, new Promise((resolve) => setTimeout(resolve, 2_000))]);
+    }
+    if (chromeRunning()) {
+      chrome.kill("SIGKILL");
+      await Promise.race([exited, new Promise((resolve) => setTimeout(resolve, 2_000))]);
+    }
+    rmSync(profileDirectory, { recursive: true, force: true });
+  }
 }
 
 async function cleanup({ userId, fanmarkId, licenseId, shortId, extensionCouponBaseline, emailTemplateBaseline }) {
@@ -285,24 +512,36 @@ async function main() {
     assert.equal(Object.hasOwn(saved.fanmark, "access_password"), false);
 
     const verifyUrl = `/api/fanmarks/access/short/${encodeURIComponent(shortId)}/verify-password`;
-    const denied = await request(verifyUrl, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ password: "0000" }),
-    });
-    assertResponse(denied, 401, "protected_password_denial_failed");
-    const verified = await request(verifyUrl, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ password: "2468" }),
-    });
-    assertResponse(verified, 204, "protected_password_verification_failed");
-    const proofCookie = responseCookie(verified, /^__Host-fanmark_access=/u);
-    const protectedResponse = await readJson(await request(
-      `/api/fanmarks/access/short/${encodeURIComponent(shortId)}/protected`,
-      { headers: { cookie: proofCookie } },
-    ), 200, "protected_content_read_failed");
-    assert.equal(protectedResponse.textContent, "Synthetic Cloudflare staging protected content.");
+    const publicProjection = await readJson(await request(
+      `/api/fanmarks/access/short/${encodeURIComponent(shortId)}`,
+    ), 200, "protected_public_projection_failed");
+    assert.equal(publicProjection.accessState, "locked");
+    assert.equal(publicProjection.textContent, null);
+    assert.equal(publicProjection.targetUrl, null);
+    let protectedAccess;
+    if (VERIFY_RENDERED_BROWSER) {
+      protectedAccess = await verifyRenderedProtectedAccess(shortId, "Synthetic Cloudflare staging protected content.");
+    } else {
+      const denied = await request(verifyUrl, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ password: "0000" }),
+      });
+      assertResponse(denied, 401, "protected_password_denial_failed");
+      const verified = await request(verifyUrl, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ password: "2468" }),
+      });
+      assertResponse(verified, 204, "protected_password_verification_failed");
+      const proofCookie = responseCookie(verified, /^__Host-fanmark_access=/u);
+      const protectedResponse = await readJson(await request(
+        `/api/fanmarks/access/short/${encodeURIComponent(shortId)}/protected`,
+        { headers: { cookie: proofCookie } },
+      ), 200, "protected_content_read_failed");
+      assert.equal(protectedResponse.textContent, "Synthetic Cloudflare staging protected content.");
+      protectedAccess = { wrongPasswordStatus: denied.status, verifyStatus: verified.status, protectedReadStatus: 200 };
+    }
 
     const stored = d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, `
       SELECT pc.is_enabled, av.password_generation, av.access_generation,
@@ -322,7 +561,7 @@ async function main() {
     return {
       worker: WORKER,
       ownerSettings: { unauthenticatedStatus: unauthorized.status, getStatus: 200, patchStatus: 200 },
-      protectedAccess: { wrongPasswordStatus: denied.status, verifyStatus: verified.status, protectedReadStatus: 200 },
+      protectedAccess: { ...protectedAccess, lockedPublicProjectionRedactsContent: true },
       passwordEvidence: "bcrypt hash stored; runtime evidence generation matched; no secret returned",
     };
   } finally {

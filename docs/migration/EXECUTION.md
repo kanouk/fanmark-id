@@ -3352,3 +3352,25 @@ suite passed 173/173. This protects observed gateway-setting parity only; it
 does not prove handler-level authorization, function behavior, or the status
 of external callers for the live-only function. No remote setting, deployment,
 function invocation, or application row changed.
+
+## Rendered protected-access staging canary (2026-09-28 JST)
+
+Added `npm run test:migration:staging-protected-access-ui`, an opt-in guarded
+headless-Chrome check that uses a random synthetic Better Auth user and a
+temporary password-protected text fanmark. On the 390x844 viewport, the
+workers.dev `/a/:shortId` page kept the synthetic text hidden while locked;
+one wrong four-digit password returned 401 and cleared the input, and the
+correct password returned 204 followed by a 200 protected read with
+`Cache-Control: no-store`. Readback verified the proof cookie was HttpOnly,
+Secure, and SameSite=Lax. The public locked projection returned no text or
+redirect target. Cleanup and independent D1 reads found zero canary Auth,
+business, proof, reservation, or access-audit rows.
+
+The API-only `npm run test:migration:staging-owner-settings` also passed its
+unauthenticated 401, owner GET/PATCH 200, wrong-password 401, valid verification
+204, protected read 200, and cleanup checks. Targeted ESLint, `node --check`,
+and `git diff --check` passed. This verifies the rendered text-password path
+for one synthetic Chrome viewport; imported Supabase password compatibility,
+other browsers, recurring CPU/abuse-control fit, and production behavior remain
+open. No application deployment, real user data, provider call, production
+route, or domain/DNS setting changed.

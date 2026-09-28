@@ -8,6 +8,17 @@ protected read passed and all canary rows were removed. No real password values
 or user rows have been moved. Compatibility for each imported source hash
 format and Cloudflare CPU/plan fit remain separate gates.
 
+On 2026-09-28, `npm run test:migration:staging-protected-access-ui` also passed
+through the rendered `/a/:shortId` page in a 390x844 headless Chrome viewport.
+The locked public projection withheld message text, an incorrect four-digit
+entry returned 401 and reset the input, and the correct entry returned 204
+before the page rendered the protected text from a `no-store` response. The
+proof cookie was HttpOnly, Secure, and SameSite=Lax. The canary removed its
+synthetic Auth/business rows, proofs, reservations, and access audit rows.
+This closes the single-browser visual path only; it does not prove other
+browsers, imported credential compatibility, recurring CPU fit, or production
+origin behavior.
+
 `workers/api/src/verified-access.mjs` implements the gated routes.
 `scripts/migration/verified-access-schema.mjs` generates, applies, and reads
 back the proof/rate-limit extension against the exact source, lifecycle,
@@ -413,17 +424,20 @@ is required:
    rollback to the existing path, confirms no redirect/text/profile content is
    rendered before the protected response arrives.
 
-Until these gates pass, keep the Worker password surface disabled and retain
-the existing Supabase path. Do not treat Better Auth's email/password or MFA
-proof as evidence for this separate anonymous fanmark authorization.
+These gates govern imported source credentials, expansion beyond the tested
+synthetic text flow, and production switching. The Worker path is enabled on
+workers.dev staging for synthetic validation; production retains the existing
+Supabase path until the remaining gates pass. Do not treat Better Auth's
+email/password or MFA proof as evidence for this separate anonymous fanmark
+authorization.
 
-## Connected local source-shaped proof
+## Initial local source-shaped proof (before staging enablement)
 
 `workers/api/src/verified-access.mjs` implements the password routes and is
 registered by `workers/api/src/index.ts` only when
 `VERIFIED_ACCESS_BACKEND=d1`, the business D1 binding, and the verification
-secret are present. The staging flag remains unset and the frontend continues
-to use Supabase for password verification. The Worker reads current source
+secret were present. At that checkpoint the staging flag was unset and the
+frontend used Supabase for password verification. The Worker read current source
 tables and generation state from the same synthetic 40-table D1 profile used
 by the lifecycle rehearsal; it also checks credential-transform provenance
 before accepting a password hash. This is local integration evidence, not a
@@ -462,7 +476,8 @@ projection with the HttpOnly proof cookie, credentials included, `no-store`,
 bounded response parsing, and no fallback. Protected profile data is passed
 directly to the profile renderer so it does not make a second anonymous
 profile request. Seven client contract tests and the frontend typecheck pass.
-The selector remains unset in staging, and no browser canary has been run.
+The later staging selector and rendered canary are recorded at the top of this
+document; the historical checkpoint itself had no browser canary.
 
 The earlier `experiments/cloudflare-auth/` proof remains a separate account
 auth/MFA experiment; it is not the route implementation. Remaining gates are
