@@ -17,6 +17,11 @@ import {
   createStripeInvoiceProjectionProvider,
   processAcceptedStripeInvoiceReceipt,
 } from "../_shared/stripe-invoice-projection/index.ts";
+import {
+  createStripeSubscriptionProjectionProvider,
+  projectStripeSubscriptionSnapshot,
+  type StripePrivatePriceIdsByMode,
+} from "../_shared/stripe-subscription-projection/index.ts";
 import { processAcceptedStripeNoopCheckoutReceipt } from "../_shared/stripe-noop-checkout-receipt.ts";
 import { validateStripeExtensionApplicationResult } from "../_shared/stripe-extension-application.ts";
 
@@ -59,21 +64,6 @@ const INVOICE_EVENT_TYPES = new Set([
 const logStep = (step: string, details?: unknown) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[STRIPE-WEBHOOK] ${step}${detailsStr}`);
-};
-
-const toIsoString = (unixSeconds?: number | null) => {
-  if (typeof unixSeconds !== "number" || Number.isNaN(unixSeconds)) {
-    return null;
-  }
-  try {
-    return new Date(unixSeconds * 1000).toISOString();
-  } catch (dateError) {
-    console.warn("[STRIPE-WEBHOOK] Unable to convert timestamp", {
-      unixSeconds,
-      error: dateError instanceof Error ? dateError.message : dateError,
-    });
-    return null;
-  }
 };
 
 const resolveUserIdFromCustomer = async (
@@ -398,20 +388,21 @@ serve(async (req) => {
         const subscription = event.data.object as Stripe.Subscription;
         logStep(`Processing ${event.type}`, { subscriptionId: subscription.id });
 
-        const stripeCustomerId = subscription.customer as string;
-        const userId = await resolveUserIdFromCustomer(supabaseClient, stripe, stripeCustomerId, event.livemode);
-
-        const firstItem = subscription.items?.data?.[0];
-        const priceId = typeof firstItem?.price?.id === "string" ? firstItem.price.id : null;
-        const productId = typeof firstItem?.price?.product === "string" ? firstItem.price.product as string : null;
-
-        if (!firstItem || !priceId || !productId) {
-          throw new Error("Subscription items missing price/product information");
+        const stripeCustomerId = typeof subscription.customer === "string"
+          ? subscription.customer
+          : subscription.customer?.id;
+        if (!stripeCustomerId || !subscription.id) {
+          throw new Error("Subscription customer or ID is missing");
         }
 
-        logStep("Price & product extracted", { priceId, productId });
-
-        const requiredKeys = ["creator_stripe_price_id", "max_stripe_price_id", "business_stripe_price_id"];
+        const requiredKeys = [
+          "creator_stripe_price_id",
+          "max_stripe_price_id",
+          "business_stripe_price_id",
+          "creator_stripe_price_id_live",
+          "max_stripe_price_id_live",
+          "business_stripe_price_id_live",
+        ];
         const { data: settingsData, error: priceSettingsError } = await supabaseClient
           .from("system_settings")
           .select("setting_key, setting_value")
@@ -423,58 +414,74 @@ serve(async (req) => {
 
         const settingsEntries = (settingsData ?? []).map((row) => [row.setting_key, row.setting_value] as const);
         const settingsMap = new Map(settingsEntries);
-        const creatorPriceId = settingsMap.get("creator_stripe_price_id");
-        const maxPriceId = settingsMap.get("max_stripe_price_id");
-        const businessPriceId = settingsMap.get("business_stripe_price_id");
-
-        if (!creatorPriceId || !maxPriceId || !businessPriceId) {
-          throw new Error("Stripe Price IDs are not configured in system_settings");
+        const privatePriceIds: StripePrivatePriceIdsByMode = {
+          test: {
+            creator: settingsMap.get("creator_stripe_price_id") ?? "",
+            max: settingsMap.get("max_stripe_price_id") ?? "",
+            business: settingsMap.get("business_stripe_price_id") ?? "",
+          },
+          live: {
+            creator: settingsMap.get("creator_stripe_price_id_live") ?? "",
+            max: settingsMap.get("max_stripe_price_id_live") ?? "",
+            business: settingsMap.get("business_stripe_price_id_live") ?? "",
+          },
+        };
+        const projection = await projectStripeSubscriptionSnapshot({
+          subscriptionId: subscription.id,
+          customerId: stripeCustomerId,
+          livemode: event.livemode,
+          privatePriceIds,
+          provider: createStripeSubscriptionProjectionProvider(new Stripe(stripeKey, {
+            apiVersion: "2025-08-27.basil",
+            timeout: 10_000,
+            maxNetworkRetries: 0,
+          })),
+        });
+        const current = projection.current;
+        const priceId = current.priceId;
+        const planType = projection.effectivePlanType;
+        if (current.currentPeriodStart === null || current.currentPeriodEnd === null) {
+          throw new Error("Current Stripe subscription periods are missing");
         }
+        const userId = await resolveUserIdFromCustomer(
+          supabaseClient,
+          stripe,
+          stripeCustomerId,
+          event.livemode,
+        );
 
-        let planType: "free" | "creator" | "max" | "business" = "free";
-        if (priceId === creatorPriceId) {
-          planType = "creator";
-        } else if (priceId === maxPriceId) {
-          planType = "max";
-        } else if (priceId === businessPriceId) {
-          planType = "business";
-        } else {
-          throw new Error(`Received Stripe price_id (${priceId}) that does not match configured plans`);
-        }
-
-        logStep("Plan type mapping", { priceId, planType });
-
-        const periodStartIso = toIsoString(subscription.current_period_start);
-        const periodEndIso = toIsoString(subscription.current_period_end);
-        const unitAmount = firstItem.price?.unit_amount ?? null;
-        const currency = firstItem.price?.currency ?? null;
-        const interval = firstItem.price?.recurring?.interval ?? null;
-        const intervalCount = firstItem.price?.recurring?.interval_count ?? null;
+        logStep("Current subscription state reconciled", {
+          subscriptionId: current.id,
+          priceId,
+          status: current.status,
+          activeSubscriptionCount: projection.activeSubscriptionCount,
+          effectivePlanType: planType,
+        });
 
         // Upsert subscription data
         logStep("Attempting upsert", { 
           user_id: userId,
           price_id: priceId,
-          product_id: productId,
-          status: subscription.status 
+          product_id: current.productId,
+          status: current.status,
         });
 
         const { error: upsertError } = await supabaseClient
           .from("user_subscriptions")
           .upsert({
             user_id: userId,
-            stripe_customer_id: subscription.customer as string,
-            stripe_subscription_id: subscription.id,
-            product_id: productId,
+            stripe_customer_id: stripeCustomerId,
+            stripe_subscription_id: current.id,
+            product_id: current.productId,
             price_id: priceId,
-            status: subscription.status,
-            current_period_start: periodStartIso,
-            current_period_end: periodEndIso,
-            cancel_at_period_end: subscription.cancel_at_period_end,
-            amount: unitAmount,
-            currency,
-            interval,
-            interval_count: intervalCount,
+            status: current.status,
+            current_period_start: current.currentPeriodStart,
+            current_period_end: current.currentPeriodEnd,
+            cancel_at_period_end: current.cancelAtPeriodEnd,
+            amount: current.amount,
+            currency: current.currency,
+            interval: current.interval,
+            interval_count: current.intervalCount,
             updated_at: new Date().toISOString(),
           }, {
             onConflict: "user_id,stripe_subscription_id"
@@ -485,7 +492,7 @@ serve(async (req) => {
           throw upsertError;
         }
 
-        if (subscription.status === "active") {
+        if (planType !== null) {
           const { error: profileError } = await supabaseClient
             .from("user_settings")
             .update({ plan_type: planType })
@@ -505,11 +512,15 @@ serve(async (req) => {
             logStep("Failed to clear payment failure state", { error: clearFailureError.message });
           }
 
-          logStep("Subscription and profile updated in database", { userId, status: subscription.status, planType });
+          logStep("Subscription and effective profile plan updated", {
+            userId,
+            status: current.status,
+            planType,
+          });
         } else {
           logStep("Skipping plan_type update for non-active subscription", {
             userId,
-            status: subscription.status,
+            status: current.status,
           });
         }
         break;

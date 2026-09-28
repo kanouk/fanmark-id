@@ -3175,6 +3175,28 @@ ordered periods; a non-null legacy top-level period is rejected. The receipt
 package suite (including 10 subscription projection cases) and typecheck pass;
 the Worker Stripe-ingress suite passes 64 tests and its typecheck passes.
 
-This is local validation only. The Supabase webhook has not yet been wired to
-the subscription projection, and no staging/deployed Stripe path was exercised.
-Issue #32 remains open; no remote database, Worker, or Stripe state changed.
+At this checkpoint, validation was local only: the Supabase webhook had not yet
+been wired to the subscription projection, and no staging/deployed Stripe path
+was exercised. Issue #32 remained open; no remote database, Worker, or Stripe
+state changed.
+
+## Supabase subscription current-state reconciliation slice (2026-09-29 JST)
+
+The Supabase webhook's `customer.subscription.created/updated` branch now uses
+the pinned Basil snapshot adapter to retrieve the current Subscription and the
+customer's active subscription set. It validates mode-specific Price IDs,
+single-item billing data, and item-level period timestamps before writing the
+current subscription row; plan state is selected from the highest active plan,
+so delayed event snapshots no longer directly choose a plan or provide periods.
+The old top-level Subscription period reads are removed.
+
+This remains an intermediate safety repair, not Issue #32 completion: the
+created/updated branch still writes the customer link, subscription projection,
+and plan separately, has no customer fence or durable receipt/dispatch claim,
+and the deleted-subscription path still deletes its row and performs Free-plan
+returns separately. The related Stripe D1 suite passes 64/64 under Node 22.6.0;
+the subscription projection package tests pass 10/10, its typecheck, Deno check,
+Deno lint, and focused ESLint pass. The full Worker API suite also passes under
+the available Node 25 runtime. No Supabase migration, external Stripe API
+request, remote D1/R2 write, Worker deployment, real user-data migration, or
+domain/DNS change was made.
