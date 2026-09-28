@@ -34,6 +34,7 @@ const APP_CONFIG = "workers/api/wrangler.app-staging.jsonc";
 const AUTH_CONFIG = "workers/api/wrangler.auth-staging.jsonc";
 const WRANGLER_VERSION = "4.135.0";
 const VERIFY_RENDERED_UI = process.argv.includes("--verify-rendered-ui");
+const VERIFY_RENDERED_DETAILS_UI = process.argv.includes("--verify-rendered-details-ui");
 const require = createRequire(new URL("../../workers/api/package.json", import.meta.url));
 const bcrypt = require("bcryptjs");
 
@@ -85,8 +86,13 @@ function assertTarget() {
   if (config.name !== "fanmark-app-staging" || config.workers_dev !== true || config.routes?.length ||
       config.custom_domains?.length || limiter?.namespace_id !== "41092703" ||
       limiter.simple?.limit !== 120 || limiter.simple.period !== 60 ||
-      config.vars?.FANMARK_ANALYTICS_BACKEND !== "d1" || config.vars?.FANMARK_ACCESS_ANALYTICS_BACKEND !== "d1") {
+      config.vars?.FANMARK_ANALYTICS_BACKEND !== "d1" || config.vars?.FANMARK_ACCESS_ANALYTICS_BACKEND !== "d1" ||
+      config.vars?.FANMARK_DETAILS_BACKEND !== "d1") {
     fail("staging_worker_target_mismatch");
+  }
+  const buildScript = JSON.parse(readFileSync("package.json", "utf8")).scripts?.["build:cloudflare-staging"];
+  if (typeof buildScript !== "string" || !buildScript.includes("VITE_FANMARK_DETAILS_BACKEND=worker")) {
+    fail("staging_details_frontend_selector_mismatch");
   }
   const expected = [
     ["FANMARK_DB", BUSINESS_DATABASE, BUSINESS_DATABASE_ID],
@@ -328,6 +334,140 @@ async function verifyRenderedAnalytics(cookie) {
   }
 }
 
+async function verifyRenderedDetails(cookie, shortId, username, fanmark) {
+  const chromeCandidates = [
+    process.env.FANMARK_STAGING_CHROME,
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/usr/bin/google-chrome",
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+  ].filter(Boolean);
+  const chromePath = chromeCandidates.find((candidate) => existsSync(candidate));
+  if (!chromePath) fail("headless_chrome_unavailable");
+
+  const profileDirectory = mkdtempSync(join(tmpdir(), "fanmark-details-ui-"));
+  const chrome = spawn(chromePath, [
+    "--headless=new", "--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu",
+    "--disable-background-networking", "--disable-component-update", "--disable-default-apps",
+    "--metrics-recording-only", "--no-first-run", "--no-default-browser-check",
+    `--user-data-dir=${profileDirectory}`, "--remote-debugging-port=0", "about:blank",
+  ], { stdio: "ignore" });
+  let cdp;
+  let chromeFailed = false;
+  let chromeExit;
+  const exited = new Promise((resolve) => { chromeExit = resolve; });
+  chrome.once("exit", chromeExit);
+  chrome.once("error", () => {
+    chromeFailed = true;
+    chromeExit();
+  });
+  const chromeRunning = () => !chromeFailed && chrome.exitCode === null && chrome.signalCode === null;
+
+  try {
+    const activePortPath = join(profileDirectory, "DevToolsActivePort");
+    const startupDeadline = Date.now() + 15_000;
+    let port;
+    while (Date.now() < startupDeadline) {
+      if (!chromeRunning()) fail("headless_chrome_exited");
+      if (existsSync(activePortPath)) {
+        const [value] = readFileSync(activePortPath, "utf8").split(/\r?\n/u);
+        if (/^\d+$/u.test(value ?? "")) {
+          port = value;
+          break;
+        }
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    if (!port) fail("browser_devtools_start_timeout");
+
+    const targetsResponse = await fetch(`http://127.0.0.1:${port}/json/list`, { signal: AbortSignal.timeout(5_000) });
+    if (!targetsResponse.ok) fail("browser_target_list_failed");
+    const targets = await targetsResponse.json();
+    const page = targets.find((target) => target.type === "page" && target.webSocketDebuggerUrl);
+    if (!page) fail("browser_page_target_missing");
+
+    cdp = cdpConnection(page.webSocketDebuggerUrl);
+    await cdp.opened;
+    await cdp.send("Network.enable");
+    await cdp.send("Page.enable");
+    const cookieResult = await cdp.send("Network.setCookie", {
+      ...cookieParts(cookie), url: APP_ORIGIN, path: "/", secure: true, httpOnly: true, sameSite: "Lax",
+    });
+    if (cookieResult.success !== true) fail("browser_session_cookie_rejected");
+
+    const detailPath = `/f/${encodeURIComponent(shortId)}`;
+    await cdp.send("Page.navigate", { url: `${APP_ORIGIN}${detailPath}` });
+    const translations = JSON.parse(readFileSync("src/translations/ja.json", "utf8")).fanmarkDetails;
+    const ownerExpression = `(() => {
+      const body = document.body?.innerText ?? '';
+      return {
+        path: location.pathname,
+        shortIdVisible: body.includes(${JSON.stringify(shortId)}),
+        fanmarkVisible: body.includes(${JSON.stringify(fanmark)}),
+        historyHeadingVisible: body.includes(${JSON.stringify(translations.ownershipHistory)}),
+        ownerVisible: body.includes(${JSON.stringify(`@${username}`)}),
+        historyRows: document.querySelectorAll('tbody tr').length,
+        workerReads: performance.getEntriesByType('resource').map((item) => item.name)
+          .filter((name) => name.startsWith(location.origin + '/api/fanmarks/details')),
+      };
+    })()`;
+    const waitForDetailsState = async (expression, predicate, timeoutCode) => {
+      const deadline = Date.now() + 35_000;
+      while (Date.now() < deadline) {
+        if (!chromeRunning()) fail("headless_chrome_exited");
+        const result = await cdp.send("Runtime.evaluate", { expression, returnByValue: true });
+        const state = result.result?.value ?? {};
+        if (predicate(state)) return state;
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+      fail(timeoutCode);
+    };
+
+    const ownerState = await waitForDetailsState(ownerExpression, (state) =>
+      state.path === detailPath && state.shortIdVisible && state.fanmarkVisible && state.historyHeadingVisible &&
+      state.ownerVisible && state.historyRows >= 1 && Array.isArray(state.workerReads) && state.workerReads.length >= 1,
+    "rendered_owner_details_timeout");
+
+    await cdp.send("Network.clearBrowserCookies");
+    await cdp.send("Page.navigate", { url: `${APP_ORIGIN}${detailPath}` });
+    const anonymousExpression = `(() => {
+      const body = document.body?.innerText ?? '';
+      return {
+        path: location.pathname,
+        signInPromptVisible: body.includes(${JSON.stringify(translations.historySignInPrompt)}),
+        ownerNameHidden: !body.includes(${JSON.stringify(`@${username}`)}),
+        historyRows: document.querySelectorAll('tbody tr').length,
+        workerReads: performance.getEntriesByType('resource').map((item) => item.name)
+          .filter((name) => name.startsWith(location.origin + '/api/fanmarks/details')),
+      };
+    })()`;
+    const anonymousState = await waitForDetailsState(anonymousExpression, (state) =>
+      state.path === detailPath && state.signInPromptVisible && state.ownerNameHidden && state.historyRows === 0 &&
+      Array.isArray(state.workerReads) && state.workerReads.length >= 1,
+    "rendered_anonymous_details_timeout");
+
+    return {
+      path: detailPath,
+      owner: { shortIdVisible: ownerState.shortIdVisible, fanmarkVisible: ownerState.fanmarkVisible,
+        historyRows: ownerState.historyRows, workerReadCount: ownerState.workerReads.length },
+      anonymous: { signInPromptVisible: anonymousState.signInPromptVisible,
+        ownerNameHidden: anonymousState.ownerNameHidden, historyRows: anonymousState.historyRows,
+        workerReadCount: anonymousState.workerReads.length },
+    };
+  } finally {
+    cdp?.close();
+    if (chromeRunning()) {
+      chrome.kill("SIGTERM");
+      await Promise.race([exited, new Promise((resolve) => setTimeout(resolve, 2_000))]);
+    }
+    if (chromeRunning()) {
+      chrome.kill("SIGKILL");
+      await Promise.race([exited, new Promise((resolve) => setTimeout(resolve, 2_000))]);
+    }
+    rmSync(profileDirectory, { recursive: true, force: true });
+  }
+}
+
 async function cleanup({ userId, email, fanmarkId, licenseId }) {
   const license = licenseId ? sqlLiteral(licenseId) : "'__no_license__'";
   const fanmark = fanmarkId ? sqlLiteral(fanmarkId) : "'__no_fanmark__'";
@@ -465,6 +605,35 @@ async function main() {
     const summary = await readJson(await request("/api/me/analytics/summary?days=30", { headers: { cookie } }), 200, "analytics_summary_failed");
     assert.deepEqual(summary.result, { totalAccess: 1 });
     const renderedUi = VERIFY_RENDERED_UI ? await verifyRenderedAnalytics(cookie) : null;
+    let renderedDetailsUi = null;
+    if (VERIFY_RENDERED_DETAILS_UI) {
+      const anonymousDetails = await readJson(await request("/api/fanmarks/details", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ shortId: row.short_id }),
+      }), 200, "anonymous_details_read_failed");
+      assert.equal(anonymousDetails.schemaVersion, 1);
+      assert.equal(anonymousDetails.result.history_available, false);
+      assert.deepEqual(anonymousDetails.result.license_history, []);
+      assert.equal(anonymousDetails.result.current_owner_username, null);
+      assert.equal(anonymousDetails.result.current_owner_display_name, null);
+      assert.equal(JSON.stringify(anonymousDetails).includes(userId), false);
+      assert.equal(JSON.stringify(anonymousDetails).includes(email), false);
+
+      const ownerDetails = await readJson(await request("/api/fanmarks/details", {
+        method: "POST", headers: { cookie, "content-type": "application/json" },
+        body: JSON.stringify({ shortId: row.short_id }),
+      }), 200, "owner_details_read_failed");
+      assert.equal(ownerDetails.schemaVersion, 1);
+      assert.equal(ownerDetails.result.short_id, row.short_id);
+      assert.equal(ownerDetails.result.is_current_owner, true);
+      assert.equal(ownerDetails.result.history_available, true);
+      assert.equal(ownerDetails.result.license_history.length, 1);
+      assert.equal(ownerDetails.result.license_history[0].username, `analytics-${nonce}`);
+      assert.equal(JSON.stringify(ownerDetails).includes(userId), false);
+      assert.equal(JSON.stringify(ownerDetails).includes(email), false);
+
+      renderedDetailsUi = await verifyRenderedDetails(cookie, row.short_id, `analytics-${nonce}`, rose.emoji);
+    }
     const anonymous = await request(`/api/me/analytics?start_date=${today}&end_date=${today}`);
     assert.equal(anonymous.status, 401);
 
@@ -502,6 +671,7 @@ async function main() {
       analytics: { firstWriteRecorded: true, concurrentDuplicatesSuppressed: duplicatePayloads.length,
         dailyAccessCount: analytics.result.summary.accessCount, uniqueVisitors: analytics.result.summary.uniqueVisitors },
       renderedUi,
+      renderedDetailsUi,
       unauthorizedReadStatus: anonymous.status,
       cleanup: cleanupProof,
       businessRowsAfterCleanup: totalRows,

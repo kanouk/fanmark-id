@@ -1517,6 +1517,21 @@ user data, production routing, or domain/DNS were changed. Raw referrer and
 user-agent retention policy, populated-user authorization, and production
 CPU/plan fit remain open.
 
+## Rendered WhoIs owner/history staging canary (2026-09-28 JST)
+
+Added `npm run test:staging-fanmark-details-ui` to verify the deployed
+`/f/:shortId` details page with the same tightly scoped synthetic fixture used
+by the analytics canary. Against staging version
+`82413f00-f60e-4a01-aeb0-2a071e01178a`, the authenticated owner page fetched
+`/api/fanmarks/details` and rendered the synthetic fanmark plus one history
+row. The isolated browser then cleared its session cookie, reloaded the page,
+and showed the login prompt with no history rows or owner name. Independent
+cleanup readback found zero synthetic business and Auth user/account/session
+rows; the temporary Chrome profile was removed. Local details Worker tests
+passed 3/3 and the canary script passed syntax and ESLint checks. No real user
+data, production route, or domain/DNS state was used or changed. Imported-row
+parity and production routing remain open.
+
 ## Reference-master editor paired-cutover gate (2026-09-26 JST)
 
 The existing versioned D1 editor is tested, but its writer selector must move

@@ -31,7 +31,10 @@ staging selector, anonymous/authenticated field boundary, ordering, and
 synthetic D1 fixture are covered by `npm run test:fanmark-details-api` and
 `npm --prefix workers/api run test:fanmark-details-d1`.
 
-This implementation does not migrate users or production fanmark rows, modify
-the Supabase RPC, deploy a production Worker, or change DNS. Staging activation
-does not by itself prove browser acceptance, parity against non-empty imported
-rows, or production readiness.
+On staging Worker version `82413f00-f60e-4a01-aeb0-2a071e01178a`, the rendered
+`/f/:shortId` canary passed with a synthetic owner. The browser read this
+Worker endpoint, displayed one ownership-history row to the owner, then cleared
+its session cookie and showed the login prompt with no history row or owner name
+to an anonymous visitor. API and browser checks did not migrate users or
+production fanmark rows, modify the Supabase RPC, deploy a production Worker,
+or change DNS. Imported-row parity and production readiness remain unverified.
