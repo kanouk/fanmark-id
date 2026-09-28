@@ -1,5 +1,30 @@
 # Cloudflare移行の実行・再開手順
 
+## Fresh Supabase v20 catalog and current-schema synthetic replay (2026-09-29 JST)
+
+Ran the reviewed `schema-readiness.sql` through Supabase CLI 2.118.0 with
+`CI=1`, `--yes`, and a private temporary project-link directory. The read-only
+query completed at `2026-09-28T18:27:23Z` and returned schema metadata only:
+40 tables / 406 columns, 144 constraints, 139 indexes, 15 enum labels, one
+view, 58 functions, 36 non-internal triggers, and 77 RLS policies. No
+application rows or live sequence values were read.
+
+Descriptor-aware schema converter v20 on this fresh catalog reports five
+schema/operation gate groups / 93 locations and remains `deployable: false`:
+11 external Auth references, 79 timestamp defaults requiring operation-owned
+clock values, and the untranslated function, RLS policy, and trigger scopes.
+The earlier v20 gate count was derived from an older catalog; this is the
+current schema-only report.
+
+Under Node 22.6.0, `scripts/migration/test-d1-import-current-schema.mjs` passed
+against this exact catalog. It reconciled 10 synthetic rows across all 40
+tables and checkpoints, bcrypt-transformed two active credentials, durably
+deferred one inactive-license credential, read back typed/hash state, and
+rejected conflicting credential coverage. The result is
+`public_rows_reconciled`; `deployable` and `fullMigrationReconciled` remain
+false. No source application rows, remote D1/R2, production route, or
+domain/DNS state was accessed or changed.
+
 ## 2026-09-29 D1 license expiry microsecond comparisons
 
 The D1 analytics summary, fanmark details, coupon application, Stripe

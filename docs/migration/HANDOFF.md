@@ -15,29 +15,32 @@ transfer-lock, and active-license boundary checks; Worker typecheck also passes.
 These are local changes pending PR validation; `0018` and `0019` have not been
 applied remotely and no remote state changed.
 
-A fresh schema-only query completed at 2026-09-29 01:40 JST using Supabase CLI
-2.118.0 in a private temporary project-link directory. It again returned 40
-tables, 406 columns, 144 constraints, 139 indexes, 15 enum labels, one view,
-58 functions, 36 non-internal triggers, and 77 RLS policies. The recorded
-converter-v18 report with the value-free credential descriptor has 7 groups /
-209 locations (2 row-conversion / 116, 5 schema/operation / 93) and
-`deployable: false`.
+A fresh schema-only query completed at 2026-09-29 03:27 JST using Supabase CLI
+2.118.0, `CI=1`, and `--yes` in a private temporary project-link directory.
+It returned 40 tables / 406 columns, 144 constraints, 139 indexes, 15 enum
+labels, one view, 58 functions, 36 non-internal triggers, and 77 RLS policies.
+No application rows or live sequence values were read.
 
-Local schema converter v20 removes the 103-location `timestamp_import_precision`
-gate: the PostgreSQL projection emits UTC microseconds as text, the row codec
-validates and preserves all six digits, generated D1 checks enforce the format,
-and synthetic import/readback tests compare the exact text. Applying v20 to the
-last recorded v18 catalog shape gives 5 schema/operation groups / 93 locations
-and `deployable: false`; this is not a fresh schema fetch. Timestamp-default
-operation behavior, external Auth references, and unsupported catalog scopes
-remain gated.
-The earlier 00:42 JST current-catalog synthetic Miniflare replay used v17: it
-completed all 40 table checkpoints with 10 synthetic rows, transformed two
-credentials, deferred one inactive credential, and rejected conflicting
-coverage. Its status remains `public_rows_reconciled`;
-`fullMigrationReconciled` remains false. No source application rows or remote
-D1/R2 were read or written. PR #41 validation run `36445109332` passed both
-required jobs.
+The value-free descriptor and converter v20 produce five schema/operation gate
+groups / 93 locations on this fresh catalog: 11 external Auth references, 79
+timestamp defaults, and the function, RLS policy, and trigger catalog scopes.
+The report remains `deployable: false`; runtime clock semantics and external
+identity references are still open.
+
+Under Node 22.6.0, the current-catalog synthetic importer completed all 40
+checkpoints with 10 synthetic rows, transformed two active credentials,
+durably deferred one inactive-license credential, performed typed/hash
+readback, and rejected conflicting credential coverage. It reports
+`public_rows_reconciled`, while `deployable` and `fullMigrationReconciled` stay
+false. No source application rows, real credentials, or remote D1/R2 state
+were used. The D1 business migrations `0018` and `0019` remain unapplied; the
+local Wrangler CLI is authenticated to a different Cloudflare account than
+the staging config, so no remote migration or deployment was attempted.
+
+Dashboard read-only verification could not run because Computer Use reported
+that macOS is locked and needs manual unlock. No browser action or Cloudflare
+write occurred. The Browser Dashboard session does not update Wrangler's
+separate CLI identity.
 
 Local schema converter v19 now removes the JSONB gate because the snapshot text
 projection, exact row codec, generated D1 `json_valid()` check, and SQLite
