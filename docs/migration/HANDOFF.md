@@ -7,7 +7,9 @@ has been performed.
 
 The Supabase Stripe webhook now durably records non-extension Checkout
 sessions and marks their receipt ignored only under the current dispatch lease;
-the service-only forward migration and handler change are local pending CI.
+the service-only forward migration and handler change are in draft PR #41 at
+`26514b3`. Validation run `36484759460` passed both the staging application
+and Worker API jobs; no Supabase migration was applied.
 Focused PGlite coverage is 13/13, shared TypeScript coverage 5/5, and the
 receipt-package typecheck passes. No Supabase migration or webhook request was
 made. This closes one bounded receipt-acknowledgment gap, not subscription
