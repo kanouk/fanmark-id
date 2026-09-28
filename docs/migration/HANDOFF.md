@@ -2632,3 +2632,12 @@ the observed Supabase bcrypt prefix on a synthetic account only; no real
 credential or user row was read or moved. MFA/OAuth, real-user reconciliation,
 and CPU-plan fit remain open. Overall progress estimates remain about 53%
 end-to-end and 73% for the prioritized app/infrastructure/master scope.
+
+Wrangler Tail measured the successful `/api/auth/sign-in/email` request at
+143 ms CPU / 229 ms wall time on Worker version
+`5e75e611-6145-48c3-a35e-daa2a3f9da5d`; avatar uploads measured 4–8 ms CPU.
+The 143 ms request is far above Workers Free's 10 ms HTTP limit. Cloudflare
+notes that isolates may infrequently exceed the configured limit, so one
+successful request is not evidence of recurring fit. Paid usage starts at
+$5/month; no plan or billing setting changed. This remains an account-owner
+cost gate unless the credential path can be optimized and remeasured.

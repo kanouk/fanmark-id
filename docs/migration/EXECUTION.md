@@ -3478,3 +3478,14 @@ avatar/cover objects. `node --check` and a local bcrypt `$2a$10$` Unicode
 fixture check passed. This improves the staging password-compatibility proof;
 it does not establish real-user hash compatibility, MFA/OAuth migration,
 recurring CPU-plan fit, or production readiness.
+
+The same synthetic `/api/auth/sign-in/email` request was measured with a
+100%-sampled Wrangler Tail stream on Worker version
+`5e75e611-6145-48c3-a35e-daa2a3f9da5d`: status 200, CPU 143 ms, wall time 229
+ms. Authenticated avatar uploads used 4–8 ms in this run. Cloudflare's current
+Free limit is 10 ms per HTTP invocation and its documentation allows infrequent
+overages before consistently over-limit work is terminated; this successful
+sample is therefore not evidence of Free-plan fit. Workers Paid currently
+starts at $5/month, but no billing-plan change was made. See Cloudflare's
+[Workers limits](https://developers.cloudflare.com/workers/platform/limits/)
+and [pricing](https://developers.cloudflare.com/workers/platform/pricing/).
