@@ -2372,6 +2372,15 @@ source-writer/Cron freeze, complete final-copy timing, applied Stripe business
 effect, post-write application restore, recurring CPU-plan fit, and other issue
 #37/#38 gates remain open.
 
+Follow-up rerun on 2026-09-28 passed with temporary Worker version
+`71094a8b-6cbb-4f42-afcd-47a5957dc69a`; the ordinary staging Worker was
+restored as `6da0dd8d-5da3-46f5-9c7e-86258a50b181` at 100%. The first
+loopback owner-settings update completed 31,937 ms after the frozen Cloudflare
+rejection, and total harness time was 75,970 ms. Final receipt/dispatch counts
+were zero and the script reported no Stripe API calls; a separate
+deployment/secret readback confirmed the restored version and only the three
+pre-existing staging secrets.
+
 ## Rendered subscription foreground-poll canary (2026-09-28 JST)
 
 The opt-in `npm run test:migration:staging-subscription-ui-poll` passed on the

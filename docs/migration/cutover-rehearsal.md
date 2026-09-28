@@ -384,6 +384,14 @@ verify a full outage window, or complete the post-write application restore.
 Issue #37 remains open; no real user data, production route, or domain/DNS
 setting changed.
 
+The 2026-09-28 follow-up rerun passed with temporary Worker
+`71094a8b-6cbb-4f42-afcd-47a5957dc69a` and restored Worker
+`6da0dd8d-5da3-46f5-9c7e-86258a50b181` at 100%. The first loopback
+owner-settings write followed the freeze rejection by 31,937 ms; total harness
+time was 75,970 ms. Final receipt and dispatch counts were zero, no Stripe API
+calls occurred, and a separate readback confirmed only the three pre-existing
+staging secrets. This repeat still does not stop a linked writer or Cron.
+
 ## Rendered subscription UI poll (2026-09-28 JST)
 
 The guarded `npm run test:migration:staging-subscription-ui-poll` authenticated

@@ -2924,6 +2924,13 @@ probe before attempting the mutation. This closes only the synthetic pre-write
 fallback subgate; no linked Supabase writer/Cron was stopped and no live user
 rows, production route, or DNS/domain were changed. Issue #37 remains open.
 
+Follow-up rerun on 2026-09-28 passed with temporary Worker
+`71094a8b-6cbb-4f42-afcd-47a5957dc69a`, restored Worker
+`6da0dd8d-5da3-46f5-9c7e-86258a50b181` at 100%, 31,937 ms to the first
+loopback source-shaped write after the freeze response, and 75,970 ms total
+harness time. Final receipt/dispatch counts were zero; live deployment and
+secret readback confirmed restoration and no temporary Stripe signing secret.
+
 ## Rendered subscription foreground-poll canary (2026-09-28 JST)
 
 The opt-in `npm run test:migration:staging-subscription-ui-poll` extends the
