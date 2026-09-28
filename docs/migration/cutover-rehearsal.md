@@ -609,3 +609,35 @@ complete Business/Auth/Storage backup or recovery drill. It does not apply a
 Stripe business effect, freeze Supabase writers or Cron, import real user
 data, or change production routing or DNS/domain state. Issue #37 remains
 open.
+
+## Lifecycle Cron retry and unverified cleanup (2026-09-28 JST)
+
+The guarded command
+`FANMARK_STAGING_CRON_CANARY=1 FANMARK_SMOKE_DIAGNOSTICS=1`
+`staging-license-expiry-lottery-smoke.mjs` passed its initial Cloudflare
+identity check and completed the first 47 remote Business D1 reads. Read 48
+started, then the process exited with `staging_cron_disable_failed` while
+handling the temporary Cron deployment. Its finalizer attempted to restore the
+baseline staging Worker and clean the synthetic fixture, but no successful
+deployment confirmation or D1 cleanup readback was captured. The post-run
+Worker Cron configuration and synthetic-row state are unknown; this attempt
+does not count as a passed canary.
+
+An independent `wrangler whoami --json` check now resolves to a Cloudflare
+account that does not match the staging configuration. The authenticated
+Dashboard route is under the configured account ID, but D1 Studio returns
+404/unauthorized. Wrangler's read-only D1/deployment requests also fail with
+authentication error 10000. This prevents a read-only post-run verification.
+Public GET probes of the workers.dev origin
+returned 200 for `/` and `/api/auth/ok`, 401 for anonymous `/api/admin/session`,
+200/null for `/api/auth/get-session`, and 404 for the disabled Stripe webhook.
+These probes establish basic route health only; they do not reveal the current
+Cron triggers, active deployment version, or D1 cleanup state.
+
+The smoke harness now retains sanitized summaries for the original canary
+error, baseline redeployment failure, and synthetic-cleanup failure, while
+redacting email addresses and credential-like values. Node 22.6.0 syntax
+checking and the focused staging-expiry guard suite pass. Before any further
+staging mutation, verify the intended Cloudflare account, active Worker
+version/triggers, and zero canary rows. No real user data, production route,
+or domain/DNS setting was read or changed.

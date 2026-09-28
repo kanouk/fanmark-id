@@ -23,6 +23,7 @@ import {
   stagingEmailTemplateMasterRowCount,
 } from "./staging-email-template-master-baseline.mjs";
 import { isStagingExpiryCronBaseline } from "./staging-expiry-cron-config.mjs";
+import { safeErrorSummary, safeWranglerDiagnostics } from "./safe-diagnostics.mjs";
 
 const ACCOUNT_ID = "bfc2890741f0b3fb236e2d755b6c9adc";
 const ACCOUNT_EMAIL = "fanmark.id@gmail.com";
@@ -61,20 +62,6 @@ function fingerprint(value) {
 
 function fail(code) {
   throw new Error(code);
-}
-
-function safeWranglerDiagnostics(output) {
-  const lines = String(output).split(/\r?\n/u)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .slice(-20)
-    .map((line) => line
-      .replace(/\u001b\[[0-9;]*m/gu, "")
-      .replace(/Bearer\s+\S+/giu, "Bearer [redacted]")
-      .replace(/(password|token|secret|api[_-]?key)(\s*[:=]\s*)\S+/giu, "$1$2[redacted]")
-      .replace(/\b[A-Za-z0-9_-]{64,}\b/gu, "[redacted]")
-      .slice(0, 500));
-  return lines;
 }
 
 function sql(value) {
@@ -439,6 +426,7 @@ async function main() {
   let cronDeploymentAttempted = false;
   let cronDisabledAgain = false;
   let cronRestoreFailed = false;
+  let cronRestoreError;
   let cleanupError;
   let runError;
   let dev;
@@ -630,14 +618,22 @@ async function main() {
       try {
         wrangler(["deploy", "--config", "wrangler.app-staging.jsonc"], WORKER_DIR);
         cronDisabledAgain = true;
-      } catch { cronRestoreFailed = true; }
+      } catch (error) {
+        cronRestoreFailed = true;
+        cronRestoreError = error;
+      }
     }
     if (seedAttempted) {
       try { cleanup(ids); } catch (error) { cleanupError = error; }
     }
   }
-  if (cronRestoreFailed) fail("staging_cron_disable_failed");
-  if (cleanupError) throw cleanupError;
+  if (cronRestoreFailed || cleanupError) {
+    fail("staging_cleanup_incomplete_" + JSON.stringify({
+      canary: runError ? safeErrorSummary(runError) : null,
+      cronRestore: cronRestoreFailed ? safeErrorSummary(cronRestoreError) : null,
+      syntheticCleanup: cleanupError ? safeErrorSummary(cleanupError) : null,
+    }));
+  }
   if (DEPLOYED_CRON_CANARY) {
     if (!cronDisabledAgain) fail("staging_cron_not_disabled_after_canary");
     const restored = verifyTarget();

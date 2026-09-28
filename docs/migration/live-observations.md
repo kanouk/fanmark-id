@@ -1795,3 +1795,16 @@ configuration or deployment changed, or application row was read. The CLI's
 inventory were updated to make the observed JWT settings explicit. This list
 does not prove handler-level authentication or authorization behavior; those
 remain operation-level review gates.
+
+## Cloudflare staging account access check (2026-09-28 JST)
+
+The app-staging Wrangler configuration targets the account represented by the
+currently open Dashboard URL, but the stored Wrangler OAuth profile exposes a
+different account. Read-only `wrangler d1 info fanmark-business-staging` and
+`wrangler deployments list` requests fail with Cloudflare authentication error
+10000. The Dashboard D1 Studio page renders 404 / `Unauthorized to access
+requested resource` for the staging database route. The latest lifecycle Cron
+canary's post-run Worker trigger state and synthetic-row cleanup therefore
+remain unverified. Do not infer them from public workers.dev health probes.
+No account email, credential value, user row, or production data is recorded
+here; no Cloudflare state was changed during this access check.

@@ -2746,8 +2746,37 @@ use uppercase `BEGIN`, both migration folders are pinned to LF with
 `.gitattributes`, and a regression test covers the format. See
 [Workers SDK issue #15314](https://github.com/cloudflare/workers-sdk/issues/15314).
 
-The rehearsal is synthetic-only and does not include R2 restoration, an
-applied Stripe business effect, a complete encrypted backup, a coordinated
-Supabase-writer/Cron freeze, real user-data import, or domain/DNS changes.
-Issue #37 remains open. The coarse estimates remain about 53% end-to-end and
-73% for the prioritized app/infrastructure/non-user-master scope.
+This was the earlier D1-only checkpoint. Later encrypted R2 and synthetic
+avatar recovery slices are recorded in
+[`cutover-rehearsal.md`](cutover-rehearsal.md); together they still cover only
+six synthetic tables and one avatar, not a complete Business/Auth/Storage
+backup. An applied Stripe business effect and a coordinated Supabase-writer/
+Cron freeze remain open. Issue #37 remains open. The coarse estimates remain
+about 53% end-to-end and 73% for the prioritized app/infrastructure/master-data
+scope.
+
+## Latest staging lifecycle-Cron retry (2026-09-28 JST)
+
+The guarded synthetic lottery-Cron retry reached the cleanup path but exited
+with `staging_cron_disable_failed`. The harness attempted to redeploy its
+baseline Worker configuration and clean the synthetic fixture; it did not
+produce a successful post-run deployment or D1 cleanup readback. Those staging
+states are therefore unverified. The stored Wrangler OAuth profile resolves
+to a different Cloudflare account than the staging configuration. The open
+Dashboard route uses the configured account ID, but D1 Studio returns 404/
+unauthorized, so no authenticated D1/deployment readback was possible.
+
+Read-only public probes of the workers.dev origin still returned 200 for `/`
+and `/api/auth/ok`, 401 for anonymous `/api/admin/session`, 200/null for
+`/api/auth/get-session`, and 404 for the disabled Stripe webhook. This confirms
+basic route health only; it does not verify the Cron triggers, Worker version,
+or synthetic-row cleanup. Before another staging canary, restore the intended
+Cloudflare account context and verify the active deployment, configured Cron
+triggers, and zero canary rows. The retry and its limits are recorded in
+[`cutover-rehearsal.md`](cutover-rehearsal.md).
+
+The harness now preserves sanitized Cron-restore and synthetic-cleanup error
+summaries, with email addresses redacted. Node 22.6.0 syntax checking, the
+five-case lifecycle-target suite, two diagnostic-redaction tests, and the
+179-test migration-data suite pass. No real user data, production route, or
+domain/DNS state was accessed or changed.

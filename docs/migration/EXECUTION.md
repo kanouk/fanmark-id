@@ -3624,3 +3624,27 @@ read-only verification branch. The business-extension verifier also uses the
 shared ledger guard; its live read-only run still requires the private
 credential descriptor and was not performed in this environment. No user
 data, production route, or domain/DNS state changed.
+
+## Lifecycle Cron canary retry diagnostics (2026-09-28 JST)
+
+The latest guarded lottery-Cron retry completed 47 remote Business D1 reads;
+read 48 started before the harness exited with
+`staging_cron_disable_failed`. The finalizer attempted to redeploy the baseline
+Worker and delete the synthetic fixture, but no successful deployment receipt
+or post-cleanup D1 readback was recorded. The current Cron configuration and
+canary-row cleanup are unverified, and this attempt is not a passing canary.
+
+Fresh Wrangler identity comparison shows that the stored CLI OAuth profile
+does not include the staging account. Read-only `d1 info` and `deployments
+list` calls against the configured account fail with Cloudflare authentication
+error 10000. The open Dashboard D1 Studio route also returns 404 with
+`Unauthorized to access requested resource`. No remote configuration or rows
+were changed during these checks. Public route probes only establish basic
+health and cannot establish Cron/deployment/cleanup state.
+
+The canary now retains sanitized summaries for its original failure, Cron
+restore failure, and synthetic cleanup failure; focused tests cover redaction
+of credential-like values and emails. Retry the state readback only after the
+Wrangler profile has access to the staging account, then verify the current
+Worker version/triggers and zero canary rows before another scheduled canary.
+No user data, production route, or domain/DNS state was read or changed.
