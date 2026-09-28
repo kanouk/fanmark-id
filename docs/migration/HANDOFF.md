@@ -443,12 +443,18 @@ and master-route checks are recorded below. PR #41 includes the PWA fix and
 refreshed evidence. Preserve the unrelated modified
 `supabase/.temp/cli-latest` file.
 
-The production-only `manual-expire-grace-licenses` function was downloaded and
-reviewed read-only: it remains active in Supabase and has no local callsite.
-The D1 lifecycle Cron covers scheduled finalization, but there is no on-demand
-bulk Worker route. The function was not invoked or changed. External
-callers/schedules and any remaining manual bulk need are unverified; see
-`live-observations.md`.
+The production-only `manual-expire-grace-licenses` function remains active in
+Supabase, version 14, with platform JWT verification enabled, and has no local
+callsite. A bounded on-demand D1 replacement route now exists at
+`POST /api/admin/license-expiry/run`; it requires a Better Auth administrator
+session with same-session MFA and shares the D1 lifecycle engine. It is not
+behaviorally identical to the legacy function: the legacy endpoint has no
+application-level administrator check, uses a strict `< now` deadline, writes
+each license/configuration/audit effect separately, ignores configuration and
+audit write errors, and returns per-license identifiers/results. It does not
+run lottery or notification effects. External callers remain unverified, so
+the Supabase function was not invoked, disabled, or changed. See
+`lifecycle-run-api.md` and the 2026-09-28 follow-up in `live-observations.md`.
 
 ## Prior staging checkpoint (2026-09-27 JST, before PWA icon deployment)
 

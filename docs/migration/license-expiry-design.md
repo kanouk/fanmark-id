@@ -230,11 +230,18 @@ committed; it does not mean email delivery or a production cutover completed.
 These are known gates from the repository and are deliberately not resolved by
 this design document:
 
-1. A live-only `manual-expire-grace-licenses` function is recorded in
-   `docs/migration/live-observations.md`, but its body, invocation contract,
-   authorization, and relationship to the local cron function are not present
-   in this repository. It needs a read-only production review and an explicit
-   migrate/replace/retire decision.
+1. The live-only `manual-expire-grace-licenses` function was reviewed
+   read-only and is still active in Supabase. Its observed contract is recorded
+   in `docs/migration/live-observations.md`: platform JWT verification is on,
+   but the function itself does not check administrator authorization; it
+   applies non-transactional per-license writes and omits lifecycle lottery and
+   notification effects. The MFA-protected D1 route at
+   `POST /api/admin/license-expiry/run` now supplies a bounded manual run using
+   the lifecycle engine. Before retiring the Supabase function, verify external
+   callers/invocation history, decide whether its legacy partial-effect and
+   response contract must be preserved, and document the retirement/writer
+   freeze. Do not weaken the D1 route's administrator/MFA checks to imitate the
+   legacy authorization gap.
 2. The lifecycle memo says expired processing deletes the profile projection,
    while the local `check-expired-licenses` source deletes basic, redirect,
    messageboard, and password projections but does not delete the profile.
@@ -279,4 +286,5 @@ reviewed Worker, import, notification consumer, and environment settings exist.
 - [`extend-fanmark-license`](../../supabase/functions/extend-fanmark-license/index.ts)
 - [`approve-transfer-request`](../../supabase/functions/approve-transfer-request/index.ts)
 - [Live-only observations](live-observations.md)
+- [Manual lifecycle run API](lifecycle-run-api.md)
 - [D1 concurrency fixture](d1-concurrency.md)

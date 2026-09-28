@@ -1522,6 +1522,42 @@ keep the Supabase function unchanged until its external callers are checked in
 the final operational phase. No function call, deployment, production change,
 user-data read, or DNS/domain change occurred during this review.
 
+## Manual grace-expiry route reconciliation (2026-09-28 JST)
+
+Supabase CLI 2.118.0's read-only Functions inventory still lists
+`manual-expire-grace-licenses` as ACTIVE, version 14, with platform JWT
+verification enabled. Its deployed source was downloaded through the
+Management API into a temporary directory and reviewed without invoking the
+function or selecting application rows.
+
+The source requires a platform-accepted JWT but performs no application-level
+administrator check before constructing a service-role client. It selects
+every `grace` license with `grace_expires_at < now`, then updates each row by
+ID in a separate request. It separately deletes basic, redirect,
+messageboard, and password configuration rows and attempts a
+`MANUAL_LICENSE_EXPIRATION` audit insert; errors from those deletes and the
+audit insert are ignored. It does not perform lottery or notification
+effects, and its response/logs include per-license identifiers and results.
+These effects are not transactional and the update does not compare the
+previous status/deadline.
+
+This corrects the earlier statement above that no on-demand bulk Worker route
+exists. The staging route `POST /api/admin/license-expiry/run` now provides a
+bounded manual run through the D1 lifecycle engine and requires a Better Auth
+administrator session with same-session MFA. It reports aggregate counters
+only and uses the lifecycle transition's guarded state/effect path, including
+the applicable lottery and outbox behavior. The route is therefore a safer
+product replacement, not exact legacy-function parity. The scheduled
+Cloudflare Cron selector remains disabled independently.
+
+No local application caller was found. The 2026-09-27 read-only `cron.job`
+inventory found no active job directly targeting the manual function, but
+Supabase invocation history, indirect database callers, and external
+callers/schedules remain unverified. Keep the live function unchanged until
+those callers are checked and a final writer-freeze/retirement decision is
+recorded. No function call, deployment, production write, application-row
+read, user-data migration, or DNS/domain change occurred during this follow-up.
+
 ## Broadcast templates read-only source and staging seed (2026-09-27 JST)
 
 Using a `BEGIN READ ONLY` Supabase query, only the three supported broadcast
