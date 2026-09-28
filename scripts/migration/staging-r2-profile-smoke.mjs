@@ -5,8 +5,10 @@
 import assert from "node:assert/strict";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
-import { readFileSync } from "node:fs";
-import { spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { spawn, spawnSync } from "node:child_process";
 import process from "node:process";
 import {
   businessTablesWithoutStagingBaselines,
@@ -150,26 +152,283 @@ function responseCookie(response) {
   return pair;
 }
 
+function cdpConnection(webSocketUrl) {
+  const socket = new WebSocket(webSocketUrl);
+  const pending = new Map();
+  let nextId = 0;
+  let openTimeout;
+  const opened = new Promise((resolve, reject) => {
+    openTimeout = setTimeout(() => reject(new Error("browser_cdp_connect_timeout")), 15_000);
+    socket.addEventListener("open", () => {
+      clearTimeout(openTimeout);
+      resolve();
+    }, { once: true });
+    socket.addEventListener("error", () => {
+      clearTimeout(openTimeout);
+      reject(new Error("browser_cdp_connect_failed"));
+    }, { once: true });
+  });
+  socket.addEventListener("message", (event) => {
+    let message;
+    try {
+      message = JSON.parse(String(event.data));
+    } catch {
+      return;
+    }
+    if (!Number.isInteger(message.id)) return;
+    const operation = pending.get(message.id);
+    if (!operation) return;
+    pending.delete(message.id);
+    clearTimeout(operation.timeout);
+    if (message.error) operation.reject(new Error("browser_cdp_command_failed"));
+    else operation.resolve(message.result ?? {});
+  });
+  socket.addEventListener("close", () => {
+    for (const operation of pending.values()) {
+      clearTimeout(operation.timeout);
+      operation.reject(new Error("browser_cdp_closed"));
+    }
+    pending.clear();
+  });
+  return {
+    opened,
+    send(method, params = {}) {
+      const id = ++nextId;
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          pending.delete(id);
+          reject(new Error("browser_cdp_timeout"));
+        }, 15_000);
+        pending.set(id, { resolve, reject, timeout });
+        socket.send(JSON.stringify({ id, method, params }));
+      });
+    },
+    close() {
+      if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) socket.close();
+    },
+  };
+}
+
+function cookieParts(cookie) {
+  const separator = cookie.indexOf("=");
+  if (separator < 1) fail("session_cookie_invalid");
+  return { name: cookie.slice(0, separator), value: cookie.slice(separator + 1) };
+}
+
+async function verifyRenderedProfileAvatar(cookie, pngBytes, onUploaded) {
+  const chromeCandidates = [
+    process.env.FANMARK_STAGING_CHROME,
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/usr/bin/google-chrome",
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+  ].filter(Boolean);
+  const chromePath = chromeCandidates.find((candidate) => existsSync(candidate));
+  if (!chromePath) fail("headless_chrome_unavailable");
+
+  const profileDirectory = mkdtempSync(join(tmpdir(), "fanmark-r2-profile-ui-"));
+  const imagePath = join(profileDirectory, "synthetic-avatar.png");
+  writeFileSync(imagePath, pngBytes, { mode: 0o600, flag: "wx" });
+  const chrome = spawn(chromePath, [
+    "--headless=new", "--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu",
+    "--disable-background-networking", "--disable-component-update", "--disable-default-apps",
+    "--metrics-recording-only", "--no-first-run", "--no-default-browser-check",
+    `--user-data-dir=${profileDirectory}`, "--remote-debugging-port=0", "about:blank",
+  ], { stdio: "ignore" });
+  let cdp;
+  let chromeFailed = false;
+  let chromeExit;
+  const exited = new Promise((resolve) => { chromeExit = resolve; });
+  chrome.once("exit", chromeExit);
+  chrome.once("error", () => {
+    chromeFailed = true;
+    chromeExit();
+  });
+  const chromeRunning = () => !chromeFailed && chrome.exitCode === null && chrome.signalCode === null;
+  const captureCurrentAvatar = async () => {
+    const response = await request("/api/me/profile", { headers: { cookie } });
+    if (response.status !== 200) return;
+    const profile = (await response.json())?.profile;
+    if (typeof profile?.avatar_url === "string") await onUploaded(profile.avatar_url);
+  };
+
+  try {
+    const activePortPath = join(profileDirectory, "DevToolsActivePort");
+    const startupDeadline = Date.now() + 15_000;
+    let port;
+    while (Date.now() < startupDeadline) {
+      if (!chromeRunning()) fail("headless_chrome_exited");
+      if (existsSync(activePortPath)) {
+        const [value] = readFileSync(activePortPath, "utf8").split(/\r?\n/u);
+        if (/^\d+$/u.test(value ?? "")) {
+          port = value;
+          break;
+        }
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    if (!port) fail("browser_devtools_start_timeout");
+
+    const targetsResponse = await fetch(`http://127.0.0.1:${port}/json/list`, { signal: AbortSignal.timeout(5_000) });
+    if (!targetsResponse.ok) fail("browser_target_list_failed");
+    const targets = await targetsResponse.json();
+    const page = targets.find((target) => target.type === "page" && target.webSocketDebuggerUrl);
+    if (!page) fail("browser_page_target_missing");
+
+    cdp = cdpConnection(page.webSocketDebuggerUrl);
+    await cdp.opened;
+    await cdp.send("Network.enable");
+    await cdp.send("Page.enable");
+    await cdp.send("DOM.enable");
+    await cdp.send("Emulation.setDeviceMetricsOverride", {
+      width: 390, height: 844, deviceScaleFactor: 1, mobile: true,
+    });
+    const cookieResult = await cdp.send("Network.setCookie", {
+      ...cookieParts(cookie), url: APP_ORIGIN, path: "/", secure: true, httpOnly: true, sameSite: "Lax",
+    });
+    if (cookieResult.success !== true) fail("browser_session_cookie_rejected");
+    await cdp.send("Page.navigate", { url: `${APP_ORIGIN}/profile` });
+
+    const evaluate = async (expression) => {
+      const result = await cdp.send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true });
+      if (result.exceptionDetails) fail("profile_browser_evaluation_failed");
+      return result.result?.value;
+    };
+    const pageDeadline = Date.now() + 30_000;
+    let pageState;
+    while (Date.now() < pageDeadline) {
+      if (!chromeRunning()) fail("headless_chrome_exited");
+      pageState = await evaluate(`({ path: location.pathname, profileInput: Boolean(document.querySelector('#display_name')), fileInput: Boolean(document.querySelector('input[type="file"][accept="image/*"]')) })`);
+      if (pageState?.path === "/profile" && pageState.profileInput && pageState.fileInput) break;
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+    if (pageState?.path !== "/profile" || !pageState.profileInput || !pageState.fileInput) fail("profile_screen_not_ready");
+
+    const documentRoot = await cdp.send("DOM.getDocument", { depth: -1 });
+    const fileInput = await cdp.send("DOM.querySelector", {
+      nodeId: documentRoot.root.nodeId,
+      selector: 'input[type="file"][accept="image/*"]',
+    });
+    if (!fileInput.nodeId) fail("profile_avatar_input_missing");
+    await cdp.send("DOM.setFileInputFiles", { files: [imagePath], nodeId: fileInput.nodeId });
+
+    let avatarState;
+    const uploadDeadline = Date.now() + 45_000;
+    while (Date.now() < uploadDeadline) {
+      if (!chromeRunning()) fail("headless_chrome_exited");
+      avatarState = await evaluate(`(() => {
+        const image = document.querySelector('img[alt="Avatar"]');
+        return {
+          path: location.pathname,
+          src: image?.src ?? null,
+          complete: image?.complete ?? false,
+          naturalWidth: image?.naturalWidth ?? 0,
+          naturalHeight: image?.naturalHeight ?? 0,
+          resources: performance.getEntriesByType('resource').map((item) => item.name)
+            .filter((name) => name.includes('/api/storage/object/avatars') ||
+              name.includes('/api/storage/public/avatars/') || name.includes('/api/me/profile')),
+        };
+      })()`);
+      if (avatarState?.src) await onUploaded(avatarState.src);
+      if (avatarState?.path === "/profile" && avatarState.src && avatarState.complete &&
+          avatarState.naturalWidth === 1 && avatarState.naturalHeight === 1) break;
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+    if (!avatarState?.src || !avatarState.complete ||
+        avatarState.naturalWidth !== 1 || avatarState.naturalHeight !== 1) {
+      fail(`profile_avatar_not_rendered_src_${avatarState?.src ? 1 : 0}_complete_${avatarState?.complete ? 1 : 0}_dimensions_${avatarState?.naturalWidth ?? 0}x${avatarState?.naturalHeight ?? 0}`);
+    }
+    const resources = avatarState.resources ?? [];
+    const workerUploadRequestObserved = resources.some((name) => name.includes("/api/storage/object/avatars"));
+    const workerPublicReadObserved = resources.some((name) => name.includes("/api/storage/public/avatars/"));
+    const workerProfileRequestObserved = resources.some((name) => name.includes("/api/me/profile"));
+    if (!workerUploadRequestObserved || !workerPublicReadObserved || !workerProfileRequestObserved) {
+      fail(`profile_avatar_worker_requests_incomplete_${workerUploadRequestObserved ? 1 : 0}${workerPublicReadObserved ? 1 : 0}${workerProfileRequestObserved ? 1 : 0}`);
+    }
+
+    const removeLabel = JSON.parse(readFileSync("src/translations/ja.json", "utf8")).userSettings.removeAvatar;
+    const removed = await evaluate(`(() => {
+      const button = Array.from(document.querySelectorAll('button'))
+        .find((item) => item.textContent?.trim() === ${JSON.stringify(removeLabel)});
+      if (!button) return false;
+      button.click();
+      return true;
+    })()`);
+    if (removed !== true) fail("profile_avatar_remove_button_missing");
+
+    const removalDeadline = Date.now() + 30_000;
+    let removedState;
+    while (Date.now() < removalDeadline) {
+      removedState = await evaluate(`({ imagePresent: Boolean(document.querySelector('img[alt="Avatar"]')) })`);
+      if (!removedState?.imagePresent) break;
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+    if (removedState?.imagePresent) fail("profile_avatar_ui_delete_failed");
+    const profileReadback = await request("/api/me/profile", { headers: { cookie } });
+    assertStatus(profileReadback, 200, "profile_avatar_ui_readback_failed");
+    if ((await profileReadback.json())?.profile?.avatar_url !== null) fail("profile_avatar_ui_not_cleared");
+    const publicReadback = await request(new URL(avatarState.src).pathname);
+    assertStatus(publicReadback, 404, "profile_avatar_ui_r2_cleanup_failed");
+
+    return {
+      path: "/profile",
+      viewport: "390x844",
+      avatarRendered: true,
+      naturalWidth: avatarState.naturalWidth,
+      naturalHeight: avatarState.naturalHeight,
+      workerUploadRequestObserved,
+      workerPublicReadObserved,
+      workerProfileRequestObserved,
+      removedThroughProfileUI: true,
+      objectReturned404: true,
+    };
+  } catch (error) {
+    try {
+      await captureCurrentAvatar();
+    } catch {
+      // Preserve the original browser failure; outer cleanup still removes the captured object when available.
+    }
+    throw error;
+  } finally {
+    cdp?.close();
+    if (chromeRunning()) {
+      chrome.kill("SIGTERM");
+      await Promise.race([exited, new Promise((resolve) => setTimeout(resolve, 2_000))]);
+    }
+    if (chromeRunning()) {
+      chrome.kill("SIGKILL");
+      await Promise.race([exited, new Promise((resolve) => setTimeout(resolve, 2_000))]);
+    }
+    rmSync(profileDirectory, { recursive: true, force: true });
+  }
+}
+
 function assertStatus(response, status, code) {
   if (response.status !== status) fail(`${code}_${response.status}`);
 }
 
-async function cleanup({ userId, email, cookie, objectPath, publicUrl, coverObjectPath, coverPublicUrl, extensionCouponBaseline, emailTemplateBaseline }) {
+async function cleanup({ userId, email, cookie, objectPath, publicUrl, uiAvatarObjectPath, uiAvatarPublicUrl, coverObjectPath, coverPublicUrl, extensionCouponBaseline, emailTemplateBaseline }) {
   const cleanupErrors = [];
-  for (const [bucket, key] of [["avatars", objectPath], ["cover-images", coverObjectPath]]) {
+  const objects = [
+    ["avatars", objectPath, "avatars_owner_delete_failed"],
+    ["avatars", uiAvatarObjectPath, "ui_avatars_owner_delete_failed"],
+    ["cover-images", coverObjectPath, "cover_images_owner_delete_failed"],
+  ];
+  for (const [bucket, key, errorCode] of objects) {
     if (!key || !cookie) continue;
     try {
       const deleted = await request(`/api/storage/object/${bucket}/${key.split("/").map(encodeURIComponent).join("/")}`, {
         method: "DELETE",
         headers: { cookie },
       });
-      if (deleted.status !== 204 && deleted.status !== 404) cleanupErrors.push(`${bucket.replaceAll("-", "_")}_owner_delete_failed`);
+      if (deleted.status !== 204 && deleted.status !== 404) cleanupErrors.push(errorCode);
     } catch {
-      cleanupErrors.push(`${bucket.replaceAll("-", "_")}_owner_delete_failed`);
+      cleanupErrors.push(errorCode);
     }
   }
   for (const [bucketName, key, errorCode] of [
     [AVATAR_BUCKET, objectPath, "avatars_owner_delete_failed"],
+    [AVATAR_BUCKET, uiAvatarObjectPath, "ui_avatars_owner_delete_failed"],
     [COVER_BUCKET, coverObjectPath, "cover_images_owner_delete_failed"],
   ]) {
     if (!key || !cleanupErrors.includes(errorCode)) continue;
@@ -209,7 +468,11 @@ async function cleanup({ userId, email, cookie, objectPath, publicUrl, coverObje
     d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, sql))) !== emailTemplateBaseline) {
     cleanupErrors.push("email_template_master_baseline_changed");
   }
-  for (const [bucket, url] of [["avatars", publicUrl], ["cover-images", coverPublicUrl]]) {
+  for (const [bucket, url] of [
+    ["avatars", publicUrl],
+    ["avatars", uiAvatarPublicUrl],
+    ["cover-images", coverPublicUrl],
+  ]) {
     if (!url) continue;
     try {
       const missing = await request(new URL(url).pathname);
@@ -224,6 +487,7 @@ async function cleanup({ userId, email, cookie, objectPath, publicUrl, coverObje
     auth,
     r2Objects: {
       avatars: publicUrl ? "404 after cleanup" : "no object created",
+      uiAvatar: uiAvatarPublicUrl ? "404 after cleanup" : "no object created",
       coverImages: coverPublicUrl ? "404 after cleanup" : "no object created",
     },
   };
@@ -240,11 +504,13 @@ async function main() {
   const passwordHash = await bcrypt.hash(password, 10);
   const now = new Date().toISOString().replace(/\.(\d{3})Z$/u, ".$1000Z");
   const pngBytes = Uint8Array.from(
-    Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADUlEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC", "base64"),
+    Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==", "base64"),
   );
   let cookie;
   let objectPath;
   let publicUrl;
+  let uiAvatarObjectPath;
+  let uiAvatarPublicUrl;
   let coverObjectPath;
   let coverPublicUrl;
   let cleanupNeeded = false;
@@ -295,6 +561,24 @@ async function main() {
       body: pngBytes,
     });
     assertStatus(unauthenticatedUpload, 401, "storage_auth_guard_failed");
+
+    const renderedAvatar = await verifyRenderedProfileAvatar(cookie, pngBytes, async (value) => {
+      let parsed;
+      try {
+        parsed = new URL(value);
+      } catch {
+        fail("profile_avatar_ui_url_invalid");
+      }
+      const prefix = "/api/storage/public/avatars/";
+      if (parsed.origin !== APP_ORIGIN || !parsed.pathname.startsWith(prefix)) fail("profile_avatar_ui_url_invalid");
+      const key = decodeURIComponent(parsed.pathname.slice(prefix.length));
+      if (!key.startsWith(`${userId}/`) || key.includes("..")) fail("profile_avatar_ui_owner_path_invalid");
+      if (uiAvatarObjectPath && (uiAvatarObjectPath !== key || uiAvatarPublicUrl !== parsed.href)) {
+        fail("profile_avatar_ui_url_changed");
+      }
+      uiAvatarObjectPath = key;
+      uiAvatarPublicUrl = parsed.href;
+    });
 
     const uploaded = await request("/api/storage/object/avatars", {
       method: "POST",
@@ -376,7 +660,7 @@ async function main() {
     assert.equal(stored.length, 1);
     assert.equal(stored[0].avatar_url, null);
 
-    const cleaned = await cleanup({ userId, email, cookie, objectPath, publicUrl, coverObjectPath, coverPublicUrl, extensionCouponBaseline, emailTemplateBaseline });
+    const cleaned = await cleanup({ userId, email, cookie, objectPath, publicUrl, uiAvatarObjectPath, uiAvatarPublicUrl, coverObjectPath, coverPublicUrl, extensionCouponBaseline, emailTemplateBaseline });
     cleanupNeeded = false;
     return {
       worker: WORKER,
@@ -387,6 +671,7 @@ async function main() {
         avatarSave: 200,
         crossOwnerUrlStatus: 400,
         cleared: true,
+        renderedAvatar,
       },
       storage: {
         anonymousUploadStatus: 401,
@@ -397,7 +682,7 @@ async function main() {
     };
   } finally {
     if (cleanupNeeded) {
-      const cleaned = await cleanup({ userId, email, cookie, objectPath, publicUrl, coverObjectPath, coverPublicUrl, extensionCouponBaseline, emailTemplateBaseline });
+      const cleaned = await cleanup({ userId, email, cookie, objectPath, publicUrl, uiAvatarObjectPath, uiAvatarPublicUrl, coverObjectPath, coverPublicUrl, extensionCouponBaseline, emailTemplateBaseline });
       process.stdout.write(`${JSON.stringify({ cleanup: cleaned })}\n`);
     }
   }

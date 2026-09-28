@@ -3389,3 +3389,26 @@ This read-only inventory provides transfer-size context only; it does not
 measure a frozen snapshot, import/reconciliation time, or user-visible
 interruption. No application row values were returned or recorded. It changed
 no Supabase, D1, R2, production route, or domain/DNS state.
+
+## Rendered profile and R2 avatar UI canary (2026-09-28 JST)
+
+Extended `scripts/migration/staging-r2-profile-smoke.mjs` to open the deployed
+workers.dev `/profile` page in an isolated headless Chrome profile at 390x844.
+The canary selects a complete synthetic 1x1 PNG through the page's file input,
+observes the Worker storage and profile requests, and requires Chrome to decode
+the returned image at its expected dimensions. It then clicks the profile's
+own remove control, checks that the Worker profile API returns a null avatar,
+and confirms the removed public R2 URL returns 404. The existing REST portions
+continue to verify anonymous rejection, same-owner URL rules, and both avatar
+and cover-image buckets.
+
+The first attempt revealed the previous API fixture was a truncated PNG header:
+the API signature check accepted it, but Chrome could not decode it. A
+CRC-valid 70-byte synthetic PNG replaced it. The live canary then passed the
+rendered upload/delete flow, and final D1/R2 readback found zero synthetic
+profile/Auth rows and zero objects. The local Worker/R2 suite also now applies
+the same Auth suspension migration selected by its test configuration; this
+fixed a fixture that otherwise caused synthetic Better Auth sign-in to return
+500. Local Worker/R2 tests pass 5/5. These changes touch only the staging
+smoke and test fixture; no source rows, existing Supabase objects, production
+routes, or domain/DNS settings changed.

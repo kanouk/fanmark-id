@@ -59,9 +59,11 @@ readback found all user-owned tables empty. No object remains from this smoke.
 New avatar and cover uploads from the workers.dev staging app now use R2;
 production remains on Supabase Storage. Profile metadata and the broader
 settings save flow are not fully cut over, and existing Supabase objects were
-not copied. These checks do not prove browser image decoding, full profile
-integration, production limits, or object migration. Supabase Storage inventory
-and object reconciliation remain in the excluded user-data stage.
+not copied. The rendered `/profile` canary below proves the synthetic avatar
+upload, image decoding, profile save, and UI delete path at one mobile
+viewport. The broader settings flow, a device/format matrix, production limits,
+and migration of existing Supabase objects remain unverified. Supabase Storage
+inventory and object reconciliation remain in the excluded user-data stage.
 
 On 2026-09-25, `fanmark-app-staging` was redeployed as version
 `1d1bae79-5793-4341-9b1f-540a55376695` with both R2 bindings. A fresh
@@ -107,9 +109,10 @@ The same sequence also passed on workers.dev staging with a one-time
 owner object delete, and profile clear returned expected results; a foreign
 owner URL was rejected with 400. Final readback found zero user, account,
 session, or profile rows and the uploaded URL returned 404. The repeatable
-canary is `npm run test:staging-r2-profile-smoke`. This still does not move
-existing Supabase user rows or objects, prove browser image decoding, or alter
-production routing.
+canary is `npm run test:staging-r2-profile-smoke`. At this 2026-09-25 API-only
+checkpoint, it did not prove browser image decoding; the later rendered UI
+proof is recorded below. Neither checkpoint moves existing Supabase user rows
+or objects or alters production routing.
 
 After R2 activation, the same staging canary was extended to verify the second
 bucket as well. The synthetic identity uploaded to `cover-images`, read
@@ -118,3 +121,23 @@ Cloudflare account inventory confirmed both expected bucket names. The live
 avatar and cover SHA-256 values matched; all synthetic D1 rows and R2 objects
 were removed. This confirms the two staging bucket bindings and routes, not a
 copy of any existing user object.
+
+## Rendered profile and R2 avatar UI canary (2026-09-28)
+
+`npm run test:staging-r2-profile-smoke` now opens the deployed staging
+`/profile` page in an isolated headless Chrome profile at 390x844, with one
+synthetic Better Auth session. It selects a complete 1x1 PNG through the
+profile's file input and verifies that the page uses the Worker upload route,
+the R2 public-read route, and the Worker profile API. Chrome decoded the
+rendered image at 1x1. The profile's own remove button cleared `avatar_url`,
+deleted the R2 object, and the public URL returned 404. Existing API checks
+still cover owner-path validation and uploads to both avatar and cover-image
+buckets.
+
+The final readback returned zero synthetic profile, Auth user/account/session,
+and R2 object rows. The local Worker/R2 contract suite passes 5/5 with the Auth
+suspension migration loaded in its fixture. A truncated header-only PNG that
+the API accepted as a format signature was replaced with a CRC-valid, decodable
+synthetic image; this browser proof covers that exact payload only. No existing
+Supabase objects, real user data, production routing, or domain/DNS settings
+were changed.

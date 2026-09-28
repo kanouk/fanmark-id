@@ -2566,3 +2566,26 @@ canary passed again as well. This closes one rendered text-password subgate;
 the approximate 53% full-migration / 73% prioritized-scope estimates are
 unchanged because credential compatibility, CPU fit, recovery, provider-backed
 acceptance, user-data import, and domain/DNS remain open.
+
+## Rendered `/profile` R2 avatar UI canary (2026-09-28 JST)
+
+The staging R2 profile smoke now drives `/profile` in an isolated headless
+Chrome profile at 390x844. Using a synthetic Better Auth session, it selects a
+CRC-valid 1x1 PNG through the page's file input, verifies Worker upload/public
+read/profile requests, and waits for Chrome to decode the rendered avatar at
+1x1. The page's remove control then clears the profile URL and deletes the R2
+object; a subsequent public GET returns 404. The smoke also retains direct API
+checks for anonymous denial, owner-path enforcement, and both R2 buckets.
+
+The first browser attempt caught an invalid header-only PNG fixture. That
+fixture is now a complete decodable image. The local Worker/R2 API tests also
+now apply Auth migration `0008_auth_user_suspension.sql`, matching the test
+configuration's active user-status backend; the suite passes 5/5. The live run
+completed with zero synthetic profile/Auth rows and zero avatar/cover objects.
+No existing Supabase object, real user row, production route, or domain/DNS
+state changed. This closes the staging browser/image-decoding subgate only; the
+broader profile/settings cutover and existing Storage object migration remain
+in their previously assigned stages. The weighted estimates stay about 53%
+end-to-end and 73% for the prioritized app/infrastructure/non-user-master
+scope because the open schema, CPU, provider, recovery, and final migration
+gates are unchanged.

@@ -2,6 +2,7 @@ import { env } from "cloudflare:workers";
 import bcrypt from "bcryptjs";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import schemaSql from "../migrations/0003_better_auth_core.sql?raw";
+import suspensionSchemaSql from "../migrations/0008_auth_user_suspension.sql?raw";
 import { handleRequest } from "../src";
 import type { Env } from "../src/repository";
 
@@ -20,6 +21,9 @@ const passwordHash = bcrypt.hashSync(password, 10);
 const pngBytes = Uint8Array.from([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
   0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+  0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4, 0x89,
+  0x00, 0x00, 0x00, 0x0d, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x63, 0xf8, 0xcf, 0xc0, 0xf0, 0x1f, 0x00, 0x05, 0x00, 0x01, 0xff, 0x89, 0x99, 0x3d, 0x1d,
+  0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82,
 ]);
 
 function splitMigrationStatements(sql: string): string[] {
@@ -42,7 +46,10 @@ function splitMigrationStatements(sql: string): string[] {
     }
     if (character !== ";" || singleQuoted || doubleQuoted) continue;
     const candidate = sql.slice(start, index).trim();
-    if (/^create\s+trigger\b/iu.test(candidate) && !/\bend\s*$/iu.test(candidate)) continue;
+    const statement = candidate
+      .replace(/^(?:\s*(?:--[^\n]*(?:\n|$)|\/\*[\s\S]*?\*\/))+/u, "")
+      .trimStart();
+    if (/^create\s+trigger\b/iu.test(statement) && !/\bend\s*$/iu.test(statement)) continue;
     if (candidate) statements.push(candidate);
     start = index + 1;
   }
@@ -111,7 +118,10 @@ async function uploadAvatar(cookie: string, bytes: Uint8Array = pngBytes): Promi
 
 beforeAll(async () => {
   if (!database || !avatarBucket || !coverBucket) throw new Error("D1/R2 bindings are unavailable");
-  await database.batch(splitMigrationStatements(schemaSql).map((statement) => database.prepare(statement)));
+  await database.batch(
+    [...splitMigrationStatements(schemaSql), ...splitMigrationStatements(suspensionSchemaSql)]
+      .map((statement) => database.prepare(statement)),
+  );
 });
 
 beforeEach(async () => {
