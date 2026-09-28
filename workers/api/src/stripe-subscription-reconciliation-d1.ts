@@ -114,6 +114,25 @@ function timestampFromSeconds(value: unknown, code: string): string | null {
   return toUtcMicrosecondTimestamp(new Date(millis));
 }
 
+function readBasilSubscriptionItemPeriods(
+  subscription: SubscriptionRecord,
+  item: SubscriptionRecord,
+): { start: string; end: string } {
+  // Basil removed these fields from Subscription. Treat a non-null legacy
+  // field as a mixed-version response instead of silently preferring it over
+  // the SubscriptionItem period.
+  if ((subscription.current_period_start !== null && subscription.current_period_start !== undefined)
+    || (subscription.current_period_end !== null && subscription.current_period_end !== undefined)) {
+    throw new StripeWebhookD1ApplicationError("subscription_period_invalid");
+  }
+  const start = timestampFromSeconds(item.current_period_start, "subscription_period_invalid");
+  const end = timestampFromSeconds(item.current_period_end, "subscription_period_invalid");
+  if (start === null || end === null || end < start) {
+    throw new StripeWebhookD1ApplicationError("subscription_period_invalid");
+  }
+  return { start, end };
+}
+
 function idFrom(value: unknown, code: string): string {
   if (typeof value === "string") return requireText(value, code, 255);
   const id = asRecord(value)?.id;
@@ -170,9 +189,15 @@ function projectSubscription(
   if (!SUBSCRIPTION_STATUSES.has(status)) throw new StripeWebhookD1ApplicationError("subscription_status_invalid");
   const items = asRecord(record.items);
   const itemRows = items && Array.isArray(items.data) ? items.data : null;
-  const firstItem = asRecord(itemRows?.[0]);
-  const price = asRecord(firstItem?.price);
-  const priceId = idFrom(firstItem?.price, "subscription_price_invalid");
+  if (itemRows === null) throw new StripeWebhookD1ApplicationError("subscription_items_invalid");
+  if (itemRows.length !== 1) {
+    throw new StripeWebhookD1ApplicationError("subscription_items_ambiguous");
+  }
+  const firstItem = asRecord(itemRows[0]);
+  if (firstItem === null) throw new StripeWebhookD1ApplicationError("subscription_items_invalid");
+  const periods = readBasilSubscriptionItemPeriods(record, firstItem);
+  const price = asRecord(firstItem.price);
+  const priceId = idFrom(firstItem.price, "subscription_price_invalid");
   const productId = idFrom(price?.product, "subscription_product_invalid");
   const planType = args.pricePlans.get(priceId);
   if (!planType) throw new StripeWebhookD1ApplicationError("subscription_price_unmapped");
@@ -202,8 +227,8 @@ function projectSubscription(
     id,
     customerId: args.customerId,
     status,
-    currentPeriodStart: timestampFromSeconds(record.current_period_start, "subscription_period_invalid"),
-    currentPeriodEnd: timestampFromSeconds(record.current_period_end, "subscription_period_invalid"),
+    currentPeriodStart: periods.start,
+    currentPeriodEnd: periods.end,
     cancelAtPeriodEnd: cancelAtPeriodEnd ? 1 : 0,
     productId,
     priceId,

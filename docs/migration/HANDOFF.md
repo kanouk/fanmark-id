@@ -3164,3 +3164,17 @@ block on Wrangler writes. Do not reuse the expired consent flow or write through
 the default profile; authenticate a fresh profile and verify its account ID
 first. No D1, R2, Worker, Stripe, production, user-data, or domain/DNS state was
 changed by the profile attempt.
+
+## Stripe Basil subscription-period compatibility (2026-09-29 JST)
+
+The pinned Stripe API version is `2025-08-27.basil`, where subscription billing
+periods are read from each `SubscriptionItem`, not the removed top-level
+Subscription fields. Both the Supabase normalization slice and Worker D1
+reconciliation now fail closed unless the expected single item has valid,
+ordered periods; a non-null legacy top-level period is rejected. The receipt
+package suite (including 10 subscription projection cases) and typecheck pass;
+the Worker Stripe-ingress suite passes 64 tests and its typecheck passes.
+
+This is local validation only. The Supabase webhook has not yet been wired to
+the subscription projection, and no staging/deployed Stripe path was exercised.
+Issue #32 remains open; no remote database, Worker, or Stripe state changed.

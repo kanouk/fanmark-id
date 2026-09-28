@@ -207,3 +207,32 @@ secrets were the pre-existing Better Auth/reference/verified-access secrets.
 The 29.13-second script duration covers temporary deployment, two requests,
 cleanup, and restore; it is not a measured production cutover window. The Stripe
 sandbox business-effect and full recovery acceptance remain open.
+
+## 2026-09-29 Supabase subscription snapshot adapter
+
+`supabase/functions/_shared/stripe-subscription-projection/index.ts` now provides
+a local-only normalizer for the later Supabase fenced projection. It retrieves
+the current Subscription and the customer's current active set through an
+injected provider, checks the exact customer ID and Stripe mode, requires one
+expanded billable item, validates its required item-level billing period pair
+and other billing fields, and maps only the caller-supplied private test/live
+Price IDs. A subscription's mapped plan is an entitlement only while its status
+is `active`; the effective plan is chosen deterministically using Creator < Max
+< Business. Duplicate active IDs, multiple billable items, malformed snapshots,
+and disagreement between the current Subscription and the active list are
+rejected for review.
+
+The Stripe SDK adapter pins every retrieve/list call to API version
+`2025-08-27.basil`, expands Price objects, and bounds pagination. The adapter
+does not query or write Supabase, link a customer, apply a receipt, or change
+the webhook. Both this adapter and the D1 reconciliation reject non-null legacy
+Subscription-level period fields and missing, invalid, or inverted
+SubscriptionItem periods. This follows Stripe's [Basil compatibility
+change](https://docs.stripe.com/changelog/basil/2025-03-31/deprecate-subscription-current-period-start-and-end),
+which moved `current_period_start` and `current_period_end` to
+`items.data[].current_period_start` and `items.data[].current_period_end`.
+Focused local tests cover mode-specific Price mapping, current versus
+active-list consistency, multiple active plans, malformed billing fields,
+duplicate IDs, item-level period projection, legacy-period rejection, and the
+pinned provider calls. SQL/RPC wiring remains a separate follow-up after the
+atomic subscription application contract is reviewed.

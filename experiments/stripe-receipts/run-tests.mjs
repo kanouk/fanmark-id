@@ -10,6 +10,7 @@ const typeScriptImports = new Set([
   "ingress.test.mjs",
   "invoice-projection.test.mjs",
   "noop-checkout-receipt.test.mjs",
+  "subscription-projection.test.mjs",
 ]);
 const pgliteTestFiles = new Set([
   "dispatch-leases.test.mjs",

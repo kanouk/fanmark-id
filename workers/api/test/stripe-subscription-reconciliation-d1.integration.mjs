@@ -160,8 +160,6 @@ function subscriptionSnapshot({
     customer: customerId,
     livemode,
     status,
-    current_period_start: periodStart,
-    current_period_end: periodEnd,
     cancel_at_period_end: false,
     items: {
       object: "list",
@@ -169,6 +167,8 @@ function subscriptionSnapshot({
       data: [{
         id: `si_${subscriptionId}`,
         quantity: 1,
+        current_period_start: periodStart,
+        current_period_end: periodEnd,
         price: {
           id: priceId,
           product: productId,
@@ -335,6 +335,8 @@ test("active subscription created/updated reconciles current Stripe state and ma
     assert.equal(result.activeSubscriptionCount, 1);
     assert.equal(await scalar(database, "SELECT plan_type AS value FROM user_settings WHERE user_id = ?", [USER_ID]), "max");
     assert.equal(await scalar(database, "SELECT price_id AS value FROM user_subscriptions WHERE stripe_subscription_id = ?", [SUBSCRIPTION_ID]), PRICE_IDS.max);
+    assert.equal(await scalar(database, "SELECT current_period_start AS value FROM user_subscriptions WHERE stripe_subscription_id = ?", [SUBSCRIPTION_ID]), "2026-09-26T05:20:00.000000Z");
+    assert.equal(await scalar(database, "SELECT current_period_end AS value FROM user_subscriptions WHERE stripe_subscription_id = ?", [SUBSCRIPTION_ID]), "2026-10-26T05:20:00.000000Z");
     assert.equal(await scalar(database, "SELECT payment_failure_at AS value FROM user_subscriptions WHERE stripe_subscription_id = ?", [SUBSCRIPTION_ID]), null);
     assert.equal(await scalar(database, "SELECT next_payment_attempt AS value FROM user_subscriptions WHERE stripe_subscription_id = ?", [SUBSCRIPTION_ID]), null);
     assert.equal(await scalar(database, "SELECT payment_failure_type AS value FROM user_subscriptions WHERE stripe_subscription_id = ?", [SUBSCRIPTION_ID]), null);
@@ -343,6 +345,58 @@ test("active subscription created/updated reconciles current Stripe state and ma
     assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM stripe_subscription_transaction_guards"), 0);
   } finally {
     await miniflare.dispose();
+  }
+});
+
+test("Basil subscription projection rejects legacy, missing, and inverted item periods", async () => {
+  const cases = [
+    {
+      name: "legacy top-level period",
+      mutate(snapshot) {
+        snapshot.current_period_start = 1790400000;
+        snapshot.current_period_end = 1792992000;
+      },
+    },
+    {
+      name: "missing item period",
+      mutate(snapshot) {
+        delete snapshot.items.data[0].current_period_start;
+      },
+    },
+    {
+      name: "inverted item period",
+      mutate(snapshot) {
+        snapshot.items.data[0].current_period_start = 1792992000;
+        snapshot.items.data[0].current_period_end = 1790400000;
+      },
+    },
+  ];
+
+  for (const currentCase of cases) {
+    const { miniflare, database } = await createDatabase();
+    try {
+      await seedConfiguration(database);
+      const current = subscriptionSnapshot();
+      currentCase.mutate(current);
+      const claim = await claimEvent(database, subscriptionEvent({
+        eventId: `evt_synthetic_period_${currentCase.name.replaceAll(" ", "_")}`,
+        subscription: current,
+      }));
+      await assert.rejects(applyStripeSubscriptionReceiptInD1({
+        database: checkedDatabase(database),
+        claim,
+        now: NOW,
+        getNow: () => NOW,
+        provider: provider({ current, active: [current] }),
+        createId: nextUuid,
+        createFenceToken: nextUuid,
+      }), /subscription_period_invalid/u, currentCase.name);
+      assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM user_subscriptions"), 0);
+      assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM stripe_subscription_applications"), 0);
+      assert.equal(await scalar(database, "SELECT status AS value FROM stripe_webhook_receipts"), "processing");
+    } finally {
+      await miniflare.dispose();
+    }
   }
 });
 
