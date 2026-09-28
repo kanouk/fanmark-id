@@ -395,6 +395,25 @@ remain unset. No real mail or provider callback was run. Identity linking,
 real provider registration, user/Auth migration, and CPU fit remain
 unverified.
 
+## Four-provider authorization-start contract (2026-09-28 JST)
+
+The Worker/D1 integration test now enables all four providers using synthetic
+credentials and checks Better Auth's generated Apple, Google, GitHub, and
+Discord authorization URLs. For each provider it verifies the provider
+authorization endpoint, configured client ID, exact
+`/api/auth/callback/{provider}` redirect URI, non-empty OAuth state, and that
+the response does not reveal the client secret. The capability response lists
+all four providers while email/social signup remains disabled, and an
+unsupported provider is rejected. `npm --prefix workers/api run test:auth:d1`
+passed 21/21 and `npm --prefix workers/api run typecheck` passed.
+
+This closes only the local authorization-start contract. It does not exchange
+codes, validate provider tokens/profiles, create/link a user or account, or
+prove a browser callback. Real callback acceptance still requires provider
+credentials and redirect URI registration in isolated staging; no provider
+secrets, external provider requests, remote D1, or deployment were used by this
+test.
+
 ## 公式一次資料
 
 - [Better Auth installation](https://better-auth.com/docs/installation) — 依存関係と最新 package version の確認。

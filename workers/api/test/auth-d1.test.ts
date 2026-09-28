@@ -527,6 +527,12 @@ describe("Better Auth through the application Worker", () => {
       AUTH_SOCIAL_BACKEND: "better-auth",
       GOOGLE_OAUTH_CLIENT_ID: "synthetic-google-client-id",
       GOOGLE_OAUTH_CLIENT_SECRET: "synthetic-google-client-secret",
+      GITHUB_OAUTH_CLIENT_ID: "synthetic-github-client-id",
+      GITHUB_OAUTH_CLIENT_SECRET: "synthetic-github-client-secret",
+      DISCORD_OAUTH_CLIENT_ID: "synthetic-discord-client-id",
+      DISCORD_OAUTH_CLIENT_SECRET: "synthetic-discord-client-secret",
+      APPLE_OAUTH_CLIENT_ID: "synthetic-apple-client-id",
+      APPLE_OAUTH_CLIENT_SECRET: "synthetic-apple-client-secret",
     };
     const capabilities = await authRequest("/capabilities", { method: "GET" }, providerEnv);
     expect(await capabilities.json()).toEqual({
@@ -534,22 +540,40 @@ describe("Better Auth through the application Worker", () => {
       passwordReset: false,
       signUp: false,
       invitationRequired: false,
-      socialProviders: ["google"],
+      socialProviders: ["apple", "discord", "github", "google"],
     });
 
-    const start = await authRequest("/sign-in/social", jsonBody({
-      provider: "google",
-      callbackURL: `${appOrigin}/auth`,
-    }), providerEnv);
-    expect(start.status).toBe(200);
-    const response = await start.json() as { url?: unknown; redirect?: unknown };
-    expect(response.redirect).toBe(true);
-    expect(typeof response.url).toBe("string");
-    expect(response.url).toContain("accounts.google.com");
-    expect(JSON.stringify(response)).not.toContain(providerEnv.GOOGLE_OAUTH_CLIENT_SECRET);
+    const authorizationEndpoints = {
+      apple: "https://appleid.apple.com/auth/authorize",
+      discord: "https://discord.com/api/oauth2/authorize",
+      github: "https://github.com/login/oauth/authorize",
+      google: "https://accounts.google.com/o/oauth2/v2/auth",
+    } as const;
+    for (const [provider, endpoint] of Object.entries(authorizationEndpoints)) {
+      const start = await authRequest("/sign-in/social", jsonBody({
+        provider,
+        callbackURL: `${appOrigin}/auth`,
+      }), providerEnv);
+      expect(start.status, `${provider} authorization start`).toBe(200);
+      const response = await start.json() as { url?: unknown; redirect?: unknown };
+      expect(response.redirect, `${provider} redirect flag`).toBe(true);
+      expect(typeof response.url, `${provider} authorization URL`).toBe("string");
+      const authorizationURL = new URL(response.url as string);
+      expect(`${authorizationURL.origin}${authorizationURL.pathname}`, `${provider} endpoint`)
+        .toBe(endpoint);
+      expect(authorizationURL.searchParams.get("client_id"), `${provider} client ID`)
+        .toBe(providerEnv[`${provider.toUpperCase()}_OAUTH_CLIENT_ID` as keyof typeof providerEnv]);
+      expect(authorizationURL.searchParams.get("redirect_uri"), `${provider} callback URI`)
+        .toBe(`${apiBase}/api/auth/callback/${provider}`);
+      expect(authorizationURL.searchParams.get("state"), `${provider} OAuth state`)
+        .toBeTruthy();
+      expect(JSON.stringify(response)).not.toContain(
+        providerEnv[`${provider.toUpperCase()}_OAUTH_CLIENT_SECRET` as keyof typeof providerEnv],
+      );
+    }
 
     const unconfiguredProvider = await authRequest("/sign-in/social", jsonBody({
-      provider: "discord",
+      provider: "linkedin",
       callbackURL: `${appOrigin}/auth`,
     }), providerEnv);
     expect(unconfiguredProvider.status).toBe(403);
