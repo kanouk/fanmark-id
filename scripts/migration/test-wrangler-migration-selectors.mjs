@@ -4,6 +4,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 const migrationDirectory = fileURLToPath(new URL("../../workers/api/migrations/", import.meta.url));
+const businessMigrationDirectory = fileURLToPath(new URL("../../workers/api/migrations-business/", import.meta.url));
 const expectedAuthMigrations = [
   "0003_better_auth_core.sql",
   "0007_auth_signup_command.sql",
@@ -39,3 +40,15 @@ for (const relativePath of [
     assert.ok(!selected.includes("0007_release_audit_timestamps.sql"));
   });
 }
+
+test("D1 trigger migrations use Cloudflare-remote-safe formatting", () => {
+  for (const directory of [migrationDirectory, businessMigrationDirectory]) {
+    for (const filename of readdirSync(directory).filter((name) => name.endsWith(".sql"))) {
+      const sql = readFileSync(`${directory}${filename}`, "utf8");
+      assert.ok(!sql.includes("\r"), `${filename} must use LF line endings`);
+      for (const line of sql.split("\n").filter((value) => /^\s*begin\s*$/iu.test(value))) {
+        assert.equal(line.trim(), "BEGIN", `${filename} trigger blocks must use uppercase BEGIN`);
+      }
+    }
+  }
+});

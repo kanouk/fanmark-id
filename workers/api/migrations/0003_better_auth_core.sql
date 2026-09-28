@@ -92,14 +92,14 @@ insert into "mfaGeneration" ("id", "generation") values (1, 0);
 
 create trigger "mfa_generation_factor_insert"
 after insert on "twoFactor"
-begin
+BEGIN
   update "mfaGeneration" set "generation" = "generation" + 1 where "id" = 1;
   delete from "mfaAssurance" where "userId" = new."userId";
 end;
 
 create trigger "mfa_generation_factor_delete"
 after delete on "twoFactor"
-begin
+BEGIN
   update "mfaGeneration" set "generation" = "generation" + 1 where "id" = 1;
   delete from "mfaAssurance" where "userId" = old."userId";
 end;
@@ -107,7 +107,7 @@ end;
 create trigger "mfa_generation_factor_secret_update"
 after update of "secret" on "twoFactor"
 when old."userId" = new."userId" and old."secret" is not new."secret"
-begin
+BEGIN
   update "mfaGeneration" set "generation" = "generation" + 1 where "id" = 1;
   delete from "mfaAssurance" where "userId" = new."userId";
 end;
@@ -115,7 +115,7 @@ end;
 create trigger "mfa_generation_factor_user_update"
 after update of "userId" on "twoFactor"
 when old."userId" is not new."userId"
-begin
+BEGIN
   update "mfaGeneration" set "generation" = "generation" + 1 where "id" = 1;
   delete from "mfaAssurance" where "userId" = old."userId";
   delete from "mfaAssurance" where "userId" = new."userId";
@@ -124,7 +124,7 @@ end;
 create trigger "mfa_generation_factor_unverify"
 after update of "verified" on "twoFactor"
 when old."verified" = 1 and new."verified" = 0
-begin
+BEGIN
   update "mfaGeneration" set "generation" = "generation" + 1 where "id" = 1;
   delete from "mfaAssurance" where "userId" = new."userId";
 end;
@@ -132,7 +132,7 @@ end;
 create trigger "mfa_generation_user_disable"
 after update of "twoFactorEnabled" on "user"
 when old."twoFactorEnabled" = 1 and new."twoFactorEnabled" = 0
-begin
+BEGIN
   update "mfaGeneration" set "generation" = "generation" + 1 where "id" = 1;
   delete from "mfaAssurance" where "userId" = new."id";
 end;

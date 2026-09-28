@@ -491,3 +491,30 @@ microsecond format; their focused D1 tests pass 72/72 and frontend API
 contracts pass 44/44. Other D1 write paths and the 79 untranslated timestamp
 defaults remain outside this subgate, so the generated schema is still not
 deployable.
+
+## Business and Auth D1 restore rehearsal (2026-09-28 JST)
+
+The guarded post-write rehearsal now creates separate disposable APAC business
+and Auth D1 databases. It applies 17/17 business migrations and the explicit
+three-file Better Auth migration allowlist, deploys the API with both isolated
+bindings, signs in a synthetic account, and acknowledges one waitlist write
+plus one pending Stripe receipt/dispatch. It bookmarks each D1, accepts a later
+waitlist row and Auth session, freezes Worker writes, then restores both
+bookmarks. The acknowledged state digest matched after restore, later writes
+were absent, and the original Auth session cookie still resolved to the same
+synthetic UUID. Restore and reconciliation took 13.660 seconds. Cleanup removed
+the Worker, both databases, and temporary config; readback showed only the
+three pre-existing staging databases.
+
+This uncovered and repaired a remote-only migration issue: Cloudflare D1's
+server statement splitter currently fails on lowercase trigger-body `begin`
+with `SQLITE_ERROR 7500`, although SQLite/Wrangler local accepts it. The Auth
+triggers now use uppercase `BEGIN`, and `.gitattributes` enforces LF for both
+migration directories. Regression coverage checks both conditions. This is a
+formatting-only SQL change; see [Workers SDK issue #15314](https://github.com/cloudflare/workers-sdk/issues/15314).
+
+This rehearsal proves the post-write business/Auth D1 bookmark path with
+synthetic state only. It does not restore R2, apply Stripe effects, validate a
+complete encrypted backup, freeze Supabase writers/Cron, or import real user
+data. Issue #37 remains open, and public DNS/domain changes remain deferred to
+the final migration phase.

@@ -2641,3 +2641,28 @@ notes that isolates may infrequently exceed the configured limit, so one
 successful request is not evidence of recurring fit. Paid usage starts at
 $5/month; no plan or billing setting changed. This remains an account-owner
 cost gate unless the credential path can be optimized and remeasured.
+
+## Synthetic dual-D1 post-write recovery (2026-09-28 JST)
+
+The guarded staging recovery script now exercises separate disposable business
+and Auth D1 databases behind a temporary API Worker. It applied/read back all
+17 business and 3 allowlisted Auth migrations; a synthetic-only login wrote a
+session. After acknowledged waitlist, pending Stripe receipt, and Auth state
+were bookmarked, the Worker accepted later synthetic writes, froze mutations,
+and both D1s were restored. The pre-bookmark digest matched; the later waitlist
+row/session disappeared, and the original session cookie still resolved to
+the same synthetic UUID. Restore/reconciliation took 13.660 seconds. All
+temporary Worker/D1/config resources were deleted and readback left the three
+pre-existing staging databases only.
+
+The rehearsal exposed Cloudflare D1's remote `incomplete input` bug for
+lowercase trigger-body `begin`; local SQLite passed. The six Auth triggers now
+use uppercase `BEGIN`, both migration folders are pinned to LF with
+`.gitattributes`, and a regression test covers the format. See
+[Workers SDK issue #15314](https://github.com/cloudflare/workers-sdk/issues/15314).
+
+The rehearsal is synthetic-only and does not include R2 restoration, an
+applied Stripe business effect, a complete encrypted backup, a coordinated
+Supabase-writer/Cron freeze, real user-data import, or domain/DNS changes.
+Issue #37 remains open. The coarse estimates remain about 53% end-to-end and
+73% for the prioritized app/infrastructure/non-user-master scope.

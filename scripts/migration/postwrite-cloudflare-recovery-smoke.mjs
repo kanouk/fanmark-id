@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
 import { mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -13,6 +14,8 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const workerRoot = path.join(repoRoot, "workers/api");
+const require = createRequire(path.join(workerRoot, "package.json"));
+const bcrypt = require("bcryptjs");
 const appConfigRelative = "wrangler.app-staging.jsonc";
 const appConfigPath = path.join(workerRoot, appConfigRelative);
 const wranglerCli = path.join(workerRoot, "node_modules/wrangler/bin/wrangler.js");
@@ -20,15 +23,24 @@ const accountId = "bfc2890741f0b3fb236e2d755b6c9adc";
 const businessName = "fanmark-business-staging";
 const businessId = "d4bb0c48-f24a-491f-8693-fa393ab0b873";
 const migrationDirectory = path.join(workerRoot, "migrations-business");
+const authName = "fanmark-auth-staging";
+const authId = "2116bc43-32ab-4e3e-b762-9378df88b95f";
+const authMigrationDirectory = path.join(workerRoot, "migrations");
 const webhookApiVersion = "2025-08-27.basil";
 const startedAt = new Date().toISOString();
 const suffix = randomBytes(8).toString("hex");
 const databaseName = `fanmark-recovery-${Date.now()}-${suffix}`;
+const authDatabaseName = `fanmark-auth-recovery-${Date.now()}-${suffix}`;
 const workerName = `fanmark-recovery-${Date.now()}-${suffix}`;
 const configName = `.wrangler-recovery-${suffix}.jsonc`;
 const configPath = path.join(workerRoot, configName);
 const tempReportPath = path.join(os.tmpdir(), `fanmark-postwrite-recovery-${suffix}.json`);
 const syntheticSecret = `whsec_${randomBytes(32).toString("base64url")}`;
+const syntheticAuthSecret = randomBytes(32).toString("base64url");
+const syntheticAuthUserId = randomUUID();
+const syntheticAuthAccountId = randomUUID();
+const syntheticAuthEmail = `auth-recovery-${randomUUID()}@example.invalid`;
+const syntheticAuthPassword = `Recovery-${randomBytes(24).toString("base64url")}あ!9`;
 const emailBeforeBookmark = `recovery-before-${randomUUID()}@example.invalid`;
 const emailAfterBookmark = `recovery-after-${randomUUID()}@example.invalid`;
 const emailDuringFreeze = `recovery-freeze-${randomUUID()}@example.invalid`;
@@ -40,7 +52,9 @@ const firstObjectId = `cus_recovery_${randomUUID().replaceAll("-", "")}`;
 
 let activeConfigRelative = appConfigRelative;
 let creationMayHaveSucceeded = false;
+let authCreationMayHaveSucceeded = false;
 let databaseId = null;
+let authDatabaseId = null;
 let workerMayExist = false;
 let tempConfigWritten = false;
 let primaryError = null;
@@ -52,9 +66,10 @@ let report = {
   failureCode: null,
   failureKind: null,
   database: { name: databaseName, id: null, expectedMigrationCount: null },
+  authDatabase: { name: authDatabaseName, id: null, expectedMigrationCount: null },
   worker: { name: workerName, origin: null, deployedVersion: null, frozenVersion: null },
-  recovery: { bookmark: null, acknowledgedDigest: null, reconciliationMs: null },
-  cleanup: { workerDeleted: false, databaseDeleted: false, configDeleted: false },
+  recovery: { bookmark: null, authBookmark: null, acknowledgedDigest: null, reconciliationMs: null },
+  cleanup: { workerDeleted: false, databaseDeleted: false, authDatabaseDeleted: false, configDeleted: false },
   lastFailedOperation: null,
   status: "running",
 };
@@ -94,9 +109,27 @@ function runWrangler(args, { input, configRelative = activeConfigRelative, timeo
     }
     operation = operation.replaceAll("-", "_");
     report.lastFailedOperation = operation;
+    report.lastFailedDiagnostic = sanitizedWranglerDiagnostic(result);
     fail(`wrangler_${operation}_failed`);
   }
   return result.stdout ?? "";
+}
+
+function sanitizedWranglerDiagnostic(result) {
+  let output = `${result.stderr ?? ""}\n${result.stdout ?? ""}`
+    .replace(/\u001b\[[0-9;]*m/gu, "")
+    .replaceAll(syntheticSecret, "[redacted]")
+    .replaceAll(syntheticAuthSecret, "[redacted]")
+    .replaceAll(syntheticAuthPassword, "[redacted]")
+    .replaceAll(syntheticAuthEmail, "[redacted]")
+    .replace(/(authorization:\s*bearer\s+)[^\s]+/giu, "$1[redacted]")
+    .replace(/\b(?:sk|rk|whsec)_[A-Za-z0-9_-]{12,}\b/gu, "[redacted]")
+    .replace(/\$2[aby]\$\d{2}\$[^\s'"]{20,}/gu, "[redacted]");
+  const relevantLines = output.split(/\r?\n/u)
+    .map((line) => line.trim())
+    .filter((line) => /error|failed|invalid|not found|status code|\[code:\s*\d+\]/iu.test(line));
+  output = relevantLines.slice(-3).join(" ").replace(/\s+/gu, " ").trim();
+  return output.slice(0, 500) || null;
 }
 
 function parseJson(output, code) {
@@ -128,10 +161,15 @@ function databaseIdOf(database) {
 function assertPrivateStagingTarget() {
   const appConfig = parseJson(readFileSync(appConfigPath, "utf8"), "staging_config_invalid");
   const business = appConfig.d1_databases?.find((entry) => entry.binding === "FANMARK_DB");
+  const auth = appConfig.d1_databases?.find((entry) => entry.binding === "AUTH_DB");
   if (appConfig.name !== "fanmark-app-staging" || appConfig.account_id !== accountId ||
       appConfig.workers_dev !== true || (appConfig.routes?.length ?? 0) !== 0 ||
       business?.database_name !== businessName || business?.database_id !== businessId ||
-      business?.migrations_dir !== "migrations-business" || business?.remote !== true) {
+      business?.migrations_dir !== "migrations-business" || business?.remote !== true ||
+      auth?.database_name !== authName || auth?.database_id !== authId ||
+      auth?.migrations_dir !== "migrations" ||
+      auth?.migrations_pattern !== "migrations/{0003_better_auth_core.sql,0007_auth_signup_command.sql,0008_auth_user_suspension.sql}" ||
+      auth?.remote !== true) {
     fail("staging_target_mismatch");
   }
 
@@ -144,7 +182,13 @@ function assertPrivateStagingTarget() {
   if (!databases.some((database) => databaseNameOf(database) === businessName && databaseIdOf(database) === businessId)) {
     fail("business_staging_database_missing");
   }
-  if (databases.some((database) => String(databaseNameOf(database) ?? "").startsWith("fanmark-recovery-"))) {
+  if (!databases.some((database) => databaseNameOf(database) === authName && databaseIdOf(database) === authId)) {
+    fail("auth_staging_database_missing");
+  }
+  if (databases.some((database) => {
+    const name = String(databaseNameOf(database) ?? "");
+    return name.startsWith("fanmark-recovery-") || name.startsWith("fanmark-auth-recovery-");
+  })) {
     fail("unreviewed_recovery_database_exists");
   }
 }
@@ -173,6 +217,13 @@ function createTemporaryConfig() {
       database_id: databaseId,
       migrations_dir: "migrations-business",
       remote: true,
+    }, {
+      binding: "AUTH_DB",
+      database_name: authDatabaseName,
+      database_id: authDatabaseId,
+      migrations_dir: "migrations",
+      migrations_pattern: "migrations/{0003_better_auth_core.sql,0007_auth_signup_command.sql,0008_auth_user_suspension.sql}",
+      remote: true,
     }],
     ratelimits: [{
       name: "WAITLIST_SIGNUP_LIMITER",
@@ -184,6 +235,8 @@ function createTemporaryConfig() {
       WAITLIST_SIGNUP_BACKEND: "d1",
       STRIPE_WEBHOOK_BACKEND: "d1",
       STRIPE_WEBHOOK_SECRET: syntheticSecret,
+      AUTH_BACKEND: "better-auth",
+      BETTER_AUTH_URL: origin,
       CUTOVER_WRITE_FREEZE: "false",
       CORS_ALLOWED_ORIGINS: origin,
       STAGING_NO_INDEX: "true",
@@ -203,8 +256,16 @@ async function writeTemporaryConfig(config) {
 }
 
 function getTemporaryDatabase() {
-  const matches = databaseRows().filter((database) => databaseNameOf(database) === databaseName);
-  if (matches.length > 1) fail("temporary_database_name_ambiguous");
+  return getTemporaryDatabaseByName(databaseName, "temporary_database_name_ambiguous");
+}
+
+function getTemporaryAuthDatabase() {
+  return getTemporaryDatabaseByName(authDatabaseName, "temporary_auth_database_name_ambiguous");
+}
+
+function getTemporaryDatabaseByName(name, ambiguityCode) {
+  const matches = databaseRows().filter((database) => databaseNameOf(database) === name);
+  if (matches.length > 1) fail(ambiguityCode);
   return matches[0] ?? null;
 }
 
@@ -218,9 +279,19 @@ function createDatabase() {
   report.database.id = databaseId;
 }
 
-function runD1(sql, { timeout = 120_000 } = {}) {
+function createAuthDatabase() {
+  authCreationMayHaveSucceeded = true;
+  runWrangler(["d1", "create", authDatabaseName, "--location=apac"], { configRelative: appConfigRelative });
+  const database = getTemporaryAuthDatabase();
+  if (!database || typeof databaseIdOf(database) !== "string" ||
+      !/^[0-9a-f-]{36}$/iu.test(databaseIdOf(database))) fail("temporary_auth_database_create_readback_failed");
+  authDatabaseId = databaseIdOf(database);
+  report.authDatabase.id = authDatabaseId;
+}
+
+function runD1On(targetDatabaseName, sql, { timeout = 120_000 } = {}) {
   const output = runWrangler([
-    "d1", "execute", databaseName, "--remote", "--json", "--command", sql,
+    "d1", "execute", targetDatabaseName, "--remote", "--json", "--command", sql,
   ], { timeout });
   const result = parseJsonArray(output, "temporary_database_query_invalid");
   if (result.length !== 1 || result[0]?.success !== true || !Array.isArray(result[0]?.results)) {
@@ -230,6 +301,22 @@ function runD1(sql, { timeout = 120_000 } = {}) {
     fail("read_only_reconciliation_query_changed_database");
   }
   return result[0].results;
+}
+
+function runD1(sql, options) {
+  return runD1On(databaseName, sql, options);
+}
+
+function writeD1(targetDatabaseName, sql, code) {
+  const output = runWrangler([
+    "d1", "execute", targetDatabaseName, "--remote", "--json", "--command", sql,
+  ]);
+  const result = parseJsonArray(output, code);
+  if (result.length !== 1 || result[0]?.success !== true ||
+      result[0]?.meta?.changed_db !== true || Number(result[0]?.meta?.rows_written) < 1) {
+    fail(code);
+  }
+  return result[0].meta;
 }
 
 function sqlLiteral(value) {
@@ -281,6 +368,95 @@ async function postEvent(origin, signed) {
   const body = await response.json();
   if (response.status !== 200) fail(`stripe_receipt_http_${response.status}`);
   if (body?.received !== true) fail("stripe_receipt_acknowledgement_invalid");
+}
+
+async function seedSyntheticAuthAccount() {
+  // Keep the disposable recovery fixture under the Workers Free CPU ceiling.
+  // Password-format compatibility is covered by the separate staging canary.
+  const generatedHash = await bcrypt.hash(syntheticAuthPassword, 4);
+  if (!generatedHash.startsWith("$2b$04$")) fail("synthetic_auth_bcrypt_format_invalid");
+  const passwordHash = generatedHash.replace(/^\$2b\$/u, () => "$2a$");
+  if (!(await bcrypt.compare(syntheticAuthPassword, passwordHash))) fail("synthetic_auth_bcrypt_fixture_invalid");
+  const now = new Date().toISOString();
+  writeD1(authDatabaseName, `
+    INSERT INTO "user" (id, name, email, emailVerified, createdAt, updatedAt)
+    VALUES (${sqlLiteral(syntheticAuthUserId)}, 'Synthetic recovery user', ${sqlLiteral(syntheticAuthEmail)}, 1, ${sqlLiteral(now)}, ${sqlLiteral(now)});
+  `, "synthetic_auth_seed_failed");
+  writeD1(authDatabaseName, `
+    INSERT INTO account (id, accountId, providerId, userId, password, createdAt, updatedAt)
+    VALUES (${sqlLiteral(syntheticAuthAccountId)}, ${sqlLiteral(syntheticAuthUserId)}, 'credential', ${sqlLiteral(syntheticAuthUserId)}, ${sqlLiteral(passwordHash)}, ${sqlLiteral(now)}, ${sqlLiteral(now)});
+  `, "synthetic_auth_seed_failed");
+  return passwordHash;
+}
+
+async function signInSyntheticUser(origin) {
+  const response = await fetch(`${origin}/api/auth/sign-in/email`, {
+    method: "POST",
+    headers: { origin, "content-type": "application/json" },
+    body: JSON.stringify({ email: syntheticAuthEmail, password: syntheticAuthPassword }),
+    signal: AbortSignal.timeout(15_000),
+  });
+  let body;
+  try {
+    body = await response.json();
+  } catch {
+    body = null;
+  }
+  if (response.status !== 200 || body?.user?.id !== syntheticAuthUserId) {
+    fail(`synthetic_auth_sign_in_http_${response.status}`);
+  }
+  const cookie = (response.headers.get("set-cookie") ?? "").split(";", 1)[0];
+  if (!/(?:__Secure-)?better-auth\.session_token=/iu.test(cookie)) fail("synthetic_auth_session_cookie_missing");
+  const session = await readSyntheticSession(origin, cookie);
+  if (session?.user?.id !== syntheticAuthUserId || typeof session?.session?.id !== "string") {
+    fail("synthetic_auth_session_identity_mismatch");
+  }
+  return { cookie, sessionId: session.session.id };
+}
+
+async function readSyntheticSession(origin, cookie) {
+  const response = await fetch(`${origin}/api/auth/get-session`, {
+    headers: { origin, cookie },
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (response.status !== 200) fail(`synthetic_auth_session_http_${response.status}`);
+  return response.json();
+}
+
+function syntheticAuthState(passwordHash) {
+  const users = runD1On(authDatabaseName, `
+    SELECT id, name, email, emailVerified, createdAt, updatedAt
+    FROM "user" WHERE id = ${sqlLiteral(syntheticAuthUserId)} ORDER BY id
+  `);
+  const accounts = runD1On(authDatabaseName, `
+    SELECT id, accountId, providerId, userId, password, createdAt, updatedAt
+    FROM account WHERE id = ${sqlLiteral(syntheticAuthAccountId)} ORDER BY id
+  `);
+  const sessions = runD1On(authDatabaseName, `
+    SELECT id, userId, expiresAt, createdAt, updatedAt
+    FROM session WHERE userId = ${sqlLiteral(syntheticAuthUserId)} ORDER BY id
+  `);
+  if (users.length !== 1 || users[0]?.id !== syntheticAuthUserId ||
+      users[0]?.email !== syntheticAuthEmail || Number(users[0]?.emailVerified) !== 1 ||
+      accounts.length !== 1 || accounts[0]?.id !== syntheticAuthAccountId ||
+      accounts[0]?.accountId !== syntheticAuthUserId || accounts[0]?.providerId !== "credential" ||
+      accounts[0]?.userId !== syntheticAuthUserId || accounts[0]?.password !== passwordHash ||
+      sessions.some((row) => row?.userId !== syntheticAuthUserId)) {
+    fail("synthetic_auth_state_mismatch");
+  }
+  return {
+    user: users[0],
+    account: {
+      id: accounts[0].id,
+      accountId: accounts[0].accountId,
+      providerId: accounts[0].providerId,
+      userId: accounts[0].userId,
+      credentialMatches: true,
+      createdAt: accounts[0].createdAt,
+      updatedAt: accounts[0].updatedAt,
+    },
+    sessions,
+  };
 }
 
 async function waitForRoute(origin, expected) {
@@ -360,13 +536,42 @@ function applyBusinessMigrations() {
   });
 }
 
-function createBookmark() {
+async function applyAuthMigrations(config) {
+  const expected = [
+    "0003_better_auth_core.sql",
+    "0007_auth_signup_command.sql",
+    "0008_auth_user_suspension.sql",
+  ];
+  for (const name of expected) {
+    if (!readFileSync(path.join(authMigrationDirectory, name), "utf8")) fail("auth_migration_missing");
+  }
+  report.authDatabase.expectedMigrationCount = expected.length;
+  const authBinding = config.d1_databases.find((entry) => entry.binding === "AUTH_DB");
+  if (!authBinding) fail("temporary_auth_binding_missing");
+  for (let index = 0; index < expected.length; index += 1) {
+    const selected = expected.slice(0, index + 1);
+    authBinding.migrations_pattern = `migrations/{${[...selected, "0000_recovery_sentinel_missing.sql"].join(",")}}`;
+    await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 });
+    report.phase = `apply_auth_migration_${expected[index].replace(/[^a-z0-9]+/giu, "_").replace(/_+$/u, "")}`;
+    runWrangler(["d1", "migrations", "apply", authDatabaseName, "--remote"], {
+      input: "y\n",
+      timeout: 300_000,
+    });
+    const applied = runD1On(authDatabaseName, "SELECT name FROM d1_migrations ORDER BY name").map((row) => row.name);
+    report.authDatabase.appliedMigrationNames = applied;
+    if (JSON.stringify(applied) !== JSON.stringify(selected)) fail("auth_migration_ledger_mismatch");
+  }
+  authBinding.migrations_pattern = `migrations/{${expected.join(",")}}`;
+  await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 });
+}
+
+function createBookmark(targetDatabaseName, reportKey) {
   const result = parseJson(
-    runWrangler(["d1", "time-travel", "info", databaseName, "--json"]),
+    runWrangler(["d1", "time-travel", "info", targetDatabaseName, "--json"]),
     "time_travel_info_invalid",
   );
   if (typeof result.bookmark !== "string" || result.bookmark.length === 0) fail("time_travel_bookmark_missing");
-  report.recovery.bookmark = result.bookmark;
+  report.recovery[reportKey] = result.bookmark;
   return result.bookmark;
 }
 
@@ -377,15 +582,22 @@ function deployTemporaryWorker(config) {
   return result;
 }
 
+function setTemporaryAuthSecret() {
+  runWrangler(["secret", "put", "BETTER_AUTH_SECRET"], {
+    input: `${syntheticAuthSecret}\n`,
+    timeout: 120_000,
+  });
+}
+
 function changeFreeze(config, frozen) {
   config.vars.CUTOVER_WRITE_FREEZE = frozen ? "true" : "false";
   return writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 });
 }
 
-function restoreToBookmark(bookmark) {
+function restoreToBookmark(targetDatabaseName, bookmark) {
   const started = performance.now();
   runWrangler([
-    "d1", "time-travel", "restore", databaseName,
+    "d1", "time-travel", "restore", targetDatabaseName,
     `--bookmark=${bookmark}`, "--json",
   ], { input: "y\n", timeout: 180_000 });
   return started;
@@ -394,21 +606,32 @@ function restoreToBookmark(bookmark) {
 async function runDrill() {
   requireExplicitStagingWrite();
   assertPrivateStagingTarget();
-  report.phase = "create_disposable_d1";
+  report.phase = "create_disposable_d1s";
   createDatabase();
+  createAuthDatabase();
 
   report.phase = "create_temporary_worker_config";
   const { config, origin } = createTemporaryConfig();
   report.worker.origin = origin;
   await writeTemporaryConfig(config);
-  report.phase = "apply_and_verify_business_migrations";
+  report.phase = "apply_and_verify_business_auth_migrations";
   await applyBusinessMigrations();
+  await applyAuthMigrations(config);
   report.phase = "deploy_temporary_worker";
+  deployTemporaryWorker(config);
+  report.phase = "configure_synthetic_better_auth_secret";
+  setTemporaryAuthSecret();
   deployTemporaryWorker(config);
   report.phase = "wait_for_active_worker_route";
   await waitForRoute(origin, "active");
 
-  report.phase = "acknowledge_synthetic_waitlist_and_receipt_writes";
+  report.phase = "seed_and_sign_in_synthetic_auth_user";
+  const passwordHash = await seedSyntheticAuthAccount();
+  const firstAuthSession = await signInSyntheticUser(origin);
+  const firstAuthState = syntheticAuthState(passwordHash);
+  assert.equal(firstAuthState.sessions.length, 1);
+
+  report.phase = "acknowledge_synthetic_waitlist_receipt_and_auth_state";
   await postWaitlist(origin, emailBeforeBookmark, referralBeforeBookmark);
   assertOneWaitingRow(tableRowsForEmail(emailBeforeBookmark), emailBeforeBookmark, referralBeforeBookmark);
   const signedFirstEvent = signEvent(firstEventId, firstObjectId);
@@ -425,15 +648,21 @@ async function runDrill() {
   const acknowledgedState = {
     waitlist: tableRowsForEmail(emailBeforeBookmark),
     stripeLedger: stripeLedgerRows([firstEventId]),
+    auth: syntheticAuthState(passwordHash),
   };
   assertOneWaitingRow(acknowledgedState.waitlist, emailBeforeBookmark, referralBeforeBookmark);
+  assert.equal(acknowledgedState.auth.sessions.length, 1);
   report.recovery.acknowledgedDigest = hash(acknowledgedState);
-  report.phase = "capture_recovery_bookmark";
-  const bookmark = createBookmark();
+  report.phase = "capture_business_and_auth_recovery_bookmarks";
+  const bookmark = createBookmark(databaseName, "bookmark");
+  const authBookmark = createBookmark(authDatabaseName, "authBookmark");
 
-  report.phase = "acknowledge_post_bookmark_synthetic_write";
+  report.phase = "acknowledge_post_bookmark_business_and_auth_writes";
   await postWaitlist(origin, emailAfterBookmark, referralAfterBookmark);
   assertOneWaitingRow(tableRowsForEmail(emailAfterBookmark), emailAfterBookmark, referralAfterBookmark);
+  const secondAuthSession = await signInSyntheticUser(origin);
+  assert.notEqual(secondAuthSession.sessionId, firstAuthSession.sessionId);
+  assert.equal(syntheticAuthState(passwordHash).sessions.length, 2);
   const laterLedger = stripeLedgerRows([firstEventId]);
   assert.deepEqual(laterLedger, firstLedger, "no Stripe receipt may be accepted after the recovery bookmark");
 
@@ -446,13 +675,20 @@ async function runDrill() {
   assert.equal(tableRowsForEmail(emailDuringFreeze).length, 0, "frozen mutation must not reach D1");
 
   report.phase = "restore_and_reconcile_bookmark";
-  const restoreStarted = restoreToBookmark(bookmark);
+  const restoreStarted = restoreToBookmark(databaseName, bookmark);
+  restoreToBookmark(authDatabaseName, authBookmark);
   const restoredState = {
     waitlist: tableRowsForEmail(emailBeforeBookmark),
     stripeLedger: stripeLedgerRows([firstEventId]),
+    auth: syntheticAuthState(passwordHash),
   };
   report.recovery.reconciliationMs = Math.round(performance.now() - restoreStarted);
   assert.deepEqual(restoredState, acknowledgedState, "acknowledged business and Stripe rows changed after restore");
+  const survivingAuthSession = await readSyntheticSession(origin, firstAuthSession.cookie);
+  if (survivingAuthSession?.user?.id !== syntheticAuthUserId ||
+      survivingAuthSession?.session?.id !== firstAuthSession.sessionId) {
+    fail("acknowledged_auth_session_failed_after_restore");
+  }
   assert.equal(tableRowsForEmail(emailAfterBookmark).length, 0, "post-bookmark synthetic row survived restore");
   assert.equal(tableRowsForEmail(emailDuringFreeze).length, 0, "frozen synthetic marker reached D1");
   assert.equal(stripeLedgerRows([firstEventId]).length, 1);
@@ -533,6 +769,25 @@ async function cleanup() {
     }
   }
 
+  if (authCreationMayHaveSucceeded && !workerMayExist) {
+    try {
+      const database = getTemporaryAuthDatabase();
+      if (database) {
+        const id = databaseIdOf(database);
+        if (authDatabaseId && id !== authDatabaseId) fail("temporary_auth_database_cleanup_identity_mismatch");
+        authDatabaseId = id;
+        runCleanup(["d1", "delete", authDatabaseName, "--skip-confirmation"], { configRelative: appConfigRelative });
+      }
+      if (databaseRows().some((database) => databaseNameOf(database) === authDatabaseName)) {
+        fail("temporary_auth_database_cleanup_readback_failed");
+      }
+      report.cleanup.authDatabaseDeleted = true;
+      authCreationMayHaveSucceeded = false;
+    } catch {
+      cleanupFailed = true;
+    }
+  }
+
   if (tempConfigWritten) {
     try {
       await rm(configPath, { force: true });
@@ -579,14 +834,18 @@ if (primaryError) {
   const code = primaryError instanceof Error && /^[a-z0-9_.-]{1,100}$/iu.test(primaryError.message)
     ? primaryError.message
     : "postwrite_recovery_smoke_failed";
-  process.stderr.write(`FAIL ${code}\n`);
+  process.stderr.write(
+    `FAIL ${code} at ${report.phase}${report.lastFailedDiagnostic ? `: ${report.lastFailedDiagnostic}` : ""}\n`,
+  );
   process.stderr.write(`Private report: ${tempReportPath}\n`);
   process.exitCode = 1;
 } else {
   process.stdout.write(
-    `PASS synthetic post-write Cloudflare recovery: D1 migrations ${report.database.expectedMigrationCount}, ` +
+    `PASS synthetic post-write Cloudflare recovery: business/Auth D1 migrations ` +
+    `${report.database.expectedMigrationCount}/${report.authDatabase.expectedMigrationCount}, ` +
     `reconciled bookmark ${report.recovery.reconciliationMs} ms.\n` +
-    `Temporary Worker/D1 cleanup: ${report.cleanup.workerDeleted}/${report.cleanup.databaseDeleted}; ` +
+    `Temporary Worker/business/Auth D1 cleanup: ${report.cleanup.workerDeleted}/` +
+    `${report.cleanup.databaseDeleted}/${report.cleanup.authDatabaseDeleted}; ` +
     `private report: ${tempReportPath}\n`,
   );
 }

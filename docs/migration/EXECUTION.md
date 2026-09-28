@@ -3489,3 +3489,39 @@ sample is therefore not evidence of Free-plan fit. Workers Paid currently
 starts at $5/month, but no billing-plan change was made. See Cloudflare's
 [Workers limits](https://developers.cloudflare.com/workers/platform/limits/)
 and [pricing](https://developers.cloudflare.com/workers/platform/pricing/).
+
+## Synthetic business/Auth D1 post-write recovery (2026-09-28 JST)
+
+Extended `npm run test:migration:staging-postwrite-recovery` to create isolated
+business and Auth D1 databases plus a disposable workers.dev API Worker. It
+applied and read back all 17 business migrations and the exact three-migration
+Auth allowlist (`0003`, `0007`, `0008`). A synthetic-only Better Auth user and
+session passed the temporary Worker login flow. The drill acknowledged one
+waitlist row and one pending Stripe receipt/dispatch, bookmarked both D1s,
+accepted a later waitlist row and Auth session, and redeployed with
+`CUTOVER_WRITE_FREEZE=true`. Both D1s were restored while frozen. The original
+waitlist/receipt/session state matched its pre-bookmark digest; the later row
+and session disappeared, and the original session cookie still resolved to the
+same synthetic UUID. Restore plus reconciliation took 13.660 seconds.
+
+The first remote attempt exposed the known D1/Workers SDK issue where trigger
+bodies using lowercase `begin` fail remote migrations with
+`incomplete input: SQLITE_ERROR`; the local SQLite path succeeds. The six
+trigger keywords in `0003_better_auth_core.sql` are now uppercase, and
+`.gitattributes` pins both D1 migration directories to LF. A migration test
+guards those remote-safe formatting requirements. This is SQL-equivalent and
+does not change the schema. See the current [Workers SDK issue #15314](https://github.com/cloudflare/workers-sdk/issues/15314).
+
+The successful rehearsal used only synthetic rows and a low-cost disposable
+bcrypt fixture so the recovery-only sign-in stayed within the Workers Free CPU
+ceiling; the separate `$2a$10$` staging compatibility canary remains the
+evidence for that observed credential format. Cleanup read back zero temporary
+Worker/D1 resources, leaving only the three pre-existing staging databases.
+No existing Auth/business/master D1, R2 object, Supabase writer, Stripe API,
+real user data, production route, or domain/DNS setting was changed.
+
+This closes a combined business/Auth post-write restore subgate, not issue #37.
+The rehearsal still has no R2 restoration, applied Stripe business effect,
+complete encrypted-backup validation, or coordinated Supabase-writer/Cron
+freeze. The coarse estimates remain about 53% end-to-end and 73% for the
+prioritized app/infrastructure/non-user-master scope.
