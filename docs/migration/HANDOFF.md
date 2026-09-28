@@ -115,6 +115,9 @@ formatting logic but does not close the full 103-column timestamp writer and
 79-default operation inventory; schema conversion remains `deployable: false`.
 The three Stripe checkout/customer/plan-change idempotency deadlines now use
 the same formatter too; their contract suites were rerun successfully (17/17).
+Public-access logging and the Stripe webhook application default clock now use
+it as well; the public-access and Stripe webhook D1 suites pass 13/13 and
+59/59, respectively.
 
 The same date, a loopback-only local Supabase smoke passed email/password Auth,
 UUID preservation, owner-scoped settings read/update/readback, and cascade

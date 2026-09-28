@@ -1,4 +1,5 @@
 import type { StripeWebhookD1LeaseIdentity } from "./stripe-webhook-d1-dispatch.ts";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 type JsonObject = Record<string, unknown>;
 type ApplicationOutcome = "applied" | "duplicate_session" | "awaiting_payment" | "no_grant" | "dead_letter";
@@ -793,7 +794,7 @@ export async function applyStripeExtensionReceiptInD1(args: {
   now?: string;
   createId?: () => string;
 }): Promise<StripeExtensionD1ApplicationResult> {
-  const now = args.now ?? new Date().toISOString().replace(/\.\d{3}Z$/u, (fraction) => `${fraction.slice(0, 4)}000Z`);
+  const now = args.now ?? toUtcMicrosecondTimestamp(new Date());
   const lease = leaseValues(args.identity, now);
   const receipt = await args.database.prepare(`
     SELECT r.id AS receipt_id, r.stripe_event_id, r.livemode, r.event_type,

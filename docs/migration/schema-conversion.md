@@ -555,3 +555,6 @@ Stripe plan-checkout, Stripe customer-creation, and plan-change idempotency
 deadlines also use the shared formatter now. Their integration suites pass
 17/17 after the change; this is operation-path coverage, not completion of the
 full timestamp inventory.
+The same formatter also supplies the default clock for public-access logging
+and Stripe webhook application; their suites pass 13/13 and 59/59,
+respectively. Full source-column writer/default reconciliation remains open.

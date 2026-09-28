@@ -1,4 +1,5 @@
 import { isUuid } from "./availability";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 export const PUBLIC_ACCESS_BODY_BYTES = 4_096;
 export const PUBLIC_ACCESS_RESPONSE_BYTES = 64 * 1024;
@@ -625,5 +626,5 @@ export function serializePublicAccessBody(value: unknown): string {
 
 export function formatPublicAccessNow(date: Date): string {
   if (Number.isNaN(date.getTime())) throw new PublicAccessConfigurationError();
-  return date.toISOString().replace(/\.(\d{3})Z$/u, ".$1000Z");
+  return toUtcMicrosecondTimestamp(date);
 }

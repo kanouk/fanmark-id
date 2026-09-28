@@ -3575,3 +3575,8 @@ The same pass also replaced the remaining three local timestamp-padding
 expressions for Stripe plan-checkout, customer-creation, and plan-change
 idempotency deadlines with the shared formatter. Their D1 integration suites
 were rerun successfully (17/17); Worker typecheck remains clean.
+
+The same formatter now supplies the default clock for public-access logging
+and Stripe webhook application. Their public-access tests pass 13/13 and the
+Stripe webhook/invoice/reconciliation D1 suite passes 59/59. Worker typecheck
+and Wrangler dry-run bundle validation also pass; no deployment was made.
