@@ -12,7 +12,7 @@
 - `supabase/functions/`: Edge Functions 群。主要なものは下記参照。
 - `supabase/migrations/`: DB マイグレーション（Supabase CLI 生成形式）。
 - `scripts/migration/`: Cloudflare移行用のschema変換・snapshot・照合ツール。`credential-import-projection.mjs` は原本の6列を検証し、通常の5列と非公開のcredential入力を分離する。`emoji-master-release-stage.mjs` は検証済み絵文字releaseをD1のprivate stagingへ保存し、`emoji-master-release-activate.mjs` はreadback・identity continuityの検証後に版ポインタを切り替える。どちらも公開中の`emoji_master`は変更しない。
-- `workers/api/src/utc-timestamp.ts`: WorkerのD1書込みで使うUTCタイムスタンプを固定幅のマイクロ秒テキストに整形する共通関数。
+- `workers/api/src/utc-timestamp.mjs` / `utc-timestamp.ts`: WorkerのD1書込みで使うUTCタイムスタンプを固定幅のマイクロ秒テキストに整形する共通実装とTypeScript向け再エクスポート。
 - `src/lib/emojiConversion.ts`: 絵文字の同期変換インデックスを保持する。起動時に`main.tsx`が`VITE_EMOJI_CATALOG_BACKEND=worker`を選ぶと、`VITE_FANMARK_API_BASE_URL`の公開read-only Worker APIから版を固定して全ページ取得し、Reactを描画する前にインデックスを差し替える。未設定時は生成済みカタログを遅延読込する。Worker選択時の読込失敗は起動エラーとして扱い、Supabaseや静的版へ戻らない。
 - `public/`: アセット。`generate-ogp-image` のテンプレート画像等。
 

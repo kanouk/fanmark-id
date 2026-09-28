@@ -558,3 +558,6 @@ full timestamp inventory.
 The same formatter also supplies the default clock for public-access logging
 and Stripe webhook application; their suites pass 13/13 and 59/59,
 respectively. Full source-column writer/default reconciliation remains open.
+Its JavaScript implementation is also shared by verified-access and scheduled
+license-expiry timestamp creation (tests 10/10 and 8/8); typecheck and Worker
+dry-run pass with the typed TypeScript re-export.

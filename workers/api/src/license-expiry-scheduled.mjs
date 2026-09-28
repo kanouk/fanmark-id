@@ -1,5 +1,6 @@
 import { createSourceLicenseExpiryRepository } from "./license-expiry-source.mjs";
 import { createSourceGraceFinalizationRepository } from "./license-grace-finalization-source.mjs";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp.mjs";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
 const TOKEN_PATTERN = /^[A-Za-z0-9._:-]{1,160}$/u;
@@ -20,13 +21,11 @@ function fail(code, cause) {
 
 function canonicalScheduledTime(scheduledTime) {
   if (!Number.isSafeInteger(scheduledTime) || scheduledTime < 0) fail("invalid_scheduled_time");
-  let iso;
   try {
-    iso = new Date(scheduledTime).toISOString();
+    return toUtcMicrosecondTimestamp(new Date(scheduledTime));
   } catch (error) {
     fail("invalid_scheduled_time", error);
   }
-  return iso.replace(/\.(\d{3})Z$/u, (_match, milliseconds) => `.${milliseconds}000Z`);
 }
 
 async function runIdForPhase(phase, targetIncarnation, capturedNow) {

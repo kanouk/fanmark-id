@@ -3580,3 +3580,7 @@ The same formatter now supplies the default clock for public-access logging
 and Stripe webhook application. Their public-access tests pass 13/13 and the
 Stripe webhook/invoice/reconciliation D1 suite passes 59/59. Worker typecheck
 and Wrangler dry-run bundle validation also pass; no deployment was made.
+The canonical implementation now lives in `utc-timestamp.mjs`, with a typed
+TypeScript re-export. Verified-access timestamp creation and scheduled expiry
+run capture use the same implementation; their tests pass 10/10 and 8/8,
+respectively. Typecheck and Worker dry-run pass after adding the declaration.

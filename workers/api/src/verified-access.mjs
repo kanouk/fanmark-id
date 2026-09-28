@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp.mjs";
 
 const COOKIE_NAME = "__Host-fanmark_access";
 const MAX_BODY_BYTES = 4096;
@@ -38,7 +39,7 @@ function nowMs(env) {
 }
 
 function iso6(value) {
-  return new Date(value).toISOString().replace(/\.(\d{3})Z$/, ".$1000Z");
+  return toUtcMicrosecondTimestamp(new Date(value));
 }
 
 function bytes(value) {
