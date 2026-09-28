@@ -27,9 +27,17 @@ import {
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const miniflarePath = path.join(repoRoot, "workers/api/node_modules/miniflare/dist/src/index.js");
-const emojiMasterDdlPath = path.join(repoRoot, "workers/api/migrations/0000_emoji_master.sql");
-const ddlPath = path.join(repoRoot, "workers/api/migrations/0001_emoji_master_release_staging.sql");
-const activationDdlPath = path.join(repoRoot, "workers/api/migrations/0002_emoji_master_release_activation.sql");
+const migrationPaths = [
+  "0000_emoji_master.sql",
+  "0001_emoji_master_release_staging.sql",
+  "0002_emoji_master_release_activation.sql",
+  "0003_better_auth_core.sql",
+  "0004_reference_master_releases.sql",
+  "0005_emoji_master_admin_guards.sql",
+  "0006_reference_master_extension_prices.sql",
+  "0007_release_audit_timestamps.sql",
+].map((name) => path.join(repoRoot, "workers/api/migrations", name));
+const canonicalTimestampPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/;
 const source = {
   id: "00000000-0000-4000-8000-000000000001",
   emoji: "👋",
@@ -108,7 +116,7 @@ function splitSqlStatements(sql) {
         statements.push(current.trim());
         current = "";
       }
-    } else if (/^\s*END;\s*$/.test(line)) {
+    } else if (/^\s*END;\s*$/i.test(line)) {
       statements.push(current.trim());
       current = "";
       trigger = false;
@@ -129,9 +137,9 @@ async function applySql(database, sql) {
 async function createDatabase({ seedSource = true } = {}) {
   const local = await createLocalD1();
   try {
-    await applySql(local.database, await fs.readFile(emojiMasterDdlPath, "utf8"));
-    await applySql(local.database, await fs.readFile(ddlPath, "utf8"));
-    await applySql(local.database, await fs.readFile(activationDdlPath, "utf8"));
+    for (const migrationPath of migrationPaths) {
+      await applySql(local.database, await fs.readFile(migrationPath, "utf8"));
+    }
     if (seedSource) {
       await local.database.prepare(
         "INSERT INTO emoji_master (id, emoji, short_name, keywords, category, subcategory, codepoints, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -214,10 +222,12 @@ test("verified release is staged, read back, and kept separate from canonical ma
     assert.equal(reusedAgain.reused, true);
     const importState = await readSingle(
       local.database,
-      "SELECT status FROM fanmark_emoji_master_release_imports WHERE release_version = ?",
+      "SELECT status, created_at, verified_at FROM fanmark_emoji_master_release_imports WHERE release_version = ?",
       [release.version],
     );
     assert.equal(importState.status, "ready");
+    assert.match(importState.created_at, canonicalTimestampPattern);
+    assert.match(importState.verified_at, canonicalTimestampPattern);
   } finally {
     await local.miniflare.dispose();
     await fs.rm(directory, { recursive: true, force: true });
@@ -413,6 +423,7 @@ test("verified versions promote and roll back through an immutable, generation-c
     const active = await readEmojiMasterActiveRelease(local.database);
     assert.equal(active.version, first.version);
     assert.equal(active.generation, 3);
+    assert.match(active.updatedAt, canonicalTimestampPattern);
     assert.deepEqual(active.records, (await verifyRelease(first.directory)).records);
     const afterRollback = await captureEmojiReleaseState(local.database);
     assertRemoteActivationReadback({
@@ -444,13 +455,16 @@ test("verified versions promote and roll back through an immutable, generation-c
     });
 
     const activations = await local.database.prepare(
-      "SELECT generation, action, from_version, to_version FROM fanmark_emoji_master_release_activations ORDER BY generation",
+      "SELECT generation, action, from_version, to_version, created_at FROM fanmark_emoji_master_release_activations ORDER BY generation",
     ).all();
-    assert.deepEqual(activations.results, [
+    assert.deepEqual(activations.results.map(({ generation, action, from_version, to_version }) => ({
+      generation, action, from_version, to_version,
+    })), [
       { generation: 1, action: "promotion", from_version: null, to_version: first.version },
       { generation: 2, action: "promotion", from_version: first.version, to_version: second.version },
       { generation: 3, action: "rollback", from_version: second.version, to_version: first.version },
     ]);
+    for (const activation of activations.results) assert.match(activation.created_at, canonicalTimestampPattern);
     await assert.rejects(
       () => local.database.prepare(
         "UPDATE fanmark_emoji_master_release_staging SET short_name = ? WHERE release_version = ? AND id = ?",

@@ -325,7 +325,7 @@ async function main() {
   let canary = null;
 
   try {
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().replace(/\.(\d{3})Z$/u, ".$1000Z");
     const statements = [`INSERT INTO user_settings (id,user_id,username,plan_type,preferred_language,created_at,updated_at)
       VALUES (${sql(settingsId)},${sql(userId)},${sql(username)},'free','ja',${sql(now)},${sql(now)})`];
     for (const testCase of cases) statements.push(`INSERT INTO notification_events

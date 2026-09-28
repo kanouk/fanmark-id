@@ -56,6 +56,10 @@ fourth active view under the same release pointer. Staging does not change
 active views. Promotion exposes a complete release through one D1 pointer
 change after its row counts and table set pass readiness checks. A retry can
 replace only a partial `loading` release; a `ready` release cannot be changed.
+Migration `0007_release_audit_timestamps.sql` keeps release activation audit
+timestamps aligned with that pointer's six-digit UTC `updated_at` value. It is
+included in the staging migration selectors; remote application is still
+pending.
 
 `monthly_price_usd` is PostgreSQL `numeric(10,2)`. The importer parses its
 canonical two-place decimal text into integer cents without binary floating

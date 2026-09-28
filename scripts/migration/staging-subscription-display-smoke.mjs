@@ -374,7 +374,7 @@ async function main() {
   const decoySubscriptionId = randomUUID();
   const profileId = randomUUID();
   const username = `codex-subscription-${randomBytes(8).toString("hex")}`;
-  const now = new Date().toISOString();
+  const now = new Date().toISOString().replace(/\.(\d{3})Z$/u, ".$1000Z");
   const initialPeriodEnd = "2030-09-28T00:00:00.000000Z";
   const updatedPeriodEnd = "2030-10-28T00:00:00.000000Z";
   const cleanupIdentity = `${userId}`;
@@ -460,7 +460,7 @@ async function main() {
 
     runD1(APP_CONFIG, BUSINESS_DATABASE, `
       UPDATE user_subscriptions
-      SET current_period_end = ${sql(updatedPeriodEnd)}, amount = 2345, updated_at = ${sql(new Date().toISOString())}
+      SET current_period_end = ${sql(updatedPeriodEnd)}, amount = 2345, updated_at = ${sql(new Date().toISOString().replace(/\.(\d{3})Z$/u, ".$1000Z"))}
       WHERE id = ${sql(mainSubscriptionId)} AND user_id = ${sql(userId)};
     `);
     const refreshed = await request("/api/me/subscription", { headers: { cookie } });
@@ -484,7 +484,7 @@ async function main() {
       renderedPollMs = await verifyRenderedSubscriptionPoll(cookie, async () => {
         runD1(APP_CONFIG, BUSINESS_DATABASE, `
           UPDATE user_subscriptions
-          SET status = 'canceled', updated_at = ${sql(new Date().toISOString())}
+          SET status = 'canceled', updated_at = ${sql(new Date().toISOString().replace(/\.(\d{3})Z$/u, ".$1000Z"))}
           WHERE id = ${sql(mainSubscriptionId)} AND user_id = ${sql(userId)};
         `);
       });

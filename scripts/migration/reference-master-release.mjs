@@ -1,5 +1,9 @@
 import { createHash, randomUUID } from "node:crypto";
 
+function utcMicrosecondTimestamp(date = new Date()) {
+  return date.toISOString().replace(/\.(\d{3})Z$/u, (_match, fraction) => `.${fraction}000Z`);
+}
+
 const TABLES = Object.freeze({
   fanmark_tiers: {
     staging: "fanmark_tier_release_rows",
@@ -249,9 +253,10 @@ export async function stageReferenceMasterRelease({ database, snapshot, snapshot
     ).bind(release.releaseVersion).run();
     if (clearedExtensionManifest?.success !== true) fail("reference_master_retry_cleanup_failed");
   } else {
+    const createdAt = utcMicrosecondTimestamp();
     const created = await database.prepare(
-      "INSERT INTO fanmark_reference_master_releases (release_version, source_snapshot_sha256, manifest_json, status) VALUES (?, ?, ?, 'loading')",
-    ).bind(release.releaseVersion, snapshotSha256, manifestJson).run();
+      "INSERT INTO fanmark_reference_master_releases (release_version, source_snapshot_sha256, manifest_json, status, created_at) VALUES (?, ?, ?, 'loading', ?)",
+    ).bind(release.releaseVersion, snapshotSha256, manifestJson, createdAt).run();
     if (created?.success !== true) fail("reference_master_release_create_failed");
   }
 
@@ -291,9 +296,10 @@ export async function stageReferenceMasterRelease({ database, snapshot, snapshot
 
   const verified = await verifyStagedReferenceMasterRelease({ database, snapshot, snapshotSha256 });
   if (!verified) fail("reference_master_stage_readback_mismatch");
+  const verifiedAt = utcMicrosecondTimestamp();
   const markedReady = await database.prepare(
-    "UPDATE fanmark_reference_master_releases SET status = 'ready', verified_at = CURRENT_TIMESTAMP WHERE release_version = ? AND status = 'loading'",
-  ).bind(release.releaseVersion).run();
+    "UPDATE fanmark_reference_master_releases SET status = 'ready', verified_at = ? WHERE release_version = ? AND status = 'loading'",
+  ).bind(verifiedAt, release.releaseVersion).run();
   if (markedReady?.success !== true || markedReady.meta?.changes !== 1) fail("reference_master_release_ready_failed");
 
   const ready = await readRows(database,
@@ -363,13 +369,14 @@ export async function activateReferenceMasterRelease({ database, releaseVersion,
     [releaseVersion]);
   if (releaseRows.length !== 1 || releaseRows[0].status !== "ready") fail("reference_master_release_not_ready");
   const generation = activeRows.length ? activeRows[0].generation + 1 : 1;
+  const activatedAt = utcMicrosecondTimestamp();
   const result = activeRows.length
     ? await database.prepare(
-      "UPDATE fanmark_reference_master_active_release SET release_version = ?, previous_release_version = ?, activation_id = ?, action = 'promotion', generation = ?, updated_at = CURRENT_TIMESTAMP WHERE singleton_id = 1",
-    ).bind(releaseVersion, activeRows[0].release_version, activationId, generation).run()
+      "UPDATE fanmark_reference_master_active_release SET release_version = ?, previous_release_version = ?, activation_id = ?, action = 'promotion', generation = ?, updated_at = ? WHERE singleton_id = 1",
+    ).bind(releaseVersion, activeRows[0].release_version, activationId, generation, activatedAt).run()
     : await database.prepare(
-      "INSERT INTO fanmark_reference_master_active_release (singleton_id, release_version, previous_release_version, activation_id, action, generation) VALUES (1, ?, NULL, ?, 'promotion', 1)",
-    ).bind(releaseVersion, activationId).run();
+      "INSERT INTO fanmark_reference_master_active_release (singleton_id, release_version, previous_release_version, activation_id, action, generation, updated_at) VALUES (1, ?, NULL, ?, 'promotion', 1, ?)",
+    ).bind(releaseVersion, activationId, activatedAt).run();
   if (result?.success !== true) fail("reference_master_activation_write_failed");
 
   const after = await captureActiveState(database);
@@ -398,9 +405,12 @@ export function renderReferenceMasterReleaseSql({ snapshot, snapshotSha256, acti
   if (typeof activationId !== "string" || activationId.length < 1) fail("reference_master_activation_input_invalid");
   const release = normalizeSnapshot(snapshot, snapshotSha256);
   const manifestJson = releaseManifestJson(snapshotSha256, release);
+  const createdAt = utcMicrosecondTimestamp();
+  const verifiedAt = utcMicrosecondTimestamp();
+  const activatedAt = utcMicrosecondTimestamp();
   const statements = [
-    "INSERT INTO fanmark_reference_master_releases (release_version, source_snapshot_sha256, manifest_json, status) VALUES (" +
-      [release.releaseVersion, snapshotSha256, manifestJson, "loading"].map(sqlLiteral).join(", ") + ");",
+    "INSERT INTO fanmark_reference_master_releases (release_version, source_snapshot_sha256, manifest_json, status, created_at) VALUES (" +
+      [release.releaseVersion, snapshotSha256, manifestJson, "loading", createdAt].map(sqlLiteral).join(", ") + ");",
   ];
   for (const entry of release.tables) {
     statements.push("INSERT INTO fanmark_reference_master_release_tables (release_version, table_name, row_count, source_sha256) VALUES (" +
@@ -416,12 +426,12 @@ export function renderReferenceMasterReleaseSql({ snapshot, snapshotSha256, acti
     }
   }
   statements.push(
-    "UPDATE fanmark_reference_master_releases SET status = 'ready', verified_at = CURRENT_TIMESTAMP WHERE release_version = " +
-      sqlLiteral(release.releaseVersion) + " AND status = 'loading';",
+    "UPDATE fanmark_reference_master_releases SET status = 'ready', verified_at = " +
+      sqlLiteral(verifiedAt) + " WHERE release_version = " + sqlLiteral(release.releaseVersion) + " AND status = 'loading';",
   );
   statements.push(
-    "INSERT INTO fanmark_reference_master_active_release (singleton_id, release_version, previous_release_version, activation_id, action, generation) VALUES (1, " +
-      sqlLiteral(release.releaseVersion) + ", NULL, " + sqlLiteral(activationId) + ", " + sqlLiteral("promotion") + ", 1);",
+    "INSERT INTO fanmark_reference_master_active_release (singleton_id, release_version, previous_release_version, activation_id, action, generation, updated_at) VALUES (1, " +
+      sqlLiteral(release.releaseVersion) + ", NULL, " + sqlLiteral(activationId) + ", " + sqlLiteral("promotion") + ", 1, " + sqlLiteral(activatedAt) + ");",
   );
   statements.push(
     "SELECT a.release_version, a.generation, " +

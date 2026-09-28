@@ -238,7 +238,7 @@ async function main() {
   const username = `codexr2${nonce}`;
   const password = `Staging-${randomBytes(24).toString("base64url")}a9!`;
   const passwordHash = await bcrypt.hash(password, 10);
-  const now = new Date().toISOString();
+  const now = new Date().toISOString().replace(/\.(\d{3})Z$/u, ".$1000Z");
   const pngBytes = Uint8Array.from(
     Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADUlEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC", "base64"),
   );

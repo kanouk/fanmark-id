@@ -18,6 +18,7 @@ const EXPECTED_MIGRATIONS = [
   "0004_reference_master_releases.sql",
   "0005_emoji_master_admin_guards.sql",
   "0006_reference_master_extension_prices.sql",
+  "0007_release_audit_timestamps.sql",
 ];
 
 function fail(code) {
@@ -104,7 +105,7 @@ function assertConfig(options, config) {
   const binding = config.d1_databases.find((entry) => entry.binding === EXPECTED_BINDING);
   if (!binding || binding.database_id !== options.database_id ||
       binding.database_name !== options.database_name || binding.migrations_dir !== "migrations" ||
-      binding.migrations_pattern !== "migrations/000[0-6]_*.sql") {
+      binding.migrations_pattern !== "migrations/000[0-7]_*.sql") {
     fail("wrangler_config_database_mismatch");
   }
 }

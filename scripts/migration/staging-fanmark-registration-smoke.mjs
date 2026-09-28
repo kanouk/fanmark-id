@@ -408,7 +408,7 @@ async function main() {
     runD1(APP_CONFIG, BUSINESS_DATABASE, `
       INSERT INTO user_settings (user_id, username, plan_type, preferred_language, created_at, updated_at)
       VALUES (${sqlLiteral(userId)}, ${sqlLiteral(`smoke-${nonce}`)}, 'free', 'ja', ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});
-      UPDATE fanmark_licenses SET status = 'grace', grace_expires_at = ${sqlLiteral(new Date(Date.now() + 86400000).toISOString())}, updated_at = ${sqlLiteral(timestamp)}
+      UPDATE fanmark_licenses SET status = 'grace', grace_expires_at = ${sqlLiteral(new Date(Date.now() + 86400000).toISOString().replace(/\.(\d{3})Z$/u, ".$1000Z"))}, updated_at = ${sqlLiteral(timestamp)}
       WHERE id = ${sqlLiteral(licenseId)} AND user_id = ${sqlLiteral(userId)} AND status = 'active';
     `);
     const appliedLottery = await readJson(await request("/api/fanmarks/lottery/apply", {

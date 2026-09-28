@@ -310,7 +310,8 @@ async function main() {
   const licenseId = randomUUID();
   const lotteryId = randomUUID();
   const shortId = "stg" + randomBytes(5).toString("hex");
-  const licenseEnd = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString();
+  const licenseEnd = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000)
+    .toISOString().replace(/\.(\d{3})Z$/u, ".$1000Z");
   const requestIds = [];
   let notificationDelivery = null;
   try {

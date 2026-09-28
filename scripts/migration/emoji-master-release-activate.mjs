@@ -9,6 +9,11 @@ const TABLES = Object.freeze({
 });
 
 const VERSION_RE = /^[0-9a-f]{64}$/;
+
+function utcMicrosecondTimestamp(date = new Date()) {
+  return date.toISOString().replace(/\.(\d{3})Z$/u, (_match, fraction) => `.${fraction}000Z`);
+}
+
 const STAGED_SELECT = `
   SELECT release_version, ordinal, id, emoji, short_name, keywords_json,
          category, subcategory, codepoints_json, sort_order
@@ -233,13 +238,14 @@ export async function activateEmojiMasterRelease({
 
   const activationId = randomUUID();
   const nextGeneration = active ? active.generation + 1 : 1;
+  const updatedAt = utcMicrosecondTimestamp();
   let result;
   try {
     if (active) {
       result = await database.prepare(`
         UPDATE ${TABLES.active}
         SET release_version = ?, previous_release_version = ?, activation_id = ?,
-            action = ?, generation = ?, updated_at = CURRENT_TIMESTAMP
+            action = ?, generation = ?, updated_at = ?
         WHERE singleton_id = 1 AND release_version = ? AND generation = ?
       `).bind(
         verified.version,
@@ -247,18 +253,19 @@ export async function activateEmojiMasterRelease({
         activationId,
         action,
         nextGeneration,
+        updatedAt,
         activeVersion,
         active.generation,
       ).run();
     } else {
       result = await database.prepare(`
         INSERT INTO ${TABLES.active}
-          (singleton_id, release_version, previous_release_version, activation_id, action, generation)
-        SELECT 1, ?, NULL, ?, 'promotion', 1
+          (singleton_id, release_version, previous_release_version, activation_id, action, generation, updated_at)
+        SELECT 1, ?, NULL, ?, 'promotion', 1, ?
         WHERE NOT EXISTS (
           SELECT 1 FROM ${TABLES.active} WHERE singleton_id = 1
         )
-      `).bind(verified.version, activationId).run();
+      `).bind(verified.version, activationId, updatedAt).run();
     }
   } catch {
     throw fail("activation_write_failed");

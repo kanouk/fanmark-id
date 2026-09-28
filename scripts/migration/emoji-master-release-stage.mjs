@@ -7,6 +7,10 @@ export const EMOJI_MASTER_RELEASE_TABLES = Object.freeze({
   staging: "fanmark_emoji_master_release_staging",
 });
 
+function utcMicrosecondTimestamp(date = new Date()) {
+  return date.toISOString().replace(/\.(\d{3})Z$/u, (_match, fraction) => `.${fraction}000Z`);
+}
+
 const TARGET_COLUMNS = [
   "id",
   "emoji",
@@ -228,9 +232,10 @@ async function readImport(database, version) {
 async function prepareImport(database, version, manifestJson, rowCount) {
   const current = await readImport(database, version);
   if (!current) {
+    const createdAt = utcMicrosecondTimestamp();
     const result = await database.prepare(
-      "INSERT INTO fanmark_emoji_master_release_imports (release_version, manifest_json, row_count, status) VALUES (?, ?, ?, 'loading')",
-    ).bind(version, manifestJson, rowCount).run();
+      "INSERT INTO fanmark_emoji_master_release_imports (release_version, manifest_json, row_count, status, created_at) VALUES (?, ?, ?, 'loading', ?)",
+    ).bind(version, manifestJson, rowCount, createdAt).run();
     if (!result || result.success !== true) throw fail("d1_write_failed");
     return false;
   }
@@ -332,7 +337,7 @@ export async function stageEmojiMasterRelease({
   }
 
   await assertStageReadback(database, verified.version, records);
-  const now = new Date().toISOString();
+  const now = utcMicrosecondTimestamp();
   const finalized = await database.prepare(
     "UPDATE fanmark_emoji_master_release_imports SET status = 'ready', verified_at = ? WHERE release_version = ? AND manifest_json = ? AND row_count = ? AND status = 'loading'",
   ).bind(now, verified.version, manifestJson, records.length).run();

@@ -143,7 +143,7 @@ async function assertStagingTarget(actions) {
   const masterBinding = config.d1_databases?.find((database) => database.binding === "MASTER_DB");
   assert.equal(masterBinding?.database_name, expectedMasterDatabase, "unexpected Master D1 name");
   assert.equal(masterBinding?.database_id, expectedMasterDatabaseId, "unexpected Master D1 id");
-  assert.equal(masterBinding?.migrations_pattern, "migrations/000[0-6]_*.sql", "unexpected Master D1 migration set");
+  assert.equal(masterBinding?.migrations_pattern, "migrations/000[0-7]_*.sql", "unexpected Master D1 migration set");
   assert.equal(config.vars?.EMOJI_MASTER_ADMIN_BACKEND, "d1", "expected D1-backed emoji-master admin API");
 }
 

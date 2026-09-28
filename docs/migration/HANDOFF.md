@@ -253,6 +253,17 @@ writer/default inventory. Emoji master create/update/import, reference-master
 release creation/verification/activation, and scheduled notification
 event/lease/retry timestamps also use the fixed-width formatter; the Auth D1
 suite passes 21/21, reference-master API 6/6, and notification D1 12/12. The
+local release suites now read back six-digit `created_at`, `verified_at`,
+`updated_at`, and activation-audit timestamps (emoji release 7/7, reference
+release 5/5). Migration `0007_release_audit_timestamps.sql` binds derived audit
+times to the active pointer's canonical `updated_at`; staging migration
+selectors and remote guards include it, but the migration has not yet been
+applied remotely. D1-writing synthetic staging smoke scripts were also aligned
+to six-digit UTC. Worker typecheck and lifecycle/schema tests pass (16/16).
+The full `workers/api` test chain, staging Vite build, and Worker Wrangler
+dry-run also pass; the dry-run read the built assets and exited without deploy.
+The latest CI run for the previous commit `cf52be8` passed; these current
+uncommitted changes still need commit and CI validation. The
 13-gate report and coarse progress estimate remain unchanged. Issue #37's full writer-freeze, timed
 final-copy, and pre/post-write recovery rehearsal remains open, as do
 provider-backed Resend/Stripe acceptance, broad authenticated UI coverage, and

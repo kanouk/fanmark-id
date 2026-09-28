@@ -453,3 +453,13 @@ writes use the format too; their respective suites pass 21/21, 6/6, and 12/12. T
 report still has 13 unresolved groups across 226 locations, and
 `timestamp_import_precision` remains open until the complete writer/default
 inventory is reconciled. No user rows were read and no remote D1 was written.
+
+The local emoji/reference release suites now assert fixed-width metadata and
+activation-audit readback (7/7 and 5/5). Migration
+`0007_release_audit_timestamps.sql` makes each audit timestamp equal its
+canonical active-pointer `updated_at`; staging configs and remote guards include
+the migration, but it has not been applied to remote D1. D1-writing synthetic
+staging smoke scripts also use six-digit UTC values. Lifecycle/schema tests
+pass 16/16 and Worker typecheck passes; the complete writer/default inventory
+remains open. The full Worker test chain, staging Vite build, and Wrangler
+deployment dry-run pass; no deployment or remote D1 migration was performed.

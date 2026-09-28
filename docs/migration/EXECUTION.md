@@ -3076,3 +3076,26 @@ readback of receipt and dispatch timestamps. Tests use isolated local D1 and
 injected providers; no live Stripe provider or user data was accessed. The
 timestamp writer/default inventory remains incomplete, so the schema gate and
 deployment readiness remain open.
+
+## Master-release audit timestamps and staging writers (2026-09-28 JST)
+
+The emoji and reference-master release tests now read back canonical
+six-digit UTC `created_at`, `verified_at`, active-pointer `updated_at`, and
+activation-audit `created_at` values. Migration
+`0007_release_audit_timestamps.sql` recreates both release audit triggers so
+they copy `NEW.updated_at` instead of using SQLite's second-precision default.
+Both isolated Miniflare release suites pass (7/7 and 5/5); lifecycle/schema
+tests pass 16/16, Worker typecheck and the full `workers/api` test chain pass.
+The staging Vite build and Wrangler `--dry-run` pass; the dry-run read the
+built assets and exited without deployment. The full migrations 0000–0007
+were applied only to disposable local D1 in these tests. Staging configs and
+remote migration guards now expect 0007, but no remote migration was applied.
+
+Synthetic staging smoke scripts that seed or update business D1 now also write
+six-digit UTC values for subscription/profile/notification timestamps, license
+period ends, grace expiry, and expected return expiry. This keeps future
+canaries compatible with the timestamp checks without touching their staging
+data. `git diff --check` passed; the current commit's CI still needs to run.
+The converter still reports 13 open groups / 226 locations and the complete
+timestamp writer/default inventory is not reconciled. No source rows, remote
+D1/R2, production routes, or domain/DNS settings were accessed or changed.

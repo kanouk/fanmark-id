@@ -18,9 +18,16 @@ import {
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const miniflarePath = path.join(repoRoot, "workers/api/node_modules/miniflare/dist/src/index.js");
 const migrationPaths = [
-  path.join(repoRoot, "workers/api/migrations/0004_reference_master_releases.sql"),
-  path.join(repoRoot, "workers/api/migrations/0006_reference_master_extension_prices.sql"),
-];
+  "0000_emoji_master.sql",
+  "0001_emoji_master_release_staging.sql",
+  "0002_emoji_master_release_activation.sql",
+  "0003_better_auth_core.sql",
+  "0004_reference_master_releases.sql",
+  "0005_emoji_master_admin_guards.sql",
+  "0006_reference_master_extension_prices.sql",
+  "0007_release_audit_timestamps.sql",
+].map((name) => path.join(repoRoot, "workers/api/migrations", name));
+const canonicalTimestampPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/;
 
 const sourceSnapshot = [
   {
@@ -107,7 +114,7 @@ function splitSqlStatements(sql) {
         statements.push(current.trim());
         current = "";
       }
-    } else if (/^\s*END;\s*$/.test(line)) {
+    } else if (/^\s*END;\s*$/i.test(line)) {
       statements.push(current.trim());
       current = "";
       trigger = false;
@@ -155,6 +162,10 @@ test("reference masters stage as an immutable release and expose only after atom
     const staged = await stageReferenceMasterRelease({ database, snapshot: sourceSnapshot, snapshotSha256, maxRowsPerBatch: 2 });
     assert.equal(staged.status, "ready");
     assert.equal(staged.reused, false);
+    const stagedMetadata = await one(database,
+      "SELECT created_at, verified_at FROM fanmark_reference_master_releases WHERE release_version = ?", [snapshotSha256]);
+    assert.match(stagedMetadata.created_at, canonicalTimestampPattern);
+    assert.match(stagedMetadata.verified_at, canonicalTimestampPattern);
     assert.equal(await one(database, "SELECT count(*) AS count FROM fanmark_tiers").then((row) => row.count), 0);
     assert.equal(await verifyStagedReferenceMasterRelease({ database, snapshot: sourceSnapshot, snapshotSha256 }), true);
 
@@ -174,6 +185,12 @@ test("reference masters stage as an immutable release and expose only after atom
     assert.deepEqual(await one(database, "SELECT pattern, price_yen, is_active FROM reserved_emoji_patterns"), {
       pattern: "🧪", price_yen: 1200, is_active: 0,
     });
+    const activeMetadata = await one(database,
+      "SELECT updated_at FROM fanmark_reference_master_active_release WHERE singleton_id = 1");
+    const auditMetadata = await one(database,
+      "SELECT created_at FROM fanmark_reference_master_release_activations WHERE generation = 1");
+    assert.match(activeMetadata.updated_at, canonicalTimestampPattern);
+    assert.match(auditMetadata.created_at, canonicalTimestampPattern);
     await assert.rejects(
       () => database.prepare("UPDATE fanmark_tier_release_rows SET display_name = 'Changed' WHERE release_version = ?")
         .bind(snapshotSha256).run(),
@@ -240,6 +257,7 @@ test("rendered SQL artifact activates the same exact release through one stateme
       activationId: "00000000-0000-4000-8000-000000000099",
     });
     assert.equal(rendered.releaseVersion, snapshotSha256);
+    assert.doesNotMatch(rendered.sql, /CURRENT_TIMESTAMP|strftime\s*\(/i);
     assert.ok(rendered.statements.length > sourceSnapshot.reduce((total, entry) => total + entry.row_count, 0));
     let finalRows;
     for (const statement of rendered.statements) {
@@ -259,6 +277,16 @@ test("rendered SQL artifact activates the same exact release through one stateme
     }]);
     assert.equal((await one(database,
       "SELECT monthly_price_usd FROM fanmark_tiers WHERE tier_level = 4")).monthly_price_usd, 30000);
+    const renderedMetadata = await one(database,
+      "SELECT r.created_at, r.verified_at, a.updated_at FROM fanmark_reference_master_releases AS r " +
+      "JOIN fanmark_reference_master_active_release AS a ON a.release_version = r.release_version WHERE r.release_version = ?",
+      [snapshotSha256]);
+    assert.match(renderedMetadata.created_at, canonicalTimestampPattern);
+    assert.match(renderedMetadata.verified_at, canonicalTimestampPattern);
+    assert.match(renderedMetadata.updated_at, canonicalTimestampPattern);
+    const renderedAudit = await one(database,
+      "SELECT created_at FROM fanmark_reference_master_release_activations WHERE generation = 1");
+    assert.match(renderedAudit.created_at, canonicalTimestampPattern);
   } finally {
     await miniflare.dispose();
   }

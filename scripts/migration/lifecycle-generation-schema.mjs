@@ -318,7 +318,7 @@ function passwordMutationBody(licenseExpression, { allowCascadeOrphan = false } 
     abortWhen(`${notExpiryClaim} AND NOT ${orphanCascade} AND (SELECT "access_generation" FROM ${ACCESS_VERSIONS} WHERE "license_id" = ${licenseExpression}) >= ${MAX_SAFE_SQL}`, "lifecycle_access_generation_overflow"),
   );
   lines.push(
-    `UPDATE ${ACCESS_VERSIONS} SET "password_generation" = "password_generation" + 1, "access_generation" = "access_generation" + 1, "updated_at" = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE "license_id" = ${licenseExpression} AND NOT (${expiryClaim});`,
+    `UPDATE ${ACCESS_VERSIONS} SET "password_generation" = "password_generation" + 1, "access_generation" = "access_generation" + 1, "updated_at" = strftime('%Y-%m-%dT%H:%M:%f000Z', 'now') WHERE "license_id" = ${licenseExpression} AND NOT (${expiryClaim});`,
   );
   lines.push(
     abortWhen(`${notExpiryClaim} AND NOT ${orphanCascade} AND changes() <> 1`, "lifecycle_password_access_version_missing"),
@@ -347,7 +347,7 @@ function accessMutationBody(licenseExpression, { allowCascadeOrphan = false } = 
     abortWhen(`${notExpiryClaim} AND NOT ${orphanCascade} AND (SELECT "access_generation" FROM ${ACCESS_VERSIONS} WHERE "license_id" = ${licenseExpression}) >= ${MAX_SAFE_SQL}`, "lifecycle_access_generation_overflow"),
   );
   lines.push(
-    `UPDATE ${ACCESS_VERSIONS} SET "access_generation" = "access_generation" + 1, "updated_at" = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE "license_id" = ${licenseExpression} AND NOT (${expiryClaim});`,
+    `UPDATE ${ACCESS_VERSIONS} SET "access_generation" = "access_generation" + 1, "updated_at" = strftime('%Y-%m-%dT%H:%M:%f000Z', 'now') WHERE "license_id" = ${licenseExpression} AND NOT (${expiryClaim});`,
   );
   lines.push(
     abortWhen(`${notExpiryClaim} AND NOT ${orphanCascade} AND changes() <> 1`, "lifecycle_access_version_missing"),
@@ -411,7 +411,7 @@ function fanmarkAccessMutationBody() {
     )`, "lifecycle_access_generation_overflow"),
     `UPDATE ${ACCESS_VERSIONS}
        SET "access_generation" = "access_generation" + 1,
-           "updated_at" = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+           "updated_at" = strftime('%Y-%m-%dT%H:%M:%f000Z', 'now')
      WHERE "license_id" IN (${relatedLicenses});`,
   ];
 }
@@ -432,7 +432,7 @@ function buildTriggerDefinition() {
       `INSERT OR IGNORE INTO ${REGISTRY} ("license_id", "incarnation") VALUES (NEW.${quoteIdentifier("id")}, 0);`,
       abortWhen(`(SELECT COUNT(*) FROM ${REGISTRY} WHERE "license_id" = NEW.${quoteIdentifier("id")}) <> 1`, "lifecycle_incarnation_missing"),
       abortWhen(`(SELECT "incarnation" FROM ${REGISTRY} WHERE "license_id" = NEW.${quoteIdentifier("id")}) > ${MAX_SAFE_SQL}`, "lifecycle_incarnation_overflow"),
-      `INSERT OR IGNORE INTO ${ACCESS_VERSIONS} ("license_id", "license_incarnation", "password_generation", "access_generation", "updated_at") SELECT NEW.${quoteIdentifier("id")}, "incarnation", 0, 0, strftime('%Y-%m-%dT%H:%M:%fZ', 'now') FROM ${REGISTRY} WHERE "license_id" = NEW.${quoteIdentifier("id")};`,
+      `INSERT OR IGNORE INTO ${ACCESS_VERSIONS} ("license_id", "license_incarnation", "password_generation", "access_generation", "updated_at") SELECT NEW.${quoteIdentifier("id")}, "incarnation", 0, 0, strftime('%Y-%m-%dT%H:%M:%f000Z', 'now') FROM ${REGISTRY} WHERE "license_id" = NEW.${quoteIdentifier("id")};`,
       abortWhen(`${accessVersionCount(`NEW.${quoteIdentifier("id")}`)} <> 1`, "lifecycle_access_version_missing"),
       abortWhen(`${accessVersionMatch(`NEW.${quoteIdentifier("id")}`)} <> 1`, "lifecycle_access_version_mismatch"),
     ],

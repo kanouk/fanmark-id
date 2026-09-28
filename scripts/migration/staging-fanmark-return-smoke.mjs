@@ -146,7 +146,7 @@ function expectedGraceExpiry(endedAt, days) {
     base.setUTCHours(0, 0, 0, 0);
     base.setUTCDate(base.getUTCDate() + 1);
   }
-  return base.toISOString();
+  return base.toISOString().replace(/\.(\d{3})Z$/u, ".$1000Z");
 }
 
 async function cleanup({ userId, fanmarkId, licenseId, transferId, favoriteId, discoveryId, favoriteUserId, shortId, extensionCouponBaseline, emailTemplateBaseline }) {
