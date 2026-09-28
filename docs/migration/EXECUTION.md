@@ -1,5 +1,20 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-09-28 Auth D1 migration selector collision
+
+Read-only `wrangler d1 migrations list AUTH_DB --remote` against both the app
+and Auth staging configs found that the Auth selector
+`migrations/000[378]_*.sql` also selected the Master-only
+`0007_release_audit_timestamps.sql`, which appeared as pending on Auth D1. It
+was not applied. Both Auth configs now use an explicit allowlist containing
+only `0003_better_auth_core.sql`, `0007_auth_signup_command.sql`, and
+`0008_auth_user_suspension.sql`. A static selector test checks those exact
+files and is part of `npm run test:migration-data`; the guarded Auth admin
+smoke checks the same allowlist. Re-running `d1 migrations list` for both
+configs reports no migrations to apply. The selector test passes 2/2 and
+`npm run check:ci` passes. No remote migration was applied, no application
+rows were read, and no D1 rows were written.
+
 ## 2026-09-27 Workerサブスクリプション表示の前景更新をstaging反映
 
 Worker版の`useSubscription`を、フォーカス/可視化復帰に加えて30秒ごとに

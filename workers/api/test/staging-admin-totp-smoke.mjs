@@ -107,7 +107,9 @@ async function assertStagingTarget(actions) {
   const binding = config.d1_databases?.find((database) => database.binding === "AUTH_DB");
   assert.equal(binding?.database_name, expectedDatabase, "unexpected Auth D1 name");
   assert.equal(binding?.database_id, expectedDatabaseId, "unexpected Auth D1 id");
-  assert.equal(binding?.migrations_pattern, "migrations/000[378]_*.sql", "expected the Auth suspension migration in the active D1 migration set");
+  assert.equal(binding?.migrations_pattern,
+    "migrations/{0003_better_auth_core.sql,0007_auth_signup_command.sql,0008_auth_user_suspension.sql}",
+    "expected only Better Auth migrations in the Auth D1 migration set");
   const businessBinding = config.d1_databases?.find((database) => database.binding === "FANMARK_DB");
   assert.equal(businessBinding?.database_name, expectedBusinessDatabase, "unexpected business D1 name");
   assert.equal(businessBinding?.database_id, expectedBusinessDatabaseId, "unexpected business D1 id");

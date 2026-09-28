@@ -297,6 +297,13 @@ cutover are intentionally deferred final phases. No production Worker, real
 user-data import, or public domain/DNS cutover has occurred. See
 [`EXECUTION.md`](EXECUTION.md).
 
+A read-only D1 migration-list check caught the broad Auth selector matching the
+Master-only `0007_release_audit_timestamps.sql`; it was pending on Auth D1 and
+was not applied. The app and standalone Auth configs now use an explicit
+Better Auth migration allowlist, covered by a 2/2 static test. Both remote Auth
+migration lists now report no pending migration. No remote DDL or row writes
+were performed; details are in [`EXECUTION.md`](EXECUTION.md).
+
 ## Unused extension coupon master seed (2026-09-27 JST)
 
 A fresh read-only Supabase projection confirmed four active coupon definitions
