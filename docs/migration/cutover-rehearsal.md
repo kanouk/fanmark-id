@@ -428,6 +428,15 @@ linked Supabase project or Cloudflare resource was used. This refreshes the
 local old-path component only; the staging freeze, source-writer/Cron stop,
 timed interruption, and complete pre-write drill remain open.
 
+The loopback-only component passed again on 2026-09-29 under Node 22.6.0:
+email/password Auth, UUID preservation, owner-scoped settings read/update/
+readback, and cascade cleanup completed in 317 ms of API calls. Post-run Docker
+checks found no matching container, volume, or network; the pre-existing
+unrelated container was left untouched. No linked Supabase project, Cloudflare
+resource, live user data, or email provider was used. This confirms only the
+local resume subgate; the staging freeze, source-writer/Cron stop, timed
+interruption, and complete pre-write drill remain open.
+
 ## Rendered subscription UI poll (2026-09-28 JST)
 
 The guarded `npm run test:migration:staging-subscription-ui-poll` authenticated
