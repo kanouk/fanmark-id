@@ -22,6 +22,7 @@
     "test:cloudflare-reference-master": "node --experimental-strip-types --test supabase/functions/_shared/cloudflare-reference-master.test.ts",
     "test:staging-fanmark-registration-smoke": "node scripts/migration/staging-fanmark-registration-smoke.mjs",
     "test:staging-fanmark-analytics-smoke": "node scripts/migration/staging-fanmark-analytics-smoke.mjs",
+    "test:staging-fanmark-analytics-ui": "node scripts/migration/staging-fanmark-analytics-smoke.mjs --verify-rendered-ui",
     "test:staging-fanmark-transfer-smoke": "node scripts/migration/staging-fanmark-transfer-smoke.mjs",
     "test:staging-fanmark-bulk-return-smoke": "node scripts/migration/staging-fanmark-bulk-return-smoke.mjs",
     "test:staging-license-expiry-lottery-smoke": "node scripts/migration/staging-license-expiry-lottery-smoke.mjs",

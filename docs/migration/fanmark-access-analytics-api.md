@@ -1,6 +1,6 @@
 # Fanmark access analytics write API
 
-Checkpoint: 2026-09-26. The public write path and owner-facing read APIs are
+Checkpoint: 2026-09-28. The public write path and owner-facing read APIs are
 enabled together on the workers.dev staging Worker and SPA. A synthetic live
 canary verified the paired flow and cleaned up its test rows. Historical
 analytics data remains in Supabase; no historical records were copied.
@@ -28,8 +28,13 @@ session identity scopes each query to the caller's D1 licenses; the analytics
 page and dashboard use these endpoints in the staging build. Worker tests
 verify owner scoping, plan gates, and anonymous denial. The staging canary
 verified an event write, four duplicate suppressions, owner projections and
-summary, anonymous 401, and exact cleanup. The selectors remain explicit and
-the normal/production build still uses Supabase.
+summary, anonymous 401, and exact cleanup. The optional
+`npm run test:staging-fanmark-analytics-ui` canary opens the authenticated
+`/analytics` page in an isolated headless Chrome profile, verifies that the
+rendered access and visitor totals both show `1`, and confirms the page read
+the Worker analytics APIs. The canary then removes the synthetic rows and
+reads all owned business/Auth row counts back as zero. The selectors remain
+explicit and the normal/production build still uses Supabase.
 
 This proves only a synthetic staging flow. Historical data is not migrated;
 public-ingress abuse controls, raw referrer/user-agent retention policy,

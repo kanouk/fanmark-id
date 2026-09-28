@@ -4,9 +4,11 @@
 
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { createRequire } from "node:module";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import process from "node:process";
 import {
   businessTablesWithoutStagingBaselines,
@@ -31,6 +33,7 @@ const WORKER_DIR = "workers/api";
 const APP_CONFIG = "workers/api/wrangler.app-staging.jsonc";
 const AUTH_CONFIG = "workers/api/wrangler.auth-staging.jsonc";
 const WRANGLER_VERSION = "4.135.0";
+const VERIFY_RENDERED_UI = process.argv.includes("--verify-rendered-ui");
 const require = createRequire(new URL("../../workers/api/package.json", import.meta.url));
 const bcrypt = require("bcryptjs");
 
@@ -144,6 +147,182 @@ function sessionCookie(response) {
   const cookie = cookies.map((value) => value.split(";", 1)[0]).find((value) => /session_token=/u.test(value));
   if (!cookie) fail("response_cookie_missing");
   return cookie;
+}
+
+function cdpConnection(webSocketUrl) {
+  const socket = new WebSocket(webSocketUrl);
+  const pending = new Map();
+  let nextId = 0;
+  let rejectOpen;
+  let openTimeout;
+  const opened = new Promise((resolve, reject) => {
+    rejectOpen = reject;
+    openTimeout = setTimeout(() => reject(new Error("browser_cdp_connect_timeout")), 15_000);
+    socket.addEventListener("open", () => {
+      clearTimeout(openTimeout);
+      resolve();
+    }, { once: true });
+    socket.addEventListener("error", () => {
+      clearTimeout(openTimeout);
+      reject(new Error("browser_cdp_connect_failed"));
+    }, { once: true });
+  });
+  socket.addEventListener("message", (event) => {
+    let message;
+    try {
+      message = JSON.parse(String(event.data));
+    } catch {
+      return;
+    }
+    if (!Number.isInteger(message.id)) return;
+    const operation = pending.get(message.id);
+    if (!operation) return;
+    pending.delete(message.id);
+    clearTimeout(operation.timeout);
+    if (message.error) operation.reject(new Error("browser_cdp_command_failed"));
+    else operation.resolve(message.result ?? {});
+  });
+  socket.addEventListener("close", () => {
+    rejectOpen?.(new Error("browser_cdp_closed"));
+    for (const operation of pending.values()) {
+      clearTimeout(operation.timeout);
+      operation.reject(new Error("browser_cdp_closed"));
+    }
+    pending.clear();
+  });
+  return {
+    opened,
+    send(method, params = {}) {
+      const id = ++nextId;
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          pending.delete(id);
+          reject(new Error("browser_cdp_timeout"));
+        }, 15_000);
+        pending.set(id, { resolve, reject, timeout });
+        socket.send(JSON.stringify({ id, method, params }));
+      });
+    },
+    close() {
+      if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) socket.close();
+    },
+  };
+}
+
+function cookieParts(cookie) {
+  const separator = cookie.indexOf("=");
+  if (separator < 1) fail("session_cookie_invalid");
+  return { name: cookie.slice(0, separator), value: cookie.slice(separator + 1) };
+}
+
+async function verifyRenderedAnalytics(cookie) {
+  const chromeCandidates = [
+    process.env.FANMARK_STAGING_CHROME,
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/usr/bin/google-chrome",
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+  ].filter(Boolean);
+  const chromePath = chromeCandidates.find((candidate) => existsSync(candidate));
+  if (!chromePath) fail("headless_chrome_unavailable");
+
+  const profileDirectory = mkdtempSync(join(tmpdir(), "fanmark-analytics-ui-"));
+  const chrome = spawn(chromePath, [
+    "--headless=new", "--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu",
+    "--disable-background-networking", "--disable-component-update", "--disable-default-apps",
+    "--metrics-recording-only", "--no-first-run", "--no-default-browser-check",
+    `--user-data-dir=${profileDirectory}`, "--remote-debugging-port=0", "about:blank",
+  ], { stdio: "ignore" });
+  let cdp;
+  let chromeFailed = false;
+  let chromeExit;
+  const exited = new Promise((resolve) => { chromeExit = resolve; });
+  chrome.once("exit", chromeExit);
+  chrome.once("error", () => {
+    chromeFailed = true;
+    chromeExit();
+  });
+  const chromeRunning = () => !chromeFailed && chrome.exitCode === null && chrome.signalCode === null;
+
+  try {
+    const activePortPath = join(profileDirectory, "DevToolsActivePort");
+    const startupDeadline = Date.now() + 15_000;
+    let port;
+    while (Date.now() < startupDeadline) {
+      if (!chromeRunning()) fail("headless_chrome_exited");
+      if (existsSync(activePortPath)) {
+        const [value] = readFileSync(activePortPath, "utf8").split(/\r?\n/u);
+        if (/^\d+$/u.test(value ?? "")) {
+          port = value;
+          break;
+        }
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    if (!port) fail("browser_devtools_start_timeout");
+
+    const targetsResponse = await fetch(`http://127.0.0.1:${port}/json/list`, { signal: AbortSignal.timeout(5_000) });
+    if (!targetsResponse.ok) fail("browser_target_list_failed");
+    const targets = await targetsResponse.json();
+    const page = targets.find((target) => target.type === "page" && target.webSocketDebuggerUrl);
+    if (!page) fail("browser_page_target_missing");
+
+    cdp = cdpConnection(page.webSocketDebuggerUrl);
+    await cdp.opened;
+    await cdp.send("Network.enable");
+    await cdp.send("Page.enable");
+    await cdp.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 1000, deviceScaleFactor: 1, mobile: false });
+    const cookieResult = await cdp.send("Network.setCookie", {
+      ...cookieParts(cookie), url: APP_ORIGIN, path: "/", secure: true, httpOnly: true, sameSite: "Lax",
+    });
+    if (cookieResult.success !== true) fail("browser_session_cookie_rejected");
+    await cdp.send("Page.navigate", { url: `${APP_ORIGIN}/analytics` });
+
+    const translations = JSON.parse(readFileSync("src/translations/ja.json", "utf8")).analytics;
+    const expression = `(() => {
+      const labels = ${JSON.stringify({
+        pageTitle: translations.pageTitle,
+        totalAccess: translations.totalAccess,
+        uniqueVisitors: translations.uniqueVisitors,
+      })};
+      const metric = (label) => {
+        const element = Array.from(document.querySelectorAll('p')).find((item) => item.textContent?.trim() === label);
+        return element?.nextElementSibling?.textContent?.trim() ?? null;
+      };
+      return {
+        path: location.pathname,
+        title: Array.from(document.querySelectorAll('h1')).some((item) => item.textContent?.trim() === labels.pageTitle),
+        totalAccess: metric(labels.totalAccess),
+        uniqueVisitors: metric(labels.uniqueVisitors),
+        workerReads: performance.getEntriesByType('resource').map((item) => item.name)
+          .filter((name) => name.startsWith(location.origin + '/api/me/analytics')),
+      };
+    })()`;
+    const deadline = Date.now() + 35_000;
+    while (Date.now() < deadline) {
+      if (!chromeRunning()) fail("headless_chrome_exited");
+      const result = await cdp.send("Runtime.evaluate", { expression, returnByValue: true });
+      const state = result.result?.value ?? {};
+      if (state.path === "/analytics" && state.title && state.totalAccess === "1" &&
+          state.uniqueVisitors === "1" && Array.isArray(state.workerReads) && state.workerReads.length >= 2) {
+        return { path: state.path, totalAccess: state.totalAccess, uniqueVisitors: state.uniqueVisitors,
+          workerReadCount: state.workerReads.length };
+      }
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+    fail("rendered_analytics_timeout");
+  } finally {
+    cdp?.close();
+    if (chromeRunning()) {
+      chrome.kill("SIGTERM");
+      await Promise.race([exited, new Promise((resolve) => setTimeout(resolve, 2_000))]);
+    }
+    if (chromeRunning()) {
+      chrome.kill("SIGKILL");
+      await Promise.race([exited, new Promise((resolve) => setTimeout(resolve, 2_000))]);
+    }
+    rmSync(profileDirectory, { recursive: true, force: true });
+  }
 }
 
 async function cleanup({ userId, email, fanmarkId, licenseId }) {
@@ -282,6 +461,7 @@ async function main() {
     assert.equal(JSON.stringify(analytics.result).includes(email), false);
     const summary = await readJson(await request("/api/me/analytics/summary?days=30", { headers: { cookie } }), 200, "analytics_summary_failed");
     assert.deepEqual(summary.result, { totalAccess: 1 });
+    const renderedUi = VERIFY_RENDERED_UI ? await verifyRenderedAnalytics(cookie) : null;
     const anonymous = await request(`/api/me/analytics?start_date=${today}&end_date=${today}`);
     assert.equal(anonymous.status, 401);
 
@@ -318,6 +498,7 @@ async function main() {
       authenticatedReaders: ["/api/me/analytics/fanmarks", "/api/me/analytics", "/api/me/analytics/summary"],
       analytics: { firstWriteRecorded: true, concurrentDuplicatesSuppressed: duplicatePayloads.length,
         dailyAccessCount: analytics.result.summary.accessCount, uniqueVisitors: analytics.result.summary.uniqueVisitors },
+      renderedUi,
       unauthorizedReadStatus: anonymous.status,
       cleanup: cleanupProof,
       businessRowsAfterCleanup: totalRows,
