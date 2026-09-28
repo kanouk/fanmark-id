@@ -247,8 +247,9 @@ return/transfer, owner settings/password, R2 profile/storage, authenticated
 administration, and staging PWA update/install checks have passed bounded
 canaries. The lifecycle settings API and rendered `AdminSettings` form now
 also pass an MFA-protected change/readback/restore canary; cleanup returned
-synthetic Auth/profile records to zero. The static audit covers 43 typed
-staging backend selectors, but runtime acceptance is still required. The
+synthetic Auth/profile records to zero. The static audit now covers 45 frontend
+backend selectors: every source reference is typed and explicitly assigned by
+the staging build; runtime acceptance is still required. The
 manual expiry Worker route is active only for explicit admin runs; scheduled
 expiry remains disabled because `LICENSE_EXPIRY_BACKEND` is unset.
 
@@ -754,7 +755,7 @@ buckets; this was a read-only check and copied no objects.
    `6da0dd8d-5da3-46f5-9c7e-86258a50b181` at 100%, with split Auth/business/
    master D1 and staging R2 bindings. Synthetic canaries cover selected
    registration, owner, access, notification, admin, and PWA routes, but the
-   static audit of 43 backend selectors still requires complete runtime
+   static audit of 45 backend selectors still requires complete runtime
    acceptance. The current v11 schema report remains `deployable: false` with
    13 unresolved groups across 226 locations; function/trigger/RLS parity,
    remaining API inventory, operation-level timestamp proof, and representative

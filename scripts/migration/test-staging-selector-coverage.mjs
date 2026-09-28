@@ -39,10 +39,21 @@ test("Cloudflare staging build explicitly selects every typed backend", () => {
 
   const declaredSelectors = [...envTypes.matchAll(/readonly\s+(VITE_[A-Z0-9_]+_BACKEND)\??\s*:/gu)]
     .map((match) => match[1]);
+  const sourceText = listTypeScriptFiles(sourceRoot)
+    .filter((filePath) => path.basename(filePath) !== "vite-env.d.ts")
+    .map((filePath) => readFileSync(filePath, "utf8"))
+    .join("\n");
+  const sourceSelectors = [...new Set([...sourceText.matchAll(/\b(VITE_[A-Z0-9_]+_BACKEND)\b/gu)].map((match) => match[1]))]
+    .sort((left, right) => left.localeCompare(right));
+  assert.deepEqual([...declaredSelectors].sort((left, right) => left.localeCompare(right)), sourceSelectors,
+    "every backend selector consumed by frontend source must have an ImportMetaEnv declaration");
+
   const assignments = new Map(
     [...stagingBuild.matchAll(/\b(VITE_[A-Z0-9_]+_BACKEND)=([A-Za-z0-9_-]+)/gu)]
       .map((match) => [match[1], match[2]]),
   );
+  assert.deepEqual([...assignments.keys()].sort((left, right) => left.localeCompare(right)), sourceSelectors,
+    "the staging build must explicitly assign every consumed backend selector and no unknown selectors");
 
   const missing = declaredSelectors.filter((selector) => !assignments.has(selector));
   assert.deepEqual(missing, [], "staging must not silently use a selector's Supabase default");
@@ -57,9 +68,11 @@ test("Cloudflare staging build explicitly selects every typed backend", () => {
     .sort(([left], [right]) => left.localeCompare(right));
   assert.deepEqual(nonWorker, [
     ["VITE_ADMIN_DATA_RESET_BACKEND", "disabled"],
+    ["VITE_BROADCAST_SEND_BACKEND", "disabled"],
+    ["VITE_BROADCAST_TEST_SEND_BACKEND", "disabled"],
     ["VITE_REFERENCE_MASTER_ADMIN_BACKEND", "d1"],
     ["VITE_STORAGE_BACKEND", "r2"],
-  ], "only the explicitly disabled destructive reset and the D1/R2 native adapters may differ from Worker");
+  ], "only data reset and unconfigured broadcast delivery are disabled; reference masters and Storage use native adapters");
 });
 
 test("every typed frontend backend selector has an implementation reference", () => {

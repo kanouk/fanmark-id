@@ -22,6 +22,8 @@ interface ImportMetaEnv {
   readonly VITE_NOTIFICATION_MASTER_BACKEND?: string;
   readonly VITE_EMAIL_TEMPLATES_BACKEND?: string;
   readonly VITE_BROADCAST_EMAIL_BACKEND?: string;
+  readonly VITE_BROADCAST_SEND_BACKEND?: string;
+  readonly VITE_BROADCAST_TEST_SEND_BACKEND?: string;
   readonly VITE_ADMIN_DATA_RESET_BACKEND?: string;
   readonly VITE_INVITATION_ADMIN_BACKEND?: string;
   readonly VITE_WAITLIST_ADMIN_BACKEND?: string;
@@ -34,7 +36,10 @@ interface ImportMetaEnv {
   readonly VITE_FAVORITES_BACKEND?: string;
   readonly VITE_LANGUAGE_READ_BACKEND?: string;
   readonly VITE_REFERENCE_MASTER_READ_BACKEND?: string;
+  readonly VITE_EXTENSION_PRICING_BACKEND?: string;
   readonly VITE_REFERENCE_MASTER_ADMIN_BACKEND?: string;
+  readonly VITE_AVAILABILITY_RULES_ADMIN_BACKEND?: string;
+  readonly VITE_ADMIN_USER_MANAGEMENT_BACKEND?: string;
   readonly VITE_STRIPE_EXTENSION_CHECKOUT_BACKEND?: string;
   readonly VITE_EXTENSION_COUPON_BACKEND?: string;
   readonly VITE_EXTENSION_COUPON_ADMIN_BACKEND?: string;

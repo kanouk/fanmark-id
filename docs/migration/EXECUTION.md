@@ -3290,3 +3290,19 @@ The Cloudflare secret-name readback found no credentials for these providers;
 staging browser callbacks remain unverified under #31. No provider settings,
 credentials, source rows, production routes, or domain/DNS configuration were
 changed.
+
+## Complete frontend backend-selector declaration and staging assignment (2026-09-28 JST)
+
+Auditing all frontend TypeScript references found 45 distinct
+`VITE_*_BACKEND` selectors, five of which were missing from `ImportMetaEnv`.
+Added all five declarations and strengthened
+`test-staging-selector-coverage.mjs` to require exact set equality between
+source references, type declarations, and the staging build assignments. The
+build now explicitly sets `VITE_BROADCAST_SEND_BACKEND=disabled` and
+`VITE_BROADCAST_TEST_SEND_BACKEND=disabled`; both controls were already
+fail-closed by default, and no sender/provider credentials are configured.
+
+Under Node 22.6.0, the focused selector suite passed 3/3, root typecheck passed,
+and `npm run build:cloudflare-staging` passed. This is a local build only; no
+Worker deployment or provider operation occurred. The selector audit is
+stronger, while runtime acceptance of the full API/UI inventory remains open.
