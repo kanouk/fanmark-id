@@ -810,6 +810,13 @@ credential compatibility or a complete user-data import.
   frontend selectors, full current API inventory, complete operation-level
   timestamp/default proof, and representative populated-data CPU/load fit
   remain open.
+- A fresh read-only Supabase Edge Function list returned 35 active functions:
+  all 34 local entrypoints match, plus live-only `manual-expire-grace-licenses`;
+  no local-only slugs exist. The 16 previously unconfigured local JWT flags
+  were made explicit to mirror the observed live `verify_jwt=false` values; a
+  second read found no local/live JWT mismatch. No function was invoked and no
+  remote configuration changed. The version/JWT matrix is in
+  [`live-observations.md`](live-observations.md).
 - Workers Free is still the selected plan. Staging CPU samples for sign-in,
   TOTP, and lifecycle work exceeded its published 10 ms/request limit. A
   production-safe plan or measured optimization is still required; no account

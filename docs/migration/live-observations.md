@@ -1719,3 +1719,66 @@ The three-ID synthetic aggregate and event were read back with
 The `fanmark_events` SQLite sequence advanced by one and was not decremented.
 No historical search rows, user data, production route, or domain/DNS settings
 were changed.
+
+## Supabase Edge Function inventory and JWT-config reconciliation (2026-09-28 JST)
+
+A read-only `functions list` query through Supabase CLI 2.118.0 returned 35
+functions, all `ACTIVE`. The live list matches all 34 local Edge Function
+entrypoints and contains one live-only function, `manual-expire-grace-licenses`;
+there are no local-only slugs. The initial comparison found 16 local entries
+without an explicit JWT setting while the live function had
+`verify_jwt=false`. `supabase/config.toml` now explicitly mirrors those
+observed flags. A second live read confirmed all local JWT values match, while
+the live-only function remains separately identified. The sixteen newly
+explicit entries are:
+`admin-expire-license`, `admin-get-user-detail`, `admin-list-users`,
+`admin-toggle-user-status`, `admin-trigger-password-reset`,
+`admin-update-user-plan`, `bulk-return-fanmarks`, `change-subscription`,
+`check-email-exists`, `check-subscription`, `create-checkout`,
+`customer-portal`, `delete-user-account`, `extend-fanmark-license`,
+`record-fanmark-access`, and `reset-fanmark-data`.
+
+| Function | State | Live version | Live `verify_jwt` | Local setting |
+| --- | --- | ---: | --- | --- |
+| `admin-expire-license` | ACTIVE | 20 | `false` | false |
+| `admin-get-user-detail` | ACTIVE | 219 | `false` | false |
+| `admin-list-users` | ACTIVE | 221 | `false` | false |
+| `admin-toggle-user-status` | ACTIVE | 220 | `false` | false |
+| `admin-trigger-password-reset` | ACTIVE | 220 | `false` | false |
+| `admin-update-user-plan` | ACTIVE | 220 | `false` | false |
+| `apply-extension-coupon` | ACTIVE | 75 | `true` | true |
+| `apply-fanmark-lottery` | ACTIVE | 192 | `true` | true |
+| `apply-transfer-code` | ACTIVE | 106 | `true` | true |
+| `approve-transfer-request` | ACTIVE | 104 | `true` | true |
+| `bulk-return-fanmarks` | ACTIVE | 231 | `false` | false |
+| `cancel-lottery-entry` | ACTIVE | 189 | `true` | true |
+| `cancel-transfer-code` | ACTIVE | 100 | `true` | true |
+| `change-subscription` | ACTIVE | 131 | `false` | false |
+| `check-email-exists` | ACTIVE | 304 | `false` | false |
+| `check-expired-licenses` | ACTIVE | 300 | `false` | false |
+| `check-subscription` | ACTIVE | 163 | `false` | false |
+| `create-checkout` | ACTIVE | 162 | `false` | false |
+| `create-extension-checkout` | ACTIVE | 152 | `true` | true |
+| `customer-portal` | ACTIVE | 159 | `false` | false |
+| `delete-user-account` | ACTIVE | 166 | `false` | false |
+| `extend-fanmark-license` | ACTIVE | 227 | `false` | false |
+| `fanmark-ogp` | ACTIVE | 107 | `false` | false |
+| `generate-ogp-image` | ACTIVE | 100 | `false` | false |
+| `generate-transfer-code` | ACTIVE | 104 | `true` | true |
+| `handle-stripe-webhook` | ACTIVE | 172 | `false` | false |
+| `manual-expire-grace-licenses` | ACTIVE | 14 | `true` | live-only |
+| `process-notification-events` | ACTIVE | 209 | `false` | false |
+| `record-fanmark-access` | ACTIVE | 114 | `false` | false |
+| `register-fanmark` | ACTIVE | 316 | `true` | true |
+| `reject-transfer-request` | ACTIVE | 100 | `true` | true |
+| `reset-fanmark-data` | ACTIVE | 235 | `false` | false |
+| `return-fanmark` | ACTIVE | 299 | `true` | true |
+| `send-auth-email` | ACTIVE | 64 | `false` | false |
+| `send-broadcast-email` | ACTIVE | 36 | `true` | true |
+
+The queries read deployment metadata only. No function was invoked, remote
+configuration or deployment changed, or application row was read. The CLI's
+`entrypoint_path` values were discarded. The local TOML and generated offline
+inventory were updated to make the observed JWT settings explicit. This list
+does not prove handler-level authentication or authorization behavior; those
+remain operation-level review gates.
