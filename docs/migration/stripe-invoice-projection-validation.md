@@ -1,13 +1,23 @@
 # Stripe invoice projection validation (#32)
 
-Status: offline implementation reviewed; production wiring remains pending. This slice adds a reusable worker
-adapter and service-only SQL transaction for the existing invoice payment
-fields. It does not connect the current Edge webhook, grant licenses, change
-`plan_type`, send payment notifications, call Stripe in production, or deploy
-the migration.
+Status: offline implementation and local Edge Function wiring are complete;
+staging and production wiring remain pending. This slice adds a reusable
+projection adapter, an exact-dispatch lease claim, and a service-only SQL
+transaction for the existing invoice payment fields. It does not grant
+licenses, change `plan_type`, send payment notifications, call Stripe in
+production, or deploy either migration.
+
+The checked-in `handle-stripe-webhook` now sends the three invoice payment
+event types through durable receipt acceptance, exact dispatch claim, and
+current-state projection. It returns 200 only after an atomic terminal result
+or a previously terminal duplicate. A busy lease or retryable projection
+returns 503 so Stripe can redeliver. Other webhook event branches keep their
+existing handlers.
 
 The migration is
 [`20260921110000_add_stripe_invoice_projection.sql`](../../supabase/migrations/20260921110000_add_stripe_invoice_projection.sql).
+The additional exact-dispatch lease RPC is in
+[`20260929170000_add_targeted_stripe_dispatch_claim.sql`](../../supabase/migrations/20260929170000_add_targeted_stripe_dispatch_claim.sql).
 It adds two private `billing_ingress` tables:
 
 - `stripe_sync_fences` is one live/test-scoped generation fence per Stripe
@@ -31,6 +41,9 @@ fixed `pg_catalog, billing_ingress` search paths:
   current fence before updating payment fields, inserting the ledger row,
   clearing the fence, and marking the receipt/dispatch terminal in one
   transaction.
+- `claim_stripe_webhook_dispatch_by_id` locks receipt then dispatch and leases
+  only the dispatch returned by this webhook's durable receipt. It cannot claim
+  unrelated queue entries; an active lease returns no row.
 
 Anonymous and authenticated roles cannot execute these functions or read the
 private tables. `service_role` can call the functions but cannot read the
@@ -122,6 +135,10 @@ real local PostgreSQL-compatible engine and covers:
 - a real SQL delay during ledger insertion that outlasts the dispatch lease,
   rejects the final mutation, and rolls back the ledger without changing payment
   fields or terminal states.
+- exact-dispatch claim isolation, rejection of an active duplicate claim, and
+  service-role-only access to the targeted claim RPC;
+- the accepted-receipt orchestration and terminal duplicate path, including no
+  second Stripe read for an already-applied event.
 
 The reusable adapter also has a compile fixture against Supabase JS `2.57.4`
 and Stripe `18.5.0`. Run from `experiments/stripe-receipts/`:
@@ -143,10 +160,12 @@ the invoice projection code is deployed there but stays disabled because no
 Stripe selectors or secrets are configured. Production migration and reviewed
 live endpoint cutover remain open.
 
-Astra independently ran the complete 63-test Stripe suite with the repository
-Node 22.6.0 and the SDK compatibility typecheck. All passed. These include 24
-invoice projection tests. The live webhook remains unwired; other billing
-writers must adopt the same customer-fence discipline before cutover.
+The current invoice projection suite passes 28 tests under repository Node
+22.6.0, including targeted-claim and accepted-receipt orchestration tests. The
+Edge Function source now wires these invoice event types locally, but neither
+the new Supabase migration nor that webhook edit has been deployed. Subscription
+and plan Checkout events still use their existing handler paths; cutover still
+requires their durable application path and reviewed staging/production wiring.
 
 ## Separate PostgreSQL connection proof
 

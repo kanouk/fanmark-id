@@ -9,6 +9,10 @@ import {
   readStripeWebhookBody,
   type DurableReceiptResult,
 } from "../_shared/stripe-receipt-ingress/index.ts";
+import {
+  createStripeInvoiceProjectionProvider,
+  processAcceptedStripeInvoiceReceipt,
+} from "../_shared/stripe-invoice-projection/index.ts";
 import { validateStripeExtensionApplicationResult } from "../_shared/stripe-extension-application.ts";
 
 const corsHeaders = {
@@ -39,6 +43,12 @@ const EXTENSION_CHECKOUT_EVENT_TYPES = new Set([
   "checkout.session.async_payment_succeeded",
   "checkout.session.async_payment_failed",
   "checkout.session.expired",
+]);
+
+const INVOICE_EVENT_TYPES = new Set([
+  "invoice.payment_failed",
+  "invoice.payment_action_required",
+  "invoice.payment_succeeded",
 ]);
 
 const logStep = (step: string, details?: unknown) => {
@@ -238,6 +248,55 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false } }
     );
+
+    if (INVOICE_EVENT_TYPES.has(event.type)) {
+      let durable: DurableReceiptResult;
+      try {
+        const input = await buildReceiptPersistenceInput(event, rawBody);
+        durable = await withTimeout(createSupabaseReceiptPersister(supabaseClient)(input));
+      } catch (receiptError) {
+        const kind = receiptError instanceof ReceiptIngressError ? receiptError.kind : "persistence";
+        logStep("Invoice receipt was not durably accepted", { kind });
+        return jsonResponse(kind === "invalid_event" ? 400 : 503, {
+          error: kind === "invalid_event" ? "Invalid event" : "Receipt persistence unavailable",
+        });
+      }
+
+      if (durable.outcome === "duplicate_terminal") {
+        return jsonResponse(200, {
+          received: true,
+          outcome: durable.outcome,
+          receipt_status: durable.receipt_status,
+          dispatch_status: durable.dispatch_status,
+        });
+      }
+
+      try {
+        const projection = await processAcceptedStripeInvoiceReceipt({
+          client: supabaseClient,
+          receipt: durable,
+          livemode: event.livemode,
+          provider: createStripeInvoiceProjectionProvider(new Stripe(stripeKey, {
+            apiVersion: "2025-08-27.basil",
+            timeout: 10_000,
+            maxNetworkRetries: 0,
+          })),
+        });
+        if (projection.status !== "applied") {
+          logStep("Invoice projection remains retryable", { code: projection.code });
+          return jsonResponse(503, { error: "Invoice processing pending" });
+        }
+        return jsonResponse(200, {
+          received: true,
+          outcome: projection.outcome,
+          receipt_status: "applied",
+          dispatch_status: "completed",
+        });
+      } catch {
+        logStep("Invoice projection could not be completed");
+        return jsonResponse(503, { error: "Invoice processing pending" });
+      }
+    }
 
     if (EXTENSION_CHECKOUT_EVENT_TYPES.has(event.type)) {
       const session = event.data.object as Stripe.Checkout.Session;
@@ -503,86 +562,6 @@ serve(async (req) => {
         }
 
         logStep("Subscription deleted from database");
-        break;
-      }
-
-      case "invoice.payment_failed":
-      case "invoice.payment_action_required": {
-        const invoice = event.data.object as Stripe.Invoice;
-        logStep(`Processing ${event.type}`, { invoiceId: invoice.id });
-
-        const stripeCustomerId = invoice.customer as string | null;
-        const subscriptionId =
-          typeof invoice.subscription === "string"
-            ? invoice.subscription
-            : (invoice.subscription as Stripe.Subscription | null)?.id ?? null;
-
-        if (!stripeCustomerId || !subscriptionId) {
-          logStep("Skipping invoice event without customer/subscription", { stripeCustomerId, subscriptionId });
-          break;
-        }
-
-        const userId = await resolveUserIdFromCustomer(supabaseClient, stripe, stripeCustomerId);
-        const nowIso = new Date().toISOString();
-        const nextAttemptIso = toIsoString(invoice.next_payment_attempt);
-
-        const { data: updateRows, error: updateError } = await supabaseClient
-          .from("user_subscriptions")
-          .update({
-            payment_failure_at: nowIso,
-            next_payment_attempt: nextAttemptIso,
-            payment_failure_type: event.type,
-            updated_at: nowIso,
-          })
-          .eq("stripe_subscription_id", subscriptionId)
-          .eq("user_id", userId)
-          .select("id");
-
-        if (updateError) {
-          logStep("Failed to record payment failure", { error: updateError.message });
-          break;
-        }
-
-        if (!updateRows || updateRows.length === 0) {
-          logStep("No subscription row found for payment failure", { subscriptionId, userId });
-        }
-
-        break;
-      }
-
-      case "invoice.payment_succeeded": {
-        const invoice = event.data.object as Stripe.Invoice;
-        logStep("Processing invoice.payment_succeeded", { invoiceId: invoice.id });
-
-        const stripeCustomerId = invoice.customer as string | null;
-        const subscriptionId =
-          typeof invoice.subscription === "string"
-            ? invoice.subscription
-            : (invoice.subscription as Stripe.Subscription | null)?.id ?? null;
-
-        if (!stripeCustomerId || !subscriptionId) {
-          logStep("Skipping invoice success without customer/subscription", { stripeCustomerId, subscriptionId });
-          break;
-        }
-
-        const userId = await resolveUserIdFromCustomer(supabaseClient, stripe, stripeCustomerId);
-        const nowIso = new Date().toISOString();
-
-        const { error: updateError } = await supabaseClient
-          .from("user_subscriptions")
-          .update({
-            payment_failure_at: null,
-            next_payment_attempt: null,
-            payment_failure_type: null,
-            updated_at: nowIso,
-          })
-          .eq("stripe_subscription_id", subscriptionId)
-          .eq("user_id", userId);
-
-        if (updateError) {
-          logStep("Failed to clear payment failure state", { error: updateError.message });
-        }
-
         break;
       }
 

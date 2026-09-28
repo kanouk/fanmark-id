@@ -9,6 +9,8 @@
  * sends a notification.
  */
 
+import type { DurableReceiptResult } from "../stripe-receipt-ingress/index.ts";
+
 export const PINNED_STRIPE_API_VERSION = "2025-08-27.basil" as const;
 
 const INVOICE_EVENT_TYPES = new Set([
@@ -520,6 +522,52 @@ function parseFence(row: unknown): InvoiceProjectionFence {
   };
 }
 
+function nullableRpcString(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  const result = boundedString(value);
+  if (result === null) throw new InvoiceProjectionError("invoice_projection_rpc_shape_invalid");
+  return result;
+}
+
+function parseClaimedDispatch(
+  row: unknown,
+  expected: { dispatchId: string; livemode: boolean },
+): ClaimedInvoiceDispatch {
+  const value = requireRecord(row, "invoice_projection_rpc_shape_invalid");
+  const dispatch = {
+    receipt_id: requireRpcString(value, "receipt_id", "invoice_projection_rpc_shape_invalid"),
+    dispatch_id: requireRpcString(value, "dispatch_id", "invoice_projection_rpc_shape_invalid"),
+    stripe_event_id: requireRpcString(value, "stripe_event_id", "invoice_projection_rpc_shape_invalid"),
+    livemode: value.livemode,
+    event_type: requireRpcString(value, "event_type", "invoice_projection_rpc_shape_invalid"),
+    object_type: nullableRpcString(value.object_type),
+    object_id: nullableRpcString(value.object_id),
+    api_version: nullableRpcString(value.api_version),
+    normalized_schema_version: value.normalized_schema_version,
+    normalized_payload: asRecord(value.normalized_payload),
+    normalized_payload_sha256: requireRpcString(value, "normalized_payload_sha256", "invoice_projection_rpc_shape_invalid"),
+    raw_payload_sha256: requireRpcString(value, "raw_payload_sha256", "invoice_projection_rpc_shape_invalid"),
+    attempt_count: value.attempt_count,
+    claim_generation: boundedGeneration(value.claim_generation, "invoice_projection_rpc_shape_invalid"),
+    lease_token: requireRpcString(value, "lease_token", "invoice_projection_rpc_shape_invalid"),
+    lease_until: requireRpcTimestamp(value, "lease_until", "invoice_projection_rpc_shape_invalid"),
+  };
+  if (dispatch.dispatch_id !== expected.dispatchId
+    || dispatch.livemode !== expected.livemode
+    || typeof dispatch.normalized_schema_version !== "number"
+    || !Number.isSafeInteger(dispatch.normalized_schema_version)
+    || dispatch.normalized_schema_version < 1
+    || dispatch.normalized_payload === null
+    || typeof dispatch.attempt_count !== "number"
+    || !Number.isSafeInteger(dispatch.attempt_count)
+    || dispatch.attempt_count < 1
+    || !/^[0-9a-f]{64}$/u.test(dispatch.normalized_payload_sha256)
+    || !/^[0-9a-f]{64}$/u.test(dispatch.raw_payload_sha256)) {
+    throw new InvoiceProjectionError("invoice_projection_rpc_shape_invalid");
+  }
+  return dispatch as ClaimedInvoiceDispatch;
+}
+
 function sameGeneration(left: number | string, right: number | string): boolean {
   return String(left) === String(right);
 }
@@ -595,6 +643,61 @@ function parseRetryResult(
     throw new InvoiceProjectionError("invoice_projection_rpc_shape_invalid");
   }
   return true;
+}
+
+export function createSupabaseInvoiceDispatchClaimer(
+  client: StripeInvoiceProjectionRpcClient,
+): (input: { dispatchId: string; livemode: boolean; leaseSeconds?: number }) => Promise<ClaimedInvoiceDispatch | null> {
+  return async ({ dispatchId, livemode, leaseSeconds = 300 }) => {
+    if (boundedString(dispatchId, 128) === null
+      || typeof livemode !== "boolean"
+      || !Number.isSafeInteger(leaseSeconds)
+      || leaseSeconds < 1
+      || leaseSeconds > 3600) {
+      throw new InvoiceProjectionError("invoice_projection_runtime_options_invalid");
+    }
+    const rows = await rpcRows(client, "claim_stripe_webhook_dispatch_by_id", {
+      p_dispatch_id: dispatchId,
+      p_livemode: livemode,
+      p_lease_seconds: leaseSeconds,
+    });
+    if (rows.length === 0) return null;
+    return parseClaimedDispatch(oneRow(rows, "invoice_projection_rpc_shape_invalid"), {
+      dispatchId,
+      livemode,
+    });
+  };
+}
+
+export async function processAcceptedStripeInvoiceReceipt(input: {
+  client: StripeInvoiceProjectionRpcClient;
+  provider: StripeInvoiceProjectionProvider;
+  receipt: DurableReceiptResult;
+  livemode: boolean;
+}): Promise<{ status: "applied"; outcome: string } | { status: "retryable"; code: string }> {
+  if (input.receipt.outcome === "duplicate_terminal") {
+    return { status: "applied", outcome: "duplicate_terminal" };
+  }
+  if (input.receipt.dispatch_id.length === 0 || typeof input.livemode !== "boolean") {
+    throw new InvoiceProjectionError("invoice_projection_runtime_options_invalid");
+  }
+
+  const dispatch = await createSupabaseInvoiceDispatchClaimer(input.client)({
+    dispatchId: input.receipt.dispatch_id,
+    livemode: input.livemode,
+  });
+  if (dispatch === null) {
+    return { status: "retryable", code: "invoice_dispatch_not_claimed" };
+  }
+
+  const projection = await processStripeInvoiceDispatch(dispatch, {
+    provider: input.provider,
+    runtime: createSupabaseInvoiceProjectionRuntime(input.client),
+  });
+  if (projection.status !== "applied") {
+    return { status: "retryable", code: projection.code };
+  }
+  return { status: "applied", outcome: projection.outcome ?? "applied" };
 }
 
 export function createSupabaseInvoiceProjectionRuntime(

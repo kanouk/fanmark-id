@@ -4,11 +4,14 @@ This document records the reusable request-handler and normalizer validation
 for migration issue #32 at
 [`supabase/functions/_shared/stripe-receipt-ingress/index.ts`](../../supabase/functions/_shared/stripe-receipt-ingress/index.ts).
 The standalone factory behavior below remains covered by its tests. The
-checked-in `handle-stripe-webhook` now reuses the raw-byte reader, normalizer,
-and receipt persister for license-extension events; the separate
+checked-in `handle-stripe-webhook` reuses the raw-byte reader, normalizer, and
+receipt persister for license-extension and invoice events. Invoice receipts
+claim only their exact dispatch, then call the current-state invoice projection
+before acknowledging the event; concurrent claims or retryable projections
+return 503. The separate
 [extension-application validation](stripe-extension-application-validation.md)
-covers that connection. Neither the local webhook edit nor SQL migration has
-been deployed or applied remotely.
+covers the extension connection. The invoice handler edit and targeted-claim
+migration have not been deployed or applied remotely.
 
 ## Validation boundary
 

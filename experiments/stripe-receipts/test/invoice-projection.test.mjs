@@ -4,7 +4,9 @@ import { after, before, beforeEach, test } from "node:test";
 import { PGlite } from "@electric-sql/pglite";
 import {
   createStripeInvoiceProjectionProvider,
+  createSupabaseInvoiceDispatchClaimer,
   createSupabaseInvoiceProjectionRuntime,
+  processAcceptedStripeInvoiceReceipt,
   processStripeInvoiceDispatch,
 } from "../../../supabase/functions/_shared/stripe-invoice-projection/index.ts";
 
@@ -20,6 +22,10 @@ const projectionSql = await readFile(
   new URL("../../../supabase/migrations/20260921110000_add_stripe_invoice_projection.sql", import.meta.url),
   "utf8",
 );
+const targetedClaimSql = await readFile(
+  new URL("../../../supabase/migrations/20260929170000_add_targeted_stripe_dispatch_claim.sql", import.meta.url),
+  "utf8",
+);
 
 const USER_ID = "11111111-1111-4111-8111-111111111111";
 const SUBSCRIPTION_ROW_ID = "22222222-2222-4222-8222-222222222222";
@@ -32,6 +38,7 @@ const acceptSql = `
   )
 `;
 const claimSql = "select * from public.claim_stripe_webhook_dispatches($1, $2, $3)";
+const claimByIdSql = "select * from public.claim_stripe_webhook_dispatch_by_id($1::uuid, $2, $3)";
 
 let db;
 
@@ -103,6 +110,10 @@ function createRpcClient() {
     acquire_stripe_customer_fence: {
       sql: `select * from public.acquire_stripe_customer_fence($1::uuid,$2::uuid,$3,$4::uuid,$5,$6,$7)`,
       values: (a) => [a.p_receipt_id, a.p_dispatch_id, a.p_livemode, a.p_lease_token, a.p_claim_generation, a.p_stripe_customer_id, a.p_lease_seconds],
+    },
+    claim_stripe_webhook_dispatch_by_id: {
+      sql: claimByIdSql,
+      values: (a) => [a.p_dispatch_id, a.p_livemode, a.p_lease_seconds],
     },
     release_stripe_customer_fence: {
       sql: `select * from public.release_stripe_customer_fence($1::uuid,$2::uuid,$3,$4::uuid,$5,$6,$7::uuid,$8)`,
@@ -289,6 +300,7 @@ before(async () => {
   await db.exec(foundationSql);
   await db.exec(leaseSql);
   await db.exec(projectionSql);
+  await db.exec(targetedClaimSql);
   await setRequestRole("service_role");
 });
 
@@ -327,6 +339,109 @@ test("the Stripe provider adapter pins Basil and expands InvoicePayment plus lat
     ["invoice", "in_provider", { expand: ["payments.data.payment.payment_intent"] }, { apiVersion: "2025-08-27.basil" }],
     ["subscription", "sub_provider", { expand: ["latest_invoice"] }, { apiVersion: "2025-08-27.basil" }],
   ]);
+});
+
+test("targeted dispatch claim leases only the requested receipt and prevents a concurrent second claim", async () => {
+  const first = await accept({ eventId: "evt_target_first", invoiceId: "in_target_first" });
+  const second = await accept({ eventId: "evt_target_second", invoiceId: "in_target_second" });
+  const claimDispatch = createSupabaseInvoiceDispatchClaimer(createRpcClient());
+
+  assert.equal(await claimDispatch({ dispatchId: first.dispatch_id, livemode: false }), null);
+  const claimed = await claimDispatch({ dispatchId: second.dispatch_id, livemode: true });
+  assert.ok(claimed);
+  assert.equal(claimed.receipt_id, second.receipt_id);
+  assert.equal(claimed.dispatch_id, second.dispatch_id);
+  assert.equal(claimed.stripe_event_id, "evt_target_second");
+  assert.equal(claimed.event_type, "invoice.payment_failed");
+  assert.equal(claimed.claim_generation, 1);
+  assert.equal(claimed.attempt_count, 1);
+  assert.equal(await claimDispatch({ dispatchId: second.dispatch_id, livemode: true }), null);
+
+  const statuses = (await execute(`
+    select r.stripe_event_id, r.status as receipt_status, d.status as dispatch_status
+      from billing_ingress.stripe_webhook_receipts r
+      join billing_ingress.stripe_webhook_dispatches d on d.receipt_id = r.id
+     order by r.stripe_event_id
+  `)).rows;
+  assert.deepEqual(statuses, [
+    { stripe_event_id: "evt_target_first", receipt_status: "received", dispatch_status: "pending" },
+    { stripe_event_id: "evt_target_second", receipt_status: "processing", dispatch_status: "processing" },
+  ]);
+
+  const firstClaim = await claimDispatch({ dispatchId: first.dispatch_id, livemode: true });
+  assert.ok(firstClaim);
+  assert.equal(firstClaim.stripe_event_id, "evt_target_first");
+});
+
+test("accepted invoice receipts are atomically applied before the webhook can acknowledge them", async () => {
+  await seedSubscription({
+    failureAt: "2025-09-01T12:00:00Z",
+    nextAttempt: "2025-09-03T12:00:00Z",
+    failureType: "invoice.payment_failed",
+  });
+  const receipt = await accept({ eventId: "evt_ingress_paid", invoiceId: "in_ingress_paid" });
+  const result = await processAcceptedStripeInvoiceReceipt({
+    client: createRpcClient(),
+    receipt,
+    livemode: true,
+    provider: providerFrom({
+      invoices: { in_ingress_paid: stripeInvoice({ id: "in_ingress_paid", status: "paid" }) },
+      subscription: stripeSubscription({ latestInvoiceId: "in_ingress_paid" }),
+    }),
+  });
+
+  assert.deepEqual(result, { status: "applied", outcome: "paid" });
+  const current = await state();
+  assert.equal(current.receipt_status, "applied");
+  assert.equal(current.dispatch_status, "completed");
+  assert.equal(current.payment_failure_at, null);
+  assert.equal(current.payment_failure_type, null);
+  assert.equal((await ledgerRows()).length, 1);
+});
+
+test("a terminal duplicate invoice delivery is acknowledged without another Stripe read", async () => {
+  await seedSubscription();
+  const original = await accept({ eventId: "evt_terminal_duplicate", invoiceId: "in_terminal_duplicate" });
+  const firstResult = await processAcceptedStripeInvoiceReceipt({
+    client: createRpcClient(),
+    receipt: original,
+    livemode: true,
+    provider: providerFrom({
+      invoices: { in_terminal_duplicate: stripeInvoice({ id: "in_terminal_duplicate", status: "paid" }) },
+      subscription: stripeSubscription({ latestInvoiceId: "in_terminal_duplicate" }),
+    }),
+  });
+  assert.deepEqual(firstResult, { status: "applied", outcome: "paid" });
+  const duplicate = await accept({ eventId: "evt_terminal_duplicate", invoiceId: "in_terminal_duplicate" });
+  assert.equal(duplicate.outcome, "duplicate_terminal");
+
+  const result = await processAcceptedStripeInvoiceReceipt({
+    client: createRpcClient(),
+    receipt: duplicate,
+    livemode: true,
+    provider: {
+      retrieveInvoice: async () => { throw new Error("terminal duplicate must not call Stripe"); },
+      retrieveSubscription: async () => { throw new Error("terminal duplicate must not call Stripe"); },
+    },
+  });
+  assert.deepEqual(result, { status: "applied", outcome: "duplicate_terminal" });
+  assert.equal((await ledgerRows()).length, 1);
+});
+
+test("a dispatch leased by a concurrent webhook remains retryable and is not double-applied", async () => {
+  const receipt = await accept({ eventId: "evt_busy_claim", invoiceId: "in_busy_claim" });
+  await claim();
+  const result = await processAcceptedStripeInvoiceReceipt({
+    client: createRpcClient(),
+    receipt,
+    livemode: true,
+    provider: providerFrom({ invoices: {}, subscription: {} }),
+  });
+  assert.deepEqual(result, { status: "retryable", code: "invoice_dispatch_not_claimed" });
+  assert.equal((await ledgerRows()).length, 0);
+  const current = await state();
+  assert.equal(current.receipt_status, "processing");
+  assert.equal(current.dispatch_status, "processing");
 });
 
 test("InvoicePayment invoice identity is verified before projection", async () => {
@@ -939,6 +1054,10 @@ test("anonymous roles cannot invoke projection RPCs and service_role cannot read
     await setRequestRole("service_role");
     await assert.rejects(
       () => execute("select * from public.acquire_stripe_customer_fence($1::uuid,$2::uuid,$3,$4::uuid,$5,$6,$7)", [dispatch.receipt_id, dispatch.dispatch_id, true, dispatch.lease_token, dispatch.claim_generation, CUSTOMER_ID, 300]),
+      /permission denied/,
+    );
+    await assert.rejects(
+      () => execute(claimByIdSql, [dispatch.dispatch_id, true, 300]),
       /permission denied/,
     );
     await execute("reset role");

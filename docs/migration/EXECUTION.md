@@ -3831,3 +3831,23 @@ test:migration-data` passes 188/188 under Node 22.6.0; the license-expiry D1
 integration passes, as does the source-profile lifecycle integration (25/25).
 This changes only local source and tests: no production Worker, user data, D1,
 or DNS/domain state changed.
+
+## Stripe invoice webhook dispatch wiring (2026-09-29 JST)
+
+The existing signed Supabase webhook now routes `invoice.payment_failed`,
+`invoice.payment_action_required`, and `invoice.payment_succeeded` through
+durable receipt acceptance and an exact-ID dispatch lease. The handler retrieves
+the current invoice and subscription from Stripe, then applies the fenced
+invoice projection, payment fields, and receipt/dispatch terminal state in one
+Supabase transaction. A terminal duplicate returns 200 without a Stripe read;
+an active lease or retryable failure returns 503. The new RPC is defined in
+`supabase/migrations/20260929170000_add_targeted_stripe_dispatch_claim.sql`.
+
+The focused PGlite projection suite passes 28/28; the full
+`experiments/stripe-receipts` `npm test` run exits successfully. Package
+typecheck, Deno check for the webhook, targeted ESLint, and `git diff --check`
+also pass. This remains local code and test coverage: the migration was not
+applied, the webhook was not deployed, and no Stripe API call, user-data
+migration, D1 change, or DNS/domain change was made. Issue #32 remains open
+because subscription, checkout, and deletion paths still need to be brought
+under the same dispatch guarantees.

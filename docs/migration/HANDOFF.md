@@ -3005,3 +3005,20 @@ its active Cron configuration. Wrangler still resolves to the wrong account,
 and direct Dashboard navigation to the Worker list did not load, so no new
 Cron run or deployment was attempted. Real user/Auth/object import and
 domain/DNS cutover remain deferred.
+
+## Stripe invoice webhook dispatch wiring (2026-09-29 JST)
+
+The signed Supabase webhook now sends the three invoice payment event types
+through durable receipt acceptance, an exact-ID dispatch lease, current Stripe
+invoice/subscription reconciliation, and fenced atomic application of the
+invoice projection and payment fields. Terminal duplicates return 200 without
+provider reads; a busy lease or retryable failure returns 503. The database
+function is in
+`supabase/migrations/20260929170000_add_targeted_stripe_dispatch_claim.sql`.
+
+The PGlite invoice-projection suite passes 28/28, and the full receipt package
+test command, typecheck, Deno check, and targeted ESLint pass. No Supabase
+migration was applied and no webhook deployed. This does not close Issue #32:
+subscription, checkout, and deletion event paths remain to be migrated. User
+data/Auth/object import and domain/DNS cutover remain deferred. The Wrangler
+account mismatch still blocks remote staging verification.
