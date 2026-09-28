@@ -13,6 +13,13 @@ invoked and no application rows or settings were changed. External callers for
 that live-only function remain unverified; see
 [`live-observations.md`](live-observations.md).
 
+A 2026-09-29 read-only query in
+[`manual-expiry-cron-readiness.sql`](../../scripts/migration/manual-expiry-cron-readiness.sql)
+found zero scheduled commands directly targeting that live-only function.
+Invocation history, indirect database use, and external callers remain
+unverified, so the Supabase function stays active until final writer-freeze
+and retirement review.
+
 The D1 analytics summary, fanmark-details projection, coupon application,
 Stripe extension checkout, and invitation signup now compare canonical
 fixed-width UTC timestamps without millisecond rounding. Business D1 migration

@@ -1550,13 +1550,15 @@ the applicable lottery and outbox behavior. The route is therefore a safer
 product replacement, not exact legacy-function parity. The scheduled
 Cloudflare Cron selector remains disabled independently.
 
-No local application caller was found. The 2026-09-27 read-only `cron.job`
-inventory found no active job directly targeting the manual function, but
-Supabase invocation history, indirect database callers, and external
-callers/schedules remain unverified. Keep the live function unchanged until
-those callers are checked and a final writer-freeze/retirement decision is
-recorded. No function call, deployment, production write, application-row
-read, user-data migration, or DNS/domain change occurred during this follow-up.
+No local application caller was found. The reproducible
+[`manual-expiry-cron-readiness.sql`](../../scripts/migration/manual-expiry-cron-readiness.sql)
+read-only query was repeated on 2026-09-29 through Supabase CLI 2.118.0; it
+returned zero jobs whose command mentions the manual function. This rules out
+a direct `pg_cron` schedule at the time of the query, not Supabase invocations,
+indirect database callers, or external callers/schedules. Keep the live
+function unchanged until those callers are checked and a final writer-freeze/
+retirement decision is recorded. The query read no application rows and
+changed no function, deployment, or setting.
 
 ## Broadcast templates read-only source and staging seed (2026-09-27 JST)
 
