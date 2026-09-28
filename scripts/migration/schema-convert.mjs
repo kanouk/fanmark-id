@@ -14,7 +14,7 @@ import { pathToFileURL } from "node:url";
 
 import { compileCredentialDescriptor, CREDENTIAL_COLUMN, CREDENTIAL_SOURCE_RELATION } from "./credential-descriptor.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 9;
+export const SCHEMA_CONVERSION_VERSION = 10;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -782,6 +782,29 @@ function typeInfo(column, enumLabels, gates, typeCounts, credentialDescriptorPla
   } else if (sourceType === "timestamp with time zone") {
     targetType = "TEXT";
     codec = "timestamptz-utc-microsecond-text";
+    checks.push(`${quoteIdentifier(column.column_name)} IS NULL OR (
+      length(${quoteIdentifier(column.column_name)}) = 27
+      AND substr(${quoteIdentifier(column.column_name)}, 5, 1) = '-'
+      AND substr(${quoteIdentifier(column.column_name)}, 8, 1) = '-'
+      AND substr(${quoteIdentifier(column.column_name)}, 11, 1) = 'T'
+      AND substr(${quoteIdentifier(column.column_name)}, 14, 1) = ':'
+      AND substr(${quoteIdentifier(column.column_name)}, 17, 1) = ':'
+      AND substr(${quoteIdentifier(column.column_name)}, 20, 1) = '.'
+      AND substr(${quoteIdentifier(column.column_name)}, 27, 1) = 'Z'
+      AND substr(${quoteIdentifier(column.column_name)}, 1, 4) NOT GLOB '*[^0-9]*'
+      AND substr(${quoteIdentifier(column.column_name)}, 6, 2) NOT GLOB '*[^0-9]*'
+      AND substr(${quoteIdentifier(column.column_name)}, 9, 2) NOT GLOB '*[^0-9]*'
+      AND substr(${quoteIdentifier(column.column_name)}, 12, 2) NOT GLOB '*[^0-9]*'
+      AND substr(${quoteIdentifier(column.column_name)}, 15, 2) NOT GLOB '*[^0-9]*'
+      AND substr(${quoteIdentifier(column.column_name)}, 18, 2) NOT GLOB '*[^0-9]*'
+      AND substr(${quoteIdentifier(column.column_name)}, 21, 6) NOT GLOB '*[^0-9]*'
+      AND substr(${quoteIdentifier(column.column_name)}, 1, 4) BETWEEN '0001' AND '9999'
+      AND date(substr(${quoteIdentifier(column.column_name)}, 1, 10), '+0 days') IS substr(${quoteIdentifier(column.column_name)}, 1, 10)
+      AND substr(${quoteIdentifier(column.column_name)}, 12, 2) BETWEEN '00' AND '23'
+      AND substr(${quoteIdentifier(column.column_name)}, 15, 2) BETWEEN '00' AND '59'
+      AND substr(${quoteIdentifier(column.column_name)}, 18, 2) BETWEEN '00' AND '59'
+      AND datetime(substr(${quoteIdentifier(column.column_name)}, 1, 19), '+0 seconds') IS replace(substr(${quoteIdentifier(column.column_name)}, 1, 19), 'T', ' ')
+    )`);
     gates.add("timestamp_import_precision", "Timestamptz imports and operation timestamps must preserve UTC microsecond text precision.", location);
   } else if (sourceType === "jsonb") {
     targetType = "TEXT";

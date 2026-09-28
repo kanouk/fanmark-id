@@ -441,6 +441,15 @@ export async function runLocalD1Integration() {
     assert.deepEqual(parent.results, [{ id: parentId, label: "parent row", amount: "12.34", payload: '{"n":1,"text":"null"}', tags: '["alpha","alpha"]' }]);
     const child = await database.prepare('SELECT "id", "parent_id", "event_at", "note", "enabled", "scores" FROM "child"').all();
     assert.deepEqual(child.results, [{ id: childId, parent_id: parentId, event_at: "2026-09-21T12:34:56.123456Z", note: "2026-09-21", enabled: 1, scores: "[1,-2,1]" }]);
+    await assert.rejects(
+      database.prepare('UPDATE "child" SET "event_at" = ? WHERE "id" = ?')
+        .bind("2025-02-29T12:34:56.123456Z", childId)
+        .run(),
+      /CHECK constraint failed/,
+      "D1 must reject non-calendar timestamps on later writes",
+    );
+    const unchangedTimestamp = await database.prepare('SELECT "event_at" FROM "child" WHERE "id" = ?').bind(childId).all();
+    assert.deepEqual(unchangedTimestamp.results, [{ event_at: "2026-09-21T12:34:56.123456Z" }]);
     const report = JSON.parse(await fs.readFile(reportPath, "utf8"));
     assert.equal(report.status, "public_rows_reconciled");
     assert.equal(report.publicRowsReconciled, true);

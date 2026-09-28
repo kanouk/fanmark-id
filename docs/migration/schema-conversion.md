@@ -411,3 +411,21 @@ fresh schema-only catalog now reports 13 unresolved groups across 226
 locations (nine row-conversion and four schema/operation); `deployable` remains
 false. Only this table's generated DDL changed relative to v8. Catalog and
 generated SQL were kept outside Git, and no remote D1 was modified.
+
+## Version 10 UTC microsecond timestamp DDL validation (2026-09-28 JST)
+
+Schema conversion v10 adds a `CHECK` for PostgreSQL `timestamp with time zone`
+columns. It accepts only fixed-width UTC text in `YYYY-MM-DDTHH:mm:ss.ffffffZ`
+form, four-digit years 0001–9999, real calendar days, and valid hour/minute/
+second fields. It protects imported values and later D1 writes. SQLite and
+Miniflare D1 tests accept canonical values and reject malformed dates, offsets,
+precision, and time fields in the SQLite fixture. Miniflare D1 directly
+confirms that an impossible leap-date update is rejected while preserving the
+old value.
+
+The latest schema-only catalog has 103 timestamptz columns across 40 tables.
+Because each table has at least one such column, generated DDL changes for all
+40 table blocks. The readiness report remains at 13 unresolved groups across
+226 locations, including `timestamp_import_precision`: the DDL constraint
+cannot prove that every application operation preserves the intended source
+timestamp. No user rows were read and no remote D1 was written.

@@ -3013,3 +3013,22 @@ credentials, one deferred credential, all 40 table checkpoints, and conflict
 rejection. Its status is `public_rows_reconciled`, not full migration
 reconciliation. No source application rows were queried; no remote D1/R2,
 production route, real user data, or domain/DNS setting was changed.
+
+## Schema converter v10 timestamp write guard (2026-09-28 JST)
+
+Converter v10 adds canonical UTC microsecond timestamp checks to generated D1
+DDL. For the fresh schema-only catalog, this affects 103 timestamptz columns
+across all 40 tables. The checks require a real date in years 0001–9999,
+fixed-width `YYYY-MM-DDTHH:mm:ss.ffffffZ` text, and valid time fields. The
+readiness report remains at 13 unresolved groups across 226 locations because
+`timestamp_import_precision` still requires operation-level evidence.
+
+Node 22.6.0 verification passes: schema-converter 15/15, row-conversion 7/7,
+Miniflare D1 importer 18/18, and the full migration-data suite 168/168. The D1
+integration rejects an impossible leap-date update and confirms the existing
+canonical timestamp remains unchanged. A separate current-catalog local D1
+replay reconciles 10 synthetic rows, two transformed credentials, one deferred
+credential, 40/40 checkpoints, and conflict rejection; its status is
+`public_rows_reconciled`, with deployment and full migration reconciliation
+false. No application rows, remote D1/R2, production route, real user data, or
+domain/DNS setting was read or changed.

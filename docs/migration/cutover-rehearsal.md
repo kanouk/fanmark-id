@@ -389,3 +389,19 @@ table checkpoints, and conflict rejection. It reports
 `public_rows_reconciled`; `fullMigrationReconciled` remains false. The
 catalog/report/DDL remained private outside Git. No source application rows,
 remote D1/R2 writes, production route, or domain/DNS change occurred.
+
+## Converter v10 timestamp constraints and synthetic D1 replay (2026-09-28 JST)
+
+The v10 converter adds canonical UTC microsecond `CHECK` constraints for all
+source timestamptz columns. Schema-converter tests pass 15/15, row-conversion
+tests 7/7, migration-data tests 168/168, and the Miniflare D1 importer suite
+18/18; the D1 integration directly confirms a later write with an impossible
+calendar date is rejected and leaves the imported canonical value intact.
+
+The fresh-catalog local replay still reconciles 10 synthetic rows, two
+transformed credentials, one deferred credential, 40/40 checkpoints, and
+conflict rejection. It reports `public_rows_reconciled`, with deployment and
+full migration reconciliation false. This is constraint/import evidence only;
+it does not close operation-level timestamp precision or the full #37 recovery
+rehearsal. No source rows, remote D1/R2, production route, or domain/DNS state
+was changed.
