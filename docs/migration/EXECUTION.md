@@ -3121,7 +3121,7 @@ The generated value has millisecond resolution padded to six fractional
 digits, and does not preserve PostgreSQL transaction-time semantics. The
 `timestamp_default_requires_operation` gate remains open; non-timestamptz
 defaults remain omitted. Schema conversion version 11 invalidates v10 snapshot
-manifests, which must be re-exported before later verification/import. The
+manifests, which must be re-exported before later verification/import.
 The 2026-09-28 read-only schema refresh was reprocessed under v11 without the
 private credential descriptor. Its report has 13 unresolved groups / 226
 locations (8 row-conversion, 5 schema/operation), including
@@ -3130,3 +3130,11 @@ catalog `now()` defaults are timestamptz and produce the new D1 expression;
 the generated DDL loaded 40 tables with clean SQLite integrity and foreign-key
 checks. No source rows, remote D1, Worker deployment, production route, real
 user data, or domain/DNS state was accessed or changed.
+
+The descriptor-aware v11 replay then passed under Node 22.6.0: 10 synthetic
+rows completed all 40 checkpoints, two synthetic credentials were
+transformed, one inactive credential was durably deferred, typed/hash
+readback matched, and conflicting coverage was rejected. The report remains
+`deployable: false` with 8 row-conversion groups / 133 locations and 5
+schema/operation groups / 93 locations. No source application rows or remote
+D1/R2 state was read or changed.

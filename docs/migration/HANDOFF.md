@@ -2503,3 +2503,15 @@ v11 DDL parses into all 40 tables with clean SQLite integrity and foreign-key
 checks. The converter suite passes 16/16 and the synthetic D1 importer suite
 passes 19/19 under Node 22.6.0 locally; the full migration-data suite passes
 170/170.
+
+## Version 11 descriptor-aware fresh-catalog replay (2026-09-28 JST)
+
+Refreshed the linked Supabase schema with the reviewed read-only catalog query,
+then ran converter v11 and the current-catalog synthetic D1 importer under
+Node 22.6.0. The report retains 13 unresolved groups / 226 locations: 8
+row-conversion groups / 133 locations and 5 schema/operation groups / 93
+locations; `deployable` remains false. The importer completed 40/40 table
+checkpoints for 10 synthetic rows, transformed two synthetic credentials,
+durably deferred one inactive credential, verified typed/hash readback, and
+rejected conflicting coverage. Status is only `public_rows_reconciled`; no
+source application rows or remote D1/R2 state were accessed or changed.

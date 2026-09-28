@@ -351,3 +351,9 @@ and remains `deployable: false`. The generated full-catalog DDL loaded 40
 tables in SQLite with `integrity_check=ok` and no foreign-key violations. The
 full migration-data suite passes 170/170 under Node 22.6.0. This local schema
 replay did not read application rows or apply the output to remote D1.
+
+A subsequent v11 run with the value-free credential descriptor retained 13
+groups / 226 locations, now reported as 8 row-conversion groups / 133
+locations and 5 schema/operation groups / 93 locations. The explicit
+descriptor-aware importer exercised the credential path using synthetic rows;
+`deployable` remains false pending the listed parity and operation gates.

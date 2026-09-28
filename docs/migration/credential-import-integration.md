@@ -620,3 +620,14 @@ The current-catalog synthetic import now completes 40 table checkpoints with
 inactive credential, exact target readback, and conflicting-coverage rejection.
 It reports `public_rows_reconciled`, not full migration readiness. No source
 application rows or remote D1 were used.
+
+## Version 11 descriptor-aware catalog refresh (2026-09-28)
+
+The read-only catalog query and value-free credential policy were reprocessed
+under converter v11 with Node 22.6.0. The current-catalog replay again completed
+all 40 checkpoints with 10 synthetic rows, two transformed credentials, one
+durably deferred inactive credential, typed/hash readback, and conflicting
+coverage rejection. The status remains `public_rows_reconciled`, while
+`deployable` and `fullMigrationReconciled` remain false. The v11 report has 8
+row-conversion groups / 133 locations and 5 schema/operation groups / 93
+locations. No source application rows or remote D1/R2 state was read or changed.

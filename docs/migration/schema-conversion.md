@@ -495,3 +495,23 @@ the fallback expression. The generated DDL loaded all 40 tables in SQLite;
 `integrity_check=ok` and `foreign_key_check` returned no violations. No source
 rows were queried, and no remote D1, production routing, user data, or
 domain/DNS state was changed.
+
+## Version 11 descriptor-aware fresh-catalog replay (2026-09-28 JST)
+
+The linked Supabase catalog was refreshed with the reviewed read-only
+`schema-readiness.sql` query. The credential descriptor was supplied only as
+value-free policy metadata (`bcryptjs@3.0.3`, cost 10); no password or hash was
+read. Under Node 22.6.0, schema conversion generated all 40 tables and kept
+`deployable: false`. The report has 8 row-conversion gate groups across 133
+locations and 5 schema/operation groups across 93 locations (13 groups / 226
+locations total). The groups still include array, exact bigint, decimal, JSON,
+money, sequence, timestamp-import, credential-transform, external-foreign-key,
+timestamp-default-operation, and unsupported-catalog-scope requirements.
+
+The fresh-catalog synthetic Miniflare D1 replay completed 40/40 checkpoints
+with 10 synthetic rows. It transformed two synthetic credentials, durably
+deferred one inactive-license credential, verified typed/hash readback, and
+rejected conflicting coverage. Its result is `public_rows_reconciled` only;
+`deployable` and `fullMigrationReconciled` remain false. The read-only source
+query read catalog metadata only. No Supabase application rows or remote D1/R2
+rows were read or written, and no production route or domain/DNS state changed.
