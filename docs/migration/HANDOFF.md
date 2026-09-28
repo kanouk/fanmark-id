@@ -2612,8 +2612,9 @@ path reset before execution; its cleanup also returned staging to baseline.
 The prior CI timeout was reproduced only when PGlite ran inside Node's
 `--test` harness (5/15 latest trials). The migration runner now executes that
 integration in a standalone process; it passed 15/15 repetitions and the full
-Stripe receipt suite passed locally on Node 22.6.0. A fresh GitHub Actions run
-is still needed to confirm the fix remotely.
+Stripe receipt suite passed locally on Node 22.6.0. Fresh GitHub Actions run
+`36394318652` passed both the staging application and Worker API jobs, including
+typecheck and Worker bundle dry-run.
 The current weighted estimates remain about 53% end-to-end and 73% for the
 prioritized app/infrastructure/master scope; the outstanding gates remain
 substantial.

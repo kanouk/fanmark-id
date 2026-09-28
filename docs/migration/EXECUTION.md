@@ -3454,8 +3454,8 @@ test runner; this path passed 15/15 repetitions, and the complete Stripe
 receipt suite passed locally on Node 22.6.0. Direct `node --test` can still
 reproduce the harness stall, so CI must use the checked-in custom runner path.
 
-The previous PR CI's Worker job passed, while the staging-app job timed out
-twice in `snapshot-export.test.mjs`. That test passes alone; the local receipt
-suite completed successfully after its existing isolated-process retry. The
-latest feature commit still needs a fresh CI run before PR merge; the synthetic
-staging Cron canary has already been deployed and restored independently.
+The earlier PR CI's Worker job passed, while the staging-app job timed out
+twice in `snapshot-export.test.mjs`. After isolating and routing around the
+PGlite/`node --test` hang, fresh CI run `36394318652` passed both the staging
+application and Worker API jobs, including Worker typecheck and bundle dry-run.
+The synthetic staging Cron canary was deployed and restored independently.
