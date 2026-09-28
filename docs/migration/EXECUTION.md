@@ -3107,3 +3107,26 @@ timestamp writer/default inventory is not reconciled. No source rows or real
 user data were accessed. The only remote D1 change was the Master audit-trigger
 migration above; no Worker deployment, R2 change, production route, or
 domain/DNS setting changed.
+
+## Schema converter v11 `now()` fallback representation (2026-09-28 JST)
+
+The converter emits
+`strftime('%Y-%m-%dT%H:%M:%f000Z', 'now')` for `now()` defaults on source
+timestamptz columns. SQLite-backed D1 evaluates the parenthesized expression
+and the generated timestamp `CHECK` accepts the fixed-width UTC result. The
+new Miniflare D1 test confirms an omitted timestamp stores 27 characters in
+that shape; the converter unit test confirms the same with SQLite.
+
+The generated value has millisecond resolution padded to six fractional
+digits, and does not preserve PostgreSQL transaction-time semantics. The
+`timestamp_default_requires_operation` gate remains open; non-timestamptz
+defaults remain omitted. Schema conversion version 11 invalidates v10 snapshot
+manifests, which must be re-exported before later verification/import. The
+The 2026-09-28 read-only schema refresh was reprocessed under v11 without the
+private credential descriptor. Its report has 13 unresolved groups / 226
+locations (8 row-conversion, 5 schema/operation), including
+`credential_descriptor_required`, and remains `deployable: false`. All 79
+catalog `now()` defaults are timestamptz and produce the new D1 expression;
+the generated DDL loaded 40 tables with clean SQLite integrity and foreign-key
+checks. No source rows, remote D1, Worker deployment, production route, real
+user data, or domain/DNS state was accessed or changed.

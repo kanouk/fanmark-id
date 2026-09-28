@@ -1,6 +1,6 @@
 # Full schema conversion generator
 
-`schema-convert.mjs` v8 is a private, catalog-only preparation tool. It converts
+`schema-convert.mjs` v11 is a private, catalog-only preparation tool. It converts
 the JSON emitted by `scripts/migration/schema-readiness.sql` into deterministic
 SQLite/D1 table and index SQL plus a machine-readable report of unresolved
 parity gates. It does not read application rows, contact Supabase, apply SQL,
@@ -322,3 +322,32 @@ catalog, generated SQL, and report remain mode 0600 outside Git, and no remote
 D1 schema or data was changed. The full migration-data suite passed 163/163;
 the complete Worker `npm test` chain, app typecheck, Cloudflare staging build,
 Worker deploy dry-run, workflow-isolation check, and `git diff --check` passed.
+
+## Schema converter version 11: canonical-shaped `now()` defaults
+
+For source `timestamp with time zone` columns, PostgreSQL `now()` defaults now
+generate the D1 expression
+`strftime('%Y-%m-%dT%H:%M:%f000Z', 'now')`. The result has the same fixed-width
+UTC text shape required by the generated timestamp `CHECK`, so a D1 insert that
+omits this column does not immediately violate that constraint. D1 follows
+SQLite SQL semantics, and SQLite permits a parenthesized expression as a
+column default ([D1 SQL compatibility](https://developers.cloudflare.com/d1/sql-api/sql-statements/),
+[SQLite `CREATE TABLE`](https://www.sqlite.org/lang_createtable.html)).
+
+This fallback has millisecond clock resolution padded with three zeroes; it
+does not preserve PostgreSQL microsecond clock resolution or transaction-start
+time semantics. `timestamp_default_requires_operation` therefore remains a
+blocking gate at each source default. Non-timestamptz `now()` defaults remain
+omitted and gated because this timestamp representation is not valid for them.
+The converter version is now 11, so snapshot manifests made with v10 must be
+re-exported before verification/import. Synthetic SQLite and Miniflare D1 tests
+assert both the stored 27-character value and the retained parity gates.
+
+The 2026-09-28 read-only catalog refresh contains 79 `now()` defaults, all on
+timestamptz columns; v11 emits the expression at all 79 locations. The report
+was run without the private credential descriptor and therefore retains
+`credential_descriptor_required`; it has 13 unresolved groups / 226 locations
+and remains `deployable: false`. The generated full-catalog DDL loaded 40
+tables in SQLite with `integrity_check=ok` and no foreign-key violations. The
+full migration-data suite passes 170/170 under Node 22.6.0. This local schema
+replay did not read application rows or apply the output to remote D1.

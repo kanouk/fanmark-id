@@ -822,6 +822,32 @@ if (isMain) {
     await runLocalD1Integration();
   });
 
+  test("emits a canonical-shaped D1 now() default while retaining timestamp parity gates", async () => {
+    const catalog = fixtureCatalog();
+    catalog.columns.find((entry) => entry.table_name === "child" && entry.column_name === "event_at").default_expression = "now()";
+    const schema = convertSchema(catalog);
+    assert.equal(schema.report.deployable, false);
+    assert.ok(schema.report.gates.some((gate) => gate.code === "timestamp_import_precision"));
+    assert.ok(schema.report.gates.some((gate) => gate.code === "timestamp_default_requires_operation"));
+
+    const fixture = await createLocalD1(schema.sql);
+    try {
+      await fixture.database.prepare('INSERT INTO "parent" ("id", "label") VALUES (?, ?)')
+        .bind(parentId, "timestamp-default-parent")
+        .run();
+      await fixture.database.prepare('INSERT INTO "child" ("id", "parent_id", "enabled") VALUES (?, ?, ?)')
+        .bind(childId, parentId, 1)
+        .run();
+      const inserted = await fixture.database.prepare('SELECT "event_at", length("event_at") AS "timestamp_length" FROM "child" WHERE "id" = ?')
+        .bind(childId)
+        .first();
+      assert.equal(inserted.timestamp_length, 27);
+      assert.match(inserted.event_at, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}000Z$/);
+    } finally {
+      await fixture.miniflare.dispose();
+    }
+  });
+
   test("imports and reconciles exact signed int64 values across the full range", async () => {
     const fixture = await openFixture();
     try {

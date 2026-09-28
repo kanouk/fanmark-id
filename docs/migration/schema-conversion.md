@@ -468,3 +468,30 @@ staging smoke scripts also use six-digit UTC values. Lifecycle/schema tests
 pass 16/16 and Worker typecheck passes; the complete writer/default inventory
 remains open. The full Worker test chain, staging Vite build, and Wrangler
 deployment dry-run pass; no Worker deployment was performed.
+
+## Version 11 `now()` default representation (2026-09-28 JST)
+
+The converter now emits a D1 SQLite default for `now()` on source
+`timestamp with time zone` columns:
+`strftime('%Y-%m-%dT%H:%M:%f000Z', 'now')`. This produces a fixed-width UTC
+value accepted by the v10 timestamp `CHECK`, including when a target insert
+omits the timestamp. A synthetic Miniflare D1 integration test applies the
+generated DDL and reads back a 27-character value ending in `Z` with three
+clock digits and three padded zeroes; the SQLite unit test checks the same
+contract.
+
+The default remains a fallback representation only. Its clock has millisecond
+resolution and SQLite evaluation does not preserve PostgreSQL transaction-time
+semantics, so `timestamp_default_requires_operation` stays blocking and
+parity-sensitive Worker operations must supply their own timestamp. Defaults
+on non-timestamptz columns are still omitted and gated. The generator version
+is 11; a v10 snapshot manifest fails the current verifier and must be freshly
+exported. The 2026-09-28 read-only schema refresh was reprocessed without the
+private credential descriptor, so the v11 report retains
+`credential_descriptor_required`. It has 13 unresolved groups across 226
+locations (8 row-conversion, 5 schema/operation) and remains
+`deployable: false`. All 79 source `now()` defaults are timestamptz and emit
+the fallback expression. The generated DDL loaded all 40 tables in SQLite;
+`integrity_check=ok` and `foreign_key_check` returned no violations. No source
+rows were queried, and no remote D1, production routing, user data, or
+domain/DNS state was changed.

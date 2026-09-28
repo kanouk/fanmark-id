@@ -208,7 +208,7 @@ function timestampFixture() {
   const catalog = fixture();
   catalog.columns.push(
     column("fanmark_access_daily_stats", "id", 1, "uuid", { not_null: true, default_expression: "gen_random_uuid()" }),
-    column("fanmark_access_daily_stats", "created_at", 2, "timestamp with time zone", { not_null: true }),
+    column("fanmark_access_daily_stats", "created_at", 2, "timestamp with time zone", { not_null: true, default_expression: "now()" }),
   );
   catalog.constraints.push(constraint(
     "fanmark_access_daily_stats",
@@ -232,7 +232,7 @@ test("conversion is deterministic and exposes exact target codecs", () => {
 
   assert.equal(first.report.target.tableCount, 4);
   assert.equal(first.report.target.columnCount, 15);
-  assert.equal(first.report.schemaVersion, 10);
+  assert.equal(first.report.schemaVersion, 11);
   assert.deepEqual(first.report.target.translatedConstraints, { p: 4, u: 0, f: 1, c: 3 });
   assert.equal(first.report.target.translatedIndexCount, 4);
   assert.deepEqual(
@@ -296,7 +296,7 @@ test("conversion is deterministic and exposes exact target codecs", () => {
 
 test("DATE schema checks preserve canonical calendar days for imports and later writes", () => {
   const result = convertSchema(calendarDateFixture());
-  assert.equal(result.report.schemaVersion, 10);
+  assert.equal(result.report.schemaVersion, 11);
   assert.equal(gateCodes(result.report).has("date_import_validation"), false);
   assert.match(result.sql, /"stat_date" IS NULL OR \([\s\S]*length\("stat_date"\) = 10[\s\S]*GLOB '\[0-9\].*-[0-9\].*-[0-9\].*'[\s\S]*substr\("stat_date", 1, 4\) BETWEEN '0001' AND '9999'[\s\S]*date\("stat_date", '\+0 days'\) IS "stat_date"/);
 
@@ -323,8 +323,10 @@ test("DATE schema checks preserve canonical calendar days for imports and later 
 
 test("TIMESTAMPTZ schema checks preserve canonical UTC microsecond text", () => {
   const result = convertSchema(timestampFixture());
-  assert.equal(result.report.schemaVersion, 10);
+  assert.equal(result.report.schemaVersion, 11);
   assert.ok(gateCodes(result.report).has("timestamp_import_precision"));
+  assert.ok(gateCodes(result.report).has("timestamp_default_requires_operation"));
+  assert.match(result.sql, /"created_at" TEXT NOT NULL DEFAULT \(strftime\('%Y-%m-%dT%H:%M:%f000Z', 'now'\)\)/);
   for (const fragment of [
     `length("created_at") = 27`,
     `substr("created_at", 5, 1) = '-'`,
@@ -360,11 +362,28 @@ test("TIMESTAMPTZ schema checks preserve canonical UTC microsecond text", () => 
   ]) {
     assert.equal(sqliteInsertPasses(result.sql, "fanmark_access_daily_stats", "created_at", value), false, `expected ${value} to fail`);
   }
+  const defaultTimestamp = execFileSync("sqlite3", [":memory:"], {
+    input: `${result.sql}\nINSERT INTO fanmark_access_daily_stats DEFAULT VALUES;\nSELECT created_at FROM fanmark_access_daily_stats;`,
+    encoding: "utf8",
+    stdio: ["pipe", "pipe", "pipe"],
+  }).trim();
+  assert.match(defaultTimestamp, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}000Z$/);
   assert.throws(() => execFileSync("sqlite3", [":memory:"], {
     input: `${result.sql}\nINSERT INTO fanmark_access_daily_stats (created_at) VALUES (NULL);`,
     encoding: "utf8",
     stdio: ["pipe", "pipe", "pipe"],
   }), "the source created_at column is NOT NULL");
+});
+
+test("now() defaults on non-timestamptz columns stay omitted and gated", () => {
+  const input = fixture();
+  input.columns.find((entry) => entry.table_name === "child" && entry.column_name === "note")
+    .default_expression = "now()";
+  const result = convertSchema(input);
+  const gates = result.report.gates.filter((gate) => gate.code === "timestamp_default_requires_operation");
+  assert.equal(gates.length, 1);
+  assert.deepEqual(gates[0].locations, [{ kind: "default", table: "child", column: "note" }]);
+  assert.doesNotMatch(result.sql, /"note" TEXT DEFAULT/);
 });
 
 test("PostgreSQL UUID defaults generate distinct canonical RFC 4122 v4 IDs in SQLite", () => {
@@ -461,7 +480,7 @@ test("the four reviewed live GIN indexes have explicit D1 query-contract disposi
   );
 
   const result = convertSchema(input);
-  assert.equal(result.report.schemaVersion, 10);
+  assert.equal(result.report.schemaVersion, 11);
   assert.deepEqual(result.report.target.indexAdaptations.map((entry) => entry.sourceIndex), [
     "idx_emoji_master_keywords",
     "idx_emoji_master_short_name",
@@ -505,7 +524,7 @@ test("known ASCII PostgreSQL regex checks require a reviewed locale proof", () =
     .flatMap((gate) => gate.locations)
     .filter((location) => sourceCheckNames.has(location.name));
   assert.deepEqual(untranslatedSourceChecks, []);
-  assert.equal(result.report.schemaVersion, 10);
+  assert.equal(result.report.schemaVersion, 11);
 
   const cases = [
     ["invitation_codes", "code", "ABC123", true],
@@ -721,7 +740,7 @@ test("the exact recent-active view is adapted only to the reviewed D1 query", ()
   input.views = [{ kind: "view", name: "recent_active_fanmarks", definition }];
 
   const result = convertSchema(input);
-  assert.equal(result.report.schemaVersion, 10);
+  assert.equal(result.report.schemaVersion, 11);
   assert.equal(result.report.deployable, false);
   assert.deepEqual(result.report.target.catalogScopeAdaptations, [{
     scope: "views",

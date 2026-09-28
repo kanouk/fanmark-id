@@ -14,7 +14,7 @@ import { pathToFileURL } from "node:url";
 
 import { compileCredentialDescriptor, CREDENTIAL_COLUMN, CREDENTIAL_SOURCE_RELATION } from "./credential-descriptor.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 10;
+export const SCHEMA_CONVERSION_VERSION = 11;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -860,8 +860,20 @@ function translateDefault(column, info, gates, sequencePrimaryKey = false) {
     return null;
   }
   if (/^now\s*\(\s*\)$/i.test(trimmed)) {
-    gates.add("timestamp_default_requires_operation", "now() would lose source microsecond precision in a copied SQLite default; operation code must supply UTC text.", location);
-    return null;
+    if (column.postgres_type.toLowerCase() !== "timestamp with time zone" || info.targetType !== "TEXT") {
+      gates.add(
+        "timestamp_default_requires_operation",
+        "now() has no reviewed default translation for this source type; the operation must provide a value in the target representation.",
+        location,
+      );
+      return null;
+    }
+    gates.add(
+      "timestamp_default_requires_operation",
+      "The D1 clock default can only provide millisecond resolution and does not preserve PostgreSQL transaction-time semantics; parity-sensitive operations must supply canonical UTC microsecond text.",
+      location,
+    );
+    return "(strftime('%Y-%m-%dT%H:%M:%f000Z', 'now'))";
   }
   if (/^nextval\s*\(/i.test(trimmed)) {
     if (sequencePrimaryKey) {
