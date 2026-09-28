@@ -3781,3 +3781,22 @@ reports 9 groups / 220 locations (4 row-conversion / 127, 5 schema/operation /
 93) and remains `deployable: false`. It returned no application rows or live
 sequence values. Focused schema/snapshot tests pass 37/37, and the complete
 migration-data suite passes 184/184 with no skips.
+
+
+## Snapshot-validated array schema gate and converter v17 (2026-09-28 JST)
+
+The supported array row envelope already carries per-column SQL-NULL state,
+dimension count, and lower bound. Conversion accepts only `text[]`, `uuid[]`,
+and `smallint[]`, rejects nested/non-1-based arrays and invalid elements, and
+preserves order, duplicates, element NULLs, and empty arrays. These checks run
+for each snapshot row before target binding, so the schema converter now shares
+the supported type list and suppresses the redundant pre-import array gate only
+for these types; an unsupported PostgreSQL array remains blocked.
+
+A fresh linked, read-only query completed without terminal input at
+2026-09-28 14:43 UTC and returned the same 40 tables / 406 columns; its nine
+arrays all use the three supported types. The v17 report removes the array
+gate's nine locations and has 8 groups / 211 locations (3 row-conversion / 118,
+5 schema/operation / 93), still `deployable: false`. Focused schema/row tests
+pass 27/27 and the complete migration-data suite passes 185/185 with no skips.
+No application rows or live sequence values were read.

@@ -1,6 +1,6 @@
 # Full schema conversion generator
 
-`schema-convert.mjs` v16 is a private, catalog-only preparation tool. It
+`schema-convert.mjs` v17 is a private, catalog-only preparation tool. It
 converts the JSON emitted by `scripts/migration/schema-readiness.sql` into deterministic
 SQLite/D1 table and index SQL plus a machine-readable report of unresolved
 parity gates. It does not read application rows, contact Supabase, apply SQL,
@@ -71,11 +71,13 @@ SQLite affinity. Treat the current report's codec values as the import contract.
 | `fanmark_password_configs.access_password` | `TEXT` | `credential-to-bcrypt` with descriptor; `credential-descriptor-required` without it | Validate the source snapshot as text, then admit only the dedicated transformed-row importer. A generic text binding is forbidden. |
 
 The money column names are deliberately explicit. A different numeric column is
-not silently treated as cents. Array dimensions/lower bounds, JSON numeric
-precision and bigint application-read precision remain gates even when the
-target SQLite type is syntactically accepted. The importer now validates the
-full signed 64-bit range without Number conversion; application reads still
-need safe bounds or an exact text projection.
+not silently treated as cents. The snapshot row envelope carries each array's
+NULL state, dimension count, and lower bound; the importer rejects unsupported
+shapes before binding. JSON numeric precision and bigint application-read
+precision remain gates even when the target SQLite type is syntactically
+accepted. The importer validates the full signed 64-bit range without Number
+conversion; application reads still need safe bounds or an exact text
+projection.
 
 The two listed money columns use exact integer-cent import and checked reversible
 API boundaries. Their previous `money_cents_import` readiness gate was removed

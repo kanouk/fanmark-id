@@ -12,7 +12,7 @@ import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 
-import { convertPgText } from "./value-conversion.mjs";
+import { convertPgText, SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { convertSchema } from "./schema-convert.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
@@ -36,7 +36,7 @@ const SUPPORTED_CODECS = new Set([
   "enum-text-check",
   "credential-to-bcrypt",
 ]);
-const ARRAY_TYPES = new Set(["text[]", "uuid[]", "smallint[]"]);
+const ARRAY_TYPES = new Set(SUPPORTED_POSTGRES_ARRAY_TYPES);
 const SEQUENCE_UUID_ARRAY_TABLES = new Set([
   "fanmark_discoveries",
   "fanmark_events",

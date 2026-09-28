@@ -4,6 +4,8 @@ const integerPattern = /^-?(?:0|[1-9]\d*)$/;
 const uuidPattern = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const invalid = (kind) => { throw new Error(`invalid_or_unsupported_${kind}`); };
 
+export const SUPPORTED_POSTGRES_ARRAY_TYPES = Object.freeze(["text[]", "uuid[]", "smallint[]"]);
+
 function integer(value, min, max) {
   if (!integerPattern.test(value)) return invalid('integer');
   const exact = BigInt(value);
@@ -78,7 +80,7 @@ function jsonArray(value, elementType) {
   return JSON.stringify(converted);
 }
 
-const supportedTypes = new Set(['text','uuid','boolean','smallint','integer','bigint','numeric(10,2)','numeric','timestamp with time zone','date','jsonb','text[]','uuid[]','smallint[]']);
+const supportedTypes = new Set(['text','uuid','boolean','smallint','integer','bigint','numeric(10,2)','numeric','timestamp with time zone','date','jsonb', ...SUPPORTED_POSTGRES_ARRAY_TYPES]);
 
 export function convertPgText(type, value) {
   if (!supportedTypes.has(type)) return invalid('type');

@@ -665,3 +665,22 @@ that exact sequence profile; other bigint and sequence shapes remain blocked.
 A fresh linked, read-only schema catalog conversion at 2026-09-28 14:30 UTC
 reports 9 groups / 220 locations (4 row-conversion / 127, 5 schema/operation /
 93) and remains `deployable: false`. No application rows were read.
+
+## Snapshot-validated arrays and v17 report (2026-09-28 JST)
+
+The row envelope's array contract records `isNull`, `ndims`, and `lowerBound`
+for every supported array column. Row conversion accepts only one-dimensional
+arrays with lower bound 1 or an empty array, validates `text[]`, `uuid[]`, and
+`smallint[]` elements, and preserves order, duplicates, element NULLs, and SQL
+NULL versus empty. The schema converter now shares that exact supported-type
+list with both row conversion and scalar/array codecs, so it removes
+`array_import_validation` only for these codecs. Other PostgreSQL array types
+remain blocked as unsupported.
+
+A fresh linked, read-only catalog query at 2026-09-28 14:43 UTC returned 40
+tables and 406 columns; all nine arrays use the three supported element types.
+The v17 report removes the array gate's nine locations: 8 unresolved groups /
+211 locations (3 row-conversion / 118, 5 schema/operation / 93), still
+`deployable: false`. Focused schema/row tests pass 27/27 and the complete
+migration-data suite passes 185/185 with no skips. No application rows or live
+sequence values were read.

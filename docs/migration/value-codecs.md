@@ -35,10 +35,11 @@ calendar at whole-second precision and returns the six fractional digits
 untouched. Offsets or millisecond-only strings are rejected rather than guessed.
 
 Array export uses `array_to_json(column)::text`; retain SQL NULL separately.
-Before conversion, validate every source array's dimensionality and lower bound
-(one dimension with lower bound 1, or empty). JSON cannot reveal a non-default
-PostgreSQL lower bound. Nested arrays are rejected locally. This requirement
-is not satisfied by a historical aggregate preflight alone.
+Each row envelope also records the source array's NULL state, dimension count,
+and first lower bound because JSON cannot reveal a non-default PostgreSQL lower
+bound. The importer accepts only one-dimensional, lower-bound-1 arrays or an
+empty array and validates element types before binding; a historical aggregate
+preflight alone is not used as a substitute for these per-row checks.
 
 JSONB validation rejects malformed JSON, nonfinite numeric interpretation,
 and unsafe integer magnitudes. Decimal tokens are stored as original text,

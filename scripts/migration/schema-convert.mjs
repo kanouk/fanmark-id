@@ -14,9 +14,10 @@ import { pathToFileURL } from "node:url";
 
 import { compileCredentialDescriptor, CREDENTIAL_COLUMN, CREDENTIAL_SOURCE_RELATION } from "./credential-descriptor.mjs";
 import { expectedSequenceTargets } from "./snapshot-format.mjs";
+import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 16;
+export const SCHEMA_CONVERSION_VERSION = 17;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -828,7 +829,9 @@ function typeInfo(column, enumLabels, gates, typeCounts, credentialDescriptorPla
     targetKind = "array";
     codec = "postgres-array-json-text";
     checks.push(`${quoteIdentifier(column.column_name)} IS NULL OR (json_valid(${quoteIdentifier(column.column_name)}) AND json_type(${quoteIdentifier(column.column_name)}) = 'array')`);
-    gates.add("array_import_validation", "PostgreSQL array dimensions, lower bounds, element values, order, duplicates, and NULL versus empty must be validated before JSON encoding.", location);
+    if (!SUPPORTED_POSTGRES_ARRAY_TYPES.includes(sourceType.toLowerCase())) {
+      gates.add("unsupported_postgres_type", `No lossless D1 representation is defined for ${sourceType}.`, location);
+    }
   } else if (/^numeric\(10,2\)$/i.test(sourceType) && MONEY_COLUMNS.has(`${column.table_name}.${column.column_name}`)) {
     targetType = "INTEGER";
     targetKind = "money_cents";
