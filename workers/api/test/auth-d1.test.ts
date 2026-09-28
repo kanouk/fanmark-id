@@ -284,6 +284,48 @@ async function sessionCount(userId: string): Promise<number> {
   return Number(row?.count ?? 0);
 }
 
+function base64Url(bytes: Uint8Array): string {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/gu, "-").replace(/\//gu, "_").replace(/=+$/gu, "");
+}
+
+async function createSyntheticIdToken(
+  issuer: string,
+  audience: string,
+  subject: string,
+  email: string,
+): Promise<string> {
+  const keyPair = await crypto.subtle.generateKey({
+    name: "RSASSA-PKCS1-v1_5",
+    modulusLength: 2048,
+    publicExponent: Uint8Array.of(1, 0, 1),
+    hash: "SHA-256",
+  }, true, ["sign", "verify"]);
+  const claims = {
+    iss: issuer,
+    aud: audience,
+    sub: subject,
+    email,
+    email_verified: true,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 3600,
+  };
+  const header = base64Url(new TextEncoder().encode(JSON.stringify({
+    alg: "RS256",
+    kid: "synthetic-oauth-key",
+    typ: "JWT",
+  })));
+  const payload = base64Url(new TextEncoder().encode(JSON.stringify(claims)));
+  const signingInput = `${header}.${payload}`;
+  const signature = new Uint8Array(await crypto.subtle.sign(
+    "RSASSA-PKCS1-v1_5",
+    keyPair.privateKey,
+    new TextEncoder().encode(signingInput),
+  ));
+  return `${signingInput}.${base64Url(signature)}`;
+}
+
 beforeAll(async () => {
   if (!database) throw new Error("AUTH_DB binding is unavailable");
   await database.batch(
@@ -606,6 +648,312 @@ describe("Better Auth through the application Worker", () => {
       .bind(verifiedUserId)
       .first<{ count: number }>();
     expect(accountCount?.count).toBe(1);
+  });
+
+  it.each([
+    {
+      provider: "github",
+      clientId: "synthetic-github-client-id",
+      clientSecret: "synthetic-github-client-secret",
+      tokenUrl: "https://github.com/login/oauth/access_token",
+      profileUrl: "https://api.github.com/user",
+      subject: "9012345",
+      scope: "read:user,user:email",
+    },
+    {
+      provider: "discord",
+      clientId: "synthetic-discord-client-id",
+      clientSecret: "synthetic-discord-client-secret",
+      tokenUrl: "https://discord.com/api/oauth2/token",
+      profileUrl: "https://discord.com/api/users/@me",
+      subject: "120000000000000002",
+      scope: "identify,email",
+    },
+  ] as const)("completes a synthetic $provider code exchange and links its verified email to the existing UUID", async ({
+    provider,
+    clientId,
+    clientSecret,
+    tokenUrl,
+    profileUrl,
+    subject,
+    scope,
+  }) => {
+    const providerEnv = {
+      AUTH_SOCIAL_BACKEND: "better-auth",
+      [`${provider.toUpperCase()}_OAUTH_CLIENT_ID`]: clientId,
+      [`${provider.toUpperCase()}_OAUTH_CLIENT_SECRET`]: clientSecret,
+    };
+    const requests: Array<{ url: string; method: string }> = [];
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = input instanceof Request ? input.url : String(input);
+      const method = init?.method ?? (input instanceof Request ? input.method : "GET");
+      const parsedUrl = new URL(url);
+      const normalizedUrl = `${parsedUrl.origin}${decodeURIComponent(parsedUrl.pathname)}`;
+      requests.push({ url: normalizedUrl, method });
+      if (url === tokenUrl) {
+        return Response.json({
+          access_token: `synthetic-${provider}-access-token`,
+          token_type: "bearer",
+          scope,
+          expires_in: 3600,
+        });
+      }
+      if (normalizedUrl === profileUrl && provider === "github") {
+        return Response.json({
+          id: Number(subject),
+          login: "synthetic-oauth-user",
+          name: "Synthetic OAuth User",
+          email: null,
+          avatar_url: "https://avatars.example.invalid/synthetic.png",
+        });
+      }
+      if (normalizedUrl === "https://api.github.com/user/emails") {
+        return Response.json([{
+          email: verifiedEmail,
+          primary: true,
+          verified: true,
+          visibility: "private",
+        }]);
+      }
+      if (normalizedUrl === profileUrl && provider === "discord") {
+        return Response.json({
+          id: subject,
+          username: "synthetic-oauth-user",
+          global_name: "Synthetic OAuth User",
+          email: verifiedEmail,
+          verified: true,
+          avatar: null,
+          discriminator: "0",
+        });
+      }
+      throw new Error(`unexpected OAuth network request: ${method} ${normalizedUrl}`);
+    });
+
+    try {
+      const start = await authRequest("/sign-in/social", jsonBody({
+        provider,
+        callbackURL: `${appOrigin}/auth`,
+        errorCallbackURL: `${appOrigin}/auth`,
+      }), providerEnv);
+      expect(start.status).toBe(200);
+      const startBody = await start.json() as { url: string };
+      const authorizationURL = new URL(startBody.url);
+      expect(authorizationURL.searchParams.get("client_id")).toBe(clientId);
+      expect(authorizationURL.searchParams.get("scope")).toContain("email");
+      const callbackCookies = (start.headers.get("set-cookie") ?? "")
+        .split(/,(?=[^;,]+=)/u)
+        .map((cookie) => cookie.trim().split(";", 1)[0])
+        .filter(Boolean)
+        .join("; ");
+      const callback = await authRequest(`/callback/${provider}?${new URLSearchParams({
+        code: `synthetic-${provider}-authorization-code`,
+        state: authorizationURL.searchParams.get("state") ?? "",
+      })}`, { headers: { cookie: callbackCookies } }, providerEnv);
+
+      expect(callback.status).toBe(302);
+      expect(callback.headers.get("location")).toBe(`${appOrigin}/auth`);
+      expect(callback.headers.get("location")).not.toContain(`synthetic-${provider}-access-token`);
+      expect(requests).toEqual([
+        { url: tokenUrl, method: "POST" },
+        { url: profileUrl, method: "GET" },
+        ...(provider === "github" ? [{ url: "https://api.github.com/user/emails", method: "GET" }] : []),
+      ]);
+
+      const sessionCookie = setCookiePair(callback, "better-auth.session_token=");
+      expect(sessionCookie).toBeTruthy();
+      const session = await authRequest("/get-session", {
+        headers: { cookie: sessionCookie ?? "" },
+      });
+      expect(session.status).toBe(200);
+      expect(await session.json()).toMatchObject({
+        user: { id: verifiedUserId, email: verifiedEmail },
+      });
+      expect(await sessionCount(verifiedUserId)).toBe(1);
+      expect(await database!.prepare(
+        'SELECT "accountId", "providerId", "userId" FROM "account" WHERE "providerId" = ?',
+      ).bind(provider).first()).toEqual({
+        accountId: subject,
+        providerId: provider,
+        userId: verifiedUserId,
+      });
+      const userCount = await database!.prepare('SELECT count(*) AS "count" FROM "user"')
+        .first<{ count: number }>();
+      expect(userCount?.count).toBe(2);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it.each([
+    {
+      provider: "google",
+      clientId: "synthetic-google-client-id",
+      clientSecret: "synthetic-google-client-secret",
+      issuer: "https://accounts.google.com",
+      subject: "synthetic-google-subject",
+      tokenUrl: "https://oauth2.googleapis.com/token",
+      callbackMethod: "GET",
+    },
+    {
+      provider: "apple",
+      clientId: "synthetic-apple-client-id",
+      clientSecret: "synthetic-apple-client-secret",
+      issuer: "https://appleid.apple.com",
+      subject: "synthetic-apple-subject",
+      tokenUrl: "https://appleid.apple.com/auth/token",
+      callbackMethod: "POST",
+    },
+  ] as const)("completes a synthetic $provider code exchange and links its identity to the existing UUID", async ({
+    provider,
+    clientId,
+    clientSecret,
+    issuer,
+    subject,
+    tokenUrl,
+    callbackMethod,
+  }) => {
+    const idToken = await createSyntheticIdToken(issuer, clientId, subject, verifiedEmail);
+    const providerEnv = {
+      AUTH_SOCIAL_BACKEND: "better-auth",
+      [`${provider.toUpperCase()}_OAUTH_CLIENT_ID`]: clientId,
+      [`${provider.toUpperCase()}_OAUTH_CLIENT_SECRET`]: clientSecret,
+    };
+    const requests: Array<{ url: string; method: string }> = [];
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = input instanceof Request ? input.url : String(input);
+      const method = init?.method ?? (input instanceof Request ? input.method : "GET");
+      const parsedUrl = new URL(url);
+      requests.push({ url: `${parsedUrl.origin}${parsedUrl.pathname}`, method });
+      if (url === tokenUrl) {
+        return Response.json({
+          access_token: `synthetic-${provider}-access-token`,
+          token_type: "bearer",
+          scope: provider === "google" ? "openid email profile" : "email name",
+          expires_in: 3600,
+          id_token: idToken,
+        });
+      }
+      throw new Error(`unexpected OAuth network request: ${method} ${parsedUrl.origin}${parsedUrl.pathname}`);
+    });
+
+    try {
+      const start = await authRequest("/sign-in/social", jsonBody({
+        provider,
+        callbackURL: `${appOrigin}/auth`,
+        errorCallbackURL: `${appOrigin}/auth`,
+      }), providerEnv);
+      expect(start.status).toBe(200);
+      const startBody = await start.json() as { url: string };
+      const authorizationURL = new URL(startBody.url);
+      expect(authorizationURL.searchParams.get("client_id")).toBe(clientId);
+      const callbackCookies = (start.headers.get("set-cookie") ?? "")
+        .split(/,(?=[^;,]+=)/u)
+        .map((cookie) => cookie.trim().split(";", 1)[0])
+        .filter(Boolean)
+        .join("; ");
+      const callbackParams = new URLSearchParams({
+        code: `synthetic-${provider}-authorization-code`,
+        state: authorizationURL.searchParams.get("state") ?? "",
+      });
+      const firstCallback = await authRequest(`/callback/${provider}${callbackMethod === "GET" ? `?${callbackParams}` : ""}`, {
+        method: callbackMethod,
+        headers: callbackMethod === "POST"
+          ? { cookie: callbackCookies, "content-type": "application/x-www-form-urlencoded" }
+          : { cookie: callbackCookies },
+        ...(callbackMethod === "POST" ? { body: callbackParams.toString() } : {}),
+      }, providerEnv);
+      const callbackLocation = firstCallback.headers.get("location");
+      const callback = callbackMethod === "POST" && callbackLocation
+        ? await authRequest(`${new URL(callbackLocation).pathname.replace(/^\/api\/auth/u, "")}${new URL(callbackLocation).search}`, {
+            headers: { cookie: callbackCookies },
+          }, providerEnv)
+        : firstCallback;
+
+      expect(firstCallback.status).toBe(302);
+      if (callbackMethod === "POST") {
+        expect(callbackLocation).toContain("/api/auth/callback/apple?");
+      }
+      expect(callback.status).toBe(302);
+      expect(callback.headers.get("location")).toBe(`${appOrigin}/auth`);
+      expect(requests).toEqual([{ url: tokenUrl, method: "POST" }]);
+      const sessionCookie = setCookiePair(callback, "better-auth.session_token=");
+      expect(sessionCookie).toBeTruthy();
+      const session = await authRequest("/get-session", {
+        headers: { cookie: sessionCookie ?? "" },
+      });
+      expect(session.status).toBe(200);
+      expect(await session.json()).toMatchObject({
+        user: { id: verifiedUserId, email: verifiedEmail },
+      });
+      expect(await sessionCount(verifiedUserId)).toBeGreaterThan(0);
+      expect(await database!.prepare(
+        'SELECT "accountId", "providerId", "userId" FROM "account" WHERE "providerId" = ?',
+      ).bind(provider).first()).toEqual({
+        accountId: subject,
+        providerId: provider,
+        userId: verifiedUserId,
+      });
+      const userCount = await database!.prepare('SELECT count(*) AS "count" FROM "user"')
+        .first<{ count: number }>();
+      expect(userCount?.count).toBe(2);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("rejects a verified but unlinked social identity without creating a user or session", async () => {
+    const clientId = "synthetic-google-client-id";
+    const providerEnv = {
+      AUTH_SOCIAL_BACKEND: "better-auth",
+      GOOGLE_OAUTH_CLIENT_ID: clientId,
+      GOOGLE_OAUTH_CLIENT_SECRET: "synthetic-google-client-secret",
+    };
+    const unlinkedEmail = "unlinked-social-user@example.invalid";
+    const idToken = await createSyntheticIdToken(
+      "https://accounts.google.com", clientId, "unlinked-google-subject", unlinkedEmail,
+    );
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("https://oauth2.googleapis.com/token");
+      expect(init?.method).toBe("POST");
+      return Response.json({
+        access_token: "synthetic-unlinked-google-access-token",
+        token_type: "bearer",
+        scope: "openid email profile",
+        expires_in: 3600,
+        id_token: idToken,
+      });
+    });
+
+    try {
+      const start = await authRequest("/sign-in/social", jsonBody({
+        provider: "google",
+        callbackURL: `${appOrigin}/auth`,
+        errorCallbackURL: `${appOrigin}/auth`,
+      }), providerEnv);
+      const startBody = await start.json() as { url: string };
+      const state = new URL(startBody.url).searchParams.get("state") ?? "";
+      const callbackCookies = (start.headers.get("set-cookie") ?? "")
+        .split(/,(?=[^;,]+=)/u)
+        .map((cookie) => cookie.trim().split(";", 1)[0])
+        .filter(Boolean)
+        .join("; ");
+      const callback = await authRequest(`/callback/google?${new URLSearchParams({
+        code: "synthetic-unlinked-google-authorization-code",
+        state,
+      })}`, { headers: { cookie: callbackCookies } }, providerEnv);
+
+      expect(callback.status).toBe(302);
+      const errorLocation = new URL(callback.headers.get("location") ?? "");
+      expect(`${errorLocation.origin}${errorLocation.pathname}`).toBe(`${appOrigin}/auth`);
+      expect(errorLocation.searchParams.get("error")).toBe("signup_disabled");
+      expect(await database!.prepare('SELECT count(*) AS "count" FROM "user"')
+        .first<{ count: number }>()).toEqual({ count: 2 });
+      expect(await database!.prepare('SELECT count(*) AS "count" FROM "account"')
+        .first<{ count: number }>()).toEqual({ count: 2 });
+      expect(await sessionCount(verifiedUserId)).toBe(0);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("handles concurrent sign-ins through the same Worker route", async () => {

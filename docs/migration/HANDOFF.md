@@ -2780,3 +2780,16 @@ summaries, with email addresses redacted. Node 22.6.0 syntax checking, the
 five-case lifecycle-target suite, two diagnostic-redaction tests, and the
 179-test migration-data suite pass. No real user data, production route, or
 domain/DNS state was accessed or changed.
+
+## Synthetic OAuth callback contract extension (2026-09-28 JST)
+
+Local Worker/D1 tests now complete synthetic code-exchange callbacks for all
+four configured social providers. Verified provider identities link to the
+existing synthetic UUID and create sessions without creating extra users; a
+verified but unknown Google email is rejected because social signup is
+disabled. Apple's `form_post` callback redirect is included. The full auth D1
+suite passes 26/26, provider configuration tests 3/3, and Worker typecheck and
+focused ESLint pass. Provider HTTP calls were stubbed, so real credentials,
+browser callbacks, and provider-console redirect registration remain open.
+This does not change the weighted progress estimate or close Issue #31. No
+remote D1, deployment, real user data, or domain/DNS state was changed.

@@ -3673,3 +3673,22 @@ admin session returned 401 and the disabled Stripe webhook returned 404. The
 root and robots response both include `X-Robots-Tag: noindex, nofollow`. These
 are route-health checks only and do not establish the deployed version, Cron
 configuration, or post-canary cleanup.
+
+## Four-provider synthetic OAuth callback contracts (2026-09-28 JST)
+
+Extended `workers/api/test/auth-d1.test.ts` to run successful synthetic
+authorization-code callbacks through the app Worker and local Auth D1 for
+Apple, Google, GitHub, and Discord. Provider fetches are fully stubbed. Tests
+assert verified-email linking to the existing synthetic UUID, social-account
+identity persistence, session issuance, and no new user row. Apple’s
+`form_post` callback redirect to the follow-up GET is included. A separate
+Google callback for a verified but unlinked email returns `signup_disabled`
+without creating a user, account, or session. Existing start/state-denial
+coverage still tests all four providers.
+
+`npm --prefix workers/api run test:auth:d1` passes 26/26;
+`npm --prefix workers/api run test:auth-social` passes 3/3; Worker typecheck,
+focused ESLint, and `git diff --check` pass. Only synthetic credentials and
+provider responses were used; there were no real OAuth requests, remote D1
+writes, deployments, user-data operations, or domain/DNS changes. This is
+local callback-contract evidence, not provider-backed staging acceptance.

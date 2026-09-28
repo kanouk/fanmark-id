@@ -411,12 +411,35 @@ no session or social account was created. `npm --prefix workers/api run
 test:auth:d1` passed 21/21 and `npm --prefix workers/api run typecheck`
 passed.
 
-This closes only the local authorization-start and state-bound denial-callback
-contracts. It does not exchange a successful authorization code, validate
-provider tokens/profiles, create/link a user or account, or prove a successful
-browser callback. Real callback acceptance still requires provider credentials
-and redirect URI registration in isolated staging; no provider secrets,
-external provider requests, remote D1, or deployment were used by this test.
+At this checkpoint, only the local authorization-start and state-bound denial
+callback contracts were covered. A later synthetic callback test below adds
+code-exchange and account-linking coverage; real provider/browser acceptance
+still requires credentials and redirect URI registration in isolated staging.
+
+## Four-provider synthetic authorization-code callback contract (2026-09-28 JST)
+
+The Worker/D1 suite now exercises successful synthetic callbacks for Apple,
+Google, GitHub, and Discord. Test fetch handlers replace every external
+provider request. They return a signed synthetic ID token from the mocked
+Apple/Google token endpoints, a synthetic private-email response from GitHub,
+and a synthetic verified profile from Discord. The callback links each
+verified provider identity to the pre-existing synthetic Better Auth UUID,
+issues a session, and leaves the user count unchanged. Apple’s `form_post`
+callback is also checked through Better Auth’s intermediate GET redirect.
+
+A separate Google callback with a verified but unknown email is rejected with
+`signup_disabled`; no user, social account, or session is created. The earlier
+four-provider `access_denied` test still confirms state-cookie binding and no
+session/account side effects. Current local results are 26/26 for
+`npm --prefix workers/api run test:auth:d1`, 3/3 for
+`npm --prefix workers/api run test:auth-social`, plus Worker typecheck and
+focused ESLint.
+
+These are local contract tests with synthetic token/profile responses; they do
+not contact providers, validate provider-console configuration or a live
+browser callback, or establish real-provider email/profile behavior. No
+provider secret, remote D1, production route, or deployment was used. The
+provider-backed staging acceptance gate remains open.
 
 ## 公式一次資料
 
