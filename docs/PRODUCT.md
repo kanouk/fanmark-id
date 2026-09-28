@@ -552,8 +552,9 @@ const priceIdToPlanType = {
 ```
 
 **Webhookのユーザー特定:**
-- `subscription.customer` / `checkout.session.customer` の `stripe_customer_id` を `user_settings` から逆引き
-- 見つからない場合のみ email をフォールバックし、見つかったら `stripe_customer_id` を保存
+- subscriptionイベントは`stripe_customer_id`を`user_settings`から逆引きし、見つからない場合はStripe Customerの`metadata.user_id`が既存の未紐付けアカウントと一致すると確認できたときだけ紐付ける
+- `license_extension` Checkoutは先に保存したowner-bound intentとCheckout Session IDから所有者を解決する
+- メールアドレスの一致だけではアカウントを特定・統合しない。ID不一致・複数候補・live/test mode不一致は失敗扱いにし、運用者による照合対象とする
 
 ---
 

@@ -5,15 +5,16 @@ draft. Isolated Cloudflare staging D1 and Workers deployments are present; no
 production Worker deployment, user-data import, or public DNS/domain cutover
 has been performed.
 
-The Supabase Stripe webhook now durably records non-extension Checkout
-sessions and marks their receipt ignored only under the current dispatch lease;
-the service-only forward migration and handler change are in draft PR #41 at
-`26514b3`. Validation run `36484759460` passed both the staging application
-and Worker API jobs; no Supabase migration was applied.
-Focused PGlite coverage is 13/13, shared TypeScript coverage 5/5, and the
-receipt-package typecheck passes. No Supabase migration or webhook request was
-made. This closes one bounded receipt-acknowledgment gap, not subscription
-reconciliation, real provider acceptance, or issue #32 as a whole.
+PR #41 is open and draft at `f5c760e`; GitHub Actions run `36486867080` passes
+both the Cloudflare staging application and Worker API jobs. Supabase Preview
+is skipped by the repository's workflow-isolation guard. The Stripe webhook
+durably records non-extension Checkout sessions and marks their receipt ignored
+only under the current dispatch lease. Its subscription-user resolver now
+rejects email-only account linking and accepts only an exact stored mapping or
+verified Customer metadata linked to one existing unbound account. Seven
+focused tests, the receipt package, Deno check, targeted ESLint, and CI pass.
+No Supabase migration or webhook request was made; issue #32 and real-provider
+acceptance remain open.
 
 At 2026-09-29 05:43 JST, PR #41 validation run `36480072183` passed both the
 staging application and Worker API jobs; the draft PR is `CLEAN`. A read-only
