@@ -3804,11 +3804,11 @@ No application rows or live sequence values were read.
 
 ## Timestamp writer coverage inventory across Workers and migration SQL (2026-09-29 JST)
 
-The read-only schema catalog was refreshed at `2026-09-28T15:05:40Z` using the
+The read-only schema catalog was refreshed at `2026-09-28T15:14:18Z` using the
 reviewed catalog-only query. It still contains 40 tables and 79 columns with
 `timestamptz DEFAULT now()`; no application rows were queried. The static
-writer audit now scans Worker `.ts`/`.mjs`, D1 business-trigger SQL, and
-migration seed SQL. It parsed 98 INSERT column lists with zero timestamp
+writer audit now scans Worker `.ts`/`.mjs`, app and business D1 migration SQL,
+and migration seed SQL. It parsed 98 INSERT column lists with zero timestamp
 columns omitted and zero target INSERTs it could not parse.
 
 Twelve timestamp defaults in seven tables have no direct INSERT in those

@@ -5,13 +5,13 @@ draft. Isolated Cloudflare staging D1 and Workers deployments are present; no
 production Worker deployment, user-data import, or public DNS/domain cutover
 has been performed.
 
-A fresh schema-only timestamp-writer audit at 2026-09-29 00:05 JST found 79
+A fresh schema-only timestamp-writer audit at 2026-09-29 00:14 JST found 79
 `now()` timestamp defaults across 40 tables. It scanned 98 explicit-column
-INSERTs in Worker source, D1 SQL routines, and migration seed SQL: none omitted
-a timestamp column and none were unparsed. Twelve defaults in seven tables
-have no direct INSERT path: eight belong to the four versioned reference
-masters populated through row-release snapshots; the remaining four are in
-`notification_preferences`, `user_roles`, and `notifications_history` and
+INSERTs in Worker source, both app and business D1 migration SQL, and migration
+seed SQL: none omitted a timestamp column and none were unparsed. Twelve defaults
+in seven tables have no direct INSERT path: eight belong to the four versioned
+reference masters populated through row-release snapshots; the remaining four
+are in `notification_preferences`, `user_roles`, and `notifications_history` and
 stay in the final data/import review. This is static column coverage, not proof
 of runtime clock semantics. The active-to-grace prototype now records its
 audit timestamp from the same captured operation time. Migration data tests

@@ -136,7 +136,7 @@ function parseArgs(argv) {
   }
   if (options.sourceRoots.length === 0) options.sourceRoots.push("workers/api/src");
   if (options.sqlRoots.length === 0) {
-    options.sqlRoots.push("workers/api/migrations-business", "scripts/migration");
+    options.sqlRoots.push("workers/api/migrations", "workers/api/migrations-business", "scripts/migration");
   }
   return options;
 }
