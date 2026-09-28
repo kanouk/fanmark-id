@@ -3605,3 +3605,22 @@ the staging config; deployment `7f7c79e9-9d12-401c-9466-2518d03b195c` is the
 latest 100% version. The prior successful lifecycle Cron canary remains the
 scheduler evidence; this attempt does not replace it or close final lifecycle
 acceptance. No production data, user data, or domain/DNS was touched.
+
+## Business migration-ledger verification (2026-09-28 JST)
+
+The business staging migration history now has one explicit ordered manifest
+through `0017_lifecycle_generation_timestamp_precision.sql`. Guarded staging
+verifiers validate that the live ledger is an exact prefix of this manifest,
+so later approved migrations no longer make an earlier migration's read-only
+verification fail. The manifest test compares every entry with the checked-in
+SQL migration directory and rejects gaps, reordering, duplicates, and unknown
+names. The migration-data suite passes 177/177.
+
+`apply-stripe-invoice-staging.mjs --verify` and its repeatable `--apply` path
+successfully read the current 18-entry staging ledger, the four expected
+invoice objects, and zero invoice, receipt, dispatch, and billing-application
+rows. Because the invoice migration was already present, `--apply` followed its
+read-only verification branch. The business-extension verifier also uses the
+shared ledger guard; its live read-only run still requires the private
+credential descriptor and was not performed in this environment. No user
+data, production route, or domain/DNS state changed.

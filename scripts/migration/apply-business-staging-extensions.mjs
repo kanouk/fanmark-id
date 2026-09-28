@@ -33,6 +33,11 @@ import {
   stagingNonUserConfigBaselineState,
 } from "./staging-notification-master-baseline.mjs";
 import { readStagingEmailTemplateMasterBaseline } from "./staging-email-template-master-baseline.mjs";
+import {
+  BUSINESS_MIGRATION_SEQUENCE,
+  hasBusinessMigrationApplied,
+  isBusinessMigrationLedgerPrefix,
+} from "./business-migration-ledger.mjs";
 
 const ACCOUNT_ID = "bfc2890741f0b3fb236e2d755b6c9adc";
 const ACCOUNT_EMAIL = "fanmark.id@gmail.com";
@@ -42,14 +47,7 @@ const BINDING = "FANMARK_DB";
 const CONFIG_PATH = path.resolve("workers/api/wrangler.app-staging.jsonc");
 const WRANGLER_VERSION = "4.139.0";
 
-const MIGRATION_NAMES = Object.freeze([
-  "0000_business_schema_v4_staging.sql",
-  "0001_lifecycle_target_staging.sql",
-  "0002_lifecycle_generation_staging.sql",
-  "0003_credential_transform_staging.sql",
-  "0004_verified_access_staging.sql",
-  "0005_lottery_plan_journal_staging.sql",
-]);
+const MIGRATION_NAMES = BUSINESS_MIGRATION_SEQUENCE.slice(0, 6);
 
 function fail(code) {
   const error = new Error(code);
@@ -181,9 +179,7 @@ async function assertStagingTarget(catalog) {
   const rows = runD1('SELECT "name" FROM "d1_migrations" ORDER BY "id"')[0]?.results;
   if (!Array.isArray(rows)) fail("business_migration_ledger_unreadable");
   const actualNames = rows.map((row) => row.name);
-  const expectedPrefix = MIGRATION_NAMES.slice(0, actualNames.length);
-  if (actualNames.length > MIGRATION_NAMES.length ||
-      actualNames.some((name, index) => name !== expectedPrefix[index])) {
+  if (!isBusinessMigrationLedgerPrefix(actualNames)) {
     fail("business_migration_ledger_unexpected");
   }
   return { sourceTables: sourceTables.length, totalRows, migrationNames: actualNames };
@@ -332,7 +328,9 @@ async function apply({ catalog, descriptor, plans, mode }) {
   const results = [];
 
   if (mode === "--verify") {
-    if (JSON.stringify(ledger) !== JSON.stringify(expectedLedger)) fail("business_migration_ledger_incomplete");
+    if (!hasBusinessMigrationApplied(ledger, expectedLedger.at(-1))) {
+      fail("business_migration_ledger_incomplete");
+    }
     const generation = await inspectLifecycleGenerationSchema(database, plans.generationPlan, plans.lifecyclePlan, [
       ...allPlanObjects(plans.credentialPlan),
       ...allPlanObjects(plans.verifiedAccessPlan),
@@ -347,7 +345,7 @@ async function apply({ catalog, descriptor, plans, mode }) {
     if (!access.complete) fail("verified_access_readback_failed");
     const lotteryJournal = await inspectLotteryPlanJournal(database);
     if (!lotteryJournal.complete) fail("lottery_journal_readback_failed");
-    results.push(...ledger.slice(2).map((migration) => ({ migration, status: "verified" })));
+    results.push(...ledger.slice(2, expectedLedger.length).map((migration) => ({ migration, status: "verified" })));
   } else {
     while (ledger.length < expectedLedger.length) {
       if (ledger.length === 2) {
@@ -413,7 +411,9 @@ async function apply({ catalog, descriptor, plans, mode }) {
       }
       fail("business_migration_ledger_order_mismatch");
     }
-    if (JSON.stringify(ledger) !== JSON.stringify(expectedLedger)) fail("business_migration_ledger_final_mismatch");
+    if (!hasBusinessMigrationApplied(ledger, expectedLedger.at(-1))) {
+      fail("business_migration_ledger_final_mismatch");
+    }
   }
 
   return {

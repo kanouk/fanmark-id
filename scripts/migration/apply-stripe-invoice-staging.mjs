@@ -11,6 +11,13 @@ import os from "node:os";
 import path from "node:path";
 import process from "node:process";
 import { randomUUID } from "node:crypto";
+import {
+  BUSINESS_MIGRATION_SEQUENCE,
+  canApplyOrVerifyBusinessMigration,
+  hasBusinessMigrationApplied,
+  isBusinessMigrationLedgerPrefix,
+  isBusinessMigrationLedgerImmediatelyBefore,
+} from "./business-migration-ledger.mjs";
 
 const ACCOUNT_ID = "bfc2890741f0b3fb236e2d755b6c9adc";
 const ACCOUNT_EMAIL = "fanmark.id@gmail.com";
@@ -20,23 +27,8 @@ const CONFIG_PATH = path.resolve("workers/api/wrangler.app-staging.jsonc");
 const MIGRATION_DIRECTORY = path.resolve("workers/api/migrations-business");
 const MIGRATION_NAME = "0008_stripe_invoice_projection_staging.sql";
 const WRANGLER_SCRIPT = path.resolve("workers/api/node_modules/wrangler/bin/wrangler.js");
-const BASE_MIGRATIONS = Object.freeze([
-  "0000_business_schema_v4_staging.sql",
-  "0001_lifecycle_target_staging.sql",
-  "0002_lifecycle_generation_staging.sql",
-  "0003_credential_transform_staging.sql",
-  "0004_verified_access_staging.sql",
-  "0005_lottery_plan_journal_staging.sql",
-  "0006_stripe_webhook_ingress_staging.sql",
-  "0007_stripe_extension_application_staging.sql",
-]);
-const EXPECTED_MIGRATIONS = [...BASE_MIGRATIONS, MIGRATION_NAME];
-const LATER_APPROVED_MIGRATIONS = [
-  ...EXPECTED_MIGRATIONS,
-  "0009_stripe_subscription_identity.sql",
-  "0010_stripe_subscription_reconciliation_staging.sql",
-  "0011_stripe_subscription_free_return.sql",
-];
+const MIGRATION_INDEX = BUSINESS_MIGRATION_SEQUENCE.indexOf(MIGRATION_NAME);
+if (MIGRATION_INDEX < 0) throw new Error("stripe_invoice_migration_not_in_business_sequence");
 
 function fail(code) {
   const error = new Error(code);
@@ -126,8 +118,7 @@ async function verifyTarget(migration, objects) {
   }
 
   const ledger = runD1('SELECT "name" FROM "d1_migrations" ORDER BY "id"').map((row) => row.name);
-  if (JSON.stringify(ledger) !== JSON.stringify(EXPECTED_MIGRATIONS) &&
-      JSON.stringify(ledger) !== JSON.stringify(LATER_APPROVED_MIGRATIONS)) {
+  if (!hasBusinessMigrationApplied(ledger, MIGRATION_NAME)) {
     fail("business_migration_ledger_mismatch");
   }
   const names = objects.map((object) => `'${object.name}'`).join(", ");
@@ -176,10 +167,12 @@ async function main() {
   if (mode === "--apply") {
     await verifyTargetBeforeApply();
     const ledger = runD1('SELECT "name" FROM "d1_migrations" ORDER BY "id"').map((row) => row.name);
-    if (JSON.stringify(ledger) === JSON.stringify(EXPECTED_MIGRATIONS) ||
-        JSON.stringify(ledger) === JSON.stringify(LATER_APPROVED_MIGRATIONS)) {
+    if (!isBusinessMigrationLedgerPrefix(ledger)) {
+      fail("business_migration_ledger_mismatch");
+    }
+    if (hasBusinessMigrationApplied(ledger, MIGRATION_NAME)) {
       // Applying twice is a read-only verification.
-    } else if (JSON.stringify(ledger) === JSON.stringify(BASE_MIGRATIONS)) {
+    } else if (isBusinessMigrationLedgerImmediatelyBefore(ledger, MIGRATION_NAME)) {
       await applyMigrationFile(migration);
     } else {
       fail("business_migration_ledger_mismatch");
@@ -214,7 +207,9 @@ async function verifyTargetBeforeApply() {
     fail("cloudflare_database_mismatch");
   }
   const priorLedger = runD1('SELECT "name" FROM "d1_migrations" ORDER BY "id"').map((row) => row.name);
-  if (JSON.stringify(priorLedger) !== JSON.stringify(BASE_MIGRATIONS)) fail("business_migration_ledger_mismatch");
+  if (!canApplyOrVerifyBusinessMigration(priorLedger, MIGRATION_NAME)) {
+    fail("business_migration_ledger_mismatch");
+  }
   const baseline = runD1(`SELECT
       (SELECT COUNT(*) FROM "fanmarks") AS fanmarks,
       (SELECT COUNT(*) FROM "fanmark_licenses") AS licenses,
