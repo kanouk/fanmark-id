@@ -1,7 +1,7 @@
 # Full schema conversion generator
 
-`schema-convert.mjs` v14 is a private, catalog-only preparation tool. It converts
-the JSON emitted by `scripts/migration/schema-readiness.sql` into deterministic
+`schema-convert.mjs` v15 is a private, catalog-only preparation tool. It
+converts the JSON emitted by `scripts/migration/schema-readiness.sql` into deterministic
 SQLite/D1 table and index SQL plus a machine-readable report of unresolved
 parity gates. It does not read application rows, contact Supabase, apply SQL,
 or declare a production migration ready.
@@ -373,12 +373,30 @@ descriptor-aware importer exercised the credential path using synthetic rows;
 
 ## Version 14 exact lottery-weight profile (2026-09-28 JST)
 
-The current descriptor-aware catalog report has 10 unresolved gate groups / 222
-locations and remains `deployable: false`: five row-conversion groups / 129
-locations and five schema/operation groups / 93. The exact lottery-weight
-column no longer contributes a decimal gate. A linked read-only aggregate
+The v14 descriptor-aware catalog report at that checkpoint had 10 unresolved
+gate groups / 222 locations and remained `deployable: false`: five
+row-conversion groups / 129 locations and five schema/operation groups / 93.
+The exact lottery-weight column no longer contributes a decimal gate. A linked read-only aggregate
 checked that current source values fit the shared codec contract without
 retaining row IDs or decimal values. The column-specific codec and its
 fail-closed catalog-shape checks are covered by schema, row-conversion, snapshot
 and exact weighted-selector tests. No source rows were migrated or remote D1
 was changed.
+
+## Version 15 exact event sequence import profile (2026-09-28 JST)
+
+The converter no longer emits `sequence_state_import_required` for the one
+source profile covered end to end: `fanmark_events.id` is a bigint primary key
+with the exact `public.fanmark_events_id_seq` default. Snapshot format 4 requires
+the source sequence state, validates its owner and definition, and the D1
+importer applies and reads back the monotonic target watermark. `is_called=false`
+is preserved as well. Any missing, extra, or unsupported source sequence still
+fails snapshot validation or retains a conversion gate. The source sequence
+must still be captured during the final writer freeze because PostgreSQL
+sequence advancement is outside MVCC; that operational rehearsal remains open
+under issues #37/#38.
+
+A fresh linked, read-only schema catalog conversion at 2026-09-28 14:25 UTC
+reports 9 unresolved groups / 221 locations (4 row-conversion / 128, 5
+schema/operation / 93) and remains `deployable: false`. The query returned no
+application rows. No live sequence values were read or imported for this change.

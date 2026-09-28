@@ -634,3 +634,19 @@ saved. The descriptor-aware v14 report has 10 unresolved gates / 222 locations
 v4 so an older snapshot or checkpoint cannot reuse the previous codec contract.
 No user rows were exported/imported and no remote D1, production route, or
 domain/DNS state changed.
+
+## Exact event sequence import path and v15 report (2026-09-28 JST)
+
+Schema converter v15 recognizes only the exact `fanmark_events.id` bigint
+primary-key default for `public.fanmark_events_id_seq` as covered by the current
+snapshot contract. Snapshot verification requires the complete sequence state
+and definition; D1 import seeds `sqlite_sequence` to the maximum of the source
+watermark and imported IDs and verifies its readback. Unsupported nextval
+profiles remain gated. This closes the schema report's stale sequence-import
+capability gate, not the coordinated writer freeze needed to obtain a final
+consistent source sequence state.
+
+A fresh linked, read-only schema catalog conversion at 2026-09-28 14:25 UTC
+reports 9 unresolved groups / 221 locations (4 row-conversion / 128, 5
+schema/operation / 93) and remains `deployable: false`. The query returned no
+application rows or live sequence values.

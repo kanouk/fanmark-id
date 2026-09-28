@@ -3745,3 +3745,22 @@ closed rather than silently resuming with changed validation.
 lifecycle source integration passes 25/25, Worker typecheck passes, and the
 focused converter/snapshot suites pass. No user rows were exported/imported,
 no remote D1 or production state changed, and domain/DNS was untouched.
+
+## Exact event sequence import profile and schema converter v15 (2026-09-28 JST)
+
+The existing snapshot format 4 and D1 importer already capture the exact
+`fanmark_events_id_seq` definition and state, then seed and verify the target
+`sqlite_sequence` watermark after importing rows. Called and unused sequences
+are both covered by integration tests, including the next generated event ID.
+The schema converter's extra `sequence_state_import_required` gate duplicated
+that fail-closed contract and is now removed only when the catalog matches the
+exact supported event sequence profile. Other nextval profiles remain gated.
+
+The schema converter advances to v15. A fresh linked, read-only schema
+catalog conversion at 2026-09-28 14:25 UTC reports 9 groups / 221 locations
+(4 row-conversion / 128, 5 schema/operation / 93); it remains
+`deployable: false`. The query returned no application rows. The actual
+PostgreSQL sequence state was not queried; it remains a final-freeze requirement
+because sequence advancement is outside MVCC. Schema conversion, snapshot-format validation, D1-import tests, and
+`npm run test:migration-data` cover the contract. No user rows, live sequence
+values, remote D1, production route, or domain/DNS state changed.

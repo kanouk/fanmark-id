@@ -13,9 +13,10 @@ import process from "node:process";
 import { pathToFileURL } from "node:url";
 
 import { compileCredentialDescriptor, CREDENTIAL_COLUMN, CREDENTIAL_SOURCE_RELATION } from "./credential-descriptor.mjs";
+import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 14;
+export const SCHEMA_CONVERSION_VERSION = 15;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -885,7 +886,7 @@ function hasReviewedLotteryWeightCheck(tableName, sourceConstraints, tableColumn
   );
 }
 
-function translateDefault(column, info, gates, sequencePrimaryKey = false) {
+function translateDefault(column, info, gates, sequencePrimaryKey = false, sequenceStateImportSupported = false) {
   const expression = column.default_expression;
   if (expression === null || expression === undefined || expression.trim() === "") return null;
   const location = { kind: "default", table: column.table_name, column: column.column_name };
@@ -915,11 +916,13 @@ function translateDefault(column, info, gates, sequencePrimaryKey = false) {
   }
   if (/^nextval\s*\(/i.test(trimmed)) {
     if (sequencePrimaryKey) {
-      gates.add(
-        "sequence_state_import_required",
-        "D1 AUTOINCREMENT preserves monotonic allocation from imported IDs, but the frozen import must seed PostgreSQL's exact next sequence value.",
-        location,
-      );
+      if (!sequenceStateImportSupported) {
+        gates.add(
+          "sequence_state_import_required",
+          "D1 AUTOINCREMENT preserves monotonic allocation from imported IDs, but the frozen import must seed PostgreSQL's exact next sequence value.",
+          location,
+        );
+      }
       return null;
     }
     gates.add("sequence_default_requires_operation", "nextval() is not a D1 default; the event ID allocation operation must be collision-safe.", location);
@@ -1235,7 +1238,8 @@ function renderTable(tableName, tableColumns, sourceConstraints, context) {
     const sequencePrimaryKey = sequencePrimaryKeyColumns.has(column.column_name);
     if (sequencePrimaryKey) parts.push("PRIMARY KEY AUTOINCREMENT");
     if (column.not_null) parts.push("NOT NULL");
-    const defaultSql = translateDefault(column, info, context.gates, sequencePrimaryKey);
+    const sequenceStateImportSupported = context.sequenceStateColumns.has(`${tableName}.${column.column_name}`);
+    const defaultSql = translateDefault(column, info, context.gates, sequencePrimaryKey, sequenceStateImportSupported);
     if (defaultSql !== null) parts.push(`DEFAULT ${defaultSql}`);
     definitions.push({ order: column.ordinal, sql: parts.join(" ") });
     for (const check of info.checks) {
@@ -1349,6 +1353,13 @@ export function convertSchema(catalogInput, options = {}) {
   const typeCounts = new Map();
   const translatedConstraints = { p: 0, u: 0, f: 0, c: 0 };
   const columnCodecs = [];
+  let sequenceStateColumns = new Set();
+  try {
+    sequenceStateColumns = new Set(expectedSequenceTargets(catalogInput).map((target) => `${target.ownerTable}.${target.ownerColumn}`));
+  } catch {
+    // Unsupported sequence catalogs remain gated by translateDefault; a
+    // partial or optimistic match must never suppress the fallback gate.
+  }
   const context = {
     gates,
     tableNames,
@@ -1357,6 +1368,7 @@ export function convertSchema(catalogInput, options = {}) {
     typeCounts,
     translatedConstraints,
     columnCodecs,
+    sequenceStateColumns,
     credentialDescriptorPlan,
     databaseLocale: catalog.database_locale,
     regexRangeProbe: catalog.regex_range_probe,
