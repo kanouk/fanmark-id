@@ -286,6 +286,48 @@ can be reconciled after restoring the app's business schema. It does not prove
 the pre-write Supabase-resume path, an applied Stripe business effect, a
 complete verified backup, or all application tables; issue #37 remains open.
 
+## Guarded synthetic post-write recovery command (2026-09-28 JST)
+
+The guarded command
+`npm run test:migration:staging-postwrite-recovery` now repeats the application
+post-write drill using resources with random names. Calling the underlying
+script without all four explicit staging/synthetic/cleanup flags returns
+before remote access. It verifies the Cloudflare account and existing staging
+target, creates a disposable APAC D1, applies and
+reads back all 17 checked-in business migrations, then deploys the actual API
+as a temporary workers.dev Worker with only the disposable business D1 and a
+unique Rate Limit namespace. It configures no Auth, master, R2, custom-domain,
+Cron, or Stripe API binding; the webhook uses a random synthetic signing secret.
+
+For D1 `fanmark-recovery-1790564852366-c4e47dddb2153c48`
+(`3c0248f3-174e-40b5-be8d-7b064ff30249`) and Worker versions
+`33732429-30a2-43ad-9e99-69ecb3a9399a` / frozen version
+`442373d8-37d7-402f-8f0c-cdc7e0ca0291`, the real `/api/waitlist` route
+acknowledged one synthetic row. `/api/stripe/webhook` accepted one locally
+signed `customer.updated` event twice; readback showed one `received` receipt,
+one `pending` dispatch, and delivery count 2. The bookmark
+`00000000-00000032-000050f4-343f8f9406b4f7438b6f865d01508dc2` was captured
+after those acknowledgements. A second synthetic waitlist row was accepted,
+then the temporary Worker was redeployed with `CUTOVER_WRITE_FREEZE=true`.
+The freeze rejected a further valid mutation with 503 and that marker never
+appeared in D1. No Stripe event was sent after the bookmark.
+
+Restoring the bookmark while the Worker remained frozen retained the first
+waitlist row and its exact receipt/dispatch state and digest; the later
+waitlist row disappeared. The acknowledged and restored state digest was
+`838bfc29fe98c0dd3ff755118a206995d5ca087ded4b4f84264c6f9c4067bd85` on both
+readbacks. Restore plus reconciliation took 5.027 seconds. The script checks
+that every reconciliation query is read-only, the dispatch has a matching
+receipt, and cleanup removes the temporary Worker, D1, and local config. The
+final D1 account list contained only the three pre-existing staging databases.
+The private report was written with mode 0600 outside the repository.
+
+This is a repeatable application-schema Time Travel drill with one synthetic
+business write and a pending receipt ledger. It does not exercise a live Stripe
+delivery during the restore window, an applied Stripe business effect, Auth,
+R2, a complete encrypted backup, or a coordinated Supabase-writer freeze. It
+does not close issue #37's integrated acceptance gate.
+
 ## Targeted auth/lifecycle CPU readback (2026-09-28 JST)
 
 A repeat synthetic TOTP/admin/lifecycle canary on the deployed staging Worker

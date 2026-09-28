@@ -70,6 +70,7 @@
     "test:emoji-conversion-runtime": "node --experimental-strip-types --test scripts/test-emoji-conversion-runtime.ts",
     "test:migration:prewrite-supabase": "node scripts/migration/prewrite-supabase-resume-smoke.mjs",
     "test:migration:staging-prewrite-resume": "node scripts/migration/staging-stripe-receipt-freeze-smoke.mjs --run-live-staging-write --database=fanmark-business-staging --account-id=bfc2890741f0b3fb236e2d755b6c9adc --confirm-no-stripe-api --verify-loopback-supabase-resume",
+    "test:migration:staging-postwrite-recovery": "node scripts/migration/postwrite-cloudflare-recovery-smoke.mjs --run-live-staging-write --account-id=bfc2890741f0b3fb236e2d755b6c9adc --confirm-synthetic-only --confirm-delete-created-resources",
     "test:migration:staging-subscription-display": "node scripts/migration/staging-subscription-display-smoke.mjs",
     "test:migration:staging-subscription-ui-poll": "node scripts/migration/staging-subscription-display-smoke.mjs --verify-rendered-poll",
     "test:migration:staging-fanmark-search-record": "node scripts/migration/staging-fanmark-search-record-smoke.mjs --run-live-staging-write --database=fanmark-business-staging --account-id=bfc2890741f0b3fb236e2d755b6c9adc",
