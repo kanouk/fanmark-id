@@ -22,6 +22,7 @@ export const BUSINESS_MIGRATION_SEQUENCE = Object.freeze([
   "0015_extension_coupon_application.sql",
   "0016_broadcast_email_delivery.sql",
   "0017_lifecycle_generation_timestamp_precision.sql",
+  "0018_invitation_capacity_timestamp_precision.sql",
 ]);
 
 export function isBusinessMigrationLedgerPrefix(ledger) {
