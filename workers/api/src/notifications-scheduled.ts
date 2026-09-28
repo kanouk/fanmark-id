@@ -1,4 +1,5 @@
 import { selectD1Database, type Env } from "./repository";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const DEFAULT_LANGUAGE = "ja";
 const EVENT_BATCH_LIMIT = 50;
@@ -133,7 +134,7 @@ async function ruleIsAllowed(
 
   const fanmarkId = typeof payload.fanmark_id === "string" ? payload.fanmark_id : null;
   if (rule.cooldown_window_seconds) {
-    const cutoff = new Date(Date.parse(now) - rule.cooldown_window_seconds * 1000).toISOString();
+    const cutoff = toUtcMicrosecondTimestamp(new Date(Date.parse(now) - rule.cooldown_window_seconds * 1000));
     const recent = await database.prepare(`
       SELECT id FROM notifications
       WHERE user_id = ? AND rule_id = ? AND created_at >= ?
@@ -207,7 +208,7 @@ async function processEvent(database: D1Database, event: NotificationEvent, now:
         fanmark_short_id: payload.fanmark_short_id ?? null,
         metadata: payload,
       };
-      const triggerAt = new Date(Date.parse(now) + delaySeconds * 1000).toISOString();
+      const triggerAt = toUtcMicrosecondTimestamp(new Date(Date.parse(now) + delaySeconds * 1000));
       const notificationId = crypto.randomUUID();
       writes.push(database.prepare(`
         INSERT INTO notifications
@@ -240,8 +241,8 @@ export async function runScheduledNotificationEvents(input: {
 }): Promise<{ status: "disabled" } | { status: "completed"; selected: number; processed: number; failed: number }> {
   if (input.env.NOTIFICATION_PROCESSOR_BACKEND?.trim() !== "d1") return { status: "disabled" };
   const database = input.database ?? databaseFor(input.env);
-  const now = new Date(input.scheduledTime).toISOString();
-  const staleBefore = new Date(input.scheduledTime - STALE_PROCESSING_MS).toISOString();
+  const now = toUtcMicrosecondTimestamp(new Date(input.scheduledTime));
+  const staleBefore = toUtcMicrosecondTimestamp(new Date(input.scheduledTime - STALE_PROCESSING_MS));
   const selection = await database.prepare(`
     SELECT id, event_type, payload, retry_count
     FROM notification_events

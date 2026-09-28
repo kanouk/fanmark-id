@@ -1,4 +1,5 @@
 import { selectD1Database, type Env } from "./repository";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const HASH_RE = /^[0-9a-f]{64}$/u;
 const UUID_RE = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/iu;
@@ -379,7 +380,7 @@ export function createReferenceMasterAdminD1Repository(env: Env) {
       if (current.releaseVersion !== expectedReleaseVersion) fail("reference_master_edit_conflict", 409);
 
       let changed = false;
-      const updatedAt = new Date().toISOString();
+      const updatedAt = toUtcMicrosecondTimestamp(new Date());
       if (patch.type === "tier") {
         const entry = current.snapshot.find((candidate) => candidate.table_name === "fanmark_tiers")!;
         const record = entry.records.find((candidate) => candidate.id === patch.id);
@@ -412,8 +413,8 @@ export function createReferenceMasterAdminD1Repository(env: Env) {
         let activated;
         try {
           activated = await database.prepare(
-            "UPDATE fanmark_reference_master_active_release SET release_version = ?, previous_release_version = ?, activation_id = ?, action = 'promotion', generation = generation + 1, updated_at = CURRENT_TIMESTAMP WHERE singleton_id = 1 AND release_version = ? AND generation = ?",
-          ).bind(releaseVersion, current.releaseVersion, activationId, current.releaseVersion, current.generation).run();
+            "UPDATE fanmark_reference_master_active_release SET release_version = ?, previous_release_version = ?, activation_id = ?, action = 'promotion', generation = generation + 1, updated_at = ? WHERE singleton_id = 1 AND release_version = ? AND generation = ?",
+          ).bind(releaseVersion, current.releaseVersion, activationId, updatedAt, current.releaseVersion, current.generation).run();
         } catch {
           fail("reference_master_edit_conflict", 409);
         }

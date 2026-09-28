@@ -292,6 +292,10 @@ describe("versioned reference-master Worker API", () => {
     expect(afterTierEdit.releaseVersion).not.toBe(initial.releaseVersion);
     expect(afterTierEdit.generation).toBe(initial.generation + 1);
     expect(afterTierEdit.tiers[0].initial_license_days).toBe(45);
+    const activeReleaseTimestamp = await database!.prepare(
+      "SELECT updated_at FROM fanmark_reference_master_active_release WHERE singleton_id = 1",
+    ).first<{ updated_at: string }>();
+    expect(activeReleaseTimestamp?.updated_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
     expect((await request("/api/reference-masters/fanmark_tiers").then((response) => response.json()) as { items: Array<Record<string, unknown>> }).items[0])
       .toMatchObject({ initialLicenseDays: 45 });
 

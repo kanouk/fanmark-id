@@ -3056,6 +3056,15 @@ timestamp gate or the 79 `now()` default locations; the full writer inventory
 remains open. No live user rows, remote D1/R2, or production settings were
 accessed.
 
+## Master and scheduled notification D1 timestamps (2026-09-28 JST)
+
+Emoji master create/update/import operations and reference-master release
+activation now persist fixed-width UTC microsecond timestamps. Emoji admin
+write readback is covered in the Auth D1 suite (21/21); reference-master API
+coverage passes 6/6. Scheduled notification processing now formats due times,
+cooldown cutoffs, generated trigger times, and operation timestamps the same
+way; its D1 suite passes 12/12. No user data or remote D1 was read or changed.
+
 ## Stripe D1 timestamp normalization (2026-09-28 JST)
 
 Stripe webhook receipt times, dispatch leases/retries, invoice projection

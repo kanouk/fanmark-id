@@ -1,4 +1,5 @@
 import { selectD1Database, type Env } from "./repository";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const API_PATH = "/api/admin/emoji-master";
 const UUID_RE = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/iu;
@@ -274,7 +275,7 @@ export function createEmojiMasterAdminD1Repository(env: Env) {
     async create(value: unknown): Promise<EmojiMasterAdminItem> {
       const input = parseInput(value);
       const id = crypto.randomUUID();
-      const now = new Date().toISOString();
+      const now = toUtcMicrosecondTimestamp(new Date());
       try {
         const result = await database.prepare(
           `INSERT INTO emoji_master (id, emoji, short_name, keywords, category, subcategory, codepoints, sort_order, updated_at)
@@ -295,7 +296,7 @@ export function createEmojiMasterAdminD1Repository(env: Env) {
       const expectedTime = Date.parse(expectedUpdatedAt);
       if (!Number.isFinite(expectedTime)) fail("invalid_request");
       const input = parseInput(value);
-      const now = new Date(Math.max(Date.now(), expectedTime + 1)).toISOString();
+      const now = toUtcMicrosecondTimestamp(new Date(Math.max(Date.now(), expectedTime + 1)));
       try {
         const result = await database.prepare(
           `UPDATE emoji_master
@@ -324,7 +325,7 @@ export function createEmojiMasterAdminD1Repository(env: Env) {
       }
       const records = recordsValue.map(parseInput);
       if (new Set(records.map((record) => record.emoji)).size !== records.length) fail("duplicate_import_emoji");
-      const now = new Date().toISOString();
+      const now = toUtcMicrosecondTimestamp(new Date());
       const sql = `INSERT INTO emoji_master (id, emoji, short_name, keywords, category, subcategory, codepoints, sort_order, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(emoji) DO UPDATE SET
@@ -336,7 +337,7 @@ export function createEmojiMasterAdminD1Repository(env: Env) {
           sort_order = excluded.sort_order,
           updated_at = CASE
             WHEN julianday(excluded.updated_at) > julianday(emoji_master.updated_at) THEN excluded.updated_at
-            ELSE strftime('%Y-%m-%dT%H:%M:%fZ', emoji_master.updated_at, '+0.001 seconds')
+            ELSE strftime('%Y-%m-%dT%H:%M:%f', emoji_master.updated_at, '+0.001 seconds') || '000Z'
           END`;
       try {
         const results = await database.batch(records.map((record) => database.prepare(sql).bind(

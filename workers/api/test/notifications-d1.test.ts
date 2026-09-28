@@ -17,7 +17,7 @@ const otherId = "66c59118-5e50-4d5c-a675-3afc83e6006d";
 const ownerEmail = "notifications-owner@example.invalid";
 const otherEmail = "notifications-other@example.invalid";
 const password = "Synthetic-Notifications-Only!2026";
-const now = "2026-09-25T00:00:00.000Z";
+const now = "2026-09-25T00:00:00.000000Z";
 const unreadDeliveredId = "55555555-1111-4111-8111-111111111111";
 const pendingId = "55555555-2222-4222-8222-222222222222";
 const expiredId = "55555555-3333-4333-8333-333333333333";
@@ -304,7 +304,7 @@ describe("D1 notification event processor", () => {
     expect(result).toMatchObject({ selected: 1, processed: 1, failed: 0 });
     const notification = await businessDatabase.prepare("SELECT status, triggered_at, delivered_at FROM notifications WHERE event_id = ?")
       .bind(eventId).first();
-    expect(notification).toEqual({ status: "pending", triggered_at: "2026-09-25T00:01:00.000Z", delivered_at: null });
+    expect(notification).toEqual({ status: "pending", triggered_at: "2026-09-25T00:01:00.000000Z", delivered_at: null });
   });
 
   it("leaves events scheduled for the future untouched", async () => {

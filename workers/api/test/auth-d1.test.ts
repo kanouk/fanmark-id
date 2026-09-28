@@ -9,6 +9,7 @@ import suspensionSchemaSql from "../migrations/0008_auth_user_suspension.sql?raw
 import referenceMasterSchemaSql from "../migrations/0004_reference_master_releases.sql?raw";
 import emojiAdminGuardsSchemaSql from "../migrations/0005_emoji_master_admin_guards.sql?raw";
 import { handleRequest } from "../src";
+import { createEmojiMasterAdminD1Repository } from "../src/emoji-master-admin-d1-repository";
 import type { Env } from "../src/repository";
 
 const runtimeEnv = env as unknown as Env;
@@ -962,5 +963,38 @@ describe("admin session authorization through the application Worker", () => {
     );
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ error: "not_found" });
+  });
+});
+
+describe("emoji master D1 timestamp contract", () => {
+  it("stores create, update, and import timestamps as UTC microsecond text", async () => {
+    if (!masterDatabase) throw new Error("MASTER_DB binding is unavailable");
+    const repository = createEmojiMasterAdminD1Repository({
+      ...runtimeEnv,
+      D1_TOPOLOGY: "split",
+      EMOJI_MASTER_ADMIN_BACKEND: "d1",
+    });
+    const input = {
+      emoji: "🧪",
+      shortName: "test_tube",
+      keywords: ["test", "tube"],
+      category: "Objects",
+      subcategory: "science",
+      codepoints: ["1F9EA"],
+      sortOrder: 90,
+    };
+    try {
+      const created = await repository.create(input);
+      expect(created.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+      const updated = await repository.update(created.id, created.updatedAt, { ...input, shortName: "test_tube_updated" });
+      expect(updated.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+
+      await repository.import([{ ...input, emoji: "🧬", shortName: "dna", codepoints: ["1F9EC"] }]);
+      const imported = await masterDatabase.prepare("SELECT updated_at FROM emoji_master WHERE emoji = ?")
+        .bind("🧬").first<{ updated_at: string }>();
+      expect(imported?.updated_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+    } finally {
+      await masterDatabase.prepare("DELETE FROM emoji_master WHERE emoji IN (?, ?)").bind("🧪", "🧬").run();
+    }
   });
 });
