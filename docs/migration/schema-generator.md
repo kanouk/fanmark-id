@@ -81,6 +81,11 @@ API boundaries. Their previous `money_cents_import` readiness gate was removed
 after row-conversion, D1 range-check, and API projection tests covered the full
 `numeric(10,2)` range; the separate unconstrained-decimal gate remains.
 
+With the explicit credential descriptor, the completed profile-bound
+transformed-row importer likewise satisfies the `credential_transform_import_required`
+capability. The generic importer remains blocked without the exact composed
+target profile, and a missing descriptor remains a blocking gate.
+
 UUID syntax validation is enforced by the shared row converter used by snapshot
 verification and D1 import, including credential-bearing rows' non-credential
 columns. It requires exactly 36 characters, rejects malformed strings before a

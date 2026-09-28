@@ -14,7 +14,7 @@ import { pathToFileURL } from "node:url";
 
 import { compileCredentialDescriptor, CREDENTIAL_COLUMN, CREDENTIAL_SOURCE_RELATION } from "./credential-descriptor.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 12;
+export const SCHEMA_CONVERSION_VERSION = 13;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -742,7 +742,9 @@ function typeInfo(column, enumLabels, gates, typeCounts, credentialDescriptorPla
       gates.add("credential_source_type_invalid", "The credential source column must be PostgreSQL text and match the explicit transform descriptor.", location);
     } else if (credentialDescriptorPlan) {
       codec = "credential-to-bcrypt";
-      gates.add("credential_transform_import_required", "The source credential requires the dedicated transformed-row importer; generic text INSERTs are forbidden.", location);
+      // The descriptor-bound importer has an atomic transformed-row path and
+      // exact target-profile preflight. The importer itself remains fail-closed
+      // when that profile is omitted; generic text INSERTs are never allowed.
     } else {
       codec = "credential-descriptor-required";
       gates.add("credential_descriptor_required", "The credential column has no explicit transform descriptor and cannot use the ordinary text codec.", location);

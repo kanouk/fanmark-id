@@ -582,7 +582,7 @@ production route, or domain/DNS state was read or changed. The catalog response
 and generated report stayed in memory and the temporary link directory was
 removed.
 
-## Exact money-cents import and API boundary (2026-09-28 JST)
+## Verified money-cents and credential-transform import (2026-09-28 JST)
 
 The two explicitly mapped `numeric(10,2)` columns now retain their reviewed
 `money-cents-int64` codec without a blocking schema-conversion gate. The
@@ -595,11 +595,19 @@ and integer cents with checked bounds. Existing API integration tests verify
 the read/write projections; new row-conversion and generated-DDL tests cover
 both extrema, one-cent values, SQL NULL, non-cent precision, and overflow.
 
-This resolves only the two explicit money columns; unconstrained `numeric`
-remains gated and the full v12 report remains `deployable: false`. The
-schema-conversion version is now 12, so v11 snapshot manifests are rejected and
-must be freshly exported before verification/import. Removing
-this single two-location gate from the latest descriptor-aware catalog shape
-reduces its readiness report from 13/226 to 12/224 (8 row-conversion groups /
-133 locations; 4 schema/operation groups / 91 locations). No source rows or
-remote D1 state were read or changed by this codec change.
+The descriptor-aware credential codec also uses the completed profile-bound
+transformed-row importer, so `credential_transform_import_required` is no longer
+reported as unresolved when the valid value-free descriptor is supplied. The
+importer still requires the exact target profile and rejects the generic path
+before any report, ledger, or target write; synthetic current-catalog tests
+cover transformed rows, inactive-row deferral, ACK-loss resume, and typed
+readback. Without a descriptor, `credential_descriptor_required` remains.
+
+Unconstrained `numeric` and the other type/parity gates remain, and the full
+v13 report remains `deployable: false`. The schema-conversion version is now 13,
+so older snapshot manifests are rejected and must be freshly exported before
+verification/import. Removing the two money locations and one completed
+credential-transform location from the latest descriptor-aware catalog shape
+reduces readiness from 13/226 to 11/223 (6 row-conversion groups / 130
+locations; 5 schema/operation groups / 93 locations). No source rows or remote
+D1 state were read or changed by this codec update.

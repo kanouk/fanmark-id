@@ -332,7 +332,6 @@ test("bounds a provider get timeout and cancels a late body", async () => {
   const lateBody = new ReadableStream({
     start(controller) {
       controller.enqueue(bytes("bytes"));
-      controller.close();
     },
     cancel() {
       cancelled = true;
