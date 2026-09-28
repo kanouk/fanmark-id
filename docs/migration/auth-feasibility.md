@@ -407,7 +407,8 @@ all four providers while email/social signup remains disabled, and an
 unsupported provider is rejected. The test then returns an `access_denied`
 callback for each provider with the issued state cookies, verifies the error
 redirect returns to the explicitly supplied error callback URL, and confirms
-no session or social account was created. `npm --prefix workers/api run
+no session or social account was created. A tampered state is also rejected
+with `state_mismatch` for each of the four providers. `npm --prefix workers/api run
 test:auth:d1` passed 21/21 and `npm --prefix workers/api run typecheck`
 passed.
 
@@ -428,9 +429,9 @@ issues a session, and leaves the user count unchanged. Apple’s `form_post`
 callback is also checked through Better Auth’s intermediate GET redirect.
 
 A separate Google callback with a verified but unknown email is rejected with
-`signup_disabled`; no user, social account, or session is created. The earlier
-four-provider `access_denied` test still confirms state-cookie binding and no
-session/account side effects. Current local results are 26/26 for
+`signup_disabled`; no user, social account, or session is created. The
+four-provider denial and tampered-state tests confirm state-cookie binding and
+no session/account side effects. Current local results are 26/26 for
 `npm --prefix workers/api run test:auth:d1`, 3/3 for
 `npm --prefix workers/api run test:auth-social`, plus Worker typecheck and
 focused ESLint.

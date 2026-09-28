@@ -635,6 +635,29 @@ describe("Better Auth through the application Worker", () => {
       expect(`${callbackDestination.origin}${callbackDestination.pathname}`)
         .toBe(`${appOrigin}/auth`);
       expect(callbackDestination.searchParams.get("error")).toBe("access_denied");
+
+      const mismatchStart = await authRequest("/sign-in/social", jsonBody({
+        provider,
+        callbackURL: `${appOrigin}/auth`,
+        errorCallbackURL: `${appOrigin}/auth`,
+      }), providerEnv);
+      const mismatchBody = await mismatchStart.json() as { url: string };
+      const mismatchAuthorizationURL = new URL(mismatchBody.url);
+      const mismatchCookies = (mismatchStart.headers.get("set-cookie") ?? "")
+        .split(/,(?=[^;,]+=)/u)
+        .map((cookie) => cookie.trim().split(";", 1)[0])
+        .filter(Boolean)
+        .join("; ");
+      const mismatchedState = `${mismatchAuthorizationURL.searchParams.get("state") ?? ""}tampered`;
+      const mismatchCallback = await authRequest(
+        `/callback/${provider}?${new URLSearchParams({ error: "access_denied", state: mismatchedState })}`,
+        { headers: { cookie: mismatchCookies } },
+        providerEnv,
+      );
+      expect(mismatchCallback.status, `${provider} mismatched state callback`).toBe(302);
+      const mismatchDestination = new URL(mismatchCallback.headers.get("location") ?? "");
+      expect(mismatchDestination.searchParams.get("error"), `${provider} mismatched state error`)
+        .toBe("state_mismatch");
     }
 
     const unconfiguredProvider = await authRequest("/sign-in/social", jsonBody({

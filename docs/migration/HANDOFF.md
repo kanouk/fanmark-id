@@ -2787,7 +2787,8 @@ Local Worker/D1 tests now complete synthetic code-exchange callbacks for all
 four configured social providers. Verified provider identities link to the
 existing synthetic UUID and create sessions without creating extra users; a
 verified but unknown Google email is rejected because social signup is
-disabled. Apple's `form_post` callback redirect is included. The full auth D1
+disabled. The denial callback and a tampered state are rejected for all four
+providers. Apple's `form_post` callback redirect is included. The full auth D1
 suite passes 26/26, provider configuration tests 3/3, and Worker typecheck and
 focused ESLint pass. Provider HTTP calls were stubbed, so real credentials,
 browser callbacks, and provider-console redirect registration remain open.

@@ -3684,7 +3684,8 @@ identity persistence, session issuance, and no new user row. Apple’s
 `form_post` callback redirect to the follow-up GET is included. A separate
 Google callback for a verified but unlinked email returns `signup_disabled`
 without creating a user, account, or session. Existing start/state-denial
-coverage still tests all four providers.
+coverage still tests all four providers, including rejection of a tampered
+state with `state_mismatch`.
 
 `npm --prefix workers/api run test:auth:d1` passes 26/26;
 `npm --prefix workers/api run test:auth-social` passes 3/3; Worker typecheck,
