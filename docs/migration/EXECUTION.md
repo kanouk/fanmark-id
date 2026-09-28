@@ -1496,6 +1496,27 @@ Historical analytics were not copied; abuse controls, retention policy,
 populated-user authorization, and production CPU/plan fit remain open. No
 production route or domain/DNS setting changed.
 
+## Access-analytics ingress limiter on staging (2026-09-28 JST)
+
+Added a dedicated Cloudflare Rate Limiting binding to the app-staging Worker:
+120 requests per client key per 60 seconds. The Worker hashes
+`cf-connecting-ip` into a versioned limiter key and never stores the raw IP.
+Missing, failing, or malformed limiter responses fail closed before D1 writes;
+local tests also verify the 429 path. The staging config remains workers.dev
+only and keeps its existing split D1 and R2 bindings.
+
+Worker full suite passed, including the 10 access-analytics tests;
+`npm run test:migration-data` passed 172/172; typecheck, staging build,
+Wrangler dry-run, ESLint, and CI workflow isolation passed. Deployed staging
+version `82413f00-f60e-4a01-aeb0-2a071e01178a` and read back 100% traffic.
+The rendered `/analytics` synthetic canary recorded one event, suppressed
+four concurrent duplicates, showed total access `1` and unique visitors `1`,
+verified both Worker reads and anonymous 401, then independently read zero
+synthetic business/Auth rows after cleanup. No historical analytics, real
+user data, production routing, or domain/DNS were changed. Raw referrer and
+user-agent retention policy, populated-user authorization, and production
+CPU/plan fit remain open.
+
 ## Reference-master editor paired-cutover gate (2026-09-26 JST)
 
 The existing versioned D1 editor is tested, but its writer selector must move

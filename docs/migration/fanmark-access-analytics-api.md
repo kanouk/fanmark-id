@@ -12,15 +12,18 @@ then resolves the latest active or grace license. Missing or mismatched public
 records return `{ success: true, recorded: false }` without exposing whether a
 fanmark ID exists.
 
-The public ingress bounds the JSON body to 8 KiB, rejects unknown fields, and
-bounds stored referrer, user-agent, and UTM values. It keeps the source behavior
-of hashing the user-agent, fanmark ID, and UTC date; it does not use an IP
-address. A D1 batch atomically suppresses a repeated visitor hash for five
-minutes, inserts the raw event, and upserts its daily aggregate. The write is
-serialized by D1, so simultaneous duplicate calls create only one log and one
-aggregate increment. The test suite covers concurrent requests, the five-minute
-boundary, unique visitor counting, origin rejection, invalid IDs, and aggregate
-classification.
+The staging Worker configuration attaches a separate Cloudflare Rate Limiting
+binding that allows 120 requests per client-IP key per 60 seconds. The Worker
+hashes the IP for the limiter key and does not write it to D1. The public
+ingress also bounds the JSON body to 8 KiB, rejects unknown fields, and bounds
+stored referrer, user-agent, and UTM values. It keeps the source behavior of
+hashing the user-agent, fanmark ID, and UTC date for visitor deduplication. A
+D1 batch atomically suppresses a repeated visitor hash for five minutes,
+inserts the raw event, and upserts its daily aggregate. The write is serialized
+by D1, so simultaneous duplicate calls create only one log and one aggregate
+increment. The test suite covers limiter denial/failure, concurrent requests,
+the five-minute boundary, unique visitor counting, origin rejection, invalid
+IDs, and aggregate classification.
 
 The paired owner-facing reads are `GET /api/me/analytics/fanmarks`,
 `GET /api/me/analytics`, and `GET /api/me/analytics/summary`. Better Auth
@@ -37,6 +40,6 @@ reads all owned business/Auth row counts back as zero. The selectors remain
 explicit and the normal/production build still uses Supabase.
 
 This proves only a synthetic staging flow. Historical data is not migrated;
-public-ingress abuse controls, raw referrer/user-agent retention policy,
-populated-user authorization, and production CPU/plan fit remain open. Owner
-history details also remain on Supabase.
+raw referrer/user-agent retention policy, populated-user authorization, and
+production CPU/plan fit remain open. Owner history details also remain on
+Supabase.

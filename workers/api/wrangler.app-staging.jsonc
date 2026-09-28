@@ -30,6 +30,14 @@
         "limit": 120,
         "period": 60
       }
+    },
+    {
+      "name": "FANMARK_ACCESS_ANALYTICS_LIMITER",
+      "namespace_id": "41092703",
+      "simple": {
+        "limit": 120,
+        "period": 60
+      }
     }
   ],
   "d1_databases": [

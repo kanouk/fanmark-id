@@ -17,6 +17,17 @@ const OTHER_LICENSE_ID = "45222222-2222-4222-8222-222222222222";
 const USER_ID = "e62ce4d0-8055-4ecb-9e3a-759d70d659e0";
 const OTHER_USER_ID = "2a1b9c5f-3c8a-4890-9e04-3768885b6dd8";
 const START = new Date("2026-09-26T10:00:00.000Z");
+const SYNTHETIC_IP = "198.51.100.51";
+let analyticsLimiterMode: "allowed" | "blocked" | "failed" = "allowed";
+const analyticsLimiterKeys: string[] = [];
+const analyticsLimiter = {
+  async limit({ key }: { key: string }): Promise<{ success: boolean }> {
+    analyticsLimiterKeys.push(key);
+    if (analyticsLimiterMode === "failed") throw new Error("synthetic_limiter_failure");
+    return { success: analyticsLimiterMode === "allowed" };
+  },
+};
+const runtimeEnvWithLimiter: Env = { ...runtimeEnv, FANMARK_ACCESS_ANALYTICS_LIMITER: analyticsLimiter };
 const ownerAuth: StorageAuthResolver = async () => ({ available: true, userId: USER_ID });
 const otherAuth: StorageAuthResolver = async () => ({ available: true, userId: OTHER_USER_ID });
 const anonymousAuth: StorageAuthResolver = async () => ({ available: true, userId: null });
@@ -46,7 +57,9 @@ const input = (overrides: Record<string, unknown> = {}) => ({
 });
 
 async function call(body: unknown, clock = () => new Date(START), headers: Record<string, string> = {}) {
-  return handleFanmarkAccessAnalyticsRequest(makeRequest(body, headers), runtimeEnv, clock);
+  return handleFanmarkAccessAnalyticsRequest(
+    makeRequest(body, { "cf-connecting-ip": SYNTHETIC_IP, ...headers }), runtimeEnvWithLimiter, clock,
+  );
 }
 
 beforeAll(async () => {
@@ -56,6 +69,8 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
+  analyticsLimiterMode = "allowed";
+  analyticsLimiterKeys.length = 0;
   if (!database) throw new Error("Business D1 binding unavailable");
   for (const table of ["fanmark_access_daily_stats", "fanmark_access_logs", "fanmark_basic_configs", "fanmark_licenses", "user_settings", "fanmarks"]) {
     await database.prepare(`DELETE FROM ${table}`).run();
@@ -88,6 +103,9 @@ describe("public fanmark access analytics D1 API", () => {
       access_type: "profile",
     });
     expect(log?.visitor_hash).toMatch(/^[0-9a-f]{32}$/u);
+    expect(analyticsLimiterKeys).toHaveLength(1);
+    expect(analyticsLimiterKeys[0]).toMatch(/^fanmark-access-analytics:v1:[0-9a-f]{64}$/u);
+    expect(analyticsLimiterKeys[0]).not.toContain(SYNTHETIC_IP);
     const stats = await database!.prepare("SELECT * FROM fanmark_access_daily_stats").first<Record<string, number>>();
     expect(stats).toMatchObject({
       access_count: 1,
@@ -130,8 +148,40 @@ describe("public fanmark access analytics D1 API", () => {
   });
 
   it("fails closed when the backend is not explicitly selected", async () => {
-    const response = await handleFanmarkAccessAnalyticsRequest(makeRequest(input()), { ...runtimeEnv, FANMARK_ACCESS_ANALYTICS_BACKEND: undefined });
+    const response = await handleFanmarkAccessAnalyticsRequest(makeRequest(input()), { ...runtimeEnvWithLimiter, FANMARK_ACCESS_ANALYTICS_BACKEND: undefined });
     expect(response?.status).toBe(503);
+  });
+
+  it("fails closed when the rate-limit binding is missing or unavailable", async () => {
+    const missing = await handleFanmarkAccessAnalyticsRequest(makeRequest(input()), {
+      ...runtimeEnvWithLimiter, FANMARK_ACCESS_ANALYTICS_LIMITER: undefined,
+    });
+    expect(missing?.status).toBe(503);
+
+    analyticsLimiterMode = "failed";
+    const unavailable = await call(input());
+    expect(unavailable?.status).toBe(503);
+    expect(await database!.prepare("SELECT COUNT(*) AS count FROM fanmark_access_logs").first<{ count: number }>())
+      .toMatchObject({ count: 0 });
+
+    const malformed = await handleFanmarkAccessAnalyticsRequest(makeRequest(input()), {
+      ...runtimeEnvWithLimiter,
+      FANMARK_ACCESS_ANALYTICS_LIMITER: { limit: async () => undefined as unknown as { success: boolean } },
+    });
+    expect(malformed?.status).toBe(503);
+    expect(await database!.prepare("SELECT COUNT(*) AS count FROM fanmark_access_logs").first<{ count: number }>())
+      .toMatchObject({ count: 0 });
+  });
+
+  it("rejects a rate-limited client before writing any analytics rows", async () => {
+    analyticsLimiterMode = "blocked";
+    const response = await call(input());
+    expect(response?.status).toBe(429);
+    expect(await response?.json()).toEqual({ error: "rate_limited" });
+    expect(await database!.prepare("SELECT COUNT(*) AS count FROM fanmark_access_logs").first<{ count: number }>())
+      .toMatchObject({ count: 0 });
+    expect(await database!.prepare("SELECT COUNT(*) AS count FROM fanmark_access_daily_stats").first<{ count: number }>())
+      .toMatchObject({ count: 0 });
   });
 
   it("returns only the authenticated owner's fanmarks and aggregate analytics", async () => {

@@ -38,6 +38,9 @@ export interface Env {
   FANMARK_SEARCH_LIMITER?: {
     limit(input: { key: string }): Promise<{ success: boolean }>;
   };
+  FANMARK_ACCESS_ANALYTICS_LIMITER?: {
+    limit(input: { key: string }): Promise<{ success: boolean }>;
+  };
   FANMARK_DETAILS_BACKEND?: string;
   NOTIFICATIONS_BACKEND?: string;
   NOTIFICATION_MASTER_BACKEND?: string;

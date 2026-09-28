@@ -124,6 +124,13 @@ async function visitorHash(userAgent: string | null, fanmarkId: string, date: st
   return Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("").slice(0, 32);
 }
 
+async function analyticsRateLimitKey(request: Request): Promise<string> {
+  const address = request.headers.get("cf-connecting-ip")?.trim() || "unknown";
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(address)));
+  const hex = Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `fanmark-access-analytics:v1:${hex}`;
+}
+
 async function readBoundedJson(request: Request): Promise<unknown | null> {
   const declaredLength = request.headers.get("content-length");
   if (declaredLength && /^\d+$/u.test(declaredLength) && Number(declaredLength) > MAX_BODY_BYTES) return null;
@@ -157,11 +164,26 @@ export async function handleFanmarkAccessAnalyticsRequest(
   if (env.FANMARK_ACCESS_ANALYTICS_BACKEND?.trim() !== "d1") {
     return response({ error: "analytics_unavailable" }, 503, cors);
   }
+  if (!env.FANMARK_ACCESS_ANALYTICS_LIMITER) {
+    return response({ error: "analytics_unavailable" }, 503, cors);
+  }
   const database = selectD1Database(env, "business");
   if (!database) return response({ error: "analytics_unavailable" }, 503, cors);
 
   const input = parseInput(await readBoundedJson(request));
   if (!input) return response({ error: "invalid_request" }, 400, cors);
+
+  let rateLimit: { success: boolean } | null = null;
+  try {
+    const result: unknown = await env.FANMARK_ACCESS_ANALYTICS_LIMITER.limit({ key: await analyticsRateLimitKey(request) });
+    if (typeof result === "object" && result !== null && typeof (result as { success?: unknown }).success === "boolean") {
+      rateLimit = result as { success: boolean };
+    }
+  } catch {
+    return response({ error: "analytics_unavailable" }, 503, cors);
+  }
+  if (!rateLimit) return response({ error: "analytics_unavailable" }, 503, cors);
+  if (!rateLimit.success) return response({ error: "rate_limited" }, 429, cors);
 
   try {
     const fanmark = await database.prepare(

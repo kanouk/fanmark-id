@@ -81,7 +81,10 @@ function runD1(config, database, sql) {
 
 function assertTarget() {
   const config = JSON.parse(readFileSync(APP_CONFIG, "utf8"));
+  const limiter = config.ratelimits?.find((entry) => entry.name === "FANMARK_ACCESS_ANALYTICS_LIMITER");
   if (config.name !== "fanmark-app-staging" || config.workers_dev !== true || config.routes?.length ||
+      config.custom_domains?.length || limiter?.namespace_id !== "41092703" ||
+      limiter.simple?.limit !== 120 || limiter.simple.period !== 60 ||
       config.vars?.FANMARK_ANALYTICS_BACKEND !== "d1" || config.vars?.FANMARK_ACCESS_ANALYTICS_BACKEND !== "d1") {
     fail("staging_worker_target_mismatch");
   }
