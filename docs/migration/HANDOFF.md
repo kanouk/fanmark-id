@@ -106,6 +106,22 @@ writers or Cron. No production route, real user data, or domain/DNS state was
 changed. Issue #37 remains open; see
 [`cutover-rehearsal.md`](cutover-rehearsal.md).
 
+A follow-up guarded run adds one synthetic avatar to that encrypted archive.
+The image survived Business/Auth Time Travel, then was deliberately deleted
+from the APAC avatar bucket and restored from the decrypted encrypted bundle;
+the public API returned matching bytes and metadata. A Storage upload during
+the write freeze returned 503 `cutover_write_freeze`. The freeze probe observed
+one early accepted synthetic waitlist request after the freeze deployment,
+then five consecutive 503 rejections; Time Travel removed the accepted
+post-bookmark fixture row. Restore/reconciliation took 10.673 seconds and
+encrypted-bundle replay took 31.019 seconds, with identical acknowledged,
+Time-Travel-restored, and R2-replayed digest
+`25280f7aee69fc5b87059043f3d00451fd696a37c9e9d64775e1835e2737c7a2`.
+Cleanup readback confirmed deletion of the temporary Worker, both D1s, config,
+both backup objects, the avatar object, and the local private bundle. This
+extends the synthetic restore slice; it does not close #37 or prove the freeze
+is globally effective at the instant a Worker deployment returns.
+
 The current worktree also centralizes D1 operation timestamps through
 `workers/api/src/utc-timestamp.ts` for availability responses, plan/extension
 checkout, availability-rule edits, notification-admin event/master writes,

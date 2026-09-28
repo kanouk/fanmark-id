@@ -31,6 +31,7 @@ const authName = "fanmark-auth-staging";
 const authId = "2116bc43-32ab-4e3e-b762-9378df88b95f";
 const authMigrationDirectory = path.join(workerRoot, "migrations");
 const recoveryBucketName = "fanmark-migration-backups-staging";
+const avatarBucketName = "fanmark-avatars-staging";
 const webhookApiVersion = "2025-08-27.basil";
 const startedAt = new Date().toISOString();
 const suffix = randomBytes(8).toString("hex");
@@ -42,12 +43,17 @@ const configPath = path.join(workerRoot, configName);
 const tempReportPath = path.join(os.tmpdir(), `fanmark-postwrite-recovery-${suffix}.json`);
 let recoveryArtifactsRoot = null;
 const uploadedR2Keys = [];
+const uploadedStorageKeys = [];
 const syntheticSecret = `whsec_${randomBytes(32).toString("base64url")}`;
 const syntheticAuthSecret = randomBytes(32).toString("base64url");
 const syntheticAuthUserId = randomUUID();
 const syntheticAuthAccountId = randomUUID();
 const syntheticAuthEmail = `auth-recovery-${randomUUID()}@example.invalid`;
 const syntheticAuthPassword = `Recovery-${randomBytes(24).toString("base64url")}あ!9`;
+const syntheticAvatarPng = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+k8iMAAAAASUVORK5CYII=",
+  "base64",
+);
 const emailBeforeBookmark = `recovery-before-${randomUUID()}@example.invalid`;
 const emailAfterBookmark = `recovery-after-${randomUUID()}@example.invalid`;
 const emailDuringFreeze = `recovery-freeze-${randomUUID()}@example.invalid`;
@@ -67,7 +73,7 @@ let workerMayExist = false;
 let tempConfigWritten = false;
 let primaryError = null;
 let report = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   startedAt,
   accountId,
   phase: "preflight",
@@ -80,6 +86,8 @@ let report = {
     origin: null,
     deployedVersion: null,
     frozenVersion: null,
+    readinessStatuses: [],
+    readinessLastError: null,
   },
   recovery: {
     bookmark: null,
@@ -96,6 +104,12 @@ let report = {
     freezeProbeAcceptedWrites: 0,
     freezeConsecutiveRejectedWrites: 0,
     authSignInDuringFreezeSucceeded: false,
+    syntheticAvatarKey: null,
+    syntheticAvatarSha256: null,
+    storageUploadDuringFreezeStatus: null,
+    storageUploadDuringFreezeError: null,
+    storageObjectSurvivedTimeTravel: false,
+    storageObjectRestoredFromEncryptedBundle: false,
     encryptedBundleReplayMs: null,
     replayedBundleDigest: null,
   },
@@ -105,6 +119,7 @@ let report = {
     authDatabaseDeleted: false,
     configDeleted: false,
     r2ObjectsDeleted: false,
+    storageObjectsDeleted: false,
     privateRecoveryArtifactsDeleted: false,
   },
   lastFailedOperation: null,
@@ -212,6 +227,8 @@ function assertPrivateStagingTarget() {
   if (appConfig.r2_buckets?.some((bucket) => bucket.bucket_name === recoveryBucketName)) {
     fail("recovery_bucket_must_not_be_bound_to_app_worker");
   }
+  const avatarBinding = appConfig.r2_buckets?.find((bucket) => bucket.binding === "AVATARS_BUCKET");
+  if (avatarBinding?.bucket_name !== avatarBucketName) fail("avatar_bucket_binding_mismatch");
 
   const identity = parseJson(runWrangler(["whoami", "--json"], { configRelative: appConfigRelative }), "cloudflare_identity_invalid");
   if (identity.loggedIn !== true || identity.accounts?.some((account) => account.id === accountId) !== true) {
@@ -230,6 +247,14 @@ function assertPrivateStagingTarget() {
   if (!/public access .* disabled/iu.test(devUrl)) fail("recovery_bucket_public_access_enabled");
   const domains = runWrangler(["r2", "bucket", "domain", "list", recoveryBucketName], { configRelative: appConfigRelative });
   if (!/no custom domains connected/iu.test(domains)) fail("recovery_bucket_custom_domain_present");
+
+  const avatarBucket = parseJson(
+    runWrangler(["r2", "bucket", "info", avatarBucketName, "--json"], { configRelative: appConfigRelative }),
+    "avatar_bucket_info_invalid",
+  );
+  if (avatarBucket.name !== avatarBucketName || avatarBucket.location !== "APAC") {
+    fail("avatar_bucket_not_apac_staging_target");
+  }
 
   const databases = databaseRows();
   if (!databases.some((database) => databaseNameOf(database) === businessName && databaseIdOf(database) === businessId)) {
@@ -283,19 +308,24 @@ function createTemporaryConfig() {
       namespace_id: String(namespaceId),
       simple: { limit: 120, period: 60 },
     }],
+    r2_buckets: [{ binding: "AVATARS_BUCKET", bucket_name: avatarBucketName }],
     vars: {
       D1_TOPOLOGY: "split",
       WAITLIST_SIGNUP_BACKEND: "d1",
       STRIPE_WEBHOOK_BACKEND: "d1",
       STRIPE_WEBHOOK_SECRET: syntheticSecret,
       AUTH_BACKEND: "better-auth",
+      STORAGE_BACKEND: "r2",
       BETTER_AUTH_URL: origin,
       CUTOVER_WRITE_FREEZE: "false",
       CORS_ALLOWED_ORIGINS: origin,
       STAGING_NO_INDEX: "true",
     },
   };
-  if (temporaryConfig.routes || temporaryConfig.assets || temporaryConfig.r2_buckets || temporaryConfig.triggers) {
+  if (temporaryConfig.routes || temporaryConfig.assets || temporaryConfig.triggers ||
+      temporaryConfig.r2_buckets?.length !== 1 ||
+      temporaryConfig.r2_buckets[0]?.binding !== "AVATARS_BUCKET" ||
+      temporaryConfig.r2_buckets[0]?.bucket_name !== avatarBucketName) {
     fail("temporary_worker_scope_invalid");
   }
 
@@ -476,6 +506,102 @@ async function readSyntheticSession(origin, cookie) {
   return response.json();
 }
 
+function encodedStorageKey(key) {
+  return key.split("/").map(encodeURIComponent).join("/");
+}
+
+async function uploadSyntheticAvatar(origin, cookie) {
+  const response = await fetch(`${origin}/api/storage/object/avatars`, {
+    method: "POST",
+    headers: { origin, cookie, "content-type": "image/png" },
+    body: syntheticAvatarPng,
+    signal: AbortSignal.timeout(15_000),
+  });
+  const body = await response.json();
+  const key = body?.path;
+  if (response.status !== 201 || typeof key !== "string" ||
+      !new RegExp(`^${syntheticAuthUserId}/[0-9a-f-]{36}\\.png$`, "iu").test(key)) {
+    fail(`synthetic_avatar_upload_http_${response.status}`);
+  }
+  uploadedStorageKeys.push(key);
+  const publicUrl = new URL(body.publicUrl);
+  if (publicUrl.origin !== origin || publicUrl.pathname !== `/api/storage/public/avatars/${encodedStorageKey(key)}`) {
+    fail("synthetic_avatar_public_url_invalid");
+  }
+  const object = {
+    bucket: "avatars",
+    key,
+    contentType: "image/png",
+    cacheControl: "public, max-age=3600",
+    bytesBase64: syntheticAvatarPng.toString("base64"),
+    sha256: createHash("sha256").update(syntheticAvatarPng).digest("hex"),
+    size: syntheticAvatarPng.byteLength,
+  };
+  await assertSyntheticAvatarRead(origin, object);
+  report.recovery.syntheticAvatarKey = key;
+  report.recovery.syntheticAvatarSha256 = object.sha256;
+  return object;
+}
+
+async function readSyntheticAvatar(origin, key) {
+  const response = await fetch(`${origin}/api/storage/public/avatars/${encodedStorageKey(key)}`, {
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (response.status === 404) return null;
+  if (response.status !== 200) fail(`synthetic_avatar_read_http_${response.status}`);
+  return {
+    bytes: Buffer.from(await response.arrayBuffer()),
+    contentType: response.headers.get("content-type"),
+    cacheControl: response.headers.get("cache-control"),
+  };
+}
+
+async function assertSyntheticAvatarRead(origin, expected) {
+  const actual = await readSyntheticAvatar(origin, expected.key);
+  if (!actual || !actual.bytes.equals(Buffer.from(expected.bytesBase64, "base64")) ||
+      actual.contentType !== expected.contentType || actual.cacheControl !== expected.cacheControl) {
+    fail("synthetic_avatar_readback_mismatch");
+  }
+}
+
+async function attemptAvatarUploadDuringFreeze(origin, cookie) {
+  const response = await fetch(`${origin}/api/storage/object/avatars`, {
+    method: "POST",
+    headers: { origin, cookie, "content-type": "image/png" },
+    body: syntheticAvatarPng,
+    signal: AbortSignal.timeout(10_000),
+  });
+  const body = await response.json();
+  report.recovery.storageUploadDuringFreezeStatus = response.status;
+  report.recovery.storageUploadDuringFreezeError = typeof body?.error === "string" ? body.error : null;
+  if (response.status !== 503 || body?.error !== "cutover_write_freeze") {
+    fail(`storage_upload_during_freeze_http_${response.status}`);
+  }
+}
+
+async function restoreSyntheticAvatarFromBackup(origin, object) {
+  if (object?.bucket !== "avatars" || object.contentType !== "image/png" ||
+      !new RegExp(`^${syntheticAuthUserId}/[0-9a-f-]{36}\\.png$`, "iu").test(object.key) ||
+      !/^[0-9a-f]{64}$/u.test(object.sha256) ||
+      typeof object.bytesBase64 !== "string") {
+    fail("encrypted_avatar_backup_invalid");
+  }
+  const bytes = Buffer.from(object.bytesBase64, "base64");
+  if (bytes.length !== object.size || createHash("sha256").update(bytes).digest("hex") !== object.sha256 ||
+      !bytes.equals(syntheticAvatarPng)) {
+    fail("encrypted_avatar_backup_hash_mismatch");
+  }
+  const avatarPath = path.join(recoveryArtifactsRoot, "restored-avatar.png");
+  await writeFile(avatarPath, bytes, { mode: 0o600, flag: "wx" });
+  await chmod(avatarPath, 0o600);
+  runWrangler([
+    "r2", "object", "put", `${avatarBucketName}/${object.key}`, "--remote", "--force",
+    "--file", avatarPath, "--content-type", object.contentType, "--cache-control", object.cacheControl,
+  ], { configRelative: appConfigRelative, timeout: 180_000 });
+  await assertSyntheticAvatarRead(origin, object);
+  report.recovery.storageObjectRestoredFromEncryptedBundle = true;
+}
+
 function syntheticAuthState(passwordHash) {
   const users = runD1On(authDatabaseName, `
     SELECT id, name, email, emailVerified, createdAt, updatedAt
@@ -527,16 +653,25 @@ async function waitForRoute(origin, expected) {
       } catch {
         // Readiness is based on the route's status and stable error code.
       }
+      report.worker.readinessStatuses.push(response.status);
+      if (report.worker.readinessStatuses.length > 30) report.worker.readinessStatuses.shift();
       if (expected === "active" && response.status === 415) return;
       if (expected === "frozen" && response.status === 503 && body?.error === "cutover_write_freeze") return;
       const staleStatus = expected === "active" ? 404 : 415;
-      if (response.status !== staleStatus) fail(`worker_readiness_unexpected_${response.status}`);
+      if (response.status !== staleStatus) {
+        report.worker.readinessLastError = typeof body?.error === "string" && /^[a-z0-9_.-]{1,100}$/iu.test(body.error)
+          ? body.error
+          : null;
+      }
     } catch (error) {
-      if (error instanceof Error && /^worker_readiness_unexpected_/u.test(error.message)) throw error;
+      if (error instanceof Error && error.name === "AbortError") {
+        report.worker.readinessLastError = "request_timeout";
+      }
     }
     await new Promise((resolve) => setTimeout(resolve, 1_000));
   }
-  fail(`worker_${expected}_deployment_not_ready`);
+  const lastStatus = report.worker.readinessStatuses.at(-1);
+  fail(`worker_${expected}_deployment_not_ready${lastStatus ? `_http_${lastStatus}` : ""}`);
 }
 
 async function postWaitlist(origin, email, referralSource) {
@@ -619,6 +754,7 @@ function recoveryBundleCatalog() {
   const columns = [
     { name: "id", type: "uuid", ordinal: 1, notNull: true },
     ...recoveryExportTables.map(({ field }, index) => ({ name: field, type: "text", ordinal: index + 2, notNull: true })),
+    { name: "storage_avatar_json", type: "text", ordinal: recoveryExportTables.length + 2, notNull: true },
   ];
   return {
     observed_at: startedAt,
@@ -692,7 +828,7 @@ async function exportSyntheticTable(database, table, outputPath) {
   return sql;
 }
 
-async function createEncryptedR2RecoveryBundle(passwordHash) {
+async function createEncryptedR2RecoveryBundle(passwordHash, syntheticAvatar) {
   recoveryArtifactsRoot = await mkdtemp(path.join(os.tmpdir(), "fanmark-postwrite-r2-recovery-"));
   await chmod(recoveryArtifactsRoot, 0o700);
   const exportedSql = {};
@@ -711,6 +847,7 @@ async function createEncryptedR2RecoveryBundle(passwordHash) {
     assert.ok(exportedSql[field].includes(marker), `synthetic ${field} export omitted its unique marker`);
   }
   assert.ok(exportedSql.auth_account_sql.includes(passwordHash), "synthetic credential was not in the Auth backup");
+  const syntheticAvatarJson = JSON.stringify(syntheticAvatar);
 
   const catalog = recoveryBundleCatalog();
   const bundleDir = path.join(recoveryArtifactsRoot, "bundle");
@@ -722,7 +859,11 @@ async function createEncryptedR2RecoveryBundle(passwordHash) {
     catalog,
     bundleDir,
     encryptionKey,
-    session: recoveryBundleSession(catalog, { id: randomUUID(), ...exportedSql }),
+    session: recoveryBundleSession(catalog, {
+      id: randomUUID(),
+      ...exportedSql,
+      storage_avatar_json: syntheticAvatarJson,
+    }),
   });
   const bundleFiles = [
     { name: "bundle.header.json", path: sealed.bundleHeaderPath },
@@ -735,6 +876,8 @@ async function createEncryptedR2RecoveryBundle(passwordHash) {
     for (const entry of recoveryExportTables) {
       assert.equal(bytes.includes(Buffer.from(exportedSql[entry.field])), false, "plaintext D1 export leaked into an R2 object");
     }
+    assert.equal(bytes.includes(syntheticAvatarPng), false, "plaintext synthetic Storage object leaked into an R2 object");
+    assert.equal(bytes.includes(Buffer.from(syntheticAvatarJson)), false, "plaintext synthetic Storage metadata leaked into an R2 object");
     const key = `postwrite-recovery/${suffix}/${runId}/${file.name}`;
     uploadedR2Keys.push(key);
     runWrangler([
@@ -768,6 +911,12 @@ async function createEncryptedR2RecoveryBundle(passwordHash) {
   for (const entry of recoveryExportTables) {
     assert.equal(restoredSql[entry.field], exportedSql[entry.field], `decrypted ${entry.field} changed`);
   }
+  assert.equal(restoredSql.storage_avatar_json, syntheticAvatarJson, "encrypted synthetic Storage metadata changed");
+  const restoredAvatar = JSON.parse(restoredSql.storage_avatar_json);
+  assert.deepEqual(restoredAvatar, syntheticAvatar, "encrypted synthetic Storage object metadata changed");
+  assert.deepEqual(Buffer.from(restoredAvatar.bytesBase64, "base64"), syntheticAvatarPng,
+    "encrypted synthetic Storage object bytes changed");
+  exportedSql.storage_avatar_json = restoredSql.storage_avatar_json;
   await rm(restoredDir, { recursive: true, force: true });
   report.recovery.encryptedBundleVerified = true;
   report.recovery.encryptedBundleSha256 = createHash("sha256").update(Buffer.concat(bundleBytes)).digest("hex");
@@ -879,6 +1028,7 @@ async function runDrill() {
   report.phase = "seed_and_sign_in_synthetic_auth_user";
   const passwordHash = await seedSyntheticAuthAccount();
   const firstAuthSession = await signInSyntheticUser(origin);
+  const syntheticAvatar = await uploadSyntheticAvatar(origin, firstAuthSession.cookie);
   const firstAuthState = syntheticAuthState(passwordHash);
   assert.equal(firstAuthState.sessions.length, 1);
 
@@ -900,12 +1050,13 @@ async function runDrill() {
     waitlist: tableRowsForEmail(emailBeforeBookmark),
     stripeLedger: stripeLedgerRows([firstEventId]),
     auth: syntheticAuthState(passwordHash),
+    avatar: { key: syntheticAvatar.key, sha256: syntheticAvatar.sha256, size: syntheticAvatar.size },
   };
   assertOneWaitingRow(acknowledgedState.waitlist, emailBeforeBookmark, referralBeforeBookmark);
   assert.equal(acknowledgedState.auth.sessions.length, 1);
   report.recovery.acknowledgedDigest = hash(acknowledgedState);
   report.phase = "capture_business_and_auth_recovery_bookmarks";
-  const encryptedRecoverySql = await createEncryptedR2RecoveryBundle(passwordHash);
+  const encryptedRecoverySql = await createEncryptedR2RecoveryBundle(passwordHash, syntheticAvatar);
   const bookmark = createBookmark(databaseName, "bookmark");
   const authBookmark = createBookmark(authDatabaseName, "authBookmark");
 
@@ -931,6 +1082,8 @@ async function runDrill() {
     fail("auth_sign_in_during_freeze_did_not_create_new_session");
   }
   report.recovery.authSignInDuringFreezeSucceeded = true;
+  report.phase = "verify_storage_upload_is_blocked_during_freeze";
+  await attemptAvatarUploadDuringFreeze(origin, firstAuthSession.cookie);
 
   report.phase = "restore_and_reconcile_bookmark";
   const restoreStarted = restoreToBookmark(databaseName, bookmark);
@@ -939,9 +1092,12 @@ async function runDrill() {
     waitlist: tableRowsForEmail(emailBeforeBookmark),
     stripeLedger: stripeLedgerRows([firstEventId]),
     auth: syntheticAuthState(passwordHash),
+    avatar: { key: syntheticAvatar.key, sha256: syntheticAvatar.sha256, size: syntheticAvatar.size },
   };
   report.recovery.reconciliationMs = Math.round(performance.now() - restoreStarted);
   assert.deepEqual(restoredState, acknowledgedState, "acknowledged business and Stripe rows changed after restore");
+  await assertSyntheticAvatarRead(origin, syntheticAvatar);
+  report.recovery.storageObjectSurvivedTimeTravel = true;
   const survivingAuthSession = await readSyntheticSession(origin, firstAuthSession.cookie);
   if (survivingAuthSession?.user?.id !== syntheticAuthUserId ||
       survivingAuthSession?.session?.id !== firstAuthSession.sessionId) {
@@ -962,6 +1118,12 @@ async function runDrill() {
   report.recovery.reconciledDigest = hash(restoredState);
 
   report.phase = "restore_business_and_auth_rows_from_encrypted_r2_bundle";
+  runWrangler([
+    "r2", "object", "delete", `${avatarBucketName}/${syntheticAvatar.key}`, "--remote", "--force",
+  ], { configRelative: appConfigRelative });
+  if (await readSyntheticAvatar(origin, syntheticAvatar.key) !== null) {
+    fail("synthetic_avatar_delete_before_replay_failed");
+  }
   writeD1(databaseName, `DELETE FROM stripe_webhook_dispatches WHERE stripe_event_id = ${sqlLiteral(firstEventId)};`, "recovery_bundle_clear_failed");
   writeD1(databaseName, `DELETE FROM stripe_webhook_receipts WHERE stripe_event_id = ${sqlLiteral(firstEventId)};`, "recovery_bundle_clear_failed");
   writeD1(databaseName, `DELETE FROM waitlist WHERE email = ${sqlLiteral(emailBeforeBookmark)};`, "recovery_bundle_clear_failed");
@@ -986,10 +1148,12 @@ async function runDrill() {
     await chmod(sqlPath, 0o600);
     runWrangler(["d1", "execute", targetDatabase, "--remote", "--file", sqlPath], { timeout: 180_000 });
   }
+  await restoreSyntheticAvatarFromBackup(origin, JSON.parse(encryptedRecoverySql.storage_avatar_json));
   const replayedState = {
     waitlist: tableRowsForEmail(emailBeforeBookmark),
     stripeLedger: stripeLedgerRows([firstEventId]),
     auth: syntheticAuthState(passwordHash),
+    avatar: { key: syntheticAvatar.key, sha256: syntheticAvatar.sha256, size: syntheticAvatar.size },
   };
   const replayedSession = await readSyntheticSession(origin, firstAuthSession.cookie);
   report.recovery.encryptedBundleReplayMs = Math.round(performance.now() - replayStarted);
@@ -1038,6 +1202,25 @@ function temporaryWorkerExists() {
 
 async function cleanup() {
   let cleanupFailed = false;
+  if (uploadedStorageKeys.length > 0) {
+    try {
+      for (const key of uploadedStorageKeys) {
+        runCleanup(["r2", "object", "delete", `${avatarBucketName}/${key}`, "--remote", "--force"], {
+          configRelative: appConfigRelative,
+          input: "",
+        });
+      }
+      if (!report.worker.origin) fail("synthetic_avatar_cleanup_origin_missing");
+      for (const key of uploadedStorageKeys) {
+        const missing = await readSyntheticAvatar(report.worker.origin, key);
+        if (missing !== null) fail("synthetic_avatar_cleanup_readback_failed");
+      }
+      report.cleanup.storageObjectsDeleted = true;
+      uploadedStorageKeys.length = 0;
+    } catch {
+      cleanupFailed = true;
+    }
+  }
   if (workerMayExist && tempConfigWritten) {
     try {
       const exists = temporaryWorkerExists();
@@ -1176,10 +1359,14 @@ if (primaryError) {
     `PASS synthetic post-write Cloudflare recovery: business/Auth D1 migrations ` +
     `${report.database.expectedMigrationCount}/${report.authDatabase.expectedMigrationCount}, ` +
     `Time Travel reconciliation ${report.recovery.reconciliationMs} ms, encrypted R2 bundle replay ` +
-    `${report.recovery.encryptedBundleReplayMs} ms.\n` +
+    `${report.recovery.encryptedBundleReplayMs} ms. Synthetic avatar survived Time Travel: ` +
+    `${report.recovery.storageObjectSurvivedTimeTravel}; restored from encrypted bundle: ` +
+    `${report.recovery.storageObjectRestoredFromEncryptedBundle}; frozen upload: ` +
+    `${report.recovery.storageUploadDuringFreezeStatus}/${report.recovery.storageUploadDuringFreezeError}.\n` +
     `Temporary Worker/business/Auth D1 cleanup: ${report.cleanup.workerDeleted}/` +
     `${report.cleanup.databaseDeleted}/${report.cleanup.authDatabaseDeleted}; ` +
-    `R2/private artifact cleanup: ${report.cleanup.r2ObjectsDeleted}/${report.cleanup.privateRecoveryArtifactsDeleted}; ` +
+    `R2 backup/image/private artifact cleanup: ${report.cleanup.r2ObjectsDeleted}/` +
+    `${report.cleanup.storageObjectsDeleted}/${report.cleanup.privateRecoveryArtifactsDeleted}; ` +
     `private report: ${tempReportPath}\n`,
   );
 }

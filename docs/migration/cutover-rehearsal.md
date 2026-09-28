@@ -569,3 +569,43 @@ slice, not a complete Business/Auth/Storage backup. It does not apply a Stripe
 business effect, exercise Storage-object recovery, coordinate Supabase-writer
 or Cron freeze, or import real user data. No existing staging D1, production
 route, user data, or DNS/domain state was changed. Issue #37 remains open.
+
+## Synthetic avatar recovery extension (2026-09-28 JST)
+
+A follow-up run of
+`npm run test:migration:staging-postwrite-recovery` bound only the exact
+APAC `fanmark-avatars-staging` bucket to the temporary Worker and enabled its
+R2 storage route. The run uploaded one 1x1 synthetic PNG through the
+authenticated avatar API, verified its public bytes and HTTP metadata, and
+included its metadata and bytes in the standard encrypted snapshot bundle.
+The encrypted R2 objects contained neither the plaintext PNG nor its plaintext
+metadata. No real Storage inventory or user object was read.
+
+After bookmarking Business/Auth D1, the run verified that the avatar survived
+Time Travel, deleted the exact synthetic key, restored it from the decrypted
+encrypted bundle, and verified identical bytes, content type, and cache
+control through the Worker. The acknowledged, Time-Travel-restored, and
+encrypted-bundle-replayed state digests matched at
+`25280f7aee69fc5b87059043f3d00451fd696a37c9e9d64775e1835e2737c7a2`.
+Time Travel restore plus reconciliation took 10.673 seconds; replay from the
+encrypted bundle took 31.019 seconds. Avatar upload during the write freeze
+returned 503 `cutover_write_freeze`.
+
+Freeze propagation was not instantaneous in this probe: one early synthetic
+waitlist POST returned 202 after the freeze deployment, followed by five
+consecutive valid POSTs rejected with 503. Time Travel removed the accepted
+post-bookmark row, and the final acknowledged state reconciled exactly. This
+confirms stable rejection at the tested workers.dev origin after repeated
+readback; it does not prove global or multi-region freeze completion at the
+instant deployment returns. The script therefore retains its five-consecutive
+rejection gate.
+
+Cleanup readback confirmed deletion of the temporary Worker, both disposable
+D1s, temporary config, both encrypted backup objects, the synthetic avatar,
+and the private local bundle. The two staging R2 buckets were left empty, and
+only the three pre-existing staging D1s remained. This adds synthetic Storage
+object recovery to the earlier six-table slice; it still does not constitute a
+complete Business/Auth/Storage backup or recovery drill. It does not apply a
+Stripe business effect, freeze Supabase writers or Cron, import real user
+data, or change production routing or DNS/domain state. Issue #37 remains
+open.
