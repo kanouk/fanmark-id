@@ -286,9 +286,11 @@ rows written. D1-writing synthetic staging smoke scripts were also aligned to
 six-digit UTC. Worker typecheck and lifecycle/schema tests pass (16/16).
 The full `workers/api` test chain, staging Vite build, and Worker Wrangler
 dry-run also pass; the dry-run read the built assets and exited without deploy.
-GitHub Actions run `36368026109` for `f241a89` passed both required jobs. The
-13-gate report and coarse progress estimate remain unchanged. Issue #37's full writer-freeze, timed
-final-copy, and pre/post-write recovery rehearsal remains open, as do
+GitHub Actions run `36372919441` for `165a4bf` passed both required jobs,
+including the full Worker API/local D1 chain, typecheck, staging application
+build, and Worker dry-run. The 13-gate report and coarse progress estimate
+remain unchanged. Issue #37's full writer-freeze, timed final-copy, and
+pre/post-write recovery rehearsal remains open, as do
 provider-backed Resend/Stripe acceptance, broad authenticated UI coverage, and
 Workers CPU/plan fit. Issue #38's real user-data import and public domain/DNS
 cutover are intentionally deferred final phases. No production Worker, real
