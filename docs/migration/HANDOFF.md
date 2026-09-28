@@ -2548,3 +2548,10 @@ The current coarse progress estimate remains about 53% end-to-end and 73% of
 the prioritized app/infrastructure/non-user-master scope. The latest
 schema-only refresh strengthened conversion evidence but did not make D1
 deployable or change that estimate.
+
+The 2026-09-28 worktree also adds a regression check that compares all 34 local
+Supabase Edge Function slugs and their explicit `verify_jwt` values against the
+read-only 35-function live inventory. The only unmatched entry remains the
+live-only `manual-expire-grace-licenses`. The standalone check and the full
+migration-data suite pass (173/173); this validates gateway-config parity, not
+handler authorization or external callers. The estimate above is unchanged.

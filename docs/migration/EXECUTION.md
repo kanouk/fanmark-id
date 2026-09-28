@@ -3335,3 +3335,20 @@ Restore and reconciliation took 4.530 seconds. Cleanup confirmed the temporary
 Worker, D1, and config were removed. No real user data, Stripe API call,
 production route, or domain/DNS change was involved. This remains an isolated
 application-schema drill, not full #37 acceptance.
+
+## Supabase Edge Function settings regression check (2026-09-28 JST)
+
+Added `scripts/migration/test-supabase-function-settings.mjs` to compare the
+read-only live-function matrix in `live-observations.md` against all local
+`supabase/functions/*/index.*` entrypoints and the explicit `verify_jwt`
+settings in `supabase/config.toml`. The check requires the 34 local slugs and
+the one documented live-only function to match the reviewed inventory, and
+fails if any local function omits or duplicates its JWT boolean. It is included
+in `npm run test:migration-data` and is available as
+`npm run test:supabase-function-settings`.
+
+Under Node 22.6.0, the standalone check passed and the full migration-data
+suite passed 173/173. This protects observed gateway-setting parity only; it
+does not prove handler-level authorization, function behavior, or the status
+of external callers for the live-only function. No remote setting, deployment,
+function invocation, or application row changed.
