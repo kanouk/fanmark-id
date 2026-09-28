@@ -45,9 +45,12 @@ let workerMayExist = false;
 let tempConfigWritten = false;
 let primaryError = null;
 let report = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   startedAt,
   accountId,
+  phase: "preflight",
+  failureCode: null,
+  failureKind: null,
   database: { name: databaseName, id: null, expectedMigrationCount: null },
   worker: { name: workerName, origin: null, deployedVersion: null, frozenVersion: null },
   recovery: { bookmark: null, acknowledgedDigest: null, reconciliationMs: null },
@@ -276,8 +279,8 @@ async function postEvent(origin, signed) {
     signal: AbortSignal.timeout(10_000),
   });
   const body = await response.json();
-  assert.equal(response.status, 200, "synthetic Stripe receipt was not acknowledged");
-  assert.equal(body.received, true);
+  if (response.status !== 200) fail(`stripe_receipt_http_${response.status}`);
+  if (body?.received !== true) fail("stripe_receipt_acknowledgement_invalid");
 }
 
 async function waitForRoute(origin, expected) {
@@ -315,8 +318,10 @@ async function postWaitlist(origin, email, referralSource) {
     signal: AbortSignal.timeout(10_000),
   });
   const body = await response.json();
-  assert.equal(response.status, 202, "synthetic waitlist mutation was not acknowledged");
-  assert.deepEqual(body, { schemaVersion: 1, accepted: true });
+  if (response.status !== 202) fail(`waitlist_write_http_${response.status}`);
+  if (body?.schemaVersion !== 1 || body?.accepted !== true || Object.keys(body).length !== 2) {
+    fail("waitlist_write_acknowledgement_invalid");
+  }
 }
 
 async function postWaitlistDuringFreeze(origin) {
@@ -332,11 +337,11 @@ async function postWaitlistDuringFreeze(origin) {
 }
 
 function assertOneWaitingRow(rows, email, referralSource) {
-  assert.equal(rows.length, 1);
-  assert.equal(rows[0].email, email);
-  assert.equal(rows[0].referral_source, referralSource);
-  assert.equal(rows[0].status, "waiting");
-  assert.ok(Number.isFinite(Date.parse(rows[0].created_at)));
+  const row = rows[0];
+  if (rows.length !== 1 || row?.email !== email || row?.referral_source !== referralSource ||
+      row?.status !== "waiting" || !Number.isFinite(Date.parse(row?.created_at))) {
+    fail("waitlist_write_readback_mismatch");
+  }
 }
 
 function hash(value) {
@@ -389,15 +394,21 @@ function restoreToBookmark(bookmark) {
 async function runDrill() {
   requireExplicitStagingWrite();
   assertPrivateStagingTarget();
+  report.phase = "create_disposable_d1";
   createDatabase();
 
+  report.phase = "create_temporary_worker_config";
   const { config, origin } = createTemporaryConfig();
   report.worker.origin = origin;
   await writeTemporaryConfig(config);
+  report.phase = "apply_and_verify_business_migrations";
   await applyBusinessMigrations();
+  report.phase = "deploy_temporary_worker";
   deployTemporaryWorker(config);
+  report.phase = "wait_for_active_worker_route";
   await waitForRoute(origin, "active");
 
+  report.phase = "acknowledge_synthetic_waitlist_and_receipt_writes";
   await postWaitlist(origin, emailBeforeBookmark, referralBeforeBookmark);
   assertOneWaitingRow(tableRowsForEmail(emailBeforeBookmark), emailBeforeBookmark, referralBeforeBookmark);
   const signedFirstEvent = signEvent(firstEventId, firstObjectId);
@@ -417,13 +428,16 @@ async function runDrill() {
   };
   assertOneWaitingRow(acknowledgedState.waitlist, emailBeforeBookmark, referralBeforeBookmark);
   report.recovery.acknowledgedDigest = hash(acknowledgedState);
+  report.phase = "capture_recovery_bookmark";
   const bookmark = createBookmark();
 
+  report.phase = "acknowledge_post_bookmark_synthetic_write";
   await postWaitlist(origin, emailAfterBookmark, referralAfterBookmark);
   assertOneWaitingRow(tableRowsForEmail(emailAfterBookmark), emailAfterBookmark, referralAfterBookmark);
   const laterLedger = stripeLedgerRows([firstEventId]);
   assert.deepEqual(laterLedger, firstLedger, "no Stripe receipt may be accepted after the recovery bookmark");
 
+  report.phase = "freeze_temporary_worker";
   await changeFreeze(config, true);
   const frozenDeploy = runWrangler(["deploy", "--message", "freeze synthetic Worker for forward recovery"], { timeout: 240_000 });
   report.worker.frozenVersion = frozenDeploy.match(/Version ID:\s*([0-9a-f-]{36})/iu)?.[1] ?? null;
@@ -431,6 +445,7 @@ async function runDrill() {
   await postWaitlistDuringFreeze(origin);
   assert.equal(tableRowsForEmail(emailDuringFreeze).length, 0, "frozen mutation must not reach D1");
 
+  report.phase = "restore_and_reconcile_bookmark";
   const restoreStarted = restoreToBookmark(bookmark);
   const restoredState = {
     waitlist: tableRowsForEmail(emailBeforeBookmark),
@@ -449,6 +464,7 @@ async function runDrill() {
   `);
   assert.equal(Number(orphanDispatches[0]?.count), 0);
   report.recovery.reconciledDigest = hash(restoredState);
+  report.phase = "complete";
   report.status = "passed";
 }
 
@@ -543,6 +559,12 @@ try {
 } catch (error) {
   primaryError = error;
   report.status = "failed";
+  const errorName = error && typeof error === "object" ? error.name : null;
+  report.failureKind = typeof errorName === "string" && /^[A-Za-z][A-Za-z0-9]{0,31}$/u.test(errorName)
+    ? errorName
+    : "UnknownError";
+  const errorMessage = error instanceof Error ? error.message : "";
+  report.failureCode = /^[a-z0-9_.-]{1,100}$/iu.test(errorMessage) ? errorMessage : null;
 } finally {
   await cleanup();
   if (report.status === "cleanup_failed") primaryError ??= new Error("temporary_resource_cleanup_failed");

@@ -58,16 +58,17 @@ pre/post-write drills or issue #37; see
 [`cutover-rehearsal.md`](cutover-rehearsal.md).
 
 A guarded, repeatable post-write smoke is now available as
-`npm run test:migration:staging-postwrite-recovery`. On 2026-09-28 it applied
-all 17 business migrations to a disposable APAC D1, deployed the real Worker
-with only that D1 plus a unique Rate Limit binding, accepted one synthetic
-waitlist write and a duplicate synthetic Stripe receipt, then froze writes and
-restored the pre-later-write Time Travel bookmark. The first acknowledged row
-and pending receipt/dispatch read back with an identical digest; one later row
-was absent, and the frozen mutation was rejected. Restore plus readback took
-5.027 s. Both temporary Cloudflare resources and the temporary config were
-removed; the account D1 list returned to its three staging databases. The
-private result report is outside the repository. This proves the narrow
+`npm run test:migration:staging-postwrite-recovery`. The latest 2026-09-28 run
+applied all 17 business migrations to disposable APAC D1
+`e87563cb-78b4-48d3-8948-b163e3a5bb2c`, deployed the real Worker with only that
+D1 plus a unique Rate Limit binding, accepted one synthetic waitlist write and
+a duplicate synthetic Stripe receipt, then froze writes and restored the
+pre-later-write Time Travel bookmark. The first acknowledged row and pending
+receipt/dispatch read back with identical digest
+`488b3ecde4c5fa8c0941b839e454e82f1b7207ae0452096355d3dbf84ef8d76a`; one later
+row was absent, and the frozen mutation was rejected. Restore plus readback took
+4.530 s. The temporary Worker, D1, and config were removed; the private result
+report is outside the repository. This proves the narrow
 app-schema recovery path only: no live Stripe delivery during restore, applied
 payment effect, Auth/R2 recovery, full encrypted backup, or coordinated
 Supabase-writer freeze was exercised, so issue #37 remains open. The runbook

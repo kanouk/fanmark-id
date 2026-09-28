@@ -3319,3 +3319,19 @@ the local staging artifact. Staging `/` returned 200 with `noindex, nofollow`,
 JSON. No D1 migrations or data operations, provider calls, production routes,
 or domain/DNS changes occurred. The selector audit is complete statically;
 runtime acceptance of the full API/UI inventory remains open.
+
+## Repeat isolated synthetic post-write recovery (2026-09-28 JST)
+
+Two preliminary repeats failed during synthetic write acknowledgement after
+their temporary Workers and D1s were created; cleanup confirmed deletion of the
+temporary resources. The private report lacked a useful safe stage indicator,
+so the harness now records phase and sanitized error labels without request or
+row contents. `node --check` and `git diff --check` passed. A rerun of
+`npm run test:migration:staging-postwrite-recovery` passed: all 17 business
+migrations applied, the synthetic waitlist and duplicate Stripe receipt were
+acknowledged, a later write was removed by Time Travel while the Worker stayed
+frozen, and the exact acknowledged row/receipt digest matched after restore.
+Restore and reconciliation took 4.530 seconds. Cleanup confirmed the temporary
+Worker, D1, and config were removed. No real user data, Stripe API call,
+production route, or domain/DNS change was involved. This remains an isolated
+application-schema drill, not full #37 acceptance.

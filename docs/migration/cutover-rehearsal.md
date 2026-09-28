@@ -328,6 +328,32 @@ delivery during the restore window, an applied Stripe business effect, Auth,
 R2, a complete encrypted backup, or a coordinated Supabase-writer freeze. It
 does not close issue #37's integrated acceptance gate.
 
+## Repeat post-ack application restore and phase diagnostics (2026-09-28 JST)
+
+Two preliminary reruns failed during synthetic write acknowledgement and
+cleaned up their temporary resources. The guarded command then passed after
+adding sanitized phase and failure labels to its private report; no request
+bodies, row contents, or credentials are stored in that diagnostic metadata.
+The successful disposable D1 was
+`e87563cb-78b4-48d3-8948-b163e3a5bb2c`; temporary Worker versions were
+`d56272f0-55cb-42cf-8834-20940dabd731` and frozen
+`b40bf6a9-ef16-4e83-8caf-e3a8aedc3503`. All 17 business migrations were
+readback-verified. The synthetic waitlist row and duplicate signed
+`customer.updated` receipt were acknowledged before the bookmark. After one
+later waitlist write, the Worker freeze rejected another mutation with 503;
+restoring the bookmark removed the later row and retained the acknowledged row
+plus its single pending receipt/dispatch. The acknowledged and restored
+readback digests matched at
+`488b3ecde4c5fa8c0941b839e454e82f1b7207ae0452096355d3dbf84ef8d76a`.
+Restore and reconciliation took 4.530 seconds. The temporary Worker, D1, and
+config were all removed. The private report is
+`/var/folders/c4/_087tnms6n95sb58l4rg8vpw0000gn/T/fanmark-postwrite-recovery-993573263a49672e.json`.
+
+This verifies post-ack restore for the isolated application schema and pending
+receipt ledger only. It still does not apply a Stripe business effect, restore
+Auth or R2, use a complete encrypted backup, or coordinate a Supabase-writer
+freeze; issue #37 remains open.
+
 ## Targeted auth/lifecycle CPU readback (2026-09-28 JST)
 
 A repeat synthetic TOTP/admin/lifecycle canary on the deployed staging Worker
