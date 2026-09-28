@@ -3264,3 +3264,29 @@ passed `integrity_check=ok` with zero foreign-key violations. All query output,
 descriptor metadata, DDL, and report were held only in memory or a private
 temporary directory that was removed on exit. No source rows, Auth values,
 remote D1/R2, production route, or domain/DNS state was read or changed.
+
+## Supabase Auth settings and staging OAuth callback target (2026-09-28 JST)
+
+A fresh read-only request to Supabase Auth's public settings endpoint returned
+HTTP 200. The response was reduced to booleans before reporting: signup is
+enabled, email confirmation is required (`mailer_autoconfirm=false`), and email,
+Apple, Google, GitHub, and Discord are enabled on the source project. This is
+provider-toggle metadata only; it does not establish that the OAuth client
+credentials exist, that provider consoles contain the required redirect URIs,
+or that a browser callback or login works. No Auth users, credentials, or
+provider secrets were read.
+
+The installed Better Auth 1.7.5 configuration uses its default `/api/auth`
+base path and `/callback/{provider}` callback path. Given the current staging
+origin, the expected provider callback URIs are:
+
+- `https://fanmark-app-staging.fanmark-id.workers.dev/api/auth/callback/apple`
+- `https://fanmark-app-staging.fanmark-id.workers.dev/api/auth/callback/google`
+- `https://fanmark-app-staging.fanmark-id.workers.dev/api/auth/callback/github`
+- `https://fanmark-app-staging.fanmark-id.workers.dev/api/auth/callback/discord`
+
+These are code-derived staging targets, not confirmed provider-console entries.
+The Cloudflare secret-name readback found no credentials for these providers;
+staging browser callbacks remain unverified under #31. No provider settings,
+credentials, source rows, production routes, or domain/DNS configuration were
+changed.

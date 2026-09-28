@@ -2525,3 +2525,14 @@ profile was removed. No historical analytics, real user data, production
 route, or domain/DNS was touched. This closes only the analytics-page browser
 subgate; the coarse weighted migration estimate and the broader #37 rehearsal
 remain unchanged.
+
+The latest source Auth settings read shows signup enabled, email confirmation
+required, and email/Apple/Google/GitHub/Discord provider toggles enabled. The
+staging Worker has no Resend or OAuth provider credentials, so target email
+delivery and real OAuth callbacks are still unverified. Code-derived staging
+callback URIs are recorded in `EXECUTION.md`; provider-console registration
+and one-provider-at-a-time browser acceptance remain external gates for #31.
+The current coarse progress estimate remains about 53% end-to-end and 73% of
+the prioritized app/infrastructure/non-user-master scope. The latest
+schema-only refresh strengthened conversion evidence but did not make D1
+deployable or change that estimate.
