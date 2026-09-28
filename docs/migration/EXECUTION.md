@@ -1,5 +1,17 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-09-29 D1 license expiry microsecond comparisons
+
+The D1 analytics summary previously used SQLite `julianday()` for license
+expiry checks, and the fanmark details projection compared a six-digit D1
+timestamp with a millisecond-width JavaScript ISO string. Both could misclassify
+a license at a sub-millisecond boundary. They now use the shared fixed-width
+UTC formatter and text ordering, consistent with the canonical D1 timestamp
+representation. Regression tests cover expiry exactly one microsecond after
+the injected clock. The two focused D1 suites pass 15/15 and Worker typecheck
+passes. This is a local app/API correction; it changes no deployed Worker,
+database rows, user data, or domain/DNS state.
+
 ## 2026-09-28 Auth D1 migration selector collision
 
 Read-only `wrangler d1 migrations list AUTH_DB --remote` against both the app

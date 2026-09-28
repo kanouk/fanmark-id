@@ -1,5 +1,6 @@
 import { selectD1Database, type Env } from "./repository";
 import type { StorageAuthResolver } from "./storage-r2";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
 
 const FANMARKS_PATH = "/api/me/analytics/fanmarks";
 const ANALYTICS_PATH = "/api/me/analytics";
@@ -242,6 +243,7 @@ async function handleAnalyticsRead(
   if (url.pathname === SUMMARY_PATH) {
     const days = daysQuery(url);
     const now = clock();
+    const nowText = toUtcMicrosecondTimestamp(now);
     const endDate = now.toISOString().slice(0, 10);
     const startDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) - (days * 24 * 60 * 60 * 1000))
       .toISOString().slice(0, 10);
@@ -254,13 +256,13 @@ async function handleAnalyticsRead(
           WHERE license.user_id = ? AND license.fanmark_id = stats.fanmark_id
             AND (
               (LOWER(COALESCE(license.status, '')) = 'active'
-                AND (license.license_end IS NULL OR julianday(license.license_end) > julianday(?)))
+                AND (license.license_end IS NULL OR license.license_end > ?))
               OR (LOWER(COALESCE(license.status, '')) NOT IN ('active', 'grace', 'expired')
                 AND license.license_end IS NOT NULL
-                AND julianday(license.license_end) > julianday(?))
+                AND license.license_end > ?)
             )
         )
-    `).bind(startDate, endDate, userId, now.toISOString(), now.toISOString()).first<{ accessCount: unknown }>();
+    `).bind(startDate, endDate, userId, nowText, nowText).first<{ accessCount: unknown }>();
     return json({ schemaVersion: 1, result: { totalAccess: metricValue(result?.accessCount) } }, 200, corsHeaders(request, env) ?? new Headers());
   }
 

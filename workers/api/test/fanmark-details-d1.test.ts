@@ -100,6 +100,18 @@ describe("authenticated fanmark details D1 API", () => {
     expect(serialized).not.toContain("license_id");
   });
 
+  it("keeps a license active until its exact D1 microsecond expiry", async () => {
+    await database!.prepare("UPDATE fanmark_licenses SET status = 'active', license_end = ? WHERE id = ?")
+      .bind("2026-09-26T00:00:00.000001Z", CURRENT_LICENSE_ID).run();
+    const response = await handleFanmarkDetailsRequest(await request({ shortId: "rose-owned" }), runtimeEnv, ownerAuth,
+      () => new Date(NOW));
+    expect(response?.status).toBe(200);
+    const payload = await response?.json() as { result: FanmarkDetailsTestResult };
+    expect(payload.result.current_license_status).toBe("active");
+    expect(payload.result.current_license_end).toBe("2026-09-26T00:00:00.000001Z");
+    expect(payload.result.is_currently_active).toBe(true);
+  });
+
   it("serves an anonymous-safe projection, reports missing short IDs, and rejects malformed requests", async () => {
     const anonymous = await handleFanmarkDetailsRequest(await request({ shortId: "rose-owned" }), runtimeEnv, anonymousAuth);
     const anonymousPayload = await anonymous?.json() as { result: FanmarkDetailsTestResult };

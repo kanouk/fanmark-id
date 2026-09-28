@@ -5,6 +5,14 @@ draft. Isolated Cloudflare staging D1 and Workers deployments are present; no
 production Worker deployment, user-data import, or public DNS/domain cutover
 has been performed.
 
+The D1 analytics summary and authenticated fanmark-details projection now use
+the shared six-digit UTC formatter for license-expiry boundaries. This fixes
+the analytics query's SQLite date-function precision loss and the details
+projection's millisecond-width comparison. Regression tests cover a license
+ending one microsecond after the injected clock; both focused D1 suites pass
+15/15 and Worker typecheck passes. These are local changes pending PR
+validation, with no remote state change.
+
 A fresh schema-only query completed at 2026-09-29 01:40 JST using Supabase CLI
 2.118.0 in a private temporary project-link directory. It again returned 40
 tables, 406 columns, 144 constraints, 139 indexes, 15 enum labels, one view,

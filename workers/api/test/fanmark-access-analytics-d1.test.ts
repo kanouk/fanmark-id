@@ -237,4 +237,18 @@ describe("public fanmark access analytics D1 API", () => {
     expect(response?.status).toBe(200);
     expect(await response?.json()).toEqual({ schemaVersion: 1, result: { totalAccess: 7 } });
   });
+
+  it("includes a license that expires one D1 microsecond after the summary clock", async () => {
+    const today = START.toISOString().slice(0, 10);
+    await database!.prepare("UPDATE fanmark_licenses SET license_end = ? WHERE id = ?")
+      .bind("2026-09-26T10:00:00.000001Z", LICENSE_ID).run();
+    await database!.prepare("INSERT INTO fanmark_access_daily_stats (fanmark_id, license_id, stat_date, access_count) VALUES (?, ?, ?, ?)")
+      .bind(FANMARK_ID, LICENSE_ID, today, 7).run();
+    const response = await handleFanmarkAnalyticsRequest(
+      makeReadRequest("/api/me/analytics/summary?days=30"),
+      { ...runtimeEnv, FANMARK_ANALYTICS_BACKEND: "d1", AUTH_BACKEND: "better-auth" }, ownerAuth, () => new Date(START),
+    );
+    expect(response?.status).toBe(200);
+    expect(await response?.json()).toEqual({ schemaVersion: 1, result: { totalAccess: 7 } });
+  });
 });

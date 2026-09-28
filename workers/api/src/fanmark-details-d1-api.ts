@@ -1,5 +1,6 @@
 import { selectD1Database, type Env } from "./repository";
 import type { StorageAuthResolver } from "./storage-r2";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp";
 
 const PATH = "/api/fanmarks/details";
 const MAX_BODY_BYTES = 1_024;
@@ -379,7 +380,7 @@ export async function handleFanmarkDetailsRequest(
       throw new FanmarkDetailsApiError("fanmark_details_unavailable");
     }
     const row = result.results[0];
-    return json({ schemaVersion: 1, result: row ? mapRow(row, clock().toISOString(), currentUserId !== null) : null }, 200, headers);
+    return json({ schemaVersion: 1, result: row ? mapRow(row, toUtcMicrosecondTimestamp(clock()), currentUserId !== null) : null }, 200, headers);
   } catch (error) {
     const failure = error instanceof FanmarkDetailsApiError ? error : new FanmarkDetailsApiError("fanmark_details_unavailable");
     return json({ error: failure.code }, failure.status, headers);
