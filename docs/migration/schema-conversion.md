@@ -515,3 +515,24 @@ rejected conflicting coverage. Its result is `public_rows_reconciled` only;
 `deployable` and `fullMigrationReconciled` remain false. The read-only source
 query read catalog metadata only. No Supabase application rows or remote D1/R2
 rows were read or written, and no production route or domain/DNS state changed.
+
+## Current schema-only source refresh (2026-09-28 05:07 UTC)
+
+Re-ran the reviewed `schema-readiness.sql` through Supabase CLI 2.118.0 with an
+isolated temporary project-link directory so the checkout's existing CLI
+state was not changed. The read-only catalog query returned 40 tables, 406
+columns, 144 constraints, 139 indexes, 15 enum labels, one view, 58 functions,
+36 non-internal triggers, and 77 RLS policies. The locale remained
+`en_US.UTF-8`; all five exhaustive Unicode regex-range probes found zero extra
+matches.
+
+The value-free `bcryptjs@3.0.3` / cost-10 credential descriptor was passed to
+schema-converter v11; no password or hash was read. The fresh report remains
+`deployable: false` with 13 groups / 226 locations: 8 row-conversion groups /
+133 locations and 5 schema/operation groups / 93 locations. Exact location
+counts by gate are recorded in the current report summary in `EXECUTION.md`.
+The generated DDL loaded into an ephemeral in-memory SQLite database with all
+40 tables, `integrity_check=ok`, and zero foreign-key violations. The private
+catalog, descriptor, generated DDL, and report were held in a mode-0700
+temporary directory and removed on exit. This refresh queried PostgreSQL
+catalogs only; no source rows or Cloudflare D1/R2 state were read or changed.

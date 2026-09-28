@@ -3243,3 +3243,24 @@ default per-request CPU limit; no paid-plan change was made. References:
 and [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/).
 This was metadata and secret-name readback only; no source rows, credentials,
 production route, or domain/DNS were accessed or changed.
+
+## Fresh Supabase catalog and v11 DDL recheck (2026-09-28 05:07 UTC)
+
+Re-ran the reviewed `schema-readiness.sql` using Supabase CLI 2.118.0 in a
+private temporary project-link directory; the checkout's existing
+`supabase/.temp/cli-latest` state was not used or overwritten. The transaction
+read catalogs only and returned 40 tables, 406 columns, 144 constraints, 139
+indexes, 15 enum labels, one view, 58 functions, 36 non-internal triggers, and
+77 RLS policies. Locale remained `en_US.UTF-8`; each of the five Unicode
+regex-range probes found zero extra matches.
+
+Schema-converter v11 ran with the value-free `bcryptjs@3.0.3` / cost-10
+descriptor. Its 13 unresolved groups / 226 locations remain: array 9, bigint
+range 3, credential transform 1, decimal 1, external foreign key 11, JSON 13,
+money cents 2, sequence state 1, timestamp default operation 79, timestamp
+import precision 103, and unsupported catalog scope 3. It remains
+`deployable: false`. Generated DDL loaded 40 tables into ephemeral SQLite and
+passed `integrity_check=ok` with zero foreign-key violations. All query output,
+descriptor metadata, DDL, and report were held only in memory or a private
+temporary directory that was removed on exit. No source rows, Auth values,
+remote D1/R2, production route, or domain/DNS state was read or changed.
