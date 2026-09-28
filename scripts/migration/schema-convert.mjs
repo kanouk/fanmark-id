@@ -17,7 +17,7 @@ import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 19;
+export const SCHEMA_CONVERSION_VERSION = 20;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -95,7 +95,6 @@ const REVIEWED_GIN_INDEX_ADAPTATIONS = new Map([
 ]);
 const ROW_CONVERSION_GATE_CODES = new Set([
   "bigint_import_range_validation",
-  "timestamp_import_precision",
   "array_import_validation",
   "money_cents_import",
   "decimal_import_validation",
@@ -834,7 +833,9 @@ function typeInfo(column, enumLabels, gates, typeCounts, credentialDescriptorPla
       AND substr(${quoteIdentifier(column.column_name)}, 18, 2) BETWEEN '00' AND '59'
       AND datetime(substr(${quoteIdentifier(column.column_name)}, 1, 19), '+0 seconds') IS replace(substr(${quoteIdentifier(column.column_name)}, 1, 19), 'T', ' ')
     )`);
-    gates.add("timestamp_import_precision", "Timestamptz imports and operation timestamps must preserve UTC microsecond text precision.", location);
+    // Source projection, strict microsecond codec, target CHECK, and D1
+    // readback are validated together. Default/operation timestamp semantics
+    // remain separately gated by translateDefault().
   } else if (sourceType === "jsonb") {
     targetType = "TEXT";
     codec = "json-text";

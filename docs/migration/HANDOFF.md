@@ -22,6 +22,15 @@ tables, 406 columns, 144 constraints, 139 indexes, 15 enum labels, one view,
 converter-v18 report with the value-free credential descriptor has 7 groups /
 209 locations (2 row-conversion / 116, 5 schema/operation / 93) and
 `deployable: false`.
+
+Local schema converter v20 removes the 103-location `timestamp_import_precision`
+gate: the PostgreSQL projection emits UTC microseconds as text, the row codec
+validates and preserves all six digits, generated D1 checks enforce the format,
+and synthetic import/readback tests compare the exact text. Applying v20 to the
+last recorded v18 catalog shape gives 5 schema/operation groups / 93 locations
+and `deployable: false`; this is not a fresh schema fetch. Timestamp-default
+operation behavior, external Auth references, and unsupported catalog scopes
+remain gated.
 The earlier 00:42 JST current-catalog synthetic Miniflare replay used v17: it
 completed all 40 table checkpoints with 10 synthetic rows, transformed two
 credentials, deferred one inactive credential, and rejected conflicting

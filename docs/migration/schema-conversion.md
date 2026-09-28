@@ -749,3 +749,21 @@ schema/operation / 93). That is a calculation from the recorded schema shape,
 not a fresh Supabase catalog query. The converter remains `deployable: false`;
 no source application rows, remote D1, production route, or domain/DNS state
 were changed.
+
+## Exact timestamptz import codec and schema converter v20 (2026-09-29 JST)
+
+Schema converter v20 removes `timestamp_import_precision` because the complete
+snapshot/import path has an exact, validated representation. The PostgreSQL
+projection converts timestamptz values to fixed-width UTC text with six
+fractional digits. `utcMicroseconds()` validates calendar/clock fields without
+round-tripping those digits through JavaScript `Date` and returns the original
+text. Generated D1 CHECKs require that same canonical shape, and the Miniflare
+importer test independently reads `.123456Z` back unchanged. Invalid dates,
+millisecond-only values, offsets, and infinity are rejected before binding.
+
+The separate `timestamp_default_requires_operation` gate remains: proving exact
+snapshot import does not prove the runtime clock behavior of every future
+write. Applying v20 to the last recorded v18 catalog shape removes the
+timestamp gate's 103 locations, leaving 5 schema/operation groups / 93
+locations and `deployable: false`. This is a derived report, not a fresh source
+catalog query. No source rows, remote D1, or production state was accessed.

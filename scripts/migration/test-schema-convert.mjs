@@ -233,7 +233,7 @@ test("conversion is deterministic and exposes exact target codecs", () => {
 
   assert.equal(first.report.target.tableCount, 4);
   assert.equal(first.report.target.columnCount, 15);
-  assert.equal(first.report.schemaVersion, 19);
+  assert.equal(first.report.schemaVersion, 20);
   assert.deepEqual(first.report.target.translatedConstraints, { p: 4, u: 0, f: 1, c: 3 });
   assert.equal(first.report.target.translatedIndexCount, 4);
   assert.deepEqual(
@@ -332,7 +332,7 @@ test("money cents DDL accepts only the exact source numeric(10,2) range", () => 
 
 test("DATE schema checks preserve canonical calendar days for imports and later writes", () => {
   const result = convertSchema(calendarDateFixture());
-  assert.equal(result.report.schemaVersion, 19);
+  assert.equal(result.report.schemaVersion, 20);
   assert.equal(gateCodes(result.report).has("date_import_validation"), false);
   assert.match(result.sql, /"stat_date" IS NULL OR \([\s\S]*length\("stat_date"\) = 10[\s\S]*GLOB '\[0-9\].*-[0-9\].*-[0-9\].*'[\s\S]*substr\("stat_date", 1, 4\) BETWEEN '0001' AND '9999'[\s\S]*date\("stat_date", '\+0 days'\) IS "stat_date"/);
 
@@ -359,8 +359,8 @@ test("DATE schema checks preserve canonical calendar days for imports and later 
 
 test("TIMESTAMPTZ schema checks preserve canonical UTC microsecond text", () => {
   const result = convertSchema(timestampFixture());
-  assert.equal(result.report.schemaVersion, 19);
-  assert.ok(gateCodes(result.report).has("timestamp_import_precision"));
+  assert.equal(result.report.schemaVersion, 20);
+  assert.ok(!gateCodes(result.report).has("timestamp_import_precision"));
   assert.ok(gateCodes(result.report).has("timestamp_default_requires_operation"));
   assert.match(result.sql, /"created_at" TEXT NOT NULL DEFAULT \(strftime\('%Y-%m-%dT%H:%M:%f000Z', 'now'\)\)/);
   for (const fragment of [
@@ -413,7 +413,7 @@ test("TIMESTAMPTZ schema checks preserve canonical UTC microsecond text", () => 
 
 test("JSONB text validation and target constraints preserve JSON null, SQL NULL, and exact text", () => {
   const result = convertSchema(fixture());
-  assert.equal(result.report.schemaVersion, 19);
+  assert.equal(result.report.schemaVersion, 20);
   assert.equal(gateCodes(result.report).has("json_import_validation"), false);
   assert.match(result.sql, /"metadata" IS NULL OR json_valid\("metadata"\)/);
 
@@ -591,7 +591,7 @@ test("the four reviewed live GIN indexes have explicit D1 query-contract disposi
   );
 
   const result = convertSchema(input);
-  assert.equal(result.report.schemaVersion, 19);
+  assert.equal(result.report.schemaVersion, 20);
   assert.deepEqual(result.report.target.indexAdaptations.map((entry) => entry.sourceIndex), [
     "idx_emoji_master_keywords",
     "idx_emoji_master_short_name",
@@ -635,7 +635,7 @@ test("known ASCII PostgreSQL regex checks require a reviewed locale proof", () =
     .flatMap((gate) => gate.locations)
     .filter((location) => sourceCheckNames.has(location.name));
   assert.deepEqual(untranslatedSourceChecks, []);
-  assert.equal(result.report.schemaVersion, 19);
+  assert.equal(result.report.schemaVersion, 20);
 
   const cases = [
     ["invitation_codes", "code", "ABC123", true],
@@ -867,7 +867,7 @@ test("the exact recent-active view is adapted only to the reviewed D1 query", ()
   input.views = [{ kind: "view", name: "recent_active_fanmarks", definition }];
 
   const result = convertSchema(input);
-  assert.equal(result.report.schemaVersion, 19);
+  assert.equal(result.report.schemaVersion, 20);
   assert.equal(result.report.deployable, false);
   assert.deepEqual(result.report.target.catalogScopeAdaptations, [{
     scope: "views",

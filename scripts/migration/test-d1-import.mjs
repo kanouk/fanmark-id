@@ -827,7 +827,7 @@ if (isMain) {
     catalog.columns.find((entry) => entry.table_name === "child" && entry.column_name === "event_at").default_expression = "now()";
     const schema = convertSchema(catalog);
     assert.equal(schema.report.deployable, false);
-    assert.ok(schema.report.gates.some((gate) => gate.code === "timestamp_import_precision"));
+    assert.ok(!schema.report.gates.some((gate) => gate.code === "timestamp_import_precision"));
     assert.ok(schema.report.gates.some((gate) => gate.code === "timestamp_default_requires_operation"));
 
     const fixture = await createLocalD1(schema.sql);

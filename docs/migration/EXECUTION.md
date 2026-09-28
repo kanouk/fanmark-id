@@ -3902,3 +3902,24 @@ The invitation signup suite passes 10/10, the coupon application suite passes
 20/20. The complete migration-data suite passes 190/190 under Node 22.6.0.
 These migrations have not been applied to staging; no source rows, remote D1,
 production route, or DNS/domain state changed.
+
+## Schema converter v20 timestamptz import gate (2026-09-29 JST)
+
+The converter previously emitted `timestamp_import_precision` for every
+`timestamptz` column even though the complete import path preserves that value
+exactly: the PostgreSQL snapshot projection formats UTC microseconds with
+`to_char(..., '...US...')`, the row codec validates and returns the six-digit
+text without passing it through `Date`, the generated D1 CHECK enforces the
+canonical shape, and the Miniflare importer test independently reads back the
+same `.123456Z` value. Invalid dates, fractions, offsets, and infinity are
+rejected. Default and future-operation clock semantics remain covered by the
+separate `timestamp_default_requires_operation` gate.
+
+Schema converter v20 removes only the now-redundant import gate and increments
+the conversion version so older manifests cannot silently resume under the new
+gate disposition. On the last recorded catalog shape, this removes 103
+locations and reduces the calculated report from 6 groups / 196 locations to
+5 schema/operation groups / 93 locations. The converter remains
+`deployable: false`; no fresh Supabase schema fetch or application-row query
+was made. `npm run test:migration-data` verifies the codec, generated DDL, and
+synthetic importer contract.
