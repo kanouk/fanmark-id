@@ -1,4 +1,5 @@
 import { selectD1Database, type Env } from "./repository.ts";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const API_PATH = "/api/admin/broadcast-emails";
 const MAX_BROADCASTS = 50;
@@ -677,7 +678,7 @@ export async function handleBroadcastEmailAdminRequest(
 
   try {
     const db = database(env);
-    const now = clock().toISOString();
+    const now = toUtcMicrosecondTimestamp(clock());
     if (isEstimate) return await handleEstimate(db, authorization.userId, await readJson(request), now, headers);
     if (isTestSend) return await handleTestSend(db, env, authorization.userId, await readJson(request), now, headers, sendTestEmail);
     if (isStartSend) return await handleStartDelivery(db, env, authorization.userId, await readJson(request), now, headers);

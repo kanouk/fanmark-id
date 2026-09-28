@@ -158,7 +158,7 @@ describe("D1 broadcast email admin API", () => {
       status: "draft",
       total_recipients: 0,
       recipient_filter: { languages: ["ja", "ko"] },
-      created_at: now.toISOString(),
+      created_at: "2026-09-27T12:34:56.000000Z",
     });
     expect(payload.broadcast.id).toMatch(/^[0-9a-f-]{36}$/u);
     const stored = await database!.prepare("SELECT created_by, status FROM broadcast_emails WHERE id = ?")

@@ -102,7 +102,7 @@ const BROADCAST = "00000000-0000-4000-8000-000000000003";
 const USER_A = "00000000-0000-4000-8000-000000000004";
 const USER_B = "00000000-0000-4000-8000-000000000005";
 const USER_C = "00000000-0000-4000-8000-000000000006";
-const NOW = "2026-09-27T12:00:00.000Z";
+const NOW = "2026-09-27T12:00:00.000000Z";
 const ADMIN = "00000000-0000-4000-8000-000000000008";
 
 test("applies durable delivery schema without persisting addresses and propagates only permanent suppressions", async () => {
@@ -134,7 +134,7 @@ test("applies durable delivery schema without persisting addresses and propagate
         .bind(RUN, USER_B, NOW, NOW, NOW),
       database.prepare(`INSERT INTO broadcast_delivery_recipients
         (run_id, user_id, language, status, next_attempt_at, lease_token, lease_expires_at, created_at, updated_at)
-        VALUES (?, ?, 'ja', 'sending', ?, 'lease-c', '2026-09-27T12:05:00.000Z', ?, ?)`)
+        VALUES (?, ?, 'ja', 'sending', ?, 'lease-c', '2026-09-27T12:05:00.000000Z', ?, ?)`)
         .bind(RUN, USER_C, NOW, NOW, NOW),
       database.prepare(`INSERT INTO broadcast_delivery_runs
         (id, broadcast_id, request_id, requested_by, status, created_at)
@@ -144,7 +144,7 @@ test("applies durable delivery schema without persisting addresses and propagate
 
     await database.prepare(`INSERT INTO broadcast_delivery_recipients
       (run_id, user_id, language, status, next_attempt_at, lease_token, lease_expires_at, created_at, updated_at)
-      VALUES (?, ?, 'ja', 'sending', ?, 'future-lease', '2026-09-27T12:05:00.000Z', ?, ?)`)
+      VALUES (?, ?, 'ja', 'sending', ?, 'future-lease', '2026-09-27T12:05:00.000000Z', ?, ?)`)
       .bind(SECOND_RUN, USER_A, NOW, NOW, NOW).run();
 
     await database.prepare(`INSERT INTO broadcast_delivery_webhook_events
@@ -319,11 +319,11 @@ test("snapshots Auth IDs in bounded pages, applies source filters, and never cop
   const filteredBroadcast = "00000000-0000-4000-8000-000000000022";
   const adminId = "00000000-0000-4000-8000-000000000023";
   const authUsers = [
-    ["00000000-0000-4000-8000-000000000031", "synthetic-a@example.test", "2026-09-26T10:00:00.000Z"],
-    ["00000000-0000-4000-8000-000000000032", "synthetic-b@example.test", "2026-09-26T10:00:00.000Z"],
-    ["00000000-0000-4000-8000-000000000033", "synthetic-no-settings@example.test", "2026-09-26T10:00:00.000Z"],
-    ["00000000-0000-4000-8000-000000000034", "synthetic-future@example.test", "2026-09-28T10:00:00.000Z"],
-    ["00000000-0000-4000-8000-000000000035", "", "2026-09-26T10:00:00.000Z"],
+    ["00000000-0000-4000-8000-000000000031", "synthetic-a@example.test", "2026-09-26T10:00:00.000000Z"],
+    ["00000000-0000-4000-8000-000000000032", "synthetic-b@example.test", "2026-09-26T10:00:00.000000Z"],
+    ["00000000-0000-4000-8000-000000000033", "synthetic-no-settings@example.test", "2026-09-26T10:00:00.000000Z"],
+    ["00000000-0000-4000-8000-000000000034", "synthetic-future@example.test", "2026-09-28T10:00:00.000000Z"],
+    ["00000000-0000-4000-8000-000000000035", "", "2026-09-26T10:00:00.000000Z"],
   ];
   const origin = "https://app.example.test";
   const env = {
@@ -359,9 +359,9 @@ test("snapshots Auth IDs in bounded pages, applies source filters, and never cop
     await database.prepare(`INSERT INTO user_settings
       (id, user_id, username, plan_type, preferred_language, created_at, updated_at)
       VALUES
-      ('settings-a', '00000000-0000-4000-8000-000000000031', 'user-a', 'free', 'en', '2026-09-27T10:00:00.000Z', ?),
-      ('settings-b', '00000000-0000-4000-8000-000000000032', 'user-b', 'creator', 'ko', '2026-09-27T10:00:00.000Z', ?),
-      ('settings-future', '00000000-0000-4000-8000-000000000034', 'user-future', 'free', 'ja', '2026-09-28T10:00:00.000Z', ?)`)
+      ('settings-a', '00000000-0000-4000-8000-000000000031', 'user-a', 'free', 'en', '2026-09-27T10:00:00.000000Z', ?),
+      ('settings-b', '00000000-0000-4000-8000-000000000032', 'user-b', 'creator', 'ko', '2026-09-27T10:00:00.000000Z', ?),
+      ('settings-future', '00000000-0000-4000-8000-000000000034', 'user-future', 'free', 'ja', '2026-09-28T10:00:00.000000Z', ?)`)
       .bind(NOW, NOW, NOW).run();
     await database.prepare(`INSERT INTO user_settings
       (id, user_id, username, plan_type, preferred_language, created_at, updated_at)
@@ -601,9 +601,9 @@ test("retries an uncertain provider response with the exact same payload and ide
     assert.match(queued.payload_fingerprint, /^[a-f0-9]{64}$/u);
     assert.equal(queued.last_error_code, "provider_server_error");
     assert.equal(queued.provider_email_id, null);
-    assert.equal(queued.next_attempt_at, "2026-09-27T12:01:00.000Z");
+    assert.equal(queued.next_attempt_at, "2026-09-27T12:01:00.000000Z");
 
-    const secondNow = "2026-09-27T12:01:00.000Z";
+    const secondNow = "2026-09-27T12:01:00.000000Z";
     const secondAttempt = await dispatchBroadcastEmailDeliveryBatch(env, () => new Date(secondNow), resendMock, async () => {}, () => "send-lease-two");
     assert.equal(secondAttempt.status, "completed");
     assert.equal(secondAttempt.sent, 1);
@@ -620,7 +620,7 @@ test("retries an uncertain provider response with the exact same payload and ide
       .bind(broadcastId).first(), { status: "completed", sent_count: 1, failed_count: 0 });
     assert.equal((await database.prepare(`SELECT COUNT(*) AS count FROM audit_logs
       WHERE action = 'BROADCAST_EMAIL_SENT' AND resource_id = ?`).bind(broadcastId).first()).count, 1);
-    const duplicateDispatch = await dispatchBroadcastEmailDeliveryBatch(env, () => new Date("2026-09-27T12:02:00.000Z"), resendMock, async () => {}, () => "send-lease-after-completion");
+    const duplicateDispatch = await dispatchBroadcastEmailDeliveryBatch(env, () => new Date("2026-09-27T12:02:00.000000Z"), resendMock, async () => {}, () => "send-lease-after-completion");
     assert.equal(duplicateDispatch.status, "idle");
     assert.equal((await database.prepare(`SELECT COUNT(*) AS count FROM audit_logs
       WHERE action = 'BROADCAST_EMAIL_SENT' AND resource_id = ?`).bind(broadcastId).first()).count, 1);
@@ -691,7 +691,7 @@ test("pauses for review if the Auth email changes after an uncertain send", asyn
     assert.equal(providerAttempts, 1);
     await authDatabase.prepare(`UPDATE "user" SET email = 'after-change@example.test' WHERE id = ?`).bind(userId).run();
 
-    const retry = await dispatchBroadcastEmailDeliveryBatch(env, () => new Date("2026-09-27T12:01:00.000Z"), uncertainProvider, async () => {}, () => "changed-email-send-two");
+    const retry = await dispatchBroadcastEmailDeliveryBatch(env, () => new Date("2026-09-27T12:01:00.000000Z"), uncertainProvider, async () => {}, () => "changed-email-send-two");
     assert.equal(retry.status, "paused");
     assert.equal(retry.reason, "payload_changed_after_attempt");
     assert.equal(providerAttempts, 1);
@@ -744,7 +744,7 @@ test("pauses without another provider call after the 24-hour idempotency window"
         (run_id, user_id, language, status, attempt_count, next_attempt_at, first_attempt_at, idempotency_expires_at,
          payload_fingerprint, last_error_code, created_at, updated_at)
         VALUES (?, ?, 'ja', 'pending', 1, ?, ?, ?, ?, 'provider_server_error', ?, ?)`)
-        .bind(runId, userId, "2026-09-27T12:01:00.000Z", NOW, "2026-09-28T12:00:00.000Z", "a".repeat(64), NOW, NOW),
+        .bind(runId, userId, "2026-09-27T12:01:00.000000Z", NOW, "2026-09-28T12:00:00.000000Z", "a".repeat(64), NOW, NOW),
     ]);
     const result = await dispatchBroadcastEmailDeliveryBatch(env,
       () => new Date("2026-09-28T12:00:00.001Z"), async () => { providerCalls += 1; return new Response("{}", { status: 200 }); },
@@ -825,6 +825,10 @@ test("verifies raw Resend signatures, deduplicates events, and persists only del
     const duplicate = await handleBroadcastEmailWebhookRequest(await makeRequest(permanentBounce, "event-bounce"), env, () => new Date(NOW));
     assert.equal(duplicate?.status, 200);
     assert.equal((await database.prepare("SELECT COUNT(*) AS count FROM broadcast_delivery_webhook_events").first()).count, 1);
+    const webhookTimestamp = await database.prepare(
+      "SELECT created_at FROM broadcast_delivery_webhook_events WHERE id = ?",
+    ).bind("event-bounce").first();
+    assert.equal(webhookTimestamp.created_at, "2026-09-27T12:00:00.000000Z");
     assert.equal((await database.prepare(`SELECT COUNT(*) AS count FROM audit_logs
       WHERE action = 'BROADCAST_EMAIL_SENT' AND resource_id = ?`).bind(broadcastId).first()).count, 1);
     assert.deepEqual(await database.prepare(`SELECT status, last_error_code FROM broadcast_delivery_recipients

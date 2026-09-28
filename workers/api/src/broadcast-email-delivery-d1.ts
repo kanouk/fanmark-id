@@ -1,4 +1,5 @@
 import { selectD1Database, type Env } from "./repository.ts";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const SNAPSHOT_PAGE_SIZE = 50;
 const SNAPSHOT_LEASE_MS = 5 * 60 * 1000;
@@ -313,8 +314,8 @@ export async function snapshotBroadcastEmailDeliveryPage(
       env.D1_TOPOLOGY?.trim() !== "split" || !businessDb || !authDb) return { status: "disabled" };
 
   const now = clock();
-  const nowIso = now.toISOString();
-  const leaseExpiresAt = new Date(now.getTime() + SNAPSHOT_LEASE_MS).toISOString();
+  const nowIso = toUtcMicrosecondTimestamp(now);
+  const leaseExpiresAt = toUtcMicrosecondTimestamp(new Date(now.getTime() + SNAPSHOT_LEASE_MS));
   let claimedRunId: string | null = null;
   let claimedRun: DeliveryRun | null = null;
   let leaseToken: string | null = null;
@@ -627,7 +628,7 @@ export async function dispatchBroadcastEmailDeliveryBatch(
   }
 
   const initialNow = clock();
-  const initialIso = initialNow.toISOString();
+  const initialIso = toUtcMicrosecondTimestamp(initialNow);
   try {
     const run = await businessDb.prepare(`SELECT run.id, run.broadcast_id, run.template_snapshot
       FROM broadcast_delivery_runs AS run
@@ -656,7 +657,7 @@ export async function dispatchBroadcastEmailDeliveryBatch(
     let failed = 0;
     for (let index = 0; index < batchSize; index += 1) {
       const now = clock();
-      const nowIso = now.toISOString();
+      const nowIso = toUtcMicrosecondTimestamp(now);
       const candidate = await eligibleDeliveryCandidate(businessDb, run.id, nowIso);
       if (!candidate) break;
 
@@ -669,7 +670,7 @@ export async function dispatchBroadcastEmailDeliveryBatch(
           WHERE run_id = ? AND user_id = ? AND status = ? AND
             ((status = 'pending' AND next_attempt_at <= ?) OR (status = 'sending' AND lease_expires_at <= ?))
             AND NOT EXISTS (SELECT 1 FROM broadcast_delivery_suppressions WHERE user_id = ?)`)
-          .bind(token, new Date(now.getTime() + 2 * 60 * 1000).toISOString(), run.id, candidate.user_id,
+          .bind(token, toUtcMicrosecondTimestamp(new Date(now.getTime() + 2 * 60 * 1000)), run.id, candidate.user_id,
             candidate.status, nowIso, nowIso, candidate.user_id).run();
         if (claimed.success && claimed.meta?.changes === 1) {
           await markNeedsReview(businessDb, run.id, candidate.user_id, token, nowIso, "idempotency_window_expired");
@@ -687,7 +688,7 @@ export async function dispatchBroadcastEmailDeliveryBatch(
             SET status = 'sending', lease_token = ?, lease_expires_at = ?
             WHERE run_id = ? AND user_id = ? AND status = ?
               AND ((status = 'pending' AND next_attempt_at <= ?) OR (status = 'sending' AND lease_expires_at <= ?))`)
-            .bind(token, new Date(now.getTime() + 2 * 60 * 1000).toISOString(), run.id,
+            .bind(token, toUtcMicrosecondTimestamp(new Date(now.getTime() + 2 * 60 * 1000)), run.id,
               candidate.user_id, candidate.status, nowIso, nowIso).run();
           if (claimed.success && claimed.meta?.changes === 1) {
             await markNeedsReview(businessDb, run.id, candidate.user_id, token, nowIso, "attempt_limit_uncertain");
@@ -708,7 +709,7 @@ export async function dispatchBroadcastEmailDeliveryBatch(
       }
 
       const leaseToken = createId();
-      const leaseExpiresAt = new Date(now.getTime() + 2 * 60 * 1000).toISOString();
+      const leaseExpiresAt = toUtcMicrosecondTimestamp(new Date(now.getTime() + 2 * 60 * 1000));
       const claim = await businessDb.prepare(`UPDATE broadcast_delivery_recipients
         SET status = 'sending', attempt_count = attempt_count + 1,
             first_attempt_at = COALESCE(first_attempt_at, ?),
@@ -717,7 +718,7 @@ export async function dispatchBroadcastEmailDeliveryBatch(
         WHERE run_id = ? AND user_id = ? AND status = ?
           AND ((status = 'pending' AND next_attempt_at <= ?) OR (status = 'sending' AND lease_expires_at <= ?))
           AND NOT EXISTS (SELECT 1 FROM broadcast_delivery_suppressions WHERE user_id = ?)`)
-        .bind(nowIso, new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(), leaseToken,
+        .bind(nowIso, toUtcMicrosecondTimestamp(new Date(now.getTime() + 24 * 60 * 60 * 1000)), leaseToken,
           leaseExpiresAt, nowIso, run.id, candidate.user_id, candidate.status, nowIso, nowIso, candidate.user_id).run();
       if (!claim.success || claim.meta?.changes !== 1) continue;
       const claimedRow = await businessDb.prepare(`SELECT attempt_count, payload_fingerprint
@@ -809,7 +810,7 @@ export async function dispatchBroadcastEmailDeliveryBatch(
         if (await updateRecipient(businessDb, run.id, candidate.user_id, leaseToken,
           exhausted ? "failed" : "pending", nowIso, {
             errorCode: exhausted ? "attempt_limit_reached" : attempt.code,
-            nextAttemptAt: exhausted ? undefined : new Date(now.getTime() + delayMinutes * 60_000).toISOString(),
+            nextAttemptAt: exhausted ? undefined : toUtcMicrosecondTimestamp(new Date(now.getTime() + delayMinutes * 60_000)),
           })) {
           processed += 1;
           if (exhausted) failed += 1;
@@ -819,7 +820,7 @@ export async function dispatchBroadcastEmailDeliveryBatch(
       if (index + 1 < batchSize) await pause(600);
     }
 
-    const reconciled = await reconcileBroadcastDeliveryRun(businessDb, run.id, clock().toISOString());
+    const reconciled = await reconcileBroadcastDeliveryRun(businessDb, run.id, toUtcMicrosecondTimestamp(clock()));
     if (reconciled.status === "completed" || reconciled.status === "failed") {
       return { status: reconciled.status, runId: run.id, processed, sent: reconciled.sent, retrying, failed: reconciled.failed };
     }

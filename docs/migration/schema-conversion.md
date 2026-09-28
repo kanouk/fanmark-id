@@ -439,11 +439,13 @@ Additional operation paths now use that formatter for account deletion,
 profile/password setup, administrator user actions, lifecycle/maintenance/
 system settings, waitlist administration/signup, invitation administration/
 signup, extension-coupon administration/application, and admin email-template
-updates. Their focused D1 suites pass 88/88, bringing the combined focused
-Worker D1 total to 160/160. Coupon and email-template administration's
-SQL/application-generated monotonic revision timestamps also retain six
-fractional digits. These tests confirm the stored operation values use
-fixed-width UTC microsecond text. This is additional path coverage only: the
-schema readiness report still has 13 unresolved groups across 226 locations,
-and `timestamp_import_precision` remains open until the complete writer/default
-inventory is reconciled. No user rows were read and no remote D1 was written.
+updates, and broadcast email administration, delivery leases/retries, and
+Resend webhook event persistence. Their focused D1 suites pass 107/107,
+bringing the combined focused Worker D1 total to 179/179. Coupon and
+email-template administration's SQL/application-generated monotonic revision
+timestamps also retain six fractional digits. Tests read back the stored
+operation values as fixed-width UTC microsecond text. This is additional path
+coverage only: the schema readiness report still has 13 unresolved groups
+across 226 locations, and `timestamp_import_precision` remains open until the
+complete writer/default inventory is reconciled. No user rows were read and no
+remote D1 was written.

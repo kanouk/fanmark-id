@@ -1,5 +1,6 @@
 import { reconcileBroadcastDeliveryRun } from "./broadcast-email-delivery-d1.ts";
 import { selectD1Database, type Env } from "./repository.ts";
+import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 export const BROADCAST_EMAIL_WEBHOOK_PATH = "/api/webhooks/resend/broadcast-delivery";
 const MAX_WEBHOOK_BODY_BYTES = 64 * 1024;
@@ -159,7 +160,7 @@ export async function handleBroadcastEmailWebhookRequest(
   const event = parseEvent(rawBody, eventId);
   if (!event) return json({ error: "invalid_webhook" }, 400);
 
-  const now = clock().toISOString();
+  const now = toUtcMicrosecondTimestamp(clock());
   try {
     await businessDb.prepare(`INSERT INTO broadcast_delivery_webhook_events
       (id, provider_email_id, event_type, bounce_type, created_at)
