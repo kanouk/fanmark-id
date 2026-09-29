@@ -3223,13 +3223,61 @@ current subscription row; plan state is selected from the highest active plan,
 so delayed event snapshots no longer directly choose a plan or provide periods.
 The old top-level Subscription period reads are removed.
 
-This remains an intermediate safety repair, not Issue #32 completion: the
-created/updated branch still writes the customer link, subscription projection,
-and plan separately, has no customer fence or durable receipt/dispatch claim,
-and the deleted-subscription path still deletes its row and performs Free-plan
-returns separately. The related Stripe D1 suite passes 64/64 under Node 22.6.0;
-the subscription projection package tests pass 10/10, its typecheck, Deno check,
-Deno lint, and focused ESLint pass. The full Worker API suite also passes under
-the available Node 25 runtime. No Supabase migration, external Stripe API
-request, remote D1/R2 write, Worker deployment, real user-data migration, or
-domain/DNS change was made.
+This entry records the earlier current-state reconciliation slice and is
+superseded by the preceding `Supabase subscription receipt and fenced
+application` checkpoint: the created/updated/deleted paths were subsequently
+connected to durable receipt/dispatch handling and the fenced application
+transaction. The tests listed here validate only that earlier slice. Neither
+checkpoint applied a Supabase migration, made an external Stripe API request,
+deployed a webhook, or moved real user data.
+
+## Current Wrangler account and business D1 migration readback (2026-09-29 JST)
+
+The earlier account mismatch is resolved for this managed worktree. A fresh
+`fanmark-staging-inapp` Wrangler profile is bound to this checkout, and
+`wrangler whoami` confirms the intended `fanmark.id@gmail.com` account and
+staging account ID `bfc2890741f0b3fb236e2d755b6c9adc`. The old `default`
+profile still points to a different account and is not used for migration
+commands.
+
+The account-pinned read-only inventory listed all three staging D1 databases
+and the three expected R2 buckets. Auth and emoji-master D1 have no pending
+migrations. Business D1 had `0018_invitation_capacity_timestamp_precision.sql`
+and `0019_extension_coupon_timestamp_precision.sql` pending. Invitation code
+and attempt rows, coupon-use rows, and coupon-application commands were each
+zero; the four non-user coupon master records were present. The focused local
+test suites passed 10/10 invitation signup cases and 8/8 coupon-application
+cases.
+
+Both migrations were applied to the APAC staging business D1. Wrangler reported
+both successful and now reports no pending migration. Readback matches the
+checked-in trigger definitions; the same five table counts remain 0, 0, 4, 0,
+0. This is staging schema validation only. No Supabase migration, Worker
+deployment paired with these DDL changes, Stripe secret/config change,
+application-row import, production route, or domain/DNS change occurred. The
+subsequent staging Worker deployment is recorded below. The coarse progress
+estimate remains about 53% end-to-end and 73% for the prioritized
+app/infrastructure/non-user master-data scope; these two trigger migrations do
+not materially change it.
+
+## PR #41 current application staging deployment (2026-09-29 JST)
+
+The latest checked-in application Worker is deployed to the APAC
+`fanmark-app-staging` workers.dev service as version
+`f6c3ee8d-baca-4938-853c-1ba3b1eaaa62` at 100%. Local staging build, Worker
+typecheck, and Wrangler dry-run passed. The deployed JavaScript asset
+`/assets/index-B6IkPHSy.js` is byte-for-byte equal to the local build at
+2,499,186 bytes (SHA-256
+`c3cb8dcd9a722255414e4c48c841a12de36455a9ae2907ed5535b10765001b74`).
+
+Read-only smoke returned 200 for `/`, `/robots.txt`, `/api/auth/ok`, and
+`/api/emoji/catalog`; health and catalog responses are `no-store`. Anonymous
+admin session returned 401, and the Stripe webhook route remains 404 with
+selectors/secrets disabled. After deployment, the notification event/inbox
+tables and Stripe receipt/dispatch/application/plan/extension tables all read
+zero rows. Cron remains configured for notifications/dispatch each minute and
+the daily lifecycle schedule; the lifecycle execution selector remains unset.
+No email, payment, real user-data import, production route, or domain/DNS was
+used or changed. The app deployment adds runtime readback evidence but does
+not materially change the coarse 53% end-to-end / 73% prioritized-scope
+estimate.

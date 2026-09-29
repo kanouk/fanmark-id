@@ -4076,3 +4076,54 @@ the exact application timestamp. Shared timestamp tests pass 6/6; the full
 Stripe webhook/receipt/dispatch/invoice/subscription suite passes 63/63, and
 Worker TypeScript checking passes. No Stripe API call, user data, remote D1,
 production deployment, or domain/DNS change occurred.
+
+## Wrangler target-account authentication and business trigger migrations (2026-09-29 JST)
+
+Created the dedicated `fanmark-staging-inapp` Wrangler profile through the
+Cloudflare OAuth flow and bound it to this managed worktree. `wrangler whoami`
+confirmed `fanmark.id@gmail.com` and the account ID pinned by the staging
+configs (`bfc2890741f0b3fb236e2d755b6c9adc`). The profile has the D1 and Worker
+scopes used by staging commands; it does not include public route or DNS scopes.
+The pre-existing `default` profile remains associated with a different
+account and was not used.
+
+Read-only inventory found the three configured staging D1 databases and the
+avatar, cover-image, and private migration-backup R2 buckets. Auth and emoji
+master D1 had no pending migrations. Business D1 had only
+`0018_invitation_capacity_timestamp_precision.sql` and
+`0019_extension_coupon_timestamp_precision.sql` pending. Before applying them,
+the invitation code/attempt tables, coupon-use table, and coupon-application
+command table each had zero rows; the four non-user coupon master rows remained
+present. The two local focused suites passed: invitation signup 10/10 and
+extension-coupon application 8/8 (Node 25.5.0).
+
+Applied both forward migrations to the account-pinned APAC staging business
+D1. Wrangler reported success for each migration, and the remote migration
+ledger now reports no pending migrations. Readback confirmed both trigger
+definitions use the exact fixed-width timestamp comparisons from the checked-in
+SQL. The five preflight counts were unchanged (0, 0, 4, 0, 0), and D1 reported
+zero rows written by the readback. This changed staging schema only; no
+application rows were imported, no Supabase migration or Worker deployment
+was run, and production routing, real user data, Stripe configuration, and
+domain/DNS remain untouched. This supersedes the earlier note that the
+account mismatch blocked all Wrangler readback and writes.
+
+## PR #41 application staging deployment (2026-09-29 JST)
+
+The current checked-in application Worker was deployed to the APAC
+`fanmark-app-staging` workers.dev service after the staging build, Worker
+typecheck, and Wrangler dry-run succeeded. Wrangler reports version
+`f6c3ee8d-baca-4938-853c-1ba3b1eaaa62` at 100%. The deployed JS asset
+`/assets/index-B6IkPHSy.js` is 2,499,186 bytes and its SHA-256 matches the local
+staging build (`c3cb8dcd9a722255414e4c48c841a12de36455a9ae2907ed5535b10765001b74`).
+
+Read-only HTTP checks returned 200 for `/`, `/robots.txt`, `/api/auth/ok`, and
+`/api/emoji/catalog`; the catalog and health responses are `no-store`. An
+anonymous `/api/admin/session` returned 401 and `/api/stripe/webhook` returned
+404, as the Stripe webhook selector/secrets are not enabled. Post-deploy
+readback found zero notification events/inbox/history rows and zero Stripe
+receipt, dispatch, application, subscription-return, extension-application,
+plan-checkout, or plan-change rows. Both declared Cron schedules remain
+configured; no real email, payment, user data, production route, or domain/DNS
+was exercised or changed. This staging deployment improves runtime evidence
+but does not materially change the coarse migration progress estimate.
