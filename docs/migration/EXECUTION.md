@@ -48,6 +48,16 @@ deploy dry-runもpass。外部Stripe APIは呼んでいない。test-only creden
 `STRIPE_WEBHOOK_SECRET`。`STRIPE_SECRET_KEY_LIVE`は設定しない。これらの値をチャットに
 貼り付けずCloudflare staging secretとして登録する。
 
+CI run `36847883045`（PR #41、head `41b1fd2`）はstaging applicationとWorker APIの
+両jobが成功した。既存PGliteテストがCIで60秒を超えたため、そのテストrunnerの外側
+timeoutを120秒にし、Node 22.6.0で単体・Stripe receipt suiteが通ることも確認した。
+staging build後、2026-10-01 10:21 JSTにWorker version
+`59deb036-3aa7-442f-9eba-11875715c43a`を100%配信した。read-only GETは`/`、
+`/api/auth/ok`、`/api/emoji/catalog`が200、Stripe selector未設定の
+`/api/stripe/webhook`が404。staging secret名のreadbackにもStripe/Resend/OAuthはない。
+この反映でStripe API、メール、D1 migration/write、実ユーザーデータ、production route、
+domain/DNSは使っていない。
+
 ## 2026-09-29 Supabase Stripe non-extension Checkout receipts
 
 The Supabase webhook now persists all supported Checkout Session events before

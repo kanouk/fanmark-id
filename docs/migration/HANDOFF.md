@@ -1,14 +1,14 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-01 JST. The migration is **not complete**. PR #41 remains
-open and draft. Pushed head `089c218` adds Stripe `test_only` isolation; the
-Worker API CI job passed, while the application CI job timed out twice at 60s
-on the existing PGlite subscription-application test. The same test and full
-receipt test runner pass locally under Node 22.6.0. The current worktree raises
-that one test's outer timeout to 120s; this adjustment is not yet pushed. The
-latest staging Worker is `7a7e2597-fc05-4fcb-b117-ba331dfa54e1` at 100%.
-Production routing, real user/Auth/Storage import, and public domain/DNS cutover
-have not been performed.
+Checkpoint: 2026-10-01 10:21 JST. The migration is **not complete**. PR #41
+remains open and draft at head `41b1fd2`. Validation run `36847883045` passed
+both staging application and Worker API jobs. The existing PGlite CI test
+needed its outer timeout raised from 60 to 120 seconds; the full receipt runner
+also passes locally under Node 22.6.0. Staging Worker version
+`59deb036-3aa7-442f-9eba-11875715c43a` is deployed at 100%. Read-only GETs for
+`/`, `/api/auth/ok`, and `/api/emoji/catalog` return 200; the Stripe webhook
+returns 404 because its selector is still unset. Production routing, real
+user/Auth/Storage import, and public domain/DNS cutover have not been performed.
 
 The dedicated Wrangler profile confirms `fanmark.id@gmail.com` and the account
 pinned by staging configuration. Business D1 has no pending migrations after
@@ -23,17 +23,19 @@ The current `wrangler secret list` contains only `BETTER_AUTH_SECRET`,
 `REFERENCE_MASTER_SERVICE_SECRET`, and `VERIFIED_ACCESS_SECRET`. Stripe,
 Resend, and OAuth staging integration is therefore still disabled and awaits
 the corresponding test credentials/configuration. Staging's checked-in config
-now sets `STRIPE_MODE_POLICY=test_only`; this alone does not enable a Stripe
-route. Local synthetic tests cover test-key-only Checkout, plan changes,
-Customer Portal, Webhook rejection of live events, scheduler refusal when live
-receipts exist, and test-only account deletion. The Stripe receipt/dispatch
-suite passes 68/68, Plan Checkout 9/9, Plan Change 9/9, Customer Portal 6/6,
-extension Checkout 6/6, and Stripe account deletion 5/5; Worker typecheck,
-CI isolation, and Wrangler dry-run pass. Next gates: push and pass PR CI, deploy
-this code to staging, then register `STRIPE_SECRET_KEY_TEST`, the same test
-value as `STRIPE_SECRET_KEY`, and the test endpoint's `STRIPE_WEBHOOK_SECRET`
-as Cloudflare secrets. Do not set `STRIPE_SECRET_KEY_LIVE`. The actual Stripe
-test-mode canary remains pending.
+sets `STRIPE_MODE_POLICY=test_only`; this alone does not enable a Stripe route.
+Local synthetic tests cover test-key-only Checkout, plan changes, Customer
+Portal, Webhook rejection of live events, scheduler refusal when live receipts
+exist, and test-only account deletion. The Stripe receipt/dispatch suite passes
+68/68, Plan Checkout 9/9, Plan Change 9/9, Customer Portal 6/6, extension
+Checkout 6/6, and Stripe account deletion 5/5.
+
+Next user action for the Stripe end-to-end canary: register `STRIPE_SECRET_KEY_TEST`,
+the same test value as `STRIPE_SECRET_KEY`, and a test-mode endpoint's
+`STRIPE_WEBHOOK_SECRET` as Cloudflare staging secrets. Do not set
+`STRIPE_SECRET_KEY_LIVE` or paste secret values into chat. Once configured, the
+test-mode webhook and synthetic purchase canary can run. No Stripe API call was
+made during this checkpoint.
 
 No Supabase migration or webhook request was made. User-data/Auth/Storage
 migration and public domain/DNS cutover remain reserved for the final stage.
