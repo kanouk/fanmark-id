@@ -233,7 +233,7 @@ test("conversion is deterministic and exposes exact target codecs", () => {
 
   assert.equal(first.report.target.tableCount, 4);
   assert.equal(first.report.target.columnCount, 15);
-  assert.equal(first.report.schemaVersion, 21);
+  assert.equal(first.report.schemaVersion, 22);
   assert.deepEqual(first.report.target.translatedConstraints, { p: 4, u: 0, f: 1, c: 3 });
   assert.equal(first.report.target.translatedIndexCount, 4);
   assert.deepEqual(
@@ -332,7 +332,7 @@ test("money cents DDL accepts only the exact source numeric(10,2) range", () => 
 
 test("DATE schema checks preserve canonical calendar days for imports and later writes", () => {
   const result = convertSchema(calendarDateFixture());
-  assert.equal(result.report.schemaVersion, 21);
+  assert.equal(result.report.schemaVersion, 22);
   assert.equal(gateCodes(result.report).has("date_import_validation"), false);
   assert.match(result.sql, /"stat_date" IS NULL OR \([\s\S]*length\("stat_date"\) = 10[\s\S]*GLOB '\[0-9\].*-[0-9\].*-[0-9\].*'[\s\S]*substr\("stat_date", 1, 4\) BETWEEN '0001' AND '9999'[\s\S]*date\("stat_date", '\+0 days'\) IS "stat_date"/);
 
@@ -359,7 +359,7 @@ test("DATE schema checks preserve canonical calendar days for imports and later 
 
 test("TIMESTAMPTZ schema checks preserve canonical UTC microsecond text", () => {
   const result = convertSchema(timestampFixture());
-  assert.equal(result.report.schemaVersion, 21);
+  assert.equal(result.report.schemaVersion, 22);
   assert.ok(!gateCodes(result.report).has("timestamp_import_precision"));
   assert.ok(gateCodes(result.report).has("timestamp_default_requires_operation"));
   assert.match(result.sql, /"created_at" TEXT NOT NULL,/);
@@ -411,9 +411,74 @@ test("TIMESTAMPTZ schema checks preserve canonical UTC microsecond text", () => 
   }), "the source created_at column is NOT NULL");
 });
 
+test("only the exact versioned reference-master timestamp defaults use the reviewed replacement disposition", () => {
+  const tables = [
+    "fanmark_tier_extension_prices",
+    "fanmark_tiers",
+    "languages",
+    "reserved_emoji_patterns",
+  ];
+  const input = fixture();
+  for (const table of tables) {
+    input.columns.push(
+      column(table, "created_at", 20, "timestamp with time zone", {
+        not_null: true, default_expression: "now()",
+      }),
+      column(table, "updated_at", 21, "timestamp with time zone", {
+        not_null: true, default_expression: "now()",
+      }),
+    );
+  }
+
+  const result = convertSchema(input);
+  const timestampGates = result.report.gates.filter((gate) => gate.code === "timestamp_default_requires_operation");
+  assert.deepEqual(timestampGates, []);
+  assert.equal(result.report.deployable, false, "the narrow timestamp disposition does not clear unrelated schema gates");
+  const dispositions = result.report.target.reviewedDefaultDispositions;
+  assert.equal(dispositions.length, 8);
+  assert.deepEqual(dispositions.map(({ table, column: columnName }) => `${table}.${columnName}`), [
+    "fanmark_tier_extension_prices.created_at",
+    "fanmark_tier_extension_prices.updated_at",
+    "fanmark_tiers.created_at",
+    "fanmark_tiers.updated_at",
+    "languages.created_at",
+    "languages.updated_at",
+    "reserved_emoji_patterns.created_at",
+    "reserved_emoji_patterns.updated_at",
+  ]);
+  assert.ok(dispositions.every((entry) => (
+    entry.code === "versioned_reference_master_replacement" &&
+    entry.sourceDefault === "now()" && entry.targetDefault === null &&
+    entry.evidence.includes("workers/api/src/reference-master-admin-d1-repository.ts")
+  )));
+
+  for (const table of tables) {
+    const start = result.sql.indexOf(`CREATE TABLE "${table}"`);
+    assert.notEqual(start, -1, `missing converted table ${table}`);
+    const end = result.sql.indexOf("\n);", start);
+    const definition = result.sql.slice(start, end);
+    for (const columnName of ["created_at", "updated_at"]) {
+      assert.match(definition, new RegExp(`"${columnName}" TEXT NOT NULL,`));
+      assert.doesNotMatch(definition, new RegExp(`"${columnName}" TEXT NOT NULL DEFAULT`));
+    }
+  }
+
+  const unrelated = structuredClone(input);
+  unrelated.columns.push(column("notification_preferences", "created_at", 1, "timestamp with time zone", {
+    not_null: true, default_expression: "now()",
+  }));
+  const unrelatedResult = convertSchema(unrelated);
+  const remainingTimestampGate = unrelatedResult.report.gates.find((gate) => (
+    gate.code === "timestamp_default_requires_operation"
+  ));
+  assert.deepEqual(remainingTimestampGate?.locations, [
+    { kind: "default", table: "notification_preferences", column: "created_at" },
+  ]);
+});
+
 test("JSONB text validation and target constraints preserve JSON null, SQL NULL, and exact text", () => {
   const result = convertSchema(fixture());
-  assert.equal(result.report.schemaVersion, 21);
+  assert.equal(result.report.schemaVersion, 22);
   assert.equal(gateCodes(result.report).has("json_import_validation"), false);
   assert.match(result.sql, /"metadata" IS NULL OR json_valid\("metadata"\)/);
 
@@ -591,7 +656,7 @@ test("the four reviewed live GIN indexes have explicit D1 query-contract disposi
   );
 
   const result = convertSchema(input);
-  assert.equal(result.report.schemaVersion, 21);
+  assert.equal(result.report.schemaVersion, 22);
   assert.deepEqual(result.report.target.indexAdaptations.map((entry) => entry.sourceIndex), [
     "idx_emoji_master_keywords",
     "idx_emoji_master_short_name",
@@ -635,7 +700,7 @@ test("known ASCII PostgreSQL regex checks require a reviewed locale proof", () =
     .flatMap((gate) => gate.locations)
     .filter((location) => sourceCheckNames.has(location.name));
   assert.deepEqual(untranslatedSourceChecks, []);
-  assert.equal(result.report.schemaVersion, 21);
+  assert.equal(result.report.schemaVersion, 22);
 
   const cases = [
     ["invitation_codes", "code", "ABC123", true],
@@ -867,7 +932,7 @@ test("the exact recent-active view is adapted only to the reviewed D1 query", ()
   input.views = [{ kind: "view", name: "recent_active_fanmarks", definition }];
 
   const result = convertSchema(input);
-  assert.equal(result.report.schemaVersion, 21);
+  assert.equal(result.report.schemaVersion, 22);
   assert.equal(result.report.deployable, false);
   assert.deepEqual(result.report.target.catalogScopeAdaptations, [{
     scope: "views",

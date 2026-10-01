@@ -4521,3 +4521,24 @@ of Master D1.
 while business D1 had no matching Tier row; the saved lottery input preserved
 47, and a missing binding left the license unclaimed. No remote resources were
 changed; staging expiry remains disabled pending the broader acceptance gate.
+
+## 2026-10-02: converter v22 reviewed reference-master timestamps
+
+Converter v22 gives a reviewed replacement disposition to exactly eight
+`now()` defaults: `created_at` and `updated_at` on `fanmark_tiers`, `languages`,
+`reserved_emoji_patterns`, and `fanmark_tier_extension_prices`. Import binds
+canonical source timestamps to source-shaped rows; Worker reads and admin
+writes use active versioned Master D1 releases. A repository audit checks that
+no direct Worker or migration SQL `INSERT` targets those base tables. The D1
+DDL still omits the defaults; all unrelated `now()` defaults remain gated.
+
+Against the catalog observed at `2026-10-01T23:36:56Z`, the converter reports
+five blocking schema/operation groups / 85 locations: 11 external Auth
+references, 71 timestamp-default operations, and three unsupported catalog
+scopes (functions, RLS policies, triggers). It remains `deployable: false`.
+Focused converter and source-audit tests pass 25/25. A v22 current-catalog
+synthetic importer replay passed 40/40 checkpoints with 10 synthetic rows,
+two transformed credentials, one deferred inactive credential, and conflicting
+coverage rejection. The result remains `public_rows_reconciled`, with
+`deployable` and `fullMigrationReconciled` false. No source rows, remote D1,
+production route, or domain state was read or changed.

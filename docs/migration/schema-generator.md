@@ -1,6 +1,6 @@
 # Full schema conversion generator
 
-`schema-convert.mjs` v21 is a private, catalog-only preparation tool. It
+`schema-convert.mjs` v22 is a private, catalog-only preparation tool. It
 converts the JSON emitted by `scripts/migration/schema-readiness.sql` into deterministic
 SQLite/D1 table and index SQL plus a machine-readable report of unresolved
 parity gates. It does not read application rows, contact Supabase, apply SQL,
@@ -427,3 +427,25 @@ resolution and does not match PostgreSQL transaction-time semantics. D1 now
 requires inserts to provide the canonical UTC microsecond timestamp explicitly;
 the schema report retains all 79 operation gates until their complete runtime
 coverage is verified.
+
+## Schema converter v22: versioned reference-master timestamp replacement (2026-10-02 JST)
+
+The four non-user reference masters (`fanmark_tiers`, `languages`,
+`reserved_emoji_patterns`, and `fanmark_tier_extension_prices`) have a reviewed
+replacement path in split D1. Their source-shaped copies are imported with
+explicit canonical source timestamps and have no direct Worker or migration
+SQL `INSERT` writer. Cloudflare runtime reads the active versioned Master D1
+release; administrative edits write separate `*_release_rows` tables with
+explicit timestamps. Converter v22 records eight exact `now()` defaults as
+`versioned_reference_master_replacement` dispositions and continues to omit
+those defaults from D1 DDL. Any other `now()` default remains a blocking
+operation gate.
+
+The repository source audit has a regression test over Worker source, D1 SQL
+migrations, and the reference-release importer. A synthetic catalog case
+verifies the exact eight locations, absence of a generated D1 default, and
+that an unrelated `notification_preferences.created_at` default remains
+gated. The change reduces the current-catalog timestamp operation count from
+79 to 71; external Auth references and unsupported functions/RLS/triggers
+remain blocking, so the schema stays non-deployable. No source rows, remote D1,
+production route, or domain/DNS state was changed.

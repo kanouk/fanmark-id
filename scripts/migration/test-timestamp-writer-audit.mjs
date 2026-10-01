@@ -1,9 +1,22 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
+import { readFileSync, readdirSync } from "node:fs";
+import path from "node:path";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { auditTimestampWriterCoverage } from "./timestamp-writer-audit.mjs";
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+
+function sourceFiles(root, extensionPattern) {
+  return readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
+    const filePath = path.join(root, entry.name);
+    if (entry.isDirectory()) return sourceFiles(filePath, extensionPattern);
+    return extensionPattern.test(entry.name) ? [filePath] : [];
+  });
+}
 
 function catalog(columns) {
   return { observed_at: "2026-09-28T14:49:37Z", columns };
@@ -103,4 +116,51 @@ test("includes D1 trigger and seed SQL writes in the same timestamp column inven
   assert.equal(result.insertStatementCount, 2);
   assert.deepEqual(result.uncoveredTimestampDefaults, []);
   assert.equal(result.columnListCoverageComplete, true);
+});
+
+test("source-shaped versioned reference masters have no direct Worker or migration INSERT writers", () => {
+  const tables = [
+    "fanmark_tier_extension_prices",
+    "fanmark_tiers",
+    "languages",
+    "reserved_emoji_patterns",
+  ];
+  const columns = tables.flatMap((table) => [timestamp(table, "created_at"), timestamp(table, "updated_at")]);
+  const sourceRoots = [
+    path.join(repoRoot, "workers/api/src"),
+    path.join(repoRoot, "scripts/migration"),
+  ];
+  const sqlRoots = [
+    path.join(repoRoot, "workers/api/migrations"),
+    path.join(repoRoot, "workers/api/migrations-business"),
+  ];
+  const files = [
+    ...sourceRoots.flatMap((root) => sourceFiles(root, /\.(?:mjs|ts)$/u)),
+    ...sqlRoots.flatMap((root) => sourceFiles(root, /\.sql$/u)),
+  ].filter((filePath) => !path.basename(filePath).startsWith("test-"));
+  const sources = [...new Set(files)].map((filePath) => ({
+    file: path.relative(repoRoot, filePath),
+    text: readFileSync(filePath, "utf8"),
+  }));
+  const result = auditTimestampWriterCoverage(catalog(columns), sources);
+
+  assert.equal(result.timestampDefaultCount, 8);
+  assert.equal(result.insertStatementCount, 0);
+  assert.deepEqual(result.unparsedTargetInserts, []);
+  assert.ok(result.uncoveredTimestampDefaults.every((entry) => entry.reason === "no_supported_insert_found"));
+
+  const adminSource = readFileSync(
+    path.join(repoRoot, "workers/api/src/reference-master-admin-d1-repository.ts"),
+    "utf8",
+  );
+  for (const target of [
+    "fanmark_tier_release_rows",
+    "fanmark_language_release_rows",
+    "fanmark_reserved_emoji_pattern_release_rows",
+    "fanmark_extension_price_release_rows",
+  ]) {
+    assert.ok(adminSource.includes(target), `missing versioned D1 target ${target}`);
+  }
+  assert.ok(adminSource.includes('"created_at"'));
+  assert.ok(adminSource.includes('"updated_at"'));
 });

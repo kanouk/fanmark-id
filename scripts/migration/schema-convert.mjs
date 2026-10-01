@@ -17,7 +17,7 @@ import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 21;
+export const SCHEMA_CONVERSION_VERSION = 22;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -44,6 +44,25 @@ const REVIEWED_LOTTERY_WEIGHT = Object.freeze({
   table: "fanmark_lottery_entries",
   column: "lottery_probability",
   check: "positive_probability",
+});
+const REVIEWED_VERSIONED_REFERENCE_MASTER_TIMESTAMPS = new Set([
+  "fanmark_tiers.created_at",
+  "fanmark_tiers.updated_at",
+  "languages.created_at",
+  "languages.updated_at",
+  "reserved_emoji_patterns.created_at",
+  "reserved_emoji_patterns.updated_at",
+  "fanmark_tier_extension_prices.created_at",
+  "fanmark_tier_extension_prices.updated_at",
+]);
+const VERSIONED_REFERENCE_MASTER_TIMESTAMP_DISPOSITION = Object.freeze({
+  code: "versioned_reference_master_replacement",
+  reason: "The source-shaped copy is imported with explicit canonical source timestamps and has no direct Worker or SQL INSERT writer; Cloudflare runtime edits the separate versioned Master D1 release rows with explicit timestamps.",
+  evidence: [
+    "workers/api/src/reference-master-d1-repository.ts",
+    "workers/api/src/reference-master-admin-d1-repository.ts",
+    "scripts/migration/reference-master-release.mjs",
+  ],
 });
 const SUPPORTED_INDEX_METHOD = "btree";
 const REVIEWED_EN_US_REGEX_LOCALE = "en_US.UTF-8";
@@ -908,7 +927,14 @@ function hasReviewedLotteryWeightCheck(tableName, sourceConstraints, tableColumn
   );
 }
 
-function translateDefault(column, info, gates, sequencePrimaryKey = false, sequenceStateImportSupported = false) {
+function translateDefault(
+  column,
+  info,
+  gates,
+  sequencePrimaryKey = false,
+  sequenceStateImportSupported = false,
+  reviewedDefaultDispositions = [],
+) {
   const expression = column.default_expression;
   if (expression === null || expression === undefined || expression.trim() === "") return null;
   const location = { kind: "default", table: column.table_name, column: column.column_name };
@@ -927,6 +953,17 @@ function translateDefault(column, info, gates, sequencePrimaryKey = false, seque
         "now() has no reviewed default translation for this source type; the operation must provide a value in the target representation.",
         location,
       );
+      return null;
+    }
+    if (REVIEWED_VERSIONED_REFERENCE_MASTER_TIMESTAMPS.has(`${column.table_name}.${column.column_name}`)) {
+      reviewedDefaultDispositions.push({
+        kind: "default",
+        table: column.table_name,
+        column: column.column_name,
+        sourceDefault: "now()",
+        targetDefault: null,
+        ...VERSIONED_REFERENCE_MASTER_TIMESTAMP_DISPOSITION,
+      });
       return null;
     }
     gates.add(
@@ -1264,7 +1301,14 @@ function renderTable(tableName, tableColumns, sourceConstraints, context) {
     const sequencePrimaryKey = sequencePrimaryKeyColumns.has(column.column_name);
     if (sequencePrimaryKey) parts.push("PRIMARY KEY AUTOINCREMENT");
     if (column.not_null) parts.push("NOT NULL");
-    const defaultSql = translateDefault(column, info, context.gates, sequencePrimaryKey, sequenceStateImportSupported);
+    const defaultSql = translateDefault(
+      column,
+      info,
+      context.gates,
+      sequencePrimaryKey,
+      sequenceStateImportSupported,
+      context.reviewedDefaultDispositions,
+    );
     if (defaultSql !== null) parts.push(`DEFAULT ${defaultSql}`);
     definitions.push({ order: column.ordinal, sql: parts.join(" ") });
     for (const check of info.checks) {
@@ -1395,6 +1439,7 @@ export function convertSchema(catalogInput, options = {}) {
     columnCodecs,
     sequenceStateColumns,
     credentialDescriptorPlan,
+    reviewedDefaultDispositions: [],
     databaseLocale: catalog.database_locale,
     regexRangeProbe: catalog.regex_range_probe,
     indexAdaptations: [],
@@ -1476,6 +1521,9 @@ export function convertSchema(catalogInput, options = {}) {
         left.table.localeCompare(right.table) || left.sourceIndex.localeCompare(right.sourceIndex)
       )),
       catalogScopeAdaptations: context.catalogScopeAdaptations,
+      reviewedDefaultDispositions: context.reviewedDefaultDispositions.sort((left, right) => (
+        left.table.localeCompare(right.table) || left.column.localeCompare(right.column)
+      )),
       typeMappings: Object.fromEntries([...typeCounts.entries()].sort(([left], [right]) => left.localeCompare(right))),
       columnCodecs: columnCodecs.sort((left, right) => left.table.localeCompare(right.table) || left.column.localeCompare(right.column)),
     },

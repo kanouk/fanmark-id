@@ -822,3 +822,26 @@ credentials, durably deferred one inactive credential, and verified typed/hash
 readback and conflicting-coverage rejection. The result is
 `public_rows_reconciled`; `deployable` and `fullMigrationReconciled` remain
 false. No source application rows or remote D1/R2 state was read or changed.
+
+## Fresh Supabase catalog and v22 reviewed reference-master defaults (2026-10-02 JST)
+
+Converter v22 records the exact `created_at` and `updated_at` `now()` defaults
+on the four versioned reference masters as a nonblocking replacement
+disposition. The source-shaped import binds the validated source timestamps;
+Cloudflare runtime reads active release views and administrative edits write
+versioned release-row tables with explicit timestamps. A source audit regression
+test confirms there are no direct Worker or migration SQL `INSERT` writers to
+those source-shaped base tables. The converter still omits all eight D1
+defaults rather than emitting SQLite's millisecond `now()` behavior.
+
+Using the catalog observed at `2026-10-01T23:36:56Z`, the timestamp-default
+operation group falls from 79 to 71 locations. The report still has five
+blocking schema/operation groups / 85 locations: 11 external Auth references,
+71 remaining timestamp operations, and three unsupported catalog scopes
+(functions, RLS policies, and triggers). It remains `deployable: false`.
+Focused schema-converter and source-audit tests pass 25/25; this disposition
+does not authorize user-data import, a remote schema write, or production
+cutover. The v22 current-catalog synthetic importer replay completed 40/40
+checkpoints with 10 synthetic rows, two transformed credentials, and one
+deferred inactive credential. It rejected conflicting coverage and remained
+`public_rows_reconciled`, with `deployable` and `fullMigrationReconciled` false.
