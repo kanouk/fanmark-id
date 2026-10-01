@@ -127,6 +127,8 @@ let report = {
     stripeBusinessEffectSurvivedTimeTravel: false,
     stripeBusinessEffectRestoredFromEncryptedBundle: false,
     stripeDispatcherLastReadback: null,
+    stripeReadbackTransientErrorCount: 0,
+    stripeReadbackLastTransientErrorCode: null,
   },
   cleanup: {
     workerDeleted: false,
@@ -1118,7 +1120,21 @@ async function enableSyntheticStripeDispatch(config) {
 async function waitForAppliedStripeExtension() {
   const deadline = Date.now() + 20 * 60 * 1000;
   while (Date.now() < deadline) {
-    const rows = stripeLedgerRows([extensionEventId]);
+    let rows;
+    try {
+      rows = stripeLedgerRows([extensionEventId]);
+    } catch (error) {
+      const code = report.lastFailedOperation === "d1_execute"
+        ? report.lastFailedDiagnostic?.match(/\[code:\s*(\d+)\]/iu)?.[1]
+        : null;
+      if (code !== "7403") throw error;
+      report.recovery.stripeReadbackTransientErrorCount += 1;
+      report.recovery.stripeReadbackLastTransientErrorCode = code;
+      await new Promise((resolve) => setTimeout(resolve, 10_000));
+      continue;
+    }
+    report.lastFailedOperation = null;
+    report.lastFailedDiagnostic = null;
     const current = rows.find((row) => row.stripe_event_id === extensionEventId);
     report.recovery.stripeDispatcherLastReadback = current
       ? {
