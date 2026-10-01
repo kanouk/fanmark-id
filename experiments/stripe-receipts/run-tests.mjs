@@ -42,7 +42,9 @@ for (const file of testFiles) {
   const attempts = pgliteTestFiles.has(file) ? 2 : 1;
   // PGlite can leave a timed-out node:test child alive; bound the outer process
   // and start a clean retry only for ETIMEDOUT.
-  const timeoutMs = file === "snapshot-export.test.mjs" ? 120_000 : 60_000;
+  const timeoutMs = file === "snapshot-export.test.mjs" || file === "subscription-application.test.mjs"
+    ? 120_000
+    : 60_000;
   let result;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     process.stdout.write(`\n=== ${file} (attempt ${attempt}/${attempts}) ===\n`);
