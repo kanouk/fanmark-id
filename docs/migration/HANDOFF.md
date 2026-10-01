@@ -1,6 +1,6 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-02 00:24 JST. The migration is **not complete**. PR #41
+Checkpoint: 2026-10-02 00:35 JST. The migration is **not complete**. PR #41
 remains open and draft at head `0bd0884`. Actions run `36877649923` passed both
 application and Worker API jobs; it includes the read-only D1 retry adjustment
 for the guarded recovery monitor. The prior code validation run `36870117511`
@@ -50,6 +50,13 @@ config directory selected another saved profile; subsequent commands must
 continue to pin `fanmark-staging-inapp` explicitly. Cron registration is now
 directly confirmed, while scheduled runtime delivery remains unobserved. Do
 not repeat the full recovery drill until the invocation path is understood.
+
+At 15:32 UTC, the deleted probe's Cron Events page displayed successful rows
+from 15:22:21 through 15:31:21. A freshly opened `fanmark-app-staging` Cron
+Events page displayed the exact same timestamps and CPU values, including rows
+after the probe's deletion/readback. These dashboard rows are stale, shared, or
+otherwise not attributable by Worker; they are not execution proof. The live
+tail remained the Worker-specific evidence and contained no scheduled marker.
 
 Staging Worker version `59deb036-3aa7-442f-9eba-11875715c43a` is deployed at
 100%. Read-only GETs for `/`, `/api/auth/ok`, and `/api/emoji/catalog` return

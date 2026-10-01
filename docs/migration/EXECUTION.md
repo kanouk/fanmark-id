@@ -17,6 +17,12 @@ recovery gateは未完了。実ユーザーデータ、既存staging D1、R2、p
 
 Cloudflare API仕様: [Get Worker Script Schedules](https://developers.cloudflare.com/api/resources/workers/subresources/scripts/subresources/schedules/methods/get/)。
 
+15:32 UTC、削除済み診断WorkerのCron Events画面には15:22:21から15:31:21までの成功行が表示された。
+新しく開いた既存`fanmark-app-staging`のCron Events画面にも、時刻とCPU時間が一致する同じ10行があり、
+そのうち複数は診断Workerの削除readback後の時刻だった。よってこのDashboard履歴はWorker単位に帰属できず、
+実行証拠にしない。Cloudflare側の古い/共有/誤帰属データかは特定できていない。Worker固有tailには
+fetch記録が届いた一方、scheduled markerは届かなかったため、Cron deliveryは引き続き未確認。
+
 ## 2026-10-01 disposable recovery再試験: 新規Worker Cron起動未確認（14:33 UTC）
 
 13:49:57 UTCに始めた試験は14:02:52 UTC、D1 readbackのAPI error 7403で停止した。最終Worker配備

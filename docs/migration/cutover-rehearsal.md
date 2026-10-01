@@ -774,3 +774,12 @@ API request returned 404/code 10007, and the local project directory was
 removed. Existing staging D1s remained the same three databases. This confirms
 control-plane schedule registration and the fetch/tail path, while Cron
 delivery remains unobserved. It does not identify the platform/runtime cause.
+
+At 15:32 UTC, the deleted diagnostic Worker's Cron Events page still displayed
+success rows from 15:22:21 through 15:31:21. A freshly opened
+`fanmark-app-staging` Cron Events page displayed the same ten timestamps and
+CPU values; rows from 15:25 UTC onward postdated the diagnostic Worker's deletion
+readback. The dashboard history is therefore not attributable to the Worker
+named in the page and cannot prove its Cron execution. The cause of the shared,
+stale, or misattributed history is unknown. Live tail showed the synthetic
+fetch, but no scheduled marker; keep Cron delivery unverified.
