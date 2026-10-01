@@ -1,16 +1,25 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-02 01:40 JST. The migration is **not complete**. PR #41
-remains open and draft at `9561109`. GitHub Actions run `36892893711` passed
-both the Cloudflare staging application and Worker API jobs. The earlier
-intermittent PGlite timeout remains unexplained, but did not recur in this run.
+Checkpoint: 2026-10-02 02:35 JST. The migration is **not complete**. PR #41
+remains open and draft at `c5bf7a3`. GitHub Actions run `36899737450` passed
+both the Cloudflare staging application and Worker API jobs. The max-emoji
+settings API/UI change at `7f66c5e` also passed run `36897394913`.
+
+`AdminSettings` now edits `max_emoji_characters`; the D1 admin API's editable
+allowlist now permits that public setting. Worker version
+`3293bea8-7929-4d6f-8786-886abd39348d` is deployed to `fanmark-app-staging` at
+100%. A same-session synthetic TOTP/MFA browser canary updated the maximum from
+5 to 6 and restored 5 through the form, and also updated/restored the lifecycle
+setting. Readback after cleanup found the setting at 5, no related audit rows,
+no synthetic admin profile, and no synthetic Auth users. The MFA generation
+counter may have advanced during factor enrollment/removal.
 
 Current Cloudflare checks use the explicit `fanmark-staging-inapp` profile.
-The authenticated identity is `fanmark.id@gmail.com`; remote Auth, Business,
-and emoji-master D1 report no pending migrations. The three staging R2 buckets
-are present. `fanmark-app-staging` remains at 100% on version
-`59deb036-3aa7-442f-9eba-11875715c43a`. Stripe test-mode and Resend credentials
-remain unconfigured, and new-Worker Cron delivery remains unverified.
+Remote Auth, Business, and emoji-master D1 report no pending migrations; the
+three staging R2 buckets are present. Stripe test-mode and Resend credentials
+remain unconfigured. New-Worker Cron delivery remains unverified. The current
+Wrangler OAuth token does not list Workers Observability access; a direct
+telemetry query returned HTTP 403. No permission or secret was changed.
 
 Latest guarded post-write recovery run started at 14:11:58.740 UTC and ended at
 14:33:51.345 UTC. Its temporary Worker was deployed with an every-minute Cron;

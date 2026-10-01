@@ -44,6 +44,30 @@ Invitation mode already has its editor in `AdminInvitationManager`.
 Stripe checkout, subscription mutation, webhook processing, or a live payment.
 No production selector or route was changed.
 
+## Staging AdminSettings editor (2026-10-02)
+
+The D1 admin API's editable-key allowlist now includes the already-projected
+`max_emoji_characters` setting. `AdminSettings` exposes a bounded integer field
+and disables saving if the settings projection cannot be read. Invitation mode
+continues to be edited in `AdminInvitationManager`.
+
+The Worker was deployed to `fanmark-app-staging` at 100% as version
+`3293bea8-7929-4d6f-8786-886abd39348d`. A same-session synthetic administrator
+canary verified TOTP/MFA, admin settings readback, stale-write rejection,
+temporary maximum-emoji update and restoration, plus the existing lifecycle
+settings form. D1 readback returned to `max_emoji_characters=5`; cleanup left
+no synthetic Auth users, admin profiles, or setting audit rows. The monotonic
+MFA generation counter may advance during factor enrollment and removal.
+
+Local checks: system-settings client tests 4/4, Worker D1 settings tests 6/6,
+root and Worker typechecks, targeted ESLint, Cloudflare staging build, Worker
+deploy dry-run, and CI run `36897394913` on code head `7f66c5e` all passed. The
+follow-up staging-canary harness update passed both jobs in CI run `36899737450`
+on head `c5bf7a3`.
+The browser canary used synthetic identities and configuration only. No
+production route, user-owned data, Stripe provider, email, or domain/DNS was
+changed.
+
 ## Staging evidence (2026-09-27 JST)
 
 The exact 18-row projection was read back from
@@ -69,6 +93,7 @@ deleted those synthetic audit rows. Cleanup read back zero user-owned Auth
 rows. The monotonic `mfaGeneration` singleton read back at 60 and is retained
 by design. The admin API canary did not exercise the UI in a browser.
 
-Browser-level authenticated admin settings flow, populated-user behavior,
-Stripe sandbox acceptance, full integrated #37 acceptance, production
-routing, real user-data import, and final domain/DNS cutover remain open.
+The browser-level lifecycle and maximum-emoji settings forms are verified with
+a synthetic authenticated administrator. Populated-user behavior, Stripe
+sandbox acceptance, full integrated #37 acceptance, production routing, real
+user-data import, and final domain/DNS cutover remain open.

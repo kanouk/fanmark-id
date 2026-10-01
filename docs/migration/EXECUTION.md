@@ -1,5 +1,13 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 system settings管理画面のstaging検証
+
+`AdminSettings`に最大絵文字数（1〜1,000,000）の編集欄を追加した。D1のsystem settings APIは公開projectionには含めていたものの書込allowlistから漏れていたため、`max_emoji_characters`をCAS/監査付き更新対象に加えた。設定読込失敗時は保存を停止する。招待モードは既存の`AdminInvitationManager`で編集する。
+
+Worker `fanmark-app-staging` version `3293bea8-7929-4d6f-8786-886abd39348d`を100%配信。合成管理者の同一session TOTP/MFA canaryで、system settings APIの匿名拒否・stale拒否・一時更新、AdminSettingsからの`max_emoji_characters`更新/復元、猶予期間フォームの更新/復元を検証。D1の最大絵文字数は5へ戻り、合成設定監査行・管理profile・Auth user-owned rowはcleanup readbackで0。MFA generation counterは単調増加のため保持する。
+
+`npm run test:system-settings-api` 4/4、`npm --prefix workers/api run test:system-settings-d1` 6/6、root/Worker typecheck、変更ファイルESLint、staging build、Wrangler staging deploy dry-run、CI run `36897394913`（head `7f66c5e`）が成功。staging canary harnessの修正もCI run `36899737450`（head `c5bf7a3`）で両job成功。実ユーザーデータ、Supabase行、本番route、Stripe/メールprovider、domain/DNSは変更していない。
+
 ## 2026-10-02 disposable Cron API readback: 登録済み・実行未確認（15:06–15:24 UTC）
 
 新規Worker Cronの登録readbackが曖昧だったため、15:06:14 UTCにD1/R2 bindingのない最小Workerを
