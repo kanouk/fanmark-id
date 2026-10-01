@@ -2122,7 +2122,15 @@ async function withStagingAdminBrowser(cookie, profilePrefix, review) {
     await cdp.send("Page.enable");
     cdp.adminApiResponses = [];
     cdp.lifecycleApiResponses = [];
+    cdp.systemSettingsRequests = [];
     cdp.systemSettingsApiResponses = [];
+    cdp.on("Network.requestWillBeSent", ({ request }) => {
+      if (!request?.url) return;
+      const url = new URL(request.url);
+      if (url.pathname === "/api/admin/system-settings") {
+        cdp.systemSettingsRequests.push({ method: request.method });
+      }
+    });
     cdp.on("Network.responseReceived", ({ response }) => {
       if (!response?.url) return;
       const url = new URL(response.url);
@@ -2585,7 +2593,7 @@ async function reviewLifecycleSettingsInBrowser(cookie, state) {
       const saved = await waitForBrowserValue(
         cdp,
         fieldStateExpression,
-        (current) => current?.value === String(value) && current.disabled === true,
+        (current) => current?.value === String(value) && current.disabled === true && current.buttonText === "更新",
         "lifecycle_update_not_rendered_as_saved",
       );
       assert.equal(saved.buttonText, "更新");
@@ -2624,6 +2632,17 @@ async function reviewMaxEmojiSettingsInBrowser(cookie, state) {
 
   await withStagingAdminBrowser(cookie, "fanmark-system-settings-ui-", async (cdp) => {
     await clickAdminTab(cdp, "システム設定");
+    await waitForBrowserValue(
+      cdp,
+      `Boolean(document.querySelector('#max-emoji-characters'))`,
+      (available) => available === true,
+      "max_emoji_characters_form_missing",
+    );
+    assert.equal(await browserValue(cdp, `(() => {
+      const input = document.querySelector('#max-emoji-characters');
+      input?.scrollIntoView({ block: 'center' });
+      return Boolean(input);
+    })()`), true, "maximum emoji input was not available to scroll into view");
     const initial = await waitForBrowserValue(
       cdp,
       fieldStateExpression,
@@ -2641,8 +2660,19 @@ async function reviewMaxEmojiSettingsInBrowser(cookie, state) {
         (current) => current?.value === String(value) && current.disabled === false,
         "max_emoji_characters_update_button_not_enabled",
       );
+      await browserValue(cdp, `document.querySelector('#max-emoji-characters')?.scrollIntoView({ block: 'center' })`);
+      const priorPatchCount = cdp.systemSettingsRequests.filter((request) => request.method === "PATCH").length;
       const priorApiCalls = cdp.systemSettingsApiResponses.length;
       await clickBrowserTarget(cdp, fieldStateExpression, "max_emoji_characters_update_button");
+      const requestDeadline = Date.now() + 5_000;
+      while (Date.now() < requestDeadline &&
+          cdp.systemSettingsRequests.filter((request) => request.method === "PATCH").length <= priorPatchCount) {
+        await delay(100);
+      }
+      assert.ok(
+        cdp.systemSettingsRequests.filter((request) => request.method === "PATCH").length > priorPatchCount,
+        `maximum emoji save did not send PATCH; requests=${JSON.stringify(cdp.systemSettingsRequests)}`,
+      );
       const deadline = Date.now() + 15_000;
       let actual;
       while (Date.now() < deadline) {
@@ -2650,11 +2680,11 @@ async function reviewMaxEmojiSettingsInBrowser(cookie, state) {
         if (actual === String(value)) break;
         await delay(250);
       }
-      assert.equal(actual, String(value), "AdminSettings maximum emoji update did not reach D1");
+      assert.equal(actual, String(value), `AdminSettings maximum emoji update did not reach D1; requests=${JSON.stringify(cdp.systemSettingsRequests)} responses=${JSON.stringify(cdp.systemSettingsApiResponses)}`);
       const saved = await waitForBrowserValue(
         cdp,
         fieldStateExpression,
-        (current) => current?.value === String(value) && current.disabled === true,
+        (current) => current?.value === String(value) && current.disabled === true && current.buttonText === "更新",
         "max_emoji_characters_update_not_rendered_as_saved",
       );
       assert.equal(saved.buttonText, "更新");
