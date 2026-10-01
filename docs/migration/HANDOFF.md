@@ -1,23 +1,36 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-02 05:43 JST. The migration is **not complete**. PR #41
-remains open and draft. The previous code checkpoint `adc94c3` passed both
-required GitHub Actions jobs in run `36919602265` after rerunning its failed
-application job.
+Checkpoint: 2026-10-02 06:23 JST. The migration is **not complete**. PR #41
+remains open and draft. Commit `3d69a00` passed both required GitHub Actions
+jobs in run `36923912880`.
 
-A second isolation probe deployed the actual API bundle (`workers/api/src/index.ts`)
-to disposable Worker `fanmark-app-cron-diag-ac3fbf6b`, without D1/R2 bindings
-or secrets. Cloudflare readback confirmed `* * * * *` and 100% persisted
-invocation logs. After 18 minutes, neither Worker-specific
-`wrangler tail --search scheduled-dispatch` nor the Dashboard's exact-Worker
-live/history Invocations view showed any event. Its version was
-`caf9c907-d5b1-4a39-9b61-eeeb1511e02a`. Cleanup deleted the Worker and config;
-the URL returned 404, Wrangler deployment readback confirmed deletion, and
-only the three existing staging D1s remained. The no-binding app-bundle probe
-reproduces the missing Cron observation, while the separate minimal Worker
-Cron probe fired. The difference is now narrowed to the app bundle/execution
-path, but delivery versus bundle-specific observability is not yet resolved.
-No real data or provider credentials were used.
+A 33-minute isolated probe deployed the actual API bundle
+(`workers/api/src/index.ts`) to disposable Worker
+`fanmark-app-cron-long-d8523502`, without D1/R2 bindings, secrets, or routes.
+Version `d95b18ec-e54a-446c-bad5-46281d6ed122` had `* * * * *` and 100%
+persisted invocation logs. The first Cron arrived at `2026-10-01T21:09:04Z`,
+about 19.5 minutes after deployment. Worker-specific tail recorded 30
+`scheduled-dispatch` diagnostic log records (received/selected for 15
+invocations); Workers invocation records returned `outcome=ok` and no
+exceptions. Notification and Stripe jobs were disabled and claimed/applied
+zero rows. The earlier 18-minute probe ended before the first observed event,
+which is consistent with delayed trigger propagation rather than an app
+handler failure.
+
+Dashboard Cron Events still displayed no rows at 32 minutes and repeated its
+up-to-30-minute delay note. The direct tail and invocation records did show
+the scheduled event and its `scheduledTime`, so Cron delivery is proven for
+the app bundle; the Past Events dashboard view remained stale/unverified.
+Cleanup deleted the Worker and config; its URL returned 404, and the D1
+inventory remained the three existing staging databases. No secrets, R2,
+real data, provider, production route, or DNS/domain setting changed.
+
+The post-write recovery harness now waits 35 minutes for its Stripe extension
+dispatch instead of 20, because the first Cron event in this isolated test
+arrived after 19 minutes. `node --check` and `git diff --check` pass. Next:
+push this checkpoint, wait for both CI jobs, then rerun the complete synthetic
+post-write recovery with the longer window. The previous recovery stopped
+before Time Travel and encrypted R2 bundle/replay, so those gates remain open.
 
 The exact disposable recovery Worker was read back from Cloudflare with
 `triggers.crons=["* * * * *"]`, 100% persisted invocation logs, and scheduled

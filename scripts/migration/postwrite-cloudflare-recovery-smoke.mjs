@@ -1144,7 +1144,9 @@ async function enableSyntheticStripeDispatch(config) {
 }
 
 async function waitForAppliedStripeExtension() {
-  const deadline = Date.now() + 20 * 60 * 1000;
+  // New Worker Cron propagation can exceed the former 20-minute smoke window;
+  // the isolated app-bundle probe first fired about 19.5 minutes after deploy.
+  const deadline = Date.now() + 35 * 60 * 1000;
   while (Date.now() < deadline) {
     let rows;
     try {

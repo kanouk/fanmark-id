@@ -1,5 +1,15 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 アプリbundleのCron遅延到達と再現確認（33分監視）
+
+18分監視では未観測だったアプリbundle Cronを、新しい使い捨てWorker `fanmark-app-cron-long-d8523502` で33分監視した。`workers/api/src/index.ts`のbundleを載せ、`* * * * *`、100% persisted invocation logs、`SCHEDULED_DISPATCH_DIAGNOSTICS=true`を有効化。D1/R2 binding、secret、routeは設定していない。version `d95b18ec-e54a-446c-bad5-46281d6ed122`。
+
+最初のscheduled invocationは配備後約19分半、`2026-10-01T21:09:04Z`。その後も毎分継続し、33分のWorker固有tailで30件の`scheduled-dispatch`診断log（1 invocationあたりreceived/selectedの2件）を観測した。Workers invocation logの各確認recordは`outcome=ok`、例外0で、`notification-events`と`stripe-webhook-dispatch`は両方disabled、claim/処理件数0。アプリbundleのscheduled handler自体とCloudflare Cron配達は動作する。前回18分の未観測は、このWorkerで最初のeventが見える前に監視を終了していた時間幅と整合する。
+
+DashboardのCron Eventsは15分および32分時点でも空で、画面は新規Workerで最大30分遅れる旨を表示した。tailとWorker invocation recordはCron event本体・`scheduledTime`・`outcome=ok`を記録しているため、今回の配達証拠にはinvocation logを使い、Past Events画面の反映は未確認扱いにする。
+
+使い捨てWorkerは33分後に削除され、URLは404。一時configも削除済みで、D1 inventoryは既存staging 3件のまま。D1/R2/secret/実データは変更していない。20分だった`postwrite-cloudflare-recovery-smoke.mjs`のdispatch待機を35分へ延長した。次はCI成功後にこの余裕時間で完全な合成post-write recoveryを再実行する。
+
 ## 2026-10-02 アプリbundleのCron隔離probe（18分監視）
 
 D1/R2 bindingを持たない使い捨てWorker `fanmark-app-cron-diag-ac3fbf6b` に、`workers/api/src/index.ts`のアプリbundleをそのまま載せ、`* * * * *`、`SCHEDULED_DISPATCH_DIAGNOSTICS=true`、100% persisted invocation logsで配備した。CloudflareからCron scheduleとinvocation log設定をreadbackし、登録を確認。Workerはversion `caf9c907-d5b1-4a39-9b61-eeeb1511e02a`。
