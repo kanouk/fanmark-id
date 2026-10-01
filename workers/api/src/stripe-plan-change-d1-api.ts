@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { selectD1Database, type Env } from "./repository.ts";
+import { resolveStripeBillingCredential } from "./stripe-mode-policy.ts";
 import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const PLAN_CHANGE_PATH = "/api/billing/plan-change";
@@ -478,14 +479,13 @@ export async function handleStripePlanChangeD1Request(
   if (!userId || !UUID.test(userId)) return json({ error: "unauthenticated" }, 401, headers);
   userId = userId.toLowerCase();
 
-  const secret = env.STRIPE_SECRET_KEY?.trim() ?? "";
-  const testSecret = env.STRIPE_SECRET_KEY_TEST?.trim() ?? "";
-  const liveSecret = env.STRIPE_SECRET_KEY_LIVE?.trim() ?? "";
-  const livemode = secret.startsWith("sk_live_");
-  if (!(livemode ? secret === liveSecret : secret.startsWith("sk_test_") && secret === testSecret) ||
-      !testSecret.startsWith("sk_test_") || !liveSecret.startsWith("sk_live_")) {
+  let credential: ReturnType<typeof resolveStripeBillingCredential>;
+  try { credential = resolveStripeBillingCredential(env); }
+  catch { credential = null; }
+  if (!credential) {
     return json({ error: "stripe_plan_change_not_ready" }, 503, headers);
   }
+  const { secret, livemode } = credential;
   let db: D1Database;
   try { db = database(env); }
   catch (error) {

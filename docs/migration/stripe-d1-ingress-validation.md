@@ -6,6 +6,16 @@ and scheduled-dispatch behavior are locally tested for the D1 port under
 also applied to isolated staging business D1; the production/staging Stripe
 route remains disabled.
 
+2026-10-01 update: staging config now selects `STRIPE_MODE_POLICY=test_only`.
+Selectors and Stripe secrets remain unset, so this does not enable a Stripe
+route. In test-only mode, the app requires matching generic/test API keys and
+refuses a configured live key; signed live Webhooks are rejected before D1
+receipt persistence; scheduled dispatch uses only the test client and fails
+closed if any live receipt/dispatch is already stored. Account deletion also
+queries only test mode. Unset policy preserves the existing dual test/live
+behavior. Local synthetic coverage for these boundaries passes; actual Stripe
+test-mode credentials and the remote canary remain pending.
+
 `workers/api/migrations-business/0006_stripe_webhook_ingress_staging.sql`
 defines receipt and durable-dispatch tables with test/live event deduplication,
 redacted normalized JSON, raw-body hashes only, paired foreign keys, terminal

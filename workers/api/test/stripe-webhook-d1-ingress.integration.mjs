@@ -347,6 +347,26 @@ test("Worker webhook route rejects invalid or stale signatures and stays disable
   }
 });
 
+test("test-only Worker webhook rejects signed live events before writing any receipt", async () => {
+  const { miniflare, database } = await createDatabase();
+  try {
+    const payload = JSON.stringify({ ...rawStripeEvent("evt_synthetic_live_rejected"), livemode: true });
+    const response = await handleStripeWebhookD1Request(signedStripeRequest(payload), {
+      D1_TOPOLOGY: "split",
+      FANMARK_DB: database,
+      STRIPE_MODE_POLICY: "test_only",
+      STRIPE_WEBHOOK_BACKEND: "d1",
+      STRIPE_WEBHOOK_SECRET: stripeSecret,
+      STRIPE_SECRET_KEY_TEST: "sk_test_synthetic",
+    });
+    assert.equal(response?.status, 400);
+    assert.equal(await tableCount(database, "stripe_webhook_receipts"), 0);
+    assert.equal(await tableCount(database, "stripe_webhook_dispatches"), 0);
+  } finally {
+    await miniflare.dispose();
+  }
+});
+
 test("configured Worker ingress fails retryably when its secret or business D1 binding is missing", async () => {
   const missingSecret = await handleStripeWebhookD1Request(new Request("https://fanmark-staging.invalid/api/stripe/webhook", { method: "POST" }), {
     STRIPE_WEBHOOK_BACKEND: "d1",

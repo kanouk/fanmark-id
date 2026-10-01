@@ -309,6 +309,28 @@ test("plan checkout creates an owner-mapped customer and an idempotent monthly s
   }
 });
 
+test("test-only plan checkout works with a test key and no live key configured", async () => {
+  const fixture = await createFixture();
+  try {
+    await insertUser(fixture.database);
+    await insertPrice(fixture.database);
+    const stripe = fakeStripe();
+    const response = await handleStripePlanCheckoutD1Request(
+      request(),
+      configuredEnv(fixture.database, {
+        STRIPE_MODE_POLICY: "test_only",
+        STRIPE_SECRET_KEY_LIVE: undefined,
+      }),
+      deps(stripe),
+    );
+    assert.equal(response?.status, 200);
+    assert.equal(stripe.calls[0]?.secret, "sk_test_synthetic");
+    assert.equal(stripe.calls.some((call) => call.secret?.startsWith("sk_live_")), false);
+  } finally {
+    await fixture.miniflare.dispose();
+  }
+});
+
 test("plan checkout retry retrieves the same open session and never creates another customer or session", async () => {
   const fixture = await createFixture();
   try {

@@ -23,6 +23,7 @@ import {
 } from "./stripe-webhook-d1-dispatch.ts";
 import { selectD1Database, type Env } from "./repository.ts";
 import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
+import { readStripeModePolicy } from "./stripe-mode-policy.ts";
 
 const EXTENSION_EVENTS = new Set([
   "checkout.session.completed",
@@ -232,6 +233,9 @@ export async function runScheduledStripeWebhookDispatches(args: {
   if (!database || args.env.D1_TOPOLOGY?.trim() !== "split") {
     throw new Error("stripe_dispatch_d1_unavailable");
   }
+  let modePolicy: ReturnType<typeof readStripeModePolicy>;
+  try { modePolicy = readStripeModePolicy(args.env); }
+  catch { throw new Error("stripe_dispatch_configuration_invalid"); }
   const batchSize = configuredPositiveInteger(args.env.STRIPE_DISPATCH_BATCH_SIZE, DEFAULT_BATCH_SIZE, 100);
   const maxAttempts = configuredPositiveInteger(args.env.STRIPE_DISPATCH_MAX_ATTEMPTS, DEFAULT_MAX_ATTEMPTS, 100);
   const now = stripeWebhookScheduledTimestamp(args.scheduledTime);
@@ -241,24 +245,43 @@ export async function runScheduledStripeWebhookDispatches(args: {
     maxNetworkRetries: 0,
     httpClient: Stripe.createFetchHttpClient(),
   });
-  const liveStripe = new Stripe(stripeSecretKeyForMode(args.env.STRIPE_SECRET_KEY_LIVE, true), {
-    apiVersion: PINNED_STRIPE_API_VERSION,
-    timeout: 10_000,
-    maxNetworkRetries: 0,
-    httpClient: Stripe.createFetchHttpClient(),
-  });
   const testInvoiceProvider = createStripeInvoiceProjectionProvider(testStripe as unknown as StripeInvoiceApiClient);
-  const liveInvoiceProvider = createStripeInvoiceProjectionProvider(liveStripe as unknown as StripeInvoiceApiClient);
   const testSubscriptionProvider = createStripeSubscriptionReconciliationProvider(testStripe as unknown as StripeSubscriptionApiClient);
-  const liveSubscriptionProvider = createStripeSubscriptionReconciliationProvider(liveStripe as unknown as StripeSubscriptionApiClient);
+  let liveInvoiceProvider: StripeInvoiceProjectionProvider | undefined;
+  let liveSubscriptionProvider: StripeSubscriptionReconciliationProvider | undefined;
+  if (modePolicy === "test_only") {
+    if (args.env.STRIPE_SECRET_KEY_LIVE?.trim()) {
+      throw new Error("stripe_dispatch_configuration_invalid");
+    }
+    const liveRows = await database.prepare(`
+      SELECT
+        (SELECT COUNT(*) FROM stripe_webhook_receipts WHERE livemode = 1) AS receipts,
+        (SELECT COUNT(*) FROM stripe_webhook_dispatches WHERE livemode = 1) AS dispatches
+    `).first<{ receipts: number; dispatches: number }>();
+    if (!liveRows || !Number.isSafeInteger(liveRows.receipts) || !Number.isSafeInteger(liveRows.dispatches) ||
+        liveRows.receipts !== 0 || liveRows.dispatches !== 0) {
+      throw new Error("stripe_test_only_live_receipts_present");
+    }
+  } else {
+    const liveStripe = new Stripe(stripeSecretKeyForMode(args.env.STRIPE_SECRET_KEY_LIVE, true), {
+      apiVersion: PINNED_STRIPE_API_VERSION,
+      timeout: 10_000,
+      maxNetworkRetries: 0,
+      httpClient: Stripe.createFetchHttpClient(),
+    });
+    liveInvoiceProvider = createStripeInvoiceProjectionProvider(liveStripe as unknown as StripeInvoiceApiClient);
+    liveSubscriptionProvider = createStripeSubscriptionReconciliationProvider(liveStripe as unknown as StripeSubscriptionApiClient);
+  }
   const test = await dispatchStripeWebhookBatchInD1({
     database, livemode: false, now, batchSize, maxAttempts, invoiceProvider: testInvoiceProvider,
     subscriptionProvider: testSubscriptionProvider,
   });
-  const live = await dispatchStripeWebhookBatchInD1({
-    database, livemode: true, now, batchSize, maxAttempts, invoiceProvider: liveInvoiceProvider,
-    subscriptionProvider: liveSubscriptionProvider,
-  });
+  const live = modePolicy === "dual"
+    ? await dispatchStripeWebhookBatchInD1({
+      database, livemode: true, now, batchSize, maxAttempts, invoiceProvider: liveInvoiceProvider,
+      subscriptionProvider: liveSubscriptionProvider,
+    })
+    : { claimed: 0, applied: 0, ignored: 0, deadLettered: 0, retryable: 0, leaseLost: 0 };
   return {
     status: "completed",
     claimed: test.claimed + live.claimed,

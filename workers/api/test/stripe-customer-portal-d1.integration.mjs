@@ -192,6 +192,44 @@ test("customer portal enforces allowed same-origin requests and auth", async (t)
   }
 });
 
+test("test-only customer portal uses only the configured test key", async () => {
+  const fixture = await createFixture();
+  try {
+    await fixture.database.prepare(`
+      INSERT INTO user_settings (id, user_id, username, plan_type, created_at, updated_at, stripe_customer_id)
+      VALUES (?, ?, 'synthetic-portal-user', 'creator', ?, ?, ?)
+    `).bind(
+      "00000000-0000-4000-8000-000000000041", USER_ID, "2026-09-26T08:00:00.000000Z",
+      "2026-09-26T08:00:00.000000Z", "cus_syntheticPortal01",
+    ).run();
+    const stripe = fakeStripe();
+    const response = await handleStripeCustomerPortalD1Request(
+      request(),
+      configuredEnv(fixture.database, {
+        STRIPE_MODE_POLICY: "test_only",
+        STRIPE_SECRET_KEY_LIVE: undefined,
+      }),
+      { resolveUser: async () => USER_ID, ...stripe },
+    );
+    assert.equal(response?.status, 200);
+    assert.deepEqual(stripe.calls.filter((call) => call.type === "client").map((call) => call.secret), ["sk_test_synthetic"]);
+    assert.equal(stripe.calls.some((call) => call.secret?.startsWith("sk_live_")), false);
+    const priorClientCount = stripe.calls.filter((call) => call.type === "client").length;
+    const liveConfigured = await handleStripeCustomerPortalD1Request(
+      request(),
+      configuredEnv(fixture.database, {
+        STRIPE_MODE_POLICY: "test_only",
+        STRIPE_SECRET_KEY_LIVE: "sk_live_synthetic",
+      }),
+      { resolveUser: async () => USER_ID, ...stripe },
+    );
+    assert.equal(liveConfigured?.status, 503);
+    assert.equal(stripe.calls.filter((call) => call.type === "client").length, priorClientCount);
+  } finally {
+    await fixture.miniflare.dispose();
+  }
+});
+
 test("customer portal needs an exact local Stripe customer mapping and never looks up by email", async () => {
   const fixture = await createFixture();
   try {

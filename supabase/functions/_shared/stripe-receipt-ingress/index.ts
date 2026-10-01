@@ -249,6 +249,7 @@ export interface StripeReceiptIngressOptions {
   webhookSecret: string;
   cryptoProvider?: unknown;
   persistReceipt: PersistReceipt;
+  acceptReceipt?: (input: ReceiptPersistenceInput) => boolean;
   maxBodyBytes?: number;
   maxNormalizedBytes?: number;
   signatureToleranceSeconds?: number;
@@ -1042,6 +1043,10 @@ export function createStripeReceiptIngress(
       if (error instanceof ReceiptIngressError && error.kind === "invalid_event") {
         return jsonResponse(400, { error: "Invalid event" });
       }
+      return jsonResponse(400, { error: "Invalid event" });
+    }
+
+    if (options.acceptReceipt && !options.acceptReceipt(input)) {
       return jsonResponse(400, { error: "Invalid event" });
     }
 

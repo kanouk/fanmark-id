@@ -254,13 +254,14 @@ test("plan-change route is off by default and requires the complete webhook/disp
   } finally { await fixture.miniflare.dispose(); }
 });
 
-test("upgrade uses proration, same-time billing anchor, stable command, and webhook-only entitlement", async () => {
+test("test-only upgrade works without a live key and keeps webhook-only entitlement", async () => {
   const fixture = await createFixture();
   try {
     await insertPrices(fixture.database);
     await insertUser(fixture.database);
     const stripe = fakeStripe();
-    const response = await invoke(fixture.database, stripe);
+    const testOnlyEnv = { STRIPE_MODE_POLICY: "test_only", STRIPE_SECRET_KEY_LIVE: undefined };
+    const response = await invoke(fixture.database, stripe, { env: testOnlyEnv });
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), { success: true, updated: true, pending: true });
     const update = stripe.calls.find((call) => call.type === "subscription_update");
@@ -276,9 +277,10 @@ test("upgrade uses proration, same-time billing anchor, stable command, and webh
     const command = await fixture.database.prepare("SELECT status, from_plan_type, to_plan_type FROM stripe_plan_change_commands WHERE request_id = ?")
       .bind(REQUEST_ID).first();
     assert.deepEqual(command, { status: "submitted", from_plan_type: "creator", to_plan_type: "max" });
-    const retry = await invoke(fixture.database, stripe);
+    const retry = await invoke(fixture.database, stripe, { env: testOnlyEnv });
     assert.equal(retry.status, 200);
     assert.equal(stripe.calls.filter((call) => call.type === "subscription_update").length, 1);
+    assert.equal(stripe.calls.some((call) => call.secret?.startsWith("sk_live_")), false);
   } finally { await fixture.miniflare.dispose(); }
 });
 

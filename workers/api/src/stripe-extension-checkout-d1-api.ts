@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 import { buildPaidExtensionPriceMetadata } from "../../../supabase/functions/_shared/stripe-receipt-ingress/index.ts";
 import { selectD1Database, type Env } from "./repository.ts";
+import { stripeSecretAllowedByModePolicy } from "./stripe-mode-policy.ts";
 import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const CHECKOUT_PATH = "/api/billing/extension-checkout";
@@ -518,6 +519,9 @@ export async function handleStripeExtensionCheckoutD1Request(
     secret = env.STRIPE_SECRET_KEY?.trim() ?? "";
     if (!secret) throw new StripeExtensionCheckoutD1Error("stripe_not_configured", 503);
     livemode = configuredStripeMode(secret);
+    if (!stripeSecretAllowedByModePolicy(env, secret, livemode)) {
+      throw new StripeExtensionCheckoutD1Error("stripe_not_configured", 503);
+    }
     now = canonicalNow(dependencies.now?.() ?? new Date());
   } catch (error) {
     const mapped = error instanceof StripeExtensionCheckoutD1Error ? error : null;

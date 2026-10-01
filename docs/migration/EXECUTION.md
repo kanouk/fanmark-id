@@ -26,6 +26,28 @@ cleanup後0件。MFA generation counterはfactor作成/削除に伴い進む場�
 このcanaryは実ユーザー行、Supabase行、メール送信、Stripe API、production route、
 domain/DNSを使っていない。Stripe・Resend・OAuthのsecretsは未設定のまま。
 
+## 2026-10-01 Stripe staging test-only isolation
+
+ステージングでStripe test-modeだけを使えるよう、`STRIPE_MODE_POLICY=test_only`
+を追加した。staging configにはこのポリシーだけを設定し、Webhook/dispatch/Checkout等の
+Stripe selectorsと実secretは引き続き未設定なので、現時点のStripe routeは無効のまま。
+本番や未指定環境は従来のtest/live両モード動作を維持する。
+
+このポリシーでは、請求APIはgeneric keyとtest keyが完全一致し、live keyが無い場合だけ
+テストStripe clientを作る。延長Checkoutもlive generic keyを拒否する。署名済みlive
+WebhookはD1保存前に拒否し、scheduled dispatcherはlive keyを構築せず、既存live receipt
+またはdispatchが1件でもあれば処理を停止する。アカウント削除もtest clientのみでcustomer
+を探し、live key設定を拒否する。未知のポリシー値はfail closed。
+
+合成D1/fake Stripe検証はWebhook・receipt・dispatch・invoice・subscription suite 68/68、
+Plan Checkout 9/9、Plan Change 9/9、Customer Portal 6/6、延長Checkout 6/6、
+Stripe account deletion 5/5。Worker typecheck、CI isolation check、staging Wrangler
+deploy dry-runもpass。外部Stripe APIは呼んでいない。test-only credentialsをstagingに
+設定後、Stripe test-mode Webhookと合成購入のend-to-end canaryが次のゲート。
+必要secret名は`STRIPE_SECRET_KEY_TEST`、同値の`STRIPE_SECRET_KEY`、test-mode endpointの
+`STRIPE_WEBHOOK_SECRET`。`STRIPE_SECRET_KEY_LIVE`は設定しない。これらの値をチャットに
+貼り付けずCloudflare staging secretとして登録する。
+
 ## 2026-09-29 Supabase Stripe non-extension Checkout receipts
 
 The Supabase webhook now persists all supported Checkout Session events before

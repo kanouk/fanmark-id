@@ -255,7 +255,10 @@ test("paid D1 checkout pins the active price, persists its intent, and reuses th
   const { miniflare, business, master } = await createFixture();
   try {
     const stripe = createFakeStripe();
-    const env = envFor(business, master);
+    const env = envFor(business, master, {
+      STRIPE_MODE_POLICY: "test_only",
+      STRIPE_SECRET_KEY_TEST: "sk_test_synthetic_only",
+    });
     const first = await handleStripeExtensionCheckoutD1Request(
       request(), env, dependencies(stripe),
     );
@@ -301,6 +304,27 @@ test("paid D1 checkout pins the active price, persists its intent, and reuses th
     assert.deepEqual(stripe.calls.retrieve, ["cs_synthetic_1"]);
     assert.equal(await business.prepare("SELECT COUNT(*) AS count FROM stripe_extension_checkout_intents")
       .first().then((row) => row.count), 1);
+  } finally {
+    await miniflare.dispose();
+  }
+});
+
+test("test-only extension checkout rejects a live generic key before calling Stripe", async () => {
+  const { miniflare, business, master } = await createFixture();
+  try {
+    const stripe = createFakeStripe();
+    const response = await handleStripeExtensionCheckoutD1Request(
+      request(),
+      envFor(business, master, {
+        STRIPE_MODE_POLICY: "test_only",
+        STRIPE_SECRET_KEY: "sk_live_synthetic_only",
+        STRIPE_SECRET_KEY_TEST: "sk_test_synthetic_only",
+      }),
+      dependencies(stripe),
+    );
+    assert.equal(response.status, 503);
+    assert.deepEqual(await response.json(), { error: "stripe_not_configured" });
+    assert.equal(stripe.calls.create.length, 0);
   } finally {
     await miniflare.dispose();
   }

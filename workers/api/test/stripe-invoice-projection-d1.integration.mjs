@@ -126,10 +126,11 @@ function invoiceEvent({
   invoiceId = SOURCE_INVOICE_ID,
   customerId = CUSTOMER_ID,
   subscriptionId = SUBSCRIPTION_ID,
+  livemode = false,
 } = {}) {
   return {
     stripeEventId: eventId,
-    livemode: false,
+    livemode,
     eventType: type,
     objectType: "invoice",
     objectId: invoiceId,
@@ -138,7 +139,7 @@ function invoiceEvent({
     normalizedPayload: {
       schema_version: 1,
       branch: "invoice",
-      event: { id: eventId, type, created: 1790395506, api_version: "2025-08-27.basil", livemode: false },
+      event: { id: eventId, type, created: 1790395506, api_version: "2025-08-27.basil", livemode },
       object: { type: "invoice", id: invoiceId },
       reference: { object_type: "invoice", object_id: invoiceId },
       invoice: { id: invoiceId, customer_id: customerId, subscription_id: subscriptionId },
@@ -492,6 +493,59 @@ test("scheduled Worker Stripe handling stays disabled when staging selectors are
     status: "disabled", claimed: 0, applied: 0, ignored: 0,
     deadLettered: 0, retryable: 0, leaseLost: 0,
   });
+});
+
+test("test-only scheduled Stripe dispatch accepts no live key and dispatches no live receipts", async () => {
+  const { miniflare, database } = await createDatabase();
+  try {
+    const result = await runScheduledStripeWebhookDispatches({
+      env: {
+        D1_TOPOLOGY: "split",
+        FANMARK_DB: database,
+        STRIPE_MODE_POLICY: "test_only",
+        STRIPE_DISPATCH_BACKEND: "d1",
+        STRIPE_WEBHOOK_BACKEND: "d1",
+        STRIPE_WEBHOOK_SECRET: "whsec_synthetic",
+        STRIPE_SECRET_KEY_TEST: "sk_test_synthetic",
+      },
+      scheduledTime: Date.parse(NOW),
+    });
+    assert.deepEqual(result, {
+      status: "completed", claimed: 0, applied: 0, ignored: 0,
+      deadLettered: 0, retryable: 0, leaseLost: 0,
+    });
+  } finally {
+    await miniflare.dispose();
+  }
+});
+
+test("test-only scheduled dispatch fails closed when a live receipt already exists", async () => {
+  const { miniflare, database } = await createDatabase();
+  try {
+    await acceptStripeWebhookReceiptIntoD1({
+      database,
+      event: invoiceEvent({ eventId: "evt_synthetic_live_dispatch_guard", livemode: true }),
+      now: NOW,
+      createId: nextUuid,
+    });
+    await assert.rejects(() => runScheduledStripeWebhookDispatches({
+      env: {
+        D1_TOPOLOGY: "split",
+        FANMARK_DB: database,
+        STRIPE_MODE_POLICY: "test_only",
+        STRIPE_DISPATCH_BACKEND: "d1",
+        STRIPE_WEBHOOK_BACKEND: "d1",
+        STRIPE_WEBHOOK_SECRET: "whsec_synthetic",
+        STRIPE_SECRET_KEY_TEST: "sk_test_synthetic",
+      },
+      scheduledTime: Date.parse(NOW),
+    }), /stripe_test_only_live_receipts_present/u);
+    assert.equal(await database.prepare(
+      "SELECT status FROM stripe_webhook_dispatches WHERE stripe_event_id = ?",
+    ).bind("evt_synthetic_live_dispatch_guard").first("status"), "pending");
+  } finally {
+    await miniflare.dispose();
+  }
 });
 
 test("scheduled Stripe API key is bound to the dispatch livemode", () => {

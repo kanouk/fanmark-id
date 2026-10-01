@@ -5,6 +5,7 @@ import {
 } from "../../../supabase/functions/_shared/stripe-receipt-ingress/index.ts";
 import { selectD1Database, type Env } from "./repository.ts";
 import { acceptStripeWebhookReceiptIntoD1 } from "./stripe-webhook-d1-ingress.ts";
+import { stripeModeAllowedByPolicy } from "./stripe-mode-policy.ts";
 
 const STRIPE_WEBHOOK_PATH = "/api/stripe/webhook";
 const STRIPE_API_VERSION = "2025-08-27.basil";
@@ -45,6 +46,13 @@ export async function handleStripeWebhookD1Request(request: Request, env: Env): 
     stripe: stripe as unknown as StripeWebhookVerifier,
     webhookSecret: secret,
     cryptoProvider,
+    acceptReceipt: (input) => {
+      try {
+        return stripeModeAllowedByPolicy(env, input.livemode);
+      } catch {
+        return false;
+      }
+    },
     persistReceipt: async (input) => {
       const result = await acceptStripeWebhookReceiptIntoD1({ database, event: input });
       return {

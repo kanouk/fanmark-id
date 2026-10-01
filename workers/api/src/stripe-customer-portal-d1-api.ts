@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { selectD1Database, type Env } from "./repository.ts";
+import { resolveStripeBillingCredential } from "./stripe-mode-policy.ts";
 
 const PORTAL_PATH = "/api/billing/customer-portal";
 const METHODS = "POST, OPTIONS";
@@ -136,15 +137,13 @@ export async function handleStripeCustomerPortalD1Request(
   }
   if (!userId || !UUID.test(userId)) return json({ error: "unauthenticated" }, 401, headers);
 
-  const secret = env.STRIPE_SECRET_KEY?.trim() ?? "";
-  const testSecret = env.STRIPE_SECRET_KEY_TEST?.trim() ?? "";
-  const liveSecret = env.STRIPE_SECRET_KEY_LIVE?.trim() ?? "";
-  const secretMatchesDispatchMode = secret.startsWith("sk_test_")
-    ? secret === testSecret
-    : secret.startsWith("sk_live_") && secret === liveSecret;
-  if (!secretMatchesDispatchMode || !testSecret.startsWith("sk_test_") || !liveSecret.startsWith("sk_live_")) {
+  let credential: ReturnType<typeof resolveStripeBillingCredential>;
+  try { credential = resolveStripeBillingCredential(env); }
+  catch { credential = null; }
+  if (!credential) {
     return json({ error: "stripe_portal_not_ready" }, 503, headers);
   }
+  const { secret } = credential;
 
   let business: ReturnType<typeof database>;
   try {

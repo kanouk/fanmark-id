@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 import { PINNED_STRIPE_API_VERSION } from "../../../supabase/functions/_shared/stripe-invoice-projection/index.ts";
 import type { Env } from "./repository";
+import { readStripeModePolicy } from "./stripe-mode-policy.ts";
 
 const CUSTOMER_ID = /^cus_[A-Za-z0-9]+$/u;
 const SUBSCRIPTION_ID = /^sub_[A-Za-z0-9]+$/u;
@@ -122,10 +123,18 @@ export async function cancelLinkedStripeSubscriptionsForAccountDeletion(
     throw new StripeAccountDeletionError("billing_identity_unavailable");
   }
 
-  const modes = [
-    { livemode: false, client: createClient(stripeKey(env.STRIPE_SECRET_KEY_TEST, false)) },
-    { livemode: true, client: createClient(stripeKey(env.STRIPE_SECRET_KEY_LIVE, true)) },
-  ];
+  let policy: ReturnType<typeof readStripeModePolicy>;
+  try { policy = readStripeModePolicy(env); }
+  catch { throw new StripeAccountDeletionError("stripe_account_deletion_not_configured"); }
+  if (policy === "test_only" && env.STRIPE_SECRET_KEY_LIVE?.trim()) {
+    throw new StripeAccountDeletionError("stripe_account_deletion_not_configured");
+  }
+  const modes = policy === "test_only"
+    ? [{ livemode: false, client: createClient(stripeKey(env.STRIPE_SECRET_KEY_TEST, false)) }]
+    : [
+      { livemode: false, client: createClient(stripeKey(env.STRIPE_SECRET_KEY_TEST, false)) },
+      { livemode: true, client: createClient(stripeKey(env.STRIPE_SECRET_KEY_LIVE, true)) },
+    ];
 
   for (const customerId of customerIds) {
     const lookups = await Promise.allSettled(modes.map(async (mode) => {

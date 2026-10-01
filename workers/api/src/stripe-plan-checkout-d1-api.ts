@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { selectD1Database, type Env } from "./repository.ts";
+import { resolveStripeBillingCredential } from "./stripe-mode-policy.ts";
 import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const PLAN_CHECKOUT_PATH = "/api/billing/plan-checkout";
@@ -501,14 +502,13 @@ export async function handleStripePlanCheckoutD1Request(
   }
   user = { id: user.id.toLowerCase(), email: user.email.trim() };
 
-  const secret = env.STRIPE_SECRET_KEY?.trim() ?? "";
-  const testSecret = env.STRIPE_SECRET_KEY_TEST?.trim() ?? "";
-  const liveSecret = env.STRIPE_SECRET_KEY_LIVE?.trim() ?? "";
-  const livemode = secret.startsWith("sk_live_");
-  const secretMatchesDispatchMode = livemode ? secret === liveSecret : secret.startsWith("sk_test_") && secret === testSecret;
-  if (!secretMatchesDispatchMode || !testSecret.startsWith("sk_test_") || !liveSecret.startsWith("sk_live_")) {
+  let credential: ReturnType<typeof resolveStripeBillingCredential>;
+  try { credential = resolveStripeBillingCredential(env); }
+  catch { credential = null; }
+  if (!credential) {
     return json({ error: "stripe_checkout_not_ready" }, 503, headers);
   }
+  const { secret, livemode } = credential;
 
   let business: D1Database;
   try {

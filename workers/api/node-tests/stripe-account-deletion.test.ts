@@ -58,6 +58,39 @@ test("cancels every nonterminal subscription only in the exact customer mode", a
   ]);
 });
 
+test("test-only deletion never constructs a live client or queries live mode", async () => {
+  const calls: string[] = [];
+  await cancelLinkedStripeSubscriptionsForAccountDeletion([customerId], {
+    STRIPE_MODE_POLICY: "test_only",
+    STRIPE_SECRET_KEY_TEST: "sk_test_synthetic",
+  }, (secret) => {
+    assert.equal(secret, "sk_test_synthetic");
+    calls.push(`client:${secret}`);
+    return {
+      customers: {
+        async retrieve(id: string) {
+          calls.push(`customer:${id}`);
+          return stripeCustomer(false);
+        },
+      },
+      subscriptions: {
+        async list() { calls.push("list:test"); return { data: [], has_more: false }; },
+        async retrieve() { throw new Error("unexpected retrieve"); },
+        async cancel() { throw new Error("unexpected cancel"); },
+      },
+    };
+  });
+  assert.deepEqual(calls, [`client:sk_test_synthetic`, `customer:${customerId}`, "list:test"]);
+  await assert.rejects(
+    cancelLinkedStripeSubscriptionsForAccountDeletion([customerId], {
+      STRIPE_MODE_POLICY: "test_only",
+      STRIPE_SECRET_KEY_TEST: "sk_test_synthetic",
+      STRIPE_SECRET_KEY_LIVE: "sk_live_synthetic",
+    }, () => { throw new Error("client must not be constructed with a live key configured"); }),
+    /stripe_account_deletion_not_configured/u,
+  );
+});
+
 test("rejects ambiguous customer mode, incomplete key custody, and unverified cancellation", async () => {
   await assert.rejects(
     cancelLinkedStripeSubscriptionsForAccountDeletion([customerId], {}, () => { throw new Error("unreachable"); }),
