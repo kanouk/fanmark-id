@@ -1,15 +1,21 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-02 00:59 JST. The migration is **not complete**. PR #41
-remains open and draft at head `5a109c1`. Latest Actions run `36885538010`
-passed the Worker API job but failed the application job: PGlite
-`subscription-application.test.mjs` produced only `TAP version 13` and timed
-out at 120 seconds on all three attempts. The same test passed 8/8 under Node
-22.6.0 in a focused run, and the full `experiments/stripe-receipts` suite
-passed locally. Earlier run `36884270848` passed both CI jobs on the same
-application code; the commits since then only update migration evidence. The
-CI stall's cause remains unknown, and local tests do not make the latest CI
-green.
+Checkpoint: 2026-10-02 01:06 JST. The migration is **not complete**. PR #41
+remains open and draft. Actions run `36888607615` passed both CI jobs on code
+head `954f356`. The preceding run `36885538010` failed the application job
+after PGlite `subscription-application.test.mjs` produced only `TAP version 13`
+and timed out at 120 seconds on all three attempts. The app code did not change
+between those runs; the later CI pass and local Node 22.6.0 focused test (8/8)
+and full Stripe receipt suite show an intermittent CI stall, though its cause
+is unknown.
+
+Current read-only Cloudflare checks used the explicit `fanmark-staging-inapp`
+profile. The authenticated identity is `fanmark.id@gmail.com`; remote Auth,
+Business, and emoji-master D1 each report no migrations to apply. The three
+staging R2 buckets are present. `fanmark-app-staging` remains at 100% on
+version `59deb036-3aa7-442f-9eba-11875715c43a`. Stripe test-mode and Resend
+credentials remain unconfigured, and new-Worker Cron delivery remains
+unverified.
 
 Latest guarded post-write recovery run started at 14:11:58.740 UTC and ended at
 14:33:51.345 UTC. Its temporary Worker was deployed with an every-minute Cron;
