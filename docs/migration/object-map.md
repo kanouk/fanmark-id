@@ -18,6 +18,16 @@ purpose, but its definitions are not reproduced here.
 
 ## Evidence boundary
 
+The offline AST inventory at commit `b34638b` contains 211 frontend callsites:
+84 table calls across 27 tables, 37 RPC calls across 24 functions, 36 Edge
+invocations across 28 functions, 8 Realtime calls across 3 subscribed tables,
+40 Auth/Auth-MFA calls, and 6 Storage calls across the `avatars` and
+`cover-images` buckets. Each extracted target is represented in the table,
+function, Edge, or non-table dependency map below. This is target coverage,
+not proof that every callsite's owner, data class, replacement behavior, or
+live production state is settled; the AST scanner also does not resolve
+arbitrary wrappers or indirect calls.
+
 | Surface | Observed count | What it supports |
 | --- | ---: | --- |
 | Generated public types (checkout plus live name readback) | 40 tables, 1 view, 45 typed RPCs | Checked-in locations and a separate live generator readback for names/type shape |
