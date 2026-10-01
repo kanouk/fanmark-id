@@ -166,10 +166,11 @@ async function deployProbe() {
       fetchReadback,
       marker,
       statePath,
-      next: "Query Workers Logs for this worker and marker after the Cron propagation window; then run --cleanup with this worker name.",
+      cleanupCommand: `node scripts/migration/staging-cron-observability-probe.mjs --cleanup --worker-name ${workerName} --run-live-staging-write --account-id ${accountId} --confirm-synthetic-only --confirm-delete-created-resources`,
+      next: "Query Workers Logs for this worker and marker after the Cron propagation window, then run cleanupCommand.",
     }, null, 2)}\n`);
   } catch (error) {
-    process.stderr.write("The disposable Worker may have been created; preserve its exact name and clean it up before retrying.\n");
+    process.stderr.write(`The disposable Worker may have been created; inspect it before retrying. Worker: ${workerName}. State: ${statePath}.\n`);
     throw error;
   }
 }
