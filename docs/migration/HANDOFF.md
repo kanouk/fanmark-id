@@ -1,9 +1,10 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-02 07:52 JST. The migration is **not complete**. PR #41
-remains open and draft. The prior head `ab2d400` passed both required GitHub
-Actions jobs in run `36935224400`; the current inventory change is commit
-`b34638b` and its CI is pending.
+Checkpoint: 2026-10-02 08:04 JST. The migration is **not complete**. PR #41
+remains open and draft. Head `2a45a04` passed both required GitHub Actions
+jobs in run `36938035519`. The inventory analyzer change is `b34638b`, its
+generated report/handoff evidence is `51d2b24`, and target-coverage notes are
+in `2a45a04`.
 
 ## 2026-10-02 frontend inventory extraction follow-up
 
