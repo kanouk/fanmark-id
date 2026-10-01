@@ -1,8 +1,23 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-02 05:07 JST. The migration is **not complete**. PR #41
-remains open and draft. The previous report checkpoint at `ff2ce9f` passed
-both required GitHub Actions jobs in run `36916092393`.
+Checkpoint: 2026-10-02 05:43 JST. The migration is **not complete**. PR #41
+remains open and draft. The previous code checkpoint `adc94c3` passed both
+required GitHub Actions jobs in run `36919602265` after rerunning its failed
+application job.
+
+A second isolation probe deployed the actual API bundle (`workers/api/src/index.ts`)
+to disposable Worker `fanmark-app-cron-diag-ac3fbf6b`, without D1/R2 bindings
+or secrets. Cloudflare readback confirmed `* * * * *` and 100% persisted
+invocation logs. After 18 minutes, neither Worker-specific
+`wrangler tail --search scheduled-dispatch` nor the Dashboard's exact-Worker
+live/history Invocations view showed any event. Its version was
+`caf9c907-d5b1-4a39-9b61-eeeb1511e02a`. Cleanup deleted the Worker and config;
+the URL returned 404, Wrangler deployment readback confirmed deletion, and
+only the three existing staging D1s remained. The no-binding app-bundle probe
+reproduces the missing Cron observation, while the separate minimal Worker
+Cron probe fired. The difference is now narrowed to the app bundle/execution
+path, but delivery versus bundle-specific observability is not yet resolved.
+No real data or provider credentials were used.
 
 The exact disposable recovery Worker was read back from Cloudflare with
 `triggers.crons=["* * * * *"]`, 100% persisted invocation logs, and scheduled

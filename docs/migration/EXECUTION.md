@@ -1,5 +1,13 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 アプリbundleのCron隔離probe（18分監視）
+
+D1/R2 bindingを持たない使い捨てWorker `fanmark-app-cron-diag-ac3fbf6b` に、`workers/api/src/index.ts`のアプリbundleをそのまま載せ、`* * * * *`、`SCHEDULED_DISPATCH_DIAGNOSTICS=true`、100% persisted invocation logsで配備した。CloudflareからCron scheduleとinvocation log設定をreadbackし、登録を確認。Workerはversion `caf9c907-d5b1-4a39-9b61-eeeb1511e02a`。
+
+18分間のWorker固有`wrangler tail --search scheduled-dispatch`とDashboard Observability > Invocationsライブ/履歴の両方でイベントを受信しなかった。履歴は「イベントなし」。本体のCron未観測はD1/R2 bindingなしでも再現し、Cloudflareの最小WorkerでCronが動いた結果との差はアプリbundle/その実行経路へ絞られる。ただし配送障害とbundle固有の可視化/実行差の最終区別は未確定。実Recoveryを繰り返す前に、この境界をさらに絞る。
+
+probe Workerを削除し、workers.dev URLは404、deployments readbackも削除済みを確認。一時configも削除し、D1 inventoryは既存Auth/Business/emoji-master staging 3件のまま。D1/R2 bindingやsecretを設定せず、実データへのアクセスもない。
+
 ## 2026-10-02 対象recovery WorkerのCron登録readbackと実行再検証（19:44–20:06 UTC）
 
 完全recoveryを再試験する前に、使い捨てWorker `fanmark-recovery-1790883885037-e57398c01b666f22` の構成をCloudflareからreadbackした。`triggers.crons`は`* * * * *`、Workers Logsはinvocation logsを含む100% sampling、diagnosticsは有効で、Business/Auth D1とavatar R2 bindingも対象Worker上に存在した。control planeへのCron登録漏れではない。
