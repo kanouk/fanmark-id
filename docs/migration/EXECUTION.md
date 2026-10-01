@@ -4436,3 +4436,31 @@ the browser Query Builder through an already-authorized dashboard session.
 This check did not change Worker settings, D1/R2, production routes, or user
 data. See [Workers Observability API](https://developers.cloudflare.com/api/resources/workers/subresources/observability/subresources/telemetry/methods/query/)
 and [Query Builder](https://developers.cloudflare.com/workers/observability/query-builder/).
+
+## Delayed Cron delivery and synthetic post-write recovery (2026-10-02 JST)
+
+The isolated 33-minute app-bundle Cron probe subsequently received its first
+scheduled invocation about 19.5 minutes after deployment and then received
+repeated invocations. The Worker-specific tail showed successful scheduled
+outcomes; the dashboard Past Events view remained empty past its advertised
+window. The temporary Worker was deleted and its workers.dev URL returned 404.
+This resolves the earlier uncertainty about runtime delivery; the dashboard
+history remains stale and is not the source of invocation proof.
+
+After CI run `36928505518` passed both required jobs on `c73f121`,
+`npm run test:migration:staging-postwrite-recovery` completed successfully
+using only disposable synthetic data. The run took 27m 1s
+(`2026-10-01T21:30:45Z`–`2026-10-01T21:57:46Z`), verified 20 business and 3
+Auth D1 migrations, applied and recovered a synthetic Stripe extension,
+reconciled D1 Time Travel in 18,362 ms, and verified/replayed the encrypted R2
+bundle in 50,668 ms. The synthetic avatar survived Time Travel and was also
+restored from the encrypted bundle. A storage upload during write freeze was
+rejected with `503 cutover_write_freeze`. Cleanup readback confirmed deletion
+of the temporary Worker, both D1 databases, temporary config, R2 objects,
+synthetic avatar, and private recovery artifacts.
+
+This is staging recovery evidence for #37, not real-user migration or a full
+cutover acceptance. Provider sandbox acceptance still needs Stripe and Resend
+credentials set directly in Cloudflare; user/Auth/Storage migration and
+public domain/DNS cutover remain deferred to #38. No production route, real
+user data, live payment, email delivery, or domain/DNS was changed.

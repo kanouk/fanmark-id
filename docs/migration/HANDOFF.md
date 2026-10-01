@@ -3626,3 +3626,30 @@ No email, payment, real user-data import, production route, or domain/DNS was
 used or changed. The app deployment adds runtime readback evidence but does
 not materially change the coarse 53% end-to-end / 73% prioritized-scope
 estimate.
+
+## 2026-10-02 checkpoint: Cron delivery and full synthetic recovery
+
+The app-bundle Cron probe ran for 33 minutes. Its first scheduled invocation
+arrived about 19.5 minutes after deployment, followed by repeated successful
+invocations. Cloudflare's dashboard Past Events view remained empty, so use
+Worker-specific invocation logs as evidence. The probe Worker was deleted and
+its URL returned 404.
+
+After CI run `36928505518` passed both required jobs on `c73f121`, the guarded
+`npm run test:migration:staging-postwrite-recovery` passed in 27m 1s. It
+verified 20 business and 3 Auth D1 migrations, synthetic Stripe extension
+application, D1 Time Travel reconciliation (18,362 ms), and encrypted R2
+bundle replay (50,668 ms). The synthetic avatar survived Time Travel and was
+restored from the encrypted bundle; frozen upload returned
+`503 cutover_write_freeze`. Cleanup readback confirmed deletion of the
+temporary Worker, both D1 databases, config, R2 objects, synthetic avatar,
+and private recovery artifacts. Report:
+`/var/folders/c4/_087tnms6n95sb58l4rg8vpw0000gn/T/fanmark-postwrite-recovery-f323d41439810681.json`.
+
+This closes the Cron-delivery uncertainty and advances #37's synthetic
+recovery evidence, but #37 remains open pending its broader integration
+acceptance. #32/#34 provider sandbox acceptance still needs staging Stripe
+and Resend credentials set directly in Cloudflare. Continue app/infrastructure
+and non-user master/import work; reserve real Auth/Storage/user rows and
+public domain/DNS cutover for #38. No production route, live payment, email
+delivery, real user data, or domain/DNS was changed.
