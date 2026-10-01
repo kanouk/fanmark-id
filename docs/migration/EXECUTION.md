@@ -1,5 +1,17 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 Cron診断とpost-write recovery再試験（18:54–19:34 UTC）
+
+先に空の使い捨てD1をbindingした最小Workerを配備し、`* * * * *`と初回deployからの100%保存invocation logsを設定した。合成GETは200でWorker固有tailに現れ、約15分33秒後に同じWorkerのscheduled invocationが`outcome=ok`、`cron=* * * * *`で記録された。新規WorkerのCronは配送され、未使用のD1 bindingもCronを止めていない。probeのWorker/D1/configを削除し、削除後URLは404、D1一覧は既存3件だけに戻った。
+
+続けてpost-write recovery smokeを19:12:25.947 UTCに開始し、最終Worker version `7fb687df-4781-43df-a2e0-4068db0aec46`を19:13:35.635 UTCに配備した。configには`* * * * *`、`SCHEDULED_DISPATCH_DIAGNOSTICS=true`、100% sampling、persisted invocation logsを設定。Worker固有tailは`scheduled`をfilterし続けたが、20分超の間scheduled markerは現れなかった。
+
+receipt/dispatchのreadbackは`received/pending`、attempt 0のまま。D1 readback transient error 7403が1回あったが再試行後に状態を読み戻しており、timeoutの説明にはならない。合成avatarは68 bytesのbyte一致、`image/png`とcache-control一致をreadbackした。19:34:02.729 UTCに`synthetic_stripe_extension_dispatch_timeout`で停止し、Time Travelと暗号化R2 bundle/replayには進んでいない。
+
+cleanup readbackはWorker、Business/Auth D1、temporary config、avatar objectすべて削除成功。Worker URLは404、D1 inventoryは既存のAuth/Business/emoji-master 3件のみ。`r2ObjectCount=0`でbundle/backup objectは作られず、失敗phaseがbackup作成前のためprivate recovery directoryも作られていない。reportの`r2ObjectsDeleted=false`と`privateRecoveryArtifactsDeleted=false`は未生成物を削除する対象がなかった状態で、cleanup failureではない。
+
+最小WorkerでCron配送は確認できたが、アプリ本体の使い捨てWorkerでは設定済みscheduleのreadbackとruntime invocationのどちらもまだ確認できていない。Issue #34/#37とrecovery gateは未完了。完全recoveryを再実行する前に、この本体WorkerのCloudflare側schedule登録を直接readbackし、登録と実行を分離して診断する。実ユーザーデータ、Supabase rows、本番route、Stripe/Resend provider、domain/DNSは変更していない。CI run `36909741122`は両必須job成功。
+
 ## 2026-10-02 post-write recovery再試験: Cronが未配送（18:25–18:47 UTC）
 
 診断版 `postwrite-cloudflare-recovery-smoke.mjs` でsynthetic-onlyの完全recoveryを再試験した。使い捨てWorkerの最終デプロイは18:26:37 UTCで、最初のデプロイからWorkers Logsの保存・invocation logs・100% samplingを有効にした。health GETは200、tailとWorker専用保存ログには合成HTTP要求が記録されたが、自然発火Cronのinvocation/logは現れなかった。Cloudflareの最大15分伝播時間を過ぎた後も同じ状態だった。

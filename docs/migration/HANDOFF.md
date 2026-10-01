@@ -1,10 +1,9 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-02 03:48 JST. The migration is **not complete**. PR #41
-remains open and draft at head `05a783d`. GitHub Actions run `36908160048`
-passed both required jobs after rerunning the staging application job; the
-Worker API job passed its first attempt, and the application job passed its
-rerun after three PGlite timeout attempts in the earlier job attempt.
+Checkpoint: 2026-10-02 04:34 JST. The migration is **not complete**. PR #41
+remains open and draft at head `80589c5`. GitHub Actions run `36909741122`
+passed both required jobs. The earlier harness commit `05a783d` also passed
+both required jobs after rerunning the staging application job.
 
 The recovery smoke harness now enables persisted Workers Logs and invocation
 logs on the disposable Worker from its first deployment, and records safe
@@ -21,6 +20,30 @@ databases, and the temporary Worker URL returns 404. No recovery bundle was
 created (`r2ObjectCount=0`). Cron delivery for the recovery Worker and Issue
 #34/#37's full recovery gate remain unverified; do not repeat the full drill
 until the scheduled delivery path is diagnosed.
+
+An additional disposable probe bound one newly created empty D1 to a minimal
+Worker. Its every-minute Cron produced a Worker-specific scheduled invocation
+about 15 minutes 33 seconds after deployment, with `outcome=ok`; the same
+Worker's synthetic GET had already verified its tail. This shows that new
+Worker Cron delivery works in the account and that an unused D1 binding alone
+does not suppress it. The probe Worker, D1, and local config were deleted; the
+URL returned 404 and the D1 inventory returned to the three existing staging
+databases.
+
+A subsequent full synthetic post-write recovery smoke started at 19:12:25 UTC
+and stopped at 19:34:02 UTC with `synthetic_stripe_extension_dispatch_timeout`.
+Its last deployed version was `7fb687df-4781-43df-a2e0-4068db0aec46` at
+19:13:35 UTC; the config had `* * * * *`, scheduled diagnostics, and persisted
+100% invocation logs. Worker-specific tail received no scheduled marker for
+over 20 minutes. The receipt remained `received/pending`, attempts 0. Avatar
+byte/metadata readback passed. Cleanup deleted Worker, disposable Business and
+Auth D1s, config, and avatar; the Worker URL returned 404 and only three
+staging D1s remained. `r2ObjectCount=0`: no backup bundle or private recovery
+directory had been created before the failure. The corresponding `false`
+cleanup flags mean there were no such artifacts to remove, not a cleanup
+failure. The minimal Worker result narrows the remaining question to the
+recovery Worker's control-plane schedule registration versus its invocation
+path. Read the exact schedule back before another full recovery attempt.
 
 `AdminSettings` now edits `max_emoji_characters`; the D1 admin API's editable
 allowlist now permits that public setting. Worker version
