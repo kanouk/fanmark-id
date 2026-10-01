@@ -1650,6 +1650,15 @@ const worker = {
   },
   async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
     const freezeState = cutoverWriteFreezeState(env.CUTOVER_WRITE_FREEZE);
+    const diagnosticsEnabled = env.SCHEDULED_DISPATCH_DIAGNOSTICS?.trim() === "true";
+    if (diagnosticsEnabled) {
+      console.log(JSON.stringify({
+        job: "scheduled-dispatch",
+        status: "received",
+        cron: controller.cron,
+        cutoverWriteFreeze: freezeState,
+      }));
+    }
     if (shouldPauseScheduledJobsForCutover(env.CUTOVER_WRITE_FREEZE)) {
       console.log(JSON.stringify({
         job: "scheduled-dispatch",
@@ -1659,6 +1668,14 @@ const worker = {
       return;
     }
     const selectedJobs = new Set(selectScheduledJobs(controller.cron, env));
+    if (diagnosticsEnabled) {
+      console.log(JSON.stringify({
+        job: "scheduled-dispatch",
+        status: "selected",
+        cron: controller.cron,
+        selectedJobs: [...selectedJobs],
+      }));
+    }
     const jobs: Promise<unknown>[] = [];
     if (selectedJobs.has("license-expiry")) {
       jobs.push(runScheduledLicenseExpiry({

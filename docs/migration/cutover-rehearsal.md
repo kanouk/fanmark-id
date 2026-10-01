@@ -691,7 +691,7 @@ is independently read back. This extension is prepared but unverified in
 staging; issue #37 remains open. No production data or domain/DNS state was
 changed.
 
-## New disposable Worker Cron gap reproduced (2026-10-01 JST)
+## Disposable Worker Cron runs but Stripe dispatch does not claim (2026-10-01 JST)
 
 The guarded `test:migration:staging-postwrite-recovery` retry deployed a temporary
 Worker with an every-minute Cron schedule and accepted a signed synthetic
@@ -703,12 +703,22 @@ replay. Its private error code was
 `synthetic_stripe_extension_dispatch_timeout` at
 `wait_for_synthetic_cron_dispatch`.
 
-The dashboard showed no Cron Events history for the new Worker and noted that
-history for new or recently renamed Workers can take up to 30 minutes to
-appear. The Cron trigger was visible in the Worker settings. Because the
-invocation itself was not independently observed, this run is incomplete and
-does not pass the recovery gate. Keep issues #34 and #37 open and investigate
-the new-Worker schedule path before another identical run.
+After the dashboard's up-to-30-minute history delay, Cron Events showed
+successful every-minute rows. The same timestamps and CPU values appeared on
+the existing `fanmark-app-staging` history page, while the temporary Worker's
+history also listed rows from 12:43–12:52 UTC, before its 12:55:54 UTC creation.
+The Cron-less emoji master page showed no events. The dashboard data therefore
+cannot be attributed to the temporary Worker. Worker Logs were disabled, and
+the live tail did not capture a job summary. The receipt remained
+`received/pending` with `attempt_count=0`; both per-Worker invocation and
+Stripe job selection remain unverified. Keep issues #34 and #37 open; add
+worker-specific runtime diagnostics before repeating the full recovery run.
+
+The event history includes times through 13:32:21, but is not reliable
+Worker-specific evidence. The exact deletion-completion time was not captured.
+A fresh settings page confirms the Worker was deleted. Cloudflare documents up
+to 15 minutes for trigger changes to propagate; the dashboard rows do not prove
+the Worker remains deployed.
 
 Cleanup readback confirmed deletion of the temporary Worker, both disposable
 D1 databases, its config, and the synthetic avatar. Only the three existing

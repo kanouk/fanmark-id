@@ -330,6 +330,7 @@ function createTemporaryConfig() {
       WAITLIST_SIGNUP_BACKEND: "d1",
       STRIPE_WEBHOOK_BACKEND: "d1",
       STRIPE_WEBHOOK_SECRET: syntheticSecret,
+      SCHEDULED_DISPATCH_DIAGNOSTICS: "true",
       STRIPE_MODE_POLICY: "test_only",
       AUTH_BACKEND: "better-auth",
       STORAGE_BACKEND: "r2",
