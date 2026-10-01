@@ -1,8 +1,8 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-02 06:23 JST. The migration is **not complete**. PR #41
-remains open and draft. Commit `3d69a00` passed both required GitHub Actions
-jobs in run `36923912880`.
+Checkpoint: 2026-10-02 07:26 JST. The migration is **not complete**. PR #41
+remains open and draft. Commit `07dbd9f` passed both required GitHub Actions
+jobs in run `36933990564`.
 
 A 33-minute isolated probe deployed the actual API bundle
 (`workers/api/src/index.ts`) to disposable Worker
@@ -25,12 +25,24 @@ Cleanup deleted the Worker and config; its URL returned 404, and the D1
 inventory remained the three existing staging databases. No secrets, R2,
 real data, provider, production route, or DNS/domain setting changed.
 
-The post-write recovery harness now waits 35 minutes for its Stripe extension
-dispatch instead of 20, because the first Cron event in this isolated test
-arrived after 19 minutes. `node --check` and `git diff --check` pass. Next:
-push this checkpoint, wait for both CI jobs, then rerun the complete synthetic
-post-write recovery with the longer window. The previous recovery stopped
-before Time Travel and encrypted R2 bundle/replay, so those gates remain open.
+After that CI pass, the full synthetic post-write recovery completed: D1 Time
+Travel reconciliation took 18,362 ms, encrypted R2 bundle replay took 50,668
+ms, and a synthetic avatar survived both recovery paths. A storage write during
+freeze was rejected with `503 cutover_write_freeze`; temporary Workers, D1s,
+R2 objects, config, avatar, and private artifacts were deleted and read back.
+
+The guarded `npm run test:migration:staging-prewrite-resume` was rerun and
+passed in 67,990 ms. Its locally signed synthetic Stripe receipt was accepted
+once, its duplicate remained nonterminal, and it made zero Stripe API calls.
+During the Cloudflare write freeze, the disposable loopback Supabase accepted
+the synthetic owner-settings update after 33,654 ms. Cleanup restored the
+ordinary staging Worker and left zero synthetic receipts or dispatches.
+
+A read-only `wrangler secret list` at `2026-10-01T22:25:49Z` found only
+`BETTER_AUTH_SECRET`, `REFERENCE_MASTER_SERVICE_SECRET`, and
+`VERIFIED_ACCESS_SECRET` on `fanmark-app-staging`. Stripe, Resend, and OAuth
+provider credentials remain external staging gates. One pre-existing local
+change, `supabase/.temp/cli-latest`, is preserved and must not be staged.
 
 The exact disposable recovery Worker was read back from Cloudflare with
 `triggers.crons=["* * * * *"]`, 100% persisted invocation logs, and scheduled

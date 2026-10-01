@@ -1,5 +1,21 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 合成pre-write fallback再試験とstaging secret readback
+
+`npm run test:migration:staging-prewrite-resume`が67,990 msで成功した。
+合成署名済みStripe receiptは1件だけ受理され、duplicateは
+`duplicate_nonterminal`となり、Stripe API呼出しは0回。Cloudflare write
+freeze中も、使い捨てloopback Supabaseへの合成owner-settings更新が
+33,654 msで成功した。終了後に通常staging Workerを復元し、receiptと
+dispatchは双方0件、合成secretも除去された。
+
+同時に`wrangler secret list --config workers/api/wrangler.app-staging.jsonc`
+をread-only実行。`2026-10-01T22:25:49Z`時点で登録名は
+`BETTER_AUTH_SECRET`、`REFERENCE_MASTER_SERVICE_SECRET`、
+`VERIFIED_ACCESS_SECRET`の3件のみ。Stripe sandbox、Resend、OAuth providerの
+staging受け入れには、必要なsecretをCloudflareへ直接登録した後の再検証が必要。
+値は読み出していない。実ユーザーデータ、本番route、公開domain/DNSは変更していない。
+
 ## 2026-10-02 アプリbundleのCron遅延到達と再現確認（33分監視）
 
 18分監視では未観測だったアプリbundle Cronを、新しい使い捨てWorker `fanmark-app-cron-long-d8523502` で33分監視した。`workers/api/src/index.ts`のbundleを載せ、`* * * * *`、100% persisted invocation logs、`SCHEDULED_DISPATCH_DIAGNOSTICS=true`を有効化。D1/R2 binding、secret、routeは設定していない。version `d95b18ec-e54a-446c-bad5-46281d6ed122`。
