@@ -1,6 +1,6 @@
 # fanmark.id repository inventory (offline)
 
-Base commit: `20e8af4991b22bed1755e0f0acf1b292bb823389`
+Base commit: `b34638b41b7cd1604263a58140bf297821e30807`
 
 This report is generated from the checked-out repository only. It makes no network calls, reads no credentials, and does not claim that local generated types, migrations, or SQL snapshots equal the current production state.
 
@@ -239,8 +239,8 @@ Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of t
 | `src/components/FanmarkSettings.tsx:514` | table | `fanmark_profiles` | `table.update` |  |
 | `src/components/FanmarkSettings.tsx:524` | table | `fanmark_profiles` | `table.insert` |  |
 | `src/components/layout/AppHeader.tsx:98` | table | `notifications` | `table.select` |  |
-| `src/components/layout/AppHeader.tsx:117` | realtime | `<unresolved>` | `realtime.channel` | `` `notifications-preview-${user.id}` `` |
-| `src/components/layout/AppHeader.tsx:135` | realtime | `<unresolved>` | `realtime.removeChannel` | `channel` |
+| `src/components/layout/AppHeader.tsx:117` | realtime | `notifications` | `realtime.channel` | `` `notifications-preview-${user.id}` `` |
+| `src/components/layout/AppHeader.tsx:135` | realtime | `notifications` | `realtime.removeChannel` |  |
 | `src/components/layout/AppHeader.tsx:164` | rpc | `mark_notification_read` | `rpc` |  |
 | `src/components/MaintenanceGate.tsx:48` | rpc | `is_admin` | `rpc` |  |
 | `src/components/PasswordProtection.tsx:59` | rpc | `verify_fanmark_password` | `rpc` |  |
@@ -312,15 +312,15 @@ Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of t
 | `src/hooks/usePasswordReset.tsx:83` | auth | `auth` | `auth.updateUser` |  |
 | `src/hooks/usePreferredLanguage.ts:28` | table | `user_settings` | `table.update` |  |
 | `src/hooks/useProfile.tsx:23` | table | `user_settings` | `table.select` |  |
-| `src/hooks/useProfile.tsx:58` | realtime | `user-settings-updates` | `realtime.channel` |  |
-| `src/hooks/useProfile.tsx:70` | realtime | `<unresolved>` | `realtime.removeChannel` | `channel` |
+| `src/hooks/useProfile.tsx:58` | realtime | `user_settings` | `realtime.channel` |  |
+| `src/hooks/useProfile.tsx:70` | realtime | `user_settings` | `realtime.removeChannel` |  |
 | `src/hooks/useProfile.tsx:120` | table | `user_settings` | `table.update` |  |
 | `src/hooks/useProfile.tsx:145` | rpc | `check_username_availability_secure` | `rpc` |  |
 | `src/hooks/useSubscription.tsx:84` | auth | `auth` | `auth.getSession` |  |
 | `src/hooks/useSubscription.tsx:86` | edge | `check-subscription` | `edge_function_invoke` |  |
 | `src/hooks/useSubscription.tsx:93` | table | `user_subscriptions` | `table.select` |  |
-| `src/hooks/useSubscription.tsx:124` | realtime | `user-subscription-updates` | `realtime.channel` |  |
-| `src/hooks/useSubscription.tsx:132` | realtime | `<unresolved>` | `realtime.removeChannel` | `channel` |
+| `src/hooks/useSubscription.tsx:124` | realtime | `user_subscriptions` | `realtime.channel` |  |
+| `src/hooks/useSubscription.tsx:132` | realtime | `user_subscriptions` | `realtime.removeChannel` |  |
 | `src/hooks/useSystemSettings.tsx:96` | table | `system_settings` | `table.select` |  |
 | `src/hooks/useSystemSettings.tsx:178` | table | `system_settings` | `table.update` |  |
 | `src/hooks/useTransferCode.ts:61` | table | `fanmark_transfer_codes` | `table.select` |  |
@@ -356,8 +356,8 @@ Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of t
 | `src/pages/ForgotPassword.tsx:65` | auth | `auth` | `auth.resetPasswordForEmail` |  |
 | `src/pages/Index.tsx:85` | table | `fanmark_licenses` | `table.select` |  |
 | `src/pages/Notifications.tsx:42` | table | `notifications` | `table.select` |  |
-| `src/pages/Notifications.tsx:66` | realtime | `notifications-updates` | `realtime.channel` |  |
-| `src/pages/Notifications.tsx:83` | realtime | `<unresolved>` | `realtime.removeChannel` | `channel` |
+| `src/pages/Notifications.tsx:66` | realtime | `notifications` | `realtime.channel` |  |
+| `src/pages/Notifications.tsx:83` | realtime | `notifications` | `realtime.removeChannel` |  |
 | `src/pages/Notifications.tsx:92` | rpc | `mark_notification_read` | `rpc` |  |
 | `src/pages/Notifications.tsx:128` | rpc | `mark_all_notifications_read` | `rpc` |  |
 | `src/pages/Notifications.tsx:139` | table | `notifications` | `table.select` |  |
@@ -406,13 +406,9 @@ Operation summary:
 - `table.update`: 22
 - `table.upsert`: 5
 
-### Unresolved or dynamic call arguments
+### Unresolved call arguments
 
-- `src/components/layout/AppHeader.tsx:117`: realtime (realtime.channel), expression `` `notifications-preview-${user.id}` ``
-- `src/components/layout/AppHeader.tsx:135`: realtime (realtime.removeChannel), expression `channel`
-- `src/hooks/useProfile.tsx:70`: realtime (realtime.removeChannel), expression `channel`
-- `src/hooks/useSubscription.tsx:132`: realtime (realtime.removeChannel), expression `channel`
-- `src/pages/Notifications.tsx:83`: realtime (realtime.removeChannel), expression `channel`
+_none detected in frontend source._
 
 ### Unsupported or unknown receiver aliases
 
@@ -478,5 +474,5 @@ Reconcile the live observations with this checkout report before treating any ma
 
 - Verify every local Edge entrypoint, configured JWT policy, deployed version, and any live-only function against the production project read-only.
 - Reconcile generated types and checked-in SQL snapshots with a fresh, access-controlled production schema readback; resolve drift before selecting Cloudflare D1/R2/Workers targets.
-- Resolve the dynamic frontend calls listed above and map each static table/RPC/function/storage operation to an owner, data classification, and Cloudflare replacement or retention decision.
+- Map each static frontend operation to an owner, data classification, and Cloudflare replacement or retention decision. Realtime cleanup aliases are resolved to their statically subscribed table; interpolated channel topics remain visible in the Dynamic expression column. Arbitrary wrappers and indirect calls still need manual review.
 - Confirm pg_cron/pg_net schedules, Auth providers and redirect URLs, Storage buckets/policies, Realtime channels, Stripe/Resend webhooks, and deployment secrets in the live environment. None are proven by this offline report.

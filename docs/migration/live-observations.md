@@ -1942,3 +1942,51 @@ account ID `3ed61145d70e5e8bd639970082b79fa5`, while
 `bfc2890741f0b3fb236e2d755b6c9adc`. Do not perform Wrangler writes through the
 default profile. No D1, R2, Worker, production, user-data, or domain/DNS state
 was changed by this check.
+
+## Current staging access and capacity recheck (2026-10-02 JST)
+
+The earlier 2026-09-29 access failure is superseded. Wrangler 4.146.0 now
+reports the active `fanmark-staging-inapp` OAuth profile and the same account
+ID configured by `workers/api/wrangler.app-staging.jsonc`. Read-only
+`wrangler d1 list` returned exactly the expected Auth, Business, and emoji
+Master staging databases. `wrangler d1 migrations list --remote` reported no
+pending migrations for `AUTH_DB`, `FANMARK_DB`, or `MASTER_DB`. Read-only R2
+inventory returned the three expected APAC staging buckets: avatars, cover
+images, and encrypted migration backups.
+
+The current `fanmark-app-staging` deployment is version
+`842554cb-9dca-4b59-b7d1-43653fa7d69f` at 100%, restored after the synthetic
+pre-write fallback rehearsal. Body-discarding public GETs returned 200 for
+`/`, `/api/auth/ok`, and `/api/emoji/catalog`; the SPA has `noindex, nofollow`,
+and API responses are `no-store`. `/api/stripe/webhook` returned 404 with its
+provider selector disabled. A read-only secret-name list contained only
+`BETTER_AUTH_SECRET`, `REFERENCE_MASTER_SERVICE_SECRET`, and
+`VERIFIED_ACCESS_SECRET`; no secret values were read.
+
+At `2026-10-01T22:36:50Z`, a temporary project-link directory with mode 0700
+ran an aggregate query inside `BEGIN READ ONLY`. `pg_database_size` returned
+27,749,523 bytes (about 26.46 MiB / 27.75 MB). Aggregated Storage metadata
+returned 109 objects and 13,285,729 bytes (about 12.67 MiB), with zero missing
+or invalid size values. The query returned no object keys, bodies, Auth rows,
+or application-row values. Its private SQL and temporary link directory were
+deleted. This remains transfer-size planning evidence, not a consistent
+snapshot or downtime/RTO measurement.
+
+The offline repository inventory was regenerated from `ab2d400`; its focused
+extraction test passed 1/1. The generated report changed only its recorded
+base commit. Dynamic frontend calls and the live operation-to-Cloudflare
+replacement map are not thereby considered complete. No source or staging
+data was migrated, and no production route or domain/DNS configuration was
+changed.
+
+## Realtime cleanup alias extraction update (2026-10-02 JST)
+
+The inventory extractor now follows a direct lexical variable initialized by
+`supabase.channel(...).on('postgres_changes', { table })` to a matching
+`supabase.removeChannel(alias)` call. This resolves the five previously
+unresolved cleanup rows in the current 211-callsite offline scan; interpolated
+channel topics remain recorded as dynamic expressions. The focused extractor
+test passes 1/1 and `npm run test:migration-data` passes 198/198. This is
+repository-only evidence: arbitrary wrappers/indirect calls, operation
+ownership/data-class decisions, and reconciliation to current production
+remain open. No live data, staging settings, Worker, or domain/DNS changed.

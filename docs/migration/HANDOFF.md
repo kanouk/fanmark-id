@@ -1,8 +1,22 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-02 07:26 JST. The migration is **not complete**. PR #41
-remains open and draft. Commit `07dbd9f` passed both required GitHub Actions
-jobs in run `36933990564`.
+Checkpoint: 2026-10-02 07:52 JST. The migration is **not complete**. PR #41
+remains open and draft. The prior head `ab2d400` passed both required GitHub
+Actions jobs in run `36935224400`; the current inventory change is commit
+`b34638b` and its CI is pending.
+
+## 2026-10-02 frontend inventory extraction follow-up
+
+The offline AST inventory now follows direct Supabase Realtime
+`channel(...).on('postgres_changes', { table })` declarations to matching
+`removeChannel(localAlias)` calls inside their lexical block. This resolves
+the previously unclassified cleanup targets to their subscribed tables;
+interpolated channel topics remain visible as expressions. Arbitrary wrappers
+and indirect calls still require manual review. The regenerated report is
+based on `b34638b`, has 211 frontend callsites and zero unresolved targets.
+This does not complete the operation-to-owner/data-class/replacement map or
+the live production reconciliation required by #30. The focused extraction
+test and all 198 migration-data tests pass.
 
 A 33-minute isolated probe deployed the actual API bundle
 (`workers/api/src/index.ts`) to disposable Worker
@@ -43,6 +57,21 @@ A read-only `wrangler secret list` at `2026-10-01T22:25:49Z` found only
 `VERIFIED_ACCESS_SECRET` on `fanmark-app-staging`. Stripe, Resend, and OAuth
 provider credentials remain external staging gates. One pre-existing local
 change, `supabase/.temp/cli-latest`, is preserved and must not be staged.
+
+Fresh read-only staging readback confirmed active Wrangler profile
+`fanmark-staging-inapp` targets the configured account. `fanmark-app-staging`
+version `842554cb-9dca-4b59-b7d1-43653fa7d69f` is at 100% after cleanup;
+Business/Auth/Master D1 report no unapplied migrations, and the three APAC R2
+staging buckets are present. `/`, `/api/auth/ok`, and `/api/emoji/catalog`
+return 200 with the expected cache/noindex headers; `/api/stripe/webhook`
+returns 404 because provider selectors remain disabled.
+
+At `2026-10-01T22:36:50Z`, a `BEGIN READ ONLY` aggregate measured PostgreSQL
+database size at 27,749,523 bytes and Storage metadata at 109 objects /
+13,285,729 bytes with no missing or invalid size metadata. No object keys,
+bodies, Auth rows, or application-row values were returned. The subsequent
+offline inventory refresh is recorded above; live mapping and production
+reconciliation remain open.
 
 The exact disposable recovery Worker was read back from Cloudflare with
 `triggers.crons=["* * * * *"]`, 100% persisted invocation logs, and scheduled
