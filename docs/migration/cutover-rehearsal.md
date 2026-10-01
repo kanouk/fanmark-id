@@ -747,3 +747,30 @@ reached, so no backup R2 object was created. Investigate Cloudflare's actual
 Cron registration/delivery for newly created Workers before another full
 recovery run. Issues #34 and #37 remain open; production data and domain/DNS
 remain unchanged.
+
+A separate minimal diagnostic Worker with no D1/R2 bindings was deployed at
+14:42:19.836 UTC with `* * * * *`. `wrangler init --from-dash` read the same
+schedule back from Cloudflare, confirming control-plane registration. Its
+Worker-specific `wrangler tail` remained connected through more than 15 minutes
+without a scheduled marker. Cron Events showed no rows, with the Dashboard
+noting that history for a new Worker can take up to 30 minutes to appear. The
+probe was deleted; deployment readback returned “Worker does not exist,” and
+the local temporary project was removed. Registration is confirmed, but runtime
+scheduled delivery/visibility remains unobserved. Investigate that path before
+repeating the recovery drill. Issues #34 and #37 remain open; production data,
+routes, and domain/DNS remain unchanged.
+
+On 2026-10-02, a stronger no-binding probe checked the Cron Schedules API
+directly. The first deploy attempt ran from the repository with a config in a
+temporary directory; Wrangler selected its unrelated default profile and
+returned authentication error 10000 before creating a Worker. Re-running with
+the explicitly bound `fanmark-staging-inapp` profile succeeded at 15:06:14 UTC.
+The API returned HTTP 200 and the exact `* * * * *` schedule. A synthetic GET
+returned 200 and appeared in both tail subscriptions, confirming the Worker
+and live-tail path. The filtered tail showed no Cron marker through 15:23:15
+UTC, more than 17 minutes after registration and beyond Cloudflare's documented
+15-minute propagation window. The Worker was deleted; a post-delete Schedules
+API request returned 404/code 10007, and the local project directory was
+removed. Existing staging D1s remained the same three databases. This confirms
+control-plane schedule registration and the fetch/tail path, while Cron
+delivery remains unobserved. It does not identify the platform/runtime cause.

@@ -1,5 +1,22 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 disposable Cron API readback: 登録済み・実行未確認（15:06–15:24 UTC）
+
+新規Worker Cronの登録readbackが曖昧だったため、15:06:14 UTCにD1/R2 bindingのない最小Workerを
+`fanmark-staging-inapp` profileで配備。最初にprofileを指定せず実行したdeployは、作業tree外の一時
+configが別の保存済みprofileを選び、API authentication error 10000で作成前に失敗した。正しいprofileを
+明示した再試験は成功し、Cloudflare Cron Schedules APIのGETは200、`* * * * *`を返した。
+
+Workerへの合成GETは200で、Worker固有tailにもfetchが表示されてtail接続を確認した。一方、Cron markerは
+15:23:15 UTCまでの約17分間表示されず、Cloudflareの最大15分propagation後にもscheduled invocationを
+観測しなかった。[Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/)の
+伝播時間上限を越えている。Worker削除後のSchedules API readbackは404/code 10007、D1一覧は既存の3 staging DBのまま。
+一時Workerとローカルdirectoryは削除済み。よってscheduleのcontrol-plane登録とfetch/tail経路は確認したが、
+新規WorkerのCron deliveryは未確認。原因を特定するまでフルrecoveryを再実行しない。Issue #34/#37と
+recovery gateは未完了。実ユーザーデータ、既存staging D1、R2、production route、domain/DNSは変更していない。
+
+Cloudflare API仕様: [Get Worker Script Schedules](https://developers.cloudflare.com/api/resources/workers/subresources/scripts/subresources/schedules/methods/get/)。
+
 ## 2026-10-01 disposable recovery再試験: 新規Worker Cron起動未確認（14:33 UTC）
 
 13:49:57 UTCに始めた試験は14:02:52 UTC、D1 readbackのAPI error 7403で停止した。最終Worker配備
@@ -17,8 +34,27 @@ Time Travelと暗号化backup/R2 replayには進んでいない。7403再発回�
 cleanup readbackではWorker、使い捨てbusiness/Auth D1、temporary config、合成avatar objectの削除が
 すべて成功し、D1一覧は既存の`fanmark-auth-staging`、`fanmark-business-staging`、
 `fanmark-emoji-master-staging`のみ。backup bundleは作成されず、recovery R2 objectも0件。次は
-同じrecoveryを繰り返さず、Cloudflare上の新規Worker Cron登録/配信経路を調べる。Issue #34/#37と
+同じrecoveryを繰り返さず、Cloudflare上の新規Worker Cron実行/可視化経路を調べる。Issue #34/#37と
 recovery gateは未完了。実ユーザーデータ、production route、domain/DNSは変更していない。
+
+登録と実行を分けるため、14:42:19.836 UTCにD1/R2 bindingのない最小の使い捨てWorkerを配備し、
+`* * * * *`を登録した。`wrangler init --from-dash`でCloudflareから構成を読み戻すと、
+`triggers.crons`は同じ毎分scheduleだった。Worker固有tailは15分後まで接続を保ったが、scheduled
+markerは届かなかった。Cron Events画面も履歴なしと表示したが、新規Workerでは履歴表示に最大30分
+かかる旨を示しており、この画面は補助情報とする。Cloudflareの[real-time logs](https://developers.cloudflare.com/workers/observability/logs/real-time-logs/)
+はinvocation/custom logを含み、`wrangler tail`で確認できる。今回、scheduleの登録は確認済みだが、
+新規Workerのscheduled invocation/ログは未確認のまま。Cron設定資料ではtrigger変更の伝播に最大15分、
+新しいWorkerのCron Events履歴に最大30分を案内しているため、tailの欠落と履歴画面は別の証拠として扱う。
+15分観測後にWorkerを削除し、APIのdeployment readbackが「Worker does not exist」を返すことを確認した。
+local temporary projectも削除済み。Cloudflare Statusにactive incidentは掲載されていなかった。
+schedule登録は読み戻しで確認できたため、次はruntime delivery/ログ可視化をCloudflareの観測APIや
+サポート情報と照合し、同一recoveryを再実行する前に原因を絞る。
+
+2026-10-02 00:02 JST、ログイン中のWrangler OAuth profileを確認し、Cloudflare APIの
+read-only `GET /accounts/{account}/workers/scripts/{script}/schedules`で既存`fanmark-app-staging`の
+scheduleを読み戻した。`* * * * *`と`0 0 * * *`が登録済みで、両方の`modified_on`は
+`2026-10-01T10:21:15.10331Z`。これは既存staging appのcontrol-plane登録の証拠で、新規Workerの
+runtime deliveryを説明しない。[Get Worker Script Schedules](https://developers.cloudflare.com/api/resources/workers/subresources/scripts/subresources/schedules/methods/get/)。
 
 ## 2026-10-01 新規Worker Cron未確認・dispatcher未処理（13:17 UTC）
 

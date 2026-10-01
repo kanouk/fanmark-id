@@ -1,7 +1,7 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-01 23:35 JST. The migration is **not complete**. PR #41
-remains open and draft at head `ab21efb`. Actions run `36873650354` passed both
+Checkpoint: 2026-10-02 00:24 JST. The migration is **not complete**. PR #41
+remains open and draft at head `0bd0884`. Actions run `36877649923` passed both
 application and Worker API jobs; it includes the read-only D1 retry adjustment
 for the guarded recovery monitor. The prior code validation run `36870117511`
 also passed on rerun after its first attempt timed out three times in the PGlite
@@ -18,9 +18,38 @@ with `attempt_count=0` through the 20-minute wait, which ended with
 R2 recovery. The prior transient D1 error 7403 did not recur. Cleanup readback
 confirmed deletion of the Worker, disposable Business/Auth D1s, temporary
 config, and synthetic avatar; only the three existing staging D1s remain. No
-recovery bundle or backup R2 object was created. New-Worker Cron registration
-is the open blocker; investigate that path before repeating this drill. Issues
-#34/#37 remain open.
+recovery bundle or backup R2 object was created. A separate minimal Worker
+without D1/R2 bindings was deployed at 14:42:19.836 UTC with `* * * * *`.
+`wrangler init --from-dash` read the exact schedule back from Cloudflare,
+confirming control-plane registration. Its per-Worker tail showed no scheduled
+marker through 15 minutes. Cron Events also showed no rows, while the Dashboard
+noted that new-Worker history can take up to 30 minutes. The probe Worker was
+deleted; a deployment readback returned “Worker does not exist,” and its
+temporary local files were removed. Only the three existing staging D1s
+remain. Schedule registration succeeds, but scheduled invocation for new
+Workers remains unobserved; investigate delivery/visibility before repeating
+recovery. Issues #34/#37 remain open.
+
+Wrangler OAuth is active under the intended Cloudflare account. A direct
+read-only Cloudflare API schedule readback for `fanmark-app-staging` returned
+`* * * * *` and `0 0 * * *`, both modified at 2026-10-01 10:21:15 UTC. This
+confirms the existing staging app's schedules are registered; it does not
+resolve delivery for newly created Workers. No additional permissions or
+secrets were added.
+
+A stronger disposable probe deployed at 15:06:14 UTC using the explicitly
+selected `fanmark-staging-inapp` profile. Its Cron Schedules API returned 200
+with `* * * * *`; a synthetic GET returned 200 and appeared in the Worker
+tail. The filtered Worker-specific tail produced no Cron marker through
+15:23:15 UTC, more than 17 minutes after registration and beyond the documented
+15-minute propagation window. A post-delete schedule readback returned 404
+with code 10007, and the existing D1 list remained the same three staging
+databases. The probe had no D1/R2 bindings. A first deploy attempt without an
+explicit profile was rejected before resource creation because the temporary
+config directory selected another saved profile; subsequent commands must
+continue to pin `fanmark-staging-inapp` explicitly. Cron registration is now
+directly confirmed, while scheduled runtime delivery remains unobserved. Do
+not repeat the full recovery drill until the invocation path is understood.
 
 Staging Worker version `59deb036-3aa7-442f-9eba-11875715c43a` is deployed at
 100%. Read-only GETs for `/`, `/api/auth/ok`, and `/api/emoji/catalog` return
