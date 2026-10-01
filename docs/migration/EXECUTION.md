@@ -4329,3 +4329,36 @@ plan-checkout, or plan-change rows. Both declared Cron schedules remain
 configured; no real email, payment, user data, production route, or domain/DNS
 was exercised or changed. This staging deployment improves runtime evidence
 but does not materially change the coarse migration progress estimate.
+
+## Persisted-log staging Cron probe and CI (2026-10-02 JST)
+
+Commits `d461c33` and `9561109` add a guarded synthetic Cron observability
+probe, focused tests, and explicit failure/cleanup targets. The temporary
+Worker `fanmark-cron-observability-a5f6043b` was deployed using the dedicated
+`fanmark-staging-inapp` profile with an every-minute Cron, no D1/R2/secret
+bindings, and persisted Workers Logs enabled at full sampling with invocation
+logs included. A synthetic GET returned 200 and appeared in its Worker-specific
+saved logs. More than 15 minutes after deployment, that view still contained
+only the GET and no scheduled invocation record. The probe was deleted, and a
+post-delete deployment readback returned Cloudflare error 10007 (Worker does
+not exist). The three existing staging D1 databases remain the only D1s in the
+account inventory. The existing `fanmark-app-staging` request-log settings
+were not changed; its saved logs remain disabled.
+
+The probe tests pass 4/4; `npm run test:migration-data` passes 198/198;
+`npm run check:ci`, `npm run typecheck`, targeted ESLint, and `git diff --check`
+pass. GitHub Actions run `36892893711` passed both staging-application and
+Worker-API jobs on head `9561109`. Repository-wide `npm run lint` still fails
+on existing unrelated/generated files (105 errors and 27 warnings); targeted
+lint for the changed files passes. The empty Cron log confirms that the
+configured persisted-log pipeline did not record a scheduled invocation, but
+does not by itself distinguish non-delivery from invocation-log visibility.
+
+Cloudflare says Cron trigger changes may take up to 15 minutes to propagate,
+new Workers may take up to 30 minutes to show historical Cron Events, and
+Workers Logs can persist Cron invocation records. The probe exceeded the
+propagation window and verified the logging configuration. See [Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
+and [Workers Logs](https://developers.cloudflare.com/workers/observability/logs/workers-logs/).
+Do not repeat the full synthetic recovery drill until this invocation path is
+understood. No real user data, production routing, or domain/DNS state was
+accessed or changed.

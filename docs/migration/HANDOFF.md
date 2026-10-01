@@ -1,21 +1,16 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-02 01:06 JST. The migration is **not complete**. PR #41
-remains open and draft. Actions run `36888607615` passed both CI jobs on code
-head `954f356`. The preceding run `36885538010` failed the application job
-after PGlite `subscription-application.test.mjs` produced only `TAP version 13`
-and timed out at 120 seconds on all three attempts. The app code did not change
-between those runs; the later CI pass and local Node 22.6.0 focused test (8/8)
-and full Stripe receipt suite show an intermittent CI stall, though its cause
-is unknown.
+Checkpoint: 2026-10-02 01:40 JST. The migration is **not complete**. PR #41
+remains open and draft at `9561109`. GitHub Actions run `36892893711` passed
+both the Cloudflare staging application and Worker API jobs. The earlier
+intermittent PGlite timeout remains unexplained, but did not recur in this run.
 
-Current read-only Cloudflare checks used the explicit `fanmark-staging-inapp`
-profile. The authenticated identity is `fanmark.id@gmail.com`; remote Auth,
-Business, and emoji-master D1 each report no migrations to apply. The three
-staging R2 buckets are present. `fanmark-app-staging` remains at 100% on
-version `59deb036-3aa7-442f-9eba-11875715c43a`. Stripe test-mode and Resend
-credentials remain unconfigured, and new-Worker Cron delivery remains
-unverified.
+Current Cloudflare checks use the explicit `fanmark-staging-inapp` profile.
+The authenticated identity is `fanmark.id@gmail.com`; remote Auth, Business,
+and emoji-master D1 report no pending migrations. The three staging R2 buckets
+are present. `fanmark-app-staging` remains at 100% on version
+`59deb036-3aa7-442f-9eba-11875715c43a`. Stripe test-mode and Resend credentials
+remain unconfigured, and new-Worker Cron delivery remains unverified.
 
 Latest guarded post-write recovery run started at 14:11:58.740 UTC and ended at
 14:33:51.345 UTC. Its temporary Worker was deployed with an every-minute Cron;
@@ -73,6 +68,39 @@ staging secret-name readback contained only `BETTER_AUTH_SECRET`,
 `REFERENCE_MASTER_SERVICE_SECRET`, and `VERIFIED_ACCESS_SECRET`; Stripe
 test-mode and Resend credentials are not configured. No secret values were
 read. Their provider canaries remain pending owner-provided staging credentials.
+
+## Persisted-log Cron probe and CI checkpoint (2026-10-02 01:40 JST)
+
+Commit `d461c33` added guarded probe coverage and `9561109` improved its failure
+and cleanup reporting. The temporary synthetic Worker
+`fanmark-cron-observability-a5f6043b` had an every-minute Cron trigger, no D1,
+R2, or secrets, persisted Workers Logs enabled with invocation logs included,
+and a synthetic `scheduled()` log marker. A GET returned 200 and appeared in
+that Worker's saved logs. After more than 15 minutes, the same Worker-specific
+log view still contained only the GET and no Cron invocation. This rules out a
+disabled log pipeline as the explanation but does not distinguish trigger
+delivery from scheduled-invocation visibility. The probe was deleted; the
+post-delete deployments readback returned Cloudflare error 10007 (Worker does
+not exist). No settings were changed on `fanmark-app-staging`, where saved
+request logging remains disabled.
+
+The probe's focused tests pass 4/4, `npm run test:migration-data` passes
+198/198, `npm run check:ci` and `npm run typecheck` pass, and targeted ESLint
+and `git diff --check` pass. Both CI jobs in run `36892893711` passed on head
+`9561109`. Repository-wide `npm run lint` still reports existing errors in
+generated and unrelated files (105 errors, 27 warnings); the touched files
+pass targeted lint. No new remote D1/R2 objects or application data were
+created. Existing staging D1 inventory remains the same three databases.
+
+Cloudflare documents a propagation delay of up to 15 minutes for Cron trigger
+changes and up to 30 minutes for new-Worker Cron history. It also documents
+persisted Workers Logs invocation records for Cron. The probe passed the
+propagation wait and verified its log settings, but its empty Cron log is not
+enough to conclude whether the handler failed to run or the dashboard did not
+surface it. See [Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
+and [Workers Logs](https://developers.cloudflare.com/workers/observability/logs/workers-logs/).
+Do not repeat the full recovery drill until the scheduled-invocation path is
+understood. Issues #34/#37 remain open.
 
 Staging Worker version `59deb036-3aa7-442f-9eba-11875715c43a` is deployed at
 100%. Read-only GETs for `/`, `/api/auth/ok`, and `/api/emoji/catalog` return
