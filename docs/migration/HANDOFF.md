@@ -1,12 +1,11 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-01 JST. The migration is **not complete**. PR #41 remains
-open and draft; latest pushed head is `9921abe`. CI run `36847883045` passed
-both jobs. Follow-up run `36848783232` passed Worker API but its application
-job timed out twice at 120 seconds in
-`subscription-application.test.mjs`. The same test and full suite pass locally
-under Node 22.6.0. The current worktree allows up to three fresh-process
-attempts for that one test; this retry adjustment is not yet pushed.
+Checkpoint: 2026-10-01 19:38 JST. The migration is **not complete**. PR #41
+remains open and draft at head `7dd78f9`. CI run `36849762646` passed both
+application and Worker API jobs. The PGlite `subscription-application` test
+timed out on its first 120-second attempt, then passed in a fresh second
+process; the runner permits up to three attempts for that test. The same test
+and full suite pass locally under Node 22.6.0.
 
 Staging Worker version `59deb036-3aa7-442f-9eba-11875715c43a` is deployed at
 100%. Read-only GETs for `/`, `/api/auth/ok`, and `/api/emoji/catalog` return

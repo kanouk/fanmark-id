@@ -60,7 +60,7 @@ for (const file of testFiles) {
     });
 
     if (result.error?.code !== "ETIMEDOUT" || attempt === attempts) break;
-    process.stderr.write(`Timed out after ${timeoutMs / 1000} seconds: ${file}; retrying once in a fresh process\n`);
+    process.stderr.write(`Timed out after ${timeoutMs / 1000} seconds: ${file}; retrying in a fresh process\n`);
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
 

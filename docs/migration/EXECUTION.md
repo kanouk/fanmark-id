@@ -51,7 +51,7 @@ deploy dry-runもpass。外部Stripe APIは呼んでいない。test-only creden
 CI run `36847883045`（PR #41、head `41b1fd2`）はstaging applicationとWorker APIの
 両jobが成功した。既存PGliteテストがCIで60秒を超えたため、そのテストrunnerの外側
 timeoutを120秒にし、Node 22.6.0で単体・Stripe receipt suiteが通ることも確認した。
-staging build後、2026-10-01 10:21 JSTにWorker version
+staging build後、2026-10-01 19:21 JSTにWorker version
 `59deb036-3aa7-442f-9eba-11875715c43a`を100%配信した。read-only GETは`/`、
 `/api/auth/ok`、`/api/emoji/catalog`が200、Stripe selector未設定の
 `/api/stripe/webhook`が404。staging secret名のreadbackにもStripe/Resend/OAuthはない。
@@ -59,9 +59,10 @@ staging build後、2026-10-01 10:21 JSTにWorker version
 domain/DNSは使っていない。
 
 後続のCI run `36848783232`ではWorker API jobは成功したが、application jobの
-`subscription-application.test.mjs`が120秒で2回タイムアウトした。直前runでは同じテストが
-初回timeout後の新規プロセス再試行で通過し、Node 22.6.0のローカル単体・全suiteも成功する。
-このため同一テストだけ最大3回の独立プロセス試行に変更した。新しいCI検証はpush後に行う。
+`subscription-application.test.mjs`が120秒で2回タイムアウトした。そこで同一テストだけ
+最大3回の独立プロセス試行に変更した。Node 22.6.0のローカル単体・全suiteが成功し、
+CI run `36849762646`もapplication（3m55s）とWorker API（5m37s）の両jobが成功した。
+PGliteテストは1回目が120秒で止まった後、2回目の新規プロセスで成功した。
 
 ## 2026-09-29 Supabase Stripe non-extension Checkout receipts
 
