@@ -1,5 +1,43 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-01 staging migration selector guard
+
+`wrangler.emoji-api-staging.jsonc` にMASTER_DBのmigration selectorがなく、
+`wrangler d1 migrations list` がmaster D1に対してAuth専用の
+`0007_auth_signup_command.sql` / `0008_auth_user_suspension.sql`を未適用と誤表示していた。
+この確認はread-onlyで、migrationは適用していない。WorkerのMASTER_DBにもmaster用と同じ
+selectorを明示し、CLIは`No migrations to apply`を返す。migration selector testはapp、
+migration-only、master APIの3設定を照合し、Auth signup/suspension SQLがmaster側に
+混入しないことを確認する。
+
+Node 22.6.0の`npm run test:migration-data`は194/194、絵文字master APIのWrangler
+deploy dry-runは成功。business/Auth/masterのstaging D1は全てmigration pendingなし。
+read-only GETはSPA、Auth health、emoji catalogが200、Stripe webhookはselectorとsecretが
+未設定のため404。avatar/cover/backupのstaging R2 bucketは全て存在し、object countは0。
+Stripe・Resend・OAuthのstaging credentialsは未設定で、実providerの統合canaryは未完了。
+実ユーザーデータ、Supabase application rows、production route、domain/DNSは変更していない。
+
+read-only `GET /api/auth/capabilities`はsignup、password reset、email verification、
+social providerが全て無効を返した。Auth機能の管理者向けstaging browser canaryは、
+合成ユーザーのsign-in、初回TOTP登録、session rotation、MFA管理者認可、ユーザー一覧/詳細、
+Enterprise/Max/Freeの変更、suspend/restore、即時license expiry、session revokeを確認。
+未認証の一覧アクセスは拒否され、画面状態とAuth/business D1のreadbackが一致した。
+cleanup後、Auth user-owned table、profile、license、audit、notificationのcanary行は0件。
+メール/provider連携は実行しておらず、MFA generation counterはfactor lifecycleで進む場合がある。
+
+PR #41 head `61d662f`のActions run `36860303037`再実行はapplicationとWorker APIの両jobが
+成功。Stripe receipt/billing/invoice suite、typecheck、migration data boundary、staging buildも
+passした。最初の同runでは`subscription-application.test.mjs`が3回120秒timeoutしたが、再実行は
+成功し、Node 22.6.0の直接実行も8/8。原因は特定できていないため、まれなPGlite起動停止は
+CI上で引き続き監視する。
+
+Cron伝播確認用の使い捨てWorker `fanmark-cron-probe-20261001-2110`は2026-10-01
+12:10:29 UTCに1分scheduleでdeployされ、version `7478077e-7928-4c9d-a0a9-87b3f69e9ca5`
+が100%だった。20分間のlive `wrangler tail`でscheduled markerは記録されず、probe Workerを
+削除し、専用config/sourceもcleanupした。D1/R2/secret bindingはなく、既存staging appのCronは
+scheduled invocation済み。新規WorkerのCron trigger登録/伝播経路は未解決で、復旧canaryは
+引き続き未完了。実ユーザーデータ、production route、domain/DNSは変更していない。
+
 ## 2026-10-01 staging再開確認と管理ユーザーUI修正
 
 再開時に`fanmark-staging-inapp` profileの`wrangler whoami --json`が

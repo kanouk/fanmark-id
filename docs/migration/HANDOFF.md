@@ -1,45 +1,55 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-01 20:48 JST. The migration is **not complete**. PR #41
-remains open and draft at code head `86ccad24cb76186c186207b59466720b9f33c0a4`;
-Actions run `36856998789` passed both application and Worker API jobs.
-The PGlite `subscription-application` test timed out on its first 120-second
-attempt in an earlier run, then passed in a fresh second process; the runner
-permits up to three attempts for that test. The same test and full suite pass
-locally under Node 22.6.0.
+Checkpoint: 2026-10-01 21:30 JST. The migration is **not complete**. PR #41
+remains open and draft at head `61d662f545fb5e5b5df2e18d0f69057d5c15e52f`.
+Actions run `36860303037` passed both application and Worker API jobs on rerun,
+including migration-data boundaries, Stripe receipt/billing/invoice suite,
+typechecks, and staging build. The first attempt of that run timed out three
+times in the PGlite subscription test; the rerun and Node 22.6.0 direct test
+passed. The transient cause is not known and should remain monitored.
 
 Staging Worker version `59deb036-3aa7-442f-9eba-11875715c43a` is deployed at
 100%. Read-only GETs for `/`, `/api/auth/ok`, and `/api/emoji/catalog` return
-200; the Stripe webhook returns 404 because its selector is still unset.
-Production routing, real user/Auth/Storage import, and public domain/DNS cutover
-have not been performed.
+200; `/api/auth/capabilities` reports signup, password reset, email
+verification, and social providers disabled. Stripe webhook remains 404
+because its selector/secrets are unset. Business/Auth/master staging D1s have
+no pending migrations; the canonical emoji master has 3,944 rows. Staging
+avatar, cover, and backup R2 buckets exist and are empty.
 
-The dedicated Wrangler profile confirms `fanmark.id@gmail.com` and the account
-pinned by staging configuration. Business D1 has no pending migrations after
-`0018`/`0019`. A synthetic MFA admin browser canary found and then verified the
-fix for a status-confirmation dialog that closed its parent user-detail sheet.
-The repeat canary passed Free→Max→Free, suspend/restore, immediate expiry, and
-rendered-state checks; Auth user-owned rows and business profile/license/audit/
-notification rows read back at zero after cleanup. Targeted lint/typecheck,
-client/API tests, staging build, Wrangler dry-run, and Worker D1 tests passed.
+The synthetic MFA admin browser canary passed sign-in, first TOTP enrollment,
+session rotation, MFA admin authorization, cross-D1 user list/detail, plan
+changes, suspension/restoration, immediate license expiry, and session revoke.
+Anonymous admin access was denied. Auth user-owned rows and business
+profile/license/audit/notification canary rows read back at zero after cleanup.
+The MFA generation counter may have advanced during factor creation/deletion.
 
-The current `wrangler secret list` contains only `BETTER_AUTH_SECRET`,
+A disposable Cron probe Worker was deployed at 12:10:29 UTC, kept active for 20
+minutes, and produced no scheduled log in live `wrangler tail`; it has been
+deleted along with its temporary files. The existing staging app Cron was
+previously observed firing with the Stripe dispatcher disabled and zero claims.
+The new-Worker trigger propagation path remains unresolved, so the guarded
+post-write recovery drill has not passed.
+
+`wrangler secret list` contains only `BETTER_AUTH_SECRET`,
 `REFERENCE_MASTER_SERVICE_SECRET`, and `VERIFIED_ACCESS_SECRET`. Stripe,
-Resend, and OAuth staging integration is therefore still disabled and awaits
-the corresponding test credentials/configuration. Staging's checked-in config
-sets `STRIPE_MODE_POLICY=test_only`; this alone does not enable a Stripe route.
-Local synthetic tests cover test-key-only Checkout, plan changes, Customer
-Portal, Webhook rejection of live events, scheduler refusal when live receipts
-exist, and test-only account deletion. The Stripe receipt/dispatch suite passes
-68/68, Plan Checkout 9/9, Plan Change 9/9, Customer Portal 6/6, extension
-Checkout 6/6, and Stripe account deletion 5/5.
+Resend, and OAuth staging integration remains disabled. For the Stripe
+test-mode canary, register `STRIPE_SECRET_KEY_TEST`, the same test value as
+`STRIPE_SECRET_KEY`, and a test-mode endpoint's `STRIPE_WEBHOOK_SECRET` as
+Cloudflare staging secrets. Do not set `STRIPE_SECRET_KEY_LIVE` or paste secret
+values into chat. Resend requires `AUTH_EMAIL_BACKEND=resend`, `RESEND_API_KEY`,
+and `RESEND_FROM_EMAIL`. Social auth requires the Better Auth selector and
+Google, GitHub, Discord, or Apple client ID/secret pairs with the staging
+callback URLs configured. No Stripe API call or email was made.
 
-Next user action for the Stripe end-to-end canary: register `STRIPE_SECRET_KEY_TEST`,
-the same test value as `STRIPE_SECRET_KEY`, and a test-mode endpoint's
-`STRIPE_WEBHOOK_SECRET` as Cloudflare staging secrets. Do not set
-`STRIPE_SECRET_KEY_LIVE` or paste secret values into chat. Once configured, the
-test-mode webhook and synthetic purchase canary can run. No Stripe API call was
-made during this checkpoint.
+Cloudflare is on Workers Free (10 ms CPU maximum); Better Auth's compatible
+bcrypt sign-in path exceeds that limit. The user has been asked whether to move
+the account to Workers Paid; no billing change has been made, and password
+hashing cost must not be reduced because it preserves Supabase credential
+compatibility.
+
+Production routes, real Supabase user/Auth/Storage rows, and public domain/DNS
+have not been changed. User-data migration and domain cutover remain the final
+stage, and PR #41 has not been merged.
 
 ## 2026-10-01 resumed migration checks and Cron recovery retry
 
