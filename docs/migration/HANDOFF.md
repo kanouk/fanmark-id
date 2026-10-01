@@ -1,12 +1,13 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-01 21:30 JST. The migration is **not complete**. PR #41
-remains open and draft at head `61d662f545fb5e5b5df2e18d0f69057d5c15e52f`.
-Actions run `36860303037` passed both application and Worker API jobs on rerun,
+Checkpoint: 2026-10-01 21:38 JST. The migration is **not complete**. PR #41
+remains open and draft at head `6c4273a02f377f3eabe6ef643f36664f516d9d06`.
+Actions run `36862463644` passed both application and Worker API jobs,
 including migration-data boundaries, Stripe receipt/billing/invoice suite,
-typechecks, and staging build. The first attempt of that run timed out three
-times in the PGlite subscription test; the rerun and Node 22.6.0 direct test
-passed. The transient cause is not known and should remain monitored.
+typechecks, and staging build. The prior code validation run `36860303037` also
+passed on rerun after its first attempt timed out three times in the PGlite
+subscription test. The direct Node 22.6.0 test passed 8/8; the transient cause
+is not known and should remain monitored.
 
 Staging Worker version `59deb036-3aa7-442f-9eba-11875715c43a` is deployed at
 100%. Read-only GETs for `/`, `/api/auth/ok`, and `/api/emoji/catalog` return
