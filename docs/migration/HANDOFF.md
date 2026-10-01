@@ -1,10 +1,10 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-01 21:38 JST. The migration is **not complete**. PR #41
-remains open and draft at head `6c4273a02f377f3eabe6ef643f36664f516d9d06`.
-Actions run `36862463644` passed both application and Worker API jobs,
-including migration-data boundaries, Stripe receipt/billing/invoice suite,
-typechecks, and staging build. The prior code validation run `36860303037` also
+Checkpoint: 2026-10-01 22:18 JST. The migration is **not complete**. PR #41
+remains open and draft at head `9f03497`. Actions run `36863199930` passed both
+application and Worker API jobs, including migration-data boundaries, Stripe
+receipt/billing/invoice suite, typechecks, and staging build. The prior code
+validation run `36860303037` also
 passed on rerun after its first attempt timed out three times in the PGlite
 subscription test. The direct Node 22.6.0 test passed 8/8; the transient cause
 is not known and should remain monitored.
@@ -30,6 +30,17 @@ deleted along with its temporary files. The existing staging app Cron was
 previously observed firing with the Stripe dispatcher disabled and zero claims.
 The new-Worker trigger propagation path remains unresolved, so the guarded
 post-write recovery drill has not passed.
+
+The 2026-10-01 12:56:38–13:17:53 UTC post-write retry again accepted a signed
+synthetic extension receipt but did not run its new Worker's dispatcher. It
+timed out with `received/pending`, `attempt_count=0`, before Time Travel or the
+encrypted R2 replay stage. Existing `fanmark-app-staging` Cron did fire at
+12:54:21 UTC. Cleanup independently confirmed the temporary Worker, both
+disposable D1s, config, and synthetic avatar were deleted; only the three
+existing staging D1s remain and the backup/avatar R2 buckets are empty. The
+dashboard had no Cron history yet and displayed a notice that new Worker
+history may take up to 30 minutes to appear. The new-Worker Cron path is still
+unverified; do not repeat the same recovery run before identifying the cause.
 
 `wrangler secret list` contains only `BETTER_AUTH_SECRET`,
 `REFERENCE_MASTER_SERVICE_SECRET`, and `VERIFIED_ACCESS_SECRET`. Stripe,
@@ -122,6 +133,13 @@ is still open because the scheduled dispatcher did not run; the confirmed
 cleanup means there is no residue to remove. No source Supabase rows,
 production routes, real user data, or domain/DNS state were accessed or
 changed.
+
+The fourth guarded synthetic recovery attempt (2026-10-01 22:17 JST) reproduced
+the same new-Worker Cron gap. The exact run evidence and cleanup readback are
+recorded in [`EXECUTION.md`](EXECUTION.md) and
+[`cutover-rehearsal.md`](cutover-rehearsal.md). PR #41 head `9f03497` has green
+application and Worker API jobs in Actions run `36863199930`; no source change
+was required for this documentation checkpoint.
 
 No Supabase migration or webhook request was made. User-data/Auth/Storage
 migration and public domain/DNS cutover remain reserved for the final stage.

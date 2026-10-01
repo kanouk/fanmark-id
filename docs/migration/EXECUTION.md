@@ -1,5 +1,29 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-01 新規Worker Cron dispatcher再試験（13:17 UTC）
+
+既存の`fanmark-app-staging`では12:54:21 UTCに毎分Cronのscheduled invocationを確認した。
+Stripe dispatcherは`disabled`・claim 0件、notification processorは処理対象0件で完了している。
+
+一方、使い捨てpost-write recovery Workerは`* * * * *`を登録してdeployし、署名済みの合成
+license-extension receiptを受け付けたが、20分の待機中にdispatcherは起動せず、receiptは
+`received/pending`、`attempt_count=0`のままだった。`synthetic_stripe_extension_dispatch_timeout`
+によりrecovery drillはTime Travelと暗号化R2 replayの前で停止した。実行時刻は2026-10-01
+12:56:38 UTCから13:17:53 UTC。Cron Events画面には履歴がなく、新規Workerの履歴表示には
+最大30分かかる旨の案内が表示された。[CloudflareのCron設定資料](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
+はtrigger反映に最大15分を見込むよう案内しているため、scheduled invocationが起きたとは判定しない。
+cleanup後のDashboard一覧には既存Workerが2つだけ表示され、Cron定義はapp stagingの2つだけだった。
+Freeプランの上限はアカウントあたり5 Cron Triggerなので、今回の事象はアカウント上限到達では
+説明できない。[Cloudflare Workers limits](https://developers.cloudflare.com/workers/platform/limits/)。
+
+cleanup summaryと独立readbackで使い捨てWorker、Business/Auth D1、config、合成avatarの削除を
+確認した。既存staging D1は3つだけで、backup/avatar staging R2は両方object count 0、0 B。
+バックアップbundleは開始前の段階で止まっており、R2 backup objectは作られていない。実ユーザー
+データ、Supabase行、実Stripe API、メール、production route、domain/DNSは使っていない。
+
+既存WorkerのCron成功と新規Workerの未確認状態を分けて記録する。Issue #34/#37とpost-write
+recovery gateは未完了のままにし、同じ復旧手順を原因調査なしで再実行しない。
+
 ## 2026-10-01 staging migration selector guard
 
 `wrangler.emoji-api-staging.jsonc` にMASTER_DBのmigration selectorがなく、

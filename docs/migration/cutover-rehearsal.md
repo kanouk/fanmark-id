@@ -690,3 +690,29 @@ correct account is verified and the earlier canary's Worker/D1 cleanup state
 is independently read back. This extension is prepared but unverified in
 staging; issue #37 remains open. No production data or domain/DNS state was
 changed.
+
+## New disposable Worker Cron gap reproduced (2026-10-01 JST)
+
+The guarded `test:migration:staging-postwrite-recovery` retry deployed a temporary
+Worker with an every-minute Cron schedule and accepted a signed synthetic
+license-extension receipt. The existing `fanmark-app-staging` Worker emitted a
+scheduled event at 12:54:21 UTC, but the temporary Worker did not claim the
+receipt during its 20-minute wait: the receipt remained `received/pending` with
+`attempt_count=0`. The run stopped before Time Travel, encrypted backup, or R2
+replay. Its private error code was
+`synthetic_stripe_extension_dispatch_timeout` at
+`wait_for_synthetic_cron_dispatch`.
+
+The dashboard showed no Cron Events history for the new Worker and noted that
+history for new or recently renamed Workers can take up to 30 minutes to
+appear. The Cron trigger was visible in the Worker settings. Because the
+invocation itself was not independently observed, this run is incomplete and
+does not pass the recovery gate. Keep issues #34 and #37 open and investigate
+the new-Worker schedule path before another identical run.
+
+Cleanup readback confirmed deletion of the temporary Worker, both disposable
+D1 databases, its config, and the synthetic avatar. Only the three existing
+staging D1s remained. The backup and avatar staging buckets both read back as
+empty (0 objects, 0 B); the run stopped before producing a backup bundle.
+No Supabase application rows, real user data, real Stripe API, email,
+production route, or domain/DNS state was used or changed.
