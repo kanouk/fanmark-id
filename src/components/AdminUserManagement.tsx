@@ -833,6 +833,45 @@ export const AdminUserManagement: React.FC = () => {
             </div>
           </SheetFooter>
         </SheetContent>
+        <AlertDialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
+          <AlertDialogContent
+            className="z-[60]"
+            style={{ pointerEvents: "auto" }}
+            onCloseAutoFocus={(event) => {
+              event.preventDefault();
+              statusActionButtonRef.current?.focus();
+            }}
+          >
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {statusAction === "suspend" ? "アカウントを停止します" : "アカウント停止を解除しますか？"}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {statusAction === "suspend"
+                  ? "このユーザーはログインや API 利用ができなくなります。必要であれば理由を入力してください。"
+                  : "停止状態を解除し、ユーザーが再びログインできるようにします。"}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div>
+              <Textarea
+                value={statusReason}
+                onChange={(event) => setStatusReason(event.target.value)}
+                placeholder="内部向けのメモ / 理由 (任意)"
+              />
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel>キャンセル</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => statusMutation.mutate()}
+                disabled={statusMutation.isPending}
+                className={statusAction === "suspend" ? "bg-destructive hover:bg-destructive/90" : ""}
+              >
+                {statusMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {statusAction === "suspend" ? "停止する" : "停止を解除する"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </Sheet>
 
       <Dialog open={isPlanDialogOpen} onOpenChange={setIsPlanDialogOpen}>
@@ -904,46 +943,6 @@ export const AdminUserManagement: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <AlertDialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
-        <AlertDialogContent
-          className="z-[60]"
-          style={{ pointerEvents: "auto" }}
-          onCloseAutoFocus={(event) => {
-            event.preventDefault();
-            statusActionButtonRef.current?.focus();
-          }}
-        >
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {statusAction === "suspend" ? "アカウントを停止します" : "アカウント停止を解除しますか？"}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {statusAction === "suspend"
-                ? "このユーザーはログインや API 利用ができなくなります。必要であれば理由を入力してください。"
-                : "停止状態を解除し、ユーザーが再びログインできるようにします。"}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div>
-            <Textarea
-              value={statusReason}
-              onChange={(event) => setStatusReason(event.target.value)}
-              placeholder="内部向けのメモ / 理由 (任意)"
-            />
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>キャンセル</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => statusMutation.mutate()}
-              disabled={statusMutation.isPending}
-              className={statusAction === "suspend" ? "bg-destructive hover:bg-destructive/90" : ""}
-            >
-              {statusMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {statusAction === "suspend" ? "停止する" : "停止を解除する"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
         <DialogContent className="z-[60] sm:max-w-lg" style={{ pointerEvents: "auto" }}>

@@ -1,5 +1,31 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-01 staging再開確認と管理ユーザーUI修正
+
+再開時に`fanmark-staging-inapp` profileの`wrangler whoami --json`が
+`fanmark.id@gmail.com`とstaging設定に固定されたCloudflare account IDを返し、
+PR #41の当時のhead `58ba192`はdraft/open/clean、必要なCI 2件がpassだった。
+business D1は`0018`/`0019`を含めmigration pendingなし。read-only HTTPはSPA、
+Better Auth health/session、emoji catalog、参照マスター価格が200、未認証管理
+sessionが401、Stripe webhookが404だった。Authのuser/account/session/verification/
+factor/role/assurance/auditとbusinessのprofile/license/audit/notification eventは
+0件、emoji masterは3,944件。読み取り時のD1 writesは0件。
+
+合成管理ユーザーのブラウザcanaryで、停止APIとAuth D1更新は成功する一方、確認
+ダイアログを閉じるとユーザー詳細Sheetも閉じ、画面上の停止状態を読めない問題を
+再現した。`src/components/AdminUserManagement.tsx`で停止確認AlertDialogを詳細Sheet
+の子に移し、停止/復旧後も同じ管理画面で詳細が更新されるよう修正した。
+
+対象ESLint、root typecheck、管理ユーザーclient契約7/7、Worker D1 12/12とtypecheck、
+staging build（3,723 modules）、Wrangler deploy dry-runが成功。staging Worker
+`7a7e2597-fc05-4fcb-b117-ba331dfa54e1`を100%配信後、`--admin-user-management-browser`
+canaryがBetter Auth sign-in/TOTP、Free→Max→Free、停止/復旧、即時失効とブラウザ表示を
+確認して成功した。Authのuser-owned全表、businessのprofile/license/audit/通知行は
+cleanup後0件。MFA generation counterはfactor作成/削除に伴い進む場合がある。
+
+このcanaryは実ユーザー行、Supabase行、メール送信、Stripe API、production route、
+domain/DNSを使っていない。Stripe・Resend・OAuthのsecretsは未設定のまま。
+
 ## 2026-09-29 Supabase Stripe non-extension Checkout receipts
 
 The Supabase webhook now persists all supported Checkout Session events before

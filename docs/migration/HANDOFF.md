@@ -1,20 +1,29 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-09-29 JST. The migration is **not complete**. PR #41 is open and
-draft. Isolated Cloudflare staging D1 and Workers deployments are present; no
-production Worker deployment, user-data import, or public DNS/domain cutover
-has been performed.
+Checkpoint: 2026-10-01 JST. The migration is **not complete**. PR #41 remains
+open and draft. The checked-out branch was at `58ba192` on resumption and its
+latest Worker API and staging application CI jobs passed. The latest staging
+Worker is `7a7e2597-fc05-4fcb-b117-ba331dfa54e1` at 100%. Production routing,
+real user/Auth/Storage import, and public domain/DNS cutover have not been
+performed.
 
-PR #41 is open and draft at `f5c760e`; GitHub Actions run `36486867080` passes
-both the Cloudflare staging application and Worker API jobs. Supabase Preview
-is skipped by the repository's workflow-isolation guard. The Stripe webhook
-durably records non-extension Checkout sessions and marks their receipt ignored
-only under the current dispatch lease. Its subscription-user resolver now
-rejects email-only account linking and accepts only an exact stored mapping or
-verified Customer metadata linked to one existing unbound account. Seven
-focused tests, the receipt package, Deno check, targeted ESLint, and CI pass.
-No Supabase migration or webhook request was made; issue #32 and real-provider
-acceptance remain open.
+The dedicated Wrangler profile confirms `fanmark.id@gmail.com` and the account
+pinned by staging configuration. Business D1 has no pending migrations after
+`0018`/`0019`. A synthetic MFA admin browser canary found and then verified the
+fix for a status-confirmation dialog that closed its parent user-detail sheet.
+The repeat canary passed Free→Max→Free, suspend/restore, immediate expiry, and
+rendered-state checks; Auth user-owned rows and business profile/license/audit/
+notification rows read back at zero after cleanup. Targeted lint/typecheck,
+client/API tests, staging build, Wrangler dry-run, and Worker D1 tests passed.
+
+The current `wrangler secret list` contains only `BETTER_AUTH_SECRET`,
+`REFERENCE_MASTER_SERVICE_SECRET`, and `VERIFIED_ACCESS_SECRET`. Stripe,
+Resend, and OAuth staging integration is therefore still disabled and awaits
+the corresponding test credentials/configuration. The active deployment and
+canary are documented in `docs/migration/EXECUTION.md`.
+
+No Supabase migration or webhook request was made. User-data/Auth/Storage
+migration and public domain/DNS cutover remain reserved for the final stage.
 
 At 2026-09-29 05:43 JST, PR #41 validation run `36480072183` passed both the
 staging application and Worker API jobs; the draft PR is `CLEAN`. A read-only
