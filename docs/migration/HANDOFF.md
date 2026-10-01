@@ -1,12 +1,15 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-02 00:35 JST. The migration is **not complete**. PR #41
-remains open and draft at head `0bd0884`. Actions run `36877649923` passed both
-application and Worker API jobs; it includes the read-only D1 retry adjustment
-for the guarded recovery monitor. The prior code validation run `36870117511`
-also passed on rerun after its first attempt timed out three times in the PGlite
-subscription test. The direct Node 22.6.0 test passed 8/8; the transient cause
-is not known and should remain monitored.
+Checkpoint: 2026-10-02 00:59 JST. The migration is **not complete**. PR #41
+remains open and draft at head `5a109c1`. Latest Actions run `36885538010`
+passed the Worker API job but failed the application job: PGlite
+`subscription-application.test.mjs` produced only `TAP version 13` and timed
+out at 120 seconds on all three attempts. The same test passed 8/8 under Node
+22.6.0 in a focused run, and the full `experiments/stripe-receipts` suite
+passed locally. Earlier run `36884270848` passed both CI jobs on the same
+application code; the commits since then only update migration evidence. The
+CI stall's cause remains unknown, and local tests do not make the latest CI
+green.
 
 Latest guarded post-write recovery run started at 14:11:58.740 UTC and ended at
 14:33:51.345 UTC. Its temporary Worker was deployed with an every-minute Cron;
@@ -57,6 +60,13 @@ Events page displayed the exact same timestamps and CPU values, including rows
 after the probe's deletion/readback. These dashboard rows are stale, shared, or
 otherwise not attributable by Worker; they are not execution proof. The live
 tail remained the Worker-specific evidence and contained no scheduled marker.
+
+On 2026-10-02, read-only Wrangler OAuth verification still identified
+`fanmark.id@gmail.com` and the intended Fanmark.id Cloudflare account. The
+staging secret-name readback contained only `BETTER_AUTH_SECRET`,
+`REFERENCE_MASTER_SERVICE_SECRET`, and `VERIFIED_ACCESS_SECRET`; Stripe
+test-mode and Resend credentials are not configured. No secret values were
+read. Their provider canaries remain pending owner-provided staging credentials.
 
 Staging Worker version `59deb036-3aa7-442f-9eba-11875715c43a` is deployed at
 100%. Read-only GETs for `/`, `/api/auth/ok`, and `/api/emoji/catalog` return
