@@ -4542,3 +4542,12 @@ two transformed credentials, one deferred inactive credential, and conflicting
 coverage rejection. The result remains `public_rows_reconciled`, with
 `deployable` and `fullMigrationReconciled` false. No source rows, remote D1,
 production route, or domain state was read or changed.
+
+The wider static writer audit at `2026-10-01T23:41:40Z` included Worker code,
+all D1 migration SQL, and migration scripts/SQL. Across 79 timestamp defaults
+in 40 tables it parsed 140 literal `INSERT` column lists. Twelve defaults had
+no supported literal writer: eight reviewed versioned reference-master columns
+and four user-scoped columns in notification preferences, archived history,
+and user roles. Three generated `INSERT` statements for `emoji_master`,
+`extension_coupons`, and `email_templates` remain unparsed. Column coverage and
+timestamp-value/transaction-time proof remain incomplete.

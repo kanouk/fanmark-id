@@ -845,3 +845,14 @@ cutover. The v22 current-catalog synthetic importer replay completed 40/40
 checkpoints with 10 synthetic rows, two transformed credentials, and one
 deferred inactive credential. It rejected conflicting coverage and remained
 `public_rows_reconciled`, with `deployable` and `fullMigrationReconciled` false.
+
+A separate static writer audit over the catalog observed at
+`2026-10-01T23:41:40Z` scanned Worker TypeScript, Worker D1 migrations, and
+migration scripts/SQL. It found 79 defaults across 40 tables and 140 supported
+literal `INSERT` column lists. Twelve timestamp columns have no supported
+literal writer: the eight versioned reference-master columns above and four
+user-scoped columns (`notification_preferences` created/updated,
+`notifications_history.archived_at`, and `user_roles.created_at`). Three
+generated `INSERT` statements for `emoji_master`, `extension_coupons`, and
+`email_templates` remain unparsed. Column coverage remains incomplete, and
+this audit does not prove the timestamp values or transaction-time semantics.

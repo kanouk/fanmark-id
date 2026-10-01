@@ -3757,3 +3757,13 @@ tests pass 25/25. A v22 current-catalog synthetic importer replay also passed
 deferred inactive credential; conflicting coverage was rejected and
 `fullMigrationReconciled` remains false. No application data, remote schema,
 deployment, or public route was changed.
+
+The wider static writer audit at `2026-10-01T23:41:40Z` included Worker code,
+all D1 migration SQL, and migration scripts/SQL. Across 79 timestamp defaults
+in 40 tables, it parsed 140 literal `INSERT` column lists. Twelve defaults had
+no supported literal writer: the eight reviewed versioned reference-master
+columns plus four user-scoped columns in notification preferences, archived
+history, and user roles. Three generated `INSERT` statements for `emoji_master`,
+`extension_coupons`, and `email_templates` remain unparsed. Operation/value
+coverage is incomplete; this static scan does not establish timestamp precision
+or transaction-time semantics.

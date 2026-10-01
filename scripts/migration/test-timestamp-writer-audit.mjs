@@ -133,6 +133,7 @@ test("source-shaped versioned reference masters have no direct Worker or migrati
   const sqlRoots = [
     path.join(repoRoot, "workers/api/migrations"),
     path.join(repoRoot, "workers/api/migrations-business"),
+    path.join(repoRoot, "scripts/migration"),
   ];
   const files = [
     ...sourceRoots.flatMap((root) => sourceFiles(root, /\.(?:mjs|ts)$/u)),
