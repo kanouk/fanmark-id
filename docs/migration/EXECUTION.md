@@ -58,6 +58,11 @@ staging build後、2026-10-01 10:21 JSTにWorker version
 この反映でStripe API、メール、D1 migration/write、実ユーザーデータ、production route、
 domain/DNSは使っていない。
 
+後続のCI run `36848783232`ではWorker API jobは成功したが、application jobの
+`subscription-application.test.mjs`が120秒で2回タイムアウトした。直前runでは同じテストが
+初回timeout後の新規プロセス再試行で通過し、Node 22.6.0のローカル単体・全suiteも成功する。
+このため同一テストだけ最大3回の独立プロセス試行に変更した。新しいCI検証はpush後に行う。
+
 ## 2026-09-29 Supabase Stripe non-extension Checkout receipts
 
 The Supabase webhook now persists all supported Checkout Session events before

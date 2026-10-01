@@ -39,7 +39,8 @@ for (const file of testFiles) {
     : ["--test", "--test-concurrency=1", `test/${file}`];
   if (typeScriptImports.has(file)) args.unshift("--import", "tsx");
 
-  const attempts = pgliteTestFiles.has(file) ? 2 : 1;
+  let attempts = pgliteTestFiles.has(file) ? 2 : 1;
+  if (file === "subscription-application.test.mjs") attempts = 3;
   // PGlite can leave a timed-out node:test child alive; bound the outer process
   // and start a clean retry only for ETIMEDOUT.
   const timeoutMs = file === "snapshot-export.test.mjs" || file === "subscription-application.test.mjs"

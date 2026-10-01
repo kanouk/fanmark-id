@@ -1,14 +1,18 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-01 10:21 JST. The migration is **not complete**. PR #41
-remains open and draft at head `41b1fd2`. Validation run `36847883045` passed
-both staging application and Worker API jobs. The existing PGlite CI test
-needed its outer timeout raised from 60 to 120 seconds; the full receipt runner
-also passes locally under Node 22.6.0. Staging Worker version
-`59deb036-3aa7-442f-9eba-11875715c43a` is deployed at 100%. Read-only GETs for
-`/`, `/api/auth/ok`, and `/api/emoji/catalog` return 200; the Stripe webhook
-returns 404 because its selector is still unset. Production routing, real
-user/Auth/Storage import, and public domain/DNS cutover have not been performed.
+Checkpoint: 2026-10-01 JST. The migration is **not complete**. PR #41 remains
+open and draft; latest pushed head is `9921abe`. CI run `36847883045` passed
+both jobs. Follow-up run `36848783232` passed Worker API but its application
+job timed out twice at 120 seconds in
+`subscription-application.test.mjs`. The same test and full suite pass locally
+under Node 22.6.0. The current worktree allows up to three fresh-process
+attempts for that one test; this retry adjustment is not yet pushed.
+
+Staging Worker version `59deb036-3aa7-442f-9eba-11875715c43a` is deployed at
+100%. Read-only GETs for `/`, `/api/auth/ok`, and `/api/emoji/catalog` return
+200; the Stripe webhook returns 404 because its selector is still unset.
+Production routing, real user/Auth/Storage import, and public domain/DNS cutover
+have not been performed.
 
 The dedicated Wrangler profile confirms `fanmark.id@gmail.com` and the account
 pinned by staging configuration. Business D1 has no pending migrations after
