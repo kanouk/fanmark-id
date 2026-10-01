@@ -117,6 +117,7 @@ let report = {
     authSignInDuringFreezeSucceeded: false,
     syntheticAvatarKey: null,
     syntheticAvatarSha256: null,
+    syntheticAvatarReadbackDiagnostics: null,
     storageUploadDuringFreezeStatus: null,
     storageUploadDuringFreezeError: null,
     storageObjectSurvivedTimeTravel: false,
@@ -307,6 +308,16 @@ function createTemporaryConfig() {
     account_id: accountId,
     workers_dev: true,
     triggers: { crons: ["* * * * *"] },
+    observability: {
+      enabled: true,
+      head_sampling_rate: 1,
+      logs: {
+        enabled: true,
+        head_sampling_rate: 1,
+        invocation_logs: true,
+        persist: true,
+      },
+    },
     d1_databases: [{
       binding: "FANMARK_DB",
       database_name: databaseName,
@@ -670,8 +681,23 @@ async function readSyntheticAvatar(origin, key) {
 
 async function assertSyntheticAvatarRead(origin, expected) {
   const actual = await readSyntheticAvatar(origin, expected.key);
-  if (!actual || !actual.bytes.equals(Buffer.from(expected.bytesBase64, "base64")) ||
-      actual.contentType !== expected.contentType || actual.cacheControl !== expected.cacheControl) {
+  const expectedBytes = Buffer.from(expected.bytesBase64, "base64");
+  const bytesMatch = actual?.bytes.equals(expectedBytes) ?? false;
+  const contentTypeMatch = actual?.contentType === expected.contentType;
+  const cacheControlMatch = actual?.cacheControl === expected.cacheControl;
+  report.recovery.syntheticAvatarReadbackDiagnostics = {
+    objectFound: actual !== null,
+    expectedSize: expectedBytes.byteLength,
+    actualSize: actual?.bytes.byteLength ?? null,
+    bytesMatch,
+    expectedContentType: expected.contentType,
+    actualContentType: actual?.contentType ?? null,
+    contentTypeMatch,
+    expectedCacheControl: expected.cacheControl,
+    actualCacheControl: actual?.cacheControl ?? null,
+    cacheControlMatch,
+  };
+  if (!actual || !bytesMatch || !contentTypeMatch || !cacheControlMatch) {
     fail("synthetic_avatar_readback_mismatch");
   }
 }
