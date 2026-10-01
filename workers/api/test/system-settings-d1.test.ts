@@ -137,6 +137,25 @@ describe("D1 system settings API", () => {
     expect(await database.prepare("SELECT count(*) AS count FROM audit_logs").first()).toEqual({ count: 1 });
   });
 
+  it("updates the public maximum emoji count through the audited admin route", async () => {
+    if (!database) throw new Error("FANMARK_DB binding is unavailable");
+    await insertSettings();
+    const response = await request(adminUrl, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ key: "max_emoji_characters", value: "6", expectedValue: "5" }),
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ schemaVersion: 1, updatedSetting: "max_emoji_characters" });
+    expect(await database.prepare("SELECT setting_value, is_public FROM system_settings WHERE setting_key = ?")
+      .bind("max_emoji_characters").first()).toEqual({ setting_value: "6", is_public: 1 });
+    expect(await database.prepare("SELECT user_id, resource_id, metadata FROM audit_logs").first()).toEqual({
+      user_id: "synthetic-admin",
+      resource_id: "max_emoji_characters",
+      metadata: JSON.stringify({ settingKey: "max_emoji_characters" }),
+    });
+  });
+
   it("rejects stale, unknown, invalid, and private-visibility-mismatched settings", async () => {
     if (!database) throw new Error("FANMARK_DB binding is unavailable");
     await insertSettings();
@@ -145,6 +164,8 @@ describe("D1 system settings API", () => {
     expect((await body({ key: "free_fanmarks_limit", value: "6", expectedValue: "wrong" })).status).toBe(409);
     expect((await body({ key: "social_login_enabled", value: "true", expectedValue: "false" })).status).toBe(400);
     expect((await body({ key: "free_fanmarks_limit", value: "0", expectedValue: "5" })).status).toBe(400);
+    expect((await body({ key: "max_emoji_characters", value: "0", expectedValue: "5" })).status).toBe(400);
+    expect((await body({ key: "max_emoji_characters", value: "1000001", expectedValue: "5" })).status).toBe(400);
     expect((await body({ key: "enterprise_pricing", value: "1.5", expectedValue: "5" })).status).toBe(400);
 
     await database.prepare("UPDATE system_settings SET is_public = 1 WHERE setting_key = ?")

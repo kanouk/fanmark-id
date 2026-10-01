@@ -36,6 +36,7 @@ const EDITABLE_SETTING_KEYS = new Set<string>([
   "premium_pricing",
   "business_fanmarks_limit",
   "business_pricing",
+  "max_emoji_characters",
   "enterprise_fanmarks_limit",
   "enterprise_pricing",
   "creator_stripe_price_id",

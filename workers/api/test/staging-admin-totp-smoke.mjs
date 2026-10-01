@@ -51,7 +51,7 @@ function requireExplicitStagingConsent() {
   const waitlistAdminReadback = args.has("--waitlist-admin-readback");
   const broadcastEmailBrowser = args.has("--broadcast-email-browser");
   const broadcastEmailReadback = args.has("--broadcast-email-readback") || broadcastEmailBrowser;
-  const systemSettingsReadback = args.has("--system-settings-readback");
+  const systemSettingsReadback = args.has("--system-settings-readback") || lifecycleSettingsBrowser;
   const lifecycleSettingsReadback = args.has("--lifecycle-settings-readback") || lifecycleSettingsBrowser;
   const notificationManualEvent = args.has("--notification-manual-event");
   const hasExplicitSmokeAction = [
@@ -1341,7 +1341,7 @@ async function exerciseSystemSettingsReadback(cookie, adminUserId, state) {
   assert.deepEqual(Object.keys(adminPayload.settings ?? {}).sort(), expectedAdminKeys);
   assert.ok(Object.values(adminPayload.settings).every((value) => typeof value === "string"));
 
-  state.key = "free_fanmarks_limit";
+  state.key = "max_emoji_characters";
   state.originalValue = await readSystemSettingValue(state.key);
   assert.match(state.originalValue, /^(?:0|[1-9]\d*)$/u);
   const originalNumber = Number(state.originalValue);
@@ -2122,6 +2122,7 @@ async function withStagingAdminBrowser(cookie, profilePrefix, review) {
     await cdp.send("Page.enable");
     cdp.adminApiResponses = [];
     cdp.lifecycleApiResponses = [];
+    cdp.systemSettingsApiResponses = [];
     cdp.on("Network.responseReceived", ({ response }) => {
       if (!response?.url) return;
       const url = new URL(response.url);
@@ -2130,6 +2131,9 @@ async function withStagingAdminBrowser(cookie, profilePrefix, review) {
       }
       if (url.pathname === "/api/admin/system-settings/lifecycle") {
         cdp.lifecycleApiResponses.push({ status: response.status, statusText: response.statusText });
+      }
+      if (url.pathname === "/api/admin/system-settings") {
+        cdp.systemSettingsApiResponses.push({ status: response.status, statusText: response.statusText });
       }
     });
     await cdp.send("Emulation.setDeviceMetricsOverride", {
@@ -2598,6 +2602,74 @@ async function reviewLifecycleSettingsInBrowser(cookie, state) {
   });
 }
 
+async function reviewMaxEmojiSettingsInBrowser(cookie, state) {
+  const fieldStateExpression = `(() => {
+    const input = document.querySelector('#max-emoji-characters');
+    const button = input?.parentElement?.querySelector('button');
+    if (!input || !button) return null;
+    const rect = button.getBoundingClientRect();
+    return { value: input.value, buttonText: button.innerText.trim(), disabled: button.disabled,
+      x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, width: rect.width, height: rect.height };
+  })()`;
+  const setFieldExpression = (value) => `(() => {
+    const input = document.querySelector('#max-emoji-characters');
+    if (!input) return null;
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    if (!setter) return null;
+    setter.call(input, ${JSON.stringify(String(value))});
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    return input.value;
+  })()`;
+
+  await withStagingAdminBrowser(cookie, "fanmark-system-settings-ui-", async (cdp) => {
+    await clickAdminTab(cdp, "システム設定");
+    const initial = await waitForBrowserValue(
+      cdp,
+      fieldStateExpression,
+      (value) => value?.buttonText === "更新",
+      "max_emoji_characters_form_missing",
+    );
+    assert.equal(initial.value, state.originalValue, "AdminSettings did not render the D1 maximum emoji baseline");
+    assert.equal(initial.disabled, true, "unchanged maximum emoji settings should not allow an update");
+
+    const saveThroughForm = async (value) => {
+      assert.equal(await browserValue(cdp, setFieldExpression(value)), String(value), "maximum emoji input did not accept the synthetic value");
+      await waitForBrowserValue(
+        cdp,
+        fieldStateExpression,
+        (current) => current?.value === String(value) && current.disabled === false,
+        "max_emoji_characters_update_button_not_enabled",
+      );
+      const priorApiCalls = cdp.systemSettingsApiResponses.length;
+      await clickBrowserTarget(cdp, fieldStateExpression, "max_emoji_characters_update_button");
+      const deadline = Date.now() + 15_000;
+      let actual;
+      while (Date.now() < deadline) {
+        actual = await readSystemSettingValue(state.key);
+        if (actual === String(value)) break;
+        await delay(250);
+      }
+      assert.equal(actual, String(value), "AdminSettings maximum emoji update did not reach D1");
+      const saved = await waitForBrowserValue(
+        cdp,
+        fieldStateExpression,
+        (current) => current?.value === String(value) && current.disabled === true,
+        "max_emoji_characters_update_not_rendered_as_saved",
+      );
+      assert.equal(saved.buttonText, "更新");
+      assert.ok(cdp.systemSettingsApiResponses.length > priorApiCalls, "maximum emoji form made no admin system settings request");
+      assert.equal(cdp.systemSettingsApiResponses.at(-1)?.status, 200, "maximum emoji form used an unexpected API result");
+      await dismissStagingToastInBrowser(cdp);
+    };
+
+    await saveThroughForm(state.temporaryValue);
+    assert.equal(await readSystemSettingValue(state.key), state.temporaryValue, "temporary maximum emoji value was not independently readable");
+    await saveThroughForm(state.originalValue);
+    assert.equal(await readSystemSettingValue(state.key), state.originalValue, "AdminSettings did not restore the maximum emoji baseline");
+  });
+}
+
 async function exerciseBroadcastEmailAdmin(cookie, userId, targetUserId, targetUsername, { browserReview = false } = {}) {
   const route = "/api/admin/broadcast-emails";
   const username = `codex-broadcast-admin-${randomBytes(6).toString("hex")}`;
@@ -2916,6 +2988,7 @@ async function main() {
     }
     if (actions.lifecycleSettingsBrowser) {
       await reviewLifecycleSettingsInBrowser(cookie, lifecycleSettingState);
+      await reviewMaxEmojiSettingsInBrowser(cookie, systemSettingState);
     }
     if (actions.notificationManualEvent) {
       await exerciseNotificationManualEvent(cookie, targetUserId);
@@ -3070,7 +3143,7 @@ async function main() {
     console.log("Staging lifecycle settings read/update passed. Anonymous and invalid writes were rejected; the MFA-protected update was read back, restored to baseline, and the public endpoint remained no-store.");
   }
   if (actions.lifecycleSettingsBrowser) {
-    console.log("The rendered AdminSettings lifecycle form updated and restored the synthetic grace-period setting through the staging Worker; D1-backed public readback confirmed both values.");
+    console.log("The rendered AdminSettings lifecycle and maximum-emoji forms updated and restored their synthetic settings through the staging Worker; D1-backed readback confirmed the baselines.");
   }
   if (actions.notificationManualEvent) {
     console.log("Staging MFA-protected manual notification-event creation passed; the deployed Cron produced one delivered Japanese in-app notification, and event, notification, profile, and Auth rows were removed.");

@@ -609,7 +609,7 @@ const priceIdToPlanType = {
 | `fanmark_licenses` | ライセンス状態 | status, license_end, grace_expires_at |
 | `fanmark_tier_extension_prices` | 延長価格マスタ | tier_level, months, price_yen, stripe_price_id |
 | `fanmark_tiers` | Tier 定義 | tier_level, initial_license_days |
-| `system_settings` | システム設定 | creator/max/business_stripe_price_id, grace_period_days |
+| `system_settings` | システム設定 | 招待モード、最大絵文字数、プラン制限/価格、Stripe設定、返却猶予期間 |
 | `audit_logs` | 操作履歴 | action, resource_type, metadata |
 
 ---

@@ -23,7 +23,13 @@ import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Settings, Wrench } from "lucide-react";
 
 export const AdminSettings = () => {
-  const { settings: systemSettings, loading: systemLoading } = useSystemSettings();
+  const {
+    settings: systemSettings,
+    loading: systemLoading,
+    error: systemError,
+    refetch: refetchSystemSettings,
+    updateSetting: updateSystemSetting,
+  } = useSystemSettings();
   const {
     settings: lifecycleSettings,
     loading: lifecycleLoading,
@@ -42,6 +48,7 @@ export const AdminSettings = () => {
 
   // Grace period state
   const [gracePeriodDays, setGracePeriodDays] = useState(lifecycleSettings.grace_period_days);
+  const [maxEmojiCharacters, setMaxEmojiCharacters] = useState(systemSettings.max_emoji_characters);
   const [maintenanceMessage, setMaintenanceMessage] = useState(maintenanceSettings.maintenance_message);
   const [maintenanceEndTime, setMaintenanceEndTime] = useState("");
   const maintenanceMode = maintenanceSettings.maintenance_mode;
@@ -57,6 +64,10 @@ export const AdminSettings = () => {
   useEffect(() => {
     setGracePeriodDays(lifecycleSettings.grace_period_days);
   }, [lifecycleSettings.grace_period_days]);
+
+  useEffect(() => {
+    setMaxEmojiCharacters(systemSettings.max_emoji_characters);
+  }, [systemSettings.max_emoji_characters]);
 
   useEffect(() => {
     setMaintenanceMessage(maintenanceSettings.maintenance_message);
@@ -75,6 +86,20 @@ export const AdminSettings = () => {
         description: "返却猶予期間の更新に失敗しました",
         variant: "destructive",
       });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleSaveMaxEmojiCharacters = async () => {
+    setUpdating(true);
+    try {
+      const updated = await updateSystemSetting("max_emoji_characters", maxEmojiCharacters);
+      if (!updated) throw new Error("max_emoji_characters_update_failed");
+      toast({ title: "設定更新完了", description: `最大絵文字数を${maxEmojiCharacters}文字に更新しました` });
+    } catch (error) {
+      console.error("Error updating maximum emoji characters:", error);
+      toast({ title: "エラー", description: "最大絵文字数の更新に失敗しました", variant: "destructive" });
     } finally {
       setUpdating(false);
     }
@@ -259,9 +284,50 @@ export const AdminSettings = () => {
         </div>
       </Card>
 
-      <div className="rounded-2xl border border-dashed border-border/50 bg-muted/10 p-5 text-sm text-muted-foreground">
-        招待制モード（現在: {systemSettings.invitation_mode ? '有効' : '無効'}）と最大絵文字文字数（{systemSettings.max_emoji_characters} 文字）の編集 UI は未実装です。必要に応じて設定テーブルを直接更新してください。
-      </div>
+      <Card className="border-border/60 shadow-sm">
+        <div className="space-y-4 p-6">
+          {systemError && (
+            <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+              システム設定を読み込めないため、最大絵文字数の更新を停止しています。
+              <Button variant="outline" size="sm" className="ml-2" onClick={() => void refetchSystemSettings()}>
+                再読み込み
+              </Button>
+            </div>
+          )}
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold text-foreground">ファンマーク登録設定</h2>
+            <p className="text-sm text-muted-foreground">
+              1件のファンマークに使える絵文字数の上限を設定します。
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="max-emoji-characters">最大絵文字数</Label>
+            <div className="flex max-w-sm gap-2">
+              <Input
+                id="max-emoji-characters"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={1_000_000}
+                step={1}
+                value={maxEmojiCharacters}
+                onChange={(event) => setMaxEmojiCharacters(Number(event.target.value))}
+                disabled={updating || Boolean(systemError)}
+              />
+              <Button
+                onClick={handleSaveMaxEmojiCharacters}
+                disabled={updating || Boolean(systemError) ||
+                  !Number.isSafeInteger(maxEmojiCharacters) || maxEmojiCharacters < 1 ||
+                  maxEmojiCharacters > 1_000_000 || maxEmojiCharacters === systemSettings.max_emoji_characters}
+                size="sm"
+              >
+                {updating ? <Loader2 className="h-4 w-4 animate-spin" /> : "更新"}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">1〜1,000,000の整数を指定してください。</p>
+          </div>
+        </div>
+      </Card>
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>

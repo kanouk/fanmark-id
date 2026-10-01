@@ -57,9 +57,11 @@ test("uses no-store same-origin Worker requests for reads and audited admin upda
   const publicSettings = settings(SYSTEM_SETTINGS_PUBLIC_KEYS);
   const fetcher: typeof fetch = async (input, init) => {
     calls.push({ url: String(input), init });
-    return init?.method === "PATCH"
-      ? Response.json({ schemaVersion: 1, updatedSetting: "invitation_mode" })
-      : Response.json({ schemaVersion: 1, settings: publicSettings });
+    if (init?.method === "PATCH") {
+      const body = JSON.parse(String(init.body)) as { key: string };
+      return Response.json({ schemaVersion: 1, updatedSetting: body.key });
+    }
+    return Response.json({ schemaVersion: 1, settings: publicSettings });
   };
 
   await fetchSystemSettingsFromWorker({
@@ -72,6 +74,11 @@ test("uses no-store same-origin Worker requests for reads and audited admin upda
     authBaseUrl: "https://api.example.test",
     fetcher,
   });
+  await updateSystemSettingInWorker({ key: "max_emoji_characters", value: "6", expectedValue: "5" }, {
+    apiBaseUrl: "https://api.example.test",
+    authBaseUrl: "https://api.example.test",
+    fetcher,
+  });
 
   assert.equal(calls[0]?.url, "https://api.example.test/api/system/settings");
   assert.equal(calls[0]?.init?.method, "GET");
@@ -80,6 +87,9 @@ test("uses no-store same-origin Worker requests for reads and audited admin upda
   assert.equal(calls[1]?.url, "https://api.example.test/api/admin/system-settings");
   assert.equal(calls[1]?.init?.method, "PATCH");
   assert.equal(calls[1]?.init?.body, JSON.stringify({ key: "invitation_mode", value: "true", expectedValue: "false" }));
+  assert.equal(calls[2]?.url, "https://api.example.test/api/admin/system-settings");
+  assert.equal(calls[2]?.init?.method, "PATCH");
+  assert.equal(calls[2]?.init?.body, JSON.stringify({ key: "max_emoji_characters", value: "6", expectedValue: "5" }));
 });
 
 test("does not fall back when the Worker is unavailable or cross-origin", async () => {

@@ -35,6 +35,11 @@ include the two private Enterprise values. The plan UI waits for settings and
 shows an error/retry instead of presenting fallback pricing when the Worker
 cannot load them.
 
+`AdminSettings` also edits the allowlisted `max_emoji_characters` value through
+the same audited administrator API. Its input is limited to integers from 1 to
+1,000,000 and is disabled when the setting projection cannot be loaded.
+Invitation mode already has its editor in `AdminInvitationManager`.
+
 `stripe_mode` and Price IDs are configuration only. This slice does not enable
 Stripe checkout, subscription mutation, webhook processing, or a live payment.
 No production selector or route was changed.
