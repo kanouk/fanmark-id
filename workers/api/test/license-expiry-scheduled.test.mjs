@@ -119,11 +119,13 @@ test("scheduled job requires split D1 and target-profile identity", async () => 
 test("new scheduled runs use canonical UTC time and stable UUID identity", async () => {
   const runs = [];
   const finalizations = [];
+  const masterDatabase = fakeDatabase();
   for (let index = 0; index < 2; index += 1) {
     await runScheduledLicenseExpiry({
       scheduledTime: SCHEDULED_TIME,
       env: environment({ LICENSE_EXPIRY_MAX_PAGES: "7" }),
       database: fakeDatabase(),
+      masterDatabase,
       repositoryFactory: fakeRepositoryFactory(runs),
       finalizationRepositoryFactory: fakeFinalizationRepositoryFactory(finalizations),
     });
@@ -139,6 +141,7 @@ test("new scheduled runs use canonical UTC time and stable UUID identity", async
   assert.equal(finalizations[0].runId, finalizations[1].runId);
   assert.notEqual(finalizations[0].runId, runs[0].runId);
   assert.equal(finalizations[0].maxPages, 7);
+  assert.equal(finalizations[0].masterDatabase, masterDatabase);
 });
 
 test("an open run resumes with its original captured time and grace period", async () => {

@@ -1682,6 +1682,7 @@ const worker = {
         scheduledTime: controller.scheduledTime,
         env,
         database: selectD1Database(env, "business"),
+        masterDatabase: selectD1Database(env, "master"),
       }).then((summary) => {
         const finalization = "graceFinalization" in summary ? summary.graceFinalization : undefined;
         console.log(JSON.stringify({

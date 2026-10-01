@@ -4502,3 +4502,22 @@ active credentials, one durably deferred inactive credential, typed/hash
 readback, and conflicting-coverage rejection. The scoped result is
 `public_rows_reconciled`; `fullMigrationReconciled` remains false. No source
 application rows or remote D1/R2 state was read or changed.
+
+## 2026-10-02: expiry lottery Tier lookup follows split D1 roles
+
+The source-shaped grace finalizer read `fanmark_tiers` from business D1 even
+though app staging stores the active reference release in Master D1. The Worker
+scheduled handler and MFA-admin lifecycle route now pass the explicit master
+binding into the finalizer. For a pending lottery, business D1 supplies the
+fanmark's tier level and Master D1 supplies its initial license duration; the
+duration is then frozen into the existing durable lottery input. A missing
+master binding stops before the lottery claim when this input has not yet been
+saved. Retries use the frozen input, and no-pending expiry remains independent
+of Master D1.
+
+`npm --prefix workers/api run test:license-expiry-source` passed 25/25.
+`npm --prefix workers/api run typecheck`, JavaScript syntax checks, and
+`git diff --check` passed. A separate synthetic master adapter returned 47 days
+while business D1 had no matching Tier row; the saved lottery input preserved
+47, and a missing binding left the license unclaimed. No remote resources were
+changed; staging expiry remains disabled pending the broader acceptance gate.

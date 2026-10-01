@@ -160,6 +160,7 @@ export async function runScheduledLicenseExpiry({
   scheduledTime,
   env,
   database,
+  masterDatabase,
   repositoryFactory = createSourceLicenseExpiryRepository,
   finalizationRepositoryFactory = createSourceGraceFinalizationRepository,
 }) {
@@ -229,6 +230,7 @@ export async function runScheduledLicenseExpiry({
     await graceFinalizationRunIdFor(targetIncarnation, finalizationCapturedNow);
   const finalizationRepository = finalizationRepositoryFactory({
     database,
+    masterDatabase,
     runId: finalizationRunId,
     targetIncarnation,
     schemaExtensionDigest,

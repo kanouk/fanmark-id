@@ -184,6 +184,7 @@ export async function handleLifecycleRunRequest(
   if (backend !== "d1") return json({ error: "lifecycle_run_unavailable" }, 500, headers);
   if (env.D1_TOPOLOGY?.trim() !== "split") return json({ error: "server_misconfigured" }, 500, headers);
   const database = selectD1Database(env, "business");
+  const masterDatabase = selectD1Database(env, "master");
   if (!database) return json({ error: "server_misconfigured" }, 500, headers);
 
   const now = dependencies.now ?? Date.now;
@@ -194,6 +195,7 @@ export async function handleLifecycleRunRequest(
       scheduledTime: startedAt,
       env: { ...env, LICENSE_EXPIRY_BACKEND: "d1" },
       database,
+      masterDatabase,
     });
     if (summary.status === "disabled") return json({ error: "lifecycle_run_unavailable" }, 503, headers);
     const finishedAt = now();

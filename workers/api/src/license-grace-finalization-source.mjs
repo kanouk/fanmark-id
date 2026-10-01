@@ -512,7 +512,7 @@ async function readItem(database, runId, licenseId) {
   }
 }
 
-async function lotteryInputsFromD1(database, item, bindings) {
+async function lotteryInputsFromD1(database, masterDatabase, item, bindings) {
   let result;
   try {
     result = await database.prepare(`
@@ -557,16 +557,30 @@ async function lotteryInputsFromD1(database, item, bindings) {
       capacity: { planType, activeCount, limit },
     };
   });
-  let tier;
+  let fanmark;
   try {
-    tier = await database.prepare(`
-      SELECT tier.initial_license_days
-      FROM fanmarks AS fanmark
-      LEFT JOIN fanmark_tiers AS tier ON tier.tier_level = fanmark.tier_level
-      WHERE fanmark.id = ?
-    `).bind(item.fanmarkId).first();
+    fanmark = await database.prepare("SELECT tier_level FROM fanmarks WHERE id = ?")
+      .bind(item.fanmarkId).first();
   } catch (error) {
     throw fail("lottery_tier_query_failed", error);
+  }
+  let tier = null;
+  if (fanmark) {
+    let result;
+    try {
+      result = await masterDatabase.prepare(`
+        SELECT initial_license_days
+        FROM fanmark_tiers
+        WHERE tier_level = ?
+        LIMIT 2
+      `).bind(fanmark.tier_level).all();
+    } catch (error) {
+      throw fail("lottery_tier_query_failed", error);
+    }
+    if (result?.success === false || !Array.isArray(result?.results) || result.results.length > 1) {
+      throw fail("lottery_tier_query_failed");
+    }
+    tier = result.results[0] ?? null;
   }
   const licenseDays = Number(tier?.initial_license_days || 30);
   if (!Number.isSafeInteger(licenseDays) || licenseDays < 1 || licenseDays > 36_500) {
@@ -1398,6 +1412,7 @@ function summaryFromRun(run, results = [], pagesProcessed = 0) {
 /** Create a bounded, durable source-profile finalizer for expired grace rows. */
 export function createSourceGraceFinalizationRepository({
   database,
+  masterDatabase,
   runId,
   targetIncarnation,
   schemaExtensionDigest,
@@ -1437,6 +1452,10 @@ export function createSourceGraceFinalizationRepository({
       if (!pending && !item.lotteryInputsJson && !item.lotteryPlanJson) {
         return { status: "no_pending_entries", runId: item.runId, licenseId };
       }
+      if (item.lotteryInputsJson === null &&
+          (!masterDatabase || typeof masterDatabase.prepare !== "function" || typeof masterDatabase.batch !== "function")) {
+        throw fail("reference_master_database_unavailable");
+      }
 
       await claimLotteryLicense(database, item, bindings);
       item = await readItem(database, bindings.runId, licenseId);
@@ -1450,7 +1469,7 @@ export function createSourceGraceFinalizationRepository({
       }
 
       if (item.lotteryInputsJson === null) {
-        const snapshot = await lotteryInputsFromD1(database, item, bindings);
+        const snapshot = await lotteryInputsFromD1(database, masterDatabase, item, bindings);
         const snapshotJson = JSON.stringify(snapshot);
         if (
           jsonByteLength(snapshotJson) > MAX_LOTTERY_INPUT_BYTES ||

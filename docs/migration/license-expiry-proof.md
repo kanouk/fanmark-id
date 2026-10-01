@@ -136,18 +136,18 @@ protected-access generation statement does not write password bytes or
 `normalized_emoji` and stable `short_id`; the notification retains the current
 `fanmark_name` value and adds `fanmark_short_id` plus its `/f/:shortId` link.
 
-The source-shaped suite runs eleven top-level Miniflare checks over synthetic
-rows (including four mandatory-effect subtests). It
-verifies exact readback, strict expiry boundary behavior, lost-ack recovery,
-rollback when each mandatory effect is suppressed, safe resume, notification
-display/link payloads, a stale fanmark conflict, and bounded-page resumption.
-It does not yet use the full 40-table profile in this run, run through the
-migration importer, activate the staging Cron, or prove production parity.
+The source-shaped suite runs Miniflare checks over synthetic rows (including
+four mandatory-effect subtests). It verifies exact readback, strict expiry
+boundary behavior, lost-ack recovery, rollback when each mandatory effect is
+suppressed, safe resume, notification display/link payloads, a stale fanmark
+conflict, and bounded-page resumption. The current integrated suite uses the
+full 40-table source profile, but it does not run through the migration
+importer, activate the staging Cron, or prove production parity.
 
 ## Worker scheduled entrypoint
 
 `workers/api/src/license-expiry-scheduled.mjs` connects the source-shaped
-active-to-grace repository and no-pending grace finalizer to the Worker
+active-to-grace repository and grace finalizer to the Worker
 `scheduled` event. It does nothing
 unless `LICENSE_EXPIRY_BACKEND=d1` is set, and then requires split D1 plus an
 explicit target-incarnation token and schema-extension digest. It reads only
@@ -160,16 +160,23 @@ multiple open runs fail closed. Because the source computes the grace deadline
 from the already-expired `license_end`, a delayed cron can move a license to
 grace with a deadline that is already past. The same-tick finalizer excludes
 licenses processed by that active-to-grace run; a later scheduled timestamp
-can finalize them. Pending lottery entries stay in grace for the unimplemented
-lottery phase.
+can finalize them. If a pending lottery needs a winner license, the finalizer
+reads `tier_level` from business D1 and the matching `initial_license_days`
+from the active versioned `fanmark_tiers` view in Master D1. It records those
+days in the durable lottery input before drawing. If the input has not yet been
+saved, missing Master D1 fails before the lottery claim is taken. Retries with
+a saved input use its frozen snapshot; no-pending finalization does not need
+Master D1.
 
 Eight scheduler contract tests cover disabled-by-default behavior, split-D1
 and profile guards, stable run IDs, resuming the persisted run binding, page
 budget sharing, and deferral while the first phase remains open. The full
-40-table source-profile Miniflare suite passes 20 checks, including grace
+40-table source-profile Miniflare suite passes 25 checks, including grace
 finalization rollback when an outbox or config delete is suppressed, resume,
-lottery deferral, and the delayed-cron two-tick case. The source-shaped suite
-also checks the page cap: 65 synthetic candidates
+lottery replay, and the delayed-cron two-tick case. A synthetic separate-master
+binding returns 47 days while the business fixture has no Tier row; the saved
+lottery input uses 47 and the missing-master path leaves the license unclaimed.
+The source-shaped suite also checks the page cap: 65 synthetic candidates
 require two bounded pages, then a final invocation to close the durable run.
 This is local execution evidence; by itself it does not prove Cloudflare Cron
 timing, production CPU/plan fit, or populated-user behavior. On 2026-09-25 the

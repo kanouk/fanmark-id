@@ -33,4 +33,5 @@ export function runScheduledLicenseExpiry(options: {
   scheduledTime: number;
   env: Env;
   database?: D1Database;
+  masterDatabase?: D1Database;
 }): Promise<{ status: "disabled" } | ScheduledLicenseExpirySummary>;

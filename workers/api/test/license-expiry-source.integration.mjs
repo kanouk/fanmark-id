@@ -479,10 +479,12 @@ function finalizationRepository(fixture, {
   runId = randomUUID(),
   capturedNow = CAPTURED_NOW,
   database = fixture.database,
+  masterDatabase = fixture.database,
   maxPages,
 } = {}) {
   return createSourceGraceFinalizationRepository({
     database,
+    masterDatabase,
     runId,
     targetIncarnation: "synthetic-target-incarnation-1",
     schemaExtensionDigest: fixture.credentialPlan.extensionDigest,
@@ -490,6 +492,29 @@ function finalizationRepository(fixture, {
     maxPages,
     uuidFactory: randomUUID,
   });
+}
+
+function tierMasterDatabase(database, initialLicenseDays) {
+  const tierQueries = [];
+  return {
+    tierQueries,
+    prepare(sql) {
+      if (!/FROM\s+fanmark_tiers\b/iu.test(sql)) return database.prepare(sql);
+      return {
+        bind(tierLevel) {
+          return {
+            async all() {
+              tierQueries.push({ sql, tierLevel });
+              return { success: true, results: [{ initial_license_days: initialLicenseDays }] };
+            },
+          };
+        },
+      };
+    },
+    batch(...statements) {
+      return database.batch(...statements);
+    },
+  };
 }
 
 async function createLotteryFinalizationItem(fixture, runId) {
@@ -943,6 +968,7 @@ test("scheduled expiry leaves a just-transitioned overdue grace license for the 
       scheduledTime: Date.parse("2026-09-24T00:00:00.000Z"),
       env,
       database: fixture.database,
+      masterDatabase: fixture.database,
     });
     assert.equal(firstTick.status, "completed");
     assert.equal(firstTick.processed, 1);
@@ -958,6 +984,7 @@ test("scheduled expiry leaves a just-transitioned overdue grace license for the 
       scheduledTime: Date.parse("2026-09-25T00:00:00.000Z"),
       env,
       database: fixture.database,
+      masterDatabase: fixture.database,
     });
     assert.equal(secondTick.processed, 0);
     assert.equal(secondTick.graceFinalization.status, "completed");
@@ -1328,8 +1355,18 @@ test("claims a pending lottery and resumes the persisted exact-weight decision w
 
     const runId = "00000000-0000-4000-8000-000000000915";
     const { operationId } = await createLotteryFinalizationItem(fixture, runId);
-    const firstRepository = finalizationRepository(fixture, { runId });
-    const concurrentRepository = finalizationRepository(fixture, { runId });
+    const noMasterRepository = finalizationRepository(fixture, { runId, masterDatabase: null });
+    await assert.rejects(
+      noMasterRepository.prepareLotteryPlan(IDS.license),
+      /reference_master_database_unavailable/u,
+    );
+    assert.equal((await row(fixture.database,
+      "SELECT lifecycle_claim_id FROM fanmark_licenses WHERE id = ?", IDS.license)).lifecycle_claim_id, null,
+    "missing reference data must fail before taking the lottery claim");
+
+    const masterDatabase = tierMasterDatabase(fixture.database, 47);
+    const firstRepository = finalizationRepository(fixture, { runId, masterDatabase });
+    const concurrentRepository = finalizationRepository(fixture, { runId, masterDatabase });
     const [first, concurrent] = await Promise.all([
       firstRepository.prepareLotteryPlan(IDS.license),
       concurrentRepository.prepareLotteryPlan(IDS.license),
@@ -1352,6 +1389,10 @@ test("claims a pending lottery and resumes the persisted exact-weight decision w
     `, runId, IDS.license);
     assert.equal(beforeReplay.lottery_seed, first.seed);
     assert.equal(JSON.parse(beforeReplay.lottery_inputs_json).entries.length, 2);
+    assert.equal(JSON.parse(beforeReplay.lottery_inputs_json).licenseDays, 47,
+      "lottery renewal duration comes from the separate reference-master binding");
+    assert.ok(masterDatabase.tierQueries.length > 0);
+    assert.equal(masterDatabase.tierQueries[0].tierLevel, 1);
     assert.equal(JSON.parse(beforeReplay.lottery_plan_json).selection.winnerEntryId, first.winnerEntryId);
     assert.equal((await row(fixture.database,
       "SELECT lifecycle_claim_id FROM fanmark_licenses WHERE id = ?", IDS.license)).lifecycle_claim_id, operationId);
@@ -1364,7 +1405,7 @@ test("claims a pending lottery and resumes the persisted exact-weight decision w
       UPDATE fanmark_licenses SET status = 'expired'
       WHERE id = '00000000-0000-4000-8000-000000000a02'
     `).run();
-    const resumedRepository = finalizationRepository(fixture, { runId });
+    const resumedRepository = finalizationRepository(fixture, { runId, masterDatabase: null });
     const resumed = await resumedRepository.prepareLotteryPlan(IDS.license);
     assert.deepEqual(resumed.plan, first.plan);
     assert.equal(resumed.seed, first.seed);

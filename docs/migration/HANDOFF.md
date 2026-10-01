@@ -3716,3 +3716,23 @@ were read or imported. Issue #35 remains open for the five schema/operation
 gates and full readiness; #36's non-user emoji-master staging distribution is
 closed. Provider sandbox acceptance remains gated on staging secrets, while
 #38 still owns real Auth/Storage/user-data migration and domain/DNS cutover.
+
+## 2026-10-02 resumed migration: lifecycle Tier lookup uses Master D1
+
+The lottery finalizer previously joined `fanmarks` to `fanmark_tiers` inside
+business D1. Split staging keeps the live reference release in Master D1, so a
+business database with an empty legacy Tier table could incorrectly use the
+30-day fallback when issuing a lottery winner's replacement license.
+`runScheduledLicenseExpiry` now passes its explicit Master D1 binding to both
+the scheduled and MFA-admin lifecycle paths. The finalizer reads the Tier
+duration from the active versioned master view and stores it in the durable
+lottery input. When this input has not yet been saved, a missing master binding
+fails before the claim is taken. Retries use the frozen input; non-lottery
+expiry does not require a reference master.
+
+The full source-shaped Miniflare suite passed 25/25, including a separate
+synthetic master adapter returning 47 days with no Tier row in business D1 and
+a missing-master no-claim check. Worker TypeScript typecheck and
+`git diff --check` passed. This was local synthetic validation only; no Cloudflare
+deployment, remote D1 write, real user row, production route, or domain/DNS
+change occurred. The scheduled expiry selector remains disabled in staging.
