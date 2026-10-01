@@ -1,11 +1,12 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-01 19:38 JST. The migration is **not complete**. PR #41
-remains open and draft at head `7dd78f9`. CI run `36849762646` passed both
-application and Worker API jobs. The PGlite `subscription-application` test
-timed out on its first 120-second attempt, then passed in a fresh second
-process; the runner permits up to three attempts for that test. The same test
-and full suite pass locally under Node 22.6.0.
+Checkpoint: 2026-10-01 20:35 JST. The migration is **not complete**. PR #41
+remains open and draft at head `cea837d3b8aa28893ce3db903dfdaecc6db59ed2`;
+latest Actions run `36850593884` passed both application and Worker API jobs.
+The PGlite `subscription-application` test timed out on its first 120-second
+attempt in an earlier run, then passed in a fresh second process; the runner
+permits up to three attempts for that test. The same test and full suite pass
+locally under Node 22.6.0.
 
 Staging Worker version `59deb036-3aa7-442f-9eba-11875715c43a` is deployed at
 100%. Read-only GETs for `/`, `/api/auth/ok`, and `/api/emoji/catalog` return
@@ -39,6 +40,77 @@ the same test value as `STRIPE_SECRET_KEY`, and a test-mode endpoint's
 `STRIPE_SECRET_KEY_LIVE` or paste secret values into chat. Once configured, the
 test-mode webhook and synthetic purchase canary can run. No Stripe API call was
 made during this checkpoint.
+
+## 2026-10-01 resumed migration checks and Cron recovery retry
+
+Fresh read-only staging probes returned 200 for `/`, `/api/auth/ok`, and
+`/api/emoji/catalog`; the Stripe webhook remained 404 with its selector unset.
+The separate emoji-master D1 read returned 3,944 canonical rows and exactly
+one active pointer at release
+`10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed`; D1
+reported `changed_db=false` and zero rows written. The four public reference
+master routes returned 200/no-store with 4 tiers, 4 languages, 5 reserved
+patterns, and 16 extension-price rows, all on release
+`ba598c61b719d84c03c10ccaee9e5308d1829fd66b1f48abba6a0e5cde9b9c0c`.
+
+Under Node 22.6.0, the migration-data suite passed 191/191; Stripe webhook,
+receipt, dispatch, invoice, subscription, and portal integration passed 68/68;
+Better Auth D1 passed 27/27; auth email passed 7/7; social-provider/OAuth
+configuration passed 3/3. The loopback Supabase pre-write smoke also passed:
+synthetic email/password login, Auth UUID preservation, owner-scoped settings
+read/update/readback, and delete cascade completed in 304 ms; post-run Docker
+container/volume/network counts were all zero. This remains one local component
+of the pre-write rehearsal, not the complete Cloudflare first-write/recovery
+drill. These are synthetic/local tests and public master readbacks, not real
+provider callbacks or user-data migration. All three existing staging D1s also
+reported no pending migrations.
+
+Two guarded post-write recovery attempts reached the signed synthetic Stripe
+receipt but stopped before dispatcher invocation: its receipt stayed
+`received/pending` with zero attempts. Both runs deleted their temporary
+Worker, business/Auth D1s, and config; cleanup readback left only the three
+existing staging D1s and both staging R2 buckets at zero objects. The first
+run also exposed that the harness enabled a fake live-mode key; the harness now
+sets only `STRIPE_MODE_POLICY=test_only` and a synthetic test key. The second
+run attempted an additional Wrangler trigger update, but timed out before the
+propagation window elapsed. Cloudflare documents that a new Cron
+trigger may take up to 15 minutes to propagate; see
+[Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/).
+
+A third synthetic-only run completed at 2026-10-01 20:33 JST. The harness
+deployed the Cron trigger from its Wrangler config and observed the extension
+receipt for 20 minutes. It remained `received/pending` with zero dispatch attempts, so the
+recovery drill stopped before the Time Travel and encrypted-R2 restore stages.
+The harness removed its temporary Worker, both disposable D1s, and config;
+Cloudflare readback shows only the three pre-existing staging D1s, and both
+staging R2 buckets remain at zero objects. The private run report confirms
+cleanup. No temporary recovery bundle was created.
+
+To isolate this from an account-wide Cron outage, a live `wrangler tail` on the
+pre-existing staging app then captured a scheduled event on `* * * * *`: its
+Stripe dispatcher correctly logged `disabled` with zero claims, and the
+notification job completed with zero selected events. Thus Cron executes on
+the existing staging Worker, while invocation on the newly created disposable
+Worker remains unverified. Cloudflare says trigger changes can take up to 15
+minutes to propagate; Cron Events history for a new Worker/name can take up to
+30 minutes to appear, so the next check should inspect the disposable Worker’s
+trigger registration/history before another recovery attempt. The extra
+`wrangler triggers deploy` command used by the prior harness runs is
+documented as experimental for `wrangler versions upload`; the harness now
+relies on config-backed `wrangler deploy` and reports the precise wait phase.
+The Cloudflare dashboard also shows this account on the Workers Free plan
+(10 ms CPU maximum per invocation). This may constrain the dispatcher after
+Cron starts, but it does not explain the absence of a scheduled invocation; no
+runtime-limit error was observed. See
+[Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
+and [Wrangler Workers commands](https://developers.cloudflare.com/workers/wrangler/commands/workers/).
+
+The recovery harness now reports the wait as its own phase, and keeps the
+dispatcher strictly `test_only` with no live key. The post-write recovery gate
+is still open because the scheduled dispatcher did not run; the confirmed
+cleanup means there is no residue to remove. No source Supabase rows,
+production routes, real user data, or domain/DNS state were accessed or
+changed.
 
 No Supabase migration or webhook request was made. User-data/Auth/Storage
 migration and public domain/DNS cutover remain reserved for the final stage.

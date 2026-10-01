@@ -126,6 +126,7 @@ let report = {
     stripeBusinessEffectApplied: false,
     stripeBusinessEffectSurvivedTimeTravel: false,
     stripeBusinessEffectRestoredFromEncryptedBundle: false,
+    stripeDispatcherLastReadback: null,
   },
   cleanup: {
     workerDeleted: false,
@@ -329,6 +330,7 @@ function createTemporaryConfig() {
       WAITLIST_SIGNUP_BACKEND: "d1",
       STRIPE_WEBHOOK_BACKEND: "d1",
       STRIPE_WEBHOOK_SECRET: syntheticSecret,
+      STRIPE_MODE_POLICY: "test_only",
       AUTH_BACKEND: "better-auth",
       STORAGE_BACKEND: "r2",
       BETTER_AUTH_URL: origin,
@@ -1106,15 +1108,24 @@ function deployTemporaryWorker(config) {
 async function enableSyntheticStripeDispatch(config) {
   config.vars.STRIPE_DISPATCH_BACKEND = "d1";
   config.vars.STRIPE_SECRET_KEY_TEST = "sk_test_synthetic_recovery_no_network";
-  config.vars.STRIPE_SECRET_KEY_LIVE = "sk_live_synthetic_recovery_no_network";
+  delete config.vars.STRIPE_SECRET_KEY_LIVE;
   await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 });
   report.phase = "deploy_synthetic_stripe_dispatcher";
   deployTemporaryWorker(config);
 }
 
 async function waitForAppliedStripeExtension() {
-  for (let attempt = 0; attempt < 180; attempt += 1) {
+  const deadline = Date.now() + 20 * 60 * 1000;
+  while (Date.now() < deadline) {
     const rows = stripeLedgerRows([extensionEventId]);
+    const current = rows.find((row) => row.stripe_event_id === extensionEventId);
+    report.recovery.stripeDispatcherLastReadback = current
+      ? {
+        receiptStatus: /^[a-z_]{1,32}$/u.test(String(current.receipt_status)) ? String(current.receipt_status) : "unknown",
+        dispatchStatus: /^[a-z_]{1,32}$/u.test(String(current.dispatch_status)) ? String(current.dispatch_status) : "unknown",
+        attemptCount: Number.isSafeInteger(Number(current.attempt_count)) ? Number(current.attempt_count) : null,
+      }
+      : { receiptStatus: "missing", dispatchStatus: "missing", attemptCount: null };
     if (rows.length === 1 && rows[0]?.receipt_status === "applied" &&
         rows[0]?.dispatch_status === "completed") {
       const effect = stripeExtensionState();
@@ -1131,7 +1142,7 @@ async function waitForAppliedStripeExtension() {
     if (rows.some((row) => row?.receipt_status === "dead_letter" || row?.dispatch_status === "dead_letter")) {
       fail("synthetic_stripe_extension_dead_lettered");
     }
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    await new Promise((resolve) => setTimeout(resolve, 10_000));
   }
   fail("synthetic_stripe_extension_dispatch_timeout");
 }
@@ -1202,6 +1213,7 @@ async function runDrill() {
   assertOneWaitingRow(tableRowsForEmail(emailBeforeBookmark), emailBeforeBookmark, referralBeforeBookmark);
   await postEvent(origin, signExtensionEvent());
   await enableSyntheticStripeDispatch(config);
+  report.phase = "wait_for_synthetic_cron_dispatch";
   const appliedExtension = await waitForAppliedStripeExtension();
   report.phase = "acknowledge_pending_synthetic_stripe_receipt";
   const signedFirstEvent = signEvent(firstEventId, firstObjectId);
