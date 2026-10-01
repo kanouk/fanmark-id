@@ -645,3 +645,16 @@ Auth gates remain. V21 omits the approximate D1 `now()` default at every
 timestamp column, requiring the operation to supply canonical UTC microseconds.
 No source application rows, actual credentials, or remote D1/R2 state were
 used.
+
+## Fresh v21 current-catalog replay (2026-10-02 JST)
+
+The read-only Supabase catalog refreshed at `2026-10-01T22:10:49Z` still has
+the exact 40-table/406-column shape required by this source-shaped synthetic
+rehearsal. Under Node 22.6.0, all 40 table checkpoints completed for 10
+synthetic rows. Two active credentials were bcrypt-transformed and read back;
+one inactive-license credential was durably deferred with no target credential
+row. Typed/hash reconciliation passed and a conflicting coverage digest was
+rejected. Status remains `public_rows_reconciled`, with `deployable` and
+`fullMigrationReconciled` false because the five schema/operation gate groups
+remain. No source application rows, actual credentials, or remote D1/R2 state
+were read or changed.

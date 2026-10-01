@@ -4464,3 +4464,25 @@ cutover acceptance. Provider sandbox acceptance still needs Stripe and Resend
 credentials set directly in Cloudflare; user/Auth/Storage migration and
 public domain/DNS cutover remain deferred to #38. No production route, real
 user data, live payment, email delivery, or domain/DNS was changed.
+
+## Fresh Supabase catalog and current-schema importer replay (2026-10-02 JST)
+
+Re-ran `scripts/migration/schema-readiness.sql` through Supabase CLI 2.118.0
+with `CI=1`, `--linked`, and the explicit configured project ref. The query
+completed at `2026-10-01T22:10:49Z` and returned 40 tables, 406 columns, 144
+constraints, 139 indexes, 15 enum labels, one view, 58 functions, 36
+non-internal triggers, and 77 RLS policies. The SQL is wrapped in
+`BEGIN READ ONLY` and queries catalog metadata only; no application rows or
+live sequence values were read. Private catalog artifacts were stored in a
+mode-0700 temporary directory and removed after validation.
+
+The value-free descriptor plus converter v21 reports no row-conversion gates
+and five schema/operation groups / 93 locations: 11 external Auth references,
+79 timestamp-default operations, and three unsupported catalog scopes
+(functions, RLS policies, and triggers). It remains `deployable: false`.
+Under Node 22.6.0, `scripts/migration/test-d1-import-current-schema.mjs`
+completed all 40 checkpoints with 10 synthetic rows, two bcrypt-transformed
+active credentials, one durably deferred inactive credential, typed/hash
+readback, and conflicting-coverage rejection. The scoped result is
+`public_rows_reconciled`; `fullMigrationReconciled` remains false. No source
+application rows or remote D1/R2 state was read or changed.

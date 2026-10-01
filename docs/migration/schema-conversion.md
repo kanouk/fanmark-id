@@ -798,3 +798,27 @@ The generated schema contains no approximate D1 timestamp defaults and still
 reports five blocking schema/operation gate groups / 93 locations. The
 SQL/report artifacts were written outside the repository with mode `0600`.
 No source rows or remote state were accessed.
+
+## Fresh Supabase catalog and v21 replay (2026-10-02 JST)
+
+Re-ran the reviewed catalog-only `schema-readiness.sql` through Supabase CLI
+2.118.0 with `CI=1`, `--linked`, and the explicit project ref. The read-only
+query completed at `2026-10-01T22:10:49Z` and returned the same 40 tables,
+406 columns, 144 constraints, 139 indexes, 15 enum labels, one view, 58
+functions, 36 non-internal triggers, and 77 RLS policies. No application rows
+or live sequence values were read. The catalog and intermediate CLI response
+were kept in a mode-0700 temporary directory and removed after validation.
+
+Converter v21 with the value-free credential descriptor reports no row
+conversion gates and five schema/operation groups / 93 locations:
+11 external Auth references, 79 timestamp-default operations, and 3
+unsupported catalog scopes (functions, RLS policies, and triggers).
+`deployable` remains false because runtime clock ownership and those external
+operations/scopes are not fully established.
+
+Under Node 22.6.0, `scripts/migration/test-d1-import-current-schema.mjs`
+completed all 40 checkpoints with 10 synthetic rows, transformed two active
+credentials, durably deferred one inactive credential, and verified typed/hash
+readback and conflicting-coverage rejection. The result is
+`public_rows_reconciled`; `deployable` and `fullMigrationReconciled` remain
+false. No source application rows or remote D1/R2 state was read or changed.

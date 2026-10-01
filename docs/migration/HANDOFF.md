@@ -3653,3 +3653,24 @@ and Resend credentials set directly in Cloudflare. Continue app/infrastructure
 and non-user master/import work; reserve real Auth/Storage/user rows and
 public domain/DNS cutover for #38. No production route, live payment, email
 delivery, real user data, or domain/DNS was changed.
+
+## 2026-10-02 checkpoint: fresh catalog and importer replay
+
+The linked Supabase catalog-only query completed at `2026-10-01T22:10:49Z`.
+It returned 40 tables / 406 columns, 144 constraints, 139 indexes, 15 enum
+labels, one view, 58 functions, 36 non-internal triggers, and 77 RLS policies.
+It ran `schema-readiness.sql` under `BEGIN READ ONLY`, queried no application
+rows, and stored its private response only in a mode-0700 temporary directory.
+
+Converter v21 with the value-free credential descriptor reports zero
+row-conversion gates and five schema/operation groups / 93 locations: 11
+external Auth references, 79 timestamp-default operations, and three
+unsupported catalog scopes (functions, RLS policies, triggers). The
+deployable/full-reconciliation flags remain false. Node 22.6.0 current-catalog
+synthetic replay completed 10 rows / 40 checkpoints, transformed two active
+credentials, durably deferred one inactive credential, verified typed/hash
+readback, and rejected conflicting coverage. No actual user rows or credentials
+were read or imported. Issue #35 remains open for the five schema/operation
+gates and full readiness; #36's non-user emoji-master staging distribution is
+closed. Provider sandbox acceptance remains gated on staging secrets, while
+#38 still owns real Auth/Storage/user-data migration and domain/DNS cutover.
