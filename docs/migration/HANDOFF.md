@@ -1,9 +1,9 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-02 02:35 JST. The migration is **not complete**. PR #41
-remains open and draft at `c5bf7a3`. GitHub Actions run `36899737450` passed
-both the Cloudflare staging application and Worker API jobs. The max-emoji
-settings API/UI change at `7f66c5e` also passed run `36897394913`.
+Checkpoint: 2026-10-02 02:44 JST. The migration is **not complete**. PR #41
+remains open and draft. Code commit `8a45507` passed GitHub Actions run
+`36900588611` for both the Cloudflare staging application and Worker API jobs;
+the earlier staging canary-harness run `36899737450` also passed both jobs.
 
 `AdminSettings` now edits `max_emoji_characters`; the D1 admin API's editable
 allowlist now permits that public setting. Worker version
@@ -13,6 +13,10 @@ allowlist now permits that public setting. Worker version
 setting. Readback after cleanup found the setting at 5, no related audit rows,
 no synthetic admin profile, and no synthetic Auth users. The MFA generation
 counter may have advanced during factor enrollment/removal.
+
+The PR and issues #33/#34/#37 have been updated with this staging evidence and
+the remaining Cron/provider gates. The PR is still draft/open; no merge or
+production cutover is authorized by those updates.
 
 Current Cloudflare checks use the explicit `fanmark-staging-inapp` profile.
 Remote Auth, Business, and emoji-master D1 report no pending migrations; the

@@ -8,6 +8,8 @@ Worker `fanmark-app-staging` version `3293bea8-7929-4d6f-8786-886abd39348d`を10
 
 `npm run test:system-settings-api` 4/4、`npm --prefix workers/api run test:system-settings-d1` 6/6、root/Worker typecheck、変更ファイルESLint、staging build、Wrangler staging deploy dry-run、CI run `36897394913`（head `7f66c5e`）が成功。staging canary harnessの修正もCI run `36899737450`（head `c5bf7a3`）で両job成功。実ユーザーデータ、Supabase行、本番route、Stripe/メールprovider、domain/DNSは変更していない。
 
+最新docs checkpoint `8a45507` のGitHub Actions run `36900588611` もCloudflare staging applicationとWorker APIの両jobが成功。AdminSettingsの最大絵文字数は合成TOTP/MFA browser canaryで5→6→5を更新・復元し、cleanup後の値5と合成ユーザー/監査行0をreadbackした。
+
 ## 2026-10-02 disposable Cron API readback: 登録済み・実行未確認（15:06–15:24 UTC）
 
 新規Worker Cronの登録readbackが曖昧だったため、15:06:14 UTCにD1/R2 bindingのない最小Workerを
