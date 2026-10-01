@@ -1,8 +1,8 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-01 20:35 JST. The migration is **not complete**. PR #41
-remains open and draft at head `cea837d3b8aa28893ce3db903dfdaecc6db59ed2`;
-latest Actions run `36850593884` passed both application and Worker API jobs.
+Checkpoint: 2026-10-01 20:48 JST. The migration is **not complete**. PR #41
+remains open and draft at code head `86ccad24cb76186c186207b59466720b9f33c0a4`;
+Actions run `36856998789` passed both application and Worker API jobs.
 The PGlite `subscription-application` test timed out on its first 120-second
 attempt in an earlier run, then passed in a fresh second process; the runner
 permits up to three attempts for that test. The same test and full suite pass
