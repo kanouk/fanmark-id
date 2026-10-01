@@ -102,6 +102,14 @@ and [Workers Logs](https://developers.cloudflare.com/workers/observability/logs/
 Do not repeat the full recovery drill until the scheduled-invocation path is
 understood. Issues #34/#37 remain open.
 
+The follow-up read-only Workers Observability telemetry query against this
+deleted synthetic Worker returned HTTP 403 `Authentication error` with the
+current Wrangler profile. Cloudflare's API reference lists `Workers
+Observability Write` as the accepted permission for this query endpoint. No
+token was printed or stored, and no saved query or Worker setting was changed.
+Direct API readback needs that permission; the browser-based Query Builder is
+another path if the account session already has access.
+
 Staging Worker version `59deb036-3aa7-442f-9eba-11875715c43a` is deployed at
 100%. Read-only GETs for `/`, `/api/auth/ok`, and `/api/emoji/catalog` return
 200; `/api/auth/capabilities` reports signup, password reset, email

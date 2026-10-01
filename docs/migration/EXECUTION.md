@@ -4362,3 +4362,17 @@ and [Workers Logs](https://developers.cloudflare.com/workers/observability/logs/
 Do not repeat the full synthetic recovery drill until this invocation path is
 understood. No real user data, production routing, or domain/DNS state was
 accessed or changed.
+
+## Observability query permission check (2026-10-02 JST)
+
+A dry-run event query filtered to the disposable Cron probe was sent to the
+Cloudflare Workers Observability telemetry API using the dedicated Wrangler
+profile. The API returned HTTP 403 `Authentication error`; no event data was
+read and no query was saved. The Wrangler credential was not printed or stored.
+Cloudflare's API reference lists `Workers Observability Write` as an accepted
+permission for the query endpoint. The existing profile therefore cannot
+perform this direct API readback; continue after that scope is granted or use
+the browser Query Builder through an already-authorized dashboard session.
+This check did not change Worker settings, D1/R2, production routes, or user
+data. See [Workers Observability API](https://developers.cloudflare.com/api/resources/workers/subresources/observability/subresources/telemetry/methods/query/)
+and [Query Builder](https://developers.cloudflare.com/workers/observability/query-builder/).
