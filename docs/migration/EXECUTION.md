@@ -1,5 +1,25 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-01 disposable recovery再試験: 新規Worker Cron起動未確認（14:33 UTC）
+
+13:49:57 UTCに始めた試験は14:02:52 UTC、D1 readbackのAPI error 7403で停止した。最終Worker配備
+から約11分で、Cloudflareが案内する最大15分のtrigger propagation前だったため、Cronの成否は判定
+できない。停止直後の既存`fanmark-business-staging`に対するread-only `SELECT 1`は成功し、継続的な
+認証失敗は再現しなかった。PR #41 commit `ab21efb`で、read-only dispatch監視に限って7403を再試行
+するよう修正した。Actions run `36873650354`はapplicationとWorker APIの両jobが成功。
+
+再試験は14:11:58.740 UTC開始、最終配備readbackは14:13:22.092 UTC。Worker固有の`wrangler tail`
+は接続し、合成avatar fetchのログを受信したが、scheduled invocation/diagnostic logは一度も観測
+しなかった。最終配備から15分後を過ぎてもreceiptは`received/pending`、dispatch attempt 0のまま
+だった。20分監視は14:33:51.345 UTCに`synthetic_stripe_extension_dispatch_timeout`で終了し、
+Time Travelと暗号化backup/R2 replayには進んでいない。7403再発回数は0。
+
+cleanup readbackではWorker、使い捨てbusiness/Auth D1、temporary config、合成avatar objectの削除が
+すべて成功し、D1一覧は既存の`fanmark-auth-staging`、`fanmark-business-staging`、
+`fanmark-emoji-master-staging`のみ。backup bundleは作成されず、recovery R2 objectも0件。次は
+同じrecoveryを繰り返さず、Cloudflare上の新規Worker Cron登録/配信経路を調べる。Issue #34/#37と
+recovery gateは未完了。実ユーザーデータ、production route、domain/DNSは変更していない。
+
 ## 2026-10-01 新規Worker Cron未確認・dispatcher未処理（13:17 UTC）
 
 既存の`fanmark-app-staging`では12:54:21 UTCに毎分Cronのscheduled invocationを確認した。

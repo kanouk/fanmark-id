@@ -1,13 +1,26 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-01 22:18 JST. The migration is **not complete**. PR #41
-remains open and draft at head `9f03497`. Actions run `36863199930` passed both
-application and Worker API jobs, including migration-data boundaries, Stripe
-receipt/billing/invoice suite, typechecks, and staging build. The prior code
-validation run `36860303037` also
-passed on rerun after its first attempt timed out three times in the PGlite
+Checkpoint: 2026-10-01 23:35 JST. The migration is **not complete**. PR #41
+remains open and draft at head `ab21efb`. Actions run `36873650354` passed both
+application and Worker API jobs; it includes the read-only D1 retry adjustment
+for the guarded recovery monitor. The prior code validation run `36870117511`
+also passed on rerun after its first attempt timed out three times in the PGlite
 subscription test. The direct Node 22.6.0 test passed 8/8; the transient cause
 is not known and should remain monitored.
+
+Latest guarded post-write recovery run started at 14:11:58.740 UTC and ended at
+14:33:51.345 UTC. Its temporary Worker was deployed with an every-minute Cron;
+worker-specific `wrangler tail` received the synthetic avatar fetch but no
+scheduled invocation logs, including after 15 minutes from the final deployment
+at 14:13:22.092 UTC. The synthetic Stripe receipt stayed `received/pending`
+with `attempt_count=0` through the 20-minute wait, which ended with
+`synthetic_stripe_extension_dispatch_timeout` before Time Travel or encrypted
+R2 recovery. The prior transient D1 error 7403 did not recur. Cleanup readback
+confirmed deletion of the Worker, disposable Business/Auth D1s, temporary
+config, and synthetic avatar; only the three existing staging D1s remain. No
+recovery bundle or backup R2 object was created. New-Worker Cron registration
+is the open blocker; investigate that path before repeating this drill. Issues
+#34/#37 remain open.
 
 Staging Worker version `59deb036-3aa7-442f-9eba-11875715c43a` is deployed at
 100%. Read-only GETs for `/`, `/api/auth/ok`, and `/api/emoji/catalog` return

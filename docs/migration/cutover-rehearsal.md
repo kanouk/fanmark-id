@@ -691,7 +691,7 @@ is independently read back. This extension is prepared but unverified in
 staging; issue #37 remains open. No production data or domain/DNS state was
 changed.
 
-## Disposable Worker Cron runs but Stripe dispatch does not claim (2026-10-01 JST)
+## Disposable Worker Cron invocation remains unverified (2026-10-01 JST)
 
 The guarded `test:migration:staging-postwrite-recovery` retry deployed a temporary
 Worker with an every-minute Cron schedule and accepted a signed synthetic
@@ -726,3 +726,24 @@ staging D1s remained. The backup and avatar staging buckets both read back as
 empty (0 objects, 0 B); the run stopped before producing a backup bundle.
 No Supabase application rows, real user data, real Stripe API, email,
 production route, or domain/DNS state was used or changed.
+
+The follow-up run with `SCHEDULED_DISPATCH_DIAGNOSTICS` started at 14:11:58.740
+UTC and deployed the disposable Worker at 14:13:22.092 UTC. Its Worker-specific
+`wrangler tail` received a synthetic avatar fetch, confirming the live log path,
+but no `scheduled` event or dispatcher log appeared through the 20-minute
+wait. After 15 minutes from final deployment, the receipt remained
+`received/pending` with zero dispatch attempts; the run ended at 14:33:51.345
+UTC before Time Travel or encrypted-R2 recovery. This is evidence that the
+newly deployed Worker did not produce a visible Cron invocation during the
+observation window; it does not identify whether trigger registration or
+platform delivery failed. The earlier 13:49 run ended before the 15-minute
+propagation window after a single D1 API 7403; the harness now retries that
+read-only error, and it did not recur in this follow-up.
+
+Cleanup readback confirmed deletion of the follow-up Worker, both disposable
+D1 databases, its temporary config, and the synthetic avatar object. Only the
+three existing staging D1 databases remain. The recovery bundle stage was not
+reached, so no backup R2 object was created. Investigate Cloudflare's actual
+Cron registration/delivery for newly created Workers before another full
+recovery run. Issues #34 and #37 remain open; production data and domain/DNS
+remain unchanged.
