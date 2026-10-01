@@ -1,5 +1,15 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 post-write recovery再試験: Cronが未配送（18:25–18:47 UTC）
+
+診断版 `postwrite-cloudflare-recovery-smoke.mjs` でsynthetic-onlyの完全recoveryを再試験した。使い捨てWorkerの最終デプロイは18:26:37 UTCで、最初のデプロイからWorkers Logsの保存・invocation logs・100% samplingを有効にした。health GETは200、tailとWorker専用保存ログには合成HTTP要求が記録されたが、自然発火Cronのinvocation/logは現れなかった。Cloudflareの最大15分伝播時間を過ぎた後も同じ状態だった。
+
+D1 readbackはreceipt `received`、dispatch `pending`、`attempt_count=0`。合成avatarは68 bytes、本文一致、`image/png`とcache-control一致を確認した。最終デプロイから20分のdispatch待機後、18:47:19 UTCに`synthetic_stripe_extension_dispatch_timeout`で停止し、Time Travelと暗号化R2 backup/replayには進まなかった。
+
+cleanup readbackはWorker、使い捨てBusiness/Auth D1、temporary config、合成avatar objectの削除成功。削除後のWorker health URLは404、独立したD1一覧は既存のAuth/Business/emoji-master staging DB 3件のみ。R2 backup object数は0でbundleは未作成。report上の`r2ObjectsDeleted=false`と`privateRecoveryArtifactsDeleted=false`は対象物が生成前で存在しなかったためで、cleanup failureではない。実ユーザーデータ、Supabase rows、production route、Stripe/Resend provider、domain/DNSは変更していない。
+
+Workers Logsを初回デプロイから明示有効にしても新規recovery WorkerのCron deliveryを観測できなかった。Issue #34/#37と完全post-write recovery gateは未完了。同じrecoveryを続けて再実行せず、Cron schedule registrationとruntime deliveryを別々に診断する。
+
 ## 2026-10-02 system settings管理画面のstaging検証
 
 `AdminSettings`に最大絵文字数（1〜1,000,000）の編集欄を追加した。D1のsystem settings APIは公開projectionには含めていたものの書込allowlistから漏れていたため、`max_emoji_characters`をCAS/監査付き更新対象に加えた。設定読込失敗時は保存を停止する。招待モードは既存の`AdminInvitationManager`で編集する。

@@ -1,9 +1,26 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-02 02:44 JST. The migration is **not complete**. PR #41
-remains open and draft. Code commit `8a45507` passed GitHub Actions run
-`36900588611` for both the Cloudflare staging application and Worker API jobs;
-the earlier staging canary-harness run `36899737450` also passed both jobs.
+Checkpoint: 2026-10-02 03:48 JST. The migration is **not complete**. PR #41
+remains open and draft at head `05a783d`. GitHub Actions run `36908160048`
+passed both required jobs after rerunning the staging application job; the
+Worker API job passed its first attempt, and the application job passed its
+rerun after three PGlite timeout attempts in the earlier job attempt.
+
+The recovery smoke harness now enables persisted Workers Logs and invocation
+logs on the disposable Worker from its first deployment, and records safe
+avatar readback diagnostics. A fresh synthetic post-write recovery run
+deployed its last version at 18:26:37 UTC and waited 20 minutes. Worker tail
+and Worker-specific saved logs recorded synthetic HTTP requests but no Cron
+invocation, including after the documented 15-minute propagation window. The
+receipt remained `received/pending`, attempt count 0; the run ended at
+18:47:19 UTC with `synthetic_stripe_extension_dispatch_timeout`, before Time
+Travel or encrypted backup replay. Synthetic avatar byte and metadata
+readback passed. Cleanup deleted the Worker, both disposable D1s, config, and
+avatar; an independent D1 inventory contains only the three existing staging
+databases, and the temporary Worker URL returns 404. No recovery bundle was
+created (`r2ObjectCount=0`). Cron delivery for the recovery Worker and Issue
+#34/#37's full recovery gate remain unverified; do not repeat the full drill
+until the scheduled delivery path is diagnosed.
 
 `AdminSettings` now edits `max_emoji_characters`; the D1 admin API's editable
 allowlist now permits that public setting. Worker version
