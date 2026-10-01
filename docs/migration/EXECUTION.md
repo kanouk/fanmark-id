@@ -1,5 +1,15 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 対象recovery WorkerのCron登録readbackと実行再検証（19:44–20:06 UTC）
+
+完全recoveryを再試験する前に、使い捨てWorker `fanmark-recovery-1790883885037-e57398c01b666f22` の構成をCloudflareからreadbackした。`triggers.crons`は`* * * * *`、Workers Logsはinvocation logsを含む100% sampling、diagnosticsは有効で、Business/Auth D1とavatar R2 bindingも対象Worker上に存在した。control planeへのCron登録漏れではない。
+
+同じWorkerのObservability > Invocations履歴は7件すべて合成HTTP `fetch` で、Cron invocationはなかった。ライブ表示もイベント待機のままで、終了後の履歴readbackにもscheduled invocationは現れなかった。Worker固有の`wrangler tail --search scheduled`にもmarkerはなく、一度接続が再確立されたため、ログtailだけを完全な連続観測とは扱わない。2つのWorker固有観測経路でscheduled invocationを確認できなかった状態で、配送と可視化のどちらが根因かは未特定。
+
+合成post-write recoveryは19:44:45.036 UTCに開始し、最終deployment version `0c5dee53-e9f0-4762-bc3e-22f54c48780b` は19:46:29.635 UTC。20:06:49.350 UTCに`synthetic_stripe_extension_dispatch_timeout`で停止した。Stripe receipt/dispatchは`received/pending`、attempt 0。合成avatarのreadbackは成功したが、Cron dispatch待ちで停止したためTime Travel bookmarkと暗号化R2 bundle/replayには進んでいない。`r2ObjectCount=0`で、backup objectとprivate recovery directoryは未生成。
+
+cleanup reportはWorker、Business/Auth D1、temporary config、avatar objectの削除をすべて確認した。Worker URLは404、D1 inventoryは既存のAuth/Business/emoji-master staging 3件だけ。`r2ObjectsDeleted=false`と`privateRecoveryArtifactsDeleted=false`は削除対象が生成されていなかったことを表し、cleanup failureではない。新規 Worker Cronは最小probeでは動作したが、recovery WorkerのCron invocationは引き続き未観測。Issue #34/#37と完全recovery gateは未完了。実ユーザーデータ、Supabase rows、本番route、provider、domain/DNSは変更していない。
+
 ## 2026-10-02 Cron診断とpost-write recovery再試験（18:54–19:34 UTC）
 
 先に空の使い捨てD1をbindingした最小Workerを配備し、`* * * * *`と初回deployからの100%保存invocation logsを設定した。合成GETは200でWorker固有tailに現れ、約15分33秒後に同じWorkerのscheduled invocationが`outcome=ok`、`cron=* * * * *`で記録された。新規WorkerのCronは配送され、未使用のD1 bindingもCronを止めていない。probeのWorker/D1/configを削除し、削除後URLは404、D1一覧は既存3件だけに戻った。

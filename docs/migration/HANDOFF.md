@@ -1,9 +1,30 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-02 04:34 JST. The migration is **not complete**. PR #41
-remains open and draft at head `80589c5`. GitHub Actions run `36909741122`
-passed both required jobs. The earlier harness commit `05a783d` also passed
-both required jobs after rerunning the staging application job.
+Checkpoint: 2026-10-02 05:07 JST. The migration is **not complete**. PR #41
+remains open and draft. The previous report checkpoint at `ff2ce9f` passed
+both required GitHub Actions jobs in run `36916092393`.
+
+The exact disposable recovery Worker was read back from Cloudflare with
+`triggers.crons=["* * * * *"]`, 100% persisted invocation logs, and scheduled
+diagnostics enabled. Its Worker-specific Observability > Invocations history
+contained seven synthetic `fetch` calls and no Cron invocation; the live stream
+also waited without receiving a scheduled event. Worker-specific
+`wrangler tail --search scheduled` had no marker, with one reconnect gap, so
+delivery versus visibility is still unresolved. A third full synthetic
+post-write recovery run started at `2026-10-01T19:44:45.036Z` and ended at
+`2026-10-01T20:06:49.350Z` with
+`synthetic_stripe_extension_dispatch_timeout`. The final deployment version
+was `0c5dee53-e9f0-4762-bc3e-22f54c48780b` at 19:46:29.635 UTC. Its D1 receipt
+remained `received/pending` with attempt count 0. The avatar byte/metadata
+readback passed; the run stopped before Time Travel bookmark creation and
+encrypted R2 bundle/replay (`r2ObjectCount=0`).
+
+Cleanup report confirmed deletion of the temporary Worker, Business/Auth D1s,
+config, and synthetic avatar. The Worker URL now returns 404, and the D1
+inventory lists only the three existing staging databases. R2 and private
+artifact cleanup flags are false because those artifacts were never created.
+No real Supabase rows, production routes, provider transactions, or DNS/domain
+settings changed. Issue #34/#37 and the complete recovery gate remain open.
 
 The recovery smoke harness now enables persisted Workers Logs and invocation
 logs on the disposable Worker from its first deployment, and records safe
@@ -41,9 +62,10 @@ Auth D1s, config, and avatar; the Worker URL returned 404 and only three
 staging D1s remained. `r2ObjectCount=0`: no backup bundle or private recovery
 directory had been created before the failure. The corresponding `false`
 cleanup flags mean there were no such artifacts to remove, not a cleanup
-failure. The minimal Worker result narrows the remaining question to the
-recovery Worker's control-plane schedule registration versus its invocation
-path. Read the exact schedule back before another full recovery attempt.
+failure. The later direct readback confirmed the recovery Worker's Cron
+schedule is registered. The 19:44–20:06 UTC retry still produced no
+attributable scheduled invocation; pause further full recovery retries until
+runtime delivery or its observation path is isolated.
 
 `AdminSettings` now edits `max_emoji_characters`; the D1 admin API's editable
 allowlist now permits that public setting. Worker version
@@ -61,7 +83,8 @@ production cutover is authorized by those updates.
 Current Cloudflare checks use the explicit `fanmark-staging-inapp` profile.
 Remote Auth, Business, and emoji-master D1 report no pending migrations; the
 three staging R2 buckets are present. Stripe test-mode and Resend credentials
-remain unconfigured. New-Worker Cron delivery remains unverified. The current
+remain unconfigured. A minimal new Worker Cron has fired, but the full recovery
+Worker still has no attributable scheduled invocation. The current
 Wrangler OAuth token does not list Workers Observability access; a direct
 telemetry query returned HTTP 403. No permission or secret was changed.
 
