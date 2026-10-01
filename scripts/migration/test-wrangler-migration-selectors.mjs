@@ -11,10 +11,44 @@ const expectedAuthMigrations = [
   "0008_auth_user_suspension.sql",
 ].sort();
 const authMigrationPattern = `migrations/{${expectedAuthMigrations.join(",")}}`;
+const expectedMasterMigrations = [
+  "0000_emoji_master.sql",
+  "0001_emoji_master_release_staging.sql",
+  "0002_emoji_master_release_activation.sql",
+  "0003_better_auth_core.sql",
+  "0004_reference_master_releases.sql",
+  "0005_emoji_master_admin_guards.sql",
+  "0006_reference_master_extension_prices.sql",
+  "0007_release_audit_timestamps.sql",
+].sort();
+const masterMigrationPatterns = new Set([
+  "migrations/{000[0-6]_*.sql,0007_release_audit_timestamps.sql}",
+  `migrations/{${expectedMasterMigrations.join(",")}}`,
+]);
 const availableMigrations = new Set(readdirSync(migrationDirectory));
 
 function readConfig(relativePath) {
   return JSON.parse(readFileSync(new URL(relativePath, import.meta.url), "utf8"));
+}
+
+function selectedMasterMigrationNames(config, bindingName) {
+  const binding = config.d1_databases?.find((database) => database.binding === bindingName);
+  assert.ok(binding, `staging config must define ${bindingName}`);
+  assert.equal(binding.migrations_dir, "migrations");
+  if (binding.remote !== undefined) assert.equal(binding.remote, true);
+  assert.ok(masterMigrationPatterns.has(binding.migrations_pattern), "Master migrations must use an approved selector");
+
+  const match = binding.migrations_pattern.match(/^migrations\/\{([^{}]+)\}$/u);
+  assert.ok(match, "Master migrations must use an explicit scoped pattern");
+  const selected = [];
+  for (const pattern of match[1].split(",")) {
+    if (pattern === "000[0-6]_*.sql") {
+      selected.push(...[...availableMigrations].filter((filename) => /^000[0-6]_.*\.sql$/u.test(filename)));
+    } else {
+      selected.push(pattern);
+    }
+  }
+  return [...new Set(selected)].sort();
 }
 
 function selectedAuthMigrationNames(config) {
@@ -27,6 +61,20 @@ function selectedAuthMigrationNames(config) {
   const match = binding.migrations_pattern.match(/^migrations\/\{([^{}]+)\}$/u);
   assert.ok(match, "Auth migrations must be an explicit brace allowlist");
   return match[1].split(",").sort();
+}
+
+for (const [relativePath, bindingName] of [
+  ["../../workers/api/wrangler.app-staging.jsonc", "MASTER_DB"],
+  ["../../workers/api/wrangler.emoji-staging.jsonc", "FANMARK_DB"],
+  ["../../workers/api/wrangler.emoji-api-staging.jsonc", "MASTER_DB"],
+]) {
+  test(`${relativePath} selects only approved master migrations`, () => {
+    const selected = selectedMasterMigrationNames(readConfig(relativePath), bindingName);
+    assert.deepEqual(selected, expectedMasterMigrations);
+    for (const filename of selected) assert.ok(availableMigrations.has(filename), `${filename} must exist`);
+    assert.ok(!selected.includes("0007_auth_signup_command.sql"));
+    assert.ok(!selected.includes("0008_auth_user_suspension.sql"));
+  });
 }
 
 for (const relativePath of [
