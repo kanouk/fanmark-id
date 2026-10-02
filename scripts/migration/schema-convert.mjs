@@ -17,7 +17,7 @@ import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 33;
+export const SCHEMA_CONVERSION_VERSION = 34;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -85,6 +85,17 @@ const REVIEWED_SNAPSHOT_IMPORT_ONLY_TIMESTAMPS = new Map([
   ["notification_templates.created_at", {
     code: "snapshot_import_only_no_timestamp_writer",
     reason: "Snapshot import and the reviewed staging seed bind the source timestamp explicitly. Runtime edits preserve created_at and update only the separately reviewed updated_at column.",
+    evidence: [
+      "scripts/migration/d1-import.mjs",
+      "scripts/migration/test-d1-import-current-schema.mjs",
+      "scripts/migration/staging-notification-master-seed.sql",
+      "workers/api/src/notification-master-d1-api.ts",
+      "workers/api/test/notification-master-admin-d1.test.ts",
+    ],
+  }],
+  ["notification_rules.created_at", {
+    code: "snapshot_import_only_no_timestamp_writer",
+    reason: "Snapshot import and the reviewed staging seed bind the source timestamp explicitly. Runtime rule edits preserve created_at and update only the separately reviewed updated_at column.",
     evidence: [
       "scripts/migration/d1-import.mjs",
       "scripts/migration/test-d1-import-current-schema.mjs",
@@ -459,6 +470,15 @@ const REVIEWED_RUNTIME_TIMESTAMP_WRITES = new Map([
   ["notification_templates.updated_at", {
     code: "worker_operation_explicit_timestamp",
     reason: "The MFA-gated notification-template patch advances updated_at beyond the expected value, preserves created_at, and reads both values back from D1.",
+    evidence: [
+      "workers/api/src/notification-master-d1-api.ts",
+      "workers/api/test/notification-master-admin-d1.test.ts",
+      "workers/api/src/utc-timestamp.ts",
+    ],
+  }],
+  ["notification_rules.updated_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The MFA-gated notification-rule patch advances updated_at beyond the expected value, preserves created_at, and reads both values back from D1.",
     evidence: [
       "workers/api/src/notification-master-d1-api.ts",
       "workers/api/test/notification-master-admin-d1.test.ts",

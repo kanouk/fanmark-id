@@ -1,5 +1,23 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 v34：通知ルール日時のレビュー
+
+最新のread-only schema catalogを`2026-10-02T13:22:08.925059Z`に取得した。
+40 tables / 406 columns / 144 constraints / 139 indexes / 36 triggers /
+77 RLS policies / 58 functions / one viewで、source table rowsは取得していない。
+
+`notification_rules.created_at`と`updated_at`をレビューした。ルールの作成日時はsource
+snapshotとstaging seedから明示的にbindされる。MFA管理APIの更新は`created_at`を維持し、
+期待値より後の`updated_at`をbindする。固定clockのD1 testが両方をreadbackする。
+
+converter v34は37個のWorker-operation timestamp columns、6個のsnapshot-import-only
+columns、8個のversioned reference-master timestamps、1個のscheduled Worker timestampと
+11 Auth FKをreview済み。残るblockingは30 locations（timestamp defaults 27、functions/RLS/triggers各1）で
+`deployable: false`。converter tests 33/33、`npm run test:migration-data` 229/229、
+notification-master D1 tests 6/6、Worker typecheck、変更ファイルのESLintが成功。
+前のPR head `e2a1a05`のCI run `37012229177`ではstaging application jobが成功し、Worker jobは実行中。
+v34のCIはpush後に確認する。source rows、Cloudflare resources、Worker deploy、domain/DNSは変更していない。
+
 ## 2026-10-02 v33：通知・メールテンプレートの日時レビュー
 
 最新のread-only schema catalogを`2026-10-02T13:17:06.595505Z`に取得した。
@@ -16,8 +34,9 @@ columns、8個のversioned reference-master timestamps、1個のscheduled Worker
 11 Auth FKをreview済み。残るblockingは32 locations（timestamp defaults 29、functions/RLS/triggers各1）で
 `deployable: false`。converter tests 33/33、`npm run test:migration-data` 229/229、
 notification-master D1 tests 6/6、admin email-template D1 tests 4/4、Worker typecheck、
-変更ファイルのESLintが成功。v32のPR head `990e841`に対するCI run `37011388396`は
-両job success。v33のCIはpush後に確認する。source rows、Cloudflare resources、Worker deploy、domain/DNSは変更していない。
+変更ファイルのESLintが成功。v33 head `e2a1a05`のCI run `37012229177`ではstaging
+application jobが成功し、Worker jobはv34 push前の時点で実行中だった。
+source rows、Cloudflare resources、Worker deploy、domain/DNSは変更していない。
 
 ## 2026-10-02 v32：転送・抽選の日時レビュー
 

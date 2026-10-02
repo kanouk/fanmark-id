@@ -152,6 +152,10 @@ describe("D1 notification master admin API", () => {
     const privateSourceIdentity = await database!.prepare("SELECT created_by FROM notification_rules WHERE id = ?")
       .bind(ruleId).first<{ created_by: string }>();
     expect(privateSourceIdentity?.created_by).toBe("source-auth-user-id");
+    expect(await database!.prepare("SELECT created_at, updated_at FROM notification_rules WHERE id = ?")
+      .bind(ruleId).first<Record<string, unknown>>()).toEqual({
+      created_at: initialTime, updated_at: now.toISOString().replace(".000Z", ".000000Z"),
+    });
   });
 
   it("updates only editable template copy and activation fields", async () => {
