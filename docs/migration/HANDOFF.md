@@ -20,9 +20,9 @@ are still unsupported and the credential descriptor gate remains. Timestamp
 review completion is not schema-conversion completion or provider acceptance.
 Local validation covers converter 41/41, migration data 237/237, lottery D1
 12/12, admin user management 12/12, broadcast admin 11/11, Worker typecheck
-and changed-file ESLint. v41 `2c79c29` was pushed to PR #41 (CI run
-`37020954433`); v42 `e73396c` is a local commit. v43 is locally validated,
-and the local follow-ups wait for v41 CI to finish before the next push.
+and changed-file ESLint. Both v41 CI jobs passed on `2c79c29` in run
+`37020954433`. v42 `e73396c` and v43 `096e118` are locally validated
+follow-ups, ready for the next push to PR #41 after that successful run.
 
 The v41 license fix writes operation-time `updated_at` in active-to-grace,
 no-entry grace expiry, and lottery expiry of the old license. Commit-recovery

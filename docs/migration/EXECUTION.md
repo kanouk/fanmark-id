@@ -17,7 +17,8 @@ credential descriptor gateは未解消のため`deployable: false`。日時レ�
 変換完了やprovider acceptanceを意味しない。
 converter 41/41、migration data 237/237、lottery D1 12/12、admin user management 12/12、
 broadcast admin 11/11、Worker typecheckと変更ファイルのESLintが成功。
-v41 `2c79c29`はCI run `37020954433`、v42 `e73396c`はlocal commit。
+v41 `2c79c29`のCI run `37020954433`は両job成功。
+v42 `e73396c`とv43 `096e118`はlocal validationを完了し、次のpush対象。
 source rows、Worker deployment、Cloudflare resources、domain/DNSは変更していない。
 
 ## 2026-10-02 v42：設定・契約・一斉メールの操作日時
