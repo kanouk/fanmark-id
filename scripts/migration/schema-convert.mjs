@@ -17,7 +17,7 @@ import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 41;
+export const SCHEMA_CONVERSION_VERSION = 42;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -195,6 +195,108 @@ const SYSTEM_SETTINGS_TIMESTAMP_EVIDENCE = Object.freeze([
   "workers/api/vitest.system-settings.config.mjs",
 ]);
 const REVIEWED_RUNTIME_TIMESTAMP_WRITES = new Map([
+  ["broadcast_emails.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Draft creation binds one canonical operation time, while scheduling and delivery transitions preserve creation time and bind their update time; snapshot imports retain source timestamps.",
+    evidence: [
+      "workers/api/src/broadcast-email-admin-d1-api.ts",
+      "workers/api/src/broadcast-email-delivery-d1.ts",
+      "workers/api/test/broadcast-email-admin-d1.test.ts",
+      "workers/api/test/broadcast-email-delivery-d1.integration.mjs",
+      "scripts/migration/d1-import.mjs",
+      "scripts/migration/test-d1-import.mjs",
+    ],
+  }],
+  ["broadcast_emails.updated_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Draft creation binds one canonical operation time, while scheduling and delivery transitions preserve creation time and bind their update time; snapshot imports retain source timestamps.",
+    evidence: [
+      "workers/api/src/broadcast-email-admin-d1-api.ts",
+      "workers/api/src/broadcast-email-delivery-d1.ts",
+      "workers/api/test/broadcast-email-admin-d1.test.ts",
+      "workers/api/test/broadcast-email-delivery-d1.integration.mjs",
+      "scripts/migration/d1-import.mjs",
+      "scripts/migration/test-d1-import.mjs",
+    ],
+  }],
+  ["enterprise_user_settings.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Admin plan changes bind canonical operation time on insert; upsert preserves the existing creation timestamp and binds the update time. Snapshot imports retain the source timestamps.",
+    evidence: [
+      "workers/api/src/admin-user-management-d1-api.ts",
+      "workers/api/test/admin-user-management-d1.test.ts",
+      "scripts/migration/d1-import.mjs",
+      "scripts/migration/test-d1-import.mjs",
+    ],
+  }],
+  ["enterprise_user_settings.updated_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Admin plan changes bind canonical operation time on insert; upsert preserves the existing creation timestamp and binds the update time. Snapshot imports retain the source timestamps.",
+    evidence: [
+      "workers/api/src/admin-user-management-d1-api.ts",
+      "workers/api/test/admin-user-management-d1.test.ts",
+      "scripts/migration/d1-import.mjs",
+      "scripts/migration/test-d1-import.mjs",
+    ],
+  }],
+  ["user_settings.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Invitation signup binds the captured completion time to creation and update timestamps. Profile, password setup, admin plan changes, customer mapping, and Stripe plan reconciliation preserve creation time and explicitly bind canonical update time. Snapshot imports retain source timestamps.",
+    evidence: [
+      "workers/api/src/invitation-signup-d1-api.ts",
+      "workers/api/src/profile-d1-repository.ts",
+      "workers/api/src/password-setup-d1-api.ts",
+      "workers/api/src/admin-user-management-d1-api.ts",
+      "workers/api/src/stripe-plan-checkout-d1-api.ts",
+      "workers/api/src/stripe-subscription-reconciliation-d1.ts",
+      "workers/api/test/invitation-signup-d1.test.ts",
+      "workers/api/test/admin-user-management-d1.test.ts",
+      "workers/api/test/stripe-subscription-reconciliation-d1.integration.mjs",
+      "scripts/migration/d1-import.mjs",
+      "scripts/migration/test-d1-import.mjs",
+    ],
+  }],
+  ["user_settings.updated_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Invitation signup binds the captured completion time to creation and update timestamps. Profile, password setup, admin plan changes, customer mapping, and Stripe plan reconciliation preserve creation time and explicitly bind canonical update time. Snapshot imports retain source timestamps.",
+    evidence: [
+      "workers/api/src/invitation-signup-d1-api.ts",
+      "workers/api/src/profile-d1-repository.ts",
+      "workers/api/src/password-setup-d1-api.ts",
+      "workers/api/src/admin-user-management-d1-api.ts",
+      "workers/api/src/stripe-plan-checkout-d1-api.ts",
+      "workers/api/src/stripe-subscription-reconciliation-d1.ts",
+      "workers/api/test/invitation-signup-d1.test.ts",
+      "workers/api/test/admin-user-management-d1.test.ts",
+      "workers/api/test/stripe-subscription-reconciliation-d1.integration.mjs",
+      "scripts/migration/d1-import.mjs",
+      "scripts/migration/test-d1-import.mjs",
+    ],
+  }],
+  ["user_subscriptions.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Stripe reconciliation binds canonical operation time on creation and update; its upsert preserves existing created_at. Invoice outcome updates bind canonical update time and snapshot imports retain source timestamps.",
+    evidence: [
+      "workers/api/src/stripe-subscription-reconciliation-d1.ts",
+      "workers/api/src/stripe-invoice-projection-d1.ts",
+      "workers/api/test/stripe-subscription-reconciliation-d1.integration.mjs",
+      "workers/api/test/stripe-invoice-projection-d1.integration.mjs",
+      "scripts/migration/d1-import.mjs",
+      "scripts/migration/test-d1-import.mjs",
+    ],
+  }],
+  ["user_subscriptions.updated_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Stripe reconciliation binds canonical operation time on creation and update; its upsert preserves existing created_at. Invoice outcome updates bind canonical update time and snapshot imports retain source timestamps.",
+    evidence: [
+      "workers/api/src/stripe-subscription-reconciliation-d1.ts",
+      "workers/api/src/stripe-invoice-projection-d1.ts",
+      "workers/api/test/stripe-subscription-reconciliation-d1.integration.mjs",
+      "workers/api/test/stripe-invoice-projection-d1.integration.mjs",
+      "scripts/migration/d1-import.mjs",
+      "scripts/migration/test-d1-import.mjs",
+    ],
+  }],
   ["fanmark_licenses.created_at", {
     code: "worker_operation_explicit_timestamp",
     reason: "Registration, transfer, and lottery-winner creation bind the canonical UTC operation time; subsequent mutations preserve creation time and snapshot imports retain their explicit source timestamps.",

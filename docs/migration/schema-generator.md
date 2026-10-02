@@ -1,19 +1,23 @@
 # Full schema conversion generator
 
-`schema-convert.mjs` v41 is a private, catalog-only preparation tool. It
+`schema-convert.mjs` v42 is a private, catalog-only preparation tool. It
 converts the JSON emitted by `scripts/migration/schema-readiness.sql` into deterministic
 SQLite/D1 table and index SQL plus a machine-readable report of unresolved
 parity gates. It does not read application rows, contact Supabase, apply SQL,
 or declare a production migration ready.
 
-v41 reviews the license `created_at`, `license_start`, and `updated_at` defaults.
-Registration, transfer, and lottery-winner creation explicitly bind operation
-time. Semantic lifecycle updates now bind `updated_at`, including three
-previously missing source-profile writes; commit-recovery readback verifies
-that value. Creation/start timestamps remain unchanged during later mutations,
-and snapshot import retains source values. Internal lifecycle claims preserve
-business timestamps. This removes three exact default gates; nine timestamp
-defaults and catalog behavior gates still keep the schema non-deployable.
+v42 reviews creation/update defaults on profiles, Enterprise settings,
+subscriptions, and broadcast emails. Signup, admin, reconciliation, scheduling,
+and delivery operations explicitly bind canonical UTC operation time; updates
+preserve the original creation time. Synthetic D1 tests read new rows, upserts,
+plan changes, and retry completion back. Snapshot imports retain source values.
+The timestamp review is now limited to `audit_logs.created_at`; catalog
+function/RLS/trigger scopes and credential descriptor gates remain blocking.
+
+v41 additionally corrected three missing license `updated_at` writes in the
+source-profile lifecycle repositories and requires the timestamp in commit
+recovery. Registration, transfer, and lottery creation supply all license
+timestamps; internal claims preserve business timestamps.
 
 The private catalog also carries `regex_range_probe`. It tests the three exact
 ASCII-format CHECK expressions against every valid Unicode scalar value using

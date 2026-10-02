@@ -1,5 +1,22 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 v42：設定・契約・一斉メールの操作日時
+
+v41と同じread-only schema catalog（`2026-10-02T14:21:25.605664Z`）を使用した。
+`user_settings`、`enterprise_user_settings`、`user_subscriptions`、`broadcast_emails`の
+`created_at` / `updated_at`をレビューした。招待登録、Enterprise設定の新規作成とupsert、
+Stripe契約の新規反映と既存契約更新、一斉メールのdraft作成とretry後完了をD1でreadbackした。
+既存レコードの作成日時を維持し、操作・完了日時を更新列へ明示することを確認した。
+Stripeとメールのproviderはsynthetic mockであり、実サービス接続のacceptanceではない。
+
+converter v42は62個のWorker-operation timestamp columnsをreview済み。
+残るschema/operation blockersは4 locations（`audit_logs.created_at`とfunctions/RLS/triggers
+各1）、credential descriptor gateも残り、`deployable: false`。
+converter tests 40/40、migration data tests 236/236、admin user management 12/12、
+invitation signup 10/10、broadcast admin 11/11、subscription/delivery integration 22/22、
+Worker typecheckと変更ファイルのESLintで検証する。v41 commit `2c79c29`はPR #41へpush済み。
+ユーザーデータ・domain/DNS・Worker deployment・Cloudflare resourcesは変更していない。
+
 ## 2026-10-02 v41：ライセンス操作日時と猶予・失効処理の修正
 
 read-only schema catalogは`2026-10-02T14:21:25.605664Z`。

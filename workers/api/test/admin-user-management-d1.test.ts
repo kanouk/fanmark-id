@@ -192,12 +192,12 @@ describe("D1 administrator user directory", () => {
       enterpriseSettings: { customFanmarksLimit: 250, customPricing: 55000, notes: "synthetic plan test" },
       updatedAt: nowIso,
     });
-    const enterpriseProfile = await business!.prepare("SELECT plan_type FROM user_settings WHERE user_id = ?")
-      .bind(userA).first<{ plan_type: string }>();
-    const enterpriseSettings = await business!.prepare(`SELECT custom_fanmarks_limit, custom_pricing, notes
+    const enterpriseProfile = await business!.prepare("SELECT plan_type, created_at, updated_at FROM user_settings WHERE user_id = ?")
+      .bind(userA).first<Record<string, unknown>>();
+    const enterpriseSettings = await business!.prepare(`SELECT custom_fanmarks_limit, custom_pricing, notes, created_at, updated_at
       FROM enterprise_user_settings WHERE user_id = ?`).bind(userA).first<Record<string, unknown>>();
-    expect(enterpriseProfile?.plan_type).toBe("enterprise");
-    expect(enterpriseSettings).toEqual({ custom_fanmarks_limit: 250, custom_pricing: 55000, notes: "synthetic plan test" });
+    expect(enterpriseProfile).toEqual({ plan_type: "enterprise", created_at: time, updated_at: nowIso });
+    expect(enterpriseSettings).toEqual({ custom_fanmarks_limit: 250, custom_pricing: 55000, notes: "synthetic plan test", created_at: time, updated_at: nowIso });
 
     const maxPlan = await request(`/api/admin/users/${userA}/plan`, {
       method: "POST",
@@ -213,6 +213,18 @@ describe("D1 administrator user directory", () => {
       AND user_id = ? AND resource_id = ?`).bind("49999999-9999-4999-8999-999999999999", userA)
       .first<{ count: number }>();
     expect(audit?.count).toBe(2);
+    const recreated = await request(`/api/admin/users/${userA}/plan`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        userId: userA, newPlanType: "enterprise",
+        enterpriseOverrides: { customFanmarksLimit: 250, customPricing: 55000, notes: "fresh settings" },
+      }),
+    });
+    expect(recreated.status).toBe(200);
+    expect(await business!.prepare("SELECT created_at, updated_at FROM enterprise_user_settings WHERE user_id = ?")
+      .bind(userA).first()).toEqual({ created_at: nowIso, updated_at: nowIso });
+
   });
 
   it("suspends and restores an account atomically with session revocation and Auth audit", async () => {

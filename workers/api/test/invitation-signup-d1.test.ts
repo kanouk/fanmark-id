@@ -246,6 +246,8 @@ describe("invitation signup across split Auth and business D1", () => {
       FROM invitation_signup_attempts WHERE attempt_id = ?`).bind(commandId).first<Record<string, unknown>>();
     expect(completedAttempt?.created_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
     expect(completedAttempt?.updated_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+    expect(profile?.created_at).toBe(profile?.updated_at);
+    expect(profile?.updated_at).toBe(completedAttempt?.updated_at);
 
     const invite = await businessDb!.prepare("SELECT used_count FROM invitation_codes WHERE id = ?")
       .bind(invitationId).first<{ used_count: number }>();

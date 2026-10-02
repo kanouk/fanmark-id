@@ -161,9 +161,9 @@ describe("D1 broadcast email admin API", () => {
       created_at: "2026-09-27T12:34:56.000000Z",
     });
     expect(payload.broadcast.id).toMatch(/^[0-9a-f-]{36}$/u);
-    const stored = await database!.prepare("SELECT created_by, status FROM broadcast_emails WHERE id = ?")
-      .bind(payload.broadcast.id as string).first<{ created_by: string; status: string }>();
-    expect(stored).toEqual({ created_by: adminId, status: "draft" });
+    const stored = await database!.prepare("SELECT created_by, status, created_at, updated_at FROM broadcast_emails WHERE id = ?")
+      .bind(payload.broadcast.id as string).first<Record<string, unknown>>();
+    expect(stored).toEqual({ created_by: adminId, status: "draft", created_at: "2026-09-27T12:34:56.000000Z", updated_at: "2026-09-27T12:34:56.000000Z" });
     const audit = await database!.prepare("SELECT user_id, resource_id, metadata FROM audit_logs WHERE action = 'BROADCAST_DRAFT_CREATE'")
       .first<{ user_id: string; resource_id: string; metadata: string }>();
     expect(audit?.user_id).toBe(adminId);

@@ -315,7 +315,7 @@ test("active subscription created/updated reconciles current Stripe state and ma
         created_at, updated_at, payment_failure_at, next_payment_attempt, payment_failure_type
       ) VALUES (?, ?, ?, ?, 'prod_old', 'past_due', ?, ?, ?, ?, 'invoice.payment_failed')
     `).bind(
-      nextUuid(), USER_ID, CUSTOMER_ID, SUBSCRIPTION_ID, NOW, NOW,
+      nextUuid(), USER_ID, CUSTOMER_ID, SUBSCRIPTION_ID, "2026-09-25T05:00:00.000000Z", "2026-09-25T05:00:00.000000Z",
       "2026-09-25T05:00:00.000Z", "2026-10-01T05:00:00.000Z",
     ).run();
     const staleEvent = subscriptionEvent({ subscription: subscriptionSnapshot({ priceId: PRICE_IDS.creator }) });
@@ -333,6 +333,13 @@ test("active subscription created/updated reconciles current Stripe state and ma
     assert.equal(result.status, "applied");
     assert.equal(result.effectivePlanType, "max");
     assert.equal(result.activeSubscriptionCount, 1);
+    const subscriptionTimes = await database.prepare("SELECT created_at, updated_at FROM user_subscriptions WHERE stripe_subscription_id = ?")
+      .bind(SUBSCRIPTION_ID).first();
+    assert.deepEqual(subscriptionTimes, { created_at: "2026-09-25T05:00:00.000000Z", updated_at: "2026-09-26T05:06:07.000000Z" });
+    const profileTimes = await database.prepare("SELECT created_at, updated_at FROM user_settings WHERE user_id = ?")
+      .bind(USER_ID).first();
+    assert.deepEqual(profileTimes, { created_at: NOW, updated_at: "2026-09-26T05:06:07.000000Z" });
+
     assert.equal(await scalar(database, "SELECT plan_type AS value FROM user_settings WHERE user_id = ?", [USER_ID]), "max");
     assert.equal(await scalar(database, "SELECT price_id AS value FROM user_subscriptions WHERE stripe_subscription_id = ?", [SUBSCRIPTION_ID]), PRICE_IDS.max);
     assert.equal(await scalar(database, "SELECT current_period_start AS value FROM user_subscriptions WHERE stripe_subscription_id = ?", [SUBSCRIPTION_ID]), "2026-09-26T05:20:00.000000Z");
@@ -413,6 +420,8 @@ test("non-active subscription updates are projected without granting or removing
     assert.equal(result.status, "applied");
     assert.equal(result.effectivePlanType, undefined);
     assert.equal(result.activeSubscriptionCount, 0);
+    assert.deepEqual(await database.prepare("SELECT created_at, updated_at FROM user_subscriptions WHERE stripe_subscription_id = ?")
+      .bind(SUBSCRIPTION_ID).first(), { created_at: "2026-09-26T05:06:07.000000Z", updated_at: "2026-09-26T05:06:07.000000Z" });
     assert.equal(await scalar(database, "SELECT plan_type AS value FROM user_settings WHERE user_id = ?", [USER_ID]), "business");
     assert.equal(await scalar(database, "SELECT status AS value FROM user_subscriptions WHERE stripe_subscription_id = ?", [SUBSCRIPTION_ID]), "trialing");
   } finally {

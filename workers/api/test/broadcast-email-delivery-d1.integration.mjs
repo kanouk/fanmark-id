@@ -616,8 +616,8 @@ test("retries an uncertain provider response with the exact same payload and ide
       status: "sent",
       provider_email_id: "resend-synthetic-message",
     });
-    assert.deepEqual(await database.prepare(`SELECT status, sent_count, failed_count FROM broadcast_emails WHERE id = ?`)
-      .bind(broadcastId).first(), { status: "completed", sent_count: 1, failed_count: 0 });
+    assert.deepEqual(await database.prepare(`SELECT status, sent_count, failed_count, created_at, updated_at FROM broadcast_emails WHERE id = ?`)
+      .bind(broadcastId).first(), { status: "completed", sent_count: 1, failed_count: 0, created_at: NOW, updated_at: secondNow });
     assert.equal((await database.prepare(`SELECT COUNT(*) AS count FROM audit_logs
       WHERE action = 'BROADCAST_EMAIL_SENT' AND resource_id = ?`).bind(broadcastId).first()).count, 1);
     const duplicateDispatch = await dispatchBroadcastEmailDeliveryBatch(env, () => new Date("2026-09-27T12:02:00.000000Z"), resendMock, async () => {}, () => "send-lease-after-completion");
