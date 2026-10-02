@@ -14,7 +14,7 @@ const origin='https://fanmark-app-staging.fanmark-id.workers.dev';
 const userId='35111111-1111-4111-8111-111111111111',fanmarkId='45111111-1111-4111-8111-111111111111',licenseId='55111111-1111-4111-8111-111111111111';
 const editor=`/fanmarks/${fanmarkId}/profile/edit`,profileRoute=`/api/me/fanmarks/${fanmarkId}/profile`;
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
-const cases=process.argv.length===2?['cold','anonymous','empty','denied','network','retry','login']:process.argv.slice(2);assert.ok(cases.every(c=>['cold','anonymous','empty','denied','network','retry','login'].includes(c)));
+const cases=process.argv.length===2?['cold','anonymous','empty','denied','network','retry','login','save-failure']:process.argv.slice(2);assert.ok(cases.every(c=>['cold','anonymous','empty','denied','network','retry','login','save-failure'].includes(c)));
 function cdpConnection(webSocketUrl) {
   const socket = new WebSocket(webSocketUrl);
   const pending = new Map();
@@ -92,7 +92,7 @@ async function run(mode){
   let port;for(let i=0;i<150;i++){try{port=(await readFile(path.join(temp,'DevToolsActivePort'),'utf8')).split('\n')[0];if(port)break;}catch{}await delay(100);}assert.ok(port);
   const targets=await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();cdp=cdpConnection(targets.find(t=>t.type==='page').webSocketDebuggerUrl);await cdp.opened;
   await cdp.send('Page.enable');await cdp.send('Network.enable');
-  const blocked=[],requests=[],failures=[];debug={blocked,requests,failures};let sessionReleased=false,sessionStarted=false,recovered=false,ownerReads=0,signedIn=!['anonymous','login'].includes(mode);
+  const blocked=[],requests=[],failures=[];debug={blocked,requests,failures};let sessionReleased=false,sessionStarted=false,recovered=false,ownerReads=0,profileWrites=0,signedIn=!['anonymous','login'].includes(mode);
   const timestamp='2026-10-03T00:00:00.000Z';
   const user={id:userId,email:'offline-profile@example.invalid',emailVerified:true,name:'Offline synthetic owner'};
   const own={schemaVersion:1,profile:{id:userId,user_id:userId,username:'offline-profile',display_name:'Offline synthetic owner',avatar_url:null,plan_type:'free',preferred_language:'ja',created_at:timestamp,updated_at:timestamp,requires_password_setup:false}};
@@ -112,6 +112,11 @@ async function run(mode){
     if(u.pathname==='/api/auth/capabilities')return fulfill(event.requestId,200,{signUp:false,socialProviders:[],passwordReset:false,invitationRequired:false});
     if(u.pathname===profileRoute){
      ownerReads++;
+     if(mode==='save-failure'&&event.request.method==='PATCH'){
+      if(++profileWrites===1)return fulfill(event.requestId,503,{error:'unavailable'});
+      const patch=JSON.parse(event.request.postData);Object.assign(context.profile,patch);
+      return fulfill(event.requestId,200,context);
+     }
      if(mode==='denied'||(mode==='retry'&&!recovered))return fulfill(event.requestId,404,{error:'not_found'});
      if(mode==='network')return cdp.send('Fetch.failRequest',{requestId:event.requestId,errorReason:'ConnectionFailed'});
      return fulfill(event.requestId,200,mode==='empty'?{...context,profile:null}:context);
@@ -128,7 +133,30 @@ async function run(mode){
   await cdp.send('Fetch.enable',{patterns:[{urlPattern:'*'}]});
   await cdp.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
   await cdp.send('Page.navigate',{url:origin+editor});
-  if(mode==='cold'){
+  if(mode==='save-failure'){
+   await wait(cdp,`!!document.querySelector('textarea[name="bio"]')`,Boolean);
+   await value(cdp,`(()=>{const e=document.querySelector('textarea[name="bio"]');e.focus();e.select();})()`);
+   const unsavedBio='Keep this unsaved draft after failure';
+   await cdp.send('Input.insertText',{text:unsavedBio});
+   const key='emoji_profile_draft_'+fanmarkId;
+   await wait(cdp,`sessionStorage.getItem(${JSON.stringify(key)})`,v=>v&&JSON.parse(v).form.bio===unsavedBio);
+   const saveButton=`Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='保存する')`;
+   await value(cdp,`${saveButton}.click()`);
+   await wait(cdp,`document.body.innerText.includes('更新に失敗しました')`,Boolean);
+   await wait(cdp,`!!${saveButton}&&!${saveButton}.disabled`,Boolean);
+   const draft=await value(cdp,`sessionStorage.getItem(${JSON.stringify(key)})`);
+   assert.ok(draft,'failed save discarded draft');assert.equal(JSON.parse(draft).form.bio,unsavedBio);
+   assert.equal(await value(cdp,'location.pathname'),editor,'failed save left editor');
+   await value(cdp,`window.__fanmarkOfflineBeforeReload=true`);
+   await cdp.send('Page.reload');
+   await wait(cdp,'window.__fanmarkOfflineBeforeReload===undefined',Boolean);
+   await wait(cdp,`document.querySelector('textarea[name="bio"]')?.value`,v=>v===unsavedBio);
+   await value(cdp,`${saveButton}.click()`);
+   await wait(cdp,'location.pathname',v=>v===`/fanmarks/${fanmarkId}/settings`);
+   assert.equal(profileWrites,2,'retry did not save');
+   assert.equal(context.profile.bio,unsavedBio,'retry lost restored draft');
+   assert.equal(await value(cdp,`sessionStorage.getItem(${JSON.stringify(key)})`),null,'successful save did not clear draft');
+  }else if(mode==='cold'){
    // Fast maintenance response, deliberately delayed persisted-session response.
    for(let i=0;i<100&&!sessionStarted;i++)await delay(100);assert.equal(sessionStarted,true,'auth request did not start');
    await delay(600);assert.equal(sessionReleased,false);assert.equal(await value(cdp,'location.pathname'),editor,'redirected before auth restoration');

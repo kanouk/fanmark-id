@@ -56,9 +56,13 @@ allows creation. Read generations invalidate obsolete/unmounted requests.
 
 `npm run build:cloudflare-staging && npm run test:staging-profile-editor-ui`
 uses headless Chrome with every browser request fulfilled or blocked locally.
-Seven synthetic cases cover delayed session restoration, anonymous return
+Eight synthetic cases cover delayed session restoration, anonymous return
 state, actual form sign-in returning to the editor, authorized missing profile,
-404 refusal, network failure and recovery by retry. The restored-owner case
+404 refusal, network failure, recovery by retry and a failed-save draft. The
+failed-save case proves that a 503 keeps the editor and draft, reload restores
+unsaved content, and only a successful retry removes the draft. The page
+rethrows a save failure after its toast so the form can distinguish success
+from failure. The restored-owner case
 checks exact entered spaces and no horizontal overflow at 390px. Font requests
 are blocked; no Supabase or real API calls are permitted. Set
 `FANMARK_STAGING_CHROME` when Chrome is outside the discovered standard paths.

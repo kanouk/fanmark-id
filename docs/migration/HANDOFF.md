@@ -5,6 +5,19 @@ open and draft. CI validates the branch but does not deploy the Worker.
 The newest checkpoint below is authoritative for current deployment state;
 older sections retain their historical acceptance and failure evidence.
 
+Draft preservation follow-up: CI `37062006317` / head `ae2c568` application job
+passed, including seven rendered browser cases on the runner; Worker was still
+running at observation. Another local Chrome fixture reproduced PATCH 503
+discarding the unsaved profile draft because page `handleSave` swallowed the
+error and the form treated it as success. The page now rethrows after its toast.
+The eighth case proves retained draft/editor, same-tab reload restoration,
+successful retry and draft removal only after success. Build/typecheck/lint,
+workflow isolation and browser 8/8 pass. New-head CI and actual deployed
+save/reopen/preview are pending; current Worker remains `010a4d7a` below.
+No provider, real-user or domain changes. Before/after logs:
+`/tmp/fanmark-profile-editor-save-failure-before.log`,
+`/tmp/fanmark-profile-editor-draft-{build,browser,typecheck,eslint}.log`.
+
 Editor follow-up: actual synthetic persisted-session Chrome opening on current
 `010a4d7a` reproduced an early auth redirect ending at `/dashboard` instead of
 the edit URL. Journal `fanmark-perpetual-editor-canary-Thyl2a` ended

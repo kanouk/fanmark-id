@@ -98,6 +98,7 @@ export default function EmojiProfileEdit() {
         description: error instanceof Error ? error.message : t('emojiProfile.updateErrorDescription'),
         variant: 'destructive',
       });
+      throw error;
     } finally {
       setIsSubmitting(false);
     }

@@ -1,5 +1,22 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：保存失敗時のプロフィール下書き消失を修正
+
+CI37062006317 / head ae2c568はapplication jobが成功し、runner上でも新しい画面試験
+7ケースが通った（Worker jobは確認時点で実行中）。CI待機中に追加のlocal Chrome
+fixtureでPATCH503を注入し、失敗toastは表示されるがsessionStorageの下書きが消える
+不具合を再現した。pageのhandleSaveが例外を処理して正常終了扱いにしていたため、
+formは保存成功と誤認して下書きを削除していた。
+
+失敗toast後に同じ例外をformへ伝播させる。formの既存catchとfinallyを保ち、失敗時は
+編集画面と下書きを保持する。新しい8番目の描画試験は、503・未保存入力保持・同じ
+タブのreloadで復元・retry成功・成功後だけdraft削除まで確認した。8/8、staging build、
+application typecheck、変更箇所ESLint、workflow isolationが成功。旧失敗は
+`/tmp/fanmark-profile-editor-save-failure-before.log`、成功は
+`/tmp/fanmark-profile-editor-draft-{build,browser,typecheck,eslint}.log`。
+新headのCIとremote editor受け入れはまだ未確認。配備は引き続き010a4d7a。
+provider設定・実ユーザーデータ・DNSは未変更。
+
 ## 2026-10-03：プロフィール編集の認証復元・取得失敗を修正
 
 Worker `010a4d7a`の実signin Cookieで編集URLを直接開いたところ、認証復元前に
