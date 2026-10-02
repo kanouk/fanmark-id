@@ -1,8 +1,8 @@
 # Cloudflare migration handoff
 
 Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
-open and draft. The latest committed checkpoint `4dd5dad` passed both CI jobs
-in Actions run `36988666920`. An earlier checkpoint `9edbd33` failed app
+open and draft. The latest committed checkpoint `c5aaefe` passed both CI jobs
+in Actions run `36990781789`. An earlier checkpoint `9edbd33` failed app
 validation: the Stripe suite's
 `subscription-application.test.mjs` process reached `construct PGlite` and
 `create base schema`, then timed out before `base schema ready` on all three
@@ -71,9 +71,9 @@ versioned-master replacement; converter v23 gave three snapshot-import-only
 dispositions. The current work adds a D1 notification archiver and a reviewed
 explicit timestamp disposition for `notifications_history.archived_at`. Local
 validation passes 208/208 migration-data tests, 15/15 notification D1 tests,
-five scheduled-dispatch tests, Worker typecheck, and targeted ESLint. These
-changes are not in CI or staging yet. The
-checked-in source function defaults to atomically archiving delivered/failed
+five scheduled-dispatch tests, Worker typecheck, and targeted ESLint. Both CI
+jobs pass on `c5aaefe` in run `36990781789`; staging deployment remains pending.
+The checked-in source function defaults to atomically archiving delivered/failed
 notifications older than 90 days, but no checked-in invocation or schedule was
 found; this is not a live `pg_cron` readback. The staging selector remains
 absent. History purge/long-term retention and source/target transaction-time
