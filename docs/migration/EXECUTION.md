@@ -6037,3 +6037,26 @@ production fit. No remote Worker/Cron/selector/secret, Supabase user row,
 real data migration, or domain/DNS state changed. Exact new-HEAD CI and guarded
 remote editor/favorites acceptance remain required; remote D1 writes stay
 pending the previous daily-read-limit rejection and full baseline preflight.
+
+## 2026-10-03 align native notification/search Auth fixtures with staging
+
+The previous full-Business-schema notification/search suites used only the
+Auth core and omitted the staging suspension selector. Both now apply Auth
+core/0007 signup marker/0008 suspension migrations and select
+AUTH_USER_STATUS_BACKEND=d1. Added warmed-session checks after synthetic
+suspension and native session revocation. The old cookie cannot read/list/count
+or mark notifications read; all notification rows stay unchanged and another
+user's session still works. Public search remains available as anonymous,
+preserving aggregate lottery count while withholding the former owner's entry
+ID. Both paths reject a new suspended-user signin with BANNED_USER/403 and
+create zero sessions.
+
+Node 22.6.0 native notifications passed 20/20 and search 13/13; Worker typecheck,
+changed-file lint and diff checks passed. The fixtures emulate the committed
+stop/revocation state; the existing admin-user-management suite separately
+verifies MFA, audit and the transaction. No runtime application code,
+remote deployment/config/rows, source data or domain/DNS state changed. This
+closes the local API boundary with the staging Auth selector, not full Auth,
+provider acceptance, import parity or production readiness. Current deployed
+Worker remains the previous 010a4d7a. New exact-HEAD CI and D1 quota/full
+preflight/native editor/favorite acceptance remain required.

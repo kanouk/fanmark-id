@@ -3,6 +3,8 @@ import bcrypt from "bcryptjs";
 import { beforeAll, beforeEach, describe, expect, inject, it } from "vitest";
 import { checkedInSqlStatements as statements } from "./schema-statements";
 import authSchema from "../migrations/0003_better_auth_core.sql?raw";
+import signupSchema from "../migrations/0007_auth_signup_command.sql?raw";
+import suspensionSchema from "../migrations/0008_auth_user_suspension.sql?raw";
 import { handleRequest } from "../src";
 import type { Env } from "../src/repository";
 
@@ -53,7 +55,7 @@ async function details(cookie = "") {
 
 beforeAll(async () => {
   if (!business || !auth) throw new Error("Split D1 bindings unavailable");
-  await auth.batch(statements(authSchema).map(sql => auth.prepare(sql)));
+  await auth.batch([authSchema, signupSchema, suspensionSchema].flatMap(statements).map(sql => auth.prepare(sql)));
   const migrations = inject("businessSearchMigrations");
   expect(migrations.length).toBeGreaterThanOrEqual(25);
   expect(migrations[0].name).toBe("0000_business_schema_v4_staging.sql");
@@ -82,6 +84,31 @@ beforeEach(async () => {
 });
 
 describe("full-schema native D1 search authorization and source lifecycle", () => {
+  it("treats a revoked cookie as anonymous without exposing its former lottery entry", async () => {
+    await business.prepare(`INSERT INTO fanmark_lottery_entries
+      (id,fanmark_id,user_id,license_id,entry_status,applied_at,created_at,updated_at)
+      VALUES (?, ?, ?, ?, 'pending', ?, ?, ?)`)
+      .bind(ownerEntry, fanmarkId, ownerId, licenseId, timestamp, timestamp, timestamp).run();
+    const cookie = await signin(ownerId);
+    const otherCookie = await signin(otherId);
+    expect(await details(cookie)).toMatchObject({ has_user_lottery_entry: true, user_lottery_entry_id: ownerEntry });
+    const before = (await business.prepare("SELECT * FROM fanmark_lottery_entries ORDER BY id").all()).results;
+    await auth.batch([
+      auth.prepare('UPDATE "user" SET banned = 1, banExpires = NULL WHERE id = ?').bind(ownerId),
+      auth.prepare('DELETE FROM session WHERE userId = ?').bind(ownerId),
+    ]);
+    const result = await details(cookie);
+    expect(result).toMatchObject({ lottery_entry_count: 1, has_user_lottery_entry: false, user_lottery_entry_id: null });
+    expect(JSON.stringify(result)).not.toContain(ownerEntry);
+    expect(await details(otherCookie)).toMatchObject({ has_user_lottery_entry: false, user_lottery_entry_id: null });
+    const blocked = await request({ email: `${ownerId}@example.invalid`, password }, "", "/api/auth/sign-in/email");
+    expect(blocked.status).toBe(403);
+    expect(await blocked.json()).toMatchObject({ code: "BANNED_USER" });
+    expect((await business.prepare("SELECT * FROM fanmark_lottery_entries ORDER BY id").all()).results).toEqual(before);
+    expect(await auth.prepare('SELECT count(*) AS count FROM session WHERE userId = ?')
+      .bind(ownerId).first()).toEqual({ count: 0 });
+  });
+
   it("resolves only each real Better Auth session's pending lottery entry", async () => {
     await business.prepare("INSERT INTO fanmark_licenses (id,fanmark_id,user_id,license_start,license_end,status,created_at,updated_at) VALUES (?, ?, ?, ?, ?, 'expired', ?, ?)")
       .bind(olderId, fanmarkId, ownerId, "2025-01-01T00:00:00.000000Z", "2025-02-01T00:00:00.000000Z", timestamp, timestamp).run();

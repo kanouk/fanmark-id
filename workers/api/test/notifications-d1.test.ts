@@ -4,6 +4,8 @@ import { beforeAll, beforeEach, describe, expect, inject, it } from "vitest";
 import authSchemaSql from "../migrations/0003_better_auth_core.sql?raw";
 import { checkedInSqlStatements as splitSqlStatements } from "./schema-statements";
 import { runScheduledNotificationArchive, runScheduledNotificationEvents } from "../src/notifications-scheduled";
+import signupSchema from "../migrations/0007_auth_signup_command.sql?raw";
+import suspensionSchema from "../migrations/0008_auth_user_suspension.sql?raw";
 import { handleRequest } from "../src";
 import type { Env } from "../src/repository";
 
@@ -111,7 +113,7 @@ async function resetRows(): Promise<void> {
 
 beforeAll(async () => {
   if (!authDatabase || !businessDatabase) throw new Error("Split D1 bindings unavailable");
-  await authDatabase.batch(splitSqlStatements(authSchemaSql).map((statement) => authDatabase.prepare(statement)));
+  await authDatabase.batch([authSchemaSql, signupSchema, suspensionSchema].flatMap(splitSqlStatements).map((statement) => authDatabase.prepare(statement)));
   const migrations = inject("businessNotificationMigrations");
   expect(migrations.length).toBeGreaterThanOrEqual(25);
   expect(migrations[0].name).toBe("0000_business_schema_v4_staging.sql");
@@ -126,6 +128,46 @@ beforeAll(async () => {
 beforeEach(resetRows);
 
 describe("Better Auth notifications API", () => {
+  it("refuses a revoked session for inbox reads/writes and rejects a new sign-in while suspended", async () => {
+    if (!authDatabase || !businessDatabase) throw new Error("Split D1 bindings unavailable");
+    const cookie = await signIn(ownerEmail);
+    const otherCookie = await signIn(otherEmail);
+    expect((await request("/api/me/notifications", { headers: { Cookie: cookie } })).status).toBe(200);
+    const before = (await businessDatabase.prepare("SELECT * FROM notifications ORDER BY id").all()).results;
+    // The admin suspension transaction sets this flag and revokes the user's
+    // sessions. Its separate MFA/audit suite covers authorization and atomicity.
+    await authDatabase.batch([
+      authDatabase.prepare('UPDATE "user" SET banned = 1, banReason = ?, banExpires = NULL WHERE id = ?')
+        .bind("synthetic notification suspension", ownerId),
+      authDatabase.prepare('DELETE FROM session WHERE userId = ?').bind(ownerId),
+    ]);
+    for (const path of ["/api/me/notifications", "/api/me/notifications/unread-count"]) {
+      const response = await request(path, { headers: { Cookie: cookie } });
+      expect(response.status).toBe(401);
+      expect(response.headers.get("cache-control")).toBe("no-store");
+      expect(JSON.stringify(await response.json())).not.toContain("Owner-only content");
+    }
+    expect((await request(`/api/me/notifications/${unreadDeliveredId}/read`, {
+      method: "PATCH", headers: { Cookie: cookie, "content-type": "application/json" },
+      body: JSON.stringify({ readVia: "app" }),
+    })).status).toBe(401);
+    expect((await request("/api/me/notifications/read-all", {
+      method: "POST", headers: { Cookie: cookie },
+    })).status).toBe(401);
+    expect((await businessDatabase.prepare("SELECT * FROM notifications ORDER BY id").all()).results).toEqual(before);
+    const other = await request("/api/me/notifications/unread-count", { headers: { Cookie: otherCookie } });
+    expect(other.status).toBe(200);
+    expect(await other.json()).toEqual({ schemaVersion: 1, count: 1 });
+    const signin = await request("/api/auth/sign-in/email", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: ownerEmail, password }),
+    });
+    expect(signin.status).toBe(403);
+    expect(await signin.json()).toMatchObject({ code: "BANNED_USER" });
+    expect(await authDatabase.prepare('SELECT count(*) AS count FROM session WHERE userId = ?')
+      .bind(ownerId).first()).toEqual({ count: 0 });
+  });
+
   it("lists only the session owner's notifications with a minimal DTO and a bounded limit", async () => {
     const cookie = await signIn(ownerEmail);
     const response = await request("/api/me/notifications?limit=3", { headers: { Cookie: cookie } });

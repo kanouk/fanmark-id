@@ -123,3 +123,20 @@ and absence was confirmed. The current staging app is version
 `47dd045f-ae0c-4b46-8138-bdd59037f7ab`; its served bundle contains the route
 and omits session credentials for the anonymous write. Production and normal
 builds remain on Supabase.
+
+
+## 2026-10-03 staging Auth configuration and revoked-session boundary
+
+The native full-Business-schema fixture now also applies the staging Auth
+core, 0007 signup-command marker, and 0008 suspension migrations and selects
+AUTH_USER_STATUS_BACKEND=d1. A warmed valid session first sees its own pending
+lottery entry. After its user is suspended and its sessions revoked, the same
+signed cookie is treated as anonymous: aggregate lottery count is preserved,
+but has_user_lottery_entry=false and user_lottery_entry_id=null, without the
+former private entry ID. Another user's session remains usable, lottery rows
+are unchanged, and a fresh suspended-user signin returns BANNED_USER/403 with
+zero new sessions. Native search now passes 13/13 under Node 22.6.0.
+
+This case verifies the API after native session revocation, not the admin
+MFA/audit/suspension transaction itself; its separate existing suite owns that
+proof. Provider-backed OAuth/email and real user import remain unverified.

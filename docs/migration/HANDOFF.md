@@ -5,6 +5,33 @@ open and draft. CI validates the branch but does not deploy the Worker.
 The newest checkpoint below is authoritative for current deployment state;
 older sections retain their historical acceptance and failure evidence.
 
+## Current resume boundary — 2026-10-03 JST
+
+- Edit only this managed migration worktree/branch and preserve the unrelated
+  supabase/.temp/cli-latest change. PR #41 is draft/open; CI never deploys.
+- Staging remains Worker 010a4d7a at 100%. New editor/favorites/catalog changes
+  are not remotely accepted yet. The last deploy preflight stopped on D1 Free
+  daily-read error 7500 before writes. Full identity/version/ledger25/empty
+  owned Business/Auth/master/wake/secrets checks are required before deployment.
+- Private combined editor/favorites preparation and the latest expected CI are
+  in /tmp/fanmark-favorites-protected-preparation.json. Re-pin the three private
+  preflight/smoke/final-readback scripts only after both jobs succeed for the
+  exact current HEAD. Do not reuse a stale successful run for a new HEAD.
+- Native notifications now use all25 Business migrations plus staging Auth
+  core/0007/0008 and suspension selector:20/20. Search uses the same Auth
+  selector/full Business schema:13/13. These are local proof only. Archive
+  rollback/backlog/resume/source ACL evidence is in notifications-api.md;
+  scheduled activation coverage is in TECH.md. Provider selectors remain off.
+- Source functions/RLS/triggers/external callers, recurring lifecycle/archive,
+  retention, D1→DO replay gap, provider-backed Stripe/Resend/4 OAuth, CPU/plan
+  fit, least privilege/key custody, and real-device/end-to-end acceptance remain
+  open. The inventory/converter is not deployable solely on these local tests.
+- Real user/Auth/business/Storage migration, source-writer shutdown and domain/
+  DNS cutover stay deferred. Production Supabase is still authoritative.
+
+The following checkpoints are chronological evidence, not current deployment
+or completion claims.
+
 Scheduled-writer checkpoint: the new read-only `source-scheduled-writers.sql`
 observed two cron.job rows at2026-10-02T21:44:12.512016+00:00, session UTC/cron GMT.
 Daily expiry mention is active, minute notification mention inactive; direct
@@ -4597,3 +4624,26 @@ production fit. No remote Worker/Cron/selector/secret, Supabase user row,
 real data migration, or domain/DNS state changed. Exact new-HEAD CI and guarded
 remote editor/favorites acceptance remain required; remote D1 writes stay
 pending the previous daily-read-limit rejection and full baseline preflight.
+
+## 2026-10-03 align native notification/search Auth fixtures with staging
+
+The previous full-Business-schema notification/search suites used only the
+Auth core and omitted the staging suspension selector. Both now apply Auth
+core/0007 signup marker/0008 suspension migrations and select
+AUTH_USER_STATUS_BACKEND=d1. Added warmed-session checks after synthetic
+suspension and native session revocation. The old cookie cannot read/list/count
+or mark notifications read; all notification rows stay unchanged and another
+user's session still works. Public search remains available as anonymous,
+preserving aggregate lottery count while withholding the former owner's entry
+ID. Both paths reject a new suspended-user signin with BANNED_USER/403 and
+create zero sessions.
+
+Node 22.6.0 native notifications passed 20/20 and search 13/13; Worker typecheck,
+changed-file lint and diff checks passed. The fixtures emulate the committed
+stop/revocation state; the existing admin-user-management suite separately
+verifies MFA, audit and the transaction. No runtime application code,
+remote deployment/config/rows, source data or domain/DNS state changed. This
+closes the local API boundary with the staging Auth selector, not full Auth,
+provider acceptance, import parity or production readiness. Current deployed
+Worker remains the previous 010a4d7a. New exact-HEAD CI and D1 quota/full
+preflight/native editor/favorite acceptance remain required.

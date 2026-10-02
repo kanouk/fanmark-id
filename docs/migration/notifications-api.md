@@ -43,6 +43,13 @@ staging設定では`NOTIFICATION_ARCHIVE_BACKEND`を選択しておらず、実W
 JSON payload、cutoffの1us前/一致、selector未設定、ID衝突、削除失敗時のbatch全体の
 rollbackと再実行、既存の同内容履歴のtimestamp保持、2,500行上限と残行の再開を扱う。
 
+Auth fixtureもstagingで選択するcore/0007 signup marker/0008 suspension migrationを
+適用し、`AUTH_USER_STATUS_BACKEND=d1`を選ぶ。停止・session失効後の古い署名Cookieで
+一覧/未読数/個別既読/全件既読が401となり、通知行が不変、別sessionの利用者は正常、
+停止中の新signinは403かつsession生成0を確認した。最新native suiteは20/20。
+このケースは停止後のAPI境界を検証し、管理者MFA/audit/停止transaction自体の試験は
+既存admin-user-management suiteが別に担当する。
+
 2026-10-02T21:03:48.240925+00:00のsource catalogでは
 `archive_old_notifications(days_old integer)`はSECURITY DEFINERで、effective EXECUTEは
 service_roleのみ（anon/authenticatedはfalse）。定義SHA-256は
