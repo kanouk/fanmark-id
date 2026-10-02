@@ -1,5 +1,35 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：無期限プロフィールのstaging合成受け入れ成功
+
+code head f4bd1aa / CI37058393397はapplication・Worker両job成功、watcher exit 0。
+固定account、旧ea309178、ledger25、source/Auth 0、secret名3件をfresh確認した。
+staging buildとpinned dry-run成功後、Worker `010a4d7a-9cd2-4683-b38f-ff6ad0dd82ec`を
+100% workers.devへ配備。version作成時刻`2026-10-02T20:13:07.300605Z`。
+通知DO namespace `2c27a340fd6c4248bfdbbb8d8bfb457c`と日次Cronを保持し、DB migrationは
+再適用しない。HTML/JSのexact一致、noindex/robots/session null/catalog3944、
+匿名wake GET/POST 401、Origin欠落403、Stripe404を確認した。
+
+private harness `/tmp/fanmark-perpetual-profile-smoke.mjs`はcode head/CI/version/account/
+ledger/secret/空source/Authを要求し、write前に予定UUIDとbaselineをatomic private journalへ
+保存する。最初は絵文字VS16表記差のfixture lookupでwrite前に拒否した。
+`fanmark-perpetual-profile-canary-De6f0I`はrefused-before-writesとして記録する。
+source/profile code変更は不要で、公開catalog表記を使うfixture選択に修正し再実行した。
+
+retry exit0、`fanmark-perpetual-profile-canary-5TgapW/canary.json`はverified-and-cleaned。
+2件の合成Authを実signinし、NULL-end owner GET200、profile create/update200、入力spaceと
+native row readback一致、公開profile200、private404、再公開200、他人のGET/PATCH404を確認。
+native active→grace後は本人GET/PATCHも公開profileも404、拒否されたprofile値は不変。
+全source-owned Business/Auth8表を0件へ戻し、両session null、2件のincarnation tombstoneを保持。
+Business master/config、公開3944件digest、Master版/count、3-store schema、Auth generation、
+既存incarnationとwake baselineの一致を確認した。
+
+独立readback `2026-10-02T20:16:33.846Z`もcurrent version/ledger25/source/Auth0/wake5/5/
+secret名3件を確認。証拠は`/tmp/fanmark-perpetual-profile-{preflight,build,deploy,http,
+staging-smoke-retry,final-readback}.log`とversion/deployments/http/readback JSON。
+API経路の受け入れであり、無期限editorのbrowser/mobile、残るfunctions/RLS/triggers、
+provider/CPU/運用は未完了。実ユーザーmigration/domain/DNSは実行していない。
+
 ## 2026-10-03：無期限Tier Cのownerプロフィール修正
 
 Workerの設定/公開プロフィールは無期限を扱う一方、owner profile read/saveだけが

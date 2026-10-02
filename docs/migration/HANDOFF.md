@@ -2,6 +2,8 @@
 
 Checkpoint: 2026-10-03 JST. The migration is **not complete**. PR #41 remains
 open and draft. CI validates the branch but does not deploy the Worker.
+The newest checkpoint below is authoritative for current deployment state;
+older sections retain their historical acceptance and failure evidence.
 
 Owner fanmark profiles now support perpetual Tier C in both authenticated
 context reads and INSERT/UPSERT eligibility. A new real local split-D1
@@ -20,13 +22,33 @@ but external use is unknown; do not classify them like unbound trigger
 functions. See `public-profile-runtime-review.md`. The source emoji/short-ID
 selection difference remains an open product gate.
 
-The previous source-audit head `91c2606` passed both CI jobs in `37057194961`;
-its watcher exited 0. The new profile runtime repair has not yet been deployed
-or accepted remotely. Current staging remains `ea309178` and Business ledger
-25; no new migration is needed for this predicate change. Next: green CI,
-guarded staging deployment and journaled perpetual owner-profile acceptance,
-then the remaining runtime/provider/CPU/operational/mobile gates. Real user
-migration and domain/DNS remain excluded.
+The profile repair head `f4bd1aaf328eb67aae8fcfd9f81f477df528e2c6` passed both
+CI jobs in `37058393397`; watcher exited 0. Guarded preflight confirmed the
+dedicated account, old `ea309178`, ledger 25, empty source/Auth and three secret
+names. Current staging is **`010a4d7a-9cd2-4683-b38f-ff6ad0dd82ec` at 100%**,
+created `2026-10-02T20:13:07.300605Z`. The notification namespace is unchanged
+and only daily Cron remains. No DB migration was reapplied. HTML/JS match the
+local staging build, catalog 3,944/noindex/session null, wake 401/403 and
+disabled Stripe 404 pass.
+
+The private journaled perpetual-profile smoke exited 0. Two real synthetic
+Better Auth sign-ins exercised NULL-end owner read/create/update, exact stored
+and public display-name spaces, native row readback, private 404, republication,
+cross-owner read/write 404 and native active-to-grace edit/public refusal with
+no unauthorized profile change. Scoped cleanup read all source-owned Business
+and eight Auth tables as zero, invalidated both sessions, retained two license
+incarnation tombstones and matched Business masters/config, public catalog,
+Master version/counts, three-store schema, Auth generation, existing
+incarnations and wake baselines. Journal `fanmark-perpetual-profile-canary-5TgapW`
+ended `verified-and-cleaned`. The first attempt refused a variation-selector
+fixture mismatch before writes; `De6f0I` is `refused-before-writes`.
+Independent readback at `2026-10-02T20:16:33.846Z` confirms current version,
+ledger 25, empty source/Auth, wake 5/5 and unchanged three secret names. Logs
+are `/tmp/fanmark-perpetual-profile-{preflight,build,deploy,http,staging-smoke-retry,final-readback}.log`.
+Perpetual editor browser/mobile acceptance is not proved by API checks.
+Next: remaining source/RLS/trigger and operational/CPU/mobile reconciliation,
+plus provider integration when configured. Real user migration and domain/DNS
+remain excluded. The previous source-audit CI `37057194961` also passed.
 
 Source runtime binding review now captures all schemas for public trigger
 functions, rather than public tables only. The linked catalog-only transaction
@@ -58,7 +80,7 @@ Repair head `41cefc3374e34b01d4a89f538ac58cf3ad4faf94` passed both CI jobs in
 `37053995420`. Guarded preflight confirmed the dedicated account, fixed old
 version, ledger 25, empty source/Auth and only three existing secret names.
 Worker `ea309178-690c-4cc3-b72e-b3619cd5b444`, created
-`2026-10-02T19:32:21.361171Z`, is 100% on workers.dev. SQLite namespace
+`2026-10-02T19:32:21.361171Z`, was 100% on workers.dev at that acceptance. SQLite namespace
 `2c27a340fd6c4248bfdbbb8d8bfb457c` is retained and only daily Cron remains.
 HTML/JS exactly match local dist, noindex/robots/session/catalog 3,944 pass,
 anonymous wake GET/POST are 401, missing Origin 403, and Stripe stays 404.

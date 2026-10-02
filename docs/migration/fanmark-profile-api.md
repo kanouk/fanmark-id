@@ -61,8 +61,15 @@ Additional tests cover NULL-end profile read/update/recreation, preservation
 of entered spaces, access-generation changes, another perpetual owner, grace
 and expired refusal, finite-plus-perpetual ambiguity, and a native transition
 to grace at the write barrier that leaves the profile/generation unchanged.
-The repaired suite passes 8/8. These new cases have not yet been rehearsed on
-the remote Worker; prior finite-license staging acceptance does not prove them.
+The repaired suite passes 8/8. The perpetual owner API also passed journaled
+synthetic acceptance on Worker `010a4d7a-9cd2-4683-b38f-ff6ad0dd82ec` after both
+CI jobs passed for code head `f4bd1aa`. Two actual sign-ins prove NULL-end
+read/create/update, exact stored/public display-name spaces, private/public
+toggling, other-owner refusal and native grace transition refusal. Cleanup
+proved zero source-owned Business/Auth, invalidated sessions, retained license
+incarnation tombstones and equal retained baselines. This proves the deployed
+API path; perpetual editor rendering/mobile and real imported rows remain open.
+See `EXECUTION.md` for the private journal and independent readback evidence.
 
 The source-shaped business schema is applied to the isolated staging D1, and
 `FANMARK_PROFILE_BACKEND=d1` plus

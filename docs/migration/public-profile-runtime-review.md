@@ -67,7 +67,12 @@ update/recreation, exact display-name spaces, generation update, other-owner
 refusal, grace/expired refusal, finite-plus-perpetual ambiguity, and native
 grace transition at the write barrier with unchanged profile/generation.
 The 14-test public-access suite includes future-by-one-microsecond acceptance
-and exact/past expiry refusal. These are local synthetic proofs. Remote
-perpetual-profile acceptance, the remaining runtime/RLS/trigger mapping,
-provider/CPU/operational/mobile acceptance and external legacy RPC disposition
+and exact/past expiry refusal. Those expiry-boundary cases are local proofs.
+After CI `37058393397` passed, the deployed Worker `010a4d7a` passed the
+journaled two-account perpetual profile read/create/update/public/private and
+other-owner/grace refusal rehearsal. Source/Auth cleanup, session invalidation,
+retained configuration/catalog/schema baselines and independent readback also
+passed. See `fanmark-profile-api.md` and `EXECUTION.md`. Perpetual editor
+browser/mobile acceptance, the remaining runtime/RLS/trigger mapping,
+provider/CPU/operational acceptance and external legacy RPC disposition
 remain open. The full runtime report and converter gates remain false.
