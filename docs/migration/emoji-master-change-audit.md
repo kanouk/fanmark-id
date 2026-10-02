@@ -72,8 +72,13 @@ compares the latest 20 exact Master audit DTOs. This passed on staging Worker
 `1eb5d9ac-815e-4957-8381-b6024dac33e8` with real sign-in/TOTP and
 102 source-shaped mutation audits; scoped Master/Business/Auth cleanup completed
 `verified-and-cleaned`. The public catalog digest remained unchanged. This
-proves the deployed user-detail API DTO; rendered history UI acceptance remains
-a separate check.
+proves the deployed user-detail API DTO. The extended
+`--emoji-master-audit-browser` canary also opened the authenticated desktop
+admin user-detail sheet. Its 20 rendered rows matched the intercepted API
+response in order/action/metadata, including the latest 18 exact Master audits
+(two subsequent admin read audits occupied the first rows). Screenshot review
+confirmed the history heading and audit metadata; cleanup restored all scoped
+rows and the public catalog. Mobile rendering remains unverified.
 
 The guarded synthetic staging command is:
 

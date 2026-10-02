@@ -38,7 +38,8 @@ const userOwnedTables = [
 function requireExplicitStagingConsent() {
   const args = new Set(process.argv.slice(2));
   const emojiMasterRoundtrip = args.has("--emoji-master-draft-roundtrip");
-  const emojiMasterAuditRoundtrip = args.has("--emoji-master-audit-roundtrip");
+  const emojiMasterAuditBrowser = args.has("--emoji-master-audit-browser");
+  const emojiMasterAuditRoundtrip = args.has("--emoji-master-audit-roundtrip") || emojiMasterAuditBrowser;
   const referenceMasterPricingReadback = args.has("--reference-master-pricing-readback");
   const referenceMasterTierRoundtrip = args.has("--reference-master-tier-roundtrip");
   const referenceMasterExtensionPriceRoundtrip = args.has("--reference-master-extension-price-roundtrip");
@@ -49,7 +50,8 @@ function requireExplicitStagingConsent() {
   const adminUserStatusReadback = args.has("--admin-user-status-readback") || adminUserManagementBrowser;
   const lifecycleSettingsBrowser = args.has("--lifecycle-settings-browser");
   const lifecycleRunReadback = args.has("--lifecycle-run-readback");
-  const waitlistAdminReadback = args.has("--waitlist-admin-readback");
+  const waitlistSecurityRoundtrip = args.has("--waitlist-security-roundtrip");
+  const waitlistAdminReadback = args.has("--waitlist-admin-readback") || waitlistSecurityRoundtrip;
   const broadcastEmailBrowser = args.has("--broadcast-email-browser");
   const broadcastEmailReadback = args.has("--broadcast-email-readback") || broadcastEmailBrowser;
   const systemSettingsReadback = args.has("--system-settings-readback") || lifecycleSettingsBrowser;
@@ -58,6 +60,7 @@ function requireExplicitStagingConsent() {
   const hasExplicitSmokeAction = [
     emojiMasterRoundtrip,
     emojiMasterAuditRoundtrip,
+    emojiMasterAuditBrowser,
     referenceMasterPricingReadback,
     referenceMasterTierRoundtrip,
     referenceMasterExtensionPriceRoundtrip,
@@ -68,6 +71,7 @@ function requireExplicitStagingConsent() {
     lifecycleSettingsBrowser,
     lifecycleRunReadback,
     waitlistAdminReadback,
+    waitlistSecurityRoundtrip,
     broadcastEmailReadback,
     systemSettingsReadback,
     lifecycleSettingsReadback,
@@ -84,6 +88,7 @@ function requireExplicitStagingConsent() {
   return {
     emojiMasterRoundtrip,
     emojiMasterAuditRoundtrip,
+    emojiMasterAuditBrowser,
     referenceMasterPricingReadback,
     referenceMasterTierRoundtrip,
     referenceMasterExtensionPriceRoundtrip,
@@ -94,6 +99,7 @@ function requireExplicitStagingConsent() {
     lifecycleSettingsBrowser,
     lifecycleRunReadback,
     waitlistAdminReadback,
+    waitlistSecurityRoundtrip,
     broadcastEmailReadback,
     systemSettingsReadback,
     lifecycleSettingsReadback,
@@ -150,7 +156,7 @@ async function assertStagingTarget(actions) {
   assert.equal(masterBinding?.database_id, expectedMasterDatabaseId, "unexpected Master D1 id");
   assert.equal(masterBinding?.migrations_pattern, "migrations/{000[0-6]_*.sql,0007_release_audit_timestamps.sql,0008_emoji_master_change_audits.sql}", "unexpected Master D1 migration set");
   assert.equal(config.vars?.EMOJI_MASTER_ADMIN_BACKEND, "d1", "expected D1-backed emoji-master admin API");
-  if (actions.emojiMasterAuditRoundtrip) {
+  if (actions.emojiMasterAuditRoundtrip || actions.waitlistSecurityRoundtrip) {
     assert.equal(config.account_id, "bfc2890741f0b3fb236e2d755b6c9adc");
     assert.ok(!config.routes?.length, "audit canary must stay on workers.dev");
     const identity = JSON.parse(await runWrangler(["whoami", "--json"]));
@@ -485,7 +491,7 @@ async function exerciseEmojiMasterDraft(cookie) {
   assert.equal(activeVersionRows[0].release_version, page.activeReleaseVersion);
 }
 
-async function exerciseEmojiMasterAudit(cookie, userId, journalPath) {
+async function exerciseEmojiMasterAudit(cookie, userId, journalPath, { browserReview = false, email } = {}) {
   const journal = JSON.parse(await readFile(journalPath, "utf8"));
   const marker = `audit-${journal.runId}`;
   const records = Array.from({ length: 100 }, (_, index) => ({
@@ -582,6 +588,9 @@ async function exerciseEmojiMasterAudit(cookie, userId, journalPath) {
     expectedHistory.map(row => ({ id: row.id, action: row.action, resourceId: row.resource_id,
       userId: row.user_id, createdAt: row.created_at, metadata: JSON.parse(row.metadata) })),
     "administrator user-detail history did not include the latest exact Master audits");
+    if (browserReview) {
+      journal.browserHistory = await reviewEmojiMasterAuditHistoryInBrowser(cookie, email, userId, audits, journalPath);
+    }
     assert.deepEqual(await queryMaster("SELECT count(*) AS count FROM fanmark_emoji_master_mutation_context"), [{ count: 0 }]);
     assert.equal(await catalogDigest(), publicDigest, "draft changes altered the public catalog");
     verified = true;
@@ -2031,7 +2040,7 @@ async function exerciseInvitationAdmin(cookie) {
   assert.equal(Number(remainingTotal[0]?.count), 0, "invitation table did not return to its staging baseline");
 }
 
-async function exerciseWaitlistAdmin(cookie, userId) {
+async function exerciseWaitlistAdmin(cookie, userId, { securityRoundtrip = false, journalPath } = {}) {
   const route = "/api/admin/waitlist";
   const baseline = await queryBusiness("SELECT COUNT(*) AS count FROM waitlist");
   assert.equal(Number(baseline[0]?.count), 0, "staging waitlist must be empty before the synthetic round-trip");
@@ -2042,6 +2051,12 @@ async function exerciseWaitlistAdmin(cookie, userId) {
   const email = `codex-waitlist-${randomBytes(8).toString("hex")}@example.invalid`;
   const username = `codex-waitlist-admin-${randomBytes(5).toString("hex")}`;
   const timestamp = new Date().toISOString();
+  const journal = journalPath ? JSON.parse(await readFile(journalPath, "utf8")) : null;
+  if (journal) {
+    Object.assign(journal, { state: "waitlist-prepared", waitlistId, waitlistEmail: email, waitlistUsername: username });
+    await writeFile(journalPath, JSON.stringify(journal), { mode: 0o600 });
+  }
+  let deniedAudits = [];
   let seedAttempted = false;
   try {
     seedAttempted = true;
@@ -2074,10 +2089,37 @@ async function exerciseWaitlistAdmin(cookie, userId) {
     assert.equal(accessAudit[0].user_id, userId);
     assert.equal(accessAudit[0].resource_id, waitlistId);
     assert.equal(String(accessAudit[0].metadata).includes(email), false, "email reveal audit copied the email address");
+    if (securityRoundtrip) {
+      await executeBusiness(`UPDATE user_settings SET plan_type = 'free' WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(username)} AND plan_type = 'admin'`, "synthetic elevated-plan removal");
+      for (const path of [route, `${route}/${encodeURIComponent(waitlistId)}/email`]) {
+        const denied = await request(path, { headers: { cookie } });
+        assertStatus(denied, 403, "valid-MFA waitlist access without the elevated plan");
+        assert.deepEqual(await denied.json(), { error: "super_admin_required" });
+      }
+      deniedAudits = await queryBusiness(`SELECT id, user_id, action, resource_id, metadata, created_at FROM audit_logs
+        WHERE user_id = ${sqlLiteral(userId)} AND action IN ('UNAUTHORIZED_WAITLIST_ACCESS','UNAUTHORIZED_EMAIL_ACCESS') ORDER BY action`);
+      assert.equal(deniedAudits.length, 2);
+      for (const audit of deniedAudits) {
+        const isEmail = audit.action === "UNAUTHORIZED_EMAIL_ACCESS";
+        assert.equal(audit.user_id, userId);
+        assert.equal(audit.resource_id, isEmail ? waitlistId : null);
+        const metadata = JSON.parse(audit.metadata);
+        assert.equal(metadata.security_level, isEmail ? "CRITICAL_RISK" : "HIGH_RISK");
+        if (isEmail) assert.equal(metadata.attempted_resource, "email_address");
+        assert.equal(metadata.timestamp, audit.created_at);
+        assert.match(audit.created_at, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+        assert.equal(audit.metadata.includes(email), false);
+      }
+      if (journal) {
+        journal.deniedAlerts = deniedAudits.map(row => ({ event: "security_alert", action: row.action, auditId: row.id, createdAt: row.created_at }));
+        journal.state = "waitlist-verified-cleanup-pending";
+        await writeFile(journalPath, JSON.stringify(journal), { mode: 0o600 });
+      }
+    }
   } finally {
     if (seedAttempted) {
       await executeBusiness(
-        `DELETE FROM audit_logs WHERE (resource_id = ${sqlLiteral(waitlistId)} AND action IN ('AUTHORIZED_WAITLIST_ACCESS', 'EMAIL_ACCESS', 'UNAUTHORIZED_WAITLIST_ACCESS', 'UNAUTHORIZED_EMAIL_ACCESS')) OR (user_id = ${sqlLiteral(userId)} AND resource_type = 'system' AND action = 'ADMIN_CHECK') OR (user_id = ${sqlLiteral(userId)} AND resource_type = 'waitlist' AND resource_id IS NULL AND action = 'AUTHORIZED_WAITLIST_ACCESS');\n` +
+        `DELETE FROM audit_logs WHERE (resource_id = ${sqlLiteral(waitlistId)} AND action IN ('AUTHORIZED_WAITLIST_ACCESS', 'EMAIL_ACCESS', 'UNAUTHORIZED_WAITLIST_ACCESS', 'UNAUTHORIZED_EMAIL_ACCESS')) OR (user_id = ${sqlLiteral(userId)} AND resource_type = 'system' AND action = 'ADMIN_CHECK') OR (user_id = ${sqlLiteral(userId)} AND resource_type = 'waitlist' AND resource_id IS NULL AND action IN ('AUTHORIZED_WAITLIST_ACCESS','UNAUTHORIZED_WAITLIST_ACCESS'));\n` +
         `DELETE FROM waitlist WHERE id = ${sqlLiteral(waitlistId)} AND email = ${sqlLiteral(email)};\n` +
         `DELETE FROM user_settings WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(username)};`,
         "synthetic waitlist canary cleanup",
@@ -2088,11 +2130,17 @@ async function exerciseWaitlistAdmin(cookie, userId) {
   const [waitlistRows, profileRows, auditRows] = await Promise.all([
     queryBusiness(`SELECT COUNT(*) AS count FROM waitlist WHERE id = ${sqlLiteral(waitlistId)} OR email = ${sqlLiteral(email)}`),
     queryBusiness(`SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(username)}`),
-    queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE resource_id = ${sqlLiteral(waitlistId)} OR (user_id = ${sqlLiteral(userId)} AND ((action = 'ADMIN_CHECK' AND resource_type = 'system') OR (action = 'AUTHORIZED_WAITLIST_ACCESS' AND resource_type = 'waitlist' AND resource_id IS NULL)))`),
+    queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE resource_id = ${sqlLiteral(waitlistId)} OR (user_id = ${sqlLiteral(userId)} AND ((action = 'ADMIN_CHECK' AND resource_type = 'system') OR (action IN ('AUTHORIZED_WAITLIST_ACCESS','UNAUTHORIZED_WAITLIST_ACCESS') AND resource_type = 'waitlist' AND resource_id IS NULL)))`),
   ]);
   assert.equal(Number(waitlistRows[0]?.count), 0, "synthetic waitlist row remained in business D1");
   assert.equal(Number(profileRows[0]?.count), 0, "synthetic waitlist administrator profile remained in business D1");
   assert.equal(Number(auditRows[0]?.count), 0, "synthetic waitlist audit remained in business D1");
+  if (journal) {
+    journal.state = "waitlist-verified-and-cleaned";
+    await writeFile(journalPath, JSON.stringify(journal), { mode: 0o600 });
+  }
+  if (securityRoundtrip) console.log(JSON.stringify({ waitlistSecurity: "exact-and-cleaned", denials: deniedAudits.length,
+    alerts: deniedAudits.map(row => ({ event: "security_alert", action: row.action, auditId: row.id, createdAt: row.created_at })) }));
 }
 
 function cdpConnection(webSocketUrl) {
@@ -2395,6 +2443,60 @@ async function clickAdminTab(cdp, label) {
     return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, width: rect.width, height: rect.height };
   })()`, "admin_tab");
   await waitForBrowserValue(cdp, `(() => Array.from(document.querySelectorAll('[role="tab"]')).some((tab) => tab.innerText.trim() === ${labelLiteral} && tab.getAttribute("data-state") === "active"))()`, Boolean, "admin_tab_not_selected");
+}
+
+async function reviewEmojiMasterAuditHistoryInBrowser(cookie, email, userId, audits, journalPath) {
+  assert.equal(typeof email, "string");
+  const emailLiteral = JSON.stringify(email);
+  const screenshotPath = path.join(path.dirname(journalPath), "master-audit-history.png");
+  return await withStagingAdminBrowser(cookie, "fanmark-master-audit-ui-", async (cdp) => {
+    const detailResponses = [];
+    cdp.on("Network.responseReceived", ({ requestId, response }) => {
+      if (response?.url && new URL(response.url).pathname === `/api/admin/users/${userId}`) {
+        detailResponses.push({ requestId, status: response.status });
+      }
+    });
+    await clickAdminTab(cdp, "ユーザー管理");
+    const rowExpression = `(() => {
+      const marker = Array.from(document.querySelectorAll('span')).find(item => item.textContent.trim() === ${emailLiteral});
+      const row = marker?.closest('tr');
+      if (!row) return null;
+      row.scrollIntoView({ block: "center" });
+      const rect = row.getBoundingClientRect();
+      return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, width: rect.width, height: rect.height };
+    })()`;
+    await waitForBrowserValue(cdp, rowExpression, Boolean, "synthetic_admin_row_missing");
+    await clickBrowserTarget(cdp, rowExpression, "synthetic_admin_row");
+    const renderedExpression = `(() => {
+      const dialog = Array.from(document.querySelectorAll('[role="dialog"]')).find(item => item.innerText.includes(${emailLiteral}));
+      const heading = Array.from(dialog?.querySelectorAll('h3') ?? []).find(item => item.textContent.trim() === "監査ログ (最新20件)");
+      if (!heading) return null;
+      return Array.from(heading.parentElement.children[1].children).map(card => ({
+        action: card.firstElementChild.firstElementChild.textContent.trim(),
+        metadata: JSON.parse(card.children[1].textContent),
+        date: card.firstElementChild.children[1].textContent.trim(),
+      }));
+    })()`;
+    const rendered = await waitForBrowserValue(cdp, renderedExpression, value => value?.length === 20, "master_audit_history_not_rendered");
+    assert.equal(detailResponses.length, 1, "unexpected detail retry makes history readback ambiguous");
+    assert.equal(detailResponses[0].status, 200);
+    const responseBody = await cdp.send("Network.getResponseBody", { requestId: detailResponses[0].requestId });
+    const detail = JSON.parse(responseBody.base64Encoded ? Buffer.from(responseBody.body, "base64").toString("utf8") : responseBody.body);
+    assert.equal(detail.profile.userId, userId);
+    assert.deepEqual(rendered.map(({ action, metadata }) => ({ action, metadata })),
+      detail.recentAuditLogs.map(({ action, metadata }) => ({ action, metadata })), "rendered history order/metadata differs from its API response");
+    assert.ok(rendered.every(row => row.date && row.date !== "Invalid Date"));
+    const masterRows = detail.recentAuditLogs.filter(row => row.resourceType === "emoji_master");
+    assert.ok(masterRows.length >= 18, "Master audits missing from rendered combined history");
+    const expected = audits.toSorted((a, b) => b.created_at.localeCompare(a.created_at) || a.id.localeCompare(b.id)).slice(0, masterRows.length);
+    assert.deepEqual(masterRows.map(row => ({ id: row.id, action: row.action, resourceId: row.resourceId, userId: row.userId, metadata: row.metadata })),
+      expected.map(row => ({ id: row.id, action: row.action, resourceId: row.resource_id, userId: row.user_id, metadata: JSON.parse(row.metadata) })));
+    await browserValue(cdp, `Array.from(document.querySelectorAll('[role="dialog"] h3')).find(item => item.textContent.trim() === "監査ログ (最新20件)")?.scrollIntoView({ block: "start" })`);
+    const screenshot = await cdp.send("Page.captureScreenshot", { format: "png" });
+    await writeFile(screenshotPath, Buffer.from(screenshot.data, "base64"), { mode: 0o600 });
+    console.log(JSON.stringify({ browserMasterHistory: "rendered-exact", rows: 20, masterRows: masterRows.length, screenshotPath }));
+    return { renderedRows: 20, masterRows: masterRows.length, screenshotPath };
+  });
 }
 
 async function reviewAdminUserManagementMutationsInBrowser(cookie, targetEmail, targetUserId) {
@@ -3043,12 +3145,12 @@ async function main() {
   const systemSettingState = { key: "", originalValue: null, temporaryValue: null };
   const lifecycleSettingState = { originalValue: null, temporaryValue: null };
   let emojiAuditJournalPath = null;
-  if (actions.emojiMasterAuditRoundtrip) {
-    const directory = await mkdtemp(path.join(os.tmpdir(), "fanmark-emoji-audit-canary-"));
+  if (actions.emojiMasterAuditRoundtrip || actions.waitlistSecurityRoundtrip) {
+    const directory = await mkdtemp(path.join(os.tmpdir(), actions.emojiMasterAuditRoundtrip ? "fanmark-emoji-audit-canary-" : "fanmark-waitlist-security-canary-"));
     emojiAuditJournalPath = path.join(directory, "canary.json");
     await writeFile(emojiAuditJournalPath, JSON.stringify({ state: "auth-prepared", runId: randomUUID(),
       userId, targetUserId, accountId, targetUsername, expectedVersion: process.env.FANMARK_EXPECTED_STAGING_VERSION }), { mode: 0o600 });
-    console.log(`Private emoji-audit recovery journal: ${emojiAuditJournalPath}`);
+    console.log(`Private staging recovery journal: ${emojiAuditJournalPath}`);
   }
 
   try {
@@ -3123,7 +3225,7 @@ async function main() {
     );
     assert.equal(Number(assuranceRows[0]?.count), 1, "MFA assurance was not persisted for this session");
     if (actions.lifecycleRunReadback) await exerciseManualLifecycleRun(cookie);
-    if (actions.emojiMasterAuditRoundtrip) await exerciseEmojiMasterAudit(cookie, userId, emojiAuditJournalPath);
+    if (actions.emojiMasterAuditRoundtrip) await exerciseEmojiMasterAudit(cookie, userId, emojiAuditJournalPath, { browserReview: actions.emojiMasterAuditBrowser, email });
     if (actions.emojiMasterRoundtrip) {
       await exerciseEmojiMasterDraft(cookie);
       await exerciseNotificationMasters(cookie);
@@ -3132,7 +3234,7 @@ async function main() {
       await exerciseInvitationAdmin(cookie);
     }
     if (actions.waitlistAdminReadback) {
-      await exerciseWaitlistAdmin(cookie, userId);
+      await exerciseWaitlistAdmin(cookie, userId, { securityRoundtrip: actions.waitlistSecurityRoundtrip, journalPath: emojiAuditJournalPath });
     }
     if (actions.broadcastEmailReadback) {
       await exerciseBroadcastEmailAdmin(cookie, userId, targetUserId, targetUsername, {
@@ -3279,7 +3381,7 @@ async function main() {
   assert.ok(flowPassed, "the staging TOTP flow did not complete");
   if (emojiAuditJournalPath) {
     const journal = JSON.parse(await readFile(emojiAuditJournalPath, "utf8"));
-    assert.equal(journal.state, "master-verified-and-cleaned");
+    assert.equal(journal.state, actions.emojiMasterAuditRoundtrip ? "master-verified-and-cleaned" : "waitlist-verified-and-cleaned");
     journal.state = "verified-and-cleaned";
     journal.authRows = 0;
     await writeFile(emojiAuditJournalPath, JSON.stringify(journal), { mode: 0o600 });

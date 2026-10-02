@@ -1,5 +1,5 @@
 import { env } from "cloudflare:workers";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import schemaSql from "./fixtures/d1-waitlist-admin.sql?raw";
 import { handleWaitlistAdminRequest, type WaitlistAdminAuthorizer } from "../src/waitlist-admin-d1-api";
 import type { Env } from "../src/repository";
@@ -58,8 +58,48 @@ async function resetRows(): Promise<void> {
 
 beforeAll(prepareSchema);
 beforeEach(resetRows);
+afterEach(() => vi.restoreAllMocks());
 
 describe("D1 waitlist admin API", () => {
+  it.each([
+    ["/api/admin/waitlist", "UNAUTHORIZED_WAITLIST_ACCESS", null, "HIGH_RISK"],
+    [`/api/admin/waitlist/${rowId}/email`, "UNAUTHORIZED_EMAIL_ACCESS", rowId, "CRITICAL_RISK"],
+  ])("correlates %s denial diagnostics to a durable source-shaped audit without copying request secrets", async (path, action, resourceId, risk) => {
+    const diagnostic = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await database!.prepare("UPDATE user_settings SET plan_type = 'free'").run();
+    const response = await request(path, { headers: {
+      Authorization: "Bearer private-auth-marker", Cookie: "session=private-cookie-marker", "x-forwarded-for": "192.0.2.7",
+    } });
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: "super_admin_required" });
+    const audit = await database!.prepare("SELECT id, user_id, resource_id, metadata, created_at FROM audit_logs WHERE action = ?")
+      .bind(action).first<{ id: string; user_id: string; resource_id: string | null; metadata: string; created_at: string }>();
+    expect(audit).toMatchObject({ user_id: adminId, resource_id: resourceId, created_at: "2026-09-27T12:34:56.000000Z" });
+    expect(JSON.parse(audit!.metadata)).toMatchObject({ security_level: risk });
+    if (resourceId) expect(JSON.parse(audit!.metadata)).toMatchObject({ attempted_resource: "email_address" });
+    expect(diagnostic).toHaveBeenCalledTimes(1);
+    const alert = JSON.parse(diagnostic.mock.calls[0][0] as string);
+    expect(alert).toEqual({ event: "security_alert", action, auditId: audit!.id, createdAt: audit!.created_at });
+    for (const forbidden of [adminId, email, rowId, "private-auth-marker", "private-cookie-marker", "192.0.2.7"]) {
+      expect(JSON.stringify(alert)).not.toContain(forbidden);
+    }
+  });
+
+  it("fails closed without emitting a persisted-audit alert when the denied audit write is rejected", async () => {
+    const diagnostic = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await database!.prepare("UPDATE user_settings SET plan_type = 'free'").run();
+    await database!.prepare(`CREATE TRIGGER reject_denied_waitlist_audit BEFORE INSERT ON audit_logs
+      WHEN NEW.action IN ('UNAUTHORIZED_WAITLIST_ACCESS', 'UNAUTHORIZED_EMAIL_ACCESS')
+      BEGIN SELECT RAISE(ABORT, 'synthetic audit failure'); END`).run();
+    try {
+      expect((await request(`/api/admin/waitlist/${rowId}/email`)).status).toBe(503);
+      expect(diagnostic).not.toHaveBeenCalled();
+      expect(await database!.prepare("SELECT count(*) AS count FROM audit_logs").first()).toEqual({ count: 0 });
+    } finally {
+      await database!.prepare("DROP TRIGGER reject_denied_waitlist_audit").run();
+    }
+  });
+
   it("returns hashed addresses only and records the restricted list access", async () => {
     const response = await request("/api/admin/waitlist");
     expect(response.status).toBe(200);

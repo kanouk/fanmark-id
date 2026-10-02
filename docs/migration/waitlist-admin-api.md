@@ -6,8 +6,10 @@ when `VITE_WAITLIST_ADMIN_BACKEND=worker` is selected. The Worker requires
 same-session admin MFA check, and a `user_settings.plan_type='admin'` row for
 the caller. The plan check retains the source's elevated-admin requirement;
 the current-session MFA check is stricter than the local Supabase schema's
-four-hour recent-session check. Recheck the live Supabase function and role
-mapping before claiming production authorization parity or moving real users.
+four-hour recent-session check. The 2026-10-02 schema-only readback confirms source `is_super_admin` uses the
+admin plan and a four-hour Auth session, while the source denial helpers write
+the rejected action and email resource ID/risk. Target role/MFA and imported
+user mapping still need production acceptance before moving real users.
 
 `GET /api/admin/waitlist` returns at most 100 rows, with email addresses
 replaced by their lowercase SHA-256 digest. It also returns at most 50 audit
@@ -16,7 +18,18 @@ CSV export therefore continues to contain hashes only. `GET
 /api/admin/waitlist/:id/email` reveals one address after the UI confirmation;
 the Worker persists an `EMAIL_ACCESS` audit row before returning the address
 and fails closed if that write fails. Audit metadata records purpose and row
-identity, never the email itself. Both routes are same-origin, credentialed,
+identity, never the email itself. Qualified administrators without the elevated
+plan get `403 super_admin_required` after a durable denial audit. Email denials
+retain the requested waitlist ID, `CRITICAL_RISK` and `email_address`; list
+denials retain `HIGH_RISK` without a resource ID. The source's
+`notify_security_breach` AFTER-audit trigger only emits a database NOTICE and
+does not send an external alert. The Worker replaces that with a bounded
+`console.warn` JSON containing event/action/audit ID/UTC operation time after
+the denial audit commits. Actor/resource lookup stays in D1, so diagnostics
+do not repeat user IDs, raw email, IP, authorization or cookies. Missing audit
+writes fail closed with 503 and do not report a persisted-audit alert. Routes
+rejected by the earlier MFA/origin/method gate do not create these D1 audits.
+Local route tests pass 9/9; new diagnostics are not deployed yet. Both routes are same-origin, credentialed,
 and `no-store`; API errors never fall back to Supabase after Worker selection.
 
 The D1 waitlist table is structurally present, but real waitlist rows have not
@@ -40,3 +53,20 @@ found that a null-resource-ID list audit and the standalone action's synthetic
 target user were omitted from shared cleanup; both harness predicates were
 fixed and a repeat run passed. See the detailed result and scope boundaries in
 `docs/migration/HANDOFF.md`.
+
+
+The guarded denial staging command is:
+
+```sh
+FANMARK_EXPECTED_STAGING_VERSION=<verified-current-version> \
+ npm --prefix workers/api run test:staging-admin-totp -- \
+ --run-live-staging-write --database=fanmark-auth-staging \
+ --waitlist-security-roundtrip
+```
+
+It requires empty user-owned Auth tables, pins account/Worker version/split D1
+bindings and the applied Master audit triggers, and journals synthetic IDs
+before Auth and waitlist writes. It checks authorized hash-list/reveal, removes
+only the synthetic caller's elevated plan, checks two 403 denials and exact
+D1 risk/resource/time fields, then removes scoped source/Auth rows. Deployed
+operator-log correlation remains to be verified separately. No email is sent.

@@ -99,10 +99,12 @@ async function sha256Hex(value: string): Promise<string> {
   return Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-async function requireAdminPlan(db: D1Database, userId: string, action: string, now: string): Promise<void> {
+async function requireAdminPlan(db: D1Database, userId: string, action: "list" | "email", now: string, resourceId: string | null = null): Promise<void> {
   const setting = await db.prepare("SELECT plan_type FROM user_settings WHERE user_id = ? LIMIT 1")
     .bind(userId).first<{ plan_type?: unknown }>();
   if (setting?.plan_type === "admin") return;
+  const auditId = crypto.randomUUID();
+  const deniedAction = action === "email" ? "UNAUTHORIZED_EMAIL_ACCESS" : "UNAUTHORIZED_WAITLIST_ACCESS";
 
   const metadata = JSON.stringify({
     timestamp: now,
@@ -114,14 +116,18 @@ async function requireAdminPlan(db: D1Database, userId: string, action: string, 
     db.prepare(`INSERT INTO audit_logs (id, user_id, action, resource_type, metadata, created_at)
       VALUES (?, ?, 'ADMIN_CHECK', 'system', ?, ?)`)
       .bind(crypto.randomUUID(), userId, metadata, now),
-    db.prepare(`INSERT INTO audit_logs (id, user_id, action, resource_type, metadata, created_at)
-      VALUES (?, ?, ?, 'waitlist', ?, ?)`)
-      .bind(crypto.randomUUID(), userId,
-        action === "email" ? "UNAUTHORIZED_EMAIL_ACCESS" : "UNAUTHORIZED_WAITLIST_ACCESS",
-        JSON.stringify({ timestamp: now, attempted_action: action, security_level: "HIGH_RISK" }), now),
+    db.prepare(`INSERT INTO audit_logs (id, user_id, action, resource_type, resource_id, metadata, created_at)
+      VALUES (?, ?, ?, 'waitlist', ?, ?, ?)`)
+      .bind(auditId, userId, deniedAction, resourceId,
+        JSON.stringify({ timestamp: now, attempted_action: action,
+          security_level: action === "email" ? "CRITICAL_RISK" : "HIGH_RISK",
+          ...(action === "email" ? { attempted_resource: "email_address" } : {}),
+        }), now),
   ];
   const result = await db.batch(statements);
   if (!result.every((item) => item.success && item.meta?.changes === 1)) fail("waitlist_admin_unavailable");
+  // The durable audit owns actor/resource details; diagnostics omit PII and headers.
+  console.warn(JSON.stringify({ event: "security_alert", action: deniedAction, auditId, createdAt: now }));
   fail("super_admin_required", 403);
 }
 
@@ -197,7 +203,7 @@ async function handleList(db: D1Database, userId: string, now: string, headers: 
 }
 
 async function handleEmail(db: D1Database, userId: string, id: string, now: string, headers: Headers): Promise<Response> {
-  await requireAdminPlan(db, userId, "email", now);
+  await requireAdminPlan(db, userId, "email", now, id);
   const row = await db.prepare("SELECT email FROM waitlist WHERE id = ? LIMIT 1").bind(id).first<{ email?: unknown }>();
   if (typeof row?.email !== "string" || row.email.length < 3 || row.email.length > 320 || /\s/u.test(row.email)) {
     return json({ error: "not_found" }, 404, headers);

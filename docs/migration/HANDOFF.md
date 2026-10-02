@@ -50,9 +50,21 @@ Lifecycle incarnation tombstones and monotonic MFA generations remain.
 Local registration suite passes 18/18 and admin history 14/14; typecheck/ESLint
 and migration-data 237/237 pass. A supplementary all-23-migration local probe
 returned no completion output and was stopped after the actual remote schema/
-trigger/canary verification. Do not use it as passing evidence. Next: rendered
-acceptance of the new Master history rows, remaining source function/RLS/trigger
-review, then provider and CPU/operational gates. Stripe/Resend/OAuth credentials
+trigger/canary verification. Do not use it as passing evidence. The new Master history rows now have authenticated desktop acceptance: 20
+rendered rows matched the intercepted API order/action/metadata, including 18
+latest exact Master audits; screenshot review and scoped cleanup passed. The
+new `--emoji-master-audit-browser` smoke covers this; mobile remains unverified.
+
+Next source diagnostic repair is local: waitlist email denial now retains its
+resource ID and CRITICAL_RISK/email_address metadata. `notify_security_breach`
+only emits a source DB NOTICE; the Worker adds a post-commit bounded warning
+(event/action/audit ID/time), omitting raw actor/email/IP/credentials. Local
+waitlist suite 9/9, typecheck/ESLint pass. The new
+`--waitlist-security-roundtrip` pins account/version, guards empty Auth and
+journals synthetic Auth/waitlist resources before writes. New warning code is
+NOT deployed. Next: push/CI/build/deploy, guarded authorized/denied waitlist
+canary and operator-log/audit correlation, scoped cleanup; then remaining
+source function/RLS/trigger review and provider/CPU/operational gates. Stripe/Resend/OAuth credentials
 remain absent. Keep real user/Auth/Storage migration and domain/DNS deferred.
 
 The preceding lottery-audit rollout used workers.dev staging Worker version

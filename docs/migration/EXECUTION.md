@@ -1,5 +1,26 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：Master履歴画面のacceptanceと待機リスト警告（local）
+
+Worker `1eb5d9ac-815e-4957-8381-b6024dac33e8`で合成signin/TOTPを通し、
+管理者本人のユーザー詳細画面をheadless Chromeで開いた。履歴20件のaction/metadataと
+順序が画面の取得したAPI応答に一致し、そのうち18件が最新Master監査とexact一致した。
+先頭2件はその後の管理画面一覧/詳細read監査。private screenshotを目視し、監査見出しと
+絵文字変更内容を確認した。Master/Auth/Business cleanupとcatalog digest保持が成功した。
+smokeに`--emoji-master-audit-browser`を追加した。desktop acceptanceで、mobileは未検証。
+
+schema-only source reviewでは、`notify_security_breach`は2種類のアクセス拒否auditで
+DB NOTICEを出すだけで、外部配信を行わない。Workerで不許可メール参照のresource IDが
+NULLになり、警告の投影もないことをfailing testで再現した。メール拒否の対象ID、
+CRITICAL_RISK/email_addressを保持し、audit確定後にevent/action/audit ID/UTC時刻だけの
+structured warningを出すよう修正。メール/IP/actor/token/cookieは警告へ複製しない。
+waitlist local D1 tests 9/9、Worker typecheck/ESLint成功。audit失敗は503で閉じ、警告を
+成功扱いで出さない。既存の管理role＋同session MFA＋admin planの認可は維持する。
+`--waitlist-security-roundtrip`にversion/account/empty Auth guard・private recovery journal、
+許可hash-list/revealとadmin plan除去後の2拒否・exact audit・scoped cleanupを準備した。
+新しいdiagnostic Workerのdeploy/remote log照合は未実施。包括catalog/provider/CPU gateは残る。
+実ユーザー移行とdomain/DNS切替は行っていない。
+
 ## 2026-10-03：発見・お気に入り連携とMaster履歴をstaging検証
 
 code head `4279db0`のCI run `37035931199`はapplication/Worker両job成功。
