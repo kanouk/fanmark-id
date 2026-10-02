@@ -194,3 +194,10 @@ alarmの永続化後にその世代をackする。HTTP mutationのwaitUntilとsc
 再起動する。空queueはalarmを消し、future event/processing lease/障害/freeze中は保持する。
 D1とDOのcommitは別で、強制終了後の再起動経路も運用検証が必要。現在のstagingは旧Cronで、
 remote namespace/schema/selector有効化は未実施。`docs/migration/notification-worker-wake.md`参照。
+
+staging configはSQLite coordinator bindingと`notification-wake-v1`のclass migration、
+`NOTIFICATION_WAKE_BACKEND=durable-object`、日次Cronだけへ変更する準備ができた。
+実remote切替はCI/空source・Auth/0024 exact readback後に行う。notification/expiry/archiveの
+local scheduled rehearsalは`NOTIFICATION_WAKE_BACKEND:disabled`を明示し、local DOが
+remote起動世代をackしない。disposable recovery Workerは独立config/vars allowlistで
+DO namespaceを継承しない。partial activation、minute Cronとの併用はguardで拒否する。

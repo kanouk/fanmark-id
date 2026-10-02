@@ -30,3 +30,13 @@ export function isStagingNotificationWakeTarget(config) {
     migrations[0].new_classes === undefined && migrations[0].deleted_classes === undefined &&
     migrations[0].renamed_classes === undefined && migrations[0].transferred_classes === undefined;
 }
+
+/** Accept either the legacy staged Cron or the complete opt-in alarm baseline. */
+export function stagingNotificationScheduleMode(config) {
+  if (isStagingNotificationWakeTarget(config)) return "alarm";
+  if (config?.vars?.NOTIFICATION_WAKE_BACKEND !== undefined || config?.vars?.NOTIFICATION_PROCESSOR_BACKEND !== "d1" ||
+      config?.durable_objects !== undefined || config?.migrations !== undefined) return null;
+  const crons = config?.triggers?.crons;
+  return Array.isArray(crons) && crons.length === 2 && new Set(crons).size === 2 &&
+    crons.includes("* * * * *") && crons.includes("0 0 * * *") ? "cron" : null;
+}

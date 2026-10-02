@@ -137,6 +137,7 @@ async function startWorker(port) {
   const child = spawn("npx", [
     "--yes", `wrangler@${WRANGLER}`, "dev", "--config", APP_CONFIG, "--test-scheduled",
     "--port", String(port), "--log-level", "info", "--var", "NOTIFICATION_ARCHIVE_BACKEND:d1",
+    "--var", "NOTIFICATION_WAKE_BACKEND:disabled",
     "--show-interactive-dev-session=false",
   ], {
     cwd: WORKER_DIR,

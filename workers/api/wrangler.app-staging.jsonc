@@ -9,10 +9,14 @@
     "directory": "../../dist-staging",
     "binding": "ASSETS",
     "not_found_handling": "404-page",
-    "run_worker_first": ["/*"]
+    "run_worker_first": [
+      "/*"
+    ]
   },
   "triggers": {
-    "crons": ["* * * * *", "0 0 * * *"]
+    "crons": [
+      "0 0 * * *"
+    ]
   },
   "ratelimits": [
     {
@@ -121,7 +125,8 @@
     "SUPABASE_URL": "https://synthetic-project.supabase.co",
     "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_fixture_only",
     "CORS_ALLOWED_ORIGINS": "https://fanmark-app-staging.fanmark-id.workers.dev",
-    "STAGING_NO_INDEX": "true"
+    "STAGING_NO_INDEX": "true",
+    "NOTIFICATION_WAKE_BACKEND": "durable-object"
   },
   "r2_buckets": [
     {
@@ -131,6 +136,22 @@
     {
       "binding": "COVER_IMAGES_BUCKET",
       "bucket_name": "fanmark-cover-images-staging"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "NOTIFICATION_WAKE",
+        "class_name": "NotificationWakeCoordinator"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "notification-wake-v1",
+      "new_sqlite_classes": [
+        "NotificationWakeCoordinator"
+      ]
     }
   ]
 }

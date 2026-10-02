@@ -4,6 +4,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+import { isStagingNotificationWakeTarget } from "./staging-notification-wake-target.mjs";
 
 const packageJson = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8"));
 const envTypes = readFileSync(new URL("../../src/vite-env.d.ts", import.meta.url), "utf8");
@@ -127,5 +128,6 @@ test("staging enables only the MFA-protected manual lifecycle API, not the sched
   assert.equal(vars.LICENSE_EXPIRY_BACKEND, undefined, "scheduled expiry must remain disabled");
   assert.equal(vars.NOTIFICATION_ARCHIVE_BACKEND, undefined, "notification archival must remain disabled in staging until deliberately selected");
   assert.equal(vars.LICENSE_EXPIRY_CRON, "0 0 * * *");
-  assert.deepEqual([...appStagingConfig.triggers.crons].sort(), ["* * * * *", "0 0 * * *"]);
+  assert.deepEqual(appStagingConfig.triggers.crons, ["0 0 * * *"]);
+  assert.equal(isStagingNotificationWakeTarget(appStagingConfig), true);
 });

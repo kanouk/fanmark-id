@@ -247,6 +247,7 @@ async function startDev(port, targetIncarnation, schemaDigest) {
     "--yes", "wrangler@" + WRANGLER, "dev", "--config", "wrangler.app-staging.jsonc",
     "--test-scheduled", "--port", String(port), "--log-level", "info",
     "--var", "LICENSE_EXPIRY_BACKEND:d1",
+    "--var", "NOTIFICATION_WAKE_BACKEND:disabled",
     "--var", "LICENSE_EXPIRY_CRON:0 0 * * *",
     "--var", "LICENSE_EXPIRY_TARGET_INCARNATION:" + targetIncarnation,
     "--var", "LICENSE_EXPIRY_SCHEMA_EXTENSION_DIGEST:" + schemaDigest,

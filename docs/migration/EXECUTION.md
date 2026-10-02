@@ -1,5 +1,17 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：通知alarmのstaging設定と検証ツール対応（配備前）
+
+checked-in staging configをSQLite coordinator binding / class migrationと
+`NOTIFICATION_WAKE_BACKEND=durable-object`、日次Cronだけへ変更した。
+shared target guardsはcomplete legacy-Cron / alarm baselineを判別し、partial設定を拒否する。
+notification/expiry/archiveのlocal scheduled rehearsalにはwake disabled overrideを追加し、
+local DOがremote D1の起動世代をackしない。disposable recovery Workerは既存の独立
+config/vars allowlistを確認し、namespace/migration非継承をguard testで固定した。
+focused設定/隔離17/17、syntax/diff check成功。remote Worker/D1は未変更。
+CI後に空userdata/Auth・canonical ledger・専用accountを再確認し、0024をexact適用/照合、
+workers.dev deployとversion固定の通知alarm smoke/cleanupを行う。
+
 ## 2026-10-03：通知workerの起動・停止と復旧経路（local検証済み）
 
 常時毎分実行から、pending保存で起動・空queueでalarm削除するSQLite Durable Objectへ

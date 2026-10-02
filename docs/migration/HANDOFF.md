@@ -3,6 +3,17 @@
 Checkpoint: 2026-10-03 JST. The migration is **not complete**. PR #41 remains
 open and draft. CI validates the branch but does not deploy the Worker.
 
+Activation configuration is now prepared: `wrangler.app-staging.jsonc` selects
+the SQLite coordinator binding and class migration, alarm mode, and daily Cron
+only. Shared guards distinguish complete legacy-Cron/alarm baselines and reject
+partial activation. Local processor/archive/expiry rehearsals explicitly disable
+wake so a local DO cannot acknowledge the staging outbox. The disposable recovery
+Worker's independent config/vars allowlist already excludes the coordinator;
+the new guard test fixes that boundary. Focused configuration/isolation tests
+pass 17/17, syntax/diff check pass. Remote Worker/D1 are still unchanged. Next:
+activation CI, fresh empty source/Auth + account/ledger guard, exact 0024 apply
+and readback, workers.dev deployment, pinned alarm smoke and final cleanup proof.
+
 Notification wake/sleep is prepared locally, **not staging-accepted**. Business
 0024 records a native monotonic wake generation; one SQLite Durable Object
 processes the existing queue and deletes its alarm when empty. The full-schema
@@ -25,8 +36,10 @@ before a write, so a lost API response can still be cleaned by recipient/nonce.
 It must observe a real API wake, exact Japanese delivery and NULL alarm after
 drain, then a native unbridged future event, MFA repair, due-time rescheduling,
 another exact delivery, retained Master/config/catalog fingerprints and scoped
-cleanup. The target guard has 2/2 local tests; syntax/lint pass. This new smoke
-has not run remotely and is deliberately refused by the current Cron config.
+cleanup. The original target guard passed 2/2; the activation configuration/isolation
+guards now pass 17/17. This smoke has not run remotely. The earlier minute-Cron
+config was deliberately refused before remote operations; the prepared alarm
+config now passes the target guard.
 
 Fresh dedicated-account remote readback confirmed Worker `13dca8cf` at 100%,
 canonical Business ledger 24 immediately before 0024, all source-owned rows
@@ -35,8 +48,8 @@ eight user-owned Auth table counts 0 and wake schema absent. Only the three
 existing secret names remain; no provider secret is registered. Current remote
 notification scheduling remains the minute Cron. Local ledger is 25; remote 0024/DO namespace/selector
 activation are pending. Next: green CI; fresh identity/empty-row/ledger guard;
-prepare alarm staging config and update existing Cron-target guards, local
-processor overrides and disposable Worker isolation; apply and read back 0024; build/dry-run/deploy only workers.dev; run the pinned alarm smoke
+confirm activation CI for the prepared alarm config/guards/overrides; apply
+and read back 0024; build/dry-run/deploy only workers.dev; run the pinned alarm smoke
 and independent final readback. The D1-to-DO commit gap remains replayable,
 not atomic; a hard missed bridge needs the next mutation or MFA repair. Broader
 functions/RLS/triggers/provider/CPU/mobile gates remain open. See

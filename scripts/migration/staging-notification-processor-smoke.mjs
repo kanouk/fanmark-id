@@ -8,6 +8,7 @@ import { readFileSync } from "node:fs";
 import { spawn, spawnSync } from "node:child_process";
 import { createServer } from "node:net";
 import { setTimeout as delay } from "node:timers/promises";
+import { stagingNotificationScheduleMode } from "./staging-notification-wake-target.mjs";
 import {
   businessTablesWithoutStagingBaselines,
   NOTIFICATION_MASTER_COUNTS_SQL,
@@ -155,6 +156,7 @@ async function startWorker(port) {
   const child = spawn("npx", [
     "--yes", `wrangler@${WRANGLER}`, "dev", "--config", APP_CONFIG, "--test-scheduled",
     "--port", String(port), "--log-level", "info", "--var", "NOTIFICATION_PROCESSOR_BACKEND:d1",
+    "--var", "NOTIFICATION_WAKE_BACKEND:disabled",
     "--show-interactive-dev-session=false",
   ], { cwd: WORKER_DIR, env: { ...process.env, NO_COLOR: "1" }, detached: process.platform !== "win32",
     stdio: ["ignore", "pipe", "pipe"] });
@@ -205,11 +207,7 @@ async function stopWorker(child) {
 
 function verifyTarget() {
   const config = JSON.parse(readFileSync(APP_CONFIG_PATH, "utf8"));
-  const crons = config.triggers?.crons ?? [];
-  const processor = config.vars?.NOTIFICATION_PROCESSOR_BACKEND;
-  const expectedCrons = ["* * * * *", "0 0 * * *"];
-  const schedulerConfigInvalid = crons.length !== expectedCrons.length ||
-    crons.some((cron, index) => cron !== expectedCrons[index]) || processor !== "d1";
+  const schedulerConfigInvalid = stagingNotificationScheduleMode(config) === null;
   if (config.name !== "fanmark-app-staging" || config.account_id !== ACCOUNT_ID || config.workers_dev !== true ||
       config.routes?.length || schedulerConfigInvalid || config.vars?.LICENSE_EXPIRY_BACKEND ||
       config.vars?.STRIPE_DISPATCH_BACKEND || config.vars?.STRIPE_WEBHOOK_BACKEND) {

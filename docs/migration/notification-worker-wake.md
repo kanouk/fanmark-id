@@ -81,7 +81,7 @@ account/version/ledger/trigger gates and a private pre-write Auth/fixture journa
 It verifies API-created wake and drain, native future-event interrupted-bridge
 recovery through MFA, due-time update/delivery, retained fingerprints and scoped
 cleanup. Its target guard passes 2/2, and script syntax/lint pass. The live alarm
-smoke remains unexecuted; the present minute-Cron config was refused before any
+smoke remains unexecuted; the earlier minute-Cron config was refused before any
 remote operation. Fresh Wrangler identity readback confirmed the dedicated
 staging account. Journal updates use private temporary files and atomic rename;
 an interrupted update does not truncate the previous recovery checkpoint.
@@ -108,13 +108,21 @@ absent. Evidence files are `/tmp/fanmark-notification-wake-ci.log`,
 `/tmp/fanmark-notification-wake-source-preflight.json` and the matching
 current-business/current-auth/deployments/identity/secret-names JSON files.
 
+The checked-in staging config now selects the alarm namespace/class migration,
+`NOTIFICATION_WAKE_BACKEND=durable-object` and the retained daily Cron only. This
+is prepared configuration; remote Worker/D1 are still unchanged. Shared guards
+accept complete legacy-Cron or alarm baselines and reject partial activation.
+The processor/archive/expiry local rehearsals explicitly override wake to
+disabled so their local DO instance cannot acknowledge the staging outbox. The
+disposable recovery Worker already constructs its own config/vars allowlist and
+inherits neither namespace nor migration. Focused configuration/isolation tests
+pass 17/17, including four wake-target tests. Activation CI and remote acceptance
+are required next.
+
 Before enabling: require green CI for activation changes, fixed staging account/bindings/version,
 empty source/Auth rows and private recovery journal, apply/read back 0024 and
 its ledger/triggers, add the SQLite namespace/class migration, and replace
-notification polling with the alarm mode. Update existing Cron-target guards,
-local processor overrides and disposable Worker configuration isolation before
-activation; they currently assume the minute-Cron config. Keep billing/email
-selectors closed.
+notification polling with the alarm mode. Keep billing/email selectors closed.
 The synthetic acceptance must prove a real API-created event wakes delivery,
 protected status reads a real alarm then NULL after drain, post-commit recovery
 works, master baselines remain intact and exact Auth/business/guard cleanup

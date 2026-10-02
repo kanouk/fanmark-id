@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { isStagingNotificationWakeTarget } from "./staging-notification-wake-target.mjs";
+import { isStagingNotificationWakeTarget, stagingNotificationScheduleMode } from "./staging-notification-wake-target.mjs";
 const current = JSON.parse(readFileSync(new URL("../../workers/api/wrangler.app-staging.jsonc", import.meta.url), "utf8"));
 const candidate = {
   ...current,
@@ -11,11 +11,36 @@ const candidate = {
   migrations: [{ tag: "notification-wake-v1", new_sqlite_classes: ["NotificationWakeCoordinator"] }],
 };
 test("only the complete staged SQLite alarm configuration passes", () => {
+  assert.equal(isStagingNotificationWakeTarget(current), true);
   assert.equal(isStagingNotificationWakeTarget(candidate), true);
   assert.equal(isStagingNotificationWakeTarget({ ...candidate, durable_objects: undefined }), false);
   assert.equal(isStagingNotificationWakeTarget({ ...candidate, triggers: { crons: ["* * * * *", "0 0 * * *"] } }), false);
   assert.equal(isStagingNotificationWakeTarget({ ...candidate, migrations: [{ tag: "notification-wake-v1", new_classes: ["NotificationWakeCoordinator"] }] }), false);
   assert.equal(isStagingNotificationWakeTarget({ ...candidate, durable_objects: { bindings: [{ ...candidate.durable_objects.bindings[0], script_name: "other-worker" }] } }), false);
+});
+test("legacy Cron and complete alarm configurations remain distinct; partial activation is refused", () => {
+  const legacy = structuredClone(current);
+  delete legacy.vars.NOTIFICATION_WAKE_BACKEND;
+  delete legacy.durable_objects;
+  delete legacy.migrations;
+  legacy.triggers.crons = ["* * * * *", "0 0 * * *"];
+  assert.equal(stagingNotificationScheduleMode(legacy), "cron");
+  assert.equal(stagingNotificationScheduleMode(current), "alarm");
+  assert.equal(stagingNotificationScheduleMode({ ...current, durable_objects: undefined }), null);
+  assert.equal(stagingNotificationScheduleMode({ ...current, vars: { ...current.vars, NOTIFICATION_WAKE_BACKEND: "typo" } }), null);
+  assert.equal(stagingNotificationScheduleMode({ ...legacy, durable_objects: current.durable_objects }), null);
+  assert.equal(stagingNotificationScheduleMode(null), null);
+});
+test("local scheduled rehearsals cannot acknowledge an outbox through a local alarm instance", () => {
+  for (const file of ["staging-notification-processor-smoke.mjs", "staging-notification-archive-smoke.mjs", "staging-license-expiry-lottery-smoke.mjs"]) {
+    const source = readFileSync(new URL(file, import.meta.url), "utf8");
+    assert.match(source, /"--var", "NOTIFICATION_WAKE_BACKEND:disabled"/u, file);
+  }
+  // The disposable recovery Worker uses an explicit config/vars allowlist; it
+  // must not inherit the app's coordinator or the app's namespace migrations.
+  const recovery = readFileSync(new URL("postwrite-cloudflare-recovery-smoke.mjs", import.meta.url), "utf8");
+  const configBuilder = recovery.slice(recovery.indexOf("function createTemporaryConfig()"), recovery.indexOf("function createTemporaryConfig()") + 5000);
+  assert.doesNotMatch(configBuilder, /durable_objects|NOTIFICATION_WAKE|new_sqlite_classes|\.\.\.appConfig\.vars/u);
 });
 test("refuses production routes, other targets, malformed bindings and enabled side effects", () => {
   for (const changed of [{ routes: ["fanmark.id/*"] }, { routes: "fanmark.id/*" }, { account_id: "other" },
