@@ -1,5 +1,35 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：発見・お気に入り連携とMaster履歴をstaging検証
+
+code head `4279db0`のCI run `37035931199`はapplication/Worker両job成功。
+Business stagingへ追加`0022_fanmark_discovery_link.sql`とledgerをprivate file importで
+適用し、全23件のledger順序・新triggerのchecked-in SQLとのexact一致・source row 0を
+読み戻した。fresh build/dry-run後、Worker `1eb5d9ac-815e-4957-8381-b6024dac33e8`を
+workers.dev限定で配備した。created_on `2026-10-02T16:51:13.579131Z`の最新版は100%。
+root/robots/session/catalog/languages 200、session=null、匿名admin/transfer 401、無効Stripe
+webhook 404。noindex header・local/public HTMLとJS SHA-256一致を確認した。
+
+versionをpinしたMaster監査canaryは実signin/TOTP/MFAを通し、draft create/updateと100件
+mixed importによる102監査を照合した。ユーザー詳細APIの最新20件がMaster監査のID/
+actor/action/resource/metadata/timeとexact一致した。公開3,944件のcatalog digestは不変。
+scoped Master/Business/Auth cleanupが完了し、private journalは`verified-and-cleaned`。
+これはdeployed DTOの検証であり、新しい履歴行のブラウザ描画は別のacceptanceとして残す。
+
+registration/discovery canaryも成功。未取得の合成discoveryとfavoriteを先に作り、実ログイン
+で取得すると両方のfanmark_idとowned_by_userが反映され、お気に入り一覧APIも200で
+同じID・表示・登録時刻を返した。発見日時・search/favorite countは不変。R2 coverの
+upload/read/profile保存/delete、owner/bucket拒否、lottery申込/重複拒否/取消、匿名・認証済み
+whois projectionも成功。合成source tables 0、Auth user/account/session 0、cover 404へ戻し、
+notification/system/email/coupon master baselineを保持した。private journalはverified-and-cleaned。
+incarnation tombstonesとMFA generationは再利用防止metadataとして保持する。
+
+補助の全23 migrationローカル適用probeは完了出力が得られず、実際のremoteスキーマ/
+trigger/統合canaryが完了した後に停止した。これを合格証拠には使わない。local registration
+18/18、admin history 14/14、migration-data 237/237、typecheck/ESLintとCIは成功。
+包括functions/RLS/triggers gate、provider接続、CPU/運用fitは未完了。
+実ユーザーデータ移行、production Supabase write、domain/DNS切替は実施していない。
+
 ## 2026-10-03：発見・お気に入り連携とMaster履歴（local）
 
 sourceの新規fanmark INSERTによるdiscovery/favorites連携を、追加Business migration

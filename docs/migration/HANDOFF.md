@@ -32,20 +32,28 @@ omitted this mode, leaving one target Auth user/profile. Its private journal
 bounded exact recovery; unconditional target cleanup fixed all modes, and a
 fresh full run ended verified-and-cleaned. No credentials were logged.
 
-The next source-trigger repair is locally implemented: Business migration 0022
-links matching ordered discoveries and all owners' favorites in the parent
-fanmark INSERT transaction, including trusted writers. Registration tests pass
-18/18, including preserved counters/timestamps/display, UUID case/NULL/JSON
-whitespace, ordering, rejected/suppressed update rollback/retry and duplicate
-identity refusal. User-detail history merges Business/Auth/Master actor audits
-with UTC-microsecond latest-20 ordering; its D1 suite passes 14/14. Missing Master
-binding/query fails closed. Worker typecheck/ESLint and migration-data 237/237
-pass. Business 0022 and the new Worker are NOT deployed yet. Next: push/CI,
-guarded 0022 apply/exact-trigger readback, fresh build/deploy, then run the
-extended Master TOTP smoke (latest-20 history) and registration smoke with
-`--run-live-staging-write --verify-discovery-link` plus pinned
-`FANMARK_EXPECTED_STAGING_VERSION`. Keep private recovery journals, verify scoped
-cleanup and master/Auth baseline; do not clear broad catalog/provider/CPU gates.
+Business migration 0022 and the combined Master history reader are now staging
+verified. CI `37035931199` passed both jobs on code head `4279db0`. Private-file
+apply added 0022/ledger; all 23 Business ledger entries and the exact native
+trigger match the checked-in sources. Fresh build/dry-run deployed Worker
+`1eb5d9ac-815e-4957-8381-b6024dac33e8` at 100%, created
+`2026-10-02T16:51:13.579131Z`. HTTP/anonymous gates/noindex and local/public
+HTML/JS hash match. The extended TOTP canary verified 102 Master audits and the
+latest 20 exact user-detail API rows; public catalog digest stayed unchanged.
+The guarded registration canary linked the preexisting synthetic discovery and
+favorite, preserved display/counters/timestamps and read the linked favorite
+through the API. Registration/lottery/whois/R2 cover checks and scoped cleanup
+passed. Both private journals ended verified-and-cleaned; source business rows
+and user-owned Auth rows returned to zero and master baselines were retained.
+Lifecycle incarnation tombstones and monotonic MFA generations remain.
+
+Local registration suite passes 18/18 and admin history 14/14; typecheck/ESLint
+and migration-data 237/237 pass. A supplementary all-23-migration local probe
+returned no completion output and was stopped after the actual remote schema/
+trigger/canary verification. Do not use it as passing evidence. Next: rendered
+acceptance of the new Master history rows, remaining source function/RLS/trigger
+review, then provider and CPU/operational gates. Stripe/Resend/OAuth credentials
+remain absent. Keep real user/Auth/Storage migration and domain/DNS deferred.
 
 The preceding lottery-audit rollout used workers.dev staging Worker version
 `445dd523-232d-4766-aaef-2c8d175e5bc6` at 100%. The code baseline is `f3787d8`;

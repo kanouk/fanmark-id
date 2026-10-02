@@ -68,7 +68,12 @@ filter and latest-20 UTC-microsecond ordering. Missing bindings or failed Master
 queries fail closed, rather than returning incomplete history. The local user
 management suite passes 14/14, including submillisecond ordering, other/NULL
 actor exclusion and credential/PII redaction. The extended TOTP staging smoke
-compares the latest 20 exact Master audit DTOs; deployment/readback is pending.
+compares the latest 20 exact Master audit DTOs. This passed on staging Worker
+`1eb5d9ac-815e-4957-8381-b6024dac33e8` with real sign-in/TOTP and
+102 source-shaped mutation audits; scoped Master/Business/Auth cleanup completed
+`verified-and-cleaned`. The public catalog digest remained unchanged. This
+proves the deployed user-detail API DTO; rendered history UI acceptance remains
+a separate check.
 
 The guarded synthetic staging command is:
 
