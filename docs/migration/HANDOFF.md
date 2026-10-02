@@ -51,9 +51,11 @@ refreshed `supabase/remote_schema.sql` to 40 tables / 406 columns / 58
 functions / 77 policies. The five added functions, three added tables, and
 policy changes match checked-in migrations. Read-only Functions metadata
 shows 35 ACTIVE deployments; all 34 local `verify_jwt` settings match, with
-one live-only `manual-expire-grace-licenses` function. Its authorization
-behavior remains under review. The readback and snapshot update changed no
-live schema or user data.
+one live-only `manual-expire-grace-licenses` function. Source review found no
+administrator-role/MFA check in its handler despite service-role database
+access. A valid non-admin JWT may reach its bulk license mutation; the function
+was not invoked or changed. Its production disposition is a security gate.
+The readback and snapshot update changed no live schema or user data.
 
 Converter v24 now recognizes the D1 notification archiver as the explicit
 writer for `notifications_history.archived_at`; its selector remains disabled

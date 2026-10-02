@@ -39,8 +39,16 @@ ESLint pass, and CI passes both jobs. The staging deployment did not read or
 write user rows or apply a D1 migration. No production schema, route, or
 domain/DNS changed. Issue #30
 still needs the user's capacity margin, maximum downtime, and configuration
-owner targets, plus behavioral review of live SQL and the live-only function.
+owner targets, plus a disposition for the live-only function authorization gap.
 Provider acceptance and wrapper/indirect-call review also remain open.
+
+The deployed-only `manual-expire-grace-licenses` source uses the service-role
+client without checking administrator role or MFA in the handler. It can
+expire every past-due grace license and remove related configuration rows; its
+JWT gateway requirement alone does not establish an administrator boundary.
+The function was only downloaded to a private temporary directory and reviewed;
+it was not invoked or changed. Treat its retirement or mitigation as a
+production security gate. Details are in [live observations](live-observations.md).
 
 Separate staging evidence covers the scheduled synthetic lifecycle path and
 the guarded post-write recovery rehearsal: one synthetic Stripe extension was

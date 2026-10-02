@@ -30,9 +30,30 @@ parity or proof that every SQL behavior has a Cloudflare replacement.
 returned 35 deployed Functions, all `ACTIVE`. There are 34 checked-in local
 entrypoints and no local-only names. All 34 shared names have the same
 `verify_jwt` value as `supabase/config.toml`. The sole deployed-only function
-is `manual-expire-grace-licenses` (version 14, `verify_jwt=true`); its code and
-service-role behavior remain a manual authorization review item and were not
-downloaded or invoked.
+is `manual-expire-grace-licenses` (version 14, `verify_jwt=true`). Its source
+was downloaded into a private temporary directory and reviewed; it was not
+invoked, and the deployed function was not changed.
+
+### Deployed-only function authorization review
+
+`manual-expire-grace-licenses` creates a Supabase client using the
+`SUPABASE_SERVICE_ROLE_KEY` environment value. The handler does not inspect the
+caller identity, role, or MFA assurance. It selects every row with
+`status='grace'` and `grace_expires_at < now`, changes each license to expired,
+deletes its basic/redirect/messageboard/password configs, and inserts an audit
+row. The function's gateway setting requires a valid JWT, but there is no
+administrator authorization check in the handler; the function also advertises
+wildcard CORS. Because it uses the service-role client, a valid non-admin JWT
+may reach a bulk license mutation if the gateway accepts that caller. This
+behavior was not tested by invoking the function.
+
+Per-license config deletion and audit errors are not checked before the
+function reports the license as successful, so partial cleanup is possible.
+The function returns license and fanmark identifiers in its result. The
+Cloudflare staging has separately guarded admin lifecycle and scheduled D1
+paths; exact behavioral equivalence with this manual function remains open.
+The live-only Supabase function's disposition and production mitigation remain
+open. The private downloaded source was deleted after review.
 
 | Function | State | Version | `verify_jwt` |
 | --- | --- | ---: | --- |
