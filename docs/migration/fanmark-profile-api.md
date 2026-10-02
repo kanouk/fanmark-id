@@ -47,6 +47,24 @@ profile visibility; that API is documented in
 and access-mode configuration stay in separate owner-scoped API contracts.
 Both routes preserve the Supabase default for production.
 
+The editor waits for AuthProvider restoration before redirecting or fetching
+the owner context. Anonymous requests preserve the internal edit URL as a
+string return target, which the Better Auth email sign-in follows. Denied,
+malformed or failed reads render a retry/back error screen, never the blank
+creation form. A successful authorized context with `profile: null` still
+allows creation. Read generations invalidate obsolete/unmounted requests.
+
+`npm run build:cloudflare-staging && npm run test:staging-profile-editor-ui`
+uses headless Chrome with every browser request fulfilled or blocked locally.
+Seven synthetic cases cover delayed session restoration, anonymous return
+state, actual form sign-in returning to the editor, authorized missing profile,
+404 refusal, network failure and recovery by retry. The restored-owner case
+checks exact entered spaces and no horizontal overflow at 390px. Font requests
+are blocked; no Supabase or real API calls are permitted. Set
+`FANMARK_STAGING_CHROME` when Chrome is outside the discovered standard paths.
+This rendered regression runs after the staging build in the application CI
+job. It is not proof of deployed saves, provider integration or a real phone.
+
 ## Verification and activation boundary
 
 Dedicated local synthetic split-D1 tests cover owner reads, profile creation

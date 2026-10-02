@@ -62,6 +62,9 @@ jobs:
       - name: Build Cloudflare staging application
         run: npm run build:cloudflare-staging
 
+      - name: Test rendered owner profile editor
+        run: npm run test:staging-profile-editor-ui
+
   worker:
     name: Validate Cloudflare Worker API
     runs-on: ubuntu-latest

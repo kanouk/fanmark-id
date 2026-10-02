@@ -212,6 +212,12 @@ selection差は変更しない。8件のowner D1試験と14件の公開read試�
 sourceの旧RPC/helperの構造差と未確認の外部consumerは
 [プロフィールruntimeレビュー](migration/public-profile-runtime-review.md)に記録する。
 
+編集画面はAuthProviderのloading解除を待つ。Workerのメールログインは内部のreturn URLを
+使い、取得拒否/通信失敗時はフォームを閉じて再試行を表示する。hookのread generationで
+古い応答を無効化する。`npm run test:staging-profile-editor-ui`はstaging build後のChrome
+描画試験で、全通信をローカルfixtureへ置き換え、7ケースと390pxの横幅を検証する。
+application CIでもbuild後に実行する。remoteの保存/再表示と実機mobileは別の検証。
+
 読み取り専用の`source-runtime-bindings.sql`はpublic関数に接続される全schemaのtriggerと
 public event-triggerのmetadataを取得する。source function本文を含むraw出力はprivateに
 保存し、`source-runtime-review.mjs --catalog ... --output ...`で本文のないreportへ変換する。

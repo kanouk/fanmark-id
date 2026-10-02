@@ -1,5 +1,27 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：プロフィール編集の認証復元・取得失敗を修正
+
+Worker `010a4d7a`の実signin Cookieで編集URLを直接開いたところ、認証復元前に
+`/auth`へ移り、その後`/dashboard`へ送られる問題を再現した。private journal
+`fanmark-perpetual-editor-canary-Thyl2a`はfailed-and-cleaned。合成Business/Authは0、
+retained baseline一致を確認済みで、この失敗を画面受け入れ成功とは扱わない。
+前のdocumentation head `81ba302`のCI37059744542は両job成功、watcher exit0。
+
+編集画面とprofile hookは認証復元を待ち、Workerログイン後は内部edit URLへ戻る。
+取得拒否/通信失敗をauthorizedなprofile nullと区別し、フォームの代わりに再試行と戻る
+操作を表示する。obsolete readはgenerationで無効化する。4言語のエラー表示を追加。
+ローカルfixtureを使った実Chrome描画で、旧取得処理の404/network時の空フォームと
+旧sign-inのdashboard固定遷移も再現した。
+
+`npm run build:cloudflare-staging && npm run test:staging-profile-editor-ui`の7ケース成功。
+delayed session・anonymous return target・実login formからの復帰・authorized null・
+404・network・retryを検証する。復元後の入力space保持と390pxで横overflowなしも確認。
+全browser通信はlocal fulfill/blockし、外部APIへのwrite/readを行わない。
+API client5/5、application typecheck、変更ファイルESLint、workflow isolation成功。
+CI application jobに同じ描画試験を追加した。新headのCIとremote画面のsave/再表示は
+まだ未確認で、現配備は引き続き010a4d7a。実ユーザー・DNS/provider設定は未変更。
+
 ## 2026-10-03：無期限プロフィールのstaging合成受け入れ成功
 
 code head f4bd1aa / CI37058393397はapplication・Worker両job成功、watcher exit 0。

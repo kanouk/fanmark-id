@@ -1215,6 +1215,8 @@
     "updateSuccessDescription": "Perubahan profil Anda telah disimpan!",
     "updateError": "Pembaruan Gagal",
     "updateErrorDescription": "Gagal memperbarui profil Anda. Silakan coba lagi.",
+    "loadError": "Profil tidak dapat dimuat",
+    "loadErrorDescription": "Kami tidak dapat memastikan profil yang dapat Anda edit. Coba lagi atau kembali ke halaman pengaturan.",
     "licenseError": "Kesalahan Lisensi",
     "licenseErrorDescription": "Tidak ada lisensi yang valid ditemukan. Kembali ke halaman pengaturan.",
     "preview": "Pratinjau",

@@ -1215,6 +1215,8 @@
     "updateSuccessDescription": "Profile updated!",
     "updateError": "Update Failed",
     "updateErrorDescription": "Failed to update your profile. Please try again.",
+    "loadError": "Unable to load the profile",
+    "loadErrorDescription": "We could not confirm a profile you can edit. Try again or return to the settings page.",
     "licenseError": "License Error",
     "licenseErrorDescription": "No valid license found. Returning to settings page.",
     "preview": "Preview",

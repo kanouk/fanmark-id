@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from './useTranslation';
@@ -85,17 +85,27 @@ export const getOwnerEmojiProfile = async (licenseId: string): Promise<EmojiProf
 };
 
 export const useEmojiProfile = (licenseId: string | null, fanmarkId?: string | null) => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { t } = useTranslation();
   const [profile, setProfile] = useState<EmojiProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const readGeneration = useRef(0);
 
   const fetchProfile = useCallback(async () => {
+    const generation = ++readGeneration.current;
+    setProfile(null);
+    setError(null);
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
     let backend: 'supabase' | 'worker';
     try {
       backend = getFanmarkProfileBackend();
     } catch (error) {
       console.error('Invalid fanmark profile backend configuration:', error);
+      setError(error instanceof Error ? error : new Error('Invalid profile configuration'));
       setLoading(false);
       return;
     }
@@ -108,7 +118,7 @@ export const useEmojiProfile = (licenseId: string | null, fanmarkId?: string | n
     try {
       if (backend === 'worker') {
         const context = await getOwnerFanmarkProfileContext(fanmarkId!);
-        setProfile(context.profile);
+        if (generation === readGeneration.current) setProfile(context.profile);
         return;
       }
 
@@ -123,13 +133,17 @@ export const useEmojiProfile = (licenseId: string | null, fanmarkId?: string | n
         throw error;
       }
 
-      setProfile(data as EmojiProfile);
+      if (generation === readGeneration.current) setProfile(data as EmojiProfile);
     } catch (error) {
       console.error('Error fetching emoji profile:', error);
+      if (generation === readGeneration.current) {
+        setProfile(null);
+        setError(error instanceof Error ? error : new Error('Profile read failed'));
+      }
     } finally {
-      setLoading(false);
+      if (generation === readGeneration.current) setLoading(false);
     }
-  }, [user, licenseId, fanmarkId]);
+  }, [authLoading, user, licenseId, fanmarkId]);
 
   const updateProfile = useCallback(async (updates: EmojiProfileUpdates) => {
     const backend = getFanmarkProfileBackend();
@@ -176,11 +190,13 @@ export const useEmojiProfile = (licenseId: string | null, fanmarkId?: string | n
 
   useEffect(() => {
     void fetchProfile();
+    return () => { readGeneration.current += 1; };
   }, [fetchProfile]);
 
   return {
     profile,
     loading,
+    error,
     updateProfile,
     refetch: fetchProfile,
   };

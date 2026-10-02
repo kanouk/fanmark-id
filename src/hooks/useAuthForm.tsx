@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,6 +27,7 @@ const detectBrowserLanguage = (): ActiveLanguageCode => {
 
 export const useAuthForm = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { t } = useTranslation();
   const { refreshSession } = useAuth();
@@ -252,7 +253,9 @@ export const useAuthForm = () => {
       if (isBetterAuthEnabled()) {
         await betterAuthClient.signInWithEmail(formData.email, formData.password);
         await refreshSession();
-        navigate('/dashboard');
+        const from = (location.state as { from?: unknown } | null)?.from;
+        navigate(typeof from === 'string' && from.startsWith('/') && !from.startsWith('//')
+          ? from : '/dashboard', { replace: true });
         return;
       }
 

@@ -16,17 +16,17 @@ export default function EmojiProfileEdit() {
   const { fanmarkId } = useParams<{ fanmarkId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [licenseId, setLicenseId] = useState<string | null>(null);
   const [licenseLoading, setLicenseLoading] = useState(true);
 
-  const { profile, loading, updateProfile } = useEmojiProfile(licenseId, fanmarkId);
+  const { profile, loading, error, updateProfile, refetch } = useEmojiProfile(licenseId, fanmarkId);
 
   // Fetch license_id from fanmarkId
   useEffect(() => {
-    if (!user || !fanmarkId) return;
+    if (authLoading || !user || !fanmarkId) return;
 
     const fetchLicenseId = async () => {
       setLicenseLoading(true);
@@ -71,16 +71,16 @@ export default function EmojiProfileEdit() {
     };
 
     fetchLicenseId();
-  }, [user, fanmarkId, navigate, t]);
+  }, [authLoading, user, fanmarkId, navigate, t]);
 
   useEffect(() => {
-    if (!user) {
+    if (!authLoading && !user) {
       navigate('/auth', { 
-        state: { from: location },
+        state: { from: location.pathname + location.search + location.hash },
         replace: true 
       });
     }
-  }, [user, navigate, location]);
+  }, [authLoading, user, navigate, location]);
 
   const handleSave = async (data: EmojiProfileUpdates) => {
     setIsSubmitting(true);
@@ -113,16 +113,31 @@ export default function EmojiProfileEdit() {
     });
   };
 
-  if (!user) {
+  if (!authLoading && !user) {
     return null;
   }
 
-  if (licenseLoading || loading || !licenseId) {
+  if (authLoading || licenseLoading || loading || !licenseId) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex items-center justify-center">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Loader2 className="h-6 w-6 animate-spin" />
           {t('common.loading')}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex items-center justify-center p-4">
+        <div role="alert" className="max-w-md space-y-4 text-center">
+          <h1 className="text-xl font-bold">{t('emojiProfile.loadError')}</h1>
+          <p className="text-muted-foreground">{t('emojiProfile.loadErrorDescription')}</p>
+          <div className="flex justify-center gap-4">
+            <Button variant="outline" onClick={handleClose}>{t('common.back')}</Button>
+            <Button onClick={() => { void refetch(); }}>{t('common.tryAgain')}</Button>
+          </div>
         </div>
       </div>
     );

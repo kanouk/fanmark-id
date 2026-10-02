@@ -5,6 +5,21 @@ open and draft. CI validates the branch but does not deploy the Worker.
 The newest checkpoint below is authoritative for current deployment state;
 older sections retain their historical acceptance and failure evidence.
 
+Editor follow-up: actual synthetic persisted-session Chrome opening on current
+`010a4d7a` reproduced an early auth redirect ending at `/dashboard` instead of
+the edit URL. Journal `fanmark-perpetual-editor-canary-Thyl2a` ended
+`failed-and-cleaned`, source-owned Business/Auth zero and retained baseline equal.
+The new editor/hook wait for Auth restoration, preserve an internal string
+return target through Worker email sign-in, distinguish failed reads from an
+authorized null profile, and provide retry/back without an editable form.
+Obsolete reads are invalidated. Seven offline Chrome cases pass against the
+built staging UI, including actual login form, 404/network/retry and 390px
+overflow/input-space checks; API client 5/5, typecheck/lint and workflow isolation
+pass. `npm run test:staging-profile-editor-ui` now runs after the application CI
+build. New-head CI and deployed editor save/reopen/preview remain pending.
+Current Worker below is unchanged. Earlier docs head `81ba302` passed both
+jobs in `37059744542`; watcher exited 0.
+
 Owner fanmark profiles now support perpetual Tier C in both authenticated
 context reads and INSERT/UPSERT eligibility. A new real local split-D1
 regression reproduced 404 before the fix and now passes, including creation,

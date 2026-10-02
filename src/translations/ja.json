@@ -1205,6 +1205,8 @@
     "updateSuccessDescription": "プロフィールの変更が保存されました！",
     "updateError": "更新に失敗しました",
     "updateErrorDescription": "プロフィールの更新に失敗しました。もう一度お試しください。",
+    "loadError": "プロフィールを読み込めませんでした",
+    "loadErrorDescription": "編集できるプロフィールを確認できませんでした。再試行するか、設定ページに戻ってください。",
     "licenseError": "ライセンスエラー",
     "licenseErrorDescription": "有効なライセンスが見つかりません。設定ページに戻ります。",
     "preview": "プレビュー",
