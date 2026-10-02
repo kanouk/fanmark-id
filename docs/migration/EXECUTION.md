@@ -1,5 +1,27 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：お気に入り一覧から保護内容が漏れる経路を修正
+
+fresh sourceの7function/2policyを照合したところ、sourceのfavorite listは本人の
+お気に入り行に絞るが、fanmarkのpassword保護内容を伏せていなかった。targetも同じ
+SQLを使っており、native D1で名称・redirect URL・本文が返ることを再現した。
+既存verified-access仕様の「ログインではpassword確認を省略しない」に合わせ、
+enabled password configの3fieldをSQLでNULLへ伏せる。Worker clientも保護flagと
+非NULL内容が矛盾する応答を拒否する。DBに保存された内容やsource既定経路は変更しない。
+
+native favoritesは11/11、clientは6/6。active perpetual licenseのowner/他ユーザー、
+redirect/text、proof-looking cookie、config不変、disabled/absent protectionを確認した。
+最初の再現試験のundefined fixture定数エラーはbugの証拠ではなく、helper修正後の
+native応答で漏えいを確認している。通常Worker CIのD1契約群へfavoritesを追加した。
+application/Worker typecheck、変更箇所lint、通常staging build、pinned dry-run、
+workflow isolation、offline Chromeのeditor8ケースも成功。詳細とsource hashは
+[favorites API](favorites-api.md)。全RLS/外部caller照合は未完了。
+
+catalog head `effdf4be49b750c2143c43935ca8de8eaf8aeeb8` / CI `37065555307` は
+application・Worker両jobがsuccess（2026-10-02T21:20:59Zに完了）。今回のfavorite
+runtime変更は新exact-head CIが必要。stagingは010a4d7aのまま。D1 quota解除後の
+完全preflight、配備、native editor/保護favorite受け入れが次のgate。
+
 ## 2026-10-03：カタログの深いページのD1読み取りを削減
 
 D1 quota待機中にlocalの実D1/Worker repositoryで読み取り量を測定した。

@@ -5,6 +5,26 @@ open and draft. CI validates the branch but does not deploy the Worker.
 The newest checkpoint below is authoritative for current deployment state;
 older sections retain their historical acceptance and failure evidence.
 
+Protected-favorites checkpoint: reviewed fresh source definitions for seven
+favorite/discovery/search functions and two policies. The source owner-only
+favorite list still selects protected name, URL and text; native target D1
+reproduced that disclosure. The target now projects all three as SQL NULL when
+password protection is enabled, for both the license owner and another favorite
+owner. The client rejects contradictory protected DTOs. Stored configurations,
+unprotected rows, owner-edit APIs and the source/default adapter are unchanged.
+This intentionally enforces the existing verified-access decision; login does
+not bypass password verification. Native favorites 11/11, client 6/6, typechecks,
+changed-file lint, normal staging build, pinned dry-run, workflow isolation and
+eight offline editor cases pass. Native favorites are added to ordinary Worker
+CI. See `favorites-api.md` for reproduction, hashes and remaining source gates.
+Catalog HEAD effdf4b / CI37065555307 completed both jobs successfully at
+2026-10-02T21:20:59Z. The new favorite runtime change needs its own exact-head
+CI before updating private preflight/smoke pins or deploying. Current Worker
+remains 010a4d7a; D1 quota recovery/full preflight and native editor/favorite
+acceptance are outstanding. The private editor smoke currently has no favorite
+seed/cleanup coverage; do not add those rows without updating the journal and
+exact-UUID cleanup. No real-user/provider/domain changes occurred.
+
 Catalog read-budget follow-up: the actual local D1 repository's offset9500 /
 limit500 query over 10,000 synthetic rows read 10,000 rows before the fix and
 500 after it. Use the existing `(release_version, ordinal)` index with a bounded

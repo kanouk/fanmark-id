@@ -57,6 +57,15 @@ test("parses the strict favorites DTO and rejects malformed response shapes", ()
   ]) assert.throws(() => parseFavoriteFanmarksPayload(payload), FavoritesApiError);
 });
 
+test("Worker favorite metadata never authorizes protected content", () => {
+  const locked = { ...favorite, access_type: "redirect", is_password_protected: true };
+  assert.deepEqual(parseFavoriteFanmarksPayload({ schemaVersion: 2, items: [locked] }), [locked]);
+  for (const content of [{ fanmark_name: "Protected name" }, { target_url: "https://example.invalid/private" },
+    { text_content: "Protected message" }]) {
+    assert.throws(() => parseFavoriteFanmarksPayload({ schemaVersion: 2, items: [{ ...locked, ...content }] }), FavoritesApiError);
+  }
+});
+
 test("normalizes source bigint counts without accepting rounded numbers", () => {
   assert.deepEqual(normalizeSupabaseFavoriteFanmarkRows([{
     ...favorite, search_count: 4, favorite_count: 0,

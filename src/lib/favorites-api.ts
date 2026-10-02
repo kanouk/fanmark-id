@@ -143,6 +143,10 @@ function parseFavoriteRow(value: unknown): FavoriteFanmarkRow {
     !isNullableText(value.current_license_start, 128) || !isNullableText(value.current_license_end, 128) ||
     !isNullableText(value.current_license_status, 64) || typeof value.is_password_protected !== "boolean"
   ) throw new FavoritesApiError("invalid_response");
+  if (value.is_password_protected &&
+      (value.fanmark_name !== null || value.target_url !== null || value.text_content !== null)) {
+    throw new FavoritesApiError("invalid_response");
+  }
   return value as unknown as FavoriteFanmarkRow;
 }
 

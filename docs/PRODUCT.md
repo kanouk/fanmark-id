@@ -48,6 +48,7 @@
 - 管理: 抽選確率の編集、申込キャンセル、履歴保存、通知テンプレートは `lottery_*` イベントで管理。
 
 ## お気に入り・通知
+- Cloudflareのお気に入り一覧は、登録時の絵文字表記・公開概要・状態を表示する。パスワード保護が有効なファンマは、名称・リンク先・本文を返さない。ログイン、お気に入り登録、proof cookieの付与だけでは一覧から保護内容を取得できない。閲覧には専用のパスワード確認経路を使い、所有者の設定編集権限とは分ける。
 - お気に入り: 新規ファンマ取得時は、順序を保った正規化UUID列が一致する既存の発見データと、その発見データを指す全ユーザーのお気に入りに取得IDを紐付ける。お気に入りの表示・登録日時、発見日時・件数は保持する。Cloudflare経路では取得と同じBusiness D1 transactionで行い、連携の欠落や同一identityの重複時は取得全体を取り消す。`fanmark_discoveries` / `fanmark_favorites` で未取得ファンマも管理。トグルは RPC `add/remove_fanmark_favorite`。返却完了時にお気に入り登録者へ `favorite_fanmark_available` 通知イベントを生成。
 - 通知基盤: `notification_events` → `notification_rules` → `notifications`。イベント例: grace開始/失効、抽選当落、移管関連、手動告知。`process-notification-events` は、pending イベント追加時だけ有効になる毎分Cronワーカーとして展開・配信し、キューが空になると停止する。これにより通知の最大約1分の反映時間を維持しながら、空キューの定期実行を行わない。in-app/メール等に対応。
 

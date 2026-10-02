@@ -25,6 +25,7 @@ const releaseVersion = "a".repeat(64);
 const baseEmojiId = "5bb06a1c-a5d2-4e3f-a31d-58fce75887b3";
 const tonedEmojiId = "d821bc9f-781a-48d5-84e8-b21c54f36627";
 const fanmarkId = "d66106d0-5b1d-4b51-9ba4-7f93e7075d3a";
+const licenseId = "16771e22-69db-42bd-a8c4-8d0d46aa3957";
 const discoveryId = "bc542077-4405-48cd-9ac7-bab2e7dc10d7";
 const searchSyntheticIp = "192.0.2.77";
 let searchLimiterMode: "allowed" | "blocked" = "allowed";
@@ -115,22 +116,22 @@ async function resetBusinessRows(): Promise<void> {
   await businessDatabase.prepare("INSERT INTO fanmarks (id, short_id) VALUES (?, ?)").bind(fanmarkId, "leaf-42").run();
   await businessDatabase.prepare(
     "INSERT INTO fanmark_licenses (id, fanmark_id, user_id, license_start, license_end, status) VALUES (?, ?, ?, ?, ?, ?)",
-  ).bind("16771e22-69db-42bd-a8c4-8d0d46aa3957", fanmarkId, otherId, now, "2026-09-24T00:00:00.000Z", "active").run();
+  ).bind(licenseId, fanmarkId, otherId, now, "2026-09-24T00:00:00.000Z", "active").run();
   await businessDatabase.prepare(
     "INSERT INTO user_settings (id, user_id, username, display_name) VALUES (?, ?, ?, ?)",
   ).bind("7876f608-6fda-4616-b6b3-5fb1f013ee66", otherId, "synthetic-owner", "Synthetic Owner").run();
   await businessDatabase.prepare(
     "INSERT INTO fanmark_basic_configs (id, license_id, fanmark_name, access_type) VALUES (?, ?, ?, ?)",
-  ).bind("b4c9d1a2-5c12-452f-96ce-2614f1343aad", "16771e22-69db-42bd-a8c4-8d0d46aa3957", "Synthetic Leaf", "redirect").run();
+  ).bind("b4c9d1a2-5c12-452f-96ce-2614f1343aad", licenseId, "Synthetic Leaf", "redirect").run();
   await businessDatabase.prepare(
     "INSERT INTO fanmark_redirect_configs (id, license_id, target_url) VALUES (?, ?, ?)",
-  ).bind("77e35468-fc22-4f78-a1be-585456a83dbf", "16771e22-69db-42bd-a8c4-8d0d46aa3957", "https://example.invalid/leaf").run();
+  ).bind("77e35468-fc22-4f78-a1be-585456a83dbf", licenseId, "https://example.invalid/leaf").run();
   await businessDatabase.prepare(
     "INSERT INTO fanmark_messageboard_configs (id, license_id, content) VALUES (?, ?, ?)",
-  ).bind("8dc4f3d4-5c70-44ca-8142-5182772946fa", "16771e22-69db-42bd-a8c4-8d0d46aa3957", "synthetic public text").run();
+  ).bind("8dc4f3d4-5c70-44ca-8142-5182772946fa", licenseId, "synthetic public text").run();
   await businessDatabase.prepare(
     "INSERT INTO fanmark_password_configs (id, license_id, is_enabled) VALUES (?, ?, 1)",
-  ).bind("dd139865-4fd5-4a25-8e84-21d661aa3377", "16771e22-69db-42bd-a8c4-8d0d46aa3957").run();
+  ).bind("dd139865-4fd5-4a25-8e84-21d661aa3377", licenseId).run();
   await businessDatabase.prepare(
     "INSERT INTO fanmark_discoveries (id, emoji_ids, normalized_emoji_ids, fanmark_id, availability_status, first_seen_at, last_seen_at, search_count, favorite_count) VALUES (?, ?, ?, ?, 'claimed_external', ?, ?, 4, 0)",
   ).bind(discoveryId, JSON.stringify([baseEmojiId]), JSON.stringify([baseEmojiId]), fanmarkId, now, now).run();
@@ -361,16 +362,74 @@ describe("Better Auth favorites D1 API", () => {
       search_count: "9007199254740993",
       favorite_count: "9223372036854775807",
       short_id: "leaf-42",
-      fanmark_name: "Synthetic Leaf",
+      fanmark_name: null,
       access_type: "redirect",
-      target_url: "https://example.invalid/leaf",
-      text_content: "synthetic public text",
+      target_url: null,
+      text_content: null,
       current_owner_username: "synthetic-owner",
       current_owner_display_name: "Synthetic Owner",
       current_license_status: "active",
       is_password_protected: true,
     });
     expect(JSON.stringify(payload)).not.toContain(otherEmail);
+  });
+
+  it.each(["redirect", "text"])("withholds protected %s content from favorites regardless of the signed-in account or proof-looking cookie", async (accessType) => {
+    await businessDatabase?.prepare("UPDATE fanmark_licenses SET license_end = NULL WHERE id = ?").bind(licenseId).run();
+    await businessDatabase?.prepare("UPDATE fanmark_basic_configs SET access_type = ? WHERE license_id = ?")
+      .bind(accessType, licenseId).run();
+    const storedBefore = await businessDatabase?.batch([
+      businessDatabase.prepare("SELECT fanmark_name, access_type FROM fanmark_basic_configs WHERE license_id = ?").bind(licenseId),
+      businessDatabase.prepare("SELECT target_url FROM fanmark_redirect_configs WHERE license_id = ?").bind(licenseId),
+      businessDatabase.prepare("SELECT content FROM fanmark_messageboard_configs WHERE license_id = ?").bind(licenseId),
+    ]);
+    for (const email of [ownerEmail, otherEmail]) {
+      const cookie = await signIn(email);
+      const add = await request("/api/me/favorites", {
+        method: "POST", headers: { Cookie: cookie, "content-type": "application/json" },
+        body: JSON.stringify({ input_emoji_ids: [baseEmojiId], input_display_fanmark: "👋" }),
+      });
+      expect(add.status).toBe(200);
+      const response = await request("/api/me/favorites", {
+        headers: { Cookie: `${cookie}; __Host-fanmark_access=synthetic-unverified-proof` },
+      });
+      expect(response.status).toBe(200);
+      expect(response.headers.get("cache-control")).toBe("no-store");
+      const payload = await response.json() as { items: Array<Record<string, unknown>> };
+      expect(payload.items).toHaveLength(1);
+      expect(payload.items[0]).toMatchObject({
+        display_fanmark: "👋", short_id: "leaf-42", access_type: accessType,
+        is_password_protected: true, fanmark_name: null, target_url: null, text_content: null,
+      });
+      expect(JSON.stringify(payload)).not.toContain("https://example.invalid/leaf");
+      expect(JSON.stringify(payload)).not.toContain("synthetic public text");
+      expect(JSON.stringify(payload)).not.toContain("Synthetic Leaf");
+    }
+    const storedAfter = await businessDatabase?.batch([
+      businessDatabase.prepare("SELECT fanmark_name, access_type FROM fanmark_basic_configs WHERE license_id = ?").bind(licenseId),
+      businessDatabase.prepare("SELECT target_url FROM fanmark_redirect_configs WHERE license_id = ?").bind(licenseId),
+      businessDatabase.prepare("SELECT content FROM fanmark_messageboard_configs WHERE license_id = ?").bind(licenseId),
+    ]);
+    expect(storedAfter?.map(result => result.results)).toEqual(storedBefore?.map(result => result.results));
+  });
+
+  it.each(["disabled", "absent"])("preserves ordinary favorite content when password configuration is %s", async (configuration) => {
+    if (configuration === "disabled") {
+      await businessDatabase?.prepare("UPDATE fanmark_password_configs SET is_enabled = 0 WHERE license_id = ?").bind(licenseId).run();
+    } else {
+      await businessDatabase?.prepare("DELETE FROM fanmark_password_configs WHERE license_id = ?").bind(licenseId).run();
+    }
+    const cookie = await signIn(ownerEmail);
+    expect((await request("/api/me/favorites", {
+      method: "POST", headers: { Cookie: cookie, "content-type": "application/json" },
+      body: JSON.stringify({ input_emoji_ids: [baseEmojiId], input_display_fanmark: "👋" }),
+    })).status).toBe(200);
+    const response = await request("/api/me/favorites", { headers: { Cookie: cookie } });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ items: [{
+      is_password_protected: false, fanmark_name: "Synthetic Leaf",
+      target_url: "https://example.invalid/leaf", text_content: "synthetic public text",
+    }] });
   });
 
   it("removes only the caller's favorite and preserves counts and event history", async () => {
