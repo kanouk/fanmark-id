@@ -6182,3 +6182,43 @@ These are local acceptance/preparation changes. Staging remains010a4d7a;
 latest editor/favorites/catalog/notification fixes need quota recovery, fresh
 baseline checks, deployment and actual browser/API acceptance. Real user/Auth/
 business/Storage copy, provider sending/billing and domain/DNS remain untouched.
+
+## 2026-10-03 actual local browser/Worker/split-D1 owner editor composition
+
+Private harness initially failed SQLite statement length when all Business SQL
+was concatenated. Applying all25 migrations individually in canonical order
+fixed the harness without modifying runtime/schema. The private successful
+report fanmark-local-editor-compose-LH5JH6/report.json proves actual HTTPS
+loopback Auth/catalog/owner API and Chrome editor, no fulfilled API responses.
+It uses all45 staging frontend selectors, an empty envDir, temporary config with
+no account/routes/services, explicit remote:false D1/R2, 3 Auth and8 Master
+migrations, two synthetic users and an eight-emoji release. No real user/source
+data, remote D1 or provider requests were used.
+
+The checked-in npm run test:staging-profile-editor-local also passed locally;
+report fanmark-local-editor-compose-nvmT6c/report.json and log
+/tmp/fanmark-editor-local-checked-in.log. It proves actual form signin/return,
+exact whitespace/cold reopen, one network-layer PATCH refusal with unchanged
+stored profile/draft retained, reload restoration and actual retry persistence/
+draft removal, public/private reads, other-owner editor refusal, revoked-owner
+signin redirect and Business foreign-key violations0. At390px no horizontal
+overflow; no real-phone acceptance. Chrome blocks external origins and continues
+every allowed request to the actual local Worker. Server is stopped and local
+database state removed. Earlier private attempts' local state was removed too.
+
+The application workflow now runs this composition alongside the offline
+eight-case rendered regression. Both script files lint clean and workflow
+isolation check passes. Cleanup additionally checks the loopback port is closed
+before local-state removal. Final adapted run also passed: private report
+fanmark-local-editor-compose-lDJonN/report.json and log
+/tmp/fanmark-editor-local-cleanup-verified.log confirm serverStopped,
+loopbackPortClosed and localDatabaseStateRemoved all true; the state directory
+is absent.
+Prior head a8f431d CI37075997456 is completed/both jobs success; the new script/
+workflow/doc commit requires its own CI. Private remote scripts stay pinned to
+the old HEAD and require repinning only after current HEAD CI/clean-tree checks.
+
+This closes a local composed-editor evidence gap only. Latest staging deploy,
+real editor/favorite browser acceptance, providers, source catalog/ops/CPU gates
+remain open. Current staging is010a4d7a; no remote query/deploy/canary ran while
+the D1 quota blocker remains. Live user-data and domain migration stay deferred.

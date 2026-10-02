@@ -76,6 +76,38 @@ bundle and does not read ignored workstation `.env` files.
 
 ## Verification and activation boundary
 
+`npm run test:staging-profile-editor-local` separately builds the actual staging
+frontend for a temporary HTTPS loopback origin and serves it through Wrangler's
+local Worker, with every D1/R2 binding explicitly remote:false and no account,
+route or service binding. It applies all25 Business migrations in order, Auth
+core/0007/0008 and the eight Master migrations to private disposable local D1.
+The isolated build reads an empty environment directory and all45 staging
+selectors; only synthetic users and a synthetic eight-emoji release are seeded.
+
+Chrome continues every allowed request to the actual loopback app/API; it never
+fulfills an API response. All other browser origins are blocked. One PATCH is
+deliberately failed at the network layer to test that the stored row stays
+unchanged and the draft survives reload; its retry saves through the actual
+Worker into D1 and clears the draft. Actual form sign-in preserves the anonymous
+return URL, cold reopening preserves exact spaces, public/private HTTP reads
+follow the saved flag, another owner's editor refuses the form and revocation
+returns the editor to sign-in. At390px there is no horizontal overflow; this is
+not a real-phone check. It verifies zero Business foreign-key violations and
+stops both local server/browser, removing local database state. A private report
+and diagnostic logs remain in the temporary directory; no remote D1/provider
+calls or workstation secret values are needed. The application CI includes this
+composed test in addition to the eight-case offline rendered regression.
+
+The first private composed run exceeded SQLite statement length because it
+concatenated all Business SQL into one CLI call; applying each migration in the
+canonical sequence fixed the harness. No runtime schema or API was changed.
+The private successful report is
+`fanmark-local-editor-compose-LH5JH6/report.json`. The checked-in command also
+passed locally (`fanmark-local-editor-compose-nvmT6c/report.json`), with server
+stopped and local DB state removed. Its CI is a separate acceptance boundary.
+The final cleanup also checks that the loopback listening port is closed before
+removing state; a still-serving process fails the test.
+
 Dedicated local synthetic split-D1 tests apply the entire canonical sequence
 of 25 Business migrations and Auth core/0007/0008, using the staging
 `AUTH_USER_STATUS_BACKEND=d1` selector. The reduced profile SQL fixture has

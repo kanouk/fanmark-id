@@ -255,3 +255,11 @@ core/0007/0008を使い、stagingの停止ユーザーselectorも適用する。
 外部providerの未設定項目、実装由来のOAuth callback、Stripe test-only credential条件、
 接続リハーサルの合格条件は[staging provider準備](migration/staging-provider-readiness.md)
 にまとめる。secret名/config確認は接続成功の証拠ではなく、実受信/認証/決済試験は未完了。
+
+`npm run test:staging-profile-editor-local`は、空envDir/45 staging selectorsで一時HTTPS
+loopback用の実frontendをbuildし、local Worker/Business・Auth・Master D1につなぐ。
+全25 Business/3 Auth/8 Master migrationを適用し、認証・保存失敗/下書きreload/再保存・
+公開設定・他所有者・停止済sessionをAPI応答の模擬なしで確認する。D1/R2は全bindingを
+remote:falseとし、account/routes/servicesは使わず、終了時にlocal DB stateを削除する。
+既存offline描画8ケースと併せてapplication CIで実行する。provider/staging/実端末の証拠とは
+区別する。詳細は[owner profile API](migration/fanmark-profile-api.md)を参照する。

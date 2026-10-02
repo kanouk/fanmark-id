@@ -28,6 +28,15 @@ older sections retain their historical acceptance and failure evidence.
   Warmed revoked sessions refuse GET/PATCH without changing profiles/versions,
   another owner remains usable, and suspended signin is403/BANNED_USER. This
   is local consumer proof, not admin-MFA/audit or remote-editor acceptance.
+- The owner editor now has a reproducible composed local test:
+  npm run test:staging-profile-editor-local. Real HTTPS loopback Worker,
+  full25 Business/3 Auth/8 Master migrations, synthetic users/catalog and actual
+  browser sign-in/save APIs passed locally. No API responses are fulfilled;
+  all external browser origins are blocked. It proves failed-save rows/draft,
+  reload/retry/D1 persistence, exact spaces, public/private reads, cross-owner
+  editor refusal and revoked-session redirect at390px. Server/local state
+  cleanup is checked. Application CI includes it. Remote/real-phone proof
+  remains open; see fanmark-profile-api.md and the latest private test log.
 - The daily entrypoint replays a missed notification bridge even with expiry
   disabled; the strengthened native case also keeps a drained queue asleep.
   Daily replay is conditional on the invocation and available D1/DO, not a
@@ -53,7 +62,8 @@ older sections retain their historical acceptance and failure evidence.
   import codecs, providers and remote acceptance remain separate open gates.
   Oracle SQL and synthetic fixture are checked in; no source app/Auth row/function
   was accessed by this oracle. Runtime head9bd59d1 CI37073821056 has both jobs
-  successful; subsequent profile/wake test changes require their own HEAD CI.
+  successful. Profile/wake head a8f431d CI37075997456 also has both jobs
+  successful. Subsequent composed-browser/CI changes need their own HEAD CI.
 - Read-only provider inventory at2026-10-02T22:50:13.212Z pinned dedicated
   identity/account and100% Worker010a4d7a, then listed secret names only:
   BETTER_AUTH_SECRET, REFERENCE_MASTER_SERVICE_SECRET, VERIFIED_ACCESS_SECRET.

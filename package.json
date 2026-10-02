@@ -42,6 +42,7 @@
     "test:subscription-api": "node --experimental-strip-types --test src/lib/subscription-api.test.ts",
     "test:fanmark-profile-api": "node --experimental-strip-types --test src/lib/fanmark-profile-api.test.ts",
     "test:staging-profile-editor-ui": "node scripts/migration/test-owner-profile-editor-browser.mjs",
+    "test:staging-profile-editor-local": "node scripts/migration/test-owner-profile-editor-local.mjs",
     "test:fanmark-settings-api": "node --experimental-strip-types --test src/lib/fanmark-settings-api.test.ts",
     "test:fanmark-return-api": "node --experimental-strip-types --test src/lib/fanmark-return-api.test.ts",
     "test:fanmark-registration-api": "node --experimental-strip-types --test src/lib/fanmark-registration-api.test.ts",
