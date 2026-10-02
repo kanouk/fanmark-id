@@ -14,6 +14,11 @@ describe("scheduled Worker job routing", () => {
     ]);
   });
 
+  it("does not select notification polling when the durable alarm backend is enabled", () => {
+    expect(selectScheduledJobs(NOTIFICATION_PROCESSOR_CRON, { NOTIFICATION_WAKE_BACKEND: "durable-object" }))
+      .toEqual(["stripe-webhook-dispatch"]);
+  });
+
   it("runs license expiry only on the daily UTC trigger by default", () => {
     expect(selectScheduledJobs(LICENSE_EXPIRY_DAILY_CRON, {})).toEqual(["license-expiry"]);
     expect(selectScheduledJobs(NOTIFICATION_PROCESSOR_CRON, {})).not.toContain("license-expiry");

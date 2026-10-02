@@ -184,3 +184,13 @@ Better Authは `workers/api/src/better-auth.mjs` に共通化し、通常Worker�
 待機リスト管理は`workers/api/src/waitlist-admin-d1-api.ts`のD1 APIを使う。`WAITLIST_ADMIN_BACKEND=d1`と`VITE_WAITLIST_ADMIN_BACKEND=worker`を選んだstaging経路では、Better Authの同一セッションMFAとD1 `user_settings.plan_type='admin'`の両方を要求する。`GET /api/admin/waitlist`は最大100行のハッシュ済みメールとpayloadを含めない監査概要を返し、`GET /api/admin/waitlist/:id/email`は監査insert成功後に限り個別アドレスを返す。公開登録は`workers/api/src/waitlist-signup-d1-api.ts`の`POST /api/waitlist`を使い、`WAITLIST_SIGNUP_BACKEND=d1`と`VITE_WAITLIST_SIGNUP_BACKEND=worker`を明示したstagingだけでbusiness D1へ保存する。重複と新規の応答は同じで、Cloudflare Rate Limitingの粗いstaging制限を使う。通常buildのselectorはSupabaseで、Worker障害時に別DBへフォールバックしない。実行経路と制約は `docs/migration/waitlist-admin-api.md` と `docs/migration/waitlist-signup-api.md`。
 
 Cloudflare buildのOAuth初回パスワードゲートはBetter Auth sessionと`GET /api/me/profile`を照合し、profile取得失敗時は保護画面を閉じたままにする。`POST /api/me/password-setup`は本人session、business D1の`requires_password_setup`、server-only Better Auth `setPassword`を組み合わせ、Auth D1書込み後の再試行もcredential検証で復旧する。通常のCloudflareパスワード変更は現在パスワードを必須としてBetter Auth `/change-password`へ送り、Supabase buildは従来経路を維持する。契約と限界は[初回パスワード設定API](migration/password-setup-api.md)。
+
+## 通知workerの起動・停止（Cloudflare local準備）
+
+D1のpending event INSERT/UPDATEと同じtransactionでBusiness 0024の起動世代を進める。
+`notification-wake.ts`のSQLite-backed Durable Objectは短いwake/sleep判定を直列化し、
+alarmの永続化後にその世代をackする。HTTP mutationのwaitUntilとscheduled jobのfinallyで
+未ack世代をflushする。起動失敗ではD1 markerを残し、次のmutationかMFA保護の管理APIで
+再起動する。空queueはalarmを消し、future event/processing lease/障害/freeze中は保持する。
+D1とDOのcommitは別で、強制終了後の再起動経路も運用検証が必要。現在のstagingは旧Cronで、
+remote namespace/schema/selector有効化は未実施。`docs/migration/notification-worker-wake.md`参照。

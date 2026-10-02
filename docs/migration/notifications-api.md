@@ -73,3 +73,11 @@ identity/binding/scheduleが異なる場合、またはindexがない場合は�
 ステージング用seedは[`scripts/migration/staging-notification-master-seed.sql`](../../scripts/migration/staging-notification-master-seed.sql)。source-shaped D1を使うSQLiteリハーサルで50行すべての値を照合し、再実行しても件数が変わらないことを確認した。2026-09-26にbusiness staging D1へ適用し、private source snapshot（SHA-256 `900f9f3a00bd5d0e68de541a0ad2a10a47c24def6613b89be69739b34584b3fb`）と全フィールドを照合した。結果は10ルール/40テンプレートで完全一致。再現用readbackは[`scripts/migration/verify-staging-notification-master-seed.mjs`](../../scripts/migration/verify-staging-notification-master-seed.mjs)。`created_by`はNULLのまま。通知設定・通知イベント・生成通知・user settings・fanmarks・licensesはいずれも0件で、公開`grace_period_days=1`設定1行も保持している。以前のWrangler API 7403は今回のread/writeで再現しなかった。
 
 合成stagingスモークは、マスターデータが未投入の0/0状態または確認済みの10/40状態のみを許可し、部分投入とその他のbusiness行は拒否する。
+
+## Wake/sleep counterpartのlocal準備
+
+常時毎分Cronからpending時だけのDurable Object alarmへ切り替える経路を、Business 0024、
+`workers/api/src/notification-wake.ts`に準備した。native D1 outbox、HTTP/scheduled終了時flush、
+空queue停止、future/stale lease/障害/freeze継続、MFA保護の状態確認/再起動を含む。
+現在のremote stagingは旧Cronで、0024/namespace/selectorは未適用。移行済みとは扱わない。
+契約、source hash、post-commit gapと次の合成検証は`notification-worker-wake.md`参照。

@@ -3,6 +3,40 @@
 Checkpoint: 2026-10-03 JST. The migration is **not complete**. PR #41 remains
 open and draft. CI validates the branch but does not deploy the Worker.
 
+Notification wake/sleep is prepared locally, **not staging-accepted**. Business
+0024 records a native monotonic wake generation; one SQLite Durable Object
+processes the existing queue and deletes its alarm when empty. The full-schema
+workerd suite passes 17/17, including outages, concurrency, future events,
+stale processing, freeze and HTTP/scheduled bridges. The actual fetch wrapper
+also proves an Origin/authorization refusal on the operator route cannot wake
+the queue through its finally path. Existing notification tests pass 15/15,
+general API tests 56/56, reset regression 15/15, migration-data 246/246,
+Worker typecheck, targeted ESLint and both local-alarm/staging dry-runs pass.
+The previous documentation-head CI `37046873764` passed both jobs; CI for these
+new changes remains required.
+
+`--notification-alarm-roundtrip` is now prepared in the TOTP smoke. Its fixed
+target guard requires all three staging D1s, no production route, SQLite class
+and namespace, daily-only Cron, closed billing/email/expiry/archive selectors,
+dedicated account and pinned deployment, exact 0024 triggers/ledger, and empty
+source/Auth rows. A private journal saves Auth IDs and each payload nonce
+before a write, so a lost API response can still be cleaned by recipient/nonce.
+It must observe a real API wake, exact Japanese delivery and NULL alarm after
+drain, then a native unbridged future event, MFA repair, due-time rescheduling,
+another exact delivery, retained Master/config/catalog fingerprints and scoped
+cleanup. The target guard has 2/2 local tests; syntax/lint pass. This new smoke
+has not run remotely and is deliberately refused by the current Cron config.
+
+Current remote checkpoint remains Worker `13dca8cf`, Business ledger 24 and
+minute notification Cron. Local ledger is 25; remote 0024/DO namespace/selector
+activation are pending. Next: green CI; fresh identity/empty-row/ledger guard;
+prepare alarm staging config and update existing Cron-target guards; apply and
+read back 0024; build/dry-run/deploy only workers.dev; run the pinned alarm smoke
+and independent final readback. The D1-to-DO commit gap remains replayable,
+not atomic; a hard missed bridge needs the next mutation or MFA repair. Broader
+functions/RLS/triggers/provider/CPU/mobile gates remain open. See
+`notification-worker-wake.md`. User-data migration and DNS remain deferred.
+
 Administrator data reset is now staging-verified. Code head `03eee80` passed
 both CI jobs in run `37045419633`. Fresh dedicated-account preflight confirmed
 canonical Business ledger 23, empty source user/business rows and empty Auth.

@@ -20,7 +20,8 @@ export function selectScheduledJobs(cron: string, env: Env): ScheduledJobName[] 
     selected.push("notification-archive");
   }
   if (cron === NOTIFICATION_PROCESSOR_CRON) {
-    selected.push("notification-events", "stripe-webhook-dispatch");
+    if (env.NOTIFICATION_WAKE_BACKEND?.trim() !== "durable-object") selected.push("notification-events");
+    selected.push("stripe-webhook-dispatch");
     if (env.BROADCAST_EMAIL_BACKEND?.trim() === "d1" && env.BROADCAST_SEND_BACKEND?.trim() === "d1") {
       selected.push("broadcast-email-delivery");
     }

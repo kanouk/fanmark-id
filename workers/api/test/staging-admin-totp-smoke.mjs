@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createHash, randomBytes, randomUUID, webcrypto } from "node:crypto";
 import { existsSync, realpathSync } from "node:fs";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
@@ -14,6 +14,7 @@ import bcrypt from "bcryptjs";
 import { buildResetCanaryDeleteGuards, assertResetCanaryEmptyCounts, RESET_TABLES as resetTables } from "../../../scripts/migration/admin-data-reset-canary-guards.mjs";
 import { hasBusinessMigrationApplied } from "../../../scripts/migration/business-migration-ledger.mjs";
 import { businessTablesWithoutStagingBaselines } from "../../../scripts/migration/staging-notification-master-baseline.mjs";
+import { isStagingNotificationWakeTarget } from "../../../scripts/migration/staging-notification-wake-target.mjs";
 
 const apiDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const wrangler = "npx";
@@ -65,7 +66,12 @@ function requireExplicitStagingConsent() {
   const broadcastEmailReadback = args.has("--broadcast-email-readback") || broadcastEmailBrowser;
   const systemSettingsReadback = args.has("--system-settings-readback") || lifecycleSettingsBrowser;
   const lifecycleSettingsReadback = args.has("--lifecycle-settings-readback") || lifecycleSettingsBrowser;
-  const notificationManualEvent = args.has("--notification-manual-event");
+  const notificationAlarmRoundtrip = args.has("--notification-alarm-roundtrip");
+  const notificationManualEvent = args.has("--notification-manual-event") || notificationAlarmRoundtrip;
+  if (notificationManualEvent && [...args].some(arg => arg.startsWith("--") &&
+      !["--run-live-staging-write", `--database=${expectedDatabase}`, notificationAlarmRoundtrip ? "--notification-alarm-roundtrip" : "--notification-manual-event"].includes(arg))) {
+    throw new Error("notification canary cannot be composed with other smoke actions");
+  }
   const hasExplicitSmokeAction = [
     adminResetRoundtrip,
     emojiMasterRoundtrip,
@@ -96,6 +102,7 @@ function requireExplicitStagingConsent() {
     );
   }
   return {
+    notificationAlarmRoundtrip,
     adminResetRoundtrip,
     adminResetBrowser,
     emojiMasterRoundtrip,
@@ -161,14 +168,34 @@ async function assertStagingTarget(actions) {
   }
   if (actions.notificationManualEvent) {
     assert.equal(config.vars?.NOTIFICATION_PROCESSOR_BACKEND, "d1", "expected D1-backed notification processor");
-    assert.ok(config.triggers?.crons?.includes("* * * * *"), "expected the one-minute staging notification Cron");
+    if (actions.notificationAlarmRoundtrip) {
+      assert.ok(isStagingNotificationWakeTarget(config), "notification alarm target configuration is not prepared");
+      const secrets = JSON.parse(await runWrangler(["secret", "list"]));
+      assert.ok(secrets.every(secret => ["BETTER_AUTH_SECRET", "REFERENCE_MASTER_SERVICE_SECRET", "VERIFIED_ACCESS_SECRET"].includes(secret.name)),
+        "notification alarm canary requires billing/email/provider secrets to remain absent");
+      const ledger = await queryBusiness("SELECT name FROM d1_migrations ORDER BY id");
+      assert.ok(hasBusinessMigrationApplied(ledger.map(row => row.name), "0024_notification_worker_wake.sql"));
+      const ddl = await readFile(path.join(apiDirectory, "migrations-business/0024_notification_worker_wake.sql"), "utf8");
+      const normalize = value => value.replace(/^[ \t]*--.*$/gmu, "").replace(/;+\s*$/u, "").replace(/\s+/gu, " ").trim();
+      const triggers = [...ddl.matchAll(/CREATE TRIGGER (\w+)\n[\s\S]*?\nEND;/gu)];
+      assert.equal(triggers.length, 3);
+      for (const match of triggers) {
+        const actual = await queryBusiness(`SELECT sql FROM sqlite_master WHERE type='trigger' AND name=${sqlLiteral(match[1])}`);
+        assert.equal(actual.length, 1);
+        assert.equal(normalize(actual[0].sql), normalize(match[0]));
+      }
+      await assertResetBusinessEmpty();
+    } else {
+      assert.equal(config.vars?.NOTIFICATION_WAKE_BACKEND, undefined, "legacy manual-event canary requires Cron mode");
+      assert.ok(config.triggers?.crons?.includes("* * * * *"), "expected the one-minute staging notification Cron");
+    }
   }
   const masterBinding = config.d1_databases?.find((database) => database.binding === "MASTER_DB");
   assert.equal(masterBinding?.database_name, expectedMasterDatabase, "unexpected Master D1 name");
   assert.equal(masterBinding?.database_id, expectedMasterDatabaseId, "unexpected Master D1 id");
   assert.equal(masterBinding?.migrations_pattern, "migrations/{000[0-6]_*.sql,0007_release_audit_timestamps.sql,0008_emoji_master_change_audits.sql}", "unexpected Master D1 migration set");
   assert.equal(config.vars?.EMOJI_MASTER_ADMIN_BACKEND, "d1", "expected D1-backed emoji-master admin API");
-  if (actions.emojiMasterAuditRoundtrip || actions.waitlistSecurityRoundtrip || actions.adminResetRoundtrip) {
+  if (actions.emojiMasterAuditRoundtrip || actions.waitlistSecurityRoundtrip || actions.adminResetRoundtrip || actions.notificationAlarmRoundtrip) {
     assert.equal(config.account_id, "bfc2890741f0b3fb236e2d755b6c9adc");
     assert.ok(!config.routes?.length, "audit canary must stay on workers.dev");
     const identity = JSON.parse(await runWrangler(["whoami", "--json"]));
@@ -683,7 +710,47 @@ async function exerciseNotificationMasters(cookie) {
   assert.deepEqual(afterCounts, beforeCounts, "notification log reads changed D1 rows");
 }
 
-async function exerciseNotificationManualEvent(cookie, userId) {
+async function readNotificationAlarmStatus(cookie) {
+  const response = await request("/api/admin/notifications/wake", { headers: { cookie } });
+  assertStatus(response, 200, "MFA-protected notification alarm status");
+  assert.match(response.headers.get("cache-control") ?? "", /no-store/iu);
+  const status = await response.json();
+  assert.deepEqual(Object.keys(status).sort(), ["acknowledgedGeneration", "nextAlarmAt", "pendingEvents", "processingEvents", "requestedGeneration"]);
+  for (const key of ["requestedGeneration", "acknowledgedGeneration", "pendingEvents", "processingEvents"]) {
+    assert.ok(Number.isSafeInteger(status[key]) && status[key] >= 0, "invalid bounded notification status");
+  }
+  assert.ok(status.acknowledgedGeneration <= status.requestedGeneration);
+  assert.ok(status.nextAlarmAt === null || (Number.isSafeInteger(status.nextAlarmAt) && status.nextAlarmAt > 0));
+  return status;
+}
+
+async function waitForNotificationAlarmIdle(cookie) {
+  const deadline = Date.now() + 15_000;
+  do {
+    const status = await readNotificationAlarmStatus(cookie);
+    if (status.nextAlarmAt === null && status.pendingEvents === 0 && status.processingEvents === 0 &&
+        status.requestedGeneration === status.acknowledgedGeneration) return status;
+    await delay(250);
+  } while (Date.now() < deadline);
+  throw new Error("the deployed notification alarm did not stop after draining");
+}
+
+async function updateNotificationJournal(journalPath, changes) {
+  if (!journalPath) return;
+  const journal = JSON.parse(await readFile(journalPath, "utf8"));
+  const nextPath = `${journalPath}.pending-${randomUUID()}`;
+  await writeFile(nextPath, JSON.stringify({ ...journal, ...changes }), { mode: 0o600, flag: "wx" });
+  await rename(nextPath, journalPath);
+}
+
+async function recordNotificationFixture(journalPath, fixture) {
+  assert.ok(journalPath, "notification writes require a private recovery journal");
+  const journal = JSON.parse(await readFile(journalPath, "utf8"));
+  await updateNotificationJournal(journalPath, { state: "notification-prepared",
+    notificationFixtures: [...(journal.notificationFixtures ?? []), fixture] });
+}
+
+async function exerciseNotificationManualEvent(cookie, userId, { alarmMode = false, journalPath } = {}) {
   const baseline = await queryBusiness(`SELECT
     (SELECT count(*) FROM notification_events) AS events,
     (SELECT count(*) FROM notifications) AS notifications,
@@ -702,6 +769,9 @@ async function exerciseNotificationManualEvent(cookie, userId) {
     language: "ja",
     grace_expires_at: "2026-10-10T00:00:00.000Z",
   };
+  // Save the recipient and unique payload nonce BEFORE submitting a request.
+  // They identify a committed event even if the HTTP response is lost.
+  await recordNotificationFixture(journalPath, { kind: "api", userId, payload });
   const anonymous = await request("/api/admin/notification-masters/events", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -720,12 +790,25 @@ async function exerciseNotificationManualEvent(cookie, userId) {
   assert.equal(body.schemaVersion, 1);
   assert.match(body.event?.id ?? "", /^[0-9a-f-]{36}$/iu);
   const eventId = body.event.id;
+  await updateNotificationJournal(journalPath, { apiEventId: eventId });
+  if (alarmMode) {
+    const deadline = Date.now() + 10_000;
+    let active;
+    do {
+      active = await readNotificationAlarmStatus(cookie);
+      if (active.nextAlarmAt !== null) break;
+      await delay(100);
+    } while (Date.now() < deadline);
+    assert.ok(active.nextAlarmAt !== null, "API-created event did not expose a real deployed wake alarm");
+    await updateNotificationJournal(journalPath, { apiWakeStatus: active });
+  }
   const inserted = await queryBusiness(`SELECT event_type, source, status, payload
     FROM notification_events WHERE id = ${sqlLiteral(eventId)}`);
   assert.equal(inserted.length, 1, "manual notification event was not inserted exactly once");
   assert.equal(inserted[0].event_type, "favorite_fanmark_available");
   assert.equal(inserted[0].source, "admin_manual");
-  assert.equal(inserted[0].status, "pending");
+  if (alarmMode) assert.ok(["pending", "processing", "processed"].includes(inserted[0].status));
+  else assert.equal(inserted[0].status, "pending");
   assert.deepEqual(JSON.parse(inserted[0].payload), payload);
 
   const eventLog = await request("/api/admin/notification-masters/events", { headers: { cookie } });
@@ -735,6 +818,13 @@ async function exerciseNotificationManualEvent(cookie, userId) {
   assert.ok(logged, "created event is missing from the admin event log");
   assert.equal(Object.hasOwn(logged, "payload"), false, "admin event log exposed the event payload");
 
+  await awaitNotificationDelivery(eventId, payload, userId);
+  if (alarmMode) await updateNotificationJournal(journalPath, { apiIdleStatus: await waitForNotificationAlarmIdle(cookie) });
+  await updateNotificationJournal(journalPath, { state: "notification-verified" });
+  return { eventId };
+}
+
+async function awaitNotificationDelivery(eventId, payload, userId) {
   const deadline = Date.now() + 120_000;
   let resultRows = [];
   while (Date.now() < deadline) {
@@ -759,10 +849,44 @@ async function exerciseNotificationManualEvent(cookie, userId) {
   assert.equal(resultRows[0].notification_status, "delivered");
   assert.ok(resultRows[0].delivered_at);
   assert.equal(resultRows[0].title, "お気に入りファンマが返却されました");
-  assert.equal(resultRows[0].payload_fanmark_id, fanmarkId);
+  assert.equal(resultRows[0].payload_fanmark_id, payload.fanmark_id);
   assert.match(String(resultRows[0].body), /合成通知イベント/u);
+}
 
-  return { eventId };
+async function exerciseNotificationAlarmRecovery(cookie, userId, journalPath) {
+  const before = await waitForNotificationAlarmIdle(cookie);
+  const id = randomUUID();
+  const payload = { user_id: userId, fanmark_id: randomUUID(), fanmark_short_id: `n${randomBytes(10).toString("hex")}`,
+    fanmark_name: "合成通知イベント・起動復旧", language: "ja", grace_expires_at: "2026-10-10T00:00:00.000Z" };
+  const timestamp = new Date().toISOString();
+  const future = new Date(Date.now() + 600_000).toISOString();
+  await recordNotificationFixture(journalPath, { kind: "interrupted-bridge", id, userId, payload });
+  await executeBusiness(`INSERT INTO notification_events (id, event_type, source, payload, trigger_at, status, created_at, updated_at)
+    VALUES (${sqlLiteral(id)}, 'favorite_fanmark_available', 'admin_manual', ${sqlLiteral(JSON.stringify(payload))},
+      ${sqlLiteral(future)}, 'pending', ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});`, "synthetic interrupted notification bridge");
+  // A GET must not repair the bridge: prove the native request survives alone.
+  const unbridged = await readNotificationAlarmStatus(cookie);
+  assert.equal(unbridged.nextAlarmAt, null);
+  assert.equal(unbridged.pendingEvents, 1);
+  assert.equal(unbridged.requestedGeneration, before.requestedGeneration + 1);
+  assert.equal(unbridged.acknowledgedGeneration, before.acknowledgedGeneration);
+  const repair = await request("/api/admin/notifications/wake", { method: "POST", headers: { cookie } });
+  assertStatus(repair, 200, "MFA-protected notification wake replay");
+  assert.deepEqual(await repair.json(), { success: true });
+  const active = await readNotificationAlarmStatus(cookie);
+  assert.ok(active.nextAlarmAt !== null);
+  assert.equal(active.pendingEvents, 1);
+  assert.equal(active.requestedGeneration, active.acknowledgedGeneration);
+  const preserved = await queryBusiness(`SELECT status, trigger_at FROM notification_events WHERE id=${sqlLiteral(id)}`);
+  assert.deepEqual(preserved, [{ status: "pending", trigger_at: future }]);
+  await updateNotificationJournal(journalPath, { recoveryUnbridgedStatus: unbridged, recoveryActiveStatus: active });
+  await executeBusiness(`UPDATE notification_events SET trigger_at=${sqlLiteral(new Date(Date.now() - 1000).toISOString())}
+    WHERE id=${sqlLiteral(id)} AND source='admin_manual' AND json_extract(payload, '$.fanmark_id')=${sqlLiteral(payload.fanmark_id)};`,
+    "synthetic notification due-time update");
+  const secondRepair = await request("/api/admin/notifications/wake", { method: "POST", headers: { cookie } });
+  assertStatus(secondRepair, 200, "MFA-protected updated notification wake replay");
+  await awaitNotificationDelivery(id, payload, userId);
+  await updateNotificationJournal(journalPath, { state: "notification-verified", recoveryIdleStatus: await waitForNotificationAlarmIdle(cookie) });
 }
 
 async function exerciseAuthEmailTemplatesAdmin(cookie, { editRoundtrip = false, adminUserId = null } = {}) {
@@ -3334,6 +3458,7 @@ async function main() {
     assert.equal(Number(baseline[0]?.notifications), 0, "notification delivery staging baseline is not empty");
     assert.equal(Number(baseline[0]?.profiles), 0, "notification profile staging baseline is not empty");
   }
+  const notificationBaseline = actions.notificationAlarmRoundtrip ? await resetPreservedFingerprint() : null;
   console.log("Staging target and empty Auth tables verified; provisioning one synthetic identity.");
 
   const userId = randomUUID();
@@ -3357,11 +3482,12 @@ async function main() {
   const systemSettingState = { key: "", originalValue: null, temporaryValue: null };
   const lifecycleSettingState = { originalValue: null, temporaryValue: null };
   let emojiAuditJournalPath = null;
-  if (actions.emojiMasterAuditRoundtrip || actions.waitlistSecurityRoundtrip || actions.adminResetRoundtrip) {
-    const directory = await mkdtemp(path.join(os.tmpdir(), actions.adminResetRoundtrip ? "fanmark-admin-reset-canary-" : actions.emojiMasterAuditRoundtrip ? "fanmark-emoji-audit-canary-" : "fanmark-waitlist-security-canary-"));
+  if (actions.emojiMasterAuditRoundtrip || actions.waitlistSecurityRoundtrip || actions.adminResetRoundtrip || actions.notificationManualEvent) {
+    const directory = await mkdtemp(path.join(os.tmpdir(), actions.adminResetRoundtrip ? "fanmark-admin-reset-canary-" : actions.emojiMasterAuditRoundtrip ? "fanmark-emoji-audit-canary-" : actions.notificationManualEvent ? "fanmark-notification-alarm-canary-" : "fanmark-waitlist-security-canary-"));
     emojiAuditJournalPath = path.join(directory, "canary.json");
     await writeFile(emojiAuditJournalPath, JSON.stringify({ state: "auth-prepared", runId: randomUUID(),
-      userId, targetUserId, accountId, targetUsername, expectedVersion: process.env.FANMARK_EXPECTED_STAGING_VERSION }), { mode: 0o600 });
+      userId, targetUserId, accountId, targetUsername, expectedVersion: process.env.FANMARK_EXPECTED_STAGING_VERSION,
+      ...(notificationBaseline ? { notificationBaseline } : {}) }), { mode: 0o600 });
     console.log(`Private staging recovery journal: ${emojiAuditJournalPath}`);
   }
 
@@ -3398,6 +3524,15 @@ async function main() {
     });
     assertStatus(enrollmentRequired, 403, "admin MFA enrollment gate");
     assert.equal((await enrollmentRequired.json()).error, "mfa_enrollment_required");
+    if (actions.notificationAlarmRoundtrip) {
+      for (const method of ["GET", "POST"]) {
+        const anonymous = await request("/api/admin/notifications/wake", { method });
+        assertStatus(anonymous, 401, "anonymous notification wake/status");
+        const denied = await request("/api/admin/notifications/wake", { method, headers: { cookie } });
+        assertStatus(denied, 403, "notification wake/status requires current-session MFA enrollment");
+        assert.equal((await denied.json()).error, "mfa_enrollment_required");
+      }
+    }
     if (actions.adminResetRoundtrip) {
       const deniedReset = await request("/api/admin/data-reset", {
         method: "POST", headers: { cookie, "content-type": "application/json" },
@@ -3505,7 +3640,9 @@ async function main() {
       await reviewMaxEmojiSettingsInBrowser(cookie, systemSettingState);
     }
     if (actions.notificationManualEvent) {
-      await exerciseNotificationManualEvent(cookie, targetUserId);
+      if (actions.notificationAlarmRoundtrip) await waitForNotificationAlarmIdle(cookie);
+      await exerciseNotificationManualEvent(cookie, targetUserId, { alarmMode: actions.notificationAlarmRoundtrip, journalPath: emojiAuditJournalPath });
+      if (actions.notificationAlarmRoundtrip) await exerciseNotificationAlarmRecovery(cookie, targetUserId, emojiAuditJournalPath);
     }
     flowPassed = true;
     console.log("Staging TOTP verification and same-session admin authorization passed.");
@@ -3515,16 +3652,28 @@ async function main() {
         if (actions.systemSettingsReadback) await restoreSystemSetting(cookie, systemSettingState);
         if (actions.lifecycleSettingsReadback) await restoreLifecycleSetting(cookie, lifecycleSettingState);
         if (actions.notificationManualEvent) {
-          await executeBusiness([
-            "DELETE FROM notifications WHERE event_id IN (SELECT id FROM notification_events WHERE source = 'admin_manual' AND json_extract(payload, '$.user_id') = " + sqlLiteral(targetUserId) + ")",
-            "DELETE FROM notification_events WHERE source = 'admin_manual' AND json_extract(payload, '$.user_id') = " + sqlLiteral(targetUserId),
-          ].join("; "), "synthetic manual notification-event cleanup");
+          const journal = JSON.parse(await readFile(emojiAuditJournalPath, "utf8"));
+          const fixtures = journal.notificationFixtures ?? [];
+          for (const fixture of fixtures) {
+            assert.equal(fixture.userId, targetUserId);
+            assert.match(fixture.payload.fanmark_id, /^[0-9a-f-]{36}$/iu);
+            const predicate = `source='admin_manual' AND event_type='favorite_fanmark_available'
+              AND json_extract(payload, '$.user_id')=${sqlLiteral(targetUserId)}
+              AND json_extract(payload, '$.fanmark_id')=${sqlLiteral(fixture.payload.fanmark_id)}`;
+            await executeBusiness(`DELETE FROM notifications WHERE event_id IN (SELECT id FROM notification_events WHERE ${predicate});
+              DELETE FROM notification_events WHERE ${predicate};`, "journaled synthetic notification-event cleanup");
+          }
           const [eventRows, notificationRows] = await Promise.all([
             queryBusiness("SELECT COUNT(*) AS count FROM notification_events WHERE source = 'admin_manual' AND json_extract(payload, '$.user_id') = " + sqlLiteral(targetUserId)),
             queryBusiness("SELECT COUNT(*) AS count FROM notifications WHERE user_id = " + sqlLiteral(targetUserId)),
           ]);
           assert.equal(Number(eventRows[0]?.count), 0, "synthetic manual notification event remained in business D1");
           assert.equal(Number(notificationRows[0]?.count), 0, "synthetic manual notification remained in business D1");
+          if (actions.notificationAlarmRoundtrip && fixtures.length > 0) {
+            const repair = await request("/api/admin/notifications/wake", { method: "POST", headers: { cookie } });
+            assertStatus(repair, 200, "empty queue wake cleanup");
+            await updateNotificationJournal(emojiAuditJournalPath, { cleanupIdleStatus: await waitForNotificationAlarmIdle(cookie) });
+          }
         }
         await executeFile(
           `DELETE FROM "mfaAssurance" WHERE "userId" = ${sqlLiteral(userId)};\n` +
@@ -3588,6 +3737,9 @@ async function main() {
           assert.equal(Number(settingsAuditRows[0]?.count), 0, "synthetic system setting audit rows remained in business D1");
         }
         await readUserOwnedCounts();
+        if (actions.notificationManualEvent) await updateNotificationJournal(emojiAuditJournalPath, {
+          state: flowPassed ? "notification-verified-and-cleaned" : "failed-and-cleaned", authRows: 0,
+        });
         if (cookie) {
           const invalidatedSession = await request("/api/auth/get-session", { headers: { cookie } });
           assertStatus(invalidatedSession, 200, "deleted synthetic session readback");
@@ -3600,11 +3752,15 @@ async function main() {
   }
 
   if (cleanupError) throw cleanupError;
+  if (actions.notificationAlarmRoundtrip) {
+    await assertResetBusinessEmpty();
+    assert.deepEqual(await resetPreservedFingerprint(), notificationBaseline, "notification alarm canary changed retained configuration/catalog/Auth baseline");
+  }
   if (actions.adminResetRoundtrip) await assertResetBusinessEmpty();
   assert.ok(flowPassed, "the staging TOTP flow did not complete");
   if (emojiAuditJournalPath) {
     const journal = JSON.parse(await readFile(emojiAuditJournalPath, "utf8"));
-    assert.equal(journal.state, actions.adminResetRoundtrip ? "reset-verified-and-cleaned" : actions.emojiMasterAuditRoundtrip ? "master-verified-and-cleaned" : "waitlist-verified-and-cleaned");
+    assert.equal(journal.state, actions.adminResetRoundtrip ? "reset-verified-and-cleaned" : actions.emojiMasterAuditRoundtrip ? "master-verified-and-cleaned" : actions.notificationManualEvent ? "notification-verified-and-cleaned" : "waitlist-verified-and-cleaned");
     journal.state = "verified-and-cleaned";
     journal.authRows = 0;
     await writeFile(emojiAuditJournalPath, JSON.stringify(journal), { mode: 0o600 });
@@ -3656,7 +3812,9 @@ async function main() {
     console.log("The rendered AdminSettings lifecycle and maximum-emoji forms updated and restored their synthetic settings through the staging Worker; D1-backed readback confirmed the baselines.");
   }
   if (actions.notificationManualEvent) {
-    console.log("Staging MFA-protected manual notification-event creation passed; the deployed Cron produced one delivered Japanese in-app notification, and event, notification, profile, and Auth rows were removed.");
+    console.log(actions.notificationAlarmRoundtrip
+      ? "Staging API-created notification wake, real alarm idle-stop, journaled interrupted-bridge recovery, future/due rescheduling and exact Japanese delivery passed; retained baselines and scoped Auth/business cleanup passed."
+      : "Staging MFA-protected manual notification-event creation passed; the deployed Cron produced one delivered Japanese in-app notification, and journaled event, notification, profile, and Auth rows were removed.");
   }
   console.log("Synthetic Auth rows were deleted; readback found all user-owned Auth tables empty.");
   console.log("The monotonic MFA generation counter was preserved and may have advanced during the synthetic factor lifecycle.");

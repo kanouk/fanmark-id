@@ -1,5 +1,35 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：通知workerの起動・停止と復旧経路（local検証済み）
+
+常時毎分実行から、pending保存で起動・空queueでalarm削除するSQLite Durable Objectへ
+置換する経路を準備した。追加Business 0024は同じD1 transactionで単調な起動世代を
+保存し、HTTP/scheduled producerがpost-commitでflushする。future、processing lease、
+同時追加、障害とfreezeを扱い、payloadや認証情報をcoordinatorへ複製しない。
+明示Originと同一session管理者MFAで状態確認/再起動を行う。拒否された再起動要求が
+共通fetch finallyから起動しないことも修正・実runtimeで検証した。
+
+全25 Business migrationを適用したworkerd D1/SQLite DO suite 17/17、既存通知15/15、
+general API 56/56、reset regression 15/15、migration-data 246/246、Worker typecheck、
+ESLint、alarm local/staging dry-run成功。前docs headのCI `37046873764`は両job成功を
+live確認した。今回のcode/harness CIはこれから確認する。
+
+TOTP smokeの`--notification-alarm-roundtrip`を準備した。固定account/version/D1、
+SQLite namespace/class、dailyのみのCron、provider/expiry/archive selector無効、
+0024 exact trigger/ledgerと空source/Authを要求する。書込前のprivate journalにAuth IDsと
+fixture payload nonceを保存し、応答不明でもrecipient/nonceでscoped cleanupする。
+実API起動とalarm時刻、配信後NULL、native future eventの未bridge状態とMFA repair、
+due-time更新/配信、Master/設定/catalog保持とAuth cleanupを検証する設計。
+guard test 2/2とsyntax/lint成功。現在の設定では検証を拒否する。
+
+remoteはWorker `13dca8cf`、Business ledger 24、旧毎分Cronのまま。0024、namespace、
+selectorは未適用で、alarm staging acceptanceは未実施。次にCI後、既存Cron guardを
+新設定へ対応させ、fresh preflight→0024 exact apply/readback→workers.dev配備→version
+固定smokeと独立readbackを行う。D1/DO間は1transactionではなく、hard interruptionの
+commit-to-bridge gapにはreplay/運用復旧が必要。包括source gateやprovider/CPU/mobileを
+完了と扱わない。実userdata/Storageとdomain/DNS移行は対象外のまま。
+詳細：`notification-worker-wake.md`。
+
 ## 2026-10-03：管理データリセットのstaging/API/desktop検証
 
 code head `03eee80` / CI `37045419633`はapplication/Worker両job成功。

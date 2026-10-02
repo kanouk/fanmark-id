@@ -1,3 +1,5 @@
+import { flushNotificationWakeSafely, handleNotificationWakeRepairRequest } from "./notification-wake";
+export { NotificationWakeCoordinator } from "./notification-wake";
 import {
   createSupabaseRecentFanmarksRepository,
   mapRecentFanmarkRows,
@@ -1264,6 +1266,14 @@ export async function handleRequest(
   if (url.pathname === "/api/admin/reference-masters/pricing") {
     return handleReferenceMasterAdminRequest(request, env, url);
   }
+  if (url.pathname === "/api/admin/notifications/wake") {
+    return (await handleNotificationWakeRepairRequest(request, env, async (adminRequest, responseHeaders) => {
+      if (env.AUTH_BACKEND?.trim() !== "better-auth") return errorResponse("auth_unavailable", 503, responseHeaders);
+      const authConfig = configuredAuth(env);
+      if (!authConfig) return errorResponse("auth_unavailable", 503, responseHeaders);
+      return authorizeAdminRequest(adminRequest, authConfig, responseHeaders);
+    })) ?? errorResponse("not_found", 404, routeHeaders);
+  }
   if (isNotificationMasterPath(url.pathname)) {
     return (await handleNotificationMasterRequest(request, env, async (adminRequest, responseHeaders) => {
       if (env.AUTH_BACKEND?.trim() !== "better-auth") {
@@ -1661,8 +1671,18 @@ export async function handleRequest(
 }
 
 const worker = {
-  fetch(request: Request, env: Env): Promise<Response> {
-    return handleRequest(request, env);
+  async fetch(request: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
+    try { return await handleRequest(request, env); }
+    finally {
+      // The operator route performs its own authorized force-wake. A refused
+      // Origin/MFA request must never replay an outbox through this finally.
+      if (!["GET", "HEAD", "OPTIONS"].includes(request.method) &&
+          new URL(request.url).pathname !== "/api/admin/notifications/wake" &&
+          env.NOTIFICATION_WAKE_BACKEND?.trim() === "durable-object") {
+        const wake = flushNotificationWakeSafely(env);
+        if (ctx) ctx.waitUntil(wake); else await wake;
+      }
+    }
   },
   async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
     const freezeState = cutoverWriteFreezeState(env.CUTOVER_WRITE_FREEZE);
@@ -1803,7 +1823,7 @@ const worker = {
           throw error;
         }));
     }
-    const completion = Promise.all(jobs);
+    const completion = Promise.all(jobs.map(job => job.finally(() => flushNotificationWakeSafely(env))));
     ctx.waitUntil(completion);
     await completion;
   },

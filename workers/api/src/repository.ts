@@ -62,6 +62,8 @@ export interface Env {
     limit(input: { key: string }): Promise<{ success: boolean }>;
   };
   NOTIFICATION_PROCESSOR_BACKEND?: string;
+  NOTIFICATION_WAKE_BACKEND?: string;
+  NOTIFICATION_WAKE?: DurableObjectNamespace;
   NOTIFICATION_ARCHIVE_BACKEND?: string;
   NOTIFICATION_ARCHIVE_CRON?: string;
   MAINTENANCE_SETTINGS_BACKEND?: string;

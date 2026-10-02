@@ -3,7 +3,7 @@ import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 
 const DEFAULT_LANGUAGE = "ja";
 const EVENT_BATCH_LIMIT = 50;
-const STALE_PROCESSING_MS = 10 * 60 * 1000;
+export const NOTIFICATION_EVENT_STALE_PROCESSING_MS = 10 * 60 * 1000;
 const NOTIFICATION_ARCHIVE_AGE_DAYS = 90;
 const NOTIFICATION_ARCHIVE_BATCH_LIMIT = 250;
 const NOTIFICATION_ARCHIVE_MAX_BATCHES = 10;
@@ -253,7 +253,7 @@ export async function runScheduledNotificationEvents(input: {
   if (input.env.NOTIFICATION_PROCESSOR_BACKEND?.trim() !== "d1") return { status: "disabled" };
   const database = input.database ?? databaseFor(input.env);
   const now = toUtcMicrosecondTimestamp(new Date(input.scheduledTime));
-  const staleBefore = toUtcMicrosecondTimestamp(new Date(input.scheduledTime - STALE_PROCESSING_MS));
+  const staleBefore = toUtcMicrosecondTimestamp(new Date(input.scheduledTime - NOTIFICATION_EVENT_STALE_PROCESSING_MS));
   const selection = await database.prepare(`
     SELECT id, event_type, payload, retry_count
     FROM notification_events
