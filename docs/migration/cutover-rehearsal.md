@@ -783,3 +783,22 @@ readback. The dashboard history is therefore not attributable to the Worker
 named in the page and cannot prove its Cron execution. The cause of the shared,
 stale, or misattributed history is unknown. Live tail showed the synthetic
 fetch, but no scheduled marker; keep Cron delivery unverified.
+
+## Synthetic Auth MFA recovery extension (2026-10-02 JST)
+
+The disposable post-write recovery harness now provisions a synthetic admin,
+enrolls TOTP, and captures the Better Auth factor, admin role, assurance, and
+MFA generation in its encrypted backup fixture. Sign-in completed the TOTP
+challenge, and `/api/admin/session` authorized the synthetic admin. A later
+36m49s staging retry stopped before recovery because the Stripe extension
+dispatcher stayed `received/pending` with `attempt_count=0` through its
+35-minute Cron wait. Time Travel, encrypted R2 replay, and MFA recovery
+readback were not reached; the prior non-MFA recovery pass remains separate
+evidence.
+
+Cleanup deleted the temporary Worker, both D1 databases, config, and synthetic
+avatar. Independent readback found only the three expected staging D1s, the
+Worker URL returned 404, and the exact synthetic avatar key was absent from
+R2. No backup object or private export was created. This does not establish
+full recovery acceptance; issues #34 and #37 remain open. Real user/Auth/
+Storage migration and public domain/DNS cutover remain deferred to #38.

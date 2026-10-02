@@ -4607,6 +4607,33 @@ coverage rejection. The result remains `public_rows_reconciled`, with
 `deployable` and `fullMigrationReconciled` false. No source rows, remote D1,
 production route, or domain state was read or changed.
 
+## Synthetic Auth MFA recovery extension retry (2026-10-02 JST)
+
+Extended the disposable post-write recovery harness to provision an admin role,
+enroll Better Auth TOTP, and include `twoFactor`, `adminRole`, `mfaAssurance`,
+and `mfaGeneration` in the encrypted backup fixture. Credential sign-in now
+completes the synthetic TOTP challenge. Secret and backup-code values are
+compared by hash in memory and are never written to the diagnostic report.
+
+The local Better Auth suite passed 6/6, migration-data suite 205/205, Worker
+typecheck, script syntax, focused ESLint, and `git diff --check` passed. The
+guarded Cloudflare attempt ran from `2026-10-02T05:36:12Z` to
+`2026-10-02T06:13:01Z` (36m49s). It applied 20 business and 3 Auth D1
+migrations; synthetic TOTP enrollment and `/api/admin/session` authorization
+succeeded, and a synthetic avatar uploaded successfully. The Stripe extension
+receipt remained `received/pending` with `attempt_count=0`; the harness timed
+out in `wait_for_synthetic_cron_dispatch` before Time Travel or encrypted R2
+backup/replay. Do not count this MFA recovery extension as a pass. The earlier
+post-write recovery without MFA remains valid evidence for its narrower state.
+
+Cleanup readback marked the temporary Worker, both D1 databases, temporary
+config, and synthetic avatar deleted. The Worker URL returned 404, the D1 list
+contained only the three expected staging databases, and the exact synthetic
+avatar key was absent from R2. The avatar bucket still reported one 128-byte
+object; no other key was inspected or changed. The encrypted backup stage was
+not reached, so this run created no backup R2 object or private export files.
+No real user/Auth/Storage rows, production route, or domain/DNS state changed.
+
 The wider static writer audit at `2026-10-01T23:41:40Z` included Worker code,
 all D1 migration SQL, and migration scripts/SQL. Across 79 timestamp defaults
 in 40 tables it parsed 140 literal `INSERT` column lists. Twelve defaults had

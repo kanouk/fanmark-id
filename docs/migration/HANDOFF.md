@@ -22,10 +22,15 @@ canary lifecycle journals after cleanup. The master D1 contains 3,944 emoji
 rows at release generation 3 (`10ec42c1…`); its Worker API returned all 3,944
 unique IDs over eight pages with `no-store`. Reference-master generation 8
 serves 4 tiers, 4 languages, 5 reserved patterns, and 16 extension prices.
-The latest synthetic post-write recovery and pre-write resume drills passed;
-their evidence is recorded in `docs/migration/EXECUTION.md`. This checkpoint
-does not include real user/Auth/Storage migration, production routing, or
-domain/DNS cutover, which remain deferred.
+The previous synthetic post-write recovery and pre-write resume drills passed;
+their evidence is recorded in `docs/migration/EXECUTION.md`. A newer
+MFA-expanded recovery attempt verified synthetic TOTP and admin authorization,
+then timed out before recovery because the Stripe dispatcher remained pending
+with zero attempts after 35 minutes. The earlier non-MFA recovery pass remains
+valid; the extended MFA recovery path is still unverified. Cleanup deleted the
+temporary Worker, both D1s, config, and synthetic avatar. This checkpoint does
+not include real user/Auth/Storage migration, production routing, or domain/DNS
+cutover, which remain deferred.
 
 The timestamp writer audit now recognizes all three generated master-seed
 INSERT paths. The emoji release staging path binds one explicit UTC

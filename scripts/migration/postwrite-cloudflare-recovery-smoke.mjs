@@ -50,6 +50,7 @@ const syntheticAuthUserId = randomUUID();
 const syntheticAuthAccountId = randomUUID();
 const syntheticAuthEmail = `auth-recovery-${randomUUID()}@example.invalid`;
 const syntheticAuthPassword = `Recovery-${randomBytes(24).toString("base64url")}あ!9`;
+let syntheticAuthTotpSecret = null;
 const syntheticAvatarPng = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+k8iMAAAAASUVORK5CYII=",
   "base64",
@@ -115,6 +116,9 @@ let report = {
     freezeProbeAcceptedWrites: 0,
     freezeConsecutiveRejectedWrites: 0,
     authSignInDuringFreezeSucceeded: false,
+    authMfaAdminSessionAuthorized: false,
+    authMfaAdminStateSurvivedTimeTravel: false,
+    authMfaAdminStateRestoredFromEncryptedBundle: false,
     syntheticAvatarKey: null,
     syntheticAvatarSha256: null,
     syntheticAvatarReadbackDiagnostics: null,
@@ -146,6 +150,69 @@ let report = {
 
 function fail(code) {
   throw new Error(code);
+}
+
+function decodeBase32(value) {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  let buffer = 0;
+  let bits = 0;
+  const bytes = [];
+  for (const character of value.replace(/=+$/u, "").toUpperCase()) {
+    const digit = alphabet.indexOf(character);
+    if (digit < 0) fail("synthetic_totp_secret_invalid");
+    buffer = (buffer << 5) | digit;
+    bits += 5;
+    if (bits >= 8) {
+      bits -= 8;
+      bytes.push((buffer >>> bits) & 0xff);
+    }
+  }
+  return Buffer.from(bytes);
+}
+
+function totpCode(base32Secret, now = Date.now()) {
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(Math.floor(now / 30_000)));
+  const digest = createHmac("sha1", decodeBase32(base32Secret)).update(counter).digest();
+  const offset = digest[digest.length - 1] & 0x0f;
+  const truncated = digest.readUInt32BE(offset) & 0x7fffffff;
+  return String(truncated % 1_000_000).padStart(6, "0");
+}
+
+async function stableTotpCode(base32Secret) {
+  const remainder = Date.now() % 30_000;
+  if (remainder > 26_000) await new Promise((resolve) => setTimeout(resolve, 32_000 - remainder));
+  return totpCode(base32Secret);
+}
+
+assert.equal(totpCode("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ", 59_000), "287082",
+  "synthetic TOTP helper does not match the RFC 6238 fixture");
+
+function setCookiePairs(response) {
+  const values = typeof response.headers.getSetCookie === "function"
+    ? response.headers.getSetCookie()
+    : [response.headers.get("set-cookie") ?? ""];
+  return values.map((value) => value.split(";", 1)[0]).filter(Boolean);
+}
+
+function sessionCookieFrom(response) {
+  return setCookiePairs(response).find((value) => /(?:__Secure-)?better-auth\.session_token=/iu.test(value)) ?? "";
+}
+
+async function assertSyntheticAdminSession(origin, cookie) {
+  const response = await fetch(`${origin}/api/admin/session`, {
+    headers: { origin, cookie },
+    signal: AbortSignal.timeout(10_000),
+  });
+  let body = null;
+  try {
+    body = await response.json();
+  } catch {
+    body = null;
+  }
+  if (response.status !== 200 || body?.authorized !== true || Object.keys(body).length !== 1) {
+    fail(`synthetic_admin_session_http_${response.status}`);
+  }
 }
 
 function requireExplicitStagingWrite() {
@@ -512,6 +579,10 @@ async function seedSyntheticAuthAccount() {
     INSERT INTO account (id, accountId, providerId, userId, password, createdAt, updatedAt)
     VALUES (${sqlLiteral(syntheticAuthAccountId)}, ${sqlLiteral(syntheticAuthUserId)}, 'credential', ${sqlLiteral(syntheticAuthUserId)}, ${sqlLiteral(passwordHash)}, ${sqlLiteral(now)}, ${sqlLiteral(now)});
   `, "synthetic_auth_seed_failed");
+  writeD1(authDatabaseName, `
+    INSERT INTO "adminRole" (userId, role)
+    VALUES (${sqlLiteral(syntheticAuthUserId)}, 'admin');
+  `, "synthetic_auth_seed_failed");
   return passwordHash;
 }
 
@@ -608,16 +679,96 @@ async function signInSyntheticUser(origin) {
   } catch {
     body = null;
   }
-  if (response.status !== 200 || body?.user?.id !== syntheticAuthUserId) {
-    fail(`synthetic_auth_sign_in_http_${response.status}`);
+  if (response.status !== 200) fail(`synthetic_auth_sign_in_http_${response.status}`);
+
+  let cookie = sessionCookieFrom(response);
+  if (body?.twoFactorRedirect === true) {
+    if (!syntheticAuthTotpSecret || !Array.isArray(body.twoFactorMethods) || !body.twoFactorMethods.includes("totp")) {
+      fail("synthetic_auth_totp_challenge_unexpected");
+    }
+    const challengeCookie = setCookiePairs(response).find((value) => /(?:__Secure-)?better-auth\.two_factor=/iu.test(value));
+    if (!challengeCookie || cookie) fail("synthetic_auth_totp_challenge_cookie_invalid");
+    const verification = await fetch(`${origin}/api/auth/two-factor/verify-totp`, {
+      method: "POST",
+      headers: { origin, cookie: challengeCookie, "content-type": "application/json" },
+      body: JSON.stringify({ code: await stableTotpCode(syntheticAuthTotpSecret) }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    let verificationBody = null;
+    try {
+      verificationBody = await verification.json();
+    } catch {
+      verificationBody = null;
+    }
+    if (verification.status !== 200 || verificationBody?.user?.id !== syntheticAuthUserId) {
+      fail(`synthetic_auth_totp_verification_http_${verification.status}`);
+    }
+    cookie = sessionCookieFrom(verification);
+  } else if (body?.user?.id !== syntheticAuthUserId || syntheticAuthTotpSecret) {
+    fail("synthetic_auth_sign_in_identity_or_mfa_mismatch");
   }
-  const cookie = (response.headers.get("set-cookie") ?? "").split(";", 1)[0];
   if (!/(?:__Secure-)?better-auth\.session_token=/iu.test(cookie)) fail("synthetic_auth_session_cookie_missing");
   const session = await readSyntheticSession(origin, cookie);
   if (session?.user?.id !== syntheticAuthUserId || typeof session?.session?.id !== "string") {
     fail("synthetic_auth_session_identity_mismatch");
   }
+  if (syntheticAuthTotpSecret) await assertSyntheticAdminSession(origin, cookie);
   return { cookie, sessionId: session.session.id };
+}
+
+async function enableSyntheticTotp(origin, initialSession) {
+  const enrollment = await fetch(`${origin}/api/auth/two-factor/enable`, {
+    method: "POST",
+    headers: { origin, cookie: initialSession.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ password: syntheticAuthPassword, method: "totp" }),
+    signal: AbortSignal.timeout(15_000),
+  });
+  let enrollmentBody = null;
+  try {
+    enrollmentBody = await enrollment.json();
+  } catch {
+    enrollmentBody = null;
+  }
+  if (enrollment.status !== 200 || enrollmentBody?.method !== "totp" || typeof enrollmentBody?.totpURI !== "string") {
+    fail(`synthetic_totp_enrollment_http_${enrollment.status}`);
+  }
+  syntheticAuthTotpSecret = new URL(enrollmentBody.totpURI).searchParams.get("secret");
+  if (!syntheticAuthTotpSecret) fail("synthetic_totp_secret_missing");
+
+  const verification = await fetch(`${origin}/api/auth/two-factor/verify-totp`, {
+    method: "POST",
+    headers: { origin, cookie: initialSession.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ code: await stableTotpCode(syntheticAuthTotpSecret) }),
+    signal: AbortSignal.timeout(15_000),
+  });
+  let verificationBody = null;
+  try {
+    verificationBody = await verification.json();
+  } catch {
+    verificationBody = null;
+  }
+  if (verification.status !== 200 || verificationBody?.user?.id !== syntheticAuthUserId) {
+    fail(`synthetic_totp_enrollment_verification_http_${verification.status}`);
+  }
+  const cookie = sessionCookieFrom(verification);
+  if (!/(?:__Secure-)?better-auth\.session_token=/iu.test(cookie)) fail("synthetic_totp_session_cookie_missing");
+  const session = await readSyntheticSession(origin, cookie);
+  if (session?.user?.id !== syntheticAuthUserId || typeof session?.session?.id !== "string") {
+    fail("synthetic_totp_session_identity_mismatch");
+  }
+  await assertSyntheticAdminSession(origin, cookie);
+  report.recovery.authMfaAdminSessionAuthorized = true;
+  return { cookie, sessionId: session.session.id };
+}
+
+async function signOutSyntheticUser(origin, cookie) {
+  const response = await fetch(`${origin}/api/auth/sign-out`, {
+    method: "POST",
+    headers: { origin, cookie, "content-type": "application/json" },
+    body: "{}",
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (response.status !== 200) fail(`synthetic_auth_sign_out_http_${response.status}`);
 }
 
 async function readSyntheticSession(origin, cookie) {
@@ -742,7 +893,7 @@ async function restoreSyntheticAvatarFromBackup(origin, object) {
 
 function syntheticAuthState(passwordHash) {
   const users = runD1On(authDatabaseName, `
-    SELECT id, name, email, emailVerified, createdAt, updatedAt
+    SELECT id, name, email, emailVerified, twoFactorEnabled, createdAt, updatedAt
     FROM "user" WHERE id = ${sqlLiteral(syntheticAuthUserId)} ORDER BY id
   `);
   const accounts = runD1On(authDatabaseName, `
@@ -753,12 +904,35 @@ function syntheticAuthState(passwordHash) {
     SELECT id, userId, expiresAt, createdAt, updatedAt
     FROM session WHERE userId = ${sqlLiteral(syntheticAuthUserId)} ORDER BY id
   `);
+  const factors = runD1On(authDatabaseName, `
+    SELECT id, secret, backupCodes, userId, verified, failedVerificationCount, lockedUntil
+    FROM "twoFactor" WHERE userId = ${sqlLiteral(syntheticAuthUserId)} ORDER BY id
+  `);
+  const adminRoles = runD1On(authDatabaseName, `
+    SELECT userId, role FROM "adminRole" WHERE userId = ${sqlLiteral(syntheticAuthUserId)} ORDER BY userId
+  `);
+  const assurances = runD1On(authDatabaseName, `
+    SELECT id, userId, sessionId, factorId, generation, verifiedAt, expiresAt
+    FROM "mfaAssurance" WHERE userId = ${sqlLiteral(syntheticAuthUserId)} ORDER BY sessionId
+  `);
+  const generations = runD1On(authDatabaseName, `
+    SELECT generation FROM "mfaGeneration" WHERE id = 1
+  `);
   if (users.length !== 1 || users[0]?.id !== syntheticAuthUserId ||
       users[0]?.email !== syntheticAuthEmail || Number(users[0]?.emailVerified) !== 1 ||
+      Number(users[0]?.twoFactorEnabled) !== 1 ||
       accounts.length !== 1 || accounts[0]?.id !== syntheticAuthAccountId ||
       accounts[0]?.accountId !== syntheticAuthUserId || accounts[0]?.providerId !== "credential" ||
       accounts[0]?.userId !== syntheticAuthUserId || accounts[0]?.password !== passwordHash ||
-      sessions.some((row) => row?.userId !== syntheticAuthUserId)) {
+      sessions.some((row) => row?.userId !== syntheticAuthUserId) ||
+      factors.length !== 1 || factors[0]?.userId !== syntheticAuthUserId || Number(factors[0]?.verified) !== 1 ||
+      typeof factors[0]?.secret !== "string" || typeof factors[0]?.backupCodes !== "string" ||
+      adminRoles.length !== 1 || adminRoles[0]?.role !== "admin" ||
+      assurances.length !== sessions.length || assurances.some((row) =>
+        row?.userId !== syntheticAuthUserId || row?.factorId !== factors[0]?.id ||
+        Number(row?.generation) !== Number(generations[0]?.generation) ||
+        !sessions.some((session) => session?.id === row?.sessionId)) ||
+      generations.length !== 1 || Number(generations[0]?.generation) !== 1) {
     fail("synthetic_auth_state_mismatch");
   }
   return {
@@ -773,6 +947,18 @@ function syntheticAuthState(passwordHash) {
       updatedAt: accounts[0].updatedAt,
     },
     sessions,
+    factor: {
+      id: factors[0].id,
+      userId: factors[0].userId,
+      verified: Number(factors[0].verified),
+      secretSha256: createHash("sha256").update(factors[0].secret).digest("hex"),
+      backupCodesSha256: createHash("sha256").update(factors[0].backupCodes).digest("hex"),
+      failedVerificationCount: Number(factors[0].failedVerificationCount),
+      lockedUntil: factors[0].lockedUntil,
+    },
+    adminRole: adminRoles[0],
+    assurances,
+    mfaGeneration: Number(generations[0].generation),
   };
 }
 
@@ -891,6 +1077,10 @@ const recoveryExportTables = [
   { name: "user", database: "auth", field: "auth_user_sql", expectedRows: 1 },
   { name: "account", database: "auth", field: "auth_account_sql", expectedRows: 1 },
   { name: "session", database: "auth", field: "auth_session_sql", expectedRows: 1 },
+  { name: "twoFactor", database: "auth", field: "auth_two_factor_sql", expectedRows: 1 },
+  { name: "adminRole", database: "auth", field: "auth_admin_role_sql", expectedRows: 1 },
+  { name: "mfaAssurance", database: "auth", field: "auth_mfa_assurance_sql", expectedRows: 1 },
+  { name: "mfaGeneration", database: "auth", field: "auth_mfa_generation_sql", expectedRows: 1 },
 ];
 
 function recoveryBundleCatalog() {
@@ -993,12 +1183,18 @@ async function createEncryptedR2RecoveryBundle(passwordHash, syntheticAvatar) {
     auth_user_sql: syntheticAuthEmail,
     auth_account_sql: syntheticAuthAccountId,
     auth_session_sql: syntheticAuthUserId,
+    auth_two_factor_sql: syntheticAuthUserId,
+    auth_admin_role_sql: syntheticAuthUserId,
+    auth_mfa_assurance_sql: syntheticAuthUserId,
+    auth_mfa_generation_sql: "1",
   })) {
     for (const uniqueMarker of Array.isArray(marker) ? marker : [marker]) {
       assert.ok(exportedSql[field].includes(uniqueMarker), `synthetic ${field} export omitted its unique marker`);
     }
   }
   assert.ok(exportedSql.auth_account_sql.includes(passwordHash), "synthetic credential was not in the Auth backup");
+  assert.ok(exportedSql.auth_two_factor_sql.includes(syntheticAuthUserId), "synthetic TOTP factor was not in the Auth backup");
+  assert.ok(exportedSql.auth_mfa_assurance_sql.includes(syntheticAuthUserId), "synthetic MFA assurance was not in the Auth backup");
   const syntheticAvatarJson = JSON.stringify(syntheticAvatar);
 
   const catalog = recoveryBundleCatalog();
@@ -1246,10 +1442,15 @@ async function runDrill() {
 
   report.phase = "seed_and_sign_in_synthetic_auth_user";
   const passwordHash = await seedSyntheticAuthAccount();
-  const firstAuthSession = await signInSyntheticUser(origin);
-  const syntheticAvatar = await uploadSyntheticAvatar(origin, firstAuthSession.cookie);
-  const firstAuthState = syntheticAuthState(passwordHash);
-  assert.equal(firstAuthState.sessions.length, 1);
+  const initialAuthSession = await signInSyntheticUser(origin);
+  const enrolledAuthSession = await enableSyntheticTotp(origin, initialAuthSession);
+  await signOutSyntheticUser(origin, initialAuthSession.cookie);
+  const enrolledAuthState = syntheticAuthState(passwordHash);
+  assert.equal(enrolledAuthState.sessions.length, 1);
+  assert.equal(enrolledAuthState.assurances.length, 1);
+  const syntheticAvatar = await uploadSyntheticAvatar(origin, enrolledAuthSession.cookie);
+  await signOutSyntheticUser(origin, enrolledAuthSession.cookie);
+  assert.equal(syntheticAuthState(passwordHash).sessions.length, 0);
 
   report.phase = "seed_synthetic_stripe_extension";
   seedSyntheticStripeExtension();
@@ -1279,6 +1480,9 @@ async function runDrill() {
     assert.ok(/^[0-9a-f]{64}$/u.test(ledger.raw_payload_sha256));
   }
 
+  report.phase = "sign_in_synthetic_admin_with_totp_before_recovery_bookmark";
+  const firstAuthSession = await signInSyntheticUser(origin);
+
   const acknowledgedState = {
     waitlist: tableRowsForEmail(emailBeforeBookmark),
     stripeLedger,
@@ -1290,6 +1494,7 @@ async function runDrill() {
   assert.equal(acknowledgedState.stripeExtension.application[0]?.new_license_end,
     acknowledgedState.stripeExtension.applicationEffect[0]?.new_license_end);
   assert.equal(acknowledgedState.auth.sessions.length, 1);
+  assert.equal(acknowledgedState.auth.assurances.length, 1);
   report.recovery.acknowledgedDigest = hash(acknowledgedState);
   report.phase = "capture_business_and_auth_recovery_bookmarks";
   const encryptedRecoverySql = await createEncryptedR2RecoveryBundle(passwordHash, syntheticAvatar);
@@ -1341,6 +1546,8 @@ async function runDrill() {
       survivingAuthSession?.session?.id !== firstAuthSession.sessionId) {
     fail("acknowledged_auth_session_failed_after_restore");
   }
+  await assertSyntheticAdminSession(origin, firstAuthSession.cookie);
+  report.recovery.authMfaAdminStateSurvivedTimeTravel = true;
   assert.equal(tableRowsForEmail(emailAfterBookmark).length, 0, "post-bookmark synthetic row survived restore");
   for (const entry of freezeProbeEntries) {
     if (tableRowsForEmail(entry.email).length !== 0) fail("post_bookmark_freeze_probe_survived_restore");
@@ -1374,6 +1581,7 @@ async function runDrill() {
   writeD1(authDatabaseName, `DELETE FROM session WHERE userId = ${sqlLiteral(syntheticAuthUserId)};`, "recovery_bundle_clear_failed");
   writeD1(authDatabaseName, `DELETE FROM account WHERE userId = ${sqlLiteral(syntheticAuthUserId)};`, "recovery_bundle_clear_failed");
   writeD1(authDatabaseName, `DELETE FROM "user" WHERE id = ${sqlLiteral(syntheticAuthUserId)};`, "recovery_bundle_clear_failed");
+  writeD1(authDatabaseName, `DELETE FROM "mfaGeneration" WHERE id = 1;`, "recovery_bundle_clear_failed");
   const absentBusiness = [
     tableRowsForEmail(emailBeforeBookmark).length,
     stripeLedgerRows([firstEventId, extensionEventId]).length,
@@ -1385,8 +1593,18 @@ async function runDrill() {
     stripeExtensionState().applicationEffect.length,
     stripeExtensionState().audit.length,
   ];
-  const absentAuth = Number(runD1On(authDatabaseName, `SELECT COUNT(*) AS count FROM "user" WHERE id = ${sqlLiteral(syntheticAuthUserId)}`)[0]?.count);
-  if (absentBusiness.some((count) => count !== 0) || absentAuth !== 0) fail("recovery_bundle_clear_readback_failed");
+  const absentAuth = [
+    Number(runD1On(authDatabaseName, `SELECT COUNT(*) AS count FROM "user" WHERE id = ${sqlLiteral(syntheticAuthUserId)}`)[0]?.count),
+    Number(runD1On(authDatabaseName, `SELECT COUNT(*) AS count FROM account WHERE userId = ${sqlLiteral(syntheticAuthUserId)}`)[0]?.count),
+    Number(runD1On(authDatabaseName, `SELECT COUNT(*) AS count FROM session WHERE userId = ${sqlLiteral(syntheticAuthUserId)}`)[0]?.count),
+    Number(runD1On(authDatabaseName, `SELECT COUNT(*) AS count FROM "twoFactor" WHERE userId = ${sqlLiteral(syntheticAuthUserId)}`)[0]?.count),
+    Number(runD1On(authDatabaseName, `SELECT COUNT(*) AS count FROM "adminRole" WHERE userId = ${sqlLiteral(syntheticAuthUserId)}`)[0]?.count),
+    Number(runD1On(authDatabaseName, `SELECT COUNT(*) AS count FROM "mfaAssurance" WHERE userId = ${sqlLiteral(syntheticAuthUserId)}`)[0]?.count),
+    Number(runD1On(authDatabaseName, `SELECT COUNT(*) AS count FROM "mfaGeneration" WHERE id = 1`)[0]?.count),
+  ];
+  if (absentBusiness.some((count) => count !== 0) || absentAuth.some((count) => count !== 0)) {
+    fail("recovery_bundle_clear_readback_failed");
+  }
 
   const replayStarted = performance.now();
   for (const entry of recoveryExportTables) {
@@ -1414,6 +1632,8 @@ async function runDrill() {
       replayedSession?.session?.id !== firstAuthSession.sessionId) {
     fail("encrypted_r2_recovery_auth_session_failed");
   }
+  await assertSyntheticAdminSession(origin, firstAuthSession.cookie);
+  report.recovery.authMfaAdminStateRestoredFromEncryptedBundle = true;
   report.recovery.stripeBusinessEffectRestoredFromEncryptedBundle = true;
 
   report.phase = "complete";
@@ -1617,6 +1837,9 @@ if (primaryError) {
     `${report.recovery.storageUploadDuringFreezeStatus}/${report.recovery.storageUploadDuringFreezeError}.\n` +
     `Temporary Worker/business/Auth D1 cleanup: ${report.cleanup.workerDeleted}/` +
     `${report.cleanup.databaseDeleted}/${report.cleanup.authDatabaseDeleted}; ` +
+    `admin MFA state survived Time Travel/encrypted R2 replay: ` +
+    `${report.recovery.authMfaAdminStateSurvivedTimeTravel}/` +
+    `${report.recovery.authMfaAdminStateRestoredFromEncryptedBundle}; ` +
     `R2 backup/image/private artifact cleanup: ${report.cleanup.r2ObjectsDeleted}/` +
     `${report.cleanup.storageObjectsDeleted}/${report.cleanup.privateRecoveryArtifactsDeleted}; ` +
     `private report: ${tempReportPath}\n`,
