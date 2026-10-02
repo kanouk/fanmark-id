@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import bcrypt from "bcryptjs";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import authSchemaSql from "../migrations/0003_better_auth_core.sql?raw";
 import profileSchemaSql from "./fixtures/d1-fanmark-profile.sql?raw";
 import { handleRequest } from "../src";
@@ -229,15 +229,41 @@ describe("owner fanmark-profile API", () => {
   it("creates a missing profile with source-like defaults on publication toggle", async () => {
     await businessDatabase?.prepare("DELETE FROM fanmark_profiles WHERE license_id = ?").bind(ownerLicenseId).run();
     const cookie = await signIn(ownerEmail);
-    const response = await request(`/api/me/fanmarks/${ownerFanmarkId}/profile`, {
-      method: "PATCH",
-      headers: { Cookie: cookie, "content-type": "application/json" },
-      body: JSON.stringify({ is_public: true }),
-    });
-    expect(response.status).toBe(200);
-    const body = await response.json() as { profile: Record<string, unknown> };
-    expect(body.profile).toMatchObject({ license_id: ownerLicenseId, bio: "", social_links: {}, theme_settings: {}, is_public: true });
-    expect(body.profile.id).toMatch(UUID_PATTERN);
+    const createdAt = new Date(Date.now() + 1_000);
+    const updatedAt = new Date(createdAt.getTime() + 5 * 60 * 1_000 + 1);
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      vi.setSystemTime(createdAt);
+      const response = await request(`/api/me/fanmarks/${ownerFanmarkId}/profile`, {
+        method: "PATCH",
+        headers: { Cookie: cookie, "content-type": "application/json" },
+        body: JSON.stringify({ is_public: true }),
+      });
+      expect(response.status).toBe(200);
+      const body = await response.json() as { profile: Record<string, unknown> };
+      expect(body.profile).toMatchObject({ license_id: ownerLicenseId, bio: "", social_links: {}, theme_settings: {}, is_public: true });
+      expect(body.profile.id).toMatch(UUID_PATTERN);
+      const created = await businessDatabase?.prepare(
+        "SELECT created_at, updated_at FROM fanmark_profiles WHERE license_id = ?",
+      ).bind(ownerLicenseId).first<{ created_at: string; updated_at: string }>();
+      const expectedCreatedAt = createdAt.toISOString().replace(/\.(\d{3})Z$/u, (_match, fraction: string) => `.${fraction}000Z`);
+      const expectedUpdatedAt = updatedAt.toISOString().replace(/\.(\d{3})Z$/u, (_match, fraction: string) => `.${fraction}000Z`);
+      expect(created).toEqual({ created_at: expectedCreatedAt, updated_at: expectedCreatedAt });
+
+      vi.setSystemTime(updatedAt);
+      const update = await request(`/api/me/fanmarks/${ownerFanmarkId}/profile`, {
+        method: "PATCH",
+        headers: { Cookie: cookie, "content-type": "application/json" },
+        body: JSON.stringify({ bio: "Updated under the next operation clock" }),
+      });
+      expect(update.status).toBe(200);
+      const updated = await businessDatabase?.prepare(
+        "SELECT created_at, updated_at FROM fanmark_profiles WHERE license_id = ?",
+      ).bind(ownerLicenseId).first<{ created_at: string; updated_at: string }>();
+      expect(updated).toEqual({ created_at: expectedCreatedAt, updated_at: expectedUpdatedAt });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("denies another owner's and expired fanmarks and rejects unsafe fields without writes", async () => {

@@ -1,10 +1,11 @@
 import { env } from "cloudflare:workers";
 import bcrypt from "bcryptjs";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import authSchemaSql from "../migrations/0003_better_auth_core.sql?raw";
 import settingsSchemaSql from "./fixtures/d1-fanmark-settings.sql?raw";
 import { handleRequest } from "../src";
 import { handleFanmarkBulkReturnRequest, handleFanmarkReturnRequest } from "../src/fanmark-return-d1-api";
+import { toUtcMicrosecondTimestamp } from "../src/utc-timestamp.mjs";
 import type { Env } from "../src/repository";
 
 const runtimeEnv = env as unknown as Env;
@@ -262,6 +263,81 @@ describe("owner fanmark-settings API", () => {
       current_password_generation: after.password_generation,
       current_incarnation: 0,
     });
+  });
+
+  it("binds explicit UTC operation timestamps when fanmark settings rows are created and updated", async () => {
+    const cookie = await signIn(ownerEmail);
+    for (const table of [
+      "fanmark_password_runtime_evidence", "fanmark_password_configs", "fanmark_redirect_configs",
+      "fanmark_messageboard_configs", "fanmark_profiles", "fanmark_basic_configs",
+    ]) {
+      await businessDatabase?.prepare(`DELETE FROM ${table} WHERE license_id = ?`).bind(ownerLicenseId).run();
+    }
+
+    const firstOperation = new Date(Date.now() + 1_000);
+    const secondOperation = new Date(firstOperation.getTime() + 5 * 60 * 1_000 + 1);
+    const thirdOperation = new Date(secondOperation.getTime() + 5 * 60 * 1_000 + 1);
+    const first = toUtcMicrosecondTimestamp(firstOperation);
+    const second = toUtcMicrosecondTimestamp(secondOperation);
+    const third = toUtcMicrosecondTimestamp(thirdOperation);
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      vi.setSystemTime(firstOperation);
+      const redirect = await patchSettings(cookie, settings({
+        accessType: "redirect", targetUrl: "https://timestamp.example.test/first", isPasswordProtected: false,
+      }));
+      expect(redirect.status).toBe(200);
+      const basicCreated = await businessDatabase?.prepare(
+        "SELECT created_at, updated_at FROM fanmark_basic_configs WHERE license_id = ?",
+      ).bind(ownerLicenseId).first();
+      const redirectCreated = await businessDatabase?.prepare(
+        "SELECT created_at, updated_at FROM fanmark_redirect_configs WHERE license_id = ?",
+      ).bind(ownerLicenseId).first();
+      const passwordCreated = await businessDatabase?.prepare(
+        "SELECT created_at, updated_at FROM fanmark_password_configs WHERE license_id = ?",
+      ).bind(ownerLicenseId).first();
+      expect(basicCreated).toEqual({ created_at: first, updated_at: first });
+      expect(redirectCreated).toEqual({ created_at: first, updated_at: first });
+      expect(passwordCreated).toEqual({ created_at: first, updated_at: first });
+
+      vi.setSystemTime(secondOperation);
+      const text = await patchSettings(cookie, settings({ accessType: "text", textContent: "timestamped", isPasswordProtected: false }));
+      expect(text.status).toBe(200);
+      const basicUpdated = await businessDatabase?.prepare(
+        "SELECT created_at, updated_at FROM fanmark_basic_configs WHERE license_id = ?",
+      ).bind(ownerLicenseId).first();
+      const textCreated = await businessDatabase?.prepare(
+        "SELECT created_at, updated_at FROM fanmark_messageboard_configs WHERE license_id = ?",
+      ).bind(ownerLicenseId).first();
+      const passwordUpdated = await businessDatabase?.prepare(
+        "SELECT created_at, updated_at FROM fanmark_password_configs WHERE license_id = ?",
+      ).bind(ownerLicenseId).first();
+      expect(basicUpdated).toEqual({ created_at: first, updated_at: second });
+      expect(textCreated).toEqual({ created_at: second, updated_at: second });
+      expect(passwordUpdated).toEqual({ created_at: first, updated_at: second });
+
+      vi.setSystemTime(thirdOperation);
+      const profile = await patchSettings(cookie, settings({ accessType: "profile", isPublic: true, isPasswordProtected: false }));
+      expect(profile.status).toBe(200);
+      const basicUpdatedAgain = await businessDatabase?.prepare(
+        "SELECT created_at, updated_at FROM fanmark_basic_configs WHERE license_id = ?",
+      ).bind(ownerLicenseId).first();
+      const profileCreated = await businessDatabase?.prepare(
+        "SELECT created_at, updated_at FROM fanmark_profiles WHERE license_id = ?",
+      ).bind(ownerLicenseId).first();
+      const textUnchanged = await businessDatabase?.prepare(
+        "SELECT created_at, updated_at FROM fanmark_messageboard_configs WHERE license_id = ?",
+      ).bind(ownerLicenseId).first();
+      const passwordUpdatedAgain = await businessDatabase?.prepare(
+        "SELECT created_at, updated_at FROM fanmark_password_configs WHERE license_id = ?",
+      ).bind(ownerLicenseId).first();
+      expect(basicUpdatedAgain).toEqual({ created_at: first, updated_at: third });
+      expect(profileCreated).toEqual({ created_at: third, updated_at: third });
+      expect(textUnchanged).toEqual({ created_at: second, updated_at: second });
+      expect(passwordUpdatedAgain).toEqual({ created_at: first, updated_at: third });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("preserves an existing enabled password when no replacement is supplied", async () => {

@@ -17,7 +17,7 @@ import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 27;
+export const SCHEMA_CONVERSION_VERSION = 28;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -96,6 +96,30 @@ const REVIEWED_AUTH_FOREIGN_KEYS = new Map([
   }],
 ]);
 const REVIEWED_RUNTIME_TIMESTAMP_WRITES = new Map([
+  ["fanmark_profiles.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Profile creation from the profile API, settings API, or registration binds one canonical UTC operation timestamp explicitly; source imports retain their original timestamp.",
+    evidence: [
+      "workers/api/src/fanmark-profile-d1-api.ts",
+      "workers/api/src/fanmark-settings-d1-api.ts",
+      "workers/api/src/fanmark-registration-d1-api.ts",
+      "workers/api/test/fanmark-profile-d1.test.ts",
+      "workers/api/test/fanmark-settings-d1.test.ts",
+      "workers/api/test/fanmark-registration-d1.test.ts",
+    ],
+  }],
+  ["fanmark_profiles.updated_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Profile updates bind one canonical UTC operation timestamp explicitly while preserving created_at; settings and registration creation paths also supply both values.",
+    evidence: [
+      "workers/api/src/fanmark-profile-d1-api.ts",
+      "workers/api/src/fanmark-settings-d1-api.ts",
+      "workers/api/src/fanmark-registration-d1-api.ts",
+      "workers/api/test/fanmark-profile-d1.test.ts",
+      "workers/api/test/fanmark-settings-d1.test.ts",
+      "workers/api/test/fanmark-registration-d1.test.ts",
+    ],
+  }],
   ["fanmark_access_daily_stats.created_at", {
     code: "worker_operation_explicit_timestamp",
     reason: "The analytics operation captures one clock value and binds its canonical UTC timestamp to the new daily aggregate; imported source timestamps remain explicit.",

@@ -117,6 +117,10 @@ describe("D1 fanmark registration", () => {
     expect(await count(business!, "fanmark_basic_configs")).toBe(1);
     expect(await count(business!, "fanmark_profiles")).toBe(1);
     expect(await count(business!, "audit_logs")).toBe(1);
+    const profileTimestamps = await business!.prepare(
+      "SELECT created_at, updated_at FROM fanmark_profiles",
+    ).first();
+    expect(profileTimestamps).toEqual({ created_at: NOW, updated_at: NOW });
   });
 
   it("maps a tone-qualified emoji to its canonical identity while retaining the original ID", async () => {

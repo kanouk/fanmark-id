@@ -1,5 +1,22 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 v28：プロフィールtimestampsの限定レビュー
+
+`2026-10-02T12:25:35.315086Z`のread-only catalogで確認した
+`fanmark_profiles.created_at`と`fanmark_profiles.updated_at`を追加レビューした。
+プロフィールAPI、設定API、登録APIの各Worker writerはoperation timestampを
+明示的にbindし、profile D1 testでは固定clockで新規作成時の両時刻と、
+後続更新時に`created_at`を保持して`updated_at`だけ進むことをreadbackした。
+registration testとsettings testもそれぞれの生成経路のD1時刻を確認する。
+
+converter v28は10個のWorker-owned timestamp columnsと11 Auth FKをreview済み。
+残るblockingは60 locations（timestamp defaults 57、functions/RLS/triggers各1）で
+`deployable: false`。schema-convert tests 28/28、
+`npm run test:migration-data` 224/224、profile D1 5/5、settings D1 18/18、
+registration D1 10/10が成功。
+PR headのrequired CIは別途通過が必要で、CIはdeployを行わない。source rows、Cloudflare
+resources、Worker deploy、domain/DNSは変更していない。
+
 ## 2026-10-02 v27：アクセス分析 timestampsの限定レビュー（12:25 UTC）
 
 linked Supabaseへのread-only catalog queryを再実行し、
@@ -19,8 +36,9 @@ sub-millisecond clockとの厳密な同値性は主張しない。
 最新のvalue-free credential descriptor付きreportはschema version 27、
 11 Auth FKをreview済み、blocking 62 locations（timestamp defaults 59、
 functions/RLS/triggers各1）で`deployable: false`。converter tests 27/27、
-`npm run test:migration-data` 223/223、access analytics D1 tests 11/11が成功。
-このv27変更はまだpush前で、push後のrequired CIが必要。source rows、
+このv27 checkpointでは`npm run test:migration-data` 223/223、access analytics
+D1 tests 11/11が成功し、required CI run `37007064286`も両job success。
+source rows、
 Cloudflare resources、Worker deploy、domain/DNSは変更していない。
 
 ## 2026-10-02 v26：Worker operation timestampsの限定レビュー（12:10 UTC）

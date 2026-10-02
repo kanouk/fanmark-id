@@ -1,6 +1,6 @@
 # Full schema conversion generator
 
-`schema-convert.mjs` v27 is a private, catalog-only preparation tool. It
+`schema-convert.mjs` v28 is a private, catalog-only preparation tool. It
 converts the JSON emitted by `scripts/migration/schema-readiness.sql` into deterministic
 SQLite/D1 table and index SQL plus a machine-readable report of unresolved
 parity gates. It does not read application rows, contact Supabase, apply SQL,
@@ -554,3 +554,22 @@ v27 reviews all 11 exact Auth references and eight Worker operation timestamps
 59 timestamp-operation locations and the three functions/RLS/trigger scopes
 (62 blocking locations total). Converter tests pass 27/27, the migration-data
 suite 223/223, and access-analytics D1 tests 11/11. No source rows were queried.
+
+## Schema converter v28: reviewed fanmark-profile timestamps
+
+Converter v28 adds `fanmark_profiles.created_at` and
+`fanmark_profiles.updated_at` to the exact
+`worker_operation_explicit_timestamp` disposition. The profile, settings, and
+registration Worker operations bind canonical UTC operation timestamps
+explicitly. Fixed-clock profile D1 readback verifies both values on creation,
+then verifies a later update preserves `created_at` and advances only
+`updated_at`; settings and registration integration tests cover their separate
+creation paths. Imported source timestamps remain explicit.
+
+Using the same schema-only catalog observed at `2026-10-02T12:25:35.315086Z`,
+converter v28 reviews ten Worker operation timestamps and all 11 exact Auth
+references. It remains `deployable: false` with 57 timestamp-operation
+locations and the three functions/RLS/trigger catalog scopes (60 blocking
+locations total). Converter tests pass 28/28, the migration-data suite 224/224,
+profile D1 tests 5/5, settings D1 tests 18/18, and registration D1 tests 10/10.
+No source rows were queried.

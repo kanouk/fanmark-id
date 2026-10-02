@@ -1,29 +1,28 @@
 # Cloudflare migration handoff
 
 Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
-open and draft. Latest completed required CI is run `37004977442` for
-`d7acab7`; run `37006337325` for the pushed v26 commit `2ba68fa` had Worker API
-still in progress at the last check. The v27 commit is prepared locally and
-requires push plus fresh CI. CI does not deploy the Worker.
+open and draft. The v27 code checkpoint, commit `566d82b`, passed both required
+CI jobs in run `37007064286`. The v28 follow-up extends that checkpoint with
+profile timestamp readback. CI does not deploy the Worker.
 
 The latest read-only schema catalog completed at
 `2026-10-02T12:25:35.315086Z`: 40 tables / 406 columns / 144 constraints /
 139 indexes / 36 triggers / 77 RLS policies / 58 functions / one view. No
-source table rows were read. Converter v27 reviews eight exact Worker-owned
+source table rows were read. Converter v28 reviews ten exact Worker-owned
 timestamps: the five columns from v26 plus
 `fanmark_access_logs.accessed_at`,
-`fanmark_access_daily_stats.created_at`, and
-`fanmark_access_daily_stats.updated_at`. Fixed-clock D1 tests verify the first
-access and a repeat visit 5 minutes plus 1 millisecond later, preserving the
-aggregate `created_at` while updating `updated_at` and the latest access log.
-The report remains `deployable: false` with 59 operation-owned timestamp
-defaults and three unsupported function/RLS/trigger scopes (62 blocking
-locations); all 11 exact Auth foreign keys remain reviewed. Converter tests
-pass 27/27, the migration-data suite 223/223, and access analytics D1 tests
-11/11. The v27 commit has not yet been pushed or validated by CI.
+`fanmark_access_daily_stats.created_at`,
+`fanmark_access_daily_stats.updated_at`, and the two `fanmark_profiles`
+timestamps. Fixed-clock D1 tests verify profile creation and update as well as
+access analytics aggregation. The report remains `deployable: false` with 57
+operation-owned timestamp defaults and three unsupported function/RLS/trigger
+scopes (60 blocking locations); all 11 exact Auth foreign keys remain reviewed.
+Converter tests pass 28/28, the migration-data suite 224/224, profile D1 tests
+5/5, settings D1 tests 18/18, registration D1 tests 10/10, and access analytics
+D1 tests 11/11. No source table rows were read.
 
 No source rows, production routing, user/Auth migration, Worker deployment, or
-domain/DNS settings were changed in this v27 work. The latest recorded
+domain/DNS settings were changed in this v28 work. The latest recorded
 workers.dev-only staging version is
 version `d2330dd1-ce17-41c0-99d2-a81b242c412d` at 100%. An earlier run
 `36991654600` exposed an intermittent 120-second
