@@ -17,7 +17,7 @@ import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 39;
+export const SCHEMA_CONVERSION_VERSION = 40;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -195,6 +195,26 @@ const SYSTEM_SETTINGS_TIMESTAMP_EVIDENCE = Object.freeze([
   "workers/api/vitest.system-settings.config.mjs",
 ]);
 const REVIEWED_RUNTIME_TIMESTAMP_WRITES = new Map([
+  ["fanmarks.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Registration binds canonical UTC operation time for new fanmarks and never changes created_at when reusing an existing fanmark; snapshot imports retain the source timestamp.",
+    evidence: [
+      "scripts/migration/d1-import.mjs",
+      "scripts/migration/test-d1-import.mjs",
+      "workers/api/src/fanmark-registration-d1-api.ts",
+      "workers/api/test/fanmark-registration-d1.test.ts",
+    ],
+  }],
+  ["fanmarks.updated_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Registration binds canonical UTC operation time on creation and reuse, while snapshot imports retain their explicit source timestamps.",
+    evidence: [
+      "scripts/migration/d1-import.mjs",
+      "scripts/migration/test-d1-import.mjs",
+      "workers/api/src/fanmark-registration-d1-api.ts",
+      "workers/api/test/fanmark-registration-d1.test.ts",
+    ],
+  }],
   ["fanmark_basic_configs.created_at", {
     code: "worker_operation_explicit_timestamp",
     reason: "Registration, settings, and transfer operations bind canonical UTC operation time when creating the basic configuration; imported source timestamps remain explicit.",

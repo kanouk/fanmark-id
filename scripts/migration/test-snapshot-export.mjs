@@ -5,6 +5,7 @@ import { chmod, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
+import { SCHEMA_CONVERSION_VERSION } from "./schema-convert.mjs";
 
 import { createPsqlSession, exportSnapshot, extractCatalogSelect, parseSourceFrame } from "./snapshot-export.mjs";
 import { verifySnapshot } from "./snapshot-verify.mjs";
@@ -233,7 +234,7 @@ test("rejects a snapshot produced by the prior schema-conversion version", async
   try {
     const result = await exportSnapshot({ catalog: catalog(), outputDir, session: fakeSession() });
     const manifest = JSON.parse(await readFile(result.manifestPath, "utf8"));
-    assert.equal(manifest.schemaConversionVersion, 39);
+    assert.equal(manifest.schemaConversionVersion, SCHEMA_CONVERSION_VERSION);
     manifest.schemaConversionVersion -= 1;
     await writeFile(result.manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, { mode: 0o600 });
     await assert.rejects(verifySnapshot(result.manifestPath), (error) => error.code === "manifest_metadata_invalid");

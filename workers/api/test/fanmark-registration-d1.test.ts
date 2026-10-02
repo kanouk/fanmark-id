@@ -11,6 +11,8 @@ const master = runtimeEnv.MASTER_DB;
 const OWNER = "e62ce4d0-8055-4ecb-9e3a-759d70d659e0";
 const OTHER = "2a1b9c5f-3c8a-4890-9e04-3768885b6dd8";
 const NOW = "2026-09-25T10:15:23.123000Z";
+const PREVIOUS_CREATED_AT = "2026-09-20T08:00:00.000000Z";
+const PREVIOUS_UPDATED_AT = "2026-09-21T08:00:00.000000Z";
 const CLOCK = () => new Date("2026-09-25T10:15:23.123Z");
 const ORIGIN = "https://app.example.test";
 const IDS = {
@@ -109,6 +111,10 @@ describe("D1 fanmark registration", () => {
       tier_level: 4, tier_display_name: "Tier 4", initial_license_days: 30,
     });
     expect(payload.fanmark.short_id).toMatch(/^[a-z0-9]{8}$/u);
+    const fanmarkTimestamps = await business!.prepare(
+      "SELECT created_at, updated_at FROM fanmarks",
+    ).first();
+    expect(fanmarkTimestamps).toEqual({ created_at: NOW, updated_at: NOW });
     const license = await business!.prepare("SELECT user_id, license_start, license_end, display_fanmark, is_initial_license FROM fanmark_licenses").first<Record<string, unknown>>();
     expect(license).toEqual({
       user_id: OWNER, license_start: NOW, license_end: "2026-10-26T00:00:00.000000Z",
@@ -159,7 +165,7 @@ describe("D1 fanmark registration", () => {
     await run(business!, `INSERT INTO fanmarks
       (id, user_input_fanmark, normalized_emoji, short_id, status, created_at, updated_at, emoji_ids, normalized_emoji_ids, tier_level)
       VALUES (?, '🌹', '🌹', 'rose-old1', 'active', ?, ?, '[]', '[]', 1)`,
-    "10000000-0000-4000-8000-000000000001", NOW, NOW);
+    "10000000-0000-4000-8000-000000000001", PREVIOUS_CREATED_AT, PREVIOUS_UPDATED_AT);
     const response = await post(registration({ normalized_emoji_ids: [IDS.thumb] }));
     expect(response.status).toBe(400);
     expect(await count(business!, "fanmarks")).toBe(1);
@@ -167,6 +173,13 @@ describe("D1 fanmark registration", () => {
     expect(success.status).toBe(201);
     expect(await count(business!, "fanmarks")).toBe(1);
     expect(await count(business!, "fanmark_licenses")).toBe(1);
+    const reusedFanmarkTimestamps = await business!.prepare(
+      "SELECT created_at, updated_at FROM fanmarks WHERE id = ?",
+    ).bind("10000000-0000-4000-8000-000000000001").first();
+    expect(reusedFanmarkTimestamps).toEqual({
+      created_at: PREVIOUS_CREATED_AT,
+      updated_at: NOW,
+    });
   });
 
   it("preserves the source grace-window and pending-lottery acquisition guards", async () => {

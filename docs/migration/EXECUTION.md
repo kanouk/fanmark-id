@@ -1,5 +1,24 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 v40：ファンマ登録日時と再開時の検証
+
+read-only schema catalogを`2026-10-02T14:11:27.866234Z`に取得した。
+40 tables / 406 columns / 144 constraints / 139 indexes / 36 triggers /
+77 RLS policies / 58 functions / one view。source table rowsは取得していない。
+
+`fanmarks.created_at`と`updated_at`をレビューした。新規登録は同じ操作時刻を両列へbindし、
+既存ファンマの再利用は作成時刻を保持して更新時刻だけをbindする。固定clockのD1 testsで
+新規作成と過去日時の既存レコード再利用をreadbackした。snapshot importerはsource日時を保持する。
+snapshot旧版拒否テストは変換版の定義を参照し、現行版のmanifestを1版下げて拒否を検証する。
+
+converter v40は51個のWorker-operation timestamp columns、7個のsnapshot-import-only
+columns、8個のversioned reference-master timestamps、1個のscheduled Worker timestampと
+11 Auth FKをreview済み。schema/operation blockersは15 locations（timestamp defaults 12、
+functions/RLS/triggers各1）。credential descriptor gateも残り、`deployable: false`。
+converter tests 38/38、migration data tests 234/234、registration D1 tests 11/11、
+Worker typecheck、変更ファイルのESLintが成功。v39 head `689a4fd`のCI run `37017428670`は
+両job成功した。ユーザーデータ移行とdomain/DNS切替は引き続き最後の工程に留める。
+
 ## 2026-10-02 v39：system_settings日時のレビュー
 
 read-only schema catalogを`2026-10-02T13:59:11.510813Z`に取得した。
@@ -18,8 +37,8 @@ columns、8個のversioned reference-master timestamps、1個のscheduled Worker
 functions/RLS/triggers各1）。credential descriptor gateも残り、`deployable: false`。
 converter tests 37/37、`npm run test:migration-data` 233/233、system settings/lifecycle
 D1 tests 11/11、Worker typecheck、変更ファイルのESLintが成功。PR #41のv38 head `c04efbe`は
-run `37016655271`で両job成功。v39は検証済みでpush可能。source rows、Cloudflare resources、
-Worker deploy、domain/DNSは変更していない。
+run `37016655271`で両job成功。v39 commit `689a4fd`のrun `37017428670`も両job成功。
+source rows、Cloudflare resources、Worker deploy、domain/DNSは変更していない。
 
 ## 2026-10-02 v38：通知レコード日時のレビュー
 
