@@ -15,6 +15,7 @@ CASCADEとSET NULLを業務D1で処理、`broadcast_emails.created_by`のNO ACTI
 function/RLS/triggerおよびtimestamp操作のgateも残るため、schema全体は未deployable。
 
 converter単体24/24、account-deletion D1 5/5、`npm run test:migration-data` 220/220を確認。
+PR #41 commit `4515813`はActions run `37003535521`でapplication / Worker APIの両jobがsuccess。
 この変更はschema変換準備のみで、実ユーザー行の読出し・移行、staging/production D1/R2への
 書込み、Worker deploy、ドメイン/DNS変更はしていない。
 

@@ -1,9 +1,9 @@
 # Cloudflare migration handoff
 
 Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
-open and draft. Its current remote head `83648f4` passed both CI jobs in run
-`37002336200`; that run predates the local schema-converter v25 change below
-and did not deploy the Worker. The latest recorded workers.dev-only staging version is
+open and draft. Implementation commit `4515813` passed both CI jobs in run
+`37003535521`; CI does not deploy the Worker. The latest recorded
+workers.dev-only staging version is
 version `d2330dd1-ce17-41c0-99d2-a81b242c412d` at 100%. An earlier run
 `36991654600` exposed an intermittent 120-second
 stall in the PGlite-heavy `subscription-application.test.mjs`; running it in a
