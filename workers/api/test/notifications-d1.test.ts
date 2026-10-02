@@ -167,13 +167,15 @@ describe("Better Auth notifications API", () => {
     });
     expect(privateRead.status).toBe(200);
     expect(await privateRead.json()).toEqual({ schemaVersion: 1, updated: false });
-    const rows = await businessDatabase?.prepare("SELECT id, user_id, read_at, read_via FROM notifications ORDER BY id").all();
+    const rows = await businessDatabase?.prepare("SELECT id, user_id, read_at, read_via, created_at, updated_at FROM notifications ORDER BY id").all();
     const ownerRow = rows?.results?.find((row) => row.id === unreadDeliveredId);
     const otherRow = rows?.results?.find((row) => row.id === otherNotificationId);
     expect(ownerRow).toMatchObject({ user_id: ownerId, read_via: "menu" });
     expect(typeof ownerRow?.read_at).toBe("string");
     expect(Number.isFinite(Date.parse(String(ownerRow?.read_at)))).toBe(true);
-    expect(otherRow).toMatchObject({ user_id: otherId, read_at: null, read_via: null });
+    expect(ownerRow?.created_at).toBe(now);
+    expect(ownerRow?.updated_at).toBe(ownerRow?.read_at);
+    expect(otherRow).toMatchObject({ user_id: otherId, read_at: null, read_via: null, created_at: now, updated_at: now });
 
     const pendingRead = await request(`/api/me/notifications/${pendingId}/read`, {
       method: "PATCH",
@@ -208,14 +210,17 @@ describe("Better Auth notifications API", () => {
     const response = await request("/api/me/notifications/read-all", { method: "POST", headers: { Cookie: cookie } });
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ schemaVersion: 1, updatedCount: 1 });
-    const rows = await businessDatabase?.prepare("SELECT id, user_id, status, expires_at, read_at, read_via FROM notifications ORDER BY id").all();
+    const rows = await businessDatabase?.prepare(`SELECT id, user_id, status, expires_at, read_at, read_via, created_at, updated_at
+      FROM notifications ORDER BY id`).all();
     const values = new Map((rows?.results ?? []).map((row) => [row.id, row]));
     expect(values.get(unreadDeliveredId)).toMatchObject({ user_id: ownerId, read_via: "app" });
     expect(Number.isFinite(Date.parse(String(values.get(unreadDeliveredId)?.read_at)))).toBe(true);
-    expect(values.get(pendingId)).toMatchObject({ read_at: null, read_via: null });
-    expect(values.get(expiredId)).toMatchObject({ read_at: null, read_via: null });
+    expect(values.get(unreadDeliveredId)?.created_at).toBe(now);
+    expect(values.get(unreadDeliveredId)?.updated_at).toBe(values.get(unreadDeliveredId)?.read_at);
+    expect(values.get(pendingId)).toMatchObject({ read_at: null, read_via: null, created_at: now, updated_at: now });
+    expect(values.get(expiredId)).toMatchObject({ read_at: null, read_via: null, created_at: now, updated_at: now });
     expect(values.get(alreadyReadId)?.read_at).toBe(now);
-    expect(values.get(otherNotificationId)).toMatchObject({ user_id: otherId, read_at: null, read_via: null });
+    expect(values.get(otherNotificationId)).toMatchObject({ user_id: otherId, read_at: null, read_via: null, created_at: now, updated_at: now });
   });
 
   it("requires Better Auth, rejects caller-supplied identities and malformed operations, and enforces CORS", async () => {
@@ -357,10 +362,14 @@ describe("D1 notification event processor", () => {
     const event = await businessDatabase.prepare("SELECT status, processed_at, updated_at FROM notification_events WHERE id = ?")
       .bind(eventId).first();
     expect(event).toEqual({ status: "processed", processed_at: now, updated_at: now });
-    const notifications = await businessDatabase.prepare("SELECT user_id, channel, status, payload FROM notifications WHERE event_id = ?")
-      .bind(eventId).all<{ user_id: string; channel: string; status: string; payload: string }>();
+    const notifications = await businessDatabase.prepare(`SELECT user_id, channel, status, payload,
+        triggered_at, created_at, updated_at FROM notifications WHERE event_id = ?`)
+      .bind(eventId).all<{ user_id: string; channel: string; status: string; payload: string; triggered_at: string; created_at: string; updated_at: string }>();
     expect(notifications.results).toHaveLength(1);
-    expect(notifications.results[0]).toMatchObject({ user_id: ownerId, channel: "in_app", status: "delivered" });
+    expect(notifications.results[0]).toMatchObject({
+      user_id: ownerId, channel: "in_app", status: "delivered",
+      triggered_at: now, created_at: now, updated_at: now,
+    });
     expect(JSON.parse(notifications.results[0].payload)).toEqual({
       title: "香水ラジオ",
       body: "Hello 香水ラジオ {{created_at}}",
@@ -389,9 +398,13 @@ describe("D1 notification event processor", () => {
       scheduledTime: Date.parse(now),
     });
     expect(result).toMatchObject({ selected: 1, processed: 1, failed: 0 });
-    const notification = await businessDatabase.prepare("SELECT status, triggered_at, delivered_at FROM notifications WHERE event_id = ?")
+    const notification = await businessDatabase.prepare(`SELECT status, triggered_at, delivered_at, created_at, updated_at
+      FROM notifications WHERE event_id = ?`)
       .bind(eventId).first();
-    expect(notification).toEqual({ status: "pending", triggered_at: "2026-09-25T00:01:00.000000Z", delivered_at: null });
+    expect(notification).toEqual({
+      status: "pending", triggered_at: "2026-09-25T00:01:00.000000Z", delivered_at: null,
+      created_at: now, updated_at: now,
+    });
   });
 
   it("leaves events scheduled for the future untouched", async () => {

@@ -17,7 +17,7 @@ import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 37;
+export const SCHEMA_CONVERSION_VERSION = 38;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -175,6 +175,13 @@ const NOTIFICATION_EVENT_TIMESTAMP_EVIDENCE = Object.freeze([
   "workers/api/test/notifications-d1.test.ts",
   "workers/api/test/stripe-subscription-reconciliation-d1.integration.mjs",
   "workers/api/test/stripe-webhook-d1-application.integration.mjs",
+]);
+const NOTIFICATION_ROW_TIMESTAMP_EVIDENCE = Object.freeze([
+  "scripts/migration/d1-import.mjs",
+  "scripts/migration/test-d1-import.mjs",
+  "workers/api/src/notifications-d1-api.ts",
+  "workers/api/src/notifications-scheduled.ts",
+  "workers/api/test/notifications-d1.test.ts",
 ]);
 const REVIEWED_RUNTIME_TIMESTAMP_WRITES = new Map([
   ["fanmark_basic_configs.created_at", {
@@ -535,6 +542,21 @@ const REVIEWED_RUNTIME_TIMESTAMP_WRITES = new Map([
     code: "worker_operation_explicit_timestamp",
     reason: "Event inserts bind updated_at explicitly, and the scheduled processor binds its invocation time for claim, completion, and retry updates.",
     evidence: NOTIFICATION_EVENT_TIMESTAMP_EVIDENCE,
+  }],
+  ["notifications.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The scheduled event processor binds its captured invocation time when it creates each notification; snapshot imports retain the source value.",
+    evidence: NOTIFICATION_ROW_TIMESTAMP_EVIDENCE,
+  }],
+  ["notifications.triggered_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The scheduled event processor binds the explicit rule-delay timestamp for each notification; snapshot imports retain the source value.",
+    evidence: NOTIFICATION_ROW_TIMESTAMP_EVIDENCE,
+  }],
+  ["notifications.updated_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Notification creation binds the captured invocation time, and read operations bind the same explicit time as read_at; snapshot imports retain the source value.",
+    evidence: NOTIFICATION_ROW_TIMESTAMP_EVIDENCE,
   }],
   ["fanmark_availability_rules.updated_at", {
     code: "worker_operation_explicit_timestamp",

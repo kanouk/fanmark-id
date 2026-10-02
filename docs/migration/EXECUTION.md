@@ -1,5 +1,25 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 v38：通知レコード日時のレビュー
+
+read-only schema catalogを`2026-10-02T13:54:20.132166Z`に取得した。
+40 tables / 406 columns / 144 constraints / 139 indexes / 36 triggers /
+77 RLS policies / 58 functions / one view。source table rowsは取得していない。
+
+`notifications.created_at`、`triggered_at`、`updated_at`は、スケジュールWorkerが
+生成時に明示する。`triggered_at`は処理時刻とルールのdelayから計算し、ユーザーが通知を
+既読にする更新では`read_at`と同じ時刻を`updated_at`へbindする。synthetic D1 testsで
+通常通知・遅延通知・既読更新の時刻をreadbackする。
+
+converter v38は47個のWorker-operation timestamp columns、7個のsnapshot-import-only
+columns、8個のversioned reference-master timestamps、1個のscheduled Worker timestampと
+11 Auth FKをreview済み。schema/operation blockersは19 locations（timestamp defaults 16、
+functions/RLS/triggers各1）。credential descriptor gateも残り、`deployable: false`。
+`npm run test:migration-data` 232/232、notification D1 15/15、Worker typecheck、
+変更ファイルのESLintが成功。v37 head `3c4b7cb`のCI run `37015863853`も両job成功し、
+v38をpushする準備ができた。
+source rows、Cloudflare resources、Worker deploy、domain/DNSは変更していない。
+
 ## 2026-10-02 v37：通知イベント日時のレビュー
 
 read-only schema catalogを`2026-10-02T13:42:59.427789Z`に取得した。
@@ -18,7 +38,8 @@ functions/RLS/triggers各1）。credential descriptor gateも残り、`deployabl
 converter tests 35/35、`npm run test:migration-data` 231/231、対象D1 tests、
 Stripe/lifecycle integration tests、Worker typecheck、変更ファイルのESLintが成功。
 v36 head `647b900`のCI run `37014590824`はapplicationとWorkerの両jobが成功。
-v37のCIはpush後に確認する。source rows、Cloudflare resources、Worker deploy、domain/DNSは変更していない。
+v37 head `3c4b7cb`のCI run `37015863853`はapplicationとWorkerの両jobが成功した。
+source rows、Cloudflare resources、Worker deploy、domain/DNSは変更していない。
 
 ## 2026-10-02 v36：クーポン日時のレビュー
 
