@@ -1,5 +1,24 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：発見・お気に入り連携とMaster履歴（local）
+
+sourceの新規fanmark INSERTによるdiscovery/favorites連携を、追加Business migration
+`0022_fanmark_discovery_link.sql`のnative AFTER INSERT triggerへ実装した。
+正規化UUIDの順序・case・NULL省略・JSON空白を扱い、全ownerのお気に入りを同じ
+transactionで紐付ける。表示/日時/件数は変更しない。更新拒否・RAISE(IGNORE)による
+抑止・同一identityの重複は取得全体をrollbackする。registration D1 suite 18/18。
+trusted SQL INSERTも連携し、正常retryは1回だけ確定する。既適用migrationは変更しない。
+
+管理者ユーザー詳細はBusiness/Auth/Masterの本人actor監査を最新20件に統合する。
+小数桁をUTC microsecondへ正規化して並べ、他actor/NULL actorは除外する。
+必要binding/query failureでは部分履歴を返さない。user management D1 suite 14/14、
+Worker typecheck/targeted ESLint、migration-data 237/237成功。
+両staging smokeをversion/trigger guard付きで拡張した。registration smokeは新flag
+`--run-live-staging-write --verify-discovery-link`と環境変数`FANMARK_EXPECTED_STAGING_VERSION`
+を要求し、空Auth・40-source-table/master baselineを確認してprivate synthetic journalを残す。
+新Worker/0022のremote反映と両smokeは未実施。包括catalog/provider/CPU gateを保持する。
+実ユーザー移行、production Supabase write、domain/DNS切替はしていない。
+
 ## 2026-10-03：絵文字マスター監査をstaging検証
 
 head `ff7bcb8`のCI run `37031840989`はstaging application / Worker APIの両job成功。

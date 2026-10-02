@@ -1,6 +1,8 @@
 import { env } from "cloudflare:workers";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import schemaSql from "./fixtures/d1-admin-user-management.sql?raw";
+import emojiSchemaSql from "../migrations/0000_emoji_master.sql?raw";
+import emojiAuditSql from "../migrations/0008_emoji_master_change_audits.sql?raw";
 import {
   handleAdminUserManagementRequest,
   type AdminUserManagementAuthorizer,
@@ -11,6 +13,7 @@ import { toUtcMicrosecondTimestamp } from "../src/utc-timestamp";
 const runtimeEnv = env as unknown as Env;
 const business = runtimeEnv.FANMARK_DB;
 const auth = runtimeEnv.AUTH_DB;
+const master = runtimeEnv.MASTER_DB;
 const baseUrl = "https://api.example.test";
 const origin = "https://app.example.test";
 const now = new Date("2026-09-26T12:34:56.000Z");
@@ -36,9 +39,13 @@ function splitSql(sql: string): string[] {
 }
 
 async function prepareSchema(): Promise<void> {
-  if (!business || !auth) throw new Error("Split D1 bindings are unavailable");
+  if (!business || !auth || !master) throw new Error("Split D1 bindings are unavailable");
   await business.batch(splitSql(schemaSql.slice(0, schemaSql.indexOf('CREATE TABLE "user"'))).map((sql) => business.prepare(sql)));
   await auth.batch(splitSql(schemaSql.slice(schemaSql.indexOf('CREATE TABLE "user"'))).map((sql) => auth.prepare(sql)));
+  const migration = (emojiSchemaSql + "\n" + emojiAuditSql).replace(/^--.*$/gmu, "");
+  const triggers = [...migration.matchAll(/^CREATE TRIGGER[\s\S]*?^END;/gmu)].map(match => match[0]);
+  const ddl = migration.replace(/^CREATE TRIGGER[\s\S]*?^END;/gmu, "");
+  await master.batch([...splitSql(ddl), ...triggers].map(sql => master.prepare(sql)));
 }
 
 async function request(
@@ -61,7 +68,8 @@ async function request(
 }
 
 async function resetRows(): Promise<void> {
-  if (!business || !auth) throw new Error("Split D1 bindings are unavailable");
+  if (!business || !auth || !master) throw new Error("Split D1 bindings are unavailable");
+  await master.prepare("DELETE FROM fanmark_emoji_master_change_audits").run();
   await business.batch([
     business.prepare("DELETE FROM notification_events"),
     business.prepare("DELETE FROM audit_logs"),
@@ -544,5 +552,63 @@ describe("D1 administrator user directory", () => {
     expect((await request("/api/admin/users", {
       method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({}),
     }, { ADMIN_USER_MANAGEMENT_BACKEND: undefined })).status).toBe(503);
+  });
+
+  it("includes only the target actor's Master audits in the latest 20 combined events with microsecond ordering and redaction", async () => {
+    if (!master || !business || !auth) throw new Error("Split D1 bindings unavailable");
+    const masterIds: string[] = [];
+    for (let index = 0; index < 24; index++) {
+      const id = crypto.randomUUID();
+      masterIds.push(id);
+      await master.prepare(`INSERT INTO fanmark_emoji_master_change_audits
+        (id, user_id, action, resource_type, resource_id, request_id, metadata, created_at)
+        VALUES (?, ?, 'EMOJI_MASTER_UPDATE', 'emoji_master', ?, ?, ?, ?)`)
+        .bind(id, userA, fanmarkA1, crypto.randomUUID(),
+          JSON.stringify({ emoji: "🌸", short_name: `master_${index}`, secret: "hidden", nested: { token: "hidden", safe: true } }),
+          `2026-09-26T12:34:56.${String(index + 1).padStart(6, "0")}Z`).run();
+    }
+    await master.prepare(`INSERT INTO fanmark_emoji_master_change_audits
+      (id, user_id, action, resource_type, resource_id, metadata, created_at)
+      VALUES (?, ?, 'EMOJI_MASTER_INSERT', 'emoji_master', ?, '{}', ?),
+             (?, NULL, 'EMOJI_MASTER_DELETE', 'emoji_master', ?, '{}', ?)`)
+      .bind(crypto.randomUUID(), userB, fanmarkA2, "2026-09-27T00:00:00.000000Z",
+        crypto.randomUUID(), fanmarkA2, "2026-09-27T00:00:00.000000Z").run();
+    const businessLatest = crypto.randomUUID();
+    await business.prepare(`INSERT INTO audit_logs (id, user_id, action, resource_type, resource_id, metadata, created_at)
+      VALUES (?, ?, 'BUSINESS_LATEST', 'user', ?, '{}', ?)`)
+      .bind(businessLatest, userA, userA, "2026-09-26T12:34:56.001Z").run();
+    const authLatest = crypto.randomUUID();
+    await auth.prepare(`INSERT INTO "adminUserStatusAudit"
+      ("id", "actorUserId", "targetUserId", "action", "reason", "banExpires", "createdAt")
+      VALUES (?, ?, ?, 'ADMIN_RESTORE_USER', 'synthetic ordering', NULL, ?)`)
+      .bind(authLatest, userB, userA, "2026-09-26T12:34:56.000Z").run();
+
+    const response = await request(`/api/admin/users/${userA}`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: userA }),
+    });
+    expect(response.status).toBe(200);
+    const payload = await response.json() as { recentAuditLogs: Array<{ id: string; action: string; userId: string; metadata: unknown; createdAt: string }> };
+    expect(payload.recentAuditLogs).toHaveLength(20);
+    expect(payload.recentAuditLogs.map(row => row.id)).toEqual([businessLatest, ...masterIds.slice(5).reverse()]);
+    expect(payload.recentAuditLogs.slice(1).every(row => row.userId === userA && row.action === "EMOJI_MASTER_UPDATE")).toBe(true);
+    expect(payload.recentAuditLogs[1].metadata).toEqual({ emoji: "🌸", short_name: "master_23", nested: { safe: true } });
+    expect(JSON.stringify(payload)).not.toMatch(/hidden|secret|token/u);
+    expect(payload.recentAuditLogs.some(row => row.id === authLatest)).toBe(false);
+  });
+
+  it("fails closed when Master audit history is unavailable instead of returning partial history", async () => {
+    const init = { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: userA }) };
+    const missingBinding = await request(`/api/admin/users/${userA}`, init, { MASTER_DB: undefined });
+    expect(missingBinding.status).toBe(500);
+    if (!master) throw new Error("MASTER_DB binding unavailable");
+    await master.prepare("ALTER TABLE fanmark_emoji_master_change_audits RENAME TO synthetic_unavailable_master_audits").run();
+    try {
+      const response = await request(`/api/admin/users/${userA}`, init);
+      expect(response.status).toBe(503);
+      expect(await response.json()).toEqual({ error: "admin_user_management_unavailable" });
+      expect(await business!.prepare("SELECT id FROM audit_logs WHERE action = 'ADMIN_VIEW_USER_DETAIL'").first()).toBeNull();
+    } finally {
+      await master.prepare("ALTER TABLE synthetic_unavailable_master_audits RENAME TO fanmark_emoji_master_change_audits").run();
+    }
   });
 });

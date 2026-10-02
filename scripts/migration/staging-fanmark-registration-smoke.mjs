@@ -4,7 +4,9 @@
 
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import process from "node:process";
 import {
@@ -15,6 +17,7 @@ import {
   STAGING_NON_USER_CONFIG_BASELINE_SQL,
   stagingNonUserConfigBaselineState,
 } from "./staging-notification-master-baseline.mjs";
+import { hasBusinessMigrationApplied } from "./business-migration-ledger.mjs";
 import { readStagingEmailTemplateMasterBaseline } from "./staging-email-template-master-baseline.mjs";
 
 const ACCOUNT_ID = "bfc2890741f0b3fb236e2d755b6c9adc";
@@ -30,6 +33,15 @@ const MASTER_DATABASE_ID = "160376b0-bde6-4d5f-8969-96deb5ae1183";
 const WRANGLER_VERSION = "4.139.0";
 const APP_CONFIG = "workers/api/wrangler.app-staging.jsonc";
 const AUTH_CONFIG = "workers/api/wrangler.auth-staging.jsonc";
+const VERIFY_DISCOVERY_LINK = process.argv.includes("--verify-discovery-link");
+const DISCOVERY_MIGRATION = "0022_fanmark_discovery_link.sql";
+let journalPath;
+let journal;
+function saveJournal(update) {
+  if (!journalPath) return;
+  journal = { ...journal, ...update };
+  writeFileSync(journalPath, JSON.stringify(journal, null, 2), { mode: 0o600 });
+}
 
 function fail(code) {
   const error = new Error(code);
@@ -74,6 +86,7 @@ function runD1(config, database, sql) {
 }
 
 function assertTarget() {
+  if (VERIFY_DISCOVERY_LINK && !process.argv.includes("--run-live-staging-write")) fail("explicit_staging_write_flag_required");
   const config = JSON.parse(readFileSync(APP_CONFIG, "utf8"));
   if (config.name !== "fanmark-app-staging" || config.workers_dev !== true || config.routes?.length ||
       config.vars?.FANMARK_REGISTRATION_BACKEND !== "d1" || config.vars?.FANMARK_LOTTERY_BACKEND !== "d1") {
@@ -102,6 +115,23 @@ function assertTarget() {
       (database.name ?? database.database_name) === name)) fail("cloudflare_database_mismatch");
   }
 
+  if (VERIFY_DISCOVERY_LINK) {
+    if (config.account_id !== ACCOUNT_ID) fail("staging_account_config_mismatch");
+    const expectedVersion = process.env.FANMARK_EXPECTED_STAGING_VERSION;
+    if (!expectedVersion) fail("pinned_staging_version_required");
+    const deployments = runJson(["deployments", "list", "--name", config.name, "--json", "--config", APP_CONFIG]);
+    const latest = deployments.toSorted((a, b) => Date.parse(b.created_on) - Date.parse(a.created_on))[0];
+    if (!Number.isFinite(Date.parse(latest?.created_on)) || !latest.versions?.some(version => version.percentage === 100 && version.version_id === expectedVersion)) fail("staging_version_mismatch");
+    const authCounts = d1Rows(runD1(AUTH_CONFIG, AUTH_DATABASE, `SELECT
+      (SELECT count(*) FROM "user") + (SELECT count(*) FROM account) + (SELECT count(*) FROM session) AS rows`))[0];
+    if (Number(authCounts?.rows) !== 0) fail("auth_staging_has_rows");
+    const ledger = d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, "SELECT name FROM d1_migrations ORDER BY id"));
+    assert.ok(hasBusinessMigrationApplied(ledger.map(row => row.name), DISCOVERY_MIGRATION), "required Business migration ledger prefix is missing");
+    const trigger = d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, "SELECT sql FROM sqlite_master WHERE type = 'trigger' AND name = 'fanmark_link_discovery_after_insert'"));
+    const normalize = value => value.replace(/^--.*$/gmu, "").replace(/\s+/gu, " ").trim().replace(/;$/u, "");
+    assert.equal(trigger.length, 1);
+    assert.equal(normalize(trigger[0].sql), normalize(readFileSync(`workers/api/migrations-business/${DISCOVERY_MIGRATION}`, "utf8")));
+  }
   const migration = readFileSync("workers/api/migrations-business/0000_business_schema_v4_staging.sql", "utf8");
   const tables = [...migration.matchAll(/^CREATE TABLE "([A-Za-z_][A-Za-z0-9_]*)"/gmu)].map((match) => match[1]);
   if (tables.length !== 40) fail("business_table_inventory_mismatch");
@@ -129,6 +159,8 @@ function assertTarget() {
 async function request(path, init = {}) {
   return fetch(`${APP_ORIGIN}${path}`, {
     ...init,
+    redirect: "manual",
+    signal: AbortSignal.timeout(30_000),
     headers: { Origin: APP_ORIGIN, ...(init.headers ?? {}) },
   });
 }
@@ -147,7 +179,7 @@ function responseCookie(response) {
   return pair;
 }
 
-async function cleanup({ userId, fanmarkId, licenseId, entryId, email, cookie, coverObjectPath, coverPublicUrl }) {
+async function cleanup({ userId, fanmarkId, licenseId, entryId, email, cookie, coverObjectPath, coverPublicUrl, discoveryId, favoriteId }) {
   if (coverObjectPath) {
     let deleted = false;
     if (cookie) {
@@ -190,6 +222,8 @@ async function cleanup({ userId, fanmarkId, licenseId, entryId, email, cookie, c
     DELETE FROM notification_events WHERE ${entryId ? `json_extract(payload, '$.entry_id') = ${sqlLiteral(entryId)}` : "0"};
     DELETE FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND resource_id = ${entryId ? sqlLiteral(entryId) : "'__no_entry__'"} AND resource_type = 'fanmark_lottery_entry';
     DELETE FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND action = 'register_fanmark';
+    DELETE FROM fanmark_favorites WHERE id = ${favoriteId ? sqlLiteral(favoriteId) : "'__no_favorite__'"} AND user_id = ${sqlLiteral(userId)};
+    DELETE FROM fanmark_discoveries WHERE id = ${discoveryId ? sqlLiteral(discoveryId) : "'__no_discovery__'"};
     ${childDeletes}
     DELETE FROM user_settings WHERE user_id = ${sqlLiteral(userId)};
     DELETE FROM fanmark_licenses WHERE user_id = ${sqlLiteral(userId)};
@@ -202,6 +236,8 @@ async function cleanup({ userId, fanmarkId, licenseId, entryId, email, cookie, c
   `);
   const business = d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, `
     SELECT
+      (SELECT COUNT(*) FROM fanmark_favorites WHERE id = ${favoriteId ? sqlLiteral(favoriteId) : "'__no_favorite__'"}) AS favorites,
+      (SELECT COUNT(*) FROM fanmark_discoveries WHERE id = ${discoveryId ? sqlLiteral(discoveryId) : "'__no_discovery__'"}) AS discoveries,
       (SELECT COUNT(*) FROM fanmark_licenses WHERE user_id = ${sqlLiteral(userId)}) AS licenses,
       (SELECT COUNT(*) FROM fanmarks WHERE id = ${fanmarkId ? sqlLiteral(fanmarkId) : "'__no_fanmark__'"}) AS fanmarks,
       (SELECT COUNT(*) FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND action = 'register_fanmark') AS audits,
@@ -262,6 +298,8 @@ async function main() {
   }
 
   const userId = randomUUID();
+  const discoveryId = VERIFY_DISCOVERY_LINK ? randomUUID() : undefined;
+  const favoriteId = VERIFY_DISCOVERY_LINK ? randomUUID() : undefined;
   const nonce = randomBytes(9).toString("hex");
   const email = `codex-registration-${nonce}@example.invalid`;
   const password = `Staging-${randomBytes(24).toString("base64url")}a9!`;
@@ -278,6 +316,11 @@ async function main() {
   let coverPublicUrl;
   let cleanupNeeded = false;
 
+  if (VERIFY_DISCOVERY_LINK) {
+    journalPath = join(mkdtempSync(join(tmpdir(), "fanmark-discovery-canary-")), "canary.json");
+    saveJournal({ state: "prepared", expectedVersion: process.env.FANMARK_EXPECTED_STAGING_VERSION,
+      userId, email, discoveryId, favoriteId, emojiId: emoji.id });
+  }
   try {
     cleanupNeeded = true;
     runD1(AUTH_CONFIG, AUTH_DATABASE, `
@@ -286,6 +329,17 @@ async function main() {
       INSERT INTO account (id, accountId, providerId, userId, password, createdAt, updatedAt)
       VALUES (${sqlLiteral(randomUUID())}, ${sqlLiteral(userId)}, 'credential', ${sqlLiteral(userId)}, ${sqlLiteral(passwordHash)}, ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});
     `);
+    saveJournal({ state: "auth-seeded" });
+    if (VERIFY_DISCOVERY_LINK) {
+      const ids = JSON.stringify([emoji.id]);
+      runD1(APP_CONFIG, BUSINESS_DATABASE, `
+        INSERT INTO fanmark_discoveries (id, emoji_ids, normalized_emoji_ids, fanmark_id, availability_status, first_seen_at, last_seen_at, search_count, favorite_count)
+        VALUES (${sqlLiteral(discoveryId)}, ${sqlLiteral(ids)}, ${sqlLiteral(JSON.stringify([emoji.id.toUpperCase()], null, 2))}, NULL, 'unclaimed', ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)}, 9, 1);
+        INSERT INTO fanmark_favorites (id, user_id, discovery_id, fanmark_id, normalized_emoji_ids, created_at, display_fanmark)
+        VALUES (${sqlLiteral(favoriteId)}, ${sqlLiteral(userId)}, ${sqlLiteral(discoveryId)}, NULL, ${sqlLiteral(ids)}, ${sqlLiteral(timestamp)}, ${sqlLiteral(emoji.emoji)});
+      `);
+      saveJournal({ state: "discovery-seeded" });
+    }
     const signedIn = await request("/api/auth/sign-in/email", {
       method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, password }),
     });
@@ -342,6 +396,25 @@ async function main() {
     assert.equal(stored.access_type, "profile");
     assert.equal(stored.display_name, "Codex registration smoke");
     assert.equal(stored.action, "register_fanmark");
+    saveJournal({ state: "registered", fanmarkId, licenseId });
+    if (VERIFY_DISCOVERY_LINK) {
+      const linked = d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, `SELECT discovery.fanmark_id, discovery.availability_status,
+        discovery.first_seen_at, discovery.last_seen_at, discovery.search_count, discovery.favorite_count,
+        favorite.fanmark_id AS favorite_fanmark_id, favorite.created_at, favorite.display_fanmark
+        FROM fanmark_discoveries discovery JOIN fanmark_favorites favorite ON favorite.discovery_id = discovery.id
+        WHERE discovery.id = ${sqlLiteral(discoveryId)} AND favorite.id = ${sqlLiteral(favoriteId)}`));
+      assert.deepEqual(linked, [{ fanmark_id: fanmarkId, availability_status: "owned_by_user", first_seen_at: timestamp,
+        last_seen_at: timestamp, search_count: 9, favorite_count: 1, favorite_fanmark_id: fanmarkId,
+        created_at: timestamp, display_fanmark: emoji.emoji }]);
+      const favoriteList = await readJson(await request("/api/me/favorites", { headers: { cookie } }), 200, "linked_favorites_read_failed");
+      assert.equal(favoriteList.items.length, 1);
+      assert.equal(favoriteList.items[0].favorite_id, favoriteId);
+      assert.equal(favoriteList.items[0].fanmark_id, fanmarkId);
+      assert.equal(favoriteList.items[0].availability_status, "owned_by_user");
+      assert.equal(favoriteList.items[0].display_fanmark, emoji.emoji);
+      assert.equal(favoriteList.items[0].favorited_at, timestamp);
+      saveJournal({ state: "discovery-verified", favoritesReadStatus: 200 });
+    }
 
     const coverBytes = Uint8Array.from(Buffer.from(
       "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADUlEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
@@ -355,6 +428,7 @@ async function main() {
     const cover = await readJson(coverUpload, 201, "cover_r2_upload_failed");
     coverObjectPath = cover.path;
     coverPublicUrl = cover.publicUrl;
+    saveJournal({ coverObjectPath, coverPublicUrl });
     assert.match(coverObjectPath, new RegExp(`^${userId}/[0-9a-f-]+\\.png$`, "iu"));
     assert.equal(new URL(coverPublicUrl).origin, APP_ORIGIN);
     const publicCover = await request(new URL(coverPublicUrl).pathname);
@@ -419,6 +493,7 @@ async function main() {
     assert.equal(appliedLottery.fanmark_id, fanmarkId);
     assert.equal(typeof appliedLottery.entry_id, "string");
     entryId = appliedLottery.entry_id;
+    saveJournal({ entryId });
     const lotteryReadback = d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE, `
       SELECT entry_status, fanmark_id, user_id, license_id, lottery_probability
       FROM fanmark_lottery_entries WHERE id = ${sqlLiteral(entryId)}
@@ -481,7 +556,7 @@ async function main() {
     }), 401, "unauthenticated_registration_not_blocked");
     assert.equal(unauthenticated.error_code, "authentication_required");
 
-    const cleanupProof = await cleanup({ userId, fanmarkId, licenseId, entryId, email, cookie, coverObjectPath, coverPublicUrl });
+    const cleanupProof = await cleanup({ userId, fanmarkId, licenseId, entryId, email, cookie, coverObjectPath, coverPublicUrl, discoveryId, favoriteId });
     const totalRowsQuery = businessTables.map((table) => `(SELECT COUNT(*) FROM "${table}")`).join(" + ");
     const totalRows = Number(d1Rows(runD1(APP_CONFIG, BUSINESS_DATABASE,
       `SELECT ${totalRowsQuery} AS total_rows`))[0]?.total_rows);
@@ -498,10 +573,13 @@ async function main() {
       fail("email_template_master_baseline_changed");
     }
     cleanupNeeded = false;
+    saveJournal({ state: "verified-and-cleaned", cleanup: cleanupProof });
     process.stdout.write(`${JSON.stringify({
       worker: "fanmark-app-staging",
       endpoint: "/api/fanmarks/register",
       syntheticOwner: true,
+      discoveryLink: VERIFY_DISCOVERY_LINK ? "exact-and-cleaned" : "not-selected",
+      journalPath,
       syntheticEmoji: emoji.emoji,
       emailTemplateBaseline,
       tier: Number(tier.tier_level),
@@ -524,7 +602,11 @@ async function main() {
       businessRowsAfterCleanup: totalRows,
     }, null, 2)}\n`);
   } finally {
-    if (cleanupNeeded) await cleanup({ userId, fanmarkId, licenseId, entryId, email, cookie, coverObjectPath, coverPublicUrl });
+    if (cleanupNeeded) {
+      saveJournal({ state: "cleanup-required", fanmarkId, licenseId, entryId, coverObjectPath, coverPublicUrl });
+      await cleanup({ userId, fanmarkId, licenseId, entryId, email, cookie, coverObjectPath, coverPublicUrl, discoveryId, favoriteId });
+      saveJournal({ state: "failed-but-cleaned" });
+    }
   }
 }
 

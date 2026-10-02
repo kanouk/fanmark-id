@@ -573,6 +573,15 @@ async function exerciseEmojiMasterAudit(cookie, userId, journalPath) {
       assert.match(audit.created_at, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
     }
     assert.equal(new Set(importAudits.map(row => row.created_at)).size, 1);
+    const historyResponse = await request(`/api/admin/users/${encodeURIComponent(userId)}`, write({ userId }));
+    assertStatus(historyResponse, 200, "administrator's combined Master audit history");
+    const history = await historyResponse.json();
+    const expectedHistory = audits.toSorted((left, right) => right.created_at.localeCompare(left.created_at) || left.id.localeCompare(right.id)).slice(0, 20);
+    assert.deepEqual(history.recentAuditLogs.map(row => ({ id: row.id, action: row.action, resourceId: row.resourceId,
+      userId: row.userId, createdAt: row.createdAt, metadata: row.metadata })),
+    expectedHistory.map(row => ({ id: row.id, action: row.action, resourceId: row.resource_id,
+      userId: row.user_id, createdAt: row.created_at, metadata: JSON.parse(row.metadata) })),
+    "administrator user-detail history did not include the latest exact Master audits");
     assert.deepEqual(await queryMaster("SELECT count(*) AS count FROM fanmark_emoji_master_mutation_context"), [{ count: 0 }]);
     assert.equal(await catalogDigest(), publicDigest, "draft changes altered the public catalog");
     verified = true;
@@ -595,7 +604,7 @@ async function exerciseEmojiMasterAudit(cookie, userId, journalPath) {
     await writeFile(journalPath, JSON.stringify(journal), { mode: 0o600 });
   }
   console.log(JSON.stringify({ emojiAudit: "verified", importRows: 100, exactPerRowAudits: 102,
-    actor: "server-authorized", contextRows: 0, publicCatalog: "unchanged", masterCleanup: "verified" }));
+    actor: "server-authorized", adminHistory: "latest-20-exact", contextRows: 0, publicCatalog: "unchanged", masterCleanup: "verified" }));
 }
 
 async function exerciseNotificationMasters(cookie) {
@@ -3054,7 +3063,7 @@ async function main() {
     await executeBusiness(`INSERT INTO user_settings (user_id, username, display_name, avatar_url, plan_type, preferred_language, created_at, updated_at)
       VALUES (${sqlLiteral(targetUserId)}, ${sqlLiteral(targetUsername)}, ${sqlLiteral(targetEmail)}, NULL, 'free', 'ja', ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});`,
     "synthetic admin target profile provision");
-    if (actions.adminUserManagementBrowser || actions.lifecycleSettingsBrowser) {
+    if (actions.adminUserManagementBrowser || actions.lifecycleSettingsBrowser || actions.emojiMasterAuditRoundtrip) {
       await executeBusiness(`INSERT INTO user_settings (user_id, username, display_name, avatar_url, plan_type, preferred_language, created_at, updated_at, requires_password_setup)
         VALUES (${sqlLiteral(userId)}, ${sqlLiteral(adminUsername)}, 'Synthetic staging MFA', NULL, 'free', 'ja', ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)}, 0);`,
       "synthetic admin browser-session profile provision");
@@ -3222,10 +3231,10 @@ async function main() {
           }
           await executeBusiness(
             `DELETE FROM enterprise_user_settings WHERE user_id = ${sqlLiteral(targetUserId)};\n` +
-            `DELETE FROM audit_logs WHERE (user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL', 'ADMIN_UPDATE_PLAN', 'admin_expire_license') AND (resource_id IS NULL OR resource_id IN (${sqlLiteral(targetUserId)}, ${sqlLiteral(expiryLicenseId)}))) OR (resource_id = ${sqlLiteral(expiryLicenseId)} AND action = 'license_expired');\n` +
+            `DELETE FROM audit_logs WHERE (user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL', 'ADMIN_UPDATE_PLAN', 'admin_expire_license') AND (resource_id IS NULL OR resource_id IN (${sqlLiteral(targetUserId)}, ${sqlLiteral(expiryLicenseId)}, ${sqlLiteral(userId)}))) OR (resource_id = ${sqlLiteral(expiryLicenseId)} AND action = 'license_expired');\n` +
             (actions.systemSettingsReadback ? `DELETE FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND action = 'ADMIN_UPDATE_SYSTEM_SETTING' AND resource_type = 'system_setting' AND resource_id = ${sqlLiteral(systemSettingState.key)};\n` : "") +
             `DELETE FROM user_settings WHERE user_id = ${sqlLiteral(targetUserId)};\n` +
-            (actions.adminUserManagementBrowser || actions.lifecycleSettingsBrowser
+            (actions.adminUserManagementBrowser || actions.lifecycleSettingsBrowser || actions.emojiMasterAuditRoundtrip
               ? `DELETE FROM user_settings WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(adminUsername)};`
               : ""),
             "synthetic admin user-management cleanup",
@@ -3237,10 +3246,10 @@ async function main() {
           );
           const [profileRows, adminProfileRows, auditRows, authRows, statusAuditRows, settingsAuditRows] = await Promise.all([
             queryBusiness(`SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(targetUserId)}`),
-            queryBusiness(actions.adminUserManagementBrowser || actions.lifecycleSettingsBrowser
+            queryBusiness(actions.adminUserManagementBrowser || actions.lifecycleSettingsBrowser || actions.emojiMasterAuditRoundtrip
               ? `SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(adminUsername)}`
               : "SELECT 0 AS count"),
-            queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE (user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL', 'ADMIN_UPDATE_PLAN', 'admin_expire_license') AND (resource_id IS NULL OR resource_id IN (${sqlLiteral(targetUserId)}, ${sqlLiteral(expiryLicenseId)}))) OR (resource_id = ${sqlLiteral(expiryLicenseId)} AND action = 'license_expired')`),
+            queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE (user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL', 'ADMIN_UPDATE_PLAN', 'admin_expire_license') AND (resource_id IS NULL OR resource_id IN (${sqlLiteral(targetUserId)}, ${sqlLiteral(expiryLicenseId)}, ${sqlLiteral(userId)}))) OR (resource_id = ${sqlLiteral(expiryLicenseId)} AND action = 'license_expired')`),
             query(`SELECT COUNT(*) AS count FROM "user" WHERE id = ${sqlLiteral(targetUserId)} AND email = ${sqlLiteral(targetEmail)}`),
             query(`SELECT COUNT(*) AS count FROM "adminUserStatusAudit" WHERE "actorUserId" = ${sqlLiteral(userId)} OR "targetUserId" = ${sqlLiteral(targetUserId)}`),
             queryBusiness(actions.systemSettingsReadback

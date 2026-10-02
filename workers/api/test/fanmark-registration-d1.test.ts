@@ -2,6 +2,7 @@ import { env } from "cloudflare:workers";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import businessSchema from "./fixtures/d1-fanmark-registration.sql?raw";
 import masterSchema from "./fixtures/d1-fanmark-registration-master.sql?raw";
+import discoveryLinkSql from "../migrations-business/0022_fanmark_discovery_link.sql?raw";
 import { handleFanmarkRegistrationRequest } from "../src/fanmark-registration-d1-api";
 import type { Env } from "../src/repository";
 
@@ -45,6 +46,7 @@ async function batch(db: D1Database, statements: string[]): Promise<void> {
 async function reset(): Promise<void> {
   if (!business || !master) throw new Error("Registration D1 bindings unavailable");
   await batch(business, [
+    "DELETE FROM fanmark_favorites", "DELETE FROM fanmark_discoveries",
     "DELETE FROM fanmark_profiles", "DELETE FROM fanmark_redirect_configs", "DELETE FROM fanmark_messageboard_configs",
     "DELETE FROM fanmark_basic_configs", "DELETE FROM audit_logs", "DELETE FROM fanmark_lottery_entries",
     "DELETE FROM fanmark_licenses", "DELETE FROM fanmarks", "DELETE FROM system_settings",
@@ -96,11 +98,106 @@ beforeAll(async () => {
   if (!business || !master) throw new Error("Registration D1 bindings unavailable");
   await batch(business, splitStatements(businessSchema));
   await batch(master, splitStatements(masterSchema));
+  await business.prepare(discoveryLinkSql.replace(/^--.*$/gmu, "").trim()).run();
 });
 
 beforeEach(reset);
 
 describe("D1 fanmark registration", () => {
+  async function seedDiscovery(normalized: Array<string | null>, withFavorites = true) {
+    if (!business) throw new Error("FANMARK_DB binding unavailable");
+    const id = crypto.randomUUID();
+    await run(business, `INSERT INTO fanmark_discoveries
+      (id, emoji_ids, normalized_emoji_ids, fanmark_id, availability_status, first_seen_at, last_seen_at, search_count, favorite_count)
+      VALUES (?, ?, ?, NULL, 'unclaimed', ?, ?, 9, ?)`, id, JSON.stringify([IDS.rose, IDS.thumb]),
+      JSON.stringify(normalized, null, 2), PREVIOUS_CREATED_AT, PREVIOUS_UPDATED_AT, withFavorites ? 2 : 0);
+    if (withFavorites) {
+      for (const [owner, display] of [[OWNER, "🌹👍🏻"], [OTHER, "🌹👍"]]) {
+        await run(business, `INSERT INTO fanmark_favorites
+          (id, user_id, discovery_id, fanmark_id, normalized_emoji_ids, created_at, display_fanmark)
+          VALUES (?, ?, ?, NULL, ?, ?, ?)`, crypto.randomUUID(), owner, id, JSON.stringify([IDS.rose, IDS.thumb]), PREVIOUS_CREATED_AT, display);
+      }
+    }
+    return id;
+  }
+
+  it.each([
+    [IDS.rose, IDS.thumb],
+    [null, IDS.rose.toUpperCase(), null, IDS.thumb, null],
+  ])("links an existing ordered discovery and all owners' favorites on registration (%j)", async (...normalized) => {
+    const id = await seedDiscovery(normalized);
+    const reversed = await seedDiscovery([IDS.thumb, IDS.rose], false);
+    const response = await post(registration({ user_input_fanmark: "🌹👍", emoji_ids: [IDS.rose, IDS.thumb], normalized_emoji_ids: [IDS.rose, IDS.thumb] }));
+    expect(response.status).toBe(201);
+    const fanmark = await business!.prepare("SELECT id FROM fanmarks").first<{ id: string }>();
+    expect(await business!.prepare(`SELECT fanmark_id, availability_status, first_seen_at, last_seen_at, search_count, favorite_count
+      FROM fanmark_discoveries WHERE id = ?`).bind(id).first()).toEqual({
+      fanmark_id: fanmark!.id, availability_status: "owned_by_user", first_seen_at: PREVIOUS_CREATED_AT,
+      last_seen_at: PREVIOUS_UPDATED_AT, search_count: 9, favorite_count: 2,
+    });
+    const favorites = await business!.prepare(`SELECT user_id, fanmark_id, created_at, display_fanmark
+      FROM fanmark_favorites WHERE discovery_id = ? ORDER BY user_id`).bind(id).all();
+    expect(favorites.results).toEqual([
+      { user_id: OTHER, fanmark_id: fanmark!.id, created_at: PREVIOUS_CREATED_AT, display_fanmark: "🌹👍" },
+      { user_id: OWNER, fanmark_id: fanmark!.id, created_at: PREVIOUS_CREATED_AT, display_fanmark: "🌹👍🏻" },
+    ]);
+    expect(await business!.prepare("SELECT fanmark_id, availability_status FROM fanmark_discoveries WHERE id = ?")
+      .bind(reversed).first()).toEqual({ fanmark_id: null, availability_status: "unclaimed" });
+  });
+
+  it.each([
+    ["fanmark_favorites", "ABORT, 'synthetic favorite failure'"],
+    ["fanmark_favorites", "IGNORE"],
+    ["fanmark_discoveries", "IGNORE"],
+  ])("rolls back the entire registration when %s linkage is rejected or suppressed (%s)", async (table, failure) => {
+    const discoveryId = await seedDiscovery([IDS.rose, IDS.thumb]);
+    const beforeDiscovery = await business!.prepare("SELECT * FROM fanmark_discoveries WHERE id = ?").bind(discoveryId).first();
+    const beforeFavorites = (await business!.prepare("SELECT * FROM fanmark_favorites WHERE discovery_id = ? ORDER BY id").bind(discoveryId).all()).results;
+    await business!.prepare(`CREATE TRIGGER synthetic_discovery_failure BEFORE UPDATE ON ${table}
+      BEGIN SELECT RAISE(${failure}); END`).run();
+    const body = registration({ user_input_fanmark: "🌹👍", emoji_ids: [IDS.rose, IDS.thumb], normalized_emoji_ids: [IDS.rose, IDS.thumb], createProfile: true });
+    try {
+      expect((await post(body)).status).toBe(503);
+      for (const affectedTable of ["fanmarks", "fanmark_licenses", "fanmark_basic_configs", "fanmark_profiles", "audit_logs"]) {
+        expect(await count(business!, affectedTable)).toBe(0);
+      }
+      expect(await business!.prepare("SELECT * FROM fanmark_discoveries WHERE id = ?").bind(discoveryId).first()).toEqual(beforeDiscovery);
+      expect((await business!.prepare("SELECT * FROM fanmark_favorites WHERE discovery_id = ? ORDER BY id").bind(discoveryId).all()).results).toEqual(beforeFavorites);
+    } finally {
+      await business!.prepare("DROP TRIGGER synthetic_discovery_failure").run();
+    }
+    expect((await post(body)).status).toBe(201);
+    expect(await count(business!, "fanmarks")).toBe(1);
+    expect(await count(business!, "audit_logs")).toBe(1);
+  });
+
+  it("rejects ambiguous discoveries with the same typed ordered identity without partial writes", async () => {
+    await seedDiscovery([IDS.rose, IDS.thumb]);
+    await seedDiscovery([null, IDS.rose.toUpperCase(), IDS.thumb, null], false);
+    expect((await post(registration({ user_input_fanmark: "🌹👍", emoji_ids: [IDS.rose, IDS.thumb], normalized_emoji_ids: [IDS.rose, IDS.thumb] }))).status).toBe(503);
+    expect(await count(business!, "fanmarks")).toBe(0);
+    expect(await count(business!, "fanmark_licenses")).toBe(0);
+    expect(await count(business!, "audit_logs")).toBe(0);
+    expect((await business!.prepare("SELECT fanmark_id, availability_status FROM fanmark_discoveries").all()).results)
+      .toEqual([{ fanmark_id: null, availability_status: "unclaimed" }, { fanmark_id: null, availability_status: "unclaimed" }]);
+    expect((await business!.prepare("SELECT fanmark_id FROM fanmark_favorites").all()).results)
+      .toEqual([{ fanmark_id: null }, { fanmark_id: null }]);
+  });
+
+  it("links favorites for a trusted native INSERT without a registration API callback", async () => {
+    const discoveryId = await seedDiscovery([IDS.rose, IDS.thumb]);
+    const fanmarkId = crypto.randomUUID();
+    await run(business!, `INSERT INTO fanmarks
+      (id, user_input_fanmark, normalized_emoji, short_id, status, created_at, updated_at, emoji_ids, normalized_emoji_ids, tier_level)
+      VALUES (?, '🌹👍', '🌹👍', 'native01', 'active', ?, ?, ?, ?, 4)`,
+    fanmarkId, NOW, NOW, JSON.stringify([IDS.rose, IDS.thumb]), JSON.stringify([IDS.rose, IDS.thumb]));
+    expect(await business!.prepare("SELECT fanmark_id, availability_status FROM fanmark_discoveries WHERE id = ?")
+      .bind(discoveryId).first()).toEqual({ fanmark_id: fanmarkId, availability_status: "owned_by_user" });
+    expect((await business!.prepare("SELECT fanmark_id FROM fanmark_favorites WHERE discovery_id = ?")
+      .bind(discoveryId).all()).results).toEqual([{ fanmark_id: fanmarkId }, { fanmark_id: fanmarkId }]);
+    expect(await count(business!, "fanmark_licenses")).toBe(0);
+  });
+
   it("creates the fanmark, initial license, configuration, profile, and audit atomically", async () => {
     const response = await post(registration({ createProfile: true }));
     expect(response.status).toBe(201);

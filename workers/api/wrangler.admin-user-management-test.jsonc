@@ -12,6 +12,7 @@
   },
   "d1_databases": [
     { "binding": "FANMARK_DB", "database_name": "fanmark-admin-users-business-local", "database_id": "00000000-0000-0000-0000-000000000121" },
-    { "binding": "AUTH_DB", "database_name": "fanmark-admin-users-auth-local", "database_id": "00000000-0000-0000-0000-000000000122" }
+    { "binding": "AUTH_DB", "database_name": "fanmark-admin-users-auth-local", "database_id": "00000000-0000-0000-0000-000000000122" },
+    { "binding": "MASTER_DB", "database_name": "fanmark-admin-users-master-local", "database_id": "00000000-0000-0000-0000-000000000123" }
   ]
 }

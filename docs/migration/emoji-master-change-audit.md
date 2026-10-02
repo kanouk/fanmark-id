@@ -63,8 +63,12 @@ all modes now clean their always-provisioned target, and the fresh full run
 completed `verified-and-cleaned`. MFA generation remains monotonic.
 
 This establishes the mutation/audit storage contract. Administrator user-detail
-history currently combines Business/Auth audit stores; integration/readback of
-these new Master audits remains a separate open UI parity check.
+history now combines Business/Auth/Master audit stores with an exact target-actor
+filter and latest-20 UTC-microsecond ordering. Missing bindings or failed Master
+queries fail closed, rather than returning incomplete history. The local user
+management suite passes 14/14, including submillisecond ordering, other/NULL
+actor exclusion and credential/PII redaction. The extended TOTP staging smoke
+compares the latest 20 exact Master audit DTOs; deployment/readback is pending.
 
 The guarded synthetic staging command is:
 

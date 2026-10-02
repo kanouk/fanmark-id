@@ -350,6 +350,11 @@ function validTimestamp(value: unknown): value is string {
   return typeof value === "string" && Number.isFinite(Date.parse(value));
 }
 
+function auditTimestampKey(value: string): string {
+  const utc = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d{1,6}))?Z$/u.exec(value);
+  return utc ? `${utc[1]}.${(utc[2] ?? "").padEnd(6, "0")}Z` : toUtcMicrosecondTimestamp(new Date(value));
+}
+
 function effectiveUserStatus(user: Pick<AuthUserRow, "banned" | "banExpires">, now: Date): "active" | "suspended" {
   if ((user.banned !== 0 && user.banned !== 1) || !(user.banExpires === null || validTimestamp(user.banExpires))) {
     fail("admin_user_management_unavailable");
@@ -859,6 +864,7 @@ async function getUserDetail(
   userId: string,
   business: D1Database,
   auth: D1Database,
+  master: D1Database,
   authorization: { userId: string; sessionId: string },
   now: Date,
   headers: Headers,
@@ -878,7 +884,7 @@ async function getUserDetail(
     fail("admin_user_management_unavailable");
   }
   const status = effectiveUserStatus({ banned: authUser.banned, banExpires: authUser.banExpires }, now);
-  const [lastSignIns, factorsResult, enterprise, summaryRows, fanmarkRows, auditRows, statusAuditRows] = await Promise.all([
+  const [lastSignIns, factorsResult, enterprise, summaryRows, fanmarkRows, auditRows, statusAuditRows, masterAuditRows] = await Promise.all([
     readLastSignIns(auth, [userId]),
     auth.prepare(`SELECT "verified" FROM "twoFactor" WHERE "userId" = ? LIMIT 3`).bind(userId).all<Record<string, unknown>>(),
     business.prepare(`SELECT custom_fanmarks_limit, custom_pricing, notes, updated_at
@@ -900,12 +906,16 @@ async function getUserDetail(
         "createdAt" AS created_at
       FROM "adminUserStatusAudit" WHERE "targetUserId" = ?
       ORDER BY "createdAt" DESC, "id" ASC LIMIT 20`).bind(userId).all<Record<string, unknown>>(),
+    master.prepare(`SELECT id, user_id, action, resource_type, resource_id, metadata, created_at
+      FROM fanmark_emoji_master_change_audits WHERE user_id = ?
+      ORDER BY created_at DESC, id ASC LIMIT 20`).bind(userId).all<Record<string, unknown>>(),
   ]);
   if (!factorsResult.success || !Array.isArray(factorsResult.results) || factorsResult.results.length > 2 ||
       !summaryRows.success || !Array.isArray(summaryRows.results) ||
       !fanmarkRows.success || !Array.isArray(fanmarkRows.results) || fanmarkRows.results.length > 25 ||
       !auditRows.success || !Array.isArray(auditRows.results) || auditRows.results.length > 20 ||
-      !statusAuditRows.success || !Array.isArray(statusAuditRows.results) || statusAuditRows.results.length > 20) fail("admin_user_management_unavailable");
+      !statusAuditRows.success || !Array.isArray(statusAuditRows.results) || statusAuditRows.results.length > 20 ||
+      !masterAuditRows.success || !Array.isArray(masterAuditRows.results) || masterAuditRows.results.length > 20) fail("admin_user_management_unavailable");
 
   const licenseSummary = { active: 0, grace: 0, expired: 0, total: 0 };
   for (const row of summaryRows.results) {
@@ -933,7 +943,7 @@ async function getUserDetail(
       accessType: row.access_type,
     };
   });
-  const recentAuditLogs = [...auditRows.results, ...statusAuditRows.results].map((row) => {
+  const recentAuditLogs = [...auditRows.results, ...statusAuditRows.results, ...masterAuditRows.results].map((row) => {
     if (typeof row.id !== "string" || !UUID.test(row.id) || !(row.user_id === null || typeof row.user_id === "string") ||
         typeof row.action !== "string" || row.action.length > 256 || typeof row.resource_type !== "string" || row.resource_type.length > 128 ||
         !validNullableText(row.resource_id, 128) || !validTimestamp(row.created_at)) fail("admin_user_management_unavailable");
@@ -946,7 +956,7 @@ async function getUserDetail(
       metadata: safeMetadata(row.metadata),
       createdAt: row.created_at,
     };
-  }).sort((left, right) => right.createdAt.localeCompare(left.createdAt) || left.id.localeCompare(right.id)).slice(0, 20);
+  }).sort((left, right) => auditTimestampKey(right.createdAt).localeCompare(auditTimestampKey(left.createdAt)) || left.id.localeCompare(right.id)).slice(0, 20);
   let enterpriseSettings: Record<string, unknown> | null = null;
   if (enterprise) {
     if (!(enterprise.custom_fanmarks_limit === null || (typeof enterprise.custom_fanmarks_limit === "number" && Number.isSafeInteger(enterprise.custom_fanmarks_limit))) ||
@@ -1049,7 +1059,9 @@ export async function handleAdminUserManagementRequest(
     if (userId !== null) {
       const body = await readBody(request);
       if (!isRecord(body) || Object.keys(body).length !== 1 || body.userId !== userId) fail("invalid_request", 400);
-      return await getUserDetail(userId, business, auth, authorization, dependencies.now?.() ?? new Date(), headers);
+      const master = selectD1Database(env, "master");
+      if (!master) fail("admin_user_management_unavailable", 500);
+      return await getUserDetail(userId, business, auth, master, authorization, dependencies.now?.() ?? new Date(), headers);
     }
     return await listUsers(request, business, auth, authorization, dependencies.now?.() ?? new Date(), headers);
   } catch (error) {

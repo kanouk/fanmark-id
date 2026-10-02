@@ -32,13 +32,20 @@ omitted this mode, leaving one target Auth user/profile. Its private journal
 bounded exact recovery; unconditional target cleanup fixed all modes, and a
 fresh full run ended verified-and-cleaned. No credentials were logged.
 
-Next concrete source-trigger gap: source fanmarks INSERT links matching
-ordered normalized discoveries and their favorites; the Worker registration
-batch and Business migrations lack that behavior. Add a failing source-shaped
-regression and preserve atomicity. Also inspect the administrator user-detail
-history: it currently combines Business/Auth audit stores and has not yet
-included/readback-verified the new Master audits. Do not call that UI parity
-complete merely because the Master audit rows exist.
+The next source-trigger repair is locally implemented: Business migration 0022
+links matching ordered discoveries and all owners' favorites in the parent
+fanmark INSERT transaction, including trusted writers. Registration tests pass
+18/18, including preserved counters/timestamps/display, UUID case/NULL/JSON
+whitespace, ordering, rejected/suppressed update rollback/retry and duplicate
+identity refusal. User-detail history merges Business/Auth/Master actor audits
+with UTC-microsecond latest-20 ordering; its D1 suite passes 14/14. Missing Master
+binding/query fails closed. Worker typecheck/ESLint and migration-data 237/237
+pass. Business 0022 and the new Worker are NOT deployed yet. Next: push/CI,
+guarded 0022 apply/exact-trigger readback, fresh build/deploy, then run the
+extended Master TOTP smoke (latest-20 history) and registration smoke with
+`--run-live-staging-write --verify-discovery-link` plus pinned
+`FANMARK_EXPECTED_STAGING_VERSION`. Keep private recovery journals, verify scoped
+cleanup and master/Auth baseline; do not clear broad catalog/provider/CPU gates.
 
 The preceding lottery-audit rollout used workers.dev staging Worker version
 `445dd523-232d-4766-aaef-2c8d175e5bc6` at 100%. The code baseline is `f3787d8`;

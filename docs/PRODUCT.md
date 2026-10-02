@@ -40,7 +40,7 @@
 - 管理: 抽選確率の編集、申込キャンセル、履歴保存、通知テンプレートは `lottery_*` イベントで管理。
 
 ## お気に入り・通知
-- お気に入り: `fanmark_discoveries` / `fanmark_favorites` で未取得ファンマも管理。トグルは RPC `add/remove_fanmark_favorite`。返却完了時にお気に入り登録者へ `favorite_fanmark_available` 通知イベントを生成。
+- お気に入り: 新規ファンマ取得時は、順序を保った正規化UUID列が一致する既存の発見データと、その発見データを指す全ユーザーのお気に入りに取得IDを紐付ける。お気に入りの表示・登録日時、発見日時・件数は保持する。Cloudflare経路では取得と同じBusiness D1 transactionで行い、連携の欠落や同一identityの重複時は取得全体を取り消す。`fanmark_discoveries` / `fanmark_favorites` で未取得ファンマも管理。トグルは RPC `add/remove_fanmark_favorite`。返却完了時にお気に入り登録者へ `favorite_fanmark_available` 通知イベントを生成。
 - 通知基盤: `notification_events` → `notification_rules` → `notifications`。イベント例: grace開始/失効、抽選当落、移管関連、手動告知。`process-notification-events` は、pending イベント追加時だけ有効になる毎分Cronワーカーとして展開・配信し、キューが空になると停止する。これにより通知の最大約1分の反映時間を維持しながら、空キューの定期実行を行わない。in-app/メール等に対応。
 
 ## 表示と正規化（ファンマ）
@@ -81,6 +81,7 @@
 - Cloudflare stagingの管理画面では、管理者roleと同じログインsessionのMFA確認を必須にし、公開版とは別の編集用マスターを更新する。
 - 作成・編集・一括取込では、認証済み管理者ID、操作種別、対象UUID、絵文字と名称、操作日時を変更と同じMaster D1 transactionに保存する。監査の保存に失敗した場合は、変更も取り消す。編集者IDをブラウザ入力から受け取らない。
 - 一括取込は最大100件。既存絵文字のUUIDと作成日時を保ち、各行の変更を監査する。古い編集の競合、公開済みidentityの変更、管理APIからの削除は拒否する。
+- 管理者のユーザー詳細には、Business/Auth/Masterの本人操作履歴を時刻順で最新20件表示する。時刻の小数桁の違いを正規化して並べ、credential/個人情報のmetadataは除去する。必要な監査ストアを読めない場合は不完全な履歴を返さない。
 - 編集内容の公開は別のrelease検証・有効化手順で行う。編集だけでは公開カタログを変更しない。
 
 ---
