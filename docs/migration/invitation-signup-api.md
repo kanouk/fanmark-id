@@ -24,7 +24,7 @@ The generated profile uses the source signup defaults: `user_<first eight ID cha
 
 - `workers/api/migrations/0007_auth_signup_command.sql`: private Auth D1 recovery marker.
 - `workers/api/migrations-business/0014_invitation_signup_attempts.sql`: business-D1 reservation ledger, capacity guards, and transactional invitation consumption.
-- `npm --prefix workers/api run test:invitation-signup-d1`: 9 synthetic split-D1 cases, including depleted invites, last-slot contention, duplicate-email privacy, email failure/retry, browser-reload recovery, lost-ack recovery, and exact profile/usage readback.
+- `npm --prefix workers/api run test:invitation-signup-d1`: 15 synthetic split-D1 cases against all 25 Business migrations and Auth core/0007/0008, including depleted invites, last-slot contention, duplicate-email privacy, email failure/retry, browser-reload recovery, lost-ack recovery, four language/source privacy defaults and forged provisioning metadata. Both databases are checked for foreign-key violations after each case. See [source signup provisioning](source-signup-provisioning.md) for the PostgreSQL literal oracle and remaining OAuth boundary.
 - `npm run test:better-auth-client`: Worker client request/response contract.
 
 The local test intercepts the Resend API with a synthetic handler. It does not establish delivery-domain readiness, real-message deliverability, OAuth, or live signup acceptance. After the schema was applied and the Worker deployed, readback confirmed the reservation table and four triggers exist with zero attempt rows, the Auth recovery marker column exists, and neither database has pending migrations. The staging Worker returns `signUp: false`; Resend secrets and `INVITATION_SIGNUP_BACKEND` are absent.

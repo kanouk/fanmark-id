@@ -6,6 +6,7 @@
   "vars": {
     "D1_TOPOLOGY": "split",
     "AUTH_BACKEND": "better-auth",
+    "AUTH_USER_STATUS_BACKEND": "d1",
     "INVITATION_SIGNUP_BACKEND": "d1",
     "AUTH_EMAIL_BACKEND": "resend",
     "RESEND_API_KEY": "local-resend-test-key-0000000000000000",

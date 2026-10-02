@@ -7,6 +7,17 @@ older sections retain their historical acceptance and failure evidence.
 
 ## Current resume boundary — 2026-10-03 JST
 
+- Signup now applies all 25 Business migrations and Auth core/0007/0008 with
+  the suspension selector. Native15/15 covers existing recovery/capacity paths,
+  four languages and refusal to forward forged provisioning metadata. Both
+  D1 FK checks pass after every case. A literal-only read-only PostgreSQL
+  oracle10 cases records credential defaults, OAuth setup and the separate
+  display-name helper. No source application/Auth row/function was accessed.
+  See source-signup-provisioning.md; target OAuth new-user provisioning/account
+  linking/initial setup still needs implementation and acceptance. Provider
+  credentials remain absent. This new test/doc HEAD needs its own CI success
+  and private canary HEAD/CI re-pin before deployment.
+
 - Edit only this managed migration worktree/branch and preserve the unrelated
   supabase/.temp/cli-latest change. PR #41 is draft/open; CI never deploys.
 - Staging remains Worker 010a4d7a at 100%. New editor/favorites/catalog changes

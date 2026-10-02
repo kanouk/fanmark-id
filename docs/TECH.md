@@ -189,6 +189,12 @@ Better Authは `workers/api/src/better-auth.mjs` に共通化し、通常Worker�
 
 Cloudflare buildのOAuth初回パスワードゲートはBetter Auth sessionと`GET /api/me/profile`を照合し、profile取得失敗時は保護画面を閉じたままにする。`POST /api/me/password-setup`は本人session、business D1の`requires_password_setup`、server-only Better Auth `setPassword`を組み合わせ、Auth D1書込み後の再試行もcredential検証で復旧する。通常のCloudflareパスワード変更は現在パスワードを必須としてBetter Auth `/change-password`へ送り、Supabase buildは従来経路を維持する。契約と限界は[初回パスワード設定API](migration/password-setup-api.md)。
 
+招待signupのnative検証は全25 Business migrationとAuth core/0007/0008、
+`AUTH_USER_STATUS_BACKEND=d1`を使用する。`test:invitation-signup-d1`の15件は
+4言語・source初期値・metadata権限入力・cross-D1復旧を検証し、各case後に両DBの
+FK違反がないことを確認する。literal PostgreSQL oracleとOAuth新規登録の残作業は
+`docs/migration/source-signup-provisioning.md`を参照。実Resend配送は別の受け入れ。
+
 ## 通知workerの起動・停止（Cloudflare staging検証中）
 
 D1のpending event INSERT/UPDATEと同じtransactionでBusiness 0024の起動世代を進める。

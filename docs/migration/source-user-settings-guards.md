@@ -28,3 +28,10 @@ paths; it does not clear the complete function/RLS/trigger catalog gate,
 prove imported-user role mapping, or establish real billing/OAuth acceptance.
 Any new caller-controlled user-settings write must preserve the same boundary.
 No real user row was read, migrated or modified by this review.
+
+The subsequent signup suite applies all 25 Business migrations and Auth
+core/0007/0008 with the suspension selector. It passes 15/15 including four
+languages and forged raw metadata/plan/identity/role inputs; signup remains
+server-Free/unverified/unbanned and gives no admin role. See
+[source signup provisioning](source-signup-provisioning.md). The earlier 10/10
+signup count is historical; source OAuth provisioning remains open.

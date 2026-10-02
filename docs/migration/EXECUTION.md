@@ -1,5 +1,20 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：新規登録を全migration構成とsource初期値で検証
+
+signup native suiteを一部schemaから全25 Business migrationとAuth core/0007/0008、
+停止account selectorへ変更した。既存のslot競合・lost-ack・メール失敗復旧・再試行に
+加え、4言語とcaller metadata/plan/ID/roleを転送しないケースを検証し15/15成功。
+各case後に両DBのforeign_key_checkが空であることを確認した。
+source handle_new_user09d55e8dとgenerate_safe_display_name1f7d9d41の取得済み定義を
+再照合し、literal-only read-only PostgreSQL oracle10 casesを取得した。アプリ/Auth行や
+stored application function/triggerは読取り・呼出しなし。メールprefix helperは
+provisioningから呼ばれておらず、OAuth setup=true分岐はcredentialとは別に残る。
+source OAuth新規登録、linking、初回password setupはtarget実装と受け入れが必要。
+詳細は[source signup provisioning](source-signup-provisioning.md)。
+新しい変更はexact-HEAD CIとprivate canary pin更新が必要。stagingは010a4d7aのまま、
+D1上限の解除後に完全preflightをやり直す。実user/domain/providerは変更していない。
+
 ## 2026-10-03：source定期writerの現状を読み取り専用で確認
 
 新`source-scheduled-writers.sql`の21:44:12.512016Z read-only transactionでcron.job

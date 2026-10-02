@@ -1,15 +1,21 @@
 import { env } from "cloudflare:workers";
 import { http, HttpResponse } from "msw";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import businessSchemaSql from "../migrations-business/0000_business_schema_v4_staging.sql?raw";
-import signupBusinessMigrationSql from "../migrations-business/0014_invitation_signup_attempts.sql?raw";
-import invitationTimestampMigrationSql from "../migrations-business/0018_invitation_capacity_timestamp_precision.sql?raw";
+import { afterEach, beforeAll, beforeEach, describe, expect, inject, it } from "vitest";
 import authSchemaSql from "../migrations/0003_better_auth_core.sql?raw";
 import signupAuthMigrationSql from "../migrations/0007_auth_signup_command.sql?raw";
+import suspensionSchemaSql from "../migrations/0008_auth_user_suspension.sql?raw";
+import sourceProvisioningJson from "./fixtures/source-signup-provisioning.json?raw";
+import { checkedInSqlStatements as splitSql } from "./schema-statements";
 import { handleRequest } from "../src";
 import { handleInvitationCodeValidationRequest } from "../src/invitation-signup-d1-api";
 import type { Env } from "../src/repository";
 import { network } from "./network";
+
+declare module "vitest" {
+  export interface ProvidedContext {
+    businessSignupMigrations: Array<{ name: string; sql: string }>;
+  }
+}
 
 const runtimeEnv = env as unknown as Env;
 const businessDb = runtimeEnv.FANMARK_DB;
@@ -20,40 +26,15 @@ const invitationId = "80000000-0000-4000-8000-000000000014";
 const timestamp = "2026-09-26T12:00:00.000Z";
 const password = "Synthetic-Signup-Password!2026";
 const signingSecret = "local-invitation-signup-test-secret-not-for-deployment-0000000000000000000000";
+const sourceProvisioning = JSON.parse(sourceProvisioningJson) as {
+  provisioning: Array<{
+    label: string; plan_type: string; preferred_language: string; requires_password_setup: boolean;
+  }>;
+};
 let resendRequests: Array<Record<string, unknown>> = [];
 
-function splitSql(sql: string): string[] {
-  const statements: string[] = [];
-  let start = 0;
-  let singleQuoted = false;
-  let doubleQuoted = false;
-  for (let index = 0; index < sql.length; index += 1) {
-    const character = sql[index];
-    const next = sql[index + 1];
-    if (character === "'" && !doubleQuoted) {
-      if (singleQuoted && next === "'") index += 1;
-      else singleQuoted = !singleQuoted;
-      continue;
-    }
-    if (character === '"' && !singleQuoted) {
-      if (doubleQuoted && next === '"') index += 1;
-      else doubleQuoted = !doubleQuoted;
-      continue;
-    }
-    if (character !== ";" || singleQuoted || doubleQuoted) continue;
-    const candidate = sql.slice(start, index).trim();
-    const isTrigger = /^create\s+trigger\b/iu.test(candidate);
-    if (isTrigger && !/\bend\s*$/iu.test(candidate)) continue;
-    if (candidate) statements.push(candidate);
-    start = index + 1;
-  }
-  const finalStatement = sql.slice(start).trim();
-  if (finalStatement) statements.push(finalStatement);
-  return statements;
-}
-
 async function applySql(database: D1Database, sql: string): Promise<void> {
-  const statements = splitSql(sql.replace(/^--.*(?:\r?\n|$)/gmu, ""));
+  const statements = splitSql(sql);
   await database.batch(statements.map((statement) => database.prepare(statement)));
 }
 
@@ -131,15 +112,87 @@ async function emailFingerprint(email: string): Promise<string> {
 
 beforeAll(async () => {
   if (!businessDb || !authDb) throw new Error("D1 test bindings are unavailable");
-  await applySql(businessDb, businessSchemaSql);
-  await applySql(businessDb, signupBusinessMigrationSql);
-  await applySql(businessDb, invitationTimestampMigrationSql);
-  await applySql(authDb, authSchemaSql);
-  await applySql(authDb, signupAuthMigrationSql);
+  for (const migration of inject("businessSignupMigrations")) {
+    await applySql(businessDb, migration.sql);
+  }
+  for (const sql of [authSchemaSql, signupAuthMigrationSql, suspensionSchemaSql]) {
+    await applySql(authDb, sql);
+  }
 });
 beforeEach(resetRows);
+afterEach(async () => {
+  for (const database of [businessDb, authDb]) {
+    expect((await database!.prepare("PRAGMA foreign_key_check").all()).results).toEqual([]);
+  }
+});
 
 describe("invitation signup across split Auth and business D1", () => {
+  it.each(["en", "ja", "ko", "id"])("preserves the %s signup language and source privacy defaults under the complete schema", async (language) => {
+    const source = sourceProvisioning.provisioning.find(row => row.label === `credential_${language}`);
+    expect(source).toBeDefined();
+    const commandId = crypto.randomUUID();
+    const response = await authRequest("/sign-up/email", {
+      commandId,
+      email: `language-${language}@example.invalid`,
+      password,
+      invitationCode: "WELCOME",
+      preferredLanguage: language,
+    });
+    expect(response.status).toBe(200);
+    const user = await authDb!.prepare('SELECT "id", "emailVerified", "banned" FROM "user" WHERE "signupCommandId" = ?')
+      .bind(commandId).first<{ id: string; emailVerified: number; banned: number }>();
+    expect(user).toMatchObject({ emailVerified: 0, banned: 0 });
+    const settings = await businessDb!.prepare(`SELECT user_id, username, display_name, plan_type,
+      preferred_language, invited_by_code, requires_password_setup FROM user_settings WHERE user_id = ?`)
+      .bind(user!.id).first();
+    expect(settings).toEqual({
+      user_id: user!.id,
+      username: `user_${user!.id.slice(0, 8)}`,
+      display_name: `user_${user!.id.slice(0, 8)}`,
+      plan_type: source!.plan_type,
+      preferred_language: source!.preferred_language,
+      invited_by_code: "WELCOME",
+      requires_password_setup: Number(source!.requires_password_setup),
+    });
+    expect(resendRequests).toHaveLength(1);
+    const replay = await authRequest("/sign-up/email", {
+      commandId, email: `language-${language}@example.invalid`, password,
+      invitationCode: "WELCOME", preferredLanguage: language,
+    });
+    expect(replay.status).toBe(200);
+    expect(resendRequests).toHaveLength(1);
+    expect((await businessDb!.prepare("SELECT used_count FROM invitation_codes WHERE id = ?")
+      .bind(invitationId).first<{ used_count: number }>())?.used_count).toBe(1);
+  });
+
+  it("does not forward caller-controlled provisioning metadata or roles to either D1", async () => {
+    const commandId = crypto.randomUUID();
+    const suppliedId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const response = await authRequest("/sign-up/email", {
+      commandId, email: "forged-metadata@example.invalid", password,
+      invitationCode: "WELCOME", preferredLanguage: "ko",
+      id: suppliedId, userId: suppliedId, user_id: suppliedId,
+      username: "chosen-admin", display_name: "chosen-admin", name: "chosen-admin",
+      plan_type: "admin", emailVerified: true, banned: false,
+      requires_password_setup: true, invited_by_code: "UNRESERVED",
+      raw_user_meta_data: { username: "chosen-admin", display_name: "chosen-admin", plan_type: "admin" },
+      data: { username: "chosen-admin", display_name: "chosen-admin", plan_type: "admin" },
+    });
+    expect(response.status).toBe(200);
+    const user = await authDb!.prepare('SELECT "id", "name", "emailVerified", "banned" FROM "user" WHERE "signupCommandId" = ?')
+      .bind(commandId).first<{ id: string; name: string; emailVerified: number; banned: number }>();
+    expect(user!.id).not.toBe(suppliedId);
+    expect(user).toMatchObject({ name: "fanmark.id user", emailVerified: 0, banned: 0 });
+    expect(await businessDb!.prepare(`SELECT user_id, username, display_name, plan_type,
+      preferred_language, invited_by_code, requires_password_setup FROM user_settings WHERE user_id = ?`)
+      .bind(user!.id).first()).toEqual({
+      user_id: user!.id, username: `user_${user!.id.slice(0, 8)}`,
+      display_name: `user_${user!.id.slice(0, 8)}`, plan_type: "free",
+      preferred_language: "ko", invited_by_code: "WELCOME", requires_password_setup: 0,
+    });
+    expect((await authDb!.prepare('SELECT count(*) AS count FROM "adminRole"').first<{ count: number }>())?.count).toBe(0);
+  });
+
   it("keeps an invitation and reservation alive one D1 microsecond past the clock", async () => {
     const expiresAt = "2026-09-26T12:00:00.000001Z";
     const fingerprint = await emailFingerprint("reserved-boundary@example.invalid");
