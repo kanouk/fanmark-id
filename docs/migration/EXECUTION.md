@@ -6060,3 +6060,28 @@ closes the local API boundary with the staging Auth selector, not full Auth,
 provider acceptance, import parity or production readiness. Current deployed
 Worker remains the previous 010a4d7a. New exact-HEAD CI and D1 quota/full
 preflight/native editor/favorite acceptance remain required.
+
+## 2026-10-03 source processor parity and boolean segment correction
+
+Read-only downloaded deployed process-notification-events ACTIVE version209;
+before/after metadata matched and the 12,390-byte entrypoint matched checked-in
+source SHA-256 986b46f37eb62ecf656e80ac357db406975e56ec5ad9b99d64a63b974cc0a301.
+It delivers only immediate in-app notifications, leaving other/delayed results
+pending. No direct fetch/functions.invoke was found; this is not proof that
+other senders/external callers do not exist. No source invocation/deploy/config
+change/user export was performed.
+
+Source segment matching uses strict equality. D1's canonical integer boolean
+requires_password_setup was compared without decoding, suppressing boolean
+matches and incorrectly accepting numeric filters. Six full-schema native cases
+reproduced four failures; decode only that column, reject invalid storage values,
+and preserve strict comparison for numeric filters and other columns. After the
+runtime fix, notifications26/26 and wake20/20 passed, as did Worker typecheck and
+changed-file lint. Remote acceptance of this fix remains pending.
+
+Prior b33c128 exact-HEAD CI37070883183 completed both jobs successfully. The
+combined preflight pinned to that HEAD passed identity/config/version checks
+but stopped on Business D1 API7500 daily-read quota before deployment or seeding.
+Worker remains010a4d7a; the new runtime change requires new exact-HEAD CI and
+re-pinned private scripts plus the full clean/identity/ledger/baseline preflight.
+Source/user/domain/DNS and provider selectors remain unchanged.

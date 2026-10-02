@@ -2,7 +2,7 @@
 
 ## 範囲
 
-通知画面とヘッダーの受信箱 read path、および個別/一括既読操作を、明示的に選択できるCloudflare Worker + business D1 APIとして用意する。D1上の通知イベント処理も別selectorで実装し、合成イベントのstaging検証後、workers.dev stagingで有効にした。メール/Web Push配信と未移行のイベント生成元は引き続きSupabase側に残る。
+通知画面とヘッダーの受信箱 read path、および個別/一括既読操作を、明示的に選択できるCloudflare Worker + business D1 APIとして用意する。D1上の通知イベント処理も別selectorで実装し、合成イベントのstaging検証後、workers.dev stagingで有効にした。未移行のイベント生成元、および他のメール/Web Push送信処理の有無と呼出し経路は引き続き照合対象とする。下記のsource processor確認だけで、サービス全体の配信経路が揃ったとは扱わない。
 
 ## API 契約
 
@@ -29,6 +29,31 @@
 - 続けて2026-09-26、stagingに移行した有効なin-appルール10種類すべてへ必須payloadを持つ合成イベントを投入し、workers.dev実Cronで各1件の日本語通知が`delivered`になることを確認した。返却、譲渡申請/承認/拒否、ライセンス猶予/失効、抽選当落/延長キャンセル、お気に入り返却通知を含む。タイトル、受信者、fanmark ID、本文locale、retry countを照合し、通知・イベント・設定行を削除。マスター/公開設定とprotected-access状態は前後一致し、合成通知関連行は0件に戻った。手順は`scripts/migration/staging-notification-processor-smoke.mjs --deployed-cron`。
 - これはstagingのscheduler経路を一度検証した結果であり、全イベント生成元の移植、メール/Web Push配信、通知archival、実ユーザー数でのCPU・認可検証、production recurring fitは未完了。本APIやsynthetic canaryの成功もそれらの完了を意味しない。
 
+## 本番processorの照合と真偽値条件の修正
+
+2026-10-02T22:15:39.799Zに、linked source projectの
+`process-notification-events`をread-onlyでdownloadした。前後のmetadataが一致する
+ACTIVE version209、verify_jwt=falseで、entrypointは12,390 bytes / 419 lines、
+SHA-256 `986b46f37eb62ecf656e80ac357db406975e56ec5ad9b99d64a63b974cc0a301`。
+checked-in sourceと同じbytesであることを確認した。source側への関数呼出し、
+deploy、設定変更やユーザー行のexportは行っていない。
+
+このprocessorが`delivered`にするのはdelay_seconds=0のin-app通知だけで、
+他channelと遅延通知はpendingになる。直接fetch/functions.invokeはなく、この確認は
+別の送信処理や外部callerの不在を証明しない。sourceの公開設定を移植せず、targetの
+processorは引き続き内部Cron/alarm経路に限定し、手動復旧には管理者MFAを要求する。
+
+sourceのsegment_filterはuser_settingsの値を厳密比較する。PostgreSQLの
+`requires_password_setup`はboolean、canonical D1は0/1のため、targetはその列だけを
+booleanへdecodeして比較する。数値0/1や文字列への暗黙変換はせず、他の列の比較は
+変更しない。移行側で0対false / 1対trueが誤って不一致、0対0 / 1対1が誤って一致する
+4ケースを全25 Business migrationのnative D1 suiteで再現し、修正後は一致/不一致と
+数値拒否の6ケースを含め26/26が成功した。通知起動suite20/20、Worker typecheckと
+変更ファイルのlintも成功。invalid D1 booleanは処理を拒否する。
+
+これはlocal検証済みのruntime修正で、stagingへのdeploy/remote acceptanceは未完了。
+最新deploy前確認もBusiness D1の日次読み取り上限（API7500）で書込み前に停止した。
+
 ## D1 通知履歴アーカイブ
 
 `workers/api/src/notifications-scheduled.ts`は、90日より古い`delivered`/`failed`
@@ -46,7 +71,7 @@ rollbackと再実行、既存の同内容履歴のtimestamp保持、2,500行上�
 Auth fixtureもstagingで選択するcore/0007 signup marker/0008 suspension migrationを
 適用し、`AUTH_USER_STATUS_BACKEND=d1`を選ぶ。停止・session失効後の古い署名Cookieで
 一覧/未読数/個別既読/全件既読が401となり、通知行が不変、別sessionの利用者は正常、
-停止中の新signinは403かつsession生成0を確認した。最新native suiteは20/20。
+停止中の新signinは403かつsession生成0を確認した。最新native suiteは上記のboolean segmentケースを含め26/26。
 このケースは停止後のAPI境界を検証し、管理者MFA/audit/停止transaction自体の試験は
 既存admin-user-management suiteが別に担当する。
 

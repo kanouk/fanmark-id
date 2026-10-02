@@ -117,7 +117,16 @@ async function userMatchesSegment(
   const result = await database.prepare("SELECT * FROM user_settings WHERE user_id = ? LIMIT 1")
     .bind(userId).first<JsonRecord>();
   if (!result) return false;
-  return Object.entries(segmentFilter).every(([key, expected]) => result[key] === expected);
+  return Object.entries(segmentFilter).every(([key, expected]) => {
+    const actual = result[key];
+    // PostgreSQL returns this column as boolean; the canonical D1 codec stores
+    // 0/1. Decode before preserving the source's strict segment comparison.
+    if (key === "requires_password_setup") {
+      if (actual !== 0 && actual !== 1) throw new ScheduledNotificationProcessorError();
+      return (actual === 1) === expected;
+    }
+    return actual === expected;
+  });
 }
 
 async function resolveLanguage(database: D1Database, userId: string, payloadLanguage: unknown): Promise<string> {

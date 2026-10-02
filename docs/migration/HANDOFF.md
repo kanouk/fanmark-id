@@ -18,10 +18,16 @@ older sections retain their historical acceptance and failure evidence.
   preflight/smoke/final-readback scripts only after both jobs succeed for the
   exact current HEAD. Do not reuse a stale successful run for a new HEAD.
 - Native notifications now use all25 Business migrations plus staging Auth
-  core/0007/0008 and suspension selector:20/20. Search uses the same Auth
+  core/0007/0008 and suspension selector:26/26. Search uses the same Auth
   selector/full Business schema:13/13. These are local proof only. Archive
   rollback/backlog/resume/source ACL evidence is in notifications-api.md;
   scheduled activation coverage is in TECH.md. Provider selectors remain off.
+- Read-only download of source notification processor ACTIVE version209 matches
+  checked-in bytes. Its strict boolean segment comparison exposed a D1 0/1
+  decoding bug; requires_password_setup is now decoded without numeric coercion.
+  Six cases reproduce the four former failures; notifications26/26, wake20/20,
+  Worker typecheck/lint pass locally. This runtime fix is not deployed. The source
+  processor delivers only immediate in-app; global external-sender parity is open.
 - Source functions/RLS/triggers/external callers, recurring lifecycle/archive,
   retention, D1→DO replay gap, provider-backed Stripe/Resend/4 OAuth, CPU/plan
   fit, least privilege/key custody, and real-device/end-to-end acceptance remain

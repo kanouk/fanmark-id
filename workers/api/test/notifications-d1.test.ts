@@ -598,6 +598,32 @@ describe("D1 notification event processor", () => {
       .bind(eventId).first()).toEqual({ count: 0 });
   });
 
+  it.each([
+    [0, false, 1],
+    [1, true, 1],
+    [0, true, 0],
+    [1, false, 0],
+    [0, 0, 0],
+    [1, 1, 0],
+  ])("compares the source boolean segment strictly after D1 decoding (%s, %s)", async (stored, expected, delivered) => {
+    if (!businessDatabase) throw new Error("Split D1 bindings unavailable");
+    const eventId = await seedEvent();
+    await businessDatabase.batch([
+      businessDatabase.prepare("UPDATE user_settings SET requires_password_setup = ? WHERE user_id = ?")
+        .bind(stored, ownerId),
+      businessDatabase.prepare("UPDATE notification_rules SET segment_filter = ? WHERE event_type = 'synthetic_event'")
+        .bind(JSON.stringify({ requires_password_setup: expected })),
+    ]);
+    await expect(runScheduledNotificationEvents({
+      env: { ...runtimeEnv, NOTIFICATION_PROCESSOR_BACKEND: "d1" },
+      database: businessDatabase, scheduledTime: Date.parse(now),
+    })).resolves.toEqual({ status: "completed", selected: 1, processed: 1, failed: 0 });
+    expect(await businessDatabase.prepare("SELECT count(*) AS count FROM notifications WHERE event_id = ?")
+      .bind(eventId).first()).toEqual({ count: delivered });
+    expect(await businessDatabase.prepare("SELECT requires_password_setup FROM user_settings WHERE user_id = ?")
+      .bind(ownerId).first()).toEqual({ requires_password_setup: stored });
+  });
+
   it("does not touch the queue while its backend selector is disabled", async () => {
     if (!businessDatabase) throw new Error("Split D1 bindings unavailable");
     const eventId = await seedEvent();
