@@ -35,6 +35,27 @@ transaction rollback on required-event failure, and exact-plan retry. The
 focused source integration suite passes 25/25; lottery selection passes
 10/10; scheduled-expiry tests pass 8/8.
 
+## Per-entry status audit (2026-10-02)
+
+The source `log_lottery_entry_changes` trigger records every pending-to-terminal
+entry change. The D1 finalizer now reproduces this effect for each winner or
+loser, including a capacity-rejected applicant recorded as `lost`. Each audit
+uses a deterministic UUID derived from the durable operation and entry IDs;
+its metadata retains old/new status and the entry's cancellation reason, and
+its timestamp is the server-captured run time.
+
+Entry status, winner license, history, audits, outbox, and journal completion
+share one batch. The existing mandatory-effect guard checks the exact per-entry
+audit identity, applicant, action, resource, request ID, metadata and timestamp.
+Commit-recovery readback checks the same values. A missing or corrupted audit
+rolls the batch back; retry reuses the saved selection and audit IDs.
+
+Source-profile integration passes 27/27, including winner/loser audit readback,
+a suppressed audit, corrupted audit metadata, required winner-event rollback,
+retry without redrawing, and a lost commit acknowledgement. Scheduled runner
+8/8, Worker typecheck and changed-file ESLint pass. This remains local evidence;
+other trigger writers and provider acceptance are still separate gates.
+
 On 2026-09-25, a one-shot scheduled-event canary ran the current Worker code
 with a remote binding to the isolated `fanmark-business-staging` D1. One
 synthetic pending entry won; readback confirmed old-license expiry, a new

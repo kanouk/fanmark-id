@@ -272,14 +272,15 @@ async function buildLotteryEffects(item, bindings, input, selection) {
     : null;
   const historyId = await deterministicUuid(`${item.operationId}:lottery-history`);
   const probabilityDistribution = JSON.stringify(lotteryProbabilityDistribution(outcomes));
-  const entryEffects = outcomes.map((entry) => ({
+  const entryEffects = await Promise.all(outcomes.map(async (entry) => ({
     entryId: entry.entryId,
+    auditId: await deterministicUuid(`${item.operationId}:lottery-entry-audit:${entry.entryId}`),
     status: entry.status,
     // The source CHECK constraint does not allow "limit_exceeded" as an
     // entry_status. Keep the valid terminal "lost" state while retaining the
     // precise capacity rejection in the replayable journal, history, and event.
     entryStatus: entry.status === "won" ? "won" : "lost",
-  }));
+  })));
   const entryEffectsJson = JSON.stringify(entryEffects);
   const lotteryEvents = [];
   for (const entry of outcomes) {
@@ -1012,6 +1013,20 @@ function lotteryFinalizationBatch(database, item, bindings, input, effects) {
       )
     `).bind(item.licenseId, item.licenseId, nextLifecycleGeneration, item.operationId)),
     database.prepare(`
+      INSERT INTO audit_logs (id, user_id, action, resource_type, resource_id, request_id, metadata, created_at)
+      SELECT json_extract(effect.value, '$.auditId'), entry.user_id,
+        'LOTTERY_ENTRY_STATUS_CHANGED', 'fanmark_lottery_entry', entry.id, ?,
+        json_object('old_status', entry.entry_status,
+          'new_status', json_extract(effect.value, '$.entryStatus'),
+          'cancellation_reason', entry.cancellation_reason), ?
+      FROM json_each(?) AS effect
+      JOIN fanmark_lottery_entries AS entry ON entry.id = json_extract(effect.value, '$.entryId')
+      WHERE entry.license_id = ? AND entry.entry_status = 'pending'
+        AND EXISTS (SELECT 1 FROM fanmark_licenses AS l WHERE l.id = entry.license_id
+          AND l.status = 'expired' AND l.lifecycle_generation = ? AND l.lifecycle_claim_id = ?)
+    `).bind(item.operationId, bindings.capturedNow, effects.entryEffectsJson,
+      item.licenseId, nextLifecycleGeneration, item.operationId),
+    database.prepare(`
       UPDATE fanmark_lottery_entries
       SET entry_status = (SELECT json_extract(effect.value, '$.entryStatus')
             FROM json_each(?) AS effect
@@ -1131,9 +1146,16 @@ function lotteryFinalizationBatch(database, item, bindings, input, effects) {
           LEFT JOIN fanmark_lottery_entries AS entry
             ON entry.id = json_extract(expected.value, '$.entryId')
               AND entry.license_id = ?
+          LEFT JOIN audit_logs AS audit ON audit.id = json_extract(expected.value, '$.auditId')
           WHERE entry.id IS NULL
             OR entry.entry_status IS NOT json_extract(expected.value, '$.entryStatus')
-            OR entry.lottery_executed_at IS NOT ?)
+            OR entry.lottery_executed_at IS NOT ?
+            OR audit.id IS NULL OR audit.user_id IS NOT entry.user_id
+            OR audit.action IS NOT 'LOTTERY_ENTRY_STATUS_CHANGED'
+            OR audit.resource_type IS NOT 'fanmark_lottery_entry' OR audit.resource_id IS NOT entry.id
+            OR audit.request_id IS NOT ? OR audit.created_at IS NOT ?
+            OR audit.metadata IS NOT json_object('old_status', 'pending',
+              'new_status', entry.entry_status, 'cancellation_reason', entry.cancellation_reason))
         AND EXISTS (SELECT 1 FROM fanmark_lottery_history AS history
           WHERE history.id = ? AND history.fanmark_id = ? AND history.license_id = ?
             AND history.total_entries = ? AND history.winner_user_id IS ?
@@ -1181,7 +1203,7 @@ function lotteryFinalizationBatch(database, item, bindings, input, effects) {
       item.licenseId, item.fanmarkId, item.userId, bindings.capturedNow,
       item.graceExpiresAt, item.isReturned, nextLifecycleGeneration, item.operationId,
       item.licenseId, effects.entryEffectsJson, input.entries.length,
-      effects.entryEffectsJson, item.licenseId, bindings.capturedNow,
+      effects.entryEffectsJson, item.licenseId, bindings.capturedNow, item.operationId, bindings.capturedNow,
       effects.historyId, item.fanmarkId, item.licenseId, input.entries.length,
       winnerUserId, effects.winner?.entryId ?? null, effects.probabilityDistribution,
       item.lotterySeed, bindings.capturedNow, bindings.capturedNow,
@@ -1238,13 +1260,13 @@ async function confirmLotteryCommitted(database, item, bindings, input, plan, ef
   try {
     const base = await confirmCommitted(database, item, bindings);
     if (!base) return false;
-    const [history, entries, events] = await Promise.all([
+    const [history, entries, events, entryAudits] = await Promise.all([
       database.prepare(`SELECT id, fanmark_id, license_id, total_entries, winner_user_id,
           winner_entry_id, probability_distribution, random_seed, executed_at,
           execution_method, created_at FROM fanmark_lottery_history WHERE id = ?`)
         .bind(effects.historyId).first(),
       database.prepare(`SELECT entry.id, entry.user_id, entry.entry_status,
-          entry.lottery_executed_at, entry.won_at
+          entry.lottery_executed_at, entry.won_at, entry.cancellation_reason
         FROM json_each(?) AS expected
         JOIN fanmark_lottery_entries AS entry
           ON entry.id = json_extract(expected.value, '$.entryId')
@@ -1257,6 +1279,11 @@ async function confirmLotteryCommitted(database, item, bindings, input, plan, ef
         JOIN notification_events AS event ON event.id = json_extract(expected.value, '$.id')
         ORDER BY event.id`)
         .bind(effects.lotteryEventsJson).all(),
+      database.prepare(`SELECT audit.id, audit.user_id, audit.action, audit.resource_type,
+          audit.resource_id, audit.request_id, audit.metadata, audit.created_at
+        FROM json_each(?) AS expected
+        JOIN audit_logs AS audit ON audit.id = json_extract(expected.value, '$.auditId')`)
+        .bind(effects.entryEffectsJson).all(),
     ]);
     if (history?.fanmark_id !== item.fanmarkId || history.license_id !== item.licenseId ||
         Number(history.total_entries) !== input.entries.length ||
@@ -1266,16 +1293,25 @@ async function confirmLotteryCommitted(database, item, bindings, input, plan, ef
         history.random_seed !== item.lotterySeed || history.executed_at !== bindings.capturedNow ||
         history.execution_method !== "automatic" || history.created_at !== bindings.capturedNow ||
         !Array.isArray(entries?.results) || entries.results.length !== effects.entryEffects.length ||
+        !Array.isArray(entryAudits?.results) || entryAudits.results.length !== effects.entryEffects.length ||
         !Array.isArray(events?.results) || events.results.length !== effects.lotteryEvents.length) {
       return false;
     }
     const expectedEntries = new Map(effects.outcomes.map((outcome) => [outcome.entryId, outcome]));
+    const auditIds = new Map(effects.entryEffects.map((entry) => [entry.entryId, entry.auditId]));
+    const auditsByEntry = new Map(entryAudits.results.map((audit) => [audit.resource_id, audit]));
     for (const row of entries.results) {
       const expected = expectedEntries.get(row.id);
       if (!expected || row.user_id !== expected.userId ||
           row.entry_status !== (expected.status === "won" ? "won" : "lost") ||
           row.lottery_executed_at !== bindings.capturedNow ||
           row.won_at !== (expected.status === "won" ? bindings.capturedNow : null)) return false;
+      const audit = auditsByEntry.get(row.id);
+      if (!audit || audit.id !== auditIds.get(row.id) || audit.user_id !== expected.userId ||
+          audit.action !== "LOTTERY_ENTRY_STATUS_CHANGED" || audit.resource_type !== "fanmark_lottery_entry" ||
+          audit.request_id !== item.operationId || audit.created_at !== bindings.capturedNow ||
+          audit.metadata !== JSON.stringify({ old_status: "pending", new_status: row.entry_status,
+            cancellation_reason: row.cancellation_reason })) return false;
     }
     const expectedEvents = new Map(effects.lotteryEvents.map((event) => [event.id, event]));
     for (const row of events.results) {

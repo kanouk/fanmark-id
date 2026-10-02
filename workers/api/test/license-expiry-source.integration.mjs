@@ -1023,14 +1023,29 @@ test("atomically finalizes a pending lottery with winner license, history, audit
       created_at: CAPTURED_NOW,
       updated_at: CAPTURED_NOW,
     });
+    let lostAcknowledgement = false;
+    const uncertainDatabase = {
+      prepare: (...args) => fixture.database.prepare(...args),
+      batch: async (...args) => {
+        const result = await fixture.database.batch(...args);
+        const audit = await row(fixture.database,
+          "SELECT COUNT(*) AS count FROM audit_logs WHERE action = 'LOTTERY_ENTRY_STATUS_CHANGED'");
+        if (!lostAcknowledgement && audit.count === 1) {
+          lostAcknowledgement = true;
+          throw new Error("synthetic lottery acknowledgement lost after commit");
+        }
+        return result;
+      },
+    };
     const runId = "00000000-0000-4000-8000-000000000912";
     const repository = finalizationRepository(fixture, {
-      runId,
+      runId, database: uncertainDatabase,
     });
     const summary = await repository.runExpiredGraceFinalization();
     assert.equal(summary.status, "completed");
     assert.equal(summary.candidateCount, 1);
     assert.equal(summary.processed, 1);
+    assert.equal(lostAcknowledgement, true);
     assert.equal(summary.conflicts, 0);
     assert.equal(summary.results[0].outcome, "processed");
 
@@ -1040,6 +1055,18 @@ test("atomically finalizes a pending lottery with winner license, history, audit
     const entry = await row(fixture.database,
       "SELECT entry_status, won_at, lottery_executed_at FROM fanmark_lottery_entries WHERE id = ?", entryId);
     assert.deepEqual(entry, { entry_status: "won", won_at: CAPTURED_NOW, lottery_executed_at: CAPTURED_NOW });
+
+    const entryAudit = await row(fixture.database,
+      "SELECT user_id, resource_type, resource_id, request_id, metadata, created_at FROM audit_logs WHERE action = 'LOTTERY_ENTRY_STATUS_CHANGED'");
+    assert.ok(entryAudit);
+    assert.equal(entryAudit.user_id, winnerId);
+    assert.equal(entryAudit.resource_type, "fanmark_lottery_entry");
+    assert.equal(entryAudit.resource_id, entryId);
+    assert.equal(entryAudit.request_id, summary.results[0].operationId);
+    assert.equal(entryAudit.created_at, CAPTURED_NOW);
+    assert.deepEqual(JSON.parse(entryAudit.metadata), {
+      old_status: "pending", new_status: "won", cancellation_reason: null,
+    });
 
     const history = await row(fixture.database,
       `SELECT fanmark_id, license_id, total_entries, winner_user_id, winner_entry_id,
@@ -1181,6 +1208,13 @@ test("finalizes multiple weighted entries with one winner, one loser, and exact 
       runId: "00000000-0000-4000-8000-000000000a2a",
     }).runExpiredGraceFinalization();
     assert.equal(summary.processed, 1);
+    const entryAudits = await fixture.database.prepare(
+      "SELECT resource_id, metadata, created_at FROM audit_logs WHERE action = 'LOTTERY_ENTRY_STATUS_CHANGED' ORDER BY resource_id",
+    ).all();
+    assert.equal(entryAudits.results.length, 2);
+    assert.deepEqual(entryAudits.results.map((audit) => audit.resource_id), applicants.map((entry) => entry.id));
+    assert.ok(entryAudits.results.every((audit) => audit.created_at === CAPTURED_NOW));
+    assert.deepEqual(entryAudits.results.map((audit) => JSON.parse(audit.metadata).new_status).sort(), ["lost", "won"]);
     const history = await row(fixture.database,
       "SELECT total_entries, winner_user_id, winner_entry_id, probability_distribution FROM fanmark_lottery_history");
     assert.equal(history.total_entries, 2);
@@ -1271,53 +1305,74 @@ test("records a capped sole applicant as a rejected draw and returns the fanmark
   }
 });
 
-test("rolls back lottery effects when a required winner event is suppressed and replays the saved plan", async () => {
-  const fixture = await setup();
-  try {
-    const winnerId = "00000000-0000-4000-8000-000000000a41";
-    await addExpiredLicense(fixture.database);
-    await markGraceExpired(fixture.database);
-    await insertCatalogRow(fixture.database, fixture.catalog, "fanmark_lottery_entries", {
-      id: "00000000-0000-4000-8000-000000000a42",
-      fanmark_id: IDS.fanmark, user_id: winnerId, license_id: IDS.license,
-      lottery_probability: "1", entry_status: "pending", applied_at: CAPTURED_NOW,
-      created_at: CAPTURED_NOW, updated_at: CAPTURED_NOW,
-    });
-    await fixture.database.prepare(`CREATE TRIGGER test_suppress_lottery_winner_event
-      BEFORE INSERT ON notification_events WHEN NEW.event_type = 'lottery_won'
-      BEGIN SELECT RAISE(IGNORE); END`).run();
-    const runId = "00000000-0000-4000-8000-000000000a43";
-    const repository = finalizationRepository(fixture, { runId });
+for (const [scenario, faultSql] of [
+  ["a suppressed winner event", `CREATE TRIGGER test_lottery_required_effect_fault
+    BEFORE INSERT ON notification_events WHEN NEW.event_type = 'lottery_won'
+    BEGIN SELECT RAISE(IGNORE); END`],
+  ["a suppressed entry audit", `CREATE TRIGGER test_lottery_required_effect_fault
+    BEFORE INSERT ON audit_logs WHEN NEW.action = 'LOTTERY_ENTRY_STATUS_CHANGED'
+    BEGIN SELECT RAISE(IGNORE); END`],
+  ["a corrupted entry audit", `CREATE TRIGGER test_lottery_required_effect_fault
+    AFTER INSERT ON audit_logs WHEN NEW.action = 'LOTTERY_ENTRY_STATUS_CHANGED'
+    BEGIN UPDATE audit_logs SET metadata = '{}' WHERE id = NEW.id; END`],
+]) {
+  test(`rolls back lottery effects for ${scenario} and replays the saved plan`, async () => {
+    const fixture = await setup();
+    try {
+      const winnerId = "00000000-0000-4000-8000-000000000a41";
+      await addExpiredLicense(fixture.database);
+      await markGraceExpired(fixture.database);
+      await insertCatalogRow(fixture.database, fixture.catalog, "fanmark_lottery_entries", {
+        id: "00000000-0000-4000-8000-000000000a42",
+        fanmark_id: IDS.fanmark, user_id: winnerId, license_id: IDS.license,
+        lottery_probability: "1", entry_status: "pending", applied_at: CAPTURED_NOW,
+        created_at: CAPTURED_NOW, updated_at: CAPTURED_NOW,
+      });
+      await fixture.database.prepare(faultSql).run();
+      const runId = "00000000-0000-4000-8000-000000000a43";
+      const repository = finalizationRepository(fixture, { runId });
 
-    await assert.rejects(repository.runExpiredGraceFinalization(), /grace_lottery_finalization_batch_failed/u);
-    assert.equal((await row(fixture.database,
-      "SELECT status FROM fanmark_licenses WHERE id = ?", IDS.license)).status, "grace");
-    assert.equal((await row(fixture.database,
-      "SELECT entry_status FROM fanmark_lottery_entries WHERE license_id = ?", IDS.license)).entry_status, "pending");
-    assert.equal((await row(fixture.database,
-      "SELECT COUNT(*) AS count FROM fanmark_lottery_history WHERE license_id = ?", IDS.license)).count, 0);
-    assert.equal((await row(fixture.database,
-      "SELECT COUNT(*) AS count FROM audit_logs WHERE action = 'license_expired'")).count, 0);
-    const savedPlan = await row(fixture.database,
-      "SELECT lottery_seed, lottery_plan_json, outcome FROM license_grace_finalization_items WHERE run_id = ? AND license_id = ?",
-      runId, IDS.license);
-    assert.match(savedPlan.lottery_seed, /^[0-9a-f]{64}$/u);
-    assert.equal(savedPlan.outcome, "pending");
+      await assert.rejects(repository.runExpiredGraceFinalization(), /grace_lottery_finalization_batch_failed/u);
+      assert.equal((await row(fixture.database,
+        "SELECT status FROM fanmark_licenses WHERE id = ?", IDS.license)).status, "grace");
+      assert.equal((await row(fixture.database,
+        "SELECT entry_status FROM fanmark_lottery_entries WHERE license_id = ?", IDS.license)).entry_status, "pending");
+      assert.equal((await row(fixture.database,
+        "SELECT COUNT(*) AS count FROM fanmark_lottery_history WHERE license_id = ?", IDS.license)).count, 0);
+      assert.equal((await row(fixture.database,
+        "SELECT COUNT(*) AS count FROM audit_logs WHERE action = 'license_expired'")).count, 0);
+      assert.equal((await row(fixture.database,
+        "SELECT COUNT(*) AS count FROM audit_logs WHERE action = 'LOTTERY_ENTRY_STATUS_CHANGED'")).count, 0);
+      const savedPlan = await row(fixture.database,
+        "SELECT lottery_seed, lottery_plan_json, outcome FROM license_grace_finalization_items WHERE run_id = ? AND license_id = ?",
+        runId, IDS.license);
+      assert.match(savedPlan.lottery_seed, /^[0-9a-f]{64}$/u);
+      assert.equal(savedPlan.outcome, "pending");
 
-    await fixture.database.prepare("DROP TRIGGER test_suppress_lottery_winner_event").run();
-    const resumed = await repository.runExpiredGraceFinalization();
-    assert.equal(resumed.status, "completed");
-    assert.equal(resumed.processed, 1);
-    assert.equal((await row(fixture.database,
-      "SELECT status FROM fanmark_licenses WHERE id = ?", IDS.license)).status, "expired");
-    assert.equal((await row(fixture.database,
-      "SELECT COUNT(*) AS count FROM fanmark_lottery_history WHERE license_id = ?", IDS.license)).count, 1);
-    assert.equal((await row(fixture.database,
-      "SELECT COUNT(*) AS count FROM notification_events WHERE event_type = 'lottery_won'")).count, 1);
-  } finally {
-    await fixture.miniflare.dispose();
-  }
-});
+      await fixture.database.prepare("DROP TRIGGER test_lottery_required_effect_fault").run();
+      const resumed = await repository.runExpiredGraceFinalization();
+      assert.equal(resumed.status, "completed");
+      assert.equal(resumed.processed, 1);
+      assert.equal((await row(fixture.database,
+        "SELECT status FROM fanmark_licenses WHERE id = ?", IDS.license)).status, "expired");
+      assert.equal((await row(fixture.database,
+        "SELECT COUNT(*) AS count FROM fanmark_lottery_history WHERE license_id = ?", IDS.license)).count, 1);
+      assert.equal((await row(fixture.database,
+        "SELECT COUNT(*) AS count FROM notification_events WHERE event_type = 'lottery_won'")).count, 1);
+      const replayedPlan = await row(fixture.database,
+        "SELECT lottery_seed, lottery_plan_json FROM license_grace_finalization_items WHERE run_id = ? AND license_id = ?",
+        runId, IDS.license);
+      assert.equal(replayedPlan.lottery_seed, savedPlan.lottery_seed);
+      assert.equal(replayedPlan.lottery_plan_json, savedPlan.lottery_plan_json);
+      await repository.runExpiredGraceFinalization();
+      assert.equal((await row(fixture.database,
+        "SELECT COUNT(*) AS count FROM audit_logs WHERE action = 'LOTTERY_ENTRY_STATUS_CHANGED'")).count, 1);
+    } finally {
+      await fixture.miniflare.dispose();
+    }
+  });
+}
+
 
 test("claims a pending lottery and resumes the persisted exact-weight decision without redrawing", async () => {
   const fixture = await setup();

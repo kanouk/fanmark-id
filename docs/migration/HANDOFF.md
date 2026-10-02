@@ -3,6 +3,22 @@
 Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
 open and draft. CI validates the branch but does not deploy the Worker.
 
+The current local follow-up adds the missing per-entry status audits during
+source-profile lottery finalization. Each pending-to-won/lost audit uses an
+operation/entry-derived deterministic UUID and captured run time. Both the
+mandatory-effect batch guard and commit-recovery readback verify identity,
+applicant, action, resource, request, metadata and time. Source-profile tests
+pass 27/27, including suppressed/corrupted audit rollback, saved-plan retry and
+lost commit acknowledgement. Scheduled runner 8/8, Worker typecheck, ESLint
+and diff check pass. No schema migration or converter version change is needed.
+
+The transfer audit fix is committed/pushed as `c58fc5c`; its CI is run
+`37023116182`. Lottery finalization remains locally validated until that CI
+finishes. Both prior CI jobs passed on `8d9b0fd` in run `37022024473`.
+The Worker has not been redeployed. Remaining known audit-trigger writers to
+review include account deletion, Stripe extension and coupon extension; the
+full function/RLS/trigger gate remains open.
+
 The next implementation slice fixes missing per-entry lottery cancellation
 audits during transfer approval. The live catalog's `log_lottery_entry_changes`
 function records each status change; the D1 transfer route previously omitted

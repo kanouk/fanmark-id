@@ -1,5 +1,23 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02：抽選確定の個別監査と復旧検証
+
+source `log_lottery_entry_changes`とD1 finalizerを比較し、pending→won/lostの
+個別監査ログの欠落をregressionで再現した。各申請の監査を当落更新と同じbatchへ追加し、
+durable operation/entry IDsからdeterministic UUIDを生成する。旧/新status、申請者、
+取消理由、captured run timestampを保存する。
+
+既存effect guardとcommit readbackに、各監査のID・申請者・action・resource・request・
+metadata・timestampの検査を追加した。監査INSERTをIGNOREするfault、metadataを書き換えるfault、
+必須winner eventを欠かすfaultはいずれも抽選全体をrollbackし、同じ保存済みseed/planでretryする。
+commit後の応答喪失でも個別ログを検証してrecoverする。新たに抽選をやり直さない。
+
+source-profile integration 27/27、scheduled runner 8/8、Worker typecheck、ESLint、diff check成功。
+converter v43とschemaは変更していない。譲渡修正 `c58fc5c`はPRへpush済みで
+CI run `37023116182`を確認中。Stripe/クーポン/退会など他のwriterのtrigger parity、
+外部provider acceptanceは引き続き未完了。実ユーザー行・Worker deploy・Cloudflare resources・
+domain/DNSは変更していない。
+
 ## 2026-10-02：譲渡時の抽選取消監査を補完
 
 read-only catalog内の`log_lottery_entry_changes`は、抽選申請のstatus変更ごとに
