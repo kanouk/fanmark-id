@@ -17,7 +17,7 @@ import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 26;
+export const SCHEMA_CONVERSION_VERSION = 27;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -96,6 +96,33 @@ const REVIEWED_AUTH_FOREIGN_KEYS = new Map([
   }],
 ]);
 const REVIEWED_RUNTIME_TIMESTAMP_WRITES = new Map([
+  ["fanmark_access_daily_stats.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The analytics operation captures one clock value and binds its canonical UTC timestamp to the new daily aggregate; imported source timestamps remain explicit.",
+    evidence: [
+      "workers/api/src/fanmark-access-analytics-d1-api.ts",
+      "workers/api/test/fanmark-access-analytics-d1.test.ts",
+      "workers/api/src/utc-timestamp.mjs",
+    ],
+  }],
+  ["fanmark_access_daily_stats.updated_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The analytics operation binds the captured canonical UTC timestamp on insert and updates the aggregate from excluded.updated_at; integration tests read back both initial and later operation values.",
+    evidence: [
+      "workers/api/src/fanmark-access-analytics-d1-api.ts",
+      "workers/api/test/fanmark-access-analytics-d1.test.ts",
+      "workers/api/src/utc-timestamp.mjs",
+    ],
+  }],
+  ["fanmark_access_logs.accessed_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The public analytics endpoint captures one operation clock value and binds its canonical UTC timestamp on each accepted access log; integration tests verify fixed and later clock values.",
+    evidence: [
+      "workers/api/src/fanmark-access-analytics-d1-api.ts",
+      "workers/api/test/fanmark-access-analytics-d1.test.ts",
+      "workers/api/src/utc-timestamp.mjs",
+    ],
+  }],
   ["fanmark_discoveries.first_seen_at", {
     code: "worker_operation_explicit_timestamp",
     reason: "Search and favorite operations capture one timestamp and bind it explicitly when inserting a new discovery. D1 stores canonical UTC operation time; PostgreSQL transaction-time or sub-millisecond clock equivalence is not claimed.",

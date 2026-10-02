@@ -1,9 +1,29 @@
 # Cloudflare migration handoff
 
 Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
-open and draft. Prior head `d7acab7` passed both required CI jobs in run
-`37004977442`; the v26 timestamp review below requires fresh CI after push.
-CI does not deploy the Worker. The latest recorded
+open and draft. Latest completed required CI is run `37004977442` for
+`d7acab7`; run `37006337325` for the pushed v26 commit `2ba68fa` had Worker API
+still in progress at the last check. The v27 commit is prepared locally and
+requires push plus fresh CI. CI does not deploy the Worker.
+
+The latest read-only schema catalog completed at
+`2026-10-02T12:25:35.315086Z`: 40 tables / 406 columns / 144 constraints /
+139 indexes / 36 triggers / 77 RLS policies / 58 functions / one view. No
+source table rows were read. Converter v27 reviews eight exact Worker-owned
+timestamps: the five columns from v26 plus
+`fanmark_access_logs.accessed_at`,
+`fanmark_access_daily_stats.created_at`, and
+`fanmark_access_daily_stats.updated_at`. Fixed-clock D1 tests verify the first
+access and a repeat visit 5 minutes plus 1 millisecond later, preserving the
+aggregate `created_at` while updating `updated_at` and the latest access log.
+The report remains `deployable: false` with 59 operation-owned timestamp
+defaults and three unsupported function/RLS/trigger scopes (62 blocking
+locations); all 11 exact Auth foreign keys remain reviewed. Converter tests
+pass 27/27, the migration-data suite 223/223, and access analytics D1 tests
+11/11. The v27 commit has not yet been pushed or validated by CI.
+
+No source rows, production routing, user/Auth migration, Worker deployment, or
+domain/DNS settings were changed in this v27 work. The latest recorded
 workers.dev-only staging version is
 version `d2330dd1-ce17-41c0-99d2-a81b242c412d` at 100%. An earlier run
 `36991654600` exposed an intermittent 120-second
@@ -67,19 +87,20 @@ staging. The local v25 change now records only the 11 exact `auth.users(id)`
 constraints as reviewed cross-database identity/deletion dispositions; it emits
 no Auth foreign keys into D1 SQL and unknown or changed constraints remain
 blocking. The importer still requires read-only Auth D1 identity preflight
-before business writes. Converter v26 also reviews five exact Worker-owned
+before business writes. Converter v26 then reviewed five exact Worker-owned
 timestamps: `waitlist.created_at`, `fanmark_discoveries.first_seen_at`,
 `fanmark_discoveries.last_seen_at`, `fanmark_events.created_at`, and
 `fanmark_favorites.created_at`. These bind a canonical UTC operation time;
 exact PostgreSQL transaction-time and sub-millisecond equivalence are not
-claimed. The other 62 timestamp defaults and functions/RLS/triggers remain
-blocking, so the converter stays `deployable: false`.
+claimed. At v26, the other 62 timestamp defaults and functions/RLS/triggers
+remained blocking. The current v27 disposition is recorded at the top of this
+handoff.
 A guarded synthetic post-write rehearsal passed on 2026-10-02: the Stripe
 effect ran once, D1 Time Travel and encrypted R2 restore preserved admin MFA
 and the avatar, and five frozen writes were rejected. Provider-backed
 acceptance and production stop/recovery targets remain open.
 
-The latest schema-only Supabase query completed at `2026-10-02T12:10:27Z` and
+The v26 schema-only Supabase query completed at `2026-10-02T12:10:27Z` and
 again returned 40 tables / 406 columns / 144 constraints / 139 indexes /
 58 functions / 36 triggers / 77 RLS policies / one view. Converter v26 has
 4 groups / 65 blocking locations: 62 timestamp-default operations and

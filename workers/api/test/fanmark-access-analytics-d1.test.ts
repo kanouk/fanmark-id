@@ -95,6 +95,7 @@ describe("public fanmark access analytics D1 API", () => {
     expect(log).toMatchObject({
       fanmark_id: FANMARK_ID,
       license_id: LICENSE_ID,
+      accessed_at: "2026-09-26T10:00:00.000000Z",
       referrer_domain: "google.co.jp",
       referrer_category: "search",
       device_type: "mobile",
@@ -106,13 +107,15 @@ describe("public fanmark access analytics D1 API", () => {
     expect(analyticsLimiterKeys).toHaveLength(1);
     expect(analyticsLimiterKeys[0]).toMatch(/^fanmark-access-analytics:v1:[0-9a-f]{64}$/u);
     expect(analyticsLimiterKeys[0]).not.toContain(SYNTHETIC_IP);
-    const stats = await database!.prepare("SELECT * FROM fanmark_access_daily_stats").first<Record<string, number>>();
+    const stats = await database!.prepare("SELECT * FROM fanmark_access_daily_stats").first<Record<string, unknown>>();
     expect(stats).toMatchObject({
       access_count: 1,
       unique_visitors: 1,
       referrer_search: 1,
       device_mobile: 1,
       access_type_profile: 1,
+      created_at: "2026-09-26T10:00:00.000000Z",
+      updated_at: "2026-09-26T10:00:00.000000Z",
     });
   });
 
@@ -131,9 +134,15 @@ describe("public fanmark access analytics D1 API", () => {
     const later = new Date(START.getTime() + 5 * 60 * 1000 + 1);
     const response = await call(input({ referrer: null, access_type: "redirect" }), () => later);
     expect(await response?.json()).toEqual({ success: true, recorded: true });
-    const stats = await database!.prepare("SELECT access_count, unique_visitors, referrer_direct, access_type_redirect FROM fanmark_access_daily_stats")
-      .first<Record<string, number>>();
-    expect(stats).toEqual({ access_count: 2, unique_visitors: 1, referrer_direct: 1, access_type_redirect: 1 });
+    const stats = await database!.prepare(`SELECT access_count, unique_visitors, referrer_direct, access_type_redirect,
+      created_at, updated_at FROM fanmark_access_daily_stats`)
+      .first<Record<string, unknown>>();
+    expect(stats).toMatchObject({ access_count: 2, unique_visitors: 1, referrer_direct: 1, access_type_redirect: 1 });
+    expect(stats?.created_at).toBe("2026-09-26T10:00:00.000000Z");
+    expect(stats?.updated_at).toBe("2026-09-26T10:05:00.001000Z");
+    const latestLog = await database!.prepare("SELECT accessed_at FROM fanmark_access_logs ORDER BY accessed_at DESC LIMIT 1")
+      .first<{ accessed_at: string }>();
+    expect(latestLog?.accessed_at).toBe("2026-09-26T10:05:00.001000Z");
   });
 
   it("rejects malformed and oversized requests, disallowed origins, and mismatched IDs", async () => {

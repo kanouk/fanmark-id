@@ -1,6 +1,6 @@
 # Full schema conversion generator
 
-`schema-convert.mjs` v26 is a private, catalog-only preparation tool. It
+`schema-convert.mjs` v27 is a private, catalog-only preparation tool. It
 converts the JSON emitted by `scripts/migration/schema-readiness.sql` into deterministic
 SQLite/D1 table and index SQL plus a machine-readable report of unresolved
 parity gates. It does not read application rows, contact Supabase, apply SQL,
@@ -532,3 +532,25 @@ all 11 exact Auth references and the five timestamp columns, while remaining
 `deployable: false` with 62 timestamp-operation locations and the three
 functions/RLS/trigger catalog scopes. Synthetic D1 readback covers both
 new-discovery insert paths. No source rows were queried.
+
+## Schema converter v27: reviewed access-analytics timestamps
+
+Converter v27 adds exactly three Worker-owned columns to the
+`worker_operation_explicit_timestamp` disposition:
+`fanmark_access_logs.accessed_at`,
+`fanmark_access_daily_stats.created_at`, and
+`fanmark_access_daily_stats.updated_at`. The fixed-clock D1 integration test
+checks an initial access, then a repeat visit 5 minutes and 1 millisecond
+later. It reads back the new access-log time, confirms the daily aggregate's
+`created_at` is unchanged, and confirms `updated_at` advances. This defines the
+target as explicit D1 operation time; it does not claim PostgreSQL transaction-
+time or sub-millisecond clock equivalence.
+
+The schema-only catalog observed at `2026-10-02T12:25:35.315086Z` contains 40
+tables, 406 columns, 144 constraints, 139 indexes, 36 triggers, 77 RLS
+policies, 58 functions, and one view. With a value-free credential descriptor,
+v27 reviews all 11 exact Auth references and eight Worker operation timestamps
+(the five v26 columns plus these three), but remains `deployable: false` with
+59 timestamp-operation locations and the three functions/RLS/trigger scopes
+(62 blocking locations total). Converter tests pass 27/27, the migration-data
+suite 223/223, and access-analytics D1 tests 11/11. No source rows were queried.

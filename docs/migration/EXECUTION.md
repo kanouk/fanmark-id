@@ -1,5 +1,28 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 v27：アクセス分析 timestampsの限定レビュー（12:25 UTC）
+
+linked Supabaseへのread-only catalog queryを再実行し、
+`2026-10-02T12:25:35.315086Z`時点で40 tables / 406 columns /
+144 constraints / 139 indexes / 36 triggers / 77 RLS policies /
+58 functions / one viewを確認した。catalog metadataのみを読み、
+source table rowsは取得していない。
+
+converter v27はWorker operation timestampとして次の3列を追加レビューした:
+`fanmark_access_logs.accessed_at`、`fanmark_access_daily_stats.created_at`、
+`fanmark_access_daily_stats.updated_at`。固定clockで初回アクセスの時刻を確認し、
+5分と1ミリ秒後の再訪で集計行の`created_at`を維持しながら
+`updated_at`と最新アクセスログを更新することをD1 readbackした。
+この契約はD1 operation timeであり、PostgreSQL transaction timeや
+sub-millisecond clockとの厳密な同値性は主張しない。
+
+最新のvalue-free credential descriptor付きreportはschema version 27、
+11 Auth FKをreview済み、blocking 62 locations（timestamp defaults 59、
+functions/RLS/triggers各1）で`deployable: false`。converter tests 27/27、
+`npm run test:migration-data` 223/223、access analytics D1 tests 11/11が成功。
+このv27変更はまだpush前で、push後のrequired CIが必要。source rows、
+Cloudflare resources、Worker deploy、domain/DNSは変更していない。
+
 ## 2026-10-02 v26：Worker operation timestampsの限定レビュー（12:10 UTC）
 
 linked Supabaseへのread-only catalog queryを再実行し、`2026-10-02T12:10:27Z`時点で
