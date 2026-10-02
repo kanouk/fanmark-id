@@ -151,6 +151,34 @@ describe("Better Auth notifications API", () => {
     expect(await response.json()).toEqual({ schemaVersion: 1, count: 1 });
   });
 
+  it("never accepts a caller-selected unread-count owner from the legacy RPC arguments", async () => {
+    await businessDatabase?.prepare(`INSERT INTO notifications
+      (id, event_id, rule_id, user_id, channel, template_id, template_version, payload,
+       status, priority, triggered_at, retry_count, created_at, updated_at)
+      SELECT '55555555-6666-4666-8666-666666666666', event_id, rule_id, user_id,
+        channel, template_id, template_version, payload, status, priority, triggered_at,
+        retry_count, created_at, updated_at FROM notifications WHERE id = ?`)
+      .bind(otherNotificationId).run();
+    const ownerCookie = await signIn(ownerEmail);
+    const otherCookie = await signIn(otherEmail);
+    for (const [cookie, count] of [[ownerCookie, 1], [otherCookie, 2]] as const) {
+      const response = await request("/api/me/notifications/unread-count", { headers: { Cookie: cookie } });
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ schemaVersion: 1, count });
+    }
+    for (const key of ["userId", "user_id", "user_id_param"]) {
+      const response = await request(`/api/me/notifications/unread-count?${key}=${otherId}`, {
+        headers: { Cookie: ownerCookie },
+      });
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({ error: "invalid_request" });
+    }
+    expect((await request("/api/me/notifications/unread-count")).status).toBe(401);
+    const rows = await businessDatabase?.prepare("SELECT user_id, read_at FROM notifications WHERE user_id = ?")
+      .bind(otherId).all();
+    expect(rows?.results).toEqual([{ user_id: otherId, read_at: null }, { user_id: otherId, read_at: null }]);
+  });
+
   it("marks one owned notification read and refuses to update another user's notification", async () => {
     const cookie = await signIn(ownerEmail);
     const updated = await request(`/api/me/notifications/${unreadDeliveredId}/read`, {

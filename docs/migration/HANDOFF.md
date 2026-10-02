@@ -5,6 +5,35 @@ open and draft. CI validates the branch but does not deploy the Worker.
 The newest checkpoint below is authoritative for current deployment state;
 older sections retain their historical acceptance and failure evidence.
 
+Latest checkpoint: HEAD `287a257` passed both jobs in CI `37063201944`, including
+all eight rendered cases and Chrome cleanup. Normal staging build and pinned
+deploy dry-run passed. Fresh identity/latest-version checks confirmed the
+dedicated account and existing `010a4d7a` at 100%, but the next Business D1 ledger
+query returned API 7500: account Free daily row-read limit exceeded. No deployment
+or canary seed was attempted. Current empty source/Auth and retained baselines
+could not be independently refreshed; retain the earlier evidence without
+claiming a new successful preflight. Workers Paid upgrade is not authorized.
+Free limits reset at 00:00 UTC/09:00 JST; see Cloudflare D1 pricing.
+Private `/tmp/fanmark-editor-preflight-command-error.json` records the exact
+failure; `/tmp/fanmark-perpetual-editor-preflight.log` is the failed preflight.
+When the quota permits, rerun the complete preflight before deployment/seed.
+
+Independent source-only progress: new `source-authorization-bindings.sql` and
+metadata-only `source-authorization-review.mjs` capture RLS/ACL/types/view options
+in one read-only transaction and distinguish 13 trigger functions from 45
+ordinary functions. The fresh `fanmark-source-authorization-AoCi1r` evidence
+contains 40 RLS-enabled tables, one security-invoker view and 77 policies; all
+58 body hashes match prior runtime evidence. EXECUTE counts exclude triggers
+for routine review and do not claim business-action access. Nine security
+validation/privacy tests pass. Notification unread-count regression verifies
+different session owners and rejects caller-selected IDs. Full policy/runtime
+acceptance remains open; see `source-authorization-review.md`. If this follow-up
+changes HEAD, update the private preflight/smoke HEAD and CI pins only after the
+new exact-head CI is green; rebuild normal staging assets before deploying.
+Local verification: notifications native D1 16/16, migration-data 266/266 with
+no skips, Worker typecheck, changed-file ESLint, workflow isolation and diff check
+pass. No remote D1 writes occurred in this quota-limited follow-up.
+
 Draft preservation follow-up: CI `37062006317` / head `ae2c568` application job
 passed, including seven rendered browser cases on the runner; Worker was still
 running at observation. Another local Chrome fixture reproduced PATCH 503

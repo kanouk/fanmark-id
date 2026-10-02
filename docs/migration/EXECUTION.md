@@ -1,5 +1,36 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：編集修正のCI成功、D1無料枠で配備前確認を保留
+
+head `287a257e603a9ed3249dc20e230d90d558a568c1` / CI `37063201944` は
+application・Worker両jobがsuccess。8画面ケースはChromeのcleanupを含めて成功した。
+通常のstaging buildとWrangler 4.139.0のdeploy dry-runも成功。
+再確認したidentityは専用Cloudflare accountで、latest deploymentは010a4d7aの100%。
+その後のBusiness D1 migration ledger readでAPI code7500を受けた。
+エラーはD1 Free daily row read limit exceededで、認証失敗ではない。
+preflightが完了していないためdeployと合成seedは実行していない。
+remoteのsource/Authゼロ・baseline不変は今回再検証できておらず、前回の証拠を保持する。
+有料プラン変更の承認はなく、無料枠のUTC00:00（日本時間09:00）リセット後に再確認する。
+公式条件は[Cloudflare D1 pricing](https://developers.cloudflare.com/d1/platform/pricing/)。
+ログは`/tmp/fanmark-perpetual-editor-preflight.log`とprivate
+`/tmp/fanmark-editor-preflight-command-error.json`、build/dry-runは
+`/tmp/fanmark-profile-editor-deploy-{build,dry-run}.log`。
+
+D1待機に依存しないsource authorization監査を追加した。
+`2026-10-02T21:03:48.240925+00:00`のcatalog-only transactionで40table+1view、
+77policy、58function（trigger13/ordinary45）、service_roleのRLS bypassと
+view security_invokerを確認。全58function body hashは既存runtime readbackと一致。
+権限・式/本文hashだけのreportはEXECUTE付きtriggerを普通のRPCと区別し、
+値を出さず、不完全scope/role/privilege/重複・dangling policyを拒否する。
+9監査テストが成功。通知の未読数はsourceのcaller-supplied UUIDを引き継がず、
+targetのsession owner限定を別ユーザーの異なる件数とquery拒否で追加検証する。
+通知native-D1は16/16、migration-dataは266/266（skip0）、Worker typecheck、
+変更箇所ESLint、workflow isolationとdiff checkが成功した。
+通知native-D1もWorkerの`test:api-contracts-d1`へ含め、今後のCIで省かれないようにした。
+全RLS移行完了とは扱わない。詳細は[source authorization review](source-authorization-review.md)。
+新headをcommit/pushした場合、再開用private preflight/smokeのHEAD/CI pinを
+両job成功した新headへ更新し、通常buildを作り直してから配備する。
+
 ## 2026-10-03：保存失敗時のプロフィール下書き消失を修正
 
 CI37062006317 / head ae2c568はapplication jobが成功し、runner上でも新しい画面試験
