@@ -3,8 +3,12 @@
 ## 2026-10-02 最新差分: 通知RPC ACL、callsite分類、CI timeout
 
 PR #41のコードcheckpoint `7f863f3` はActions run `36986104988` の両jobが成功。
-フロントエンド211 callsiteのうち141件をowner、data class、Cloudflare置換先まで
-分類し、残りは70件。今回ダッシュボード/Analyticsの8件を追加した。
+フロントエンド211 callsiteは、このcheckpoint時点では141件を分類し70件が未分類だった。
+その後、owner-license reads 2件と残る68件の対応表を追加し、静的callsite 211件すべてに
+owner、data class、Cloudflare置換先または保持方針を記録した。対応表は
+[`repository-inventory.md`](repository-inventory.md) と
+[`frontend-callsite-map.md`](frontend-callsite-map.md) を参照。これは静的参照の分類完了であり、
+wrapper/indirect call、production reconciliation、provider acceptanceの完了を意味しない。
 延長CheckoutはWorker routeとclientを台帳へ反映したが、stagingのStripe selectorと
 keysが未設定のため404で閉じている。Stripeへのリクエストは行っていない。
 
@@ -16,11 +20,13 @@ fresh processの再試行では同じschema処理が約2秒で終わり、suite 
 hosted runner側の誘因は未特定。Node 22.6.0のローカルでは当該fileとStripe suite
 全体が成功した。CIはdeployを行わない。
 
-211件のフロントエンドSupabase callsiteのうち、Auth/Auth-MFA 40件、
+211件のフロントエンドSupabase callsiteすべてをowner、data class、Cloudflare置換先または
+保持方針まで分類した。先行する143件はAuth/Auth-MFA 40件、
 本人/ファンマークプロフィール20件、設定/Storage 11件、マスター/参照データ19件、
 検索/登録8件、お気に入り3件、譲渡/抽選10件、Realtime 8件、通知操作・管理画面14件、
-ダッシュボード/Analytics 8件をowner、data class、Cloudflare置換先まで分類した。
-残りは70件。延長CheckoutはWorker clientがあるが、staging APIはselector/secrets未設定で
+ダッシュボード/Analytics 8件とowner-license reads 2件。残る68件の分類は
+[`frontend-callsite-map.md`](frontend-callsite-map.md) に記録した。
+延長CheckoutはWorker clientがあるが、staging APIはselector/secrets未設定で
 404のfail-closed状態を保ち、Stripe provider acceptanceは未完了。
 認証の本番/defaultはSupabaseのまま、
 stagingはBetter Authを選択する。実ユーザーのID/credential/MFA移送は#38に
@@ -57,6 +63,18 @@ pending migrationなしをremote readbackした。Actions run `36993739726`成�
 業務/master/public-settings baseline不変、Auth行0件を確認した。ローカルscheduled Workerが
 remote staging D1へ接続し、実Worker deployment/Cron/configは変更していない。
 production、ユーザーデータ、domain/DNSは変更していない。
+
+## 2026-10-02 owner-license read completion
+
+The Cloudflare staging build selected `VITE_OWNED_FANMARKS_BACKEND=worker`, but
+the home-screen license count and shared plan-downgrade selection helper still
+queried Supabase directly. Both now use the existing session-scoped
+`GET /api/me/fanmarks` route in Worker mode. The projection counts active
+perpetual licenses and excludes expired or grace licenses; the legacy Supabase
+home count was aligned to include perpetual licenses as well. A focused
+projection test passes 2/2, the migration-data suite passes 215/215, root
+typecheck and targeted ESLint pass, and the Cloudflare staging build succeeds.
+No staging account or user data was read or written for this local change.
 
 ## 2026-10-02 PR #41 validation, staging Worker, and D1 readback
 

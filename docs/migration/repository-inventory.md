@@ -160,6 +160,12 @@ Found 34 local directories with `index.ts` (`_shared` excluded). 34 have an expl
 
 Scanned `src/**/*.{ts,tsx}`: 211 callsites. Each row records the first line of the call and the extracted operation.
 
+All 211 checked-in static callsites now have an owner, data-class, and Cloudflare
+replacement or retention mapping across this document and the
+[remaining-callsite map](frontend-callsite-map.md). This closes the static
+mapping count only; wrapper/indirect calls and live production reconciliation
+remain separate checks.
+
 | Location | Kind | Target | Operation | Dynamic expression |
 | --- | --- | --- | --- | --- |
 | `src/components/AdminApp.tsx:44` | rpc | `is_admin` | `rpc` |  |
@@ -474,7 +480,7 @@ Reconcile the live observations with this checkout report before treating any ma
 
 - Verify every local Edge entrypoint, configured JWT policy, deployed version, and any live-only function against the production project read-only.
 - Reconcile generated types and checked-in SQL snapshots with a fresh, access-controlled production schema readback; resolve drift before selecting Cloudflare D1/R2/Workers targets.
-- Map each static frontend operation to an owner, data classification, and Cloudflare replacement or retention decision. Realtime cleanup aliases are resolved to their statically subscribed table; interpolated channel topics remain visible in the Dynamic expression column. Arbitrary wrappers and indirect calls still need manual review.
+- Review the completed static frontend mapping in this document and the [remaining-callsite map](frontend-callsite-map.md). Realtime cleanup aliases are resolved to their statically subscribed table; interpolated channel topics remain visible in the Dynamic expression column. Arbitrary wrappers and indirect calls still need manual review.
 - Confirm pg_cron/pg_net schedules, Auth providers and redirect URLs, Storage buckets/policies, Realtime channels, Stripe/Resend webhooks, and deployment secrets in the live environment. None are proven by this offline report.
 
 ## Semantic mapping completed slice: Authentication and MFA
@@ -696,6 +702,23 @@ real-user migration or provider acceptance.
 
 The route contracts are documented in [notifications-api.md](notifications-api.md),
 [own-profile-api.md](own-profile-api.md), and the subscription API implementation
-in `workers/api/src/subscription-d1-api.ts`. The remaining 70 callsites still
-need equivalent owner, data-class, and replacement/retention classification;
-wrapper and indirect-call review also remains open.
+in `workers/api/src/subscription-d1-api.ts`.
+
+## Semantic mapping completed slice: Home usage count and plan downgrade selection
+
+This slice maps the two remaining owner-license reads used by the home screen
+and plan downgrade UI. The Worker obtains the account only from the Better Auth
+session. Active licenses without an end date count toward the plan limit, as
+required for perpetual Tier C licenses.
+
+| Callsite | Operation and owner | Data class | Cloudflare replacement and parity |
+| --- | --- | --- | --- |
+| `src/pages/Index.tsx:85` | Count the current user's valid active licenses for the home screen. | Private owner license count. | With `VITE_OWNED_FANMARKS_BACKEND=worker`, read the owner-scoped `GET /api/me/fanmarks` projection and count active, unexpired licenses, including perpetual licenses. The Supabase query now uses the same no-end-or-future-end rule. |
+| `src/lib/plan-utils.ts:58` | Load the current user's eligible fanmarks before plan downgrade selection in `PlanSelection` or `UserProfileForm`. | Private owner license state and fanmark labels/configuration. | With the Worker selector, use the same session-scoped `GET /api/me/fanmarks` route and project its allowlisted DTO into the existing selection shape. No user ID is sent to the Worker. Synthetic tests cover perpetual inclusion and expired/grace exclusion; production/default remains Supabase. |
+
+The Worker uses the same API and session boundary as the dashboard list; see
+[`docs/ARCHITECTURE.md`](../ARCHITECTURE.md) and
+[`workers/api/src/owned-fanmarks-d1-repository.ts`](../../workers/api/src/owned-fanmarks-d1-repository.ts).
+The 68 previously unmapped static callsites are classified in
+[`frontend-callsite-map.md`](frontend-callsite-map.md), completing all 211
+locations in this report. Wrapper and indirect-call review remains open.

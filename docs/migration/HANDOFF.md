@@ -20,12 +20,18 @@ disabled. The first CLI check failed to read its macOS Keychain credential
 (exit 51); a fresh `whoami --json` confirms the intended
 `fanmark.id@gmail.com` account ID.
 
-The 211-callsite inventory now has 141 semantic mappings: 40 Auth/Auth-MFA
+The 211-callsite inventory now has semantic mappings for all 211 static locations.
+The first 143 are: 40 Auth/Auth-MFA
 operations, 20 own/fanmark-profile operations, 11 fanmark-settings/Storage
 operations, 19 master/reference-data operations, eight search/registration
 operations, three favorites operations, ten transfer/lottery operations,
 eight Realtime subscriptions, 14 notification data/admin operations, and eight
-dashboard/analytics operations; 70 remain. The extension checkout callsite is
+dashboard/analytics operations, plus two owner-license usage/downgrade reads.
+The remaining 68 are classified in
+[`frontend-callsite-map.md`](frontend-callsite-map.md). Wrapper/indirect-call
+review, production reconciliation, and provider acceptance remain open. The
+two owner-license reads use the session-scoped D1 API in Cloudflare mode. The
+extension checkout callsite is
 mapped but still gated pending staging Stripe configuration. A
 schema-only readback of the linked production Supabase project found that
 `get_unread_notification_count(uuid)` trusts a supplied UUID and grants
