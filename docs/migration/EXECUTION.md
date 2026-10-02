@@ -1,5 +1,28 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：通知alarmの実signin/TOTP合成受け入れ成功
+
+修正head `41cefc3` / CI `37053995420`は両job成功。専用account、old version、
+ledger 25、source/Auth 0、secret名3件を再確認し、Worker
+`ea309178-690c-4cc3-b72e-b3619cd5b444`を100% workers.devへ反映した。
+作成時刻`2026-10-02T19:32:21.361171Z`、SQLite namespaceは保持、Cronは日次のみ。
+公開HTML/JS exact一致、catalog 3,944、匿名wake GET/POST 401、Origin欠落403、
+Stripe 404を確認した。
+
+pinned `--notification-alarm-roundtrip` exit 0。real signin/TOTP/session rotation/MFA、
+手動通知201、実alarm/1 pending/generation 3/3、日本語配信後NULL/empty 3/3。
+native futureイベントはNULL alarm/1 pending/4 requested・3 ackを保持し、GETで修復しない。
+MFA repairはfutureを保持してalarm/4 ackへ復旧。due-time変更とrepair後の2件目の
+exact配信・NULL/empty 5/5を確認した。scoped cleanupもNULL/empty 5/5で完了。
+8 Auth表/source-owned Business 0、session null、Master/config/catalog/Auth保持fingerprint
+一致。private journal `fanmark-notification-alarm-canary-Hwogoy/canary.json`は
+`verified-and-cleaned`、authRows 0、fixture 2。終端journalの書込みも既存atomic helperへ
+統一するscript-only follow-upにsyntax/lintを実施した（remote smokeは変更前headで実行）。
+証拠は`/tmp/fanmark-notification-returning-{ci,preflight,deploy,http,staging-smoke}.log`と
+version/deployments/http-readback JSON。以前の503は以下の失敗記録を保持する。
+通知event schedulerの合成受け入れであり、delayed/他channel/provider、残るsource
+functions/RLS/triggers、CPU/運用/mobileを完了扱いしない。実ユーザー・domain/DNSは除外。
+
 ## 2026-10-03：通知alarmの配備と実APIの503修正
 
 head `7ec0c00` / CI `37051952726`は両job成功。専用account、空のsource/Auth、
@@ -18,7 +41,7 @@ payload nonceで削除しsource 0を確認した。generationはrewindせず次�
 
 APIを`INSERT ... RETURNING id`のexact receipt判定へ修正した。修正前503を再現した
 full-schema regressionを含むlocal wake 20/20、notification master 6/6、Worker
- typecheck成功。IGNORE/missing wake markerの拒否も確認した。修正版CI・再配備・
+typecheck成功。IGNORE/missing wake markerの拒否も確認した。修正版CI・再配備・
 full alarm smokeは未実施で、配備済みだけでは受け入れ完了と扱わない。
 証拠: `/tmp/fanmark-notification-alarm-{deploy,staging-smoke}.log`、
 `/tmp/fanmark-notification-metadata-probe.log`、

@@ -81,3 +81,12 @@ identity/binding/scheduleが異なる場合、またはindexがない場合は�
 空queue停止、future/stale lease/障害/freeze継続、MFA保護の状態確認/再起動を含む。
 現在のremote stagingは旧Cronで、0024/namespace/selectorは未適用。移行済みとは扱わない。
 契約、source hash、post-commit gapと次の合成検証は`notification-worker-wake.md`参照。
+
+## 2026-10-03：手動イベントとalarmのstaging合成受け入れ
+
+Worker `ea309178`で実signin/TOTP/MFA後の手動POST 201、実alarm起動、日本語in-app配信、
+空queueでの停止を確認した。native future eventの未ack世代はGETで変えず、MFA repairで
+復旧し、due-time変更後にも配信/停止した。各通知はexact 1件、journal/retained baselineを
+照合してAuth/業務fixtureを削除済み。手動作成は`INSERT ... RETURNING id`のexact receiptで
+確認する。remote D1の`meta.changes`はwake trigger更新を含み2件となるため、1件と比較しない。
+詳細と残るdelayed/他channel/provider/CPU等の境界は[通知起動・停止](notification-worker-wake.md)。

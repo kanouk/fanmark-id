@@ -192,7 +192,7 @@ D1のpending event INSERT/UPDATEと同じtransactionでBusiness 0024の起動世
 alarmの永続化後にその世代をackする。HTTP mutationのwaitUntilとscheduled jobのfinallyで
 未ack世代をflushする。起動失敗ではD1 markerを残し、次のmutationかMFA保護の管理APIで
 再起動する。空queueはalarmを消し、future event/processing lease/障害/freeze中は保持する。
-D1とDOのcommitは別で、強制終了後の再起動経路も運用検証が必要。staging namespace/schema/selectorは有効化済み。remote D1はpending INSERTとwake trigger更新を合算した`meta.changes=2`を返すため、手動通知作成は`INSERT ... RETURNING id`のexact receiptで判定する。合計更新件数を1件と比較しない。native IGNOREやwake marker欠落は503で拒否し、全Business schemaのlocal test 20/20で確認した。修正版のremote受け入れは未完了。`docs/migration/notification-worker-wake.md`参照。
+D1とDOのcommitは別で、強制終了後の再起動経路も運用検証が必要。staging namespace/schema/selectorは有効化済み。remote D1はpending INSERTとwake trigger更新を合算した`meta.changes=2`を返すため、手動通知作成は`INSERT ... RETURNING id`のexact receiptで判定する。合計更新件数を1件と比較しない。native IGNOREやwake marker欠落は503で拒否し、全Business schemaのlocal test 20/20で確認した。修正版`ea309178`を100% workers.dev配備し、実signin/TOTP/MFAの合成通知で201・日本語配信・NULL alarmへの停止、native future eventのunacked世代とMFA repair、due-time変更後の配信/停止を確認した。保持baseline一致とAuth/業務fixtureの削除も確認済み。`docs/migration/notification-worker-wake.md`参照。
 
 staging configはSQLite coordinator bindingと`notification-wake-v1`のclass migration、
 `NOTIFICATION_WAKE_BACKEND=durable-object`、日次Cronだけで配備済み。

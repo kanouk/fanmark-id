@@ -3,41 +3,51 @@
 Checkpoint: 2026-10-03 JST. The migration is **not complete**. PR #41 remains
 open and draft. CI validates the branch but does not deploy the Worker.
 
-Notification alarm activation is deployed but **not accepted**. Head `7ec0c00`
-passed both CI jobs in `37051952726`. Guarded remote apply/readback confirmed
-Business 0024 and all four exact schema objects, canonical ledger 25, and zero
-source-owned/Auth rows. Worker `49d22f73-3684-4f66-b457-17f63c07ca52` is 100%
-on workers.dev; its SQLite namespace is `2c27a340fd6c4248bfdbbb8d8bfb457c`.
-Only daily Cron `0 0 * * *` remains. Public HTML/JS match the staging build,
-noindex/robots/session/catalog gates pass, anonymous wake GET/POST return 401,
-missing Origin returns 403, and Stripe remains closed with 404.
+Notification event wake/sleep is now **staging-verified with synthetic data**.
+Repair head `41cefc3374e34b01d4a89f538ac58cf3ad4faf94` passed both CI jobs in
+`37053995420`. Guarded preflight confirmed the dedicated account, fixed old
+version, ledger 25, empty source/Auth and only three existing secret names.
+Worker `ea309178-690c-4cc3-b72e-b3619cd5b444`, created
+`2026-10-02T19:32:21.361171Z`, is 100% on workers.dev. SQLite namespace
+`2c27a340fd6c4248bfdbbb8d8bfb457c` is retained and only daily Cron remains.
+HTML/JS exactly match local dist, noindex/robots/session/catalog 3,944 pass,
+anonymous wake GET/POST are 401, missing Origin 403, and Stripe stays 404.
 
-The first pinned `--notification-alarm-roundtrip` reached real sign-in/TOTP/MFA
-but manual creation returned 503 instead of 201. Its private journal records
-`failed-and-cleaned`: zero Auth/source fixtures, NULL alarm, and wake generation
-1/1. This proves cleanup, not notification acceptance. A guarded native remote
-probe then observed a successful one-row `RETURNING id` receipt with
-`meta.changes=2`: D1 includes the wake trigger's marker update. That probe was
-journaled before insertion and cleaned by exact ID/source/payload nonce; source
-rows are zero again. It increments the monotonic requested generation and
-leaves replay to the next mutation/operator repair; it does not modify the ack.
+The initial `49d22f73` smoke returned 503 after committing a manual event but
+was cleaned completely. A guarded native D1 probe proved one returned ID with
+`meta.changes=2` because the pending-event trigger updates the marker. It too
+was journaled and removed by exact ID/source/nonce. The repair verifies exactly
+one matching `INSERT ... RETURNING id` receipt. Full-schema workerd regression
+reproduced the old 503 and now passes 20/20, including remote-style aggregate
+metadata, actual delivery/stop, ignored inserts and missing-marker rollback.
+Notification master 6/6, Worker typecheck/lint, staging build and pinned dry-run
+pass; full CI passed before deployment. Do not reapply remote 0024/ledger 25.
 
-The manual event API now verifies `INSERT ... RETURNING id` with exactly one
-matching ID instead of comparing aggregate change count to 1. The full-schema
-workerd regression reproduced the old 503 and now passes 20/20, including
-actual delivery/idle stop with remote-style metadata, suppressed inserts and
-missing-marker rollback. The notification master suite passes 6/6; Worker
-typecheck passes. Other direct event producers do not compare their event
-INSERT result to 1, and processor state transitions leave pending so do not
-fire the pending-only marker trigger. Next: commit/green CI, guarded workers.dev
-redeploy, pinned full TOTP alarm roundtrip, independent retention/cleanup proof.
-Do not reapply 0024: the remote ledger is already 25.
+The pinned `--notification-alarm-roundtrip` on `ea309178` exited 0. Real
+sign-in/TOTP/session rotation/MFA accepted manual API 201. The journal captures
+an actual alarm with one pending event and generation 3/3, exact Japanese
+in-app delivery, then NULL alarm/empty queue 3/3. A native future insert proves
+a missed bridge with NULL alarm, one pending and generation 4/3; GET does not
+repair it. MFA POST arms the alarm and acknowledges 4/4 without prematurely
+processing the future event. A native due-time update plus MFA repair produces
+the second exact delivery and returns to NULL/empty 5/5. Scoped cleanup also
+observed NULL/empty 5/5, zero eight-table Auth and zero source-owned Business,
+invalidated session null, and exact retained Master/config/catalog/Auth baseline
+fingerprints. Private journal `fanmark-notification-alarm-canary-Hwogoy/canary.json`
+ended `verified-and-cleaned`, authRows 0, with two journaled fixtures. Evidence:
+`/tmp/fanmark-notification-returning-{ci,preflight,deploy,http,staging-smoke}.log`
+and deployments/version/http-readback JSON. Terminal journal updates now reuse
+the same atomic-rename helper as pre-write notification updates; syntax/lint
+checks cover that follow-up script-only improvement.
 
-The D1-to-DO commit gap remains replayable rather than atomic. A hard missed
-bridge needs the next mutation or MFA repair. Broader source functions/RLS/
-triggers, delayed delivery, providers, CPU, operational and mobile gates remain
-open. Live user data and domain/DNS remain deferred. Provider secrets have not
-been registered. See `notification-worker-wake.md` for the contract and evidence.
+The D1-to-DO commit gap remains replayable rather than atomic. Hard missed
+bridges need the next mutation or MFA repair, as now actually demonstrated.
+This closes only this notification-event scheduler rehearsal. Broader source
+functions/RLS/triggers, delayed in-app/other-channel delivery, providers, CPU,
+operational and mobile gates remain open. User data and domain/DNS stay deferred;
+provider secrets remain absent. Next: fresh source behavior reconciliation across
+remaining functions/policies/triggers and provider integration when configured.
+See `notification-worker-wake.md` for boundaries and recovery details.
 
 Administrator data reset is now staging-verified. Code head `03eee80` passed
 both CI jobs in run `37045419633`. Fresh dedicated-account preflight confirmed

@@ -3761,9 +3761,7 @@ async function main() {
   if (emojiAuditJournalPath) {
     const journal = JSON.parse(await readFile(emojiAuditJournalPath, "utf8"));
     assert.equal(journal.state, actions.adminResetRoundtrip ? "reset-verified-and-cleaned" : actions.emojiMasterAuditRoundtrip ? "master-verified-and-cleaned" : actions.notificationManualEvent ? "notification-verified-and-cleaned" : "waitlist-verified-and-cleaned");
-    journal.state = "verified-and-cleaned";
-    journal.authRows = 0;
-    await writeFile(emojiAuditJournalPath, JSON.stringify(journal), { mode: 0o600 });
+    await updateNotificationJournal(emojiAuditJournalPath, { state: "verified-and-cleaned", authRows: 0 });
   }
   console.log("Staging Better Auth sign-in, first-time TOTP enrollment, session rotation, and admin MFA authorization passed.");
   if (actions.emojiMasterRoundtrip) {
