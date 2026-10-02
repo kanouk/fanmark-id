@@ -233,7 +233,7 @@ test("rejects a snapshot produced by the prior schema-conversion version", async
   try {
     const result = await exportSnapshot({ catalog: catalog(), outputDir, session: fakeSession() });
     const manifest = JSON.parse(await readFile(result.manifestPath, "utf8"));
-    assert.equal(manifest.schemaConversionVersion, 31);
+    assert.equal(manifest.schemaConversionVersion, 32);
     manifest.schemaConversionVersion -= 1;
     await writeFile(result.manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, { mode: 0o600 });
     await assert.rejects(verifySnapshot(result.manifestPath), (error) => error.code === "manifest_metadata_invalid");

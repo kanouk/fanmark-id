@@ -1,6 +1,6 @@
 # Full schema conversion generator
 
-`schema-convert.mjs` v31 is a private, catalog-only preparation tool. It
+`schema-convert.mjs` v32 is a private, catalog-only preparation tool. It
 converts the JSON emitted by `scripts/migration/schema-readiness.sql` into deterministic
 SQLite/D1 table and index SQL plus a machine-readable report of unresolved
 parity gates. It does not read application rows, contact Supabase, apply SQL,
@@ -628,3 +628,23 @@ with 45 timestamp-operation locations and the three functions/RLS/trigger
 catalog scopes (48 blocking locations total). Converter tests pass 31/31,
 the migration-data suite 227/227, and invitation admin D1 tests 5/5. No source
 rows were queried.
+
+## Schema converter v32: transfer and lottery operation timestamps
+
+Converter v32 reviews the seven timestamps on transfer codes and requests,
+the three timestamps on lottery entries, and `created_at` / `executed_at` on
+lottery history. The D1 transfer and lottery tests verify insert values,
+timestamp preservation, and later operation times. The license-expiry
+integration test verifies both lottery-history timestamps from the same
+captured finalization clock. Snapshot import still binds the exact source
+timestamps.
+
+The latest read-only catalog observed at `2026-10-02T13:03:01.839723Z` contains
+40 tables, 406 columns, 144 constraints, 139 indexes, 36 triggers, 77 RLS
+policies, 58 functions, and one view; no source table rows were read. Converter
+v32 reviews 34 Worker-operation timestamps and all 11 exact Auth references.
+It remains `deployable: false` with 33 timestamp-operation locations and the
+three functions/RLS/trigger catalog scopes (36 blocking locations total).
+Converter tests pass 32/32 and the migration-data suite 228/228. Transfer D1
+tests pass 9/9, lottery D1 tests 12/12, and the license-expiry integration
+suite 25/25.

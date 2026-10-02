@@ -16,7 +16,9 @@ const LICENSE = "20000000-0000-4000-8000-000000000001";
 const SECOND_FANMARK = "10000000-0000-4000-8000-000000000002";
 const SECOND_LICENSE = "20000000-0000-4000-8000-000000000002";
 const NOW = "2026-09-25T10:15:23.123000Z";
-const CLOCK = () => new Date("2026-09-25T10:15:23.123Z");
+const NEXT = "2026-09-25T10:16:23.123000Z";
+let clockValue = new Date("2026-09-25T10:15:23.123Z");
+const CLOCK = () => new Date(clockValue);
 const ORIGIN = "https://app.example.test";
 const requestEnv: Env = { ...runtimeEnv, D1_TOPOLOGY: "split", AUTH_BACKEND: "better-auth", FANMARK_TRANSFER_BACKEND: "d1", CORS_ALLOWED_ORIGINS: ORIGIN };
 
@@ -39,6 +41,7 @@ async function count(db: D1Database, table: string): Promise<number> {
 }
 
 async function reset(): Promise<void> {
+  clockValue = new Date("2026-09-25T10:15:23.123Z");
   await business.batch([
     "DELETE FROM notification_events", "DELETE FROM audit_logs", "DELETE FROM fanmark_lottery_entries",
     "DELETE FROM fanmark_transfer_requests", "DELETE FROM fanmark_transfer_codes", "DELETE FROM fanmark_password_configs",
@@ -126,6 +129,11 @@ describe("D1 fanmark transfer", () => {
     expect(await count(business, "fanmark_transfer_codes")).toBe(2);
     expect(await business.prepare("SELECT status FROM fanmark_transfer_codes ORDER BY status")
       .all<{ status: string }>()).toMatchObject({ results: [{ status: "active" }, { status: "cancelled" }] });
+    expect((await business.prepare("SELECT disclaimer_agreed_at, created_at, updated_at FROM fanmark_transfer_codes ORDER BY status")
+      .all<Record<string, unknown>>()).results).toEqual([
+      { disclaimer_agreed_at: NOW, created_at: NOW, updated_at: NOW },
+      { disclaimer_agreed_at: NOW, created_at: NOW, updated_at: NOW },
+    ]);
     expect(await count(business, "audit_logs")).toBe(2);
     const forbidden = await call("/issue", { license_id: LICENSE, disclaimer_agreed: false });
     expect(forbidden.status).toBe(400);
@@ -179,11 +187,20 @@ describe("D1 fanmark transfer", () => {
     const requestId = String(applied.request_id);
     const denied = await call("/reject", { request_id: requestId }, OTHER);
     expect(denied.status).toBe(403);
+    clockValue = new Date("2026-09-25T10:16:23.123Z");
     const rejected = await call("/reject", { request_id: requestId, reason: "Not now" });
     expect(rejected.status).toBe(200);
     expect(await business.prepare("SELECT status FROM fanmark_transfer_codes").first<{ status: string }>()).toEqual({ status: "active" });
     expect(await business.prepare("SELECT status, rejection_reason FROM fanmark_transfer_requests WHERE id = ?")
       .bind(requestId).first<Record<string, unknown>>()).toEqual({ status: "rejected", rejection_reason: "Not now" });
+    expect(await business.prepare("SELECT disclaimer_agreed_at, created_at, updated_at FROM fanmark_transfer_codes WHERE id = ?")
+      .bind(issued.transfer_code_id).first<Record<string, unknown>>()).toEqual({
+      disclaimer_agreed_at: NOW, created_at: NOW, updated_at: NEXT,
+    });
+    expect(await business.prepare("SELECT disclaimer_agreed_at, applied_at, created_at, updated_at FROM fanmark_transfer_requests WHERE id = ?")
+      .bind(requestId).first<Record<string, unknown>>()).toEqual({
+      disclaimer_agreed_at: NOW, applied_at: NOW, created_at: NOW, updated_at: NEXT,
+    });
     expect(await count(business, "notification_events")).toBe(2);
   });
 

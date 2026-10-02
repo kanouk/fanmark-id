@@ -1037,7 +1037,7 @@ test("atomically finalizes a pending lottery with winner license, history, audit
 
     const history = await row(fixture.database,
       `SELECT fanmark_id, license_id, total_entries, winner_user_id, winner_entry_id,
-        probability_distribution, random_seed, executed_at, execution_method
+        probability_distribution, random_seed, executed_at, execution_method, created_at
        FROM fanmark_lottery_history`);
     assert.equal(history.fanmark_id, IDS.fanmark);
     assert.equal(history.license_id, IDS.license);
@@ -1049,6 +1049,7 @@ test("atomically finalizes a pending lottery with winner license, history, audit
     ]);
     assert.match(history.random_seed, /^[0-9a-f]{64}$/u);
     assert.equal(history.executed_at, CAPTURED_NOW);
+    assert.equal(history.created_at, CAPTURED_NOW);
     assert.equal(history.execution_method, "automatic");
 
     const winnerLicense = await row(fixture.database,

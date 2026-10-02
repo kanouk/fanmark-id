@@ -1,5 +1,26 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 v32：転送・抽選の日時レビュー
+
+最新のread-only schema catalogを`2026-10-02T13:03:01.839723Z`に取得した。
+40 tables / 406 columns / 144 constraints / 139 indexes / 36 triggers /
+77 RLS policies / 58 functions / one viewで、source table rowsは取得していない。
+
+`fanmark_transfer_codes`、`fanmark_transfer_requests`、
+`fanmark_lottery_entries`、`fanmark_lottery_history`の計12 timestamp columnsを
+Worker operation timestampとしてレビューした。固定clockに加え、拒否・再申請・取消を
+次の時刻で実行し、作成/申請時刻の保持と`updated_at`の前進をD1からreadbackする。
+ライフサイクル統合テストは抽選履歴の`executed_at`と`created_at`も確認する。
+snapshot importはsource timestampを明示的にbindする。
+
+converter v32は34個のWorker-operation timestamp columnsと11 Auth FKをreview済み。
+残るblockingは36 locations（timestamp defaults 33、functions/RLS/triggers各1）で
+`deployable: false`。converter tests 32/32、`npm run test:migration-data` 228/228、
+transfer D1 tests 9/9、lottery D1 tests 12/12、license-expiry integration 25/25、
+Worker typecheck、変更ファイルのESLintが成功。PR head `fa648c9`のCI run
+`37010055229`はv32変更前に両job success。v32変更後のCIはpush後に確認する。
+source rows、Cloudflare resources、Worker deploy、domain/DNSは変更していない。
+
 ## 2026-10-02 v31：招待コードtimestampsの限定レビュー
 
 最新のread-only schema catalogを`2026-10-02T12:57:00.005354Z`に取得した。

@@ -12,7 +12,9 @@ const FANMARK = "10000000-0000-4000-8000-000000000001";
 const LICENSE = "20000000-0000-4000-8000-000000000001";
 const ENTRY = "30000000-0000-4000-8000-000000000001";
 const NOW = "2026-09-25T10:15:23.123000Z";
-const CLOCK = () => new Date("2026-09-25T10:15:23.123Z");
+const NEXT = "2026-09-25T10:16:23.123000Z";
+let clockValue = new Date("2026-09-25T10:15:23.123Z");
+const CLOCK = () => new Date(clockValue);
 const ORIGIN = "https://app.example.test";
 const requestEnv: Env = {
   ...runtimeEnv,
@@ -32,6 +34,7 @@ async function run(sql: string, ...values: unknown[]): Promise<void> {
 
 async function reset(): Promise<void> {
   if (!business) throw new Error("Lottery D1 binding unavailable");
+  clockValue = new Date("2026-09-25T10:15:23.123Z");
   for (const table of ["notification_events", "audit_logs", "fanmark_lottery_entries", "fanmark_licenses", "fanmarks", "user_settings", "system_settings"]) {
     await business.prepare(`DELETE FROM ${table}`).run();
   }
@@ -77,6 +80,10 @@ describe("D1 fanmark lottery entry actions", () => {
       grace_expires_at: "2026-09-26T00:00:00.000000Z", applied_at: NOW });
     expect(typeof payload.entry_id).toBe("string");
     expect(await count("fanmark_lottery_entries")).toBe(1);
+    expect(await business!.prepare("SELECT applied_at, created_at, updated_at FROM fanmark_lottery_entries WHERE id = ?")
+      .bind(payload.entry_id).first<Record<string, unknown>>()).toEqual({
+      applied_at: NOW, created_at: NOW, updated_at: NOW,
+    });
     expect(await count("audit_logs")).toBe(1);
     expect(await count("notification_events")).toBe(1);
     const event = await business!.prepare("SELECT event_type, source, payload FROM notification_events").first<Record<string, unknown>>();
@@ -111,12 +118,16 @@ describe("D1 fanmark lottery entry actions", () => {
     await run(`INSERT INTO fanmark_lottery_entries
       (id, fanmark_id, user_id, license_id, entry_status, applied_at, cancelled_at, cancellation_reason, created_at, updated_at)
       VALUES (?, ?, ?, ?, 'cancelled', ?, ?, 'user_request', ?, ?)`, ENTRY, FANMARK, OWNER, LICENSE, NOW, NOW, NOW, NOW);
+    clockValue = new Date("2026-09-25T10:16:23.123Z");
     const response = await post("apply", { fanmark_id: FANMARK });
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ entry_id: ENTRY });
-    const row = await business!.prepare("SELECT entry_status, cancelled_at, cancellation_reason FROM fanmark_lottery_entries WHERE id = ?")
+    const row = await business!.prepare("SELECT entry_status, applied_at, cancelled_at, cancellation_reason, created_at, updated_at FROM fanmark_lottery_entries WHERE id = ?")
       .bind(ENTRY).first<Record<string, unknown>>();
-    expect(row).toEqual({ entry_status: "pending", cancelled_at: NOW, cancellation_reason: "user_request" });
+    expect(row).toEqual({
+      entry_status: "pending", applied_at: NEXT, cancelled_at: NOW, cancellation_reason: "user_request",
+      created_at: NOW, updated_at: NEXT,
+    });
     const audit = await business!.prepare("SELECT action, metadata FROM audit_logs ORDER BY rowid DESC LIMIT 1")
       .first<{ action: string; metadata: string }>();
     expect(audit?.action).toBe("LOTTERY_ENTRY_STATUS_CHANGED");
@@ -161,9 +172,14 @@ describe("D1 fanmark lottery entry actions", () => {
     const payload = await applied.json() as { entry_id: string };
     const forbidden = await post("cancel", { entry_id: payload.entry_id }, OTHER);
     expect(forbidden.status).toBe(403);
+    clockValue = new Date("2026-09-25T10:16:23.123Z");
     const cancelled = await post("cancel", { entry_id: payload.entry_id });
     expect(cancelled.status).toBe(200);
-    expect(await cancelled.json()).toMatchObject({ success: true, entry_id: payload.entry_id, entry_status: "cancelled", cancelled_at: NOW });
+    expect(await cancelled.json()).toMatchObject({ success: true, entry_id: payload.entry_id, entry_status: "cancelled", cancelled_at: NEXT });
+    expect(await business!.prepare("SELECT applied_at, cancelled_at, created_at, updated_at FROM fanmark_lottery_entries WHERE id = ?")
+      .bind(payload.entry_id).first<Record<string, unknown>>()).toEqual({
+      applied_at: NOW, cancelled_at: NEXT, created_at: NOW, updated_at: NEXT,
+    });
     expect(await count("audit_logs")).toBe(2);
     expect((await post("cancel", { entry_id: payload.entry_id })).status).toBe(400);
   });

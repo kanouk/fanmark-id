@@ -17,7 +17,7 @@ import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 31;
+export const SCHEMA_CONVERSION_VERSION = 32;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -305,6 +305,112 @@ const REVIEWED_RUNTIME_TIMESTAMP_WRITES = new Map([
     evidence: [
       "workers/api/src/invitation-admin-d1-api.ts",
       "workers/api/test/invitation-admin-d1.test.ts",
+    ],
+  }],
+  ["fanmark_transfer_codes.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The transfer-code issue operation binds the canonical UTC timestamp explicitly, and the snapshot importer preserves the source value; D1 integration coverage reads back the timestamp.",
+    evidence: [
+      "workers/api/src/fanmark-transfer-d1-api.ts",
+      "workers/api/test/fanmark-transfer-d1.test.ts",
+      "scripts/migration/d1-import.mjs",
+    ],
+  }],
+  ["fanmark_transfer_codes.disclaimer_agreed_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The transfer-code issue operation records the required disclaimer agreement using its captured canonical UTC timestamp; D1 integration coverage reads back the value.",
+    evidence: [
+      "workers/api/src/fanmark-transfer-d1-api.ts",
+      "workers/api/test/fanmark-transfer-d1.test.ts",
+    ],
+  }],
+  ["fanmark_transfer_codes.updated_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Issue, replace, apply, expire, approve, reject, and cancel operations bind the captured canonical UTC timestamp explicitly; D1 integration coverage verifies creation and later updates.",
+    evidence: [
+      "workers/api/src/fanmark-transfer-d1-api.ts",
+      "workers/api/test/fanmark-transfer-d1.test.ts",
+      "workers/api/src/utc-timestamp.ts",
+    ],
+  }],
+  ["fanmark_transfer_requests.applied_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The apply operation sets applied_at from the captured canonical UTC operation time; integration coverage verifies it remains unchanged when a request is later resolved.",
+    evidence: [
+      "workers/api/src/fanmark-transfer-d1-api.ts",
+      "workers/api/test/fanmark-transfer-d1.test.ts",
+    ],
+  }],
+  ["fanmark_transfer_requests.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The apply operation binds created_at explicitly alongside applied_at, and the snapshot importer retains the original source value; D1 integration coverage reads it back.",
+    evidence: [
+      "workers/api/src/fanmark-transfer-d1-api.ts",
+      "workers/api/test/fanmark-transfer-d1.test.ts",
+      "scripts/migration/d1-import.mjs",
+    ],
+  }],
+  ["fanmark_transfer_requests.disclaimer_agreed_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The apply operation records the required disclaimer agreement using its captured canonical UTC timestamp; integration coverage verifies the value is preserved on resolution.",
+    evidence: [
+      "workers/api/src/fanmark-transfer-d1-api.ts",
+      "workers/api/test/fanmark-transfer-d1.test.ts",
+    ],
+  }],
+  ["fanmark_transfer_requests.updated_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Apply and request resolution operations bind the captured canonical UTC timestamp explicitly; D1 integration coverage verifies updated_at advances while original application timestamps remain intact.",
+    evidence: [
+      "workers/api/src/fanmark-transfer-d1-api.ts",
+      "workers/api/test/fanmark-transfer-d1.test.ts",
+      "workers/api/src/utc-timestamp.ts",
+    ],
+  }],
+  ["fanmark_lottery_entries.applied_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The lottery apply operation binds the captured canonical UTC timestamp, including when reusing a cancelled entry; the D1 integration test reads the original and replacement application times.",
+    evidence: [
+      "workers/api/src/fanmark-lottery-d1-api.ts",
+      "workers/api/test/fanmark-lottery-d1.test.ts",
+      "workers/api/src/utc-timestamp.ts",
+      "scripts/migration/d1-import.mjs",
+    ],
+  }],
+  ["fanmark_lottery_entries.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The lottery apply operation supplies created_at on insert, and snapshot import retains the source value; D1 integration coverage verifies it survives entry reuse.",
+    evidence: [
+      "workers/api/src/fanmark-lottery-d1-api.ts",
+      "workers/api/test/fanmark-lottery-d1.test.ts",
+      "scripts/migration/d1-import.mjs",
+    ],
+  }],
+  ["fanmark_lottery_entries.updated_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Apply, cancelled-entry reuse, cancellation, and transfer approval bind updated_at explicitly; D1 integration coverage verifies the timestamp advances while created_at is preserved.",
+    evidence: [
+      "workers/api/src/fanmark-lottery-d1-api.ts",
+      "workers/api/src/fanmark-transfer-d1-api.ts",
+      "workers/api/test/fanmark-lottery-d1.test.ts",
+      "workers/api/src/utc-timestamp.ts",
+    ],
+  }],
+  ["fanmark_lottery_history.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The lifecycle finalization operation binds the captured UTC execution time explicitly to each lottery history row; integration coverage reads back the value.",
+    evidence: [
+      "workers/api/src/license-grace-finalization-source.mjs",
+      "workers/api/test/license-expiry-source.integration.mjs",
+    ],
+  }],
+  ["fanmark_lottery_history.executed_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The lifecycle finalization operation uses one captured canonical UTC timestamp for executed_at and verifies it on readback; source snapshot imports preserve existing timestamps.",
+    evidence: [
+      "workers/api/src/license-grace-finalization-source.mjs",
+      "workers/api/test/license-expiry-source.integration.mjs",
+      "scripts/migration/d1-import.mjs",
     ],
   }],
   ["waitlist.created_at", {

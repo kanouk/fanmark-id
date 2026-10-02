@@ -4,21 +4,21 @@ Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
 open and draft. CI validates the branch but does not deploy the Worker.
 
 The latest read-only schema catalog completed at
-`2026-10-02T12:57:00.005354Z`: 40 tables / 406 columns / 144 constraints /
+`2026-10-02T13:03:01.839723Z`: 40 tables / 406 columns / 144 constraints /
 139 indexes / 36 triggers / 77 RLS policies / 58 functions / one view. No
-source table rows were read. Converter v31 reviews 22 exact Worker-owned
-timestamps: five v26 columns, three access-analytics columns, two profile
-columns, eight settings columns, two `emoji_master` columns, and two
-`invitation_codes` columns. Fixed-clock D1 coverage verifies emoji-master
-create/update/import insert/upsert and invitation-code create/patch, including
-preservation of `created_at`. The report remains `deployable: false` with 45
-operation-owned timestamp defaults and three unsupported function/RLS/trigger
-scopes (48 blocking locations); all 11 exact Auth foreign keys remain reviewed.
-Converter tests pass 31/31, migration data tests 227/227, auth D1 tests 27/27,
-invitation admin D1 tests 5/5, Worker typecheck, and ESLint on changed files.
+source table rows were read. Converter v32 reviews 34 exact Worker-operation
+timestamps and all 11 exact Auth references. This pass adds seven transfer
+timestamps and five lottery timestamps. Fixed-clock D1 tests verify original
+timestamps and later `updated_at` values for transfer reject, lottery
+reapply/cancel, and lottery-history finalization. The report remains
+`deployable: false` with 33 operation-owned timestamp defaults and three
+unsupported function/RLS/trigger scopes (36 blocking locations). Converter
+tests pass 32/32, migration data tests 228/228, transfer D1 9/9, lottery D1
+12/12, license-expiry integration 25/25, Worker typecheck, and ESLint on
+changed files. All 11 exact Auth foreign keys remain reviewed.
 
 No source rows, production routing, user/Auth migration, Worker deployment, or
-domain/DNS settings were changed in v31. The latest recorded
+domain/DNS settings were changed in v32. The latest recorded
 workers.dev-only staging version is
 version `d2330dd1-ce17-41c0-99d2-a81b242c412d` at 100%. An earlier run
 `36991654600` exposed an intermittent 120-second
