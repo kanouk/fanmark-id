@@ -2,22 +2,20 @@
 
 ## 2026-10-02 PR #41 validation, staging Worker, and D1 readback
 
-PR #41 remains open and draft. GitHub Actions run `36965838066` passed both
+PR #41 remains open and draft. GitHub Actions run `36966388049` passed both
 the Cloudflare staging application and Worker API jobs. A prior run exposed a
 date-sensitive Stripe test fixture whose fixed 2026-10-01 license expiry had
 elapsed on 2026-10-02; the fixture now uses a future UTC date, and
 `npm --prefix experiments/stripe-receipts test` passes locally. CI validated
-code and build only; it did not deploy the application. Commits after deployed
-Worker source `3a93f8b` update schema conversion, auditing, tests, and
-documentation; they do not change the deployed Worker bundle.
+code and build only. A separate guarded canary deployed and then restored the
+staging Worker.
 
-Using the explicit `fanmark-staging-inapp` Wrangler profile, read-only
-deployment history showed `fanmark-app-staging` version
-`9ab4f6f9-ecf2-41b0-87fe-c75f26d6c8ea` at 100%, deployed at
-`2026-10-01T23:56:01Z`. The profile identifies `fanmark.id@gmail.com` in the
-intended Fanmark.id account. Remote migration readback reported no pending
-migrations for `fanmark-business-staging`, `fanmark-auth-staging`, or
-`fanmark-emoji-master-staging`.
+Using the explicit `fanmark-staging-inapp` profile, Cloudflare readback showed
+restored Worker version `6f0d73af-f3db-46b5-94fb-fed521478634` at 100%; the
+temporary canary version `89172416-0366-4c2f-b464-d71b200cef48` is no longer
+active. The profile identifies `fanmark.id@gmail.com` in the intended
+Fanmark.id account. Remote migration readback reported no pending migrations
+for Business, Auth, or emoji-master staging D1.
 
 The current staging Worker retains Cron schedules `* * * * *` and
 `0 0 * * *`; `NOTIFICATION_PROCESSOR_BACKEND=d1` is configured, while
@@ -30,6 +28,28 @@ deployable: 11 external Auth references, 71 timestamp-default operations, and
 functions/RLS/trigger scope gates remain; its fresh-catalog synthetic replay
 proves public-row reconciliation only, not full migration reconciliation.
 No real user/Auth/Storage rows, production routes, or domain/DNS were changed.
+
+## 2026-10-02 master D1 and scheduled expiry readback (05:10 UTC)
+
+Read-only Master D1 queries returned 3,944 canonical emoji rows. Its active
+pointer is generation 3, action `rollback`, release
+`10ec42c1a562197c1e66c5fd10316c904188cdfb274ca5b8852c99ba240d3bed`. The
+active reference release is generation 8, action `promotion`, release
+`ba598c61b719d84c03c10ccaee9e5308d1829fd66b1f48abba6a0e5cde9b9c0c`, with
+4 tiers, 4 languages, 5 reserved patterns, and 16 extension prices. The live
+emoji API returned all 3,944 rows over eight pages with unique IDs, one stable
+version, HTTP 200, and `Cache-Control: no-store`; all four reference-master
+API routes also returned HTTP 200/no-store with the expected counts.
+
+`FANMARK_STAGING_CRON_CANARY=1` ran the deployed workers.dev lifecycle path
+with synthetic data. The scheduled event finalized one lottery winner
+(`winner_finalized`); the harness restored its Cron/selector baseline, the
+grace-period setting, and retained lifecycle state. Its result reported zero
+synthetic business rows, zero lifecycle journal rows, and no Auth user rows
+changed. A separate aggregate D1 readback confirmed zero fanmarks, licenses,
+and canary lifecycle runs after cleanup. The active daily selector remains
+unset, so recurring license expiry is still intentionally disabled in
+staging. No real user data or domain/DNS was migrated.
 
 The latest catalog-only query completed at `2026-10-02T04:34:34Z` under
 `BEGIN READ ONLY` and returned 40 tables / 406 columns. The updated writer audit

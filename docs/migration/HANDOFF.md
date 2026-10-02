@@ -1,23 +1,27 @@
 # Cloudflare migration handoff
 
 Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
-open and draft. GitHub Actions run `36965838066` passed both required jobs.
-The previous run exposed a Stripe test fixture fixed to 2026-10-01 after that
-date had elapsed; the fixture now uses a future UTC date, and the full Stripe
-receipt suite passes. CI validated code and build only; it did not deploy the
-application. The active Wrangler profile `fanmark-staging-inapp` is logged
-into the intended Fanmark.id account. Fresh readback at this checkpoint shows
-staging Worker `fanmark-app-staging` version
-`9ab4f6f9-ecf2-41b0-87fe-c75f26d6c8ea` at 100%, and no unapplied migrations
-in Business, Auth, or emoji-master staging D1. The deployment contains the
-Worker change from `3a93f8b`; later schema conversion, audit, test, and
-documentation commits were not part of that Worker deployment.
+open and draft. GitHub Actions run `36966388049` passed both required jobs.
+The earlier date-sensitive Stripe fixture failure is fixed; the full Stripe
+receipt suite, application build, and Worker API validation pass. CI itself
+does not deploy. The active Wrangler profile `fanmark-staging-inapp` is logged
+into the intended Fanmark.id account. A guarded deployed Cron canary passed and
+restored the staging baseline; the current `fanmark-app-staging` Worker version
+`6f0d73af-f3db-46b5-94fb-fed521478634` is at 100%. Business, Auth, and
+emoji-master staging D1 report no unapplied migrations.
 
 The app staging config retains Cron schedules `* * * * *` and `0 0 * * *`.
 `NOTIFICATION_PROCESSOR_BACKEND=d1` is configured; the expiry selector
 `LICENSE_EXPIRY_BACKEND` and Stripe/Resend/OAuth provider credentials are not.
 Thus scheduled notification processing may run when events exist, while daily
 license expiry and provider-backed integration acceptance remain disabled.
+The canary temporarily enabled the scheduled lifecycle selector, finalized one
+synthetic lottery winner, then restored the selector, baseline settings, and
+retained lifecycle state. Readback found zero fanmarks/licenses and zero
+canary lifecycle journals after cleanup. The master D1 contains 3,944 emoji
+rows at release generation 3 (`10ec42c1…`); its Worker API returned all 3,944
+unique IDs over eight pages with `no-store`. Reference-master generation 8
+serves 4 tiers, 4 languages, 5 reserved patterns, and 16 extension prices.
 The latest synthetic post-write recovery and pre-write resume drills passed;
 their evidence is recorded in `docs/migration/EXECUTION.md`. This checkpoint
 does not include real user/Auth/Storage migration, production routing, or
