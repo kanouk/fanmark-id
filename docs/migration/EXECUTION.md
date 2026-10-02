@@ -1,5 +1,24 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 v33：通知・メールテンプレートの日時レビュー
+
+最新のread-only schema catalogを`2026-10-02T13:17:06.595505Z`に取得した。
+40 tables / 406 columns / 144 constraints / 139 indexes / 36 triggers /
+77 RLS policies / 58 functions / one viewで、source table rowsは取得していない。
+
+`email_templates`と`notification_templates`の`created_at` / `updated_at`を確認した。
+作成時刻はsnapshot importと限定されたstaging seedだけが明示的にbindし、ランタイム編集は
+`created_at`を維持して別途レビュー済みの`updated_at`だけを進める。通知マスターの固定clock
+D1 testと認証メールテンプレートのD1 testがreadbackする。
+
+converter v33は36個のWorker-operation timestamp columns、5個のsnapshot-import-only
+columns、8個のversioned reference-master timestamps、1個のscheduled Worker timestampと
+11 Auth FKをreview済み。残るblockingは32 locations（timestamp defaults 29、functions/RLS/triggers各1）で
+`deployable: false`。converter tests 33/33、`npm run test:migration-data` 229/229、
+notification-master D1 tests 6/6、admin email-template D1 tests 4/4、Worker typecheck、
+変更ファイルのESLintが成功。v32のPR head `990e841`に対するCI run `37011388396`は
+両job success。v33のCIはpush後に確認する。source rows、Cloudflare resources、Worker deploy、domain/DNSは変更していない。
+
 ## 2026-10-02 v32：転送・抽選の日時レビュー
 
 最新のread-only schema catalogを`2026-10-02T13:03:01.839723Z`に取得した。
@@ -17,8 +36,8 @@ converter v32は34個のWorker-operation timestamp columnsと11 Auth FKをreview
 残るblockingは36 locations（timestamp defaults 33、functions/RLS/triggers各1）で
 `deployable: false`。converter tests 32/32、`npm run test:migration-data` 228/228、
 transfer D1 tests 9/9、lottery D1 tests 12/12、license-expiry integration 25/25、
-Worker typecheck、変更ファイルのESLintが成功。PR head `fa648c9`のCI run
-`37010055229`はv32変更前に両job success。v32変更後のCIはpush後に確認する。
+Worker typecheck、変更ファイルのESLintが成功。PR head `990e841`のGitHub Actions run
+`37011388396`はアプリ・Worker両job success。
 source rows、Cloudflare resources、Worker deploy、domain/DNSは変更していない。
 
 ## 2026-10-02 v31：招待コードtimestampsの限定レビュー

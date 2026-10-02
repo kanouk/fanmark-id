@@ -1,6 +1,6 @@
 # Full schema conversion generator
 
-`schema-convert.mjs` v32 is a private, catalog-only preparation tool. It
+`schema-convert.mjs` v33 is a private, catalog-only preparation tool. It
 converts the JSON emitted by `scripts/migration/schema-readiness.sql` into deterministic
 SQLite/D1 table and index SQL plus a machine-readable report of unresolved
 parity gates. It does not read application rows, contact Supabase, apply SQL,
@@ -648,3 +648,20 @@ three functions/RLS/trigger catalog scopes (36 blocking locations total).
 Converter tests pass 32/32 and the migration-data suite 228/228. Transfer D1
 tests pass 9/9, lottery D1 tests 12/12, and the license-expiry integration
 suite 25/25.
+
+## Schema converter v33: notification and email template timestamps
+
+Converter v33 reviews `created_at` and `updated_at` for both email and
+notification templates. Source imports and the bounded staging seeds bind the
+original creation values; runtime edits preserve `created_at` and explicitly
+advance `updated_at`. Fixed-clock D1 tests read back both behaviors.
+
+The latest read-only catalog observed at `2026-10-02T13:17:06.595505Z` contains
+40 tables, 406 columns, 144 constraints, 139 indexes, 36 triggers, 77 RLS
+policies, 58 functions, and one view; no source table rows were read. Converter
+v33 reviews 36 Worker-operation timestamps, five snapshot-import-only
+timestamps, and all 11 exact Auth references. It remains `deployable: false`
+with 29 timestamp-operation locations and the three functions/RLS/trigger
+catalog scopes (32 blocking locations total). Converter tests pass 33/33 and
+the migration-data suite 229/229. Notification-master D1 tests pass 6/6 and
+email-template D1 tests pass 4/4.

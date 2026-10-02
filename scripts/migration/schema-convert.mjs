@@ -17,7 +17,7 @@ import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 32;
+export const SCHEMA_CONVERSION_VERSION = 33;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -55,10 +55,44 @@ const REVIEWED_VERSIONED_REFERENCE_MASTER_TIMESTAMPS = new Set([
   "fanmark_tier_extension_prices.created_at",
   "fanmark_tier_extension_prices.updated_at",
 ]);
-const REVIEWED_SNAPSHOT_IMPORT_ONLY_TIMESTAMPS = new Set([
-  "notification_preferences.created_at",
-  "notification_preferences.updated_at",
-  "user_roles.created_at",
+const REVIEWED_SNAPSHOT_IMPORT_ONLY_TIMESTAMPS = new Map([
+  ["notification_preferences.created_at", {
+    code: "snapshot_import_only_no_timestamp_writer",
+    reason: "Snapshot import binds the source timestamp exactly. No current Worker INSERT or UPDATE writer changes this column after import.",
+    evidence: ["scripts/migration/d1-import.mjs", "scripts/migration/test-d1-import-current-schema.mjs", "scripts/migration/timestamp-writer-audit.mjs"],
+  }],
+  ["notification_preferences.updated_at", {
+    code: "snapshot_import_only_no_timestamp_writer",
+    reason: "Snapshot import binds the source timestamp exactly. No current Worker INSERT or UPDATE writer changes this column after import.",
+    evidence: ["scripts/migration/d1-import.mjs", "scripts/migration/test-d1-import-current-schema.mjs", "scripts/migration/timestamp-writer-audit.mjs"],
+  }],
+  ["user_roles.created_at", {
+    code: "snapshot_import_only_no_timestamp_writer",
+    reason: "Snapshot import binds the source timestamp exactly. No current Worker INSERT or UPDATE writer changes this column after import.",
+    evidence: ["scripts/migration/d1-import.mjs", "scripts/migration/test-d1-import-current-schema.mjs", "scripts/migration/timestamp-writer-audit.mjs"],
+  }],
+  ["email_templates.created_at", {
+    code: "snapshot_import_only_no_timestamp_writer",
+    reason: "Snapshot import and the reviewed staging seed bind the source timestamp explicitly. Runtime edits preserve created_at and update only the separately reviewed updated_at column.",
+    evidence: [
+      "scripts/migration/d1-import.mjs",
+      "scripts/migration/test-d1-import-current-schema.mjs",
+      "scripts/migration/stage-staging-broadcast-email-templates.mjs",
+      "workers/api/src/admin-email-templates-d1-api.ts",
+      "workers/api/test/admin-email-templates-d1.test.ts",
+    ],
+  }],
+  ["notification_templates.created_at", {
+    code: "snapshot_import_only_no_timestamp_writer",
+    reason: "Snapshot import and the reviewed staging seed bind the source timestamp explicitly. Runtime edits preserve created_at and update only the separately reviewed updated_at column.",
+    evidence: [
+      "scripts/migration/d1-import.mjs",
+      "scripts/migration/test-d1-import-current-schema.mjs",
+      "scripts/migration/staging-notification-master-seed.sql",
+      "workers/api/src/notification-master-d1-api.ts",
+      "workers/api/test/notification-master-admin-d1.test.ts",
+    ],
+  }],
 ]);
 const REVIEWED_AUTH_FOREIGN_KEYS = new Map([
   ["broadcast_emails_created_by_fkey", {
@@ -413,6 +447,24 @@ const REVIEWED_RUNTIME_TIMESTAMP_WRITES = new Map([
       "scripts/migration/d1-import.mjs",
     ],
   }],
+  ["email_templates.updated_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The MFA-gated email-template update advances updated_at beyond the expected value, preserves created_at, and reads the exact result back from D1.",
+    evidence: [
+      "workers/api/src/admin-email-templates-d1-api.ts",
+      "workers/api/test/admin-email-templates-d1.test.ts",
+      "workers/api/src/utc-timestamp.ts",
+    ],
+  }],
+  ["notification_templates.updated_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The MFA-gated notification-template patch advances updated_at beyond the expected value, preserves created_at, and reads both values back from D1.",
+    evidence: [
+      "workers/api/src/notification-master-d1-api.ts",
+      "workers/api/test/notification-master-admin-d1.test.ts",
+      "workers/api/src/utc-timestamp.ts",
+    ],
+  }],
   ["waitlist.created_at", {
     code: "worker_operation_explicit_timestamp",
     reason: "The only Worker INSERT writer captures the operation time and binds it through the shared six-digit UTC formatter. D1 keeps the operation timestamp explicitly; this does not claim PostgreSQL transaction-time or sub-millisecond clock equivalence.",
@@ -439,18 +491,6 @@ const VERSIONED_REFERENCE_MASTER_TIMESTAMP_DISPOSITION = Object.freeze({
     "workers/api/src/reference-master-d1-repository.ts",
     "workers/api/src/reference-master-admin-d1-repository.ts",
     "scripts/migration/reference-master-release.mjs",
-  ],
-});
-const SNAPSHOT_IMPORT_ONLY_TIMESTAMP_DISPOSITION = Object.freeze({
-  code: "snapshot_import_only_no_timestamp_writer",
-  reason: "The source-shaped importer binds the exact source timestamp. Current Cloudflare Worker code has no INSERT writer for preferences or roles, and no preference UPDATE writer that needs these timestamps; the target default is omitted so any future application writer must provide the canonical timestamp explicitly.",
-  evidence: [
-    "scripts/migration/d1-import.mjs",
-    "scripts/migration/test-d1-import-current-schema.mjs",
-    "scripts/migration/timestamp-writer-audit.mjs",
-    "workers/api/src/index.ts",
-    "workers/api/src/account-deletion-d1-api.ts",
-    "workers/api/src/notifications-scheduled.ts",
   ],
 });
 const SUPPORTED_INDEX_METHOD = "btree";
@@ -1355,14 +1395,15 @@ function translateDefault(
       });
       return null;
     }
-    if (REVIEWED_SNAPSHOT_IMPORT_ONLY_TIMESTAMPS.has(`${column.table_name}.${column.column_name}`)) {
+    const importOnlyTimestamp = REVIEWED_SNAPSHOT_IMPORT_ONLY_TIMESTAMPS.get(`${column.table_name}.${column.column_name}`);
+    if (importOnlyTimestamp) {
       reviewedDefaultDispositions.push({
         kind: "default",
         table: column.table_name,
         column: column.column_name,
         sourceDefault: "now()",
         targetDefault: null,
-        ...SNAPSHOT_IMPORT_ONLY_TIMESTAMP_DISPOSITION,
+        ...importOnlyTimestamp,
       });
       return null;
     }
