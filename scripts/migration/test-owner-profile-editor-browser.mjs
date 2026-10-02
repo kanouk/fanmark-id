@@ -87,7 +87,7 @@ async function wait(cdp,expression,predicate,timeout=10000){const deadline=Date.
 async function run(mode){
  const temp=await mkdtemp(path.join(os.tmpdir(),'fanmark-editor-offline-'));
  const chrome=spawn(chromePath,['--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-background-networking','--disable-component-update','--disable-default-apps','--no-first-run','--no-default-browser-check',`--user-data-dir=${temp}`,'--remote-debugging-port=0','about:blank'],{stdio:'ignore'});
- let cdp;let debug;const exited=new Promise(resolve=>{chrome.once('exit',resolve);chrome.once('error',resolve);});
+ let cdp;let debug;let success;const exited=new Promise(resolve=>{chrome.once('exit',resolve);chrome.once('error',resolve);});
  try{
   let port;for(let i=0;i<150;i++){try{port=(await readFile(path.join(temp,'DevToolsActivePort'),'utf8')).split('\n')[0];if(port)break;}catch{}await delay(100);}assert.ok(port);
   const targets=await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();cdp=cdpConnection(targets.find(t=>t.type==='page').webSocketDebuggerUrl);await cdp.opened;
@@ -192,7 +192,8 @@ async function run(mode){
    }
   }
   assert.deepEqual(blocked.filter(o=>o!=='https://fonts.googleapis.com'&&o!=='https://fonts.gstatic.com'),[],'frontend contacted unapproved origin');assert.deepEqual(failures,[],'interception errors');
-  console.log(JSON.stringify({case:mode,passed:true,apiRequests:requests.filter(r=>r.path.startsWith('/api/')).length,blockedFontRequests:blocked.length}));
- }catch(error){console.error(JSON.stringify({mode,debug,state:cdp?await value(cdp,'({path:location.pathname,title:document.title,text:document.body?.innerText?.slice(0,300),html:document.documentElement.outerHTML.slice(0,150)})').catch(()=>null):null}));throw error;}finally{cdp?.close();chrome.kill('SIGTERM');await Promise.race([exited,delay(2000)]);if(chrome.exitCode===null&&chrome.signalCode===null){chrome.kill('SIGKILL');await Promise.race([exited,delay(2000)]);}await rm(temp,{recursive:true,force:true});}
+  success={case:mode,passed:true,apiRequests:requests.filter(r=>r.path.startsWith('/api/')).length,blockedFontRequests:blocked.length};
+ }catch(error){console.error(JSON.stringify({mode,debug,state:cdp?await value(cdp,'({path:location.pathname,title:document.title,text:document.body?.innerText?.slice(0,300),html:document.documentElement.outerHTML.slice(0,150)})').catch(()=>null):null}));throw error;}finally{cdp?.close();chrome.kill('SIGTERM');await Promise.race([exited,delay(2000)]);if(chrome.exitCode===null&&chrome.signalCode===null){chrome.kill('SIGKILL');await Promise.race([exited,delay(2000)]);}await rm(temp,{recursive:true,force:true,maxRetries:8,retryDelay:150});}
+ console.log(JSON.stringify(success));
 }
 for(const mode of cases){try{await run(mode);}catch(error){console.error(JSON.stringify({case:mode,passed:false,error:error.message}));process.exitCode=1;}}

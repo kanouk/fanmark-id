@@ -17,6 +17,17 @@ save/reopen/preview are pending; current Worker remains `010a4d7a` below.
 No provider, real-user or domain changes. Before/after logs:
 `/tmp/fanmark-profile-editor-save-failure-before.log`,
 `/tmp/fanmark-profile-editor-draft-{build,browser,typecheck,eslint}.log`.
+CI `37062485010` / head `4889ec9` application assertions all passed 8/8, but
+Chrome's profile-directory cleanup raced with late child writes and failed
+ENOTEMPTY. The job therefore failed. Bounded `fs.rm` retries preserve cleanup
+and every case; no skips or successful-job claim. Latest-head CI must pass
+before deployment. Log: `/tmp/fanmark-profile-editor-draft-ci-job.log`.
+Success logs now follow completed cleanup. Local eight-case checks including
+cleanup pass. Fresh catalog-only readback `2026-10-02T20:46:32.597978+00:00`
+also matches the recorded source fingerprint: 58 functions/37 bindings,
+one external Auth binding, no events. Private `fanmark-source-bindings-KhOjiA`
+retains query/review; the four inactive definitions and 54 pending report
+linkages remain, with broad runtime/deployable gates false.
 
 Editor follow-up: actual synthetic persisted-session Chrome opening on current
 `010a4d7a` reproduced an early auth redirect ending at `/dashboard` instead of

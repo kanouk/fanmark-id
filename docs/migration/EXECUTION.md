@@ -17,6 +17,19 @@ application typecheck、変更箇所ESLint、workflow isolationが成功。旧�
 新headのCIとremote editor受け入れはまだ未確認。配備は引き続き010a4d7a。
 provider設定・実ユーザーデータ・DNSは未変更。
 
+head4889ec9 / CI37062485010のapplication logでは8ケースすべてのassertionが成功した。
+その後、Chromeのprofile directory cleanupがENOTEMPTYで失敗しjob全体はfailure。
+fs.rmにbounded retriesを追加する。caseを削除/skipしたりcleanupを成功扱いにはしない。
+成功logはcleanup完了後にだけ出す。変更後の8ケースはlocalでもcleanup込みで成功。
+新headのCI完了を待って配備する。証拠は
+`/tmp/fanmark-profile-editor-draft-ci-job.log`（source rowsやcredentialsを含まない）。
+
+並行してcatalog-only source readbackを再実行。`2026-10-02T20:46:32.597978+00:00`も
+58関数/37接続/外部Auth接続1/event0で、runtime fingerprint
+`8ee600ced4b859664feba7e29c94b2166734473a40f920b0c8aef991be11b579`が前回と一致。
+private `fanmark-source-bindings-KhOjiA/{query,review}.json`。inactive4件・reportでの
+runtimeレビュー未接続54件を保持し、fullRuntimeReconciled/deployableはfalseのまま。
+
 ## 2026-10-03：プロフィール編集の認証復元・取得失敗を修正
 
 Worker `010a4d7a`の実signin Cookieで編集URLを直接開いたところ、認証復元前に
