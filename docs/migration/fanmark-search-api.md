@@ -65,6 +65,51 @@ prevents a staging failure from silently creating mixed-backend writes.
 
 ## Verification and deployment boundary
 
+### Fresh source review and full-schema native D1 evidence, 2026-10-03
+
+The catalog-only source observation at `2026-10-02T21:03:48.240925+00:00`
+contains the privately reviewed definitions below. No real user's RPC was
+invoked and no source application/Auth rows were read.
+
+| Function | Definition SHA-256 |
+| --- | --- |
+| `get_fanmark_complete_data` | `bceaa1e6b4c2378d08d057a27193b0d4f6e5a523bf7a855af2ba0ae2f38de4e0` |
+| `check_fanmark_availability` | `80d1bfeaf110d139f7b8911234f5e97eddf9733e6f0de21b6d5ac72ef9f5df63` |
+| `check_fanmark_availability_secure` | `5d1e6f3fe52dff2549a00115bf4c88c8d613d9275e6cd1ce29fd6c5279b5038e` |
+| `search_fanmarks_with_lottery` | `5f7ca109288d480b48905257b99a21d1e8c77083f7f270454250adc8e8dc9f89` |
+
+`get_fanmark_complete_data` derives pending entry state from `auth.uid()` and
+selects one latest license by NULL-first end ordering. It also selects raw config
+content, which the narrower target search endpoint deliberately never queries.
+Its latest-license selection differs from availability/secure availability and
+the combined lottery helper: those choose the earliest currently blocking
+active/grace license with NULL last. The target preserves these separate
+contracts. The combined lottery RPC has no literal frontend/Edge invocation in
+the current repository (only its generated type declaration was found). Its
+external/dynamic consumers,
+ties between NULL-end historical licenses, full policy reconciliation and
+imported-data parity remain open; this review does not classify them as inactive.
+
+`test/fanmark-search-d1.test.ts` now runs through `handleRequest`, real Better Auth
+sign-in/cookies, and native local D1 queries. Its config supplies every canonical
+Business migration from `business-migration-ledger.mjs` (25 at this checkpoint),
+including lifecycle/config generations, constraints and current triggers; it
+does not substitute a reduced business schema. Auth uses the core Better Auth
+schema. The fixture tokenizer retains quoted literals, comments and complete
+trigger BEGIN/CASE/END blocks when applying the checked-in SQL.
+
+Twelve cases cover each signed-in user's own pending entry, anonymous false/null
+state, pending-only count with cancelled history, caller-selected owner rejection,
+unchanged lottery rows, active perpetual/future-by-1us/exact/past deadlines, grace
+fallback/override/exact deadlines, expired perpetual rows, NULL-first selection
+over a finite license, and omitted protected config content for anonymous/owner/
+other-user sessions. The first run failed on a missing required `tier_level`
+fixture field; that is not an application defect. The corrected full-schema
+suite passes. `npm run test:fanmark-search-d1` is part of normal Worker CI's
+`test:api-contracts-d1`, separately from the existing mocked contract tests.
+This closes the local SQL/session evidence gap for these cases, not deployed
+acceptance, all source functions/RLS, or real user-data migration.
+
 The frontend contract tests validate explicit selection, the narrow DTO, URL
 and auth-origin checks, cookie inclusion, and no fallback after Worker failure.
 The Worker contract tests validate search aggregate normalization, atomic

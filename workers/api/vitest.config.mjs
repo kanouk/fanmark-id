@@ -25,6 +25,7 @@ export default defineConfig({
       "./test/notifications-d1.test.ts",
       "./test/notification-wake.test.ts",
       "./test/favorites-d1.test.ts",
+      "./test/fanmark-search-d1.test.ts",
       "./test/fanmark-profile-d1.test.ts",
       "./test/fanmark-details-d1.test.ts",
       "./test/fanmark-access-analytics-d1.test.ts",

@@ -5,6 +5,32 @@ open and draft. CI validates the branch but does not deploy the Worker.
 The newest checkpoint below is authoritative for current deployment state;
 older sections retain their historical acceptance and failure evidence.
 
+Search evidence checkpoint: the source complete-data/public availability/secure
+availability/combined-lottery definitions were reviewed from the existing fresh
+catalog-only snapshot. Latest NULL-first license selection and earliest-blocker
+NULL-last selection are distinct source contracts. No source rows/RPCs were
+read/invoked. New native local D1 search tests apply every canonical Business
+migration (25), use real Better Auth sign-in/cookies and the actual Worker router.
+Twelve cases pass for session-bound pending entries, anonymous false/null,
+caller-ID rejection, unchanged lottery rows, perpetual and exact microsecond
+lifecycle boundaries, selection and protected config omission. The first run
+failed on a missing required tier fixture field, not an application bug.
+Worker typecheck/changed-file lint and `npm run check:ci` pass. Native search
+joins normal Worker CI; see `fanmark-search-api.md` for hashes and open gates.
+New exact-head CI is required before repinning the private deployment scripts.
+
+Prior favorite runtime head20026f7 / CI37066581254 passed both jobs at
+2026-10-02T21:29:14Z. The private editor smoke now journals discovery/config UUIDs
+and emoji identities before seed and includes protected redirect/text favorite
+checks for both accounts, disabled-content compatibility and count verification.
+Its exact-identity cleanup was exercised on all25 Business migrations in local
+SQLite: retry/partial NULL-linked seed/unrelated synthetic discovery preservation,
+FK violations0 and two retained incarnation tombstones. Missing live flag refuses
+before remote calls. This is preparation, not native remote acceptance; current
+Worker remains010a4d7a and D1 quota/full preflight/deploy/editor/favorite acceptance
+are pending. Read `/tmp/fanmark-favorites-protected-preparation.json` plus the
+private smoke and cleanup-proof files; update HEAD/CI only after the next CI passes.
+
 Protected-favorites checkpoint: reviewed fresh source definitions for seven
 favorite/discovery/search functions and two policies. The source owner-only
 favorite list still selects protected name, URL and text; native target D1
@@ -21,9 +47,9 @@ Catalog HEAD effdf4b / CI37065555307 completed both jobs successfully at
 2026-10-02T21:20:59Z. The new favorite runtime change needs its own exact-head
 CI before updating private preflight/smoke pins or deploying. Current Worker
 remains 010a4d7a; D1 quota recovery/full preflight and native editor/favorite
-acceptance are outstanding. The private editor smoke currently has no favorite
-seed/cleanup coverage; do not add those rows without updating the journal and
-exact-UUID cleanup. No real-user/provider/domain changes occurred.
+acceptance are outstanding. At that checkpoint the private editor smoke had no
+favorite seed/cleanup coverage; the later preparation checkpoint above records
+the extension and its local cleanup proof. No real-user/provider/domain changes occurred.
 
 Catalog read-budget follow-up: the actual local D1 repository's offset9500 /
 limit500 query over 10,000 synthetic rows read 10,000 rows before the fix and

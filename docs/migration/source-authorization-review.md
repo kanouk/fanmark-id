@@ -85,6 +85,15 @@ allowed input/owner/role/MFA conditions remain part of acceptance.
   identity and ownership. Existing target tests read back both users' rows and
   verify refusal of foreign notification updates and preservation of pending,
   expired, already-read and foreign rows during bulk read.
+- Fresh source complete-data/availability/secure-availability/combined-lottery
+  definitions were reviewed against the actual target search SQL. New local
+  native D1 tests apply all 25 canonical Business migrations and exercise real
+  Better Auth sessions through the Worker router, owner-specific pending
+  entries, anonymous projection, rejected caller-selected identities and
+  microsecond lifecycle boundaries. Source latest-license and earliest-blocker
+  ordering remain distinct; target search never selects config content.
+  Twelve cases pass. Combined-RPC external callers and NULL-end history ties
+  remain unresolved; see [search evidence](fanmark-search-api.md).
 
 These focused counterparts are not acceptance for all 77 policies or 45 ordinary
 functions. The report retains `authorizationReconciled=false` and

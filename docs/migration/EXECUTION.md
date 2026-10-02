@@ -1,5 +1,33 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：検索のsource照合と全Business schemaのnative検証
+
+source complete-data、public/secure availability、combined lottery searchの4定義を
+取得済みcatalog-only証拠から再照合した。complete-dataのlatest NULL-firstと、
+availabilityの現在blocker earliest/NULL-lastは別の契約であり、一律に統合しない。
+本人抽選状態はauth.uid由来、target検索は設定内容をqueryせずに狭いDTOを返す。
+source本番・業務/Authデータの読出し/変更は行っていない。hashと残るtie/external
+caller gateは[検索API](fanmark-search-api.md)へ記録した。
+
+従来検索試験はmock応答だったため、canonical Business migration全25件と
+native local D1、実Better Auth signin/session、実Worker routerを使う12ケースを追加。
+2sessionのpending本人行・cancelledを除く件数・anonymous false/null、3種の
+caller指定ID拒否、元行不変、active NULL/future1us/exact/past、grace fallbackとoverride、
+expired NULL、NULL-first選択、owner/他人/匿名で保護config非公開を確認した。
+最初の12失敗はseedに必須tier_levelを欠いたためで、application bugとは扱わない。
+修正後12/12、Worker typecheck/変更箇所lint、正しい`npm run check:ci`でisolation成功。
+誤ったcheck script pathによるMODULE_NOT_FOUNDはisolation成功の証拠にしていない。
+native検索も通常Worker CIの`test:api-contracts-d1`へ含める。
+
+保護favorites head20026f7 / CI37066581254は両job success（21:29:14Z完了）。
+private editor canaryを拡張し、2accountのprotected redirect/text、disabled response、
+保存config不変、favorite countとscoped event/favorite/discovery cleanupを準備した。
+全25schemaのlocal SQLiteでcleanup/retry/NULL-linked partial seed、無関係な合成
+discovery保持、FK違反0、license tombstone2保持を確認。flagなしはremote call前に拒否。
+新smokeはまだ実行していない。記録は`/tmp/fanmark-favorites-protected-preparation.json`。
+新head CI成功後にprivate HEAD/CI pinを更新し、D1 quota解除後に完全preflightから
+配備/native editor・favorite受け入れへ進む。stagingは010a4d7aのまま。
+
 ## 2026-10-03：お気に入り一覧から保護内容が漏れる経路を修正
 
 fresh sourceの7function/2policyを照合したところ、sourceのfavorite listは本人の
