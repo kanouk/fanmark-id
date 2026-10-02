@@ -1,6 +1,6 @@
 # Full schema conversion generator
 
-`schema-convert.mjs` v22 is a private, catalog-only preparation tool. It
+`schema-convert.mjs` v23 is a private, catalog-only preparation tool. It
 converts the JSON emitted by `scripts/migration/schema-readiness.sql` into deterministic
 SQLite/D1 table and index SQL plus a machine-readable report of unresolved
 parity gates. It does not read application rows, contact Supabase, apply SQL,
@@ -462,3 +462,21 @@ unparsed target INSERTs. Twelve timestamp columns still lack a direct literal
 writer; this is separate from proving their source/import path and transaction-
 time semantics. Focused writer tests pass 6/6; the converter remains
 non-deployable.
+
+## Schema converter v23: source-shaped import-only user timestamps (2026-10-02 JST)
+
+Converter v23 records exactly three additional `now()` defaults as
+`snapshot_import_only_no_timestamp_writer`: `notification_preferences.created_at`,
+`notification_preferences.updated_at`, and `user_roles.created_at`. The
+generic source-shaped importer binds the original source values. A repository
+audit confirms there is no Worker INSERT writer for preferences or roles and no
+Worker UPDATE for notification preferences. Target defaults stay omitted, so a
+future application writer must bind a canonical UTC microsecond timestamp.
+
+A fresh synthetic import used the current 40-table catalog and read back the
+exact timestamp values for one synthetic preference and one synthetic role.
+The report now has five blocking gate groups / 82 locations (11 external Auth
+references, 68 timestamp operations, and three unsupported functions/RLS/
+trigger scopes). `notifications_history.archived_at` remains gated until its
+archive operation and retention contract are resolved. `deployable` and full
+data reconciliation remain false; no real rows or remote state were changed.

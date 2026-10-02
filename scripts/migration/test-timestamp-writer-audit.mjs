@@ -237,3 +237,42 @@ test("source-shaped versioned reference masters have no direct Worker or migrati
   assert.ok(adminSource.includes('"created_at"'));
   assert.ok(adminSource.includes('"updated_at"'));
 });
+
+test("snapshot-import-only preference and legacy role timestamps have no timestamp INSERT writer", () => {
+  const columns = [
+    timestamp("notification_preferences", "created_at"),
+    timestamp("notification_preferences", "updated_at"),
+    timestamp("user_roles", "created_at"),
+  ];
+  const sourceRoots = [path.join(repoRoot, "workers/api/src"), path.join(repoRoot, "scripts/migration")];
+  const sqlRoots = [
+    path.join(repoRoot, "workers/api/migrations"),
+    path.join(repoRoot, "workers/api/migrations-business"),
+    path.join(repoRoot, "scripts/migration"),
+  ];
+  const files = [
+    ...sourceRoots.flatMap((root) => sourceFiles(root, /\.(?:mjs|ts)$/u)),
+    ...sqlRoots.flatMap((root) => sourceFiles(root, /\.sql$/u)),
+  ].filter((filePath) => !path.basename(filePath).startsWith("test-"));
+  const sources = [...new Set(files)].map((filePath) => ({
+    file: path.relative(repoRoot, filePath),
+    text: readFileSync(filePath, "utf8"),
+  }));
+  const result = auditTimestampWriterCoverage(catalog(columns), sources);
+
+  assert.equal(result.timestampDefaultCount, 3);
+  assert.equal(result.insertStatementCount, 0);
+  assert.deepEqual(result.unparsedTargetInserts, []);
+  assert.ok(result.uncoveredTimestampDefaults.every((entry) => entry.reason === "no_supported_insert_found"));
+
+  for (const source of sources) {
+    assert.doesNotMatch(source.text, /\bINSERT(?:\s+OR\s+[A-Za-z_]+)?\s+INTO\s+(?:(?:"public"|public)\s*\.\s*)?["`]?notification_preferences["`]?\b/iu,
+      `${source.file} must not insert notification preferences without a reviewed runtime contract`);
+    assert.doesNotMatch(source.text, /\bUPDATE\s+(?:(?:"public"|public)\s*\.\s*)?["`]?notification_preferences["`]?\b/iu,
+      `${source.file} must not update preferences without explicit timestamp ownership`);
+    assert.doesNotMatch(source.text, /\bINSERT(?:\s+OR\s+[A-Za-z_]+)?\s+INTO\s+(?:(?:"public"|public)\s*\.\s*)?["`]?user_roles["`]?\b/iu,
+      `${source.file} must not insert a role without a reviewed runtime contract`);
+    assert.doesNotMatch(source.text, /\bUPDATE\s+(?:(?:"public"|public)\s*\.\s*)?["`]?user_roles["`]?\b[\s\S]{0,300}?\bSET\b[^;`]{0,300}?\bcreated_at\s*=/iu,
+      `${source.file} must not update a role creation timestamp without a reviewed runtime contract`);
+  }
+});

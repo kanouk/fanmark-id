@@ -869,3 +869,31 @@ versioned-reference replacement contract, while four user-scoped timestamps
 need separate operation-level verification. This inventory does not prove
 bound-value or PostgreSQL transaction-time semantics; `deployable` remains
 false.
+
+## Fresh Supabase catalog and v23 import-only timestamps (2026-10-02 JST)
+
+The catalog-only query completed at `2026-10-02T07:02:17Z` under
+`BEGIN READ ONLY`; it returned 40 tables and 406 columns. Converter v23 adds a
+narrow disposition for `notification_preferences.created_at/updated_at` and
+`user_roles.created_at`. These user-scoped rows are copied source-shaped by the
+generic importer, which binds the original six-digit UTC timestamps. Current
+Worker code has no direct INSERT writer for either table and no UPDATE writer
+for notification preferences. The target DDL therefore omits these defaults;
+a future runtime writer must provide its timestamp explicitly. Regression
+coverage rejects new unreviewed writers and a fresh-catalog synthetic import
+reads back both timestamp pairs exactly.
+
+`notifications_history.archived_at` remains gated because the source archive
+operation has not been ported and its retention/long-term storage contract is
+not settled. With the catalog observed at `2026-10-02T07:02:17Z`, converter v23
+reports five blocking schema/operation groups / 82 locations: 11 external Auth
+references, 68 timestamp-default operations, and three unsupported catalog
+scopes (functions, RLS policies, and triggers). It remains
+`deployable: false`.
+
+The current-catalog synthetic import completed 40/40 checkpoints with 12
+synthetic rows, two transformed credentials, one durably deferred inactive
+credential, six calls to the synthetic Auth identity resolver, exact timestamp
+readback for preferences and roles, and conflicting-coverage rejection. The
+result remains `public_rows_reconciled`; `fullMigrationReconciled` remains
+false. No source rows or remote D1/R2 state was read or changed.

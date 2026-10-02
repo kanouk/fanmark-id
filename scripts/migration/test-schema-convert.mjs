@@ -233,7 +233,7 @@ test("conversion is deterministic and exposes exact target codecs", () => {
 
   assert.equal(first.report.target.tableCount, 4);
   assert.equal(first.report.target.columnCount, 15);
-  assert.equal(first.report.schemaVersion, 22);
+  assert.equal(first.report.schemaVersion, 23);
   assert.deepEqual(first.report.target.translatedConstraints, { p: 4, u: 0, f: 1, c: 3 });
   assert.equal(first.report.target.translatedIndexCount, 4);
   assert.deepEqual(
@@ -332,7 +332,7 @@ test("money cents DDL accepts only the exact source numeric(10,2) range", () => 
 
 test("DATE schema checks preserve canonical calendar days for imports and later writes", () => {
   const result = convertSchema(calendarDateFixture());
-  assert.equal(result.report.schemaVersion, 22);
+  assert.equal(result.report.schemaVersion, 23);
   assert.equal(gateCodes(result.report).has("date_import_validation"), false);
   assert.match(result.sql, /"stat_date" IS NULL OR \([\s\S]*length\("stat_date"\) = 10[\s\S]*GLOB '\[0-9\].*-[0-9\].*-[0-9\].*'[\s\S]*substr\("stat_date", 1, 4\) BETWEEN '0001' AND '9999'[\s\S]*date\("stat_date", '\+0 days'\) IS "stat_date"/);
 
@@ -359,7 +359,7 @@ test("DATE schema checks preserve canonical calendar days for imports and later 
 
 test("TIMESTAMPTZ schema checks preserve canonical UTC microsecond text", () => {
   const result = convertSchema(timestampFixture());
-  assert.equal(result.report.schemaVersion, 22);
+  assert.equal(result.report.schemaVersion, 23);
   assert.ok(!gateCodes(result.report).has("timestamp_import_precision"));
   assert.ok(gateCodes(result.report).has("timestamp_default_requires_operation"));
   assert.match(result.sql, /"created_at" TEXT NOT NULL,/);
@@ -464,7 +464,7 @@ test("only the exact versioned reference-master timestamp defaults use the revie
   }
 
   const unrelated = structuredClone(input);
-  unrelated.columns.push(column("notification_preferences", "created_at", 1, "timestamp with time zone", {
+  unrelated.columns.push(column("notifications_history", "archived_at", 1, "timestamp with time zone", {
     not_null: true, default_expression: "now()",
   }));
   const unrelatedResult = convertSchema(unrelated);
@@ -472,13 +472,64 @@ test("only the exact versioned reference-master timestamp defaults use the revie
     gate.code === "timestamp_default_requires_operation"
   ));
   assert.deepEqual(remainingTimestampGate?.locations, [
-    { kind: "default", table: "notification_preferences", column: "created_at" },
+    { kind: "default", table: "notifications_history", column: "archived_at" },
   ]);
+});
+
+test("snapshot-import-only user timestamps omit defaults only when Cloudflare has no runtime writer", () => {
+  const input = fixture();
+  input.columns.push(
+    column("notification_preferences", "created_at", 1, "timestamp with time zone", {
+      not_null: true, default_expression: "now()",
+    }),
+    column("notification_preferences", "updated_at", 2, "timestamp with time zone", {
+      not_null: true, default_expression: "now()",
+    }),
+    column("user_roles", "created_at", 1, "timestamp with time zone", {
+      not_null: true, default_expression: "now()",
+    }),
+    column("notifications_history", "archived_at", 1, "timestamp with time zone", {
+      not_null: true, default_expression: "now()",
+    }),
+  );
+
+  const result = convertSchema(input);
+  const timestampGates = result.report.gates.filter((gate) => gate.code === "timestamp_default_requires_operation");
+  assert.deepEqual(timestampGates.map((gate) => gate.locations).flat(), [
+    { kind: "default", table: "notifications_history", column: "archived_at" },
+  ]);
+  const dispositions = result.report.target.reviewedDefaultDispositions
+    .filter((entry) => entry.code === "snapshot_import_only_no_timestamp_writer");
+  assert.deepEqual(dispositions.map(({ table, column: columnName }) => `${table}.${columnName}`), [
+    "notification_preferences.created_at",
+    "notification_preferences.updated_at",
+    "user_roles.created_at",
+  ]);
+  assert.ok(dispositions.every((entry) => (
+    entry.sourceDefault === "now()" && entry.targetDefault === null &&
+    entry.evidence.includes("scripts/migration/d1-import.mjs") &&
+    entry.evidence.includes("scripts/migration/test-d1-import-current-schema.mjs")
+  )));
+  assert.equal(result.report.deployable, false, "the narrow import disposition does not clear unrelated timestamp or catalog gates");
+
+  for (const [table, columns] of [
+    ["notification_preferences", ["created_at", "updated_at"]],
+    ["user_roles", ["created_at"]],
+  ]) {
+    const start = result.sql.indexOf(`CREATE TABLE "${table}"`);
+    assert.notEqual(start, -1, `missing converted table ${table}`);
+    const end = result.sql.indexOf("\n);", start);
+    const definition = result.sql.slice(start, end);
+    for (const columnName of columns) {
+      assert.match(definition, new RegExp(`"${columnName}" TEXT NOT NULL,`));
+      assert.doesNotMatch(definition, new RegExp(`"${columnName}" TEXT NOT NULL DEFAULT`));
+    }
+  }
 });
 
 test("JSONB text validation and target constraints preserve JSON null, SQL NULL, and exact text", () => {
   const result = convertSchema(fixture());
-  assert.equal(result.report.schemaVersion, 22);
+  assert.equal(result.report.schemaVersion, 23);
   assert.equal(gateCodes(result.report).has("json_import_validation"), false);
   assert.match(result.sql, /"metadata" IS NULL OR json_valid\("metadata"\)/);
 
@@ -656,7 +707,7 @@ test("the four reviewed live GIN indexes have explicit D1 query-contract disposi
   );
 
   const result = convertSchema(input);
-  assert.equal(result.report.schemaVersion, 22);
+  assert.equal(result.report.schemaVersion, 23);
   assert.deepEqual(result.report.target.indexAdaptations.map((entry) => entry.sourceIndex), [
     "idx_emoji_master_keywords",
     "idx_emoji_master_short_name",
@@ -700,7 +751,7 @@ test("known ASCII PostgreSQL regex checks require a reviewed locale proof", () =
     .flatMap((gate) => gate.locations)
     .filter((location) => sourceCheckNames.has(location.name));
   assert.deepEqual(untranslatedSourceChecks, []);
-  assert.equal(result.report.schemaVersion, 22);
+  assert.equal(result.report.schemaVersion, 23);
 
   const cases = [
     ["invitation_codes", "code", "ABC123", true],
@@ -932,7 +983,7 @@ test("the exact recent-active view is adapted only to the reviewed D1 query", ()
   input.views = [{ kind: "view", name: "recent_active_fanmarks", definition }];
 
   const result = convertSchema(input);
-  assert.equal(result.report.schemaVersion, 22);
+  assert.equal(result.report.schemaVersion, 23);
   assert.equal(result.report.deployable, false);
   assert.deepEqual(result.report.target.catalogScopeAdaptations, [{
     scope: "views",

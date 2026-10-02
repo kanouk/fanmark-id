@@ -23,8 +23,8 @@ The current staging Worker retains Cron schedules `* * * * *` and
 disabled. The secret-name readback still contains only
 `BETTER_AUTH_SECRET`, `REFERENCE_MASTER_SERVICE_SECRET`, and
 `VERIFIED_ACCESS_SECRET`; no secret values were read. Stripe/Resend/OAuth
-provider acceptance and CPU/plan fit remain open. Converter v22 is also not
-deployable: 11 external Auth references, 71 timestamp-default operations, and
+provider acceptance and CPU/plan fit remain open. Converter v23 is also not
+deployable: 11 external Auth references, 68 timestamp-default operations, and
 functions/RLS/trigger scope gates remain; its fresh-catalog synthetic replay
 proves public-row reconciliation only, not full migration reconciliation.
 No real user/Auth/Storage rows, production routes, or domain/DNS were changed.
@@ -4671,3 +4671,28 @@ blocked by five schema/operation groups / 85 locations (`deployable: false`);
 #38 retains live user/Auth/Storage migration and domain/DNS cutover. No real
 user data, production route, payment, email delivery, or domain/DNS was used or
 changed.
+
+## 2026-10-02 converter v23 and current-catalog import-only timestamp proof
+
+A fresh `schema-readiness.sql` query completed at `2026-10-02T07:02:17Z` under
+`BEGIN READ ONLY` and returned catalog metadata only (40 tables / 406 columns).
+The v23 converter records three exact import-only timestamp dispositions for
+`notification_preferences.created_at/updated_at` and `user_roles.created_at`.
+The current Worker repository has no INSERT writer for those tables and no
+notification-preference UPDATE writer; the generic importer binds the source
+timestamp into the D1 row. Tests keep the target defaults absent and ensure a
+new runtime writer cannot be added without revisiting the timestamp contract.
+
+Converter v23 reports five blocking groups / 82 locations: 11 external Auth
+references, 68 remaining timestamp-default operations, and three unsupported
+catalog scopes (functions, RLS policies, triggers). The report stays
+`deployable: false`; `notifications_history.archived_at` remains blocked while
+the source archive operation's retention and target contract are unresolved.
+
+The exact-catalog Miniflare replay completed all 40 checkpoints with 12
+synthetic rows, two transformed credentials, one durably deferred inactive
+credential, and six synthetic Auth identity resolver calls. Preference/role
+timestamps read back exactly as six-digit UTC text; a tampered credential
+coverage record was rejected. The status remains `public_rows_reconciled`,
+with `fullMigrationReconciled: false`. No source application rows, remote D1,
+R2, production route, or DNS/domain state was read or changed.

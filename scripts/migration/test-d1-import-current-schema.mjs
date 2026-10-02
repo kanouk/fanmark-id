@@ -47,6 +47,7 @@ const syntheticDisabledPasswordConfigId = "90000000-0000-4000-8000-000000000007"
 const syntheticInactiveFanmarkId = "90000000-0000-4000-8000-000000000008";
 const syntheticInactiveLicenseId = "90000000-0000-4000-8000-000000000009";
 const syntheticInactivePasswordConfigId = "90000000-0000-4000-8000-00000000000a";
+const syntheticAuthUserId = "90000000-0000-4000-8000-00000000000d";
 const syntheticEventId = "9007199254740993";
 
 function failUsage() {
@@ -213,6 +214,40 @@ function buildRows(catalog) {
     arrayMetadata: {
       normalized_emoji_ids: { isNull: false, ndims: 1, lowerBound: 1 },
     },
+  }];
+  const preferenceColumns = requireColumns(catalog, "notification_preferences", [
+    "id", "user_id", "channel", "event_type", "enabled", "created_at", "updated_at",
+  ]);
+  rows.notification_preferences = [{
+    schemaVersion: 1,
+    table: "notification_preferences",
+    columns: preferenceColumns,
+    values: {
+      id: "90000000-0000-4000-8000-00000000000e",
+      user_id: syntheticAuthUserId,
+      channel: "in_app",
+      event_type: null,
+      enabled: "t",
+      created_at: timestamp,
+      updated_at: timestamp,
+    },
+    arrayMetadata: {},
+  }];
+  const roleColumns = requireColumns(catalog, "user_roles", [
+    "id", "user_id", "role", "created_at", "created_by",
+  ]);
+  rows.user_roles = [{
+    schemaVersion: 1,
+    table: "user_roles",
+    columns: roleColumns,
+    values: {
+      id: "90000000-0000-4000-8000-00000000000f",
+      user_id: syntheticAuthUserId,
+      role: "user",
+      created_at: timestamp,
+      created_by: null,
+    },
+    arrayMetadata: {},
   }];
   return { tableNames, rows };
 }
@@ -412,6 +447,7 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath) {
   let miniflare = null;
   const trace = [];
   let phase = "snapshot";
+  let authIdentityLookups = 0;
   try {
     const manifestPath = await createSyntheticSnapshot(catalog, rows, sequenceStates, snapshotDirectory);
     phase = "create-d1";
@@ -444,6 +480,11 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath) {
       now: () => new Date("2026-09-26T12:00:00.000Z"),
       scanBatchRows: 1,
       maxRowsPerBatch: 1,
+      resolveAuthUserIds: async (requestedIds) => {
+        authIdentityLookups += 1;
+        assert.deepEqual(requestedIds, [syntheticAuthUserId]);
+        return new Set([syntheticAuthUserId]);
+      },
     };
     let ackUnknown = true;
     phase = "initial-import";
@@ -539,6 +580,27 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath) {
     assert.equal(reconciliation.targetRowCount, 2);
     assert.equal(reconciliation.deferredRows, 1);
     assert.deepEqual(await database.prepare("PRAGMA foreign_key_check").all().then((result) => result.results), []);
+    const importedPreference = await database.prepare(
+      'SELECT "user_id", "channel", "event_type", "enabled", "created_at", "updated_at" FROM "notification_preferences" WHERE "id" = ?',
+    ).bind("90000000-0000-4000-8000-00000000000e").first();
+    assert.deepEqual(importedPreference, {
+      user_id: syntheticAuthUserId,
+      channel: "in_app",
+      event_type: null,
+      enabled: 1,
+      created_at: "2026-09-26T12:00:00.000000Z",
+      updated_at: "2026-09-26T12:00:00.000000Z",
+    });
+    const importedRole = await database.prepare(
+      'SELECT "user_id", "role", "created_at", "created_by" FROM "user_roles" WHERE "id" = ?',
+    ).bind("90000000-0000-4000-8000-00000000000f").first();
+    assert.deepEqual(importedRole, {
+      user_id: syntheticAuthUserId,
+      role: "user",
+      created_at: "2026-09-26T12:00:00.000000Z",
+      created_by: null,
+    });
+    assert.ok(authIdentityLookups >= 1, "external synthetic Auth references must be preflighted");
     // Miniflare's D1 authorizer rejects PRAGMA integrity_check with SQLITE_AUTH.
     // The importer has already streamed and read back every table/hash above.
 
@@ -553,9 +615,11 @@ export async function runCurrentCatalogSyntheticImport(catalogResultPath) {
     );
     return {
       tableCount: tableNames.length,
-      sourceRowCount: 10,
+      sourceRowCount: 12,
       transformedCredentialCount: 2,
       deferredCredentialCount: 1,
+      syntheticAuthIdentityLookupCount: authIdentityLookups,
+      importOnlyTimestampReadback: true,
       checkpointCount: checkpoints.count,
       completedCheckpointCount: checkpoints.complete,
       status: resumed.status,

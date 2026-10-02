@@ -17,7 +17,7 @@ import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 22;
+export const SCHEMA_CONVERSION_VERSION = 23;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -55,6 +55,11 @@ const REVIEWED_VERSIONED_REFERENCE_MASTER_TIMESTAMPS = new Set([
   "fanmark_tier_extension_prices.created_at",
   "fanmark_tier_extension_prices.updated_at",
 ]);
+const REVIEWED_SNAPSHOT_IMPORT_ONLY_TIMESTAMPS = new Set([
+  "notification_preferences.created_at",
+  "notification_preferences.updated_at",
+  "user_roles.created_at",
+]);
 const VERSIONED_REFERENCE_MASTER_TIMESTAMP_DISPOSITION = Object.freeze({
   code: "versioned_reference_master_replacement",
   reason: "The source-shaped copy is imported with explicit canonical source timestamps and has no direct Worker or SQL INSERT writer; Cloudflare runtime edits the separate versioned Master D1 release rows with explicit timestamps.",
@@ -62,6 +67,18 @@ const VERSIONED_REFERENCE_MASTER_TIMESTAMP_DISPOSITION = Object.freeze({
     "workers/api/src/reference-master-d1-repository.ts",
     "workers/api/src/reference-master-admin-d1-repository.ts",
     "scripts/migration/reference-master-release.mjs",
+  ],
+});
+const SNAPSHOT_IMPORT_ONLY_TIMESTAMP_DISPOSITION = Object.freeze({
+  code: "snapshot_import_only_no_timestamp_writer",
+  reason: "The source-shaped importer binds the exact source timestamp. Current Cloudflare Worker code has no INSERT writer for preferences or roles, and no preference UPDATE writer that needs these timestamps; the target default is omitted so any future application writer must provide the canonical timestamp explicitly.",
+  evidence: [
+    "scripts/migration/d1-import.mjs",
+    "scripts/migration/test-d1-import-current-schema.mjs",
+    "scripts/migration/timestamp-writer-audit.mjs",
+    "workers/api/src/index.ts",
+    "workers/api/src/account-deletion-d1-api.ts",
+    "workers/api/src/notifications-scheduled.ts",
   ],
 });
 const SUPPORTED_INDEX_METHOD = "btree";
@@ -963,6 +980,17 @@ function translateDefault(
         sourceDefault: "now()",
         targetDefault: null,
         ...VERSIONED_REFERENCE_MASTER_TIMESTAMP_DISPOSITION,
+      });
+      return null;
+    }
+    if (REVIEWED_SNAPSHOT_IMPORT_ONLY_TIMESTAMPS.has(`${column.table_name}.${column.column_name}`)) {
+      reviewedDefaultDispositions.push({
+        kind: "default",
+        table: column.table_name,
+        column: column.column_name,
+        sourceDefault: "now()",
+        targetDefault: null,
+        ...SNAPSHOT_IMPORT_ONLY_TIMESTAMP_DISPOSITION,
       });
       return null;
     }

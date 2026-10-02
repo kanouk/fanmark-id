@@ -24,23 +24,37 @@ unique IDs over eight pages with `no-store`. Reference-master generation 8
 serves 4 tiers, 4 languages, 5 reserved patterns, and 16 extension prices.
 The previous synthetic post-write recovery and pre-write resume drills passed;
 their evidence is recorded in `docs/migration/EXECUTION.md`. A newer
-MFA-expanded recovery attempt verified synthetic TOTP and admin authorization,
-then timed out before recovery because the Stripe dispatcher remained pending
-with zero attempts after 35 minutes. The earlier non-MFA recovery pass remains
-valid; the extended MFA recovery path is still unverified. Cleanup deleted the
-temporary Worker, both D1s, config, and synthetic avatar. This checkpoint does
-not include real user/Auth/Storage migration, production routing, or domain/DNS
-cutover, which remain deferred.
+Stripe-dispatch-dependent MFA recovery attempt verified synthetic TOTP and
+admin authorization, then timed out before recovery because the Stripe
+dispatcher remained pending with zero attempts after 35 minutes. A separate
+Cron-free MFA-only recovery slice subsequently passed, including Time Travel
+and encrypted R2 replay. The Stripe-dependent full path remains unverified.
+Cleanup deleted the temporary Worker, both D1s, config, and synthetic avatar.
+This checkpoint does not include real user/Auth/Storage migration, production
+routing, or domain/DNS cutover, which remain deferred.
 
 The timestamp writer audit now recognizes all three generated master-seed
 INSERT paths. The emoji release staging path binds one explicit UTC
 microsecond `created_at`/`updated_at` value and checks those values on readback.
 A fresh read-only catalog audit observed 79 defaults across 40 tables, parsed
 143 literal/generated INSERT column lists with zero unparsed targets, and
-retained 12 timestamp columns without a direct literal writer for separate
-review. Timestamp value semantics and transaction-time equivalence remain
-open. The migration-data suite passes 205/205, both app and Worker typechecks
-pass, and targeted ESLint is clean.
+retained 12 timestamp columns without direct literal writers. Eight now have a
+versioned-master replacement; converter v23 gives three snapshot-import-only
+dispositions, leaving `notifications_history.archived_at` pending its archive
+operation contract. Timestamp value semantics and transaction-time equivalence
+remain open. The migration-data suite passes 207/207; both app and Worker
+typechecks and targeted ESLint also pass at the latest staging checkpoint.
+
+Converter v23 now gives an import-only disposition to three of those columns:
+`notification_preferences.created_at/updated_at` and `user_roles.created_at`.
+The generic importer preserves their source timestamps, and the current Worker
+has no direct insert writer for either table or preference update writer. A
+fresh 40-table synthetic replay passed 40/40 checkpoints with 12 rows and exact
+readback of both timestamp pairs. Current converter gates are five groups / 82
+locations (11 external Auth references, 68 timestamp operations, and three
+function/RLS/trigger scopes); `deployable` and full migration reconciliation
+remain false. `notifications_history.archived_at` is still gated pending the
+archive retention contract.
 
 The inventory analyzer change is `b34638b`, its generated report/handoff
 evidence is `51d2b24`, and target-coverage notes are in `2a45a04`.
