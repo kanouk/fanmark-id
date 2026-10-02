@@ -8,7 +8,7 @@ export default defineConfig({
     }),
   ],
   test: {
-    include: ["./test/system-settings-d1.test.ts"],
+    include: ["./test/system-settings-d1.test.ts", "./test/lifecycle-settings-d1.test.ts"],
     fileParallelism: false,
     setupFiles: ["./test/setup.ts"],
   },

@@ -17,7 +17,7 @@ import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 38;
+export const SCHEMA_CONVERSION_VERSION = 39;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -182,6 +182,17 @@ const NOTIFICATION_ROW_TIMESTAMP_EVIDENCE = Object.freeze([
   "workers/api/src/notifications-d1-api.ts",
   "workers/api/src/notifications-scheduled.ts",
   "workers/api/test/notifications-d1.test.ts",
+]);
+const SYSTEM_SETTINGS_TIMESTAMP_EVIDENCE = Object.freeze([
+  "scripts/migration/system-settings-stage.mjs",
+  "scripts/migration/stage-staging-system-settings.mjs",
+  "scripts/migration/staging-max-emoji-setting-seed.sql",
+  "scripts/migration/test-system-settings-stage.mjs",
+  "workers/api/src/lifecycle-settings-d1-api.ts",
+  "workers/api/src/system-settings-d1-api.ts",
+  "workers/api/test/lifecycle-settings-d1.test.ts",
+  "workers/api/test/system-settings-d1.test.ts",
+  "workers/api/vitest.system-settings.config.mjs",
 ]);
 const REVIEWED_RUNTIME_TIMESTAMP_WRITES = new Map([
   ["fanmark_basic_configs.created_at", {
@@ -557,6 +568,16 @@ const REVIEWED_RUNTIME_TIMESTAMP_WRITES = new Map([
     code: "worker_operation_explicit_timestamp",
     reason: "Notification creation binds the captured invocation time, and read operations bind the same explicit time as read_at; snapshot imports retain the source value.",
     evidence: NOTIFICATION_ROW_TIMESTAMP_EVIDENCE,
+  }],
+  ["system_settings.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The bounded settings stage preserves source timestamps for its exact allowlist, and lifecycle settings bind created_at explicitly on first creation.",
+    evidence: SYSTEM_SETTINGS_TIMESTAMP_EVIDENCE,
+  }],
+  ["system_settings.updated_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The bounded settings stage preserves source timestamps; lifecycle creation/update and MFA-gated administration bind updated_at explicitly while lifecycle upserts preserve created_at.",
+    evidence: SYSTEM_SETTINGS_TIMESTAMP_EVIDENCE,
   }],
   ["fanmark_availability_rules.updated_at", {
     code: "worker_operation_explicit_timestamp",

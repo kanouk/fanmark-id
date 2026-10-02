@@ -4,25 +4,26 @@ Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
 open and draft. CI validates the branch but does not deploy the Worker.
 
 The latest read-only schema catalog completed at
-`2026-10-02T13:54:20.132166Z`: 40 tables / 406 columns / 144 constraints /
+`2026-10-02T13:59:11.510813Z`: 40 tables / 406 columns / 144 constraints /
 139 indexes / 36 triggers / 77 RLS policies / 58 functions / one view. No
-source table rows were read. Converter v38 reviews 47 exact Worker-operation
+source table rows were read. Converter v39 reviews 49 exact Worker-operation
 timestamps, seven snapshot-import-only timestamps, eight versioned reference
 master timestamps, one scheduled Worker timestamp, and all 11 exact Auth
-references. This pass reviews `notifications.created_at`, `triggered_at`, and
-`updated_at`: the scheduler binds creation and rule-delay times explicitly,
-while read operations bind the same operation time to `read_at` and
-`updated_at`. D1 tests read normal and delayed notification timestamps and
-read-operation updates back. The report remains `deployable: false` with 16
-timestamp defaults and three unsupported function/RLS/trigger scopes (19
-schema/operation blockers); the credential descriptor gate remains. Migration
-data tests pass 232/232, notification D1 15/15, Worker typecheck, and
-changed-file ESLint. Both v37 CI jobs passed on PR head `3c4b7cb` in run
-`37015863853`; v38 is locally validated and ready to push.
+references. This pass reviews `system_settings.created_at` and `updated_at`:
+the source stage remains limited to its allowlist and keeps source timestamps;
+MFA-gated updates preserve `created_at`, while lifecycle inserts/upserts bind
+explicit timestamps. Synthetic D1 tests cover creation, update, and preserved
+creation time. The report remains `deployable: false` with 14 timestamp
+defaults and three unsupported function/RLS/trigger scopes (17 schema/operation
+blockers); the credential descriptor gate remains. Converter tests pass 37/37,
+migration data tests 233/233, system settings/lifecycle D1 11/11, Worker
+typecheck, and changed-file ESLint. Both v37 CI jobs passed on PR head `3c4b7cb`
+in run `37015863853`; both v38 CI jobs passed on PR head `c04efbe` in run
+`37016655271`. v39 is locally validated and ready to push.
 
 No source rows, production routing, user/Auth migration, Worker deployment,
-Cloudflare resource writes, or domain/DNS settings were changed in v38.
-The same boundaries held in v37.
+Cloudflare resource writes, or domain/DNS settings were changed in v39. The
+same boundaries held in v38 and v37.
 No source rows, production routing, user/Auth migration, Worker deployment, or
 domain/DNS settings were changed in v36. The latest recorded
 workers.dev-only staging version is

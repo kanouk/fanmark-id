@@ -80,6 +80,26 @@ describe("D1 lifecycle settings API", () => {
     });
   });
 
+  it("preserves the original creation time when an existing lifecycle setting is updated", async () => {
+    if (!database) throw new Error("FANMARK_DB binding is unavailable");
+    const originalCreatedAt = "2026-09-01T00:00:00.000000Z";
+    await database.prepare(`INSERT INTO system_settings
+      (id, setting_key, setting_value, is_public, created_at, updated_at)
+      VALUES (?, 'grace_period_days', '14', 1, ?, ?)
+    `).bind("10000000-0000-4000-8000-000000000003", originalCreatedAt, originalCreatedAt).run();
+
+    const response = await request(adminUrl, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ grace_period_days: 30 }),
+    });
+    expect(response.status).toBe(200);
+    expect(await database.prepare("SELECT setting_value, created_at, updated_at FROM system_settings WHERE setting_key = ?")
+      .bind("grace_period_days").first()).toEqual({
+      setting_value: "30", created_at: originalCreatedAt, updated_at: "2026-09-25T12:34:56.000000Z",
+    });
+  });
+
   it("rejects private collisions, unknown fields, invalid values, and oversized bodies", async () => {
     if (!database) throw new Error("FANMARK_DB binding is unavailable");
     await database.prepare(`INSERT INTO system_settings

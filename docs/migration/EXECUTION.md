@@ -1,5 +1,26 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 v39：system_settings日時のレビュー
+
+read-only schema catalogを`2026-10-02T13:59:11.510813Z`に取得した。
+40 tables / 406 columns / 144 constraints / 139 indexes / 36 triggers /
+77 RLS policies / 58 functions / one view。source table rowsは取得していない。
+
+`system_settings.created_at`と`updated_at`をレビューした。移行のseedは限定された
+allowlistの値だけを出力し、各source timestampを保持する。MFA管理APIの更新は
+`created_at`を維持して`updated_at`を明示し、lifecycle設定のinsert/upsertも日時をbindする。
+synthetic D1 testsで新規作成、更新、作成日時の保持を確認した。system_settings全件の
+コピーやprivate settingの取り込みは行っていない。
+
+converter v39は49個のWorker-operation timestamp columns、7個のsnapshot-import-only
+columns、8個のversioned reference-master timestamps、1個のscheduled Worker timestampと
+11 Auth FKをreview済み。schema/operation blockersは17 locations（timestamp defaults 14、
+functions/RLS/triggers各1）。credential descriptor gateも残り、`deployable: false`。
+converter tests 37/37、`npm run test:migration-data` 233/233、system settings/lifecycle
+D1 tests 11/11、Worker typecheck、変更ファイルのESLintが成功。PR #41のv38 head `c04efbe`は
+run `37016655271`で両job成功。v39は検証済みでpush可能。source rows、Cloudflare resources、
+Worker deploy、domain/DNSは変更していない。
+
 ## 2026-10-02 v38：通知レコード日時のレビュー
 
 read-only schema catalogを`2026-10-02T13:54:20.132166Z`に取得した。

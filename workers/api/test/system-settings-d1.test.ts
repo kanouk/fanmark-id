@@ -112,9 +112,9 @@ describe("D1 system settings API", () => {
     const accepted = await request(adminUrl, { method: "PATCH", headers, body: JSON.stringify(payload) });
     expect(accepted.status).toBe(200);
     expect(await accepted.json()).toEqual({ schemaVersion: 1, updatedSetting: "enterprise_pricing" });
-    expect(await database.prepare("SELECT setting_value, is_public, updated_at FROM system_settings WHERE setting_key = ?")
+    expect(await database.prepare("SELECT setting_value, is_public, created_at, updated_at FROM system_settings WHERE setting_key = ?")
       .bind("enterprise_pricing").first()).toEqual({
-      setting_value: "75000", is_public: 0, updated_at: "2026-09-27T03:04:05.000000Z",
+      setting_value: "75000", is_public: 0, created_at: now.toISOString(), updated_at: "2026-09-27T03:04:05.000000Z",
     });
     const audit = await database.prepare(`
       SELECT user_id, action, resource_type, resource_id, metadata
