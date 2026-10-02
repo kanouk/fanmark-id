@@ -3,39 +3,49 @@
 Checkpoint: 2026-10-03 JST. The migration is **not complete**. PR #41 remains
 open and draft. CI validates the branch but does not deploy the Worker.
 
-Prepared the remaining administrator data-reset counterpart: Business 0023
-native atomic eight-table command/count/audit/receipt and MFA/Origin/DELETE
-Worker API, plus opt-in typed frontend/dialog. Full 24-migration local D1
-15/15, native canary guard 2/2, frontend adapter/mode 6/6, migration data 244/244, app/Worker typecheck,
-ESLint and staging build pass. Deletion/audit ABORT/IGNORE/corruption rolls
-back all effects; same-ID concurrent/uncertain retries preserve later rows.
-Nil UUIDs and incarnation fences are retained. Restrictive coupon/lifecycle
-history returns 409 without partial deletion; authenticated non-admin attempts
-retain a bounded source denial audit through the server role gate.
+Administrator data reset is now staging-verified. Code head `03eee80` passed
+both CI jobs in run `37045419633`. Fresh dedicated-account preflight confirmed
+canonical Business ledger 23, empty source user/business rows and empty Auth.
+Additive Business 0023/ledger was applied; all 24 entries and the exact reset
+table/two triggers match the checked-in SQL. Fresh staging build/dry-run
+was deployed as `13dca8cf-c089-417b-8f1e-e27880a86775`, created
+`2026-10-02T18:14:03.15368Z`, 100%, workers.dev only. Reset Worker/D1 selectors
+are enabled only in staging. Canonical Node HTTP readback confirms public
+HTML/JS hashes, noindex, robots/session/catalog, anonymous reset 401,
+missing-Origin reset 403 and disabled Stripe webhook 404. An initial Python
+urllib probe returned 403; Node and actual Chrome served the staging app.
 
-Initial code head `6c4e8c4` ran CI `37042692784`: application passed, but
-Worker failed before the dedicated D1 suites because the broad default Vitest
-include also collected the new reset test without its D1 binding. Added it to
-the existing default-suite exclusions; its dedicated npm test remains in the
-full Worker test chain. The first failure is configuration evidence, not a
-reset implementation acceptance or a passing full CI run.
+The pinned `--admin-data-reset-browser` passed real sign-in, first-time TOTP,
+session rotation/MFA, eight-table atomic deletion and exact audit/receipt,
+invalid confirmation/forged actor refusal, same-ID retry retaining a later
+row, and role removal/non-admin 403 plus exact denial audit. Eight native
+BEFORE DELETE guards allowed only the journaled fixture UUIDs; their SQL was
+read back exactly. A local full-schema case proves an unrelated raced row
+rolls back the entire operation. The actual Chrome DELETE dialog rejected
+empty confirmation, accepted typed DELETE, rendered a one-row result, and its
+API response matched the actor-bound D1 receipt. Private screenshot was
+visually inspected (desktop 1280x900; mobile remains unverified).
 
-The corrected code head is `23b2415`; default API tests pass 55/55. CI run
-`37043190892` passed both application and Worker jobs (rechecked live). Read-only staging preflight confirmed the
-expected account/split bindings, reset-target eight-table row count 0,
-user-owned Auth count 0, reset command table absent and 0023 ledger absent.
-The server reset selector remains unset. No remote row/schema was changed.
+Retained configuration/Master/Auth fingerprints stayed unchanged during the
+reset; all 3,944 public catalog rows retained digest
+`629d5da3b49720f7aa33d15f157aef65ce2f76b55e000c59919624a8340b8c23`.
+Exact fixture/receipt/audit/discovery/guard and synthetic profile/Auth cleanup
+passed; the process exited 0 and recovery journal ended `verified-and-cleaned`,
+Auth rows 0. Final source Business/Auth empty and zero receipt/temporary-guard
+readback is saved in `/tmp/fanmark-reset-canary-final-readback.json`.
+Private output: `/tmp/fanmark-admin-reset-staging-smoke.log`; journal and
+screenshot: `/var/folders/c4/_087tnms6n95sb58l4rg8vpw0000gn/T/fanmark-admin-reset-canary-KuFSKS/`.
+License incarnation tombstones and monotonic MFA generation are retained.
+Local D1 15/15, native guard 2/2, frontend 6/6, migration-data 244/244,
+app/Worker typecheck, ESLint, staging build/dry-run pass. Restrictive coupon/
+lifecycle history remains protective and returns 409 instead of partial
+reset. Initial broad Vitest inclusion was corrected on `23b2415`; that CI
+`37043190892` also passed both jobs. See admin-data-reset-api.md.
 
-0023 is NOT remotely applied. Current remote reset frontend remains disabled
-and server selector unset. Local next-deployment configuration selects Worker/D1.
-The journaled account/version/empty-data/master/trigger preflight and eight native
-canary-only delete guards are prepared; the full-schema guard case rolls back
-an unrelated raced row. Browser fixture cleanup now includes the reset admin
-profile. MFA enrollment refusal, actual DELETE dialog/API receipt, retained
-fingerprints and final source-empty proof are wired. Next: CI/schema/runtime/
-synthetic TOTP/API/UI acceptance and scoped cleanup. See
-admin-data-reset-api.md. Keep real user/Auth/Storage migration and domain/DNS
-deferred; this is preparation, not completed runtime migration.
+Remaining scope includes source functions/RLS/triggers review, provider
+integration and CPU/operational fit. Stripe/Resend/OAuth credentials remain
+absent. Keep real user/Auth/Storage migration and domain/DNS deferred; no
+production Supabase write or real billing/email was performed.
 
 Master emoji mutation audits are implemented and staging-verified. Additive Master migration
 `0008_emoji_master_change_audits.sql` adds native per-change audits and a

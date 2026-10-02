@@ -1,5 +1,30 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：管理データリセットのstaging/API/desktop検証
+
+code head `03eee80` / CI `37045419633`はapplication/Worker両job成功。
+専用account/binding/空source・Auth・canonical ledger guard後に0023/ledgerを適用し、
+全24 ledger・reset table・2 triggerのchecked-in SQLとのexact一致を確認した。
+fresh build/dry-runでWorker `13dca8cf-c089-417b-8f1e-e27880a86775`を100%配備、
+created_on `2026-10-02T18:14:03.15368Z`。workers.devのみでreset Worker/D1を有効化。
+Node HTTP gates/noindexとpublic/local HTML・JS hash一致。Python urllibの初回root probeは
+403だったが、Nodeと実Chromeでは200を確認した。
+
+version固定の`--admin-data-reset-browser`が実signin/TOTP/session MFA、8テーブル削除と
+exact件数/監査/receipt、confirmation/actor不正拒否、後続行を残す同操作IDのretry、
+role除去後403と拒否監査を確認した。一時native DELETE guardは検証用8 UUIDのみを
+許可し、remote SQLをexact照合した。実画面のDELETE必須/入力/送信と1件結果を確認し、
+画面が取得したAPI応答とactor-bound receiptを照合。private screenshotを目視した。
+保持Master/設定/Authのfingerprint、公開3,944絵文字SHA-256は不変。scoped cleanup後に
+journal `verified-and-cleaned`、source business/Auth rows 0、reset receiptsとguard 0を
+確認した。process exit 0。local D1 15/15、guard 2/2、migration-data 244/244。
+
+証拠：`/tmp/fanmark-admin-reset-staging-smoke.log`、
+`/tmp/fanmark-reset-canary-final-readback.json`、journal/screenshotは
+`/var/folders/c4/_087tnms6n95sb58l4rg8vpw0000gn/T/fanmark-admin-reset-canary-KuFSKS/`。
+desktopのみでmobileは未検証。包括DB functions/RLS/triggers、provider、CPU/運用gateは残る。
+実ユーザー/Storage移行、production Supabase write、実決済/配信、domain/DNS切替は行っていない。
+
 ## 2026-10-03：管理データリセットの合成検証ガード（配備前）
 
 前checkpointの修正head `23b2415` / CI `37043190892`は両job成功をlive確認した。
