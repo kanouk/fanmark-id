@@ -186,6 +186,14 @@ describe("Better Auth account deletion coordinator", () => {
     ).bind(ownerId).first<{ cancelled_at: string; updated_at: string }>();
     expect(cancelledLottery?.cancelled_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
     expect(cancelledLottery?.updated_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+    const lotteryAudit = await businessDatabase?.prepare(
+      "SELECT user_id, resource_type, resource_id, metadata, created_at FROM audit_logs WHERE action = 'LOTTERY_ENTRY_STATUS_CHANGED'",
+    ).first<Record<string, unknown>>();
+    expect(lotteryAudit).toMatchObject({ user_id: ownerId, resource_type: "fanmark_lottery_entry",
+      resource_id: "delete-pending-lottery", created_at: cancelledLottery?.updated_at });
+    expect(JSON.parse(String(lotteryAudit?.metadata))).toEqual({
+      old_status: "pending", new_status: "cancelled", cancellation_reason: "user_request",
+    });
     expect(history).toEqual({ winner_user_id: null });
     expect(otherRole).toEqual({ created_by: null });
     expect(rules).toEqual({ created_by: null });
@@ -202,6 +210,43 @@ describe("Better Auth account deletion coordinator", () => {
     expect(audits?.results.map((row) => row.action)).toContain("FANMARK_RETURNED_ON_ACCOUNT_DELETE");
     expect(audits?.results.map((row) => row.action)).toContain("DELETE_ACCOUNT");
     expect(JSON.stringify(audits?.results)).not.toContain(ownerEmail);
+  });
+
+  it("retains Auth and rolls back business cleanup on cancellation-audit failure, then resumes deletion", async () => {
+    const cookie = await signIn();
+    await businessDatabase?.prepare(`CREATE TRIGGER reject_deletion_lottery_audit BEFORE INSERT ON audit_logs
+      WHEN NEW.action = 'LOTTERY_ENTRY_STATUS_CHANGED'
+      BEGIN SELECT RAISE(ABORT, 'synthetic deletion lottery audit failure'); END`).run();
+    try {
+      const failed = await request("/api/me/account/delete", jsonRequest({ confirmation: "DELETE", password }, cookie));
+      expect(failed.status).toBeGreaterThanOrEqual(500);
+      expect(await authDatabase?.prepare('SELECT "id" FROM "user" WHERE "id" = ?').bind(ownerId).first())
+        .toEqual({ id: ownerId });
+      expect(await businessDatabase?.prepare("SELECT user_id FROM user_settings WHERE user_id = ?").bind(ownerId).first())
+        .toEqual({ user_id: ownerId });
+      expect(await businessDatabase?.prepare("SELECT entry_status FROM fanmark_lottery_entries WHERE user_id = ?")
+        .bind(ownerId).first()).toEqual({ entry_status: "pending" });
+      // Per-license returns precede business cleanup across the two D1 databases.
+      // A failed cleanup preserves that committed grace transition for retry.
+      expect(await businessDatabase?.prepare("SELECT user_id, status FROM fanmark_licenses WHERE id = ?")
+        .bind(licenseId).first()).toEqual({ user_id: ownerId, status: "grace" });
+      expect(await businessDatabase?.prepare("SELECT COUNT(*) AS count FROM audit_logs WHERE action = 'LOTTERY_ENTRY_STATUS_CHANGED'")
+        .first()).toEqual({ count: 0 });
+      expect(await businessDatabase?.prepare("SELECT COUNT(*) AS count FROM audit_logs WHERE action = 'DELETE_ACCOUNT'")
+        .first()).toEqual({ count: 0 });
+    } finally {
+      await businessDatabase?.prepare("DROP TRIGGER reject_deletion_lottery_audit").run();
+    }
+    const resumed = await request("/api/me/account/delete", jsonRequest({ confirmation: "DELETE", password }, cookie));
+    expect(resumed.status).toBe(200);
+    expect(await authDatabase?.prepare('SELECT "id" FROM "user" WHERE "id" = ?').bind(ownerId).first()).toBeNull();
+    const audits = await businessDatabase?.prepare("SELECT action, COUNT(*) AS count FROM audit_logs WHERE user_id = ? GROUP BY action")
+      .bind(ownerId).all<{ action: string; count: number }>();
+    expect(audits?.results).toEqual(expect.arrayContaining([
+      { action: "FANMARK_RETURNED_ON_ACCOUNT_DELETE", count: 1 },
+      { action: "LOTTERY_ENTRY_STATUS_CHANGED", count: 1 },
+      { action: "DELETE_ACCOUNT", count: 1 },
+    ]));
   });
 
   it("rejects bad passwords and a source-FK broadcast dependency before business effects", async () => {

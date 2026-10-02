@@ -1,5 +1,19 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：退会の抽選取消監査とcleanup再開
+
+退会でpending抽選申請を取消す際もsource trigger相当の個別監査が欠けており、
+Better Auth/D1 regressionで再現した。申請者・申請ID・旧/新status・`user_request`理由・
+captured操作時刻を保存するINSERTをbusiness cleanup batchへ追加した。
+監査失敗ではcleanupがrollbackしてAuthとuser settingsを残し、先に確定したライセンス返却は
+graceのまま再開する。retryで返却ログや取消ログを重複させずに削除を完了することを確認した。
+
+account deletion suite 6/6、Worker typecheck、ESLint、diff check成功。
+譲渡修正 `c58fc5c`のCI run `37023116182`は両job成功。
+抽選確定修正 `6d36028`もsource-profile 27/27でlocal検証済み。
+両修正はschema/converter版を変えず、Stripe/クーポンのtrigger parityと外部provider
+acceptanceは引き続き未完了。実ユーザー行・Worker deploy・Cloudflare resources・domain/DNSは変更しない。
+
 ## 2026-10-02：抽選確定の個別監査と復旧検証
 
 source `log_lottery_entry_changes`とD1 finalizerを比較し、pending→won/lostの

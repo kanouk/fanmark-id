@@ -198,6 +198,12 @@ async function cleanupBusinessRows(database: D1Database, userId: string, nowIso:
     database.prepare("UPDATE notification_rules SET created_by = NULL, updated_at = ? WHERE created_by = ?").bind(nowIso, userId),
     database.prepare("UPDATE user_roles SET created_by = NULL WHERE created_by = ?").bind(userId),
     database.prepare(`
+      INSERT INTO audit_logs (user_id, action, resource_type, resource_id, metadata, created_at)
+      SELECT user_id, 'LOTTERY_ENTRY_STATUS_CHANGED', 'fanmark_lottery_entry', id,
+        json_object('old_status', entry_status, 'new_status', 'cancelled', 'cancellation_reason', 'user_request'), ?
+      FROM fanmark_lottery_entries WHERE user_id = ? AND entry_status = 'pending'
+    `).bind(nowIso, userId),
+    database.prepare(`
       UPDATE fanmark_lottery_entries
       SET entry_status = 'cancelled', cancelled_at = ?, cancellation_reason = 'user_request', updated_at = ?
       WHERE user_id = ? AND entry_status = 'pending'

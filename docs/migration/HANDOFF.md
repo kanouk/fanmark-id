@@ -1,7 +1,19 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
+Checkpoint: 2026-10-03 JST. The migration is **not complete**. PR #41 remains
 open and draft. CI validates the branch but does not deploy the Worker.
+
+The latest local follow-up restores per-entry lottery cancellation audits in
+account-deletion business cleanup. Required-audit failure rolls back cleanup
+and retains Auth/profile rows; previously committed license returns stay in
+grace and retry continues without duplicate audits. Better Auth/D1 tests pass
+6/6, Worker typecheck/ESLint/diff check pass. No schema or converter change.
+Stripe and coupon extension audit-trigger writers remain to be reviewed.
+
+Both transfer CI jobs passed on `c58fc5c` in run `37023116182`.
+Lottery-finalization commit `6d36028` is locally validated (27/27 source
+integration) and ready to push together with the account-deletion follow-up.
+No Worker deployment or source/user/domain changes occurred in these slices.
 
 The current local follow-up adds the missing per-entry status audits during
 source-profile lottery finalization. Each pending-to-won/lost audit uses an
@@ -13,8 +25,8 @@ lost commit acknowledgement. Scheduled runner 8/8, Worker typecheck, ESLint
 and diff check pass. No schema migration or converter version change is needed.
 
 The transfer audit fix is committed/pushed as `c58fc5c`; its CI is run
-`37023116182`. Lottery finalization remains locally validated until that CI
-finishes. Both prior CI jobs passed on `8d9b0fd` in run `37022024473`.
+`37023116182` and both jobs passed. Lottery finalization is locally validated
+and ready for the next push. Both prior CI jobs passed on `8d9b0fd` in run `37022024473`.
 The Worker has not been redeployed. Remaining known audit-trigger writers to
 review include account deletion, Stripe extension and coupon extension; the
 full function/RLS/trigger gate remains open.

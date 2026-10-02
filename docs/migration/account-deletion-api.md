@@ -12,6 +12,15 @@ The source catalog also has a no-action constraint from `broadcast_emails.create
 
 Stripe cancellation, business D1, and Auth D1 cannot share a transaction. The order is password verification, source-constraint and eligible-license/transfer preflight, exact Stripe cancellation, idempotent per-license return, atomic business cleanup, then Auth deletion. If Stripe partially cancels multiple subscriptions or a later D1/Auth operation fails, the account remains authenticated and a retry re-reads Stripe state and continues from remaining active licenses. A transfer created concurrently after preflight can still cause a partial license return followed by a 409; the account remains and a retry after the transfer is resolved completes the process.
 
+Pending lottery cancellation also records `LOTTERY_ENTRY_STATUS_CHANGED` for
+each applicant entry, with the entry ID, old/new status, `user_request` reason,
+and the same captured time as cancellation. These audits and business cleanup
+share one batch. If an audit insert fails, business cleanup rolls back and Auth
+is retained. Already committed per-license returns remain in grace, as required
+by the cross-database retry order above. Retry finishes cleanup/Auth deletion
+without duplicating those return or cancellation audits. The synthetic Better
+Auth/D1 suite covers this failure and recovery and passes 6/6.
+
 ## Verification
 
 - `npm run test:account-deletion-d1` covers real Better Auth/D1 behavior with synthetic users, including Tier C return, audit/notification cleanup, pending-lottery cancellation, broadcast-FK and license-transfer preflight before Stripe, invalid password, Stripe-secret fail-closed behavior, anonymous denial, and the closed direct deletion route.
