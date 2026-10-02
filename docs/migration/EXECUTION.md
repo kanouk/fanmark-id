@@ -22,6 +22,13 @@ API client5/5、application typecheck、変更ファイルESLint、workflow isol
 CI application jobに同じ描画試験を追加した。新headのCIとremote画面のsave/再表示は
 まだ未確認で、現配備は引き続き010a4d7a。実ユーザー・DNS/provider設定は未変更。
 
+最初の新CI37061182268はapplicationの描画stepで失敗した。job logでGit管理外の
+`.env.cloudflare-staging`がrunnerにないことを確認。fixtureのenv file依存を除き、
+bundleが要求するcatalog versionを返す。CI buildは空のenvDirと公開staging origin・
+synthetic Supabase初期化値を明示する。これはsecret/source接続の追加ではない。
+同じ空envDirでbuildと7ケースを再検証した。通常の配備buildは別途作り直す。
+`useAuthForm`の既存Hook lint警告2件は残る（error 0）。新CI完了前に配備しない。
+
 ## 2026-10-03：無期限プロフィールのstaging合成受け入れ成功
 
 code head f4bd1aa / CI37058393397はapplication・Worker両job成功、watcher exit 0。

@@ -10,8 +10,6 @@ const root=fileURLToPath(new URL('../../',import.meta.url));
 const chromePath=[process.env.FANMARK_STAGING_CHROME,'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome','/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser'].filter(Boolean).find(existsSync);
 assert.ok(chromePath,'Chrome is required; set FANMARK_STAGING_CHROME if needed');
 await readFile(path.join(root,'dist-staging/index.html'));
-const catalogVersion=(await readFile(path.join(root,'.env.cloudflare-staging'),'utf8')).match(/^VITE_EMOJI_CATALOG_VERSION=([a-f0-9]{64})$/m)?.[1];
-assert.ok(catalogVersion,'staging catalog version is required');
 const origin='https://fanmark-app-staging.fanmark-id.workers.dev';
 const userId='35111111-1111-4111-8111-111111111111',fanmarkId='45111111-1111-4111-8111-111111111111',licenseId='55111111-1111-4111-8111-111111111111';
 const editor=`/fanmarks/${fanmarkId}/profile/edit`,profileRoute=`/api/me/fanmarks/${fanmarkId}/profile`;
@@ -106,7 +104,7 @@ async function run(mode){
    const u=new URL(event.request.url);requests.push({path:u.pathname,method:event.request.method});
    if(u.origin!==origin){blocked.push(u.origin);await cdp.send('Fetch.failRequest',{requestId:event.requestId,errorReason:'BlockedByClient'});return;}
    if(u.pathname.startsWith('/api/')){
-    if(u.pathname==='/api/emoji/catalog')return fulfill(event.requestId,200,{schemaVersion:1,version:catalogVersion,total:1,offset:0,limit:Number(u.searchParams.get('limit')),nextOffset:null,items:[{id:'75111111-1111-4111-8111-111111111111',emoji:'🌸',shortName:'cherry blossom',keywords:[],category:null,subcategory:null,codepoints:['1F338'],sortOrder:1}]});
+    if(u.pathname==='/api/emoji/catalog')return fulfill(event.requestId,200,{schemaVersion:1,version:u.searchParams.get('version')??'a'.repeat(64),total:1,offset:0,limit:Number(u.searchParams.get('limit')),nextOffset:null,items:[{id:'75111111-1111-4111-8111-111111111111',emoji:'🌸',shortName:'cherry blossom',keywords:[],category:null,subcategory:null,codepoints:['1F338'],sortOrder:1}]});
     if(u.pathname==='/api/auth/get-session'){sessionStarted=true;await delay(mode==='cold'?1600:400);sessionReleased=true;return fulfill(event.requestId,200,signedIn?{user,session:{id:'offline-session'}}:null);}
     if(u.pathname==='/api/auth/sign-in/email'){signedIn=true;return fulfill(event.requestId,200,{user,session:{id:'offline-session'}});}
     if(u.pathname==='/api/me/profile')return fulfill(event.requestId,200,own);

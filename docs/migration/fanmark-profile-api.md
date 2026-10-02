@@ -64,6 +64,10 @@ are blocked; no Supabase or real API calls are permitted. Set
 `FANMARK_STAGING_CHROME` when Chrome is outside the discovered standard paths.
 This rendered regression runs after the staging build in the application CI
 job. It is not proof of deployed saves, provider integration or a real phone.
+The CI build points Vite at an empty environment directory and explicitly
+supplies the staging API origin and synthetic Supabase client initialization
+values. The browser fixture honors any pinned catalog version requested by the
+bundle and does not read ignored workstation `.env` files.
 
 ## Verification and activation boundary
 

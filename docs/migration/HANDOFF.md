@@ -19,6 +19,14 @@ pass. `npm run test:staging-profile-editor-ui` now runs after the application CI
 build. New-head CI and deployed editor save/reopen/preview remain pending.
 Current Worker below is unchanged. Earlier docs head `81ba302` passed both
 jobs in `37059744542`; watcher exited 0.
+First new CI `37061182268` application failed because the browser test read an
+ignored `.env.cloudflare-staging` absent on the runner. The follow-up removes
+that dependency and explicitly builds with an empty Vite env directory,
+public staging origin and synthetic Supabase initialization values. Browser
+fixtures echo the requested pinned catalog version. Repeat local seven-case
+checks use the same isolated env setup; latest CI remains pending and nothing
+has been deployed. Rebuild the normal staging dist before deployment. Existing
+`useAuthForm` Hook lint warnings are two, with zero errors.
 
 Owner fanmark profiles now support perpetual Tier C in both authenticated
 context reads and INSERT/UPSERT eligibility. A new real local split-D1
