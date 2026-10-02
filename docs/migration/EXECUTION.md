@@ -1,5 +1,36 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 最新read-only catalogとsynthetic import再生（11:17 UTC）
+
+`npx --yes supabase@2.119.0 db query --linked --file
+scripts/migration/schema-readiness.sql --output-format json`を再実行した。
+SQLは`BEGIN READ ONLY`でcatalog metadataのみを読む。観測時刻は
+`2026-10-02T11:17:58.694587Z`。40 tables / 406 columns / 58 functions /
+36 triggers / 77 RLS policiesを確認した。応答とconverter reportはmode 0700
+の一時directory内だけに保存し、終了時に削除した。source table rowsは取得していない。
+
+value-free credential descriptorを渡したconverter v24は`deployable: false`
+のまま、5 gate groups / 81 locationsを返した。内訳はexternal Auth foreign keys
+11、operation-owned timestamp defaults 67、未翻訳のfunctions / RLS policies /
+triggers各1 group。別のtimestamp-writer auditは79 defaults、99 INSERT column
+lists、11 defaults without a direct literal writer、unparsed INSERT 0件を返した。
+このaudit countとconverter gate countは範囲が異なる。
+
+同一catalogで`node scripts/migration/test-d1-import-current-schema.mjs <private-catalog>`
+を実行し、disposable local Miniflare D1で40/40 checkpoints、12 synthetic rows、
+6 external Auth identity lookups、2 credential transforms、inactive credential 1件の
+durable deferral、import-only timestamp readback、conflicting coverage rejectionを確認。
+結果は`public_rows_reconciled`、`deployable=false`、
+`fullMigrationReconciled=false`。source rows、Cloudflare staging D1、R2は使っていない。
+
+PR #41 head `bd7c8bd`のrequired application / Worker API CIはrun
+`36999647995`で両方success。headの変更は棚卸しdocumentationのみで、Workerを
+redeployしていない。read-only `wrangler secret list`ではstaging secretsは引き続き
+`BETTER_AUTH_SECRET`、`REFERENCE_MASTER_SERVICE_SECRET`、
+`VERIFIED_ACCESS_SECRET`の3件のみ。Stripe test、Resend、social OAuth acceptanceは
+各provider設定後まで未完了。実ユーザーデータ、live payment/email、production route、
+domain/DNSへの変更はない。
+
 ## 2026-10-02 current checkout and live inventory refresh
 
 PR #41 commit `0b42862` passed both GitHub Actions jobs in run
@@ -40,7 +71,9 @@ write user rows or apply a D1 migration. No production schema, route, or
 domain/DNS changed. Issue #30
 still needs the user's capacity margin, maximum downtime, and configuration
 owner targets, plus a disposition for the live-only function authorization gap.
-Provider acceptance and wrapper/indirect-call review also remain open.
+Provider acceptance remains open. A bounded trace covers the known shared
+favorites, plan, profile, and emoji-master helpers; arbitrary dynamic aliases
+and whole-program call paths remain unproven.
 
 The deployed-only `manual-expire-grace-licenses` source uses the service-role
 client without checking administrator role or MFA in the handler. It can

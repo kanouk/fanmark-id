@@ -1,8 +1,9 @@
 # Cloudflare migration handoff
 
 Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
-open and draft. Code checkpoint `0b42862` passed both CI jobs in run
-`36997782249`. It was then deployed to the workers.dev-only staging app as
+open and draft. Its current head `bd7c8bd` passed both CI jobs in run
+`36999647995`; that commit updates migration inventory documentation and did
+not redeploy the Worker. The latest recorded workers.dev-only staging version is
 version `d2330dd1-ce17-41c0-99d2-a81b242c412d` at 100%. An earlier run
 `36991654600` exposed an intermittent 120-second
 stall in the PGlite-heavy `subscription-application.test.mjs`; running it in a
@@ -30,9 +31,11 @@ operations, three favorites operations, ten transfer/lottery operations,
 eight Realtime subscriptions, 14 notification data/admin operations, and eight
 dashboard/analytics operations, plus two owner-license usage/downgrade reads.
 The remaining 68 are classified in
-[`frontend-callsite-map.md`](frontend-callsite-map.md). Wrapper/indirect-call
-review, production reconciliation, and provider acceptance remain open. The
-two owner-license reads use the session-scoped D1 API in Cloudflare mode. The
+[`frontend-callsite-map.md`](frontend-callsite-map.md). A bounded trace now
+covers the shared favorites, plan, profile, and emoji-master helpers; arbitrary
+dynamic/whole-program calls, production reconciliation, and provider acceptance
+remain open. The two owner-license reads use the session-scoped D1 API in
+Cloudflare mode. The
 extension checkout callsite is
 mapped but still gated pending staging Stripe configuration. A
 schema-only readback of the linked production Supabase project found that
@@ -65,6 +68,23 @@ A guarded synthetic post-write rehearsal passed on 2026-10-02: the Stripe
 effect ran once, D1 Time Travel and encrypted R2 restore preserved admin MFA
 and the avatar, and five frozen writes were rejected. Provider-backed
 acceptance and production stop/recovery targets remain open.
+
+The latest schema-only Supabase query completed at `2026-10-02T11:17:58Z` and
+again returned 40 tables / 406 columns / 58 functions / 36 triggers / 77 RLS
+policies. Converter v24 remains `deployable: false` with 5 groups / 81
+locations: 11 external Auth foreign keys, 67 timestamp-default operations,
+and functions/RLS/triggers. A fresh 40-table synthetic importer replay passed
+40/40 checkpoints with 12 synthetic rows, six Auth identity lookups, two
+credential transforms, one durable inactive-credential deferral, exact
+timestamp readback, and conflicting-coverage rejection. It remains
+`public_rows_reconciled`; full migration reconciliation is false. It touched
+only disposable local D1 and no source rows.
+
+PR #41 head `bd7c8bd` passed both required CI jobs in run `36999647995`. The
+current read-only staging secret list still contains only Better Auth, the
+reference-master service, and verified-access secrets. Stripe test, Resend,
+and OAuth acceptance remain disabled until their staging credentials are
+configured. No provider-backed request was made.
 
 The earlier date-sensitive Stripe fixture failure is fixed; the full Stripe
 receipt suite, application build, and Worker API validation pass. CI itself
