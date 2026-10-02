@@ -39,7 +39,8 @@ time. Missing or corrupted audit rows abort the whole command, including
 coupon capacity, usage, license change and notifications. A later update by
 another writer that retains an old coupon marker does not create a duplicate.
 Previously applied migrations 0015 and 0019 are unchanged. This describes the
-locally tested migration; remote application is recorded in HANDOFF.
+locally tested migration; its guarded remote application and synthetic
+command/replay/cleanup smoke passed on 2026-10-03, as recorded in HANDOFF.
 A unique `(user_id, request_id)` key makes sequential or concurrent retries
 return the original result; a conflicting payload receives 409. Grace-state
 commands snapshot the plan type and configured/fallback limit, then the trigger
@@ -97,10 +98,13 @@ masters described above.
 
 Run `node scripts/migration/staging-coupon-lottery-audit-smoke.mjs` for read-only
 preflight. `--apply-and-smoke` additionally applies only migration 0021 if the
-canonical ledger is immediately before it, verifies the exact new trigger and
+canonical ledger is immediately before it, uses a private file import containing
+the migration and its ledger INSERT together, verifies the exact new trigger and
 existing 0015/0019 triggers, then creates a synthetic coupon/license/two entries.
 The command checks individual audits, same-request replay, usage and notification
-counts, then removes its own rows and proves the full business/Auth baseline.
+counts, then removes its own source-table rows and coupon commands and proves the
+40-source-table/master baseline plus empty Auth. Lifecycle incarnation
+tombstones remain intentional runtime metadata, separate from imported user rows.
 The target guard pins account, Worker and both D1 bindings; source-backed master
 rows must retain their verified baseline. The synthetic cleanup journal is kept
 outside the repository in a private temporary directory. No provider, production

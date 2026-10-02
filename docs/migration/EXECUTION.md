@@ -1,5 +1,31 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：監査修正をstagingへ反映
+
+head `f3787d8`のCI run `37026002389`はstaging application / Worker APIの両job成功。
+`0021_coupon_lottery_status_audit.sql`をbusiness stagingへ適用し、追加triggerと既存0015/0019
+triggerをchecked-in SQLとexact照合した。合成クーポン/ライセンス/応募2件で個別監査2件、
+同requestの再送後もusage 1件・通知event 2件・取消2件を確認し、source-table合成行とcommandを除去した。
+40-source-table/master基準値を復元し、Authは0行。通常のmigrations applyは適用なしで終了したため、
+既存工程と同じprivate file importでSQLとledger INSERTをまとめて適用した。初回canaryはD1の
+LIKE pattern制限で検証/cleanupに失敗した。private journalの対象IDだけを除去し、eventキーの
+exact IN照合へ修正後の再実行は成功。incarnation tombstoneは派生runtime metadataとして保持する。
+
+fresh staging buildとWrangler dry-run成功後、Worker `445dd523-232d-4766-aaef-2c8d175e5bc6`を
+workers.dev限定で配備し、最新deployment（created_onで選択）が100%であることを読み戻した。
+配備前の最新versionは記録どおり`d2330dd1-ce17-41c0-99d2-a81b242c412d`だった。
+先頭の古いdeploymentを現在版と誤認したが、時刻順に選び直して修正した。
+root/robots/session/emoji/languagesは200、session=null、匿名admin/transferは401、
+無効のStripe webhookは404。配布JSのSHA-256はlocal buildと一致
+（`dd779e2f1ef10aaf7c26f7b94100d82353ae6cf91e524af7cfbd498125a6a27d`）。
+
+最新の配備には譲渡・抽選確定・退会・Stripe延長・クーポン延長の個別抽選監査修正を含む。
+譲渡のauthenticated synthetic canaryも成功。合成signin、issue/apply/reject/reapply/approve、
+応募別監査exact readback、再承認400/監査非重複、日本語通知3件の配信、業務/Auth行cleanupを確認した。
+初回は旧3桁deadlineのassertionで止まったがcleanup成功後、現仕様の6桁assertionで再実行成功。
+Stripe/Resend/OAuthのsecretは依然未登録で、
+外部provider acceptanceは未完了。実ユーザーデータ移行とpublic domain/DNS切替は行っていない。
+
 ## 2026-10-03：クーポン延長の応募別監査（local）
 
 クーポン適用では取消対象2件の個別監査が0件になることをregressionで再現した。

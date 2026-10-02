@@ -26,6 +26,7 @@ import {
   stagingEmailTemplateMasterRowCount,
 } from "./staging-email-template-master-baseline.mjs";
 import { isStagingNotificationArchiveTarget } from "./staging-notification-archive-target.mjs";
+import { safeWranglerDiagnostics } from "./safe-diagnostics.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const WORKER_DIR = path.join(ROOT, "workers/api");
@@ -38,6 +39,7 @@ const TRIGGER = "extension_coupon_lottery_status_audit";
 const AUTH_TABLES = ["user", "account", "session", "verification", "twoFactor", "adminRole", "mfaAssurance"];
 const WRANGLER = "4.139.0";
 let journalPath;
+let phase = "preflight";
 
 function fail(code) { throw new Error(code); }
 function sql(value) { return "'" + String(value).replaceAll("'", "''") + "'"; }
@@ -49,7 +51,28 @@ function wrangler(args) {
     cwd: WORKER_DIR, encoding: "utf8", env: { ...process.env, NO_COLOR: "1", CI: "1" },
     timeout: 120_000, maxBuffer: 8 * 1024 * 1024,
   });
-  if (result.error || result.status !== 0) fail("coupon_audit_staging_wrangler_failed");
+  if (result.error || result.status !== 0) {
+    const error = new Error("coupon_audit_staging_wrangler_failed");
+    error.command = args.slice(0, 2).join(" ");
+    error.phase = phase;
+    const diagnosticsDirectory = mkdtempSync(path.join(tmpdir(), "fanmark-coupon-audit-error-"));
+    chmodSync(diagnosticsDirectory, 0o700);
+    error.diagnosticsPath = path.join(diagnosticsDirectory, "wrangler-output.json");
+    writeFileSync(error.diagnosticsPath, JSON.stringify({ stdout: result.stdout, stderr: result.stderr }), { mode: 0o600 });
+    error.diagnostics = safeWranglerDiagnostics(result.stderr);
+    try {
+      const output = JSON.parse(result.stdout);
+      const detail = output?.error;
+      if (detail && typeof detail === "object") {
+        error.diagnostics.push(...safeWranglerDiagnostics([
+          detail.text ?? detail.message ?? "",
+          ...(Array.isArray(detail.notes) ? detail.notes.map(note => note.text ?? "") : []),
+        ].join("\n")));
+      }
+    } catch { /* Full provider output is retained only in the private diagnostics file. */ }
+    error.exit = result.status ?? result.error?.code;
+    throw error;
+  }
   return result.stdout.trim();
 }
 function json(args) {
@@ -132,9 +155,14 @@ function command(ids, now, previousEnd, newEnd) {
     WHERE NOT EXISTS (SELECT 1 FROM extension_coupon_application_commands
       WHERE user_id = ${sql(ids.owner)} AND request_id = ${sql(ids.request)})`;
 }
+function eventKeys(ids) {
+  return [ids.entry1, ids.entry2].map(id => sql(`coupon-extension:${ids.command}:${id}`)).join(", ");
+}
 function cleanup(ids) {
   d1([
-    `DELETE FROM notification_events WHERE dedupe_key LIKE ${sql(`coupon-extension:${ids.command}:%`)}`,
+    `DELETE FROM notifications WHERE user_id IN (${sql(ids.applicant1)}, ${sql(ids.applicant2)})
+      OR event_id IN (SELECT id FROM notification_events WHERE dedupe_key IN (${eventKeys(ids)}))`,
+    `DELETE FROM notification_events WHERE dedupe_key IN (${eventKeys(ids)})`,
     `DELETE FROM audit_logs WHERE request_id = ${sql(ids.command)} OR (resource_type = 'fanmark_license' AND resource_id = ${sql(ids.license)})`,
     `DELETE FROM fanmark_lottery_entries WHERE license_id = ${sql(ids.license)}`,
     `DELETE FROM extension_coupon_usages WHERE coupon_id = ${sql(ids.coupon)}`,
@@ -162,6 +190,7 @@ function smoke(tables, before) {
   writeFileSync(journalPath, JSON.stringify({ ids, now, previousEnd, newEnd, state: "prepared" }), { mode: 0o600 });
   let failure;
   try {
+    phase = "seed-synthetic-rows";
     d1([
       `INSERT INTO extension_coupons (id, code, months, max_uses, used_count, is_active, created_at, updated_at)
         VALUES (${sql(ids.coupon)}, ${sql(ids.code)}, 2, 1, 0, 1, ${sql(now)}, ${sql(now)})`,
@@ -174,9 +203,12 @@ function smoke(tables, before) {
         VALUES (${sql(ids[`entry${index}`])}, ${sql(ids.fanmark)}, ${sql(ids[`applicant${index}`])}, ${sql(ids.license)}, '1.0', 'pending', ${sql(now)}, ${sql(now)}, ${sql(now)})`),
     ].join("; "), { write: true });
     const insert = command(ids, now, previousEnd, newEnd);
+    phase = "apply-synthetic-command";
     d1(insert, { write: true });
     // Replay the same API command's guarded insert; the saved response and all effects stay unchanged.
+    phase = "replay-synthetic-command";
     d1(insert, { write: true });
+    phase = "verify-synthetic-effects";
     const saved = d1(`SELECT status, cancelled_lottery_entries FROM extension_coupon_application_commands WHERE id = ${sql(ids.command)}`)[0];
     assert.deepEqual(saved, { status: "completed", cancelled_lottery_entries: 2 });
     const audits = d1(`SELECT user_id, resource_type, resource_id, request_id, metadata, created_at
@@ -194,12 +226,14 @@ function smoke(tables, before) {
     const counts = d1(`SELECT
       (SELECT used_count FROM extension_coupons WHERE id = ${sql(ids.coupon)}) AS used,
       (SELECT COUNT(*) FROM extension_coupon_usages WHERE coupon_id = ${sql(ids.coupon)}) AS usages,
-      (SELECT COUNT(*) FROM notification_events WHERE dedupe_key LIKE ${sql(`coupon-extension:${ids.command}:%`)}) AS notices,
+      (SELECT COUNT(*) FROM notification_events WHERE dedupe_key IN (${eventKeys(ids)})) AS notices,
       (SELECT COUNT(*) FROM fanmark_lottery_entries WHERE license_id = ${sql(ids.license)} AND entry_status = 'cancelled_by_extension') AS cancelled`)[0];
     assert.deepEqual(counts, { used: 1, usages: 1, notices: 2, cancelled: 2 });
     assert.equal(d1(`SELECT license_end FROM fanmark_licenses WHERE id = ${sql(ids.license)}`)[0]?.license_end, newEnd);
   } catch (error) { failure = error; }
+  phase = "cleanup-synthetic-rows";
   try { cleanup(ids); } catch { failure ??= new Error("coupon_audit_staging_cleanup_failed"); }
+  phase = "verify-cleanup-baseline";
   try { assert.deepEqual(baseline(tables), before); } catch { failure ??= new Error("coupon_audit_staging_cleanup_readback_failed"); }
   if (failure) throw failure;
   writeFileSync(journalPath, JSON.stringify({ ids, now, previousEnd, newEnd, state: "cleaned-and-verified" }), { mode: 0o600 });
@@ -220,7 +254,17 @@ function main() {
     console.log(JSON.stringify({ mode: "readonly", migration: MIGRATION, applied, baseline: "verified" }));
     return;
   }
-  if (!applied) wrangler(["d1", "migrations", "apply", BUSINESS, "--remote", "--config", APP_CONFIG]);
+  if (!applied) {
+    // The file-import path preserves trigger bodies and commits their ledger row
+    // together, as in the existing Business/Auth staging migration applicators.
+    const directory = mkdtempSync(path.join(tmpdir(), "fanmark-coupon-audit-migration-"));
+    chmodSync(directory, 0o700);
+    const file = path.join(directory, MIGRATION);
+    const migration = readFileSync(path.join(WORKER_DIR, "migrations-business", MIGRATION), "utf8");
+    writeFileSync(file, migration + `\nINSERT INTO d1_migrations (name) VALUES (${sql(MIGRATION)});\n`, { mode: 0o600 });
+    phase = "apply-migration-file";
+    wrangler(["d1", "execute", BUSINESS, "--remote", "--file", file, "--config", APP_CONFIG]);
+  }
   if (!hasBusinessMigrationApplied(ledger(), MIGRATION)) fail("coupon_audit_staging_ledger_readback_failed");
   assert.deepEqual(pending(), []);
   verifyTrigger();
@@ -231,6 +275,7 @@ function main() {
 }
 try { main(); } catch (error) {
   // Provider output, source coupon values, and synthetic identifiers stay out of diagnostics.
-  console.error(JSON.stringify({ error: error.message?.startsWith("coupon_audit_staging_") ? error.message : "coupon_audit_staging_verification_failed", journalPath }));
+  console.error(JSON.stringify({ error: error.message?.startsWith("coupon_audit_staging_") ? error.message : "coupon_audit_staging_verification_failed",
+    command: error.command, phase: error.phase ?? phase, exit: error.exit, diagnostics: error.diagnostics, diagnosticsPath: error.diagnosticsPath, journalPath }));
   process.exitCode = 1;
 }

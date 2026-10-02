@@ -1,5 +1,32 @@
 # 本番読み取りの観測記録
 
+## 2026-10-03 staging audit rollout (15:36 UTC)
+
+CI run `37026002389` on `f3787d8` passed both jobs. Business staging migration
+0021 is applied with exact trigger/ledger readback and no pending migration.
+A direct synthetic coupon-command smoke passed with two individually audited
+cancellations, one usage after replay, two notification events, cleanup of
+source-table/command rows, preserved master baseline and empty Auth. The
+initial long-LIKE-pattern failure in the rehearsal was recovered using its
+private journal and fixed with exact event-key IN predicates. This is D1
+command/trigger evidence, not an imported-user or Stripe/Resend/OAuth acceptance.
+
+Fresh build/dry-run then deployed Worker `445dd523-232d-4766-aaef-2c8d175e5bc6`
+to `fanmark-app-staging.fanmark-id.workers.dev`. Latest-by-created_on readback
+confirmed 100%; the prior version was `d2330dd1-ce17-41c0-99d2-a81b242c412d`.
+HTTP root/robots/session/emoji/languages returned 200, session=null, anonymous
+admin and transfer list 401, disabled Stripe webhook 404. Public/local JS
+SHA-256 matched `dd779e2f1ef10aaf7c26f7b94100d82353ae6cf91e524af7cfbd498125a6a27d`.
+Staging remains noindex. Authenticated synthetic transfer acceptance passed:
+sign-in, issue/apply/reject/reapply/approve, exact per-entry cancellation audit,
+repeat-approval denial without duplication, and three delivered Japanese in-app
+notifications. Source-table/Auth canary rows were removed and coupon/email
+master and MFA-generation baselines preserved. The initial obsolete three-digit
+deadline assertion was corrected to the current canonical six-digit contract
+after its failed run had cleaned up.
+No real user migration, provider request, production Supabase write or domain/DNS
+operation was performed.
+
 ## 2026-10-02 public schema / Edge Function readback (10:44 UTC)
 
 Using the linked project `ppqgtbjykitqtiaisyji`, `supabase db dump --linked

@@ -80,7 +80,15 @@ function assertTarget() {
   if (!identity.loggedIn || identity.email !== ACCOUNT_EMAIL ||
       !identity.accounts?.some((account) => account.id === ACCOUNT_ID)) fail("cloudflare_account_mismatch");
   const deployment = json(["deployments", "list", "--name", config.name, "--json", "--config", APP_CONFIG]);
-  if (!deployment[0]?.versions?.some((version) => version.percentage === 100)) fail("staging_worker_not_active");
+  const latestDeployment = Array.isArray(deployment)
+    ? deployment.toSorted((left, right) => Date.parse(right.created_on) - Date.parse(left.created_on))[0]
+    : null;
+  if (!Number.isFinite(Date.parse(latestDeployment?.created_on ?? "")) ||
+      !latestDeployment?.versions?.some((version) => version.percentage === 100)) fail("staging_worker_not_active");
+  if (process.env.FANMARK_EXPECTED_STAGING_VERSION && !latestDeployment.versions.some((version) =>
+    version.percentage === 100 && version.version_id === process.env.FANMARK_EXPECTED_STAGING_VERSION)) {
+    fail("staging_worker_version_mismatch");
+  }
 
   const source = readFileSync("workers/api/migrations-business/0000_business_schema_v4_staging.sql", "utf8");
   const businessTables = [...source.matchAll(/^CREATE TABLE "([A-Za-z_][A-Za-z0-9_]*)"/gmu)].map((match) => match[1]);
@@ -422,7 +430,7 @@ async function main() {
     assert.ok(Date.parse(state.transfer_locked_until) < serverNow + 31 * 86_400_000);
     assert.ok(Date.parse(state.license_end) > serverNow + 7 * 86_400_000);
     assert.ok(Date.parse(state.license_end) <= serverNow + 8 * 86_400_000);
-    assert.match(state.license_end, /T00:00:00\.000Z$/u);
+    assert.match(state.license_end, /T00:00:00\.000000Z$/u);
     const audits = d1(APP_CONFIG, BUSINESS,
       "SELECT COUNT(*) AS count FROM audit_logs WHERE user_id IN (" + sql(ownerId) + "," + sql(recipientId) + ")")[0];
     const events = d1(APP_CONFIG, BUSINESS,
@@ -430,7 +438,26 @@ async function main() {
       sql("transfer_rejected_" + rejectedApply.request_id) + "," +
       sql("transfer_requested_" + applied.request_id) + "," +
       sql("transfer_approved_" + applied.request_id) + ")")[0];
-    assert.equal(Number(audits.count), 5);
+    assert.equal(Number(audits.count), 6);
+    const entryAudits = d1(APP_CONFIG, BUSINESS,
+      "SELECT audit.user_id, audit.resource_type, audit.metadata, audit.created_at, entry.updated_at " +
+      "FROM audit_logs audit JOIN fanmark_lottery_entries entry ON entry.id = audit.resource_id " +
+      "WHERE audit.action = 'LOTTERY_ENTRY_STATUS_CHANGED' AND entry.id = " + sql(lotteryId));
+    assert.equal(entryAudits.length, 1);
+    assert.equal(entryAudits[0].user_id, ownerId);
+    assert.equal(entryAudits[0].resource_type, "fanmark_lottery_entry");
+    assert.equal(entryAudits[0].created_at, entryAudits[0].updated_at);
+    assert.match(entryAudits[0].created_at, /\.\d{6}Z$/u);
+    assert.deepEqual(JSON.parse(entryAudits[0].metadata), {
+      old_status: "pending", new_status: "cancelled", cancellation_reason: "system",
+    });
+    assert.equal((await request("/api/me/transfers/approve", {
+      method: "POST", headers: { cookie: ownerCookie, "content-type": "application/json" },
+      body: JSON.stringify({ request_id: applied.request_id, transferredFanmarkName: "Synthetic transfer" }),
+    })).status, 400);
+    assert.equal(Number(d1(APP_CONFIG, BUSINESS,
+      "SELECT COUNT(*) AS count FROM audit_logs WHERE action = 'LOTTERY_ENTRY_STATUS_CHANGED' " +
+      "AND resource_id = " + sql(lotteryId))[0]?.count), 1);
     assert.equal(Number(events.count), 3);
     notificationDelivery = await waitForDeliveredTransferNotifications({
       rejectedRequestId: rejectedApply.request_id, approvedRequestId: applied.request_id,
@@ -444,6 +471,7 @@ async function main() {
   console.log(JSON.stringify({
     staging: ORIGIN, transferLifecycle: "issue_apply_reject_reapply_approve", tierLevel,
     notificationDelivery,
+    lotteryStatusAudit: "exact_and_not_duplicated",
     businessSyntheticRowsAfterCleanup: 0, authUserRowsAfterCleanup: 0,
     userDataMigration: "not performed", domainDns: "unchanged",
   }));

@@ -3,42 +3,63 @@
 Checkpoint: 2026-10-03 JST. The migration is **not complete**. PR #41 remains
 open and draft. CI validates the branch but does not deploy the Worker.
 
-The latest local follow-up adds migration `0021_coupon_lottery_status_audit.sql`
-without changing applied migrations 0015/0019. It records source-equivalent
-per-entry coupon cancellations inside the existing command transaction and
-rejects missing/corrupted audits. Reused entries retaining an older coupon
-marker do not trigger duplicate audits for other writers. The pre-fix
-regression reproduced zero per-entry audits for two cancelled applicants.
-Coupon redemption passes 11/11; canonical migration ledger passes 3/3;
-migration data passes 237/237;
-Worker typecheck, focused ESLint and diff check pass. Migration 0021 is local
-only and has not been applied remotely. `bfdeb54` contains the coupon fix.
-The new guarded smoke script
-`node scripts/migration/staging-coupon-lottery-audit-smoke.mjs` passed read-only
-preflight: exact 0015/0019 triggers, verified business/master baseline, empty
-Auth and the canonical ledger ending at 0020. Its `--apply-and-smoke` mode is
-prepared for exact 0021 readback, two synthetic applicants, idempotent command
-replay and complete cleanup; remote application/smoke remain pending.
-Converter remains v43 and the broad
-function/RLS/trigger parity gate remains open.
+The audit fixes are deployed to workers.dev staging as Worker version
+`445dd523-232d-4766-aaef-2c8d175e5bc6` at 100%. The code baseline is `f3787d8`;
+CI run `37026002389` passed both application and Worker jobs. A fresh staging
+build and Wrangler dry-run passed before deployment. The latest deployment
+must be selected by `created_on`; Wrangler's JSON list is not newest-first.
+The preceding current version was the recorded `d2330dd1-ce17-41c0-99d2-a81b242c412d`,
+not the older first list item inspected initially.
 
-Committed transfer `c58fc5c`, lottery finalization `6d36028` and account deletion
-`ae4c351` restore individual status audits. Local suites pass 11/11, 27/27 and
-6/6 respectively. Required-audit faults roll back their transaction; finalizer
-recovery verifies committed audits using its saved plan. Account deletion
-retains Auth/profile rows if cleanup fails; earlier license returns remain in
-grace and retry continues without duplicate audits. CI run `37024045461` on
-`ae4c351` passed both application and Worker jobs.
+Business staging migration `0021_coupon_lottery_status_audit.sql` is applied.
+The new trigger and existing 0015/0019 triggers match checked-in SQL exactly;
+no business migration remains pending. The guarded synthetic coupon smoke
+passed: two per-entry cancellation audits with exact actor/entry/command/
+metadata/time, same-request replay with one use and two notification events,
+source-table/coupon-command cleanup, original 40-source-table/master baseline,
+and empty Auth. The direct command/trigger smoke does not establish an
+imported-user or provider-backed coupon flow. Lifecycle incarnation tombstones
+remain intentional derived runtime metadata.
 
-Stripe extension `97f963c` is committed/pushed; CI run `37024950939` passed
-both application and Worker jobs. Its durable cancellation snapshot and terminal guard require exact
-per-entry audit identity/metadata/time. Missing or corrupted records roll back
-the billing batch. Duplicate-Session replay retains one extension and one
-record per entry. The Stripe ingress/application/invoice/subscription/portal
-suite passes 70/70, with Worker typecheck/ESLint/diff check passing.
+Normal migrations apply exited without applying 0021. The existing private
+file-import pattern then applied the SQL and ledger row together. The first
+canary verification/cleanup hit D1's long-LIKE-pattern limit, leaving synthetic
+rows; the private journal bounded recovery to its exact IDs. Event-key IN
+predicates replaced LIKE, recovery removed those rows, and a fresh full smoke
+completed with cleanup readback. The script retains private journals and
+sanitized failure diagnostics for reproducible recovery.
 
-These follow-ups have not redeployed the Worker or changed source/user/domain
-state. External Stripe/Resend/OAuth acceptance remains pending provider setup.
+HTTP readback passed: root/robots/session/catalog/languages 200, no session,
+anonymous admin/transfer 401 and disabled Stripe webhook 404. The local/public
+JS SHA-256 matches `dd779e2f1ef10aaf7c26f7b94100d82353ae6cf91e524af7cfbd498125a6a27d`.
+The updated authenticated transfer canary passed against the pinned new
+version: synthetic sign-in, issue/apply/reject/reapply/approve, exact per-entry
+cancellation audit and repeat-approval denial without duplicate audits. Three
+Japanese in-app notifications were delivered. Its business/Auth rows were
+removed and existing coupon/email masters and MFA generation were preserved.
+The first run hit an obsolete three-digit deadline assertion after successful
+transfer and cleaned up; the strict canonical six-digit assertion now passes.
+
+The deployed code includes transfer `c58fc5c`, finalization `6d36028`, deletion
+`ae4c351`, Stripe extension `97f963c` and coupon `bfdeb54`. Local suites passed
+11/11, 27/27, 6/6, 70/70 and 11/11 respectively. Audit INSERT errors abort their respective business batch/command. Stripe,
+finalization and coupon flows additionally verify missing/corrupted audit
+values. Tested retry/recovery cases do not duplicate effects.
+Account cleanup failure retains Auth/profile rows while prior committed
+license returns stay in grace, as documented. Migration data passes 237/237.
+
+Remaining source-trigger review found a concrete next gap: the Master D1 emoji
+draft repository does not record the source per-change emoji audits. Preserve
+the authenticated administrator actor and atomicity in Master D1; Business D1
+cannot share that transaction. Source security-alert behavior is database NOTICE
+only, with no external delivery call. See the updated object map and private
+non-timestamp-trigger review; do not clear the broad catalog gate.
+
+Converter remains v43 with function/RLS/trigger scopes and credential descriptor
+still gated. Stripe, Resend and OAuth secrets remain absent; real provider
+acceptance and CPU/operational fit remain unresolved. No production Supabase
+writes, real user/Auth/Storage migration, real provider transaction, or public
+domain/DNS change occurred.
 
 The latest read-only schema catalog completed at
 `2026-10-02T14:21:25.605664Z`: 40 tables / 406 columns / 144 constraints /
@@ -81,7 +102,7 @@ Cloudflare resource writes, or domain/DNS settings were changed in v43, v42, v41
 same boundaries held in v39, v38, and v37.
 No source rows, production routing, user/Auth migration, Worker deployment, or
 domain/DNS settings were changed in v36. The latest recorded
-workers.dev-only staging version is
+workers.dev-only staging version before this rollout was
 version `d2330dd1-ce17-41c0-99d2-a81b242c412d` at 100%. An earlier run
 `36991654600` exposed an intermittent 120-second
 stall in the PGlite-heavy `subscription-application.test.mjs`; running it in a
