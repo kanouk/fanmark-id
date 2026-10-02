@@ -1,8 +1,10 @@
 # Cloudflare migration handoff
 
 Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
-open and draft. Code checkpoint `63b6018` passed both CI jobs in run
-`36996085760`; CI did not deploy. An earlier run `36991654600` exposed an intermittent 120-second
+open and draft. Code checkpoint `0b42862` passed both CI jobs in run
+`36997782249`. It was then deployed to the workers.dev-only staging app as
+version `d2330dd1-ce17-41c0-99d2-a81b242c412d` at 100%. An earlier run
+`36991654600` exposed an intermittent 120-second
 stall in the PGlite-heavy `subscription-application.test.mjs`; running it in a
 standalone Node process resolved the hosted validation failure. CI does not
 deploy.
@@ -66,9 +68,14 @@ The earlier date-sensitive Stripe fixture failure is fixed; the full Stripe
 receipt suite, application build, and Worker API validation pass. CI itself
 does not deploy. The active Wrangler profile `fanmark-staging-inapp` is logged
 into the intended Fanmark.id account. A guarded deployed Cron canary passed and
-restored the staging baseline; the current `fanmark-app-staging` Worker version
-`6f0d73af-f3db-46b5-94fb-fed521478634` is at 100%. Business, Auth, and
+restored the staging baseline. Business, Auth, and
 emoji-master staging D1 report no unapplied migrations.
+
+The latest staging deployment retained existing schedules, bindings, and
+selectors. Read-only health/session, emoji catalog, and tier-master requests
+returned 200/no-store; the anonymous session endpoint returned no session.
+License expiry and notification archival remain disabled. The deployment did
+not apply a D1 migration or write rows or R2 objects.
 
 The app staging config retains Cron schedules `* * * * *` and `0 0 * * *`.
 `NOTIFICATION_PROCESSOR_BACKEND=d1` is configured; the expiry selector

@@ -2,14 +2,25 @@
 
 ## 2026-10-02 current checkout and live inventory refresh
 
-PR #41 commit `63b6018` passed both GitHub Actions jobs in run
-`36996085760` (Cloudflare application migration boundaries/build and Worker
-API contracts/typecheck/bundle dry-run). CI did not deploy. The offline
+PR #41 commit `0b42862` passed both GitHub Actions jobs in run
+`36997782249` (Cloudflare application migration boundaries/build and Worker
+API contracts/typecheck/bundle dry-run). The offline
 frontend scanner was regenerated from this checkout; its base is `63b6018`
 and it still finds 211 static callsites. The prior 143 plus the mapped 68
 cover each location once; `test:frontend-callsite-mapping.mjs` enforces exact
 coverage. The latest owner-license changes use the session-scoped D1 API for
 home counts and plan-downgrade selection.
+
+After CI, the current workers.dev-only staging config was built and deployed
+to `fanmark-app-staging` as version
+`d2330dd1-ce17-41c0-99d2-a81b242c412d` (100%). Wrangler confirmed the existing
+`* * * * *` and `0 0 * * *` schedules and split Business/Auth/Master D1 plus
+avatar/cover R2 bindings. Read-only GET checks returned 200/no-store for
+Better Auth health/session, emoji catalog, and the four-tier reference master;
+the session endpoint returned anonymous. The SPA root also returned 200.
+Neither license expiry nor notification archival was enabled by this deploy.
+No D1 migration or manual D1/R2 write was run; production routes and domains
+were untouched.
 
 A read-only production public-schema dump refreshed `supabase/remote_schema.sql`.
 The private raw dump was 180,288 bytes with SHA-256
@@ -24,8 +35,9 @@ with `manual-expire-grace-licenses` remaining live-only. Details and deployed
 versions are in [live observations](live-observations.md).
 
 The migration-data suite passes 215/215, application typecheck and targeted
-ESLint pass, and CI passes both jobs. This did not read or write user rows,
-apply production schema, deploy a Worker, or change domains/DNS. Issue #30
+ESLint pass, and CI passes both jobs. The staging deployment did not read or
+write user rows or apply a D1 migration. No production schema, route, or
+domain/DNS changed. Issue #30
 still needs the user's capacity margin, maximum downtime, and configuration
 owner targets, plus behavioral review of live SQL and the live-only function.
 Provider acceptance and wrapper/indirect-call review also remain open.
