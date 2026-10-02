@@ -172,11 +172,11 @@ export function createEmojiMasterD1Repository(env: Env) {
           SELECT ordinal, id, emoji, short_name, keywords_json, category,
                  subcategory, codepoints_json, sort_order
           FROM fanmark_emoji_master_release_staging
-          WHERE release_version = ?
+          WHERE release_version = ? AND ordinal > ? AND ordinal <= ?
           ORDER BY ordinal
-          LIMIT ? OFFSET ?
+          LIMIT ?
         `)
-        .bind(version, page.limit, page.offset)
+        .bind(version, page.offset, page.offset + page.limit, page.limit)
         .all<Record<string, unknown>>();
       const rows = assertD1Success(result);
       const total = metadata.row_count as number;

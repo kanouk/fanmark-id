@@ -8,6 +8,38 @@ deploy a Worker. An isolated remote D1 now holds the verified public emoji
 master and its active release; the workers.dev staging API serves it by default.
 Production application routing and custom-domain cutover remain separate gates.
 
+## 2026-10-03: bound catalog page reads by immutable ordinals
+
+The read-only API preserves its version/offset/limit/nextOffset JSON contract.
+For a verified ready release, `offset` selects the zero-based ordinal range:
+`ordinal > offset AND ordinal <= offset + limit`. The existing unique index on
+`(release_version, ordinal)` seeks that range; SQL no longer scans preceding
+rows with OFFSET. No index or remote schema change is required. The stage and
+activation helpers already verify contiguous ordinals, and deployed triggers
+keep ready release rows immutable. Each returned page still validates expected
+length, exact ordinals and DTO fields; startup validates the complete catalog.
+
+A real local D1 benchmark with 10,000 synthetic public catalog rows and the
+actual repository measured the last 500-row page (offset 9500): old OFFSET
+query 10,000 `meta.rows_read`, new range query 500, identical 9501..10000 output.
+This is a 95% reduction for that measured page, not a production-wide estimate
+or attribution of the account's current daily read exhaustion.
+Private `/tmp/fanmark-catalog-read-metrics.log` contains only synthetic metrics.
+The native-D1 regression instruments the repository's real statement results
+and enforces at most 1,000 page-row reads for this case (metadata queries are
+separate). It also covers zero-based offsets, final partial/empty pages,
+version pinning after active-pointer changes and missing/out-of-range ordinals.
+The API test fixture deliberately omits immutability triggers for corruption
+injection; separate full-migration release tests validate those triggers.
+
+Local checks: API/native D1 7/7, full-schema release/activation/rollback 7/7,
+frontend pagination/integrity 7/7, Worker typecheck and changed-file lint pass.
+`test:emoji-catalog:d1` is now included in the Worker `test:api-contracts-d1` and
+therefore normal `npm test`/CI. Remote deployment and read-metric verification
+remain pending behind exact-head CI and a complete D1 preflight. The current
+D1 Free daily limit prevents that preflight; no ready release, source data,
+provider, user migration or domain routing was changed by this repair.
+
 ## Cloudflare staging のマスター編集
 
 `AdminEmojiMaster`はCloudflare staging modeで`/api/admin/emoji-master`へ接続し、

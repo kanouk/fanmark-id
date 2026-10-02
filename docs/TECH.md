@@ -57,6 +57,7 @@ Environment の名前だけでは承認やブランチ制限は有効になら�
   - `process-notification-events-every-minute` (`* * * * *`) → `functions/v1/process-notification-events`。通常は無効で、`notification_events` に pending が追加された時だけDBトリガーが有効化する。Edge Function はキューが空になった時だけ無効化し、呼び出し失敗時は有効状態を維持して翌分に再実行する。将来時刻の pending がある場合も有効状態を維持する。
 
 ## 絵文字マスタ更新（Unicode emoji-test.txt）
+- Cloudflareの公開カタログAPIは、検証済み不変releaseの`ordinal`範囲を既存indexで読む。外部offset形式を保ち、SQL OFFSETによる前方走査を避ける。ページの連番/件数とクライアントの全カタログ検証は維持する。読み取りbudgetとnative検証は`docs/migration/emoji-releases.md`。
 1. Unicode 公式から `emoji-test.txt` を取得して `data/emoji/` に保存する。  
    - 例:  
      - `curl -o data/emoji/emoji-test.txt https://unicode.org/Public/emoji/15.1/emoji-test.txt`

@@ -5,6 +5,22 @@ open and draft. CI validates the branch but does not deploy the Worker.
 The newest checkpoint below is authoritative for current deployment state;
 older sections retain their historical acceptance and failure evidence.
 
+Catalog read-budget follow-up: the actual local D1 repository's offset9500 /
+limit500 query over 10,000 synthetic rows read 10,000 rows before the fix and
+500 after it. Use the existing `(release_version, ordinal)` index with a bounded
+ordinal range; retain external version/offset/limit/nextOffset, expected page
+length/ordinals/DTO validation and verified immutable release behavior.
+No new index/migration is needed. Native API 7/7, full-schema release/rollback
+7/7, frontend pagination 7/7 and Worker typecheck/lint pass. Include the native
+catalog suite in `test:api-contracts-d1`/normal Worker CI. Measurement is local
+and does not attribute the current quota exhaustion or prove remote savings.
+Read `/tmp/fanmark-catalog-read-metrics.log` and `emoji-releases.md` for evidence.
+Deployment/editor acceptance remain pending; current Worker is still010a4d7a.
+Both ordinary bundle and pinned staging dry-run/workflow isolation pass. Prior
+authorization HEAD62d1672 / CI37064985605 application job succeeded; Worker was
+still running at the pre-push observation. Require both jobs on the newer
+runtime head before deployment, then refresh the private HEAD/CI pins.
+
 Latest checkpoint: HEAD `287a257` passed both jobs in CI `37063201944`, including
 all eight rendered cases and Chrome cleanup. Normal staging build and pinned
 deploy dry-run passed. Fresh identity/latest-version checks confirmed the

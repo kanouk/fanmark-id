@@ -1,5 +1,27 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：カタログの深いページのD1読み取りを削減
+
+D1 quota待機中にlocalの実D1/Worker repositoryで読み取り量を測定した。
+合成カタログ10,000行・offset9500/limit500の旧SQLは500行の返却に10,000行を読んだ。
+既存の`(release_version, ordinal)` unique indexを使うordinal範囲指定へ変更すると、
+同じ9501〜10000の500行を500行の読み取りで返した（その条件で95%減）。
+offset/limit/version/nextOffsetの外部形式、最大500件、ページ件数・連番・DTO検証、
+ready版と版固定は保持する。公開版の連番と不変性は既存stage/activationで検証される。
+この結果から現在accountのquota消費の原因や本番全体の削減率は断定しない。
+
+native D1 APIは読み取りbudget、部分/空ページ、版切替時pin、欠落/metadata外の
+ordinal拒否を含め7/7。full-schema immutable release/activation/rollbackは7/7、
+frontend pagination/integrityは7/7、Worker typecheck/変更箇所ESLint成功。
+通常bundleとWrangler4.139.0のstaging deploy dry-run、workflow isolationも成功。
+API試験は通常Worker CIへ追加した。ログは`/tmp/fanmark-catalog-budget-{before,
+boundaries,release,client,typecheck,lint}.log`、正確な測定は
+`/tmp/fanmark-catalog-read-metrics.log`。詳細は[versioned emoji catalog](emoji-releases.md)。
+stagingは010a4d7aのまま。D1無料枠が復旧して完全なpreflightが成功するまで、
+配備とnative editor受け入れは未完了。source/user/domain/provider/schemaは未変更。
+前の認可監査head62d1672 / CI37064985605はapplication job成功、Worker jobは
+追加runtime修正をpushする前の確認時点で実行中。次のexact-head CIで両方を再検証する。
+
 ## 2026-10-03：編集修正のCI成功、D1無料枠で配備前確認を保留
 
 head `287a257e603a9ed3249dc20e230d90d558a568c1` / CI `37063201944` は

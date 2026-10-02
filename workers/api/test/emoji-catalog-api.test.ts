@@ -2,6 +2,7 @@ import { env, exports as workerExports } from "cloudflare:workers";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import schemaSql from "./fixtures/d1-emoji-catalog-api.sql?raw";
 import { handleRequest } from "../src";
+import { createEmojiMasterD1Repository } from "../src/emoji-master-d1-repository";
 import type { Env } from "../src/repository";
 
 const runtimeEnv = env as unknown as Env;
@@ -121,6 +122,51 @@ beforeEach(async () => {
 });
 
 describe("emoji catalog D1 API", () => {
+  it("keeps deep-page D1 reads proportional to the returned immutable ordinal range", async () => {
+    if (!database) throw new Error("MASTER_DB binding is unavailable");
+    await database.batch([
+      database.prepare("INSERT INTO fanmark_emoji_master_release_imports VALUES (?, '{}', 10000, 'ready')").bind(VERSION),
+      database.prepare(`WITH RECURSIVE ordinals(n) AS (
+        SELECT 1 UNION ALL SELECT n + 1 FROM ordinals WHERE n < 10000
+      ) INSERT INTO fanmark_emoji_master_release_staging
+        (release_version, ordinal, id, emoji, short_name, keywords_json, category, subcategory, codepoints_json, sort_order)
+      SELECT ?, n, printf('00000000-0000-4000-8000-%012d', n), char(128511 + n), 'synthetic symbol',
+        '[]', NULL, NULL, printf('["%X"]', 128511 + n), n FROM ordinals`).bind(VERSION),
+    ]);
+    const reads: number[] = [];
+    function measuredStatement(statement: D1PreparedStatement): D1PreparedStatement {
+      return new Proxy(statement, {
+        get(target, key) {
+          if (key === "bind") return (...values: unknown[]) => measuredStatement(target.bind(...values));
+          if (key === "all") return async () => {
+            const result = await target.all();
+            reads.push(result.meta.rows_read);
+            return result;
+          };
+          const member = Reflect.get(target, key);
+          return typeof member === "function" ? member.bind(target) : member;
+        },
+      });
+    }
+    const measured = new Proxy(database, {
+      get(target, key) {
+        if (key === "prepare") return (sql: string) => measuredStatement(target.prepare(sql));
+        const member = Reflect.get(target, key);
+        return typeof member === "function" ? member.bind(target) : member;
+      },
+    });
+    const repository = createEmojiMasterD1Repository(d1Environment({ MASTER_DB: measured }));
+    const page = await repository.readPage({ version: VERSION, offset: 9500, limit: 500 });
+    expect(page.total).toBe(10000);
+    expect(page.nextOffset).toBeNull();
+    expect(page.items).toHaveLength(500);
+    expect(page.items[0].sortOrder).toBe(9501);
+    expect(page.items[499].sortOrder).toBe(10000);
+    expect(reads).toHaveLength(1);
+    console.log(JSON.stringify({ catalogPage: "9500/500", rowsRead: reads[0], rowsReturned: page.items.length }));
+    expect(reads[0]).toBeLessThanOrEqual(1000);
+  });
+
   it("serves the active immutable catalog through the Worker entrypoint", async () => {
     await seedActiveRelease();
 
@@ -149,6 +195,54 @@ describe("emoji catalog D1 API", () => {
         sortOrder: ITEMS[0].sort_order,
       }],
     });
+  });
+
+  it("preserves zero-based offsets, final partial pages and empty pages past the end", async () => {
+    await seedActiveRelease();
+    for (const offset of [0, 1, 2, 10000]) {
+      const response = await request(`?version=${VERSION}&offset=${offset}&limit=1`);
+      expect(response.status).toBe(200);
+      const body = await response.json() as { offset: number; nextOffset: number | null; items: { id: string }[] };
+      expect(body.offset).toBe(offset);
+      expect(body.nextOffset).toBe(offset === 0 ? 1 : null);
+      expect(body.items.map(item => item.id)).toEqual(offset < 2 ? [ITEMS[offset].id] : []);
+    }
+    const finalPartial = await request(`?version=${VERSION}&offset=1&limit=500`);
+    expect(finalPartial.status).toBe(200);
+    expect(await finalPartial.json()).toMatchObject({ nextOffset: null, items: [{ id: ITEMS[1].id }] });
+  });
+
+  it("keeps later pages pinned to the selected version after the active pointer changes", async () => {
+    await seedActiveRelease();
+    const otherVersion = "b".repeat(64);
+    await database?.batch([
+      database.prepare("INSERT INTO fanmark_emoji_master_release_imports VALUES (?, '{}', 2, 'ready')").bind(otherVersion),
+      database.prepare(`INSERT INTO fanmark_emoji_master_release_staging
+        SELECT ?, ordinal, id, emoji, 'new release name', keywords_json, category, subcategory, codepoints_json, sort_order
+        FROM fanmark_emoji_master_release_staging WHERE release_version = ?`).bind(otherVersion, VERSION),
+      database.prepare("UPDATE fanmark_emoji_master_active_release SET release_version = ? WHERE singleton_id = 1").bind(otherVersion),
+    ]);
+    const pinned = await request(`?version=${VERSION}&offset=1&limit=1`);
+    expect(pinned.status).toBe(200);
+    expect(await pinned.json()).toMatchObject({ version: VERSION, items: [{ id: ITEMS[1].id, shortName: ITEMS[1].short_name }] });
+    const active = await request("?offset=1&limit=1");
+    expect(active.status).toBe(200);
+    expect(await active.json()).toMatchObject({ version: otherVersion, items: [{ shortName: "new release name" }] });
+  });
+
+  it("fails closed for a missing requested ordinal or rows beyond the declared catalog size", async () => {
+    await seedActiveRelease();
+    // The API fixture deliberately allows corruption that deployed immutable-release
+    // triggers reject, so read-time integrity refusal can be exercised independently.
+    await database?.prepare("DELETE FROM fanmark_emoji_master_release_staging WHERE ordinal = 2").run();
+    const missing = await request(`?version=${VERSION}&offset=1&limit=1`);
+    expect(missing.status).toBe(502);
+    expect(await missing.json()).toEqual({ error: "upstream_unavailable" });
+    await database?.prepare("UPDATE fanmark_emoji_master_release_imports SET row_count = 1 WHERE release_version = ?").bind(VERSION).run();
+    await database?.prepare("UPDATE fanmark_emoji_master_release_staging SET ordinal = 2").run();
+    const beyondMetadata = await request(`?version=${VERSION}&offset=1&limit=1`);
+    expect(beyondMetadata.status).toBe(502);
+    expect(await beyondMetadata.json()).toEqual({ error: "upstream_unavailable" });
   });
 
   it("rejects malformed query parameters and non-GET methods", async () => {
