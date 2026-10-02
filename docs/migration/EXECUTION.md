@@ -1,6 +1,23 @@
 # Cloudflare移行の実行・再開手順
 
-# 2026-10-02 v30：emoji master timestampsの限定レビュー
+## 2026-10-02 v31：招待コードtimestampsの限定レビュー
+
+最新のread-only schema catalogを`2026-10-02T12:57:00.005354Z`に取得した。
+40 tables / 406 columns / 144 constraints / 139 indexes / 36 triggers /
+77 RLS policies / 58 functions / one viewで、source table rowsは取得していない。
+
+`invitation_codes.created_at`と`updated_at`をWorker operation timestampとして追加レビューした。
+招待コード管理APIのcreateとpatchはcanonical UTC時刻を明示的にbindする。
+固定clockのD1 integration testは作成時の両時刻とpatch後の`updated_at`をreadbackし、
+`created_at`が保持されることも確認する。snapshot importはsource timestampsをbindする。
+
+converter v31は22個のWorker-owned timestamp columnsと11 Auth FKをreview済み。
+残るblockingは48 locations（timestamp defaults 45、functions/RLS/triggers各1）で
+`deployable: false`。converter tests 31/31、`npm run test:migration-data` 227/227、
+invitation admin D1 tests 5/5、auth D1 tests 27/27、Worker typecheck、変更ファイルのESLintが成功。
+source rows、Cloudflare resources、Worker deploy、domain/DNSは変更していない。
+
+## 2026-10-02 v30：emoji master timestampsの限定レビュー
 
 最新のread-only schema catalogを`2026-10-02T12:49:06.519034Z`に取得した。
 40 tables / 406 columns / 144 constraints / 139 indexes / 36 triggers /

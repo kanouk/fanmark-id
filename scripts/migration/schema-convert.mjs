@@ -17,7 +17,7 @@ import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 30;
+export const SCHEMA_CONVERSION_VERSION = 31;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -288,6 +288,23 @@ const REVIEWED_RUNTIME_TIMESTAMP_WRITES = new Map([
       "workers/api/test/auth-d1.test.ts",
       "scripts/migration/emoji-master-seed.mjs",
       "scripts/migration/test-emoji-master-seed.mjs",
+    ],
+  }],
+  ["invitation_codes.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The invitation admin create operation binds one canonical UTC timestamp explicitly; fixed-clock D1 integration coverage reads back both creation columns, and snapshot import retains source timestamps.",
+    evidence: [
+      "workers/api/src/invitation-admin-d1-api.ts",
+      "workers/api/test/invitation-admin-d1.test.ts",
+      "scripts/migration/d1-import.mjs",
+    ],
+  }],
+  ["invitation_codes.updated_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Invitation admin create and patch operations bind canonical UTC timestamps explicitly; fixed-clock D1 readback verifies the create and update values while preserving created_at.",
+    evidence: [
+      "workers/api/src/invitation-admin-d1-api.ts",
+      "workers/api/test/invitation-admin-d1.test.ts",
     ],
   }],
   ["waitlist.created_at", {

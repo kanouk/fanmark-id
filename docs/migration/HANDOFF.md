@@ -1,25 +1,24 @@
 # Cloudflare migration handoff
 
 Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
-open and draft. The v29 head `d97d5dd` passed both required CI jobs in run
-`37008817112`; CI does not deploy the Worker.
+open and draft. CI validates the branch but does not deploy the Worker.
 
 The latest read-only schema catalog completed at
-`2026-10-02T12:49:06.519034Z`: 40 tables / 406 columns / 144 constraints /
+`2026-10-02T12:57:00.005354Z`: 40 tables / 406 columns / 144 constraints /
 139 indexes / 36 triggers / 77 RLS policies / 58 functions / one view. No
-source table rows were read. Converter v30 reviews 20 exact Worker-owned
-timestamps: the five v26 columns, three access-analytics columns, two profile
-columns, eight settings columns, and two `emoji_master` columns. Fixed-clock
-D1 coverage verifies emoji-master admin create/update/import insert/upsert,
-including preservation of `created_at` when `updated_at` advances. The report
-remains `deployable: false` with 47 operation-owned timestamp defaults and
-three unsupported function/RLS/trigger scopes (50 blocking locations); all 11
-exact Auth foreign keys remain reviewed. Converter tests pass 30/30, migration
-data tests 226/226, auth D1 tests 27/27, Worker typecheck, and ESLint on changed
-files. The v30 head still needs its required CI check before merge.
+source table rows were read. Converter v31 reviews 22 exact Worker-owned
+timestamps: five v26 columns, three access-analytics columns, two profile
+columns, eight settings columns, two `emoji_master` columns, and two
+`invitation_codes` columns. Fixed-clock D1 coverage verifies emoji-master
+create/update/import insert/upsert and invitation-code create/patch, including
+preservation of `created_at`. The report remains `deployable: false` with 45
+operation-owned timestamp defaults and three unsupported function/RLS/trigger
+scopes (48 blocking locations); all 11 exact Auth foreign keys remain reviewed.
+Converter tests pass 31/31, migration data tests 227/227, auth D1 tests 27/27,
+invitation admin D1 tests 5/5, Worker typecheck, and ESLint on changed files.
 
 No source rows, production routing, user/Auth migration, Worker deployment, or
-domain/DNS settings were changed in v30. The latest recorded
+domain/DNS settings were changed in v31. The latest recorded
 workers.dev-only staging version is
 version `d2330dd1-ce17-41c0-99d2-a81b242c412d` at 100%. An earlier run
 `36991654600` exposed an intermittent 120-second

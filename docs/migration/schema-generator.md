@@ -1,6 +1,6 @@
 # Full schema conversion generator
 
-`schema-convert.mjs` v30 is a private, catalog-only preparation tool. It
+`schema-convert.mjs` v31 is a private, catalog-only preparation tool. It
 converts the JSON emitted by `scripts/migration/schema-readiness.sql` into deterministic
 SQLite/D1 table and index SQL plus a machine-readable report of unresolved
 parity gates. It does not read application rows, contact Supabase, apply SQL,
@@ -610,3 +610,21 @@ with 47 timestamp-operation locations and the three functions/RLS/trigger
 catalog scopes (50 blocking locations total). Converter tests pass 30/30,
 the migration-data suite 226/226, and auth D1 tests 27/27. No source rows were
 queried.
+
+## Schema converter v31: reviewed invitation-code timestamps
+
+Converter v31 adds `invitation_codes.created_at` and
+`invitation_codes.updated_at` to the exact
+`worker_operation_explicit_timestamp` disposition. The admin create and patch
+operations bind canonical UTC timestamps. Fixed-clock D1 readback verifies
+both creation values and confirms patch preserves `created_at` while advancing
+`updated_at`; snapshot imports continue to bind source values.
+
+The latest read-only catalog observed at `2026-10-02T12:57:00.005354Z` contains
+40 tables, 406 columns, 144 constraints, 139 indexes, 36 triggers, 77 RLS
+policies, 58 functions, and one view. Converter v31 reviews 22 Worker-owned
+timestamps and all 11 exact Auth references. It remains `deployable: false`
+with 45 timestamp-operation locations and the three functions/RLS/trigger
+catalog scopes (48 blocking locations total). Converter tests pass 31/31,
+the migration-data suite 227/227, and invitation admin D1 tests 5/5. No source
+rows were queried.

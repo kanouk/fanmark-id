@@ -83,9 +83,9 @@ describe("D1 invitation code admin API", () => {
     });
     expect(patched.status).toBe(200);
     expect(await patched.json()).toMatchObject({ schemaVersion: 1, code: { max_uses: 5, is_active: false } });
-    const savedTimestamp = await database!.prepare("SELECT updated_at FROM invitation_codes WHERE id = ?")
-      .bind(codeId).first<{ updated_at: string }>();
-    expect(savedTimestamp?.updated_at).toBe("2026-09-26T12:34:56.000000Z");
+    const savedTimestamps = await database!.prepare("SELECT created_at, updated_at FROM invitation_codes WHERE id = ?")
+      .bind(codeId).first<{ created_at: string; updated_at: string }>();
+    expect(savedTimestamps).toEqual({ created_at: initialTime, updated_at: "2026-09-26T12:34:56.000000Z" });
 
     const stale = await request(`/api/admin/invitation-codes/${codeId}`, {
       method: "PATCH", headers: { "content-type": "application/json" },
