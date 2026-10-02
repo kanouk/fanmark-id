@@ -245,13 +245,15 @@ isolated("applies coupon, cancels lottery entries, records notices/audits, and r
   const replay = await call({}, OWNER, () => "00000000-0000-4000-8000-000000000011");
   assert.deepEqual(await body(replay), result);
 
-  const coupon = await database.prepare("SELECT used_count FROM extension_coupons WHERE id = ?").bind(COUPON).first();
+  const coupon = await database.prepare("SELECT used_count, created_at, updated_at FROM extension_coupons WHERE id = ?").bind(COUPON).first();
+  const usage = await database.prepare("SELECT used_at FROM extension_coupon_usages WHERE coupon_id = ?").bind(COUPON).first();
   const license = await database.prepare("SELECT status, license_end, grace_expires_at, excluded_at, excluded_from_plan FROM fanmark_licenses WHERE id = ?").bind(LICENSE).first();
   const usages = await database.prepare("SELECT COUNT(*) AS count FROM extension_coupon_usages").first();
   const cancelled = await database.prepare("SELECT COUNT(*) AS count FROM fanmark_lottery_entries WHERE coupon_extension_command_id IS NOT NULL AND entry_status = 'cancelled_by_extension' AND cancellation_reason = 'license_extended'").first();
   const notices = await database.prepare("SELECT event_type, source, payload, dedupe_key FROM notification_events ORDER BY dedupe_key").all();
   const audits = await database.prepare("SELECT action FROM audit_logs ORDER BY action").all();
-  assert.equal(coupon.used_count, 1);
+  assert.deepEqual(coupon, { used_count: 1, created_at: NOW_SQL, updated_at: NOW_SQL });
+  assert.deepEqual(usage, { used_at: NOW_SQL });
   assert.deepEqual(license, {
     status: "active",
     license_end: "2026-12-01T00:00:00.000000Z",

@@ -4,23 +4,23 @@ Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
 open and draft. CI validates the branch but does not deploy the Worker.
 
 The latest read-only schema catalog completed at
-`2026-10-02T13:22:08.925059Z`: 40 tables / 406 columns / 144 constraints /
+`2026-10-02T13:38:05.465570Z`: 40 tables / 406 columns / 144 constraints /
 139 indexes / 36 triggers / 77 RLS policies / 58 functions / one view. No
-source table rows were read. Converter v35 reviews 38 exact Worker-operation
+source table rows were read. Converter v36 reviews 41 exact Worker-operation
 timestamps, seven snapshot-import-only timestamps, eight versioned reference
 master timestamps, one scheduled Worker timestamp, and all 11 exact Auth
-references. This pass adds `fanmark_availability_rules.created_at` and
-`updated_at`: snapshot import and the staging seed bind creation time; both MFA
-admin edit paths and account deletion preserve it and write an explicit
-operation time. The report remains `deployable: false` with 25 timestamp
-defaults and three unsupported function/RLS/trigger scopes (28 schema/operation
-blockers); the credential descriptor gate remains too. Converter tests pass
-33/33, migration data tests 229/229, availability admin D1 4/4, account
-deletion D1 5/5, Worker typecheck, and ESLint on changed files. Both CI jobs
-passed on v34 PR head `6ebfd31` in run `37012939847`.
+references. This pass reviews `extension_coupons.created_at` / `updated_at`
+and `extension_coupon_usages.used_at`: admin creation, admin activation, and
+coupon redemption bind explicit canonical times; Miniflare D1 tests read back
+the exact operation values. The report remains `deployable: false` with 22
+timestamp defaults and three unsupported function/RLS/trigger scopes (25
+schema/operation blockers); the credential descriptor gate remains. Converter
+tests pass 34/34, migration data tests 230/230, coupon admin D1 4/4, coupon
+application D1 8/8, Worker typecheck, and ESLint on changed files. Both CI jobs
+passed on v35 PR head `8f5ab34` in run `37013644032`.
 
 No source rows, production routing, user/Auth migration, Worker deployment, or
-domain/DNS settings were changed in v35. The latest recorded
+domain/DNS settings were changed in v36. The latest recorded
 workers.dev-only staging version is
 version `d2330dd1-ce17-41c0-99d2-a81b242c412d` at 100%. An earlier run
 `36991654600` exposed an intermittent 120-second

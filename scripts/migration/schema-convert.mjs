@@ -17,7 +17,7 @@ import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 35;
+export const SCHEMA_CONVERSION_VERSION = 36;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -505,6 +505,36 @@ const REVIEWED_RUNTIME_TIMESTAMP_WRITES = new Map([
       "workers/api/src/account-deletion-d1-api.ts",
       "workers/api/test/account-deletion-d1.test.ts",
       "workers/api/src/utc-timestamp.ts",
+    ],
+  }],
+  ["extension_coupons.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The MFA-gated admin create binds one canonical operation timestamp to both creation and update fields; the reviewed master staging seed preserves source timestamps and reads them back.",
+    evidence: [
+      "workers/api/src/extension-coupon-admin-d1-api.ts",
+      "workers/api/test/extension-coupon-admin-d1.integration.mjs",
+      "scripts/migration/extension-coupon-master.mjs",
+      "scripts/migration/stage-staging-extension-coupons.mjs",
+    ],
+  }],
+  ["extension_coupons.updated_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Admin activation changes and coupon redemption explicitly bind a later canonical operation timestamp; source master timestamps are retained, and D1 tests verify the exact values.",
+    evidence: [
+      "workers/api/src/extension-coupon-admin-d1-api.ts",
+      "workers/api/test/extension-coupon-admin-d1.integration.mjs",
+      "workers/api/src/extension-coupon-application-d1-api.ts",
+      "workers/api/migrations-business/0015_extension_coupon_application.sql",
+      "workers/api/test/extension-coupon-application-d1.integration.mjs",
+    ],
+  }],
+  ["extension_coupon_usages.used_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Coupon redemption uses the command's explicit canonical applied_at for usage history; the D1 trigger and synthetic integration test read that exact value back.",
+    evidence: [
+      "workers/api/src/extension-coupon-application-d1-api.ts",
+      "workers/api/migrations-business/0015_extension_coupon_application.sql",
+      "workers/api/test/extension-coupon-application-d1.integration.mjs",
     ],
   }],
   ["waitlist.created_at", {

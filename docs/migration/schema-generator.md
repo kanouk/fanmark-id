@@ -1,6 +1,6 @@
 # Full schema conversion generator
 
-`schema-convert.mjs` v35 is a private, catalog-only preparation tool. It
+`schema-convert.mjs` v36 is a private, catalog-only preparation tool. It
 converts the JSON emitted by `scripts/migration/schema-readiness.sql` into deterministic
 SQLite/D1 table and index SQL plus a machine-readable report of unresolved
 parity gates. It does not read application rows, contact Supabase, apply SQL,
@@ -699,3 +699,24 @@ timestamp-operation locations and the three functions/RLS/trigger catalog
 scopes (28 schema/operation blockers); the credential descriptor gate also
 remains. Converter tests pass 33/33, migration-data tests 229/229, availability
 admin D1 tests 4/4, and account deletion D1 tests 5/5.
+
+## Schema converter v36: extension coupon timestamps
+
+Converter v36 reviews `extension_coupons.created_at` and `updated_at` plus
+`extension_coupon_usages.used_at` as explicit Worker-operation timestamps. The
+MFA-protected admin create binds one canonical time to both coupon fields; the
+admin activation update advances `updated_at` while preserving `created_at`.
+Coupon redemption uses one canonical `applied_at` for the coupon update and
+usage record through the D1 trigger. Miniflare D1 tests read the exact values
+back. The restricted staging master seed preserves source timestamps.
+
+A fresh catalog-only query at `2026-10-02T13:38:05.465570Z` returned 40 tables,
+406 columns, 144 constraints, 139 indexes, 36 triggers, 77 RLS policies, 58
+functions, and one view; no source table rows were read. Converter v36 reviews
+41 Worker-operation timestamps, seven snapshot-import-only timestamps, eight
+versioned reference-master timestamps, one scheduled Worker timestamp, and
+all 11 exact Auth references. It remains `deployable: false` with 22 timestamp
+defaults and the three functions/RLS/trigger catalog scopes (25
+schema/operation blockers); the credential descriptor gate remains. Converter
+tests pass 34/34, migration-data tests 230/230, coupon admin D1 tests 4/4, and
+coupon application D1 tests 8/8.

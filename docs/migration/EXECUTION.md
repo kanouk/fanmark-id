@@ -1,5 +1,25 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 v36：クーポン日時のレビュー
+
+read-only schema catalogを`2026-10-02T13:38:05.465570Z`に再取得した。
+40 tables / 406 columns / 144 constraints / 139 indexes / 36 triggers /
+77 RLS policies / 58 functions / one view。source table rowsは取得していない。
+
+`extension_coupons.created_at`はMFA管理APIのcreate時に明示的なUTC時刻をbindし、
+限定されたmaster seedはsource時刻を保持する。`updated_at`は管理APIの切替とクーポン利用の
+D1 triggerが操作時刻を明示する。`extension_coupon_usages.used_at`はcommandの
+`applied_at`から設定される。synthetic Miniflare D1が作成・更新・利用履歴の各時刻をreadbackする。
+
+converter v36は41個のWorker-operation timestamp columns、7個のsnapshot-import-only
+columns、8個のversioned reference-master timestamps、1個のscheduled Worker timestampと
+11 Auth FKをreview済み。schema/operation blockersは25 locations（timestamp defaults 22、
+functions/RLS/triggers各1）。credential descriptor gateも残り、`deployable: false`。
+converter tests 34/34、`npm run test:migration-data` 230/230、coupon admin D1 4/4、
+coupon application D1 8/8、Worker typecheck、変更ファイルのESLintが成功。
+v35 head `8f5ab34`のCI run `37013644032`はapplicationとWorkerの両jobが成功。
+v36のCIはpush後に確認する。source rows、Cloudflare resources、Worker deploy、domain/DNSは変更していない。
+
 ## 2026-10-02 v35：利用可能ルール日時のレビュー
 
 v34で取得したread-only schema catalog（`2026-10-02T13:22:08.925059Z`）から再変換した。

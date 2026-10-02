@@ -139,6 +139,8 @@ async function body(response) { return await response.json(); }
   assert.equal(payload.coupon.used_count, 0);
   assert.equal(payload.coupon.created_at, NOW);
   assert.equal(payload.coupon.updated_at, NOW);
+  assert.deepEqual(await database.prepare("SELECT created_at, updated_at FROM extension_coupons WHERE id = ?")
+    .bind(COUPON).first(), { created_at: NOW, updated_at: NOW });
 
   const listing = await call();
   assert.equal(listing.status, 200);
@@ -160,6 +162,9 @@ test("updates coupon active state with an optimistic revision and preserves rede
   assert.equal(payload.coupon.is_active, false);
   assert.notEqual(payload.coupon.updated_at, NOW);
   assert.match(payload.coupon.updated_at, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+  assert.equal(payload.coupon.created_at, NOW);
+  assert.deepEqual(await database.prepare("SELECT created_at, updated_at FROM extension_coupons WHERE id = ?")
+    .bind(COUPON).first(), { created_at: NOW, updated_at: payload.coupon.updated_at });
 
   const stale = await call(`/${COUPON}`, "PATCH", { is_active: true, expected_updated_at: NOW });
   assert.equal(stale.status, 409);
