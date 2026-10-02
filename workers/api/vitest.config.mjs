@@ -40,6 +40,7 @@ export default defineConfig({
       "./test/invitation-signup-d1.test.ts",
       "./test/availability-rules-admin-d1.test.ts",
       "./test/admin-user-management-d1.test.ts",
+      "./test/admin-data-reset-d1.test.ts",
       "./test/admin-email-templates-d1.test.ts",
       "./test/broadcast-email-admin-d1.test.ts",
       "./test/system-settings-d1.test.ts",

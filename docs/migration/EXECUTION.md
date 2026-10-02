@@ -14,6 +14,9 @@
 DELETE入力と不確定結果後の同じ操作IDによるretryを使用する。staging frontendはdisabled、
 server selector未設定のまま。0023のremote適用・有効化・TOTP合成reset/cleanup・画面acceptanceは
 未実施。次にprivate journal/空userdata guardとcanary-only native delete guardを準備して検証する。
+初回code head `6c4e8c4`のCI `37042692784`ではapplicationが成功し、Workerはdefault Vitestの
+includeにD1専用testが混入してbindingがないため失敗した。既存default exclude一覧へ追加し、
+専用npm testはfull Worker chainで維持する。これは初回full CI成功の証拠には使わない。
 実ユーザー移行、Supabase production write、domain/DNS切替は行っていない。
 
 ## 2026-10-03：待機リスト拒否監査・運用警告のstaging照合

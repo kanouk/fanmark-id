@@ -60,7 +60,7 @@ export const AdminDataReset = () => {
         title: "エラー",
         description: resetMode !== "worker" ? "データのリセットに失敗しました"
           : error instanceof AdminDataResetApiError && error.status === 409
-          ? "履歴の参照があるため、リセットを完了できませんでした。データは削除されていません。"
+          ? "履歴の参照があるか、以前の操作と競合したため、リセットを完了できませんでした。"
           : "データのリセットを確認できませんでした。再実行すると同じ操作の結果を確認します。",
         variant: "destructive",
       });

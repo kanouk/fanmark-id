@@ -13,6 +13,13 @@ Nil UUIDs and incarnation fences are retained. Restrictive coupon/lifecycle
 history returns 409 without partial deletion; authenticated non-admin attempts
 retain a bounded source denial audit through the server role gate.
 
+Initial code head `6c4e8c4` ran CI `37042692784`: application passed, but
+Worker failed before the dedicated D1 suites because the broad default Vitest
+include also collected the new reset test without its D1 binding. Added it to
+the existing default-suite exclusions; its dedicated npm test remains in the
+full Worker test chain. The first failure is configuration evidence, not a
+reset implementation acceptance or a passing full CI run.
+
 0023 is NOT remotely applied. Staging reset frontend remains disabled and
 server selector unset. Next: journaled account/version/empty-data/master/trigger
 guards and temporary native delete guards against any non-fixture row, then
