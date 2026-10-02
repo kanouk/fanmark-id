@@ -205,6 +205,16 @@ local scheduled rehearsalは`NOTIFICATION_WAKE_BACKEND:disabled`を明示し、l
 remote起動世代をackしない。disposable recovery Workerは独立config/vars allowlistで
 DO namespaceを継承しない。partial activation、minute Cronとの併用はguardで拒否する。
 
+Stripe dispatcherと一斉メールのdurable queueは通知DOとは別に毎分Cronを使う。
+現在のprovider未設定baselineは日次Cronだけで維持する。将来
+`STRIPE_DISPATCH_BACKEND=d1`または`BROADCAST_SEND_BACKEND=d1`を有効にするconfigには
+`* * * * *`も必要で、DOを選択した通知processorはそのCronから選ばれない。
+`npm run check:cloudflare-schedules`はbase Wrangler configの有効jobと実Worker routerを
+照合し、Cron未登録、bulk sendのD1 draft backend欠落、重複/不正なtriggerを拒否する。
+Cloudflare検証CIでも実行する。これは静的設定の確認であり、provider credentials、
+Cronのremote配信、決済/メールの受理や復旧を証明しない。provider有効化時には既存の
+通知baseline guardと秘密名allowlistも別途更新・検証する。
+
 ## Source runtime catalogの接続先レビュー
 
 公開プロフィール/所有者helperの照合は`public-profile-runtime-readiness.sql`で

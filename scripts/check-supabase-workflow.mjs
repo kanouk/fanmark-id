@@ -86,6 +86,7 @@ assert(/^  workflow_dispatch:\s*$/m.test(cloudflareWorkflow), "Cloudflare migrat
 assert(/^permissions:\s*\n^  contents:\s*read\s*$/m.test(cloudflareWorkflow), "Cloudflare migration validation must be read-only");
 assert(!/secrets\.|\bsupabase\b|\bwrangler\s+deploy\b|--remote\b|\bgit\s+push\b/i.test(cloudflareWorkflow), "Cloudflare migration validation must not access secrets or deploy/write remotely");
 assert(/run: npm run test:migration-data\s*$/m.test(cloudflareWorkflow), "Cloudflare validation must test migration data boundaries");
+assert(/run: npm run check:cloudflare-schedules\s*$/m.test(cloudflareWorkflow), "Cloudflare validation must check configured scheduled job coverage");
 assert(/run: npm run build:cloudflare-staging\s*$/m.test(cloudflareWorkflow), "Cloudflare validation must build the staging application");
 assert(/run: npm test\s*$/m.test(cloudflareWorkflow), "Cloudflare validation must run the complete Worker test chain");
 assert(/run: npm run build:dry-run\s*$/m.test(cloudflareWorkflow), "Cloudflare validation must validate the Worker bundle without deployment");

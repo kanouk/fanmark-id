@@ -4532,3 +4532,32 @@ payload and six-digit UTC archive timestamps; four ineligible rows remained.
 Cleanup and baseline readback passed with zero synthetic notification/history
 rows. No Worker deployment, Cron/selector setting, Supabase source row,
 production route, or domain/DNS state changed.
+
+## 2026-10-03 scheduled provider activation coverage
+
+Stripe webhook ingress only persists receipt/dispatch rows; Stripe dispatch
+and broadcast snapshot/delivery are routed by `* * * * *`. The current
+notification-DO baseline registers only the daily Cron and keeps these provider
+dispatch selectors off. Enabling a selector alone would leave its queue without
+this scheduled execution path.
+
+Added `scheduled-job-coverage.mjs` and `npm run check:cloudflare-schedules`
+to compare enabled jobs in the base Wrangler config against registered triggers
+and the actual Worker router. Cloudflare validation CI runs this check, and
+workflow isolation requires the step. It covers notification Cron fallback,
+Stripe dispatch, broadcast delivery, and default/custom expiry/archive schedules.
+A minute Cron for Stripe/broadcast does not select notification polling with the
+DO backend. Receipt-only frozen rehearsal and draft-only broadcast editing do
+not need dispatch. Existing strict staging baseline/secrets guards are unchanged
+and must be reconciled separately before provider activation.
+
+Under Node 22.6.0 the first migration-suite run passed 276/276. After adding
+a CLI failure-exit case, the focused coverage/selector suite passed 15/15
+(11 coverage and 4 selector cases). Config CLI, workflow isolation, targeted
+ESLint, and diff checks passed. CI `37068708453` for prior HEAD `a19d7e9`
+passed both jobs; this new change still requires CI. This proves local
+configuration coverage only, not remote Cron delivery, provider acceptance,
+or production readiness. No remote Cron/selector/secret, deployed Worker,
+source user row, or domain/DNS state changed. Combined remote profile-editor
+and protected-favorites acceptance remains pending after the previous D1
+daily-read quota rejection; no deploy/seed before the full guarded preflight.

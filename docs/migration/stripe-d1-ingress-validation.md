@@ -81,6 +81,14 @@ request-id intent, and uses an intent-derived Stripe idempotency key. An open
 Session is reused on request replay; after the conservative 20-hour window a
 missing Session enters reconciliation. Checkout is refused unless the matching
 D1 webhook selector, signing secret, and dispatch selector are configured.
+The dispatcher also needs a registered `* * * * *` Cron; webhook ingress
+persists receipts and does not invoke dispatch itself. The current notification
+Durable Object baseline has only a daily Cron and keeps Stripe dispatch off.
+`npm run check:cloudflare-schedules` rejects enabling the dispatcher without
+its minute trigger. Notification polling remains unselected on that trigger
+when `NOTIFICATION_WAKE_BACKEND=durable-object`. Receipt-only frozen rehearsals
+do not require a dispatcher. This configuration check does not prove remote
+Cron delivery or provider-backed payment acceptance.
 The frontend has an opt-in `VITE_STRIPE_EXTENSION_CHECKOUT_BACKEND=worker`
 client; Supabase remains the default. Four Miniflare cases and five client
 contract cases pass with synthetic data and a fake Stripe client.

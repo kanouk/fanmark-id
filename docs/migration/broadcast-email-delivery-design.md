@@ -46,6 +46,17 @@ has been sent as part of this implementation work.
 
 ## Durable execution
 
+The snapshot and delivery functions are selected by the registered
+`* * * * *` Cron only when both `BROADCAST_EMAIL_BACKEND=d1` and
+`BROADCAST_SEND_BACKEND=d1` are configured. Draft editing alone needs no
+delivery scheduler. The current daily-only notification alarm baseline keeps
+bulk send disabled; a future activation must register the minute trigger and
+reconcile the existing baseline/secrets guards. `npm run check:cloudflare-schedules`
+rejects a missing trigger or missing draft backend in the base config. The
+notification processor continues to use its Durable Object and is not
+selected by this minute Cron. Remote schedule delivery, Resend acceptance,
+signed delivery events, and retry/reconciliation are separate acceptance gates.
+
 1. `POST /api/admin/broadcast-emails/send` validates a UUID request ID, an
    eligible draft, current administrator MFA, and the explicit D1 selector.
    A unique command key binds that request ID to the broadcast and administrator.

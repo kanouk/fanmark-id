@@ -41,6 +41,9 @@ jobs:
       - name: Verify workflow isolation
         run: npm run check:ci
 
+      - name: Verify configured scheduled jobs have Cron triggers
+        run: npm run check:cloudflare-schedules
+
       - name: Test migration data boundaries
         run: npm run test:migration-data
 
