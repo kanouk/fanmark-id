@@ -1,5 +1,28 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：source runtimeの全schema接続先を確認
+
+public-tableだけのtrigger catalogではAuthの新規ユーザー処理を捕捉しないため、
+`source-runtime-bindings.sql`を追加した。固定project/CLI/private link dirでBEGIN READ ONLYの
+catalog queryを実行し、`2026-10-02T19:45:33.736244+00:00`に58関数・37trigger・public event
+binding 0を確認。58 definition SHAはv41と全件一致。追加1件はenabled Auth
+`on_auth_user_created -> handle_new_user`。実ユーザー/Auth rowsは読んでいない。
+
+全schemaで接続のないexact trigger関数4件を分類した。`log_profile_cache_access`、
+`log_waitlist_access`、`sync_public_profile_cache`、`validate_display_name`を新しいactive
+D1 triggerとして導入しない。通常RPC `generate_safe_display_name`と既存waitlist監査は
+別レビューのまま保持する。新しいreport builderはfull scope/Auth依存/identity/定義・型・
+security metadata/接続を検証し、disabled/外部/event接続の追加でも再レビューへ戻す。
+raw SQL本文はreportへ含めず、private atomic出力とinput alias拒否を確認した。
+focused 9/9、migration-data 257/257・skip 0、ESLint/syntax成功。CIにも追加した。
+
+private raw query/reportは`fanmark-source-bindings-tdCL5H`、value-free fingerprintは
+`8ee600ced4b859664feba7e29c94b2166734473a40f920b0c8aef991be11b579`。
+詳細: `source-runtime-review.md`。残る54関数はこのreportへのruntime証拠紐付け待ち。
+fullRuntimeReconciled/deployableとconverterの全体gateは未完了で、既存feature受け入れを
+取り消したり自動で全体完了にしたりしない。source/target rows、runtime schema/Worker配備、
+実user migration、domain/DNSは未変更。前の記録head24c510aのCI37055294792は両job成功。
+
 ## 2026-10-03：通知alarmの実signin/TOTP合成受け入れ成功
 
 修正head `41cefc3` / CI `37053995420`は両job成功。専用account、old version、

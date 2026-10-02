@@ -200,3 +200,13 @@ staging configはSQLite coordinator bindingと`notification-wake-v1`のclass mig
 local scheduled rehearsalは`NOTIFICATION_WAKE_BACKEND:disabled`を明示し、local DOが
 remote起動世代をackしない。disposable recovery Workerは独立config/vars allowlistで
 DO namespaceを継承しない。partial activation、minute Cronとの併用はguardで拒否する。
+
+## Source runtime catalogの接続先レビュー
+
+読み取り専用の`source-runtime-bindings.sql`はpublic関数に接続される全schemaのtriggerと
+public event-triggerのmetadataを取得する。source function本文を含むraw出力はprivateに
+保存し、`source-runtime-review.mjs --catalog ... --output ...`で本文のないreportへ変換する。
+exact SHA/type/security metadataと登録接続先を検証し、publicだけのscope・Auth依存欠落・
+source driftを成功扱いしない。CLIは入力/出力のaliasを拒否し、mode 0600でatomic renameする。
+`test-source-runtime-review.mjs`はmigration-data CIにも含む。最新の接続先と4つのunbound
+trigger関数の扱いは[接続先レビュー](migration/source-runtime-review.md)を参照する。

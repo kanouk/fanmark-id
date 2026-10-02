@@ -267,3 +267,13 @@ scheduled expiryはsource-shaped D1上で期限切れgraceライセンス、抽�
 新しいWorker APIのD1 roleは `D1_TOPOLOGY=split` で明示し、業務データは `FANMARK_DB`、Better Authは `AUTH_DB`、emoji/reference masterは `MASTER_DB` から選ぶ。split modeは必要bindingがない場合に他DBへfallbackしない。app stagingはrole別D1に分離済みで、`fanmark-business-staging`には現行source-shaped schemaと運用拡張が適用されている。実ユーザー・ライセンス行はないが、許可済みのreference/system/email/notification masterは明示的なsource digest照合後にseedされ、合成canary後のライセンスincarnation tombstoneやMFA世代singletonなどの再利用防止状態は保持する。`fanmark-auth-staging`はBetter Auth schemaを持ち、Auth user-owned行はcanary後に0件へ戻している。Master D1は3,944件の絵文字releaseと版管理されたreference mastersを保持する。R2 stagingにはavatar/cover bucketがあり、Workerとstaging frontendでR2を選択済み。両bucketの合成アップロード・読取・削除を確認した。staging configには毎分の通知/Stripe dispatchと日次expiryのCron triggerがある。通知processorはD1で有効だが、expiry selectorは通常未設定。Stripe webhook/dispatchもselectorとStripe secretが未設定で、Webhook endpointは閉じている。実Auth/業務データ、既存Storage object、production route、domain/DNSは移行・変更しておらず、production/default buildはSupabaseを維持する。
 
 Cloudflare buildでは`/password-setup`をBetter Authの初回OAuthパスワード設定画面として使い、D1プロフィールのsetup flagをGateに反映する。`POST /api/me/password-setup`は本人sessionからユーザーIDを決め、Better Auth server-only password APIとbusiness D1のflagを連携する。通常のパスワード変更は現在パスワードを要求する。合成検証と非atomicなAuth/business D1再試行契約は `docs/migration/password-setup-api.md` を参照する。2026-09-27にCI成功後のstaging反映を確認し、匿名POSTの401とsetup画面の200/noindexを確認済み。OAuth資格情報が未設定のためprovider実認証は未確認。
+
+## 移行元のruntime接続先の確認
+
+`schema-readiness.sql`はpublicテーブルのtriggerを取得する。公開関数がAuth等の別schemaへ
+接続される場合は`source-runtime-bindings.sql`で追加取得する。`source-runtime-review.mjs`は
+関数本文を出力せずfingerprintと接続先を記録し、exact source definitionかつ全schemaで
+接続のない4つのtrigger関数を分類する。Authの`on_auth_user_created -> handle_new_user`は
+別schemaのactive依存として保持する。接続追加・definition変更・scope欠落は再レビューを
+要求する。runtime受け入れやconverterのdeployable gateを自動で完了にしない。
+詳細は[接続先レビュー](migration/source-runtime-review.md)。

@@ -3,6 +3,31 @@
 Checkpoint: 2026-10-03 JST. The migration is **not complete**. PR #41 remains
 open and draft. CI validates the branch but does not deploy the Worker.
 
+Source runtime binding review now captures all schemas for public trigger
+functions, rather than public tables only. The linked catalog-only transaction
+at `2026-10-02T19:45:33.736244+00:00` found 58 unchanged functions and 37 triggers:
+36 public bindings plus enabled `auth.users.on_auth_user_created -> handle_new_user`.
+No public-function event bindings exist. Four exact unbound trigger definitions
+(`log_profile_cache_access`, `log_waitlist_access`, `sync_public_profile_cache`,
+`validate_display_name`) have no registered binding in any captured schema.
+They must not be reintroduced as new active D1 triggers. The ordinary helper
+`generate_safe_display_name` remains a separate RPC review item.
+
+`source-runtime-bindings.sql` is catalog-only/read-only; the value-free report
+builder verifies full scope, the known Auth binding, unique/durable metadata,
+exact known definition/type/security fingerprints and zero bindings. New,
+external, disabled or event bindings invalidate inactive classification.
+Unknown functions retain review; raw SQL is not copied into the report. CLI
+output is private/atomic and cannot overwrite source through path aliases.
+Focused tests pass 9/9; migration-data passes 257/257 with no skips and includes them. The report has
+four inactive definitions and 54 functions awaiting runtime evidence linkage
+in this report, with all registered bindings still requiring counterparts.
+Existing per-feature acceptance evidence is retained. Full runtime/deployable
+and broad converter catalog gates remain false. No runtime/source rows/schema,
+Worker version or DNS changed. See `source-runtime-review.md` for exact hashes,
+current fingerprint and repeatable commands. The previous acceptance-record
+head `24c510a` passed both jobs in `37055294792`; watcher exited 0.
+
 Notification event wake/sleep is now **staging-verified with synthetic data**.
 Repair head `41cefc3374e34b01d4a89f538ac58cf3ad4faf94` passed both CI jobs in
 `37053995420`. Guarded preflight confirmed the dedicated account, fixed old
