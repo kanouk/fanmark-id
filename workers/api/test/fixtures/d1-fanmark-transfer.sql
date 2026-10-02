@@ -48,7 +48,7 @@ CREATE TABLE fanmark_profiles (
   is_public INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
 );
 CREATE TABLE fanmark_lottery_entries (
-  id TEXT PRIMARY KEY, license_id TEXT NOT NULL REFERENCES fanmark_licenses(id) ON DELETE CASCADE,
+  id TEXT PRIMARY KEY, user_id TEXT NOT NULL, license_id TEXT NOT NULL REFERENCES fanmark_licenses(id) ON DELETE CASCADE,
   entry_status TEXT NOT NULL, cancelled_at TEXT, cancellation_reason TEXT
     CHECK (cancellation_reason IS NULL OR cancellation_reason IN ('user_request','license_extended','system')),
   updated_at TEXT

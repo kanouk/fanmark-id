@@ -79,7 +79,7 @@
 - `check-expired-licenses` はライセンスの active→grace→expired 遷移、抽選実行、通知イベント挿入を担当。
 
 ## 監査とセキュリティ
-- 監査: 主要 Edge Functions は `audit_logs` に記録。移管・抽選・延長・返却・Stripe Webhook はメタデータを保存。
+- 監査: 主要 Edge Functions は `audit_logs` に記録。移管・抽選・延長・返却・Stripe Webhook はメタデータを保存。 Cloudflareの譲渡承認では、対象ライセンスのpending抽選申請それぞれに状態変更の監査を記録し、取消・ライセンス更新・設定削除・通知と同じD1 batchで確定する。
 - RLS: `fanmark_lottery_entries`, `fanmark_favorites`, `fanmark_discoveries`, `invitation_codes`, `fanmark_transfer_*` などは認可ポリシーで保護。管理系は `is_admin()` / `is_super_admin()` を使用。
 - レート/重複防止: `notification_events.dedupe_key`、抽選のユニーク制約、招待コードの残数チェックで制御。
 

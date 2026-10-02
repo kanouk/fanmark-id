@@ -20,6 +20,15 @@ after application and that total is now above the limit, approval fails with
 `fanmark_limit_exceeded` and leaves the request, transfer code, sender license,
 and associated settings unchanged.
 
+Approval also records `LOTTERY_ENTRY_STATUS_CHANGED` once for each pending
+lottery entry it cancels, matching the source `log_lottery_entry_changes`
+trigger. Each row records the applicant ID, entry ID, old/new status,
+`system` cancellation reason, and captured approval time. This insert and the
+cancellations share the approval batch, so an audit insertion error rolls back
+the licenses, code/request, settings, and outbox. Previously cancelled entries
+and entries on another license are unaffected; a repeated approval creates no
+additional cancellation audit. These cases are covered by the D1 suite.
+
 The current Supabase schema constrains `fanmark_lottery_entries.cancellation_reason` to `user_request`, `license_extended`, or `system`, while `approve-transfer-request` attempts to write `license_transferred`. The D1 implementation records this transfer-triggered cancellation as `system`, which satisfies the current source DDL and keeps approval atomic. Aligning the source check and event vocabulary remains a separate source-schema correction.
 
 Local proof is provided by `workers/api/test/fanmark-transfer-d1.test.ts` and `src/lib/fanmark-transfer-api.test.ts`, including two synthetic transfer requests competing for one recipient slot and a plan-limit change between application and approval. The staging smoke uses only short-lived synthetic Better Auth users and synthetic business rows, then verifies cleanup. It does not import existing Auth/users or touch domain/DNS state.

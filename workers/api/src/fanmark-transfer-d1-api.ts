@@ -526,6 +526,14 @@ async function approveRequest(
     db.prepare("UPDATE fanmark_transfer_requests SET status = 'approved', resolved_at = ?, updated_at = ? WHERE id = ? AND status = 'pending' AND EXISTS (SELECT 1 FROM fanmark_licenses WHERE id = ?)")
       .bind(nowIso, nowIso, requestId, newLicenseId),
     db.prepare(`
+      INSERT INTO audit_logs (user_id, action, resource_type, resource_id, metadata, created_at)
+      SELECT entry.user_id, 'LOTTERY_ENTRY_STATUS_CHANGED', 'fanmark_lottery_entry', entry.id,
+        json_object('old_status', entry.entry_status, 'new_status', 'cancelled', 'cancellation_reason', 'system'), ?
+      FROM fanmark_lottery_entries AS entry
+      WHERE entry.license_id = ? AND entry.entry_status = 'pending'
+        AND EXISTS (SELECT 1 FROM fanmark_transfer_requests WHERE id = ? AND status = 'approved')
+    `).bind(nowIso, transfer.license_id, requestId),
+    db.prepare(`
       UPDATE fanmark_lottery_entries
       SET entry_status = 'cancelled', cancelled_at = ?, cancellation_reason = 'system', updated_at = ?
       WHERE license_id = ? AND entry_status = 'pending'

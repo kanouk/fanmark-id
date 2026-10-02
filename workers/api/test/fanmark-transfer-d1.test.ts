@@ -69,7 +69,7 @@ async function reset(): Promise<void> {
   await run(business, "INSERT INTO fanmark_messageboard_configs (license_id, content, created_at, updated_at) VALUES (?, 'old text', ?, ?)", LICENSE, NOW, NOW);
   await run(business, "INSERT INTO fanmark_password_configs (license_id, access_password, created_at, updated_at) VALUES (?, '1234', ?, ?)", LICENSE, NOW, NOW);
   await run(business, "INSERT INTO fanmark_profiles (license_id, display_name, created_at, updated_at) VALUES (?, 'old profile', ?, ?)", LICENSE, NOW, NOW);
-  await run(business, "INSERT INTO fanmark_lottery_entries (id, license_id, entry_status) VALUES ('40000000-0000-4000-8000-000000000001', ?, 'pending')", LICENSE);
+  await run(business, "INSERT INTO fanmark_lottery_entries (id, user_id, license_id, entry_status) VALUES ('40000000-0000-4000-8000-000000000001', ?, ?, 'pending')", OTHER, LICENSE);
 }
 
 async function call(
@@ -173,17 +173,91 @@ describe("D1 fanmark transfer", () => {
     expect(await business.prepare("SELECT status FROM fanmark_transfer_codes").first<{ status: string }>()).toEqual({ status: "completed" });
     expect(await business.prepare("SELECT entry_status, cancellation_reason FROM fanmark_lottery_entries")
       .first<Record<string, unknown>>()).toEqual({ entry_status: "cancelled", cancellation_reason: "system" });
+    const cancelledEntryAudit = await business.prepare(
+      "SELECT user_id, resource_type, resource_id, metadata, created_at FROM audit_logs WHERE action = 'LOTTERY_ENTRY_STATUS_CHANGED'",
+    ).first<Record<string, unknown>>();
+    expect(cancelledEntryAudit).toMatchObject({
+      user_id: OTHER, resource_type: "fanmark_lottery_entry", resource_id: "40000000-0000-4000-8000-000000000001", created_at: NOW,
+    });
+    expect(JSON.parse(String(cancelledEntryAudit?.metadata))).toEqual({
+      old_status: "pending", new_status: "cancelled", cancellation_reason: "system",
+    });
     expect(await count(business, "notification_events")).toBe(2);
     expect((await business.prepare(`SELECT event_type, trigger_at, created_at, updated_at
       FROM notification_events ORDER BY event_type`).all<Record<string, unknown>>()).results).toEqual([
       { event_type: "transfer_approved", trigger_at: NOW, created_at: NOW, updated_at: NOW },
       { event_type: "transfer_requested", trigger_at: NOW, created_at: NOW, updated_at: NOW },
     ]);
+    expect((await call("/approve", { request_id: requestId })).status).toBe(400);
+    expect(await business.prepare("SELECT COUNT(*) AS count FROM audit_logs WHERE action = 'LOTTERY_ENTRY_STATUS_CHANGED'")
+      .first()).toEqual({ count: 1 });
     const lockedIssue = await call("/issue", {
       license_id: result.new_license_id, disclaimer_agreed: true,
     }, RECIPIENT);
     expect(lockedIssue.status).toBe(400);
     expect(await lockedIssue.json()).toMatchObject({ error: "transfer_locked" });
+  });
+
+  it("audits each pending entry on the transferred license and leaves other entries unchanged", async () => {
+    await seedRecipientLicenses();
+    const additionalEntry = "40000000-0000-4000-8000-000000000002";
+    const previouslyCancelled = "40000000-0000-4000-8000-000000000003";
+    const unrelatedEntry = "40000000-0000-4000-8000-000000000004";
+    await run(business, `INSERT INTO fanmark_lottery_entries (id, user_id, license_id, entry_status)
+      VALUES (?, ?, ?, 'pending'), (?, ?, ?, 'cancelled'), (?, ?, ?, 'pending')`,
+    additionalEntry, OWNER, LICENSE, previouslyCancelled, RECIPIENT, LICENSE,
+    unrelatedEntry, OTHER, "20000000-0000-4000-8000-000000000003");
+    const issued = await issue();
+    const applied = await apply(String(issued.transfer_code));
+    expect((await call("/approve", { request_id: applied.request_id })).status).toBe(200);
+    const audits = await business.prepare(
+      "SELECT user_id, resource_id, metadata, created_at FROM audit_logs WHERE action = 'LOTTERY_ENTRY_STATUS_CHANGED' ORDER BY resource_id",
+    ).all<Record<string, unknown>>();
+    expect(audits.results.map((row) => ({ user_id: row.user_id, resource_id: row.resource_id, created_at: row.created_at })))
+      .toEqual([
+        { user_id: OTHER, resource_id: "40000000-0000-4000-8000-000000000001", created_at: NOW },
+        { user_id: OWNER, resource_id: additionalEntry, created_at: NOW },
+      ]);
+    for (const row of audits.results) expect(JSON.parse(String(row.metadata))).toEqual({
+      old_status: "pending", new_status: "cancelled", cancellation_reason: "system",
+    });
+    expect(await business.prepare("SELECT entry_status FROM fanmark_lottery_entries WHERE id = ?")
+      .bind(unrelatedEntry).first()).toEqual({ entry_status: "pending" });
+    expect(await business.prepare("SELECT cancellation_reason, updated_at FROM fanmark_lottery_entries WHERE id = ?")
+      .bind(previouslyCancelled).first()).toEqual({ cancellation_reason: null, updated_at: null });
+  });
+
+  it("rolls back approval when an entry cancellation audit fails and retries without duplicate effects", async () => {
+    const issued = await issue();
+    const applied = await apply(String(issued.transfer_code));
+    const requestId = String(applied.request_id);
+    const auditsBefore = await count(business, "audit_logs");
+    await business.prepare(`CREATE TRIGGER reject_transfer_lottery_audit BEFORE INSERT ON audit_logs
+      WHEN NEW.action = 'LOTTERY_ENTRY_STATUS_CHANGED'
+      BEGIN SELECT RAISE(ABORT, 'synthetic lottery audit failure'); END`).run();
+    try {
+      expect((await call("/approve", { request_id: requestId })).status).toBe(500);
+      expect(await business.prepare("SELECT status FROM fanmark_transfer_requests WHERE id = ?")
+        .bind(requestId).first()).toEqual({ status: "pending" });
+      expect(await business.prepare("SELECT status FROM fanmark_transfer_codes WHERE id = ?")
+        .bind(issued.transfer_code_id).first()).toEqual({ status: "applied" });
+      expect(await business.prepare("SELECT status FROM fanmark_licenses WHERE id = ?")
+        .bind(LICENSE).first()).toEqual({ status: "active" });
+      expect(await count(business, "fanmark_licenses")).toBe(1);
+      expect(await count(business, "audit_logs")).toBe(auditsBefore);
+      expect(await count(business, "notification_events")).toBe(1);
+      expect(await business.prepare("SELECT entry_status FROM fanmark_lottery_entries").first())
+        .toEqual({ entry_status: "pending" });
+      expect(await business.prepare("SELECT fanmark_name, access_type FROM fanmark_basic_configs").first())
+        .toEqual({ fanmark_name: "old", access_type: "profile" });
+    } finally {
+      await business.prepare("DROP TRIGGER reject_transfer_lottery_audit").run();
+    }
+    expect((await call("/approve", { request_id: requestId })).status).toBe(200);
+    expect(await business.prepare("SELECT COUNT(*) AS count FROM audit_logs WHERE action = 'LOTTERY_ENTRY_STATUS_CHANGED'")
+      .first()).toEqual({ count: 1 });
+    expect(await count(business, "fanmark_licenses")).toBe(2);
+    expect(await count(business, "notification_events")).toBe(2);
   });
 
   it("enforces ownership and restores a code after rejection", async () => {

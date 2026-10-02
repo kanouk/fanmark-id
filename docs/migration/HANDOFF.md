@@ -3,6 +3,20 @@
 Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
 open and draft. CI validates the branch but does not deploy the Worker.
 
+The next implementation slice fixes missing per-entry lottery cancellation
+audits during transfer approval. The live catalog's `log_lottery_entry_changes`
+function records each status change; the D1 transfer route previously omitted
+that record. A regression reproduced the missing audit. Approval now inserts
+one guarded audit per pending target entry in the same D1 batch as cancellation
+and transfer effects. The 11/11 transfer tests cover multiple applicants,
+unrelated/previously cancelled entries, repeat approval, required-audit failure
+rollback, and retry. Worker typecheck, ESLint and diff check pass. No schema
+migration or converter version change is needed. Other trigger writers remain
+under review; this is not full trigger parity.
+
+Both CI jobs passed on `8d9b0fd` in run `37022024473`. The transfer follow-up
+is locally validated and ready to push. Staging has not been redeployed.
+
 The latest read-only schema catalog completed at
 `2026-10-02T14:21:25.605664Z`: 40 tables / 406 columns / 144 constraints /
 139 indexes / 36 triggers / 77 RLS policies / 58 functions / one view. No
@@ -22,7 +36,7 @@ Local validation covers converter 41/41, migration data 237/237, lottery D1
 12/12, admin user management 12/12, broadcast admin 11/11, Worker typecheck
 and changed-file ESLint. Both v41 CI jobs passed on `2c79c29` in run
 `37020954433`. v42 `e73396c` and v43 `096e118` are locally validated
-follow-ups, ready for the next push to PR #41 after that successful run.
+follow-ups included in `8d9b0fd`; run `37022024473` passed both CI jobs.
 
 The v41 license fix writes operation-time `updated_at` in active-to-grace,
 no-entry grace expiry, and lottery expiry of the old license. Commit-recovery

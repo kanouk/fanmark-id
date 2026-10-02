@@ -1,5 +1,20 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02：譲渡時の抽選取消監査を補完
+
+read-only catalog内の`log_lottery_entry_changes`は、抽選申請のstatus変更ごとに
+`LOTTERY_ENTRY_STATUS_CHANGED`を記録する。D1譲渡承認にはこの個別ログがなく、
+synthetic regressionで欠落を再現した。承認済みrequestとpending申請をguardした監査INSERTを
+取消UPDATEと同じ承認batchへ追加した。申請者・申請ID・旧/新status・取消理由・操作日時を保存する。
+
+D1 suite 11/11で、対象各申請への個別ログ、他license/取消済み行の保持、再承認での重複防止、
+監査INSERT失敗時のlicense/code/request/config/outbox全体のrollbackとretryを確認した。
+Worker typecheck、ESLint、diff check成功。converterはv43のままでschema変更はない。
+この修正は譲渡経路の証拠であり、Stripe/クーポン/退会/抽選実行等の全trigger parityは未確認。
+
+前工程のhead `8d9b0fd`、CI run `37022024473`は両job成功。
+実ユーザー行、Worker deployment、Cloudflare resources、domain/DNSを変更していない。
+
 ## 2026-10-02 v43：監査ログの操作日時レビュー完了
 
 v41/v42と同じread-only catalog（`2026-10-02T14:21:25.605664Z`）を使用した。
