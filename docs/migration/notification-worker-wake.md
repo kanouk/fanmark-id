@@ -46,9 +46,16 @@ due-delivery sender. That inherited behavior needs its own source/specification
 review; event wake/sleep tests do not establish delayed delivery acceptance.
 
 A failed post-commit bridge leaves an unacknowledged D1 generation. A later
-mutation replays it. A hard interruption in the commit-to-bridge gap still
-requires replay or operator recovery; D1 and Durable Object storage are not one
-transaction. Do not describe the bridge as an exactly-once external commit.
+mutation replays it. The registered daily `0 0 * * *` entrypoint also replays
+it through the selected expiry job's finally path, even while
+`LICENSE_EXPIRY_BACKEND` is unset and that job returns disabled. Native tests
+prove recovery after a missing-namespace bridge, then show that a later daily
+invocation leaves the drained queue without an alarm. This is conditional on
+the daily invocation reaching that finally path and D1/DO being available;
+it is not a one-minute recovery guarantee. A hard interruption in the
+commit-to-bridge gap still needs one of those replays or operator recovery;
+D1 and Durable Object storage are not one transaction. Do not describe the
+bridge as an exactly-once external commit.
 `POST /api/admin/notifications/wake` replays queued work and `GET` reads the real
 alarm time, generations and pending/processing counts. Both require explicit
 allowed Origin and the existing administrator/current-session MFA gate. Neither
@@ -117,7 +124,8 @@ above ran the repair head before that follow-up.
 
 The proven recovery path closes this event scheduler rehearsal, not the full
 source catalog gate. D1/DO commits remain separate; hard missed bridges require
-replay or MFA repair. Delayed in-app delivery and other channels still need their
+later mutation/daily replay or MFA repair. The daily failed-bridge/empty-queue
+path is local evidence, not a new remote recovery rehearsal. Delayed in-app delivery and other channels still need their
 own source/specification/provider review. Broader functions/policies/triggers,
 CPU, operational/mobile gates and provider acceptance stay open. Real user data
 and domain/DNS remain deferred.

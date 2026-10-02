@@ -6135,3 +6135,50 @@ Prior ba1e901 CI37073066866 application completed successfully while Worker test
 remained live during this change. New HEAD requires its own complete CI; no stale
 private deployment pin may be reused. No D1 deploy/query/write, source user data,
 provider activation or domain/DNS operation was performed.
+
+## 2026-10-03 full-schema owner profile and daily missed-wake recovery
+
+Converted owner profile native tests from d1-fanmark-profile.sql to all25
+canonical Business migrations and staging Auth core/0007/0008 with
+AUTH_USER_STATUS_BACKEND=d1. Initial fixture failures were missing required
+normalized emoji/start/incarnation data and invalid cleanup order, not runtime
+API failures. Canonical license triggers now supply incarnations/access-version
+rows; cleanup preserves native retirement triggers. Then three assertions failed
+because config/profile seed advances access generation to2. The assertions now
+compare before/after generations: a successful update adds1 and a write-barrier
+grace transition refuses the update without changing profile/generation.
+No canonical trigger or runtime ownership predicate was weakened.
+
+A new actual Better Auth warmed-session case models the committed suspension
+state: revoke owner sessions and ban the owner, GET/PATCH401 with unchanged
+profiles/access-version rows, other-owner GET200, new signin403/BANNED_USER,
+owner session count0. This does not replace admin MFA/audit/transaction proof.
+Profile native9/9, Worker typecheck and changed-file lint passed. The unreferenced
+reduced fixture is removed. Log: /tmp/fanmark-profile-full-schema-final.log.
+
+Strengthened the actual Worker daily scheduled-entrypoint case: a missing
+namespace bridge rejects while retaining the D1 request generation and NULL
+alarm; daily0 0 * * * reaches expiry's finally despite its backend being unset,
+arms/delivers/acks, and another daily call leaves the empty queue asleep. Wake
+native20/20 passes (/tmp/fanmark-daily-wake-replay.log). This conditional replay
+narrows the operational gap but does not make D1/DO commits atomic or establish
+one-minute recovery after a lost bridge. No new minute polling was introduced.
+
+Previous runtime head9bd59d1 exact CI37073821056 was freshly read as completed
+with both jobs successful. Profile/wake test/doc changes need their own HEAD CI
+before repinning private deployment/canary scripts. The scripts reject a dirty
+working tree, allowing only the unrelated unstaged supabase/.temp/cli-latest.
+
+Read-only provider inventory at2026-10-02T22:50:13.212Z pinned dedicated identity/
+account and100% Worker010a4d7a before listing secret names. It observed only
+BETTER_AUTH_SECRET, REFERENCE_MASTER_SERVICE_SECRET, VERIFIED_ACCESS_SECRET;
+OAuth/Resend/Stripe required names were absent in secrets/checked-in vars.
+Selectors are checked-in config observations, not remote plaintext-var reads.
+No D1 query, source row, provider call or write occurred. The private report is
+/tmp/fanmark-staging-provider-inventory.json; staging-provider-readiness.md now
+records callbacks, credential/selector dependencies and real rehearsal gates.
+
+These are local acceptance/preparation changes. Staging remains010a4d7a;
+latest editor/favorites/catalog/notification fixes need quota recovery, fresh
+baseline checks, deployment and actual browser/API acceptance. Real user/Auth/
+business/Storage copy, provider sending/billing and domain/DNS remain untouched.

@@ -240,11 +240,25 @@ describe("native D1 outbox and real SQLite Durable Object alarms", () => {
     finally { await run("DROP TRIGGER test_ignore_wake"); }
     expect((await db.prepare("SELECT count(*) AS count FROM notification_events").first())?.count).toBe(0);
   });
-  it("the scheduled entrypoint also flushes committed event generations", async () => {
-    await event(); const ctx = createExecutionContext();
+  it("the daily entrypoint replays a failed bridge even with expiry disabled, then leaves an empty queue asleep", async () => {
+    expect(runtime.LICENSE_EXPIRY_BACKEND).toBeUndefined();
+    expect(await alarm()).toBeNull();
+    await event();
+    const pending = await wakeState();
+    await expect(flushNotificationWake({ ...runtime, NOTIFICATION_WAKE: undefined })).rejects.toThrow();
+    expect(await wakeState()).toEqual(pending);
+    expect(await alarm()).toBeNull();
+    const ctx = createExecutionContext();
     await worker.scheduled({ cron: "0 0 * * *", scheduledTime: Date.now(), noRetry() {} } as ScheduledController, runtime, ctx);
     await waitOnExecutionContext(ctx); expect(await alarm()).not.toBeNull();
     await runDurableObjectAlarm(stub); expect(await alarm()).toBeNull();
+    const drained = await wakeState();
+    expect(drained?.acknowledged_generation).toBe(drained?.requested_generation);
+    const idleCtx = createExecutionContext();
+    await worker.scheduled({ cron: "0 0 * * *", scheduledTime: Date.now(), noRetry() {} } as ScheduledController, runtime, idleCtx);
+    await waitOnExecutionContext(idleCtx);
+    expect(await alarm()).toBeNull();
+    expect(await wakeState()).toEqual(drained);
   });
   it("the deployed fetch entrypoint flushes a committed outbox before its lifetime ends", async () => {
     await event(); const ctx = createExecutionContext();

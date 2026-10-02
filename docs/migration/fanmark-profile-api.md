@@ -23,8 +23,9 @@ lengths, social URL schemes, theme keys, color/position/dimension values, and
 serialized JSON size are bounded. New profiles receive runtime UUID and
 timestamp values because the converted D1 schema does not supply Postgres
 defaults. Existing-row edits are owner-scoped and preserve fields omitted from
-the patch; the profile generation trigger remains responsible for access
-generation increments on changed existing rows.
+the patch; the canonical profile triggers increment access generation on
+creation and updates. Tests compare the generation before and after a write;
+the preceding basic-config/profile seed also advances that generation.
 
 When a theme image URL points back to this same Worker's `/api/storage/` path,
 the Worker also checks that a cover URL names the `cover-images` bucket and the
@@ -75,19 +76,28 @@ bundle and does not read ignored workstation `.env` files.
 
 ## Verification and activation boundary
 
-Dedicated local synthetic split-D1 tests cover owner reads, profile creation
+Dedicated local synthetic split-D1 tests apply the entire canonical sequence
+of 25 Business migrations and Auth core/0007/0008, using the staging
+`AUTH_USER_STATUS_BACKEND=d1` selector. The reduced profile SQL fixture has
+been removed. They cover owner reads, profile creation
 and updates, profile generation changes, another owner's fanmark, an expired
 license, invalid fields, same-owner image paths, cross-owner and wrong-bucket
 R2 image paths, CORS, methods, and backend selection. Frontend
 contract tests cover URL validation, cookie behavior, response shape, and
 fail-closed errors. These fixtures contain synthetic identities and records.
+The full-schema native suite passes 9/9. A warmed actual sign-in/session is
+revoked after the synthetic committed suspension state: GET/PATCH return 401,
+all profile/access-version rows are unchanged, another owner's context still
+works, and a new sign-in returns 403/BANNED_USER without issuing a session.
+This consumer check does not replace the separate admin MFA/audit/atomicity
+suite and is not evidence of a deployed suspension flow.
 
 The perpetual-owner regression reproduced 404 before the predicate repair.
 Additional tests cover NULL-end profile read/update/recreation, preservation
 of entered spaces, access-generation changes, another perpetual owner, grace
 and expired refusal, finite-plus-perpetual ambiguity, and a native transition
 to grace at the write barrier that leaves the profile/generation unchanged.
-The repaired suite passes 8/8. The perpetual owner API also passed journaled
+The earlier reduced-schema suite passed 8/8. The perpetual owner API also passed journaled
 synthetic acceptance on Worker `010a4d7a-9cd2-4683-b38f-ff6ad0dd82ec` after both
 CI jobs passed for code head `f4bd1aa`. Two actual sign-ins prove NULL-end
 read/create/update, exact stored/public display-name spaces, private/public

@@ -22,6 +22,16 @@ older sections retain their historical acceptance and failure evidence.
   selector/full Business schema:13/13. These are local proof only. Archive
   rollback/backlog/resume/source ACL evidence is in notifications-api.md;
   scheduled activation coverage is in TECH.md. Provider selectors remain off.
+- Owner profile native tests now use the same full25 Business/Auth core/0007/
+  0008 schema and suspension selector:9/9. Generation assertions compare the
+  before/after value; canonical config/profile inserts already increment it.
+  Warmed revoked sessions refuse GET/PATCH without changing profiles/versions,
+  another owner remains usable, and suspended signin is403/BANNED_USER. This
+  is local consumer proof, not admin-MFA/audit or remote-editor acceptance.
+- The daily entrypoint replays a missed notification bridge even with expiry
+  disabled; the strengthened native case also keeps a drained queue asleep.
+  Daily replay is conditional on the invocation and available D1/DO, not a
+  one-minute guarantee or an atomic commit. Mutation/MFA repair remains valid.
 - Read-only download of source notification processor ACTIVE version209 matches
   checked-in bytes. Its strict boolean segment comparison exposed a D1 0/1
   decoding bug; requires_password_setup is now decoded without numeric coercion.
@@ -42,7 +52,15 @@ older sections retain their historical acceptance and failure evidence.
   wake20/20, types/lint pass locally. Ambiguous multiple-channel rows, source
   import codecs, providers and remote acceptance remain separate open gates.
   Oracle SQL and synthetic fixture are checked in; no source app/Auth row/function
-  was accessed by this oracle. Current runtime fix needs new exact-HEAD CI.
+  was accessed by this oracle. Runtime head9bd59d1 CI37073821056 has both jobs
+  successful; subsequent profile/wake test changes require their own HEAD CI.
+- Read-only provider inventory at2026-10-02T22:50:13.212Z pinned dedicated
+  identity/account and100% Worker010a4d7a, then listed secret names only:
+  BETTER_AUTH_SECRET, REFERENCE_MASTER_SERVICE_SECRET, VERIFIED_ACCESS_SECRET.
+  No OAuth/Resend/Stripe required credential names were present in that list
+  or checked-in vars. Selector observation is from checked-in config, not a
+  remote plaintext-var read. Private /tmp/fanmark-staging-provider-inventory.json
+  contains the report; no D1/provider/source-row calls or writes were made.
 - Source functions/RLS/triggers/external callers, recurring lifecycle/archive,
   retention, D1→DO replay gap, provider-backed Stripe/Resend/4 OAuth, CPU/plan
   fit, least privilege/key custody, and real-device/end-to-end acceptance remain

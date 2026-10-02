@@ -240,3 +240,18 @@ exact SHA/type/security metadataと登録接続先を検証し、publicだけの
 source driftを成功扱いしない。CLIは入力/出力のaliasを拒否し、mode 0600でatomic renameする。
 `test-source-runtime-review.mjs`はmigration-data CIにも含む。最新の接続先と4つのunbound
 trigger関数の扱いは[接続先レビュー](migration/source-runtime-review.md)を参照する。
+
+所有ファンマのプロフィールAPIのnative試験は全25 Business migrationとAuth
+core/0007/0008を使い、stagingの停止ユーザーselectorも適用する。9ケースで無期限所有、
+生成/更新のアクセス世代、write直前のgrace移行、停止後の既存session拒否と他所有者の
+継続利用を確認する。簡略化したprofile SQL fixtureは削除した。コマンドとremote/editor
+の証拠境界は[owner profile API](migration/fanmark-profile-api.md)を参照する。
+
+通知起動のnative20ケースは、起動bridge失敗後に失効処理を無効のまま既存日次Cronから
+再試行し、配信後の空queueではalarmを再開しない経路も検証する。日次invocationとD1/DO
+利用可能性が前提で、失敗時の1分以内復旧を保証しない。
+[通知起動・停止](migration/notification-worker-wake.md)を参照する。
+
+外部providerの未設定項目、実装由来のOAuth callback、Stripe test-only credential条件、
+接続リハーサルの合格条件は[staging provider準備](migration/staging-provider-readiness.md)
+にまとめる。secret名/config確認は接続成功の証拠ではなく、実受信/認証/決済試験は未完了。

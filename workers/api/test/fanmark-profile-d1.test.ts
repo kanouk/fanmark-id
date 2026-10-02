@@ -1,10 +1,18 @@
 import { env } from "cloudflare:workers";
 import bcrypt from "bcryptjs";
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, inject, it, vi } from "vitest";
 import authSchemaSql from "../migrations/0003_better_auth_core.sql?raw";
-import profileSchemaSql from "./fixtures/d1-fanmark-profile.sql?raw";
+import signupSchemaSql from "../migrations/0007_auth_signup_command.sql?raw";
+import suspensionSchemaSql from "../migrations/0008_auth_user_suspension.sql?raw";
+import { checkedInSqlStatements as splitSqlStatements } from "./schema-statements";
 import { handleRequest } from "../src";
 import type { Env } from "../src/repository";
+
+declare module "vitest" {
+  export interface ProvidedContext {
+    businessProfileMigrations: Array<{ name: string; sql: string }>;
+  }
+}
 
 const runtimeEnv = env as unknown as Env;
 const authDatabase = runtimeEnv.AUTH_DB;
@@ -24,35 +32,6 @@ const otherEmail = "fanmark-profile-other@example.invalid";
 const password = "Synthetic-Fanmark-Profile-Only!2026";
 const now = "2026-09-25T00:00:00.000000Z";
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
-
-function splitSqlStatements(sql: string): string[] {
-  const statements: string[] = [];
-  let start = 0;
-  let singleQuoted = false;
-  let doubleQuoted = false;
-  for (let index = 0; index < sql.length; index += 1) {
-    const character = sql[index];
-    const next = sql[index + 1];
-    if (character === "'" && !doubleQuoted) {
-      if (singleQuoted && next === "'") index += 1;
-      else singleQuoted = !singleQuoted;
-      continue;
-    }
-    if (character === '"' && !singleQuoted) {
-      if (doubleQuoted && next === '"') index += 1;
-      else doubleQuoted = !doubleQuoted;
-      continue;
-    }
-    if (character !== ";" || singleQuoted || doubleQuoted) continue;
-    const statement = sql.slice(start, index).trim();
-    if (/^create\s+trigger\b/iu.test(statement) && !/\bend\s*$/iu.test(statement)) continue;
-    if (statement) statements.push(statement);
-    start = index + 1;
-  }
-  const finalStatement = sql.slice(start).trim();
-  if (finalStatement) statements.push(finalStatement);
-  return statements;
-}
 
 async function request(path: string, init: RequestInit = {}, overrides: Partial<Env> = {}): Promise<Response> {
   const headers = new Headers(init.headers);
@@ -81,7 +60,7 @@ async function resetRows(): Promise<void> {
   await authDatabase.prepare('DELETE FROM "account" WHERE "userId" IN (?, ?)').bind(ownerId, otherId).run();
   await authDatabase.prepare('DELETE FROM "user" WHERE "id" IN (?, ?)').bind(ownerId, otherId).run();
   await businessDatabase.prepare("DELETE FROM fanmark_profiles").run();
-  await businessDatabase.prepare("DELETE FROM fanmark_access_versions").run();
+  await businessDatabase.prepare("DELETE FROM fanmark_basic_configs").run();
   await businessDatabase.prepare("DELETE FROM fanmark_licenses").run();
   await businessDatabase.prepare("DELETE FROM fanmarks").run();
 
@@ -103,8 +82,8 @@ async function resetRows(): Promise<void> {
     [expiredFanmarkId, "🪻", "iris-expired"],
   ]) {
     await businessDatabase.prepare(
-      "INSERT INTO fanmarks (id, short_id, user_input_fanmark, emoji_ids, status, tier_level, created_at, updated_at) VALUES (?, ?, ?, ?, 'active', 1, ?, ?)",
-    ).bind(id, shortId, input, JSON.stringify(["043a78d4-1e42-4502-9f57-b1d1f93482db"]), now, now).run();
+      "INSERT INTO fanmarks (id, short_id, user_input_fanmark, normalized_emoji, emoji_ids, normalized_emoji_ids, status, tier_level, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'active', 1, ?, ?)",
+    ).bind(id, shortId, input, input, JSON.stringify([id]), JSON.stringify([id]), now, now).run();
   }
   for (const [id, fanmarkId, userId, end] of [
     [ownerLicenseId, ownerFanmarkId, ownerId, "2999-12-31T23:59:59.000000Z"],
@@ -112,11 +91,8 @@ async function resetRows(): Promise<void> {
     [expiredLicenseId, expiredFanmarkId, ownerId, "2000-01-01T00:00:00.000000Z"],
   ] as const) {
     await businessDatabase.prepare(
-      "INSERT INTO fanmark_licenses (id, fanmark_id, user_id, status, license_end, display_fanmark, created_at, updated_at) VALUES (?, ?, ?, 'active', ?, ?, ?, ?)",
-    ).bind(id, fanmarkId, userId, end, "displayed-fanmark", now, now).run();
-    await businessDatabase.prepare(
-      "INSERT INTO fanmark_access_versions (license_id, access_generation, updated_at) VALUES (?, 0, ?)",
-    ).bind(id, now).run();
+      "INSERT INTO fanmark_licenses (id, fanmark_id, user_id, status, license_start, license_end, display_fanmark, created_at, updated_at) VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?)",
+    ).bind(id, fanmarkId, userId, id === expiredLicenseId ? "1999-01-01T00:00:00.000000Z" : now, end, "displayed-fanmark", now, now).run();
     await businessDatabase.prepare(
       "INSERT INTO fanmark_basic_configs (id, license_id, fanmark_name, access_type, created_at, updated_at) VALUES (?, ?, ?, 'profile', ?, ?)",
     ).bind(`${id}-basic`, id, `Name ${shortFor(id)}`, now, now).run();
@@ -139,10 +115,22 @@ function shortFor(id: string): string {
   return id === ownerLicenseId ? "rose" : id === otherLicenseId ? "sunflower" : "iris";
 }
 
+async function accessGeneration(licenseId: string): Promise<number> {
+  const row = await businessDatabase!.prepare(
+    "SELECT access_generation FROM fanmark_access_versions WHERE license_id = ?",
+  ).bind(licenseId).first<{ access_generation: number }>();
+  if (!row) throw new Error("Synthetic license has no access generation");
+  return row.access_generation;
+}
+
 beforeAll(async () => {
   if (!authDatabase || !businessDatabase) throw new Error("Split D1 bindings unavailable");
-  await authDatabase.batch(splitSqlStatements(authSchemaSql).map((statement) => authDatabase.prepare(statement)));
-  await businessDatabase.batch(splitSqlStatements(profileSchemaSql).map((statement) => businessDatabase.prepare(statement)));
+  for (const sql of [authSchemaSql, signupSchemaSql, suspensionSchemaSql]) {
+    await authDatabase.batch(splitSqlStatements(sql).map((statement) => authDatabase.prepare(statement)));
+  }
+  for (const migration of inject("businessProfileMigrations")) {
+    await businessDatabase.batch(splitSqlStatements(migration.sql).map((statement) => businessDatabase.prepare(statement)));
+  }
 });
 
 beforeEach(resetRows);
@@ -178,6 +166,7 @@ describe("owner fanmark-profile API", () => {
 
     const before = await request(`/api/me/fanmarks/${ownerFanmarkId}/profile`, { headers: { Cookie: cookie } });
     const beforeBody = await before.json() as { profile: { id: string; updated_at: string } };
+    const generationBefore = await accessGeneration(ownerLicenseId);
     const updated = await request(`/api/me/fanmarks/${ownerFanmarkId}/profile`, {
       method: "PATCH",
       headers: { Cookie: cookie, "content-type": "application/json" },
@@ -220,10 +209,7 @@ describe("owner fanmark-profile API", () => {
       }),
     });
     expect(unsafeUrl.status).toBe(400);
-    const generation = await businessDatabase?.prepare(
-      "SELECT access_generation FROM fanmark_access_versions WHERE license_id = ?",
-    ).bind(ownerLicenseId).first<{ access_generation: number }>();
-    expect(generation?.access_generation).toBe(1);
+    expect(await accessGeneration(ownerLicenseId)).toBe(generationBefore + 1);
   });
 
   it("creates a missing profile with source-like defaults on publication toggle", async () => {
@@ -274,6 +260,7 @@ describe("owner fanmark-profile API", () => {
     const read = await request(path, { headers: { Cookie: cookie } });
     expect(read.status).toBe(200);
     expect(await read.json()).toMatchObject({ licenseId: ownerLicenseId, profile: { display_name: "Saved display name" } });
+    const generationBefore = await accessGeneration(ownerLicenseId);
     const patch = () => request(path, {
       method: "PATCH", headers: { Cookie: cookie, "content-type": "application/json" },
       body: JSON.stringify({ display_name: " Perpetual owner ", bio: "Lifetime profile", is_public: true }),
@@ -281,8 +268,7 @@ describe("owner fanmark-profile API", () => {
     const updated = await patch();
     expect(updated.status).toBe(200);
     expect(await updated.json()).toMatchObject({ profile: { display_name: " Perpetual owner ", bio: "Lifetime profile", is_public: true } });
-    expect(await businessDatabase!.prepare("SELECT access_generation FROM fanmark_access_versions WHERE license_id = ?")
-      .bind(ownerLicenseId).first()).toMatchObject({ access_generation: 1 });
+    expect(await accessGeneration(ownerLicenseId)).toBe(generationBefore + 1);
 
     expect((await request(`/api/me/fanmarks/${otherFanmarkId}/profile`, { headers: { Cookie: cookie } })).status).toBe(404);
     expect((await request(`/api/me/fanmarks/${otherFanmarkId}/profile`, {
@@ -307,8 +293,8 @@ describe("owner fanmark-profile API", () => {
   it("rejects ambiguous ownership when perpetual and finite active licenses belong to the same owner", async () => {
     const conflictingLicenseId = "45555555-5555-4555-8555-555555555555";
     await businessDatabase!.prepare(
-      "INSERT INTO fanmark_licenses (id, fanmark_id, user_id, status, license_end, display_fanmark, created_at, updated_at) VALUES (?, ?, ?, 'active', NULL, ?, ?, ?)",
-    ).bind(conflictingLicenseId, ownerFanmarkId, ownerId, "conflicting-perpetual", now, now).run();
+      "INSERT INTO fanmark_licenses (id, fanmark_id, user_id, status, license_start, license_end, display_fanmark, created_at, updated_at) VALUES (?, ?, ?, 'active', ?, NULL, ?, ?, ?)",
+    ).bind(conflictingLicenseId, ownerFanmarkId, ownerId, now, "conflicting-perpetual", now, now).run();
     const cookie = await signIn(ownerEmail);
     const path = `/api/me/fanmarks/${ownerFanmarkId}/profile`;
     expect((await request(path, { headers: { Cookie: cookie } })).status).toBe(503);
@@ -325,6 +311,7 @@ describe("owner fanmark-profile API", () => {
   it("rechecks perpetual ownership in the write statement when the license enters grace after the read", async () => {
     await businessDatabase!.prepare("UPDATE fanmark_licenses SET license_end = NULL WHERE id = ?").bind(ownerLicenseId).run();
     const cookie = await signIn(ownerEmail);
+    const generationBefore = await accessGeneration(ownerLicenseId);
     let intercepted = false;
     const racedDatabase = new Proxy(businessDatabase!, {
       get(target, property) {
@@ -364,8 +351,42 @@ describe("owner fanmark-profile API", () => {
     expect(response.status).toBe(404);
     expect(await businessDatabase!.prepare("SELECT bio FROM fanmark_profiles WHERE license_id = ?")
       .bind(ownerLicenseId).first()).toEqual({ bio: "Saved biography" });
-    expect(await businessDatabase!.prepare("SELECT access_generation FROM fanmark_access_versions WHERE license_id = ?")
-      .bind(ownerLicenseId).first()).toMatchObject({ access_generation: 0 });
+    expect(await accessGeneration(ownerLicenseId)).toBe(generationBefore);
+  });
+
+  it("revokes warmed owner sessions after suspension without changing profiles or access generations", async () => {
+    const ownerCookie = await signIn(ownerEmail);
+    const otherCookie = await signIn(otherEmail);
+    const path = `/api/me/fanmarks/${ownerFanmarkId}/profile`;
+    expect((await request(path, { headers: { Cookie: ownerCookie } })).status).toBe(200);
+    const profilesBefore = (await businessDatabase!.prepare("SELECT * FROM fanmark_profiles ORDER BY id").all()).results;
+    const versionsBefore = (await businessDatabase!.prepare("SELECT * FROM fanmark_access_versions ORDER BY license_id").all()).results;
+
+    // Model the committed revocation state; admin MFA and audit atomicity are
+    // covered by the dedicated user-management suite.
+    await authDatabase!.batch([
+      authDatabase!.prepare('UPDATE "user" SET banned = 1, banExpires = NULL WHERE id = ?').bind(ownerId),
+      authDatabase!.prepare('DELETE FROM "session" WHERE userId = ?').bind(ownerId),
+    ]);
+    expect((await request(path, { headers: { Cookie: ownerCookie } })).status).toBe(401);
+    expect((await request(path, {
+      method: "PATCH", headers: { Cookie: ownerCookie, "content-type": "application/json" },
+      body: JSON.stringify({ display_name: "Revoked owner", bio: "Must not be saved", is_public: false }),
+    })).status).toBe(401);
+    expect((await businessDatabase!.prepare("SELECT * FROM fanmark_profiles ORDER BY id").all()).results).toEqual(profilesBefore);
+    expect((await businessDatabase!.prepare("SELECT * FROM fanmark_access_versions ORDER BY license_id").all()).results).toEqual(versionsBefore);
+
+    const other = await request(`/api/me/fanmarks/${otherFanmarkId}/profile`, { headers: { Cookie: otherCookie } });
+    expect(other.status).toBe(200);
+    expect(await other.json()).toMatchObject({ licenseId: otherLicenseId, profile: null });
+    const blocked = await request("/api/auth/sign-in/email", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: ownerEmail, password }),
+    });
+    expect(blocked.status).toBe(403);
+    expect(await blocked.json()).toMatchObject({ code: "BANNED_USER" });
+    expect(await authDatabase!.prepare('SELECT count(*) AS count FROM "session" WHERE userId = ?').bind(ownerId).first())
+      .toEqual({ count: 0 });
   });
 
   it("denies another owner's and expired fanmarks and rejects unsafe fields without writes", async () => {
