@@ -1,5 +1,24 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 v29：Fanmark設定timestampsの限定レビュー
+
+v28で扱った`fanmark_profiles`に加え、
+`fanmark_basic_configs`、`fanmark_messageboard_configs`、
+`fanmark_password_configs`、`fanmark_redirect_configs`の
+`created_at` / `updated_at`をWorker operation timestampとしてレビューした。
+設定APIの固定clock D1 testは4種類すべての新規作成・更新時刻をreadbackし、
+updateで`created_at`を維持して`updated_at`だけ進むことを確認する。
+登録APIはbasic、redirect、messageboardの初期値を固定時計で確認し、
+譲渡APIは新しいbasic configの初期時刻をreadbackする。
+
+converter v29は18個のWorker-owned timestamp columnsと11 Auth FKをreview済み。
+残るblockingは52 locations（timestamp defaults 49、functions/RLS/triggers各1）で
+`deployable: false`。schema-convert tests 29/29、
+`npm run test:migration-data` 225/225、profile D1 5/5、settings D1 18/18、
+registration D1 11/11、transfer D1 9/9が成功。PR headのrequired CIは
+別途検証される。source rows、Cloudflare resources、Worker deploy、domain/DNSは
+変更していない。
+
 ## 2026-10-02 v28：プロフィールtimestampsの限定レビュー
 
 `2026-10-02T12:25:35.315086Z`のread-only catalogで確認した

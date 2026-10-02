@@ -153,8 +153,10 @@ describe("D1 fanmark transfer", () => {
       transfer_locked_until: "2026-10-25T10:15:23.123000Z", license_end: "2026-10-03T00:00:00.000000Z", display_fanmark: "🌹",
     });
     expect(await count(business, "fanmark_basic_configs")).toBe(1);
-    expect(await business.prepare("SELECT fanmark_name, access_type FROM fanmark_basic_configs WHERE license_id = ?")
-      .bind(result.new_license_id).first<Record<string, unknown>>()).toEqual({ fanmark_name: "Rose", access_type: "inactive" });
+    expect(await business.prepare("SELECT fanmark_name, access_type, created_at, updated_at FROM fanmark_basic_configs WHERE license_id = ?")
+      .bind(result.new_license_id).first<Record<string, unknown>>()).toEqual({
+      fanmark_name: "Rose", access_type: "inactive", created_at: NOW, updated_at: NOW,
+    });
     for (const table of ["fanmark_redirect_configs", "fanmark_messageboard_configs", "fanmark_password_configs", "fanmark_profiles"]) {
       expect(await count(business, table)).toBe(0);
     }

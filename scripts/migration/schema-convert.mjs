@@ -17,7 +17,7 @@ import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 28;
+export const SCHEMA_CONVERSION_VERSION = 29;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -96,6 +96,86 @@ const REVIEWED_AUTH_FOREIGN_KEYS = new Map([
   }],
 ]);
 const REVIEWED_RUNTIME_TIMESTAMP_WRITES = new Map([
+  ["fanmark_basic_configs.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Registration, settings, and transfer operations bind canonical UTC operation time when creating the basic configuration; imported source timestamps remain explicit.",
+    evidence: [
+      "workers/api/src/fanmark-registration-d1-api.ts",
+      "workers/api/src/fanmark-settings-d1-api.ts",
+      "workers/api/src/fanmark-transfer-d1-api.ts",
+      "workers/api/test/fanmark-registration-d1.test.ts",
+      "workers/api/test/fanmark-settings-d1.test.ts",
+      "workers/api/test/fanmark-transfer-d1.test.ts",
+    ],
+  }],
+  ["fanmark_basic_configs.updated_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Registration, settings, and transfer operations bind canonical UTC operation time to basic configuration writes; D1 upserts preserve created_at and update updated_at.",
+    evidence: [
+      "workers/api/src/fanmark-registration-d1-api.ts",
+      "workers/api/src/fanmark-settings-d1-api.ts",
+      "workers/api/src/fanmark-transfer-d1-api.ts",
+      "workers/api/test/fanmark-registration-d1.test.ts",
+      "workers/api/test/fanmark-settings-d1.test.ts",
+      "workers/api/test/fanmark-transfer-d1.test.ts",
+    ],
+  }],
+  ["fanmark_messageboard_configs.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Registration and settings operations bind canonical UTC operation time when creating messageboard configuration; source imports retain their original timestamps.",
+    evidence: [
+      "workers/api/src/fanmark-registration-d1-api.ts",
+      "workers/api/src/fanmark-settings-d1-api.ts",
+      "workers/api/test/fanmark-registration-d1.test.ts",
+      "workers/api/test/fanmark-settings-d1.test.ts",
+    ],
+  }],
+  ["fanmark_messageboard_configs.updated_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Registration and settings operations bind explicit canonical UTC values; the settings upsert preserves created_at and advances updated_at.",
+    evidence: [
+      "workers/api/src/fanmark-registration-d1-api.ts",
+      "workers/api/src/fanmark-settings-d1-api.ts",
+      "workers/api/test/fanmark-registration-d1.test.ts",
+      "workers/api/test/fanmark-settings-d1.test.ts",
+    ],
+  }],
+  ["fanmark_password_configs.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The settings operation binds one canonical UTC value when creating password configuration; no other Worker path writes this table and imported source timestamps remain explicit.",
+    evidence: [
+      "workers/api/src/fanmark-settings-d1-api.ts",
+      "workers/api/test/fanmark-settings-d1.test.ts",
+    ],
+  }],
+  ["fanmark_password_configs.updated_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The settings operation binds canonical UTC operation time on password configuration writes while preserving created_at on conflict updates.",
+    evidence: [
+      "workers/api/src/fanmark-settings-d1-api.ts",
+      "workers/api/test/fanmark-settings-d1.test.ts",
+    ],
+  }],
+  ["fanmark_redirect_configs.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Registration and settings operations bind canonical UTC operation time when creating redirect configuration; source import values remain explicit.",
+    evidence: [
+      "workers/api/src/fanmark-registration-d1-api.ts",
+      "workers/api/src/fanmark-settings-d1-api.ts",
+      "workers/api/test/fanmark-registration-d1.test.ts",
+      "workers/api/test/fanmark-settings-d1.test.ts",
+    ],
+  }],
+  ["fanmark_redirect_configs.updated_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Registration and settings operations bind explicit canonical UTC values; the settings upsert preserves created_at and advances updated_at.",
+    evidence: [
+      "workers/api/src/fanmark-registration-d1-api.ts",
+      "workers/api/src/fanmark-settings-d1-api.ts",
+      "workers/api/test/fanmark-registration-d1.test.ts",
+      "workers/api/test/fanmark-settings-d1.test.ts",
+    ],
+  }],
   ["fanmark_profiles.created_at", {
     code: "worker_operation_explicit_timestamp",
     reason: "Profile creation from the profile API, settings API, or registration binds one canonical UTC operation timestamp explicitly; source imports retain their original timestamp.",

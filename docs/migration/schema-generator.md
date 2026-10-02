@@ -1,6 +1,6 @@
 # Full schema conversion generator
 
-`schema-convert.mjs` v28 is a private, catalog-only preparation tool. It
+`schema-convert.mjs` v29 is a private, catalog-only preparation tool. It
 converts the JSON emitted by `scripts/migration/schema-readiness.sql` into deterministic
 SQLite/D1 table and index SQL plus a machine-readable report of unresolved
 parity gates. It does not read application rows, contact Supabase, apply SQL,
@@ -573,3 +573,22 @@ locations and the three functions/RLS/trigger catalog scopes (60 blocking
 locations total). Converter tests pass 28/28, the migration-data suite 224/224,
 profile D1 tests 5/5, settings D1 tests 18/18, and registration D1 tests 10/10.
 No source rows were queried.
+
+## Schema converter v29: reviewed fanmark settings timestamps
+
+Converter v29 reviews `created_at` and `updated_at` for
+`fanmark_basic_configs`, `fanmark_messageboard_configs`,
+`fanmark_password_configs`, and `fanmark_redirect_configs` under the exact
+`worker_operation_explicit_timestamp` disposition. Fixed-clock settings D1
+readback covers initial writes and later upserts for all four tables. Separate
+registration D1 cases verify initial basic, redirect, and messageboard rows;
+the transfer D1 case verifies the new license's basic configuration. Source
+imports continue to supply their original timestamps.
+
+The same schema-only catalog observed at `2026-10-02T12:25:35.315086Z` yields
+18 reviewed Worker operation timestamps and all 11 exact Auth-reference
+dispositions. Converter v29 remains `deployable: false` with 49 timestamp-
+operation locations and the three functions/RLS/trigger catalog scopes (52
+blocking locations total). Converter tests pass 29/29, the migration-data
+suite 225/225, settings D1 tests 18/18, registration D1 tests 11/11, and
+transfer D1 tests 9/9. No source rows were queried.

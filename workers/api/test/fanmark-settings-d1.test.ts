@@ -277,9 +277,13 @@ describe("owner fanmark-settings API", () => {
     const firstOperation = new Date(Date.now() + 1_000);
     const secondOperation = new Date(firstOperation.getTime() + 5 * 60 * 1_000 + 1);
     const thirdOperation = new Date(secondOperation.getTime() + 5 * 60 * 1_000 + 1);
+    const fourthOperation = new Date(thirdOperation.getTime() + 5 * 60 * 1_000 + 1);
+    const fifthOperation = new Date(fourthOperation.getTime() + 5 * 60 * 1_000 + 1);
     const first = toUtcMicrosecondTimestamp(firstOperation);
     const second = toUtcMicrosecondTimestamp(secondOperation);
     const third = toUtcMicrosecondTimestamp(thirdOperation);
+    const fourth = toUtcMicrosecondTimestamp(fourthOperation);
+    const fifth = toUtcMicrosecondTimestamp(fifthOperation);
     vi.useFakeTimers({ toFake: ["Date"] });
     try {
       vi.setSystemTime(firstOperation);
@@ -335,6 +339,26 @@ describe("owner fanmark-settings API", () => {
       expect(profileCreated).toEqual({ created_at: third, updated_at: third });
       expect(textUnchanged).toEqual({ created_at: second, updated_at: second });
       expect(passwordUpdatedAgain).toEqual({ created_at: first, updated_at: third });
+
+      vi.setSystemTime(fourthOperation);
+      const redirectUpdated = await patchSettings(cookie, settings({
+        accessType: "redirect", targetUrl: "https://timestamp.example.test/updated", isPasswordProtected: false,
+      }));
+      expect(redirectUpdated.status).toBe(200);
+      const redirectTimes = await businessDatabase?.prepare(
+        "SELECT created_at, updated_at FROM fanmark_redirect_configs WHERE license_id = ?",
+      ).bind(ownerLicenseId).first();
+      expect(redirectTimes).toEqual({ created_at: first, updated_at: fourth });
+
+      vi.setSystemTime(fifthOperation);
+      const textUpdated = await patchSettings(cookie, settings({
+        accessType: "text", textContent: "updated timestamped text", isPasswordProtected: false,
+      }));
+      expect(textUpdated.status).toBe(200);
+      const textTimes = await businessDatabase?.prepare(
+        "SELECT created_at, updated_at FROM fanmark_messageboard_configs WHERE license_id = ?",
+      ).bind(ownerLicenseId).first();
+      expect(textTimes).toEqual({ created_at: second, updated_at: fifth });
     } finally {
       vi.useRealTimers();
     }

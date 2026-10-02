@@ -123,6 +123,25 @@ describe("D1 fanmark registration", () => {
     expect(profileTimestamps).toEqual({ created_at: NOW, updated_at: NOW });
   });
 
+  it("binds explicit operation timestamps for redirect and messageboard registrations", async () => {
+    for (const testCase of [
+      { accessType: "redirect", targetUrl: "https://registered.example.test/", table: "fanmark_redirect_configs" },
+      { accessType: "text", textContent: "Registered message", table: "fanmark_messageboard_configs" },
+    ] as const) {
+      await reset();
+      const response = await post(registration(testCase));
+      expect(response.status).toBe(201);
+      const basic = await business!.prepare(
+        "SELECT created_at, updated_at FROM fanmark_basic_configs",
+      ).first();
+      const config = await business!.prepare(
+        `SELECT created_at, updated_at FROM ${testCase.table}`,
+      ).first();
+      expect(basic).toEqual({ created_at: NOW, updated_at: NOW });
+      expect(config).toEqual({ created_at: NOW, updated_at: NOW });
+    }
+  });
+
   it("maps a tone-qualified emoji to its canonical identity while retaining the original ID", async () => {
     const response = await post(registration({
       user_input_fanmark: "👍🏻", emoji_ids: [IDS.thumbTone], normalized_emoji_ids: [IDS.thumb],
