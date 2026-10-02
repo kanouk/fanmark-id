@@ -47,7 +47,26 @@ moved.
 | `src/pages/Profile.tsx:257` | Delete the signed-in account after password confirmation and cleanup. | Auth identity, business rows, license history, subscription state, and possible Stripe cancellation. | Worker mode calls the cross-D1 account-deletion coordinator, which fails closed on ambiguous Stripe identity/config and preflights foreign-key/transfer constraints. Synthetic contract tests pass; no real account or Stripe subscription was deleted. Real user state remains deferred. See [account deletion API](account-deletion-api.md). |
 
 The row references above cover the previously unmapped locations in the
-checked-in 211-callsite report. Remaining inventory risk is outside direct
-static calls: whole-program wrappers/indirect calls, fresh production-state
-reconciliation, provider acceptance, and real-data parity remain separate
-gates.
+checked-in 211-callsite report. A bounded import/caller trace for shared
+frontend helpers found these paths:
+
+- `src/lib/favorites-backend.ts` is called by the favorites hook and fanmark
+  acquisition/detail flows. Its load/add/remove operations select the Worker
+  implementation in Worker mode and retain Supabase only in the default mode.
+- `src/lib/plan-utils.ts` is used by plan selection and profile settings. Its
+  active-license query delegates to the session-bound owned-fanmarks API in
+  Worker mode; the Supabase query is the default-mode branch.
+- `src/hooks/useEmojiProfile.tsx` is used by public profile rendering, profile
+  editing, and the owner preview. Public reads select the Worker public-access
+  route, while edit/preview paths select the owner profile API. The preview's
+  direct Supabase helper is reached only in its default-mode branch.
+- `src/lib/profile-utils.ts` has no runtime app caller in this trace; the
+  `useProfile.tsx` import is type-only and runtime operations use
+  `src/lib/profile-api.ts`. `src/lib/emoji-master-utils.ts` is imported only by
+  the offline conversion test script; the app uses `src/lib/emojiConversion.ts`
+  and its Worker catalog path.
+
+This resolves only the named imports and callers. Arbitrary/computed aliases,
+dynamic imports, and other whole-program dataflow remain unproven. Fresh
+production-state reconciliation, provider acceptance, and real-data parity
+remain separate gates.

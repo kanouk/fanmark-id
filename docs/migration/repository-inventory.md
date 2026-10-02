@@ -480,7 +480,7 @@ Reconcile the live observations with this checkout report before treating any ma
 
 - Review the read-only deployed Edge inventory in [live observations](live-observations.md). The live-only `manual-expire-grace-licenses` function still requires purpose and authorization review before any replacement or retirement.
 - Review the refreshed public schema snapshot and live object-identity reconciliation in [live observations](live-observations.md). The generated TypeScript function set covers PostgREST RPCs, not every trigger/internal function; behavior, RLS, trigger, and D1-converter gates remain separate.
-- Review the completed static operation map in this document and the [remaining-callsite map](frontend-callsite-map.md). Realtime cleanup aliases are resolved to their subscribed table; interpolated channel topics remain visible. Arbitrary wrappers and indirect calls still need manual review.
+- Review the completed static operation map in this document and the [remaining-callsite map](frontend-callsite-map.md). Realtime cleanup aliases are resolved to their subscribed table; a bounded import/caller trace for shared favorites, plan, profile, and emoji-master helpers is recorded there. Arbitrary/computed aliases, dynamic imports, and whole-program dataflow remain open.
 - Confirm pg_cron/pg_net schedules, Auth providers and redirect URLs, Storage buckets/policies, Realtime channels, Stripe/Resend webhooks, and deployment secrets in the live environment. None are proven by this offline report.
 
 ## Semantic mapping completed slice: Authentication and MFA
