@@ -77,12 +77,11 @@ test("Cloudflare staging build explicitly selects every typed backend", () => {
     .filter(([, value]) => value !== "worker")
     .sort(([left], [right]) => left.localeCompare(right));
   assert.deepEqual(nonWorker, [
-    ["VITE_ADMIN_DATA_RESET_BACKEND", "disabled"],
     ["VITE_BROADCAST_SEND_BACKEND", "disabled"],
     ["VITE_BROADCAST_TEST_SEND_BACKEND", "disabled"],
     ["VITE_REFERENCE_MASTER_ADMIN_BACKEND", "d1"],
     ["VITE_STORAGE_BACKEND", "r2"],
-  ], "only data reset and unconfigured broadcast delivery are disabled; reference masters and Storage use native adapters");
+  ], "only unconfigured broadcast delivery is disabled; reference masters and Storage use native adapters");
 });
 
 test("every typed frontend backend selector has an implementation reference", () => {

@@ -40,23 +40,42 @@ eligible rows, with native cascading behavior separate from those counts.
 The opt-in frontend Worker adapter validates the exact DTO/count sum and has
 no Supabase fallback. Its dialog requires typing DELETE and retains the
 operation ID after an uncertain result, so retry checks the existing operation.
-Normal builds continue selecting Supabase. The Cloudflare staging build is
-still `VITE_ADMIN_DATA_RESET_BACKEND=disabled`, and its server reset selector
-is unset: this preparation does not enable a remote destructive operation.
+Normal builds continue selecting Supabase. The next Cloudflare staging build selects
+`VITE_ADMIN_DATA_RESET_BACKEND=worker` with `ADMIN_DATA_RESET_BACKEND=d1`.
+The currently deployed Worker has neither enabled; local configuration is
+preparation for the guarded rehearsal, not remote acceptance.
 
 Local D1 tests apply every checked-in Business migration (24 at this checkpoint)
 and exercise complete-schema deletion, preserved settings/discoveries,
 incarnation fences, concurrent retries and new rows, nil UUIDs, empty reset,
 immutable receipts, delete ABORT/IGNORE, audit ABORT/IGNORE/corruption,
 restrictive source/target history, confirmation/identity/origin/MFA gates and
-role-denial audit failures. D1 tests pass 14/14; frontend adapter/mode tests 6/6,
-Worker/app typecheck, ESLint, staging build and migration data 242/242 pass.
+role-denial audit failures. D1 tests pass 15/15; frontend adapter/mode tests 6/6,
+Worker/app typecheck, ESLint, staging build and migration data 244/244 pass.
 
 Remote 0023 application, runtime enabling, guarded synthetic TOTP/API reset
 with operator recovery and cleanup, and rendered dialog acceptance remain.
 Those must guard account/version/split bindings, empty real user/source rows,
 exact migration trigger definitions and all retained master baselines before
-any delete. A temporary canary-only native delete guard should reject any row
-outside the journaled fixture even if another writer races the preflight.
+any delete. The `--admin-data-reset-roundtrip` / `--admin-data-reset-browser` modes of
+`workers/api/test/staging-admin-totp-smoke.mjs` cannot compose with other actions.
+They require the fixed account and 100% deployment version, canonical migration
+ledger and exact trigger SQL, all source business/user tables empty apart from
+retained masters, empty Auth, and no stale reset guards/receipts. A private
+journal records actor, target identity, fixture UUIDs and trigger names before
+remote writes. Eight temporary native BEFORE DELETE guards reject any row
+outside the fixture even if another writer races the preflight; a full-schema
+D1 case verifies that the entire reset then rolls back. Guard tests pass 2/2.
+The rehearsal checks sign-in/enrollment/MFA, eight deletes, exact audit/receipt,
+a later-row retry, non-admin rejection, retained config/catalog/Auth fingerprints
+and exact fixture cleanup. Browser mode additionally checks typed DELETE, actual
+frontend request/receipt and rendered one-row result. Its synthetic admin profile
+is included in the shared cleanup, and the full source-empty guard runs again.
+
+After an interrupted run, inspect the private journal first. Recover only its
+eight fixture IDs, discovery ID, actor-bound reset receipts/audits and exact
+trigger names, then the two journaled synthetic Auth identities/profiles. Do not
+run the reset API as cleanup or delete unrelated rows. Preserve license
+incarnation tombstones and the MFA generation singleton.
 No source production row or real Auth/business/Storage row was migrated,
 read or deleted by this local preparation. Domain/DNS cutover stays deferred.

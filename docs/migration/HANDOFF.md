@@ -6,7 +6,7 @@ open and draft. CI validates the branch but does not deploy the Worker.
 Prepared the remaining administrator data-reset counterpart: Business 0023
 native atomic eight-table command/count/audit/receipt and MFA/Origin/DELETE
 Worker API, plus opt-in typed frontend/dialog. Full 24-migration local D1
-14/14, frontend adapter/mode 6/6, migration data 242/242, app/Worker typecheck,
+15/15, native canary guard 2/2, frontend adapter/mode 6/6, migration data 244/244, app/Worker typecheck,
 ESLint and staging build pass. Deletion/audit ABORT/IGNORE/corruption rolls
 back all effects; same-ID concurrent/uncertain retries preserve later rows.
 Nil UUIDs and incarnation fences are retained. Restrictive coupon/lifecycle
@@ -20,10 +20,20 @@ the existing default-suite exclusions; its dedicated npm test remains in the
 full Worker test chain. The first failure is configuration evidence, not a
 reset implementation acceptance or a passing full CI run.
 
-0023 is NOT remotely applied. Staging reset frontend remains disabled and
-server selector unset. Next: journaled account/version/empty-data/master/trigger
-guards and temporary native delete guards against any non-fixture row, then
-CI/schema/runtime/synthetic TOTP/API/UI acceptance and scoped cleanup. See
+The corrected code head is `23b2415`; default API tests pass 55/55. CI run
+`37043190892` passed both application and Worker jobs (rechecked live). Read-only staging preflight confirmed the
+expected account/split bindings, reset-target eight-table row count 0,
+user-owned Auth count 0, reset command table absent and 0023 ledger absent.
+The server reset selector remains unset. No remote row/schema was changed.
+
+0023 is NOT remotely applied. Current remote reset frontend remains disabled
+and server selector unset. Local next-deployment configuration selects Worker/D1.
+The journaled account/version/empty-data/master/trigger preflight and eight native
+canary-only delete guards are prepared; the full-schema guard case rolls back
+an unrelated raced row. Browser fixture cleanup now includes the reset admin
+profile. MFA enrollment refusal, actual DELETE dialog/API receipt, retained
+fingerprints and final source-empty proof are wired. Next: CI/schema/runtime/
+synthetic TOTP/API/UI acceptance and scoped cleanup. See
 admin-data-reset-api.md. Keep real user/Auth/Storage migration and domain/DNS
 deferred; this is preparation, not completed runtime migration.
 

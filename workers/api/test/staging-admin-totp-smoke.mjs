@@ -11,6 +11,9 @@ import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 
 import bcrypt from "bcryptjs";
+import { buildResetCanaryDeleteGuards, assertResetCanaryEmptyCounts, RESET_TABLES as resetTables } from "../../../scripts/migration/admin-data-reset-canary-guards.mjs";
+import { hasBusinessMigrationApplied } from "../../../scripts/migration/business-migration-ledger.mjs";
+import { businessTablesWithoutStagingBaselines } from "../../../scripts/migration/staging-notification-master-baseline.mjs";
 
 const apiDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const wrangler = "npx";
@@ -37,6 +40,12 @@ const userOwnedTables = [
 
 function requireExplicitStagingConsent() {
   const args = new Set(process.argv.slice(2));
+  const adminResetBrowser = args.has("--admin-data-reset-browser");
+  const adminResetRoundtrip = args.has("--admin-data-reset-roundtrip") || adminResetBrowser;
+  if (adminResetRoundtrip && [...args].some(arg => arg.startsWith("--") &&
+      !["--run-live-staging-write", `--database=${expectedDatabase}`, "--admin-data-reset-browser", "--admin-data-reset-roundtrip"].includes(arg))) {
+    throw new Error("data reset canary cannot be composed with other smoke actions");
+  }
   const emojiMasterRoundtrip = args.has("--emoji-master-draft-roundtrip");
   const emojiMasterAuditBrowser = args.has("--emoji-master-audit-browser");
   const emojiMasterAuditRoundtrip = args.has("--emoji-master-audit-roundtrip") || emojiMasterAuditBrowser;
@@ -58,6 +67,7 @@ function requireExplicitStagingConsent() {
   const lifecycleSettingsReadback = args.has("--lifecycle-settings-readback") || lifecycleSettingsBrowser;
   const notificationManualEvent = args.has("--notification-manual-event");
   const hasExplicitSmokeAction = [
+    adminResetRoundtrip,
     emojiMasterRoundtrip,
     emojiMasterAuditRoundtrip,
     emojiMasterAuditBrowser,
@@ -86,6 +96,8 @@ function requireExplicitStagingConsent() {
     );
   }
   return {
+    adminResetRoundtrip,
+    adminResetBrowser,
     emojiMasterRoundtrip,
     emojiMasterAuditRoundtrip,
     emojiMasterAuditBrowser,
@@ -156,7 +168,7 @@ async function assertStagingTarget(actions) {
   assert.equal(masterBinding?.database_id, expectedMasterDatabaseId, "unexpected Master D1 id");
   assert.equal(masterBinding?.migrations_pattern, "migrations/{000[0-6]_*.sql,0007_release_audit_timestamps.sql,0008_emoji_master_change_audits.sql}", "unexpected Master D1 migration set");
   assert.equal(config.vars?.EMOJI_MASTER_ADMIN_BACKEND, "d1", "expected D1-backed emoji-master admin API");
-  if (actions.emojiMasterAuditRoundtrip || actions.waitlistSecurityRoundtrip) {
+  if (actions.emojiMasterAuditRoundtrip || actions.waitlistSecurityRoundtrip || actions.adminResetRoundtrip) {
     assert.equal(config.account_id, "bfc2890741f0b3fb236e2d755b6c9adc");
     assert.ok(!config.routes?.length, "audit canary must stay on workers.dev");
     const identity = JSON.parse(await runWrangler(["whoami", "--json"]));
@@ -182,6 +194,24 @@ async function assertStagingTarget(actions) {
       assert.equal(normalize(actual[0].sql), normalize(match[0]), "Master audit trigger differs from migration");
     }
   }
+  if (actions.adminResetRoundtrip) {
+    assert.equal(config.vars?.ADMIN_DATA_RESET_BACKEND, "d1");
+    const ledger = await queryBusiness("SELECT name FROM d1_migrations ORDER BY id");
+    assert.ok(hasBusinessMigrationApplied(ledger.map(row => row.name), "0023_admin_data_reset.sql"));
+    const ddl = await readFile(path.join(apiDirectory, "migrations-business/0023_admin_data_reset.sql"), "utf8");
+    const normalize = value => String(value).replace(/^[ \t]*--.*$/gmu, "").replace(/;+\s*$/u, "").replace(/\s+/gu, " ").trim();
+    for (const match of ddl.matchAll(/CREATE TRIGGER (\w+)\n[\s\S]*?\nEND;/gu)) {
+      const actual = await queryBusiness(`SELECT sql FROM sqlite_master WHERE type='trigger' AND name=${sqlLiteral(match[1])}`);
+      assert.equal(actual.length, 1);
+      assert.equal(normalize(actual[0].sql), normalize(match[0]));
+    }
+    assert.equal(Number((await queryBusiness("SELECT count(*) AS count FROM sqlite_master WHERE type='trigger' AND name GLOB 'canary_admin_reset_*'"))[0].count), 0,
+      "stale reset canary guard requires journaled recovery");
+    await assertResetBusinessEmpty();
+    assertResetCanaryEmptyCounts(await resetTargetCounts());
+    assert.equal(Number((await queryBusiness("SELECT count(*) AS count FROM admin_data_reset_commands"))[0].count), 0);
+  }
+
 }
 
 function runWrangler(args) {
@@ -3105,6 +3135,188 @@ async function exerciseBroadcastEmailAdmin(cookie, userId, targetUserId, targetU
   console.log("Staging MFA-protected broadcast list/estimate/draft readback passed; test-send and bulk-send remained disabled; a synthetic needs_review run was shown without raw details; all synthetic rows and audits were removed.");
 }
 
+async function resetTargetCounts() {
+  return (await queryBusiness(`SELECT ${resetTables.map(table => `(SELECT count(*) FROM ${table}) AS ${table}`).join(', ')}`))[0];
+}
+
+async function assertResetBusinessEmpty() {
+  const schema = await readFile(path.join(apiDirectory, 'migrations-business/0000_business_schema_v4_staging.sql'), 'utf8');
+  const tables = [...schema.matchAll(/^CREATE TABLE "([a-z_]+)"/gmu)].map(match => match[1]);
+  assert.equal(tables.length, 40);
+  const owned = businessTablesWithoutStagingBaselines(tables, { verifiedEmailTemplateMasters: true, verifiedExtensionCouponMaster: true });
+  const total = (await queryBusiness(`SELECT ${owned.map(table => `(SELECT count(*) FROM ${table})`).join(' + ')} AS count`))[0];
+  assert.equal(Number(total.count), 0, 'reset canary requires empty source user/business tables');
+}
+
+async function resetPreservedFingerprint() {
+  const tables = ['user_settings', 'system_settings', 'notification_rules', 'notification_templates', 'fanmark_availability_rules', 'email_templates', 'extension_coupons'];
+  const rows = await Promise.all(tables.map(table => queryBusiness(`SELECT * FROM ${table} ORDER BY id`)));
+  const masters = await queryMaster(`SELECT
+    (SELECT count(*) FROM emoji_master) AS canonical_rows,
+    (SELECT count(*) FROM fanmark_emoji_master_change_audits) AS audit_rows,
+    (SELECT count(*) FROM fanmark_emoji_master_release_staging) AS release_rows,
+    (SELECT release_version FROM fanmark_emoji_master_active_release WHERE singleton_id = 1) AS active_version,
+    (SELECT release_version FROM fanmark_reference_master_active_release WHERE singleton_id = 1) AS reference_version`);
+  const authCounts = await query(`SELECT ${userOwnedTables.map(table => `(SELECT count(*) FROM "${table}") AS "${table}"`).join(', ')}`);
+  const items = [];
+  let offset = 0;
+  for (let pageNumber = 0; pageNumber < 16; pageNumber++) {
+    const response = await request(`/api/emoji/catalog?offset=${offset}&limit=500`);
+    assertStatus(response, 200, 'reset preserved public catalog');
+    const page = await response.json();
+    assert.equal(page.total, 3944);
+    assert.equal(page.version, masters[0].active_version);
+    items.push(...page.items);
+    offset = page.nextOffset;
+    if (offset === null || offset === undefined) break;
+  }
+  assert.equal(items.length, 3944);
+  return {
+    businessSHA256: createHash('sha256').update(JSON.stringify(rows)).digest('hex'),
+    publicSHA256: createHash('sha256').update(JSON.stringify(items)).digest('hex'),
+    masters, authCounts,
+  };
+}
+
+async function exerciseAdminDataReset(cookie, userId, journalPath, browserReview) {
+  assert.ok(journalPath);
+  assertResetCanaryEmptyCounts(await resetTargetCounts());
+  const journal = JSON.parse(await readFile(journalPath, 'utf8'));
+  const fixtureIds = Object.fromEntries(resetTables.map(table => [table, randomUUID()]));
+  const discoveryId = randomUUID();
+  const operationId = randomUUID();
+  const guards = buildResetCanaryDeleteGuards(journal.runId, fixtureIds);
+  const timestamp = new Date().toISOString().replace(/\.(\d{3})Z$/u, (_, milliseconds) => `.${milliseconds}000Z`);
+  const baseline = await resetPreservedFingerprint();
+  Object.assign(journal, { state: 'reset-prepared', fixtureIds, discoveryId, operationId, triggerNames: guards.triggerNames, preservedBaseline: baseline });
+  await writeFile(journalPath, JSON.stringify(journal), { mode: 0o600 });
+  let passed = false;
+  const fanmarkInsert = `INSERT INTO fanmarks (id, user_input_fanmark, normalized_emoji, short_id, tier_level, created_at, updated_at)
+    VALUES (${sqlLiteral(fixtureIds.fanmarks)}, '🧪', '🧪', ${sqlLiteral('reset-' + journal.runId.slice(0, 8))}, 1, ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});`;
+  try {
+    await executeBusiness(guards.createSql, 'install exact synthetic reset row scopes');
+    const actualGuards = await queryBusiness(`SELECT name, sql FROM sqlite_master WHERE type='trigger' AND name IN (${guards.triggerNames.map(sqlLiteral).join(', ')}) ORDER BY name`);
+    assert.deepEqual(actualGuards.map(row => row.name), [...guards.triggerNames].sort());
+    const normalizeTrigger = value => value.replace(/;\s*$/u, '').replace(/\s+/gu, ' ').trim();
+    const expectedGuardSql = guards.createSql.match(/CREATE TRIGGER[\s\S]*?END;/gu);
+    assert.equal(expectedGuardSql.length, resetTables.length);
+    for (const row of actualGuards) {
+      const expected = expectedGuardSql.find(sql => sql.startsWith(`CREATE TRIGGER ${row.name}\n`));
+      assert.ok(expected);
+      assert.equal(normalizeTrigger(row.sql), normalizeTrigger(expected));
+    }
+    let seedSql = fanmarkInsert + `\nINSERT INTO fanmark_licenses (id, fanmark_id, user_id, license_start, created_at, updated_at)
+      VALUES (${sqlLiteral(fixtureIds.fanmark_licenses)}, ${sqlLiteral(fixtureIds.fanmarks)}, ${sqlLiteral(userId)}, ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});`;
+    for (const table of resetTables.slice(0, 5)) {
+      const extra = table === 'fanmark_redirect_configs' ? ', target_url' : table === 'fanmark_password_configs' ? ', access_password' : '';
+      const value = table === 'fanmark_redirect_configs' ? 'https://example.invalid/synthetic-reset' : 'synthetic-reset-only-disabled-password';
+      seedSql += `\nINSERT INTO ${table} (id, license_id, created_at, updated_at${extra}${table === 'fanmark_password_configs' ? ', is_enabled' : ''})
+        VALUES (${sqlLiteral(fixtureIds[table])}, ${sqlLiteral(fixtureIds.fanmark_licenses)}, ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)}${extra ? ', ' + sqlLiteral(value) : ''}${table === 'fanmark_password_configs' ? ', 0' : ''});`;
+    }
+    seedSql += `\nINSERT INTO fanmark_discoveries (id, emoji_ids, normalized_emoji_ids, fanmark_id, availability_status, first_seen_at, last_seen_at)
+      VALUES (${sqlLiteral(discoveryId)}, '[]', '[]', ${sqlLiteral(fixtureIds.fanmarks)}, 'owned_by_user', ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});
+      INSERT INTO fanmark_favorites (id, user_id, discovery_id, fanmark_id, normalized_emoji_ids, created_at, display_fanmark)
+      VALUES (${sqlLiteral(fixtureIds.fanmark_favorites)}, ${sqlLiteral(userId)}, ${sqlLiteral(discoveryId)}, ${sqlLiteral(fixtureIds.fanmarks)}, '[]', ${sqlLiteral(timestamp)}, '🧪');`;
+    await executeBusiness(seedSql, 'seed journaled eight-table synthetic reset fixture');
+    assert.deepEqual(await resetTargetCounts(), Object.fromEntries(resetTables.map(table => [table, 1])));
+    const route = '/api/admin/data-reset';
+    const init = { method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body: JSON.stringify({ requestId: operationId, confirmation: 'DELETE' }) };
+    assertStatus(await request(route, { ...init, headers: { 'content-type': 'application/json' } }), 401, 'anonymous reset');
+    assertStatus(await request(route, { ...init, body: JSON.stringify({ requestId: operationId, confirmation: 'delete' }) }), 400, 'invalid reset confirmation');
+    assertStatus(await request(route, { ...init, body: JSON.stringify({ requestId: operationId, confirmation: 'DELETE', actorUserId: randomUUID() }) }), 400, 'forged reset actor');
+    const response = await request(route, init);
+    assertStatus(response, 200, 'authenticated atomic synthetic reset');
+    const result = await response.json();
+    assert.deepEqual(result, { success: true, deletedCounts: Object.fromEntries(resetTables.map(table => [table, 1])), totalDeleted: 8 });
+    assertResetCanaryEmptyCounts(await resetTargetCounts());
+    const audits = await queryBusiness(`SELECT user_id, action, resource_type, resource_id, request_id, metadata, created_at FROM audit_logs WHERE request_id=${sqlLiteral(operationId)}`);
+    assert.equal(audits.length, 1);
+    const audit = audits[0];
+    assert.equal(audit.user_id, userId); assert.equal(audit.action, 'ADMIN_DATA_RESET');
+    assert.equal(audit.resource_type, 'system'); assert.equal(audit.resource_id, null);
+    assert.match(audit.created_at, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+    assert.deepEqual(JSON.parse(audit.metadata), { timestamp: audit.created_at, deletedCounts: result.deletedCounts, totalDeleted: 8, security_level: 'ADMIN_VERIFIED' });
+    assert.equal(Number((await queryBusiness(`SELECT incarnation FROM fanmark_license_incarnations WHERE license_id=${sqlLiteral(fixtureIds.fanmark_licenses)}`))[0].incarnation), 1);
+    assert.equal((await queryBusiness(`SELECT fanmark_id FROM fanmark_discoveries WHERE id=${sqlLiteral(discoveryId)}`))[0].fanmark_id, null);
+    await executeBusiness(fanmarkInsert, 'seed later synthetic row to verify committed-reset retry');
+    const replay = await request(route, init); assertStatus(replay, 200, 'reset same-ID replay');
+    assert.deepEqual(await replay.json(), result);
+    assert.equal((await resetTargetCounts()).fanmarks, 1, 'reset retry removed a later row');
+    if (browserReview) journal.browserReset = await reviewAdminDataResetInBrowser(cookie, userId, journalPath);
+    await executeFile(`DELETE FROM "adminRole" WHERE "userId"=${sqlLiteral(userId)};`, 'remove only synthetic admin role for reset denial');
+    try {
+      const denied = await request(route, init); assertStatus(denied, 403, 'authenticated non-admin reset');
+      assert.deepEqual(await denied.json(), { error: 'admin_required' });
+      const denial = await queryBusiness(`SELECT metadata, created_at FROM audit_logs WHERE user_id=${sqlLiteral(userId)} AND action='UNAUTHORIZED_DATA_RESET_ATTEMPT'`);
+      assert.equal(denial.length, 1);
+      assert.deepEqual(JSON.parse(denial[0].metadata), { timestamp: denial[0].created_at, security_level: 'CRITICAL_RISK' });
+    } finally {
+      await executeFile(`INSERT INTO "adminRole" ("userId", "role") VALUES (${sqlLiteral(userId)}, 'admin');`, 'restore only synthetic admin role');
+    }
+    assert.deepEqual(await resetPreservedFingerprint(), baseline, 'reset changed retained configuration/catalog/Auth rows');
+    passed = true;
+  } finally {
+    const cleanup = resetTables.map(table => `DELETE FROM ${table} WHERE id=${sqlLiteral(fixtureIds[table])};`).join('\n') +
+      `\nDELETE FROM fanmark_discoveries WHERE id=${sqlLiteral(discoveryId)};
+       DELETE FROM audit_logs WHERE user_id=${sqlLiteral(userId)} AND action IN ('ADMIN_DATA_RESET','UNAUTHORIZED_DATA_RESET_ATTEMPT');
+       DELETE FROM admin_data_reset_commands WHERE actor_user_id=${sqlLiteral(userId)};\n` + guards.dropSql;
+    await executeBusiness(cleanup, 'cleanup only journaled reset fixture and native scopes');
+    assertResetCanaryEmptyCounts(await resetTargetCounts());
+    assert.equal(Number((await queryBusiness(`SELECT count(*) AS count FROM admin_data_reset_commands WHERE actor_user_id=${sqlLiteral(userId)}`))[0].count), 0);
+    assert.equal(Number((await queryBusiness(`SELECT count(*) AS count FROM sqlite_master WHERE type='trigger' AND name IN (${guards.triggerNames.map(sqlLiteral).join(', ')})`))[0].count), 0);
+    assert.deepEqual(await resetPreservedFingerprint(), baseline);
+    journal.state = passed ? 'reset-verified-and-cleaned' : 'reset-failed-and-cleaned';
+    await writeFile(journalPath, JSON.stringify(journal), { mode: 0o600 });
+  }
+  console.log('Staging atomic data reset, later-row retry, exact audits, retained masters/Auth and scoped cleanup passed.');
+}
+
+async function reviewAdminDataResetInBrowser(cookie, userId, journalPath) {
+  return await withStagingAdminBrowser(cookie, 'fanmark-data-reset-ui-', async cdp => {
+    let api;
+    let requestId;
+    cdp.on('Network.requestWillBeSent', ({ request }) => {
+      if (new URL(request.url).pathname === '/api/admin/data-reset' && request.method === 'POST') {
+        const body = JSON.parse(request.postData);
+        assert.equal(body.confirmation, 'DELETE');
+        requestId = body.requestId;
+      }
+    });
+    cdp.on('Network.responseReceived', ({ requestId: networkId, response }) => {
+      if (new URL(response.url).pathname === '/api/admin/data-reset') api = { networkId, status: response.status };
+    });
+    await clickAdminTab(cdp, 'データ管理');
+    const buttonPosition = text => `(() => {
+      const button = Array.from(document.querySelectorAll('button')).find(item => item.innerText.trim() === ${JSON.stringify(text)});
+      button?.scrollIntoView({block:'center'}); if (!button) return null;
+      const r=button.getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2,width:r.width,height:r.height,disabled:button.disabled};
+    })()`;
+    await clickBrowserTarget(cdp, buttonPosition('ファンマークデータを削除'), 'reset_dialog_button');
+    await waitForBrowserValue(cdp, `Boolean(document.querySelector('#data-reset-confirmation'))`, Boolean, 'reset_confirmation_missing');
+    assert.equal((await browserValue(cdp, buttonPosition('削除を実行'))).disabled, true);
+    await browserValue(cdp, `(() => { const input=document.querySelector('#data-reset-confirmation'); input.focus(); return true; })()`);
+    await cdp.send('Input.insertText', { text: 'DELETE' });
+    await waitForBrowserValue(cdp, buttonPosition('削除を実行'), value => value && !value.disabled, 'reset_confirmation_did_not_enable');
+    await clickBrowserTarget(cdp, buttonPosition('削除を実行'), 'reset_confirm_submit');
+    await waitForBrowserValue(cdp, `document.body.innerText.includes('削除完了（合計: 1 件）')`, Boolean, 'reset_result_not_rendered');
+    assert.ok(api && requestId);
+    assert.equal(api.status, 200);
+    const body = JSON.parse((await cdp.send('Network.getResponseBody', { requestId: api.networkId })).body);
+    assert.deepEqual(body, { success: true, deletedCounts: Object.fromEntries(resetTables.map(table => [table, table === 'fanmarks' ? 1 : 0])), totalDeleted: 1 });
+    const receipt = await queryBusiness(`SELECT actor_user_id, result_json FROM admin_data_reset_commands WHERE request_id=${sqlLiteral(requestId)}`);
+    assert.equal(receipt[0]?.actor_user_id, userId);
+    assert.deepEqual(JSON.parse(receipt[0].result_json), body);
+    await browserValue(cdp, `(() => {
+      const result = Array.from(document.querySelectorAll('div')).find(item => item.innerText === '削除完了（合計: 1 件）');
+      result?.scrollIntoView({block:'center'}); return Boolean(result);
+    })()`);
+    const screenshotPath = path.join(path.dirname(journalPath), 'data-reset-result.png');
+    const screenshot = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
+    await writeFile(screenshotPath, Buffer.from(screenshot.data, 'base64'), { mode: 0o600 });
+    return { requestId, totalDeleted: 1, screenshotPath };
+  });
+}
+
 function assertStatus(response, status, operation) {
   assert.equal(response.status, status, `${operation} returned HTTP ${response.status}; expected ${status}`);
 }
@@ -3145,8 +3357,8 @@ async function main() {
   const systemSettingState = { key: "", originalValue: null, temporaryValue: null };
   const lifecycleSettingState = { originalValue: null, temporaryValue: null };
   let emojiAuditJournalPath = null;
-  if (actions.emojiMasterAuditRoundtrip || actions.waitlistSecurityRoundtrip) {
-    const directory = await mkdtemp(path.join(os.tmpdir(), actions.emojiMasterAuditRoundtrip ? "fanmark-emoji-audit-canary-" : "fanmark-waitlist-security-canary-"));
+  if (actions.emojiMasterAuditRoundtrip || actions.waitlistSecurityRoundtrip || actions.adminResetRoundtrip) {
+    const directory = await mkdtemp(path.join(os.tmpdir(), actions.adminResetRoundtrip ? "fanmark-admin-reset-canary-" : actions.emojiMasterAuditRoundtrip ? "fanmark-emoji-audit-canary-" : "fanmark-waitlist-security-canary-"));
     emojiAuditJournalPath = path.join(directory, "canary.json");
     await writeFile(emojiAuditJournalPath, JSON.stringify({ state: "auth-prepared", runId: randomUUID(),
       userId, targetUserId, accountId, targetUsername, expectedVersion: process.env.FANMARK_EXPECTED_STAGING_VERSION }), { mode: 0o600 });
@@ -3165,7 +3377,7 @@ async function main() {
     await executeBusiness(`INSERT INTO user_settings (user_id, username, display_name, avatar_url, plan_type, preferred_language, created_at, updated_at)
       VALUES (${sqlLiteral(targetUserId)}, ${sqlLiteral(targetUsername)}, ${sqlLiteral(targetEmail)}, NULL, 'free', 'ja', ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)});`,
     "synthetic admin target profile provision");
-    if (actions.adminUserManagementBrowser || actions.lifecycleSettingsBrowser || actions.emojiMasterAuditRoundtrip) {
+    if (actions.adminUserManagementBrowser || actions.lifecycleSettingsBrowser || actions.emojiMasterAuditRoundtrip || actions.adminResetBrowser) {
       await executeBusiness(`INSERT INTO user_settings (user_id, username, display_name, avatar_url, plan_type, preferred_language, created_at, updated_at, requires_password_setup)
         VALUES (${sqlLiteral(userId)}, ${sqlLiteral(adminUsername)}, 'Synthetic staging MFA', NULL, 'free', 'ja', ${sqlLiteral(timestamp)}, ${sqlLiteral(timestamp)}, 0);`,
       "synthetic admin browser-session profile provision");
@@ -3186,6 +3398,15 @@ async function main() {
     });
     assertStatus(enrollmentRequired, 403, "admin MFA enrollment gate");
     assert.equal((await enrollmentRequired.json()).error, "mfa_enrollment_required");
+    if (actions.adminResetRoundtrip) {
+      const deniedReset = await request("/api/admin/data-reset", {
+        method: "POST", headers: { cookie, "content-type": "application/json" },
+        body: JSON.stringify({ requestId: randomUUID(), confirmation: "DELETE" }),
+      });
+      assertStatus(deniedReset, 403, "reset requires current-session MFA enrollment");
+      assert.equal((await deniedReset.json()).error, "mfa_enrollment_required");
+      assert.equal(Number((await queryBusiness("SELECT count(*) AS count FROM admin_data_reset_commands"))[0].count), 0);
+    }
 
     const enrollment = await request("/api/auth/two-factor/enable", {
       method: "POST",
@@ -3224,6 +3445,7 @@ async function main() {
       `SELECT count(*) AS "count" FROM "mfaAssurance" WHERE "userId" = ${sqlLiteral(userId)} AND "sessionId" = ${sqlLiteral(sessionBody.session.id)}`,
     );
     assert.equal(Number(assuranceRows[0]?.count), 1, "MFA assurance was not persisted for this session");
+    if (actions.adminResetRoundtrip) await exerciseAdminDataReset(cookie, userId, emojiAuditJournalPath, actions.adminResetBrowser);
     if (actions.lifecycleRunReadback) await exerciseManualLifecycleRun(cookie);
     if (actions.emojiMasterAuditRoundtrip) await exerciseEmojiMasterAudit(cookie, userId, emojiAuditJournalPath, { browserReview: actions.emojiMasterAuditBrowser, email });
     if (actions.emojiMasterRoundtrip) {
@@ -3336,7 +3558,7 @@ async function main() {
             `DELETE FROM audit_logs WHERE (user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL', 'ADMIN_UPDATE_PLAN', 'admin_expire_license') AND (resource_id IS NULL OR resource_id IN (${sqlLiteral(targetUserId)}, ${sqlLiteral(expiryLicenseId)}, ${sqlLiteral(userId)}))) OR (resource_id = ${sqlLiteral(expiryLicenseId)} AND action = 'license_expired');\n` +
             (actions.systemSettingsReadback ? `DELETE FROM audit_logs WHERE user_id = ${sqlLiteral(userId)} AND action = 'ADMIN_UPDATE_SYSTEM_SETTING' AND resource_type = 'system_setting' AND resource_id = ${sqlLiteral(systemSettingState.key)};\n` : "") +
             `DELETE FROM user_settings WHERE user_id = ${sqlLiteral(targetUserId)};\n` +
-            (actions.adminUserManagementBrowser || actions.lifecycleSettingsBrowser || actions.emojiMasterAuditRoundtrip
+            (actions.adminUserManagementBrowser || actions.lifecycleSettingsBrowser || actions.emojiMasterAuditRoundtrip || actions.adminResetBrowser
               ? `DELETE FROM user_settings WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(adminUsername)};`
               : ""),
             "synthetic admin user-management cleanup",
@@ -3348,7 +3570,7 @@ async function main() {
           );
           const [profileRows, adminProfileRows, auditRows, authRows, statusAuditRows, settingsAuditRows] = await Promise.all([
             queryBusiness(`SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(targetUserId)}`),
-            queryBusiness(actions.adminUserManagementBrowser || actions.lifecycleSettingsBrowser || actions.emojiMasterAuditRoundtrip
+            queryBusiness(actions.adminUserManagementBrowser || actions.lifecycleSettingsBrowser || actions.emojiMasterAuditRoundtrip || actions.adminResetBrowser
               ? `SELECT COUNT(*) AS count FROM user_settings WHERE user_id = ${sqlLiteral(userId)} AND username = ${sqlLiteral(adminUsername)}`
               : "SELECT 0 AS count"),
             queryBusiness(`SELECT COUNT(*) AS count FROM audit_logs WHERE (user_id = ${sqlLiteral(userId)} AND action IN ('ADMIN_LIST_USERS', 'ADMIN_VIEW_USER_DETAIL', 'ADMIN_UPDATE_PLAN', 'admin_expire_license') AND (resource_id IS NULL OR resource_id IN (${sqlLiteral(targetUserId)}, ${sqlLiteral(expiryLicenseId)}, ${sqlLiteral(userId)}))) OR (resource_id = ${sqlLiteral(expiryLicenseId)} AND action = 'license_expired')`),
@@ -3378,10 +3600,11 @@ async function main() {
   }
 
   if (cleanupError) throw cleanupError;
+  if (actions.adminResetRoundtrip) await assertResetBusinessEmpty();
   assert.ok(flowPassed, "the staging TOTP flow did not complete");
   if (emojiAuditJournalPath) {
     const journal = JSON.parse(await readFile(emojiAuditJournalPath, "utf8"));
-    assert.equal(journal.state, actions.emojiMasterAuditRoundtrip ? "master-verified-and-cleaned" : "waitlist-verified-and-cleaned");
+    assert.equal(journal.state, actions.adminResetRoundtrip ? "reset-verified-and-cleaned" : actions.emojiMasterAuditRoundtrip ? "master-verified-and-cleaned" : "waitlist-verified-and-cleaned");
     journal.state = "verified-and-cleaned";
     journal.authRows = 0;
     await writeFile(emojiAuditJournalPath, JSON.stringify(journal), { mode: 0o600 });

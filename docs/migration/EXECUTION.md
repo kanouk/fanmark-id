@@ -1,5 +1,17 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：管理データリセットの合成検証ガード（配備前）
+
+前checkpointの修正head `23b2415` / CI `37043190892`は両job成功をlive確認した。
+8テーブルに検証用UUID以外のDELETEをABORTする一時native guardを準備し、
+空データ確認後に別の行が入った場合もreset全体がrollbackするlocal D1 testを追加した。
+D1 15/15、guard 2/2、migration-data 244/244、Worker typecheck/ESLint成功。
+`--admin-data-reset-browser`は専用account/version/ledger/trigger/空userdata guard、private
+復旧journal、実signin/TOTP/MFA、8件削除/監査/receipt、後続行を残すretry、typed DELETE
+画面とAPI応答の照合、Master/Auth保持、検証用profileを含むcleanupを実装した。
+次のstaging build/server configはWorker/D1を選ぶが、remote 0023適用・有効化・合成実行は
+まだ行っていない。実ユーザーとdomain/DNSは引き続き除外する。
+
 ## 2026-10-03：管理データリセットのWorker/D1経路（local準備）
 
 未移行のAdminDataResetを調べ、旧Edge Functionが8回の削除結果を個別に検証しないことを

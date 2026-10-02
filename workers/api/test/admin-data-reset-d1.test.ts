@@ -2,6 +2,7 @@ import { env } from "cloudflare:workers";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { handleAdminDataResetRequest, recordUnauthorizedDataResetAttempt, RESET_TABLES } from "../src/admin-data-reset-d1-api";
 import type { Env } from "../src/repository";
+import { buildResetCanaryDeleteGuards } from "../../../scripts/migration/admin-data-reset-canary-guards.mjs";
 
 const runtime = env as unknown as Env;
 const db = runtime.FANMARK_DB!;
@@ -248,6 +249,26 @@ describe("atomic D1 administrator data reset with the complete Business schema",
     expect(JSON.parse(audit!.metadata)).toEqual({ timestamp: NOW, security_level: "CRITICAL_RISK" });
     expect(await counts()).toEqual(before);
     expect(await db.prepare("SELECT count(*) AS count FROM admin_data_reset_commands").first()).toEqual({ count: 0 });
+  });
+
+  it("the staging canary's native row guard rolls back the entire reset if an unrelated row races the preflight", async () => {
+    const ids: Record<string, string> = {};
+    for (const table of RESET_TABLES) ids[table] = (await db.prepare(`SELECT id FROM ${table}`).first<{ id: string }>())!.id;
+    const guards = buildResetCanaryDeleteGuards(crypto.randomUUID(), ids);
+    for (const statement of splitSql(guards.createSql)) await run(statement);
+    const outsider = crypto.randomUUID();
+    try {
+      await run(`INSERT INTO fanmarks (id, user_input_fanmark, normalized_emoji, short_id, tier_level, created_at, updated_at, normalized_emoji_ids)
+        VALUES (?, '🦋', '🦋', 'racing-outsider', 1, ?, ?, '["dddddddd-dddd-4ddd-8ddd-dddddddddddd"]')`, outsider, NOW, NOW);
+      const before = await counts();
+      expect((await request()).status).toBe(503);
+      expect(await counts()).toEqual(before);
+      expect(await db.prepare("SELECT id FROM fanmarks WHERE id = ?").bind(outsider).first()).toEqual({ id: outsider });
+      expect(await db.prepare("SELECT count(*) AS count FROM admin_data_reset_commands").first()).toEqual({ count: 0 });
+      await run("DELETE FROM fanmarks WHERE id = ?", FANMARK);
+    } finally {
+      for (const statement of splitSql(guards.dropSql)) await run(statement);
+    }
   });
 
   it("reports a failed role-denial audit to the authorization gate instead of claiming it was recorded", async () => {
