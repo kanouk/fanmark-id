@@ -44,10 +44,10 @@ Auth user rows、通知/履歴の空状態を確認してから実行する。`0
 `NOTIFICATION_ARCHIVE_BACKEND=d1`を渡して合成通知6件を処理し、90日cutoff、status、
 保存JSON、timestamp、cleanup後のbaselineを照合する。既存の通知や履歴がある場合、
 identity/binding/scheduleが異なる場合、またはindexがない場合は書込み前に停止する。
-このremote staging smokeは未実行。Wrangler CLIは現在、期待するemail/account IDで
-認証でき、`0020`はstaging D1で適用/readback済み。runner修正後のコードhosted CI成功後に
-実行する。これは実Cronや
-Supabase側の定常運用を証明しない。
+このremote staging smokeは2026-10-02に成功した。`0020`適用/readbackとhosted CI成功後、
+ローカルscheduled Workerからstaging business D1を実行し、eligible 2件を履歴へ移し、
+対象外4件を保持した。cleanup後は通知/履歴0件で、業務/master/public-settings baselineは
+一致、Auth rowsは0件。実Worker deployment、実Cron、Supabase側の定常運用は証明しない。
 
 ## 管理画面のグローバルマスター編集
 

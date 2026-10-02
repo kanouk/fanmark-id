@@ -44,17 +44,19 @@ Actions run `36991654600` はWorker API jobが成功し、application jobは
 base schema statement 1で120秒停止した。どのSQL文が原因かは確認できていない。
 このsuiteをNode test worker内でなくstandalone Node processとして実行する変更を
 worktreeへ加え、`CI=true npm test --prefix experiments/stripe-receipts`は全suite成功。
-hosted CIでの再検証は未完了。
+PR #41 commit `4ee72f6`のActions run `36993739726`でapplicationとWorker APIの
+両jobも成功。CIはdeployを行わない。
 
 通知archival用のstaging canary scriptとtarget guardも追加した。実Workerのselectorは
 引き続きunsetのまま、ローカルscheduled Workerに一時selectorを渡してremote business
 D1の合成通知だけを検査する。index migration `0020`のreadback、空の通知/履歴と
 認証/業務baseline、固定staging identityを全て通らない限り書き込みを始めない。
-このcanaryは未実行。`wrangler whoami --json`がmacOS Keychain読出しexit 51で失敗し、
-その後の再試行では期待するemail/account IDを確認した。2026-10-02にbusiness stagingの
-migration `0020`を適用し、`idx_notifications_archive_due`とpending migrationなしを
-remote readbackした。合成通知の書込みはまだなく、runner修正後のhosted CI成功後にcanaryを
-実行する。production、ユーザーデータ、domain/DNSは変更していない。
+2026-10-02にbusiness stagingのmigration `0020`を適用し、`idx_notifications_archive_due`と
+pending migrationなしをremote readbackした。Actions run `36993739726`成功後にcanaryを実行し、
+古いdelivered/failed 2行をarchive、対象外4行を保持、cleanup後の合成通知/履歴0行、
+業務/master/public-settings baseline不変、Auth行0件を確認した。ローカルscheduled Workerが
+remote staging D1へ接続し、実Worker deployment/Cron/configは変更していない。
+production、ユーザーデータ、domain/DNSは変更していない。
 
 ## 2026-10-02 PR #41 validation, staging Worker, and D1 readback
 

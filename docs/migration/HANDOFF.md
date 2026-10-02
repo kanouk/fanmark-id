@@ -1,24 +1,24 @@
 # Cloudflare migration handoff
 
 Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
-open and draft. Code checkpoint `c5aaefe` passed both CI jobs in run
-`36990781789`; later docs-only commit `68729c5` passed the Worker API job, but
-its app job failed in run `36991654600`. The log shows three fresh attempts of
-`subscription-application.test.mjs`, each stuck for 120 seconds on the first
-base-schema statement after PGlite construction. The trigger is not confirmed.
-The current worktree runs that PGlite-heavy test in a standalone Node process;
-`CI=true npm test` passes the complete Stripe receipt suite locally. Hosted
-validation after this runner change is pending. CI does not deploy.
+open and draft. Code checkpoint `4ee72f6` passed both CI jobs in run
+`36993739726`. An earlier run `36991654600` exposed an intermittent 120-second
+stall in the PGlite-heavy `subscription-application.test.mjs`; running it in a
+standalone Node process resolved the hosted validation failure. CI does not
+deploy.
 
 The archive staging smoke and an exact account/Worker/D1 guard are prepared.
 The additive business migration `0020` was applied to staging and read back:
 `idx_notifications_archive_due` exists, and Wrangler reports no pending
-migrations. The synthetic notification smoke has not run. The first CLI check
-failed to read its macOS Keychain credential (exit 51); a fresh
-`whoami --json` confirms the intended `fanmark.id@gmail.com` account ID. No
-notification rows were written, and the current Worker config still leaves
-notification archival disabled. Hosted validation after the runner change is
-pending before the smoke can run.
+migrations. After CI passed, the guarded synthetic archive smoke passed against
+staging business D1 through a local scheduled Worker: two eligible rows were
+archived, four ineligible rows retained, then all synthetic notification and
+history rows were deleted and read back as zero. Business/master/public
+settings baselines were preserved and Auth remained empty. No Worker was
+deployed and the current Worker config still leaves notification archival
+disabled. The first CLI check failed to read its macOS Keychain credential
+(exit 51); a fresh `whoami --json` confirms the intended
+`fanmark.id@gmail.com` account ID.
 
 The 211-callsite inventory now has 141 semantic mappings: 40 Auth/Auth-MFA
 operations, 20 own/fanmark-profile operations, 11 fanmark-settings/Storage
