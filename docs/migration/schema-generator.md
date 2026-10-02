@@ -1,10 +1,17 @@
 # Full schema conversion generator
 
-`schema-convert.mjs` v36 is a private, catalog-only preparation tool. It
+`schema-convert.mjs` v37 is a private, catalog-only preparation tool. It
 converts the JSON emitted by `scripts/migration/schema-readiness.sql` into deterministic
 SQLite/D1 table and index SQL plus a machine-readable report of unresolved
 parity gates. It does not read application rows, contact Supabase, apply SQL,
 or declare a production migration ready.
+
+v37 reviews the explicit runtime timestamps for `notification_events.trigger_at`,
+`created_at`, and `updated_at`. All event producers bind an event or operation
+time; the scheduled processor binds its invocation time when claiming,
+completing, and retrying an event. The source snapshot importer retains source
+timestamps. This disposition removes three default gates but leaves the overall
+schema `deployable: false` until every remaining gate is closed.
 
 The private catalog also carries `regex_range_probe`. It tests the three exact
 ASCII-format CHECK expressions against every valid Unicode scalar value using

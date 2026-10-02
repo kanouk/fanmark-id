@@ -250,7 +250,8 @@ isolated("applies coupon, cancels lottery entries, records notices/audits, and r
   const license = await database.prepare("SELECT status, license_end, grace_expires_at, excluded_at, excluded_from_plan FROM fanmark_licenses WHERE id = ?").bind(LICENSE).first();
   const usages = await database.prepare("SELECT COUNT(*) AS count FROM extension_coupon_usages").first();
   const cancelled = await database.prepare("SELECT COUNT(*) AS count FROM fanmark_lottery_entries WHERE coupon_extension_command_id IS NOT NULL AND entry_status = 'cancelled_by_extension' AND cancellation_reason = 'license_extended'").first();
-  const notices = await database.prepare("SELECT event_type, source, payload, dedupe_key FROM notification_events ORDER BY dedupe_key").all();
+  const notices = await database.prepare(`SELECT event_type, source, payload, dedupe_key, trigger_at, created_at, updated_at
+    FROM notification_events ORDER BY dedupe_key`).all();
   const audits = await database.prepare("SELECT action FROM audit_logs ORDER BY action").all();
   assert.deepEqual(coupon, { used_count: 1, created_at: NOW_SQL, updated_at: NOW_SQL });
   assert.deepEqual(usage, { used_at: NOW_SQL });
@@ -265,6 +266,9 @@ isolated("applies coupon, cancels lottery entries, records notices/audits, and r
   assert.equal(cancelled.count, 2);
   assert.equal(notices.results.length, 2);
   assert.ok(notices.results.every((notice) => notice.event_type === "lottery_cancelled_by_extension" && notice.source === "edge_function"));
+  assert.ok(notices.results.every((notice) => (
+    notice.trigger_at === NOW_SQL && notice.created_at === NOW_SQL && notice.updated_at === NOW_SQL
+  )));
   assert.equal((await database.prepare("SELECT json_extract(payload, '$.fanmark_name') AS name FROM notification_events LIMIT 1").first()).name, "🧪");
   assert.deepEqual(audits.results.map((row) => row.action).sort(), [
     "COUPON_EXTENSION_LOTTERY_CANCELLED",

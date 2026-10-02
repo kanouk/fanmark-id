@@ -354,9 +354,9 @@ describe("D1 notification event processor", () => {
       scheduledTime: Date.parse(now),
     });
     expect(result).toEqual({ status: "completed", selected: 1, processed: 1, failed: 0 });
-    const event = await businessDatabase.prepare("SELECT status, processed_at FROM notification_events WHERE id = ?")
+    const event = await businessDatabase.prepare("SELECT status, processed_at, updated_at FROM notification_events WHERE id = ?")
       .bind(eventId).first();
-    expect(event).toEqual({ status: "processed", processed_at: now });
+    expect(event).toEqual({ status: "processed", processed_at: now, updated_at: now });
     const notifications = await businessDatabase.prepare("SELECT user_id, channel, status, payload FROM notifications WHERE event_id = ?")
       .bind(eventId).all<{ user_id: string; channel: string; status: string; payload: string }>();
     expect(notifications.results).toHaveLength(1);

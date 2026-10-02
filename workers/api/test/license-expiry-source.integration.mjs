@@ -1066,9 +1066,12 @@ test("atomically finalizes a pending lottery with winner license, history, audit
     assert.equal((await row(fixture.database,
       "SELECT COUNT(*) AS count FROM fanmark_access_versions WHERE license_id = ?", winnerLicense.id)).count, 1);
 
-    const events = await fixture.database.prepare(`SELECT event_type, payload FROM notification_events
+    const events = await fixture.database.prepare(`SELECT event_type, payload, trigger_at, created_at, updated_at FROM notification_events
       ORDER BY event_type`).all();
     assert.deepEqual(events.results.map((event) => event.event_type), ["license_expired", "lottery_won"]);
+    assert.ok(events.results.every((event) => (
+      event.trigger_at === CAPTURED_NOW && event.created_at === CAPTURED_NOW && event.updated_at === CAPTURED_NOW
+    )));
     const winnerEvent = events.results.find((event) => event.event_type === "lottery_won");
     assert.deepEqual(JSON.parse(winnerEvent.payload), {
       user_id: winnerId,

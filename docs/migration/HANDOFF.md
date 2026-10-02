@@ -4,21 +4,24 @@ Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
 open and draft. CI validates the branch but does not deploy the Worker.
 
 The latest read-only schema catalog completed at
-`2026-10-02T13:38:05.465570Z`: 40 tables / 406 columns / 144 constraints /
+`2026-10-02T13:42:59.427789Z`: 40 tables / 406 columns / 144 constraints /
 139 indexes / 36 triggers / 77 RLS policies / 58 functions / one view. No
-source table rows were read. Converter v36 reviews 41 exact Worker-operation
+source table rows were read. Converter v37 reviews 44 exact Worker-operation
 timestamps, seven snapshot-import-only timestamps, eight versioned reference
 master timestamps, one scheduled Worker timestamp, and all 11 exact Auth
-references. This pass reviews `extension_coupons.created_at` / `updated_at`
-and `extension_coupon_usages.used_at`: admin creation, admin activation, and
-coupon redemption bind explicit canonical times; Miniflare D1 tests read back
-the exact operation values. The report remains `deployable: false` with 22
-timestamp defaults and three unsupported function/RLS/trigger scopes (25
-schema/operation blockers); the credential descriptor gate remains. Converter
-tests pass 34/34, migration data tests 230/230, coupon admin D1 4/4, coupon
-application D1 8/8, Worker typecheck, and ESLint on changed files. Both CI jobs
-passed on v35 PR head `8f5ab34` in run `37013644032`.
+references. This pass reviews `notification_events.trigger_at`, `created_at`,
+and `updated_at`: every runtime producer binds an explicit event or operation
+time, while the scheduled processor binds its invocation time for claim,
+completion, and retry updates. Synthetic D1 tests read the values back. The
+report remains `deployable: false` with 19 timestamp defaults and three
+unsupported function/RLS/trigger scopes (22 schema/operation blockers); the
+credential descriptor gate remains. Converter tests pass 35/35, migration
+data tests 231/231, relevant D1 and Stripe/lifecycle integration tests pass,
+Worker typecheck and changed-file ESLint pass. Both CI jobs passed on v36 PR
+head `647b900` in run `37014590824`; v37 CI must be checked after push.
 
+No source rows, production routing, user/Auth migration, Worker deployment,
+Cloudflare resource writes, or domain/DNS settings were changed in v37.
 No source rows, production routing, user/Auth migration, Worker deployment, or
 domain/DNS settings were changed in v36. The latest recorded
 workers.dev-only staging version is

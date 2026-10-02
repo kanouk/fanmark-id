@@ -174,6 +174,11 @@ describe("D1 fanmark transfer", () => {
     expect(await business.prepare("SELECT entry_status, cancellation_reason FROM fanmark_lottery_entries")
       .first<Record<string, unknown>>()).toEqual({ entry_status: "cancelled", cancellation_reason: "system" });
     expect(await count(business, "notification_events")).toBe(2);
+    expect((await business.prepare(`SELECT event_type, trigger_at, created_at, updated_at
+      FROM notification_events ORDER BY event_type`).all<Record<string, unknown>>()).results).toEqual([
+      { event_type: "transfer_approved", trigger_at: NOW, created_at: NOW, updated_at: NOW },
+      { event_type: "transfer_requested", trigger_at: NOW, created_at: NOW, updated_at: NOW },
+    ]);
     const lockedIssue = await call("/issue", {
       license_id: result.new_license_id, disclaimer_agreed: true,
     }, RECIPIENT);
@@ -202,6 +207,11 @@ describe("D1 fanmark transfer", () => {
       disclaimer_agreed_at: NOW, applied_at: NOW, created_at: NOW, updated_at: NEXT,
     });
     expect(await count(business, "notification_events")).toBe(2);
+    expect((await business.prepare(`SELECT event_type, trigger_at, created_at, updated_at
+      FROM notification_events ORDER BY event_type`).all<Record<string, unknown>>()).results).toEqual([
+      { event_type: "transfer_rejected", trigger_at: NEXT, created_at: NEXT, updated_at: NEXT },
+      { event_type: "transfer_requested", trigger_at: NOW, created_at: NOW, updated_at: NOW },
+    ]);
   });
 
   it("prevents self-transfer, expired or reused codes, and exposes only the caller's rows", async () => {

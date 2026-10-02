@@ -243,6 +243,11 @@ test("paid extension applies license, lottery cancellation, audits, notification
     });
     assert.equal(await scalar(database, "SELECT count(*) AS count FROM fanmark_lottery_entries WHERE entry_status = 'cancelled_by_extension'"), 2);
     assert.equal(await scalar(database, "SELECT count(*) AS count FROM notification_events WHERE event_type = 'lottery_cancelled_by_extension'"), 2);
+    const eventTimes = await database.prepare(`SELECT trigger_at, created_at, updated_at
+      FROM notification_events WHERE event_type = 'lottery_cancelled_by_extension' ORDER BY dedupe_key`).all();
+    assert.deepEqual(eventTimes.results, Array.from({ length: 2 }, () => ({
+      trigger_at: NOW, created_at: NOW, updated_at: NOW,
+    })));
     assert.equal(await scalar(database, "SELECT count(*) AS count FROM audit_logs WHERE action = 'LICENSE_EXTENDED'"), 1);
     assert.equal(await scalar(database, "SELECT count(*) AS count FROM audit_logs WHERE action = 'LICENSE_EXTENDED_LOTTERY_CANCELLED'"), 1);
     assert.equal(await scalar(database, "SELECT status FROM stripe_extension_applications"), "applied");

@@ -498,6 +498,17 @@ test("deleted final subscription sets Free and atomically returns newest excess 
     assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM audit_logs WHERE action = 'return_fanmark' AND request_id LIKE ?", [result.applicationId + ":%"]), 2);
     assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM notification_events WHERE event_type = 'fanmark_returned_owner'"), 2);
     assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM notification_events WHERE event_type = 'favorite_fanmark_available'"), 1);
+    const eventTimes = await database.prepare(`SELECT event.event_type, event.trigger_at, event.created_at,
+        event.updated_at, item.returned_at
+      FROM notification_events AS event
+      JOIN stripe_subscription_return_items AS item
+        ON json_extract(event.payload, '$.fanmark_id') = item.fanmark_id
+      WHERE event.event_type IN ('fanmark_returned_owner', 'favorite_fanmark_available')
+      ORDER BY event.event_type, event.trigger_at`).all();
+    assert.equal(eventTimes.results.length, 3);
+    assert.ok(eventTimes.results.every((event) => (
+      event.trigger_at === event.returned_at && event.created_at === event.returned_at && event.updated_at === event.returned_at
+    )));
     assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM fanmark_licenses WHERE user_id = ? AND status = 'active'", [USER_ID]), 3);
     assert.equal(await scalar(database, "SELECT COUNT(*) AS value FROM fanmark_licenses WHERE user_id = ? AND status = 'grace' AND license_start >= '2026-01-04T00:00:00.000Z'", [USER_ID]), 2);
     assert.equal(await scalar(database, "SELECT grace_expires_at AS value FROM fanmark_licenses WHERE id = ?", [licenses[4].licenseId]), "2026-09-29T00:00:00.000000Z");

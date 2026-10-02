@@ -17,7 +17,7 @@ import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 36;
+export const SCHEMA_CONVERSION_VERSION = 37;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -150,6 +150,31 @@ const REVIEWED_AUTH_FOREIGN_KEYS = new Map([
   ["user_subscriptions_user_id_fkey", {
     table: "user_subscriptions", column: "user_id", onDelete: "CASCADE", accountDeletion: "delete_rows",
   }],
+]);
+const NOTIFICATION_EVENT_TIMESTAMP_EVIDENCE = Object.freeze([
+  "scripts/migration/d1-import.mjs",
+  "workers/api/src/admin-user-management-d1-api.ts",
+  "workers/api/src/fanmark-lottery-d1-api.ts",
+  "workers/api/src/fanmark-return-d1-api.ts",
+  "workers/api/src/fanmark-transfer-d1-api.ts",
+  "workers/api/src/license-expiry-source.mjs",
+  "workers/api/src/license-grace-finalization-source.mjs",
+  "workers/api/src/notification-master-d1-api.ts",
+  "workers/api/src/notifications-scheduled.ts",
+  "workers/api/src/stripe-subscription-reconciliation-d1.ts",
+  "workers/api/src/stripe-webhook-d1-application.ts",
+  "workers/api/migrations-business/0015_extension_coupon_application.sql",
+  "workers/api/test/admin-user-management-d1.test.ts",
+  "scripts/migration/test-d1-import.mjs",
+  "workers/api/test/extension-coupon-application-d1.integration.mjs",
+  "workers/api/test/fanmark-lottery-d1.test.ts",
+  "workers/api/test/fanmark-settings-d1.test.ts",
+  "workers/api/test/fanmark-transfer-d1.test.ts",
+  "workers/api/test/license-expiry-source.integration.mjs",
+  "workers/api/test/notification-master-admin-d1.test.ts",
+  "workers/api/test/notifications-d1.test.ts",
+  "workers/api/test/stripe-subscription-reconciliation-d1.integration.mjs",
+  "workers/api/test/stripe-webhook-d1-application.integration.mjs",
 ]);
 const REVIEWED_RUNTIME_TIMESTAMP_WRITES = new Map([
   ["fanmark_basic_configs.created_at", {
@@ -495,6 +520,21 @@ const REVIEWED_RUNTIME_TIMESTAMP_WRITES = new Map([
       "workers/api/test/notification-master-admin-d1.test.ts",
       "workers/api/src/utc-timestamp.ts",
     ],
+  }],
+  ["notification_events.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Every reviewed runtime event producer binds the source event or operation time explicitly; snapshot imports retain source timestamps.",
+    evidence: NOTIFICATION_EVENT_TIMESTAMP_EVIDENCE,
+  }],
+  ["notification_events.trigger_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Every reviewed runtime event producer binds an explicit event or operation time to trigger_at; no D1 server default is used.",
+    evidence: NOTIFICATION_EVENT_TIMESTAMP_EVIDENCE,
+  }],
+  ["notification_events.updated_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Event inserts bind updated_at explicitly, and the scheduled processor binds its invocation time for claim, completion, and retry updates.",
+    evidence: NOTIFICATION_EVENT_TIMESTAMP_EVIDENCE,
   }],
   ["fanmark_availability_rules.updated_at", {
     code: "worker_operation_explicit_timestamp",

@@ -494,12 +494,17 @@ describe("D1 fanmark return API", () => {
     });
 
     const events = await businessDatabase?.prepare(
-      "SELECT event_type, payload FROM notification_events ORDER BY event_type",
-    ).all<{ event_type: string; payload: string }>();
+      "SELECT event_type, payload, trigger_at, created_at, updated_at FROM notification_events ORDER BY event_type",
+    ).all<{ event_type: string; payload: string; trigger_at: string; created_at: string; updated_at: string }>();
     expect(events?.results?.map((event) => event.event_type)).toEqual([
       "fanmark_returned_owner",
       "favorite_fanmark_available",
     ]);
+    expect(events?.results?.every((event) => (
+      event.trigger_at === toUtcMicrosecondTimestamp(nowDate) &&
+      event.created_at === toUtcMicrosecondTimestamp(nowDate) &&
+      event.updated_at === toUtcMicrosecondTimestamp(nowDate)
+    ))).toBe(true);
     const favoriteEvent = events?.results?.find((event) => event.event_type === "favorite_fanmark_available");
     expect(JSON.parse(favoriteEvent?.payload ?? "{}")).toMatchObject({
       user_id: otherId,

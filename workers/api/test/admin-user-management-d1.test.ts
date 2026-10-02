@@ -340,9 +340,12 @@ describe("D1 administrator user directory", () => {
     const adminAudit = await business!.prepare(`SELECT user_id, action, resource_type, resource_id, metadata
       FROM audit_logs WHERE action = 'admin_expire_license' AND resource_id = ?`).bind(licenseA1).first<Record<string, unknown>>();
     expect(adminAudit).toMatchObject({ user_id: "49999999-9999-4999-8999-999999999999", resource_id: licenseA1 });
-    const event = await business!.prepare(`SELECT event_type, source, payload_schema, trigger_at, payload
+    const event = await business!.prepare(`SELECT event_type, source, payload_schema, trigger_at, created_at, updated_at, payload
       FROM notification_events WHERE event_type = 'license_expired'`).first<Record<string, unknown>>();
-    expect(event).toMatchObject({ event_type: "license_expired", source: "admin_ui", payload_schema: "license_expired.v1", trigger_at: nowIso });
+    expect(event).toMatchObject({
+      event_type: "license_expired", source: "admin_ui", payload_schema: "license_expired.v1",
+      trigger_at: nowIso, created_at: nowIso, updated_at: nowIso,
+    });
     expect(JSON.parse(String(event?.payload))).toEqual({
       user_id: userA, fanmark_id: fanmarkA1, fanmark_name: "🍋", expired_at: nowIso,
       license_end: "2026-10-01T00:00:00.000Z",

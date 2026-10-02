@@ -206,7 +206,7 @@ describe("D1 notification master admin API", () => {
     const createdBody = await created.json() as { schemaVersion: number; event: { id: string } };
     expect(createdBody.schemaVersion).toBe(1);
     expect(createdBody.event.id).toMatch(/^[0-9a-f-]{36}$/iu);
-    const inserted = await database!.prepare(`SELECT event_type, source, status, payload, trigger_at, created_at
+    const inserted = await database!.prepare(`SELECT event_type, source, status, payload, trigger_at, created_at, updated_at
       FROM notification_events WHERE id = ?`).bind(createdBody.event.id).first();
     expect(inserted).toEqual({
       event_type: "favorite_fanmark_available",
@@ -215,6 +215,7 @@ describe("D1 notification master admin API", () => {
       payload: '{"user_id":"synthetic-user","fanmark_name":"合成マーク"}',
       trigger_at: now.toISOString().replace(".000Z", ".000000Z"),
       created_at: now.toISOString().replace(".000Z", ".000000Z"),
+      updated_at: now.toISOString().replace(".000Z", ".000000Z"),
     });
 
     const invalid = await request("/api/admin/notification-masters/events", {

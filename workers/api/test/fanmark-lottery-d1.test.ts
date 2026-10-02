@@ -86,9 +86,11 @@ describe("D1 fanmark lottery entry actions", () => {
     });
     expect(await count("audit_logs")).toBe(1);
     expect(await count("notification_events")).toBe(1);
-    const event = await business!.prepare("SELECT event_type, source, payload FROM notification_events").first<Record<string, unknown>>();
+    const event = await business!.prepare(`SELECT event_type, source, payload, trigger_at, created_at, updated_at
+      FROM notification_events`).first<Record<string, unknown>>();
     expect(event?.event_type).toBe("lottery_application_submitted");
     expect(event?.source).toBe("edge_function");
+    expect(event).toMatchObject({ trigger_at: NOW, created_at: NOW, updated_at: NOW });
     expect(JSON.parse(String(event?.payload))).toMatchObject({ user_id: OWNER, fanmark_id: FANMARK, fanmark_name: "🌹" });
     const audit = await business!.prepare("SELECT action, resource_type, resource_id, metadata FROM audit_logs").first<Record<string, unknown>>();
     expect(audit?.action).toBe("LOTTERY_ENTRY_CREATED");
