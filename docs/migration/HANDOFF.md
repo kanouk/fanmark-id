@@ -1,8 +1,8 @@
 # Cloudflare migration handoff
 
 Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
-open and draft. Implementation commit `4515813` passed both CI jobs in run
-`37003535521`; CI does not deploy the Worker. The latest recorded
+open and draft. Latest head `0e16d9f` passed both required CI jobs in run
+`37004143377`; CI does not deploy the Worker. The latest recorded
 workers.dev-only staging version is
 version `d2330dd1-ce17-41c0-99d2-a81b242c412d` at 100%. An earlier run
 `36991654600` exposed an intermittent 120-second
@@ -73,9 +73,9 @@ effect ran once, D1 Time Travel and encrypted R2 restore preserved admin MFA
 and the avatar, and five frozen writes were rejected. Provider-backed
 acceptance and production stop/recovery targets remain open.
 
-The latest schema-only Supabase query completed at `2026-10-02T11:17:58Z` and
+The latest schema-only Supabase query completed at `2026-10-02T12:03:07Z` and
 again returned 40 tables / 406 columns / 58 functions / 36 triggers / 77 RLS
-policies. Converter v25 now has 4 groups / 70 blocking locations: 67
+policies. Converter v25 has 4 groups / 70 blocking locations: 67
 timestamp-default operations and functions/RLS/triggers. It separately reports
 all 11 exact Auth FK dispositions, verifies those definitions against
 `supabase/remote_schema.sql`, and preserves the D1 importer's Auth identity

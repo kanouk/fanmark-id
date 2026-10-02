@@ -1,5 +1,24 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 v25再確認：最新schema-only catalog（12:03 UTC）
+
+linked Supabaseへのread-only queryを再実行し、`2026-10-02T12:03:07Z`時点で
+40 tables / 406 columns / 144 constraints / 36 triggers / 77 RLS policies /
+58 functionsを確認した。queryはcatalog metadataのみを対象にし、source table rowsは
+取得していない。応答と変換reportはprivate temporary directoryに保存した。
+
+value-free credential descriptorを渡したconverter v25は、11本の完全一致した
+`auth.users(id)` foreign keyをreviewed dispositionとして記録し、external Auth FKの
+blocking locationを0にした。全体は`deployable: false`のままで、4 gate groups /
+70 locations（operation-owned timestamp defaults 67、functions/RLS/triggers各1 group）。
+timestamp-writer auditは79 defaults、99 explicit-column INSERTs、unparsed INSERT 0件、
+直接のliteral writerが見つからないdefaults 11件を報告した。静的writer coverageは
+実行時の時刻精度・意味を証明しない。
+
+PR #41 head `0e16d9f`のapplication / Worker API CIはrun `37004143377`で両方success。
+実ユーザー行の読出し・移行、Cloudflare staging D1/R2への書込み、Worker deploy、
+ドメイン/DNS変更はしていない。
+
 ## 2026-10-02 converter v25: exact Auth foreign-key dispositions
 
 現在のschema-only catalog（11:17 UTC）で観測した`auth.users(id)`参照11本を、

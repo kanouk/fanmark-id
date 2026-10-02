@@ -1,6 +1,6 @@
 # Full schema conversion generator
 
-`schema-convert.mjs` v24 is a private, catalog-only preparation tool. It
+`schema-convert.mjs` v25 is a private, catalog-only preparation tool. It
 converts the JSON emitted by `scripts/migration/schema-readiness.sql` into deterministic
 SQLite/D1 table and index SQL plus a machine-readable report of unresolved
 parity gates. It does not read application rows, contact Supabase, apply SQL,
@@ -492,3 +492,24 @@ PostgreSQL transaction-time microsecond identity is not claimed. The schedule
 requires `NOTIFICATION_ARCHIVE_BACKEND=d1`, absent from staging. Source
 invocation and history retention remain unresolved; the converter is still
 non-deployable.
+
+## Schema converter v25: reviewed cross-database Auth references
+
+Converter v25 recognizes only the 11 current business-schema foreign keys to
+`auth.users(id)` when each constraint name, source table and column, UUID type,
+and delete action exactly match the reviewed catalog. It records their
+identity/deletion dispositions in `reviewedAuthForeignKeys` and omits these
+cross-database constraints from generated D1 SQL. Any changed or unknown
+constraint remains a blocking gate. The importer separately performs a
+read-only Auth D1 identity lookup for every non-null reference before business
+writes; account deletion remains owned by the existing Worker operation.
+
+A schema-only catalog refreshed at `2026-10-02T12:03:07Z` again contained 40
+tables, 406 columns, 58 functions, 36 triggers, and 77 RLS policies. With the
+value-free credential descriptor, v25 reports all 11 Auth references as
+reviewed and remains `deployable: false` with four blocking groups / 70
+locations: 67 operation-owned timestamp defaults and the functions, RLS, and
+trigger scopes. The timestamp-writer audit found 79 defaults and 99 explicit
+column-list INSERTs, with 11 defaults lacking a direct literal writer and no
+unparsed INSERTs. These counts cover different scopes; static column coverage
+does not prove runtime timestamp semantics. No source rows were queried.
