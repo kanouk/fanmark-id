@@ -1444,13 +1444,14 @@ describe("admin session authorization through the application Worker", () => {
 });
 
 describe("emoji master D1 timestamp contract", () => {
-  it("stores create, update, and import timestamps as UTC microsecond text", async () => {
+  it("binds deterministic UTC microsecond timestamps for create, update, and import", async () => {
     if (!masterDatabase) throw new Error("MASTER_DB binding is unavailable");
+    let now = new Date("2026-10-02T12:00:00.123Z");
     const repository = createEmojiMasterAdminD1Repository({
       ...runtimeEnv,
       D1_TOPOLOGY: "split",
       EMOJI_MASTER_ADMIN_BACKEND: "d1",
-    });
+    }, () => new Date(now));
     const input = {
       emoji: "🧪",
       shortName: "test_tube",
@@ -1462,18 +1463,32 @@ describe("emoji master D1 timestamp contract", () => {
     };
     try {
       const created = await repository.create(input);
-      expect(created.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+      const createAt = "2026-10-02T12:00:00.123000Z";
+      expect(created.updatedAt).toBe(createAt);
       const createdRow = await masterDatabase.prepare("SELECT created_at, updated_at FROM emoji_master WHERE id = ?")
         .bind(created.id).first<{ created_at: string; updated_at: string }>();
-      expect(createdRow?.created_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
-      const updated = await repository.update(created.id, created.updatedAt, { ...input, shortName: "test_tube_updated" });
-      expect(updated.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+      expect(createdRow).toEqual({ created_at: createAt, updated_at: createAt });
 
+      now = new Date("2026-10-02T12:00:01.456Z");
+      const updated = await repository.update(created.id, created.updatedAt, { ...input, shortName: "test_tube_updated" });
+      const updateAt = "2026-10-02T12:00:01.456000Z";
+      expect(updated.updatedAt).toBe(updateAt);
+      const updatedRow = await masterDatabase.prepare("SELECT created_at, updated_at FROM emoji_master WHERE id = ?")
+        .bind(created.id).first<{ created_at: string; updated_at: string }>();
+      expect(updatedRow).toEqual({ created_at: createAt, updated_at: updateAt });
+
+      now = new Date("2026-10-02T12:00:02.789Z");
       await repository.import([{ ...input, emoji: "🧬", shortName: "dna", codepoints: ["1F9EC"] }]);
+      const importAt = "2026-10-02T12:00:02.789000Z";
       const imported = await masterDatabase.prepare("SELECT created_at, updated_at FROM emoji_master WHERE emoji = ?")
         .bind("🧬").first<{ created_at: string; updated_at: string }>();
-      expect(imported?.created_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
-      expect(imported?.updated_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+      expect(imported).toEqual({ created_at: importAt, updated_at: importAt });
+
+      now = new Date("2026-10-02T12:00:03.012Z");
+      await repository.import([{ ...input, emoji: "🧬", shortName: "dna_updated", codepoints: ["1F9EC"] }]);
+      const importedAgain = await masterDatabase.prepare("SELECT created_at, updated_at FROM emoji_master WHERE emoji = ?")
+        .bind("🧬").first<{ created_at: string; updated_at: string }>();
+      expect(importedAgain).toEqual({ created_at: importAt, updated_at: "2026-10-02T12:00:03.012000Z" });
     } finally {
       await masterDatabase.prepare("DELETE FROM emoji_master WHERE emoji IN (?, ?)").bind("🧪", "🧬").run();
     }

@@ -212,7 +212,7 @@ async function activeVersion(database: D1Database): Promise<string | null> {
   return row.release_version;
 }
 
-export function createEmojiMasterAdminD1Repository(env: Env) {
+export function createEmojiMasterAdminD1Repository(env: Env, clock: () => Date = () => new Date()) {
   const database = databaseFor(env);
 
   async function getById(id: string): Promise<EmojiMasterAdminItem> {
@@ -275,7 +275,7 @@ export function createEmojiMasterAdminD1Repository(env: Env) {
     async create(value: unknown): Promise<EmojiMasterAdminItem> {
       const input = parseInput(value);
       const id = crypto.randomUUID();
-      const now = toUtcMicrosecondTimestamp(new Date());
+      const now = toUtcMicrosecondTimestamp(clock());
       try {
         const result = await database.prepare(
           `INSERT INTO emoji_master (id, emoji, short_name, keywords, category, subcategory, codepoints, sort_order, created_at, updated_at)
@@ -296,7 +296,7 @@ export function createEmojiMasterAdminD1Repository(env: Env) {
       const expectedTime = Date.parse(expectedUpdatedAt);
       if (!Number.isFinite(expectedTime)) fail("invalid_request");
       const input = parseInput(value);
-      const now = toUtcMicrosecondTimestamp(new Date(Math.max(Date.now(), expectedTime + 1)));
+      const now = toUtcMicrosecondTimestamp(new Date(Math.max(clock().getTime(), expectedTime + 1)));
       try {
         const result = await database.prepare(
           `UPDATE emoji_master
@@ -325,7 +325,7 @@ export function createEmojiMasterAdminD1Repository(env: Env) {
       }
       const records = recordsValue.map(parseInput);
       if (new Set(records.map((record) => record.emoji)).size !== records.length) fail("duplicate_import_emoji");
-      const now = toUtcMicrosecondTimestamp(new Date());
+      const now = toUtcMicrosecondTimestamp(clock());
       const sql = `INSERT INTO emoji_master (id, emoji, short_name, keywords, category, subcategory, codepoints, sort_order, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(emoji) DO UPDATE SET

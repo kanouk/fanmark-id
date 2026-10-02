@@ -1,5 +1,23 @@
 # Cloudflare移行の実行・再開手順
 
+# 2026-10-02 v30：emoji master timestampsの限定レビュー
+
+最新のread-only schema catalogを`2026-10-02T12:49:06.519034Z`に取得した。
+40 tables / 406 columns / 144 constraints / 139 indexes / 36 triggers /
+77 RLS policies / 58 functions / one viewで、source table rowsは取得していない。
+
+`emoji_master.created_at`と`updated_at`をWorker operation timestampとして追加レビューした。
+固定clockのD1 integration testは管理APIのcreate、update、import insert、import upsertを
+readbackし、update/upsertが`created_at`を保持して`updated_at`を進めることを確認する。
+canonical catalog seedとsnapshot importerもそれぞれ明示的な時刻をbindする。
+
+converter v30は20個のWorker-owned timestamp columnsと11 Auth FKをreview済み。
+残るblockingは50 locations（timestamp defaults 47、functions/RLS/triggers各1）で
+`deployable: false`。converter tests 30/30、`npm run test:migration-data` 226/226、
+Worker `test:auth:d1` 27/27、Worker typecheck、変更ファイルのESLintが成功。
+直前のv29 PR head CI run `37008817112`は両job success。v30 headのrequired CIは別途確認する。
+source rows、Cloudflare resources、Worker deploy、domain/DNSは変更していない。
+
 ## 2026-10-02 v29：Fanmark設定timestampsの限定レビュー
 
 v28で扱った`fanmark_profiles`に加え、

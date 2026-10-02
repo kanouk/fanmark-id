@@ -1,6 +1,6 @@
 # Full schema conversion generator
 
-`schema-convert.mjs` v29 is a private, catalog-only preparation tool. It
+`schema-convert.mjs` v30 is a private, catalog-only preparation tool. It
 converts the JSON emitted by `scripts/migration/schema-readiness.sql` into deterministic
 SQLite/D1 table and index SQL plus a machine-readable report of unresolved
 parity gates. It does not read application rows, contact Supabase, apply SQL,
@@ -592,3 +592,21 @@ operation locations and the three functions/RLS/trigger catalog scopes (52
 blocking locations total). Converter tests pass 29/29, the migration-data
 suite 225/225, settings D1 tests 18/18, registration D1 tests 11/11, and
 transfer D1 tests 9/9. No source rows were queried.
+
+## Schema converter v30: reviewed emoji-master timestamps
+
+Converter v30 adds `emoji_master.created_at` and `emoji_master.updated_at` to
+the exact `worker_operation_explicit_timestamp` disposition. The admin D1
+repository binds canonical UTC timestamps for create, update, import insert,
+and import upsert; fixed-clock D1 readback verifies the exact values and that
+updates preserve `created_at`. The canonical catalog seed binds its import
+timestamp explicitly, while snapshot imports retain the source values.
+
+The read-only catalog observed at `2026-10-02T12:49:06.519034Z` still contains
+40 tables, 406 columns, 144 constraints, 139 indexes, 36 triggers, 77 RLS
+policies, 58 functions, and one view. Converter v30 reviews 20 Worker-owned
+timestamps and all 11 exact Auth references. It remains `deployable: false`
+with 47 timestamp-operation locations and the three functions/RLS/trigger
+catalog scopes (50 blocking locations total). Converter tests pass 30/30,
+the migration-data suite 226/226, and auth D1 tests 27/27. No source rows were
+queried.

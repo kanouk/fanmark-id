@@ -17,7 +17,7 @@ import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 29;
+export const SCHEMA_CONVERSION_VERSION = 30;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -267,6 +267,27 @@ const REVIEWED_RUNTIME_TIMESTAMP_WRITES = new Map([
       "workers/api/src/favorites-d1-api.ts",
       "workers/api/test/favorites-d1.test.ts",
       "workers/api/src/utc-timestamp.mjs",
+    ],
+  }],
+  ["emoji_master.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The emoji-master admin create/import paths and canonical catalog seed bind created_at explicitly; fixed-clock D1 integration coverage reads back create and import timestamps, and snapshot imports retain source values.",
+    evidence: [
+      "workers/api/src/emoji-master-admin-d1-repository.ts",
+      "workers/api/test/auth-d1.test.ts",
+      "scripts/migration/emoji-master-seed.mjs",
+      "scripts/migration/test-emoji-master-seed.mjs",
+      "scripts/migration/d1-import.mjs",
+    ],
+  }],
+  ["emoji_master.updated_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The emoji-master admin create/import paths bind canonical UTC timestamps and update advances updated_at while preserving created_at; fixed-clock D1 integration coverage reads back each path.",
+    evidence: [
+      "workers/api/src/emoji-master-admin-d1-repository.ts",
+      "workers/api/test/auth-d1.test.ts",
+      "scripts/migration/emoji-master-seed.mjs",
+      "scripts/migration/test-emoji-master-seed.mjs",
     ],
   }],
   ["waitlist.created_at", {

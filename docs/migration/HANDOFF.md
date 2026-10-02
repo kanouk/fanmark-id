@@ -1,27 +1,25 @@
 # Cloudflare migration handoff
 
 Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
-open and draft. The v28 code checkpoint, commit `4532802`, passed both required
-CI jobs in run `37008123314`. The v29 follow-up adds explicit settings
-timestamp coverage. CI does not deploy the Worker.
+open and draft. The v29 head `d97d5dd` passed both required CI jobs in run
+`37008817112`; CI does not deploy the Worker.
 
 The latest read-only schema catalog completed at
-`2026-10-02T12:25:35.315086Z`: 40 tables / 406 columns / 144 constraints /
+`2026-10-02T12:49:06.519034Z`: 40 tables / 406 columns / 144 constraints /
 139 indexes / 36 triggers / 77 RLS policies / 58 functions / one view. No
-source table rows were read. Converter v29 reviews 18 exact Worker-owned
-timestamps: five columns from v26, three access-analytics columns, the two
-`fanmark_profiles` columns, and the `created_at` / `updated_at` columns for
-basic, messageboard, password, and redirect configs. Fixed-clock D1 tests cover
-settings creation/upsert, registration, transfer, profile, and access
-analytics paths. The report remains `deployable: false` with 49 operation-owned
-timestamp defaults and three unsupported function/RLS/trigger scopes (52
-blocking locations); all 11 exact Auth foreign keys remain reviewed. Converter
-tests pass 29/29, the migration-data suite 225/225, profile D1 tests 5/5,
-settings D1 tests 18/18, registration D1 tests 11/11, transfer D1 tests 9/9,
-and access analytics D1 tests 11/11. No source table rows were read.
+source table rows were read. Converter v30 reviews 20 exact Worker-owned
+timestamps: the five v26 columns, three access-analytics columns, two profile
+columns, eight settings columns, and two `emoji_master` columns. Fixed-clock
+D1 coverage verifies emoji-master admin create/update/import insert/upsert,
+including preservation of `created_at` when `updated_at` advances. The report
+remains `deployable: false` with 47 operation-owned timestamp defaults and
+three unsupported function/RLS/trigger scopes (50 blocking locations); all 11
+exact Auth foreign keys remain reviewed. Converter tests pass 30/30, migration
+data tests 226/226, auth D1 tests 27/27, Worker typecheck, and ESLint on changed
+files. The v30 head still needs its required CI check before merge.
 
 No source rows, production routing, user/Auth migration, Worker deployment, or
-domain/DNS settings were changed in this v29 work. The latest recorded
+domain/DNS settings were changed in v30. The latest recorded
 workers.dev-only staging version is
 version `d2330dd1-ce17-41c0-99d2-a81b242c412d` at 100%. An earlier run
 `36991654600` exposed an intermittent 120-second
