@@ -2,6 +2,7 @@
 
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import { convertSchema, validateDistinctPaths } from "./schema-convert.mjs";
@@ -233,7 +234,7 @@ test("conversion is deterministic and exposes exact target codecs", () => {
 
   assert.equal(first.report.target.tableCount, 4);
   assert.equal(first.report.target.columnCount, 15);
-  assert.equal(first.report.schemaVersion, 24);
+  assert.equal(first.report.schemaVersion, 25);
   assert.deepEqual(first.report.target.translatedConstraints, { p: 4, u: 0, f: 1, c: 3 });
   assert.equal(first.report.target.translatedIndexCount, 4);
   assert.deepEqual(
@@ -295,6 +296,81 @@ test("conversion is deterministic and exposes exact target codecs", () => {
   assert.ok(first.report.stageReadiness.schemaAndOperations.gateCodes.includes("unsupported_index_method"));
 });
 
+test("the exact reviewed Auth foreign keys become explicit non-DDL dispositions", () => {
+  const references = [
+    { table: "broadcast_emails", name: "broadcast_emails_created_by_fkey", column: "created_by", onDelete: null, deletion: "reject_before_effects" },
+    { table: "fanmark_availability_rules", name: "fanmark_availability_rules_created_by_fkey", column: "created_by", onDelete: "SET NULL", deletion: "set_null" },
+    { table: "fanmark_favorites", name: "fanmark_favorites_user_id_fkey", column: "user_id", onDelete: "CASCADE", deletion: "delete_rows" },
+    { table: "fanmark_licenses", name: "fanmark_licenses_user_id_fkey", column: "user_id", onDelete: "SET NULL", deletion: "set_null" },
+    { table: "notification_preferences", name: "notification_preferences_user_id_fkey", column: "user_id", onDelete: "CASCADE", deletion: "delete_rows" },
+    { table: "notification_rules", name: "notification_rules_created_by_fkey", column: "created_by", onDelete: "SET NULL", deletion: "set_null" },
+    { table: "notifications", name: "notifications_user_id_fkey", column: "user_id", onDelete: "CASCADE", deletion: "delete_rows" },
+    { table: "user_roles", name: "user_roles_created_by_fkey", column: "created_by", onDelete: "SET NULL", deletion: "set_null" },
+    { table: "user_roles", name: "user_roles_user_id_fkey", column: "user_id", onDelete: "CASCADE", deletion: "delete_rows" },
+    { table: "user_settings", name: "user_settings_user_id_fkey", column: "user_id", onDelete: "CASCADE", deletion: "delete_rows" },
+    { table: "user_subscriptions", name: "user_subscriptions_user_id_fkey", column: "user_id", onDelete: "CASCADE", deletion: "delete_rows" },
+  ];
+  const input = fixture();
+  input.constraints = input.constraints.filter((entry) => entry.name !== "child_auth_fkey");
+  const nextOrdinalByTable = new Map();
+  for (const reference of references) {
+    const ordinal = (nextOrdinalByTable.get(reference.table) ?? 0) + 1;
+    nextOrdinalByTable.set(reference.table, ordinal);
+    input.columns.push(column(reference.table, reference.column, ordinal, "uuid"));
+    const action = reference.onDelete ? ` ON DELETE ${reference.onDelete}` : "";
+    input.constraints.push(constraint(
+      reference.table,
+      reference.name,
+      "f",
+      `FOREIGN KEY (${reference.column}) REFERENCES auth.users(id)${action}`,
+    ));
+  }
+
+  const result = convertSchema(input);
+  const dispositions = result.report.target.reviewedAuthForeignKeys;
+  assert.equal(dispositions.length, references.length);
+  assert.deepEqual(dispositions.map(({ table, name, column, sourceOnDelete, accountDeletion }) => ({
+    table, name, column, sourceOnDelete, accountDeletion,
+  })), references.map((reference) => ({
+    table: reference.table,
+    name: reference.name,
+    column: reference.column,
+    sourceOnDelete: reference.onDelete ?? "NO ACTION (default)",
+    accountDeletion: reference.deletion,
+  })).sort((left, right) => left.table.localeCompare(right.table) || left.name.localeCompare(right.name)));
+  assert.equal(gateCodes(result.report).has("external_foreign_key"), false);
+  assert.equal(result.report.target.translatedConstraints.f, 1);
+  assert.doesNotMatch(result.sql, /auth\.users|REFERENCES "users"/i);
+
+  const sourceSchema = readFileSync(new URL("../../supabase/remote_schema.sql", import.meta.url), "utf8");
+  for (const reference of references) {
+    const action = reference.onDelete ? ` ON DELETE ${reference.onDelete}` : "";
+    const definition = new RegExp(
+      `ADD CONSTRAINT "${reference.name}" FOREIGN KEY \\("${reference.column}"\\) REFERENCES "auth"\\."users"\\("id"\\)${action};`,
+    );
+    assert.match(sourceSchema, definition, `missing exact source definition ${reference.name}`);
+  }
+});
+
+test("an exact Auth reference still gates when its source constraint changes", () => {
+  const input = fixture();
+  input.constraints = input.constraints.filter((entry) => entry.name !== "child_auth_fkey");
+  input.columns.push(column("fanmark_favorites", "user_id", 1, "uuid"));
+  input.constraints.push(constraint(
+    "fanmark_favorites",
+    "fanmark_favorites_user_id_fkey",
+    "f",
+    "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE SET NULL",
+  ));
+
+  const result = convertSchema(input);
+  const gate = result.report.gates.find((entry) => entry.code === "external_foreign_key");
+  assert.ok(gate?.locations.some((location) => (
+    location.table === "fanmark_favorites" && location.name === "fanmark_favorites_user_id_fkey"
+  )));
+  assert.deepEqual(result.report.target.reviewedAuthForeignKeys, []);
+});
+
 test("only array element types covered by the snapshot row contract avoid the array gate", () => {
   const input = fixture();
   input.columns.push(
@@ -332,7 +408,7 @@ test("money cents DDL accepts only the exact source numeric(10,2) range", () => 
 
 test("DATE schema checks preserve canonical calendar days for imports and later writes", () => {
   const result = convertSchema(calendarDateFixture());
-  assert.equal(result.report.schemaVersion, 24);
+  assert.equal(result.report.schemaVersion, 25);
   assert.equal(gateCodes(result.report).has("date_import_validation"), false);
   assert.match(result.sql, /"stat_date" IS NULL OR \([\s\S]*length\("stat_date"\) = 10[\s\S]*GLOB '\[0-9\].*-[0-9\].*-[0-9\].*'[\s\S]*substr\("stat_date", 1, 4\) BETWEEN '0001' AND '9999'[\s\S]*date\("stat_date", '\+0 days'\) IS "stat_date"/);
 
@@ -359,7 +435,7 @@ test("DATE schema checks preserve canonical calendar days for imports and later 
 
 test("TIMESTAMPTZ schema checks preserve canonical UTC microsecond text", () => {
   const result = convertSchema(timestampFixture());
-  assert.equal(result.report.schemaVersion, 24);
+  assert.equal(result.report.schemaVersion, 25);
   assert.ok(!gateCodes(result.report).has("timestamp_import_precision"));
   assert.ok(gateCodes(result.report).has("timestamp_default_requires_operation"));
   assert.match(result.sql, /"created_at" TEXT NOT NULL,/);
@@ -532,7 +608,7 @@ test("user timestamps omit defaults only when an importer or reviewed runtime wr
 
 test("JSONB text validation and target constraints preserve JSON null, SQL NULL, and exact text", () => {
   const result = convertSchema(fixture());
-  assert.equal(result.report.schemaVersion, 24);
+  assert.equal(result.report.schemaVersion, 25);
   assert.equal(gateCodes(result.report).has("json_import_validation"), false);
   assert.match(result.sql, /"metadata" IS NULL OR json_valid\("metadata"\)/);
 
@@ -710,7 +786,7 @@ test("the four reviewed live GIN indexes have explicit D1 query-contract disposi
   );
 
   const result = convertSchema(input);
-  assert.equal(result.report.schemaVersion, 24);
+  assert.equal(result.report.schemaVersion, 25);
   assert.deepEqual(result.report.target.indexAdaptations.map((entry) => entry.sourceIndex), [
     "idx_emoji_master_keywords",
     "idx_emoji_master_short_name",
@@ -754,7 +830,7 @@ test("known ASCII PostgreSQL regex checks require a reviewed locale proof", () =
     .flatMap((gate) => gate.locations)
     .filter((location) => sourceCheckNames.has(location.name));
   assert.deepEqual(untranslatedSourceChecks, []);
-  assert.equal(result.report.schemaVersion, 24);
+  assert.equal(result.report.schemaVersion, 25);
 
   const cases = [
     ["invitation_codes", "code", "ABC123", true],
@@ -986,7 +1062,7 @@ test("the exact recent-active view is adapted only to the reviewed D1 query", ()
   input.views = [{ kind: "view", name: "recent_active_fanmarks", definition }];
 
   const result = convertSchema(input);
-  assert.equal(result.report.schemaVersion, 24);
+  assert.equal(result.report.schemaVersion, 25);
   assert.equal(result.report.deployable, false);
   assert.deepEqual(result.report.target.catalogScopeAdaptations, [{
     scope: "views",

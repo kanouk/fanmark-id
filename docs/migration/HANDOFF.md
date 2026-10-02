@@ -1,9 +1,9 @@
 # Cloudflare migration handoff
 
 Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
-open and draft. Its current head `bd7c8bd` passed both CI jobs in run
-`36999647995`; that commit updates migration inventory documentation and did
-not redeploy the Worker. The latest recorded workers.dev-only staging version is
+open and draft. Its current remote head `83648f4` passed both CI jobs in run
+`37002336200`; that run predates the local schema-converter v25 change below
+and did not deploy the Worker. The latest recorded workers.dev-only staging version is
 version `d2330dd1-ce17-41c0-99d2-a81b242c412d` at 100%. An earlier run
 `36991654600` exposed an intermittent 120-second
 stall in the PGlite-heavy `subscription-application.test.mjs`; running it in a
@@ -48,8 +48,8 @@ Supabase DB container is unavailable in this worktree.
 
 The offline frontend report was regenerated at base `63b6018`. Exact
 211-location coverage is guarded by
-`scripts/migration/test-frontend-callsite-mapping.mjs`; the latest
-`test:migration-data` run passes 215/215. A schema-only Supabase readback
+`scripts/migration/test-frontend-callsite-mapping.mjs`; the latest full
+`test:migration-data` run passes 220/220. A schema-only Supabase readback
 refreshed `supabase/remote_schema.sql` to 40 tables / 406 columns / 58
 functions / 77 policies. The five added functions, three added tables, and
 policy changes match checked-in migrations. Read-only Functions metadata
@@ -60,10 +60,14 @@ MFA check; it is not deployed. The active version 14 still has service-role
 access without those handler checks, so its production disposition remains a
 security gate. No live function was invoked or changed.
 
-Converter v24 now recognizes the D1 notification archiver as the explicit
-writer for `notifications_history.archived_at`; its selector remains disabled
-in staging. External Auth references and untranslated function/RLS/trigger
-behavior remain blocking gates, so the converter is still `deployable: false`.
+Converter v24 recognized the D1 notification archiver as the explicit writer
+for `notifications_history.archived_at`; its selector remains disabled in
+staging. The local v25 change now records only the 11 exact `auth.users(id)`
+constraints as reviewed cross-database identity/deletion dispositions; it emits
+no Auth foreign keys into D1 SQL and unknown or changed constraints remain
+blocking. The importer still requires read-only Auth D1 identity preflight
+before business writes. Functions/RLS/triggers and 67 operation-owned timestamp
+defaults remain blocking, so the converter stays `deployable: false`.
 A guarded synthetic post-write rehearsal passed on 2026-10-02: the Stripe
 effect ran once, D1 Time Travel and encrypted R2 restore preserved admin MFA
 and the avatar, and five frozen writes were rejected. Provider-backed
@@ -71,9 +75,12 @@ acceptance and production stop/recovery targets remain open.
 
 The latest schema-only Supabase query completed at `2026-10-02T11:17:58Z` and
 again returned 40 tables / 406 columns / 58 functions / 36 triggers / 77 RLS
-policies. Converter v24 remains `deployable: false` with 5 groups / 81
-locations: 11 external Auth foreign keys, 67 timestamp-default operations,
-and functions/RLS/triggers. A fresh 40-table synthetic importer replay passed
+policies. Converter v25 now has 4 groups / 70 blocking locations: 67
+timestamp-default operations and functions/RLS/triggers. It separately reports
+all 11 exact Auth FK dispositions, verifies those definitions against
+`supabase/remote_schema.sql`, and preserves the D1 importer's Auth identity
+preflight. Converter tests pass 24/24, account-deletion D1 tests pass 5/5, and
+the complete local migration suite passes 220/220. A fresh 40-table synthetic importer replay passed
 40/40 checkpoints with 12 synthetic rows, six Auth identity lookups, two
 credential transforms, one durable inactive-credential deferral, exact
 timestamp readback, and conflicting-coverage rejection. It remains
@@ -4007,3 +4014,17 @@ application typecheck and targeted ESLint passed, and
 jobs before these code changes; CI for this update remains required. No
 Supabase function, database, Cloudflare resource, user row, production route,
 or domain/DNS setting changed.
+
+## 2026-10-02 staged notification archive canary
+
+`npm run test:staging-notification-archive-smoke` passed using a local
+scheduled Worker with a temporary `NOTIFICATION_ARCHIVE_BACKEND=d1` selector
+and the APAC staging business D1. The guarded preflight matched the 40-table
+schema, archive index, notification/reference/email/coupon master baselines,
+public settings, and empty Auth/user-owned tables. Six unique synthetic rows
+covered delivered, failed, pending, cancelled, recent-delivered, and sent
+cases. The two due delivered/failed rows moved to history with exact source
+payload and six-digit UTC archive timestamps; four ineligible rows remained.
+Cleanup and baseline readback passed with zero synthetic notification/history
+rows. No Worker deployment, Cron/selector setting, Supabase source row,
+production route, or domain/DNS state changed.

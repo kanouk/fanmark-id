@@ -1,5 +1,23 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 converter v25: exact Auth foreign-key dispositions
+
+現在のschema-only catalog（11:17 UTC）で観測した`auth.users(id)`参照11本を、
+constraint名・source table/column・source UUID型・delete actionの完全一致で照合する。
+一致する参照はD1 SQLへ出力せず、`reviewedAuthForeignKeys`として変換reportに記録する。
+現在の`supabase/remote_schema.sql`をテストで照合し、1本でも名前・列・actionが変われば
+従来どおりblocking gateに戻る。その他のexternal FKも引き続きgateする。
+
+D1 import計画は別途Auth参照を検出し、すべての非NULL UUIDをread-only Auth D1 lookupで
+業務D1書込み前に確認する。account deletionはBetter Auth経由の既存Worker操作に限定し、
+CASCADEとSET NULLを業務D1で処理、`broadcast_emails.created_by`のNO ACTIONは副作用前に
+削除を拒否する。これらの経路は既存のD1テストで検証済み。クロスDBの物理FK自体はなく、
+function/RLS/triggerおよびtimestamp操作のgateも残るため、schema全体は未deployable。
+
+converter単体24/24、account-deletion D1 5/5、`npm run test:migration-data` 220/220を確認。
+この変更はschema変換準備のみで、実ユーザー行の読出し・移行、staging/production D1/R2への
+書込み、Worker deploy、ドメイン/DNS変更はしていない。
+
 ## 2026-10-02 最新read-only catalogとsynthetic import再生（11:17 UTC）
 
 `npx --yes supabase@2.119.0 db query --linked --file
@@ -10,8 +28,9 @@ SQLは`BEGIN READ ONLY`でcatalog metadataのみを読む。観測時刻は
 の一時directory内だけに保存し、終了時に削除した。source table rowsは取得していない。
 
 value-free credential descriptorを渡したconverter v24は`deployable: false`
-のまま、5 gate groups / 81 locationsを返した。内訳はexternal Auth foreign keys
-11、operation-owned timestamp defaults 67、未翻訳のfunctions / RLS policies /
+のまま、5 gate groups / 81 locationsを返した。この後のv25では外部Auth参照11本を
+完全一致のreviewed dispositionへ移し、残るblocking gateは4 groups / 70 locationsとなる。
+内訳はoperation-owned timestamp defaults 67、未翻訳のfunctions / RLS policies /
 triggers各1 group。別のtimestamp-writer auditは79 defaults、99 INSERT column
 lists、11 defaults without a direct literal writer、unparsed INSERT 0件を返した。
 このaudit countとconverter gate countは範囲が異なる。
@@ -4917,3 +4936,15 @@ targeted ESLint, and migration data tests passed (218/218). The live version
 was not invoked or deployed; its partial, non-transactional behavior and
 possible external callers remain unresolved. No source rows or Cloudflare
 resources were changed.
+
+## 2026-10-02 staging notification archive canary
+
+`npm run test:staging-notification-archive-smoke` passed with six unique
+synthetic rows in the staging business D1 and a local scheduled Worker using a
+temporary archive selector. It archived the two >90-day delivered/failed rows
+with their exact payloads and explicit six-digit UTC archive timestamp, while
+retaining four ineligible rows. The script's account/schema/master-baseline
+guards passed; cleanup and independent readback found zero synthetic source or
+history rows and preserved the existing master/public-settings baseline.
+Auth stayed empty. No deployed Worker, Cron configuration, Supabase source
+row, production route, actual user data, or domain/DNS setting changed.

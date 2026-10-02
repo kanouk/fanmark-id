@@ -17,7 +17,7 @@ import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 24;
+export const SCHEMA_CONVERSION_VERSION = 25;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -59,6 +59,41 @@ const REVIEWED_SNAPSHOT_IMPORT_ONLY_TIMESTAMPS = new Set([
   "notification_preferences.created_at",
   "notification_preferences.updated_at",
   "user_roles.created_at",
+]);
+const REVIEWED_AUTH_FOREIGN_KEYS = new Map([
+  ["broadcast_emails_created_by_fkey", {
+    table: "broadcast_emails", column: "created_by", onDelete: null, accountDeletion: "reject_before_effects",
+  }],
+  ["fanmark_availability_rules_created_by_fkey", {
+    table: "fanmark_availability_rules", column: "created_by", onDelete: "SET NULL", accountDeletion: "set_null",
+  }],
+  ["fanmark_favorites_user_id_fkey", {
+    table: "fanmark_favorites", column: "user_id", onDelete: "CASCADE", accountDeletion: "delete_rows",
+  }],
+  ["fanmark_licenses_user_id_fkey", {
+    table: "fanmark_licenses", column: "user_id", onDelete: "SET NULL", accountDeletion: "set_null",
+  }],
+  ["notification_preferences_user_id_fkey", {
+    table: "notification_preferences", column: "user_id", onDelete: "CASCADE", accountDeletion: "delete_rows",
+  }],
+  ["notification_rules_created_by_fkey", {
+    table: "notification_rules", column: "created_by", onDelete: "SET NULL", accountDeletion: "set_null",
+  }],
+  ["notifications_user_id_fkey", {
+    table: "notifications", column: "user_id", onDelete: "CASCADE", accountDeletion: "delete_rows",
+  }],
+  ["user_roles_created_by_fkey", {
+    table: "user_roles", column: "created_by", onDelete: "SET NULL", accountDeletion: "set_null",
+  }],
+  ["user_roles_user_id_fkey", {
+    table: "user_roles", column: "user_id", onDelete: "CASCADE", accountDeletion: "delete_rows",
+  }],
+  ["user_settings_user_id_fkey", {
+    table: "user_settings", column: "user_id", onDelete: "CASCADE", accountDeletion: "delete_rows",
+  }],
+  ["user_subscriptions_user_id_fkey", {
+    table: "user_subscriptions", column: "user_id", onDelete: "CASCADE", accountDeletion: "delete_rows",
+  }],
 ]);
 const REVIEWED_RUNTIME_TIMESTAMP_WRITES = new Map([
   ["notifications_history.archived_at", {
@@ -1097,7 +1132,7 @@ function parseForeignKey(definition) {
   };
 }
 
-function translateForeignKey(constraint, columnsByTable, tableNames, gates) {
+function translateForeignKey(constraint, columnsByTable, tableNames, gates, reviewedAuthForeignKeys) {
   const parsed = parseForeignKey(constraint.definition);
   const location = { kind: "constraint", table: constraint.table_name, name: constraint.name };
   if (!parsed || !ensureColumns(constraint.table_name, parsed.columns, columnsByTable)) {
@@ -1107,7 +1142,53 @@ function translateForeignKey(constraint, columnsByTable, tableNames, gates) {
   const referenceParts = parsed.reference.split(".");
   const referenceSchema = referenceParts.length === 2 ? referenceParts[0] : "public";
   const referenceTable = referenceParts.at(-1);
+  const remaining = parsed.actions;
+  const actionMatches = [...remaining.matchAll(/ON\s+(DELETE|UPDATE)\s+(CASCADE|SET\s+NULL|SET\s+DEFAULT|RESTRICT|NO\s+ACTION)/gi)];
+  const remainder = remaining.replace(/ON\s+(DELETE|UPDATE)\s+(CASCADE|SET\s+NULL|SET\s+DEFAULT|RESTRICT|NO\s+ACTION)/gi, "").trim();
+  if (remainder !== "") {
+    gates.add("unsupported_foreign_key_action", "Foreign-key action syntax needs an explicit translation.", location);
+    return null;
+  }
   if (referenceSchema !== "public" || !tableNames.has(referenceTable)) {
+    const reviewed = referenceSchema === "auth" && referenceTable === "users"
+      ? REVIEWED_AUTH_FOREIGN_KEYS.get(constraint.name)
+      : null;
+    const sourceColumn = parsed.columns.length === 1
+      ? columnsByTable.get(constraint.table_name)?.get(parsed.columns[0])
+      : null;
+    const actualDeleteActions = actionMatches
+      .filter((match) => match[1].toUpperCase() === "DELETE")
+      .map((match) => match[2].replace(/\s+/g, " ").toUpperCase());
+    const hasNoUpdateAction = actionMatches.every((match) => match[1].toUpperCase() !== "UPDATE");
+    const exactReviewedAuthReference = reviewed &&
+      reviewed.table === constraint.table_name &&
+      parsed.columns.length === 1 && parsed.columns[0] === reviewed.column &&
+      parsed.referenceColumns.length === 1 && parsed.referenceColumns[0] === "id" &&
+      sourceColumn?.postgres_type?.toLowerCase() === "uuid" &&
+      hasNoUpdateAction &&
+      (reviewed.onDelete === null
+        ? actualDeleteActions.length === 0
+        : actualDeleteActions.length === 1 && actualDeleteActions[0] === reviewed.onDelete);
+    if (exactReviewedAuthReference) {
+      reviewedAuthForeignKeys.push({
+        kind: "constraint",
+        table: reviewed.table,
+        column: reviewed.column,
+        name: constraint.name,
+        sourceReference: "auth.users(id)",
+        sourceOnDelete: reviewed.onDelete ?? "NO ACTION (default)",
+        targetConstraint: null,
+        identityPreflight: "read_only_auth_d1_lookup_before_business_writes",
+        accountDeletion: reviewed.accountDeletion,
+        evidence: [
+          "supabase/remote_schema.sql",
+          "scripts/migration/d1-import.mjs",
+          "workers/api/src/account-deletion-d1-api.ts",
+          "workers/api/test/account-deletion-d1.test.ts",
+        ],
+      });
+      return null;
+    }
     gates.add("external_foreign_key", "The catalog references an external identity table; do not create placeholder users in D1.", location);
     return null;
   }
@@ -1116,13 +1197,6 @@ function translateForeignKey(constraint, columnsByTable, tableNames, gates) {
     return null;
   }
   let actions = "";
-  const remaining = parsed.actions;
-  const actionMatches = [...remaining.matchAll(/ON\s+(DELETE|UPDATE)\s+(CASCADE|SET\s+NULL|SET\s+DEFAULT|RESTRICT|NO\s+ACTION)/gi)];
-  const remainder = remaining.replace(/ON\s+(DELETE|UPDATE)\s+(CASCADE|SET\s+NULL|SET\s+DEFAULT|RESTRICT|NO\s+ACTION)/gi, "").trim();
-  if (remainder !== "") {
-    gates.add("unsupported_foreign_key_action", "Foreign-key action syntax needs an explicit translation.", location);
-    return null;
-  }
   for (const match of actionMatches) actions += ` ON ${match[1].toUpperCase()} ${match[2].toUpperCase()}`;
   return `CONSTRAINT ${quoteIdentifier(constraint.name)} FOREIGN KEY (${parsed.columns.map(quoteIdentifier).join(", ")}) REFERENCES ${quoteIdentifier(referenceTable)} (${parsed.referenceColumns.map(quoteIdentifier).join(", ")})${actions}`;
 }
@@ -1396,7 +1470,13 @@ function renderTable(tableName, tableColumns, sourceConstraints, context) {
       definitions.push({ order: 20_000 + sourceOrder[constraint.kind], sql: `CONSTRAINT ${quoteIdentifier(constraint.name)} ${prefix} (${names.map(quoteIdentifier).join(", ")})` });
       context.translatedConstraints[constraint.kind] += 1;
     } else if (constraint.kind === "f") {
-      const foreignKey = translateForeignKey(constraint, context.columnsByTable, context.tableNames, context.gates);
+      const foreignKey = translateForeignKey(
+        constraint,
+        context.columnsByTable,
+        context.tableNames,
+        context.gates,
+        context.reviewedAuthForeignKeys,
+      );
       if (foreignKey) {
         definitions.push({ order: 30_000, sql: foreignKey });
         context.translatedConstraints.f += 1;
@@ -1491,6 +1571,7 @@ export function convertSchema(catalogInput, options = {}) {
     sequenceStateColumns,
     credentialDescriptorPlan,
     reviewedDefaultDispositions: [],
+    reviewedAuthForeignKeys: [],
     databaseLocale: catalog.database_locale,
     regexRangeProbe: catalog.regex_range_probe,
     indexAdaptations: [],
@@ -1574,6 +1655,9 @@ export function convertSchema(catalogInput, options = {}) {
       catalogScopeAdaptations: context.catalogScopeAdaptations,
       reviewedDefaultDispositions: context.reviewedDefaultDispositions.sort((left, right) => (
         left.table.localeCompare(right.table) || left.column.localeCompare(right.column)
+      )),
+      reviewedAuthForeignKeys: context.reviewedAuthForeignKeys.sort((left, right) => (
+        left.table.localeCompare(right.table) || left.name.localeCompare(right.name)
       )),
       typeMappings: Object.fromEntries([...typeCounts.entries()].sort(([left], [right]) => left.localeCompare(right))),
       columnCodecs: columnCodecs.sort((left, right) => left.table.localeCompare(right.table) || left.column.localeCompare(right.column)),
