@@ -1,19 +1,17 @@
 # Cloudflare migration handoff
 
 Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
-open and draft at `578e7cd`. On prior head `d512fbb`, the Worker API CI job
-passed and the application job failed because a Stripe test fixed its license
-expiry to 2026-10-01, which had elapsed; the fixture now uses a future UTC
-date. The full Stripe receipt test suite passes locally after that fix, and
-GitHub Actions run `36965774714` is validating the new head. The active
-Wrangler profile `fanmark-staging-inapp` is logged
+open and draft. GitHub Actions run `36965838066` passed both required jobs.
+The previous run exposed a Stripe test fixture fixed to 2026-10-01 after that
+date had elapsed; the fixture now uses a future UTC date, and the full Stripe
+receipt suite passes. CI validated code and build only; it did not deploy the
+application. The active Wrangler profile `fanmark-staging-inapp` is logged
 into the intended Fanmark.id account. Fresh readback at this checkpoint shows
 staging Worker `fanmark-app-staging` version
 `9ab4f6f9-ecf2-41b0-87fe-c75f26d6c8ea` at 100%, and no unapplied migrations
 in Business, Auth, or emoji-master staging D1. The deployment contains the
-Worker change from `3a93f8b`; later `fef0112`/`28fa8c1`/`d512fbb`/`578e7cd`
-changes are converter, audit, tests, and documentation and were not part of
-that Worker deployment.
+Worker change from `3a93f8b`; later schema conversion, audit, test, and
+documentation commits were not part of that Worker deployment.
 
 The app staging config retains Cron schedules `* * * * *` and `0 0 * * *`.
 `NOTIFICATION_PROCESSOR_BACKEND=d1` is configured; the expiry selector

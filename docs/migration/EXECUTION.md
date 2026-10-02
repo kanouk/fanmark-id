@@ -1,16 +1,15 @@
 # Cloudflare移行の実行・再開手順
 
-## 2026-10-02 PR #41 head, staging Worker, and D1 readback
+## 2026-10-02 PR #41 validation, staging Worker, and D1 readback
 
-PR #41 remains open and draft at head `578e7cd77794d4dc93acdd4d88fec1e185808624`.
-On prior head `d512fbb70ca7f1d7e4eb1ea42d32829b82fc5c5e`, Worker API validation
-passed, while the application job found a date-sensitive Stripe test fixture:
-its fixed 2026-10-01 license expiry had elapsed on 2026-10-02. The fixture now
-uses a future UTC date; `npm --prefix experiments/stripe-receipts test` passes
-locally, and GitHub Actions run `36965774714` is validating the fix. The
-commits after deployed Worker source `3a93f8b` update schema conversion,
-auditing, tests, and documentation; they do not change the deployed Worker
-bundle.
+PR #41 remains open and draft. GitHub Actions run `36965838066` passed both
+the Cloudflare staging application and Worker API jobs. A prior run exposed a
+date-sensitive Stripe test fixture whose fixed 2026-10-01 license expiry had
+elapsed on 2026-10-02; the fixture now uses a future UTC date, and
+`npm --prefix experiments/stripe-receipts test` passes locally. CI validated
+code and build only; it did not deploy the application. Commits after deployed
+Worker source `3a93f8b` update schema conversion, auditing, tests, and
+documentation; they do not change the deployed Worker bundle.
 
 Using the explicit `fanmark-staging-inapp` Wrangler profile, read-only
 deployment history showed `fanmark-app-staging` version
