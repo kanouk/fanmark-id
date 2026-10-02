@@ -108,4 +108,82 @@ describe("cutover write freeze", () => {
 
     expect(waitUntilCalls).toBe(0);
   });
+
+  it("records Cron receipt and freeze state only through the explicit diagnostics binding", async () => {
+    const events: Array<{ sql: string; values: unknown[] }> = [];
+    const diagnosticsDatabase = {
+      prepare(sql: string) {
+        return {
+          bind(...values: unknown[]) {
+            return {
+              run: async () => {
+                events.push({ sql, values });
+                return { success: true, meta: { changes: 1 } };
+              },
+            };
+          },
+        };
+      },
+    } as unknown as D1Database;
+    const controller = { cron: "* * * * *", scheduledTime: 1_791_232_200_000 } as ScheduledController;
+    const ctx = { waitUntil: () => {} } as unknown as ExecutionContext;
+
+    await worker.scheduled!(controller, {
+      ...runtimeEnv,
+      CUTOVER_WRITE_FREEZE: "true",
+      SCHEDULED_DISPATCH_DIAGNOSTICS: "true",
+      SCHEDULED_DISPATCH_DIAGNOSTICS_DB: diagnosticsDatabase,
+    }, ctx);
+
+    expect(events.map(({ values }) => values[3])).toEqual(["received", "paused"]);
+    expect(events.every(({ sql }) => sql.includes("migration_scheduled_dispatch_diagnostics"))).toBe(true);
+    expect(JSON.parse(String(events[1]?.values[5]))).toEqual({ code: "cutover_write_freeze" });
+  });
+
+  it("records the selected Stripe job and its completion without enabling Stripe dispatch", async () => {
+    const events: Array<{ values: unknown[] }> = [];
+    const diagnosticsDatabase = {
+      prepare() {
+        return {
+          bind(...values: unknown[]) {
+            return {
+              run: async () => {
+                events.push({ values });
+                return { success: true, meta: { changes: 1 } };
+              },
+            };
+          },
+        };
+      },
+    } as unknown as D1Database;
+    const controller = { cron: "* * * * *", scheduledTime: 1_791_232_200_000 } as ScheduledController;
+    const ctx = { waitUntil: () => {} } as unknown as ExecutionContext;
+
+    await worker.scheduled!(controller, {
+      ...runtimeEnv,
+      CUTOVER_WRITE_FREEZE: "false",
+      SCHEDULED_DISPATCH_DIAGNOSTICS: "true",
+      SCHEDULED_DISPATCH_DIAGNOSTICS_DB: diagnosticsDatabase,
+      NOTIFICATION_PROCESSOR_BACKEND: undefined,
+      STRIPE_DISPATCH_BACKEND: undefined,
+      BROADCAST_EMAIL_BACKEND: undefined,
+      BROADCAST_SEND_BACKEND: undefined,
+    }, ctx);
+
+    const stages = events.map(({ values }) => `${values[3]}:${values[4]}`);
+    expect(stages).toContain("received:");
+    expect(stages).toContain("selected:");
+    expect(stages).toContain("job_started:stripe-webhook-dispatch");
+    expect(stages).toContain("job_completed:stripe-webhook-dispatch");
+    const selected = events.find(({ values }) => values[3] === "selected");
+    expect(JSON.parse(String(selected?.values[5]))).toEqual({
+      selectedJobs: ["notification-events", "stripe-webhook-dispatch"],
+    });
+    const completed = events.find(({ values }) => values[3] === "job_completed");
+    expect(JSON.parse(String(completed?.values[5]))).toMatchObject({
+      status: "disabled",
+      claimed: 0,
+      applied: 0,
+    });
+  });
 });

@@ -4696,3 +4696,40 @@ timestamps read back exactly as six-digit UTC text; a tampered credential
 coverage record was rejected. The status remains `public_rows_reconciled`,
 with `fullMigrationReconciled: false`. No source application rows, remote D1,
 R2, production route, or DNS/domain state was read or changed.
+
+## 2026-10-02 full synthetic post-write recovery and Cron diagnostics
+
+The prior MFA-integrated Stripe recovery attempt timed out before any synthetic
+dispatch attempt. To separate Cron delivery from dispatch execution, the
+temporary Worker now writes value-free `received`, `selected`, Stripe job
+start/completion/failure, and freeze-pause records to a dedicated disposable
+D1 binding. The diagnostics binding is absent from `fanmark-app-staging`; the
+MFA-only rehearsal does not create it.
+
+The guarded full rehearsal passed from `2026-10-02T07:50:30.142Z` through
+`2026-10-02T08:00:31.163Z`. It applied 20 business and 3 Auth migrations to
+disposable D1s, completed 5 synthetic signup/write-freeze probes (0 accepted,
+5 rejected), and rejected an avatar upload with `503 cutover_write_freeze`.
+The diagnostic D1 recorded 5 Cron receipts, 3 selected every-minute jobs,
+3 Stripe dispatch starts/completions, and 2 pauses during freeze. The synthetic
+extension receipt reached `applied/completed` in one attempt; its business
+effect survived both recovery paths. No Stripe API request was made.
+
+D1 Time Travel reconciliation completed in 19,638 ms. The verified encrypted
+two-object R2 bundle replay completed in 64,368 ms. Synthetic admin MFA state,
+waitlist state, Stripe extension state, and avatar bytes survived Time Travel
+and were restored from the encrypted bundle. Cleanup reported true for the
+temporary Worker, business/Auth/diagnostics D1s, local config, recovery-bucket
+objects, synthetic avatar, and private recovery artifacts. Independent
+readback found zero disposable recovery D1s, the Worker returned Cloudflare
+`10007` (“does not exist”), and the private recovery bucket had 0 objects / 0
+bytes. The avatar cleanup readback checked only the synthetic key.
+
+Worker regression tests, Worker typecheck, focused Cron tests (8/8), migration
+data tests (207/207), CI isolation, staging Worker dry-run, targeted ESLint,
+script syntax, and `git diff --check` passed. This closes the synthetic
+MFA/Auth + Stripe + waitlist + Storage recovery slice only. It does not prove
+provider-backed Stripe/Resend/OAuth acceptance, production readiness, source
+row parity, real user/Auth/Storage migration, or domain/DNS cutover. No
+production route, live payment, email send, real user row, or domain setting
+was changed.

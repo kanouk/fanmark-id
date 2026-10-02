@@ -130,6 +130,7 @@ import {
 } from "./broadcast-email-delivery-d1";
 import { handleBroadcastEmailWebhookRequest } from "./broadcast-email-webhook-d1";
 import { selectScheduledJobs } from "./scheduled-dispatch";
+import { recordScheduledDispatchDiagnostic } from "./scheduled-dispatch-diagnostics";
 import {
   createEmojiMasterD1Repository,
   EmojiCatalogConfigurationError,
@@ -1651,6 +1652,24 @@ const worker = {
   async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
     const freezeState = cutoverWriteFreezeState(env.CUTOVER_WRITE_FREEZE);
     const diagnosticsEnabled = env.SCHEDULED_DISPATCH_DIAGNOSTICS?.trim() === "true";
+    const writeDiagnostic = async (
+      stage: "received" | "paused" | "selected" | "job_started" | "job_completed" | "job_failed",
+      jobName?: "license-expiry" | "notification-events" | "stripe-webhook-dispatch" | "broadcast-email-delivery",
+      details?: Parameters<typeof recordScheduledDispatchDiagnostic>[1]["details"],
+    ): Promise<void> => {
+      if (!diagnosticsEnabled || !env.SCHEDULED_DISPATCH_DIAGNOSTICS_DB) return;
+      try {
+        await recordScheduledDispatchDiagnostic(env.SCHEDULED_DISPATCH_DIAGNOSTICS_DB, {
+          cron: controller.cron,
+          scheduledTime: controller.scheduledTime,
+          stage,
+          ...(jobName ? { jobName } : {}),
+          ...(details ? { details } : {}),
+        });
+      } catch {
+        console.error(JSON.stringify({ job: "scheduled-dispatch-diagnostic", status: "failed" }));
+      }
+    };
     if (diagnosticsEnabled) {
       console.log(JSON.stringify({
         job: "scheduled-dispatch",
@@ -1659,12 +1678,16 @@ const worker = {
         cutoverWriteFreeze: freezeState,
       }));
     }
+    await writeDiagnostic("received", undefined, { status: "received" });
     if (shouldPauseScheduledJobsForCutover(env.CUTOVER_WRITE_FREEZE)) {
       console.log(JSON.stringify({
         job: "scheduled-dispatch",
         status: "paused",
         reason: freezeState === "invalid" ? "invalid_cutover_write_freeze" : "cutover_write_freeze",
       }));
+      await writeDiagnostic("paused", undefined, {
+        code: freezeState === "invalid" ? "invalid_cutover_write_freeze" : "cutover_write_freeze",
+      });
       return;
     }
     const selectedJobs = new Set(selectScheduledJobs(controller.cron, env));
@@ -1676,6 +1699,7 @@ const worker = {
         selectedJobs: [...selectedJobs],
       }));
     }
+    await writeDiagnostic("selected", undefined, { selectedJobs: [...selectedJobs] });
     const jobs: Promise<unknown>[] = [];
     if (selectedJobs.has("license-expiry")) {
       jobs.push(runScheduledLicenseExpiry({
@@ -1726,13 +1750,18 @@ const worker = {
         }));
     }
     if (selectedJobs.has("stripe-webhook-dispatch")) {
-      jobs.push(runScheduledStripeWebhookDispatches({ env, scheduledTime: controller.scheduledTime })
-        .then((summary) => {
+      jobs.push((async () => {
+        await writeDiagnostic("job_started", "stripe-webhook-dispatch", { status: "started" });
+        try {
+          const summary = await runScheduledStripeWebhookDispatches({ env, scheduledTime: controller.scheduledTime });
+          await writeDiagnostic("job_completed", "stripe-webhook-dispatch", summary);
           console.log(JSON.stringify({ job: "stripe-webhook-dispatch", ...summary }));
-        }).catch((error: unknown) => {
+        } catch (error) {
+          await writeDiagnostic("job_failed", "stripe-webhook-dispatch", { code: "stripe_dispatch_failed" });
           console.error(JSON.stringify({ job: "stripe-webhook-dispatch", status: "failed", code: "stripe_dispatch_failed" }));
           throw error;
-        }));
+        }
+      })());
     }
     if (selectedJobs.has("broadcast-email-delivery")) {
       jobs.push((async () => {

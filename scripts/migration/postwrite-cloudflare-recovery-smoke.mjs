@@ -36,6 +36,7 @@ const webhookApiVersion = "2025-08-27.basil";
 const mfaRecoveryOnly = process.argv.includes("--mfa-recovery-only");
 const startedAt = new Date().toISOString();
 const suffix = randomBytes(8).toString("hex");
+const diagnosticsDatabaseName = `fanmark-recovery-diagnostics-${Date.now()}-${suffix}`;
 const databaseName = `fanmark-recovery-${Date.now()}-${suffix}`;
 const authDatabaseName = `fanmark-auth-recovery-${Date.now()}-${suffix}`;
 const workerName = `fanmark-recovery-${Date.now()}-${suffix}`;
@@ -82,11 +83,13 @@ let creationMayHaveSucceeded = false;
 let authCreationMayHaveSucceeded = false;
 let databaseId = null;
 let authDatabaseId = null;
+let diagnosticsDatabaseCreationMayHaveSucceeded = false;
+let diagnosticsDatabaseId = null;
 let workerMayExist = false;
 let tempConfigWritten = false;
 let primaryError = null;
 let report = {
-  schemaVersion: 4,
+  schemaVersion: 5,
   startedAt,
   accountId,
   phase: "preflight",
@@ -94,6 +97,7 @@ let report = {
   failureKind: null,
   database: { name: databaseName, id: null, expectedMigrationCount: null },
   authDatabase: { name: authDatabaseName, id: null, expectedMigrationCount: null },
+  diagnosticsDatabase: mfaRecoveryOnly ? null : { name: diagnosticsDatabaseName, id: null },
   worker: {
     name: workerName,
     origin: null,
@@ -133,6 +137,7 @@ let report = {
     stripeBusinessEffectSurvivedTimeTravel: false,
     stripeBusinessEffectRestoredFromEncryptedBundle: false,
     stripeDispatcherLastReadback: null,
+    scheduledDispatchDiagnosticsLastReadback: [],
     stripeReadbackTransientErrorCount: 0,
     stripeReadbackLastTransientErrorCode: null,
   },
@@ -140,6 +145,7 @@ let report = {
     workerDeleted: false,
     databaseDeleted: false,
     authDatabaseDeleted: false,
+    diagnosticsDatabaseDeleted: mfaRecoveryOnly,
     configDeleted: false,
     r2ObjectsDeleted: false,
     storageObjectsDeleted: false,
@@ -405,7 +411,12 @@ function createTemporaryConfig() {
       migrations_dir: "migrations",
       migrations_pattern: "migrations/{0003_better_auth_core.sql,0007_auth_signup_command.sql,0008_auth_user_suspension.sql}",
       remote: true,
-    }],
+    }, ...(!mfaRecoveryOnly ? [{
+      binding: "SCHEDULED_DISPATCH_DIAGNOSTICS_DB",
+      database_name: diagnosticsDatabaseName,
+      database_id: diagnosticsDatabaseId,
+      remote: true,
+    }] : [])],
     ratelimits: [{
       name: "WAITLIST_SIGNUP_LIMITER",
       namespace_id: String(namespaceId),
@@ -434,6 +445,10 @@ function createTemporaryConfig() {
       temporaryConfig.r2_buckets[0]?.binding !== "AVATARS_BUCKET" ||
       temporaryConfig.r2_buckets[0]?.bucket_name !== avatarBucketName) {
     fail("temporary_worker_scope_invalid");
+  }
+  if (temporaryConfig.d1_databases.length !== (mfaRecoveryOnly ? 2 : 3) ||
+      (!mfaRecoveryOnly && temporaryConfig.d1_databases[2]?.binding !== "SCHEDULED_DISPATCH_DIAGNOSTICS_DB")) {
+    fail("temporary_worker_d1_scope_invalid");
   }
 
   return { config: temporaryConfig, origin };
@@ -477,6 +492,57 @@ function createAuthDatabase() {
       !/^[0-9a-f-]{36}$/iu.test(databaseIdOf(database))) fail("temporary_auth_database_create_readback_failed");
   authDatabaseId = databaseIdOf(database);
   report.authDatabase.id = authDatabaseId;
+}
+
+function getTemporaryDiagnosticsDatabase() {
+  return getTemporaryDatabaseByName(diagnosticsDatabaseName, "temporary_diagnostics_database_name_ambiguous");
+}
+
+function createDiagnosticsDatabase() {
+  diagnosticsDatabaseCreationMayHaveSucceeded = true;
+  runWrangler(["d1", "create", diagnosticsDatabaseName, "--location=apac"], { configRelative: appConfigRelative });
+  const database = getTemporaryDiagnosticsDatabase();
+  if (!database || typeof databaseIdOf(database) !== "string" ||
+      !/^[0-9a-f-]{36}$/iu.test(databaseIdOf(database))) fail("temporary_diagnostics_database_create_readback_failed");
+  diagnosticsDatabaseId = databaseIdOf(database);
+  report.diagnosticsDatabase.id = diagnosticsDatabaseId;
+}
+
+function createDiagnosticsSchema() {
+  const output = runWrangler([
+    "d1", "execute", diagnosticsDatabaseName, "--remote", "--json", "--command",
+    `CREATE TABLE migration_scheduled_dispatch_diagnostics (
+      event_id TEXT PRIMARY KEY,
+      cron TEXT NOT NULL,
+      scheduled_time_ms INTEGER NOT NULL,
+      stage TEXT NOT NULL CHECK (stage IN ('received', 'paused', 'selected', 'job_started', 'job_completed', 'job_failed')),
+      job_name TEXT NOT NULL,
+      details_json TEXT NOT NULL
+    );`,
+  ], { configRelative: appConfigRelative });
+  const result = parseJsonArray(output, "scheduled_diagnostics_schema_create_invalid");
+  if (result.length !== 1 || result[0]?.success !== true || result[0]?.meta?.changed_db !== true) {
+    fail("scheduled_diagnostics_schema_create_failed");
+  }
+  const readback = runD1On(diagnosticsDatabaseName,
+    "SELECT COUNT(*) AS row_count FROM migration_scheduled_dispatch_diagnostics");
+  if (Number(readback[0]?.row_count) !== 0) fail("scheduled_diagnostics_schema_readback_failed");
+}
+
+function readScheduledDispatchDiagnostics() {
+  if (!diagnosticsDatabaseCreationMayHaveSucceeded) return [];
+  return runD1On(diagnosticsDatabaseName, `
+    SELECT cron, scheduled_time_ms, stage, job_name, details_json
+    FROM migration_scheduled_dispatch_diagnostics
+    ORDER BY scheduled_time_ms DESC, stage, job_name
+    LIMIT 100
+  `).map((row) => ({
+    cron: row.cron,
+    scheduledTimeMs: Number(row.scheduled_time_ms),
+    stage: row.stage,
+    jobName: row.job_name,
+    details: parseJson(row.details_json, "scheduled_diagnostics_details_invalid"),
+  }));
 }
 
 function runD1On(targetDatabaseName, sql, { timeout = 120_000 } = {}) {
@@ -1358,6 +1424,7 @@ async function waitForAppliedStripeExtension() {
   // New Worker Cron propagation can exceed the former 20-minute smoke window;
   // the isolated app-bundle probe first fired about 19.5 minutes after deploy.
   const deadline = Date.now() + 35 * 60 * 1000;
+  let lastDiagnosticsReadAt = 0;
   while (Date.now() < deadline) {
     let rows;
     try {
@@ -1382,6 +1449,22 @@ async function waitForAppliedStripeExtension() {
         attemptCount: Number.isSafeInteger(Number(current.attempt_count)) ? Number(current.attempt_count) : null,
       }
       : { receiptStatus: "missing", dispatchStatus: "missing", attemptCount: null };
+    if (Date.now() - lastDiagnosticsReadAt >= 60_000) {
+      report.recovery.scheduledDispatchDiagnosticsLastReadback = readScheduledDispatchDiagnostics().slice(0, 20);
+      lastDiagnosticsReadAt = Date.now();
+      const stripeFailures = report.recovery.scheduledDispatchDiagnosticsLastReadback.filter((entry) => (
+        entry.stage === "job_failed" && entry.jobName === "stripe-webhook-dispatch"
+      ));
+      if (stripeFailures.length > 0) fail("synthetic_stripe_dispatch_cron_failed");
+      const received = report.recovery.scheduledDispatchDiagnosticsLastReadback.some((entry) => (
+        entry.stage === "received" && entry.cron === "* * * * *"
+      ));
+      const selectedWithoutStripe = report.recovery.scheduledDispatchDiagnosticsLastReadback.some((entry) => (
+        entry.stage === "selected" && entry.cron === "* * * * *" &&
+        !entry.details?.selectedJobs?.includes("stripe-webhook-dispatch")
+      ));
+      if (received && selectedWithoutStripe) fail("synthetic_stripe_dispatch_job_not_selected");
+    }
     if (rows.length === 1 && rows[0]?.receipt_status === "applied" &&
         rows[0]?.dispatch_status === "completed") {
       const effect = stripeExtensionState();
@@ -1439,6 +1522,7 @@ async function runDrill() {
   report.phase = "create_disposable_d1s";
   createDatabase();
   createAuthDatabase();
+  if (!mfaRecoveryOnly) createDiagnosticsDatabase();
 
   report.phase = "create_temporary_worker_config";
   const { config, origin } = createTemporaryConfig();
@@ -1447,6 +1531,10 @@ async function runDrill() {
   report.phase = "apply_and_verify_business_auth_migrations";
   await applyBusinessMigrations();
   await applyAuthMigrations(config);
+  if (!mfaRecoveryOnly) {
+    report.phase = "create_scheduled_diagnostics_schema";
+    createDiagnosticsSchema();
+  }
   report.phase = "deploy_temporary_worker";
   deployTemporaryWorker(config);
   report.phase = "configure_synthetic_better_auth_secret";
@@ -1782,6 +1870,29 @@ async function cleanup() {
     }
   }
 
+  if (diagnosticsDatabaseCreationMayHaveSucceeded && !workerMayExist) {
+    try {
+      const database = getTemporaryDiagnosticsDatabase();
+      if (database) {
+        const id = databaseIdOf(database);
+        if (diagnosticsDatabaseId && id !== diagnosticsDatabaseId) {
+          fail("temporary_diagnostics_database_cleanup_identity_mismatch");
+        }
+        diagnosticsDatabaseId = id;
+        runCleanup(["d1", "delete", diagnosticsDatabaseName, "--skip-confirmation"], {
+          configRelative: appConfigRelative,
+        });
+      }
+      if (databaseRows().some((database) => databaseNameOf(database) === diagnosticsDatabaseName)) {
+        fail("temporary_diagnostics_database_cleanup_readback_failed");
+      }
+      report.cleanup.diagnosticsDatabaseDeleted = true;
+      diagnosticsDatabaseCreationMayHaveSucceeded = false;
+    } catch {
+      cleanupFailed = true;
+    }
+  }
+
   if (tempConfigWritten) {
     try {
       await rm(configPath, { force: true });
@@ -1874,8 +1985,9 @@ if (primaryError) {
     `${report.recovery.storageObjectSurvivedTimeTravel}; restored from encrypted bundle: ` +
     `${report.recovery.storageObjectRestoredFromEncryptedBundle}; frozen upload: ` +
     `${report.recovery.storageUploadDuringFreezeStatus}/${report.recovery.storageUploadDuringFreezeError}.\n` +
-    `Temporary Worker/business/Auth D1 cleanup: ${report.cleanup.workerDeleted}/` +
-    `${report.cleanup.databaseDeleted}/${report.cleanup.authDatabaseDeleted}; ` +
+    `Temporary Worker/business/Auth/diagnostics D1 cleanup: ${report.cleanup.workerDeleted}/` +
+    `${report.cleanup.databaseDeleted}/${report.cleanup.authDatabaseDeleted}/` +
+    `${report.cleanup.diagnosticsDatabaseDeleted}; ` +
     `admin MFA state survived Time Travel/encrypted R2 replay: ` +
     `${report.recovery.authMfaAdminStateSurvivedTimeTravel}/` +
     `${report.recovery.authMfaAdminStateRestoredFromEncryptedBundle}; ` +

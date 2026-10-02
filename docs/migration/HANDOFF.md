@@ -1,7 +1,7 @@
 # Cloudflare migration handoff
 
 Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
-open and draft. GitHub Actions run `36966388049` passed both required jobs.
+open and draft. GitHub Actions run `36977804659` passed both required jobs.
 The earlier date-sensitive Stripe fixture failure is fixed; the full Stripe
 receipt suite, application build, and Worker API validation pass. CI itself
 does not deploy. The active Wrangler profile `fanmark-staging-inapp` is logged
@@ -22,14 +22,16 @@ canary lifecycle journals after cleanup. The master D1 contains 3,944 emoji
 rows at release generation 3 (`10ec42c1…`); its Worker API returned all 3,944
 unique IDs over eight pages with `no-store`. Reference-master generation 8
 serves 4 tiers, 4 languages, 5 reserved patterns, and 16 extension prices.
-The previous synthetic post-write recovery and pre-write resume drills passed;
-their evidence is recorded in `docs/migration/EXECUTION.md`. A newer
-Stripe-dispatch-dependent MFA recovery attempt verified synthetic TOTP and
-admin authorization, then timed out before recovery because the Stripe
-dispatcher remained pending with zero attempts after 35 minutes. A separate
-Cron-free MFA-only recovery slice subsequently passed, including Time Travel
-and encrypted R2 replay. The Stripe-dependent full path remains unverified.
-Cleanup deleted the temporary Worker, both D1s, config, and synthetic avatar.
+The first MFA-integrated Stripe recovery attempt timed out with a pending
+synthetic receipt. A later full guarded rehearsal passed from
+`2026-10-02T07:50:30Z` to `2026-10-02T08:00:31Z`: 20 business and 3 Auth D1
+migrations, one synthetic Stripe extension applied once, admin MFA state and
+avatar surviving both D1 Time Travel and encrypted R2 restore, and five
+consecutive frozen writes rejected. An isolated diagnostics D1 recorded Cron
+receipt, job selection, Stripe dispatch completion, and freeze pauses. The
+temporary Worker, three disposable D1s, config, R2 objects, avatar, and private
+recovery artifacts were deleted and read back. This completes that synthetic
+recovery slice, not the remaining provider, production, or migration gates.
 This checkpoint does not include real user/Auth/Storage migration, production
 routing, or domain/DNS cutover, which remain deferred.
 
