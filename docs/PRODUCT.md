@@ -48,7 +48,7 @@
 - お気に入り: 新規ファンマ取得時は、順序を保った正規化UUID列が一致する既存の発見データと、その発見データを指す全ユーザーのお気に入りに取得IDを紐付ける。お気に入りの表示・登録日時、発見日時・件数は保持する。Cloudflare経路では取得と同じBusiness D1 transactionで行い、連携の欠落や同一identityの重複時は取得全体を取り消す。`fanmark_discoveries` / `fanmark_favorites` で未取得ファンマも管理。トグルは RPC `add/remove_fanmark_favorite`。返却完了時にお気に入り登録者へ `favorite_fanmark_available` 通知イベントを生成。
 - 通知基盤: `notification_events` → `notification_rules` → `notifications`。イベント例: grace開始/失効、抽選当落、移管関連、手動告知。`process-notification-events` は、pending イベント追加時だけ有効になる毎分Cronワーカーとして展開・配信し、キューが空になると停止する。これにより通知の最大約1分の反映時間を維持しながら、空キューの定期実行を行わない。in-app/メール等に対応。
 
-- Cloudflareの通知workerはpending保存後に起動し、キューが空になると停止する方式へ置き換える。未来のイベントと処理中断からの復旧を扱う。再起動に失敗した場合は処理要求を保持し、管理者MFAで状態確認・再起動できる。現時点のstagingは毎分Cronで、alarm counterpartはlocal検証段階。
+- Cloudflareの通知workerはpending保存後に起動し、キューが空になると停止する方式へ置き換える。未来のイベントと処理中断からの復旧を扱う。再起動に失敗した場合は処理要求を保持し、管理者MFAで状態確認・再起動できる。stagingにはD1 wake markerとDurable Object alarmを配備済みで、毎分Cronを除いた。実環境の通知作成で更新件数の判定による503を確認し、挿入IDのreceiptを検証する修正をlocalで確認した。配信・停止の実環境受け入れは修正版の検証待ち。
 
 ## 表示と正規化（ファンマ）
 - 内部の同一性判定・検索は正規化済み（肌色除去）を使用し、表示はユーザーが意図した表記を保持する。

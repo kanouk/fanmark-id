@@ -11,8 +11,8 @@ The source v41 catalog observed `2026-10-02T14:21:25.605664+00:00` contains:
 The trigger runs after INSERT or UPDATE OF status/trigger_at with NEW pending.
 Wake and sleep use one transaction advisory lock; future pending events keep
 Cron active. Scheduler failures warn instead of failing the business operation.
-The current Cloudflare staging replacement polls every minute even when empty,
-so runtime wake/sleep parity is not yet established.
+Cloudflare staging uses a SQLite Durable Object alarm instead of minute Cron.
+Runtime acceptance remains pending after a live manual-event API failure.
 
 ## Prepared implementation
 
@@ -62,68 +62,53 @@ supports direct durable scheduling and retries. SQLite-backed objects are
 [available on Workers Free](https://developers.cloudflare.com/durable-objects/platform/pricing/).
 This design does not authorize a paid-plan change.
 
-## Evidence and next gate
+## Current validation and next gate
 
-The dedicated local suite passes 17/17, applies all 25 Business migrations and uses the real
-workerd SQLite Durable Object/D1 runtimes. It checks idle stop, actual in-app
-delivery, coalescing, future events, stale leases, concurrent enqueue/sleep,
-binding outages beyond six attempts, monotonic/suppressed generations, freeze,
-protected recovery/status and both HTTP/scheduled entrypoint bridges. No remote
-0024, namespace or selectors have been applied. Current staging still uses its
-existing minute Cron. Do not clear the broad source catalog gate from this
-three-function/one-trigger review.
+Activation head `7ec0c00` passed both CI jobs in `37051952726`. Dedicated-account,
+empty source/Auth, ledger and old-version guards preceded remote 0024 apply.
+Four schema objects match checked-in SQL; Business ledger is 25. Worker
+`49d22f73-3684-4f66-b457-17f63c07ca52` is 100% on workers.dev only, with SQLite
+namespace `2c27a340fd6c4248bfdbbb8d8bfb457c`, alarm selectors and daily-only Cron.
+Public build hashes, noindex, catalog 3,944, anonymous operator 401,
+missing-Origin 403 and disabled Stripe 404 pass.
 
-Existing notification D1 15/15, general API 56/56, reset regression 15/15,
-migration-data 246/246, Worker typecheck, targeted ESLint and local-alarm plus
-current-staging dry-runs pass. The new TOTP smoke flag
-`--notification-alarm-roundtrip` requires the fixed alarm target configuration,
-account/version/ledger/trigger gates and a private pre-write Auth/fixture journal.
-It verifies API-created wake and drain, native future-event interrupted-bridge
-recovery through MFA, due-time update/delivery, retained fingerprints and scoped
-cleanup. Its target guard passes 2/2, and script syntax/lint pass. The live alarm
-smoke remains unexecuted; the earlier minute-Cron config was refused before any
-remote operation. Fresh Wrangler identity readback confirmed the dedicated
-staging account. Journal updates use private temporary files and atomic rename;
-an interrupted update does not truncate the previous recovery checkpoint.
+The first pinned alarm smoke reached real sign-in/TOTP/MFA but manual creation
+returned 503. Its pre-write journal ended `failed-and-cleaned`, proving removal
+of Auth/source fixtures, NULL alarm and wake generation 1/1. A guarded native
+probe returned one inserted ID with `meta.changes=2`: the event INSERT and wake
+trigger marker UPDATE both contribute to remote D1 metadata. The exact probe
+event was removed and source rows verified zero; its requested generation stays
+for replay without rewinding the marker. Both runs have private recovery journals;
+neither is accepted notification delivery evidence.
 
-Prepared command, only after configuration/deployment/readback gates:
+Manual creation now requires exactly one matching ID from `INSERT ... RETURNING
+id`. It does not compare aggregate changes to 1. Suppressed inserts have no receipt;
+missing-marker ABORT still rolls back the event. Full-schema workerd regression
+reproduced 503 before repair and now passes 20/20, proving delivery and idle stop
+with remote-style metadata, suppressed insert refusal and missing-marker rollback.
+Notification master 6/6 and Worker typecheck pass. Other direct event producers do
+not compare event INSERT metadata to 1; processor processing/terminal transitions
+do not fire the pending-only trigger. Native SQL `changes()` guards remain unchanged.
+
+Configuration/isolation checks passed 17/17 and migration-data 248/248 before
+activation. Complete alarm target guards require daily-only Cron and closed
+billing/email/expiry/archive selectors. Local scheduled rehearsals disable wake
+so local DOs cannot acknowledge the remote outbox; disposable recovery Workers
+retain their independent binding/vars allowlist.
+
+Next: green repair CI, fresh account/version/empty-data guard, workers.dev redeploy
+and pinned TOTP smoke. Do not reapply 0024. Acceptance requires real API 201, alarm
+wake, exact Japanese delivery, NULL alarm after drain, native future-event bridge
+recovery via MFA, due-time rescheduling, retained Master/config/catalog fingerprints
+and scoped cleanup. A prepared test or failed-cleaned run does not satisfy it.
 
 ```sh
 FANMARK_EXPECTED_STAGING_VERSION=<verified-100-percent-version> node workers/api/test/staging-admin-totp-smoke.mjs --run-live-staging-write --database=fanmark-auth-staging --notification-alarm-roundtrip
 ```
 
-The journal stores each unique payload nonce before event creation and the
-returned event ID immediately after a successful response. Cleanup does not
-depend on receiving that response: it matches the journaled synthetic recipient,
-event type/source and payload nonce, deletes notification children first, and
-checks the deployed alarm is NULL before removing MFA/Auth identities. Monotonic
-MFA and notification wake generations are retained. A failed cleanup retains the
-journal for scoped recovery and is not an accepted rehearsal.
-
-Code head `41b5d50` passed both CI jobs in run `37050466908`. Fresh account,
-deployment, canonical 24-ledger / immediately-before-0024, empty source-owned
-rows across all 40 source tables, eight empty Auth tables and absent wake-schema
-readback confirm the unmodified staging checkpoint; provider secrets remain
-absent. Evidence files are `/tmp/fanmark-notification-wake-ci.log`,
-`/tmp/fanmark-notification-wake-source-preflight.json` and the matching
-current-business/current-auth/deployments/identity/secret-names JSON files.
-
-The checked-in staging config now selects the alarm namespace/class migration,
-`NOTIFICATION_WAKE_BACKEND=durable-object` and the retained daily Cron only. This
-is prepared configuration; remote Worker/D1 are still unchanged. Shared guards
-accept complete legacy-Cron or alarm baselines and reject partial activation.
-The processor/archive/expiry local rehearsals explicitly override wake to
-disabled so their local DO instance cannot acknowledge the staging outbox. The
-disposable recovery Worker already constructs its own config/vars allowlist and
-inherits neither namespace nor migration. Focused configuration/isolation tests
-pass 17/17, including four wake-target tests. Activation CI and remote acceptance
-are required next.
-
-Before enabling: require green CI for activation changes, fixed staging account/bindings/version,
-empty source/Auth rows and private recovery journal, apply/read back 0024 and
-its ledger/triggers, add the SQLite namespace/class migration, and replace
-notification polling with the alarm mode. Keep billing/email selectors closed.
-The synthetic acceptance must prove a real API-created event wakes delivery,
-protected status reads a real alarm then NULL after drain, post-commit recovery
-works, master baselines remain intact and exact Auth/business/guard cleanup
-completes. Mobile, external provider delivery and production remain separate.
+Private journal updates use atomic rename. Payload nonces are saved before each
+write and returned IDs immediately after 201; cleanup matches synthetic recipient,
+type/source/nonce even after response loss, deletes children before events, and
+requires actual NULL alarm before Auth removal. Monotonic MFA/wake generations
+are retained. Broad source/provider/delayed delivery/CPU/operational/mobile gates
+remain open; real user data and domain/DNS stay deferred.

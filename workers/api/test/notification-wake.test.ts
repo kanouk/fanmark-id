@@ -3,6 +3,7 @@ import { runInDurableObject, runDurableObjectAlarm, createExecutionContext, wait
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import worker, { NotificationWakeCoordinator } from "../src";
 import { flushNotificationWake, handleNotificationWakeRepairRequest } from "../src/notification-wake";
+import { handleNotificationMasterRequest } from "../src/notification-master-d1-api";
 import type { Env } from "../src/repository";
 
 const runtime = env as unknown as Env;
@@ -29,6 +30,13 @@ function splitSql(sql: string): string[] {
 async function run(sql: string, ...values: unknown[]) { return db.prepare(sql).bind(...values).run(); }
 async function alarm() { return runInDurableObject(stub, (_instance, state) => state.storage.getAlarm()); }
 async function wakeState() { return db.prepare("SELECT requested_generation, acknowledged_generation FROM notification_worker_wake_state").first(); }
+async function manualEvent(database = db) {
+  return handleNotificationMasterRequest(new Request("https://app.example.test/api/admin/notification-masters/events", {
+    method: "POST", headers: { origin: "https://app.example.test", "content-type": "application/json" },
+    body: JSON.stringify({ eventType: "license_expired", payload: { user_id: OWNER, name: "Synthetic" } }),
+  }), { ...runtime, FANMARK_DB: database, NOTIFICATION_MASTER_BACKEND: "d1" },
+  async () => ({ userId: OWNER, sessionId: "verified-current-session" }));
+}
 async function event(status = "pending", triggerAt = new Date(Date.now() - 1000).toISOString()) {
   const id = crypto.randomUUID(); const now = new Date().toISOString();
   await run(`INSERT INTO notification_events (id, event_type, source, payload, trigger_at, status, created_at, updated_at)
@@ -57,6 +65,57 @@ beforeEach(async () => {
 });
 
 describe("native D1 outbox and real SQLite Durable Object alarms", () => {
+  it("returns a committed manual event and delivers it when remote metadata includes the wake trigger", async () => {
+    // Live D1 counts both the event insert and the trigger's marker update.
+    function wrapStatement(statement: D1PreparedStatement): D1PreparedStatement {
+      return new Proxy(statement, { get(target, property) {
+        if (property === "bind") return (...values: unknown[]) => wrapStatement(target.bind(...values));
+        if (property === "run" || property === "all") return async () => {
+          const result = await target[property]();
+          return { ...result, meta: { ...result.meta, changes: 2 } };
+        };
+        const value = Reflect.get(target, property);
+        return typeof value === "function" ? value.bind(target) : value;
+      } });
+    }
+    const remoteMetadata = new Proxy(db, { get(target, property) {
+      if (property === "prepare") return (sql: string) => wrapStatement(target.prepare(sql));
+      const value = Reflect.get(target, property);
+      return typeof value === "function" ? value.bind(target) : value;
+    } });
+    await run("UPDATE notification_rules SET event_type = 'license_expired'");
+    const before = await wakeState();
+    const response = await manualEvent(remoteMetadata);
+    expect(response?.status).toBe(201);
+    const body = await response!.json() as { schemaVersion: number; event: { id: string } };
+    expect(body).toEqual({ schemaVersion: 1, event: { id: expect.any(String) } });
+    expect((await db.prepare("SELECT id, status FROM notification_events WHERE id = ?").bind(body.event.id).first()))
+      .toEqual({ id: body.event.id, status: "pending" });
+    expect((await wakeState())?.requested_generation).toBe(Number(before?.requested_generation) + 1);
+    await flushNotificationWake(runtime); await runDurableObjectAlarm(stub);
+    expect((await db.prepare("SELECT count(*) AS count FROM notifications WHERE event_id = ?").bind(body.event.id).first())?.count).toBe(1);
+    expect(await alarm()).toBeNull();
+  });
+  it("does not report creation when the native event insert is suppressed", async () => {
+    const before = await wakeState();
+    await run("CREATE TRIGGER suppress_manual_event BEFORE INSERT ON notification_events WHEN NEW.source = 'admin_manual' BEGIN SELECT RAISE(IGNORE); END");
+    try {
+      expect((await manualEvent())?.status).toBe(503);
+      expect((await db.prepare("SELECT count(*) AS count FROM notification_events").first())?.count).toBe(0);
+      expect(await wakeState()).toEqual(before);
+    } finally { await run("DROP TRIGGER suppress_manual_event"); }
+  });
+  it("rolls back manual creation when its durable wake marker is missing", async () => {
+    const before = await wakeState();
+    await run("DELETE FROM notification_worker_wake_state WHERE singleton_id = 1");
+    try {
+      expect((await manualEvent())?.status).toBe(503);
+      expect((await db.prepare("SELECT count(*) AS count FROM notification_events").first())?.count).toBe(0);
+    } finally {
+      await run("INSERT INTO notification_worker_wake_state (singleton_id, requested_generation, acknowledged_generation) VALUES (1, ?, ?)",
+        before?.requested_generation, before?.acknowledged_generation);
+    }
+  });
   it("empty queues do not arm an alarm and acknowledge the outstanding generation", async () => {
     const id = await event(); await run("DELETE FROM notification_events WHERE id = ?", id);
     await flushNotificationWake(runtime);

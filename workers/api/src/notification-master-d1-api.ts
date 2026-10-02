@@ -294,8 +294,12 @@ async function createManualEvent(
       id, event_type, event_version, source, payload, payload_schema, trigger_at,
       dedupe_key, status, processed_at, error_reason, retry_count, created_at, updated_at
     ) VALUES (?, ?, 1, 'admin_manual', ?, NULL, ?, NULL, 'pending', NULL, NULL, 0, ?, ?)
-  `).bind(id, value.eventType, payload, timestamp, timestamp, timestamp).run();
-  if (!result.success || Number(result.meta?.changes ?? 0) !== 1) fail("notification_master_unavailable");
+    RETURNING id
+  `).bind(id, value.eventType, payload, timestamp, timestamp, timestamp).all<{ id: string }>();
+  // Remote D1's change count includes the wake trigger; verify this insert's receipt instead.
+  if (!result.success || result.results?.length !== 1 || result.results[0]?.id !== id) {
+    fail("notification_master_unavailable");
+  }
   return { id };
 }
 

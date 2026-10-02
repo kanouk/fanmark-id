@@ -1,5 +1,30 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：通知alarmの配備と実APIの503修正
+
+head `7ec0c00` / CI `37051952726`は両job成功。専用account、空のsource/Auth、
+旧version、ledgerを再確認し、Business 0024の4 schema objectとledger 25を適用・照合した。
+Worker `49d22f73-3684-4f66-b457-17f63c07ca52`は100% workers.dev配備済み。
+SQLite DO namespaceは`2c27a340fd6c4248bfdbbb8d8bfb457c`、Cronは日次だけ。
+公開HTML/JS一致、noindex、robots、catalog 3,944、匿名wake 401、Origin欠落403、
+Stripe 404を確認した。
+
+最初のreal signin/TOTP alarm smokeは通知作成503で失敗した。private journalで
+Auth/通知fixtureを削除し、NULL alarm、generation 1/1、空source/Authを確認した。
+その後のguarded native D1 probeは、1行のRETURNING receiptに`meta.changes=2`が
+付くことを実測した。event INSERTとwake trigger UPDATEの合計であり、APIが1件と
+比較して保存済みイベントを失敗と判定していた。probeは事前journalのexact ID/source/
+payload nonceで削除しsource 0を確認した。generationはrewindせず次のreplayへ残す。
+
+APIを`INSERT ... RETURNING id`のexact receipt判定へ修正した。修正前503を再現した
+full-schema regressionを含むlocal wake 20/20、notification master 6/6、Worker
+ typecheck成功。IGNORE/missing wake markerの拒否も確認した。修正版CI・再配備・
+full alarm smokeは未実施で、配備済みだけでは受け入れ完了と扱わない。
+証拠: `/tmp/fanmark-notification-alarm-{deploy,staging-smoke}.log`、
+`/tmp/fanmark-notification-metadata-probe.log`、
+`/tmp/fanmark-notification-returning-{regression-before,wake,master,typecheck}.log`。
+実ユーザーデータ・domain/DNS・実課金/メールは未実施。
+
 ## 2026-10-03：通知alarmのstaging設定と検証ツール対応（配備前）
 
 checked-in staging configをSQLite coordinator binding / class migrationと

@@ -3,57 +3,41 @@
 Checkpoint: 2026-10-03 JST. The migration is **not complete**. PR #41 remains
 open and draft. CI validates the branch but does not deploy the Worker.
 
-Activation configuration is now prepared: `wrangler.app-staging.jsonc` selects
-the SQLite coordinator binding and class migration, alarm mode, and daily Cron
-only. Shared guards distinguish complete legacy-Cron/alarm baselines and reject
-partial activation. Local processor/archive/expiry rehearsals explicitly disable
-wake so a local DO cannot acknowledge the staging outbox. The disposable recovery
-Worker's independent config/vars allowlist already excludes the coordinator;
-the new guard test fixes that boundary. Focused configuration/isolation tests
-pass 17/17, syntax/diff check pass. Remote Worker/D1 are still unchanged. Next:
-activation CI, fresh empty source/Auth + account/ledger guard, exact 0024 apply
-and readback, workers.dev deployment, pinned alarm smoke and final cleanup proof.
+Notification alarm activation is deployed but **not accepted**. Head `7ec0c00`
+passed both CI jobs in `37051952726`. Guarded remote apply/readback confirmed
+Business 0024 and all four exact schema objects, canonical ledger 25, and zero
+source-owned/Auth rows. Worker `49d22f73-3684-4f66-b457-17f63c07ca52` is 100%
+on workers.dev; its SQLite namespace is `2c27a340fd6c4248bfdbbb8d8bfb457c`.
+Only daily Cron `0 0 * * *` remains. Public HTML/JS match the staging build,
+noindex/robots/session/catalog gates pass, anonymous wake GET/POST return 401,
+missing Origin returns 403, and Stripe remains closed with 404.
 
-Notification wake/sleep is prepared locally, **not staging-accepted**. Business
-0024 records a native monotonic wake generation; one SQLite Durable Object
-processes the existing queue and deletes its alarm when empty. The full-schema
-workerd suite passes 17/17, including outages, concurrency, future events,
-stale processing, freeze and HTTP/scheduled bridges. The actual fetch wrapper
-also proves an Origin/authorization refusal on the operator route cannot wake
-the queue through its finally path. Existing notification tests pass 15/15,
-general API tests 56/56, reset regression 15/15, migration-data 246/246,
-Worker typecheck, targeted ESLint and both local-alarm/staging dry-runs pass.
-Code head `41b5d50` passed both CI jobs in run `37050466908`; the watcher
-exited 0 and a fresh run readback confirmed completed/success. The previous
-documentation-head CI `37046873764` also passed both jobs.
+The first pinned `--notification-alarm-roundtrip` reached real sign-in/TOTP/MFA
+but manual creation returned 503 instead of 201. Its private journal records
+`failed-and-cleaned`: zero Auth/source fixtures, NULL alarm, and wake generation
+1/1. This proves cleanup, not notification acceptance. A guarded native remote
+probe then observed a successful one-row `RETURNING id` receipt with
+`meta.changes=2`: D1 includes the wake trigger's marker update. That probe was
+journaled before insertion and cleaned by exact ID/source/payload nonce; source
+rows are zero again. It increments the monotonic requested generation and
+leaves replay to the next mutation/operator repair; it does not modify the ack.
 
-`--notification-alarm-roundtrip` is now prepared in the TOTP smoke. Its fixed
-target guard requires all three staging D1s, no production route, SQLite class
-and namespace, daily-only Cron, closed billing/email/expiry/archive selectors,
-dedicated account and pinned deployment, exact 0024 triggers/ledger, and empty
-source/Auth rows. A private journal saves Auth IDs and each payload nonce
-before a write, so a lost API response can still be cleaned by recipient/nonce.
-It must observe a real API wake, exact Japanese delivery and NULL alarm after
-drain, then a native unbridged future event, MFA repair, due-time rescheduling,
-another exact delivery, retained Master/config/catalog fingerprints and scoped
-cleanup. The original target guard passed 2/2; the activation configuration/isolation
-guards now pass 17/17. This smoke has not run remotely. The earlier minute-Cron
-config was deliberately refused before remote operations; the prepared alarm
-config now passes the target guard.
+The manual event API now verifies `INSERT ... RETURNING id` with exactly one
+matching ID instead of comparing aggregate change count to 1. The full-schema
+workerd regression reproduced the old 503 and now passes 20/20, including
+actual delivery/idle stop with remote-style metadata, suppressed inserts and
+missing-marker rollback. The notification master suite passes 6/6; Worker
+typecheck passes. Other direct event producers do not compare their event
+INSERT result to 1, and processor state transitions leave pending so do not
+fire the pending-only marker trigger. Next: commit/green CI, guarded workers.dev
+redeploy, pinned full TOTP alarm roundtrip, independent retention/cleanup proof.
+Do not reapply 0024: the remote ledger is already 25.
 
-Fresh dedicated-account remote readback confirmed Worker `13dca8cf` at 100%,
-canonical Business ledger 24 immediately before 0024, all source-owned rows
-across the 40 source tables totaling 0, notification/event/profile rows 0,
-eight user-owned Auth table counts 0 and wake schema absent. Only the three
-existing secret names remain; no provider secret is registered. Current remote
-notification scheduling remains the minute Cron. Local ledger is 25; remote 0024/DO namespace/selector
-activation are pending. Next: green CI; fresh identity/empty-row/ledger guard;
-confirm activation CI for the prepared alarm config/guards/overrides; apply
-and read back 0024; build/dry-run/deploy only workers.dev; run the pinned alarm smoke
-and independent final readback. The D1-to-DO commit gap remains replayable,
-not atomic; a hard missed bridge needs the next mutation or MFA repair. Broader
-functions/RLS/triggers/provider/CPU/mobile gates remain open. See
-`notification-worker-wake.md`. User-data migration and DNS remain deferred.
+The D1-to-DO commit gap remains replayable rather than atomic. A hard missed
+bridge needs the next mutation or MFA repair. Broader source functions/RLS/
+triggers, delayed delivery, providers, CPU, operational and mobile gates remain
+open. Live user data and domain/DNS remain deferred. Provider secrets have not
+been registered. See `notification-worker-wake.md` for the contract and evidence.
 
 Administrator data reset is now staging-verified. Code head `03eee80` passed
 both CI jobs in run `37045419633`. Fresh dedicated-account preflight confirmed
