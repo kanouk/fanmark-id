@@ -13,6 +13,7 @@ const migrationPaths = [
   "workers/api/migrations-business/0000_business_schema_v4_staging.sql",
   "workers/api/migrations-business/0015_extension_coupon_application.sql",
   "workers/api/migrations-business/0019_extension_coupon_timestamp_precision.sql",
+  "workers/api/migrations-business/0021_coupon_lottery_status_audit.sql",
 ];
 const { handleExtensionCouponApplicationD1Request } = await import(pathToFileURL(modulePath).href);
 
@@ -272,8 +273,80 @@ isolated("applies coupon, cancels lottery entries, records notices/audits, and r
   assert.equal((await database.prepare("SELECT json_extract(payload, '$.fanmark_name') AS name FROM notification_events LIMIT 1").first()).name, "🧪");
   assert.deepEqual(audits.results.map((row) => row.action).sort(), [
     "COUPON_EXTENSION_LOTTERY_CANCELLED",
+    "LOTTERY_ENTRY_STATUS_CHANGED",
+    "LOTTERY_ENTRY_STATUS_CHANGED",
     "extend_fanmark_license_by_coupon",
   ].sort());
+  const entryAudits = await database.prepare(`
+    SELECT user_id, resource_type, resource_id, request_id, metadata, created_at
+    FROM audit_logs WHERE action = 'LOTTERY_ENTRY_STATUS_CHANGED' ORDER BY resource_id
+  `).all();
+  assert.deepEqual(entryAudits.results.map((row) => [row.resource_id, row.user_id]), [
+    ["00000000-0000-4000-8000-000000000006", OTHER_OWNER],
+    ["00000000-0000-4000-8000-000000000008", "00000000-0000-4000-8000-000000000010"],
+  ]);
+  for (const audit of entryAudits.results) {
+    assert.equal(audit.resource_type, "fanmark_lottery_entry");
+    assert.equal(audit.request_id, "00000000-0000-4000-8000-000000000007");
+    assert.equal(audit.created_at, NOW_SQL);
+    assert.deepEqual(JSON.parse(audit.metadata), {
+      old_status: "pending", new_status: "cancelled_by_extension", cancellation_reason: "license_extended",
+    });
+  }
+});
+
+for (const fault of ["ignore", "corrupt"]) {
+  isolated(`rolls back the coupon command when a per-entry audit is ${fault === "ignore" ? "ignored" : "corrupted"} and retries once`, async () => {
+    await reset();
+    await seedCoupon();
+    await seedLicense();
+    await seedPendingEntry();
+    await database.prepare(fault === "ignore" ? `
+      CREATE TRIGGER test_coupon_audit_fault BEFORE INSERT ON audit_logs
+      WHEN NEW.action = 'LOTTERY_ENTRY_STATUS_CHANGED'
+      BEGIN SELECT RAISE(IGNORE); END
+    ` : `
+      CREATE TRIGGER test_coupon_audit_fault AFTER INSERT ON audit_logs
+      WHEN NEW.action = 'LOTTERY_ENTRY_STATUS_CHANGED'
+      BEGIN UPDATE audit_logs SET metadata = '{}' WHERE id = NEW.id; END
+    `).run();
+
+    const failed = await call({});
+    assert.equal(failed.status, 503);
+    assert.deepEqual(await body(failed), { error: "coupon_application_unavailable" });
+    assert.equal((await database.prepare("SELECT used_count FROM extension_coupons WHERE id = ?").bind(COUPON).first()).used_count, 0);
+    assert.deepEqual(await database.prepare("SELECT status, license_end FROM fanmark_licenses WHERE id = ?").bind(LICENSE).first(), {
+      status: "active", license_end: "2026-09-30T12:00:00.000Z",
+    });
+    assert.deepEqual(await database.prepare("SELECT entry_status, coupon_extension_command_id FROM fanmark_lottery_entries").first(), {
+      entry_status: "pending", coupon_extension_command_id: null,
+    });
+    for (const table of ["extension_coupon_usages", "extension_coupon_application_commands", "notification_events", "audit_logs"]) {
+      assert.equal((await database.prepare(`SELECT COUNT(*) AS count FROM ${table}`).first()).count, 0, table);
+    }
+
+    await database.prepare("DROP TRIGGER test_coupon_audit_fault").run();
+    const recovered = await call({});
+    assert.equal(recovered.status, 200);
+    assert.deepEqual(await body(await call({})), await body(recovered));
+    assert.equal((await database.prepare("SELECT used_count FROM extension_coupons WHERE id = ?").bind(COUPON).first()).used_count, 1);
+    assert.equal((await database.prepare("SELECT COUNT(*) AS count FROM extension_coupon_usages").first()).count, 1);
+    assert.equal((await database.prepare("SELECT COUNT(*) AS count FROM audit_logs WHERE action = 'LOTTERY_ENTRY_STATUS_CHANGED'").first()).count, 1);
+  });
+}
+
+isolated("does not duplicate other writers' audits when an entry retains an old coupon marker", async () => {
+  await reset();
+  await seedCoupon();
+  await seedLicense();
+  await seedPendingEntry();
+  assert.equal((await call({})).status, 200);
+  await database.prepare("UPDATE fanmark_lottery_entries SET entry_status = 'pending'").run();
+  await database.prepare(`
+    UPDATE fanmark_lottery_entries SET entry_status = 'cancelled_by_extension',
+      cancellation_reason = 'license_extended', updated_at = ?, cancelled_at = ?
+  `).bind(NOW_SQL, NOW_SQL).run();
+  assert.equal((await database.prepare("SELECT COUNT(*) AS count FROM audit_logs WHERE action = 'LOTTERY_ENTRY_STATUS_CHANGED'").first()).count, 1);
 });
 
 isolated("serializes competing claims against the coupon cap", async () => {

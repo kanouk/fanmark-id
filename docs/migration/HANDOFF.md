@@ -3,58 +3,35 @@
 Checkpoint: 2026-10-03 JST. The migration is **not complete**. PR #41 remains
 open and draft. CI validates the branch but does not deploy the Worker.
 
-The latest local follow-up adds per-entry lottery cancellation audits to paid
-Stripe extension application. The terminal application guard checks each audit
-against its durable cancellation snapshot (applicant/entry/request IDs, action,
-resource, metadata and time). Missing or corrupted audit rows roll the billing
-batch back; retry and duplicate-Session replay retain one extension and one
-record per entry. The full local Stripe ingress/application/invoice/subscription/
-portal suite passes 70/70, with Worker typecheck/ESLint/diff check passing.
-No Stripe provider request, schema change or converter-version change occurred.
-The coupon command-trigger writer is the remaining known lottery-audit gap to
-review; broad function/RLS/trigger parity is still unproven.
+The latest local follow-up adds migration `0021_coupon_lottery_status_audit.sql`
+without changing applied migrations 0015/0019. It records source-equivalent
+per-entry coupon cancellations inside the existing command transaction and
+rejects missing/corrupted audits. Reused entries retaining an older coupon
+marker do not trigger duplicate audits for other writers. The pre-fix
+regression reproduced zero per-entry audits for two cancelled applicants.
+Coupon redemption passes 11/11; canonical migration ledger passes 3/3;
+migration data passes 237/237;
+Worker typecheck, focused ESLint and diff check pass. Migration 0021 is local
+only and has not been applied remotely. Converter remains v43 and the broad
+function/RLS/trigger parity gate remains open.
 
-The latest local follow-up restores per-entry lottery cancellation audits in
-account-deletion business cleanup. Required-audit failure rolls back cleanup
-and retains Auth/profile rows; previously committed license returns stay in
-grace and retry continues without duplicate audits. Better Auth/D1 tests pass
-6/6, Worker typecheck/ESLint/diff check pass. No schema or converter change.
-Stripe and coupon extension audit-trigger writers remain to be reviewed.
+Committed transfer `c58fc5c`, lottery finalization `6d36028` and account deletion
+`ae4c351` restore individual status audits. Local suites pass 11/11, 27/27 and
+6/6 respectively. Required-audit faults roll back their transaction; finalizer
+recovery verifies committed audits using its saved plan. Account deletion
+retains Auth/profile rows if cleanup fails; earlier license returns remain in
+grace and retry continues without duplicate audits. CI run `37024045461` on
+`ae4c351` passed both application and Worker jobs.
 
-Both transfer CI jobs passed on `c58fc5c` in run `37023116182`.
-Lottery-finalization commit `6d36028` is locally validated (27/27 source
-integration) and ready to push together with the account-deletion follow-up.
-No Worker deployment or source/user/domain changes occurred in these slices.
+Stripe extension `97f963c` is committed/pushed; CI run `37024950939` is in
+progress. Its durable cancellation snapshot and terminal guard require exact
+per-entry audit identity/metadata/time. Missing or corrupted records roll back
+the billing batch. Duplicate-Session replay retains one extension and one
+record per entry. The Stripe ingress/application/invoice/subscription/portal
+suite passes 70/70, with Worker typecheck/ESLint/diff check passing.
 
-The current local follow-up adds the missing per-entry status audits during
-source-profile lottery finalization. Each pending-to-won/lost audit uses an
-operation/entry-derived deterministic UUID and captured run time. Both the
-mandatory-effect batch guard and commit-recovery readback verify identity,
-applicant, action, resource, request, metadata and time. Source-profile tests
-pass 27/27, including suppressed/corrupted audit rollback, saved-plan retry and
-lost commit acknowledgement. Scheduled runner 8/8, Worker typecheck, ESLint
-and diff check pass. No schema migration or converter version change is needed.
-
-The transfer audit fix is committed/pushed as `c58fc5c`; its CI is run
-`37023116182` and both jobs passed. Lottery finalization is locally validated
-and ready for the next push. Both prior CI jobs passed on `8d9b0fd` in run `37022024473`.
-The Worker has not been redeployed. Remaining known audit-trigger writers to
-review include account deletion, Stripe extension and coupon extension; the
-full function/RLS/trigger gate remains open.
-
-The next implementation slice fixes missing per-entry lottery cancellation
-audits during transfer approval. The live catalog's `log_lottery_entry_changes`
-function records each status change; the D1 transfer route previously omitted
-that record. A regression reproduced the missing audit. Approval now inserts
-one guarded audit per pending target entry in the same D1 batch as cancellation
-and transfer effects. The 11/11 transfer tests cover multiple applicants,
-unrelated/previously cancelled entries, repeat approval, required-audit failure
-rollback, and retry. Worker typecheck, ESLint and diff check pass. No schema
-migration or converter version change is needed. Other trigger writers remain
-under review; this is not full trigger parity.
-
-Both CI jobs passed on `8d9b0fd` in run `37022024473`. The transfer follow-up
-is locally validated and ready to push. Staging has not been redeployed.
+These follow-ups have not redeployed the Worker or changed source/user/domain
+state. External Stripe/Resend/OAuth acceptance remains pending provider setup.
 
 The latest read-only schema catalog completed at
 `2026-10-02T14:21:25.605664Z`: 40 tables / 406 columns / 144 constraints /

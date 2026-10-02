@@ -24,6 +24,7 @@ test("canonical business migration sequence matches the checked-in files", () =>
 
 test("accepts valid prefixes and recognizes later approved migrations", () => {
   const ledger = BUSINESS_MIGRATION_SEQUENCE;
+  const before = (name) => ledger.slice(0, ledger.indexOf(name));
   assert.equal(isBusinessMigrationLedgerPrefix([]), true);
   assert.equal(isBusinessMigrationLedgerPrefix(ledger.slice(0, 6)), true);
   assert.equal(isBusinessMigrationLedgerPrefix(ledger), true);
@@ -32,18 +33,23 @@ test("accepts valid prefixes and recognizes later approved migrations", () => {
   assert.equal(hasBusinessMigrationApplied(ledger, "0018_invitation_capacity_timestamp_precision.sql"), true);
   assert.equal(hasBusinessMigrationApplied(ledger, "0019_extension_coupon_timestamp_precision.sql"), true);
   assert.equal(hasBusinessMigrationApplied(ledger, "0020_notification_archive_index.sql"), true);
-  assert.equal(hasBusinessMigrationApplied(ledger.slice(0, -1), "0019_extension_coupon_timestamp_precision.sql"), true);
-  assert.equal(hasBusinessMigrationApplied(ledger.slice(0, -1), "0020_notification_archive_index.sql"), false);
+  assert.equal(hasBusinessMigrationApplied(ledger, "0021_coupon_lottery_status_audit.sql"), true);
+  assert.equal(hasBusinessMigrationApplied(before("0020_notification_archive_index.sql"), "0019_extension_coupon_timestamp_precision.sql"), true);
+  assert.equal(hasBusinessMigrationApplied(before("0020_notification_archive_index.sql"), "0020_notification_archive_index.sql"), false);
   assert.equal(isBusinessMigrationLedgerImmediatelyBefore(
-    ledger.slice(0, -2),
+    before("0021_coupon_lottery_status_audit.sql"),
+    "0021_coupon_lottery_status_audit.sql",
+  ), true);
+  assert.equal(isBusinessMigrationLedgerImmediatelyBefore(
+    before("0019_extension_coupon_timestamp_precision.sql"),
     "0019_extension_coupon_timestamp_precision.sql",
   ), true);
   assert.equal(isBusinessMigrationLedgerImmediatelyBefore(
-    ledger.slice(0, -1),
+    before("0020_notification_archive_index.sql"),
     "0020_notification_archive_index.sql",
   ), true);
   assert.equal(isBusinessMigrationLedgerImmediatelyBefore(
-    ledger.slice(0, -3),
+    before("0018_invitation_capacity_timestamp_precision.sql"),
     "0018_invitation_capacity_timestamp_precision.sql",
   ), true);
   assert.equal(hasBusinessMigrationApplied(ledger.slice(0, 8), "0008_stripe_invoice_projection_staging.sql"), false);

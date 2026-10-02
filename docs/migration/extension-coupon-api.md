@@ -30,6 +30,16 @@ the same D1 write transaction. It claims one coupon use, inserts its usage row,
 updates the license, cancels pending lottery entries using the valid
 `license_extended` reason, emits one deduplicated notification event per
 cancelled applicant, writes audit entries, and records the response snapshot.
+Additive migration `0021_coupon_lottery_status_audit.sql` restores the source
+per-entry `LOTTERY_ENTRY_STATUS_CHANGED` audit. The trigger runs only when a
+pending entry is cancelled with a newly assigned coupon-command marker. It
+checks the processing command identity and captured time, then verifies the
+inserted audit's applicant, entry, command ID, action, resource, metadata and
+time. Missing or corrupted audit rows abort the whole command, including
+coupon capacity, usage, license change and notifications. A later update by
+another writer that retains an old coupon marker does not create a duplicate.
+Previously applied migrations 0015 and 0019 are unchanged. This describes the
+locally tested migration; remote application is recorded in HANDOFF.
 A unique `(user_id, request_id)` key makes sequential or concurrent retries
 return the original result; a conflicting payload receives 409. Grace-state
 commands snapshot the plan type and configured/fallback limit, then the trigger
@@ -74,7 +84,10 @@ reconciled redemption history.
 Dedicated Miniflare tests use synthetic users, coupons, licenses, and lottery
 entries to check atomic success, response replay, coupon-cap competition,
 duplicate use, transfer and tier rejection, Grace limits, notification/audit
-creation, admin MFA-gated route wiring, and safe coupon deletion. These tests do
+creation, suppressed/corrupted per-entry audit rollback and retry, retained
+marker scoping, admin MFA-gated route wiring, and safe coupon deletion. The
+redemption suite passes 11/11 after reproducing the missing two per-entry logs
+in the pre-fix implementation. These tests do
 not establish live Supabase parity, imported-record readiness, a successful
 authenticated staging redemption against imported user data, or production
 behavior. The staging definitions are restricted to the four verified unused

@@ -1,5 +1,20 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：クーポン延長の応募別監査（local）
+
+クーポン適用では取消対象2件の個別監査が0件になることをregressionで再現した。
+既存適用済み0015/0019は変更せず、追加0021でcoupon command markerが新たに設定される
+pending→cancelled_by_extensionに限定した監査triggerを追加した。commandのprocessing状態・
+license/fanmark・操作時刻を検査し、保存後の申請者/申請/command/action/resource/metadata/timeを確認する。
+監査INSERTのIGNOREまたはmetadata改変ではクーポン利用数・usage・license・取消・通知・commandを
+すべてrollbackし、再送で1回だけ確定する。旧coupon markerを保持した他writerの更新で重複しない。
+
+coupon redemption 11/11、business migration ledger 3/3、migration data 237/237、Worker typecheck、ESLint、diff check成功。
+0021はlocalのみでremote適用前。converter v43、functions/RLS/triggersの包括gateは残す。
+先行transfer/lottery/account-deletion修正のCI run 37024045461は両job成功。
+Stripe修正97f963cはpush済み、CI run 37024950939を確認中。
+実ユーザー移行、外部provider実接続、Worker deploy、domain/DNS切替は行っていない。
+
 ## 2026-10-03：Stripe延長時の抽選取消監査
 
 D1 Stripe extensionでは、2件の取消対象に個別状態変更監査が0件になることをregressionで再現した。
