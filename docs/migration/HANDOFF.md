@@ -6,21 +6,21 @@ open and draft. CI validates the branch but does not deploy the Worker.
 The latest read-only schema catalog completed at
 `2026-10-02T13:22:08.925059Z`: 40 tables / 406 columns / 144 constraints /
 139 indexes / 36 triggers / 77 RLS policies / 58 functions / one view. No
-source table rows were read. Converter v34 reviews 37 exact Worker-operation
-timestamps, six snapshot-import-only timestamps, eight versioned reference
+source table rows were read. Converter v35 reviews 38 exact Worker-operation
+timestamps, seven snapshot-import-only timestamps, eight versioned reference
 master timestamps, one scheduled Worker timestamp, and all 11 exact Auth
-references. This pass adds `notification_rules.created_at` and
-`notification_rules.updated_at`: creation time is imported explicitly, while
-the MFA-gated rule update preserves it and writes the new operation time. The
-report remains `deployable: false` with 27 operation-owned timestamp defaults
-and three unsupported function/RLS/trigger scopes (30 blocking locations).
-Converter tests pass 33/33, migration data tests 229/229, notification-master
-D1 6/6, Worker typecheck, and ESLint on changed files. The prior PR head CI run
-`37012229177` has a passing application job; the Worker job was still running
-before v34 was pushed.
+references. This pass adds `fanmark_availability_rules.created_at` and
+`updated_at`: snapshot import and the staging seed bind creation time; both MFA
+admin edit paths and account deletion preserve it and write an explicit
+operation time. The report remains `deployable: false` with 25 timestamp
+defaults and three unsupported function/RLS/trigger scopes (28 schema/operation
+blockers); the credential descriptor gate remains too. Converter tests pass
+33/33, migration data tests 229/229, availability admin D1 4/4, account
+deletion D1 5/5, Worker typecheck, and ESLint on changed files. Both CI jobs
+passed on v34 PR head `6ebfd31` in run `37012939847`.
 
 No source rows, production routing, user/Auth migration, Worker deployment, or
-domain/DNS settings were changed in v34. The latest recorded
+domain/DNS settings were changed in v35. The latest recorded
 workers.dev-only staging version is
 version `d2330dd1-ce17-41c0-99d2-a81b242c412d` at 100%. An earlier run
 `36991654600` exposed an intermittent 120-second

@@ -91,6 +91,10 @@ describe("D1 availability rule admin API", () => {
     const payload = await updated.json() as { rule: Record<string, unknown> };
     expect(payload.rule).toMatchObject({ id: ruleIds[0], is_available: true, updated_at: "2026-09-26T12:34:56.000000Z" });
     expect(JSON.stringify(payload)).not.toContain("private-synthetic-user");
+    expect(await database!.prepare("SELECT created_at, updated_at FROM fanmark_availability_rules WHERE id = ?")
+      .bind(ruleIds[0]).first<Record<string, unknown>>()).toEqual({
+      created_at: initialTime, updated_at: "2026-09-26T12:34:56.000000Z",
+    });
 
     const stale = await request(`/api/admin/availability-rules/${ruleIds[0]}`, {
       method: "PATCH", headers: { "content-type": "application/json" },
@@ -114,6 +118,10 @@ describe("D1 availability rule admin API", () => {
     expect(await updated.json()).toMatchObject({
       schemaVersion: 1,
       rule: { rule_config: { prefixes: { "🎄": 5.99, "🏢": 120.05, "💎": 19.99 } } },
+    });
+    expect(await database!.prepare("SELECT created_at, updated_at FROM fanmark_availability_rules WHERE id = ?")
+      .bind(ruleIds[2]).first<Record<string, unknown>>()).toEqual({
+      created_at: initialTime, updated_at: "2026-09-26T12:34:56.000000Z",
     });
 
     const wrongRule = await request(`/api/admin/availability-rules/${ruleIds[0]}`, {

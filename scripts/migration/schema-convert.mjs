@@ -17,7 +17,7 @@ import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 34;
+export const SCHEMA_CONVERSION_VERSION = 35;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -102,6 +102,17 @@ const REVIEWED_SNAPSHOT_IMPORT_ONLY_TIMESTAMPS = new Map([
       "scripts/migration/staging-notification-master-seed.sql",
       "workers/api/src/notification-master-d1-api.ts",
       "workers/api/test/notification-master-admin-d1.test.ts",
+    ],
+  }],
+  ["fanmark_availability_rules.created_at", {
+    code: "snapshot_import_only_no_timestamp_writer",
+    reason: "The source snapshot importer and reviewed staging seed bind created_at explicitly. Runtime admin edits and account deletion preserve the original creation time.",
+    evidence: [
+      "scripts/migration/d1-import.mjs",
+      "scripts/migration/test-d1-import-current-schema.mjs",
+      "scripts/migration/staging-availability-rules-seed.sql",
+      "workers/api/src/availability-rules-admin-d1-api.ts",
+      "workers/api/test/availability-rules-admin-d1.test.ts",
     ],
   }],
 ]);
@@ -482,6 +493,17 @@ const REVIEWED_RUNTIME_TIMESTAMP_WRITES = new Map([
     evidence: [
       "workers/api/src/notification-master-d1-api.ts",
       "workers/api/test/notification-master-admin-d1.test.ts",
+      "workers/api/src/utc-timestamp.ts",
+    ],
+  }],
+  ["fanmark_availability_rules.updated_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The MFA-gated admin patch and account-deletion cleanup bind explicit UTC operation times while preserving created_at; D1 tests read both timestamps back.",
+    evidence: [
+      "workers/api/src/availability-rules-admin-d1-api.ts",
+      "workers/api/test/availability-rules-admin-d1.test.ts",
+      "workers/api/src/account-deletion-d1-api.ts",
+      "workers/api/test/account-deletion-d1.test.ts",
       "workers/api/src/utc-timestamp.ts",
     ],
   }],

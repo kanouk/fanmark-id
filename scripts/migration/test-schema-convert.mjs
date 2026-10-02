@@ -234,7 +234,7 @@ test("conversion is deterministic and exposes exact target codecs", () => {
 
   assert.equal(first.report.target.tableCount, 4);
   assert.equal(first.report.target.columnCount, 15);
-  assert.equal(first.report.schemaVersion, 34);
+  assert.equal(first.report.schemaVersion, 35);
   assert.deepEqual(first.report.target.translatedConstraints, { p: 4, u: 0, f: 1, c: 3 });
   assert.equal(first.report.target.translatedIndexCount, 4);
   assert.deepEqual(
@@ -408,7 +408,7 @@ test("money cents DDL accepts only the exact source numeric(10,2) range", () => 
 
 test("DATE schema checks preserve canonical calendar days for imports and later writes", () => {
   const result = convertSchema(calendarDateFixture());
-  assert.equal(result.report.schemaVersion, 34);
+  assert.equal(result.report.schemaVersion, 35);
   assert.equal(gateCodes(result.report).has("date_import_validation"), false);
   assert.match(result.sql, /"stat_date" IS NULL OR \([\s\S]*length\("stat_date"\) = 10[\s\S]*GLOB '\[0-9\].*-[0-9\].*-[0-9\].*'[\s\S]*substr\("stat_date", 1, 4\) BETWEEN '0001' AND '9999'[\s\S]*date\("stat_date", '\+0 days'\) IS "stat_date"/);
 
@@ -435,7 +435,7 @@ test("DATE schema checks preserve canonical calendar days for imports and later 
 
 test("TIMESTAMPTZ schema checks preserve canonical UTC microsecond text", () => {
   const result = convertSchema(timestampFixture());
-  assert.equal(result.report.schemaVersion, 34);
+  assert.equal(result.report.schemaVersion, 35);
   assert.ok(!gateCodes(result.report).has("timestamp_import_precision"));
   assert.ok(gateCodes(result.report).has("timestamp_default_requires_operation"));
   assert.match(result.sql, /"created_at" TEXT NOT NULL,/);
@@ -622,7 +622,7 @@ test("the waitlist signup timestamp uses its reviewed operation-owned write", ()
   assert.equal(disposition?.targetDefault, null);
   assert.ok(disposition?.evidence.includes("workers/api/src/waitlist-signup-d1-api.ts"));
   assert.ok(disposition?.evidence.includes("workers/api/test/waitlist-signup-d1.test.ts"));
-  assert.equal(result.report.schemaVersion, 34);
+  assert.equal(result.report.schemaVersion, 35);
 
   const start = result.sql.indexOf('CREATE TABLE "waitlist"');
   assert.notEqual(start, -1);
@@ -697,7 +697,7 @@ test("public access analytics timestamps are reviewed on insert and aggregate up
     entry.sourceDefault === "now()" && entry.targetDefault === null &&
     entry.evidence.includes("workers/api/test/fanmark-access-analytics-d1.test.ts")
   )));
-  assert.equal(result.report.schemaVersion, 34);
+  assert.equal(result.report.schemaVersion, 35);
 });
 
 test("fanmark profile timestamps are reviewed for explicit creation and updates", () => {
@@ -727,7 +727,7 @@ test("fanmark profile timestamps are reviewed for explicit creation and updates"
     entry.evidence.includes("workers/api/test/fanmark-profile-d1.test.ts") &&
     entry.evidence.includes("workers/api/test/fanmark-registration-d1.test.ts")
   )));
-  assert.equal(result.report.schemaVersion, 34);
+  assert.equal(result.report.schemaVersion, 35);
 });
 
 test("emoji master timestamps require exact explicit Worker and seed writers", () => {
@@ -774,7 +774,7 @@ test("emoji master timestamps require exact explicit Worker and seed writers", (
     gate.code === "timestamp_default_requires_operation" &&
     gate.locations.some((location) => location.table === "emoji_master" && location.column === "reviewed_at")
   )));
-  assert.equal(result.report.schemaVersion, 34);
+  assert.equal(result.report.schemaVersion, 35);
 });
 
 test("invitation code timestamps require exact admin operation writers", () => {
@@ -813,7 +813,7 @@ test("invitation code timestamps require exact admin operation writers", () => {
     gate.code === "timestamp_default_requires_operation" &&
     gate.locations.some((location) => location.table === "invitation_codes" && location.column === "reviewed_at")
   )));
-  assert.equal(result.report.schemaVersion, 34);
+  assert.equal(result.report.schemaVersion, 35);
 });
 
 test("transfer and lottery timestamps require reviewed operation writers", () => {
@@ -870,12 +870,12 @@ test("transfer and lottery timestamps require reviewed operation writers", () =>
     gate.code === "timestamp_default_requires_operation" ? gate.locations : []
   ));
   assert.deepEqual(remaining, [{ kind: "default", table: "fanmark_transfer_codes", column: "reviewed_at" }]);
-  assert.equal(result.report.schemaVersion, 34);
+  assert.equal(result.report.schemaVersion, 35);
 });
 
-test("notification master and template timestamps distinguish imports from runtime edits", () => {
+test("admin, notification master, and template timestamps distinguish imports from runtime edits", () => {
   const input = fixture();
-  const tables = ["email_templates", "notification_templates", "notification_rules"];
+  const tables = ["email_templates", "notification_templates", "notification_rules", "fanmark_availability_rules"];
   for (const table of tables) {
     input.columns.push(
       column(table, "created_at", 1, "timestamp with time zone", {
@@ -896,6 +896,8 @@ test("notification master and template timestamps distinguish imports from runti
   assert.deepEqual(dispositions.map((entry) => `${entry.table}.${entry.column}`).sort(), [
     "email_templates.created_at",
     "email_templates.updated_at",
+    "fanmark_availability_rules.created_at",
+    "fanmark_availability_rules.updated_at",
     "notification_rules.created_at",
     "notification_rules.updated_at",
     "notification_templates.created_at",
@@ -915,6 +917,11 @@ test("notification master and template timestamps distinguish imports from runti
   assert.ok(notificationSeed?.evidence.includes("scripts/migration/staging-notification-master-seed.sql"));
   const ruleSeed = dispositions.find((entry) => entry.table === "notification_rules" && entry.column === "created_at");
   assert.ok(ruleSeed?.evidence.includes("scripts/migration/staging-notification-master-seed.sql"));
+  const availabilitySeed = dispositions.find((entry) => entry.table === "fanmark_availability_rules" && entry.column === "created_at");
+  assert.ok(availabilitySeed?.evidence.includes("scripts/migration/staging-availability-rules-seed.sql"));
+  const availabilityUpdated = dispositions.find((entry) => entry.table === "fanmark_availability_rules" && entry.column === "updated_at");
+  assert.ok(availabilityUpdated?.evidence.includes("workers/api/test/account-deletion-d1.test.ts"));
+  assert.ok(availabilityUpdated?.evidence.includes("workers/api/test/availability-rules-admin-d1.test.ts"));
 
   const changed = structuredClone(input);
   changed.columns.push(column("notification_templates", "reviewed_at", 3, "timestamp with time zone", {
@@ -924,7 +931,7 @@ test("notification master and template timestamps distinguish imports from runti
   assert.deepEqual(changedResult.report.gates.flatMap((gate) => (
     gate.code === "timestamp_default_requires_operation" ? gate.locations : []
   )), [{ kind: "default", table: "notification_templates", column: "reviewed_at" }]);
-  assert.equal(result.report.schemaVersion, 34);
+  assert.equal(result.report.schemaVersion, 35);
 });
 
 test("fanmark settings configuration timestamps require exact operation reviews", () => {
@@ -960,12 +967,12 @@ test("fanmark settings configuration timestamps require exact operation reviews"
   }
   assert.ok(evidenceByTable.get("fanmark_basic_configs")?.has("workers/api/test/fanmark-transfer-d1.test.ts"));
   assert.ok(evidenceByTable.get("fanmark_basic_configs")?.has("workers/api/test/fanmark-registration-d1.test.ts"));
-  assert.equal(result.report.schemaVersion, 34);
+  assert.equal(result.report.schemaVersion, 35);
 });
 
 test("JSONB text validation and target constraints preserve JSON null, SQL NULL, and exact text", () => {
   const result = convertSchema(fixture());
-  assert.equal(result.report.schemaVersion, 34);
+  assert.equal(result.report.schemaVersion, 35);
   assert.equal(gateCodes(result.report).has("json_import_validation"), false);
   assert.match(result.sql, /"metadata" IS NULL OR json_valid\("metadata"\)/);
 
@@ -1143,7 +1150,7 @@ test("the four reviewed live GIN indexes have explicit D1 query-contract disposi
   );
 
   const result = convertSchema(input);
-  assert.equal(result.report.schemaVersion, 34);
+  assert.equal(result.report.schemaVersion, 35);
   assert.deepEqual(result.report.target.indexAdaptations.map((entry) => entry.sourceIndex), [
     "idx_emoji_master_keywords",
     "idx_emoji_master_short_name",
@@ -1187,7 +1194,7 @@ test("known ASCII PostgreSQL regex checks require a reviewed locale proof", () =
     .flatMap((gate) => gate.locations)
     .filter((location) => sourceCheckNames.has(location.name));
   assert.deepEqual(untranslatedSourceChecks, []);
-  assert.equal(result.report.schemaVersion, 34);
+  assert.equal(result.report.schemaVersion, 35);
 
   const cases = [
     ["invitation_codes", "code", "ABC123", true],
@@ -1419,7 +1426,7 @@ test("the exact recent-active view is adapted only to the reviewed D1 query", ()
   input.views = [{ kind: "view", name: "recent_active_fanmarks", definition }];
 
   const result = convertSchema(input);
-  assert.equal(result.report.schemaVersion, 34);
+  assert.equal(result.report.schemaVersion, 35);
   assert.equal(result.report.deployable, false);
   assert.deepEqual(result.report.target.catalogScopeAdaptations, [{
     scope: "views",

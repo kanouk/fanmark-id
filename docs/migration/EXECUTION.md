@@ -1,5 +1,23 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 v35：利用可能ルール日時のレビュー
+
+v34で取得したread-only schema catalog（`2026-10-02T13:22:08.925059Z`）から再変換した。
+catalogは40 tables / 406 columnsで、source table rowsは取得していない。
+
+`fanmark_availability_rules.created_at`はsnapshot importとstaging seedが明示的にbindする。
+MFA管理APIの両方の更新経路とアカウント削除処理は`created_at`を保ち、明示的なUTC
+`updated_at`をbindする。固定clock D1テストとアカウント削除D1テストで両方をreadbackする。
+
+converter v35は38個のWorker-operation timestamp columns、7個のsnapshot-import-only
+columns、8個のversioned reference-master timestamps、1個のscheduled Worker timestampと
+11 Auth FKをreview済み。schema/operation blockersは28 locations（timestamp defaults 25、
+functions/RLS/triggers各1）。credential descriptor gateも残り、`deployable: false`。
+converter tests 33/33、`npm run test:migration-data` 229/229、availability admin D1 4/4、
+account deletion D1 5/5、Worker typecheck、変更ファイルのESLintが成功。
+v34 head `6ebfd31`のCI run `37012939847`はapplicationとWorkerの両jobが成功。
+v35のCIはpush後に確認する。source rows、Cloudflare resources、Worker deploy、domain/DNSは変更していない。
+
 ## 2026-10-02 v34：通知ルール日時のレビュー
 
 最新のread-only schema catalogを`2026-10-02T13:22:08.925059Z`に取得した。
@@ -16,7 +34,8 @@ columns、8個のversioned reference-master timestamps、1個のscheduled Worker
 `deployable: false`。converter tests 33/33、`npm run test:migration-data` 229/229、
 notification-master D1 tests 6/6、Worker typecheck、変更ファイルのESLintが成功。
 前のPR head `e2a1a05`のCI run `37012229177`ではstaging application jobが成功し、Worker jobは実行中。
-v34のCIはpush後に確認する。source rows、Cloudflare resources、Worker deploy、domain/DNSは変更していない。
+v34 head `6ebfd31`のCI run `37012939847`はstaging applicationとWorkerの両jobが成功。
+source rows、Cloudflare resources、Worker deploy、domain/DNSは変更していない。
 
 ## 2026-10-02 v33：通知・メールテンプレートの日時レビュー
 

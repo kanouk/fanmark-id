@@ -1,6 +1,6 @@
 # Full schema conversion generator
 
-`schema-convert.mjs` v34 is a private, catalog-only preparation tool. It
+`schema-convert.mjs` v35 is a private, catalog-only preparation tool. It
 converts the JSON emitted by `scripts/migration/schema-readiness.sql` into deterministic
 SQLite/D1 table and index SQL plus a machine-readable report of unresolved
 parity gates. It does not read application rows, contact Supabase, apply SQL,
@@ -682,3 +682,20 @@ timestamps, and all 11 exact Auth references. It remains `deployable: false`
 with 27 timestamp-operation locations and the three functions/RLS/trigger
 catalog scopes (30 blocking locations total). Converter tests pass 33/33 and
 the migration-data suite 229/229. Notification-master D1 tests pass 6/6.
+
+## Schema converter v35: availability rule timestamps
+
+Converter v35 reviews `fanmark_availability_rules.created_at` as import-only
+and `updated_at` as a Worker-operation timestamp. The source snapshot importer
+and staging seed bind creation time explicitly. Both MFA-gated admin update
+paths and account deletion preserve it while binding their operation time;
+focused D1 tests read back both timestamps.
+
+Using the catalog observed at `2026-10-02T13:22:08.925059Z`, converter v35
+reviews 38 Worker-operation timestamps, seven snapshot-import-only timestamps,
+eight versioned reference-master timestamps, one scheduled Worker timestamp,
+and all 11 exact Auth references. It remains `deployable: false` with 25
+timestamp-operation locations and the three functions/RLS/trigger catalog
+scopes (28 schema/operation blockers); the credential descriptor gate also
+remains. Converter tests pass 33/33, migration-data tests 229/229, availability
+admin D1 tests 4/4, and account deletion D1 tests 5/5.

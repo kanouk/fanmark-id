@@ -72,6 +72,7 @@ CREATE TABLE notification_rules (
 CREATE TABLE fanmark_availability_rules (
   id TEXT PRIMARY KEY NOT NULL,
   created_by TEXT,
+  created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
 

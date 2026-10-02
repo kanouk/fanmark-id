@@ -118,7 +118,8 @@ async function seedAccount(): Promise<void> {
     businessDatabase.prepare("INSERT INTO user_roles (user_id, created_by) VALUES (?, ?)").bind(ownerId, ownerId),
     businessDatabase.prepare("INSERT INTO user_roles (user_id, created_by) VALUES (?, ?)").bind(otherId, ownerId),
     businessDatabase.prepare("INSERT INTO notification_rules (id, created_by, updated_at) VALUES ('delete-rule', ?, ?)").bind(ownerId, now),
-    businessDatabase.prepare("INSERT INTO fanmark_availability_rules (id, created_by, updated_at) VALUES ('delete-availability-rule', ?, ?)").bind(ownerId, now),
+    businessDatabase.prepare("INSERT INTO fanmark_availability_rules (id, created_by, created_at, updated_at) VALUES ('delete-availability-rule', ?, ?, ?)")
+      .bind(ownerId, "2026-09-01T00:00:00.000000Z", now),
     businessDatabase.prepare("INSERT INTO fanmark_favorites (id, fanmark_id, user_id, display_fanmark) VALUES ('delete-own-favorite', ?, ?, '🧪'), ('other-favorite', ?, ?, '🧪')").bind(fanmarkId, ownerId, fanmarkId, otherId),
     businessDatabase.prepare("INSERT INTO notifications (id, user_id) VALUES ('delete-notification', ?)").bind(ownerId),
     businessDatabase.prepare("INSERT INTO notification_preferences (id, user_id) VALUES ('delete-preference', ?)").bind(ownerId),
@@ -159,7 +160,7 @@ describe("Better Auth account deletion coordinator", () => {
     expect(typeof license?.grace_expires_at).toBe("string");
     expect(license?.updated_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
 
-    const [settings, favorites, notifications, preferences, subscriptions, enterpriseSettings, lottery, history, otherRole, rules] = await Promise.all([
+    const [settings, favorites, notifications, preferences, subscriptions, enterpriseSettings, lottery, history, otherRole, rules, availabilityRule] = await Promise.all([
       businessDatabase?.prepare("SELECT COUNT(*) AS total FROM user_settings WHERE user_id = ?").bind(ownerId).first<{ total: number }>(),
       businessDatabase?.prepare("SELECT COUNT(*) AS total FROM fanmark_favorites WHERE user_id = ?").bind(ownerId).first<{ total: number }>(),
       businessDatabase?.prepare("SELECT COUNT(*) AS total FROM notifications WHERE user_id = ?").bind(ownerId).first<{ total: number }>(),
@@ -170,6 +171,8 @@ describe("Better Auth account deletion coordinator", () => {
       businessDatabase?.prepare("SELECT winner_user_id FROM fanmark_lottery_history WHERE id = 'delete-history'").first<Record<string, unknown>>(),
       businessDatabase?.prepare("SELECT created_by FROM user_roles WHERE user_id = ?").bind(otherId).first<Record<string, unknown>>(),
       businessDatabase?.prepare("SELECT created_by FROM notification_rules WHERE id = 'delete-rule'").first<Record<string, unknown>>(),
+      businessDatabase?.prepare("SELECT created_by, created_at, updated_at FROM fanmark_availability_rules WHERE id = 'delete-availability-rule'")
+        .first<Record<string, unknown>>(),
     ]);
     expect(settings?.total).toBe(0);
     expect(favorites?.total).toBe(0);
@@ -186,6 +189,10 @@ describe("Better Auth account deletion coordinator", () => {
     expect(history).toEqual({ winner_user_id: null });
     expect(otherRole).toEqual({ created_by: null });
     expect(rules).toEqual({ created_by: null });
+    expect(availabilityRule?.created_by).toBeNull();
+    expect(availabilityRule?.created_at).toBe("2026-09-01T00:00:00.000000Z");
+    expect(availabilityRule?.updated_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+    expect(availabilityRule?.updated_at).not.toBe(now);
 
     const events = await businessDatabase?.prepare("SELECT event_type, payload FROM notification_events ORDER BY event_type").all<Record<string, unknown>>();
     expect(events?.results).toHaveLength(1);
