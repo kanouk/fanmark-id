@@ -18,6 +18,11 @@
 - `broadcast_emails.created_by` の参照によりAuth削除が拒否される場合は、他の副作用を始める前に削除を止める。
 - Cloudflare staging では `ACCOUNT_DELETION_BACKEND=d1` と `VITE_ACCOUNT_DELETION_BACKEND=worker` を明示した経路を検証する。production の既定は引き続きSupabaseで、実ユーザーに対する削除操作は移行対象に含めない。
 
+## 管理者によるファンマーデータリセット
+- 管理画面のデータリセットは、ファンマ本体・ライセンス・5種の設定/プロフィール・お気に入りの8テーブルを対象にする。ユーザーアカウント、ユーザー設定、システム/マスター設定、招待コード、待機リストは保持する。既存FKのcascadeとnil UUIDの除外を保つ。
+- Cloudflare版の準備済み経路は同一sessionの管理者MFAと確認語 `DELETE` を必須にし、削除・件数記録・監査を単一transactionで確定する。削除/監査の失敗や抑止では全体を取り消す。削除を妨げるクーポン利用履歴や失効処理記録は保持して拒否し、途中までの削除を成功と表示しない。
+- 操作IDが同じ再試行は保存済み結果を返し、初回完了後に新しく作られたデータを削除しない。Cloudflare stagingの操作は、合成データによるremote検証まで無効のままにする。
+
 ## 料金プランとティア
 - プラン (ユーザー枠): Free=3件, Creator=10件, Business=50件, Admin=無制限。延長は有料（Adminのみ無料延長）。上限は有効な所有ライセンス件数で判定し、無期限のTier Cも1件として数える。上限超過時は取得不可。
 - プラン変更: アップグレードは即時適用。ダウングレード時は `FanmarkSelectionModal` で上限数だけ選択し、未選択分は一括返却（`bulk-return-fanmarks`）。選択は一度きりでキャンセル不可。

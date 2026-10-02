@@ -3,6 +3,23 @@
 Checkpoint: 2026-10-03 JST. The migration is **not complete**. PR #41 remains
 open and draft. CI validates the branch but does not deploy the Worker.
 
+Prepared the remaining administrator data-reset counterpart: Business 0023
+native atomic eight-table command/count/audit/receipt and MFA/Origin/DELETE
+Worker API, plus opt-in typed frontend/dialog. Full 24-migration local D1
+14/14, frontend adapter/mode 6/6, migration data 242/242, app/Worker typecheck,
+ESLint and staging build pass. Deletion/audit ABORT/IGNORE/corruption rolls
+back all effects; same-ID concurrent/uncertain retries preserve later rows.
+Nil UUIDs and incarnation fences are retained. Restrictive coupon/lifecycle
+history returns 409 without partial deletion; authenticated non-admin attempts
+retain a bounded source denial audit through the server role gate.
+
+0023 is NOT remotely applied. Staging reset frontend remains disabled and
+server selector unset. Next: journaled account/version/empty-data/master/trigger
+guards and temporary native delete guards against any non-fixture row, then
+CI/schema/runtime/synthetic TOTP/API/UI acceptance and scoped cleanup. See
+admin-data-reset-api.md. Keep real user/Auth/Storage migration and domain/DNS
+deferred; this is preparation, not completed runtime migration.
+
 Master emoji mutation audits are implemented and staging-verified. Additive Master migration
 `0008_emoji_master_change_audits.sql` adds native per-change audits and a
 transaction-scoped server actor/request/time context. Missing/corrupted audits
@@ -55,17 +72,31 @@ rendered rows matched the intercepted API order/action/metadata, including 18
 latest exact Master audits; screenshot review and scoped cleanup passed. The
 new `--emoji-master-audit-browser` smoke covers this; mobile remains unverified.
 
-Next source diagnostic repair is local: waitlist email denial now retains its
-resource ID and CRITICAL_RISK/email_address metadata. `notify_security_breach`
-only emits a source DB NOTICE; the Worker adds a post-commit bounded warning
-(event/action/audit ID/time), omitting raw actor/email/IP/credentials. Local
-waitlist suite 9/9, typecheck/ESLint pass. The new
-`--waitlist-security-roundtrip` pins account/version, guards empty Auth and
-journals synthetic Auth/waitlist resources before writes. New warning code is
-NOT deployed. Next: push/CI/build/deploy, guarded authorized/denied waitlist
-canary and operator-log/audit correlation, scoped cleanup; then remaining
-source function/RLS/trigger review and provider/CPU/operational gates. Stripe/Resend/OAuth credentials
-remain absent. Keep real user/Auth/Storage migration and domain/DNS deferred.
+Waitlist denial diagnostics are now staging-verified. Code head `5744231`
+passed both CI jobs in run `37039256333`; fresh build/dry-run deployed Worker
+`4199fd09-8080-4944-8c09-6932e94913b2` at 100%, created
+`2026-10-02T17:21:06.720158Z`. HTTP/anonymous gates/noindex and local/public
+HTML/JS hash match. The pinned `--waitlist-security-roundtrip` passed authorized
+hash-list/reveal, then two 403 denials after removing only the synthetic
+caller's admin plan. D1 retained the exact resource/risk/operation-time fields.
+A version-pinned live operator tail captured only the bounded warning fields;
+both events exactly matched the D1 audit IDs/actions/times. Raw request headers,
+cookies, tokens, IP and emails were neither forwarded nor saved by the tail.
+The private recovery journal ended `verified-and-cleaned`, user-owned Auth
+rows returned to zero, and scoped waitlist/profile/audit cleanup passed. The
+owned tail process was stopped and returned exit 0 after capturing two events.
+Local waitlist suite remains 9/9. Source NOTICE has no external delivery call.
+
+The two source user-settings privilege triggers have been reviewed against
+owner profile PATCH and invitation signup: caller plan/identity/billing edits
+are rejected, and signup inserts the literal Free plan after Auth lease checks.
+Both existing local D1 suites were rerun successfully (10/10 each). See
+source-user-settings-guards.md; this does not clear the broad catalog gate or
+prove imported-user/provider authorization.
+
+Next: remaining source function/RLS/trigger review and unresolved management,
+provider/CPU/operational gates. Stripe/Resend/OAuth credentials remain absent.
+Keep real user/Auth/Storage migration and domain/DNS deferred.
 
 The preceding lottery-audit rollout used workers.dev staging Worker version
 `445dd523-232d-4766-aaef-2c8d175e5bc6` at 100%. The code baseline is `f3787d8`;

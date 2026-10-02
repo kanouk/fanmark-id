@@ -29,7 +29,8 @@ the denial audit commits. Actor/resource lookup stays in D1, so diagnostics
 do not repeat user IDs, raw email, IP, authorization or cookies. Missing audit
 writes fail closed with 503 and do not report a persisted-audit alert. Routes
 rejected by the earlier MFA/origin/method gate do not create these D1 audits.
-Local route tests pass 9/9; new diagnostics are not deployed yet. Both routes are same-origin, credentialed,
+Local route tests pass 9/9; denial diagnostics are staging-verified on Worker
+`4199fd09-8080-4944-8c09-6932e94913b2`. Both routes are same-origin, credentialed,
 and `no-store`; API errors never fall back to Supabase after Worker selection.
 
 The D1 waitlist table is structurally present, but real waitlist rows have not
@@ -68,5 +69,8 @@ It requires empty user-owned Auth tables, pins account/Worker version/split D1
 bindings and the applied Master audit triggers, and journals synthetic IDs
 before Auth and waitlist writes. It checks authorized hash-list/reveal, removes
 only the synthetic caller's elevated plan, checks two 403 denials and exact
-D1 risk/resource/time fields, then removes scoped source/Auth rows. Deployed
-operator-log correlation remains to be verified separately. No email is sent.
+D1 risk/resource/time fields, then removes scoped source/Auth rows. On 2026-10-03 the pinned canary passed and its private journal ended
+`verified-and-cleaned` with user-owned Auth rows zero. A live version-pinned
+operator tail captured two sanitized warning events; action/audit ID/time
+exactly matched both D1 denial audits. The tail was then stopped (exit 0).
+No email was sent.

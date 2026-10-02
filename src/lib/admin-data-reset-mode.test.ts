@@ -6,5 +6,6 @@ test("data reset keeps the existing Supabase mode by default and disables the de
   assert.equal(getAdminDataResetMode(undefined), "supabase");
   assert.equal(getAdminDataResetMode(" supabase "), "supabase");
   assert.equal(getAdminDataResetMode("disabled"), "disabled");
-  assert.throws(() => getAdminDataResetMode("worker"), /not supported/u);
+  assert.equal(getAdminDataResetMode("worker"), "worker");
+  assert.throws(() => getAdminDataResetMode("invalid"), /not supported/u);
 });

@@ -1,6 +1,39 @@
 # Cloudflare移行の実行・再開手順
 
-## 2026-10-03：Master履歴画面のacceptanceと待機リスト警告（local）
+## 2026-10-03：管理データリセットのWorker/D1経路（local準備）
+
+未移行のAdminDataResetを調べ、旧Edge Functionが8回の削除結果を個別に検証しないことを
+確認した。追加Business `0023_admin_data_reset.sql`とMFA保護Worker APIを実装し、8テーブル
+削除・件数・exact auditを1つのtransactionで確定する。ABORT/IGNOREや監査改変は全rollback。
+同じrequest IDは保存済み結果を返し、後から作られた行を再削除しない。nil UUIDとnative FKを
+保持する。クーポン利用履歴/target失効journalが制約となる場合は全体を409で拒否し保持する。
+認証済みnon-adminの拒否監査もserver role gateで保存し、メールやcookieを複製しない。
+
+全24 Business migrationを実適用したlocal D1 14/14、frontend adapter/mode 6/6、migration-data
+242/242、Worker/app typecheck、ESLint、staging build成功。Worker opt-in adapter/dialogも準備し、
+DELETE入力と不確定結果後の同じ操作IDによるretryを使用する。staging frontendはdisabled、
+server selector未設定のまま。0023のremote適用・有効化・TOTP合成reset/cleanup・画面acceptanceは
+未実施。次にprivate journal/空userdata guardとcanary-only native delete guardを準備して検証する。
+実ユーザー移行、Supabase production write、domain/DNS切替は行っていない。
+
+## 2026-10-03：待機リスト拒否監査・運用警告のstaging照合
+
+code head `5744231`のCI run `37039256333`はapplication/Worker両job成功。fresh staging
+build/dry-run後、Worker `4199fd09-8080-4944-8c09-6932e94913b2`を100%で配備した。
+HTTP gates/noindex、local/public HTML・JS hash一致を確認。version/account/empty Authを
+確認した合成canaryは許可hash-list/reveal、合成管理者だけのplan変更、一覧・メール参照の
+403拒否、対象ID/risk/UTC時刻のexact D1監査を検証した。version固定のlive operator tailは
+警告の4 fieldだけを抽出し、2件ともD1監査のID/action/timeと一致した。raw request header、
+Cookie、token、メール、IPは保存していない。private journalはverified-and-cleaned、
+user-owned Auth 0、合成waitlist/profile/auditはscoped cleanup完了。tailは停止・exit 0。
+
+sourceのuser_settings INSERT/UPDATE権限triggerもowner PATCH/signup経路でレビューした。
+clientからplan/identity/billingを書き換えられず、signupは検証済みAuth lease後にFree literalを
+挿入する。既存profile D1 10/10、invitation signup D1 10/10を再実行し成功。詳細は
+source-user-settings-guards.md。包括catalog、実provider、CPU/運用gateは残す。
+実ユーザー移行、production Supabase write、domain/DNS切替は行っていない。
+
+## 2026-10-03：Master履歴画面のacceptanceと待機リスト警告（local準備記録）
 
 Worker `1eb5d9ac-815e-4957-8381-b6024dac33e8`で合成signin/TOTPを通し、
 管理者本人のユーザー詳細画面をheadless Chromeで開いた。履歴20件のaction/metadataと

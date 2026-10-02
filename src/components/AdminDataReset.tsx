@@ -6,6 +6,8 @@ import { Trash2, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getAdminDataResetMode } from "@/lib/admin-data-reset-mode";
+import { resetDataThroughWorker, AdminDataResetApiError } from "@/lib/admin-data-reset-api";
+import { Input } from "@/components/ui/input";
 
 interface ResetResult {
   success: boolean;
@@ -23,39 +25,49 @@ interface ResetResult {
 }
 
 export const AdminDataReset = () => {
-  const resetDisabled = getAdminDataResetMode() === "disabled";
+  const resetMode = getAdminDataResetMode();
+  const resetDisabled = resetMode === "disabled";
+  const [confirmation, setConfirmation] = useState("");
+  const [requestId, setRequestId] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [resetResult, setResetResult] = useState<ResetResult | null>(null);
   const { toast } = useToast();
 
   const handleReset = async () => {
-    if (resetDisabled) return;
+    if (resetDisabled || (resetMode === "worker" && (!requestId || confirmation !== "DELETE"))) return;
     setIsResetting(true);
     setResetResult(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('reset-fanmark-data', {
-        method: 'POST',
-      });
-
-      if (error) throw error;
+      let data: ResetResult;
+      if (resetMode === "worker") {
+        data = await resetDataThroughWorker(requestId!, confirmation);
+      } else {
+        const result = await supabase.functions.invoke('reset-fanmark-data', { method: 'POST' });
+        if (result.error) throw result.error;
+        data = result.data as ResetResult;
+      }
 
       setResetResult(data as ResetResult);
+      setRequestId(null);
       toast({
         title: "データリセット完了",
         description: `${data.totalDeleted} 件のレコードを削除しました`,
       });
     } catch (error) {
-      console.error('Reset error:', error);
       toast({
         title: "エラー",
-        description: "データのリセットに失敗しました",
+        description: resetMode !== "worker" ? "データのリセットに失敗しました"
+          : error instanceof AdminDataResetApiError && error.status === 409
+          ? "履歴の参照があるため、リセットを完了できませんでした。データは削除されていません。"
+          : "データのリセットを確認できませんでした。再実行すると同じ操作の結果を確認します。",
         variant: "destructive",
       });
     } finally {
       setIsResetting(false);
       setIsDialogOpen(false);
+      setConfirmation("");
     }
   };
 
@@ -85,7 +97,11 @@ export const AdminDataReset = () => {
 
       <Button
         variant="destructive"
-        onClick={() => setIsDialogOpen(true)}
+        onClick={() => {
+          if (!requestId) setRequestId(crypto.randomUUID());
+          setConfirmation("");
+          setIsDialogOpen(true);
+        }}
         disabled={resetDisabled || isResetting}
         className="w-full"
       >
@@ -123,11 +139,18 @@ export const AdminDataReset = () => {
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {resetMode === "worker" && (
+            <div className="space-y-2">
+              <label htmlFor="data-reset-confirmation" className="text-sm">確認のため DELETE と入力してください</label>
+              <Input id="data-reset-confirmation" value={confirmation}
+                onChange={(event) => setConfirmation(event.target.value)} autoComplete="off" />
+            </div>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel>キャンセル</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleReset}
-              disabled={resetDisabled}
+              disabled={resetDisabled || isResetting || (resetMode === "worker" && confirmation !== "DELETE")}
               className="bg-destructive hover:bg-destructive/90"
             >
               削除を実行

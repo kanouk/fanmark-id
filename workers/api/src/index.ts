@@ -83,6 +83,7 @@ import {
   handleBroadcastEmailAdminRequest,
   isBroadcastEmailAdminPath,
 } from "./broadcast-email-admin-d1-api";
+import { handleAdminDataResetRequest, isAdminDataResetPath, recordUnauthorizedDataResetAttempt } from "./admin-data-reset-d1-api";
 import { handleWaitlistSignupRequest } from "./waitlist-signup-d1-api";
 import { handleStripeWebhookD1Request, isStripeWebhookPath } from "./stripe-webhook-d1-api";
 import { runScheduledStripeWebhookDispatches } from "./stripe-webhook-d1-scheduled";
@@ -488,6 +489,7 @@ async function authorizeAdminRequest(
   request: Request,
   authConfig: NonNullable<ReturnType<typeof configuredAuth>>,
   responseHeaders: Headers,
+  onRoleDenied?: (userId: string) => Promise<void>,
 ): Promise<AdminAuthorization> {
   try {
     const auth = createApplicationAuth(authConfig);
@@ -504,6 +506,7 @@ async function authorizeAdminRequest(
       .bind(current.user.id)
       .first<{ role?: unknown }>();
     if (role?.role !== "admin") {
+      await onRoleDenied?.(current.user.id);
       return errorResponse("admin_required", 403, responseHeaders);
     }
 
@@ -1279,6 +1282,15 @@ export async function handleRequest(
       const authConfig = configuredAuth(env);
       if (!authConfig) return errorResponse("auth_unavailable", 503, responseHeaders);
       return authorizeAdminRequest(adminRequest, authConfig, responseHeaders);
+    })) ?? errorResponse("not_found", 404, routeHeaders);
+  }
+  if (isAdminDataResetPath(url.pathname)) {
+    return (await handleAdminDataResetRequest(request, env, async (adminRequest, responseHeaders) => {
+      if (env.AUTH_BACKEND?.trim() !== "better-auth") return errorResponse("auth_unavailable", 503, responseHeaders);
+      const authConfig = configuredAuth(env);
+      if (!authConfig) return errorResponse("auth_unavailable", 503, responseHeaders);
+      return authorizeAdminRequest(adminRequest, authConfig, responseHeaders,
+        (userId) => recordUnauthorizedDataResetAttempt(env, userId));
     })) ?? errorResponse("not_found", 404, routeHeaders);
   }
   if (isWaitlistAdminPath(url.pathname)) {
