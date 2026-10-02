@@ -675,7 +675,7 @@ async function handleEmojiMasterAdminRequest(request: Request, env: Env, url: UR
   if (authorization instanceof Response) return authorization;
 
   try {
-    const repository = createEmojiMasterAdminD1Repository(env);
+    const repository = createEmojiMasterAdminD1Repository(env, undefined, authorization.userId);
     if (route.kind === "list" && method === "GET") {
       return jsonResponse(await repository.list(url), 200, responseHeaders);
     }

@@ -15,7 +15,7 @@
       "database_name": "fanmark-emoji-master-staging",
       "database_id": "160376b0-bde6-4d5f-8969-96deb5ae1183",
       "migrations_dir": "migrations",
-      "migrations_pattern": "migrations/{0000_emoji_master.sql,0001_emoji_master_release_staging.sql,0002_emoji_master_release_activation.sql,0003_better_auth_core.sql,0004_reference_master_releases.sql,0005_emoji_master_admin_guards.sql,0006_reference_master_extension_prices.sql,0007_release_audit_timestamps.sql}",
+      "migrations_pattern": "migrations/{0000_emoji_master.sql,0001_emoji_master_release_staging.sql,0002_emoji_master_release_activation.sql,0003_better_auth_core.sql,0004_reference_master_releases.sql,0005_emoji_master_admin_guards.sql,0006_reference_master_extension_prices.sql,0007_release_audit_timestamps.sql,0008_emoji_master_change_audits.sql}",
       "remote": true
     }
   ]

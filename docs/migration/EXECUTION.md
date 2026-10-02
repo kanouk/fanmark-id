@@ -1,5 +1,23 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：絵文字マスター変更監査（local）
+
+sourceの`log_emoji_master_changes`に相当する監査がMaster D1 draft編集から欠けていた。
+追加Master migration `0008_emoji_master_change_audits.sql`でnative INSERT/UPDATE/DELETE
+triggerと監査表を追加し、Workerは認証済み管理者ID・request UUID・操作時刻を変更と同じ
+Master D1 batchの一時contextに保持する。監査の未保存・値の改変では編集とcontextをrollbackする。
+trusted CLI writeはsource service-roleと同じNULL actorとし、API削除は従来どおり拒否する。
+最大100件のimportを1つのJSON INSERT/upsertにまとめ、各行の監査と既存UUID/作成日時を保つ。
+
+Auth/Worker/Master D1 suite 34/34、migration-data 237/237、Worker typecheckとESLint成功。
+監査欠落/改変、mixed import rollback/retry、100件取込/upsert、同時actor分離を検証した。
+staging smokeに`--emoji-master-audit-roundtrip`を追加し、version/account/trigger guardとprivate
+recovery journal、TOTP認証、102件監査、public catalog digest、scoped cleanupを準備した。
+Master selectorとrelease guard/fixtureもAuth0008を混ぜず更新した。新migration/Workerはremote未反映。
+前head `ea9880f`のCI run `37029293358`は両job成功。詳細は[絵文字監査契約](emoji-master-change-audit.md)。
+functions/RLS/triggersの包括gate、外部provider acceptance、CPU/運用fitは残る。
+実ユーザー移行、production Supabase write、domain/DNS切替は行っていない。
+
 ## 2026-10-03：監査修正をstagingへ反映
 
 head `f3787d8`のCI run `37026002389`はstaging application / Worker APIの両job成功。

@@ -3,6 +3,22 @@
 Checkpoint: 2026-10-03 JST. The migration is **not complete**. PR #41 remains
 open and draft. CI validates the branch but does not deploy the Worker.
 
+Master emoji mutation audits are now implemented and locally verified, but
+not remotely applied/deployed. Additive Master migration
+`0008_emoji_master_change_audits.sql` adds native per-change audits and a
+transaction-scoped server actor/request/time context. Missing/corrupted audits
+roll back the mutation; trusted CLI writes retain NULL actors. JSON import
+mutates up to 100 rows in one SQL statement, preserving stable UUIDs and
+creation times. Auth/Worker/Master D1 tests pass 34/34; migration data 237/237,
+Worker typecheck and changed-file ESLint pass. Master migration selectors,
+remote release guards and release fixtures include the new migration while
+Auth selectors remain separate. The guarded TOTP staging smoke has a new
+`--emoji-master-audit-roundtrip` flag with pinned account/version/triggers,
+private recovery journal, 100-row import, 102 exact audits, public catalog
+digest and scoped Master/Auth cleanup. See emoji-master-change-audit.md.
+Next: commit/CI, apply Master migration, fresh staging build/deploy and run
+that canary. CI `37029293358` on preceding head `ea9880f` passed both jobs.
+
 The audit fixes are deployed to workers.dev staging as Worker version
 `445dd523-232d-4766-aaef-2c8d175e5bc6` at 100%. The code baseline is `f3787d8`;
 CI run `37026002389` passed both application and Worker jobs. A fresh staging
@@ -48,10 +64,9 @@ values. Tested retry/recovery cases do not duplicate effects.
 Account cleanup failure retains Auth/profile rows while prior committed
 license returns stay in grace, as documented. Migration data passes 237/237.
 
-Remaining source-trigger review found a concrete next gap: the Master D1 emoji
-draft repository does not record the source per-change emoji audits. Preserve
-the authenticated administrator actor and atomicity in Master D1; Business D1
-cannot share that transaction. Source security-alert behavior is database NOTICE
+Source-trigger review found the Master D1 emoji change-audit gap now being
+closed by the local implementation above; remote verification remains pending.
+Source security-alert behavior is database NOTICE
 only, with no external delivery call. See the updated object map and private
 non-timestamp-trigger review; do not clear the broad catalog gate.
 

@@ -20,9 +20,10 @@ const expectedMasterMigrations = [
   "0005_emoji_master_admin_guards.sql",
   "0006_reference_master_extension_prices.sql",
   "0007_release_audit_timestamps.sql",
+  "0008_emoji_master_change_audits.sql",
 ].sort();
 const masterMigrationPatterns = new Set([
-  "migrations/{000[0-6]_*.sql,0007_release_audit_timestamps.sql}",
+  "migrations/{000[0-6]_*.sql,0007_release_audit_timestamps.sql,0008_emoji_master_change_audits.sql}",
   `migrations/{${expectedMasterMigrations.join(",")}}`,
 ]);
 const availableMigrations = new Set(readdirSync(migrationDirectory));

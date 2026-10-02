@@ -212,8 +212,27 @@ async function activeVersion(database: D1Database): Promise<string | null> {
   return row.release_version;
 }
 
-export function createEmojiMasterAdminD1Repository(env: Env, clock: () => Date = () => new Date()) {
+export function createEmojiMasterAdminD1Repository(
+  env: Env,
+  clock: () => Date = () => new Date(),
+  actorUserId?: string,
+) {
   const database = databaseFor(env);
+
+  async function mutate(statements: D1PreparedStatement[], operationAt: string): Promise<D1Result[]> {
+    if (typeof actorUserId !== "string" || !UUID_RE.test(actorUserId)) fail("emoji_admin_actor_unavailable", 503);
+    const results = await database.batch([
+      database.prepare(`INSERT INTO fanmark_emoji_master_mutation_context
+        (singleton_id, user_id, request_id, created_at) VALUES (1, ?, ?, ?)`)
+        .bind(actorUserId.toLowerCase(), crypto.randomUUID(), operationAt),
+      ...statements,
+      database.prepare("DELETE FROM fanmark_emoji_master_mutation_context WHERE singleton_id = 1"),
+    ]);
+    if (results.length !== statements.length + 2 || results.some(result => result.success !== true)) {
+      fail("emoji_master_write_failed", 503);
+    }
+    return results.slice(1, -1);
+  }
 
   async function getById(id: string): Promise<EmojiMasterAdminItem> {
     const result = await database.prepare(`
@@ -277,12 +296,12 @@ export function createEmojiMasterAdminD1Repository(env: Env, clock: () => Date =
       const id = crypto.randomUUID();
       const now = toUtcMicrosecondTimestamp(clock());
       try {
-        const result = await database.prepare(
+        const [result] = await mutate([database.prepare(
           `INSERT INTO emoji_master (id, emoji, short_name, keywords, category, subcategory, codepoints, sort_order, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         ).bind(id, input.emoji, input.shortName, JSON.stringify(input.keywords), input.category,
-          input.subcategory, JSON.stringify(input.codepoints), input.sortOrder, now, now).run();
-        if (result?.success !== true || result.meta?.changes !== 1) fail("emoji_master_write_failed", 503);
+          input.subcategory, JSON.stringify(input.codepoints), input.sortOrder, now, now)], now);
+        if (result?.success !== true || !Number.isSafeInteger(result.meta?.changes) || result.meta.changes < 1) fail("emoji_master_write_failed", 503);
         return await getById(id);
       } catch (error) {
         if (error instanceof EmojiMasterAdminError) throw error;
@@ -296,16 +315,18 @@ export function createEmojiMasterAdminD1Repository(env: Env, clock: () => Date =
       const expectedTime = Date.parse(expectedUpdatedAt);
       if (!Number.isFinite(expectedTime)) fail("invalid_request");
       const input = parseInput(value);
-      const now = toUtcMicrosecondTimestamp(new Date(Math.max(clock().getTime(), expectedTime + 1)));
+      const operationClock = clock();
+      const operationAt = toUtcMicrosecondTimestamp(operationClock);
+      const now = toUtcMicrosecondTimestamp(new Date(Math.max(operationClock.getTime(), expectedTime + 1)));
       try {
-        const result = await database.prepare(
+        const [result] = await mutate([database.prepare(
           `UPDATE emoji_master
            SET emoji = ?, short_name = ?, keywords = ?, category = ?, subcategory = ?, codepoints = ?, sort_order = ?, updated_at = ?
            WHERE id = ? AND updated_at = ?`,
         ).bind(input.emoji, input.shortName, JSON.stringify(input.keywords), input.category,
-          input.subcategory, JSON.stringify(input.codepoints), input.sortOrder, now, id.toLowerCase(), expectedUpdatedAt).run();
+          input.subcategory, JSON.stringify(input.codepoints), input.sortOrder, now, id.toLowerCase(), expectedUpdatedAt)], operationAt);
         if (result?.success !== true) fail("emoji_master_write_failed", 503);
-        if (result.meta?.changes !== 1) {
+        if (!Number.isSafeInteger(result.meta?.changes) || result.meta.changes < 1) {
           const exists = await database.prepare("SELECT id FROM emoji_master WHERE id = ? LIMIT 1")
             .bind(id.toLowerCase()).first();
           fail(exists ? "emoji_edit_conflict" : "emoji_not_found", exists ? 409 : 404);
@@ -327,7 +348,10 @@ export function createEmojiMasterAdminD1Repository(env: Env, clock: () => Date =
       if (new Set(records.map((record) => record.emoji)).size !== records.length) fail("duplicate_import_emoji");
       const now = toUtcMicrosecondTimestamp(clock());
       const sql = `INSERT INTO emoji_master (id, emoji, short_name, keywords, category, subcategory, codepoints, sort_order, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        SELECT json_extract(value, '$.id'), json_extract(value, '$.emoji'), json_extract(value, '$.shortName'),
+          json_extract(value, '$.keywords'), json_extract(value, '$.category'), json_extract(value, '$.subcategory'),
+          json_extract(value, '$.codepoints'), json_extract(value, '$.sortOrder'), ?, ?
+        FROM json_each(?) WHERE true
         ON CONFLICT(emoji) DO UPDATE SET
           short_name = excluded.short_name,
           keywords = excluded.keywords,
@@ -340,11 +364,9 @@ export function createEmojiMasterAdminD1Repository(env: Env, clock: () => Date =
             ELSE strftime('%Y-%m-%dT%H:%M:%f', emoji_master.updated_at, '+0.001 seconds') || '000Z'
           END`;
       try {
-        const results = await database.batch(records.map((record) => database.prepare(sql).bind(
-          crypto.randomUUID(), record.emoji, record.shortName, JSON.stringify(record.keywords), record.category,
-          record.subcategory, JSON.stringify(record.codepoints), record.sortOrder, now, now,
-        )));
-        if (results.some((result) => result?.success !== true)) fail("emoji_master_write_failed", 503);
+        const rows = records.map(record => ({ ...record, id: crypto.randomUUID() }));
+        const results = await mutate([database.prepare(sql).bind(now, now, JSON.stringify(rows))], now);
+        if (results.some(result => result.success !== true)) fail("emoji_master_write_failed", 503);
         return { importedCount: records.length };
       } catch (error) {
         if (error instanceof EmojiMasterAdminError) throw error;

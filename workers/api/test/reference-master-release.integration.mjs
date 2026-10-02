@@ -26,6 +26,7 @@ const migrationPaths = [
   "0005_emoji_master_admin_guards.sql",
   "0006_reference_master_extension_prices.sql",
   "0007_release_audit_timestamps.sql",
+  "0008_emoji_master_change_audits.sql",
 ].map((name) => path.join(repoRoot, "workers/api/migrations", name));
 const canonicalTimestampPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/;
 

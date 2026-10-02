@@ -7,6 +7,7 @@ import emojiActivationSchemaSql from "../migrations/0002_emoji_master_release_ac
 import schemaSql from "../migrations/0003_better_auth_core.sql?raw";
 import suspensionSchemaSql from "../migrations/0008_auth_user_suspension.sql?raw";
 import referenceMasterSchemaSql from "../migrations/0004_reference_master_releases.sql?raw";
+import emojiChangeAuditSchemaSql from "../migrations/0008_emoji_master_change_audits.sql?raw";
 import emojiAdminGuardsSchemaSql from "../migrations/0005_emoji_master_admin_guards.sql?raw";
 import { handleRequest } from "../src";
 import { createEmojiMasterAdminD1Repository } from "../src/emoji-master-admin-d1-repository";
@@ -344,6 +345,7 @@ beforeAll(async () => {
     schemaSql,
     referenceMasterSchemaSql,
     emojiAdminGuardsSchemaSql,
+    emojiChangeAuditSchemaSql,
   ];
   for (const migration of masterMigrations) {
     const statements = splitMigrationStatements(migration.replace(/^--.*(?:\r?\n|$)/gmu, ""))
@@ -1451,7 +1453,7 @@ describe("emoji master D1 timestamp contract", () => {
       ...runtimeEnv,
       D1_TOPOLOGY: "split",
       EMOJI_MASTER_ADMIN_BACKEND: "d1",
-    }, () => new Date(now));
+    }, () => new Date(now), verifiedUserId);
     const input = {
       emoji: "🧪",
       shortName: "test_tube",
@@ -1492,5 +1494,214 @@ describe("emoji master D1 timestamp contract", () => {
     } finally {
       await masterDatabase.prepare("DELETE FROM emoji_master WHERE emoji IN (?, ?)").bind("🧪", "🧬").run();
     }
+  });
+});
+
+describe("emoji master change audit parity", () => {
+  const operationAt = "2026-10-03T01:02:03.456000Z";
+  const input = {
+    emoji: "🪁",
+    shortName: "audit_kite",
+    keywords: ["audit", "kite"],
+    category: "Objects",
+    subcategory: "toy",
+    codepoints: ["1FA81"],
+    sortOrder: 81,
+  };
+
+  function repository(actor: string | undefined = verifiedUserId) {
+    return createEmojiMasterAdminD1Repository({
+      ...runtimeEnv,
+      D1_TOPOLOGY: "split",
+      EMOJI_MASTER_ADMIN_BACKEND: "d1",
+    }, () => new Date(operationAt), actor);
+  }
+
+  function master() {
+    if (!masterDatabase) throw new Error("MASTER_DB binding is unavailable");
+    return masterDatabase;
+  }
+
+  beforeEach(async () => {
+    // This fixture shares Master D1 across tests; clear only these private
+    // synthetic identities, leaving the published release fixture intact.
+    await master().prepare("DELETE FROM emoji_master WHERE emoji IN (?, ?, ?, ?)")
+      .bind("🪁", "🪀", "🪂", "🪃").run();
+    await master().prepare(`DELETE FROM fanmark_emoji_master_change_audits
+      WHERE json_extract(metadata, '$.emoji') IN (?, ?, ?, ?)`)
+      .bind("🪁", "🪀", "🪂", "🪃").run();
+  });
+
+  async function audits(id: string) {
+    return (await master().prepare(`SELECT id, user_id, action, resource_type, resource_id,
+      request_id, metadata, created_at FROM fanmark_emoji_master_change_audits
+      WHERE resource_id = ? ORDER BY rowid`).bind(id).all<{
+        id: string; user_id: string | null; action: string; resource_type: string;
+        resource_id: string; request_id: string | null; metadata: string; created_at: string;
+      }>()).results;
+  }
+
+  async function expectEmptyContext() {
+    expect(await master().prepare("SELECT count(*) AS count FROM fanmark_emoji_master_mutation_context")
+      .first()).toEqual({ count: 0 });
+  }
+
+  it("records the server-authorized actor and source metadata; reads and rejected writes add no audits", async () => {
+    const { cookie, sessionId } = await signInAndGetSession();
+    await grantSyntheticAdminRoleAndMfa(sessionId);
+    const forgedActor = await emojiMasterAdminRequest("", jsonBody({ ...input, userId: unverifiedUserId }, "POST", cookie));
+    expect(forgedActor.status).toBe(400);
+    const response = await emojiMasterAdminRequest("", jsonBody(input, "POST", cookie));
+    expect(response.status).toBe(201);
+    const created = await response.json() as { id: string; updatedAt: string };
+    const first = await audits(created.id);
+    expect(first).toHaveLength(1);
+    expect(first[0]).toMatchObject({
+      user_id: verifiedUserId, action: "EMOJI_MASTER_INSERT", resource_type: "emoji_master",
+      resource_id: created.id, metadata: JSON.stringify({ emoji: input.emoji, short_name: input.shortName }),
+      created_at: created.updatedAt,
+    });
+    expect(first[0].id).toMatch(/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/u);
+    expect(first[0].request_id).toMatch(/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/u);
+
+    const updated = await repository().update(created.id, created.updatedAt, { ...input, shortName: "kite_edited" });
+    const changed = await audits(created.id);
+    expect(changed).toHaveLength(2);
+    expect(changed[1]).toMatchObject({
+      user_id: verifiedUserId, action: "EMOJI_MASTER_UPDATE", resource_id: created.id,
+      metadata: JSON.stringify({ emoji: input.emoji, short_name: "kite_edited" }), created_at: operationAt,
+    });
+    expect(changed[1].request_id).not.toBe(first[0].request_id);
+    await repository().getById(created.id);
+    await repository().list(new URL(`${apiBase}/api/admin/emoji-master?search=kite`));
+    await expect(repository().update(created.id, created.updatedAt, input)).rejects.toMatchObject({ code: "emoji_edit_conflict", status: 409 });
+    await expect(repository().create(input)).rejects.toMatchObject({ code: "emoji_conflict", status: 409 });
+    await expect(repository().delete(created.id)).rejects.toMatchObject({ code: "emoji_deletion_requires_release_review", status: 409 });
+    expect(await audits(created.id)).toEqual(changed);
+    expect(await repository().getById(created.id)).toEqual(updated);
+    await expectEmptyContext();
+  });
+
+  it.each(["suppressed", "corrupted"])("rolls back the draft and request context when a required audit is %s", async (fault) => {
+    const created = await repository().create(input);
+    const baseline = await audits(created.id);
+    const triggerName = `synthetic_emoji_audit_${fault}`;
+    const definition = fault === "suppressed"
+      ? `CREATE TRIGGER ${triggerName} BEFORE INSERT ON fanmark_emoji_master_change_audits
+         WHEN NEW.action = 'EMOJI_MASTER_UPDATE' AND NEW.resource_id = '${created.id}'
+         BEGIN SELECT RAISE(IGNORE); END;`
+      : `CREATE TRIGGER ${triggerName} AFTER INSERT ON fanmark_emoji_master_change_audits
+         WHEN NEW.action = 'EMOJI_MASTER_UPDATE' AND NEW.resource_id = '${created.id}'
+         BEGIN UPDATE fanmark_emoji_master_change_audits SET metadata = '{}' WHERE id = NEW.id; END;`;
+    await master().prepare(definition).run();
+    try {
+      await expect(repository().update(created.id, created.updatedAt, { ...input, shortName: "should_rollback" }))
+        .rejects.toMatchObject({ code: "emoji_master_write_failed", status: 503 });
+      expect(await repository().getById(created.id)).toEqual(created);
+      expect(await audits(created.id)).toEqual(baseline);
+      await expectEmptyContext();
+    } finally {
+      await master().prepare(`DROP TRIGGER ${triggerName}`).run();
+    }
+    await repository().update(created.id, created.updatedAt, { ...input, shortName: "retry_committed" });
+    expect(await audits(created.id)).toHaveLength(2);
+    await expectEmptyContext();
+  });
+
+  it("rolls back a mixed insert/upsert import when any row lacks its audit, then retries with one shared request", async () => {
+    const created = await repository().create(input);
+    const baseline = await audits(created.id);
+    const insertedInput = { ...input, emoji: "🪀", shortName: "audit_yoyo", codepoints: ["1FA80"] };
+    await master().prepare(`CREATE TRIGGER synthetic_import_audit_failure BEFORE INSERT ON fanmark_emoji_master_change_audits
+      WHEN json_extract(NEW.metadata, '$.emoji') = '🪀'
+      BEGIN SELECT RAISE(IGNORE); END;`).run();
+    try {
+      await expect(repository().import([{ ...input, shortName: "rolled_back_upsert" }, insertedInput]))
+        .rejects.toMatchObject({ code: "emoji_master_write_failed", status: 503 });
+      expect(await repository().getById(created.id)).toEqual(created);
+      expect(await audits(created.id)).toEqual(baseline);
+      expect(await master().prepare("SELECT id FROM emoji_master WHERE emoji = ?").bind(insertedInput.emoji).first()).toBeNull();
+      await expectEmptyContext();
+    } finally {
+      await master().prepare("DROP TRIGGER synthetic_import_audit_failure").run();
+    }
+    expect(await repository().import([{ ...input, shortName: "committed_upsert" }, insertedInput])).toEqual({ importedCount: 2 });
+    const changed = await audits(created.id);
+    const added = await master().prepare("SELECT id, created_at, updated_at FROM emoji_master WHERE emoji = ?")
+      .bind(insertedInput.emoji).first<{ id: string; created_at: string; updated_at: string }>();
+    expect(changed).toHaveLength(2);
+    expect(changed[1].action).toBe("EMOJI_MASTER_UPDATE");
+    expect(added).toMatchObject({ created_at: operationAt, updated_at: operationAt });
+    const inserted = await audits(added!.id);
+    expect(inserted).toHaveLength(1);
+    expect(inserted[0]).toMatchObject({ user_id: verifiedUserId, action: "EMOJI_MASTER_INSERT", request_id: changed[1].request_id });
+    expect(await master().prepare("SELECT created_at FROM emoji_master WHERE id = ?").bind(created.id).first())
+      .toEqual({ created_at: operationAt });
+    await expectEmptyContext();
+  });
+
+  it("imports 100 records atomically with one per-row audit and preserves UUIDs on repeated upsert", async () => {
+    const records = Array.from({ length: 100 }, (_, index) => ({
+      ...input, emoji: String.fromCodePoint(0x1F300 + index), shortName: `audit_bulk_${index}`,
+      codepoints: [(0x1F300 + index).toString(16).toUpperCase()], sortOrder: index,
+    }));
+    expect(await repository().import(records)).toEqual({ importedCount: 100 });
+    const before = (await master().prepare(`SELECT id, emoji, short_name, created_at, updated_at FROM emoji_master
+      WHERE short_name LIKE 'audit_bulk_%' ORDER BY emoji`).all<{ id: string; emoji: string; short_name: string; created_at: string; updated_at: string }>()).results;
+    expect(before).toHaveLength(100);
+    expect(new Set(before.map(row => row.id)).size).toBe(100);
+    const initialAudits = (await master().prepare(`SELECT resource_id, action, user_id, request_id, metadata, created_at
+      FROM fanmark_emoji_master_change_audits WHERE json_extract(metadata, '$.short_name') LIKE 'audit_bulk_%'`)
+      .all<{ resource_id: string; action: string; user_id: string; request_id: string; metadata: string; created_at: string }>()).results;
+    expect(initialAudits).toHaveLength(100);
+    expect(new Set(initialAudits.map(row => row.request_id)).size).toBe(1);
+    for (const row of before) {
+      expect(initialAudits.find(audit => audit.resource_id === row.id)).toMatchObject({
+        action: "EMOJI_MASTER_INSERT", user_id: verifiedUserId, created_at: operationAt,
+        metadata: JSON.stringify({ emoji: row.emoji, short_name: row.short_name }),
+      });
+    }
+    expect(await repository().import(records)).toEqual({ importedCount: 100 });
+    const after = (await master().prepare(`SELECT id, emoji, short_name, created_at, updated_at FROM emoji_master
+      WHERE short_name LIKE 'audit_bulk_%' ORDER BY emoji`).all()).results;
+    expect(after).toEqual(before.map(row => ({ ...row, updated_at: "2026-10-03T01:02:03.457000Z" })));
+    const all = await master().prepare(`SELECT action, count(*) AS count, count(DISTINCT request_id) AS requests
+      FROM fanmark_emoji_master_change_audits WHERE json_extract(metadata, '$.short_name') LIKE 'audit_bulk_%' GROUP BY action`).all();
+    expect(all.results).toEqual([
+      { action: "EMOJI_MASTER_INSERT", count: 100, requests: 1 },
+      { action: "EMOJI_MASTER_UPDATE", count: 100, requests: 1 },
+    ]);
+    await expectEmptyContext();
+  });
+
+  it("keeps simultaneous actors isolated and rejects writes without an authenticated actor", async () => {
+    const other = { ...input, emoji: "🪂", shortName: "audit_parachute", codepoints: ["1FA82"] };
+    await expect(repository("invalid-actor").create(input)).rejects.toMatchObject({ code: "emoji_admin_actor_unavailable", status: 503 });
+    const noActor = createEmojiMasterAdminD1Repository({ ...runtimeEnv, EMOJI_MASTER_ADMIN_BACKEND: "d1" });
+    await expect(noActor.create(input)).rejects.toMatchObject({ code: "emoji_admin_actor_unavailable", status: 503 });
+    const [first, second] = await Promise.all([repository().create(input), repository(unverifiedUserId).create(other)]);
+    expect((await audits(first.id))[0]).toMatchObject({ user_id: verifiedUserId, action: "EMOJI_MASTER_INSERT" });
+    expect((await audits(second.id))[0]).toMatchObject({ user_id: unverifiedUserId, action: "EMOJI_MASTER_INSERT" });
+    expect((await audits(first.id))[0].request_id).not.toBe((await audits(second.id))[0].request_id);
+    await expectEmptyContext();
+  });
+
+  it("audits trusted direct insert/update/delete with a NULL actor and preserves deletion history", async () => {
+    const id = crypto.randomUUID();
+    await master().prepare(`INSERT INTO emoji_master (id, emoji, short_name, keywords, category, subcategory,
+      codepoints, sort_order, created_at, updated_at) VALUES (?, ?, ?, '[]', NULL, NULL, ?, NULL, ?, ?)`)
+      .bind(id, "🪃", "audit_boomerang", '["1FA83"]', operationAt, operationAt).run();
+    await master().prepare("UPDATE emoji_master SET short_name = 'audit_boomerang_updated' WHERE id = ?").bind(id).run();
+    await master().prepare("DELETE FROM emoji_master WHERE id = ?").bind(id).run();
+    const rows = await audits(id);
+    expect(rows).toHaveLength(3);
+    expect(rows.map(row => row.action)).toEqual(["EMOJI_MASTER_INSERT", "EMOJI_MASTER_UPDATE", "EMOJI_MASTER_DELETE"]);
+    for (const row of rows) {
+      expect(row).toMatchObject({ user_id: null, request_id: null, resource_type: "emoji_master", resource_id: id });
+      expect(row.created_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+    }
+    expect(JSON.parse(rows[2].metadata)).toEqual({ emoji: "🪃", short_name: "audit_boomerang_updated" });
+    expect(await master().prepare("SELECT id FROM emoji_master WHERE id = ?").bind(id).first()).toBeNull();
+    await expectEmptyContext();
   });
 });

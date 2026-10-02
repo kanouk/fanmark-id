@@ -38,6 +38,7 @@ const userOwnedTables = [
 function requireExplicitStagingConsent() {
   const args = new Set(process.argv.slice(2));
   const emojiMasterRoundtrip = args.has("--emoji-master-draft-roundtrip");
+  const emojiMasterAuditRoundtrip = args.has("--emoji-master-audit-roundtrip");
   const referenceMasterPricingReadback = args.has("--reference-master-pricing-readback");
   const referenceMasterTierRoundtrip = args.has("--reference-master-tier-roundtrip");
   const referenceMasterExtensionPriceRoundtrip = args.has("--reference-master-extension-price-roundtrip");
@@ -56,6 +57,7 @@ function requireExplicitStagingConsent() {
   const notificationManualEvent = args.has("--notification-manual-event");
   const hasExplicitSmokeAction = [
     emojiMasterRoundtrip,
+    emojiMasterAuditRoundtrip,
     referenceMasterPricingReadback,
     referenceMasterTierRoundtrip,
     referenceMasterExtensionPriceRoundtrip,
@@ -81,6 +83,7 @@ function requireExplicitStagingConsent() {
   }
   return {
     emojiMasterRoundtrip,
+    emojiMasterAuditRoundtrip,
     referenceMasterPricingReadback,
     referenceMasterTierRoundtrip,
     referenceMasterExtensionPriceRoundtrip,
@@ -145,8 +148,34 @@ async function assertStagingTarget(actions) {
   const masterBinding = config.d1_databases?.find((database) => database.binding === "MASTER_DB");
   assert.equal(masterBinding?.database_name, expectedMasterDatabase, "unexpected Master D1 name");
   assert.equal(masterBinding?.database_id, expectedMasterDatabaseId, "unexpected Master D1 id");
-  assert.equal(masterBinding?.migrations_pattern, "migrations/{000[0-6]_*.sql,0007_release_audit_timestamps.sql}", "unexpected Master D1 migration set");
+  assert.equal(masterBinding?.migrations_pattern, "migrations/{000[0-6]_*.sql,0007_release_audit_timestamps.sql,0008_emoji_master_change_audits.sql}", "unexpected Master D1 migration set");
   assert.equal(config.vars?.EMOJI_MASTER_ADMIN_BACKEND, "d1", "expected D1-backed emoji-master admin API");
+  if (actions.emojiMasterAuditRoundtrip) {
+    assert.equal(config.account_id, "bfc2890741f0b3fb236e2d755b6c9adc");
+    assert.ok(!config.routes?.length, "audit canary must stay on workers.dev");
+    const identity = JSON.parse(await runWrangler(["whoami", "--json"]));
+    assert.equal(identity.loggedIn, true);
+    assert.equal(identity.email, "fanmark.id@gmail.com");
+    assert.ok(identity.accounts?.some(account => account.id === config.account_id));
+    assert.ok(process.env.FANMARK_EXPECTED_STAGING_VERSION, "audit canary requires a pinned deployed version");
+    const deployments = JSON.parse(await runWrangler(["deployments", "list", "--name", expectedWorker, "--json"]));
+    const latest = deployments.toSorted((left, right) => Date.parse(right.created_on) - Date.parse(left.created_on))[0];
+    assert.ok(Number.isFinite(Date.parse(latest?.created_on)));
+    assert.ok(latest.versions.some(version => version.percentage === 100 &&
+      version.version_id === process.env.FANMARK_EXPECTED_STAGING_VERSION));
+    const migration = "0008_emoji_master_change_audits.sql";
+    const ledger = await queryMaster(`SELECT name FROM d1_migrations WHERE name = ${sqlLiteral(migration)}`);
+    assert.deepEqual(ledger, [{ name: migration }]);
+    const sql = await readFile(path.join(apiDirectory, "migrations", migration), "utf8");
+    const normalize = value => value.replace(/^--.*$/gmu, "").replace(/\s+/gu, " ").trim().replace(/;$/u, "");
+    const requiredTriggers = [...sql.matchAll(/^CREATE TRIGGER ([a-z_]+)\n[\s\S]*?^END;/gmu)];
+    assert.equal(requiredTriggers.length, 3);
+    for (const match of requiredTriggers) {
+      const actual = await queryMaster(`SELECT sql FROM sqlite_master WHERE type = 'trigger' AND name = ${sqlLiteral(match[1])}`);
+      assert.equal(actual.length, 1, "required Master audit trigger is missing");
+      assert.equal(normalize(actual[0].sql), normalize(match[0]), "Master audit trigger differs from migration");
+    }
+  }
 }
 
 function runWrangler(args) {
@@ -454,6 +483,119 @@ async function exerciseEmojiMasterDraft(cookie) {
   assert.equal(restored.shortName, record.shortName);
   assert.equal(activeVersionRows.length, 1);
   assert.equal(activeVersionRows[0].release_version, page.activeReleaseVersion);
+}
+
+async function exerciseEmojiMasterAudit(cookie, userId, journalPath) {
+  const journal = JSON.parse(await readFile(journalPath, "utf8"));
+  const marker = `audit-${journal.runId}`;
+  const records = Array.from({ length: 100 }, (_, index) => ({
+    emoji: "🧪" + String.fromCodePoint(0x1F300 + index), shortName: `${marker}-${index}`,
+    keywords: ["synthetic-staging"], category: "Synthetic", subcategory: null,
+    codepoints: ["1F9EA", (0x1F300 + index).toString(16).toUpperCase()], sortOrder: index,
+  }));
+  const plannedEmoji = records.map(record => record.emoji);
+  const predicate = `emoji IN (SELECT value FROM json_each(${sqlLiteral(JSON.stringify(plannedEmoji))}))`;
+  const baselineSql = `SELECT
+    (SELECT count(*) FROM emoji_master) AS canonical_rows,
+    (SELECT count(*) FROM fanmark_emoji_master_change_audits) AS audit_rows,
+    (SELECT count(*) FROM fanmark_emoji_master_mutation_context) AS context_rows,
+    (SELECT count(*) FROM fanmark_emoji_master_release_staging) AS release_rows,
+    (SELECT count(*) FROM fanmark_emoji_master_release_activations) AS activations,
+    (SELECT release_version FROM fanmark_emoji_master_active_release WHERE singleton_id = 1) AS active_version`;
+  const baseline = await queryMaster(baselineSql);
+  assert.equal(Number(baseline[0]?.canonical_rows), 3944);
+  assert.equal(Number(baseline[0]?.context_rows), 0);
+  assert.deepEqual(await queryMaster(`SELECT id FROM emoji_master WHERE ${predicate}`), []);
+  const catalogDigest = async () => {
+    const pages = [];
+    let nextOffset = 0;
+    do {
+      const response = await request(`/api/emoji/catalog?offset=${nextOffset}&limit=500`);
+      assertStatus(response, 200, "public catalog audit readback");
+      const page = await response.json();
+      assert.equal(page.version, baseline[0].active_version);
+      assert.equal(page.total, 3944);
+      pages.push(...page.items);
+      nextOffset = page.nextOffset;
+    } while (nextOffset !== null && nextOffset !== undefined);
+    assert.equal(pages.length, 3944);
+    return createHash("sha256").update(JSON.stringify(pages)).digest("hex");
+  };
+  const publicDigest = await catalogDigest();
+  Object.assign(journal, { state: "master-prepared", marker, plannedEmoji, masterBaseline: baseline, publicDigest });
+  await writeFile(journalPath, JSON.stringify(journal), { mode: 0o600 });
+  const write = (body, method = "POST") => ({ method, headers: { cookie, "content-type": "application/json" }, body: JSON.stringify(body) });
+  const auditSql = `SELECT id, user_id, action, resource_type, resource_id, request_id, metadata, created_at
+    FROM fanmark_emoji_master_change_audits WHERE user_id = ${sqlLiteral(userId)} ORDER BY rowid`;
+  let verified = false;
+  try {
+    const spoof = await request("/api/admin/emoji-master", write({ ...records[0], userId: randomUUID() }));
+    assertStatus(spoof, 400, "client-supplied audit actor rejection");
+    const create = await request("/api/admin/emoji-master", write(records[0]));
+    assertStatus(create, 201, "synthetic audited draft create");
+    const created = await create.json();
+    const edited = { ...records[0], shortName: `${marker}-edited` };
+    const update = await request(`/api/admin/emoji-master/${created.id}`, write({ ...edited, updatedAt: created.updatedAt }, "PUT"));
+    assertStatus(update, 200, "synthetic audited draft update");
+    const beforeRejected = await queryMaster(auditSql);
+    assert.equal(beforeRejected.length, 2);
+    assert.deepEqual(beforeRejected.map(row => row.action), ["EMOJI_MASTER_INSERT", "EMOJI_MASTER_UPDATE"]);
+    for (const [index, row] of beforeRejected.entries()) {
+      assert.equal(row.user_id, userId);
+      assert.equal(row.resource_type, "emoji_master");
+      assert.equal(row.resource_id, created.id);
+      assert.match(row.request_id, /^[0-9a-f-]{36}$/u);
+      assert.match(row.created_at, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+      assert.deepEqual(JSON.parse(row.metadata), { emoji: records[0].emoji, short_name: index === 0 ? records[0].shortName : edited.shortName });
+    }
+    assertStatus(await request(`/api/admin/emoji-master/${created.id}`, write({ ...edited, updatedAt: created.updatedAt }, "PUT")), 409, "stale draft edit rejection");
+    assertStatus(await request(`/api/admin/emoji-master/${created.id}`, { method: "DELETE", headers: { cookie } }), 409, "draft API deletion remains closed");
+    assert.deepEqual(await queryMaster(auditSql), beforeRejected, "rejected writes produced audit rows");
+    const imported = await request("/api/admin/emoji-master/import", write({ records }));
+    assertStatus(imported, 200, "100-row audited draft import");
+    assert.deepEqual(await imported.json(), { importedCount: 100 });
+    const rows = await queryMaster(`SELECT id, emoji, short_name, created_at, updated_at FROM emoji_master WHERE ${predicate} ORDER BY emoji`);
+    assert.equal(rows.length, 100);
+    assert.equal(rows.find(row => row.emoji === created.emoji)?.id, created.id, "upsert replaced the stable UUID");
+    const audits = await queryMaster(auditSql);
+    assert.equal(audits.length, 102);
+    const importAudits = audits.slice(2);
+    assert.equal(new Set(importAudits.map(row => row.request_id)).size, 1);
+    assert.ok(!beforeRejected.some(row => row.request_id === importAudits[0].request_id));
+    assert.equal(importAudits.filter(row => row.action === "EMOJI_MASTER_INSERT").length, 99);
+    assert.equal(importAudits.filter(row => row.action === "EMOJI_MASTER_UPDATE").length, 1);
+    for (const row of rows) {
+      const audit = importAudits.find(value => value.resource_id === row.id);
+      assert.ok(audit, "import row lacks its audit");
+      assert.equal(audit.user_id, userId);
+      assert.equal(audit.resource_type, "emoji_master");
+      assert.deepEqual(JSON.parse(audit.metadata), { emoji: row.emoji, short_name: row.short_name });
+      assert.match(audit.created_at, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+    }
+    assert.equal(new Set(importAudits.map(row => row.created_at)).size, 1);
+    assert.deepEqual(await queryMaster("SELECT count(*) AS count FROM fanmark_emoji_master_mutation_context"), [{ count: 0 }]);
+    assert.equal(await catalogDigest(), publicDigest, "draft changes altered the public catalog");
+    verified = true;
+  } finally {
+    const owned = await queryMaster(`SELECT id, short_name FROM emoji_master WHERE ${predicate}`);
+    assert.ok(owned.every(row => row.short_name.startsWith(marker)), "cleanup refuses an unexpected canonical record");
+    const ids = owned.map(row => row.id);
+    Object.assign(journal, { state: "master-cleanup", resourceIds: ids });
+    await writeFile(journalPath, JSON.stringify(journal), { mode: 0o600 });
+    if (ids.length) {
+      const idPredicate = `IN (SELECT value FROM json_each(${sqlLiteral(JSON.stringify(ids))}))`;
+      await queryMaster(`DELETE FROM emoji_master WHERE id ${idPredicate}`);
+      const scopedAudits = await queryMaster(`SELECT id, user_id FROM fanmark_emoji_master_change_audits WHERE resource_id ${idPredicate}`);
+      assert.ok(scopedAudits.every(row => row.user_id === userId || row.user_id === null));
+      await queryMaster(`DELETE FROM fanmark_emoji_master_change_audits WHERE resource_id ${idPredicate}`);
+    }
+    assert.deepEqual(await queryMaster(baselineSql), baseline, "Master baseline was not restored");
+    assert.equal(await catalogDigest(), publicDigest, "cleanup altered the public catalog");
+    journal.state = verified ? "master-verified-and-cleaned" : "master-failed-and-cleaned";
+    await writeFile(journalPath, JSON.stringify(journal), { mode: 0o600 });
+  }
+  console.log(JSON.stringify({ emojiAudit: "verified", importRows: 100, exactPerRowAudits: 102,
+    actor: "server-authorized", contextRows: 0, publicCatalog: "unchanged", masterCleanup: "verified" }));
 }
 
 async function exerciseNotificationMasters(cookie) {
@@ -2891,6 +3033,14 @@ async function main() {
   let cookie = "";
   const systemSettingState = { key: "", originalValue: null, temporaryValue: null };
   const lifecycleSettingState = { originalValue: null, temporaryValue: null };
+  let emojiAuditJournalPath = null;
+  if (actions.emojiMasterAuditRoundtrip) {
+    const directory = await mkdtemp(path.join(os.tmpdir(), "fanmark-emoji-audit-canary-"));
+    emojiAuditJournalPath = path.join(directory, "canary.json");
+    await writeFile(emojiAuditJournalPath, JSON.stringify({ state: "auth-prepared", runId: randomUUID(),
+      userId, targetUserId, accountId, targetUsername, expectedVersion: process.env.FANMARK_EXPECTED_STAGING_VERSION }), { mode: 0o600 });
+    console.log(`Private emoji-audit recovery journal: ${emojiAuditJournalPath}`);
+  }
 
   try {
     seedAttempted = true;
@@ -2964,6 +3114,7 @@ async function main() {
     );
     assert.equal(Number(assuranceRows[0]?.count), 1, "MFA assurance was not persisted for this session");
     if (actions.lifecycleRunReadback) await exerciseManualLifecycleRun(cookie);
+    if (actions.emojiMasterAuditRoundtrip) await exerciseEmojiMasterAudit(cookie, userId, emojiAuditJournalPath);
     if (actions.emojiMasterRoundtrip) {
       await exerciseEmojiMasterDraft(cookie);
       await exerciseNotificationMasters(cookie);
@@ -3129,6 +3280,13 @@ async function main() {
 
   if (cleanupError) throw cleanupError;
   assert.ok(flowPassed, "the staging TOTP flow did not complete");
+  if (emojiAuditJournalPath) {
+    const journal = JSON.parse(await readFile(emojiAuditJournalPath, "utf8"));
+    assert.equal(journal.state, "master-verified-and-cleaned");
+    journal.state = "verified-and-cleaned";
+    journal.authRows = 0;
+    await writeFile(emojiAuditJournalPath, JSON.stringify(journal), { mode: 0o600 });
+  }
   console.log("Staging Better Auth sign-in, first-time TOTP enrollment, session rotation, and admin MFA authorization passed.");
   if (actions.emojiMasterRoundtrip) {
     console.log("Staging MFA-protected invitation-code create/list/CAS-edit/disable/delete round-trip passed and returned business D1 to zero invitation rows.");
