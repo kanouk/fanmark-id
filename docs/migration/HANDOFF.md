@@ -12,7 +12,14 @@ regression reproduced zero per-entry audits for two cancelled applicants.
 Coupon redemption passes 11/11; canonical migration ledger passes 3/3;
 migration data passes 237/237;
 Worker typecheck, focused ESLint and diff check pass. Migration 0021 is local
-only and has not been applied remotely. Converter remains v43 and the broad
+only and has not been applied remotely. `bfdeb54` contains the coupon fix.
+The new guarded smoke script
+`node scripts/migration/staging-coupon-lottery-audit-smoke.mjs` passed read-only
+preflight: exact 0015/0019 triggers, verified business/master baseline, empty
+Auth and the canonical ledger ending at 0020. Its `--apply-and-smoke` mode is
+prepared for exact 0021 readback, two synthetic applicants, idempotent command
+replay and complete cleanup; remote application/smoke remain pending.
+Converter remains v43 and the broad
 function/RLS/trigger parity gate remains open.
 
 Committed transfer `c58fc5c`, lottery finalization `6d36028` and account deletion
@@ -23,8 +30,8 @@ retains Auth/profile rows if cleanup fails; earlier license returns remain in
 grace and retry continues without duplicate audits. CI run `37024045461` on
 `ae4c351` passed both application and Worker jobs.
 
-Stripe extension `97f963c` is committed/pushed; CI run `37024950939` is in
-progress. Its durable cancellation snapshot and terminal guard require exact
+Stripe extension `97f963c` is committed/pushed; CI run `37024950939` passed
+both application and Worker jobs. Its durable cancellation snapshot and terminal guard require exact
 per-entry audit identity/metadata/time. Missing or corrupted records roll back
 the billing batch. Duplicate-Session replay retains one extension and one
 record per entry. The Stripe ingress/application/invoice/subscription/portal

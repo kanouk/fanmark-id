@@ -12,7 +12,10 @@ license/fanmark・操作時刻を検査し、保存後の申請者/申請/comman
 coupon redemption 11/11、business migration ledger 3/3、migration data 237/237、Worker typecheck、ESLint、diff check成功。
 0021はlocalのみでremote適用前。converter v43、functions/RLS/triggersの包括gateは残す。
 先行transfer/lottery/account-deletion修正のCI run 37024045461は両job成功。
-Stripe修正97f963cはpush済み、CI run 37024950939を確認中。
+Stripe修正97f963cのCI run 37024950939は両job成功。
+クーポン修正bfdeb54をcommit済み。専用staging smoke scriptのread-only preflightで
+0015/0019 trigger exact readback、business/master基準値、Auth空、ledger末尾0020を確認した。
+0021適用と2件の合成応募・再送・cleanupは次のremote検証。
 実ユーザー移行、外部provider実接続、Worker deploy、domain/DNS切替は行っていない。
 
 ## 2026-10-03：Stripe延長時の抽選取消監査

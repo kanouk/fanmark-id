@@ -92,3 +92,16 @@ not establish live Supabase parity, imported-record readiness, a successful
 authenticated staging redemption against imported user data, or production
 behavior. The staging definitions are restricted to the four verified unused
 masters described above.
+
+## Guarded staging rehearsal
+
+Run `node scripts/migration/staging-coupon-lottery-audit-smoke.mjs` for read-only
+preflight. `--apply-and-smoke` additionally applies only migration 0021 if the
+canonical ledger is immediately before it, verifies the exact new trigger and
+existing 0015/0019 triggers, then creates a synthetic coupon/license/two entries.
+The command checks individual audits, same-request replay, usage and notification
+counts, then removes its own rows and proves the full business/Auth baseline.
+The target guard pins account, Worker and both D1 bindings; source-backed master
+rows must retain their verified baseline. The synthetic cleanup journal is kept
+outside the repository in a private temporary directory. No provider, production
+Supabase, real user import or domain operation occurs.
