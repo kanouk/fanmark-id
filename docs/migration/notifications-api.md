@@ -29,6 +29,26 @@
 - 続けて2026-09-26、stagingに移行した有効なin-appルール10種類すべてへ必須payloadを持つ合成イベントを投入し、workers.dev実Cronで各1件の日本語通知が`delivered`になることを確認した。返却、譲渡申請/承認/拒否、ライセンス猶予/失効、抽選当落/延長キャンセル、お気に入り返却通知を含む。タイトル、受信者、fanmark ID、本文locale、retry countを照合し、通知・イベント・設定行を削除。マスター/公開設定とprotected-access状態は前後一致し、合成通知関連行は0件に戻った。手順は`scripts/migration/staging-notification-processor-smoke.mjs --deployed-cron`。
 - これはstagingのscheduler経路を一度検証した結果であり、全イベント生成元の移植、メール/Web Push配信、通知archival、実ユーザー数でのCPU・認可検証、production recurring fitは未完了。本APIやsynthetic canaryの成功もそれらの完了を意味しない。
 
+## D1 通知履歴アーカイブ
+
+`workers/api/src/notifications-scheduled.ts`は、90日より古い`delivered`/`failed`
+通知を`notifications_history`へ移して元行を削除するD1処理を実装する。
+staging設定では`NOTIFICATION_ARCHIVE_BACKEND`を選択しておらず、実WorkerのCronは
+この処理を実行しない。履歴の長期保存・削除方針とSupabase本番側の実呼出し有無は
+引き続き未確認。
+
+`npm run test:staging-notification-archive-smoke`は、確認済みのstaging account、Worker、
+business/Auth D1を照合し、通知マスターと公開設定のseed状態、40業務テーブルの行数、
+Auth user rows、通知/履歴の空状態を確認してから実行する。`0020_notification_archive_index.sql`
+適用後だけを許可する。staging設定を書き換えず、ローカルscheduled Workerへ一時的に
+`NOTIFICATION_ARCHIVE_BACKEND=d1`を渡して合成通知6件を処理し、90日cutoff、status、
+保存JSON、timestamp、cleanup後のbaselineを照合する。既存の通知や履歴がある場合、
+identity/binding/scheduleが異なる場合、またはindexがない場合は書込み前に停止する。
+このremote staging smokeは未実行。Wrangler CLIは現在、期待するemail/account IDで
+認証でき、`0020`はstaging D1で適用/readback済み。runner修正後のコードhosted CI成功後に
+実行する。これは実Cronや
+Supabase側の定常運用を証明しない。
+
 ## 管理画面のグローバルマスター編集
 
 `AdminNotificationManager`の通知ルール切替とテンプレート本文/有効状態の編集は、明示的な`VITE_NOTIFICATION_MASTER_BACKEND=worker`で `/api/admin/notification-masters` のD1 APIを利用できる。Worker側は独立した`NOTIFICATION_MASTER_BACKEND=d1` selector、Better Authの管理者roleと同一session/factorに結び付いた期限内MFA assuranceを要求する。`notification_rules`と`notification_templates`だけを明示列で返し、`created_by`やtemplate payload schemaは公開しない。PATCHは編集可能列に限定し、`updated_at`比較で古い画面の上書きを拒否する。

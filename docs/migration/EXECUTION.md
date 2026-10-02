@@ -37,6 +37,25 @@ local DB containerがないため起動できず、pgTAP自体は未実行。mig
 branch上だけで、Supabase本番には適用していない。ユーザーデータ、R2、
 本番route、DNS/domainにも変更なし。
 
+## 2026-10-02 follow-up: archive smoke guard and PGlite runner
+
+Actions run `36991654600` はWorker API jobが成功し、application jobは
+`subscription-application.test.mjs`のPGlite初期化で失敗した。3回とも新規processの
+base schema statement 1で120秒停止した。どのSQL文が原因かは確認できていない。
+このsuiteをNode test worker内でなくstandalone Node processとして実行する変更を
+worktreeへ加え、`CI=true npm test --prefix experiments/stripe-receipts`は全suite成功。
+hosted CIでの再検証は未完了。
+
+通知archival用のstaging canary scriptとtarget guardも追加した。実Workerのselectorは
+引き続きunsetのまま、ローカルscheduled Workerに一時selectorを渡してremote business
+D1の合成通知だけを検査する。index migration `0020`のreadback、空の通知/履歴と
+認証/業務baseline、固定staging identityを全て通らない限り書き込みを始めない。
+このcanaryは未実行。`wrangler whoami --json`がmacOS Keychain読出しexit 51で失敗し、
+その後の再試行では期待するemail/account IDを確認した。2026-10-02にbusiness stagingの
+migration `0020`を適用し、`idx_notifications_archive_due`とpending migrationなしを
+remote readbackした。合成通知の書込みはまだなく、runner修正後のhosted CI成功後にcanaryを
+実行する。production、ユーザーデータ、domain/DNSは変更していない。
+
 ## 2026-10-02 PR #41 validation, staging Worker, and D1 readback
 
 PR #41 remains open and draft. GitHub Actions run `36966388049` passed both

@@ -1,17 +1,24 @@
 # Cloudflare migration handoff
 
 Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
-open and draft. The latest committed checkpoint `c5aaefe` passed both CI jobs
-in Actions run `36990781789`. An earlier checkpoint `9edbd33` failed app
-validation: the Stripe suite's
-`subscription-application.test.mjs` process reached `construct PGlite` and
-`create base schema`, then timed out before `base schema ready` on all three
-120-second attempts. The Worker API/D1 tests, typecheck, and bundle validation
-passed. The same subscription suite passes locally under Node 22.6.0 (8/8 in
-about two seconds), and earlier code checkpoint `7f863f3` passed both CI jobs
-in run `36986104988`. This narrows the intermittent hosted-runner stall to the
-test's bulk `PGlite.db.exec` for its base schema; the specific statement or
-runner trigger is not known. CI does not deploy.
+open and draft. Code checkpoint `c5aaefe` passed both CI jobs in run
+`36990781789`; later docs-only commit `68729c5` passed the Worker API job, but
+its app job failed in run `36991654600`. The log shows three fresh attempts of
+`subscription-application.test.mjs`, each stuck for 120 seconds on the first
+base-schema statement after PGlite construction. The trigger is not confirmed.
+The current worktree runs that PGlite-heavy test in a standalone Node process;
+`CI=true npm test` passes the complete Stripe receipt suite locally. Hosted
+validation after this runner change is pending. CI does not deploy.
+
+The archive staging smoke and an exact account/Worker/D1 guard are prepared.
+The additive business migration `0020` was applied to staging and read back:
+`idx_notifications_archive_due` exists, and Wrangler reports no pending
+migrations. The synthetic notification smoke has not run. The first CLI check
+failed to read its macOS Keychain credential (exit 51); a fresh
+`whoami --json` confirms the intended `fanmark.id@gmail.com` account ID. No
+notification rows were written, and the current Worker config still leaves
+notification archival disabled. Hosted validation after the runner change is
+pending before the smoke can run.
 
 The 211-callsite inventory now has 141 semantic mappings: 40 Auth/Auth-MFA
 operations, 20 own/fanmark-profile operations, 11 fanmark-settings/Storage

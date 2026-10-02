@@ -34,7 +34,8 @@ if (snapshotExportIndex > 0) {
 
 for (const file of testFiles) {
   const standalonePglite = file === "snapshot-export.test.mjs";
-  const args = standalonePglite
+  const standaloneRunner = standalonePglite || file === "subscription-application.test.mjs";
+  const args = standaloneRunner
     ? [`test/${file}`]
     : ["--test", "--test-concurrency=1", `test/${file}`];
   if (typeScriptImports.has(file)) args.unshift("--import", "tsx");
