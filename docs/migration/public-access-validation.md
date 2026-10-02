@@ -69,7 +69,11 @@ PATH="/Users/kanouk/.anyenv/envs/nodenv/versions/22.6.0/bin:$PATH" npm run typec
 PATH="/Users/kanouk/.anyenv/envs/nodenv/versions/22.6.0/bin:$PATH" npm run test:public-access:d1
 ```
 
-The focused run currently passes 11 tests. Existing recent, availability,
+The focused run currently passes 14 tests, including future-by-one-microsecond
+profile access and exact/past expiry refusal. The separate owner-profile
+perpetual-license correction and legacy helper findings are documented in
+[`public-profile-runtime-review.md`](public-profile-runtime-review.md).
+Existing recent, availability,
 default API, and static-asset suites remain separate checks. This slice does
 not prove remote D1 provisioning, full schema/data conversion, Cloudflare CPU
 or concurrency limits, password verification/hash migration, OAuth behavior,

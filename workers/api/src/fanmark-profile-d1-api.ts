@@ -357,7 +357,7 @@ async function readContext(db: D1Database, fanmarkId: string, userId: string, no
          ) AS b ON b.license_id = fl.id
          LEFT JOIN fanmark_profiles AS p ON p.license_id = fl.id
         WHERE f.id = ? AND fl.user_id = ? AND fl.status = 'active'
-          AND fl.license_end > ?
+          AND (fl.license_end IS NULL OR fl.license_end > ?)
         ORDER BY fl.created_at DESC, fl.id ASC
         LIMIT 2`,
     ).bind(fanmarkId, userId, now).all<ContextRow>();
@@ -406,7 +406,7 @@ async function applyPatch(
        SELECT ?, fl.id, ?, ?, ?, ?, ?, ?, ?
          FROM fanmark_licenses AS fl
         WHERE fl.fanmark_id = ? AND fl.user_id = ? AND fl.status = 'active'
-          AND fl.license_end > ?
+          AND (fl.license_end IS NULL OR fl.license_end > ?)
        ON CONFLICT(license_id) DO UPDATE SET ${assignments.join(", ")}
        WHERE EXISTS (
          SELECT 1 FROM fanmark_licenses AS owned

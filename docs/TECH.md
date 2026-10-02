@@ -203,6 +203,15 @@ DO namespaceを継承しない。partial activation、minute Cronとの併用は
 
 ## Source runtime catalogの接続先レビュー
 
+公開プロフィール/所有者helperの照合は`public-profile-runtime-readiness.sql`で
+6関数の定義・profile列・policy式を再取得し、本文を非公開で保持する。
+Workerのowner profile APIは無期限Tier Cもread/saveできるようreadとUPSERTで
+`license_end IS NULL OR license_end > captured_now`を使う。元editor/INSERT policyの
+finite-only条件からの明示的な修正で、Supabaseの本番policyと公開絵文字/short-IDの
+selection差は変更しない。8件のowner D1試験と14件の公開read試験が成功。
+sourceの旧RPC/helperの構造差と未確認の外部consumerは
+[プロフィールruntimeレビュー](migration/public-profile-runtime-review.md)に記録する。
+
 読み取り専用の`source-runtime-bindings.sql`はpublic関数に接続される全schemaのtriggerと
 public event-triggerのmetadataを取得する。source function本文を含むraw出力はprivateに
 保存し、`source-runtime-review.mjs --catalog ... --output ...`で本文のないreportへ変換する。

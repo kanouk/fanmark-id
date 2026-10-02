@@ -518,6 +518,22 @@ describe("public fanmark access D1 contract", () => {
     expect(returned.status).toBe(404);
   });
 
+  it("closes a published profile exactly at expiry while preserving a future microsecond", async () => {
+    for (const [end, expectedStatus] of [
+      ["2026-09-21T00:00:00.000001Z", 200],
+      [NOW, 404],
+      ["2026-09-20T23:59:59.999999Z", 404],
+    ] as const) {
+      await run("UPDATE fanmark_licenses SET license_end = ? WHERE id = ?", end, LICENSE.emoji);
+      const response = await request(`/api/fanmarks/public-profile/${LICENSE.emoji}`);
+      expect(response.status).toBe(expectedStatus);
+      expect(response.headers.get("cache-control")).toBe("no-store");
+      const body = await response.json();
+      if (expectedStatus === 200) expect(body).toMatchObject({ displayName: "Open Name" });
+      else expect(body).toEqual({ error: "not_found" });
+    }
+  });
+
   it("rejects invalid stored access types, URLs, and oversized text", async () => {
     for (const shortId of ["invalid-url", "oversize-text"]) {
       const response = await request(`/api/fanmarks/access/short/${shortId}`);

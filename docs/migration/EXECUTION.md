@@ -1,5 +1,32 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：無期限Tier Cのownerプロフィール修正
+
+Workerの設定/公開プロフィールは無期限を扱う一方、owner profile read/saveだけが
+元editor/INSERT policyの`license_end > now()`をコピーして404にしていた。
+新しいlocal split-D1 regressionで修正前404を再現し、両SELECTへ
+`license_end IS NULL OR license_end > captured_now`を適用した。PRODUCTの無期限契約に
+合わせるtarget修正で、live Supabase policy/default frontendは変更しない。
+
+owner suite 8/8: 無期限read/update/recreation、入力space保持、generation更新、
+他人の無期限拒否、grace/expired拒否、finite+perpetual重複所有の拒否、write barrierで
+nativeにgraceへ遷移した場合の404/profile/generation不変を確認。
+public suite 14/14: future 1usなら公開、期限ちょうど/過去なら同じ404/no-storeを確認。
+settings 18/18、migration-data 257/257・skip 0、Worker typecheck/ESLint、
+pinned staging deploy dry-run成功。ログは`/tmp/fanmark-perpetual-profile-{before,final,typecheck,eslint}.log`
+と`/tmp/fanmark-profile-expiry-boundary.log`。beforeは1 failed/5 passed、finalは8 passed。
+
+catalog-only readback `2026-10-02T20:02:54.411923+00:00`で6 function SHAが前回と一致し、
+旧`get_public_fanmark_profile`が参照するprofile `fanmark_id`列が現在存在しないことを確認。
+実UI/OGPはlicense-ID RPCを使う。旧ownership helper 2件はNULLをactive扱いしない。
+実行callsiteや他のcaptured関数本文での名前参照は見つからないが、外部consumerの不在は
+証明していないため普通のRPCを自動除外しない。private rawは`fanmark-profile-runtime-7fkpOj`。
+詳細は`public-profile-runtime-review.md`。emoji/short-IDの元selection差は保持しgate未完了。
+
+前head91c2606/CI37057194961は両job成功、watcher exit 0。今回のpredicate修正はremote
+未配備・perpetual acceptance未実施。staging current ea309178/ledger25のまま。
+runtime/schema/ユーザー/DNSは未変更。次はCI後のguarded配備とjournaled合成受け入れ。
+
 ## 2026-10-03：source runtimeの全schema接続先を確認
 
 public-tableだけのtrigger catalogではAuthの新規ユーザー処理を捕捉しないため、

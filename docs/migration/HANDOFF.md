@@ -3,6 +3,31 @@
 Checkpoint: 2026-10-03 JST. The migration is **not complete**. PR #41 remains
 open and draft. CI validates the branch but does not deploy the Worker.
 
+Owner fanmark profiles now support perpetual Tier C in both authenticated
+context reads and INSERT/UPSERT eligibility. A new real local split-D1
+regression reproduced 404 before the fix and now passes, including creation,
+updates, unchanged entered spaces, other-owner/grace/expired refusal,
+finite-plus-perpetual ambiguity and a native grace transition at the write
+barrier with no profile/generation change. Owner profile tests pass 8/8;
+public access passes 14/14, including a future microsecond and exact/past
+expiry boundary. Settings 18/18, migration-data 257/257 with no skips, Worker
+typecheck/lint and pinned staging deploy dry-run pass. This is a target PRODUCT correction
+to the legacy finite-only editor/INSERT policy, not a live Supabase change.
+The new catalog-only profile query at `2026-10-02T20:02:54.411923+00:00`
+confirms six unchanged function hashes and the absent legacy profile
+`fanmark_id` column. Ordinary legacy RPCs have no executable repository caller
+but external use is unknown; do not classify them like unbound trigger
+functions. See `public-profile-runtime-review.md`. The source emoji/short-ID
+selection difference remains an open product gate.
+
+The previous source-audit head `91c2606` passed both CI jobs in `37057194961`;
+its watcher exited 0. The new profile runtime repair has not yet been deployed
+or accepted remotely. Current staging remains `ea309178` and Business ledger
+25; no new migration is needed for this predicate change. Next: green CI,
+guarded staging deployment and journaled perpetual owner-profile acceptance,
+then the remaining runtime/provider/CPU/operational/mobile gates. Real user
+migration and domain/DNS remain excluded.
+
 Source runtime binding review now captures all schemas for public trigger
 functions, rather than public tables only. The linked catalog-only transaction
 at `2026-10-02T19:45:33.736244+00:00` found 58 unchanged functions and 37 triggers:

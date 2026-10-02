@@ -266,6 +266,108 @@ describe("owner fanmark-profile API", () => {
     }
   });
 
+  it("lets a perpetual license owner read, update and recreate a profile while denying other owners and inactive licenses", async () => {
+    await businessDatabase!.prepare("UPDATE fanmark_licenses SET license_end = NULL WHERE id IN (?, ?)")
+      .bind(ownerLicenseId, otherLicenseId).run();
+    const cookie = await signIn(ownerEmail);
+    const path = `/api/me/fanmarks/${ownerFanmarkId}/profile`;
+    const read = await request(path, { headers: { Cookie: cookie } });
+    expect(read.status).toBe(200);
+    expect(await read.json()).toMatchObject({ licenseId: ownerLicenseId, profile: { display_name: "Saved display name" } });
+    const patch = () => request(path, {
+      method: "PATCH", headers: { Cookie: cookie, "content-type": "application/json" },
+      body: JSON.stringify({ display_name: " Perpetual owner ", bio: "Lifetime profile", is_public: true }),
+    });
+    const updated = await patch();
+    expect(updated.status).toBe(200);
+    expect(await updated.json()).toMatchObject({ profile: { display_name: " Perpetual owner ", bio: "Lifetime profile", is_public: true } });
+    expect(await businessDatabase!.prepare("SELECT access_generation FROM fanmark_access_versions WHERE license_id = ?")
+      .bind(ownerLicenseId).first()).toMatchObject({ access_generation: 1 });
+
+    expect((await request(`/api/me/fanmarks/${otherFanmarkId}/profile`, { headers: { Cookie: cookie } })).status).toBe(404);
+    expect((await request(`/api/me/fanmarks/${otherFanmarkId}/profile`, {
+      method: "PATCH", headers: { Cookie: cookie, "content-type": "application/json" },
+      body: JSON.stringify({ display_name: "Wrong owner" }),
+    })).status).toBe(404);
+    expect(await businessDatabase!.prepare("SELECT id FROM fanmark_profiles WHERE license_id = ?").bind(otherLicenseId).first()).toBeNull();
+
+    await businessDatabase!.prepare("DELETE FROM fanmark_profiles WHERE license_id = ?").bind(ownerLicenseId).run();
+    const created = await patch();
+    expect(created.status).toBe(200);
+    expect(await created.json()).toMatchObject({ profile: { license_id: ownerLicenseId, bio: "Lifetime profile" } });
+    for (const status of ["grace", "expired"]) {
+      await businessDatabase!.prepare("UPDATE fanmark_licenses SET status = ? WHERE id = ?").bind(status, ownerLicenseId).run();
+      expect((await request(path, { headers: { Cookie: cookie } })).status).toBe(404);
+      expect((await patch()).status).toBe(404);
+    }
+    expect(await businessDatabase!.prepare("SELECT display_name, bio FROM fanmark_profiles WHERE license_id = ?")
+      .bind(ownerLicenseId).first()).toEqual({ display_name: " Perpetual owner ", bio: "Lifetime profile" });
+  });
+
+  it("rejects ambiguous ownership when perpetual and finite active licenses belong to the same owner", async () => {
+    const conflictingLicenseId = "45555555-5555-4555-8555-555555555555";
+    await businessDatabase!.prepare(
+      "INSERT INTO fanmark_licenses (id, fanmark_id, user_id, status, license_end, display_fanmark, created_at, updated_at) VALUES (?, ?, ?, 'active', NULL, ?, ?, ?)",
+    ).bind(conflictingLicenseId, ownerFanmarkId, ownerId, "conflicting-perpetual", now, now).run();
+    const cookie = await signIn(ownerEmail);
+    const path = `/api/me/fanmarks/${ownerFanmarkId}/profile`;
+    expect((await request(path, { headers: { Cookie: cookie } })).status).toBe(503);
+    const response = await request(path, {
+      method: "PATCH", headers: { Cookie: cookie, "content-type": "application/json" },
+      body: JSON.stringify({ bio: "Must not be saved" }),
+    });
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: "fanmark_profile_unavailable" });
+    expect(await businessDatabase!.prepare("SELECT license_id, bio FROM fanmark_profiles").all())
+      .toMatchObject({ results: [{ license_id: ownerLicenseId, bio: "Saved biography" }] });
+  });
+
+  it("rechecks perpetual ownership in the write statement when the license enters grace after the read", async () => {
+    await businessDatabase!.prepare("UPDATE fanmark_licenses SET license_end = NULL WHERE id = ?").bind(ownerLicenseId).run();
+    const cookie = await signIn(ownerEmail);
+    let intercepted = false;
+    const racedDatabase = new Proxy(businessDatabase!, {
+      get(target, property) {
+        if (property === "prepare") return (sql: string) => {
+          const statement = target.prepare(sql);
+          if (!sql.includes("INSERT INTO fanmark_profiles")) return statement;
+          return new Proxy(statement, {
+            get(prepared, method) {
+              if (method === "bind") return (...values: unknown[]) => {
+                const bound = prepared.bind(...values);
+                return new Proxy(bound, {
+                  get(boundStatement, operation) {
+                    if (operation === "run") return async () => {
+                      intercepted = true;
+                      await target.prepare("UPDATE fanmark_licenses SET status = 'grace' WHERE id = ?").bind(ownerLicenseId).run();
+                      return boundStatement.run();
+                    };
+                    const value = Reflect.get(boundStatement, operation);
+                    return typeof value === "function" ? value.bind(boundStatement) : value;
+                  },
+                });
+              };
+              const value = Reflect.get(prepared, method);
+              return typeof value === "function" ? value.bind(prepared) : value;
+            },
+          });
+        };
+        const value = Reflect.get(target, property);
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    });
+    const response = await request(`/api/me/fanmarks/${ownerFanmarkId}/profile`, {
+      method: "PATCH", headers: { Cookie: cookie, "content-type": "application/json" },
+      body: JSON.stringify({ bio: "Must not be saved" }),
+    }, { FANMARK_DB: racedDatabase });
+    expect(intercepted).toBe(true);
+    expect(response.status).toBe(404);
+    expect(await businessDatabase!.prepare("SELECT bio FROM fanmark_profiles WHERE license_id = ?")
+      .bind(ownerLicenseId).first()).toEqual({ bio: "Saved biography" });
+    expect(await businessDatabase!.prepare("SELECT access_generation FROM fanmark_access_versions WHERE license_id = ?")
+      .bind(ownerLicenseId).first()).toMatchObject({ access_generation: 0 });
+  });
+
   it("denies another owner's and expired fanmarks and rejects unsafe fields without writes", async () => {
     const cookie = await signIn(ownerEmail);
     expect((await request(`/api/me/fanmarks/${otherFanmarkId}/profile`, { headers: { Cookie: cookie } })).status).toBe(404);

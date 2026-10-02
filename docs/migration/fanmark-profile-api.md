@@ -3,9 +3,17 @@
 The Worker can read and update one fanmark owner's profile through
 `GET/PATCH /api/me/fanmarks/{fanmarkId}/profile`. The route resolves the
 Better Auth session on the server, then finds exactly one active license owned
-by that session with `license_end > now()`. The caller cannot supply a user or
-license ID. This matches the current profile editor's license lookup and the
-source INSERT policy. Ambiguous ownership and unavailable D1 fail closed.
+by that session with `license_end IS NULL OR license_end > now()`. This supports
+perpetual Tier C as specified in PRODUCT.md and already supported by the
+Worker settings/public-profile routes. The caller cannot supply a user or
+license ID. Both the context read and the INSERT/UPSERT selector enforce the
+same eligibility. Ambiguous ownership and unavailable D1 fail closed.
+
+This intentionally corrects the finite-only legacy Supabase profile editor
+and INSERT policy on the Worker path. The Supabase default and live source
+policies are unchanged. It does not change the separate emoji-vs-short-ID
+public lookup selection contract; see
+[`public-profile-runtime-review.md`](public-profile-runtime-review.md).
 
 The response contains the resolved `licenseId`, the minimal fanmark context
 needed by the edit/preview screens, and either the owner profile or `null`.
@@ -47,6 +55,14 @@ license, invalid fields, same-owner image paths, cross-owner and wrong-bucket
 R2 image paths, CORS, methods, and backend selection. Frontend
 contract tests cover URL validation, cookie behavior, response shape, and
 fail-closed errors. These fixtures contain synthetic identities and records.
+
+The perpetual-owner regression reproduced 404 before the predicate repair.
+Additional tests cover NULL-end profile read/update/recreation, preservation
+of entered spaces, access-generation changes, another perpetual owner, grace
+and expired refusal, finite-plus-perpetual ambiguity, and a native transition
+to grace at the write barrier that leaves the profile/generation unchanged.
+The repaired suite passes 8/8. These new cases have not yet been rehearsed on
+the remote Worker; prior finite-license staging acceptance does not prove them.
 
 The source-shaped business schema is applied to the isolated staging D1, and
 `FANMARK_PROFILE_BACKEND=d1` plus
