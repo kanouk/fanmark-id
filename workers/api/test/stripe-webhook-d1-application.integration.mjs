@@ -250,6 +250,20 @@ test("paid extension applies license, lottery cancellation, audits, notification
     })));
     assert.equal(await scalar(database, "SELECT count(*) AS count FROM audit_logs WHERE action = 'LICENSE_EXTENDED'"), 1);
     assert.equal(await scalar(database, "SELECT count(*) AS count FROM audit_logs WHERE action = 'LICENSE_EXTENDED_LOTTERY_CANCELLED'"), 1);
+    const entryAudits = await database.prepare(
+      "SELECT user_id, resource_id, request_id, metadata, created_at FROM audit_logs WHERE action = 'LOTTERY_ENTRY_STATUS_CHANGED' ORDER BY resource_id",
+    ).all();
+    const entries = await database.prepare("SELECT id, user_id FROM fanmark_lottery_entries ORDER BY id").all();
+    assert.equal(entryAudits.results.length, 2);
+    assert.deepEqual(entryAudits.results.map((audit) => ({ id: audit.resource_id, user_id: audit.user_id })), entries.results);
+    const application = await row(database, "SELECT id FROM stripe_extension_applications");
+    for (const audit of entryAudits.results) {
+      assert.equal(audit.request_id, application.id);
+      assert.equal(audit.created_at, NOW);
+      assert.deepEqual(JSON.parse(audit.metadata), {
+        old_status: "pending", new_status: "cancelled_by_extension", cancellation_reason: "license_extended",
+      });
+    }
     assert.equal(await scalar(database, "SELECT status FROM stripe_extension_applications"), "applied");
     assert.equal(await scalar(database, "SELECT status FROM stripe_extension_checkout_intents WHERE id = ?", [INTENT_ID]), "applied");
     assert.equal(await scalar(database, "SELECT status FROM stripe_webhook_receipts"), "applied");
@@ -432,27 +446,49 @@ test("price mismatch, stale owner, and transfer lock dead-letter without changin
   }
 });
 
-test("failed audit statement rolls back the entire billing effect batch", async () => {
-  const { miniflare, database } = await createDatabase();
-  try {
-    await seedBusiness(database);
-    await database.prepare(`
-      CREATE TRIGGER synthetic_stripe_audit_failure BEFORE INSERT ON audit_logs
-      WHEN NEW.action = 'LICENSE_EXTENDED'
-      BEGIN SELECT RAISE(ABORT, 'synthetic audit failure'); END
-    `).run();
-    const { claim } = await acceptAndClaim(database, stripeEvent({ eventId: "evt_synthetic_extension_rollback" }));
-    await assert.rejects(() => applyStripeExtensionReceiptInD1({ database: checkedDatabase(database), identity: claim, now: NOW, createId: nextUuid }));
+for (const [scenario, faultSql] of [
+  ["a failed license audit", `CREATE TRIGGER synthetic_stripe_audit_failure BEFORE INSERT ON audit_logs
+    WHEN NEW.action = 'LICENSE_EXTENDED'
+    BEGIN SELECT RAISE(ABORT, 'synthetic audit failure'); END`],
+  ["a suppressed entry audit", `CREATE TRIGGER synthetic_stripe_audit_failure BEFORE INSERT ON audit_logs
+    WHEN NEW.action = 'LOTTERY_ENTRY_STATUS_CHANGED'
+    BEGIN SELECT RAISE(IGNORE); END`],
+  ["corrupted entry audit metadata", `CREATE TRIGGER synthetic_stripe_audit_failure AFTER INSERT ON audit_logs
+    WHEN NEW.action = 'LOTTERY_ENTRY_STATUS_CHANGED'
+    BEGIN UPDATE audit_logs SET metadata = '{}' WHERE id = NEW.id; END`],
+]) {
+  test(`lottery billing effects roll back for ${scenario}`, async () => {
+    const { miniflare, database } = await createDatabase();
+    try {
+      await seedBusiness(database);
+      await seedLotteryEntries(database);
+      await database.prepare(faultSql).run();
+      const { claim } = await acceptAndClaim(database, stripeEvent({ eventId: "evt_synthetic_extension_rollback" }));
+      await assert.rejects(() => applyStripeExtensionReceiptInD1({ database: checkedDatabase(database), identity: claim, now: NOW, createId: nextUuid }));
 
-    assert.equal(await scalar(database, "SELECT license_end FROM fanmark_licenses WHERE id = ?", [LICENSE_ID]), "2026-10-01T00:00:00.000000Z");
-    assert.equal(await scalar(database, "SELECT count(*) AS count FROM stripe_extension_applications"), 0);
-    assert.equal(await scalar(database, "SELECT count(*) AS count FROM stripe_extension_application_effects"), 0);
-    assert.equal(await scalar(database, "SELECT status FROM stripe_webhook_receipts"), "processing");
-    assert.equal(await scalar(database, "SELECT status FROM stripe_webhook_dispatches"), "processing");
-  } finally {
-    await miniflare.dispose();
-  }
-});
+      assert.equal(await scalar(database, "SELECT license_end FROM fanmark_licenses WHERE id = ?", [LICENSE_ID]), "2026-10-01T00:00:00.000000Z");
+      assert.equal(await scalar(database, "SELECT count(*) AS count FROM stripe_extension_applications"), 0);
+      assert.equal(await scalar(database, "SELECT count(*) AS count FROM stripe_extension_application_effects"), 0);
+      assert.equal(await scalar(database, "SELECT status FROM stripe_webhook_receipts"), "processing");
+      assert.equal(await scalar(database, "SELECT status FROM stripe_webhook_dispatches"), "processing");
+      assert.equal(await scalar(database, "SELECT count(*) AS count FROM fanmark_lottery_entries WHERE entry_status = 'pending'"), 2);
+      assert.equal(await scalar(database, "SELECT count(*) AS count FROM audit_logs"), 0);
+      await database.prepare("DROP TRIGGER synthetic_stripe_audit_failure").run();
+      const resumed = await applyStripeExtensionReceiptInD1({ database: checkedDatabase(database), identity: claim, now: NOW, createId: nextUuid });
+      assert.equal(resumed.outcome, "applied");
+      assert.equal(await scalar(database, "SELECT count(*) AS count FROM audit_logs WHERE action = 'LOTTERY_ENTRY_STATUS_CHANGED'"), 2);
+      const duplicate = await acceptAndClaim(database, stripeEvent({
+        eventId: "evt_synthetic_extension_rollback_replay", type: "checkout.session.async_payment_succeeded",
+      }));
+      const repeated = await applyStripeExtensionReceiptInD1({ database: checkedDatabase(database), identity: duplicate.claim, now: NOW, createId: nextUuid });
+      assert.equal(repeated.outcome, "duplicate_session");
+      assert.equal(await scalar(database, "SELECT count(*) AS count FROM audit_logs WHERE action = 'LOTTERY_ENTRY_STATUS_CHANGED'"), 2);
+    } finally {
+      await miniflare.dispose();
+    }
+  });
+}
+
 
 test("competing receipts for one session converge on one license effect", async () => {
   const { miniflare, database } = await createDatabase();

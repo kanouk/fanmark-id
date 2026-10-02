@@ -2,6 +2,24 @@
 
 Date: 2026-09-25 JST
 
+## D1 per-entry cancellation audits (2026-10-03)
+
+The D1 billing application now writes `LOTTERY_ENTRY_STATUS_CHANGED` for each
+pending lottery entry cancelled by a paid extension. The record includes the
+applicant and entry IDs, old/new status, `license_extended` reason, application
+request ID and operation time. These records share the billing-effect batch.
+Before marking the application applied, SQL verifies the exact per-entry audit
+against the durable cancellation snapshot. A missing audit or corrupted
+metadata makes the batch fail and roll back; retry preserves one extension and
+one audit per entry even when another receipt arrives for the same Session.
+
+The regression first reproduced zero per-entry records for two cancelled
+entries. The complete local Stripe ingress/application/invoice/subscription/
+portal suite passes 70/70, including ignored audit inserts, corrupted metadata,
+transaction rollback and duplicate-Session replay. Worker typecheck, ESLint and
+diff check pass. Providers are synthetic; no real Stripe request ran. The coupon
+command-trigger writer remains a separate parity review.
+
 ## Implemented locally
 
 The `handle-stripe-webhook` Edge Function now routes these license-extension

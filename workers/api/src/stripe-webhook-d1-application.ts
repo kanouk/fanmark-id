@@ -597,6 +597,17 @@ async function completePaidExtension(args: {
       WHERE a.livemode = ? AND a.stripe_checkout_session_id = ? AND a.status = 'applying'
     `).bind(lease.now, lease.livemode, sessionId),
     args.database.prepare(`
+      INSERT INTO audit_logs (user_id, action, resource_type, resource_id, request_id, metadata, created_at)
+      SELECT le.user_id, 'LOTTERY_ENTRY_STATUS_CHANGED', 'fanmark_lottery_entry', le.id, a.id,
+        json_object('old_status', le.entry_status, 'new_status', 'cancelled_by_extension',
+          'cancellation_reason', 'license_extended'), ?
+      FROM stripe_extension_application_lottery_entries AS x
+      JOIN stripe_extension_applications AS a ON a.id = x.application_id
+      JOIN fanmark_lottery_entries AS le ON le.id = x.lottery_entry_id AND le.user_id = x.user_id
+      WHERE x.status = 'pending' AND le.entry_status = 'pending'
+        AND a.status = 'applying' AND a.livemode = ? AND a.stripe_checkout_session_id = ?
+    `).bind(lease.now, lease.livemode, sessionId),
+    args.database.prepare(`
       UPDATE fanmark_lottery_entries
       SET entry_status = 'cancelled_by_extension', cancellation_reason = 'license_extended',
           cancelled_at = ?, updated_at = ?
@@ -685,6 +696,17 @@ async function completePaidExtension(args: {
               AND NOT EXISTS (
                 SELECT 1 FROM stripe_extension_application_lottery_entries AS x
                 WHERE x.application_id = stripe_extension_applications.id AND x.status <> 'cancelled'
+              )
+              AND NOT EXISTS (
+                SELECT 1 FROM stripe_extension_application_lottery_entries AS x
+                WHERE x.application_id = stripe_extension_applications.id AND NOT EXISTS (
+                  SELECT 1 FROM audit_logs AS audit
+                  WHERE audit.user_id = x.user_id AND audit.action = 'LOTTERY_ENTRY_STATUS_CHANGED'
+                    AND audit.resource_type = 'fanmark_lottery_entry' AND audit.resource_id = x.lottery_entry_id
+                    AND audit.request_id = x.application_id AND audit.created_at = x.created_at
+                    AND audit.metadata = json_object('old_status', 'pending', 'new_status', 'cancelled_by_extension',
+                      'cancellation_reason', 'license_extended')
+                )
               )
               AND (
                 NOT EXISTS (

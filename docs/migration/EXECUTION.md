@@ -1,5 +1,18 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：Stripe延長時の抽選取消監査
+
+D1 Stripe extensionでは、2件の取消対象に個別状態変更監査が0件になることをregressionで再現した。
+Durable cancellation snapshotのpending申請ごとに、申請者・申請ID・旧/新status・
+`license_extended`・application request ID・操作日時を記録するINSERTをbilling batchへ追加した。
+`applied`確定前にsnapshotと個別監査のexact値を検査し、未挿入/metadata改変でbatchをrollbackする。
+retry後の別receiptによる同じCheckout Sessionの再処理は延長や監査を重複させない。
+
+Stripe ingress/application/invoice/subscription/portal suite 70/70、Worker typecheck、ESLint、diff check成功。
+Stripe API/providerはsyntheticのみ。schema/converter版は変更しない。クーポンのcommand-trigger
+writerは引き続き未確認で、functions/RLS/triggersの包括gateは残す。
+実ユーザー行・Worker deploy・Cloudflare resources・domain/DNSは変更していない。
+
 ## 2026-10-03：退会の抽選取消監査とcleanup再開
 
 退会でpending抽選申請を取消す際もsource trigger相当の個別監査が欠けており、

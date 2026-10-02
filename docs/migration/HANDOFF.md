@@ -3,6 +3,17 @@
 Checkpoint: 2026-10-03 JST. The migration is **not complete**. PR #41 remains
 open and draft. CI validates the branch but does not deploy the Worker.
 
+The latest local follow-up adds per-entry lottery cancellation audits to paid
+Stripe extension application. The terminal application guard checks each audit
+against its durable cancellation snapshot (applicant/entry/request IDs, action,
+resource, metadata and time). Missing or corrupted audit rows roll the billing
+batch back; retry and duplicate-Session replay retain one extension and one
+record per entry. The full local Stripe ingress/application/invoice/subscription/
+portal suite passes 70/70, with Worker typecheck/ESLint/diff check passing.
+No Stripe provider request, schema change or converter-version change occurred.
+The coupon command-trigger writer is the remaining known lottery-audit gap to
+review; broad function/RLS/trigger parity is still unproven.
+
 The latest local follow-up restores per-entry lottery cancellation audits in
 account-deletion business cleanup. Required-audit failure rolls back cleanup
 and retains Auth/profile rows; previously committed license returns stay in
