@@ -1,19 +1,21 @@
 # Cloudflare migration handoff
 
 Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
-open and draft. Code head `4f26174` passed the Worker API job, but Actions run
-`36984142796` failed the staging application job after three 120-second
-timeouts in `subscription-application.test.mjs`. It emitted the TAP header but
-no subtest output, suggesting the hang occurs before the first test; the exact
-setup phase is not yet known. The file passes 8/8 and the full Stripe receipt
-suite passes locally under the same Node 22.6.0 as CI. CI-only PGlite setup
-milestones have been added for the next run to identify the stalled phase. CI
-itself does not deploy.
+open and draft. PR head `63eeacb` passed both jobs in Actions run
+`36985367697`. The Stripe suite's first `subscription-application.test.mjs`
+process reached `construct PGlite` and `create base schema`, then did not reach
+`base schema ready` before the 120-second timeout. The fresh retry completed
+that same schema creation in about two seconds and all eight tests passed. This
+localizes the intermittent stall to the test's bulk `PGlite.db.exec` for its
+base schema; the specific statement or hosted-runner trigger is not known. The
+suite and full Stripe receipt tests also pass locally under Node 22.6.0. CI
+does not deploy.
 
-The 211-callsite inventory now has 85 semantic mappings: 40 Auth/Auth-MFA
-operations, 20 own/fanmark-profile operations, three favorites operations,
-eight Realtime subscriptions, and 14 notification data/admin operations;
-126 remain. A
+The 211-callsite inventory now has 112 semantic mappings: 40 Auth/Auth-MFA
+operations, 20 own/fanmark-profile operations, 19 master/reference-data
+operations, eight search/registration operations, three favorites operations,
+eight Realtime subscriptions, and 14 notification data/admin operations; 99
+remain. A
 schema-only readback of the linked production Supabase project found that
 `get_unread_notification_count(uuid)` trusts a supplied UUID and grants
 execution to `anon`, exposing only the target account's unread count. A local

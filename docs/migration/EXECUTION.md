@@ -2,17 +2,19 @@
 
 ## 2026-10-02 最新差分: 通知RPC ACL、callsite分類、CI timeout
 
-PR #41 code head `4f26174` のActions run `36984142796` はWorker API job成功、
-staging application job失敗。`subscription-application.test.mjs` がTAP
-headerを出した後、120秒timeoutを3回起こし、subtest出力はなかった。
-前のrun `36981863610` ではretry後に成功した。今回、同じNode 22.6.0で当該
-ファイル8/8とStripe receipt suite全体がローカル成功した。CI固有のhang箇所は
-未特定で、次のrunに限りPGlite初期化のschema/migration段階をstderrへ出す診断を
-追加した。原因確定前にflakeと断定しない。
+PR #41 head `63eeacb` のActions run `36985367697` は両job成功。
+直前のrun `36984142796` では`subscription-application.test.mjs`が3回とも
+120秒timeoutした。診断付きrunでは初回に`construct PGlite`と`create base schema`
+まで出て、テスト用base schemaを一括実行する`db.exec`から120秒戻らなかった。
+fresh processの再試行では同じschema処理が約2秒で終わり、suite 8/8で成功した。
+この間欠停止はテスト用PGliteのbase-schema実行内に絞れたが、具体的なSQL文または
+hosted runner側の誘因は未特定。Node 22.6.0のローカルでは当該fileとStripe suite
+全体が成功した。CIはdeployを行わない。
 
 211件のフロントエンドSupabase callsiteのうち、Auth/Auth-MFA 40件、
-本人/ファンマークプロフィール20件、お気に入り3件、Realtime 8件、通知操作・
-管理画面14件をowner、data class、Cloudflare置換先まで分類した。残りは126件。
+本人/ファンマークプロフィール20件、マスター/参照データ19件、検索/登録8件、
+お気に入り3件、Realtime 8件、通知操作・管理画面14件をowner、data class、
+Cloudflare置換先まで分類した。残りは99件。
 認証の本番/defaultはSupabaseのまま、
 stagingはBetter Authを選択する。実ユーザーのID/credential/MFA移送は#38に
 残している。通知数RPCについてproduction Supabaseをschema-onlyで読み戻し、

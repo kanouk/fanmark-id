@@ -529,6 +529,51 @@ The route contracts and synthetic staging evidence are in
 [public-access-contract.md](public-access-contract.md). None of these reads or
 tests imported real account/profile rows.
 
+## Semantic mapping completed slice: Master and reference data
+
+This slice classifies 19 callsites for non-user catalog, pricing, language,
+and availability configuration. These records are separated from account
+data, although some admin operations still require a Better Auth admin session
+and current MFA assurance.
+
+| Callsite(s) | Operation and data owner | Cloudflare replacement and remaining boundary |
+| --- | --- | --- |
+| `src/components/AdminEmojiMaster.tsx:89,180,184,192,229` | Read, create, update, delete, or import canonical public emoji catalog records. | In staging, `/api/admin/emoji-master` reads and edits the protected `MASTER_DB` draft. Import preserves existing UUIDs; published identity changes and deletions are refused. Draft writes do not publish a catalog version; release build, continuity review, and explicit activation remain separate. Supabase stays the default. |
+| `src/lib/emoji-master-utils.ts:120` | Legacy full-table emoji lookup loader. | This helper still contains a direct Supabase query and has no other `src` import. The staging app installs the versioned Worker catalog in `src/main.tsx` before React mounts. Keep the unused helper identified for cleanup rather than assuming it is a second active staging read path. |
+| `src/hooks/useLanguages.tsx:44` | Read public language labels and active/sort state. | `VITE_LANGUAGE_READ_BACKEND=worker` reads the active reference release through `/api/reference-masters/languages`; the production default remains Supabase. The hook keeps its built-in defaults if the selected read fails. |
+| `src/components/AdminExtensionCoupons.tsx:99` | Read active tier labels and eligibility for coupon administration. | `VITE_REFERENCE_MASTER_READ_BACKEND=worker` reads the versioned tier projection. Coupon CRUD and application are separate operations and retain their own selectors. |
+| `src/components/ExtendLicenseDialog.tsx:102` | Read active extension terms and yen prices for the extension dialog. | `VITE_EXTENSION_PRICING_BACKEND=worker` reads the public 16-field pricing projection from the active reference release. This only moves the price read; checkout and license mutation remain independently gated by Stripe/provider configuration. |
+| `src/components/AdminTierExtensionPrices.tsx:80,85,149,186,264,306,373` | Read and edit tier extension prices, Stripe price references, active flags, and initial license days. | The staging selector uses MFA-protected `/api/admin/reference-masters/pricing`; each edit stages a complete immutable release and activates it only if the expected release is current. Stripe IDs are returned only to an authorized admin. Staging readback is proven; a live authenticated edit is not recorded as accepted evidence. Supabase remains the default. |
+| `src/components/AdminPatternRules.tsx:31,81,129` | Read global availability rules and edit enabled state or prefix-price configuration. | Staging uses `/api/admin/availability-rules` with admin MFA and compare-and-set updates. Four source rules were seeded disabled and the TOTP canary read, edited, restored, and verified them. This migrates the admin configuration surface; it does not activate runtime availability or Stripe enforcement. |
+
+The source reference masters have a verified staging release for four tiers,
+four languages, five reserved patterns, and 16 extension-price rows. Their
+active D1 projection and API reads are distinct from the user-owned tables in
+the deferred data phase. See [reference masters](reference-master-data.md),
+[emoji releases](emoji-releases.md), and
+[availability-rule administration](availability-rules-admin-api.md).
+
+## Semantic mapping completed slice: Search and registration
+
+This slice maps eight callsites in the acquisition search path. The app can
+select Worker APIs against staging D1, but source-row parity still depends on
+the deferred user-data import. The already-mapped auth read is described in
+the Auth slice above.
+
+| Callsite(s) | Operation and owner | Cloudflare replacement and remaining boundary |
+| --- | --- | --- |
+| `src/components/RecentFanmarksScroll.tsx:25`; `src/hooks/useFanmarkSearch.tsx:148` | Read recent public fanmarks for the landing view and search suggestions. | The shared `/api/fanmarks/recent` projection is selected in staging and sends no session credentials. Existing production/default builds retain Supabase. Staging HTTP readback passed; it does not prove parity before user-owned fanmark rows are imported. |
+| `src/hooks/useFanmarkSearch.tsx:287,559` | Check whether one or more canonical emoji IDs can be acquired. | The staging Worker resolves IDs through the active Master D1 release and evaluates synthetic business D1 state; requests carry no auth cookies. It preserves the public result contract and fails closed without Supabase fallback. This is advisory availability, not authorization or payment enforcement. |
+| `src/hooks/useFanmarkSearch.tsx:301` | Record a completed anonymous search in discovery aggregates. | The staging Worker batches `search_count`/`last_seen_at` with a search event, sets `user_id=NULL`, and rate-limits by a hashed client-IP key. A synthetic staging canary passed and its rows were removed. Historical user-attributed Supabase events remain deferred. |
+| `src/hooks/useFanmarkSearch.tsx:334,569` | Read a candidate fanmark, license status, and pending lottery state for the current search. | Staging `POST /api/fanmarks/search/details` uses Better Auth to derive the optional owner and returns an allowlisted bounded projection. The client cannot choose a user ID; private settings and content are excluded. Synthetic owner/anonymous integration paths are documented separately. |
+| `src/hooks/useFanmarkSearch.tsx:517` | Register or acquire the selected fanmark. | `VITE_FANMARK_REGISTRATION_BACKEND=worker` sends this operation to the owner-bound D1 registration API, which reads the active emoji/tier masters and writes dependent fanmark/license/settings/profile/audit rows atomically. Integrated synthetic staging readback and cleanup passed; production stays on Supabase. |
+
+The API contracts and staging evidence are in [search APIs](fanmark-search-api.md),
+[availability validation](availability-validation.md),
+[recent fanmarks](recent-api-contract.md), and
+[registration](fanmark-registration-api.md). The existing owner's historical
+rows and event attribution are still outside this phase.
+
 ## Semantic mapping completed slice: Favorites
 
 This slice classifies the three favorite RPC callsites. Favorites are private
@@ -596,6 +641,6 @@ real-user migration or provider acceptance.
 
 The route contracts are documented in [notifications-api.md](notifications-api.md),
 [own-profile-api.md](own-profile-api.md), and the subscription API implementation
-in `workers/api/src/subscription-d1-api.ts`. The remaining 126 callsites still
+in `workers/api/src/subscription-d1-api.ts`. The remaining 99 callsites still
 need equivalent owner, data-class, and replacement/retention classification;
 wrapper and indirect-call review also remains open.
