@@ -2,6 +2,9 @@ project_id = "ppqgtbjykitqtiaisyji"
 
 # These flags mirror the read-only deployed-function inventory collected on
 # 2026-09-28. Review handler authorization separately from gateway JWT checks.
+[functions.manual-expire-grace-licenses]
+verify_jwt = true
+
 [functions.admin-expire-license]
 verify_jwt = false
 

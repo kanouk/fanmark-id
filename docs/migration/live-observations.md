@@ -1913,7 +1913,7 @@ explicit entries are:
 | `generate-ogp-image` | ACTIVE | 100 | `false` | false |
 | `generate-transfer-code` | ACTIVE | 104 | `true` | true |
 | `handle-stripe-webhook` | ACTIVE | 172 | `false` | false |
-| `manual-expire-grace-licenses` | ACTIVE | 14 | `true` | live-only |
+| `manual-expire-grace-licenses` | ACTIVE | 14 | `true` | prepared |
 | `process-notification-events` | ACTIVE | 209 | `false` | false |
 | `record-fanmark-access` | ACTIVE | 114 | `false` | false |
 | `register-fanmark` | ACTIVE | 316 | `true` | true |
@@ -1926,9 +1926,12 @@ explicit entries are:
 The queries read deployment metadata only. No function was invoked, remote
 configuration or deployment changed, or application row was read. The CLI's
 `entrypoint_path` values were discarded. The local TOML and generated offline
-inventory were updated to make the observed JWT settings explicit. This list
-does not prove handler-level authentication or authorization behavior; those
-remain operation-level review gates.
+inventory were updated to make the observed JWT settings explicit. On
+2026-10-02, a local replacement was added for the live-only bulk expiry
+function. It preserves `verify_jwt=true` and adds an application-level admin
+role plus current-session AAL2 check. The local source is prepared but not
+deployed; the active version 14 still lacks those checks. Handler-level
+authorization remains a deployment gate.
 
 ## Supabase Edge Function inventory refresh (2026-09-29 JST)
 
@@ -2106,3 +2109,21 @@ tightening, not exact source parity. No production function, grant, application
 row, Cloudflare resource, or domain/DNS setting was changed. Consider removing
 anonymous execution or binding the Supabase function to `auth.uid()` before
 the final switch while Supabase remains the active production backend.
+
+## Local guarded source for deployed manual expiry (2026-10-02 JST)
+
+The Supabase Functions metadata remains ACTIVE version 14 with
+`verify_jwt=true`. The local repository now contains a replacement at
+`supabase/functions/manual-expire-grace-licenses/index.ts`. It requires an
+admin role and asks Supabase Auth to verify the same request token's current
+assurance level; only `aal2` proceeds. The check fails closed on API errors and
+missing assurance. The local config preserves the observed platform JWT gate.
+
+The local handler rechecks `status='grace'` and the captured expiry cutoff on
+each update, pages candidates by ID, records the acting admin, and marks
+configuration/audit failures in the response. Its writes remain separate
+requests, so it does not claim transactional parity with the D1 lifecycle
+route. There is no repository callsite, but external callers or schedules have
+not been ruled out. Production version 14 is still unguarded and unchanged;
+the new source is prepared but not deployed. No function was invoked and no
+application rows were read or written.

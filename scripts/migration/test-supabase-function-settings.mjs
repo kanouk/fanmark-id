@@ -17,23 +17,27 @@ const tableStart = observations.indexOf(tableHeader);
 assert.notEqual(tableStart, -1, "live Edge Function settings table must be present");
 
 const table = observations.slice(tableStart + tableHeader.length).split(/\n\s*\n/u, 1)[0];
-const liveRows = [...table.matchAll(/^\|\s*`([a-z0-9-]+)`\s*\|\s*([A-Z]+)\s*\|\s*\d+\s*\|\s*`(true|false)`\s*\|\s*(true|false|live-only)\s*\|$/gmu)];
+const liveRows = [...table.matchAll(/^\|\s*`([a-z0-9-]+)`\s*\|\s*([A-Z]+)\s*\|\s*\d+\s*\|\s*`(true|false)`\s*\|\s*(true|false|prepared|live-only)\s*\|$/gmu)];
 assert.equal(liveRows.length, 35, "the reviewed live inventory contains 35 functions");
 
 const expectedLocal = new Map();
 const liveOnly = [];
+const prepared = [];
 for (const [, name, state, liveVerifyJwt, localSetting] of liveRows) {
   assert.equal(state, "ACTIVE", `${name} must remain part of the active observed inventory`);
   if (localSetting === "live-only") {
     liveOnly.push(name);
     continue;
   }
-  assert.equal(localSetting, liveVerifyJwt, `${name} local setting must mirror the observed gateway setting`);
+  if (localSetting === "prepared") prepared.push(name);
+  const localVerifyJwt = localSetting === "prepared" ? liveVerifyJwt : localSetting;
+  assert.equal(localVerifyJwt, liveVerifyJwt, `${name} local setting must mirror the observed gateway setting`);
   assert.ok(!expectedLocal.has(name), `${name} must appear only once in the observation table`);
-  expectedLocal.set(name, localSetting === "true");
+  expectedLocal.set(name, localVerifyJwt === "true");
 }
 
-assert.deepEqual(liveOnly, ["manual-expire-grace-licenses"]);
+assert.deepEqual(liveOnly, []);
+assert.deepEqual(prepared, ["manual-expire-grace-licenses"]);
 
 const localEntrypoints = readdirSync(functionsPath, { withFileTypes: true })
   .filter((entry) => entry.isDirectory() && !entry.name.startsWith("_"))
@@ -55,4 +59,8 @@ for (const section of config.split(/(?=^\[)/mu)) {
 }
 
 assert.deepEqual(configured, expectedLocal, "every local function config must match its read-only live observation");
-console.log(`Supabase Edge Function config matches ${expectedLocal.size} local functions; ${liveOnly.length} live-only function is documented.`);
+const preparedSource = readFileSync(path.join(functionsPath, "manual-expire-grace-licenses/index.ts"), "utf8");
+assert.match(preparedSource, /requireAdminContext\(req,\s*\{\s*requireMfa:\s*true\s*\}\)/u);
+const adminAuthSource = readFileSync(path.join(functionsPath, "_shared/admin-auth.ts"), "utf8");
+assert.match(adminAuthSource, /options\.requireMfa\s*&&\s*!\(await hasCurrentAal2\(supabase\.auth\.mfa, accessToken\)\)/u);
+console.log(`Supabase Edge Function config matches ${expectedLocal.size} deployed functions; ${prepared.length} guarded local replacement is prepared but not deployed.`);

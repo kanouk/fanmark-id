@@ -53,12 +53,12 @@ The offline frontend report was regenerated at base `63b6018`. Exact
 refreshed `supabase/remote_schema.sql` to 40 tables / 406 columns / 58
 functions / 77 policies. The five added functions, three added tables, and
 policy changes match checked-in migrations. Read-only Functions metadata
-shows 35 ACTIVE deployments; all 34 local `verify_jwt` settings match, with
-one live-only `manual-expire-grace-licenses` function. Source review found no
-administrator-role/MFA check in its handler despite service-role database
-access. A valid non-admin JWT may reach its bulk license mutation; the function
-was not invoked or changed. Its production disposition is a security gate.
-The readback and snapshot update changed no live schema or user data.
+shows 35 ACTIVE deployments; the metadata snapshot initially had 34 matching
+local entrypoints and one live-only `manual-expire-grace-licenses`. A local
+replacement is now prepared with an administrator-role and current-session
+MFA check; it is not deployed. The active version 14 still has service-role
+access without those handler checks, so its production disposition remains a
+security gate. No live function was invoked or changed.
 
 Converter v24 now recognizes the D1 notification archiver as the explicit
 writer for `notifications_history.archived_at`; its selector remains disabled
@@ -3980,3 +3980,30 @@ projection refresh. 203 frontend callsites remain to be classified. This
 source-level slice does not prove live production configuration or data parity.
 Continue with the remaining non-user-data inventory and master/infrastructure
 gates. Keep actual user/Auth/Storage migration and domain/DNS cutover for #38.
+
+## 2026-10-02 local MFA guard for the live-only Supabase expiry function
+
+The read-only deployed inventory still reports `manual-expire-grace-licenses`
+ACTIVE at version 14 with `verify_jwt=true`. Its downloaded source showed that
+the gateway accepts a JWT but the handler used the service-role client without
+an application admin-role or MFA check. A local replacement is now checked in
+with `verify_jwt=true`, POST-only handling, an admin role check, and Supabase's
+current-session AAL2 verification against the exact request token. The MFA
+check fails closed on AAL1, missing assurance, API errors, or network errors.
+
+The local handler rechecks the status and captured expiry cutoff on each
+update, pages candidates by ID, records the acting admin in audit metadata,
+and reports per-license config/audit failures rather than counting them as
+successful. The legacy operation remains non-transactional and still has no
+repository callsite; external invocations and schedules have not been ruled
+out. The local replacement is prepared but not deployed, and live version 14
+remains unchanged pending that operational review.
+
+Node's focused MFA assurance suite passed 3/3; the function inventory/config
+contract passed for all 35 deployed names and confirmed the prepared
+replacement is not deployed. `deno check` passed for the new Edge Function,
+application typecheck and targeted ESLint passed, and
+`npm run test:migration-data` passed 218/218. CI run `37000774332` passed both
+jobs before these code changes; CI for this update remains required. No
+Supabase function, database, Cloudflare resource, user row, production route,
+or domain/DNS setting changed.

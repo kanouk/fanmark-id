@@ -4899,3 +4899,21 @@ provider-backed Stripe/Resend/OAuth acceptance, production readiness, source
 row parity, real user/Auth/Storage migration, or domain/DNS cutover. No
 production route, live payment, email send, real user row, or domain setting
 was changed.
+
+## 2026-10-02 prepared MFA-gated local source for manual grace expiry
+
+The read-only Supabase Function inventory still shows
+`manual-expire-grace-licenses` ACTIVE at version 14 with platform JWT
+verification. Its handler's service-role access was not protected by an
+application admin or MFA check. Added a local replacement using the shared
+admin role check and Supabase current-session AAL2 verification for the exact
+request token; the MFA check fails closed. The function requires POST, pages
+the due rows, conditionally updates the captured `grace` state/deadline, and
+reports cleanup/audit errors.
+
+Focused MFA tests passed 3/3; the function inventory/config contract covers
+all 35 deployed names; Deno type checking, root application typecheck,
+targeted ESLint, and migration data tests passed (218/218). The live version
+was not invoked or deployed; its partial, non-transactional behavior and
+possible external callers remain unresolved. No source rows or Cloudflare
+resources were changed.
