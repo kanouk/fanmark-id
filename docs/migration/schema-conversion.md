@@ -910,3 +910,18 @@ credential, six calls to the synthetic Auth identity resolver, exact timestamp
 readback for preferences and roles, and conflicting-coverage rejection. The
 result remains `public_rows_reconciled`; `fullMigrationReconciled` remains
 false. No source rows or remote D1/R2 state was read or changed.
+
+## Converter v24: explicit D1 notification archive timestamp writer
+
+The Worker now implements a bounded D1 archive operation for the checked-in
+90-day `delivered`/`failed` notification move. It binds one invocation-time
+value to `notifications_history.archived_at`, writes canonical six-digit UTC
+text, and keeps the source row when a preexisting history record conflicts.
+The `notifications_history.archived_at` default is therefore omitted by the
+converter under the narrow `scheduled_worker_explicit_timestamp` disposition,
+backed by the D1 integration test and timestamp-writer audit. The D1 timestamp
+has millisecond clock resolution; PostgreSQL transaction-time microsecond
+identity is not claimed. Staging has no `NOTIFICATION_ARCHIVE_BACKEND` selector,
+so the archiver remains disabled there. This does not define a history purge or
+resolve source production invocation. Converter v24 still reports
+`deployable: false`; no user rows or remote D1/R2 state were read or changed.

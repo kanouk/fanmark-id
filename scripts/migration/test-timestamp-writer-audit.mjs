@@ -276,3 +276,28 @@ test("snapshot-import-only preference and legacy role timestamps have no timesta
       `${source.file} must not update a role creation timestamp without a reviewed runtime contract`);
   }
 });
+
+test("the D1 notification archiver explicitly writes archived_at", () => {
+  const archiveSource = "workers/api/src/notifications-scheduled.ts";
+  const archiveTest = "workers/api/test/notifications-d1.test.ts";
+  const sources = [{
+    file: archiveSource,
+    text: readFileSync(path.join(repoRoot, archiveSource), "utf8"),
+  }];
+  const testText = readFileSync(path.join(repoRoot, archiveTest), "utf8");
+  const result = auditTimestampWriterCoverage(catalog([
+    timestamp("notifications_history", "archived_at"),
+  ]), sources);
+
+  assert.equal(result.insertStatementCount, 1);
+  assert.deepEqual(result.unparsedTargetInserts, []);
+  assert.deepEqual(result.uncoveredTimestampDefaults, []);
+  assert.deepEqual(result.timestampColumnWriters, [{
+    table: "notifications_history",
+    file: archiveSource,
+    line: 365,
+    columns: ["archived_at"],
+  }]);
+  assert.match(sources[0].text, /\.bind\(archivedAt, cutoff, NOTIFICATION_ARCHIVE_BATCH_LIMIT\)/u);
+  assert.match(testText, /archived_at\)\.toBe\("2026-09-25T00:00:00\.000000Z"\)/u);
+});

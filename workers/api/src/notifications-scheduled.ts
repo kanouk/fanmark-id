@@ -4,6 +4,9 @@ import { toUtcMicrosecondTimestamp } from "./utc-timestamp.ts";
 const DEFAULT_LANGUAGE = "ja";
 const EVENT_BATCH_LIMIT = 50;
 const STALE_PROCESSING_MS = 10 * 60 * 1000;
+const NOTIFICATION_ARCHIVE_AGE_DAYS = 90;
+const NOTIFICATION_ARCHIVE_BATCH_LIMIT = 250;
+const NOTIFICATION_ARCHIVE_MAX_BATCHES = 10;
 const DATE_PLACEHOLDERS = new Set(["grace_expires_at", "license_end", "expires_at", "created_at", "updated_at"]);
 
 type NotificationEvent = {
@@ -35,6 +38,14 @@ export class ScheduledNotificationProcessorError extends Error {
   constructor() {
     super("notification processor failed");
     this.name = "ScheduledNotificationProcessorError";
+  }
+}
+
+export class ScheduledNotificationArchiveError extends Error {
+  readonly code = "notification_archive_failed";
+  constructor() {
+    super("notification archive failed");
+    this.name = "ScheduledNotificationArchiveError";
   }
 }
 
@@ -281,4 +292,129 @@ export async function runScheduledNotificationEvents(input: {
   }
 
   return { status: "completed", selected: selection.results.length, processed, failed };
+}
+
+function archivedNotificationJson(alias: string): string {
+  return `json_object(
+    'id', ${alias}.id,
+    'user_id', ${alias}.user_id,
+    'event_id', ${alias}.event_id,
+    'rule_id', ${alias}.rule_id,
+    'template_id', ${alias}.template_id,
+    'template_version', ${alias}.template_version,
+    'channel', ${alias}.channel,
+    'status', ${alias}.status,
+    'payload', json(${alias}.payload),
+    'priority', ${alias}.priority,
+    'triggered_at', ${alias}.triggered_at,
+    'delivered_at', ${alias}.delivered_at,
+    'read_at', ${alias}.read_at,
+    'read_via', ${alias}.read_via,
+    'expires_at', ${alias}.expires_at,
+    'retry_count', ${alias}.retry_count,
+    'error_reason', ${alias}.error_reason,
+    'created_at', ${alias}.created_at,
+    'updated_at', ${alias}.updated_at
+  )`;
+}
+
+function archiveCount(value: unknown): number {
+  if (!Number.isSafeInteger(value) || Number(value) < 0) throw new ScheduledNotificationArchiveError();
+  return Number(value);
+}
+
+function archiveChangedRows(result: D1Result<unknown>): number {
+  if (result?.success !== true || !Number.isSafeInteger(result.meta?.changes) || Number(result.meta.changes) < 0) {
+    throw new ScheduledNotificationArchiveError();
+  }
+  return Number(result.meta.changes);
+}
+
+/** Move old terminal notifications to D1 history using the source RPC's default 90-day cutoff. */
+export async function runScheduledNotificationArchive(input: {
+  env: Env;
+  database?: D1Database;
+  now?: Date;
+}): Promise<
+  | { status: "disabled" }
+  | { status: "completed" | "partial"; archived: number; remaining: number; conflicts: number; batches: number }
+> {
+  if (input.env.NOTIFICATION_ARCHIVE_BACKEND?.trim() !== "d1") return { status: "disabled" };
+  const database = input.database ?? selectD1Database(input.env, "business");
+  if (!database) throw new ScheduledNotificationArchiveError();
+
+  const operationTime = input.now ?? new Date();
+  const operationTimeMs = operationTime.getTime();
+  const cutoffTimeMs = operationTimeMs - NOTIFICATION_ARCHIVE_AGE_DAYS * 24 * 60 * 60 * 1000;
+  if (!Number.isSafeInteger(operationTimeMs) || !Number.isFinite(cutoffTimeMs)) {
+    throw new ScheduledNotificationArchiveError();
+  }
+  const archivedAt = toUtcMicrosecondTimestamp(operationTime);
+  const cutoff = toUtcMicrosecondTimestamp(new Date(cutoffTimeMs));
+  const json = archivedNotificationJson("n");
+  const conflictFilter = `NOT EXISTS (
+    SELECT 1 FROM notifications_history AS prior
+    WHERE prior.id = n.id AND prior.original_data <> ${json}
+  )`;
+
+  let archived = 0;
+  let batches = 0;
+  for (let index = 0; index < NOTIFICATION_ARCHIVE_MAX_BATCHES; index += 1) {
+    const results = await database.batch([
+      database.prepare(`
+        INSERT OR IGNORE INTO notifications_history (id, original_data, archived_at)
+        SELECT n.id, ${json}, ?
+        FROM notifications AS n
+        WHERE n.status IN ('delivered', 'failed')
+          AND n.created_at < ?
+          AND ${conflictFilter}
+        ORDER BY n.created_at ASC, n.id ASC
+        LIMIT ?
+      `).bind(archivedAt, cutoff, NOTIFICATION_ARCHIVE_BATCH_LIMIT),
+      database.prepare(`
+        DELETE FROM notifications
+        WHERE id IN (
+          SELECT n.id
+          FROM notifications AS n
+          JOIN notifications_history AS history ON history.id = n.id
+          WHERE n.status IN ('delivered', 'failed')
+            AND n.created_at < ?
+            AND history.original_data = ${json}
+          ORDER BY n.created_at ASC, n.id ASC
+          LIMIT ?
+        )
+      `).bind(cutoff, NOTIFICATION_ARCHIVE_BATCH_LIMIT),
+    ]);
+    if (results.length !== 2 || results.some((result) => result?.success !== true)) {
+      throw new ScheduledNotificationArchiveError();
+    }
+    batches += 1;
+    const moved = archiveChangedRows(results[1]);
+    archived += moved;
+    if (moved < NOTIFICATION_ARCHIVE_BATCH_LIMIT) break;
+  }
+
+  const [remainingRow, conflictRow] = await Promise.all([
+    database.prepare(`
+      SELECT count(*) AS count FROM notifications
+      WHERE status IN ('delivered', 'failed') AND created_at < ?
+    `).bind(cutoff).first<{ count?: unknown }>(),
+    database.prepare(`
+      SELECT count(*) AS count
+      FROM notifications AS n
+      JOIN notifications_history AS prior ON prior.id = n.id
+      WHERE n.status IN ('delivered', 'failed') AND n.created_at < ?
+        AND prior.original_data <> ${json}
+    `).bind(cutoff).first<{ count?: unknown }>(),
+  ]);
+  if (!remainingRow || !conflictRow) throw new ScheduledNotificationArchiveError();
+  const remaining = archiveCount(remainingRow.count);
+  const conflicts = archiveCount(conflictRow.count);
+  return {
+    status: remaining > 0 ? "partial" : "completed",
+    archived,
+    remaining,
+    conflicts,
+    batches,
+  };
 }

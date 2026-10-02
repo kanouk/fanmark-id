@@ -480,3 +480,15 @@ references, 68 timestamp operations, and three unsupported functions/RLS/
 trigger scopes). `notifications_history.archived_at` remains gated until its
 archive operation and retention contract are resolved. `deployable` and full
 data reconciliation remain false; no real rows or remote state were changed.
+
+## Schema converter v24: notification archive timestamp writer
+
+The D1 Worker archive operation now binds `notifications_history.archived_at`
+explicitly and is covered by synthetic D1 integration tests and the static
+timestamp-writer audit. Converter v24 omits the source `now()` default under a
+narrow `scheduled_worker_explicit_timestamp` disposition. The operation uses a
+single JS `Date` per invocation rendered as six-digit UTC text; exact
+PostgreSQL transaction-time microsecond identity is not claimed. The schedule
+requires `NOTIFICATION_ARCHIVE_BACKEND=d1`, absent from staging. Source
+invocation and history retention remain unresolved; the converter is still
+non-deployable.

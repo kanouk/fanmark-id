@@ -17,7 +17,7 @@ import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 23;
+export const SCHEMA_CONVERSION_VERSION = 24;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -59,6 +59,17 @@ const REVIEWED_SNAPSHOT_IMPORT_ONLY_TIMESTAMPS = new Set([
   "notification_preferences.created_at",
   "notification_preferences.updated_at",
   "user_roles.created_at",
+]);
+const REVIEWED_RUNTIME_TIMESTAMP_WRITES = new Map([
+  ["notifications_history.archived_at", {
+    code: "scheduled_worker_explicit_timestamp",
+    reason: "The D1 notification archive operation binds one explicit canonical UTC timestamp for each scheduled archive invocation; no table default is used. The Worker derives this timestamp from its operation Date and emits six-digit UTC text.",
+    evidence: [
+      "workers/api/src/notifications-scheduled.ts",
+      "workers/api/test/notifications-d1.test.ts",
+      "workers/api/src/utc-timestamp.ts",
+    ],
+  }],
 ]);
 const VERSIONED_REFERENCE_MASTER_TIMESTAMP_DISPOSITION = Object.freeze({
   code: "versioned_reference_master_replacement",
@@ -991,6 +1002,18 @@ function translateDefault(
         sourceDefault: "now()",
         targetDefault: null,
         ...SNAPSHOT_IMPORT_ONLY_TIMESTAMP_DISPOSITION,
+      });
+      return null;
+    }
+    const runtimeTimestampWrite = REVIEWED_RUNTIME_TIMESTAMP_WRITES.get(`${column.table_name}.${column.column_name}`);
+    if (runtimeTimestampWrite) {
+      reviewedDefaultDispositions.push({
+        kind: "default",
+        table: column.table_name,
+        column: column.column_name,
+        sourceDefault: "now()",
+        targetDefault: null,
+        ...runtimeTimestampWrite,
       });
       return null;
     }

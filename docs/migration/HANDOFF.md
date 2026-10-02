@@ -1,8 +1,9 @@
 # Cloudflare migration handoff
 
 Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
-open and draft. Latest code checkpoint `9edbd33` failed app validation in
-Actions run `36987359636`: the Stripe suite's
+open and draft. The latest committed checkpoint `4dd5dad` passed both CI jobs
+in Actions run `36988666920`. An earlier checkpoint `9edbd33` failed app
+validation: the Stripe suite's
 `subscription-application.test.mjs` process reached `construct PGlite` and
 `create base schema`, then timed out before `base schema ready` on all three
 120-second attempts. The Worker API/D1 tests, typecheck, and bundle validation
@@ -65,26 +66,52 @@ INSERT paths. The emoji release staging path binds one explicit UTC
 microsecond `created_at`/`updated_at` value and checks those values on readback.
 A fresh read-only catalog audit observed 79 defaults across 40 tables, parsed
 143 literal/generated INSERT column lists with zero unparsed targets, and
-retained 12 timestamp columns without direct literal writers. Eight now have a
-versioned-master replacement; converter v23 gives three snapshot-import-only
-dispositions. `notifications_history.archived_at` remains gated pending the
-Worker archive operation and target storage/scheduling contract. The checked-in
-source function defaults to atomically archiving delivered/failed notifications
-older than 90 days, but no checked-in invocation or schedule was found; this is
-not a live `pg_cron` readback. Timestamp value semantics and transaction-time
-equivalence remain open. The migration-data suite passes 207/207; both app and
-Worker typechecks and targeted ESLint also pass at the latest staging checkpoint.
+retained 12 timestamp columns without direct literal writers. Eight have a
+versioned-master replacement; converter v23 gave three snapshot-import-only
+dispositions. The current work adds a D1 notification archiver and a reviewed
+explicit timestamp disposition for `notifications_history.archived_at`. Local
+validation passes 208/208 migration-data tests, 15/15 notification D1 tests,
+five scheduled-dispatch tests, Worker typecheck, and targeted ESLint. These
+changes are not in CI or staging yet. The
+checked-in source function defaults to atomically archiving delivered/failed
+notifications older than 90 days, but no checked-in invocation or schedule was
+found; this is not a live `pg_cron` readback. The staging selector remains
+absent. History purge/long-term retention and source/target transaction-time
+equivalence remain open. The migration-data suite passed 207/207 at the latest
+committed checkpoint; the current local suite passes 208/208.
 
-Converter v23 now gives an import-only disposition to three of those columns:
+At the converter v23 checkpoint, three columns received an import-only disposition:
 `notification_preferences.created_at/updated_at` and `user_roles.created_at`.
 The generic importer preserves their source timestamps, and the current Worker
 has no direct insert writer for either table or preference update writer. A
 fresh 40-table synthetic replay passed 40/40 checkpoints with 12 rows and exact
-readback of both timestamp pairs. Current converter gates are five groups / 82
-locations (11 external Auth references, 68 timestamp operations, and three
-function/RLS/trigger scopes); `deployable` and full migration reconciliation
-remain false. `notifications_history.archived_at` is still gated pending the
-archive retention contract.
+readback of both timestamp pairs. The v23 converter report at that checkpoint
+had five groups / 82 locations (11 external Auth references, 68 timestamp
+operations, and three function/RLS/trigger scopes); `deployable` and full
+migration reconciliation remain false. The current v24 follow-up below
+implements and tests the Worker writer for `notifications_history.archived_at`;
+retention policy remains open.
+
+## 2026-10-02 D1 notification archive implementation
+
+`workers/api/src/notifications-scheduled.ts` now contains a D1 equivalent of
+the checked-in `archive_old_notifications(integer)` operation. It moves only
+`delivered`/`failed` rows older than 90 days, preserves the source fields in
+`notifications_history.original_data`, uses 250-row batches with a 10-batch
+per-invocation cap, and retains source rows when an existing history record
+conflicts. Conflicts or a remaining backlog report `partial`. A partial index
+supports the archive scan. The schedule is opt-in through
+`NOTIFICATION_ARCHIVE_BACKEND=d1`; the staging config has no such selector, so
+the new operation is not deployed or running there.
+
+Synthetic D1 integration coverage checks the cutoff boundary, eligible states,
+archived JSON and timestamp, selector-disabled behavior, and conflict
+retention. Converter v24 records that `archived_at` has an explicit runtime
+writer and omits its SQL default. The writer uses one JS `Date` value expanded
+to canonical six-digit UTC text per invocation; PostgreSQL transaction-time
+microsecond identity is not claimed. Source invocation/schedule, history
+retention/deletion, live staging readback, and production operation remain
+unverified. User rows and domain/DNS cutover are still deferred.
 
 The inventory analyzer change is `b34638b`, its generated report/handoff
 evidence is `51d2b24`, and target-coverage notes are in `2a45a04`.

@@ -61,6 +61,8 @@ export interface Env {
     limit(input: { key: string }): Promise<{ success: boolean }>;
   };
   NOTIFICATION_PROCESSOR_BACKEND?: string;
+  NOTIFICATION_ARCHIVE_BACKEND?: string;
+  NOTIFICATION_ARCHIVE_CRON?: string;
   MAINTENANCE_SETTINGS_BACKEND?: string;
   CUTOVER_WRITE_FREEZE?: string;
   SCHEDULED_DISPATCH_DIAGNOSTICS?: string;

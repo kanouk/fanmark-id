@@ -126,6 +126,7 @@ test("staging enables only the MFA-protected manual lifecycle API, not the sched
   assert.equal(vars.LICENSE_EXPIRY_SCHEMA_EXTENSION_DIGEST, lifecycleSchemaDigest());
   assert.equal(vars.LICENSE_EXPIRY_MAX_PAGES, "4");
   assert.equal(vars.LICENSE_EXPIRY_BACKEND, undefined, "scheduled expiry must remain disabled");
+  assert.equal(vars.NOTIFICATION_ARCHIVE_BACKEND, undefined, "notification archival must remain disabled in staging until deliberately selected");
   assert.equal(vars.LICENSE_EXPIRY_CRON, "0 0 * * *");
   assert.deepEqual([...appStagingConfig.triggers.crons].sort(), ["* * * * *", "0 0 * * *"]);
 });

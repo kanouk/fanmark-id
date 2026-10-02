@@ -3,7 +3,8 @@ import bcrypt from "bcryptjs";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import authSchemaSql from "../migrations/0003_better_auth_core.sql?raw";
 import notificationsSchemaSql from "./fixtures/d1-notifications.sql?raw";
-import { runScheduledNotificationEvents } from "../src/notifications-scheduled";
+import archiveIndexMigrationSql from "../migrations-business/0020_notification_archive_index.sql?raw";
+import { runScheduledNotificationArchive, runScheduledNotificationEvents } from "../src/notifications-scheduled";
 import { handleRequest } from "../src";
 import type { Env } from "../src/repository";
 
@@ -78,6 +79,7 @@ async function resetRows(): Promise<void> {
   await authDatabase.prepare('DELETE FROM "user" WHERE "id" IN (?, ?)').bind(ownerId, otherId).run();
   await businessDatabase.prepare("DELETE FROM notifications WHERE user_id IN (?, ?)").bind(ownerId, otherId).run();
   await businessDatabase.batch([
+    businessDatabase.prepare("DELETE FROM notifications_history"),
     businessDatabase.prepare("DELETE FROM notification_events"),
     businessDatabase.prepare("DELETE FROM notification_preferences"),
     businessDatabase.prepare("DELETE FROM notification_rules"),
@@ -120,6 +122,7 @@ beforeAll(async () => {
   if (!authDatabase || !businessDatabase) throw new Error("Split D1 bindings unavailable");
   await authDatabase.batch(splitSqlStatements(authSchemaSql).map((statement) => authDatabase.prepare(statement)));
   await businessDatabase.batch(splitSqlStatements(notificationsSchemaSql).map((statement) => businessDatabase.prepare(statement)));
+  await businessDatabase.prepare(archiveIndexMigrationSql).run();
 });
 
 beforeEach(resetRows);
@@ -230,6 +233,90 @@ describe("Better Auth notifications API", () => {
     expect((await request("/api/me/notifications", {}, { NOTIFICATIONS_BACKEND: undefined })).status).toBe(503);
     expect((await request("/api/me/notifications", { headers: { Origin: "https://attacker.example.test", Cookie: cookie } })).status).toBe(403);
     expect((await request("/api/me/notifications", { method: "OPTIONS", headers: { "access-control-request-method": "GET" } })).status).toBe(204);
+  });
+});
+
+describe("scheduled notification archive", () => {
+  const archiveNow = new Date("2026-09-25T00:00:00.000Z");
+  const archiveCutoff = new Date(archiveNow.getTime() - 90 * 24 * 60 * 60 * 1000);
+  const oldCreatedAt = new Date(archiveCutoff.getTime() - 1).toISOString();
+  const cutoffCreatedAt = archiveCutoff.toISOString();
+  const deliveredArchiveId = "66666666-1111-4111-8111-111111111111";
+  const failedArchiveId = "66666666-2222-4222-8222-222222222222";
+  const boundaryArchiveId = "66666666-3333-4333-8333-333333333333";
+  const pendingArchiveId = "66666666-4444-4444-8444-444444444444";
+  const conflictingArchiveId = "66666666-5555-4555-8555-555555555555";
+
+  async function insertArchiveCandidate(id: string, status: string, createdAt: string): Promise<void> {
+    await businessDatabase?.prepare(`
+      INSERT INTO notifications (
+        id, event_id, rule_id, user_id, channel, template_id, template_version,
+        payload, status, priority, triggered_at, delivered_at, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, 'in_app', 'archive-test', 1, ?, ?, 5, ?, ?, ?, ?)
+    `).bind(
+      id, `${id}-event`, `${id}-rule`, ownerId, JSON.stringify({ note: `synthetic-${id}`, keep: [1, null] }),
+      status, createdAt, status === "delivered" ? createdAt : null, createdAt, createdAt,
+    ).run();
+  }
+
+  it("moves only old delivered/failed rows and preserves source fields in history", async () => {
+    await insertArchiveCandidate(deliveredArchiveId, "delivered", oldCreatedAt);
+    await insertArchiveCandidate(failedArchiveId, "failed", oldCreatedAt);
+    await insertArchiveCandidate(boundaryArchiveId, "delivered", cutoffCreatedAt);
+    await insertArchiveCandidate(pendingArchiveId, "pending", oldCreatedAt);
+
+    const summary = await runScheduledNotificationArchive({
+      env: { ...runtimeEnv, NOTIFICATION_ARCHIVE_BACKEND: "d1" },
+      now: archiveNow,
+    });
+    expect(summary).toEqual({ status: "completed", archived: 2, remaining: 0, conflicts: 0, batches: 1 });
+
+    const archivedRows = await businessDatabase?.prepare(`
+      SELECT id, original_data, archived_at FROM notifications_history ORDER BY id
+    `).all<{ id: string; original_data: string; archived_at: string }>();
+    expect(archivedRows?.results?.map((row) => row.id)).toEqual([deliveredArchiveId, failedArchiveId]);
+    const archivedDelivered = archivedRows?.results?.find((row) => row.id === deliveredArchiveId);
+    const sourceData = JSON.parse(String(archivedDelivered?.original_data)) as Record<string, unknown>;
+    expect(sourceData).toMatchObject({
+      id: deliveredArchiveId,
+      event_id: `${deliveredArchiveId}-event`,
+      rule_id: `${deliveredArchiveId}-rule`,
+      user_id: ownerId,
+      channel: "in_app",
+      status: "delivered",
+      payload: { note: `synthetic-${deliveredArchiveId}`, keep: [1, null] },
+      created_at: oldCreatedAt,
+      updated_at: oldCreatedAt,
+    });
+    expect(archivedDelivered?.archived_at).toBe("2026-09-25T00:00:00.000000Z");
+    const remainingRows = await businessDatabase?.prepare(`
+      SELECT id FROM notifications WHERE id IN (?, ?, ?, ?) ORDER BY id
+    `).bind(deliveredArchiveId, failedArchiveId, boundaryArchiveId, pendingArchiveId).all<{ id: string }>();
+    expect(remainingRows?.results?.map((row) => row.id)).toEqual([boundaryArchiveId, pendingArchiveId]);
+  });
+
+  it("does not touch source rows while the archive backend selector is disabled", async () => {
+    await insertArchiveCandidate(deliveredArchiveId, "delivered", oldCreatedAt);
+    await expect(runScheduledNotificationArchive({ env: runtimeEnv, now: archiveNow })).resolves.toEqual({ status: "disabled" });
+    const source = await businessDatabase?.prepare("SELECT id FROM notifications WHERE id = ?").bind(deliveredArchiveId).first();
+    const history = await businessDatabase?.prepare("SELECT id FROM notifications_history WHERE id = ?").bind(deliveredArchiveId).first();
+    expect(source).toMatchObject({ id: deliveredArchiveId });
+    expect(history).toBeNull();
+  });
+
+  it("retains a source row and reports a conflicting preexisting history record", async () => {
+    await insertArchiveCandidate(conflictingArchiveId, "failed", oldCreatedAt);
+    await businessDatabase?.prepare(`
+      INSERT INTO notifications_history (id, original_data, archived_at) VALUES (?, ?, ?)
+    `).bind(conflictingArchiveId, JSON.stringify({ id: conflictingArchiveId, unrelated: true }), "2026-01-01T00:00:00.000000Z").run();
+
+    const summary = await runScheduledNotificationArchive({
+      env: { ...runtimeEnv, NOTIFICATION_ARCHIVE_BACKEND: "d1" },
+      now: archiveNow,
+    });
+    expect(summary).toEqual({ status: "partial", archived: 0, remaining: 1, conflicts: 1, batches: 1 });
+    const source = await businessDatabase?.prepare("SELECT id FROM notifications WHERE id = ?").bind(conflictingArchiveId).first();
+    expect(source).toMatchObject({ id: conflictingArchiveId });
   });
 });
 

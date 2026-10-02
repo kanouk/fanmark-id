@@ -23,6 +23,10 @@ export interface ScheduledDispatchDiagnostic {
     deadLettered?: number;
     retryable?: number;
     leaseLost?: number;
+    archived?: number;
+    remaining?: number;
+    conflicts?: number;
+    batches?: number;
   };
 }
 
@@ -37,6 +41,7 @@ const STAGES = new Set<ScheduledDispatchDiagnosticStage>([
 const JOBS = new Set<ScheduledJobName>([
   "license-expiry",
   "notification-events",
+  "notification-archive",
   "stripe-webhook-dispatch",
   "broadcast-email-delivery",
 ]);
@@ -50,6 +55,10 @@ const DETAIL_KEYS = new Set([
   "deadLettered",
   "retryable",
   "leaseLost",
+  "archived",
+  "remaining",
+  "conflicts",
+  "batches",
 ]);
 
 /** Write bounded, value-free Cron execution evidence to an explicitly bound D1. */
@@ -67,7 +76,7 @@ export async function recordScheduledDispatchDiagnostic(
 
   const details = diagnostic.details ?? {};
   const metricValues = [details.claimed, details.applied, details.ignored, details.deadLettered,
-    details.retryable, details.leaseLost];
+    details.retryable, details.leaseLost, details.archived, details.remaining, details.conflicts, details.batches];
   const labelValues = [details.status, details.code];
   const hasInvalidMetric = metricValues.some((value) => (
     value !== undefined && (!Number.isSafeInteger(value) || value < 0)

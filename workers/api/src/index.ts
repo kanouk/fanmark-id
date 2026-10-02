@@ -123,13 +123,16 @@ import {
   runScheduledLicenseExpiry,
   ScheduledLicenseExpiryError,
 } from "./license-expiry-scheduled.mjs";
-import { runScheduledNotificationEvents } from "./notifications-scheduled";
+import {
+  runScheduledNotificationArchive,
+  runScheduledNotificationEvents,
+} from "./notifications-scheduled";
 import {
   dispatchBroadcastEmailDeliveryBatch,
   snapshotBroadcastEmailDeliveryPage,
 } from "./broadcast-email-delivery-d1";
 import { handleBroadcastEmailWebhookRequest } from "./broadcast-email-webhook-d1";
-import { selectScheduledJobs } from "./scheduled-dispatch";
+import { selectScheduledJobs, type ScheduledJobName } from "./scheduled-dispatch";
 import { recordScheduledDispatchDiagnostic } from "./scheduled-dispatch-diagnostics";
 import {
   createEmojiMasterD1Repository,
@@ -1654,7 +1657,7 @@ const worker = {
     const diagnosticsEnabled = env.SCHEDULED_DISPATCH_DIAGNOSTICS?.trim() === "true";
     const writeDiagnostic = async (
       stage: "received" | "paused" | "selected" | "job_started" | "job_completed" | "job_failed",
-      jobName?: "license-expiry" | "notification-events" | "stripe-webhook-dispatch" | "broadcast-email-delivery",
+      jobName?: ScheduledJobName,
       details?: Parameters<typeof recordScheduledDispatchDiagnostic>[1]["details"],
     ): Promise<void> => {
       if (!diagnosticsEnabled || !env.SCHEDULED_DISPATCH_DIAGNOSTICS_DB) return;
@@ -1748,6 +1751,20 @@ const worker = {
           console.error(JSON.stringify({ job: "notification-events", status: "failed", code: "notification_processor_failed" }));
           throw error;
         }));
+    }
+    if (selectedJobs.has("notification-archive")) {
+      jobs.push((async () => {
+        await writeDiagnostic("job_started", "notification-archive", { status: "started" });
+        try {
+          const summary = await runScheduledNotificationArchive({ env });
+          await writeDiagnostic("job_completed", "notification-archive", summary);
+          console.log(JSON.stringify({ job: "notification-archive", ...summary }));
+        } catch {
+          await writeDiagnostic("job_failed", "notification-archive", { code: "notification_archive_failed" });
+          console.error(JSON.stringify({ job: "notification-archive", status: "failed", code: "notification_archive_failed" }));
+          throw new Error("notification_archive_failed");
+        }
+      })());
     }
     if (selectedJobs.has("stripe-webhook-dispatch")) {
       jobs.push((async () => {

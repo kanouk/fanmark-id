@@ -21,6 +21,12 @@ CREATE TABLE notifications (
   updated_at TEXT NOT NULL
 );
 
+CREATE TABLE notifications_history (
+  id TEXT PRIMARY KEY NOT NULL,
+  original_data TEXT NOT NULL CHECK (json_valid(original_data)),
+  archived_at TEXT NOT NULL
+);
+
 CREATE INDEX notifications_user_triggered_at_idx
   ON notifications (user_id, triggered_at DESC, id ASC);
 
