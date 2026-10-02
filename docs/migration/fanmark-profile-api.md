@@ -32,8 +32,12 @@ The frontend defaults to Supabase. A build may select the Worker with
 bounded response parsing, and no alternate-database fallback after selection.
 The profile edit and preview routes use the owner API in that mode. Public
 profile reads remain under the separate `VITE_PUBLIC_ACCESS_READ_BACKEND`
-selector. The settings page still reads the fanmark and access configuration
-from Supabase, and its overall save operation remains Supabase-backed.
+selector. The fanmark settings page has a separate
+`VITE_FANMARK_SETTINGS_BACKEND=worker` route for access configuration and
+profile visibility; that API is documented in
+[`fanmark-settings-api.md`](fanmark-settings-api.md). Profile content editing
+and access-mode configuration stay in separate owner-scoped API contracts.
+Both routes preserve the Supabase default for production.
 
 ## Verification and activation boundary
 
@@ -49,9 +53,10 @@ The source-shaped business schema is applied to the isolated staging D1, and
 `VITE_FANMARK_PROFILE_BACKEND=worker` are selected on the workers.dev app only.
 A live synthetic Better Auth account completed owner-profile GET/PATCH and its
 profile, license, fanmark, and Auth rows were removed and read back as zero.
-The overall fanmark settings save and access-configuration flow remain on
-Supabase; no real user data was read or written. Production and domain/DNS
-remain unchanged.
+The separate fanmark settings API also passed a synthetic staging GET/PATCH
+canary as recorded in [`fanmark-settings-api.md`](fanmark-settings-api.md).
+No real user data was read or written. Production and domain/DNS remain
+unchanged.
 
 Staging version `a6b0a110-9169-4921-9cdc-60e51a521714` also passed an integrated
 cover-image canary: upload to the R2 cover bucket, public byte readback, save

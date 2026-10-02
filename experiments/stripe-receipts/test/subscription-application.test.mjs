@@ -41,6 +41,11 @@ const PRICE_IDS = { test: TEST_PRICES, live: LIVE_PRICES };
 const acceptSql =
   `select * from public.accept_stripe_webhook_receipt($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10)`;
 let db;
+const logSetup = (message) => {
+  if (process.env.CI === "true") {
+    process.stderr.write(`[subscription-application setup] ${message}\n`);
+  }
+};
 
 async function query(sql, params = []) {
   return db.query(sql, params);
@@ -303,7 +308,9 @@ async function seedLicenseSet(count = 5) {
 }
 
 before(async () => {
+  logSetup("construct PGlite");
   db = new PGlite();
+  logSetup("create base schema");
   await db.exec(`
     create role anon nologin;
     create role authenticated nologin;
@@ -359,14 +366,23 @@ before(async () => {
       return event_id;
     end $$;
   `);
-  await db.exec(foundationSql);
-  await db.exec(leaseSql);
-  await db.exec(invoiceProjectionSql);
-  await db.exec(targetedClaimSql);
-  await db.exec(subscriptionSql);
+  logSetup("base schema ready");
+  for (const [name, sql] of [
+    ["receipt foundation", foundationSql],
+    ["dispatch leases", leaseSql],
+    ["invoice projection", invoiceProjectionSql],
+    ["targeted claim", targetedClaimSql],
+    ["subscription projection", subscriptionSql],
+  ]) {
+    logSetup(`apply ${name}`);
+    await db.exec(sql);
+    logSetup(`${name} ready`);
+  }
+  logSetup("set service role");
   await query(
     "select set_config('request.jwt.claim.role','service_role',false)",
   );
+  logSetup("setup complete");
 });
 
 beforeEach(async () => {

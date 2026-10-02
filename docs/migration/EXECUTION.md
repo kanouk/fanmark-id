@@ -1,18 +1,21 @@
 # Cloudflare移行の実行・再開手順
 
-## 2026-10-02 最新差分: 通知RPCのACLとCI timeout
+## 2026-10-02 最新差分: 通知RPC ACL、callsite分類、CI timeout
 
-PR #41 head `9b0a0ca` のActions run `36982543355` はWorker API job成功、
+PR #41 code head `4f26174` のActions run `36984142796` はWorker API job成功、
 staging application job失敗。`subscription-application.test.mjs` がTAP
-headerの後に120秒timeoutを3回起こした。前のrun `36981863610` では同じ
-suiteがretry後に成功し、今回もNode 25のローカル単独実行で8/8、receipt
-suite全体でも成功した。現時点ではCI/PGlite初期化の間欠的timeoutと扱う。次push後にCI
-を再実行し、再発したらworkflowのNode versionと失敗前後のPGlite resource
-状態を追加調査する。
+headerを出した後、120秒timeoutを3回起こし、subtest出力はなかった。
+前のrun `36981863610` ではretry後に成功した。今回、同じNode 22.6.0で当該
+ファイル8/8とStripe receipt suite全体がローカル成功した。CI固有のhang箇所は
+未特定で、次のrunに限りPGlite初期化のschema/migration段階をstderrへ出す診断を
+追加した。原因確定前にflakeと断定しない。
 
-211件のフロントエンドSupabase callsiteのうち、Realtime 8件と通知操作・
-管理画面14件をowner、data class、Cloudflare置換先まで分類した。残りは
-189件。通知数RPCについてproduction Supabaseをschema-onlyで読み戻し、
+211件のフロントエンドSupabase callsiteのうち、Auth/Auth-MFA 40件、
+本人/ファンマークプロフィール20件、お気に入り3件、Realtime 8件、通知操作・
+管理画面14件をowner、data class、Cloudflare置換先まで分類した。残りは126件。
+認証の本番/defaultはSupabaseのまま、
+stagingはBetter Authを選択する。実ユーザーのID/credential/MFA移送は#38に
+残している。通知数RPCについてproduction Supabaseをschema-onlyで読み戻し、
 `get_unread_notification_count(uuid)` が入力UUIDを認証主体と照合せず、
 `anon`にもEXECUTEを許可していることを確認した。返すのは未読件数だけで
 内容は含まれないが、既知UUIDを指定して他人の件数を読めるACL/認可差分。

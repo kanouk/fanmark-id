@@ -477,6 +477,74 @@ Reconcile the live observations with this checkout report before treating any ma
 - Map each static frontend operation to an owner, data classification, and Cloudflare replacement or retention decision. Realtime cleanup aliases are resolved to their statically subscribed table; interpolated channel topics remain visible in the Dynamic expression column. Arbitrary wrappers and indirect calls still need manual review.
 - Confirm pg_cron/pg_net schedules, Auth providers and redirect URLs, Storage buckets/policies, Realtime channels, Stripe/Resend webhooks, and deployment secrets in the live environment. None are proven by this offline report.
 
+## Semantic mapping completed slice: Authentication and MFA
+
+This slice classifies the 40 direct Auth/Auth-MFA callsites in the 211-callsite
+inventory. The production/default UI still uses Supabase Auth. The explicit
+Cloudflare staging build uses Better Auth and Worker APIs; staging synthetic
+proof does not mean existing users, password hashes, sessions, or MFA factors
+were imported. Those identity records remain deferred to #38.
+
+| Callsite(s) | Operation and owner | Data class | Cloudflare replacement and parity |
+| --- | --- | --- | --- |
+| `src/hooks/useAuth.tsx:134,149,186` | Load session, observe auth changes, and sign out the current user. | Private identity and session. | Better Auth `getSession`/`signOut` with HttpOnly Worker cookies; Worker mode skips the Supabase auth-state listener. Synthetic session and logout passed in local/staging proof. |
+| `src/components/AdminApp.tsx:88,100,137`; `src/pages/AdminAuth.tsx:42,76,89,118,172` | Admin session, password sign-in, AAL/factor checks, and sign-out. | Restricted admin identity and MFA assurance. | `CloudflareAdminAuth` uses Better Auth sign-in/TOTP and `/api/admin/session`; each protected Worker operation checks admin role and same-session, current-factor assurance. The Supabase `AdminAuth` branch remains for Supabase mode. |
+| `src/components/auth/MFAChallenge.tsx:43,73,108,120`; `src/components/auth/MFAEnrollment.tsx:37,62,82,136,148` | List, enroll, challenge, verify, or remove TOTP factors. | MFA secret, factor identity, and challenge state. | These components are only rendered by `SupabaseAdminAuth`. Cloudflare mode uses inline Better Auth `enableTotp`/`verifyTotp` flows in `CloudflareAdminAuth`; synthetic enrollment, challenge, replacement, and session-bound assurance are tested. Supabase factor secrets were not read or migrated. |
+| `src/hooks/useAuthForm.tsx:183` | Create an identity and send verification email. | Email, password credential, invitation attribution. | `POST /api/auth/sign-up/email` uses a recoverable split-D1 command; account creation remains closed until selector and Resend are configured. No real email was sent. See [invitation signup API](invitation-signup-api.md). |
+| `src/hooks/useAuthForm.tsx:259` | Sign in with email and password. | Password credential and session. | Better Auth email sign-in verifies the existing D1 account and sets a secure session cookie. Synthetic bcrypt-compatible credentials passed; actual Supabase hashes/users remain unmigrated. |
+| `src/hooks/useAuthForm.tsx:304,340`; `src/pages/ForgotPassword.tsx:65` | Request password reset and resend signup verification. | Email address and one-time token/link. | Better Auth callbacks send through Resend and return no token to the browser. Capability remains false while Resend settings are absent. No real delivery was attempted. |
+| `src/hooks/useAuthForm.tsx:375,403,431,459` | Start Google, GitHub, Discord, or Apple OAuth. | Provider identity, OAuth state, and callback. | Better Auth supports the four provider paths and state-bound synthetic callback tests. Real credentials and provider-console callback verification are absent, so staging capabilities list no enabled providers. |
+| `src/hooks/usePasswordReset.tsx:34,47,83` | Validate a recovery session/token and set a new password. | Password credential and short-lived recovery token. | Worker mode requires the Better Auth reset token and calls its reset-password API; the Supabase session/setSession/updateUser path remains conditional on Supabase mode. Resend-gated delivery is unverified. |
+| `src/pages/PasswordSetup.tsx:89` | Complete the first-password setup gate. | Password credential and own-account setup state. | Better Auth `setupPassword` updates the credential and owner profile through the Worker; the Supabase password/profile updates remain the legacy branch. Synthetic API contract is tested. |
+| `src/pages/Profile.tsx:135` | Change the signed-in user's password. | Current/new password credential. | Better Auth `changePassword` uses the authenticated session; the Supabase `updateUser` call runs only in Supabase mode. |
+| `src/hooks/useFanmarkSearch.tsx:254`; `src/lib/profile-utils.ts:27`; `src/hooks/useSubscription.tsx:84` | Read current user/session before protected profile, search, or subscription behavior. | Private identity and session. | Worker-backed profile/search/subscription APIs derive the owner from Better Auth cookies; no client-supplied user ID selects the account. Existing user projections remain in their deferred data phase. |
+| `src/components/AdminBroadcastEmail.tsx:246,285,319` | Read the current administrator session before email-management actions. | Restricted administrator identity. | Worker calls use same-origin Better Auth cookies, then each admin API independently checks role and MFA assurance. Broadcast delivery remains disabled until reviewed Resend/provider selectors are configured. |
+
+All 40 direct Auth/Auth-MFA callsites now have a retention or replacement
+decision. These mappings document checked-in branches and synthetic evidence;
+they do not establish real OAuth/Resend acceptance or user credential parity.
+See [Auth feasibility](auth-feasibility.md) for the identity migration gates.
+
+## Semantic mapping completed slice: Own and fanmark profiles
+
+This slice classifies 20 profile and user-settings operations. Worker routes
+derive the account or active license from Better Auth and do not accept a
+caller-supplied owner. The checked-in profile rows and Storage objects remain
+in Supabase until the separate real-user/data phase.
+
+| Callsite(s) | Operation and owner | Data class | Cloudflare replacement and parity |
+| --- | --- | --- | --- |
+| `src/hooks/useAuth.tsx:52`; `src/hooks/useProfile.tsx:23,120`; `src/hooks/usePreferredLanguage.ts:28`; `src/lib/profile-utils.ts:34` | Read or update the signed-in user's profile and preferred language. | Private account/profile fields, including plan and password-setup state. | `GET/PATCH /api/me/profile`; session owns the row. PATCH allows display name, avatar URL, and language; plan, Stripe IDs, invitation fields, and password-setup state are not client-writable. Existing rows are not imported. |
+| `src/hooks/useProfile.tsx:145`; `src/lib/profile-utils.ts:59` | Check whether a candidate username is available, excluding the current user. | Username and account existence signal. | `GET /api/me/username-availability`; Worker derives the excluded ID from Better Auth and returns only a boolean. It is a read-only check and does not reserve the name. |
+| `src/pages/PasswordSetup.tsx:92`; `src/pages/Profile.tsx:139` | Clear `requires_password_setup` after a password change. | Private account security state. | Better Auth `setupPassword` and `changePassword` own these transitions; Worker mode does not expose a generic profile flag write. The direct table writes remain in Supabase mode. |
+| `src/hooks/useAuthForm.tsx:204` | Record the invitation attribution on the new user's profile. | Private signup attribution. | The split-D1 signup command creates the source-shaped profile and consumes the reserved invitation atomically; the legacy post-signup update runs only in Supabase mode. |
+| `src/components/AdminBroadcastEmail.tsx:192` | Count recipients matching allowlisted plan, language, and date filters. | Aggregate user population count. | `POST /api/admin/broadcast-emails/estimate` requires admin role and MFA and returns only `{count}`; it does not expose user IDs or addresses. Delivery remains selector/secret gated. |
+| `src/hooks/useExtensionCouponAdmin.ts:183` | Enrich coupon-use records with a user's display name or username. | Restricted user display label. | `GET /api/admin/extension-coupons/:couponId/usages` returns bounded display labels only to an MFA-authorized admin; it does not expose email or other profile fields. |
+| `src/components/FanmarkSettings.tsx:506,514,524`; `src/hooks/useEmojiProfile.tsx:73,115,154`; `src/pages/FanmarkSettingsPage.tsx:113` | Read, create, update, or preserve `fanmark_profiles` visibility for the owner's active fanmark. | Owner profile content and publication state. | Profile editor/preview use `GET/PATCH /api/me/fanmarks/{fanmarkId}/profile`; access-mode settings use `GET/PATCH /api/me/fanmarks/{fanmarkId}/settings`. Worker checks active ownership and preserves omitted bio/theme fields. The two Worker APIs are separate from the public read route. |
+| `src/hooks/useEmojiProfile.tsx:51` | Read a profile for public display. | Public profile projection; private profiles remain private. | `GET /api/fanmarks/public-profile/:licenseId` returns only a published, non-password-protected projection and omits owner/account identifiers. See [public access contract](public-access-contract.md). |
+
+The route contracts and synthetic staging evidence are in
+[own-profile-api.md](own-profile-api.md), [fanmark-profile-api.md](fanmark-profile-api.md),
+[fanmark-settings-api.md](fanmark-settings-api.md), and
+[public-access-contract.md](public-access-contract.md). None of these reads or
+tests imported real account/profile rows.
+
+## Semantic mapping completed slice: Favorites
+
+This slice classifies the three favorite RPC callsites. Favorites are private
+per-user rows; source history remains in Supabase until the deferred user-data
+phase. Worker mode uses a session-bound route and active emoji Master D1.
+
+| Callsite | Operation and owner | Data class | Cloudflare replacement and parity |
+| --- | --- | --- | --- |
+| `src/lib/favorites-backend.ts:13` | List the signed-in user's saved fanmarks and their public discovery counters. | Private favorite relation plus aggregate discovery counts. | `GET /api/me/favorites`; Worker derives owner from Better Auth, normalizes exact bigint counts as decimal strings, and caps the response at 500 rows. |
+| `src/lib/favorites-backend.ts:22` | Add a favorite for the signed-in user. | Private favorite relation and public favorite-count/event effects. | `POST /api/me/favorites`; active Master D1 resolves canonical emoji IDs, and one D1 batch updates the relation, count, and event with idempotent change guards. |
+| `src/lib/favorites-backend.ts:33` | Remove a favorite for the signed-in user. | Private favorite relation and public favorite-count effect. | `DELETE /api/me/favorites`; same owner check and atomic count/event reconciliation, with a zero floor. |
+
+Synthetic local and workers.dev staging add/list/remove canaries passed and
+cleaned their favorite, event, and discovery rows. No historical favorite
+records were copied. Details are in [favorites API](favorites-api.md).
+
 ## Semantic mapping completed slice: Notifications data operations
 
 This slice classifies the 14 inbox and notification-admin callsites in the
@@ -517,7 +585,7 @@ real-user migration or provider acceptance.
 
 | Callsite | Operation and owner | Data class | Cloudflare replacement and parity |
 | --- | --- | --- | --- |
-| `src/components/layout/AppHeader.tsx:118` | Subscribe to any change in the signed-in user's `notifications`; recipient owns the read, system/admin workflows create rows. | Private user notification content and delivery/read state. | `GET /api/me/notifications?limit=5` plus `/api/me/notifications/unread-count`; Worker mode polls every 30 seconds while visible. This replaces push updates with bounded polling. |
+| `src/components/layout/AppHeader.tsx:117` | Subscribe to any change in the signed-in user's `notifications`; recipient owns the read, system/admin workflows create rows. | Private user notification content and delivery/read state. | `GET /api/me/notifications?limit=5` plus `/api/me/notifications/unread-count`; Worker mode polls every 30 seconds while visible. This replaces push updates with bounded polling. |
 | `src/components/layout/AppHeader.tsx:135` | Remove the component's Supabase channel on cleanup. | No persisted data; browser subscription lifecycle only. | Worker mode creates no channel. React Query's component lifecycle and polling configuration own cleanup. |
 | `src/pages/Notifications.tsx:66` | Subscribe to any change in the signed-in user's `notifications` and reload up to 50 rows; recipient owns the read. | Private user notification content and delivery/read state. | `GET /api/me/notifications?limit=50`; Worker mode polls every 30 seconds. Immediate cross-device refresh becomes eventual polling. |
 | `src/pages/Notifications.tsx:83` | Remove the page's Supabase channel on cleanup. | No persisted data; browser subscription lifecycle only. | Worker mode creates no channel; the 30-second interval is cleared when the page unmounts. |
@@ -528,6 +596,6 @@ real-user migration or provider acceptance.
 
 The route contracts are documented in [notifications-api.md](notifications-api.md),
 [own-profile-api.md](own-profile-api.md), and the subscription API implementation
-in `workers/api/src/subscription-d1-api.ts`. The remaining 189 callsites still
+in `workers/api/src/subscription-d1-api.ts`. The remaining 126 callsites still
 need equivalent owner, data-class, and replacement/retention classification;
 wrapper and indirect-call review also remains open.
