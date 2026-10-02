@@ -1,6 +1,6 @@
 # Full schema conversion generator
 
-`schema-convert.mjs` v25 is a private, catalog-only preparation tool. It
+`schema-convert.mjs` v26 is a private, catalog-only preparation tool. It
 converts the JSON emitted by `scripts/migration/schema-readiness.sql` into deterministic
 SQLite/D1 table and index SQL plus a machine-readable report of unresolved
 parity gates. It does not read application rows, contact Supabase, apply SQL,
@@ -513,3 +513,22 @@ trigger scopes. The timestamp-writer audit found 79 defaults and 99 explicit
 column-list INSERTs, with 11 defaults lacking a direct literal writer and no
 unparsed INSERTs. These counts cover different scopes; static column coverage
 does not prove runtime timestamp semantics. No source rows were queried.
+
+## Schema converter v26: reviewed D1 operation timestamps
+
+Using the same explicit `worker_operation_explicit_timestamp` disposition,
+v26 reviews exactly five current columns: `waitlist.created_at`,
+`fanmark_discoveries.first_seen_at`, `fanmark_discoveries.last_seen_at`,
+`fanmark_events.created_at`, and `fanmark_favorites.created_at`. The Worker writers bind an explicit canonical
+six-digit UTC operation timestamp; integration tests read back the waitlist,
+search, favorite-add, and favorite-remove paths. This accepts D1 operation time
+as the target contract and does not claim PostgreSQL transaction-time or
+sub-millisecond clock equivalence.
+
+The latest schema-only catalog was observed at `2026-10-02T12:10:27Z` and
+again contained 40 tables, 406 columns, 144 constraints, 139 indexes, 36
+triggers, 77 RLS policies, 58 functions, and one view. Converter v26 reviews
+all 11 exact Auth references and the five timestamp columns, while remaining
+`deployable: false` with 62 timestamp-operation locations and the three
+functions/RLS/trigger catalog scopes. Synthetic D1 readback covers both
+new-discovery insert paths. No source rows were queried.

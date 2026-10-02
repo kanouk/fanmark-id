@@ -1,5 +1,27 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 v26：Worker operation timestampsの限定レビュー（12:10 UTC）
+
+linked Supabaseへのread-only catalog queryを再実行し、`2026-10-02T12:10:27Z`時点で
+40 tables / 406 columns / 144 constraints / 139 indexes / 36 triggers /
+77 RLS policies / 58 functions / one viewを確認した。catalog metadataのみを読み、
+source table rowsは取得していない。
+
+converter v26は5列のWorker書込みを、現行コード・明示的UTC formatter・D1
+統合readbackで照合した: `waitlist.created_at`, `fanmark_discoveries.first_seen_at`,
+`fanmark_discoveries.last_seen_at`, `fanmark_events.created_at`,
+`fanmark_favorites.created_at`。D1のoperation timeを
+正規UTC形式で保存する契約を採用し、PostgreSQL transaction timeやsub-millisecond
+clockとの厳密な同値性は主張しない。新規search/favorite discoveryの両insert経路で
+first/last seen、event、favorite timestampsが同一のcanonical valueになることを
+readbackした。
+
+value-free credential descriptor付きの最新reportはschema version 26、11 Auth FKを
+review済み、blocking 65 locations（timestamp 62、functions/RLS/triggers各1）で
+`deployable: false`。converter tests 26/26、`npm run test:migration-data` 222/222、
+favorites D1 tests 7/7、waitlist signup D1 tests 6/6が成功。PR #41の直前head `d7acab7`の
+required CIも両job successだが、このv26変更はpush後のCI確認が必要。
+
 ## 2026-10-02 v25再確認：最新schema-only catalog（12:03 UTC）
 
 linked Supabaseへのread-only queryを再実行し、`2026-10-02T12:03:07Z`時点で

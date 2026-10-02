@@ -193,23 +193,73 @@ describe("Better Auth favorites D1 API", () => {
     expect(await response.json()).toEqual({ schemaVersion: 1, recorded: true });
 
     const discovery = await businessDatabase?.prepare(
-      "SELECT emoji_ids AS emojiIds, normalized_emoji_ids AS normalizedIds, search_count AS searchCount FROM fanmark_discoveries WHERE id = ?",
-    ).bind(discoveryId).first<{ emojiIds: string; normalizedIds: string; searchCount: number }>();
+      "SELECT emoji_ids AS emojiIds, normalized_emoji_ids AS normalizedIds, search_count AS searchCount, last_seen_at AS lastSeenAt FROM fanmark_discoveries WHERE id = ?",
+    ).bind(discoveryId).first<{ emojiIds: string; normalizedIds: string; searchCount: number; lastSeenAt: string }>();
     expect(discovery).toEqual({
       emojiIds: JSON.stringify([tonedEmojiId]),
       normalizedIds: JSON.stringify([baseEmojiId]),
       searchCount: 5,
+      lastSeenAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u),
     });
     const events = await businessDatabase?.prepare(
-      "SELECT event_type AS type, user_id AS userId, discovery_id AS discoveryId, normalized_emoji_ids AS normalizedIds FROM fanmark_events ORDER BY id",
-    ).all<{ type: string; userId: string | null; discoveryId: string; normalizedIds: string }>();
+      "SELECT event_type AS type, user_id AS userId, discovery_id AS discoveryId, normalized_emoji_ids AS normalizedIds, created_at AS createdAt FROM fanmark_events ORDER BY id",
+    ).all<{ type: string; userId: string | null; discoveryId: string; normalizedIds: string; createdAt: string }>();
     expect(events?.results).toEqual([{
       type: "search", userId: null, discoveryId,
       normalizedIds: JSON.stringify([baseEmojiId]),
+      createdAt: discovery?.lastSeenAt,
     }]);
+    expect(events?.results?.[0]?.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
     expect(searchLimiterKeys).toHaveLength(1);
     expect(searchLimiterKeys[0]).toMatch(/^fanmark-search:v1:[0-9a-f]{64}$/u);
     expect(searchLimiterKeys[0]).not.toContain(searchSyntheticIp);
+  });
+
+  it("binds one canonical timestamp on new search and favorite discovery writes", async () => {
+    const searchIds = [baseEmojiId, baseEmojiId];
+    const searchKey = JSON.stringify(searchIds);
+    const search = await request("/api/fanmarks/search/record", {
+      method: "POST",
+      headers: { "content-type": "application/json", "cf-connecting-ip": searchSyntheticIp },
+      body: JSON.stringify({ input_emoji_ids: searchIds }),
+    }, {
+      FANMARK_SEARCH_BACKEND: "d1",
+      FANMARK_SEARCH_LIMITER: searchLimiter,
+      CORS_ALLOWED_ORIGINS: appOrigin,
+    });
+    expect(search.status).toBe(200);
+    const searchedDiscovery = await businessDatabase?.prepare(
+      "SELECT first_seen_at AS firstSeenAt, last_seen_at AS lastSeenAt FROM fanmark_discoveries WHERE normalized_emoji_ids = ?",
+    ).bind(searchKey).first<{ firstSeenAt: string; lastSeenAt: string }>();
+    const searchEvent = await businessDatabase?.prepare(
+      "SELECT created_at AS createdAt FROM fanmark_events WHERE event_type = 'search' AND normalized_emoji_ids = ?",
+    ).bind(searchKey).first<{ createdAt: string }>();
+    expect(searchedDiscovery?.firstSeenAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+    expect(searchedDiscovery?.lastSeenAt).toBe(searchedDiscovery?.firstSeenAt);
+    expect(searchEvent?.createdAt).toBe(searchedDiscovery?.firstSeenAt);
+
+    const cookie = await signIn(ownerEmail);
+    const favoriteIds = [baseEmojiId, baseEmojiId, baseEmojiId];
+    const favoriteKey = JSON.stringify(favoriteIds);
+    const favorite = await request("/api/me/favorites", {
+      method: "POST",
+      headers: { Cookie: cookie, "content-type": "application/json" },
+      body: JSON.stringify({ input_emoji_ids: favoriteIds, input_display_fanmark: "👋👋👋" }),
+    });
+    expect(favorite.status).toBe(200);
+    const favoritedDiscovery = await businessDatabase?.prepare(
+      "SELECT first_seen_at AS firstSeenAt, last_seen_at AS lastSeenAt FROM fanmark_discoveries WHERE normalized_emoji_ids = ?",
+    ).bind(favoriteKey).first<{ firstSeenAt: string; lastSeenAt: string }>();
+    const favoriteRow = await businessDatabase?.prepare(
+      "SELECT created_at AS createdAt FROM fanmark_favorites WHERE user_id = ? AND normalized_emoji_ids = ?",
+    ).bind(ownerId, favoriteKey).first<{ createdAt: string }>();
+    const favoriteEvent = await businessDatabase?.prepare(
+      "SELECT created_at AS createdAt FROM fanmark_events WHERE event_type = 'favorite_add' AND normalized_emoji_ids = ?",
+    ).bind(favoriteKey).first<{ createdAt: string }>();
+    expect(favoritedDiscovery?.firstSeenAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+    expect(favoritedDiscovery?.lastSeenAt).toBe(favoritedDiscovery?.firstSeenAt);
+    expect(favoriteRow?.createdAt).toBe(favoritedDiscovery?.firstSeenAt);
+    expect(favoriteEvent?.createdAt).toBe(favoritedDiscovery?.firstSeenAt);
   });
 
   it("fails closed on rate limiting and malformed search writes", async () => {
@@ -267,13 +317,20 @@ describe("Better Auth favorites D1 API", () => {
     expect(addResults.map((result) => result.added).sort()).toEqual([false, true]);
 
     const discovery = await businessDatabase?.prepare(
-      "SELECT emoji_ids AS emojiIds, normalized_emoji_ids AS normalizedIds, favorite_count AS favoriteCount FROM fanmark_discoveries WHERE id = ?",
-    ).bind(discoveryId).first<{ emojiIds: string; normalizedIds: string; favoriteCount: number }>();
+      "SELECT emoji_ids AS emojiIds, normalized_emoji_ids AS normalizedIds, favorite_count AS favoriteCount, last_seen_at AS lastSeenAt FROM fanmark_discoveries WHERE id = ?",
+    ).bind(discoveryId).first<{ emojiIds: string; normalizedIds: string; favoriteCount: number; lastSeenAt: string }>();
     expect(discovery?.emojiIds).toBe(JSON.stringify([tonedEmojiId]));
     expect(discovery?.normalizedIds).toBe(JSON.stringify([baseEmojiId]));
     expect(discovery?.favoriteCount).toBe(1);
-    const events = await businessDatabase?.prepare("SELECT event_type AS type FROM fanmark_events ORDER BY id").all<{ type: string }>();
+    expect(discovery?.lastSeenAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+    const favorite = await businessDatabase?.prepare(
+      "SELECT created_at AS createdAt FROM fanmark_favorites WHERE user_id = ? AND normalized_emoji_ids = ?",
+    ).bind(ownerId, JSON.stringify([baseEmojiId])).first<{ createdAt: string }>();
+    expect(favorite?.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+    const events = await businessDatabase?.prepare("SELECT event_type AS type, created_at AS createdAt FROM fanmark_events ORDER BY id")
+      .all<{ type: string; createdAt: string }>();
     expect(events?.results?.map((row) => row.type)).toEqual(["favorite_add"]);
+    expect(events?.results?.[0]?.createdAt).toBe(favorite?.createdAt);
   });
 
   it("returns only the session owner's favorites with the existing favorite DTO", async () => {
@@ -340,8 +397,10 @@ describe("Better Auth favorites D1 API", () => {
     const discovery = await businessDatabase?.prepare("SELECT favorite_count AS favoriteCount FROM fanmark_discoveries WHERE id = ?")
       .bind(discoveryId).first<{ favoriteCount: number }>();
     expect(discovery?.favoriteCount).toBe(1);
-    const events = await businessDatabase?.prepare("SELECT event_type AS type FROM fanmark_events ORDER BY id").all<{ type: string }>();
+    const events = await businessDatabase?.prepare("SELECT event_type AS type, created_at AS createdAt FROM fanmark_events ORDER BY id")
+      .all<{ type: string; createdAt: string }>();
     expect(events?.results?.map((row) => row.type)).toEqual(["favorite_add", "favorite_remove"]);
+    expect(events?.results?.every((row) => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u.test(row.createdAt))).toBe(true);
     const remaining = await businessDatabase?.prepare("SELECT count(*) AS count FROM fanmark_favorites").first<{ count: number }>();
     expect(remaining?.count).toBe(1);
   });

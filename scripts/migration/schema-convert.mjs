@@ -17,7 +17,7 @@ import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 25;
+export const SCHEMA_CONVERSION_VERSION = 26;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -96,6 +96,57 @@ const REVIEWED_AUTH_FOREIGN_KEYS = new Map([
   }],
 ]);
 const REVIEWED_RUNTIME_TIMESTAMP_WRITES = new Map([
+  ["fanmark_discoveries.first_seen_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Search and favorite operations capture one timestamp and bind it explicitly when inserting a new discovery. D1 stores canonical UTC operation time; PostgreSQL transaction-time or sub-millisecond clock equivalence is not claimed.",
+    evidence: [
+      "workers/api/src/fanmark-search-d1-api.ts",
+      "workers/api/src/favorites-d1-api.ts",
+      "workers/api/test/favorites-d1.test.ts",
+      "workers/api/src/availability.ts",
+      "workers/api/src/utc-timestamp.mjs",
+    ],
+  }],
+  ["fanmark_discoveries.last_seen_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Search and favorite operations capture one timestamp, bind it explicitly on discovery writes, and update last_seen_at from that bound value. It is a canonical D1 operation time, not PostgreSQL transaction-time or sub-millisecond clock equivalence.",
+    evidence: [
+      "workers/api/src/fanmark-search-d1-api.ts",
+      "workers/api/src/favorites-d1-api.ts",
+      "workers/api/test/favorites-d1.test.ts",
+      "workers/api/src/availability.ts",
+      "workers/api/src/utc-timestamp.mjs",
+    ],
+  }],
+  ["fanmark_events.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The search and favorite add/remove event writers bind the canonical operation timestamp captured before their D1 batch; the integration test reads back all three event paths.",
+    evidence: [
+      "workers/api/src/fanmark-search-d1-api.ts",
+      "workers/api/src/favorites-d1-api.ts",
+      "workers/api/test/favorites-d1.test.ts",
+      "workers/api/src/availability.ts",
+      "workers/api/src/utc-timestamp.mjs",
+    ],
+  }],
+  ["fanmark_favorites.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The favorite-add writer binds the canonical operation timestamp captured before the D1 batch; integration coverage reads back the favorite and matching event timestamps.",
+    evidence: [
+      "workers/api/src/favorites-d1-api.ts",
+      "workers/api/test/favorites-d1.test.ts",
+      "workers/api/src/utc-timestamp.mjs",
+    ],
+  }],
+  ["waitlist.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "The only Worker INSERT writer captures the operation time and binds it through the shared six-digit UTC formatter. D1 keeps the operation timestamp explicitly; this does not claim PostgreSQL transaction-time or sub-millisecond clock equivalence.",
+    evidence: [
+      "workers/api/src/waitlist-signup-d1-api.ts",
+      "workers/api/test/waitlist-signup-d1.test.ts",
+      "workers/api/src/utc-timestamp.mjs",
+    ],
+  }],
   ["notifications_history.archived_at", {
     code: "scheduled_worker_explicit_timestamp",
     reason: "The D1 notification archive operation binds one explicit canonical UTC timestamp for each scheduled archive invocation; no table default is used. The Worker derives this timestamp from its operation Date and emits six-digit UTC text.",

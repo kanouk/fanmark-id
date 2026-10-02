@@ -1,8 +1,9 @@
 # Cloudflare migration handoff
 
 Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
-open and draft. Latest head `0e16d9f` passed both required CI jobs in run
-`37004143377`; CI does not deploy the Worker. The latest recorded
+open and draft. Prior head `d7acab7` passed both required CI jobs in run
+`37004977442`; the v26 timestamp review below requires fresh CI after push.
+CI does not deploy the Worker. The latest recorded
 workers.dev-only staging version is
 version `d2330dd1-ce17-41c0-99d2-a81b242c412d` at 100%. An earlier run
 `36991654600` exposed an intermittent 120-second
@@ -66,22 +67,30 @@ staging. The local v25 change now records only the 11 exact `auth.users(id)`
 constraints as reviewed cross-database identity/deletion dispositions; it emits
 no Auth foreign keys into D1 SQL and unknown or changed constraints remain
 blocking. The importer still requires read-only Auth D1 identity preflight
-before business writes. Functions/RLS/triggers and 67 operation-owned timestamp
-defaults remain blocking, so the converter stays `deployable: false`.
+before business writes. Converter v26 also reviews five exact Worker-owned
+timestamps: `waitlist.created_at`, `fanmark_discoveries.first_seen_at`,
+`fanmark_discoveries.last_seen_at`, `fanmark_events.created_at`, and
+`fanmark_favorites.created_at`. These bind a canonical UTC operation time;
+exact PostgreSQL transaction-time and sub-millisecond equivalence are not
+claimed. The other 62 timestamp defaults and functions/RLS/triggers remain
+blocking, so the converter stays `deployable: false`.
 A guarded synthetic post-write rehearsal passed on 2026-10-02: the Stripe
 effect ran once, D1 Time Travel and encrypted R2 restore preserved admin MFA
 and the avatar, and five frozen writes were rejected. Provider-backed
 acceptance and production stop/recovery targets remain open.
 
-The latest schema-only Supabase query completed at `2026-10-02T12:03:07Z` and
-again returned 40 tables / 406 columns / 58 functions / 36 triggers / 77 RLS
-policies. Converter v25 has 4 groups / 70 blocking locations: 67
-timestamp-default operations and functions/RLS/triggers. It separately reports
-all 11 exact Auth FK dispositions, verifies those definitions against
+The latest schema-only Supabase query completed at `2026-10-02T12:10:27Z` and
+again returned 40 tables / 406 columns / 144 constraints / 139 indexes /
+58 functions / 36 triggers / 77 RLS policies / one view. Converter v26 has
+4 groups / 65 blocking locations: 62 timestamp-default operations and
+functions/RLS/triggers. It separately reports all 11 exact Auth FK dispositions,
+verifies those definitions against
 `supabase/remote_schema.sql`, and preserves the D1 importer's Auth identity
-preflight. Converter tests pass 24/24, account-deletion D1 tests pass 5/5, and
-the complete local migration suite passes 220/220. A fresh 40-table synthetic importer replay passed
-40/40 checkpoints with 12 synthetic rows, six Auth identity lookups, two
+preflight. Converter tests pass 26/26, the complete local migration suite
+passes 222/222, favorites D1 tests pass 7/7, and waitlist signup D1 tests pass
+6/6. A fresh
+40-table synthetic importer replay on the earlier 11:17 catalog passed 40/40
+checkpoints with 12 synthetic rows, six Auth identity lookups, two
 credential transforms, one durable inactive-credential deferral, exact
 timestamp readback, and conflicting-coverage rejection. It remains
 `public_rows_reconciled`; full migration reconciliation is false. It touched
