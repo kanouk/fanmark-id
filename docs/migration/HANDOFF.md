@@ -12,8 +12,9 @@ also proves an Origin/authorization refusal on the operator route cannot wake
 the queue through its finally path. Existing notification tests pass 15/15,
 general API tests 56/56, reset regression 15/15, migration-data 246/246,
 Worker typecheck, targeted ESLint and both local-alarm/staging dry-runs pass.
-The previous documentation-head CI `37046873764` passed both jobs; CI for these
-new changes remains required.
+Code head `41b5d50` passed both CI jobs in run `37050466908`; the watcher
+exited 0 and a fresh run readback confirmed completed/success. The previous
+documentation-head CI `37046873764` also passed both jobs.
 
 `--notification-alarm-roundtrip` is now prepared in the TOTP smoke. Its fixed
 target guard requires all three staging D1s, no production route, SQLite class
@@ -27,11 +28,15 @@ another exact delivery, retained Master/config/catalog fingerprints and scoped
 cleanup. The target guard has 2/2 local tests; syntax/lint pass. This new smoke
 has not run remotely and is deliberately refused by the current Cron config.
 
-Current remote checkpoint remains Worker `13dca8cf`, Business ledger 24 and
-minute notification Cron. Local ledger is 25; remote 0024/DO namespace/selector
+Fresh dedicated-account remote readback confirmed Worker `13dca8cf` at 100%,
+canonical Business ledger 24 immediately before 0024, all source-owned rows
+across the 40 source tables totaling 0, notification/event/profile rows 0,
+eight user-owned Auth table counts 0 and wake schema absent. Only the three
+existing secret names remain; no provider secret is registered. Current remote
+notification scheduling remains the minute Cron. Local ledger is 25; remote 0024/DO namespace/selector
 activation are pending. Next: green CI; fresh identity/empty-row/ledger guard;
-prepare alarm staging config and update existing Cron-target guards; apply and
-read back 0024; build/dry-run/deploy only workers.dev; run the pinned alarm smoke
+prepare alarm staging config and update existing Cron-target guards, local
+processor overrides and disposable Worker isolation; apply and read back 0024; build/dry-run/deploy only workers.dev; run the pinned alarm smoke
 and independent final readback. The D1-to-DO commit gap remains replayable,
 not atomic; a hard missed bridge needs the next mutation or MFA repair. Broader
 functions/RLS/triggers/provider/CPU/mobile gates remain open. See

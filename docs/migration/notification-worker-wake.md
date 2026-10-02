@@ -100,10 +100,21 @@ checks the deployed alarm is NULL before removing MFA/Auth identities. Monotonic
 MFA and notification wake generations are retained. A failed cleanup retains the
 journal for scoped recovery and is not an accepted rehearsal.
 
-Before enabling: require green CI, fixed staging account/bindings/version,
+Code head `41b5d50` passed both CI jobs in run `37050466908`. Fresh account,
+deployment, canonical 24-ledger / immediately-before-0024, empty source-owned
+rows across all 40 source tables, eight empty Auth tables and absent wake-schema
+readback confirm the unmodified staging checkpoint; provider secrets remain
+absent. Evidence files are `/tmp/fanmark-notification-wake-ci.log`,
+`/tmp/fanmark-notification-wake-source-preflight.json` and the matching
+current-business/current-auth/deployments/identity/secret-names JSON files.
+
+Before enabling: require green CI for activation changes, fixed staging account/bindings/version,
 empty source/Auth rows and private recovery journal, apply/read back 0024 and
 its ledger/triggers, add the SQLite namespace/class migration, and replace
-notification polling with the alarm mode. Keep billing/email selectors closed.
+notification polling with the alarm mode. Update existing Cron-target guards,
+local processor overrides and disposable Worker configuration isolation before
+activation; they currently assume the minute-Cron config. Keep billing/email
+selectors closed.
 The synthetic acceptance must prove a real API-created event wakes delivery,
 protected status reads a real alarm then NULL after drain, post-commit recovery
 works, master baselines remain intact and exact Auth/business/guard cleanup

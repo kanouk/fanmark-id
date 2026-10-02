@@ -12,7 +12,8 @@
 全25 Business migrationを適用したworkerd D1/SQLite DO suite 17/17、既存通知15/15、
 general API 56/56、reset regression 15/15、migration-data 246/246、Worker typecheck、
 ESLint、alarm local/staging dry-run成功。前docs headのCI `37046873764`は両job成功を
-live確認した。今回のcode/harness CIはこれから確認する。
+live確認した。今回のcode head `41b5d50` / CI `37050466908`も両job成功、
+watcher exit 0とfresh run readbackのcompleted/successを確認した。
 
 TOTP smokeの`--notification-alarm-roundtrip`を準備した。固定account/version/D1、
 SQLite namespace/class、dailyのみのCron、provider/expiry/archive selector無効、
@@ -23,7 +24,10 @@ due-time更新/配信、Master/設定/catalog保持とAuth cleanupを検証す�
 guard test 2/2とsyntax/lint成功。現在の設定では検証を拒否する。
 
 remoteはWorker `13dca8cf`、Business ledger 24、旧毎分Cronのまま。0024、namespace、
-selectorは未適用で、alarm staging acceptanceは未実施。次にCI後、既存Cron guardを
+selectorは未適用で、alarm staging acceptanceは未実施。fresh専用account readbackで
+canonical 24 ledger / 0024直前、40 source tableのuserdata合計0、8 Auth counts 0、
+notification/event/profile 0、wake schemaなしとprovider secret未登録を確認した。
+次に既存Cron guard・local processor override・disposable Worker isolationを
 新設定へ対応させ、fresh preflight→0024 exact apply/readback→workers.dev配備→version
 固定smokeと独立readbackを行う。D1/DO間は1transactionではなく、hard interruptionの
 commit-to-bridge gapにはreplay/運用復旧が必要。包括source gateやprovider/CPU/mobileを
