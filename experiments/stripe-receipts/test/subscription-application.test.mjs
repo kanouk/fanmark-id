@@ -24,6 +24,61 @@ const targetedClaimSql = await migration(
 const subscriptionSql = await migration(
   "20260929210000_add_stripe_subscription_projection.sql",
 );
+const baseSchemaStatements = [
+  "create role anon nologin",
+  "create role authenticated nologin",
+  "create role service_role nologin",
+  "create schema auth",
+  `create function auth.role() returns text language sql stable
+    as $$ select current_setting('request.jwt.claim.role', true) $$`,
+  "create type public.user_plan as enum ('free','creator','max','business','admin')",
+  `create table public.user_settings (
+    user_id uuid primary key, stripe_customer_id text unique, plan_type public.user_plan not null default 'free',
+    updated_at timestamptz not null default now()
+  )`,
+  `create table public.user_subscriptions (
+    id uuid primary key default gen_random_uuid(), user_id uuid not null, stripe_customer_id text not null,
+    stripe_subscription_id text not null, product_id text not null, status text not null,
+    current_period_start timestamptz, current_period_end timestamptz, cancel_at_period_end boolean default false,
+    price_id text, amount integer, currency text, interval text, interval_count integer,
+    payment_failure_at timestamptz, next_payment_attempt timestamptz, payment_failure_type text,
+    updated_at timestamptz default now(), unique(user_id,stripe_subscription_id)
+  )`,
+  "create table public.system_settings (setting_key text primary key, setting_value text, is_public boolean not null default false)",
+  "create table public.fanmarks (id uuid primary key, user_input_fanmark text not null, short_id text)",
+  `create table public.fanmark_licenses (
+    id uuid primary key, fanmark_id uuid not null, user_id uuid, license_start timestamptz not null,
+    license_end timestamptz, status text not null default 'active', display_fanmark text,
+    grace_expires_at timestamptz, is_returned boolean not null default false, excluded_at timestamptz,
+    created_at timestamptz not null default now(), updated_at timestamptz not null default now()
+  )`,
+  "create table public.fanmark_transfer_codes (id uuid primary key default gen_random_uuid(), license_id uuid not null, status text not null)",
+  "create table public.fanmark_favorites (fanmark_id uuid not null, user_id uuid not null, display_fanmark text)",
+  `create table public.audit_logs (
+    id uuid primary key default gen_random_uuid(), user_id uuid, action text not null,
+    resource_type text not null, resource_id text, request_id text, metadata jsonb, created_at timestamptz not null default now()
+  )`,
+  `create table public.notification_events (
+    id uuid primary key default gen_random_uuid(), event_type text not null, event_version integer default 1,
+    source text not null, payload jsonb not null, trigger_at timestamptz default now(), dedupe_key text,
+    status text default 'pending', created_at timestamptz default now(), updated_at timestamptz default now()
+  )`,
+  `create function public.create_notification_event(event_type_param text, payload_param jsonb,
+    source_param text default 'system', dedupe_key_param text default null,
+    trigger_at_param timestamptz default now()) returns uuid language plpgsql as $$
+  declare event_id uuid;
+  begin
+    if dedupe_key_param is not null then
+      select id into event_id from public.notification_events
+        where dedupe_key = dedupe_key_param and status in ('pending','processing') limit 1;
+      if found then return event_id; end if;
+    end if;
+    insert into public.notification_events(event_type,payload,source,dedupe_key,trigger_at,status)
+      values(event_type_param,payload_param,source_param,dedupe_key_param,trigger_at_param,'pending')
+      returning id into event_id;
+    return event_id;
+  end $$`,
+];
 
 const USER_ID = "11111111-1111-4111-8111-111111111111";
 const CUSTOMER_ID = "cus_subscription_projection";
@@ -310,62 +365,11 @@ async function seedLicenseSet(count = 5) {
 before(async () => {
   logSetup("construct PGlite");
   db = new PGlite();
-  logSetup("create base schema");
-  await db.exec(`
-    create role anon nologin;
-    create role authenticated nologin;
-    create role service_role nologin;
-    create schema auth;
-    create function auth.role() returns text language sql stable
-      as $$ select current_setting('request.jwt.claim.role', true) $$;
-    create type public.user_plan as enum ('free','creator','max','business','admin');
-    create table public.user_settings (
-      user_id uuid primary key, stripe_customer_id text unique, plan_type public.user_plan not null default 'free',
-      updated_at timestamptz not null default now()
-    );
-    create table public.user_subscriptions (
-      id uuid primary key default gen_random_uuid(), user_id uuid not null, stripe_customer_id text not null,
-      stripe_subscription_id text not null, product_id text not null, status text not null,
-      current_period_start timestamptz, current_period_end timestamptz, cancel_at_period_end boolean default false,
-      price_id text, amount integer, currency text, interval text, interval_count integer,
-      payment_failure_at timestamptz, next_payment_attempt timestamptz, payment_failure_type text,
-      updated_at timestamptz default now(), unique(user_id,stripe_subscription_id)
-    );
-    create table public.system_settings (setting_key text primary key, setting_value text, is_public boolean not null default false);
-    create table public.fanmarks (id uuid primary key, user_input_fanmark text not null, short_id text);
-    create table public.fanmark_licenses (
-      id uuid primary key, fanmark_id uuid not null, user_id uuid, license_start timestamptz not null,
-      license_end timestamptz, status text not null default 'active', display_fanmark text,
-      grace_expires_at timestamptz, is_returned boolean not null default false, excluded_at timestamptz,
-      created_at timestamptz not null default now(), updated_at timestamptz not null default now()
-    );
-    create table public.fanmark_transfer_codes (id uuid primary key default gen_random_uuid(), license_id uuid not null, status text not null);
-    create table public.fanmark_favorites (fanmark_id uuid not null, user_id uuid not null, display_fanmark text);
-    create table public.audit_logs (
-      id uuid primary key default gen_random_uuid(), user_id uuid, action text not null,
-      resource_type text not null, resource_id text, request_id text, metadata jsonb, created_at timestamptz not null default now()
-    );
-    create table public.notification_events (
-      id uuid primary key default gen_random_uuid(), event_type text not null, event_version integer default 1,
-      source text not null, payload jsonb not null, trigger_at timestamptz default now(), dedupe_key text,
-      status text default 'pending', created_at timestamptz default now(), updated_at timestamptz default now()
-    );
-    create function public.create_notification_event(event_type_param text, payload_param jsonb,
-      source_param text default 'system', dedupe_key_param text default null,
-      trigger_at_param timestamptz default now()) returns uuid language plpgsql as $$
-    declare event_id uuid;
-    begin
-      if dedupe_key_param is not null then
-        select id into event_id from public.notification_events
-          where dedupe_key = dedupe_key_param and status in ('pending','processing') limit 1;
-        if found then return event_id; end if;
-      end if;
-      insert into public.notification_events(event_type,payload,source,dedupe_key,trigger_at,status)
-        values(event_type_param,payload_param,source_param,dedupe_key_param,trigger_at_param,'pending')
-        returning id into event_id;
-      return event_id;
-    end $$;
-  `);
+  logSetup(`create base schema (${baseSchemaStatements.length} statements)`);
+  for (const [index, statement] of baseSchemaStatements.entries()) {
+    logSetup(`base schema statement ${index + 1}/${baseSchemaStatements.length}`);
+    await db.exec(statement);
+  }
   logSetup("base schema ready");
   for (const [name, sql] of [
     ["receipt foundation", foundationSql],

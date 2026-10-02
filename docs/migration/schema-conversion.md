@@ -883,13 +883,26 @@ a future runtime writer must provide its timestamp explicitly. Regression
 coverage rejects new unreviewed writers and a fresh-catalog synthetic import
 reads back both timestamp pairs exactly.
 
-`notifications_history.archived_at` remains gated because the source archive
-operation has not been ported and its retention/long-term storage contract is
-not settled. With the catalog observed at `2026-10-02T07:02:17Z`, converter v23
-reports five blocking schema/operation groups / 82 locations: 11 external Auth
-references, 68 timestamp-default operations, and three unsupported catalog
-scopes (functions, RLS policies, and triggers). It remains
-`deployable: false`.
+The checked-in source definition for `archive_old_notifications(integer)` has
+a 90-day default. It atomically moves only `delivered` and `failed`
+notifications whose `created_at` is older than the cutoff into
+`notifications_history`, preserving the listed notification fields in
+`original_data`; `archived_at` is supplied by the history table's `now()`
+default. A later checked-in hardening migration revokes execution from
+`PUBLIC`, `anon`, and `authenticated`. No invocation or schedule for this
+function was found in the checked-in Worker, Edge Function, or migration
+sources. This establishes the repository-defined archive operation, but not
+whether or how often production invokes it. The source also does not define a
+history purge; the target's long-term store and archive schedule therefore
+remain unresolved. `notifications_history.archived_at` stays gated until the
+Worker operation and target storage/scheduling contract are implemented and
+tested. This is source-history evidence, not a fresh live function-body or
+`pg_cron` readback.
+
+With the catalog observed at `2026-10-02T07:02:17Z`, converter v23 reports five
+blocking schema/operation groups / 82 locations: 11 external Auth references,
+68 timestamp-default operations, and three unsupported catalog scopes
+(functions, RLS policies, and triggers). It remains `deployable: false`.
 
 The current-catalog synthetic import completed 40/40 checkpoints with 12
 synthetic rows, two transformed credentials, one durably deferred inactive
