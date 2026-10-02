@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import bcrypt from "bcryptjs";
 import { beforeAll, beforeEach, describe, expect, inject, it } from "vitest";
+import { checkedInSqlStatements as statements } from "./schema-statements";
 import authSchema from "../migrations/0003_better_auth_core.sql?raw";
 import { handleRequest } from "../src";
 import type { Env } from "../src/repository";
@@ -27,35 +28,6 @@ const otherEntry = "0323d70f-094e-46e9-b509-5c5551b06f3e";
 const password = "Synthetic-Search-Only!2026";
 const hash = bcrypt.hashSync(password, 10);
 const ids = '["5bb06a1c-a5d2-4e3f-a31d-58fce75887b3"]';
-
-// Trusted checked-in migrations only. Quoted literals/comments do not contribute
-// BEGIN/CASE/END tokens; trigger body semicolons stay in the same statement.
-function statements(sql: string): string[] {
-  const result: string[] = [];
-  let start = 0;
-  let depth = 0;
-  let trigger = false;
-  let words: string[] = [];
-  for (const token of sql.matchAll(/--[^\n]*|\/\*[\s\S]*?\*\/|'(?:''|[^'])*'|"(?:""|[^"])*"|[A-Za-z_]\w*|;/gu)) {
-    const value = token[0];
-    if (/^(?:--|\/\*|'|")/u.test(value)) continue;
-    const word = value.toUpperCase();
-    if (word !== ";") {
-      words.push(word);
-      if (words[0] === "CREATE" && word === "TRIGGER") trigger = true;
-      if (trigger && (word === "BEGIN" || word === "CASE")) depth += 1;
-      if (trigger && word === "END") depth -= 1;
-    } else if (depth === 0) {
-      const statement = sql.slice(start, token.index).trim();
-      if (statement.replace(/--[^\n]*/gu, "").trim()) result.push(statement);
-      start = token.index! + 1;
-      words = [];
-      trigger = false;
-    }
-  }
-  if (sql.slice(start).replace(/--[^\n]*/gu, "").trim()) throw new Error("Incomplete fixture SQL");
-  return result;
-}
 
 async function request(body: unknown, cookie = "", route = "/api/fanmarks/search/details") {
   return handleRequest(new Request(`https://api.example.test${route}`, {

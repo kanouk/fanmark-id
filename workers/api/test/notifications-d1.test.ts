@@ -1,12 +1,17 @@
 import { env } from "cloudflare:workers";
 import bcrypt from "bcryptjs";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, inject, it } from "vitest";
 import authSchemaSql from "../migrations/0003_better_auth_core.sql?raw";
-import notificationsSchemaSql from "./fixtures/d1-notifications.sql?raw";
-import archiveIndexMigrationSql from "../migrations-business/0020_notification_archive_index.sql?raw";
+import { checkedInSqlStatements as splitSqlStatements } from "./schema-statements";
 import { runScheduledNotificationArchive, runScheduledNotificationEvents } from "../src/notifications-scheduled";
 import { handleRequest } from "../src";
 import type { Env } from "../src/repository";
+
+declare module "vitest" {
+  export interface ProvidedContext {
+    businessNotificationMigrations: Array<{ name: string; sql: string }>;
+  }
+}
 
 const runtimeEnv = env as unknown as Env;
 const authDatabase = runtimeEnv.AUTH_DB;
@@ -25,35 +30,6 @@ const expiredId = "55555555-3333-4333-8333-333333333333";
 const alreadyReadId = "55555555-4444-4444-8444-444444444444";
 const otherNotificationId = "55555555-5555-4555-8555-555555555555";
 
-function splitSqlStatements(sql: string): string[] {
-  const statements: string[] = [];
-  let start = 0;
-  let singleQuoted = false;
-  let doubleQuoted = false;
-  for (let index = 0; index < sql.length; index += 1) {
-    const character = sql[index];
-    const next = sql[index + 1];
-    if (character === "'" && !doubleQuoted) {
-      if (singleQuoted && next === "'") index += 1;
-      else singleQuoted = !singleQuoted;
-      continue;
-    }
-    if (character === '"' && !singleQuoted) {
-      if (doubleQuoted && next === '"') index += 1;
-      else doubleQuoted = !doubleQuoted;
-      continue;
-    }
-    if (character !== ";" || singleQuoted || doubleQuoted) continue;
-    const candidate = sql.slice(start, index).trim();
-    if (/^create\s+trigger\b/iu.test(candidate) && !/\bend\s*$/iu.test(candidate)) continue;
-    if (candidate) statements.push(candidate);
-    start = index + 1;
-  }
-  const finalStatement = sql.slice(start).trim();
-  if (finalStatement) statements.push(finalStatement);
-  return statements;
-}
-
 async function request(path: string, init: RequestInit = {}, overrides: Partial<Env> = {}): Promise<Response> {
   const headers = new Headers(init.headers);
   if (!headers.has("Origin")) headers.set("Origin", appOrigin);
@@ -70,6 +46,20 @@ async function signIn(email: string): Promise<string> {
   const cookie = response.headers.get("set-cookie")?.split(";")[0];
   if (!cookie) throw new Error("Synthetic sign-in did not issue a session cookie");
   return cookie;
+}
+
+async function seedNotificationReferences(id: string, createdAt: string): Promise<void> {
+  if (!businessDatabase) throw new Error("Split D1 bindings unavailable");
+  await businessDatabase.batch([
+    businessDatabase.prepare(`INSERT INTO notification_events
+      (id,event_type,source,trigger_at,status,created_at,updated_at)
+      VALUES (?, 'synthetic_reference', 'system', ?, 'processed', ?, ?)`)
+      .bind(id, createdAt, createdAt, createdAt),
+    businessDatabase.prepare(`INSERT INTO notification_rules
+      (id,event_type,channel,template_id,enabled,created_at,updated_at)
+      VALUES (?, 'synthetic_reference', 'in_app', 'synthetic-reference-template', 0, ?, ?)`)
+      .bind(id, createdAt, createdAt),
+  ]);
 }
 
 async function resetRows(): Promise<void> {
@@ -105,6 +95,7 @@ async function resetRows(): Promise<void> {
     [otherNotificationId, otherId, "in_app", "delivered", null, null, { title: "Other user's private notification" }],
   ] as const;
   for (const [id, userId, channel, status, expiresAt, readAt, payload] of fixtures) {
+    await seedNotificationReferences(id, now);
     await businessDatabase.prepare(`
       INSERT INTO notifications
         (id, event_id, rule_id, user_id, channel, template_id, template_version, payload,
@@ -112,7 +103,7 @@ async function resetRows(): Promise<void> {
          read_via, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, 5, ?, ?, ?, 0, ?, ?, ?, ?)
     `).bind(
-      id, `${id}-event`, `${id}-rule`, userId, channel, `${id}-template`, JSON.stringify(payload), status,
+      id, id, id, userId, channel, `${id}-template`, JSON.stringify(payload), status,
       now, expiresAt, status === "delivered" ? now : null, readAt, readAt ? "app" : null, now, now,
     ).run();
   }
@@ -121,8 +112,15 @@ async function resetRows(): Promise<void> {
 beforeAll(async () => {
   if (!authDatabase || !businessDatabase) throw new Error("Split D1 bindings unavailable");
   await authDatabase.batch(splitSqlStatements(authSchemaSql).map((statement) => authDatabase.prepare(statement)));
-  await businessDatabase.batch(splitSqlStatements(notificationsSchemaSql).map((statement) => businessDatabase.prepare(statement)));
-  await businessDatabase.prepare(archiveIndexMigrationSql).run();
+  const migrations = inject("businessNotificationMigrations");
+  expect(migrations.length).toBeGreaterThanOrEqual(25);
+  expect(migrations[0].name).toBe("0000_business_schema_v4_staging.sql");
+  for (const migration of migrations) {
+    const sql = splitSqlStatements(migration.sql);
+    for (let offset = 0; offset < sql.length; offset += 50) {
+      await businessDatabase.batch(sql.slice(offset, offset + 50).map(statement => businessDatabase.prepare(statement)));
+    }
+  }
 });
 
 beforeEach(resetRows);
@@ -220,12 +218,13 @@ describe("Better Auth notifications API", () => {
     for (let index = 0; index < 18; index += 1) {
       const suffix = String(index + 1).padStart(12, "0");
       const id = `77777777-7777-4777-8777-${suffix}`;
+      await seedNotificationReferences(id, now);
       await businessDatabase?.prepare(`
         INSERT INTO notifications
           (id, event_id, rule_id, user_id, channel, template_id, template_version, payload,
            status, priority, triggered_at, retry_count, created_at, updated_at)
         VALUES (?, ?, ?, ?, 'in_app', ?, 1, ?, 'delivered', 5, ?, 0, ?, ?)
-      `).bind(id, `${id}-event`, `${id}-rule`, ownerId, `${id}-template`, payload, now, now, now).run();
+      `).bind(id, id, id, ownerId, `${id}-template`, payload, now, now, now).run();
     }
 
     const response = await request("/api/me/notifications?limit=50", { headers: { Cookie: cookie } });
@@ -272,8 +271,8 @@ describe("Better Auth notifications API", () => {
 describe("scheduled notification archive", () => {
   const archiveNow = new Date("2026-09-25T00:00:00.000Z");
   const archiveCutoff = new Date(archiveNow.getTime() - 90 * 24 * 60 * 60 * 1000);
-  const oldCreatedAt = new Date(archiveCutoff.getTime() - 1).toISOString();
-  const cutoffCreatedAt = archiveCutoff.toISOString();
+  const oldCreatedAt = new Date(archiveCutoff.getTime() - 1).toISOString().replace(".999Z", ".999999Z");
+  const cutoffCreatedAt = archiveCutoff.toISOString().replace(".000Z", ".000000Z");
   const deliveredArchiveId = "66666666-1111-4111-8111-111111111111";
   const failedArchiveId = "66666666-2222-4222-8222-222222222222";
   const boundaryArchiveId = "66666666-3333-4333-8333-333333333333";
@@ -281,13 +280,14 @@ describe("scheduled notification archive", () => {
   const conflictingArchiveId = "66666666-5555-4555-8555-555555555555";
 
   async function insertArchiveCandidate(id: string, status: string, createdAt: string): Promise<void> {
+    await seedNotificationReferences(id, createdAt);
     await businessDatabase?.prepare(`
       INSERT INTO notifications (
         id, event_id, rule_id, user_id, channel, template_id, template_version,
         payload, status, priority, triggered_at, delivered_at, created_at, updated_at
       ) VALUES (?, ?, ?, ?, 'in_app', 'archive-test', 1, ?, ?, 5, ?, ?, ?, ?)
     `).bind(
-      id, `${id}-event`, `${id}-rule`, ownerId, JSON.stringify({ note: `synthetic-${id}`, keep: [1, null] }),
+      id, id, id, ownerId, JSON.stringify({ note: `synthetic-${id}`, keep: [1, null] }),
       status, createdAt, status === "delivered" ? createdAt : null, createdAt, createdAt,
     ).run();
   }
@@ -310,14 +310,24 @@ describe("scheduled notification archive", () => {
     expect(archivedRows?.results?.map((row) => row.id)).toEqual([deliveredArchiveId, failedArchiveId]);
     const archivedDelivered = archivedRows?.results?.find((row) => row.id === deliveredArchiveId);
     const sourceData = JSON.parse(String(archivedDelivered?.original_data)) as Record<string, unknown>;
-    expect(sourceData).toMatchObject({
+    expect(sourceData).toEqual({
       id: deliveredArchiveId,
-      event_id: `${deliveredArchiveId}-event`,
-      rule_id: `${deliveredArchiveId}-rule`,
+      event_id: deliveredArchiveId,
+      rule_id: deliveredArchiveId,
       user_id: ownerId,
       channel: "in_app",
+      template_id: "archive-test",
+      template_version: 1,
       status: "delivered",
       payload: { note: `synthetic-${deliveredArchiveId}`, keep: [1, null] },
+      priority: 5,
+      triggered_at: oldCreatedAt,
+      delivered_at: oldCreatedAt,
+      read_at: null,
+      read_via: null,
+      expires_at: null,
+      retry_count: 0,
+      error_reason: null,
       created_at: oldCreatedAt,
       updated_at: oldCreatedAt,
     });
@@ -351,6 +361,72 @@ describe("scheduled notification archive", () => {
     const source = await businessDatabase?.prepare("SELECT id FROM notifications WHERE id = ?").bind(conflictingArchiveId).first();
     expect(source).toMatchObject({ id: conflictingArchiveId });
   });
+
+  it("rolls back history insertion when deleting the original notification fails", async () => {
+    if (!businessDatabase) throw new Error("Split D1 bindings unavailable");
+    await insertArchiveCandidate(deliveredArchiveId, "delivered", oldCreatedAt);
+    await businessDatabase.prepare(`CREATE TRIGGER reject_archive_delete BEFORE DELETE ON notifications
+      WHEN OLD.id = '${deliveredArchiveId}' BEGIN SELECT RAISE(ABORT, 'synthetic_archive_delete_failure'); END`).run();
+    try {
+      await expect(runScheduledNotificationArchive({
+        env: { ...runtimeEnv, NOTIFICATION_ARCHIVE_BACKEND: "d1" }, now: archiveNow,
+      })).rejects.toThrow(/synthetic_archive_delete_failure/u);
+      expect(await businessDatabase.prepare("SELECT id FROM notifications WHERE id = ?")
+        .bind(deliveredArchiveId).first()).toEqual({ id: deliveredArchiveId });
+      expect(await businessDatabase.prepare("SELECT id FROM notifications_history WHERE id = ?")
+        .bind(deliveredArchiveId).first()).toBeNull();
+      expect((await businessDatabase.prepare("PRAGMA foreign_key_check").all()).results).toEqual([]);
+    } finally {
+      await businessDatabase.prepare("DROP TRIGGER reject_archive_delete").run();
+    }
+    await expect(runScheduledNotificationArchive({
+      env: { ...runtimeEnv, NOTIFICATION_ARCHIVE_BACKEND: "d1" }, now: archiveNow,
+    })).resolves.toMatchObject({ status: "completed", archived: 1, remaining: 0 });
+  });
+
+  it("resumes an identical previously archived row without rewriting the history timestamp", async () => {
+    if (!businessDatabase) throw new Error("Split D1 bindings unavailable");
+    await insertArchiveCandidate(deliveredArchiveId, "delivered", oldCreatedAt);
+    const source = await businessDatabase.prepare("SELECT * FROM notifications WHERE id = ?")
+      .bind(deliveredArchiveId).first<Record<string, unknown>>();
+    if (!source) throw new Error("Synthetic notification missing");
+    const keys = ["id", "user_id", "event_id", "rule_id", "template_id", "template_version", "channel",
+      "status", "payload", "priority", "triggered_at", "delivered_at", "read_at", "read_via", "expires_at",
+      "retry_count", "error_reason", "created_at", "updated_at"];
+    const original = Object.fromEntries(keys.map(key => [key, key === "payload" ? JSON.parse(String(source[key])) : source[key]]));
+    const earlierArchiveTime = "2026-09-24T00:00:00.000000Z";
+    await businessDatabase.prepare("INSERT INTO notifications_history (id,original_data,archived_at) VALUES (?, ?, ?)")
+      .bind(deliveredArchiveId, JSON.stringify(original), earlierArchiveTime).run();
+    await expect(runScheduledNotificationArchive({
+      env: { ...runtimeEnv, NOTIFICATION_ARCHIVE_BACKEND: "d1" }, now: archiveNow,
+    })).resolves.toEqual({ status: "completed", archived: 1, remaining: 0, conflicts: 0, batches: 1 });
+    expect(await businessDatabase.prepare("SELECT original_data,archived_at FROM notifications_history WHERE id = ?")
+      .bind(deliveredArchiveId).first()).toEqual({ original_data: JSON.stringify(original), archived_at: earlierArchiveTime });
+    expect(await businessDatabase.prepare("SELECT id FROM notifications WHERE id = ?")
+      .bind(deliveredArchiveId).first()).toBeNull();
+  });
+
+  it("stops after 2500 rows and resumes the remaining archive backlog", async () => {
+    if (!businessDatabase) throw new Error("Split D1 bindings unavailable");
+    const inserts = Array.from({ length: 2501 }, (_, index) => businessDatabase.prepare(`INSERT INTO notifications
+      (id,user_id,channel,template_id,payload,status,triggered_at,created_at,updated_at)
+      VALUES (?, ?, 'in_app', 'synthetic-backlog', '{}', 'delivered', ?, ?, ?)`)
+      .bind(`88888888-8888-4888-8888-${String(index + 1).padStart(12, "0")}`, ownerId,
+        oldCreatedAt, oldCreatedAt, oldCreatedAt));
+    for (let offset = 0; offset < inserts.length; offset += 100) {
+      await businessDatabase.batch(inserts.slice(offset, offset + 100));
+    }
+    const args = { env: { ...runtimeEnv, NOTIFICATION_ARCHIVE_BACKEND: "d1" }, now: archiveNow };
+    await expect(runScheduledNotificationArchive(args))
+      .resolves.toEqual({ status: "partial", archived: 2500, remaining: 1, conflicts: 0, batches: 10 });
+    expect(await businessDatabase.prepare("SELECT count(*) AS count FROM notifications_history").first())
+      .toEqual({ count: 2500 });
+    await expect(runScheduledNotificationArchive(args))
+      .resolves.toEqual({ status: "completed", archived: 1, remaining: 0, conflicts: 0, batches: 1 });
+    expect(await businessDatabase.prepare("SELECT count(*) AS count FROM notifications_history").first())
+      .toEqual({ count: 2501 });
+    expect((await businessDatabase.prepare("PRAGMA foreign_key_check").all()).results).toEqual([]);
+  }, 20_000);
 });
 
 describe("D1 notification event processor", () => {
@@ -360,16 +436,16 @@ describe("D1 notification event processor", () => {
     const ruleId = "bbbbbbbb-2222-4222-8222-222222222222";
     const createdAt = now;
     await businessDatabase.batch([
-      businessDatabase.prepare(`INSERT INTO user_settings (id, user_id, username, preferred_language)
-        VALUES (?, ?, ?, 'ja')`).bind("cccccccc-3333-4333-8333-333333333333", ownerId, "synthetic-notification-owner"),
+      businessDatabase.prepare(`INSERT INTO user_settings (id, user_id, username, preferred_language, created_at, updated_at)
+        VALUES (?, ?, ?, 'ja', ?, ?)`).bind("cccccccc-3333-4333-8333-333333333333", ownerId, "synthetic-notification-owner", createdAt, createdAt),
       businessDatabase.prepare(`INSERT INTO notification_templates
-        (id, template_id, version, channel, language, title, body, summary, is_active)
-        VALUES (?, ?, 1, 'in_app', 'ja', ?, ?, ?, 1)`)
-        .bind("dddddddd-4444-4444-8444-444444444444", "synthetic-template", "{{fanmark_name}}", "Hello {{fanmark_name}} {{created_at}}", "For {{fanmark_id}}"),
+        (id, template_id, version, channel, language, title, body, summary, is_active, created_at, updated_at)
+        VALUES (?, ?, 1, 'in_app', 'ja', ?, ?, ?, 1, ?, ?)`)
+        .bind("dddddddd-4444-4444-8444-444444444444", "synthetic-template", "{{fanmark_name}}", "Hello {{fanmark_name}} {{created_at}}", "For {{fanmark_id}}", createdAt, createdAt),
       businessDatabase.prepare(`INSERT INTO notification_rules
-        (id, event_type, channel, template_id, template_version, delay_seconds, priority, enabled)
-        VALUES (?, 'synthetic_event', 'in_app', 'synthetic-template', 1, ?, 8, 1)`)
-        .bind(ruleId, delaySeconds),
+        (id, event_type, channel, template_id, template_version, delay_seconds, priority, enabled, created_at, updated_at)
+        VALUES (?, 'synthetic_event', 'in_app', 'synthetic-template', 1, ?, 8, 1, ?, ?)`)
+        .bind(ruleId, delaySeconds, createdAt, createdAt),
       businessDatabase.prepare(`INSERT INTO notification_events
         (id, event_type, event_version, source, payload, trigger_at, status, retry_count, created_at, updated_at)
         VALUES (?, 'synthetic_event', 1, 'edge_function', ?, ?, 'pending', 0, ?, ?)`)

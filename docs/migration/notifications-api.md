@@ -37,6 +37,23 @@ staging設定では`NOTIFICATION_ARCHIVE_BACKEND`を選択しておらず、実W
 この処理を実行しない。履歴の長期保存・削除方針とSupabase本番側の実呼出し有無は
 引き続き未確認。
 
+通知API/processor/archiverのnative D1 suiteはcanonical Business migration全25件を
+順に適用する。簡略fixtureを廃止し、event/ruleの参照元、必須timestamp、実FKと
+0024 wake triggerを含めて19ケースを確認した。アーカイブでは全19フィールドと
+JSON payload、cutoffの1us前/一致、selector未設定、ID衝突、削除失敗時のbatch全体の
+rollbackと再実行、既存の同内容履歴のtimestamp保持、2,500行上限と残行の再開を扱う。
+
+2026-10-02T21:03:48.240925+00:00のsource catalogでは
+`archive_old_notifications(days_old integer)`はSECURITY DEFINERで、effective EXECUTEは
+service_roleのみ（anon/authenticatedはfalse）。定義SHA-256は
+`d207d6ccb0010a5dc1f4525b005e533894a696ea7ef32bd61c9741c1cdc9cb9f`。
+履歴のSELECT policyは`is_admin()`で、helperはauth.uid()とuser_settingsのadmin planを確認する。
+policy式SHA-256は`f0fa793ce9eac245f80cb36c1e202ab3f68594d111e7025274d1b0ab6cb9dc82`。
+table grantだけではRLSを通る権限の証明と扱わない。現在のWorkerは履歴を内部archiver
+だけで操作し、履歴本文を読むHTTP APIを実装していない。frontend/Edgeのliteral callsiteも
+generated type以外に見つからないが、外部/動的呼出しやcustom days_oldの利用は未確認。
+targetの90日固定・default-off運用を全source呼出しの互換性としては扱わない。
+
 `npm run test:staging-notification-archive-smoke`は、確認済みのstaging account、Worker、
 business/Auth D1を照合し、通知マスターと公開設定のseed状態、40業務テーブルの行数、
 Auth user rows、通知/履歴の空状態を確認してから実行する。`0020_notification_archive_index.sql`

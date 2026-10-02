@@ -4561,3 +4561,39 @@ or production readiness. No remote Cron/selector/secret, deployed Worker,
 source user row, or domain/DNS state changed. Combined remote profile-editor
 and protected-favorites acceptance remains pending after the previous D1
 daily-read quota rejection; no deploy/seed before the full guarded preflight.
+
+## 2026-10-03 full-schema notifications and archive authorization
+
+Replaced the reduced notifications fixture with all 25 canonical Business
+migrations, including FK constraints and the 0024 wake triggers. Synthetic
+notifications now reference real terminal events/disabled rules, and processor
+fixtures supply the canonical required timestamps. Extracted the existing
+checked-in SQL tokenizer for use by both notifications and search suites.
+The first full-schema run exposed one response-size fixture without parent
+rows; after fixing that seed, the existing API/processor checks passed.
+
+Expanded archival checks to all 19 original fields, nested JSON, exact cutoff
+and 1us before it, a delete-failure trigger proving insertion/deletion rollback
+and successful retry, identical prior-history replay without timestamp rewrite,
+and a 2,501-row backlog processed as 2,500 then 1. The first backlog assertion
+incorrectly expected five batches; actual configured batches are 10 x 250.
+This was corrected without changing the archiver. Node 22.6.0 native
+notifications passed 19/19, shared-tokenizer search regression passed 12/12,
+Worker typecheck, targeted ESLint, and diff checks passed.
+
+The existing source catalog observed 2026-10-02T21:03:48.240925+00:00 confirms
+archive RPC effective EXECUTE is false for anon/authenticated and true for
+service_role. The history SELECT policy uses is_admin(), whose definition
+checks auth.uid() and user_settings.plan_type=admin. Raw grants alone do not
+prove RLS access. The target retains an internal archiver; no history-body HTTP
+reader exists. Corrected object-map text that had described an admin reader
+as if implemented. The archive definition/policy hashes and remaining custom
+cutoff/external invocation gates are recorded in notifications-api.md.
+
+This validates local notifications with the full Business schema and the
+reviewed source authorization boundary. It does not prove all source callsites,
+provider/email/Web Push behavior, recurring archive/retention operations, or
+production fit. No remote Worker/Cron/selector/secret, Supabase user row,
+real data migration, or domain/DNS state changed. Exact new-HEAD CI and guarded
+remote editor/favorites acceptance remain required; remote D1 writes stay
+pending the previous daily-read-limit rejection and full baseline preflight.
