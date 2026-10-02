@@ -1,7 +1,24 @@
 # Cloudflare migration handoff
 
 Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
-open and draft. GitHub Actions run `36977804659` passed both required jobs.
+open and draft. The latest head is `9b0a0ca`; CI run `36982543355` passed the
+Worker API job but the staging application job failed after three 120-second
+timeouts in `subscription-application.test.mjs`. The same test passed in the
+previous full run after one retry and passed locally 8/8, so this is currently
+tracked as a hosted PGlite startup flake, not a verified application defect.
+The worker job remains green; rerun CI after the next push and investigate if
+the timeout recurs. CI itself does not deploy.
+
+The 211-callsite inventory now has 22 semantic mappings: eight Realtime
+subscriptions and 14 notification data/admin operations; 189 remain. A
+schema-only readback of the linked production Supabase project found that
+`get_unread_notification_count(uuid)` trusts a supplied UUID and grants
+execution to `anon`, exposing only the target account's unread count. A local
+Supabase hardening migration and pgTAP regression test now bind that RPC to
+`auth.uid()` and revoke anonymous execution. They passed a disposable PGlite
+behavior check, but have not been applied to Supabase; the repository's local
+Supabase DB container is unavailable in this worktree.
+
 The earlier date-sensitive Stripe fixture failure is fixed; the full Stripe
 receipt suite, application build, and Worker API validation pass. CI itself
 does not deploy. The active Wrangler profile `fanmark-staging-inapp` is logged

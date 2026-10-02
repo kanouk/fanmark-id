@@ -1,5 +1,30 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 最新差分: 通知RPCのACLとCI timeout
+
+PR #41 head `9b0a0ca` のActions run `36982543355` はWorker API job成功、
+staging application job失敗。`subscription-application.test.mjs` がTAP
+headerの後に120秒timeoutを3回起こした。前のrun `36981863610` では同じ
+suiteがretry後に成功し、今回もNode 25のローカル単独実行で8/8、receipt
+suite全体でも成功した。現時点ではCI/PGlite初期化の間欠的timeoutと扱う。次push後にCI
+を再実行し、再発したらworkflowのNode versionと失敗前後のPGlite resource
+状態を追加調査する。
+
+211件のフロントエンドSupabase callsiteのうち、Realtime 8件と通知操作・
+管理画面14件をowner、data class、Cloudflare置換先まで分類した。残りは
+189件。通知数RPCについてproduction Supabaseをschema-onlyで読み戻し、
+`get_unread_notification_count(uuid)` が入力UUIDを認証主体と照合せず、
+`anon`にもEXECUTEを許可していることを確認した。返すのは未読件数だけで
+内容は含まれないが、既知UUIDを指定して他人の件数を読めるACL/認可差分。
+Cloudflare APIはBetter Auth session ownerに限定しており、sourceより狭い。
+
+Supabase側の修正migrationとpgTAP regression testを追加した。使い捨て
+PGlite検証では匿名実行拒否、authenticated/service_roleの実行許可、本人の
+eligible未読件数、他人UUIDの拒否を確認した。`supabase status` はworktreeに
+local DB containerがないため起動できず、pgTAP自体は未実行。migrationは
+branch上だけで、Supabase本番には適用していない。ユーザーデータ、R2、
+本番route、DNS/domainにも変更なし。
+
 ## 2026-10-02 PR #41 validation, staging Worker, and D1 readback
 
 PR #41 remains open and draft. GitHub Actions run `36966388049` passed both

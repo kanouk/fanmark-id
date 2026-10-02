@@ -1990,3 +1990,23 @@ test passes 1/1 and `npm run test:migration-data` passes 198/198. This is
 repository-only evidence: arbitrary wrappers/indirect calls, operation
 ownership/data-class decisions, and reconciliation to current production
 remain open. No live data, staging settings, Worker, or domain/DNS changed.
+
+## Production unread-count RPC ACL readback (2026-10-02 JST)
+
+The linked Supabase project was verified as `fanmark.id` in `ap-northeast-1`.
+A schema-only dump of the `public` schema (no table rows) confirmed that
+`public.get_unread_notification_count(uuid)` is `SECURITY DEFINER`, sets
+`current_user_id = COALESCE(user_id_param, auth.uid())`, and does not compare a
+supplied ID with `auth.uid()`. Its live ACL grants execution to `anon`,
+`authenticated`, and `service_role`. A caller who knows a user UUID can therefore
+retrieve that user's count of unread, delivered, unexpired notifications; the
+function does not return notification content. This is a verified count-only
+privacy exposure from schema definition and privileges, not a live endpoint
+probe.
+
+The Cloudflare `GET /api/me/notifications/unread-count` path instead derives
+the owner from the Better Auth session. Treat that as an authorization
+tightening, not exact source parity. No production function, grant, application
+row, Cloudflare resource, or domain/DNS setting was changed. Consider removing
+anonymous execution or binding the Supabase function to `auth.uid()` before
+the final switch while Supabase remains the active production backend.

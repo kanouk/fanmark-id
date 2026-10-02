@@ -477,6 +477,35 @@ Reconcile the live observations with this checkout report before treating any ma
 - Map each static frontend operation to an owner, data classification, and Cloudflare replacement or retention decision. Realtime cleanup aliases are resolved to their statically subscribed table; interpolated channel topics remain visible in the Dynamic expression column. Arbitrary wrappers and indirect calls still need manual review.
 - Confirm pg_cron/pg_net schedules, Auth providers and redirect URLs, Storage buckets/policies, Realtime channels, Stripe/Resend webhooks, and deployment secrets in the live environment. None are proven by this offline report.
 
+## Semantic mapping completed slice: Notifications data operations
+
+This slice classifies the 14 inbox and notification-admin callsites in the
+211-callsite inventory. Admin endpoints require Better Auth admin role and
+same-session MFA assurance. All mappings describe the checked-in application
+and Worker contracts; they do not mean that existing user notification rows
+were imported.
+
+| Callsite | Operation and owner | Data class | Cloudflare replacement and parity |
+| --- | --- | --- | --- |
+| `src/components/layout/AppHeader.tsx:98` | Read the signed-in user's five newest inbox rows. | Private user notification content and read/delivery state. | `GET /api/me/notifications?limit=5`; Worker selector polls every 30 seconds. |
+| `src/components/layout/AppHeader.tsx:164` | Mark one notification read with `read_via=menu`; recipient owns the row. | Private user notification state. | `PATCH /api/me/notifications/{uuid}/read` with `readVia=menu`; Worker derives recipient from session. |
+| `src/hooks/useUnreadNotifications.ts:18` | Read unread count for the signed-in user. | Private user activity count. | `GET /api/me/notifications/unread-count`; Worker derives recipient from session and the UI refreshes every 30 seconds. A production schema-only readback on 2026-10-02 confirmed the Supabase `SECURITY DEFINER` RPC trusts a supplied user ID and grants execution to `anon`, so a caller who knows a UUID can read that account's count. The Worker route tightens access to the session owner; see [live observations](live-observations.md) and treat this as an authorization change, not exact parity. |
+| `src/pages/Notifications.tsx:42` | Read up to 50 newest rows for the signed-in user. | Private user notification content and read/delivery state. | `GET /api/me/notifications?limit=50`; Better Auth session owns the filter and Worker mode polls every 30 seconds. |
+| `src/pages/Notifications.tsx:92` | Mark one notification read with `read_via=app`; recipient owns the row. | Private user notification state. | `PATCH /api/me/notifications/{uuid}/read` with `readVia=app`; same owner-bound behavior. |
+| `src/pages/Notifications.tsx:128` | Mark eligible unread rows read for the signed-in user. | Private user notification state. | `POST /api/me/notifications/read-all`; Worker derives owner from session and preserves delivered/unexpired eligibility filters. |
+| `src/pages/Notifications.tsx:139` | Reload the inbox after mark-all-read. | Private user notification content and read/delivery state. | `GET /api/me/notifications?limit=50`; same bounded read route as initial load. |
+| `src/components/AdminNotificationManager.tsx:64` | Create a manually requested notification event; only an MFA-authorized admin may initiate it. | User-targeted operational event and payload; existing rows remain in the deferred user-data phase. | `POST /api/admin/notification-masters/events`; Worker allowlists the three event types exposed by this UI and records an `admin_manual` source. |
+| `src/components/AdminNotificationManager.tsx:89` | Read the latest 100 notification event records as an administrator. | Restricted operational queue metadata; payload is withheld by the Worker DTO. | `GET /api/admin/notification-masters/events`; requires admin role and same-session MFA. |
+| `src/components/AdminNotificationManager.tsx:105` | Read the latest 100 delivery records as an administrator. | Restricted delivery metadata, including a shortened user ID; payload is withheld. | `GET /api/admin/notification-masters/notifications`; requires admin role and same-session MFA and returns only a user-ID prefix. |
+| `src/components/AdminNotificationManager.tsx:124` | Read global notification rules as an administrator. | Global operational master configuration. | `GET /api/admin/notification-masters/rules`; versioned D1 data, MFA protected. |
+| `src/components/AdminNotificationManager.tsx:139` | Read global notification templates as an administrator. | Global localized message master data. | `GET /api/admin/notification-masters/templates`; versioned D1 data, MFA protected. |
+| `src/components/AdminNotificationManager.tsx:157` | Update a notification rule as an administrator. | Global operational master configuration. | `PATCH /api/admin/notification-masters/rules/{uuid}`; allowlisted fields and `updated_at` compare-and-swap reject stale edits. |
+| `src/components/AdminNotificationManager.tsx:189` | Update a notification template as an administrator. | Global localized message master data. | `PATCH /api/admin/notification-masters/templates/{uuid}`; allowlisted fields and `updated_at` compare-and-swap reject stale edits. |
+
+The unread-count ACL evidence above is a current live schema readback, not a
+functional PostgREST probe. Endpoint and selector details are in
+[notifications-api.md](notifications-api.md).
+
 ## Semantic mapping completed slice: Realtime
 
 The following eight rows are the four Realtime subscriptions and their four
@@ -499,6 +528,6 @@ real-user migration or provider acceptance.
 
 The route contracts are documented in [notifications-api.md](notifications-api.md),
 [own-profile-api.md](own-profile-api.md), and the subscription API implementation
-in `workers/api/src/subscription-d1-api.ts`. The remaining 203 callsites still
+in `workers/api/src/subscription-d1-api.ts`. The remaining 189 callsites still
 need equivalent owner, data-class, and replacement/retention classification;
 wrapper and indirect-call review also remains open.
