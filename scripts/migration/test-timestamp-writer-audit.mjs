@@ -118,6 +118,78 @@ test("includes D1 trigger and seed SQL writes in the same timestamp column inven
   assert.equal(result.columnListCoverageComplete, true);
 });
 
+test("resolves generated master INSERT columns and exposes omitted timestamp defaults", () => {
+  const result = auditTimestampWriterCoverage(catalog([
+    timestamp("emoji_master", "created_at"),
+    timestamp("emoji_master", "updated_at"),
+    timestamp("extension_coupons", "created_at"),
+    timestamp("extension_coupons", "updated_at"),
+    timestamp("email_templates", "created_at"),
+    timestamp("email_templates", "updated_at"),
+  ]), [
+    {
+      file: "scripts/migration/emoji-master-release-remote-stage.mjs",
+      text: `const insertSql = "INSERT INTO emoji_master " +
+        "(id, emoji, short_name)" + " VALUES (?, ?, ?)";`,
+    },
+    {
+      file: "scripts/migration/extension-coupon-master.mjs",
+      text: `const EXTENSION_COUPON_SOURCE_FIELDS = ["id", "created_at", "updated_at"];
+const EXTENSION_COUPON_TARGET_FIELDS = [...EXTENSION_COUPON_SOURCE_FIELDS, "created_by"];
+const fields = EXTENSION_COUPON_TARGET_FIELDS;
+return \`INSERT INTO extension_coupons (\u0024{fields.map((field) => \`"\u0024{field}"\`).join(", ")}) VALUES\`;`,
+    },
+    {
+      file: "scripts/migration/stage-staging-broadcast-email-templates.mjs",
+      text: `const FIELDS = ["id", "created_at", "updated_at"];
+const columns = FIELDS.map((field) => \`"\u0024{field}"\`).join(", ");
+return \`INSERT INTO "email_templates" (\u0024{columns}) VALUES\`;`,
+    },
+  ]);
+
+  assert.equal(result.insertStatementCount, 3);
+  assert.deepEqual(result.unparsedTargetInserts, []);
+  assert.deepEqual(result.uncoveredTimestampDefaults, [
+    {
+      table: "emoji_master",
+      column: "created_at",
+      reason: "insert_omits_timestamp_default_column",
+      file: "scripts/migration/emoji-master-release-remote-stage.mjs",
+      line: 1,
+    },
+    {
+      table: "emoji_master",
+      column: "updated_at",
+      reason: "insert_omits_timestamp_default_column",
+      file: "scripts/migration/emoji-master-release-remote-stage.mjs",
+      line: 1,
+    },
+  ]);
+  assert.equal(result.columnListCoverageComplete, false);
+});
+
+test("fully inventories the real generated master seed INSERT columns", () => {
+  const files = [
+    "scripts/migration/emoji-master-seed.mjs",
+    "scripts/migration/extension-coupon-master.mjs",
+    "scripts/migration/stage-staging-broadcast-email-templates.mjs",
+  ];
+  const tables = ["emoji_master", "extension_coupons", "email_templates"];
+  const columns = tables.flatMap((table) => [
+    timestamp(table, "created_at"),
+    timestamp(table, "updated_at"),
+  ]);
+  const result = auditTimestampWriterCoverage(catalog(columns), files.map((file) => ({
+    file,
+    text: readFileSync(path.join(repoRoot, file), "utf8"),
+  })));
+
+  assert.equal(result.insertStatementCount, 3);
+  assert.deepEqual(result.unparsedTargetInserts, []);
+  assert.deepEqual(result.uncoveredTimestampDefaults, []);
+  assert.equal(result.columnListCoverageComplete, true);
+});
+
 test("source-shaped versioned reference masters have no direct Worker or migration INSERT writers", () => {
   const tables = [
     "fanmark_tier_extension_prices",

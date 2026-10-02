@@ -856,3 +856,16 @@ user-scoped columns (`notification_preferences` created/updated,
 generated `INSERT` statements for `emoji_master`, `extension_coupons`, and
 `email_templates` remain unparsed. Column coverage remains incomplete, and
 this audit does not prove the timestamp values or transaction-time semantics.
+
+### 2026-10-02 generated-writer follow-up
+
+The audit now resolves the three generated master-seed paths and reports zero
+unparsed target `INSERT` statements. `emoji_master` bootstrap rows now bind an
+explicit UTC microsecond `created_at`/`updated_at` value and read it back. A
+fresh catalog observed at `2026-10-02T04:34:34Z` yields 143 literal or
+statically generated column lists across 40 tables. Twelve timestamp columns
+still have no direct literal writer: eight are covered by the reviewed
+versioned-reference replacement contract, while four user-scoped timestamps
+need separate operation-level verification. This inventory does not prove
+bound-value or PostgreSQL transaction-time semantics; `deployable` remains
+false.

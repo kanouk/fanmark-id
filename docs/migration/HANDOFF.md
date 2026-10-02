@@ -1,10 +1,37 @@
 # Cloudflare migration handoff
 
-Checkpoint: 2026-10-02 08:04 JST. The migration is **not complete**. PR #41
-remains open and draft. Head `2a45a04` passed both required GitHub Actions
-jobs in run `36938035519`. The inventory analyzer change is `b34638b`, its
-generated report/handoff evidence is `51d2b24`, and target-coverage notes are
-in `2a45a04`.
+Checkpoint: 2026-10-02 JST. The migration is **not complete**. PR #41 remains
+open and draft at `28fa8c1`; both required GitHub Actions jobs passed in run
+`36942360484`. The active Wrangler profile `fanmark-staging-inapp` is logged
+into the intended Fanmark.id account. Fresh readback at this checkpoint shows
+staging Worker `fanmark-app-staging` version
+`9ab4f6f9-ecf2-41b0-87fe-c75f26d6c8ea` at 100%, and no unapplied migrations
+in Business, Auth, or emoji-master staging D1. The deployment contains the
+Worker change from `3a93f8b`; later `fef0112`/`28fa8c1` changes are converter,
+audit, tests, and documentation and were not part of that Worker deployment.
+
+The app staging config retains Cron schedules `* * * * *` and `0 0 * * *`.
+`NOTIFICATION_PROCESSOR_BACKEND=d1` is configured; the expiry selector
+`LICENSE_EXPIRY_BACKEND` and Stripe/Resend/OAuth provider credentials are not.
+Thus scheduled notification processing may run when events exist, while daily
+license expiry and provider-backed integration acceptance remain disabled.
+The latest synthetic post-write recovery and pre-write resume drills passed;
+their evidence is recorded in `docs/migration/EXECUTION.md`. This checkpoint
+does not include real user/Auth/Storage migration, production routing, or
+domain/DNS cutover, which remain deferred.
+
+The timestamp writer audit now recognizes all three generated master-seed
+INSERT paths. The emoji release staging path binds one explicit UTC
+microsecond `created_at`/`updated_at` value and checks those values on readback.
+A fresh read-only catalog audit observed 79 defaults across 40 tables, parsed
+143 literal/generated INSERT column lists with zero unparsed targets, and
+retained 12 timestamp columns without a direct literal writer for separate
+review. Timestamp value semantics and transaction-time equivalence remain
+open. The migration-data suite passes 205/205, both app and Worker typechecks
+pass, and targeted ESLint is clean.
+
+The inventory analyzer change is `b34638b`, its generated report/handoff
+evidence is `51d2b24`, and target-coverage notes are in `2a45a04`.
 
 ## 2026-10-02 frontend inventory extraction follow-up
 

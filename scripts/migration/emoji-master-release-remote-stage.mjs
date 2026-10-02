@@ -5,6 +5,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 
 import { verifyRelease } from "../build-emoji-release.ts";
+import { buildCanonicalEmojiMasterInsert, utcMicrosecondTimestamp } from "./emoji-master-seed.mjs";
 import { stageEmojiMasterRelease } from "./emoji-master-release-stage.mjs";
 import { assertAuthSchemaEmpty, assertEmojiReleaseStateUnchanged, captureEmojiReleaseState } from "./emoji-master-release-remote-guards.mjs";
 import { createWranglerD1Database } from "./wrangler-d1-database.mjs";
@@ -112,7 +113,7 @@ function assertConfig(options, config) {
 
 async function readCanonicalRows(database) {
   const result = await database.prepare(
-    "SELECT id, emoji, short_name, keywords, category, subcategory, codepoints, sort_order FROM emoji_master ORDER BY id",
+    "SELECT id, emoji, short_name, keywords, category, subcategory, codepoints, sort_order, created_at, updated_at FROM emoji_master ORDER BY id",
   ).all();
   return result.results;
 }
@@ -151,28 +152,33 @@ async function main() {
 
   const existingIds = new Set(existing.map((row) => row.id));
   const missing = release.records.filter((record) => !existingIds.has(record.id));
-  const insertSql = "INSERT INTO emoji_master " +
-    "(id, emoji, short_name, keywords, category, subcategory, codepoints, sort_order) " +
-    "VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO NOTHING";
+  const importedAt = utcMicrosecondTimestamp();
+  const insertedIds = [];
   for (let offset = 0; offset < missing.length; offset += 100) {
     const batch = missing.slice(offset, offset + 100);
-    const results = await database.batch(batch.map((record) => database.prepare(insertSql).bind(
-      record.id,
-      record.emoji,
-      record.short_name,
-      JSON.stringify(record.keywords),
-      record.category,
-      record.subcategory,
-      JSON.stringify(record.codepoints),
-      record.sort_order,
-    )));
-    if (results.some((result) => result.success !== true)) fail("canonical_catalog_write_failed");
+    const results = await database.batch(batch.map((record) => {
+      const statement = buildCanonicalEmojiMasterInsert(record, importedAt);
+      return database.prepare(statement.sql).bind(...statement.bindings);
+    }));
+    if (results.length !== batch.length || results.some((result) => result?.success !== true)) {
+      fail("canonical_catalog_write_failed");
+    }
+    for (const [index, result] of results.entries()) {
+      const changes = Number(result.meta?.changes);
+      if (changes === 1) insertedIds.push(batch[index].id);
+      else if (changes !== 0) fail("canonical_catalog_write_readback_invalid");
+    }
   }
 
   const canonicalRows = await readCanonicalRows(database);
   if (canonicalRows.length !== release.records.length ||
       canonicalRows.some((row) => !canonicalRecordMatches(row, recordsById.get(row.id)))) {
     fail("canonical_catalog_readback_mismatch");
+  }
+  const insertedIdSet = new Set(insertedIds);
+  if (canonicalRows.some((row) => insertedIdSet.has(row.id) &&
+      (row.created_at !== importedAt || row.updated_at !== importedAt))) {
+    fail("canonical_catalog_timestamp_readback_mismatch");
   }
 
   const staged = await stageEmojiMasterRelease({

@@ -29,6 +29,59 @@ function parseColumns(rawColumns) {
   return columns.length > 0 && columns.every(Boolean) ? columns : null;
 }
 
+function identifier(name) {
+  return /^[A-Za-z_$][A-Za-z0-9_$]*$/u.test(name);
+}
+
+function resolveColumnArray(sourceText, name, seen = new Set()) {
+  if (!identifier(name) || seen.has(name)) return null;
+  const nextSeen = new Set(seen).add(name);
+  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+  const arrayDeclaration = new RegExp(
+    `(?:export\\s+)?const\\s+${escapedName}\\s*=\\s*\\[([\\s\\S]*?)\\]\\s*;`,
+    "u",
+  ).exec(sourceText);
+  if (arrayDeclaration) {
+    const values = [];
+    for (const raw of arrayDeclaration[1].split(",").map((part) => part.trim()).filter(Boolean)) {
+      const spread = /^\.\.\.\s*([A-Za-z_$][A-Za-z0-9_$]*)$/u.exec(raw);
+      if (spread) {
+        const expanded = resolveColumnArray(sourceText, spread[1], nextSeen);
+        if (!expanded) return null;
+        values.push(...expanded);
+        continue;
+      }
+      const literal = /^["']([A-Za-z_][A-Za-z0-9_]*)["']$/u.exec(raw);
+      if (!literal) return null;
+      values.push(literal[1]);
+    }
+    return values.length > 0 ? values : null;
+  }
+
+  // Generated INSERT templates may map a literal string array into quoted
+  // SQL identifiers, or alias a same-file field array before interpolating it.
+  const alias = new RegExp(
+    `(?:export\\s+)?const\\s+${escapedName}\\s*=\\s*([A-Za-z_$][A-Za-z0-9_$]*)\\s*(?:\\.map\\s*\\()?`,
+    "u",
+  ).exec(sourceText);
+  return alias ? resolveColumnArray(sourceText, alias[1], nextSeen) : null;
+}
+
+function generatedInsertColumns(source, table, offset) {
+  const remainder = source.text.slice(offset, offset + 1600);
+  const literalParts = new RegExp(
+    `^INSERT\\s+INTO\\s+["\x60]?${table}["\x60]?\\s*["']\\s*\\+\\s*["']\\(([^"']+)\\)["']`,
+    "iu",
+  ).exec(remainder);
+  if (literalParts) return parseColumns(literalParts[1]);
+
+  const template = new RegExp(
+    `^INSERT\\s+INTO\\s+["\x60]?${table}["\x60]?\\s*\\(\\s*\\$\\{\\s*([A-Za-z_$][A-Za-z0-9_$]*)`,
+    "iu",
+  ).exec(remainder);
+  return template ? resolveColumnArray(source.text, template[1]) : null;
+}
+
 function lineAt(text, offset) {
   let line = 1;
   for (let index = 0; index < offset; index += 1) {
@@ -71,18 +124,25 @@ export function auditTimestampWriterCoverage(catalog, sources) {
     for (const match of source.text.matchAll(INSERT_RE)) {
       const table = match[1].toLowerCase();
       if (!targetTables.has(table)) continue;
-      parsedOffsets.add(match.index);
-      const columns = parseColumns(match[2]);
+      const columns = parseColumns(match[2]) ?? generatedInsertColumns(source, table, match.index);
       if (!columns) {
+        parsedOffsets.add(match.index);
         unparsedTargetInserts.push({ table, file: source.file, line: lineAt(source.text, match.index) });
         continue;
       }
+      parsedOffsets.add(match.index);
       inserts.push({ table, columns: new Set(columns), file: source.file, line: lineAt(source.text, match.index) });
     }
     for (const match of source.text.matchAll(INSERT_TABLE_RE)) {
       const table = match[1].toLowerCase();
       if (targetTables.has(table) && !parsedOffsets.has(match.index)) {
-        unparsedTargetInserts.push({ table, file: source.file, line: lineAt(source.text, match.index) });
+        const columns = generatedInsertColumns(source, table, match.index);
+        if (columns) {
+          parsedOffsets.add(match.index);
+          inserts.push({ table, columns: new Set(columns), file: source.file, line: lineAt(source.text, match.index) });
+        } else {
+          unparsedTargetInserts.push({ table, file: source.file, line: lineAt(source.text, match.index) });
+        }
       }
     }
   }

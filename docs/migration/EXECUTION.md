@@ -1,5 +1,46 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 PR #41 head, staging Worker, and D1 readback
+
+PR #41 remains open and draft at head `28fa8c151d14d438c33037c74d4cab148a53cc5e`.
+GitHub Actions run `36942360484` passed both required jobs: Cloudflare staging
+application and Worker API validation. The later commits after deployed Worker
+source `3a93f8b` update schema conversion/auditing, tests, and documentation;
+they do not change the deployed Worker bundle.
+
+Using the explicit `fanmark-staging-inapp` Wrangler profile, read-only
+deployment history showed `fanmark-app-staging` version
+`9ab4f6f9-ecf2-41b0-87fe-c75f26d6c8ea` at 100%, deployed at
+`2026-10-01T23:56:01Z`. The profile identifies `fanmark.id@gmail.com` in the
+intended Fanmark.id account. Remote migration readback reported no pending
+migrations for `fanmark-business-staging`, `fanmark-auth-staging`, or
+`fanmark-emoji-master-staging`.
+
+The current staging Worker retains Cron schedules `* * * * *` and
+`0 0 * * *`; `NOTIFICATION_PROCESSOR_BACKEND=d1` is configured, while
+`LICENSE_EXPIRY_BACKEND` is unset and daily license expiry therefore remains
+disabled. The secret-name readback still contains only
+`BETTER_AUTH_SECRET`, `REFERENCE_MASTER_SERVICE_SECRET`, and
+`VERIFIED_ACCESS_SECRET`; no secret values were read. Stripe/Resend/OAuth
+provider acceptance and CPU/plan fit remain open. Converter v22 is also not
+deployable: 11 external Auth references, 71 timestamp-default operations, and
+functions/RLS/trigger scope gates remain; its fresh-catalog synthetic replay
+proves public-row reconciliation only, not full migration reconciliation.
+No real user/Auth/Storage rows, production routes, or domain/DNS were changed.
+
+The latest catalog-only query completed at `2026-10-02T04:34:34Z` under
+`BEGIN READ ONLY` and returned 40 tables / 406 columns. The updated writer audit
+parsed 143 literal or statically generated INSERT column lists and found zero
+unparsed target INSERTs. Twelve timestamp defaults have no direct literal
+writer (eight versioned reference-master fields and four user-scoped fields).
+The generic snapshot importer is a separate source-shaped path; this audit
+does not establish bound-value correctness or transaction-time semantics.
+The three previously unparsed master seed builders are now covered by a
+regression test. The emoji release bootstrap binds an explicit six-digit UTC
+timestamp to newly inserted master rows and verifies both values on readback.
+`npm run test:migration-data` passes 205/205; root and Worker typechecks,
+JavaScript syntax checks, and `git diff --check` pass.
+
 ## 2026-10-02 合成pre-write fallback再試験とstaging secret readback
 
 `npm run test:migration:staging-prewrite-resume`が67,990 msで成功した。

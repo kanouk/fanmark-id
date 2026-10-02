@@ -449,3 +449,16 @@ gated. The change reduces the current-catalog timestamp operation count from
 79 to 71; external Auth references and unsupported functions/RLS/triggers
 remain blocking, so the schema stays non-deployable. No source rows, remote D1,
 production route, or domain/DNS state was changed.
+
+## 2026-10-02 generated master-writer audit follow-up
+
+The audit now resolves static generated column arrays for the extension-coupon
+and broadcast-email master seed builders, and the emoji release bootstrap uses
+an explicit ten-column statement. It binds one UTC microsecond timestamp to
+both `created_at` and `updated_at` for new catalog rows and checks those values
+on readback. A fresh read-only catalog audit observed at `2026-10-02T04:34:34Z`
+parsed 143 literal or statically generated INSERT column lists and reported no
+unparsed target INSERTs. Twelve timestamp columns still lack a direct literal
+writer; this is separate from proving their source/import path and transaction-
+time semantics. Focused writer tests pass 6/6; the converter remains
+non-deployable.
