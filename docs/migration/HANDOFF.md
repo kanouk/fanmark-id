@@ -5,6 +5,17 @@ open and draft. CI validates the branch but does not deploy the Worker.
 The newest checkpoint below is authoritative for current deployment state;
 older sections retain their historical acceptance and failure evidence.
 
+Scheduled-writer checkpoint: the new read-only `source-scheduled-writers.sql`
+observed two cron.job rows at2026-10-02T21:44:12.512016+00:00, session UTC/cron GMT.
+Daily expiry mention is active, minute notification mention inactive; direct
+manual-expiry/archive mentions are absent. Only operational metadata/digests
+were selected, excluding raw commands/URLs/job names/credentials and user rows.
+Scope/types/ID uniqueness/SHA-256 were validated. This does not prove successful
+invocation or exclude indirect/external callers. No jobs/functions/deployments
+changed; see `source-scheduled-writers.md` and private AdGAl7 metadata evidence.
+Recurring target activation, CPU/plan fit and archive retention remain open;
+source writer shutdown belongs to the deferred final cutover.
+
 Search evidence checkpoint: the source complete-data/public availability/secure
 availability/combined-lottery definitions were reviewed from the existing fresh
 catalog-only snapshot. Latest NULL-first license selection and earliest-blocker

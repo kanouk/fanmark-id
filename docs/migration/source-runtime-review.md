@@ -1,5 +1,11 @@
 # Source runtime bindings review
 
+Scheduled writers are separately observed by a metadata-only read-only query;
+see [source scheduled writers](source-scheduled-writers.md). Trigger bindings,
+ordinary-function privileges, current Cron state and invocation history are
+distinct scopes. Missing direct Cron mentions do not classify an ordinary
+function as inactive or retire an external caller.
+
 `schema-readiness.sql` captures triggers whose **table** is in `public`. It
 does not capture a public function attached to `auth.users`. Runtime migration
 review therefore also uses `scripts/migration/source-runtime-bindings.sql`, a

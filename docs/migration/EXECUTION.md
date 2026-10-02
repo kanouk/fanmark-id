@@ -1,5 +1,18 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-03：source定期writerの現状を読み取り専用で確認
+
+新`source-scheduled-writers.sql`の21:44:12.512016Z read-only transactionでcron.job
+2jobの時刻帯・active・command SHA-256と固定operation mentionを取得した。
+session UTC / cron GMT。check-expired-licensesを記した日次0:00 jobはactive、
+process-notification-eventsを記した毎分jobはinactive。manual expiry/archiveを
+直接記すjobは0。本文・URL・job名・credentialとapplication/Auth行は取得しない。
+metadata scope/型/ID重複/SHA-256検証は成功。mention/activeは実invocationの成功を
+意味せず、間接/外部callerは未確認。source/Cloudflare scheduleは変更せず、daily
+staging execution selectorも未設定を保持した。private証拠と残るgateは
+[source scheduled writers](source-scheduled-writers.md)。source writer停止は最終
+cutoverに属し、今回実行しない。
+
 ## 2026-10-03：検索のsource照合と全Business schemaのnative検証
 
 source complete-data、public/secure availability、combined lottery searchの4定義を
