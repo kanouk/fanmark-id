@@ -733,7 +733,7 @@ async function confirmCommitted(database, item, bindings) {
   try {
     const [license, registry, access, journal, audit, event, configs, pending, guard] = await Promise.all([
       database.prepare(`SELECT status, excluded_at, lifecycle_generation, lifecycle_claim_id,
-          fanmark_id, user_id, grace_expires_at, is_returned FROM fanmark_licenses WHERE id = ?`)
+          fanmark_id, user_id, grace_expires_at, is_returned, updated_at FROM fanmark_licenses WHERE id = ?`)
         .bind(item.licenseId).first(),
       database.prepare("SELECT incarnation FROM fanmark_license_incarnations WHERE license_id = ?")
         .bind(item.licenseId).first(),
@@ -761,6 +761,7 @@ async function confirmCommitted(database, item, bindings) {
         .bind(item.operationId).first(),
     ]);
     return license?.status === "expired" && license.excluded_at === bindings.capturedNow &&
+      license.updated_at === bindings.capturedNow &&
       Number(license.lifecycle_generation) === values.nextLifecycleGeneration &&
       license.lifecycle_claim_id === null && license.fanmark_id === item.fanmarkId &&
       license.user_id === item.userId && license.grace_expires_at === item.graceExpiresAt &&
@@ -793,7 +794,7 @@ function finalizationBatch(database, item, bindings) {
   const statements = [
     database.prepare(`
       UPDATE fanmark_licenses
-      SET status = 'expired', excluded_at = ?, lifecycle_generation = lifecycle_generation + 1,
+      SET status = 'expired', excluded_at = ?, updated_at = ?, lifecycle_generation = lifecycle_generation + 1,
           lifecycle_claim_id = ?
       WHERE id = ? AND fanmark_id = ? AND user_id IS ? AND status = 'grace'
         AND grace_expires_at = ? AND grace_expires_at <= ? AND is_returned = ?
@@ -819,7 +820,7 @@ function finalizationBatch(database, item, bindings) {
             AND item.license_lifecycle_generation = fanmark_licenses.lifecycle_generation
             AND item.access_generation = ?)
     `).bind(
-      bindings.capturedNow, operationId, item.licenseId, item.fanmarkId, item.userId,
+      bindings.capturedNow, bindings.capturedNow, operationId, item.licenseId, item.fanmarkId, item.userId,
       item.graceExpiresAt, bindings.capturedNow, item.isReturned,
       item.licenseLifecycleGeneration, item.fanmarkShortId, item.fanmarkName,
       item.licenseIncarnation, item.licenseIncarnation, item.accessGeneration,
@@ -952,7 +953,7 @@ function lotteryFinalizationBatch(database, item, bindings, input, effects) {
   const statements = [
     database.prepare(`
       UPDATE fanmark_licenses
-      SET status = 'expired', excluded_at = ?, lifecycle_generation = lifecycle_generation + 1
+      SET status = 'expired', excluded_at = ?, updated_at = ?, lifecycle_generation = lifecycle_generation + 1
       WHERE id = ? AND fanmark_id = ? AND user_id IS ? AND status = 'grace'
         AND grace_expires_at = ? AND grace_expires_at <= ? AND is_returned = ?
         AND lifecycle_generation = ? AND lifecycle_claim_id = ?
@@ -984,7 +985,7 @@ function lotteryFinalizationBatch(database, item, bindings, input, effects) {
           WHERE active.user_id = ? AND active.status = 'active' AND active.is_returned = 0
             AND (active.license_end IS NULL OR active.license_end > ?)) < ?)
     `).bind(
-      bindings.capturedNow, item.licenseId, item.fanmarkId, item.userId,
+      bindings.capturedNow, bindings.capturedNow, item.licenseId, item.fanmarkId, item.userId,
       item.graceExpiresAt, bindings.capturedNow, item.isReturned,
       item.licenseLifecycleGeneration, item.operationId,
       item.fanmarkShortId, item.fanmarkName, item.licenseIncarnation,

@@ -151,13 +151,13 @@ describe("D1 fanmark transfer", () => {
     expect(response.status).toBe(200);
     const result = await response.json() as Record<string, unknown>;
     expect(result).toMatchObject({ success: true, fanmark_name: "🌹", new_license_end: "2026-10-03T00:00:00.000000Z" });
-    const oldLicense = await business.prepare("SELECT status, is_returned, license_end FROM fanmark_licenses WHERE id = ?")
+    const oldLicense = await business.prepare("SELECT status, is_returned, license_end, updated_at FROM fanmark_licenses WHERE id = ?")
       .bind(LICENSE).first<Record<string, unknown>>();
-    expect(oldLicense).toEqual({ status: "expired", is_returned: 1, license_end: NOW });
-    const nextLicense = await business.prepare("SELECT user_id, status, is_transferred, transfer_locked_until, license_end, display_fanmark FROM fanmark_licenses WHERE id = ?")
+    expect(oldLicense).toEqual({ status: "expired", is_returned: 1, license_end: NOW, updated_at: NOW });
+    const nextLicense = await business.prepare("SELECT user_id, status, is_transferred, transfer_locked_until, license_end, display_fanmark, license_start, created_at, updated_at FROM fanmark_licenses WHERE id = ?")
       .bind(result.new_license_id).first<Record<string, unknown>>();
     expect(nextLicense).toEqual({
-      user_id: RECIPIENT, status: "active", is_transferred: 1,
+      user_id: RECIPIENT, status: "active", is_transferred: 1, license_start: NOW, created_at: NOW, updated_at: NOW,
       transfer_locked_until: "2026-10-25T10:15:23.123000Z", license_end: "2026-10-03T00:00:00.000000Z", display_fanmark: "🌹",
     });
     expect(await count(business, "fanmark_basic_configs")).toBe(1);

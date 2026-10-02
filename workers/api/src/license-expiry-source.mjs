@@ -1,8 +1,7 @@
 /**
- * Local integration repository for the source-shaped fanmark.id schema.
+ * Source-shaped D1 repository used by the shared scheduled/admin lifecycle runner.
  *
- * This is intentionally not wired to a Worker route, cron, or remote D1. It
- * accepts only internal run bindings and a server-captured timestamp. Its
+ * It accepts only internal run bindings and a server-captured timestamp. Its
  * synthetic tests use the catalog-converted schema and target extensions.
  */
 
@@ -390,7 +389,7 @@ async function confirmCommitted(database, item, bindings) {
     const [license, registry, access, journal, audit, event] = await Promise.all([
       database.prepare(`
         SELECT status, lifecycle_generation, lifecycle_claim_id, fanmark_id,
-               user_id, license_end, grace_expires_at, is_returned
+               user_id, license_end, grace_expires_at, is_returned, updated_at
         FROM fanmark_licenses WHERE id = ?
       `).bind(item.licenseId).first(),
       database.prepare(`
@@ -418,6 +417,7 @@ async function confirmCommitted(database, item, bindings) {
       license.lifecycle_claim_id !== null || license.fanmark_id !== item.fanmarkId ||
       license.user_id !== item.userId || license.license_end !== item.licenseEnd ||
       license.grace_expires_at !== item.graceExpiresAt || Number(license.is_returned) !== 0 ||
+      license.updated_at !== bindings.capturedNow ||
       Number(registry.incarnation) !== item.licenseIncarnation ||
       Number(access.license_incarnation) !== item.licenseIncarnation ||
       Number(access.access_generation) !== accessGeneration || access.updated_at !== bindings.capturedNow ||
@@ -453,7 +453,7 @@ async function applyActiveToGrace(database, item, bindings) {
   const statements = [
     database.prepare(`
       UPDATE fanmark_licenses
-      SET status = 'grace', grace_expires_at = ?, is_returned = 0,
+      SET status = 'grace', grace_expires_at = ?, updated_at = ?, is_returned = 0,
           lifecycle_generation = lifecycle_generation + 1,
           lifecycle_claim_id = ?
       WHERE id = ? AND fanmark_id = ? AND user_id IS ?
@@ -485,7 +485,7 @@ async function applyActiveToGrace(database, item, bindings) {
             AND item.access_generation = ?
         )
     `).bind(
-      item.graceExpiresAt, operationId, item.licenseId, item.fanmarkId, item.userId,
+      item.graceExpiresAt, bindings.capturedNow, operationId, item.licenseId, item.fanmarkId, item.userId,
       item.licenseLifecycleGeneration, item.licenseEnd, bindings.capturedNow,
       item.fanmarkShortId, item.fanmarkName,
       item.licenseIncarnation, item.licenseIncarnation, item.accessGeneration,

@@ -1,5 +1,27 @@
 # Cloudflare移行の実行・再開手順
 
+## 2026-10-02 v41：ライセンス操作日時と猶予・失効処理の修正
+
+read-only schema catalogは`2026-10-02T14:21:25.605664Z`。
+40 tables / 406 columns / 144 constraints / 139 indexes / 36 triggers /
+77 RLS policies / 58 functions / one view。source table rowsは取得していない。
+
+source-profile D1の猶予開始、抽選なし失効、抽選後の旧ライセンス失効の3経路で、
+状態変更時に`fanmark_licenses.updated_at`が更新されない問題を再現し修正した。
+各経路はserver-captured操作時刻をbindし、応答喪失時のcommit確認もその時刻を検証する。
+過去の作成・更新日時を持つsynthetic rowsで回帰テストを実行し、作成日時の保持と更新日時の
+進行をreadbackした。登録・譲渡・抽選当選者の新規ライセンスは`license_start`、`created_at`、
+`updated_at`が操作時刻になることも確認する。内部claimの取得・解除は業務日時を変更しない。
+
+converter v41は54個のWorker-operation timestamp columns、7個のsnapshot-import-only
+columns、8個のversioned reference-master timestamps、1個のscheduled Worker timestampと
+11 Auth FKをreview済み。schema/operation blockersは12 locations（timestamp defaults 9、
+functions/RLS/triggers各1）。credential descriptor gateも残り、`deployable: false`。
+converter tests 39/39、migration data tests 235/235、source lifecycle integration 25/25、
+scheduled runner 8/8、registration D1 11/11、transfer D1 9/9、Worker typecheckと変更ファイルの
+ESLintを確認する。v40 head `8a17bef`のCI run `37019188514`は両job成功。
+ユーザーデータ移行とdomain/DNS切替は引き続き最後の工程に留める。
+
 ## 2026-10-02 v40：ファンマ登録日時と再開時の検証
 
 read-only schema catalogを`2026-10-02T14:11:27.866234Z`に取得した。

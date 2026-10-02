@@ -17,7 +17,7 @@ import { expectedSequenceTargets } from "./snapshot-format.mjs";
 import { SUPPORTED_POSTGRES_ARRAY_TYPES } from "./value-conversion.mjs";
 import { MAX_LOTTERY_WEIGHT_TEXT_LENGTH } from "../../workers/api/src/license-lottery-weight-contract.mjs";
 
-export const SCHEMA_CONVERSION_VERSION = 40;
+export const SCHEMA_CONVERSION_VERSION = 41;
 export const DEFAULT_SQL_FILE = "schema-d1.generated.sql";
 export const DEFAULT_REPORT_FILE = "schema-d1.gates.json";
 
@@ -195,6 +195,55 @@ const SYSTEM_SETTINGS_TIMESTAMP_EVIDENCE = Object.freeze([
   "workers/api/vitest.system-settings.config.mjs",
 ]);
 const REVIEWED_RUNTIME_TIMESTAMP_WRITES = new Map([
+  ["fanmark_licenses.created_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Registration, transfer, and lottery-winner creation bind the canonical UTC operation time; subsequent mutations preserve creation time and snapshot imports retain their explicit source timestamps.",
+    evidence: [
+      "workers/api/src/fanmark-registration-d1-api.ts",
+      "workers/api/src/fanmark-transfer-d1-api.ts",
+      "workers/api/src/license-grace-finalization-source.mjs",
+      "workers/api/test/fanmark-registration-d1.test.ts",
+      "workers/api/test/fanmark-transfer-d1.test.ts",
+      "workers/api/test/license-expiry-source.integration.mjs",
+      "scripts/migration/d1-import.mjs",
+      "scripts/migration/test-d1-import.mjs",
+    ],
+  }],
+  ["fanmark_licenses.license_start", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Registration, transfer, and lottery-winner creation bind the canonical UTC operation time as the new license start; later operations preserve it and snapshot imports retain the source start.",
+    evidence: [
+      "workers/api/src/fanmark-registration-d1-api.ts",
+      "workers/api/src/fanmark-transfer-d1-api.ts",
+      "workers/api/src/license-grace-finalization-source.mjs",
+      "workers/api/test/fanmark-registration-d1.test.ts",
+      "workers/api/test/fanmark-transfer-d1.test.ts",
+      "workers/api/test/license-expiry-source.integration.mjs",
+      "scripts/migration/d1-import.mjs",
+      "scripts/migration/test-d1-import.mjs",
+    ],
+  }],
+  ["fanmark_licenses.updated_at", {
+    code: "worker_operation_explicit_timestamp",
+    reason: "Source-profile lifecycle transitions, registration, transfer, return, account deletion, admin expiry, Stripe plan reconciliation and extension, and coupon application explicitly bind their canonical operation time; internal lifecycle claims preserve business timestamps and snapshot imports retain the source value.",
+    evidence: [
+      "workers/api/src/fanmark-registration-d1-api.ts",
+      "workers/api/src/fanmark-transfer-d1-api.ts",
+      "workers/api/src/license-grace-finalization-source.mjs",
+      "workers/api/test/fanmark-registration-d1.test.ts",
+      "workers/api/test/fanmark-transfer-d1.test.ts",
+      "workers/api/test/license-expiry-source.integration.mjs",
+      "scripts/migration/d1-import.mjs",
+      "scripts/migration/test-d1-import.mjs",
+      "workers/api/src/license-expiry-source.mjs",
+      "workers/api/src/fanmark-return-d1-api.ts",
+      "workers/api/src/account-deletion-d1-api.ts",
+      "workers/api/src/admin-user-management-d1-api.ts",
+      "workers/api/src/stripe-subscription-reconciliation-d1.ts",
+      "workers/api/src/stripe-webhook-d1-application.ts",
+      "workers/api/migrations-business/0015_extension_coupon_application.sql",
+    ],
+  }],
   ["fanmarks.created_at", {
     code: "worker_operation_explicit_timestamp",
     reason: "Registration binds canonical UTC operation time for new fanmarks and never changes created_at when reusing an existing fanmark; snapshot imports retain the source timestamp.",

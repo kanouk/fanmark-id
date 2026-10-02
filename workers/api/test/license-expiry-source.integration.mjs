@@ -435,6 +435,8 @@ async function addExpiredLicense(database, {
   licenseId = IDS.license,
   userId = null,
   licenseEnd = EXPIRY,
+  createdAt = CAPTURED_NOW,
+  updatedAt = CAPTURED_NOW,
   emoji = "🌿",
 } = {}) {
   const catalog = await loadCatalog();
@@ -461,8 +463,8 @@ async function addExpiredLicense(database, {
     is_returned: 0,
     is_transferred: 0,
     display_fanmark: emoji,
-    created_at: CAPTURED_NOW,
-    updated_at: CAPTURED_NOW,
+    created_at: createdAt,
+    updated_at: updatedAt,
   };
   await insertCatalogRow(database, catalog, "fanmarks", knownCatalogValues(catalog, "fanmarks", fanmark));
   await insertCatalogRow(database, catalog, "fanmark_licenses", knownCatalogValues(catalog, "fanmark_licenses", license));
@@ -724,7 +726,7 @@ async function seedProtectedTarget(fixture, hash) {
 test("applies nullable-owner expiry with independent lifecycle/access generations and source-shaped effects", async () => {
   const fixture = await setup();
   try {
-    await addExpiredLicense(fixture.database);
+    await addExpiredLicense(fixture.database, { createdAt: EXPIRY, updatedAt: EXPIRY });
     const before = await row(fixture.database,
       'SELECT "license_incarnation", "password_generation", "access_generation" FROM "fanmark_access_versions" WHERE "license_id" = ?',
       IDS.license,
@@ -748,7 +750,7 @@ test("applies nullable-owner expiry with independent lifecycle/access generation
     assert.equal(run.schema_extension_digest, fixture.credentialPlan.extensionDigest);
 
     const license = await row(fixture.database,
-      'SELECT "status", "user_id", "license_end", "grace_expires_at", "is_returned", "lifecycle_generation", "lifecycle_claim_id" FROM "fanmark_licenses" WHERE "id" = ?',
+      'SELECT "status", "user_id", "license_end", "grace_expires_at", "is_returned", "lifecycle_generation", "lifecycle_claim_id", "created_at", "updated_at" FROM "fanmark_licenses" WHERE "id" = ?',
       IDS.license,
     );
     assert.deepEqual(license, {
@@ -759,6 +761,8 @@ test("applies nullable-owner expiry with independent lifecycle/access generation
       is_returned: 0,
       lifecycle_generation: 1,
       lifecycle_claim_id: null,
+      created_at: EXPIRY,
+      updated_at: CAPTURED_NOW,
     });
     const after = await row(fixture.database,
       'SELECT "license_incarnation", "password_generation", "access_generation" FROM "fanmark_access_versions" WHERE "license_id" = ?',
@@ -836,7 +840,7 @@ test("applies nullable-owner expiry with independent lifecycle/access generation
 test("finalizes an overdue grace license without lottery entries as one guarded source-profile transition", async () => {
   const fixture = await setup();
   try {
-    await addExpiredLicense(fixture.database);
+    await addExpiredLicense(fixture.database, { createdAt: EXPIRY, updatedAt: EXPIRY });
     await insertCatalogRow(fixture.database, fixture.catalog, "fanmark_basic_configs", {
       id: randomUUID(), license_id: IDS.license, fanmark_name: "Synthetic", access_type: "text",
     });
@@ -862,12 +866,14 @@ test("finalizes an overdue grace license without lottery entries as one guarded 
     assert.equal(summary.results[0].outcome, "processed");
 
     const license = await row(fixture.database, `SELECT status, excluded_at, lifecycle_generation,
-      lifecycle_claim_id, grace_expires_at FROM fanmark_licenses WHERE id = ?`, IDS.license);
+      lifecycle_claim_id, grace_expires_at, created_at, updated_at FROM fanmark_licenses WHERE id = ?`, IDS.license);
     assert.deepEqual(license, {
       status: "expired",
       excluded_at: CAPTURED_NOW,
       lifecycle_generation: 2,
       lifecycle_claim_id: null,
+      created_at: EXPIRY,
+      updated_at: CAPTURED_NOW,
       grace_expires_at: "2026-09-22T11:59:59.000000Z",
     });
     const afterAccess = await row(fixture.database,
@@ -1004,7 +1010,7 @@ test("atomically finalizes a pending lottery with winner license, history, audit
     const ownerId = "00000000-0000-4000-8000-000000000a10";
     const winnerId = "00000000-0000-4000-8000-000000000a11";
     const entryId = "00000000-0000-4000-8000-000000000a12";
-    await addExpiredLicense(fixture.database, { userId: ownerId });
+    await addExpiredLicense(fixture.database, { userId: ownerId, createdAt: EXPIRY, updatedAt: EXPIRY });
     await markGraceExpired(fixture.database);
     await insertCatalogRow(fixture.database, fixture.catalog, "fanmark_lottery_entries", {
       id: entryId,
@@ -1029,8 +1035,8 @@ test("atomically finalizes a pending lottery with winner license, history, audit
     assert.equal(summary.results[0].outcome, "processed");
 
     const oldLicense = await row(fixture.database,
-      "SELECT status, lifecycle_claim_id FROM fanmark_licenses WHERE id = ?", IDS.license);
-    assert.deepEqual(oldLicense, { status: "expired", lifecycle_claim_id: null });
+      "SELECT status, lifecycle_claim_id, created_at, updated_at FROM fanmark_licenses WHERE id = ?", IDS.license);
+    assert.deepEqual(oldLicense, { status: "expired", lifecycle_claim_id: null, created_at: EXPIRY, updated_at: CAPTURED_NOW });
     const entry = await row(fixture.database,
       "SELECT entry_status, won_at, lottery_executed_at FROM fanmark_lottery_entries WHERE id = ?", entryId);
     assert.deepEqual(entry, { entry_status: "won", won_at: CAPTURED_NOW, lottery_executed_at: CAPTURED_NOW });
@@ -1054,10 +1060,12 @@ test("atomically finalizes a pending lottery with winner license, history, audit
 
     const winnerLicense = await row(fixture.database,
       `SELECT id, fanmark_id, user_id, license_start, license_end, status,
-        is_initial_license FROM fanmark_licenses WHERE user_id = ? AND status = 'active'`, winnerId);
+        is_initial_license, created_at, updated_at FROM fanmark_licenses WHERE user_id = ? AND status = 'active'`, winnerId);
     assert.equal(winnerLicense.fanmark_id, IDS.fanmark);
     assert.equal(winnerLicense.user_id, winnerId);
     assert.equal(winnerLicense.license_start, CAPTURED_NOW);
+    assert.equal(winnerLicense.created_at, CAPTURED_NOW);
+    assert.equal(winnerLicense.updated_at, CAPTURED_NOW);
     assert.equal(winnerLicense.license_end, "2026-10-23T00:00:00.000000Z");
     assert.equal(winnerLicense.status, "active");
     assert.equal(winnerLicense.is_initial_license, 0);

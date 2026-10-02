@@ -115,10 +115,10 @@ describe("D1 fanmark registration", () => {
       "SELECT created_at, updated_at FROM fanmarks",
     ).first();
     expect(fanmarkTimestamps).toEqual({ created_at: NOW, updated_at: NOW });
-    const license = await business!.prepare("SELECT user_id, license_start, license_end, display_fanmark, is_initial_license FROM fanmark_licenses").first<Record<string, unknown>>();
+    const license = await business!.prepare("SELECT user_id, license_start, license_end, display_fanmark, is_initial_license, created_at, updated_at FROM fanmark_licenses").first<Record<string, unknown>>();
     expect(license).toEqual({
       user_id: OWNER, license_start: NOW, license_end: "2026-10-26T00:00:00.000000Z",
-      display_fanmark: "🌹", is_initial_license: 1,
+      display_fanmark: "🌹", is_initial_license: 1, created_at: NOW, updated_at: NOW,
     });
     expect(await count(business!, "fanmark_basic_configs")).toBe(1);
     expect(await count(business!, "fanmark_profiles")).toBe(1);
