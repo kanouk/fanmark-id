@@ -624,6 +624,62 @@ describe("D1 notification event processor", () => {
       .bind(ownerId).first()).toEqual({ requires_password_setup: stored });
   });
 
+  it.each(["", null])("uses the default language when payload language is empty (%s)", async (language) => {
+    if (!businessDatabase) throw new Error("Split D1 bindings unavailable");
+    const eventId = await seedEvent();
+    await businessDatabase.prepare("UPDATE notification_events SET payload = json_set(payload, '$.language', ?) WHERE id = ?")
+      .bind(language, eventId).run();
+    await expect(runScheduledNotificationEvents({
+      env: { ...runtimeEnv, NOTIFICATION_PROCESSOR_BACKEND: "d1" },
+      database: businessDatabase, scheduledTime: Date.parse(now),
+    })).resolves.toMatchObject({ processed: 1, failed: 0 });
+    const row = await businessDatabase.prepare("SELECT payload FROM notifications WHERE event_id = ?")
+      .bind(eventId).first<{ payload: string }>();
+    expect(JSON.parse(row?.payload ?? "null")).toMatchObject({
+      title: "香水ラジオ", body: "Hello 香水ラジオ {{created_at}}", summary: "For fmk-1",
+    });
+  });
+
+  it.each([
+    ["cooldown_window_seconds", "fmk-1", 0],
+    ["cooldown_window_seconds", "different-fanmark", 1],
+    ["cooldown_window_seconds", "", 0],
+    ["cooldown_window_seconds", null, 0],
+    ["max_per_user", "fmk-1", 0],
+    ["max_per_user", "different-fanmark", 1],
+    ["max_per_user", "", 0],
+    ["max_per_user", null, 0],
+  ])("preserves source notification limit scope (%s, %s)", async (limitColumn, fanmarkId, delivered) => {
+    if (!businessDatabase) throw new Error("Split D1 bindings unavailable");
+    const eventId = await seedEvent();
+    const ruleId = "bbbbbbbb-2222-4222-8222-222222222222";
+    const priorEventId = "aaaaaaaa-2222-4222-8222-222222222222";
+    const priorNotificationId = "ffffffff-2222-4222-8222-222222222222";
+    await businessDatabase.batch([
+      businessDatabase.prepare(`UPDATE notification_rules SET ${limitColumn} = ? WHERE id = ?`)
+        .bind(limitColumn === "max_per_user" ? 1 : 60, ruleId),
+      businessDatabase.prepare("UPDATE notification_events SET payload = json_set(payload, '$.fanmark_id', ?) WHERE id = ?")
+        .bind(fanmarkId, eventId),
+      businessDatabase.prepare(`INSERT INTO notification_events
+        (id,event_type,source,trigger_at,status,created_at,updated_at)
+        VALUES (?, 'synthetic_event', 'system', ?, 'processed', ?, ?)`)
+        .bind(priorEventId, now, now, now),
+      businessDatabase.prepare(`INSERT INTO notifications
+        (id,event_id,rule_id,user_id,channel,template_id,payload,status,triggered_at,created_at,updated_at)
+        VALUES (?, ?, ?, ?, 'in_app', 'synthetic-template', ?, 'delivered', ?, ?, ?)`)
+        .bind(priorNotificationId, priorEventId, ruleId, ownerId,
+          JSON.stringify({ fanmark_id: "fmk-1", title: "Prior synthetic notification" }), now, now, now),
+    ]);
+    await expect(runScheduledNotificationEvents({
+      env: { ...runtimeEnv, NOTIFICATION_PROCESSOR_BACKEND: "d1" },
+      database: businessDatabase, scheduledTime: Date.parse(now),
+    })).resolves.toEqual({ status: "completed", selected: 1, processed: 1, failed: 0 });
+    expect(await businessDatabase.prepare("SELECT count(*) AS count FROM notifications WHERE event_id = ?")
+      .bind(eventId).first()).toEqual({ count: delivered });
+    expect(await businessDatabase.prepare("SELECT payload FROM notifications WHERE id = ?")
+      .bind(priorNotificationId).first()).toEqual({ payload: JSON.stringify({ fanmark_id: "fmk-1", title: "Prior synthetic notification" }) });
+  });
+
   it("does not touch the queue while its backend selector is disabled", async () => {
     if (!businessDatabase) throw new Error("Split D1 bindings unavailable");
     const eventId = await seedEvent();

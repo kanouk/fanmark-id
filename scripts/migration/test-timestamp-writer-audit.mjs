@@ -292,10 +292,13 @@ test("the D1 notification archiver explicitly writes archived_at", () => {
   assert.equal(result.insertStatementCount, 1);
   assert.deepEqual(result.unparsedTargetInserts, []);
   assert.deepEqual(result.uncoveredTimestampDefaults, []);
+  const insertMatch = /INSERT OR IGNORE INTO notifications_history/u.exec(sources[0].text);
+  assert.ok(insertMatch, "the production archiver must contain its history INSERT");
+  const insertLine = sources[0].text.slice(0, insertMatch.index).split("\n").length;
   assert.deepEqual(result.timestampColumnWriters, [{
     table: "notifications_history",
     file: archiveSource,
-    line: 365,
+    line: insertLine,
     columns: ["archived_at"],
   }]);
   assert.match(sources[0].text, /\.bind\(archivedAt, cutoff, NOTIFICATION_ARCHIVE_BATCH_LIMIT\)/u);

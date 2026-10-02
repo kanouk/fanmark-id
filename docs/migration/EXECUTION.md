@@ -6085,3 +6085,27 @@ but stopped on Business D1 API7500 daily-read quota before deployment or seeding
 Worker remains010a4d7a; the new runtime change requires new exact-HEAD CI and
 re-pinned private scripts plus the full clean/identity/ledger/baseline preflight.
 Source/user/domain/DNS and provider selectors remain unchanged.
+
+## 2026-10-03 source locale/limit scope parity and CI repair
+
+Source version209 uses a truthy payload language override and scopes cooldown/
+max_per_user by fanmark ID only when nonempty. Target treated empty language as
+an unavailable locale and empty ID as a filtered identifier, bypassing limits.
+Two locale and eight limit-scope native cases reproduced three runtime failures;
+fixed both paths while preserving nonempty strings and strict boolean segments.
+Notifications36/36, migration-data277/277, Worker typecheck/lint/diff passed.
+Initial fixture failures for forbidden settings language/missing triggered_at
+were corrected and are not counted as runtime regressions.
+
+CI37072572541 application failed because the timestamp writer test pinned line365
+rather than verifying the archive INSERT's actual line374. Derive the expected
+position from that INSERT, retaining writer-count/column/bind/native timestamp
+checks. The full local migration suite now passes. Worker CI remained live while
+these follow-up changes were prepared; do not reuse that run for the new HEAD.
+
+Reviewed the live-catalog render_notification_template definition hash730aaec7.
+It leaves five date placeholders, selects active ID/version/language and does
+not select by channel. Target channel selection and JSONB text/key ordering/
+numeric precision need further contract reconciliation; this is not full render
+parity acceptance. No source function invocation or real-user data operation,
+remote D1 query/write/deployment, provider activation or DNS change was performed.

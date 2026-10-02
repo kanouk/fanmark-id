@@ -54,6 +54,38 @@ booleanへdecodeして比較する。数値0/1や文字列への暗黙変換は�
 これはlocal検証済みのruntime修正で、stagingへのdeploy/remote acceptanceは未完了。
 最新deploy前確認もBusiness D1の日次読み取り上限（API7500）で書込み前に停止した。
 
+## 言語・回数制限とrender RPCの照合
+
+source version209は空のpayload.languageを既定値として扱い、settingsの言語を使う。
+移行側も空文字を指定言語として採用しない。空文字/nullのpayload言語で日本語templateを
+使う2ケースを追加した。preferred_language自体はsource/targetの4言語制約で空文字を
+拒否するため、不正なsettings行を作って言語fallbackの証明には使わない。
+
+sourceのcooldown/max_per_userはfanmark_idが空文字/nullなら利用者・rule全体を数え、
+非空なら同じfanmarkだけを数える。移行側もこのscopeを保つ。両制限について
+同じID/別ID/空文字/nullの8ケースを追加した。空languageと2つの空ID制限で
+修正前の3失敗を再現し、修正後はnative通知36/36が成功した。fixtureの初回実行では
+必須triggered_atを欠くprior通知と禁止された空settings言語も失敗したが、これらは
+fixtureの問題として修正し、runtime不具合の件数に含めていない。
+
+source catalog 2026-10-02T21:03:48.240925+00:00の
+`render_notification_template(uuid,integer,jsonb,text)`はSTABLE/SECURITY DEFINER、
+定義SHA-256 `730aaec79e000cb375ad6d98005a2c908973efce3a6fd605db7f13c2830c987e`。
+sourceはtemplate ID/version/language/activeでLIMIT 1を選び、5種類のdate placeholderを
+残してpayloadの非null値を置換する。targetもdate placeholderを残し、templateが
+取得できなければevent type/raw payloadへfallbackする。
+
+全render互換性はまだ承認しない。sourceのSELECTはchannelで絞らず、同じ
+ID/version/languageで複数channelがある場合の選択順を保証しない。targetはrule channelで
+絞るため、この差の契約は要確認。またnested object/arrayのPostgreSQL JSONB textと
+JavaScript JSON文字列化、置換順と数値精度の完全なparity fixtureは未完了。source RPCを
+実ユーザーpayloadで呼び出したり、sourceの公開権限をtargetにコピーしたりはしていない。
+
+CI37072572541のapplication失敗は、archive writer testが固定line365を期待し、
+boolean修正で実位置374へ移ったためだった。testは実INSERT位置から期待lineを求め、
+唯一のhistory writer、archived_at列、bind値とnative timestampの検証を維持する。
+修正後の全test:migration-dataは277/277、Worker typecheck/lint/diffも成功した。
+
 ## D1 通知履歴アーカイブ
 
 `workers/api/src/notifications-scheduled.ts`は、90日より古い`delivered`/`failed`
@@ -71,7 +103,7 @@ rollbackと再実行、既存の同内容履歴のtimestamp保持、2,500行上�
 Auth fixtureもstagingで選択するcore/0007 signup marker/0008 suspension migrationを
 適用し、`AUTH_USER_STATUS_BACKEND=d1`を選ぶ。停止・session失効後の古い署名Cookieで
 一覧/未読数/個別既読/全件既読が401となり、通知行が不変、別sessionの利用者は正常、
-停止中の新signinは403かつsession生成0を確認した。最新native suiteは上記のboolean segmentケースを含め26/26。
+停止中の新signinは403かつsession生成0を確認した。最新native suiteは上記のboolean/言語/制限scopeケースを含め36/36。
 このケースは停止後のAPI境界を検証し、管理者MFA/audit/停止transaction自体の試験は
 既存admin-user-management suiteが別に担当する。
 

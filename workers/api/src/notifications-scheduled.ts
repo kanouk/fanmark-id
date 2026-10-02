@@ -130,10 +130,11 @@ async function userMatchesSegment(
 }
 
 async function resolveLanguage(database: D1Database, userId: string, payloadLanguage: unknown): Promise<string> {
-  if (typeof payloadLanguage === "string") return payloadLanguage;
+  if (typeof payloadLanguage === "string" && payloadLanguage.length > 0) return payloadLanguage;
   const settings = await database.prepare("SELECT preferred_language FROM user_settings WHERE user_id = ? LIMIT 1")
     .bind(userId).first<{ preferred_language?: unknown }>();
-  return typeof settings?.preferred_language === "string" ? settings.preferred_language : DEFAULT_LANGUAGE;
+  return typeof settings?.preferred_language === "string" && settings.preferred_language.length > 0
+    ? settings.preferred_language : DEFAULT_LANGUAGE;
 }
 
 async function ruleIsAllowed(
@@ -152,7 +153,8 @@ async function ruleIsAllowed(
         !await userMatchesSegment(database, userId, segment)) return false;
   }
 
-  const fanmarkId = typeof payload.fanmark_id === "string" ? payload.fanmark_id : null;
+  const fanmarkId = typeof payload.fanmark_id === "string" && payload.fanmark_id.length > 0
+    ? payload.fanmark_id : null;
   if (rule.cooldown_window_seconds) {
     const cutoff = toUtcMicrosecondTimestamp(new Date(Date.parse(now) - rule.cooldown_window_seconds * 1000));
     const recent = await database.prepare(`

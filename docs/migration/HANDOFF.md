@@ -18,7 +18,7 @@ older sections retain their historical acceptance and failure evidence.
   preflight/smoke/final-readback scripts only after both jobs succeed for the
   exact current HEAD. Do not reuse a stale successful run for a new HEAD.
 - Native notifications now use all25 Business migrations plus staging Auth
-  core/0007/0008 and suspension selector:26/26. Search uses the same Auth
+  core/0007/0008 and suspension selector:36/36. Search uses the same Auth
   selector/full Business schema:13/13. These are local proof only. Archive
   rollback/backlog/resume/source ACL evidence is in notifications-api.md;
   scheduled activation coverage is in TECH.md. Provider selectors remain off.
@@ -28,6 +28,13 @@ older sections retain their historical acceptance and failure evidence.
   Six cases reproduce the four former failures; notifications26/26, wake20/20,
   Worker typecheck/lint pass locally. This runtime fix is not deployed. The source
   processor delivers only immediate in-app; global external-sender parity is open.
+- Empty payload language now uses the settings/default locale. Empty fanmark ID
+  preserves source global cooldown/max scope instead of bypassing limits. Three
+  failures were reproduced; notifications36/36, migration-data277/277, types/lint
+  pass. CI37072572541 application failed on an archive test's fixed source line;
+  the test now derives the INSERT position without dropping writer checks. New
+  exact-HEAD CI is required. Render RPC channel/JSONB/order parity remains open;
+  see notifications-api.md. No new remote D1 query/seed/deploy was performed.
 - Source functions/RLS/triggers/external callers, recurring lifecycle/archive,
   retention, D1→DO replay gap, provider-backed Stripe/Resend/4 OAuth, CPU/plan
   fit, least privilege/key custody, and real-device/end-to-end acceptance remain
