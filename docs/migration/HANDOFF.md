@@ -3836,3 +3836,29 @@ slice; Stripe integration and the complete #37 acceptance remain open. Issue
 #35 still has five schema/operation blocker groups / 85 locations and the
 catalog remains non-deployable. Keep real user/Auth/Storage migration and
 domain/DNS cutover deferred to #38.
+
+## 2026-10-02 resumed migration: Cron recovery and Realtime operation map
+
+The full synthetic post-write recovery and disposable Cron diagnostics are
+recorded in `docs/migration/EXECUTION.md`. The run passed: 5 scheduled-event
+receipts, 3 selected dispatches, 3 Stripe job completions, and 2 write-freeze
+pauses were observed; the synthetic extension was applied once, survived D1
+Time Travel and encrypted R2 replay, and all disposable resources were removed.
+No Stripe API call, live user data, production route, or domain/DNS change was
+used. The earlier attempt timed out while waiting for a synthetic Cron receipt;
+that does not establish its exact cause.
+
+CI run [`36981863610`](https://github.com/fanmark-id/actions/runs/36981863610)
+passed both jobs on `5b826c9`: Worker API/D1 tests, typecheck and dry-run passed
+in 6 minutes; staging migration boundaries, Stripe contracts, application
+typecheck and build passed in 4m3s. `git diff --check` also passes for the
+current documentation update.
+
+`docs/migration/repository-inventory.md` now classifies all 8 Realtime
+callsites by owner, data class, Cloudflare replacement and parity: notification
+surfaces use bounded D1 APIs with 30-second polling, profiles use local update
+events plus focus/visibility refresh, and subscriptions use read-only D1
+projection refresh. 203 frontend callsites remain to be classified. This
+source-level slice does not prove live production configuration or data parity.
+Continue with the remaining non-user-data inventory and master/infrastructure
+gates. Keep actual user/Auth/Storage migration and domain/DNS cutover for #38.

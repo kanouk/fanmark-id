@@ -476,3 +476,29 @@ Reconcile the live observations with this checkout report before treating any ma
 - Reconcile generated types and checked-in SQL snapshots with a fresh, access-controlled production schema readback; resolve drift before selecting Cloudflare D1/R2/Workers targets.
 - Map each static frontend operation to an owner, data classification, and Cloudflare replacement or retention decision. Realtime cleanup aliases are resolved to their statically subscribed table; interpolated channel topics remain visible in the Dynamic expression column. Arbitrary wrappers and indirect calls still need manual review.
 - Confirm pg_cron/pg_net schedules, Auth providers and redirect URLs, Storage buckets/policies, Realtime channels, Stripe/Resend webhooks, and deployment secrets in the live environment. None are proven by this offline report.
+
+## Semantic mapping completed slice: Realtime
+
+The following eight rows are the four Realtime subscriptions and their four
+cleanup calls from the 211-callsite scan. Ownership and data classification
+come from the checked-in product behavior and row-scoped API contracts; this is
+local source analysis, not a fresh production readback. Cloudflare routes are
+implemented behind explicit staging selectors, but this table does not claim
+real-user migration or provider acceptance.
+
+| Callsite | Operation and owner | Data class | Cloudflare replacement and parity |
+| --- | --- | --- | --- |
+| `src/components/layout/AppHeader.tsx:118` | Subscribe to any change in the signed-in user's `notifications`; recipient owns the read, system/admin workflows create rows. | Private user notification content and delivery/read state. | `GET /api/me/notifications?limit=5` plus `/api/me/notifications/unread-count`; Worker mode polls every 30 seconds while visible. This replaces push updates with bounded polling. |
+| `src/components/layout/AppHeader.tsx:135` | Remove the component's Supabase channel on cleanup. | No persisted data; browser subscription lifecycle only. | Worker mode creates no channel. React Query's component lifecycle and polling configuration own cleanup. |
+| `src/pages/Notifications.tsx:66` | Subscribe to any change in the signed-in user's `notifications` and reload up to 50 rows; recipient owns the read. | Private user notification content and delivery/read state. | `GET /api/me/notifications?limit=50`; Worker mode polls every 30 seconds. Immediate cross-device refresh becomes eventual polling. |
+| `src/pages/Notifications.tsx:83` | Remove the page's Supabase channel on cleanup. | No persisted data; browser subscription lifecycle only. | Worker mode creates no channel; the 30-second interval is cleared when the page unmounts. |
+| `src/hooks/useProfile.tsx:58` | Receive `UPDATE` for the signed-in user's `user_settings` row and replace local profile state; the user owns the row. | Private account profile and preference fields. | `GET/PATCH /api/me/profile`; same-runtime local update events plus a quiet refresh on focus/visibility. A change from another device is not pushed immediately. |
+| `src/hooks/useProfile.tsx:70` | Remove the Supabase channel on cleanup. | No persisted data; browser subscription lifecycle only. | Worker mode removes its local event handler and focus/visibility listeners. |
+| `src/hooks/useSubscription.tsx:124` | Receive any change to the signed-in user's latest `user_subscriptions` record and refetch it; the user owns the read, Stripe webhook processing owns provider-state writes. | Private billing entitlement and subscription projection metadata. | Read-only `GET /api/me/subscription`; focus/visibility refresh and a 30-second visible-tab interval. Stripe webhook projection replaces database push; no Stripe secret or payment action is exposed to the client. |
+| `src/hooks/useSubscription.tsx:132` | Remove the Supabase channel on cleanup. | No persisted data; browser subscription lifecycle only. | Worker mode removes focus/visibility listeners and clears the interval. |
+
+The route contracts are documented in [notifications-api.md](notifications-api.md),
+[own-profile-api.md](own-profile-api.md), and the subscription API implementation
+in `workers/api/src/subscription-d1-api.ts`. The remaining 203 callsites still
+need equivalent owner, data-class, and replacement/retention classification;
+wrapper and indirect-call review also remains open.
