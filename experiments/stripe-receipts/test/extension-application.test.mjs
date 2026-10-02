@@ -373,7 +373,10 @@ after(async () => {
 });
 
 test("applies one paid extension and commits license, lottery, audit, ledger, receipt, and dispatch together", async () => {
-  await seedLicense({ licenseEnd: "2026-10-01T12:00:00.000Z" });
+  const licenseEndYear = new Date().getUTCFullYear() + 2;
+  const licenseEnd = new Date(Date.UTC(licenseEndYear, 9, 1, 12));
+  const expectedLicenseEnd = new Date(Date.UTC(licenseEndYear, 10, 2));
+  await seedLicense({ licenseEnd: licenseEnd.toISOString() });
   const accepted = await accept();
   await execute("set time zone 'America/Los_Angeles'");
   const result = await apply(accepted.receipt_id);
@@ -382,7 +385,7 @@ test("applies one paid extension and commits license, lottery, audit, ledger, re
   assert.equal(result.outcome, "applied");
   assert.equal(result.receipt_status, "applied");
   assert.equal(result.dispatch_status, "completed");
-  assert.equal(result.license_end.toISOString(), "2026-11-02T00:00:00.000Z");
+  assert.equal(result.license_end.toISOString(), expectedLicenseEnd.toISOString());
 
   const license = await execute("select status, license_end, grace_expires_at, is_returned from public.fanmark_licenses where id = $1::uuid", [LICENSE_ID]);
   assert.deepEqual(license.rows[0], {
