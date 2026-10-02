@@ -27,6 +27,14 @@ fixtures echo the requested pinned catalog version. Repeat local seven-case
 checks use the same isolated env setup; latest CI remains pending and nothing
 has been deployed. Rebuild the normal staging dist before deployment. Existing
 `useAuthForm` Hook lint warnings are two, with zero errors.
+Second CI `37061645755` application failed the unchanged workflow isolation
+check: the synthetic domain and multiline build violated its strict patterns.
+Follow-up keeps the checker intact, uses `https://synthetic-db.example.invalid`
+and a separate empty-dir preparation step, and restores the original build
+command. Direct `npm run check:ci` exit 0 and success output are confirmed.
+The earlier shell wrapper's final diff-check exit masked isolation failure;
+do not count it as passing evidence. Seven browser cases pass again with the
+new fixture URL. No remote deployment has occurred in this editor follow-up.
 
 Owner fanmark profiles now support perpetual Tier C in both authenticated
 context reads and INSERT/UPSERT eligibility. A new real local split-D1

@@ -29,6 +29,14 @@ synthetic Supabase初期化値を明示する。これはsecret/source接続の�
 同じ空envDirでbuildと7ケースを再検証した。通常の配備buildは別途作り直す。
 `useAuthForm`の既存Hook lint警告2件は残る（error 0）。新CI完了前に配備しない。
 
+次のCI37061645755は既存workflow isolationで拒否された。合成URLのdomain文字列と
+build stepの複数行化が既存の厳格な検査に合わなかった。checkerは変更せず、
+`https://synthetic-db.example.invalid`へ初期化URLを替え、空envDir作成を別stepにして
+既存のbuild commandを保持した。`npm run check:ci`のexit0と成功出力を直接確認。
+前回のローカルcheck commandは後続diff checkのexitで失敗を隠していたため、
+そのwrapperのexit0はisolation成功の証拠にしない。新しいsynthetic URLでもbuildと
+7ケースを再検証して成功。ここまでremote配備は行っていない。
+
 ## 2026-10-03：無期限プロフィールのstaging合成受け入れ成功
 
 code head f4bd1aa / CI37058393397はapplication・Worker両job成功、watcher exit 0。

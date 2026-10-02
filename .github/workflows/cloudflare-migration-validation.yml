@@ -59,16 +59,17 @@ jobs:
       - name: Type check application
         run: npm run typecheck
 
+      - name: Prepare empty staging build environment
+        run: mkdir -p "$RUNNER_TEMP/fanmark-ui-fixture-env"
+
       - name: Build Cloudflare staging application
         env:
           FANMARK_VITE_ENV_DIR: ${{ runner.temp }}/fanmark-ui-fixture-env
           VITE_FANMARK_API_BASE_URL: https://fanmark-app-staging.fanmark-id.workers.dev
           VITE_AUTH_API_BASE_URL: https://fanmark-app-staging.fanmark-id.workers.dev
-          VITE_SUPABASE_URL: https://synthetic-project.supabase.co
+          VITE_SUPABASE_URL: https://synthetic-db.example.invalid
           VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_fixture_only
-        run: |
-          mkdir -p "$FANMARK_VITE_ENV_DIR"
-          npm run build:cloudflare-staging
+        run: npm run build:cloudflare-staging
 
       - name: Test rendered owner profile editor
         run: npm run test:staging-profile-editor-ui
